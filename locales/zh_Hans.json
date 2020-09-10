@@ -1,3 +1,16 @@
 {
-    "password_too_simple_1": "密码长度至少为8个字符"
+    "password_too_simple_1": "密码长度至少为8个字符",
+    "backup_created": "备份已创建",
+    "app_start_remove": "正在删除{app}……",
+    "admin_password_change_failed": "不能修改密码",
+    "admin_password_too_long": "请选择一个小于127个字符的密码",
+    "app_upgrade_failed": "不能升级{app:s}：{error}",
+    "app_id_invalid": "无效 app ID",
+    "app_unknown": "未知应用",
+    "admin_password_changed": "管理密码已更改",
+    "aborting": "正在放弃。",
+    "admin_password": "管理密码",
+    "app_start_restore": "正在恢复{app}……",
+    "action_invalid": "无效操作 '{action:s}'",
+    "ask_lastname": "姓"
 }

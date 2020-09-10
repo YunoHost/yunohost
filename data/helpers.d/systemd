@@ -58,7 +58,7 @@ ynh_add_systemd_config () {
     ynh_store_file_checksum --file="$finalsystemdconf"
 
     chown root: "$finalsystemdconf"
-    systemctl enable $service
+    systemctl enable $service --quiet
     systemctl daemon-reload
 }
 
@@ -81,7 +81,7 @@ ynh_remove_systemd_config () {
     if [ -e "$finalsystemdconf" ]
     then
         ynh_systemd_action --service_name=$service --action=stop
-        systemctl disable $service
+        systemctl disable $service --quiet
         ynh_secure_remove --file="$finalsystemdconf"
         systemctl daemon-reload
     fi
@@ -145,7 +145,7 @@ ynh_systemd_action() {
     if ! systemctl $action $service_name
     then
         # Show syslog for this service
-        ynh_exec_err journalctl --no-pager --lines=$length --unit=$service_name
+        ynh_exec_err journalctl --quiet --no-hostname --no-pager --lines=$length --unit=$service_name
         # If a log is specified for this service, show also the content of this log
         if [ -e "$log_path" ]
         then
@@ -183,7 +183,7 @@ ynh_systemd_action() {
         then
             ynh_print_warn --message="The service $service_name didn't fully executed the action ${action} before the timeout."
             ynh_print_warn --message="Please find here an extract of the end of the log of the service $service_name:"
-            ynh_exec_warn journalctl --no-pager --lines=$length --unit=$service_name
+            ynh_exec_warn journalctl --quiet --no-hostname --no-pager --lines=$length --unit=$service_name
             if [ -e "$log_path" ]
             then
                 ynh_print_warn --message="\-\-\-"

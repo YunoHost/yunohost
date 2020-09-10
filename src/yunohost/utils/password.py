@@ -63,7 +63,7 @@ class PasswordValidator(object):
             settings = json.load(open('/etc/yunohost/settings.json', "r"))
             setting_key = "security.password." + profile + ".strength"
             self.validation_strength = int(settings[setting_key]["value"])
-        except Exception as e:
+        except Exception:
             # Fallback to default value if we can't fetch settings for some reason
             self.validation_strength = 1
 
@@ -83,11 +83,7 @@ class PasswordValidator(object):
         # on top (at least not the moulinette ones)
         # because the moulinette needs to be correctly initialized
         # as well as modules available in python's path.
-        import logging
         from yunohost.utils.error import YunohostError
-        from moulinette.utils.log import getActionLogger
-
-        logger = logging.getLogger('yunohost.utils.password')
 
         status, msg = self.validation_summary(password)
         if status == "error":

@@ -2,7 +2,6 @@
 
 import os
 
-import subprocess
 from yunohost.diagnosis import Diagnoser
 from yunohost.regenconf import _get_regenconf_infos, _calculate_hash
 

@@ -90,6 +90,10 @@ def domain_add(operation_logger, domain, dyndns=False):
 
     operation_logger.start()
 
+    # Lower domain to avoid some edge cases issues
+    # See: https://forum.yunohost.org/t/invalid-domain-causes-diagnosis-web-to-fail-fr-on-demand/11765
+    domain = domain.lower()
+
     # DynDNS domain
     if dyndns:
 
@@ -179,9 +183,15 @@ def domain_remove(operation_logger, domain, force=False):
             raise YunohostError('domain_cannot_remove_main_add_new_one', domain=domain)
 
     # Check if apps are installed on the domain
-    app_settings = [_get_app_settings(app) for app in _installed_apps()]
-    if any(s["domain"] == domain for s in app_settings):
-        raise YunohostError('domain_uninstall_app_first')
+    apps_on_that_domain = []
+
+    for app in _installed_apps():
+        settings = _get_app_settings(app)
+        if settings.get("domain") == domain:
+            apps_on_that_domain.append("%s (on https://%s%s)" % (app, domain, settings["path"]) if "path" in settings else app)
+
+    if apps_on_that_domain:
+        raise YunohostError('domain_uninstall_app_first', apps=", ".join(apps_on_that_domain))
 
     operation_logger.start()
     ldap = _get_ldap_interface()
@@ -528,10 +538,10 @@ def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
     ####################
 
     records = {
-        "basic": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in basic],
-        "xmpp": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in xmpp],
-        "mail": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in mail],
-        "extra": [{"name": name, "ttl": ttl, "type": type_, "value": value} for name, ttl, type_, value in extra],
+        "basic": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in basic],
+        "xmpp": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in xmpp],
+        "mail": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in mail],
+        "extra": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in extra],
     }
 
     ##################
@@ -604,17 +614,17 @@ def _get_DKIM(domain):
     if is_legacy_format:
         dkim = re.match((
             r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
-             '[^"]*"v=(?P<v>[^";]+);'
-             '[\s"]*k=(?P<k>[^";]+);'
-             '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+            '[^"]*"v=(?P<v>[^";]+);'
+            r'[\s"]*k=(?P<k>[^";]+);'
+            '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
         )
     else:
         dkim = re.match((
             r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
-             '[^"]*"v=(?P<v>[^";]+);'
-             '[\s"]*h=(?P<h>[^";]+);'
-             '[\s"]*k=(?P<k>[^";]+);'
-             '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+            '[^"]*"v=(?P<v>[^";]+);'
+            r'[\s"]*h=(?P<h>[^";]+);'
+            r'[\s"]*k=(?P<k>[^";]+);'
+            '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
         )
 
     if not dkim:

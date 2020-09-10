@@ -57,6 +57,9 @@ do_post_regen() {
   done
 
   # fix some permissions
+
+  # metronome should be in ssl-cert group to let it access SSL certificates
+  usermod -aG ssl-cert metronome
   chown -R metronome: /var/lib/metronome/
   chown -R metronome: /etc/metronome/conf.d/
 

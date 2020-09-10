@@ -1,8 +1,12 @@
 #!/usr/bin/env python
 import os
 import psutil
+import subprocess
+import datetime
+import re
 
 from yunohost.diagnosis import Diagnoser
+
 
 class SystemResourcesDiagnoser(Diagnoser):
 
@@ -13,7 +17,7 @@ class SystemResourcesDiagnoser(Diagnoser):
     def run(self):
 
         MB = 1024**2
-        GB = MB*1024
+        GB = MB * 1024
 
         #
         # RAM
@@ -45,14 +49,15 @@ class SystemResourcesDiagnoser(Diagnoser):
         item = dict(meta={"test": "swap"},
                     data={"total": human_size(swap.total), "recommended": "512 MiB"})
         if swap.total <= 1 * MB:
-            item["status"] = "ERROR"
+            item["status"] = "INFO"
             item["summary"] = "diagnosis_swap_none"
-        elif swap.total < 500 * MB:
-            item["status"] = "WARNING"
+        elif swap.total < 450 * MB:
+            item["status"] = "INFO"
             item["summary"] = "diagnosis_swap_notsomuch"
         else:
             item["status"] = "SUCCESS"
             item["summary"] = "diagnosis_swap_ok"
+        item["details"] = ["diagnosis_swap_tip"]
         yield item
 
         # FIXME : add a check that swapiness is low if swap is on a sdcard...
@@ -75,7 +80,7 @@ class SystemResourcesDiagnoser(Diagnoser):
                               # N.B.: we do not use usage.total because we want
                               # to take into account the 5% security margin
                               # correctly (c.f. the doc of psutil ...)
-                              "total": human_size(usage.used+usage.free),
+                              "total": human_size(usage.used + usage.free),
                               "free": human_size(usage.free),
                               "free_percent": free_percent})
 
@@ -92,13 +97,54 @@ class SystemResourcesDiagnoser(Diagnoser):
                 item["status"] = "SUCCESS"
                 item["summary"] = "diagnosis_diskusage_ok"
 
-
             yield item
+
+        #
+        # Recent kills by oom_reaper
+        #
+
+        kills_count = self.recent_kills_by_oom_reaper()
+        if kills_count:
+            kills_summary = "\n".join(["%s (x%s)" % (proc, count) for proc, count in kills_count])
+
+            yield dict(meta={"test": "oom_reaper"},
+                       status="WARNING",
+                       summary="diagnosis_processes_killed_by_oom_reaper",
+                       data={"kills_summary": kills_summary})
+
+    def recent_kills_by_oom_reaper(self):
+        if not os.path.exists("/var/log/kern.log"):
+            return []
+
+        def analyzed_kern_log():
+
+            cmd = 'tail -n 10000 /var/log/kern.log | grep "oom_reaper: reaped process" || true'
+            out = subprocess.check_output(cmd, shell=True).strip()
+            lines = out.split("\n") if out else []
+
+            now = datetime.datetime.now()
+
+            for line in reversed(lines):
+                # Lines look like :
+                # Aug 25 18:48:21 yolo kernel: [ 9623.613667] oom_reaper: reaped process 11509 (uwsgi), now anon-rss:0kB, file-rss:0kB, shmem-rss:328kB
+                date_str = str(now.year) + " " + " ".join(line.split()[:3])
+                date = datetime.datetime.strptime(date_str, '%Y %b %d %H:%M:%S')
+                diff = now - date
+                if diff.days >= 1:
+                    break
+                process_killed = re.search(r"\(.*\)", line).group().strip("()")
+                yield process_killed
+
+        processes = list(analyzed_kern_log())
+        kills_count = [(p, len([p_ for p_ in processes if p_ == p])) for p in set(processes)]
+        kills_count = sorted(kills_count, key=lambda p: p[1], reverse=True)
+
+        return kills_count
 
 
 def human_size(bytes_):
     # Adapted from https://stackoverflow.com/a/1094933
-    for unit in ['','ki','Mi','Gi','Ti','Pi','Ei','Zi']:
+    for unit in ['', 'ki', 'Mi', 'Gi', 'Ti', 'Pi', 'Ei', 'Zi']:
         if abs(bytes_) < 1024.0:
             return "%s %sB" % (round_(bytes_), unit)
         bytes_ /= 1024.0
@@ -112,6 +158,7 @@ def round_(n):
     if n > 10:
         n = int(round(n))
     return n
+
 
 def main(args, env, loggers):
     return SystemResourcesDiagnoser(args, env, loggers).diagnose()

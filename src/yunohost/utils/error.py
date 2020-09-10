@@ -33,8 +33,8 @@ class YunohostError(MoulinetteError):
     """
 
     def __init__(self, key, raw_msg=False, *args, **kwargs):
-        self.key = key # Saving the key is useful for unit testing
-        self.kwargs = kwargs # Saving the key is useful for unit testing
+        self.key = key  # Saving the key is useful for unit testing
+        self.kwargs = kwargs  # Saving the key is useful for unit testing
         if raw_msg:
             msg = key
         else:

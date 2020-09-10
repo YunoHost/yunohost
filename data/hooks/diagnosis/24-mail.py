@@ -47,7 +47,6 @@ class MailDiagnoser(Diagnoser):
                         status="SUCCESS",
                         summary="diagnosis_mail_" + name + "_ok")
 
-
     def check_outgoing_port_25(self):
         """
         Check outgoing port 25 is open and not blocked by router
@@ -63,7 +62,6 @@ class MailDiagnoser(Diagnoser):
                            summary="diagnosis_mail_outgoing_port_25_blocked",
                            details=["diagnosis_mail_outgoing_port_25_blocked_details",
                                     "diagnosis_mail_outgoing_port_25_blocked_relay_vpn"])
-
 
     def check_ehlo(self):
         """
@@ -99,7 +97,6 @@ class MailDiagnoser(Diagnoser):
                            summary="diagnosis_mail_ehlo_wrong",
                            details=["diagnosis_mail_ehlo_wrong_details"])
 
-
     def check_fcrdns(self):
         """
         Check the reverse DNS is well defined by doing a Forward-confirmed
@@ -126,7 +123,7 @@ class MailDiagnoser(Diagnoser):
                 query += '.ip6.arpa'
 
             # Do the DNS Query
-            status, value = dig(query, 'PTR')
+            status, value = dig(query, 'PTR', resolvers="force_external")
             if status == "nok":
                 yield dict(meta={"test": "mail_fcrdns", "ipversion": ipversion},
                            data={"ip": ip, "ehlo_domain": self.ehlo_domain},
@@ -147,7 +144,6 @@ class MailDiagnoser(Diagnoser):
                            status="ERROR",
                            summary="diagnosis_mail_fcrdns_different_from_ehlo_domain",
                            details=details)
-
 
     def check_blacklist(self):
         """
@@ -225,7 +221,6 @@ class MailDiagnoser(Diagnoser):
                            status="SUCCESS",
                            summary="diagnosis_mail_queue_ok")
 
-
     def get_ips_checked(self):
         outgoing_ipversions = []
         outgoing_ips = []
@@ -244,6 +239,7 @@ class MailDiagnoser(Diagnoser):
                 if global_ipv6:
                     outgoing_ips.append(global_ipv6)
         return (outgoing_ipversions, outgoing_ips)
+
 
 def main(args, env, loggers):
     return MailDiagnoser(args, env, loggers).diagnose()

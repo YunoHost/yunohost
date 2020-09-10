@@ -5,6 +5,7 @@ import os
 from yunohost.diagnosis import Diagnoser
 from yunohost.service import service_status
 
+
 class ServicesDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
@@ -21,7 +22,7 @@ class ServicesDiagnoser(Diagnoser):
                         data={"status": result["status"], "configuration": result["configuration"]})
 
             if result["status"] != "running":
-                item["status"] = "ERROR"
+                item["status"] = "ERROR" if result["status"] != "unknown" else "WARNING"
                 item["summary"] = "diagnosis_services_bad_status"
                 item["details"] = ["diagnosis_services_bad_status_tip"]
 
@@ -35,6 +36,7 @@ class ServicesDiagnoser(Diagnoser):
                 item["summary"] = "diagnosis_services_running"
 
             yield item
+
 
 def main(args, env, loggers):
     return ServicesDiagnoser(args, env, loggers).diagnose()
