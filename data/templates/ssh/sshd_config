@@ -70,20 +70,11 @@ Subsystem sftp internal-sftp
 # Disallow unallowed users to use SSH as a VPN-like or a X11 server
 AllowTcpForwarding no
 AllowStreamLocalForwarding no
-GatewayPorts no
-X11Forwarding no
-PermitTTY no
 PermitUserRC no
 
-# Chroot standard users
-ChrootDirectory /home/%u
-
 Match User admin,root
-    ChrootDirectory none
     AllowTcpForwarding yes
-    GatewayPorts no
-    X11Forwarding yes
-    PermitTTY yes
+    AllowStreamLocalForwarding yes
     PermitUserRC yes
 
 
