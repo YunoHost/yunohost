@@ -39,6 +39,7 @@ from collections import OrderedDict
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
+from moulinette.utils.process import run_commands
 from moulinette.utils.filesystem import read_file, read_json, read_toml, read_yaml, write_to_file, write_to_json, write_to_yaml, chmod, chown, mkdir
 
 from yunohost.service import service_status, _run_service_command
@@ -2237,61 +2238,15 @@ def _fetch_app_from_git(app):
 
     logger.debug(m18n.n('downloading'))
 
+    # Extract URL, branch and revision to download
     if ('@' in app) or ('http://' in app) or ('https://' in app):
         url = app
         branch = 'master'
-        github_repo = re_github_repo.match(app)
-        if github_repo:
-            if github_repo.group('tree'):
-                branch = github_repo.group('tree')
-            url = "https://github.com/{owner}/{repo}".format(
-                owner=github_repo.group('owner'),
-                repo=github_repo.group('repo'),
-            )
-            tarball_url = "{url}/archive/{tree}.zip".format(
-                url=url, tree=branch
-            )
-            try:
-                subprocess.check_call([
-                    'wget', '-qO', app_tmp_archive, tarball_url])
-            except subprocess.CalledProcessError:
-                logger.exception('unable to download %s', tarball_url)
-                raise YunohostError('app_sources_fetch_failed')
-            else:
-                manifest, extracted_app_folder = _extract_app_from_file(
-                    app_tmp_archive, remove=True)
-        else:
-            tree_index = url.rfind('/tree/')
-            if tree_index > 0:
-                url = url[:tree_index]
-                branch = app[tree_index + 6:]
-            try:
-                # We use currently git 2.1 so we can't use --shallow-submodules
-                # option. When git will be in 2.9 (with the new debian version)
-                # we will be able to use it. Without this option all the history
-                # of the submodules repo is downloaded.
-                subprocess.check_call([
-                    'git', 'clone', '-b', branch, '--single-branch', '--recursive', '--depth=1', url,
-                    extracted_app_folder])
-                subprocess.check_call([
-                    'git', 'reset', '--hard', branch
-                ], cwd=extracted_app_folder)
-                manifest = _get_manifest_of_app(extracted_app_folder)
-            except subprocess.CalledProcessError:
-                raise YunohostError('app_sources_fetch_failed')
-            except ValueError as e:
-                raise YunohostError('app_manifest_invalid', error=e)
-            else:
-                logger.debug(m18n.n('done'))
-
-        # Store remote repository info into the returned manifest
-        manifest['remote'] = {'type': 'git', 'url': url, 'branch': branch}
-        try:
-            revision = _get_git_last_commit_hash(url, branch)
-        except Exception as e:
-            logger.debug("cannot get last commit hash because: %s ", e)
-        else:
-            manifest['remote']['revision'] = revision
+        tree_index = url.rfind('/tree/')
+        if tree_index > 0:
+            url = url[:tree_index]
+            branch = app[tree_index + 6:]
+        revision = 'HEAD'
     else:
         app_dict = _load_apps_catalog()["apps"]
 
@@ -2303,47 +2258,39 @@ def _fetch_app_from_git(app):
             raise YunohostError('app_unsupported_remote_type')
 
         app_info = app_dict[app_id]
-        app_info['manifest']['lastUpdate'] = app_info['lastUpdate']
-        manifest = app_info['manifest']
         url = app_info['git']['url']
+        branch = app_info['git']['branch']
+        revision = str(app_info['git']['revision'])
 
-        if 'github.com' in url:
-            tarball_url = "{url}/archive/{tree}.zip".format(
-                url=url, tree=app_info['git']['revision']
-            )
-            try:
-                subprocess.check_call([
-                    'wget', '-qO', app_tmp_archive, tarball_url])
-            except subprocess.CalledProcessError:
-                logger.exception('unable to download %s', tarball_url)
-                raise YunohostError('app_sources_fetch_failed')
-            else:
-                manifest, extracted_app_folder = _extract_app_from_file(
-                    app_tmp_archive, remove=True)
-        else:
-            try:
-                subprocess.check_call([
-                    'git', 'clone', app_info['git']['url'],
-                    '-b', app_info['git']['branch'], extracted_app_folder])
-                subprocess.check_call([
-                    'git', 'reset', '--hard',
-                    str(app_info['git']['revision'])
-                ], cwd=extracted_app_folder)
-                manifest = _get_manifest_of_app(extracted_app_folder)
-            except subprocess.CalledProcessError:
-                raise YunohostError('app_sources_fetch_failed')
-            except ValueError as e:
-                raise YunohostError('app_manifest_invalid', error=e)
-            else:
-                logger.debug(m18n.n('done'))
+    # Download only this commit
+    try:
+        # We don't use git clone because, git clone can't download
+        # a specific revision only
+        run_commands([['git', 'init', extracted_app_folder]], shell=False)
+        run_commands([
+            ['git', 'remote', 'add', 'origin', url],
+            ['git', 'fetch', '--depth=1', 'origin',
+                branch if revision == 'HEAD' else revision],
+            ['git', 'reset', '--hard', 'FETCH_HEAD']
+        ], cwd=extracted_app_folder, shell=False)
+        manifest = _get_manifest_of_app(extracted_app_folder)
+    except subprocess.CalledProcessError:
+        raise YunohostError('app_sources_fetch_failed')
+    except ValueError as e:
+        raise YunohostError('app_manifest_invalid', error=e)
+    else:
+        logger.debug(m18n.n('done'))
 
-        # Store remote repository info into the returned manifest
-        manifest['remote'] = {
-            'type': 'git',
-            'url': url,
-            'branch': app_info['git']['branch'],
-            'revision': app_info['git']['revision'],
-        }
+    # Store remote repository info into the returned manifest
+    manifest['remote'] = {'type': 'git', 'url': url, 'branch': branch}
+    if revision == 'HEAD':
+        try:
+            manifest['remote']['revision'] = _get_git_last_commit_hash(url, branch)
+        except Exception as e:
+            logger.debug("cannot get last commit hash because: %s ", e)
+    else:
+        manifest['remote']['revision'] = revision
+        manifest['lastUpdate'] = app_info['lastUpdate']
 
     return manifest, extracted_app_folder
 
