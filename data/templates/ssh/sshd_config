@@ -75,9 +75,6 @@ X11Forwarding no
 PermitTTY no
 PermitUserRC no
 
-# Chroot standard users
-ChrootDirectory /home/%u
-
 Match User admin,root
     ChrootDirectory none
     AllowTcpForwarding yes
