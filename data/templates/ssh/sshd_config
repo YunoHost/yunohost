@@ -67,9 +67,11 @@ AcceptEnv LANG LC_*
 # SFTP stuff
 Subsystem sftp internal-sftp
 
-# Disallow unallowed users to use SSH as a VPN-like or a X11 server
+# Forbid users from using their account SSH as a VPN (even if SSH login is disabled)
 AllowTcpForwarding no
 AllowStreamLocalForwarding no
+
+# Disable .ssh/rc, which could be edited (e.g. from Nextcloud or whatever) by users to execute arbitrary commands even if SSH login is disabled
 PermitUserRC no
 
 Match User admin,root
