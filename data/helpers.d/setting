@@ -383,7 +383,7 @@ ynh_permission_url() {
     then
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
-        # By example:
+        # For example:
         # --add_url /urlA /urlB
         # will be:
         # add_url=['/urlA', '/urlB']
@@ -394,7 +394,7 @@ ynh_permission_url() {
     then
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
-        # By example:
+        # For example:
         # --remove_url /urlA /urlB
         # will be:
         # remove_url=['/urlA', '/urlB']
@@ -454,7 +454,7 @@ ynh_permission_update() {
     then
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
-        # By example:
+        # For example:
         # --add alice bob
         # will be:
         # add=['alice', 'bob']
@@ -464,7 +464,7 @@ ynh_permission_update() {
     then
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
-        # By example:
+        # For example:
         # --remove alice bob
         # will be:
         # remove=['alice', 'bob']
