@@ -153,6 +153,8 @@ def app_info(app, full=False):
     """
     Get info for a specific app
     """
+    from yunohost.permission import user_permission_list
+
     if not _is_installed(app):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
@@ -180,6 +182,8 @@ def app_info(app, full=False):
     ret['supports_backup_restore'] = (os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "backup")) and
                                       os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "restore")))
     ret['supports_multi_instance'] = is_true(local_manifest.get("multi_instance", False))
+    permissions = user_permission_list(full=True, full_path=True)["permissions"]
+    ret['permissions'] = {p: i for p, i in permissions.items() if p.startswith(app + ".") and (i["url"] or i['additional_urls'])}
     return ret
 
 
