@@ -24,6 +24,7 @@
     Manage permissions
 """
 
+import re
 import copy
 import grp
 import random
@@ -368,15 +369,15 @@ def permission_url(operation_logger, permission,
     """
     from yunohost.app import app_setting
     from yunohost.utils.ldap import _get_ldap_interface
-    from yunohost.domain import _check_and_sanitize_permission_path
     ldap = _get_ldap_interface()
 
     # By default, manipulate main permission
     if "." not in permission:
         permission = permission + ".main"
 
+    app = permission.split('.')[0]
+
     if url or add_url:
-        app = permission.split('.')[0]
         domain = app_setting(app, 'domain')
         path = app_setting(app, 'path')
         if domain is None or path is None:
@@ -395,7 +396,7 @@ def permission_url(operation_logger, permission,
     if url is None:
         url = existing_permission["url"]
     else:
-        url = _check_and_sanitize_permission_path(url, app_main_path, permission)
+        url = _validate_and_sanitize_permission_url(url, app_main_path, app)
 
         if url.startswith('re:') and existing_permission['show_tile']:
             logger.warning(m18n.n('regex_incompatible_with_tile', regex=url, permission=permission))
@@ -409,7 +410,7 @@ def permission_url(operation_logger, permission,
             if ur in current_additional_urls:
                 logger.warning(m18n.n('additional_urls_already_added', permission=permission, url=ur))
             else:
-                ur = _check_and_sanitize_permission_path(ur, app_main_path, permission)
+                ur = _validate_and_sanitize_permission_url(ur, app_main_path, app)
                 new_additional_urls += [ur]
 
     if remove_url:
@@ -645,3 +646,100 @@ def _get_absolute_url(url, base_path):
         return 're:' + base_path.replace('.', '\\.') + url[3:]
     else:
         return url
+
+
+def _validate_and_sanitize_permission_url(url, app_base_path, app):
+    """
+    Check and normalize the urls passed for all permissions
+    Also check that the Regex is valid
+
+    As documented in the 'ynh_permission_create' helper:
+
+    If provided, 'url' is assumed to be relative to the app domain/path if they
+    start with '/'.  For example:
+       /                             -> domain.tld/app
+       /admin                        -> domain.tld/app/admin
+       domain.tld/app/api            -> domain.tld/app/api
+       domain.tld                    -> domain.tld
+
+    'url' can be later treated as a regex if it starts with "re:".
+    For example:
+       re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
+       re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
+    """
+
+    from yunohost.domain import domain_list, _assert_no_conflicting_apps
+
+
+    domains = domain_list()['domains']
+
+    #
+    # Regexes
+    #
+
+    def validate_regex(regex):
+        if '%' in regex:
+            logger.warning("/!\\ Packagers! You are probably using a lua regex. You should use a PCRE regex instead.")
+            return
+
+        try:
+            re.compile(regex)
+        except Exception:
+            raise YunohostError('invalid_regex', regex=regex)
+
+    if url.startswith('re:'):
+
+        # regex without domain
+
+        if url.startswith('re:/'):
+            validate_regex(url[4:])
+            return url
+
+        # regex with domain
+
+        if '/' not in url:
+            raise YunohostError('regex_with_only_domain')
+        domain, path = url[3:].split('/', 1)
+        path = '/' + path
+
+        if domain.replace('%', '').replace('\\', '') not in domains:
+            raise YunohostError('domain_name_unknown', domain=domain)
+
+        validate_regex(path)
+
+        return 're:' + domain + path
+
+    #
+    # "Regular" URIs
+    #
+
+    def split_domain_path(url):
+        url = url.strip("/")
+        (domain, path) = url.split('/', 1) if "/" in url else (url, "/")
+        if path != "/":
+            path = "/" + path
+        return (domain, path)
+
+    # uris without domain
+    if url.startswith('/'):
+        # if url is for example /admin/
+        # we want sanitized_url to be: /admin
+        # and (domain, path) to be   : (domain.tld, /app/admin)
+        sanitized_url = "/" + url.strip("/")
+        domain, path = split_domain_path(app_base_path)
+        path = "/" + path.strip("/") + sanitized_url.strip("/")
+
+    # uris with domain
+    else:
+        # if url is for example domain.tld/wat/
+        # we want sanitized_url to be: domain.tld/wat
+        # and (domain, path) to be   : (domain.tld, /wat)
+        domain, path = split_domain_path(url)
+        sanitized_url = domain + path
+
+        if domain not in domains:
+            raise YunohostError('domain_name_unknown', domain=domain)
+
+    _assert_no_conflicting_apps(domain, path, ignore_app=app)
+
+    return sanitized_url

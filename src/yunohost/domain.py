@@ -388,6 +388,22 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
 
     return conflicts
 
+def _assert_no_conflicting_apps(domain, path, ignore_app=None):
+
+    conflicts = _get_conflicting_apps(domain, path, ignore_app)
+
+    if conflicts:
+        apps = []
+        for path, app_id, app_label in conflicts:
+            apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
+                domain=domain,
+                path=path,
+                app_id=app_id,
+                app_label=app_label,
+            ))
+
+        raise YunohostError('app_location_unavailable', apps="\n".join(apps))
+
 
 def domain_url_available(domain, path):
     """
@@ -428,98 +444,6 @@ def _normalize_domain_path(domain, path):
     path = "/" + path.strip("/")
 
     return domain, path
-
-
-def _check_and_sanitize_permission_path(url, app_main_path, permission):
-    """
-    Check and normalize the urls passed for all permissions
-    Also check that the Regex is valid
-
-    As documented in the 'ynh_permission_create' helper:
-
-    If provided, 'url' is assumed to be relative to the app domain/path if they
-    start with '/'.  For example:
-       /                             -> domain.tld/app
-       /admin                        -> domain.tld/app/admin
-       domain.tld/app/api            -> domain.tld/app/api
-       domain.tld                    -> domain.tld
-
-    'url' can be later treated as a regex if it starts with "re:".
-    For example:
-       re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
-       re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
-    """
-
-    domains = domain_list()['domains']
-
-    # regex without domain
-    if url.startswith('re:/'):
-        regex = url[4:]
-        # check regex if it's a PCRE regex, if it's a lua regex just print a warning
-        # I don't how how to validate a regex
-        if '%' in regex:
-            logger.warning("/!\\ Packagers! You are probably using a lua regex. You should use a PCRE regex instead.")
-        else:
-            try:
-                re.compile(regex)
-            except Exception:
-                raise YunohostError('invalid_regex', regex=regex)
-        return url
-
-    # regex with domain
-    if url.startswith('re:'):
-        if '/' not in url:
-            raise YunohostError('regex_with_only_domain')
-        domain = url[3:].split('/')[0]
-        path = '/' + url[3:].split('/', 1)[1]
-
-        if domain.replace('%', '').replace('\\', '') not in domains:
-            raise YunohostError('domain_name_unknown', domain=domain)
-
-        if '%' in path:
-            logger.warning("/!\\ Packagers! You are probably using a lua regex. You should use a PCRE regex instead.")
-        else:
-            try:
-                re.compile(path)
-            except Exception:
-                raise YunohostError('invalid_regex', regex=path)
-
-        return 're:' + domain + path
-
-    # uris without domain
-    if url.startswith('/'):
-        sanitized_url = '/' + url.strip("/")
-        domain = app_main_path.split('/')[0]
-        path = ('/' + app_main_path.split('/')[1]) if '/' in app_main_path else '/'
-
-    # uris with domain
-    else:
-        domain = url.split('/')[0]
-        if domain not in domains:
-            raise YunohostError('domain_name_unknown', domain=domain)
-
-        if '/' in url:
-            path = '/' + url.split('/', 1)[1].rstrip('/')
-            sanitized_url = domain + path
-        else:
-            sanitized_url = domain
-            path = '/'
-
-    conflicts = _get_conflicting_apps(domain, path, ignore_app=permission.split('.')[0])
-
-    if conflicts:
-        apps = []
-        for path, app_id, app_label in conflicts:
-            apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
-                domain=domain,
-                path=path,
-                app_id=app_id,
-                app_label=app_label,
-            ))
-
-        raise YunohostError('app_location_unavailable', apps="\n".join(apps))
-
-    return sanitized_url
 
 
 def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):

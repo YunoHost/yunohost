@@ -5,7 +5,8 @@ from conftest import get_test_apps_dir
 
 from yunohost.utils.error import YunohostError
 from yunohost.app import app_install, app_remove
-from yunohost.domain import _get_maindomain, domain_url_available, _normalize_domain_path, _check_and_sanitize_permission_path
+from yunohost.domain import _get_maindomain, domain_url_available, _normalize_domain_path
+from yunohost.permission import _validate_and_sanitize_permission_url
 
 # Get main domain
 maindomain = _get_maindomain()
@@ -66,43 +67,43 @@ def test_registerurl_baddomain():
 
 def test_normalize_permission_path():
     # Relative path
-    assert _check_and_sanitize_permission_path("/wiki/", maindomain + '/path', 'test_permission.main') == "/wiki"
-    assert _check_and_sanitize_permission_path("/", maindomain + '/path', 'test_permission.main') == "/"
-    assert _check_and_sanitize_permission_path("//salut/", maindomain + '/path', 'test_permission.main') == "/salut"
+    assert _validate_and_sanitize_permission_url("/wiki/", maindomain + '/path', 'test_permission') == "/wiki"
+    assert _validate_and_sanitize_permission_url("/", maindomain + '/path', 'test_permission') == "/"
+    assert _validate_and_sanitize_permission_url("//salut/", maindomain + '/path', 'test_permission') == "/salut"
 
     # Full path
-    assert _check_and_sanitize_permission_path(maindomain + "/hey/", maindomain + '/path', 'test_permission.main') == maindomain + "/hey"
-    assert _check_and_sanitize_permission_path(maindomain + "//", maindomain + '/path', 'test_permission.main') == maindomain + "/"
-    assert _check_and_sanitize_permission_path(maindomain + "/", maindomain + '/path', 'test_permission.main') == maindomain + "/"
+    assert _validate_and_sanitize_permission_url(maindomain + "/hey/", maindomain + '/path', 'test_permission') == maindomain + "/hey"
+    assert _validate_and_sanitize_permission_url(maindomain + "//", maindomain + '/path', 'test_permission') == maindomain + "/"
+    assert _validate_and_sanitize_permission_url(maindomain + "/", maindomain + '/path', 'test_permission') == maindomain + "/"
 
     # Relative Regex
-    assert _check_and_sanitize_permission_path("re:/yolo.*/", maindomain + '/path', 'test_permission.main') == "re:/yolo.*/"
-    assert _check_and_sanitize_permission_path("re:/y.*o(o+)[a-z]*/bo\1y", maindomain + '/path', 'test_permission.main') == "re:/y.*o(o+)[a-z]*/bo\1y"
+    assert _validate_and_sanitize_permission_url("re:/yolo.*/", maindomain + '/path', 'test_permission') == "re:/yolo.*/"
+    assert _validate_and_sanitize_permission_url("re:/y.*o(o+)[a-z]*/bo\1y", maindomain + '/path', 'test_permission') == "re:/y.*o(o+)[a-z]*/bo\1y"
 
     # Full Regex
-    assert _check_and_sanitize_permission_path("re:" + maindomain + "/yolo.*/", maindomain + '/path', 'test_permission.main') == "re:" + maindomain + "/yolo.*/"
-    assert _check_and_sanitize_permission_path("re:" + maindomain + "/y.*o(o+)[a-z]*/bo\1y", maindomain + '/path', 'test_permission.main') == "re:" + maindomain + "/y.*o(o+)[a-z]*/bo\1y"
+    assert _validate_and_sanitize_permission_url("re:" + maindomain + "/yolo.*/", maindomain + '/path', 'test_permission') == "re:" + maindomain + "/yolo.*/"
+    assert _validate_and_sanitize_permission_url("re:" + maindomain + "/y.*o(o+)[a-z]*/bo\1y", maindomain + '/path', 'test_permission') == "re:" + maindomain + "/y.*o(o+)[a-z]*/bo\1y"
 
 
 def test_normalize_permission_path_with_bad_regex():
     # Relative Regex
     with pytest.raises(YunohostError):
-        _check_and_sanitize_permission_path("re:/yolo.*[1-7]^?/", maindomain + '/path', 'test_permission.main')
+        _validate_and_sanitize_permission_url("re:/yolo.*[1-7]^?/", maindomain + '/path', 'test_permission')
     with pytest.raises(YunohostError):
-        _check_and_sanitize_permission_path("re:/yolo.*[1-7](]/", maindomain + '/path', 'test_permission.main')
+        _validate_and_sanitize_permission_url("re:/yolo.*[1-7](]/", maindomain + '/path', 'test_permission')
 
     # Full Regex
     with pytest.raises(YunohostError):
-        _check_and_sanitize_permission_path("re:" + maindomain + "/yolo?+/", maindomain + '/path', 'test_permission.main')
+        _validate_and_sanitize_permission_url("re:" + maindomain + "/yolo?+/", maindomain + '/path', 'test_permission')
     with pytest.raises(YunohostError):
-        _check_and_sanitize_permission_path("re:" + maindomain + "/yolo[1-9]**/", maindomain + '/path', 'test_permission.main')
+        _validate_and_sanitize_permission_url("re:" + maindomain + "/yolo[1-9]**/", maindomain + '/path', 'test_permission')
 
 
 def test_normalize_permission_path_with_unknown_domain():
     with pytest.raises(YunohostError):
-        _check_and_sanitize_permission_path("shouldntexist.tld/hey", maindomain + '/path', 'test_permission.main')
+        _validate_and_sanitize_permission_url("shouldntexist.tld/hey", maindomain + '/path', 'test_permission')
     with pytest.raises(YunohostError):
-        _check_and_sanitize_permission_path("re:shouldntexist.tld/hey.*", maindomain + '/path', 'test_permission.main')
+        _validate_and_sanitize_permission_url("re:shouldntexist.tld/hey.*", maindomain + '/path', 'test_permission')
 
 
 def test_normalize_permission_path_conflicting_path():
@@ -110,6 +111,6 @@ def test_normalize_permission_path_conflicting_path():
                 args="domain=%s&path=%s" % (maindomain, "/url/registerapp"), force=True)
 
     with pytest.raises(YunohostError):
-        _check_and_sanitize_permission_path("/registerapp", maindomain + '/url', 'test_permission.main')
+        _validate_and_sanitize_permission_url("/registerapp", maindomain + '/url', 'test_permission')
     with pytest.raises(YunohostError):
-        _check_and_sanitize_permission_path(maindomain + "/url/registerapp", maindomain + '/path', 'test_permission.main')
+        _validate_and_sanitize_permission_url(maindomain + "/url/registerapp", maindomain + '/path', 'test_permission')

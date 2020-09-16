@@ -317,7 +317,7 @@ def app_change_url(operation_logger, app, domain, path):
 
     """
     from yunohost.hook import hook_exec, hook_callback
-    from yunohost.domain import _normalize_domain_path, _get_conflicting_apps
+    from yunohost.domain import _normalize_domain_path, _assert_no_conflicting_apps
 
     installed = _is_installed(app)
     if not installed:
@@ -337,17 +337,7 @@ def app_change_url(operation_logger, app, domain, path):
         raise YunohostError("app_change_url_identical_domains", domain=domain, path=path)
 
     # Check the url is available
-    conflicts = _get_conflicting_apps(domain, path, ignore_app=app)
-    if conflicts:
-        apps = []
-        for path, app_id, app_label in conflicts:
-            apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
-                domain=domain,
-                path=path,
-                app_id=app_id,
-                app_label=app_label,
-            ))
-        raise YunohostError('app_location_unavailable', apps="\n".join(apps))
+    _assert_no_conflicting_apps(domain, path, ignore_app=app)
 
     manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
 
@@ -1275,7 +1265,7 @@ def app_register_url(app, domain, path):
 
     # This line can't be moved on top of file, otherwise it creates an infinite
     # loop of import with tools.py...
-    from .domain import _get_conflicting_apps, _normalize_domain_path
+    from .domain import _assert_no_conflicting_apps, _normalize_domain_path
 
     domain, path = _normalize_domain_path(domain, path)
 
@@ -1288,18 +1278,7 @@ def app_register_url(app, domain, path):
             raise YunohostError('app_already_installed_cant_change_url')
 
     # Check the url is available
-    conflicts = _get_conflicting_apps(domain, path)
-    if conflicts:
-        apps = []
-        for path, app_id, app_label in conflicts:
-            apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
-                domain=domain,
-                path=path,
-                app_id=app_id,
-                app_label=app_label,
-            ))
-
-        raise YunohostError('app_location_unavailable', apps="\n".join(apps))
+    _assert_no_conflicting_apps(domain, path)
 
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
@@ -2655,7 +2634,7 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
 
 def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
 
-    from yunohost.domain import _get_conflicting_apps, _normalize_domain_path
+    from yunohost.domain import _assert_no_conflicting_apps, _normalize_domain_path
 
     # If there's only one "domain" and "path", validate that domain/path
     # is an available url and normalize the path.
@@ -2670,18 +2649,7 @@ def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
         domain, path = _normalize_domain_path(domain, path)
 
         # Check the url is available
-        conflicts = _get_conflicting_apps(domain, path)
-        if conflicts:
-            apps = []
-            for path, app_id, app_label in conflicts:
-                apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
-                    domain=domain,
-                    path=path,
-                    app_id=app_id,
-                    app_label=app_label,
-                ))
-
-            raise YunohostError('app_location_unavailable', apps="\n".join(apps))
+        _assert_no_conflicting_apps(domain, path)
 
         # (We save this normalized path so that the install script have a
         # standard path format to deal with no matter what the user inputted)
@@ -2704,8 +2672,7 @@ def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
            and re.search(r"(ynh_webpath_register|yunohost app checkurl)", install_script_content):
 
             domain = domain_args[0][1]
-            if _get_conflicting_apps(domain, "/"):
-                raise YunohostError('app_full_domain_unavailable', domain=domain)
+            _assert_no_conflicting_apps(domain, "/")
 
 
 def _make_environment_dict(args_dict, prefix="APP_ARG_"):
