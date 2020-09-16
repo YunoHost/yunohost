@@ -82,6 +82,29 @@ class BaseSystemDiagnoser(Diagnoser):
                        details=["diagnosis_security_vulnerable_to_meltdown_details"]
                        )
 
+        bad_sury_packages = list(self.bad_sury_packages())
+        if bad_sury_packages:
+            cmd_to_fix = "apt install --allow-downgrades " \
+                         + " ".join(["%s=%s" % (package, version) for package, version in bad_sury_packages])
+            yield dict(meta={"test": "packages_from_sury"},
+                       data={"cmd_to_fix": cmd_to_fix},
+                       status="WARNING",
+                       summary="diagnosis_package_installed_from_sury",
+                       details=["diagnosis_package_installed_from_sury_details"])
+
+    def bad_sury_packages(self):
+
+        packages_to_check = ["openssl", "libssl1.1", "libssl-dev"]
+        for package in packages_to_check:
+            cmd = "dpkg --list | grep '^ii' | grep gbp | grep -q -w %s" % package
+            # If version currently installed is not from sury, nothing to report
+            if os.system(cmd) != 0:
+                continue
+
+            cmd = "LC_ALL=C apt policy %s 2>&1 | grep http -B1 | tr -d '*' | grep '+deb' | grep -v 'gbp' | head -n 1 | awk '{print $1}'" % package
+            version_to_downgrade_to = check_output(cmd).strip()
+            yield (package, version_to_downgrade_to)
+
     def is_vulnerable_to_meltdown(self):
         # meltdown CVE: https://security-tracker.debian.org/tracker/CVE-2017-5754
 
