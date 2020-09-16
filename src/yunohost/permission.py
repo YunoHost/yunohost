@@ -174,7 +174,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None,
         if "visitors" not in new_allowed_groups or len(new_allowed_groups) >= 3:
             logger.warning(m18n.n("permission_currently_allowed_for_all_users"))
 
-    # Note that we can get is argument as string we it come from the CLI
+    # Note that we can get this argument as string if we it come from the CLI
     if isinstance(show_tile, str):
         if show_tile.lower() == "true":
             show_tile = True
