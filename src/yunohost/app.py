@@ -2542,7 +2542,7 @@ class YunoHostArgumentFormatParser(object):
                 question.value = None
 
         # we don't have an answer, check optional and default_value
-        if question.value is None:
+        if question.value is None or question.value == '':
             if not question.optional and question.default is None:
                 raise YunohostError('app_argument_required', name=question.name)
             else:
@@ -2566,11 +2566,11 @@ class YunoHostArgumentFormatParser(object):
     def _format_text_for_user_input_in_cli(self, question):
         text_for_user_input_in_cli = _value_for_locale(question.ask)
 
-        if question.default is not None:
-            text_for_user_input_in_cli += ' (default: {0})'.format(question.default)
-
         if question.choices:
             text_for_user_input_in_cli += ' [{0}]'.format(' | '.join(question.choices))
+
+        if question.default is not None:
+            text_for_user_input_in_cli += ' (default: {0})'.format(question.default)
 
         return text_for_user_input_in_cli
 
