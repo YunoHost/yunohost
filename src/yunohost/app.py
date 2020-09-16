@@ -2498,7 +2498,7 @@ class YunoHostArgumentFormatParser(object):
         # we have an answer, do some post checks
         if question.value is not None:
             if question.choices and question.value not in question.choices:
-                self._raise_invalide_answer(question)
+                self._raise_invalid_answer(question)
 
         # this is done to enforce a certain formating like for boolean
         # by default it doesn't do anything
@@ -2506,7 +2506,7 @@ class YunoHostArgumentFormatParser(object):
 
         return (question.value, self.argument_type)
 
-    def _raise_invalide_answer(self, question):
+    def _raise_invalid_answer(self, question):
         raise YunohostError('app_argument_choice_invalid', name=question.name,
                             choices=', '.join(question.choices))
 
@@ -2611,7 +2611,7 @@ class DomainArgumentParser(YunoHostArgumentFormatParser):
 
         return question
 
-    def _raise_invalide_answer(self, question):
+    def _raise_invalid_answer(self, question):
         raise YunohostError('app_argument_invalid', name=question.name,
                             error=m18n.n('domain_unknown'))
 
@@ -2634,7 +2634,7 @@ class UserArgumentParser(YunoHostArgumentFormatParser):
 
         return question
 
-    def _raise_invalide_answer(self, question):
+    def _raise_invalid_answer(self, question):
         raise YunohostError('app_argument_invalid', name=question.name,
                             error=m18n.n('user_unknown', user=question.value))
 
@@ -2650,7 +2650,7 @@ class AppArgumentParser(YunoHostArgumentFormatParser):
 
         return question
 
-    def _raise_invalide_answer(self, question):
+    def _raise_invalid_answer(self, question):
         raise YunohostError('app_argument_invalid', name=question.name,
                             error=m18n.n('app_unknown'))
 
