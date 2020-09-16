@@ -60,12 +60,6 @@ APPS_CATALOG_CRON_PATH = "/etc/cron.daily/yunohost-fetch-apps-catalog"
 APPS_CATALOG_API_VERSION = 2
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 
-re_github_repo = re.compile(
-    r'^(http[s]?://|git@)github.com[/:]'
-    '(?P<owner>[\w\-_]+)/(?P<repo>[\w\-_]+)(.git)?'
-    '(/tree/(?P<tree>.+))?'
-)
-
 re_app_instance_name = re.compile(
     r'^(?P<appid>[\w-]+?)(__(?P<appinstancenb>[1-9][0-9]*))?$'
 )
@@ -2242,10 +2236,8 @@ def _fetch_app_from_git(app):
     if ('@' in app) or ('http://' in app) or ('https://' in app):
         url = app
         branch = 'master'
-        tree_index = url.rfind('/tree/')
-        if tree_index > 0:
-            url = url[:tree_index]
-            branch = app[tree_index + 6:]
+        if "/tree/" in url:
+            url, branch = url.split("/tree/", 1)
         revision = 'HEAD'
     else:
         app_dict = _load_apps_catalog()["apps"]
