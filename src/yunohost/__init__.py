@@ -190,7 +190,7 @@ def init_logging(interface="cli",
             'loggers': {
                 'yunohost': {
                     'level': 'DEBUG',
-                    'handlers': ['file', 'api'] + ['console'] if debug else [],
+                    'handlers': ['file', 'api'] + (['console'] if debug else []),
                     'propagate': False,
                 },
                 'moulinette': {
@@ -201,6 +201,6 @@ def init_logging(interface="cli",
             },
             'root': {
                 'level': 'DEBUG',
-                'handlers': ['file'] + ['console'] if debug else [],
+                'handlers': ['file'] + (['console'] if debug else []),
             },
         })
