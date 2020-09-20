@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Fetch x509 fingerprint
+x509_fingerprint=$(openssl x509  -in /etc/yunohost/certs/yunohost.org/crt.pem -noout -fingerprint -sha256 | cut -d= -f2)
+
+
 # Fetch SSH fingerprints
 i=0
 for key in $(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key.pub 2> /dev/null) ; do 
@@ -40,6 +44,7 @@ LOGO_AND_FINGERPRINTS=$(cat << EOF
 $LOGO
 
  IP: ${local_ip}
+ X509 fingerprint: ${x509_fingerprint}
  SSH fingerprints:
  ${fingerprint[0]}
  ${fingerprint[1]}
