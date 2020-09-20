@@ -417,7 +417,7 @@ ynh_read_manifest () {
     jq ".$manifest_key" "$manifest" --raw-output
 }
 
-# Read the upstream version from the manifest
+# Read the upstream version from the manifest, or from the env variable $YNH_APP_MANIFEST_VERSION if not given
 #
 # usage: ynh_app_upstream_version [--manifest="manifest.json"]
 # | arg: -m, --manifest=    - Path of the manifest to read
@@ -437,7 +437,13 @@ ynh_app_upstream_version () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    version_key=$YNH_APP_MANIFEST_VERSION
+    if [[ "$manifest" != "" ]] && [[ -e "$manifest" ]];
+    then
+      version_key=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
+    else
+      version_key=$YNH_APP_MANIFEST_VERSION
+    fi
+
     echo "${version_key/~ynh*/}"
 }
 
