@@ -342,7 +342,7 @@ ynh_add_config () {
 #   __USER__            by $app
 #   __FINALPATH__       by $final_path
 #   __PHPVERSION__      by $YNH_PHP_VERSION
-#
+#   __YNH_NODE_LOAD_PATH__"    by $ynh_node_load_PATH
 # And any dynamic variables that should be defined before calling this helper like:
 #   __DOMAIN__   by $domain
 #   __APP__      by $app
