@@ -279,12 +279,13 @@ ynh_local_curl () {
 # The helper will use the template $template to generate a config file
 # $destination by replacing the following keywords with global variables
 # that should be defined before calling this helper :
-#   __PATH__             by  $path_url
-#   __NAME__            by $app
-#   __NAMETOCHANGE__    by $app
-#   __USER__            by $app
-#   __FINALPATH__       by $final_path
-#   __PHPVERSION__      by $YNH_PHP_VERSION
+#   __PATH__                by $path_url
+#   __NAME__                by $app
+#   __NAMETOCHANGE__        by $app
+#   __USER__                by $app
+#   __FINALPATH__           by $final_path
+#   __PHPVERSION__          by $YNH_PHP_VERSION
+#   __YNH_NODE_LOAD_PATH__  by $ynh_node_load_PATH
 #
 # And any dynamic variables that should be defined before calling this helper like:
 #   __DOMAIN__   by $domain
@@ -336,13 +337,14 @@ ynh_add_config () {
 #
 # The helper will replace the following keywords with global variables
 # that should be defined before calling this helper :
-#   __PATH__             by  $path_url
-#   __NAME__            by $app
-#   __NAMETOCHANGE__    by $app
-#   __USER__            by $app
-#   __FINALPATH__       by $final_path
-#   __PHPVERSION__      by $YNH_PHP_VERSION
-#   __YNH_NODE_LOAD_PATH__"    by $ynh_node_load_PATH
+#   __PATH__                by $path_url
+#   __NAME__                by $app
+#   __NAMETOCHANGE__        by $app
+#   __USER__                by $app
+#   __FINALPATH__           by $final_path
+#   __PHPVERSION__          by $YNH_PHP_VERSION
+#   __YNH_NODE_LOAD_PATH__  by $ynh_node_load_PATH
+#
 # And any dynamic variables that should be defined before calling this helper like:
 #   __DOMAIN__   by $domain
 #   __APP__      by $app
