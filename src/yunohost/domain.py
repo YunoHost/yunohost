@@ -238,7 +238,10 @@ def domain_remove(operation_logger, domain, force=False):
     # Remove metronome
     os.system('rm -rf /var/xmpp-upload/{}'.format(domain))
     domain_encoded = quote(domain, safe='').lower().replace('.', '%2e').replace('-','%2d').replace('_', '%5f')
-    os.system('rm -rf /var/lib/metronome/{muc,pubsub,vjud,xmpp%2dupload}%2e' + domain_encoded)
+    os.system('rm -rf /var/lib/metronome/muc%2e' + domain_encoded)
+    os.system('rm -rf /var/lib/metronome/pubsub%2e' + domain_encoded)
+    os.system('rm -rf /var/lib/metronome/vjud%2e' + domain_encoded)
+    os.system('rm -rf /var/lib/metronome/xmpp%2dupload%2e' + domain_encoded)
     os.system('rm -rf /var/lib/metronome/{}'.format(domain_encoded))
 
     regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
