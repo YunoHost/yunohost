@@ -26,6 +26,8 @@
 import os
 import re
 
+from urllib import urlencode
+
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
@@ -235,7 +237,7 @@ def domain_remove(operation_logger, domain, force=False):
 
     # Remove metronome
     os.system('rm -rf /var/xmpp-upload/{}'.format(domain))
-    domain_encoded = urllib.urlencode(domain)
+    domain_encoded = urlencode(domain)
     os.system('rm -f /var/lib/metronome/muc%2e{}'.format(domain_encoded))
     os.system('rm -f /var/lib/metronome/pubsub%2e{}'.format(domain_encoded))
     os.system('rm -f /var/lib/metronome/vjud%2e{}'.format(domain_encoded))
