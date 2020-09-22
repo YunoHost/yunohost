@@ -303,17 +303,10 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # Change folders permissions
     os.system('chmod 755 /home/yunohost.app')
 
-    # Set hostname to avoid amavis bug
-    if os.system('hostname -d >/dev/null') != 0:
-        os.system('hostname yunohost.yunohost.org')
-
-    # Add a temporary SSOwat rule to redirect SSO to admin page
+    # Init ssowat's conf.json.persistent
     if not os.path.exists('/etc/ssowat/conf.json.persistent'):
-        ssowat_conf = {}
-    else:
-        ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
+        write_to_json('/etc/ssowat/conf.json.persistent', {})
 
-    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
