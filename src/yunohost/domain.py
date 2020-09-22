@@ -222,6 +222,9 @@ def domain_remove(operation_logger, domain, force=False):
     # Remove the nginx domain directory in addition to the domain file
     os.system('rm -rf /etc/nginx/conf.d/{}.d'.format(domain))
 
+    # Remove smtp autoconfig
+    os.system('rm -rf /var/www/.well-known/{}'.format(domain))
+
     # Remove certificates
     os.system('rm -rf /etc/yunohost/certs/{}'.format(domain))
     os.system('rm -rf /etc/yunohost/certs/{}-history'.format(domain))
@@ -229,6 +232,15 @@ def domain_remove(operation_logger, domain, force=False):
     # Remove the DKIM public and private data
     os.system('rm -f /etc/dkim/{}.mail.key'.format(domain))
     os.system('rm -f /etc/dkim/{}.mail.txt'.format(domain))
+
+    # Remove metronome
+    os.system('rm -rf /var/xmpp-upload/{}'.format(domain))
+    domain_encoded = urllib.urlencode(domain)
+    os.system('rm -f /var/lib/metronome/muc%2e{}'.format(domain_encoded))
+    os.system('rm -f /var/lib/metronome/pubsub%2e{}'.format(domain_encoded))
+    os.system('rm -f /var/lib/metronome/vjud%2e{}'.format(domain_encoded))
+    os.system('rm -f /var/lib/metronome/xmpp%2dupload%2e{}'.format(domain_encoded))
+    os.system('rm -f /var/lib/metronome/{}'.format(domain_encoded))
 
     regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf()
