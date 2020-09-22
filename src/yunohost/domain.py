@@ -25,6 +25,7 @@
 """
 import os
 import re
+import shutil
 
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
@@ -200,8 +201,8 @@ def domain_remove(operation_logger, domain, force=False):
     except Exception as e:
         raise YunohostError('domain_deletion_failed', domain=domain, error=e)
 
-    os.system('rm -rf /etc/yunohost/certs/{}'.format(domain))
-    os.system('rm -rf /etc/yunohost/certs/{}-history'.format(domain))
+    shutil.rmtree('/etc/yunohost/certs/{}'.format(domain))
+    shutil.rmtree('/etc/yunohost/certs/{}-history'.format(domain))
 
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...
@@ -223,11 +224,11 @@ def domain_remove(operation_logger, domain, force=False):
         _process_regen_conf("/etc/nginx/conf.d/%s.conf" % domain, new_conf=None, save=True)
 
     # Remove the nginx domain directory in addition to the domain file
-    os.system('rm -rf /etc/nginx/conf.d/{}.d'.format(domain))
+    shutil.rmtree('/etc/nginx/conf.d/{}.d'.format(domain))
 
     # Remove the DKIM public and private data
-    os.system('rm -rf /etc/dkim/{}.key'.format(domain))
-    os.system('rm -rf /etc/dkim/{}.txt'.format(domain))
+    shutil.rmtree('/etc/dkim/{}.key'.format(domain))
+    shutil.rmtree('/etc/dkim/{}.txt'.format(domain))
 
     regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf()
