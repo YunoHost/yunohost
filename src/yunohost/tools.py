@@ -908,42 +908,10 @@ def tools_migrations_state():
     """
     Show current migration state
     """
-    if os.path.exists("/etc/yunohost/migrations_state.json"):
-        _migrate_legacy_migration_json()
-
     if not os.path.exists(MIGRATIONS_STATE_PATH):
         return {"migrations": {}}
 
     return read_yaml(MIGRATIONS_STATE_PATH)
-
-
-def _migrate_legacy_migration_json():
-
-    from moulinette.utils.filesystem import read_json
-
-    logger.debug("Migrating legacy migration state json to yaml...")
-
-    # We fetch the old state containing the last run migration
-    old_state = read_json("/etc/yunohost/migrations_state.json")["last_run_migration"]
-    last_run_migration_id = str(old_state["number"]) + "_" + old_state["name"]
-
-    # Extract the list of migration ids
-    from . import data_migrations
-    migrations_path = data_migrations.__path__[0]
-    migration_files = filter(lambda x: re.match(r"^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path))
-    # (here we remove the .py extension and make sure the ids are sorted)
-    migration_ids = sorted([f.rsplit(".", 1)[0] for f in migration_files])
-
-    # So now build the new dict for every id up to the last run migration
-    migrations = {}
-    for migration_id in migration_ids:
-        migrations[migration_id] = "done"
-        if last_run_migration_id in migration_id:
-            break
-
-    # Write the new file and rename the old one
-    write_to_yaml(MIGRATIONS_STATE_PATH, {"migrations": migrations})
-    os.rename("/etc/yunohost/migrations_state.json", "/etc/yunohost/migrations_state.json.old")
 
 
 def _write_migration_state(migration_id, state):
