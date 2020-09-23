@@ -63,7 +63,7 @@ def domain_list(exclude_subdomains=False):
 
     return {
         'domains': result_list,
-        'default': _get_maindomain()
+        'main': _get_maindomain()
     }
 
 
