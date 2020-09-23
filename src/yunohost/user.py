@@ -797,14 +797,6 @@ def user_permission_info(permission):
 import yunohost.ssh
 
 
-def user_ssh_allow(username):
-    return yunohost.ssh.user_ssh_allow(username)
-
-
-def user_ssh_disallow(username):
-    return yunohost.ssh.user_ssh_disallow(username)
-
-
 def user_ssh_list_keys(username):
     return yunohost.ssh.user_ssh_list_keys(username)
 
