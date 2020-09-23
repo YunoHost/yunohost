@@ -103,9 +103,9 @@ user:
                     extra:
                         ask: ask_email
                         required: True
-                        pattern: &pattern_email_without_plus
+                        pattern: &pattern_email
                             - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,})$
-                            - "pattern_email_without_plus"
+                            - "pattern_email"
                 -p:
                     full: --password
                     help: User password
@@ -164,7 +164,7 @@ user:
                 -m:
                     full: --mail
                     extra:
-                        pattern: *pattern_email_without_plus
+                        pattern: *pattern_email
                 -p:
                     full: --change-password
                     help: New password to set
@@ -176,9 +176,9 @@ user:
                     nargs: "*"
                     metavar: MAIL
                     extra:
-                        pattern: &pattern_email
+                        pattern: &pattern_email_forward
                             - !!str ^[\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,})$
-                            - "pattern_email"
+                            - "pattern_email_forward"
                 --remove-mailforward:
                     help: Mailforward addresses to remove
                     nargs: "*"
@@ -188,7 +188,7 @@ user:
                     nargs: "*"
                     metavar: MAIL
                     extra:
-                        pattern: *pattern_email_without_plus
+                        pattern: *pattern_email
                 --remove-mailalias:
                     help: Mail aliases to remove
                     nargs: "*"
