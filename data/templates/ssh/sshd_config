@@ -91,7 +91,6 @@ PermitTunnel no
 # Disable .ssh/rc, which could be edited (e.g. from Nextcloud or whatever) by users to execute arbitrary commands even if SSH login is disabled
 PermitUserRC no
 
-
 # root login is allowed on local networks
 # It's meant to be a backup solution in case LDAP is down and
 # user admin can't be used...

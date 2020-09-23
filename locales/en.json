@@ -587,7 +587,7 @@
     "show_tile_cant_be_enabled_for_regex": "You cannot enable 'show_tile' right no, because the URL for the permission '{permission}' is a regex",
     "sftp_permission_already_disabled": "SFTP permission already disabled",
     "sftp_permission_already_enabled": "SFTP permission already enabled",
-    "ssowat_conf_generated": "SSOwat configuration regenerated",
+    "ssowat_conf_generated": "SSOwat configuration generated",
     "ssowat_conf_updated": "SSOwat configuration updated",
     "system_upgraded": "System upgraded",
     "system_username_exists": "Username already exists in the list of system users",
