@@ -96,16 +96,9 @@ depends_children:
             - posixGroup
             - permissionYnh
         groupPermission: []
-    cn=ssh.tunnel,ou=permission:
-        cn: ssh.tunnel
-        gidNumber: "5004"
-        objectClass:
-            - posixGroup
-            - permissionYnh
-        groupPermission: []
     cn=sftp.main,ou=permission:
         cn: sftp.main
-        gidNumber: "5005"
+        gidNumber: "5004"
         objectClass:
             - posixGroup
             - permissionYnh
