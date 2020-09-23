@@ -64,7 +64,7 @@ def domain_list(exclude_subdomains=False):
     result_list.sort()
     return {
         'domains': result_list,
-        'default': result_list.index(_get_maindomain())
+        'default': _get_maindomain()
     }
 
 
