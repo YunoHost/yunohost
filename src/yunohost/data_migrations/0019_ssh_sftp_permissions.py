@@ -1,8 +1,6 @@
-import time
 import subprocess
 
 from moulinette import m18n
-from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_yaml
 
@@ -35,9 +33,9 @@ class MyMigration(Migration):
         ldap_map = read_yaml('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml')
         for rdn, attr_dict in ldap_map['depends_children'].items():
             try:
-                objects = ldap.search(rdn + ",dc=yunohost,dc=org")
+                ldap.search(rdn + ",dc=yunohost,dc=org")
             # ldap search will raise an exception if no corresponding object is found >.> ...
-            except Exception as e:
+            except Exception:
                 if rdn == "cn=ssh.main,ou=permission":
                     add_perm_to_users = True
                 ldap.add(rdn, attr_dict)
