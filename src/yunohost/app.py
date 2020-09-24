@@ -1215,14 +1215,15 @@ def app_setting(app, key, value=None, delete=False):
                     permission_url(permission_name, clear_urls=True, sync_perm=False)
                     permission_url(permission_name, add_url=new_urls)
                 else:
-                   # Let's create a "special" permission for the legacy settings
+                    from utils.legacy import legacy_permission_label
+                    # Let's create a "special" permission for the legacy settings
                     permission_create(permission=permission_name,
                                       # FIXME find a way to limit to only the user allowed to the main permission
                                       allowed=['all_users'] if key.startswith('protected_') else ['all_users', 'visitors'],
                                       url=None,
                                       additional_urls=urls.split(','),
                                       auth_header=not key.startswith('skipped_'),
-                                      label="Legacy permission - %s_uris/regex for app : %s" % (key.split('_')[0], app),
+                                      label=legacy_permission_label(app, key.split('_')[0]),
                                       show_tile=False,
                                       protected=True)
 

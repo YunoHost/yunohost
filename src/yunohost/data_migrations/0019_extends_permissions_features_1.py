@@ -77,6 +77,7 @@ class MyMigration(Migration):
 
 
     def migrate_skipped_unprotected_protected_uris(self, app=None):
+        from utils.legacy import legacy_permission_label
         logger.info(m18n.n("migration_0019_migrate_old_app_settings"))
         apps = _installed_apps()
 
@@ -101,15 +102,15 @@ class MyMigration(Migration):
 
             if skipped_urls != []:
                 permission_create(app+".legacy_skipped_uris", additional_urls=skipped_urls,
-                                  auth_header=False, label='Legacy permission - skipped_urls for app : ' + app,
+                                  auth_header=False, label=legacy_permission_label(app, "skipped"),
                                   show_tile=False, allowed='visitors', protected=True, sync_perm=False)
             if unprotected_urls != []:
                 permission_create(app+".legacy_unprotected_uris", additional_urls=unprotected_urls,
-                                  auth_header=True, label='Legacy permission - unprotected_uris for app : ' + app,
+                                  auth_header=True, label=legacy_permission_label(app, "unprotected"),
                                   show_tile=False, allowed='visitors', protected=True, sync_perm=False)
             if protected_urls != []:
                 permission_create(app+".legacy_protected_uris", additional_urls=protected_urls,
-                                  auth_header=True, label='Legacy permission - protected_uris for app : ' + app,
+                                  auth_header=True, label=legacy_permission_label(app, "protected"),
                                   show_tile=False, allowed=permission_list()['permissions']['allowed'],
                                   protected=True, sync_perm=False)
 
