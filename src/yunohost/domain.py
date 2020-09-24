@@ -62,7 +62,6 @@ def domain_list(exclude_subdomains=False):
 
         result_list.append(domain)
 
-
     def cmp_domain(domain1, domain2):
         # Keep the main part of the domain and the extension together
         # eg: this.is.an.example.com -> ['example.com', 'an', 'is', 'this']
@@ -77,6 +76,11 @@ def domain_list(exclude_subdomains=False):
     result_list = sorted(result_list, cmp_domain)
 
     return {'domains': result_list}
+  
+    return {
+        'domains': result_list,
+        'main': _get_maindomain()
+    }
 
 
 @is_unit_operation()
