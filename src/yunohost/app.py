@@ -1158,7 +1158,7 @@ def app_setting(app, key, value=None, delete=False):
         from permission import user_permission_list, user_permission_update, permission_create, permission_delete, permission_url
         permissions = user_permission_list(full=True, full_path=False)['permissions']
         permission_name = "%s.legacy_%s_uris" % (app, key.split('_')[0])
-        permission = permission.get(permission_name)
+        permission = permissions.get(permission_name)
 
         # GET
         if value is None and not delete:
