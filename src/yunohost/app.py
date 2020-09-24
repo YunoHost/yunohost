@@ -1144,55 +1144,51 @@ def app_setting(app, key, value=None, delete=False):
 
     """
     app_settings = _get_app_settings(app) or {}
-    legacy_settings_warning="/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism."
 
-    if value is None and not delete:
-        try:
-            if any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"]):
-                logger.warning(legacy_settings_warning)
-                # Well, here there are no solution to manage the root case
-                # so just ignore this case, I don't think that get this setting
-                # The only time that I see this is when we try to migrate to group-permission
-                from permission import user_permission_list
-                permissions = user_permission_list(full=True, full_path=False)['permissions']
-                permission_name = "%s.legacy_%s_uris" % (app, key.split('_')[0])
-                if permission_name in permissions:
-                    return ','.join(permissions[permission_name]['additional_urls'])
-                else:
-                    return None
-            else:
-                return app_settings[key]
-        except Exception as e:
-            logger.debug("cannot get app setting '%s' for '%s' (%s)", key, app, e)
-            return None
+    #
+    # Legacy permission setting management
+    # (unprotected, protected, skipped_uri/regex)
+    #
 
-    if delete:
-        if key in app_settings:
-            if any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"]):
-                logger.warning(legacy_settings_warning)
-                from permission import user_permission_list, user_permission_update, permission_delete
+    is_legacy_permission_setting = any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"])
 
-                permissions = user_permission_list(full=True, full_path=False)['permissions']
+    if is_legacy_permission_setting:
 
-                # In in case of the visitors group is in the main permission, it's probably that
-                # we wan't to remove this group so just to dit
-                if 'visitors' in permissions[app + ".main"]['allowed'] and 'is_public' in app_settings:
+        logger.warning("/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.")
+        from permission import user_permission_list, user_permission_update, permission_create, permission_delete, permission_url
+        permissions = user_permission_list(full=True, full_path=False)['permissions']
+        permission_name = "%s.legacy_%s_uris" % (app, key.split('_')[0])
+        permission = permission.get(permission_name)
+
+        # GET
+        if value is None and not delete:
+            # FIXME FIXME FIXME : what about the main url ...?
+            return ','.join(permission['additional_urls']) if permission else None
+
+        # DELETE
+        if delete:
+            if key in app_settings:
+
+                # If 'is_public' setting still exists, we interpret this as
+                # coming from a legacy app (because new apps should manage the
+                # is_public state themselves anymore...)
+                #
+                # In that case, we interpret the request for "deleting
+                # unprotected/skipped" setting as willing to make the app
+                # private
+                if 'is_public' in app_settings and 'visitors' in permissions[app + ".main"]['allowed']:
                     if key.startswith('unprotected_') or key.startswith('skipped_'):
                         user_permission_update(app + ".main", remove="visitors")
                 else:
-                    permission_name = "%s.legacy_%s_uris" % (app, key.split('_')[0])
-                    if permission_name in permissions:
+                    if permission:
                         permission_delete(permission_name)
-            else:
-                del app_settings[key]
-    else:
-        if any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"]):
-            logger.warning(legacy_settings_warning)
-            from permission import user_permission_list, user_permission_update, permission_create, permission_url
 
+        # SET
+        else:
             urls = value
-            permission_name = "%s.legacy_%s_uris" % (app, key.split('_')[0])
-
+            # If the request is about the root of the app (/), ( = the vast majority of cases)
+            # we interpret this as a change for the main permission
+            # (i.e. allowing/disallowing visitors)
             if urls == '/':
                 if key.startswith("unprotected_") or key.startswith("skipped_"):
                     permission_url(app + ".main", url='/', sync_perm=False)
@@ -1204,18 +1200,17 @@ def app_setting(app, key, value=None, delete=False):
                 if key.endswith('_regex'):
                     urls = 're:' + urls
 
-                permissions = user_permission_list(full=True, full_path=False)['permissions']
-                if permission_name in permissions:
+                if permission:
                     # In case of new regex, save the urls, to add a new time in the additional_urls
                     # In case of new urls, we do the same thing but inversed
                     if key.endswith('_regex'):
                         # List of urls to save
-                        actuals_urls_or_regex = [url for url in permissions[permission_name]['additional_urls'] if not url.startswith('re:')]
+                        current_urls_or_regex = [url for url in permission['additional_urls'] if not url.startswith('re:')]
                     else:
                         # List of regex to save
-                        actuals_urls_or_regex = [url for url in permissions[permission_name]['additional_urls'] if url.startswith('re:')]
+                        current_urls_or_regex = [url for url in permission['additional_urls'] if url.startswith('re:')]
 
-                    new_urls = urls.split(',') + actuals_urls_or_regex
+                    new_urls = urls.split(',') + current_urls_or_regex
                     # We need to clear urls because in the old setting the new setting override the old one and dont just add some urls
                     permission_url(permission_name, clear_urls=True, sync_perm=False)
                     permission_url(permission_name, add_url=new_urls)
@@ -1223,20 +1218,35 @@ def app_setting(app, key, value=None, delete=False):
                    # Let's create a "special" permission for the legacy settings
                     permission_create(permission=permission_name,
                                       # FIXME find a way to limit to only the user allowed to the main permission
-                                      allowed=['all_users'] if key.startswith('protected_') else ['all_users', 'visitors'], 
+                                      allowed=['all_users'] if key.startswith('protected_') else ['all_users', 'visitors'],
                                       url=None,
                                       additional_urls=urls.split(','),
                                       auth_header=not key.startswith('skipped_'),
                                       label="Legacy permission - %s_uris/regex for app : %s" % (key.split('_')[0], app),
-                                      show_tile=False, 
+                                      show_tile=False,
                                       protected=True)
 
-        else:
-            # FIXME: Allow multiple values for some keys?
-            if key in ['redirected_urls', 'redirected_regex']:
-                value = yaml.load(value)
-            app_settings[key] = value
-        _set_app_settings(app, app_settings)
+
+    #
+    # Regular setting management
+    #
+
+    # GET
+    if value is None and not delete:
+        return app_settings.get(key, None)
+
+    # DELETE
+    if delete:
+        if key in app_settings:
+            del app_settings[key]
+
+    # SET
+    else:
+        if key in ['redirected_urls', 'redirected_regex']:
+            value = yaml.load(value)
+        app_settings[key] = value
+
+    _set_app_settings(app, app_settings)
 
 
 def app_register_url(app, domain, path):
