@@ -21,7 +21,6 @@
 
 import os
 import yaml
-import json
 import subprocess
 import shutil
 import hashlib
@@ -31,7 +30,6 @@ from datetime import datetime
 
 from moulinette import m18n
 from moulinette.utils import log, filesystem
-from moulinette.utils.filesystem import read_file
 
 from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation
@@ -49,7 +47,7 @@ logger = log.getActionLogger('yunohost.regenconf')
 # FIXME : check for all reference of 'service' close to operation_logger stuff
 @is_unit_operation([('names', 'configuration')])
 def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run=False,
-                       list_pending=False):
+               list_pending=False):
     """
     Regenerate the configuration file(s)
 
@@ -61,16 +59,6 @@ def regen_conf(operation_logger, names=[], with_diff=False, force=False, dry_run
         list_pending -- List pending configuration files and exit
 
     """
-
-    # Legacy code to automatically run the migration
-    # This is required because regen_conf is called before the migration call
-    # in debian's postinst script
-    if os.path.exists("/etc/yunohost/installed") \
-       and ("conffiles" in read_file("/etc/yunohost/services.yml") \
-            or not os.path.exists(REGEN_CONF_FILE)):
-        from yunohost.tools import _get_migration_by_name
-        migration = _get_migration_by_name("decouple_regenconf_from_services")
-        migration.run()
 
     result = {}
 
@@ -450,13 +438,13 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
 
     """
 
-    if os.path.exists(orig_file):
+    if orig_file and os.path.exists(orig_file):
         with open(orig_file, 'r') as orig_file:
             orig_file = orig_file.readlines()
     else:
         orig_file = []
 
-    if os.path.exists(new_file):
+    if new_file and os.path.exists(new_file):
         with open(new_file, 'r') as new_file:
             new_file = new_file.readlines()
     else:

@@ -27,14 +27,13 @@ do_pre_regen() {
   ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
   ynh_validate_ip6 "$ipv6" || ipv6=''
 
+  export ipv4
+  export ipv6
+
   # add domain conf files
   for domain in $YNH_DOMAINS; do
-    cat domain.tpl \
-      | sed "s/{{ domain }}/${domain}/g" \
-      | sed "s/{{ ip }}/${ipv4}/g" \
-      > "${dnsmasq_dir}/${domain}"
-    [[ -n $ipv6 ]] \
-      && echo "address=/${domain}/${ipv6}" >> "${dnsmasq_dir}/${domain}"
+      export domain
+      ynh_render_template "domain.tpl" "${dnsmasq_dir}/${domain}"
   done
 
   # remove old domain conf files
@@ -69,8 +68,16 @@ do_post_regen() {
   short_hostname=$(hostname -s)
   grep -q "127.0.0.1.*$short_hostname" /etc/hosts || echo -e "\n127.0.0.1\t$short_hostname" >>/etc/hosts
 
-  [[ -z "$regen_conf_files" ]] \
-    || service dnsmasq restart
+  [[ -n "$regen_conf_files" ]] || return
+
+  # Remove / disable services likely to conflict with dnsmasq
+  for SERVICE in systemd-resolved bind9
+  do
+      systemctl is-enabled $SERVICE &>/dev/null && systemctl disable $SERVICE 2>/dev/null
+      systemctl is-active $SERVICE &>/dev/null && systemctl stop $SERVICE
+  done
+
+  systemctl restart dnsmasq
 }
 
 FORCE=${2:-0}

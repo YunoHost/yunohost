@@ -27,7 +27,6 @@ import sys
 import shutil
 import pwd
 import grp
-import smtplib
 import subprocess
 import glob
 
@@ -467,6 +466,7 @@ Subject: %s
 %s
 """ % (from_, to_, subject_, text)
 
+    import smtplib
     smtp = smtplib.SMTP("localhost")
     smtp.sendmail(from_, [to_], message)
     smtp.quit()

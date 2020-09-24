@@ -63,10 +63,10 @@ class BaseSystemDiagnoser(Diagnoser):
         ynh_core_version = ynh_packages["yunohost"]["version"]
         consistent_versions = all(infos["version"][:3] == ynh_core_version[:3] for infos in ynh_packages.values())
         ynh_version_details = [("diagnosis_basesystem_ynh_single_version",
-                                {"package":package,
+                                {"package": package,
                                  "version": infos["version"],
                                  "repo": infos["repo"]}
-                               )
+                                )
                                for package, infos in ynh_packages.items()]
 
         yield dict(meta={"test": "ynh_versions"},
@@ -75,13 +75,35 @@ class BaseSystemDiagnoser(Diagnoser):
                    summary="diagnosis_basesystem_ynh_main_version" if consistent_versions else "diagnosis_basesystem_ynh_inconsistent_versions",
                    details=ynh_version_details)
 
-
         if self.is_vulnerable_to_meltdown():
             yield dict(meta={"test": "meltdown"},
                        status="ERROR",
                        summary="diagnosis_security_vulnerable_to_meltdown",
                        details=["diagnosis_security_vulnerable_to_meltdown_details"]
                        )
+
+        bad_sury_packages = list(self.bad_sury_packages())
+        if bad_sury_packages:
+            cmd_to_fix = "apt install --allow-downgrades " \
+                         + " ".join(["%s=%s" % (package, version) for package, version in bad_sury_packages])
+            yield dict(meta={"test": "packages_from_sury"},
+                       data={"cmd_to_fix": cmd_to_fix},
+                       status="WARNING",
+                       summary="diagnosis_package_installed_from_sury",
+                       details=["diagnosis_package_installed_from_sury_details"])
+
+    def bad_sury_packages(self):
+
+        packages_to_check = ["openssl", "libssl1.1", "libssl-dev"]
+        for package in packages_to_check:
+            cmd = "dpkg --list | grep '^ii' | grep gbp | grep -q -w %s" % package
+            # If version currently installed is not from sury, nothing to report
+            if os.system(cmd) != 0:
+                continue
+
+            cmd = "LC_ALL=C apt policy %s 2>&1 | grep http -B1 | tr -d '*' | grep '+deb' | grep -v 'gbp' | head -n 1 | awk '{print $1}'" % package
+            version_to_downgrade_to = check_output(cmd).strip()
+            yield (package, version_to_downgrade_to)
 
     def is_vulnerable_to_meltdown(self):
         # meltdown CVE: https://security-tracker.debian.org/tracker/CVE-2017-5754

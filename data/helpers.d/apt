@@ -191,17 +191,17 @@ ynh_package_install_from_equivs () {
     cp "$controlfile" "${TMPDIR}/control"
     (cd "$TMPDIR"
     LC_ALL=C equivs-build ./control 1> /dev/null
-    dpkg --force-depends --install "./${pkgname}_${pkgversion}_all.deb" 2>&1)
+    LC_ALL=C dpkg --force-depends --install "./${pkgname}_${pkgversion}_all.deb" 2>&1 | tee ./dpkg_log)
 
     ynh_package_install --fix-broken || \
         { # If the installation failed 
         # (the following is ran inside { } to not start a subshell otherwise ynh_die wouldnt exit the original process)
-        # Get the list of dependencies from the deb
-        local dependencies="$(dpkg --info "$TMPDIR/${pkgname}_${pkgversion}_all.deb" | grep Depends | \
-            sed 's/^ Depends: //' | sed 's/,//g')"
+        # Parse the list of problematic dependencies from dpkg's log ...
+        # (relevant lines look like: "foo-ynh-deps depends on bar; however:")
+        local problematic_dependencies="$(cat $TMPDIR/dpkg_log | grep -oP '(?<=-ynh-deps depends on ).*(?=; however)' | tr '\n' ' ')"
         # Fake an install of those dependencies to see the errors
-        # The sed command here is, Print only from '--fix-broken' to the end.
-        ynh_package_install $dependencies --dry-run | sed --quiet '/--fix-broken/,$p' >&2
+        # The sed command here is, Print only from 'Reading state info' to the end.
+        [[ -n "$problematic_dependencies" ]] && ynh_package_install $problematic_dependencies --dry-run 2>&1 | sed --quiet '/Reading state info/,$p' | grep -v "fix-broken\|Reading state info" >&2
         ynh_die --message="Unable to install dependencies"; }
     [[ -n "$TMPDIR" ]] && rm --recursive --force $TMPDIR	# Remove the temp dir.
 
@@ -265,12 +265,6 @@ ynh_install_app_dependencies () {
             then
                 # Re-add sury
                 ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version --priority=600
-
-                # Pin this sury repository to prevent sury of doing shit
-                for package_to_not_upgrade in "php" "php-fpm" "php-mysql" "php-xml" "php-zip" "php-mbstring" "php-ldap" "php-gd" "php-curl" "php-bz2" "php-json" "php-sqlite3" "php-intl" "openssl" "libssl1.1" "libssl-dev"
-                do
-                    ynh_pin_repo --package="$package_to_not_upgrade" --pin="origin \"packages.sury.org\"" --priority="-1" --name=extra_php_version --append
-                done
             fi
         fi
     fi
@@ -467,8 +461,8 @@ ynh_remove_extra_repo () {
 
     ynh_secure_remove "/etc/apt/sources.list.d/$name.list"
     ynh_secure_remove "/etc/apt/preferences.d/$name"
-    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.gpg"
-    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.asc"
+    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.gpg" > /dev/null
+    ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.asc" > /dev/null
 
     # Update the list of package to exclude the old repo
     ynh_package_update

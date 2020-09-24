@@ -8,7 +8,6 @@ from moulinette.utils.filesystem import read_file
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list
-from yunohost.utils.error import YunohostError
 
 DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 

@@ -99,13 +99,7 @@ user:
                             - "pattern_lastname"
                 -m:
                     full: --mail
-                    help: Main unique email address
-                    extra:
-                        ask: ask_email
-                        required: True
-                        pattern: &pattern_email
-                            - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,})$
-                            - "pattern_email"
+                    help: (Deprecated, see --domain) Main unique email address
                 -p:
                     full: --password
                     help: User password
@@ -116,6 +110,13 @@ user:
                             - !!str ^.{3,}$
                             - "pattern_password"
                         comment: good_practices_about_user_password
+                -d:
+                    full: --domain
+                    help: Domain for the email address and xmpp account
+                    extra:
+                        pattern: &pattern_domain
+                            - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                            - "pattern_domain"
                 -q:
                     full: --mailbox-quota
                     help: Mailbox size quota
@@ -157,7 +158,9 @@ user:
                 -m:
                     full: --mail
                     extra:
-                        pattern: *pattern_email
+                        pattern: &pattern_email
+                            - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                            - "pattern_email"
                 -p:
                     full: --change-password
                     help: New password to set
@@ -169,7 +172,9 @@ user:
                     nargs: "*"
                     metavar: MAIL
                     extra:
-                        pattern: *pattern_email
+                        pattern: &pattern_email_forward
+                            - !!str ^[\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                            - "pattern_email_forward"
                 --remove-mailforward:
                     help: Mailforward addresses to remove
                     nargs: "*"
@@ -419,9 +424,7 @@ domain:
                 domain:
                     help: Domain name to add
                     extra:
-                        pattern: &pattern_domain
-                            - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+([^\W\d_]{2,})$
-                            - "pattern_domain"
+                        pattern: *pattern_domain
                 -d:
                     full: --dyndns
                     help: Subscribe to the DynDNS service
@@ -660,6 +663,10 @@ app:
                 -f:
                     full: --file
                     help: Folder or tarball for upgrade
+                -F:
+                    full: --force
+                    help: Force the update, even though the app is up to date
+                    action: store_true
 
         ### app_change_url()
         change-url:
@@ -847,10 +854,6 @@ backup:
                 -o:
                     full: --output-directory
                     help: Output directory for the backup
-                -r:
-                    full: --no-compress
-                    help: Do not create an archive file
-                    action: store_true
                 --methods:
                     help: List of backup methods to apply (copy or tar by default)
                     nargs: "*"
@@ -907,6 +910,14 @@ backup:
                     full: --human-readable
                     help: Print sizes in human readable format
                     action: store_true
+
+        ### backup_download()
+        download:
+            action_help: (API only) Request to download the file
+            api: GET /backup/download/<name>
+            arguments:
+                name:
+                    help: Name of the local backup archive
 
         ### backup_delete()
         delete:
@@ -1631,16 +1642,18 @@ log:
             action_help: List logs
             api: GET /logs
             arguments:
-                category:
-                    help: Log category to display (default operations), could be operation, history, package, system, access, service or app
-                    nargs: "*"
                 -l:
                     full: --limit
-                    help: Maximum number of logs
+                    help: Maximum number of operations to list (default to 50)
                     type: int
+                    default: 50
                 -d:
                     full: --with-details
                     help: Show additional infos (e.g. operation success) but may significantly increase command time. Consider using --limit in combination with this.
+                    action: store_true
+                -s:
+                    full: --with-suboperations
+                    help: Include metadata about operations that are not the main operation but are sub-operations triggered by another ongoing operation... (e.g. initializing groups/permissions when installing an app)
                     action: store_true
 
         ### log_display()
@@ -1661,6 +1674,10 @@ log:
                 -i:
                     full: --filter-irrelevant
                     help: Do not show some lines deemed not relevant (like set +x or helper argument parsing)
+                    action: store_true
+                -s:
+                    full: --with-suboperations
+                    help: Include metadata about sub-operations of this operation... (e.g. initializing groups/permissions when installing an app)
                     action: store_true
 
 

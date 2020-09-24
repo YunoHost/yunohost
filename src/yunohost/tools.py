@@ -26,19 +26,17 @@
 import re
 import os
 import yaml
-import json
 import subprocess
 import pwd
-import socket
 from importlib import import_module
 
 from moulinette import msignals, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
-from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
+from moulinette.utils.filesystem import write_to_json, read_yaml, write_to_yaml
 
-from yunohost.app import _update_apps_catalog, app_info, app_upgrade, app_ssowatconf, app_list, _initialize_apps_catalog_system
-from yunohost.domain import domain_add, domain_list
+from yunohost.app import _update_apps_catalog, app_info, app_upgrade, _initialize_apps_catalog_system
+from yunohost.domain import domain_add
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_start, service_enable
@@ -53,8 +51,10 @@ MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
 logger = getActionLogger('yunohost.tools')
 
+
 def tools_versions():
     return ynh_packages_version()
+
 
 def tools_ldapinit():
     """
@@ -88,15 +88,15 @@ def tools_ldapinit():
             logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
 
     admin_dict = {
-        'cn': 'admin',
-        'uid': 'admin',
-        'description': 'LDAP Administrator',
-        'gidNumber': '1007',
-        'uidNumber': '1007',
-        'homeDirectory': '/home/admin',
-        'loginShell': '/bin/bash',
+        'cn': ['admin'],
+        'uid': ['admin'],
+        'description': ['LDAP Administrator'],
+        'gidNumber': ['1007'],
+        'uidNumber': ['1007'],
+        'homeDirectory': ['/home/admin'],
+        'loginShell': ['/bin/bash'],
         'objectClass': ['organizationalRole', 'posixAccount', 'simpleSecurityObject'],
-        'userPassword': 'yunohost'
+        'userPassword': ['yunohost']
     }
 
     ldap.update('cn=admin', admin_dict)
@@ -110,6 +110,14 @@ def tools_ldapinit():
     except KeyError:
         logger.error(m18n.n('ldap_init_failed_to_create_admin'))
         raise YunohostError('installation_failed')
+
+    try:
+        # Attempt to create user home folder
+        subprocess.check_call(["mkhomedir_helper", "admin"])
+    except subprocess.CalledProcessError:
+        if not os.path.isdir('/home/{0}'.format("admin")):
+            logger.warning(m18n.n('user_home_creation_failed'),
+                           exc_info=1)
 
     logger.success(m18n.n('ldap_initialized'))
 
@@ -140,7 +148,7 @@ def tools_adminpw(new_password, check_strength=True):
     ldap = _get_ldap_interface()
 
     try:
-        ldap.update("cn=admin", {"userPassword": new_hash, })
+        ldap.update("cn=admin", {"userPassword": [new_hash], })
     except:
         logger.exception('unable to change admin password')
         raise YunohostError('admin_password_change_failed')
@@ -295,17 +303,10 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # Change folders permissions
     os.system('chmod 755 /home/yunohost.app')
 
-    # Set hostname to avoid amavis bug
-    if os.system('hostname -d >/dev/null') != 0:
-        os.system('hostname yunohost.yunohost.org')
-
-    # Add a temporary SSOwat rule to redirect SSO to admin page
+    # Init ssowat's conf.json.persistent
     if not os.path.exists('/etc/ssowat/conf.json.persistent'):
-        ssowat_conf = {}
-    else:
-        ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
+        write_to_json('/etc/ssowat/conf.json.persistent', {})
 
-    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     # Create SSL CA
@@ -592,7 +593,6 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
                 raise YunohostError(m18n.n('packages_upgrade_failed'))
 
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
-
 
             def is_relevant(l):
                 irrelevants = [
@@ -908,42 +908,10 @@ def tools_migrations_state():
     """
     Show current migration state
     """
-    if os.path.exists("/etc/yunohost/migrations_state.json"):
-        _migrate_legacy_migration_json()
-
     if not os.path.exists(MIGRATIONS_STATE_PATH):
         return {"migrations": {}}
 
     return read_yaml(MIGRATIONS_STATE_PATH)
-
-
-def _migrate_legacy_migration_json():
-
-    from moulinette.utils.filesystem import read_json
-
-    logger.debug("Migrating legacy migration state json to yaml...")
-
-    # We fetch the old state containing the last run migration
-    old_state = read_json("/etc/yunohost/migrations_state.json")["last_run_migration"]
-    last_run_migration_id = str(old_state["number"]) + "_" + old_state["name"]
-
-    # Extract the list of migration ids
-    from . import data_migrations
-    migrations_path = data_migrations.__path__[0]
-    migration_files = filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path))
-    # (here we remove the .py extension and make sure the ids are sorted)
-    migration_ids = sorted([f.rsplit(".", 1)[0] for f in migration_files])
-
-    # So now build the new dict for every id up to the last run migration
-    migrations = {}
-    for migration_id in migration_ids:
-        migrations[migration_id] = "done"
-        if last_run_migration_id in migration_id:
-            break
-
-    # Write the new file and rename the old one
-    write_to_yaml(MIGRATIONS_STATE_PATH, {"migrations": migrations})
-    os.rename("/etc/yunohost/migrations_state.json", "/etc/yunohost/migrations_state.json.old")
 
 
 def _write_migration_state(migration_id, state):
@@ -979,7 +947,7 @@ def _get_migrations_list():
     # (in particular, pending migrations / not already ran are not listed
     states = tools_migrations_state()["migrations"]
 
-    for migration_file in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
+    for migration_file in filter(lambda x: re.match(r"^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
         m = _load_migration(migration_file)
         m.state = states.get(m.id, "pending")
         migrations.append(m)
@@ -998,7 +966,7 @@ def _get_migration_by_name(migration_name):
         raise AssertionError("Unable to find migration with name %s" % migration_name)
 
     migrations_path = data_migrations.__path__[0]
-    migrations_found = filter(lambda x: re.match("^\d+_%s\.py$" % migration_name, x), os.listdir(migrations_path))
+    migrations_found = filter(lambda x: re.match(r"^\d+_%s\.py$" % migration_name, x), os.listdir(migrations_path))
 
     assert len(migrations_found) == 1, "Unable to find migration with name %s" % migration_name
 
@@ -1042,7 +1010,7 @@ class Migration(object):
     # Those are to be implemented by daughter classes
 
     mode = "auto"
-    dependencies = [] # List of migration ids required before running this migration
+    dependencies = []  # List of migration ids required before running this migration
 
     @property
     def disclaimer(self):

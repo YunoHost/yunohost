@@ -27,9 +27,10 @@
 import os
 import re
 import yaml
-import collections
+import glob
+import psutil
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from logging import FileHandler, getLogger, Formatter
 
 from moulinette import m18n, msettings
@@ -41,8 +42,6 @@ from moulinette.utils.filesystem import read_file, read_yaml
 
 CATEGORIES_PATH = '/var/log/yunohost/categories/'
 OPERATIONS_PATH = '/var/log/yunohost/categories/operation/'
-#CATEGORIES = ['operation', 'history', 'package', 'system', 'access', 'service', 'app']
-CATEGORIES = ['operation']
 METADATA_FILE_EXT = '.yml'
 LOG_FILE_EXT = '.log'
 RELATED_CATEGORIES = ['app', 'domain', 'group', 'service', 'user']
@@ -50,80 +49,89 @@ RELATED_CATEGORIES = ['app', 'domain', 'group', 'service', 'user']
 logger = getActionLogger('yunohost.log')
 
 
-def log_list(category=[], limit=None, with_details=False):
+def log_list(limit=None, with_details=False, with_suboperations=False):
     """
     List available logs
 
     Keyword argument:
         limit -- Maximum number of logs
-        with_details -- Include details (e.g. if the operation was a success). Likely to increase the command time as it needs to open and parse the metadata file for each log... So try to use this in combination with --limit.
+        with_details -- Include details (e.g. if the operation was a success).
+        Likely to increase the command time as it needs to open and parse the
+        metadata file for each log...
+        with_suboperations -- Include operations that are not the "main"
+        operation but are sub-operations triggered by another ongoing operation
+        ... (e.g. initializing groups/permissions when installing an app)
     """
 
-    categories = category
-    is_api = msettings.get('interface') == 'api'
+    operations = {}
 
-    # In cli we just display `operation` logs by default
-    if not categories:
-        categories = CATEGORIES
+    logs = filter(lambda x: x.endswith(METADATA_FILE_EXT),
+                  os.listdir(OPERATIONS_PATH))
+    logs = list(reversed(sorted(logs)))
 
-    result = collections.OrderedDict()
-    for category in categories:
-        result[category] = []
+    if limit is not None:
+        logs = logs[:limit]
 
-        category_path = os.path.join(CATEGORIES_PATH, category)
-        if not os.path.exists(category_path):
-            logger.debug(m18n.n('log_category_404', category=category))
+    for log in logs:
+
+        base_filename = log[:-len(METADATA_FILE_EXT)]
+        md_path = os.path.join(OPERATIONS_PATH, log)
+
+        entry = {
+            "name": base_filename,
+            "path": md_path,
+            "description": _get_description_from_name(base_filename),
+        }
+
+        try:
+            entry["started_at"] = _get_datetime_from_name(base_filename)
+        except ValueError:
+            pass
+
+        try:
+            metadata = read_yaml(md_path)
+        except Exception as e:
+            # If we can't read the yaml for some reason, report an error and ignore this entry...
+            logger.error(m18n.n('log_corrupted_md_file', md_file=md_path, error=e))
             continue
 
-        logs = filter(lambda x: x.endswith(METADATA_FILE_EXT),
-                      os.listdir(category_path))
-        logs = list(reversed(sorted(logs)))
+        if with_details:
+            entry["success"] = metadata.get("success", "?") if metadata else "?"
+            entry["parent"] = metadata.get("parent")
 
-        if limit is not None:
-            logs = logs[:limit]
+        if with_suboperations:
+            entry["parent"] = metadata.get("parent")
+            entry["suboperations"] = []
+        elif metadata.get("parent") is not None:
+            continue
 
-        for log in logs:
+        operations[base_filename] = entry
 
-            base_filename = log[:-len(METADATA_FILE_EXT)]
-            md_filename = log
-            md_path = os.path.join(category_path, md_filename)
+    # When displaying suboperations, we build a tree-like structure where
+    # "suboperations" is a list of suboperations (each of them may also have a list of
+    # "suboperations" suboperations etc...
+    if with_suboperations:
+        suboperations = [o for o in operations.values() if o["parent"] is not None]
+        for suboperation in suboperations:
+            parent = operations.get(suboperation["parent"])
+            if not parent:
+                continue
+            parent["suboperations"].append(suboperation)
+        operations = [o for o in operations.values() if o["parent"] is None]
+    else:
+        operations = [o for o in operations.values()]
 
-            log = base_filename.split("-")
-
-            entry = {
-                "name": base_filename,
-                "path": md_path,
-            }
-            entry["description"] = _get_description_from_name(base_filename)
-            try:
-                log_datetime = datetime.strptime(" ".join(log[:2]),
-                                                 "%Y%m%d %H%M%S")
-            except ValueError:
-                pass
-            else:
-                entry["started_at"] = log_datetime
-
-            if with_details:
-                try:
-                    metadata = read_yaml(md_path)
-                except Exception as e:
-                    # If we can't read the yaml for some reason, report an error and ignore this entry...
-                    logger.error(m18n.n('log_corrupted_md_file', md_file=md_path, error=e))
-                    continue
-                entry["success"] = metadata.get("success", "?") if metadata else "?"
-
-            result[category].append(entry)
-
+    operations = list(reversed(sorted(operations, key=lambda o: o["name"])))
     # Reverse the order of log when in cli, more comfortable to read (avoid
     # unecessary scrolling)
+    is_api = msettings.get('interface') == 'api'
     if not is_api:
-        for category in result:
-            result[category] = list(reversed(result[category]))
+        operations = list(reversed(operations))
 
-    return result
+    return {"operation": operations}
 
 
-def log_display(path, number=None, share=False, filter_irrelevant=False):
+def log_display(path, number=None, share=False, filter_irrelevant=False, with_suboperations=False):
     """
     Display a log file enriched with metadata if any.
 
@@ -163,10 +171,7 @@ def log_display(path, number=None, share=False, filter_irrelevant=False):
     abs_path = path
     log_path = None
     if not path.startswith('/'):
-        for category in CATEGORIES:
-            abs_path = os.path.join(CATEGORIES_PATH, category, path)
-            if os.path.exists(abs_path) or os.path.exists(abs_path + METADATA_FILE_EXT):
-                break
+        abs_path = os.path.join(OPERATIONS_PATH, path)
 
     if os.path.exists(abs_path) and not path.endswith(METADATA_FILE_EXT):
         log_path = abs_path
@@ -225,14 +230,54 @@ def log_display(path, number=None, share=False, filter_irrelevant=False):
             if 'log_path' in metadata:
                 log_path = metadata['log_path']
 
+            if with_suboperations:
+
+                def suboperations():
+                    try:
+                        log_start = _get_datetime_from_name(base_filename)
+                    except ValueError:
+                        return
+
+                    for filename in os.listdir(OPERATIONS_PATH):
+
+                        if not filename.endswith(METADATA_FILE_EXT):
+                            continue
+
+                        # We first retrict search to a ~48h time window to limit the number
+                        # of .yml we look into
+                        try:
+                            date = _get_datetime_from_name(base_filename)
+                        except ValueError:
+                            continue
+                        if (date < log_start) or (date > log_start + timedelta(hours=48)):
+                            continue
+
+                        try:
+                            submetadata = read_yaml(os.path.join(OPERATIONS_PATH, filename))
+                        except Exception:
+                            continue
+
+                        if submetadata.get("parent") == base_filename:
+                            yield {
+                                "name": filename[:-len(METADATA_FILE_EXT)],
+                                "description": _get_description_from_name(filename[:-len(METADATA_FILE_EXT)]),
+                                "success": submetadata.get("success", "?")
+                            }
+
+                metadata["suboperations"] = list(suboperations())
+
     # Display logs if exist
     if os.path.exists(log_path):
         from yunohost.service import _tail
-        if number:
+        if number and filters:
+            logs = _tail(log_path, int(number * 4))
+        elif number:
             logs = _tail(log_path, int(number))
         else:
             logs = read_file(log_path)
         logs = _filter_lines(logs, filters)
+        if number:
+            logs = logs[-number:]
         infos['log_path'] = log_path
         infos['logs'] = logs
 
@@ -360,6 +405,8 @@ class OperationLogger(object):
     This class record logs and metadata like context or start time/end time.
     """
 
+    _instances = []
+
     def __init__(self, operation, related_to=None, **kwargs):
         # TODO add a way to not save password on app installation
         self.operation = operation
@@ -370,6 +417,8 @@ class OperationLogger(object):
         self.logger = None
         self._name = None
         self.data_to_redact = []
+        self.parent = self.parent_logger()
+        self._instances.append(self)
 
         for filename in ["/etc/yunohost/mysql", "/etc/yunohost/psql"]:
             if os.path.exists(filename):
@@ -379,6 +428,54 @@ class OperationLogger(object):
 
         if not os.path.exists(self.path):
             os.makedirs(self.path)
+
+    def parent_logger(self):
+
+        # If there are other operation logger instances
+        for instance in reversed(self._instances):
+            # Is one of these operation logger started but not yet done ?
+            if instance.started_at is not None and instance.ended_at is None:
+                # We are a child of the first one we found
+                return instance.name
+
+        # If no lock exists, we are probably in tests or yunohost is used as a
+        # lib ... let's not really care about that case and assume we're the
+        # root logger then.
+        if not os.path.exists("/var/run/moulinette_yunohost.lock"):
+            return None
+
+        locks = read_file("/var/run/moulinette_yunohost.lock").strip().split("\n")
+        # If we're the process with the lock, we're the root logger
+        if locks == [] or str(os.getpid()) in locks:
+            return None
+
+        # If we get here, we are in a yunohost command called by a yunohost
+        # (maybe indirectly from an app script for example...)
+        #
+        # The strategy is :
+        # 1. list 20 most recent log files
+        # 2. iterate over the PID of parent processes
+        # 3. see if parent process has some log file open (being actively
+        # written in)
+        # 4. if among those file, there's an operation log file, we use the id
+        # of the most recent file
+
+        recent_operation_logs = sorted(glob.iglob(OPERATIONS_PATH + "*.log"), key=os.path.getctime, reverse=True)[:20]
+
+        proc = psutil.Process().parent()
+        while proc is not None:
+            # We use proc.open_files() to list files opened / actively used by this proc
+            # We only keep files matching a recent yunohost operation log
+            active_logs = sorted([f.path for f in proc.open_files() if f.path in recent_operation_logs], key=os.path.getctime, reverse=True)
+            if active_logs != []:
+                # extra the log if from the full path
+                return os.path.basename(active_logs[0])[:-4]
+            else:
+                proc = proc.parent()
+                continue
+
+        # If nothing found, assume we're the root operation logger
+        return None
 
     def start(self):
         """
@@ -466,6 +563,7 @@ class OperationLogger(object):
         data = {
             'started_at': self.started_at,
             'operation': self.operation,
+            'parent': self.parent,
             'yunohost_version': get_ynh_package_version("yunohost")["version"],
         }
         if self.related_to is not None:
@@ -502,8 +600,10 @@ class OperationLogger(object):
         self.ended_at = datetime.utcnow()
         self._error = error
         self._success = error is None
+
         if self.logger is not None:
             self.logger.removeHandler(self.file_handler)
+            self.file_handler.close()
 
         is_api = msettings.get('interface') == 'api'
         desc = _get_description_from_name(self.name)
@@ -534,6 +634,15 @@ class OperationLogger(object):
             return
         else:
             self.error(m18n.n('log_operation_unit_unclosed_properly'))
+
+
+def _get_datetime_from_name(name):
+
+    # Filenames are expected to follow the format:
+    # 20200831-170740-short_description-and-stuff
+
+    raw_datetime = " ".join(name.split("-")[:2])
+    return datetime.strptime(raw_datetime, "%Y%m%d %H%M%S")
 
 
 def _get_description_from_name(name):

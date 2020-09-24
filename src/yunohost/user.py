@@ -27,16 +27,14 @@ import os
 import re
 import pwd
 import grp
-import json
 import crypt
 import random
 import string
 import subprocess
 import copy
 
-from moulinette import m18n
+from moulinette import msignals, msettings, m18n
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
 
 from yunohost.utils.error import YunohostError
 from yunohost.service import service_status
@@ -46,16 +44,7 @@ logger = getActionLogger('yunohost.user')
 
 
 def user_list(fields=None):
-    """
-    List users
 
-    Keyword argument:
-        filter -- LDAP filter used to search
-        offset -- Starting number for user fetching
-        limit -- Maximum number of user fetched
-        fields -- fields to fetch
-
-    """
     from yunohost.utils.ldap import _get_ldap_interface
 
     user_attrs = {
@@ -105,20 +94,9 @@ def user_list(fields=None):
 
 
 @is_unit_operation([('username', 'user')])
-def user_create(operation_logger, username, firstname, lastname, mail, password,
-                mailbox_quota="0"):
-    """
-    Create user
+def user_create(operation_logger, username, firstname, lastname, domain, password,
+                mailbox_quota="0", mail=None):
 
-    Keyword argument:
-        firstname
-        lastname
-        username -- Must be unique
-        mail -- Main mail address must be unique
-        password
-        mailbox_quota -- Mailbox size quota
-
-    """
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.hook import hook_callback
     from yunohost.utils.password import assert_password_is_strong_enough
@@ -127,6 +105,30 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
     # Ensure sufficiently complex password
     assert_password_is_strong_enough("user", password)
 
+    if mail is not None:
+        logger.warning("Packagers ! Using --mail in 'yunohost user create' is deprecated ... please use --domain instead.")
+        domain = mail.split("@")[-1]
+
+    # Validate domain used for email address/xmpp account
+    if domain is None:
+        if msettings.get('interface') == 'api':
+            raise YunohostError('Invalide usage, specify domain argument')
+        else:
+            # On affiche les differents domaines possibles
+            msignals.display(m18n.n('domains_available'))
+            for domain in domain_list()['domains']:
+                msignals.display("- {}".format(domain))
+
+            maindomain = _get_maindomain()
+            domain = msignals.prompt(m18n.n('ask_user_domain') + ' (default: %s)' % maindomain)
+            if not domain:
+                domain = maindomain
+
+    # Check that the domain exists
+    if domain not in domain_list()['domains']:
+        raise YunohostError('domain_unknown', domain)
+
+    mail = username + '@' + domain
     ldap = _get_ldap_interface()
 
     if username in user_list()["users"]:
@@ -158,10 +160,6 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
     if mail in aliases:
         raise YunohostError('mail_unavailable')
 
-    # Check that the mail domain exists
-    if mail.split("@")[1] not in domain_list()['domains']:
-        raise YunohostError('mail_domain_unknown', domain=mail.split("@")[1])
-
     operation_logger.start()
 
     # Get random UID/GID
@@ -176,21 +174,22 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
 
     # Adapt values for LDAP
     fullname = '%s %s' % (firstname, lastname)
+
     attr_dict = {
         'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount', 'userPermissionYnh'],
-        'givenName': firstname,
-        'sn': lastname,
-        'displayName': fullname,
-        'cn': fullname,
-        'uid': username,
-        'mail': mail,
-        'maildrop': username,
-        'mailuserquota': mailbox_quota,
-        'userPassword': _hash_user_password(password),
-        'gidNumber': uid,
-        'uidNumber': uid,
-        'homeDirectory': '/home/' + username,
-        'loginShell': '/bin/false'
+        'givenName': [firstname],
+        'sn': [lastname],
+        'displayName': [fullname],
+        'cn': [fullname],
+        'uid': [username],
+        'mail': mail,  # NOTE: this one seems to be already a list
+        'maildrop': [username],
+        'mailuserquota': [mailbox_quota],
+        'userPassword': [_hash_user_password(password)],
+        'gidNumber': [uid],
+        'uidNumber': [uid],
+        'homeDirectory': ['/home/' + username],
+        'loginShell': ['/bin/false']
     }
 
     # If it is the first user, add some aliases
@@ -208,8 +207,7 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
 
     try:
         # Attempt to create user home folder
-        subprocess.check_call(
-            ['su', '-', username, '-c', "''"])
+        subprocess.check_call(["mkhomedir_helper", username])
     except subprocess.CalledProcessError:
         if not os.path.isdir('/home/{0}'.format(username)):
             logger.warning(m18n.n('user_home_creation_failed'),
@@ -240,7 +238,6 @@ def user_delete(operation_logger, username, purge=False):
     """
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
-    from yunohost.permission import permission_sync_to_user
 
     if username not in user_list()["users"]:
         raise YunohostError('user_unknown', user=username)
@@ -317,21 +314,21 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
     # Get modifications from arguments
     new_attr_dict = {}
     if firstname:
-        new_attr_dict['givenName'] = firstname  # TODO: Validate
-        new_attr_dict['cn'] = new_attr_dict['displayName'] = firstname + ' ' + user['sn'][0]
+        new_attr_dict['givenName'] = [firstname]  # TODO: Validate
+        new_attr_dict['cn'] = new_attr_dict['displayName'] = [firstname + ' ' + user['sn'][0]]
 
     if lastname:
-        new_attr_dict['sn'] = lastname  # TODO: Validate
-        new_attr_dict['cn'] = new_attr_dict['displayName'] = user['givenName'][0] + ' ' + lastname
+        new_attr_dict['sn'] = [lastname]  # TODO: Validate
+        new_attr_dict['cn'] = new_attr_dict['displayName'] = [user['givenName'][0] + ' ' + lastname]
 
     if lastname and firstname:
-        new_attr_dict['cn'] = new_attr_dict['displayName'] = firstname + ' ' + lastname
+        new_attr_dict['cn'] = new_attr_dict['displayName'] = [firstname + ' ' + lastname]
 
     if change_password:
         # Ensure sufficiently complex password
         assert_password_is_strong_enough("user", change_password)
 
-        new_attr_dict['userPassword'] = _hash_user_password(change_password)
+        new_attr_dict['userPassword'] = [_hash_user_password(change_password)]
 
     if mail:
         main_domain = _get_maindomain()
@@ -396,7 +393,7 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
         new_attr_dict['maildrop'] = user['maildrop']
 
     if mailbox_quota is not None:
-        new_attr_dict['mailuserquota'] = mailbox_quota
+        new_attr_dict['mailuserquota'] = [mailbox_quota]
 
     operation_logger.start()
 

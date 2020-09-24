@@ -11,45 +11,42 @@ Package: yunohost
 Essential: yes
 Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
- , moulinette (>= 3.7), ssowat (>= 3.7)
+ , moulinette (>= 4.1), ssowat (>= 4.0)
  , python-psutil, python-requests, python-dnspython, python-openssl
  , python-miniupnpc, python-dbus, python-jinja2
- , python-toml, python-packaging
+ , python-toml, python-packaging, python-publicsuffix
  , apt, apt-transport-https, dirmngr
- , nginx, nginx-extras (>=1.6.2)
- , php-fpm, php-ldap, php-intl
- , mariadb-server, php-mysql | php-mysqlnd
+ , php7.3-common, php7.3-fpm, php7.3-ldap, php7.3-intl
+ , mariadb-server, php7.3-mysql
  , openssh-server, iptables, fail2ban, dnsutils, bind9utils
  , openssl, ca-certificates, netcat-openbsd, iproute2
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
  , dnsmasq, avahi-daemon, libnss-mdns, resolvconf, libnss-myhostname
  , postfix, postfix-ldap, postfix-policyd-spf-perl, postfix-pcre
  , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved, dovecot-antispam
- , rspamd (>= 1.6.0), opendkim-tools, postsrsd, procmail, mailutils
+ , rspamd, opendkim-tools, postsrsd, procmail, mailutils
  , redis-server
  , metronome (>=3.14.0)
- , git, curl, wget, cron, unzip, jq
- , lsb-release, haveged, fake-hwclock, equivs, lsof, whois, python-publicsuffix
+ , git, curl, wget, cron, unzip, jq, bc
+ , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog
- , php-gd, php-curl, php-gettext, php-mcrypt
+ , php7.3-gd, php7.3-curl, php-gettext
  , python-pip
  , unattended-upgrades
  , libdbd-ldap-perl, libnet-dns-perl
 Suggests: htop, vim, rsync, acpi-support-base, udisks2
 Conflicts: iptables-persistent
- , moulinette-yunohost, yunohost-config
- , yunohost-config-others, yunohost-config-postfix
- , yunohost-config-dovecot, yunohost-config-slapd
- , yunohost-config-nginx, yunohost-config-amavis
- , yunohost-config-mysql, yunohost-predepends
- , apache2, bind9
-Replaces: moulinette-yunohost, yunohost-config
- , yunohost-config-others, yunohost-config-postfix
- , yunohost-config-dovecot, yunohost-config-slapd
- , yunohost-config-nginx, yunohost-config-amavis
- , yunohost-config-mysql, yunohost-predepends
+ , apache2
+ , bind9
+ , nginx-extras (>= 1.16)
+ , openssl (>= 1.1.1g)
+ , slapd (>= 2.4.49)
+ , dovecot-core (>= 1:2.3.7)
+ , redis-server (>= 5:5.0.7)
+ , fail2ban (>= 0.11)
+ , iptables (>= 1.8.3)
 Description: manageable and configured self-hosting server
  YunoHost aims to make self-hosting accessible to everyone. It configures
  an email, Web and IM server alongside a LDAP base. It also provides

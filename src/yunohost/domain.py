@@ -59,8 +59,24 @@ def domain_list(exclude_subdomains=False):
             parent_domain = domain.split(".", 1)[1]
             if parent_domain in result:
                 continue
+
         result_list.append(domain)
 
+    def cmp_domain(domain1, domain2):
+        # Keep the main part of the domain and the extension together
+        # eg: this.is.an.example.com -> ['example.com', 'an', 'is', 'this']
+        domain1 = domain1.split('.')
+        domain2 = domain2.split('.')
+        domain1[-1] = domain1[-2] + domain1.pop()
+        domain2[-1] = domain2[-2] + domain2.pop()
+        domain1 = list(reversed(domain1))
+        domain2 = list(reversed(domain2))
+        return cmp(domain1, domain2)
+
+    result_list = sorted(result_list, cmp_domain)
+
+    return {'domains': result_list}
+  
     return {
         'domains': result_list,
         'main': _get_maindomain()
@@ -617,17 +633,17 @@ def _get_DKIM(domain):
     if is_legacy_format:
         dkim = re.match((
             r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
-             '[^"]*"v=(?P<v>[^";]+);'
-             '[\s"]*k=(?P<k>[^";]+);'
-             '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+            '[^"]*"v=(?P<v>[^";]+);'
+            r'[\s"]*k=(?P<k>[^";]+);'
+            '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
         )
     else:
         dkim = re.match((
             r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
-             '[^"]*"v=(?P<v>[^";]+);'
-             '[\s"]*h=(?P<h>[^";]+);'
-             '[\s"]*k=(?P<k>[^";]+);'
-             '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+            '[^"]*"v=(?P<v>[^";]+);'
+            r'[\s"]*h=(?P<h>[^";]+);'
+            r'[\s"]*k=(?P<k>[^";]+);'
+            '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
         )
 
     if not dkim:

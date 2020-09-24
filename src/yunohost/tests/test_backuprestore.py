@@ -16,6 +16,7 @@ from yunohost.hook import CUSTOM_HOOK_FOLDER
 # Get main domain
 maindomain = ""
 
+
 def setup_function(function):
 
     global maindomain
@@ -32,7 +33,7 @@ def setup_function(function):
 
     assert len(backup_list()["archives"]) == 0
 
-    markers = [m.name for m in function.__dict__.get("pytestmark",[])]
+    markers = [m.name for m in function.__dict__.get("pytestmark", [])]
 
     if "with_wordpress_archive_from_2p4" in markers:
         add_archive_wordpress_from_2p4()
@@ -61,7 +62,7 @@ def setup_function(function):
 
     if "with_permission_app_installed" in markers:
         assert not app_is_installed("permissions_app")
-        user_create("alice", "Alice", "White", "alice@" + maindomain, "test123Ynh")
+        user_create("alice", "Alice", "White", maindomain, "test123Ynh")
         install_app("permissions_app_ynh", "/urlpermissionapp"
                     "&admin=alice")
         assert app_is_installed("permissions_app")
@@ -75,7 +76,7 @@ def teardown_function(function):
     delete_all_backups()
     uninstall_test_apps_if_needed()
 
-    markers = [m.name for m in function.__dict__.get("pytestmark",[])]
+    markers = [m.name for m in function.__dict__.get("pytestmark", [])]
 
     if "clean_opt_dir" in markers:
         shutil.rmtree("/opt/test_backup_output_directory")
@@ -90,6 +91,7 @@ def check_LDAP_db_integrity_call():
     yield
     check_LDAP_db_integrity()
 
+
 @pytest.fixture(autouse=True)
 def check_permission_for_apps_call():
     check_permission_for_apps()
@@ -99,6 +101,7 @@ def check_permission_for_apps_call():
 #
 # Helpers                                                                    #
 #
+
 
 def app_is_installed(app):
 
@@ -184,22 +187,22 @@ def add_archive_wordpress_from_2p4():
 
     os.system("mkdir -p /home/yunohost.backup/archives")
 
-    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_wordpress_from_2p4/backup.info.json") + \
-               " /home/yunohost.backup/archives/backup_wordpress_from_2p4.info.json")
+    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_wordpress_from_2p4/backup.info.json")
+              + " /home/yunohost.backup/archives/backup_wordpress_from_2p4.info.json")
 
-    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_wordpress_from_2p4/backup.tar.gz") + \
-               " /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz")
+    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_wordpress_from_2p4/backup.tar.gz")
+              + " /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz")
 
 
 def add_archive_system_from_2p4():
 
     os.system("mkdir -p /home/yunohost.backup/archives")
 
-    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_system_from_2p4/backup.info.json") + \
-               " /home/yunohost.backup/archives/backup_system_from_2p4.info.json")
+    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_system_from_2p4/backup.info.json")
+              + " /home/yunohost.backup/archives/backup_system_from_2p4.info.json")
 
-    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_system_from_2p4/backup.tar.gz") + \
-               " /home/yunohost.backup/archives/backup_system_from_2p4.tar.gz")
+    os.system("cp " + os.path.join(get_test_apps_dir(), "backup_system_from_2p4/backup.tar.gz")
+              + " /home/yunohost.backup/archives/backup_system_from_2p4.tar.gz")
 
 #
 # System backup                                                              #
@@ -309,7 +312,7 @@ def test_backup_script_failure_handling(monkeypatch, mocker):
     # with the expected error message key
     monkeypatch.setattr("yunohost.backup.hook_exec", custom_hook_exec)
 
-    with message(mocker,  'backup_app_failed', app='backup_recommended_app'):
+    with message(mocker, 'backup_app_failed', app='backup_recommended_app'):
         with raiseYunohostError(mocker, 'backup_nothings_done'):
             backup_create(system=None, apps=["backup_recommended_app"])
 
@@ -375,7 +378,7 @@ def test_backup_with_different_output_directory(mocker):
                       output_directory="/opt/test_backup_output_directory",
                       name="backup")
 
-    assert os.path.exists("/opt/test_backup_output_directory/backup.tar.gz")
+    assert os.path.exists("/opt/test_backup_output_directory/backup.tar")
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -387,13 +390,13 @@ def test_backup_with_different_output_directory(mocker):
 
 
 @pytest.mark.clean_opt_dir
-def test_backup_with_no_compress(mocker):
+def test_backup_using_copy_method(mocker):
 
     # Create the backup
     with message(mocker, "backup_created"):
         backup_create(system=["conf_nginx"], apps=None,
                       output_directory="/opt/test_backup_output_directory",
-                      no_compress=True,
+                      methods=["copy"],
                       name="backup")
 
     assert os.path.exists("/opt/test_backup_output_directory/info.json")
@@ -499,6 +502,7 @@ def test_backup_and_restore_with_ynh_restore(mocker):
 
     _test_backup_and_restore_app(mocker, "backup_recommended_app")
 
+
 @pytest.mark.with_permission_app_installed
 def test_backup_and_restore_permission_app(mocker):
 
@@ -548,7 +552,7 @@ def _test_backup_and_restore_app(mocker, app):
     # Uninstall the app
     app_remove(app)
     assert not app_is_installed(app)
-    assert app+".main" not in user_permission_list()['permissions']
+    assert app + ".main" not in user_permission_list()['permissions']
 
     # Restore the app
     with message(mocker, "restore_complete"):
@@ -559,7 +563,7 @@ def _test_backup_and_restore_app(mocker, app):
 
     # Check permission
     per_list = user_permission_list()['permissions']
-    assert app+".main" in per_list
+    assert app + ".main" in per_list
 
 #
 # Some edge cases                                                            #
@@ -576,6 +580,7 @@ def test_restore_archive_with_no_json(mocker):
 
     with raiseYunohostError(mocker, 'backup_archive_cant_retrieve_info_json'):
         backup_restore(name="badbackup", force=True)
+
 
 @pytest.mark.with_wordpress_archive_from_2p4
 def test_restore_archive_with_bad_archive(mocker):
@@ -605,9 +610,9 @@ def test_restore_archive_with_custom_hook(mocker):
     # Restore system with custom hook
     with message(mocker, "restore_complete"):
         backup_restore(name=backup_list()["archives"][0],
-                        system=[],
-                        apps=None,
-                        force=True)
+                       system=[],
+                       apps=None,
+                       force=True)
 
     os.system("rm %s/99-yolo" % custom_restore_hook_folder)
 

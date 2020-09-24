@@ -97,8 +97,8 @@ def service_add(name, description=None, log=None, log_type=None, test_status=Non
         service["test_status"] = test_status
     else:
         # Try to get the description from systemd service
-        _, service = _get_service_information_from_systemd(name)
-        type_ = service.get("Type") if service is not None else ""
+        _, systemd_info = _get_service_information_from_systemd(name)
+        type_ = systemd_info.get("Type") if systemd_info is not None else ""
         if type_ == "oneshot":
             logger.warning("/!\\ Packagers! Please provide a --test_status when adding oneshot-type services in Yunohost, such that it has a reliable way to check if the service is running or not.")
 
@@ -346,16 +346,20 @@ def _get_and_format_service_status(service, infos):
             'configuration': "unknown",
         }
 
-    translation_key = "service_description_%s" % service
+    # Try to get description directly from services.yml
     description = infos.get("description")
+
+    # If no description was there, try to get it from the .json locales
     if not description:
+        translation_key = "service_description_%s" % service
         description = m18n.n(translation_key)
 
-    # that mean that we don't have a translation for this string
-    # that's the only way to test for that for now
-    # if we don't have it, uses the one provided by systemd
-    if description.decode('utf-8') == translation_key:
-        description = str(raw_status.get("Description", ""))
+        # If descrption is still equal to the translation key,
+        # that mean that we don't have a translation for this string
+        # that's the only way to test for that for now
+        # if we don't have it, uses the one provided by systemd
+        if description.decode('utf-8') == translation_key:
+            description = str(raw_status.get("Description", ""))
 
     output = {
         'status': str(raw_status.get("SubState", "unknown")),
@@ -618,7 +622,7 @@ def _get_services():
     if "postgresql" in services:
         if "description" in services["postgresql"]:
             del services["postgresql"]["description"]
-        services["postgresql"]["actual_systemd_service"] = "postgresql@9.6-main"
+        services["postgresql"]["actual_systemd_service"] = "postgresql@11-main"
 
     return services
 
@@ -649,7 +653,6 @@ def _tail(file, n):
     """
     avg_line_length = 74
     to_read = n
-
 
     try:
         if file.endswith(".gz"):

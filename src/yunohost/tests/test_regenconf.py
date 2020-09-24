@@ -9,6 +9,7 @@ TEST_DOMAIN_NGINX_CONFIG = "/etc/nginx/conf.d/%s.conf" % TEST_DOMAIN
 TEST_DOMAIN_DNSMASQ_CONFIG = "/etc/dnsmasq.d/%s" % TEST_DOMAIN
 SSHD_CONFIG = "/etc/ssh/sshd_config"
 
+
 def setup_function(function):
 
     _force_clear_hashes([TEST_DOMAIN_NGINX_CONFIG])
@@ -169,7 +170,7 @@ def test_stale_hashes_if_file_manually_deleted():
 # ... Anyway, the proper way to write these tests would be to use a dummy
 # regen-conf hook just for tests but meh I'm lazy
 #
-#def test_stale_hashes_if_file_manually_modified():
+# def test_stale_hashes_if_file_manually_modified():
 #    """
 #    Same as other test, but manually delete the file in between and check
 #    behavior

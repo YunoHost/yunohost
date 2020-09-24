@@ -80,10 +80,10 @@ ynh_handle_getopts_args () {
                 arguments[arg]="${arguments[arg]//--${args_array[$option_flag]}-/--${args_array[$option_flag]}\\TOBEREMOVED\\-}"
                 # And replace long option (value of the option_flag) by the short option, the option_flag itself
                 # (e.g. for [u]=user, --user will be -u)
-                # Replace long option with =
-                arguments[arg]="${arguments[arg]//--${args_array[$option_flag]}/-${option_flag} }"
-                # And long option without =
-                arguments[arg]="${arguments[arg]//--${args_array[$option_flag]%=}/-${option_flag}}"
+                # Replace long option with = (match the beginning of the argument)
+                arguments[arg]="$(echo "${arguments[arg]}" | sed "s/^--${args_array[$option_flag]}/-${option_flag} /")"
+                # And long option without = (match the whole line)
+                arguments[arg]="$(echo "${arguments[arg]}" | sed "s/^--${args_array[$option_flag]%=}$/-${option_flag} /")"
             done
         done
 
@@ -130,6 +130,12 @@ ynh_handle_getopts_args () {
                         then
                             # Remove the option and the space, so keep only the value itself.
                             all_args[0]="${all_args[0]#-${parameter} }"
+
+                            # At this point, if all_args[0] start with "-", then the argument is not well formed
+                            if [ "${all_args[0]:0:1}" == "-" ]
+                            then
+                                ynh_die --message="Argument \"${all_args[0]}\" not valid! Did you use a single \"-\" instead of two?"
+                            fi
                             # Reduce the value of shift, because the option has been removed manually
                             shift_value=$(( shift_value - 1 ))
                         fi

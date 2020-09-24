@@ -6,7 +6,7 @@ import glob
 import shutil
 
 from moulinette import m18n
-from moulinette.utils.filesystem import read_json, write_to_json, write_to_yaml, mkdir
+from moulinette.utils.filesystem import read_json, write_to_json, write_to_yaml
 
 from yunohost.utils.error import YunohostError
 from yunohost.app import (_initialize_apps_catalog_system,
@@ -37,9 +37,11 @@ DUMMY_APP_CATALOG = """{
 }
 """
 
+
 class AnyStringWith(str):
     def __eq__(self, other):
         return self in other
+
 
 def setup_function(function):
 
@@ -165,6 +167,7 @@ def test_apps_catalog_update_404(mocker):
             _update_apps_catalog()
             m18n.n.assert_any_call("apps_catalog_failed_to_download")
 
+
 def test_apps_catalog_update_timeout(mocker):
 
     # Initialize ...
@@ -236,7 +239,6 @@ def test_apps_catalog_load_with_empty_cache(mocker):
         app_dict = _load_apps_catalog()["apps"]
         m18n.n.assert_any_call("apps_catalog_obsolete_cache")
         m18n.n.assert_any_call("apps_catalog_update_success")
-
 
     # Cache shouldn't be empty anymore empty
     assert glob.glob(APPS_CATALOG_CACHE + "/*")
@@ -315,58 +317,3 @@ def test_apps_catalog_load_with_oudated_api_version(mocker):
     for cache_file in glob.glob(APPS_CATALOG_CACHE + "/*"):
         cache_json = read_json(cache_file)
         assert cache_json["from_api_version"] == APPS_CATALOG_API_VERSION
-
-
-
-def test_apps_catalog_migrate_legacy_explicitly():
-
-    open("/etc/yunohost/appslists.json", "w").write('{"yunohost": {"yolo":"swag"}}')
-    mkdir(APPS_CATALOG_CACHE, 0o750, parents=True)
-    open(APPS_CATALOG_CACHE+"/yunohost_old.json", "w").write('{"foo":{}, "bar": {}}')
-    open(APPS_CATALOG_CRON_PATH, "w").write("# Some old cron")
-
-    from yunohost.tools import _get_migration_by_name
-    migration = _get_migration_by_name("futureproof_apps_catalog_system")
-
-    with requests_mock.Mocker() as m:
-
-        # Mock the server response with a dummy apps catalog
-        m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
-        migration.run()
-
-    # Old conf shouldnt be there anymore (got renamed to .old)
-    assert not os.path.exists("/etc/yunohost/appslists.json")
-    # Old cache should have been removed
-    assert not os.path.exists(APPS_CATALOG_CACHE+"/yunohost_old.json")
-    # Cron should have been changed
-    assert "/bin/bash" in open(APPS_CATALOG_CRON_PATH, "r").read()
-    assert cron_job_is_there()
-
-    # Reading the apps_catalog should work
-    app_dict = _load_apps_catalog()["apps"]
-    assert "foo" in app_dict.keys()
-    assert "bar" in app_dict.keys()
-
-
-def test_apps_catalog_migrate_legacy_implicitly():
-
-    open("/etc/yunohost/appslists.json", "w").write('{"yunohost": {"yolo":"swag"}}')
-    mkdir(APPS_CATALOG_CACHE, 0o750, parents=True)
-    open(APPS_CATALOG_CACHE+"/yunohost_old.json", "w").write('{"old_foo":{}, "old_bar": {}}')
-    open(APPS_CATALOG_CRON_PATH, "w").write("# Some old cron")
-
-    with requests_mock.Mocker() as m:
-        m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
-        app_dict = _load_apps_catalog()["apps"]
-
-    assert "foo" in app_dict.keys()
-    assert "bar" in app_dict.keys()
-
-    # Old conf shouldnt be there anymore (got renamed to .old)
-    assert not os.path.exists("/etc/yunohost/appslists.json")
-    # Old cache should have been removed
-    assert not os.path.exists(APPS_CATALOG_CACHE+"/yunohost_old.json")
-    # Cron should have been changed
-    assert "/bin/bash" in open(APPS_CATALOG_CRON_PATH, "r").read()
-    assert cron_job_is_there()
-

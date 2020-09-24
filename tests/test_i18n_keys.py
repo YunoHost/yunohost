@@ -23,8 +23,10 @@ def find_expected_string_keys():
     # Try to find :
     #    m18n.n(   "foo"
     #    YunohostError("foo"
+    #    # i18n: foo
     p1 = re.compile(r'm18n\.n\(\s*[\"\'](\w+)[\"\']')
     p2 = re.compile(r'YunohostError\([\'\"](\w+)[\'\"]')
+    p3 = re.compile(r'# i18n: [\'\"]?(\w+)[\'\"]?')
 
     python_files = glob.glob("src/yunohost/*.py")
     python_files.extend(glob.glob("src/yunohost/utils/*.py"))
@@ -41,6 +43,8 @@ def find_expected_string_keys():
         for m in p2.findall(content):
             if m.endswith("_"):
                 continue
+            yield m
+        for m in p3.findall(content):
             yield m
 
     # For each diagnosis, try to find strings like "diagnosis_stuff_foo" (c.f. diagnosis summaries)
@@ -112,7 +116,7 @@ def find_expected_string_keys():
     # Hardcoded expected keys ...
     yield "admin_password"  # Not sure that's actually used nowadays...
 
-    for method in ["tar", "copy", "borg", "custom"]:
+    for method in ["tar", "copy", "custom"]:
         yield "backup_applying_method_%s" % method
         yield "backup_method_%s_finished" % method
 
