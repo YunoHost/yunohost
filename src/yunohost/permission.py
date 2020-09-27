@@ -87,16 +87,24 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
             perm["additional_urls"] = infos.get("additionalUrls", [])
 
             if full_path:
-                app_base_path = apps_base_path[app] if app in apps_base_path else "" # Meh in some situation where the app is currently installed/removed, this function may be called and we still need to act as if the corresponding permission indeed exists ... dunno if that's really the right way to proceed but okay.
+                app_base_path = apps_base_path[app] if app in apps_base_path else ""  # Meh in some situation where the app is currently installed/removed, this function may be called and we still need to act as if the corresponding permission indeed exists ... dunno if that's really the right way to proceed but okay.
                 perm["url"] = _get_absolute_url(perm["url"], app_base_path)
                 perm["additional_urls"] = [_get_absolute_url(url, app_base_path) for url in perm["additional_urls"]]
 
         permissions[name] = perm
 
+    # Make sure labels for sub-permissions are the form " Applabel (Sublabel) "
+    if full:
+        for name, infos in {k: v for k, v in permissions if not k.endswith(".main")}:
+            main_perm_name = name.split(".")[0] + ".main"
+            main_perm_label = permissions[main_perm_name]["label"]
+            infos["label"] = "%s (%s)" % (main_perm_label, infos["label"])
+
     if short:
         permissions = permissions.keys()
 
     return {'permissions': permissions}
+
 
 @is_unit_operation()
 def user_permission_update(operation_logger, permission, add=None, remove=None,

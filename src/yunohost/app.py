@@ -429,7 +429,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
     """
     from packaging import version
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
-    from yunohost.permission import permission_sync_to_user, user_permission_list
+    from yunohost.permission import permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
 
     apps = app
@@ -521,7 +521,6 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         env_dict["YNH_APP_ID"] = app_id
         env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
         env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
-        env_dict["YNH_APP_LABEL"] = user_permission_list(full=True, ignore_system_perms=True, full_path=False)['permissions'][app_id+".main"]['label']
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
@@ -756,7 +755,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
-    env_dict["YNH_APP_LABEL"] = label
     env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
 
     # Start register change on system

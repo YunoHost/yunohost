@@ -283,7 +283,7 @@ ynh_permission_create() {
     if [[ -n ${label:-} ]]; then
         label=",label='$label'"
     else
-        label=",label='$YNH_APP_LABEL ($permission)'"
+        label=",label='$permission'"
     fi
 
     if [[ -n ${show_tile:-} ]]
