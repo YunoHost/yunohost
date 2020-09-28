@@ -279,6 +279,9 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     else:
         dyndns = False
 
+    if os.system("iptables -V >/dev/null 2>/dev/null") != 0:
+        raise YunohostError("iptables/nftables does not seems to be working on your setup. You may be in a container or your kernel does have the proper modules loaded. Sometimes, rebooting the machine may solve the issue.", raw_msg=True)
+
     operation_logger.start()
     logger.info(m18n.n('yunohost_installing'))
 
