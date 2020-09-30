@@ -76,6 +76,51 @@ class MyMigration(Migration):
                     })
 
 
+    def migrate_skipped_unprotected_protected_uris(self, app=None):
+        from utils.legacy import legacy_permission_label
+        logger.info(m18n.n("migration_0019_migrate_old_app_settings"))
+        apps = _installed_apps()
+
+        if app:
+            if app not in apps:
+                logger.error("Can't migrate permission for app %s because it ain't installed..." % app)
+                apps = []
+            else:
+                apps = [app]
+
+        def _get_setting(app, name):
+            s = app_setting(app, name)
+            return s.split(',') if s else []
+
+        for app in apps:
+            skipped_urls = [_sanitized_absolute_url(uri) for uri in _get_setting(app, 'skipped_uris') if uri != '/']
+            skipped_urls += ['re:' + regex for regex in _get_setting(app, 'skipped_regex')]
+            unprotected_urls = [_sanitized_absolute_url(uri) for uri in _get_setting(app, 'unprotected_uris') if uri != '/']
+            unprotected_urls += ['re:' + regex for regex in _get_setting(app, 'unprotected_regex')]
+            protected_urls = [_sanitized_absolute_url(uri) for uri in _get_setting(app, 'protected_uris') if uri != '/']
+            protected_urls += ['re:' + regex for regex in _get_setting(app, 'protected_regex')]
+
+            if skipped_urls != []:
+                permission_create(app+".legacy_skipped_uris", additional_urls=skipped_urls,
+                                  auth_header=False, label=legacy_permission_label(app, "skipped"),
+                                  show_tile=False, allowed='visitors', protected=True, sync_perm=False)
+            if unprotected_urls != []:
+                permission_create(app+".legacy_unprotected_uris", additional_urls=unprotected_urls,
+                                  auth_header=True, label=legacy_permission_label(app, "unprotected"),
+                                  show_tile=False, allowed='visitors', protected=True, sync_perm=False)
+            if protected_urls != []:
+                permission_create(app+".legacy_protected_uris", additional_urls=protected_urls,
+                                  auth_header=True, label=legacy_permission_label(app, "protected"),
+                                  show_tile=False, allowed=permission_list()['permissions']['allowed'],
+                                  protected=True, sync_perm=False)
+
+            app_setting(app, 'skipped_uris', delete=True)
+            app_setting(app, 'unprotected_uris', delete=True)
+            app_setting(app, 'protected_uris', delete=True)
+
+        permission_sync_to_user()
+
+
     def run(self):
 
         # FIXME : what do we really want to do here ...
@@ -100,7 +145,8 @@ class MyMigration(Migration):
             # Update LDAP database
             self.add_new_ldap_attributes()
 
-            app_ssowatconf()
+            # Migrate old settings
+            self.migrate_skipped_unprotected_protected_uris()
 
         except Exception as e:
             logger.warn(m18n.n("migration_0019_migration_failed_trying_to_rollback"))

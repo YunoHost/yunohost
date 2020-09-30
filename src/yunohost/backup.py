@@ -1257,6 +1257,7 @@ class RestoreManager():
                              name should be already install)
         """
         from yunohost.user import user_group_list
+        from yunohost.app import app_setting
         from yunohost.permission import permission_create, permission_delete, user_permission_list, permission_sync_to_user
 
         def copytree(src, dst, symlinks=False, ignore=None):
@@ -1352,6 +1353,14 @@ class RestoreManager():
                 # app (included in its settings.yml)
                 from yunohost.utils.legacy import SetupGroupPermissions
                 SetupGroupPermissions.migrate_app_permission(app=app_instance_name)
+
+            # Migrate old settings
+            if app_setting(app_instance_name, 'skipped_uris') is not None or \
+               app_setting(app_instance_name, 'unprotected_uris') is not None or \
+               app_setting(app_instance_name, 'protected_uris') is not None:
+                from yunohost.tools import _get_migration_by_name
+                extends_permissions_features_1 = _get_migration_by_name("extends_permissions_features_1")
+                extends_permissions_features_1.migrate_skipped_unprotected_protected_uris(app=app_instance_name)
 
             # Prepare env. var. to pass to script
             env_dict = self._get_env_var(app_instance_name)

@@ -439,6 +439,7 @@
     "migration_0018_failed_to_migrate_iptables_rules": "Failed to migrate legacy iptables rules to nftables: {error}",
     "migration_0018_failed_to_reset_legacy_rules": "Failed to reset legacy iptables rules: {error}",
     "migration_0019_add_new_attributes_in_ldap": "Add new attributes for permissions in LDAP database",
+    "migration_0019_migrate_old_app_settings": "Migrate old apps settings 'skipped_uris', 'unprotected_uris', 'protected_uris' in permissions system.",
     "migration_0019_backup_before_migration": "Creating a backup of LDAP database and apps settings prior to the actual migration.",
     "migration_0019_can_not_backup_before_migration": "The backup of the system could not be completed before the migration failed. Error: {error:s}",
     "migration_0019_migration_failed_trying_to_rollback": "Could not migrate... trying to roll back the system.",
