@@ -66,12 +66,19 @@ AcceptEnv LANG LC_*
 
 # SFTP stuff
 Subsystem sftp internal-sftp
-Match User sftpusers
-        ForceCommand internal-sftp
-        ChrootDirectory /home/%u
-        AllowTcpForwarding no
-        GatewayPorts no
-        X11Forwarding no
+
+# Forbid users from using their account SSH as a VPN (even if SSH login is disabled)
+AllowTcpForwarding no
+AllowStreamLocalForwarding no
+
+# Disable .ssh/rc, which could be edited (e.g. from Nextcloud or whatever) by users to execute arbitrary commands even if SSH login is disabled
+PermitUserRC no
+
+Match User admin,root
+    AllowTcpForwarding yes
+    AllowStreamLocalForwarding yes
+    PermitUserRC yes
+
 
 # root login is allowed on local networks
 # It's meant to be a backup solution in case LDAP is down and

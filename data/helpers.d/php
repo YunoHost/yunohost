@@ -111,12 +111,6 @@ ynh_add_fpm_config () {
         local fpm_service="php${phpversion}-fpm"
         local fpm_config_dir="/etc/php/$phpversion/fpm"
     fi
-    # Configure PHP-FPM 5 on Debian Jessie
-    if [ "$(ynh_get_debian_release)" == "jessie" ]
-    then
-        fpm_config_dir="/etc/php5/fpm"
-        fpm_service="php5-fpm"
-    fi
 
     # Create the directory for FPM pools
     mkdir --parents "$fpm_config_dir/pool.d"
@@ -219,7 +213,7 @@ ynh_add_fpm_config () {
 
     if [ -e "../conf/php-fpm.ini" ]
     then
-        ynh_print_warn -message="Packagers ! Please do not use a separate php ini file, merge your directives in the pool file instead."
+        ynh_print_warn --message="Packagers ! Please do not use a separate php ini file, merge your directives in the pool file instead."
         finalphpini="$fpm_config_dir/conf.d/20-$app.ini"
         ynh_backup_if_checksum_is_different "$finalphpini"
         cp ../conf/php-fpm.ini "$finalphpini"

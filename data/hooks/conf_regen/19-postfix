@@ -23,7 +23,26 @@ do_pre_regen() {
 
   # Support different strategy for security configurations
   export compatibility="$(yunohost settings get 'security.postfix.compatibility')"
+  
+  # Add possibility to specify a relay
+  # Could be useful with some isp with no 25 port open or more complex setup
+  export relay_host="$(yunohost settings get 'smtp.relay.host')"
+  if [ -n "${relay_host}" ]
+  then
+    export relay_port="$(yunohost settings get 'smtp.relay.port')"
+    export relay_user="$(yunohost settings get 'smtp.relay.user')"
+    relay_password="$(yunohost settings get 'smtp.relay.password')"
+    
+    # Avoid to display "Relay account paswword" to other users
+    touch ${postfix_dir}/sasl_passwd
+    chmod 750 ${postfix_dir}/sasl_passwd
+    # Avoid "postmap: warning: removing zero-length database file"
+    chown postfix ${pending_dir}/etc/postfix
+    chown postfix ${pending_dir}/etc/postfix/sasl_passwd
 
+    cat <<< "[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" > ${postfix_dir}/sasl_passwd
+    postmap ${postfix_dir}/sasl_passwd
+  fi
   export main_domain
   export domain_list="$YNH_DOMAINS"
   ynh_render_template "main.cf" "${postfix_dir}/main.cf"
@@ -47,6 +66,12 @@ do_pre_regen() {
 
 do_post_regen() {
   regen_conf_files=$1
+
+  if [ -e /etc/postfix/sasl_passwd ]
+  then
+      chmod 750 /etc/postfix/sasl_passwd*
+      chown postfix:root /etc/postfix/sasl_passwd*
+  fi
 
   [[ -z "$regen_conf_files" ]] \
     || { service postfix restart && service postsrsd restart; }

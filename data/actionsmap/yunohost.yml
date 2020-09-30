@@ -172,7 +172,9 @@ user:
                     nargs: "*"
                     metavar: MAIL
                     extra:
-                        pattern: *pattern_email
+                        pattern: &pattern_email_forward
+                            - !!str ^[\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                            - "pattern_email_forward"
                 --remove-mailforward:
                     help: Mailforward addresses to remove
                     nargs: "*"
@@ -917,6 +919,14 @@ backup:
                     full: --human-readable
                     help: Print sizes in human readable format
                     action: store_true
+
+        ### backup_download()
+        download:
+            action_help: (API only) Request to download the file
+            api: GET /backup/download/<name>
+            arguments:
+                name:
+                    help: Name of the local backup archive
 
         ### backup_delete()
         delete:

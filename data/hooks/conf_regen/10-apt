@@ -7,17 +7,21 @@ do_pre_regen() {
 
     mkdir --parents "${pending_dir}/etc/apt/preferences.d"
 
-    for package in "php" "php-fpm" "php-mysql" "php-xml" "php-zip" "php-mbstring" "php-ldap" "php-gd" "php-curl" "php-bz2" "php-json" "php-sqlite3" "php-intl" "openssl" "libssl1.1" "libssl-dev"
+    packages_to_refuse_from_sury="php php-fpm php-mysql php-xml php-zip php-mbstring php-ldap php-gd php-curl php-bz2 php-json php-sqlite3 php-intl openssl libssl1.1 libssl-dev"
+    for package in $packages_to_refuse_from_sury
     do
         echo "
 Package: $package
 Pin: origin \"packages.sury.org\" 
-Pin-Priority: -1" >> "/etc/apt/preferences.d/extra_php_version"
+Pin-Priority: -1" >> "${pending_dir}/etc/apt/preferences.d/extra_php_version"
     done
 }
 
 do_post_regen() {
   regen_conf_files=$1
+
+  # Make sure php7.3 is the default version when using php in cli
+  update-alternatives --set php /usr/bin/php7.3
 }
 
 FORCE=${2:-0}

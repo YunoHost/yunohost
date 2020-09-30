@@ -59,9 +59,28 @@ def domain_list(exclude_subdomains=False):
             parent_domain = domain.split(".", 1)[1]
             if parent_domain in result:
                 continue
+
         result_list.append(domain)
 
+    def cmp_domain(domain1, domain2):
+        # Keep the main part of the domain and the extension together
+        # eg: this.is.an.example.com -> ['example.com', 'an', 'is', 'this']
+        domain1 = domain1.split('.')
+        domain2 = domain2.split('.')
+        domain1[-1] = domain1[-2] + domain1.pop()
+        domain2[-1] = domain2[-2] + domain2.pop()
+        domain1 = list(reversed(domain1))
+        domain2 = list(reversed(domain2))
+        return cmp(domain1, domain2)
+
+    result_list = sorted(result_list, cmp_domain)
+
     return {'domains': result_list}
+  
+    return {
+        'domains': result_list,
+        'main': _get_maindomain()
+    }
 
 
 @is_unit_operation()

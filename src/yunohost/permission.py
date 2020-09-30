@@ -36,7 +36,7 @@ from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.user')
 
-SYSTEM_PERMS = ["mail", "xmpp", "stfp"]
+SYSTEM_PERMS = ["mail", "xmpp", "sftp", "ssh"]
 
 #
 #

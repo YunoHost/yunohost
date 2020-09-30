@@ -39,6 +39,7 @@ from collections import OrderedDict
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
+from moulinette.utils.process import run_commands
 from moulinette.utils.filesystem import read_file, read_json, read_toml, read_yaml, write_to_file, write_to_json, write_to_yaml, chmod, chown, mkdir
 
 from yunohost.service import service_status, _run_service_command
@@ -58,12 +59,6 @@ APPS_CATALOG_CONF = '/etc/yunohost/apps_catalog.yml'
 APPS_CATALOG_CRON_PATH = "/etc/cron.daily/yunohost-fetch-apps-catalog"
 APPS_CATALOG_API_VERSION = 2
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
-
-re_github_repo = re.compile(
-    r'^(http[s]?://|git@)github.com[/:]'
-    '(?P<owner>[\w\-_]+)/(?P<repo>[\w\-_]+)(.git)?'
-    '(/tree/(?P<tree>.+))?'
-)
 
 re_app_instance_name = re.compile(
     r'^(?P<appid>[\w-]+?)(__(?P<appinstancenb>[1-9][0-9]*))?$'
@@ -2171,61 +2166,13 @@ def _fetch_app_from_git(app):
 
     logger.debug(m18n.n('downloading'))
 
+    # Extract URL, branch and revision to download
     if ('@' in app) or ('http://' in app) or ('https://' in app):
         url = app
         branch = 'master'
-        github_repo = re_github_repo.match(app)
-        if github_repo:
-            if github_repo.group('tree'):
-                branch = github_repo.group('tree')
-            url = "https://github.com/{owner}/{repo}".format(
-                owner=github_repo.group('owner'),
-                repo=github_repo.group('repo'),
-            )
-            tarball_url = "{url}/archive/{tree}.zip".format(
-                url=url, tree=branch
-            )
-            try:
-                subprocess.check_call([
-                    'wget', '-qO', app_tmp_archive, tarball_url])
-            except subprocess.CalledProcessError:
-                logger.exception('unable to download %s', tarball_url)
-                raise YunohostError('app_sources_fetch_failed')
-            else:
-                manifest, extracted_app_folder = _extract_app_from_file(
-                    app_tmp_archive, remove=True)
-        else:
-            tree_index = url.rfind('/tree/')
-            if tree_index > 0:
-                url = url[:tree_index]
-                branch = app[tree_index + 6:]
-            try:
-                # We use currently git 2.1 so we can't use --shallow-submodules
-                # option. When git will be in 2.9 (with the new debian version)
-                # we will be able to use it. Without this option all the history
-                # of the submodules repo is downloaded.
-                subprocess.check_call([
-                    'git', 'clone', '-b', branch, '--single-branch', '--recursive', '--depth=1', url,
-                    extracted_app_folder])
-                subprocess.check_call([
-                    'git', 'reset', '--hard', branch
-                ], cwd=extracted_app_folder)
-                manifest = _get_manifest_of_app(extracted_app_folder)
-            except subprocess.CalledProcessError:
-                raise YunohostError('app_sources_fetch_failed')
-            except ValueError as e:
-                raise YunohostError('app_manifest_invalid', error=e)
-            else:
-                logger.debug(m18n.n('done'))
-
-        # Store remote repository info into the returned manifest
-        manifest['remote'] = {'type': 'git', 'url': url, 'branch': branch}
-        try:
-            revision = _get_git_last_commit_hash(url, branch)
-        except Exception as e:
-            logger.debug("cannot get last commit hash because: %s ", e)
-        else:
-            manifest['remote']['revision'] = revision
+        if "/tree/" in url:
+            url, branch = url.split("/tree/", 1)
+        revision = 'HEAD'
     else:
         app_dict = _load_apps_catalog()["apps"]
 
@@ -2237,47 +2184,39 @@ def _fetch_app_from_git(app):
             raise YunohostError('app_unsupported_remote_type')
 
         app_info = app_dict[app_id]
-        app_info['manifest']['lastUpdate'] = app_info['lastUpdate']
-        manifest = app_info['manifest']
         url = app_info['git']['url']
+        branch = app_info['git']['branch']
+        revision = str(app_info['git']['revision'])
 
-        if 'github.com' in url:
-            tarball_url = "{url}/archive/{tree}.zip".format(
-                url=url, tree=app_info['git']['revision']
-            )
-            try:
-                subprocess.check_call([
-                    'wget', '-qO', app_tmp_archive, tarball_url])
-            except subprocess.CalledProcessError:
-                logger.exception('unable to download %s', tarball_url)
-                raise YunohostError('app_sources_fetch_failed')
-            else:
-                manifest, extracted_app_folder = _extract_app_from_file(
-                    app_tmp_archive, remove=True)
-        else:
-            try:
-                subprocess.check_call([
-                    'git', 'clone', app_info['git']['url'],
-                    '-b', app_info['git']['branch'], extracted_app_folder])
-                subprocess.check_call([
-                    'git', 'reset', '--hard',
-                    str(app_info['git']['revision'])
-                ], cwd=extracted_app_folder)
-                manifest = _get_manifest_of_app(extracted_app_folder)
-            except subprocess.CalledProcessError:
-                raise YunohostError('app_sources_fetch_failed')
-            except ValueError as e:
-                raise YunohostError('app_manifest_invalid', error=e)
-            else:
-                logger.debug(m18n.n('done'))
+    # Download only this commit
+    try:
+        # We don't use git clone because, git clone can't download
+        # a specific revision only
+        run_commands([['git', 'init', extracted_app_folder]], shell=False)
+        run_commands([
+            ['git', 'remote', 'add', 'origin', url],
+            ['git', 'fetch', '--depth=1', 'origin',
+                branch if revision == 'HEAD' else revision],
+            ['git', 'reset', '--hard', 'FETCH_HEAD']
+        ], cwd=extracted_app_folder, shell=False)
+        manifest = _get_manifest_of_app(extracted_app_folder)
+    except subprocess.CalledProcessError:
+        raise YunohostError('app_sources_fetch_failed')
+    except ValueError as e:
+        raise YunohostError('app_manifest_invalid', error=e)
+    else:
+        logger.debug(m18n.n('done'))
 
-        # Store remote repository info into the returned manifest
-        manifest['remote'] = {
-            'type': 'git',
-            'url': url,
-            'branch': app_info['git']['branch'],
-            'revision': app_info['git']['revision'],
-        }
+    # Store remote repository info into the returned manifest
+    manifest['remote'] = {'type': 'git', 'url': url, 'branch': branch}
+    if revision == 'HEAD':
+        try:
+            manifest['remote']['revision'] = _get_git_last_commit_hash(url, branch)
+        except Exception as e:
+            logger.debug("cannot get last commit hash because: %s ", e)
+    else:
+        manifest['remote']['revision'] = revision
+        manifest['lastUpdate'] = app_info['lastUpdate']
 
     return manifest, extracted_app_folder
 
@@ -2442,6 +2381,225 @@ def _parse_args_for_action(action, args={}):
     return _parse_args_in_yunohost_format(args, action_args)
 
 
+class Question:
+    "empty class to store questions information"
+
+
+class YunoHostArgumentFormatParser(object):
+    hide_user_input_in_prompt = False
+
+    def parse_question(self, question, user_answers):
+        parsed_question = Question()
+
+        parsed_question.name = question['name']
+        parsed_question.default = question.get('default', None)
+        parsed_question.choices = question.get('choices', [])
+        parsed_question.optional = question.get('optional', False)
+        parsed_question.ask = question.get('ask')
+        parsed_question.value = user_answers.get(parsed_question.name)
+
+        if parsed_question.ask is None:
+            parsed_question.ask = "Enter value for '%s':" % parsed_question.name
+
+        return parsed_question
+
+    def parse(self, question, user_answers):
+        question = self.parse_question(question, user_answers)
+
+        if question.value is None:
+            text_for_user_input_in_cli = self._format_text_for_user_input_in_cli(question)
+
+            try:
+                question.value = msignals.prompt(text_for_user_input_in_cli, self.hide_user_input_in_prompt)
+            except NotImplementedError:
+                question.value = None
+
+        # we don't have an answer, check optional and default_value
+        if question.value is None or question.value == '':
+            if not question.optional and question.default is None:
+                raise YunohostError('app_argument_required', name=question.name)
+            else:
+                question.value = getattr(self, "default_value", None) if question.default is None else question.default
+
+        # we have an answer, do some post checks
+        if question.value is not None:
+            if question.choices and question.value not in question.choices:
+                self._raise_invalid_answer(question)
+
+        # this is done to enforce a certain formating like for boolean
+        # by default it doesn't do anything
+        question.value = self._post_parse_value(question)
+
+        return (question.value, self.argument_type)
+
+    def _raise_invalid_answer(self, question):
+        raise YunohostError('app_argument_choice_invalid', name=question.name,
+                            choices=', '.join(question.choices))
+
+    def _format_text_for_user_input_in_cli(self, question):
+        text_for_user_input_in_cli = _value_for_locale(question.ask)
+
+        if question.choices:
+            text_for_user_input_in_cli += ' [{0}]'.format(' | '.join(question.choices))
+
+        if question.default is not None:
+            text_for_user_input_in_cli += ' (default: {0})'.format(question.default)
+
+        return text_for_user_input_in_cli
+
+    def _post_parse_value(self, question):
+        return question.value
+
+
+class StringArgumentParser(YunoHostArgumentFormatParser):
+    argument_type = "string"
+    default_value = ""
+
+
+class PasswordArgumentParser(YunoHostArgumentFormatParser):
+    hide_user_input_in_prompt = True
+    argument_type = "password"
+    default_value = ""
+    forbidden_chars = "{}"
+
+    def parse_question(self, question, user_answers):
+        question = super(PasswordArgumentParser, self).parse_question(question, user_answers)
+
+        if question.default is not None:
+            raise YunohostError('app_argument_password_no_default', name=question.name)
+
+        return question
+
+    def _post_parse_value(self, question):
+        if any(char in question.value for char in self.forbidden_chars):
+            raise YunohostError('pattern_password_app', forbidden_chars=self.forbidden_chars)
+
+        from yunohost.utils.password import assert_password_is_strong_enough
+        assert_password_is_strong_enough('user', question.value)
+
+        return super(PasswordArgumentParser, self)._post_parse_value(question)
+
+
+class PathArgumentParser(YunoHostArgumentFormatParser):
+    argument_type = "path"
+    default_value = ""
+
+
+class BooleanArgumentParser(YunoHostArgumentFormatParser):
+    argument_type = "boolean"
+    default_value = False
+
+    def parse_question(self, question, user_answers):
+        question = super(BooleanArgumentParser, self).parse_question(question, user_answers)
+
+        if question.default is None:
+            question.default = False
+
+        return question
+
+    def _format_text_for_user_input_in_cli(self, question):
+        text_for_user_input_in_cli = _value_for_locale(question.ask)
+
+        text_for_user_input_in_cli += " [yes | no]"
+
+        if question.default is not None:
+            formatted_default = "yes" if question.default else "no"
+            text_for_user_input_in_cli += ' (default: {0})'.format(formatted_default)
+
+        return text_for_user_input_in_cli
+
+    def _post_parse_value(self, question):
+        if isinstance(question.value, bool):
+            return 1 if question.value else 0
+
+        if str(question.value).lower() in ["1", "yes", "y"]:
+            return 1
+
+        if str(question.value).lower() in ["0", "no", "n"]:
+            return 0
+
+        raise YunohostError('app_argument_choice_invalid', name=question.name,
+                            choices='yes, no, y, n, 1, 0')
+
+
+class DomainArgumentParser(YunoHostArgumentFormatParser):
+    argument_type = "domain"
+
+    def parse_question(self, question, user_answers):
+        from yunohost.domain import domain_list, _get_maindomain
+
+        question = super(DomainArgumentParser, self).parse_question(question, user_answers)
+
+        if question.default is None:
+            question.default = _get_maindomain()
+
+        question.choices = domain_list()["domains"]
+
+        return question
+
+    def _raise_invalid_answer(self, question):
+        raise YunohostError('app_argument_invalid', name=question.name,
+                            error=m18n.n('domain_unknown'))
+
+
+class UserArgumentParser(YunoHostArgumentFormatParser):
+    argument_type = "user"
+
+    def parse_question(self, question, user_answers):
+        from yunohost.user import user_list, user_info
+        from yunohost.domain import _get_maindomain
+
+        question = super(UserArgumentParser, self).parse_question(question, user_answers)
+        question.choices = user_list()["users"]
+        if question.default is None:
+            root_mail = "root@%s" % _get_maindomain()
+            for user in question.choices.keys():
+                if root_mail in user_info(user).get("mail-aliases", []):
+                    question.default = user
+                    break
+
+        return question
+
+    def _raise_invalid_answer(self, question):
+        raise YunohostError('app_argument_invalid', name=question.name,
+                            error=m18n.n('user_unknown', user=question.value))
+
+
+class AppArgumentParser(YunoHostArgumentFormatParser):
+    argument_type = "app"
+
+    def parse_question(self, question, user_answers):
+        from yunohost.app import app_list
+
+        question = super(AppArgumentParser, self).parse_question(question, user_answers)
+        question.choices = [x["id"] for x in app_list()["apps"]]
+
+        return question
+
+    def _raise_invalid_answer(self, question):
+        raise YunohostError('app_argument_invalid', name=question.name,
+                            error=m18n.n('app_unknown'))
+
+
+class DisplayTextArgumentParser(YunoHostArgumentFormatParser):
+    argument_type = "display_text"
+
+    def parse(self, question, user_answers):
+        print(question["ask"])
+
+
+ARGUMENTS_TYPE_PARSERS = {
+    "string": StringArgumentParser,
+    "password": PasswordArgumentParser,
+    "path": PathArgumentParser,
+    "boolean": BooleanArgumentParser,
+    "domain": DomainArgumentParser,
+    "user": UserArgumentParser,
+    "app": AppArgumentParser,
+    "display_text": DisplayTextArgumentParser,
+}
+
+
 def _parse_args_in_yunohost_format(user_answers, argument_questions):
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
@@ -2453,128 +2611,14 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
                               format from actions.json/toml, manifest.json/toml
                               or config_panel.json/toml
     """
-    from yunohost.domain import domain_list, _get_maindomain
-    from yunohost.user import user_list, user_info
-
     parsed_answers_dict = OrderedDict()
 
     for question in argument_questions:
-        question_name = question['name']
-        question_type = question.get('type', 'string')
-        question_default = question.get('default', None)
-        question_choices = question.get('choices', [])
-        question_value = None
+        parser = ARGUMENTS_TYPE_PARSERS[question.get("type", "string")]()
 
-        # Transpose default value for boolean type and set it to
-        # false if not defined.
-        if question_type == 'boolean':
-            question_default = 1 if question_default else 0
-
-        # do not print for webadmin
-        if question_type == 'display_text' and msettings.get('interface') != 'api':
-            print(_value_for_locale(question['ask']))
-            continue
-
-        # Attempt to retrieve argument value
-        if question_name in user_answers:
-            question_value = user_answers[question_name]
-        else:
-            if 'ask' in question:
-
-                if question_type == 'domain':
-                    question_default = _get_maindomain()
-                    msignals.display(m18n.n('domains_available'))
-                    for domain in domain_list()['domains']:
-                        msignals.display("- {}".format(domain))
-
-                elif question_type == 'user':
-                    msignals.display(m18n.n('users_available'))
-                    users = user_list()['users']
-                    for user in users.keys():
-                        msignals.display("- {}".format(user))
-
-                    root_mail = "root@%s" % _get_maindomain()
-                    for user in users.keys():
-                        if root_mail in user_info(user).get("mail-aliases", []):
-                            question_default = user
-                            break
-
-                elif question_type == 'password':
-                    msignals.display(m18n.n('good_practices_about_user_password'))
-
-                # Retrieve proper ask string
-                text_for_user_input_in_cli = _value_for_locale(question['ask'])
-
-                # Append extra strings
-                if question_type == 'boolean':
-                    text_for_user_input_in_cli += ' [yes | no]'
-                elif question_choices:
-                    text_for_user_input_in_cli += ' [{0}]'.format(' | '.join(question_choices))
-
-
-                if question_default is not None:
-                    if question_type == 'boolean':
-                        text_for_user_input_in_cli += ' (default: {0})'.format("yes" if question_default == 1 else "no")
-                    else:
-                        text_for_user_input_in_cli += ' (default: {0})'.format(question_default)
-
-                is_password = True if question_type == 'password' else False
-
-                try:
-                    input_string = msignals.prompt(text_for_user_input_in_cli, is_password)
-                except NotImplementedError:
-                    input_string = None
-                if (input_string == '' or input_string is None) \
-                        and question_default is not None:
-                    question_value = question_default
-                else:
-                    question_value = input_string
-            elif question_default is not None:
-                question_value = question_default
-
-        # If the value is empty (none or '')
-        # then check if question is optional or not
-        if question_value is None or question_value == '':
-            if question.get("optional", False):
-                # Argument is optional, keep an empty value
-                # and that's all for this question!
-                parsed_answers_dict[question_name] = ('', question_type)
-                continue
-            else:
-                # The argument is required !
-                raise YunohostError('app_argument_required', name=question_name)
-
-        # Validate argument choice
-        if question_choices and question_value not in question_choices:
-            raise YunohostError('app_argument_choice_invalid', name=question_name, choices=', '.join(question_choices))
-
-        # Validate argument type
-        if question_type == 'domain':
-            if question_value not in domain_list()['domains']:
-                raise YunohostError('app_argument_invalid', name=question_name, error=m18n.n('domain_unknown'))
-        elif question_type == 'user':
-            if question_value not in user_list()["users"].keys():
-                raise YunohostError('app_argument_invalid', name=question_name, error=m18n.n('user_unknown', user=question_value))
-        elif question_type == 'app':
-            if not _is_installed(question_value):
-                raise YunohostError('app_argument_invalid', name=question_name, error=m18n.n('app_unknown'))
-        elif question_type == 'boolean':
-            if isinstance(question_value, bool):
-                question_value = 1 if question_value else 0
-            else:
-                if str(question_value).lower() in ["1", "yes", "y"]:
-                    question_value = 1
-                elif str(question_value).lower() in ["0", "no", "n"]:
-                    question_value = 0
-                else:
-                    raise YunohostError('app_argument_choice_invalid', name=question_name, choices='yes, no, y, n, 1, 0')
-        elif question_type == 'password':
-            forbidden_chars = "{}"
-            if any(char in question_value for char in forbidden_chars):
-                raise YunohostError('pattern_password_app', forbidden_chars=forbidden_chars)
-            from yunohost.utils.password import assert_password_is_strong_enough
-            assert_password_is_strong_enough('user', question_value)
-        parsed_answers_dict[question_name] = (question_value, question_type)
+        answer = parser.parse(question=question, user_answers=user_answers)
+        if answer is not None:
+            parsed_answers_dict[question["name"]] = answer
 
     return parsed_answers_dict
 
