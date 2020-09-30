@@ -95,7 +95,8 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
 
     # Make sure labels for sub-permissions are the form " Applabel (Sublabel) "
     if full:
-        for name, infos in {k: v for k, v in permissions.items() if not k.endswith(".main")}:
+        subpermissions = {k: v for k, v in permissions.items() if not k.endswith(".main")}
+        for name, infos in subpermissions.items():
             main_perm_name = name.split(".")[0] + ".main"
             main_perm_label = permissions[main_perm_name]["label"]
             infos["label"] = "%s (%s)" % (main_perm_label, infos["label"])
