@@ -5,4 +5,4 @@ set +x
 for helper in $(run-parts --list /usr/share/yunohost/helpers.d 2>/dev/null) ; do
     [ -r $helper ] && . $helper || true
 done
-eval "$XTRACE_BKP"
+eval "$XTRACE_ENABLE"
