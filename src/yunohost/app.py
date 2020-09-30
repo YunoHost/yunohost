@@ -317,7 +317,6 @@ def app_change_url(operation_logger, app, domain, path):
 
     """
     from yunohost.hook import hook_exec, hook_callback
-    from yunohost.domain import _normalize_domain_path, _assert_no_conflicting_apps
 
     installed = _is_installed(app)
     if not installed:
@@ -1308,10 +1307,6 @@ def app_register_url(app, domain, path):
         domain -- The domain on which the app should be registered (e.g. your.domain.tld)
         path -- The path to be registered (e.g. /coffee)
     """
-
-    # This line can't be moved on top of file, otherwise it creates an infinite
-    # loop of import with tools.py...
-    from .domain import _assert_no_conflicting_apps, _normalize_domain_path
 
     domain, path = _normalize_domain_path(domain, path)
 
@@ -2586,8 +2581,6 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
 
 def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
 
-    from yunohost.domain import _assert_no_conflicting_apps, _normalize_domain_path
-
     # If there's only one "domain" and "path", validate that domain/path
     # is an available url and normalize the path.
 
@@ -2625,6 +2618,82 @@ def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
 
             domain = domain_args[0][1]
             _assert_no_conflicting_apps(domain, "/", full_domain=True)
+
+
+def _normalize_domain_path(domain, path):
+
+    # We want url to be of the format :
+    #  some.domain.tld/foo
+
+    # Remove http/https prefix if it's there
+    if domain.startswith("https://"):
+        domain = domain[len("https://"):]
+    elif domain.startswith("http://"):
+        domain = domain[len("http://"):]
+
+    # Remove trailing slashes
+    domain = domain.rstrip("/").lower()
+    path = "/" + path.strip("/")
+
+    return domain, path
+
+
+def _get_conflicting_apps(domain, path, ignore_app=None):
+    """
+    Return a list of all conflicting apps with a domain/path (it can be empty)
+
+    Keyword argument:
+        domain -- The domain for the web path (e.g. your.domain.tld)
+        path -- The path to check (e.g. /coffee)
+        ignore_app -- An optional app id to ignore (c.f. the change_url usecase)
+    """
+
+    from yunohost.domain import domain_list
+
+    domain, path = _normalize_domain_path(domain, path)
+
+    # Abort if domain is unknown
+    if domain not in domain_list()['domains']:
+        raise YunohostError('domain_name_unknown', domain=domain)
+
+    # Fetch apps map
+    apps_map = app_map(raw=True)
+
+    # Loop through all apps to check if path is taken by one of them
+    conflicts = []
+    if domain in apps_map:
+        # Loop through apps
+        for p, a in apps_map[domain].items():
+            if a["id"] == ignore_app:
+                continue
+            if path == p:
+                conflicts.append((p, a["id"], a["label"]))
+            # We also don't want conflicts with other apps starting with
+            # same name
+            elif path.startswith(p) or p.startswith(path):
+                conflicts.append((p, a["id"], a["label"]))
+
+    return conflicts
+
+
+def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False):
+
+    conflicts = _get_conflicting_apps(domain, path, ignore_app)
+
+    if conflicts:
+        apps = []
+        for path, app_id, app_label in conflicts:
+            apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
+                domain=domain,
+                path=path,
+                app_id=app_id,
+                app_label=app_label,
+            ))
+
+        if full_domain:
+            raise YunohostError('app_full_domain_unavailable', domain=domain)
+        else:
+            raise YunohostError('app_location_unavailable', apps="\n".join(apps))
 
 
 def _make_environment_dict(args_dict, prefix="APP_ARG_"):

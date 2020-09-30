@@ -4,8 +4,8 @@ import os
 from conftest import get_test_apps_dir
 
 from yunohost.utils.error import YunohostError
-from yunohost.app import app_install, app_remove
-from yunohost.domain import _get_maindomain, domain_url_available, _normalize_domain_path
+from yunohost.app import app_install, app_remove, _normalize_domain_path
+from yunohost.domain import _get_maindomain, domain_url_available
 from yunohost.permission import _validate_and_sanitize_permission_url
 
 # Get main domain

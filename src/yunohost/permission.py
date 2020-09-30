@@ -676,8 +676,8 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
        re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
     """
 
-    from yunohost.domain import domain_list, _assert_no_conflicting_apps
-
+    from yunohost.domain import domain_list
+    from yunohost.app import _assert_no_conflicting_apps
 
     domains = domain_list()['domains']
 
