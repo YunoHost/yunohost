@@ -292,10 +292,13 @@ def can_access_webpage(webpath, logged_as=None):
 def test_permission_list():
     res = user_permission_list(full=True)['permissions']
 
-    assert "wiki.main" in res
-    assert "blog.main" in res
     assert "mail.main" in res
     assert "xmpp.main" in res
+
+    assert "wiki.main" in res
+    assert "blog.main" in res
+    assert "blog.api" in res
+
     assert res['wiki.main']['allowed'] == ["all_users"]
     assert res['blog.main']['allowed'] == ["alice"]
     assert res['blog.api']['allowed'] == ["visitors"]
@@ -385,26 +388,26 @@ def test_permission_create_with_tile_management_with_main_default_value(mocker):
     assert res['site.main']['show_tile'] == True
 
 def test_permission_create_with_tile_management_with_not_main_default_value(mocker):
-    with message(mocker, "permission_created", permission="site.api"):
-        _permission_create_with_dummy_app("site.api", allowed=["all_users"], show_tile=True, url="/",
+    with message(mocker, "permission_created", permission="wiki.api"):
+        _permission_create_with_dummy_app("wiki.api", allowed=["all_users"], show_tile=True, url="/",
                                           domain=maindomain, path='/site')
 
     res = user_permission_list(full=True)['permissions']
-    assert "site.api" in res
-    assert res['site.api']['label'] == "Site (api)"
-    assert res['site.api']['show_tile'] == True
+    assert "wiki.api" in res
+    assert res['wiki.api']['label'] == "Wiki (api)"
+    assert res['wiki.api']['show_tile'] == True
 
 
 def test_permission_create_with_urls_management_without_url(mocker):
-    with message(mocker, "permission_created", permission="site.api"):
-        _permission_create_with_dummy_app("site.api", allowed=["all_users"],
+    with message(mocker, "permission_created", permission="wiki.api"):
+        _permission_create_with_dummy_app("wiki.api", allowed=["all_users"],
                                           domain=maindomain, path='/site')
 
     res = user_permission_list(full=True)['permissions']
-    assert "site.api" in res
-    assert res['site.api']['url'] == None
-    assert res['site.api']['additional_urls'] == []
-    assert res['site.api']['auth_header'] == True
+    assert "wiki.api" in res
+    assert res['wiki.api']['url'] == None
+    assert res['wiki.api']['additional_urls'] == []
+    assert res['wiki.api']['auth_header'] == True
 
 
 def test_permission_create_with_urls_management_simple_domain(mocker):

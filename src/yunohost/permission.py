@@ -98,6 +98,9 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
         subpermissions = {k: v for k, v in permissions.items() if not k.endswith(".main")}
         for name, infos in subpermissions.items():
             main_perm_name = name.split(".")[0] + ".main"
+            if main_perm_name not in permissions:
+                logger.debug("Uhoh, unknown permission %s ? (Maybe we're in the process or deleting the perm for this app...)" % main_perm_name)
+                continue
             main_perm_label = permissions[main_perm_name]["label"]
             infos["label"] = "%s (%s)" % (main_perm_label, infos["label"])
 
@@ -321,15 +324,16 @@ def permission_create(operation_logger, permission, allowed=None,
         gid = str(random.randint(200, 99999))
         uid_guid_found = gid not in all_gid
 
+    app, subperm = permission.split(".")
+
     attr_dict = {
         'objectClass': ['top', 'permissionYnh', 'posixGroup'],
         'cn': str(permission),
         'gidNumber': gid,
         'authHeader': ['TRUE'],
-        'label': [str(permission.split('.')[0].title() if permission.endswith('.main')
-                  else "%s (%s)" % (permission.split('.')[0].title(), permission.split('.')[1]))],
-        'showTile': ['FALSE'], # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
-        'isProtected': ['FALSE'] # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
+        'label': [str(label) if label else (subperm if subperm != "main" else app.title())],
+        'showTile': ['FALSE'],  # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
+        'isProtected': ['FALSE']  # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
     }
 
     if allowed is not None:
@@ -571,40 +575,35 @@ def _update_ldap_group_permission(permission, allowed,
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
 
-    # Fetch currently allowed groups for this permission
     existing_permission = user_permission_list(full=True, full_path=False)["permissions"][permission]
 
-    if allowed is None:
-        allowed = existing_permission['allowed']
+    update = {}
 
-    if label is None:
-        label = existing_permission["label"]
+    if allowed is not None:
+        allowed = [allowed] if not isinstance(allowed, list) else allowed
+        # Guarantee uniqueness of values in allowed, which would otherwise make ldap.update angry.
+        allowed = set(allowed)
+        update['groupPermission'] = ['cn=' + g + ',ou=groups,dc=yunohost,dc=org' for g in allowed]
 
-    if show_tile is None:
-        show_tile = existing_permission["show_tile"]
-    elif show_tile is True:
-        if not existing_permission['url']:
-            logger.warning(m18n.n('show_tile_cant_be_enabled_for_url_not_defined', permission=permission))
-            show_tile = False
-        elif existing_permission['url'].startswith('re:'):
-            logger.warning(m18n.n('show_tile_cant_be_enabled_for_regex', permission=permission))
-            show_tile = False
+    if label is not None:
+        update["label"] = [str(label)]
 
-    if protected is None:
-        protected = existing_permission["protected"]
+    if protected is not None:
+        update["isProtected"] = [str(protected).upper()]
 
-    allowed = [allowed] if not isinstance(allowed, list) else allowed
+    if show_tile is not None:
 
-    # Guarantee uniqueness of values in allowed, which would otherwise make ldap.update angry.
-    allowed = set(allowed)
+        if show_tile is True:
+            if not existing_permission['url']:
+                logger.warning(m18n.n('show_tile_cant_be_enabled_for_url_not_defined', permission=permission))
+                show_tile = False
+            elif existing_permission['url'].startswith('re:'):
+                logger.warning(m18n.n('show_tile_cant_be_enabled_for_regex', permission=permission))
+                show_tile = False
+        update["showTile"] = [str(show_tile).upper()]
 
     try:
-        ldap.update('cn=%s,ou=permission' % permission,
-                    {'groupPermission': ['cn=' + g + ',ou=groups,dc=yunohost,dc=org' for g in allowed],
-                     'label': [str(label)] if label != "" else [],
-                     'showTile': [str(show_tile).upper()],
-                     'isProtected': [str(protected).upper()]
-                     })
+        ldap.update('cn=%s,ou=permission' % permission, update)
     except Exception as e:
         raise YunohostError('permission_update_failed', permission=permission, error=e)
 
