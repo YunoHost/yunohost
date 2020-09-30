@@ -2624,7 +2624,7 @@ def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
            and re.search(r"(ynh_webpath_register|yunohost app checkurl)", install_script_content):
 
             domain = domain_args[0][1]
-            _assert_no_conflicting_apps(domain, "/")
+            _assert_no_conflicting_apps(domain, "/", full_domain=True)
 
 
 def _make_environment_dict(args_dict, prefix="APP_ARG_"):

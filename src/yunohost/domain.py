@@ -388,7 +388,8 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
 
     return conflicts
 
-def _assert_no_conflicting_apps(domain, path, ignore_app=None):
+
+def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False):
 
     conflicts = _get_conflicting_apps(domain, path, ignore_app)
 
@@ -402,7 +403,10 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None):
                 app_label=app_label,
             ))
 
-        raise YunohostError('app_location_unavailable', apps="\n".join(apps))
+        if full_domain:
+            raise YunohostError('app_full_domain_unavailable', domain=domain)
+        else:
+            raise YunohostError('app_location_unavailable', apps="\n".join(apps))
 
 
 def domain_url_available(domain, path):
