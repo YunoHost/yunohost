@@ -7,7 +7,7 @@ from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
 from yunohost.app import app_setting, _installed_apps
-from yunohost.permission import user_permission_list, permission_create, permission_sync_to_user, permission_list
+from yunohost.permission import user_permission_list, permission_create, permission_sync_to_user
 from yunohost.utils.legacy import legacy_permission_label
 
 logger = getActionLogger('yunohost.migration')
@@ -112,7 +112,7 @@ class MyMigration(Migration):
             if protected_urls != []:
                 permission_create(app + ".legacy_protected_uris", additional_urls=protected_urls,
                                   auth_header=True, label=legacy_permission_label(app, "protected"),
-                                  show_tile=False, allowed=permission_list()['permissions'][app + ".main"]['allowed'],
+                                  show_tile=False, allowed=user_permission_list()['permissions'][app + ".main"]['allowed'],
                                   protected=True, sync_perm=False)
 
             app_setting(app, 'skipped_uris', delete=True)
