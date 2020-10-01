@@ -305,12 +305,10 @@ def test_permission_list():
     assert set(res['wiki.main']['corresponding_users']) == set(["alice", "bob"])
     assert res['blog.main']['corresponding_users'] == ["alice"]
     assert res['blog.api']['corresponding_users'] == []
-    assert res['wiki.main']['url'] == maindomain + "/wiki"
-    assert res['blog.main']['url'] == maindomain + "/blog"
+    assert res['wiki.main']['url'] == "/"
+    assert res['blog.main']['url'] == "/"
     assert res['blog.api']['url'] == None
-    assert set(res['wiki.main']['additional_urls']) == {maindomain + '/wiki/whatever', maindomain + '/wiki/idontnow'}
-    assert res['blog.main']['additional_urls'] == []
-    assert res['blog.api']['additional_urls'] == []
+    assert set(res['wiki.main']['additional_urls']) == {'/whatever', '/idontnow'}
     assert res['wiki.main']['protected'] == False
     assert res['blog.main']['protected'] == False
     assert res['blog.api']['protected'] == True
@@ -324,10 +322,13 @@ def test_permission_list():
     assert res['blog.main']['auth_header'] == True
     assert res['blog.api']['auth_header'] == True
 
-    res = user_permission_list(full=True, full_path=False)['permissions']
-    assert res['wiki.main']['url'] == "/"
-    assert res['blog.main']['url'] == "/"
-    assert set(res['wiki.main']['additional_urls']) == {'/whatever', '/idontnow'}
+    res = user_permission_list(full=True, absolute_urls=True)['permissions']
+    assert res['wiki.main']['url'] == maindomain + "/wiki"
+    assert res['blog.main']['url'] == maindomain + "/blog"
+    assert res['blog.api']['url'] == None
+    assert set(res['wiki.main']['additional_urls']) == {maindomain + '/wiki/whatever', maindomain + '/wiki/idontnow'}
+    assert res['blog.main']['additional_urls'] == []
+    assert res['blog.api']['additional_urls'] == []
 
 
 #
@@ -416,7 +417,7 @@ def test_permission_create_with_urls_management_simple_domain(mocker):
                                           url="/", additional_urls=['/whatever','/idontnow'], auth_header=False,
                                           domain=maindomain, path='/site')
 
-    res = user_permission_list(full=True)['permissions']
+    res = user_permission_list(full=True, absolute_urls=True)['permissions']
     assert "site.main" in res
     assert res['site.main']['url'] == maindomain + "/site"
     assert set(res['site.main']['additional_urls']) == {maindomain + "/site/whatever", maindomain + "/site/idontnow"}
@@ -433,7 +434,7 @@ def test_permission_create_with_urls_management_multiple_domain(mocker):
                                           auth_header=True,
                                           domain=maindomain, path='/site')
 
-    res = user_permission_list(full=True)['permissions']
+    res = user_permission_list(full=True, absolute_urls=True)['permissions']
     assert "site.main" in res
     assert res['site.main']['url'] == maindomain + "/site/something"
     assert set(res['site.main']['additional_urls']) == {other_domains[0] + "/blabla", other_domains[1] + "/ahh"}
@@ -640,7 +641,7 @@ def test_permission_protected_update(mocker):
 def test_permission_redefine_url():
     permission_url("blog.main", url="/pwet")
 
-    res = user_permission_list(full=True, full_path=False)['permissions']
+    res = user_permission_list(full=True)['permissions']
     assert res["blog.main"]["url"] == "/pwet"
 
 
@@ -654,10 +655,10 @@ def test_permission_remove_url():
 def test_permission_main_url_regex():
     permission_url("blog.main", url="re:/[a-z]+reboy/.*")
 
-    res = user_permission_list(full=True, full_path=False)['permissions']
+    res = user_permission_list(full=True)['permissions']
     assert res["blog.main"]["url"] == "re:/[a-z]+reboy/.*"
 
-    res = user_permission_list(full=True, full_path=True)['permissions']
+    res = user_permission_list(full=True, absolute_urls=True)['permissions']
     assert res["blog.main"]["url"] == "re:%s/blog/[a-z]+reboy/.*" % maindomain.replace('.', '\.')
 
 
@@ -670,7 +671,7 @@ def test_permission_main_url_bad_regex(mocker):
 def test_permission_add_additional_url():
     permission_url("wiki.main", add_url=[other_domains[0] + "/heyby", "/myhouse"])
 
-    res = user_permission_list(full=True)['permissions']
+    res = user_permission_list(full=True, absolute_urls=True)['permissions']
     assert res['wiki.main']['url'] == maindomain + "/wiki"
     assert set(res['wiki.main']['additional_urls']) == {maindomain + '/wiki/whatever',
                                                         maindomain + '/wiki/idontnow',
@@ -681,10 +682,10 @@ def test_permission_add_additional_url():
 def test_permission_add_additional_regex():
     permission_url("blog.main", add_url=["re:/[a-z]+reboy/.*"])
 
-    res = user_permission_list(full=True, full_path=False)['permissions']
+    res = user_permission_list(full=True)['permissions']
     assert res["blog.main"]["additional_urls"] == ["re:/[a-z]+reboy/.*"]
 
-    res = user_permission_list(full=True, full_path=True)['permissions']
+    res = user_permission_list(full=True, absolute_urls=True)['permissions']
     assert res["blog.main"]["additional_urls"] == ["re:%s/blog/[a-z]+reboy/.*" % maindomain.replace('.', '\.')]
 
 
@@ -696,7 +697,7 @@ def test_permission_add_additional_bad_regex(mocker):
 def test_permission_remove_additional_url():
     permission_url("wiki.main", remove_url=['/whatever'])
 
-    res = user_permission_list(full=True)['permissions']
+    res = user_permission_list(full=True, absolute_urls=True)['permissions']
     assert res['wiki.main']['url'] == maindomain + "/wiki"
     assert res['wiki.main']['additional_urls'] == [maindomain + '/wiki/idontnow']
 
@@ -705,7 +706,7 @@ def test_permssion_add_additional_url_already_exist():
     permission_url("wiki.main", add_url=['/whatever', "/myhouse"])
     permission_url("wiki.main", add_url=['/whatever'])
 
-    res = user_permission_list(full=True)['permissions']
+    res = user_permission_list(full=True, absolute_urls=True)['permissions']
     assert res['wiki.main']['url'] == maindomain + "/wiki"
     assert set(res['wiki.main']['additional_urls']) == {maindomain + '/wiki/whatever',
                                                         maindomain + '/wiki/idontnow',
@@ -716,7 +717,7 @@ def test_permission_remove_additional_url_dont_exist():
     permission_url("wiki.main", remove_url=['/shouldntexist', '/whatever'])
     permission_url("wiki.main", remove_url=['/shouldntexist'])
 
-    res = user_permission_list(full=True)['permissions']
+    res = user_permission_list(full=True, absolute_urls=True)['permissions']
     assert res['wiki.main']['url'] == maindomain + "/wiki"
     assert res['wiki.main']['additional_urls'] == [maindomain + '/wiki/idontnow']
 
@@ -814,7 +815,7 @@ def test_show_tile_cant_be_enabled():
                                       allowed=["all_users"], protected=False, sync_perm=True,
                                       domain=maindomain, path="/web")
 
-    permissions = user_permission_list(full=True, full_path=False)['permissions']
+    permissions = user_permission_list(full=True)['permissions']
 
     assert permissions['site.main']['show_tile'] == False
     assert permissions['web.main']['show_tile'] == False
@@ -830,7 +831,7 @@ def test_permission_app_install():
     app_install(os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
                 args="domain=%s&domain_2=%s&path=%s&is_public=0&admin=%s" % (maindomain, other_domains[0], "/urlpermissionapp", "alice"), force=True)
 
-    res = user_permission_list(full=True, full_path=False)['permissions']
+    res = user_permission_list(full=True)['permissions']
     assert "permissions_app.main" in res
     assert "permissions_app.admin" in res
     assert "permissions_app.dev" in res
@@ -871,14 +872,14 @@ def test_permission_app_change_url():
                 args="domain=%s&domain_2=%s&path=%s&admin=%s" % (maindomain, other_domains[0], "/urlpermissionapp", "alice"), force=True)
 
     # FIXME : should rework this test to look for differences in the generated app map / app tiles ...
-    res = user_permission_list(full=True, full_path=False)['permissions']
+    res = user_permission_list(full=True)['permissions']
     assert res['permissions_app.main']['url'] == "/"
     assert res['permissions_app.admin']['url'] == "/admin"
     assert res['permissions_app.dev']['url'] == "/dev"
 
     app_change_url("permissions_app", maindomain, "/newchangeurl")
 
-    res = user_permission_list(full=True, full_path=False)['permissions']
+    res = user_permission_list(full=True)['permissions']
     assert res['permissions_app.main']['url'] == "/"
     assert res['permissions_app.admin']['url'] == "/admin"
     assert res['permissions_app.dev']['url'] == "/dev"

@@ -45,7 +45,7 @@ SYSTEM_PERMS = ["mail", "xmpp", "sftp", "ssh"]
 #
 
 
-def user_permission_list(short=False, full=False, ignore_system_perms=False, full_path=True):
+def user_permission_list(short=False, full=False, ignore_system_perms=False, absolute_urls=False):
     """
     List permissions and corresponding accesses
     """
@@ -86,7 +86,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, ful
             perm["url"] = infos.get("URL", [None])[0]
             perm["additional_urls"] = infos.get("additionalUrls", [])
 
-            if full_path:
+            if absolute_urls:
                 app_base_path = apps_base_path[app] if app in apps_base_path else ""  # Meh in some situation where the app is currently installed/removed, this function may be called and we still need to act as if the corresponding permission indeed exists ... dunno if that's really the right way to proceed but okay.
                 perm["url"] = _get_absolute_url(perm["url"], app_base_path)
                 perm["additional_urls"] = [_get_absolute_url(url, app_base_path) for url in perm["additional_urls"]]
@@ -132,7 +132,7 @@ def user_permission_update(operation_logger, permission, add=None, remove=None,
     if "." not in permission:
         permission = permission + ".main"
 
-    existing_permission = user_permission_list(full=True, full_path=False)["permissions"].get(permission, None)
+    existing_permission = user_permission_info(permission)
 
     # Refuse to add "visitors" to mail, xmpp ... they require an account to make sense.
     if add and "visitors" in add and permission.split(".")[0] in SYSTEM_PERMS:
@@ -144,9 +144,6 @@ def user_permission_update(operation_logger, permission, add=None, remove=None,
         raise YunohostError('permission_protected', permission=permission)
 
     # Fetch currently allowed groups for this permission
-
-    if existing_permission is None:
-        raise YunohostError('permission_not_found', permission=permission)
 
     current_allowed_groups = existing_permission["allowed"]
     operation_logger.related_to.append(('app', permission.split(".")[0]))
@@ -223,9 +220,7 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
 
     # Fetch existing permission
 
-    existing_permission = user_permission_list(full=True, full_path=False)["permissions"].get(permission, None)
-    if existing_permission is None:
-        raise YunohostError('permission_not_found', permission=permission)
+    existing_permission = user_permission_info(permission)
 
     if existing_permission["allowed"] == ["all_users"]:
         logger.warning(m18n.n("permission_already_up_to_date"))
@@ -400,9 +395,7 @@ def permission_url(operation_logger, permission,
 
     # Fetch existing permission
 
-    existing_permission = user_permission_list(full=True, full_path=False)["permissions"].get(permission, None)
-    if not existing_permission:
-        raise YunohostError('permission_not_found', permission=permission)
+    existing_permission = user_permission_info(permission)
 
     show_tile = existing_permission['show_tile']
 
@@ -461,7 +454,7 @@ def permission_url(operation_logger, permission,
         permission_sync_to_user()
 
     logger.debug(m18n.n('permission_updated', permission=permission))
-    return user_permission_list(full=True)["permissions"][permission]
+    return user_permission_info(permission)
 
 
 @is_unit_operation()
@@ -485,9 +478,7 @@ def permission_delete(operation_logger, permission, force=False, sync_perm=True)
 
     # Make sure this permission exists
 
-    existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
-    if not existing_permission:
-        raise YunohostError('permission_not_found', permission=permission)
+    _ = user_permission_info(permission)
 
     # Actually delete the permission
 
@@ -516,7 +507,7 @@ def permission_sync_to_user():
     ldap = _get_ldap_interface()
 
     groups = user_group_list(full=True)["groups"]
-    permissions = user_permission_list(full=True, full_path=False)["permissions"]
+    permissions = user_permission_list(full=True)["permissions"]
 
     for permission_name, permission_infos in permissions.items():
 
@@ -575,7 +566,7 @@ def _update_ldap_group_permission(permission, allowed,
     from yunohost.utils.ldap import _get_ldap_interface
     ldap = _get_ldap_interface()
 
-    existing_permission = user_permission_list(full=True, full_path=False)["permissions"][permission]
+    existing_permission = user_permission_info(permission)
 
     update = {}
 
@@ -612,7 +603,7 @@ def _update_ldap_group_permission(permission, allowed,
     if sync_perm:
         permission_sync_to_user()
 
-    new_permission = user_permission_list(full=True)["permissions"][permission]
+    new_permission = user_permission_info(permission)
 
     # Trigger app callbacks
 

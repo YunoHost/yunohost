@@ -177,7 +177,7 @@ def app_info(app, full=False):
     ret['supports_backup_restore'] = (os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "backup")) and
                                       os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "restore")))
     ret['supports_multi_instance'] = is_true(local_manifest.get("multi_instance", False))
-    permissions = user_permission_list(full=True, full_path=True)["permissions"]
+    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
     ret['permissions'] = {p: i for p, i in permissions.items() if p.startswith(app + ".") and (i["url"] or i['additional_urls'])}
     return ret
 
@@ -249,7 +249,7 @@ def app_map(app=None, raw=False, user=None):
     else:
         apps = os.listdir(APPS_SETTING_PATH)
 
-    permissions = user_permission_list(full=True, full_path=True)["permissions"]
+    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
     for app_id in apps:
         app_settings = _get_app_settings(app_id)
         if not app_settings:
@@ -640,7 +640,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import user_permission_list, user_permission_update, permission_create, permission_url, permission_delete, permission_sync_to_user
+    from yunohost.permission import user_permission_list, user_permission_info, user_permission_update, permission_create, permission_url, permission_delete, permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
 
     # Fetch or extract sources
@@ -926,7 +926,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     app_settings = _get_app_settings(app_instance_name)
     domain = app_settings.get('domain', None)
     path = app_settings.get('path', None)
-    if domain and path and user_permission_list(full=True, full_path=False)['permissions'][app_instance_name + '.main']['url'] is None:
+    if domain and path and user_permission_info(app_instance_name + '.main')['url'] is None:
         permission_url(app_instance_name + ".main", url='/', sync_perm=False)
     user_permission_update(app_instance_name + ".main", show_tile=True, sync_perm=False)
 
@@ -1199,7 +1199,7 @@ def app_setting(app, key, value=None, delete=False):
 
         logger.warning("/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.")
         from permission import user_permission_list, user_permission_update, permission_create, permission_delete, permission_url
-        permissions = user_permission_list(full=True, full_path=False)['permissions']
+        permissions = user_permission_list(full=True)['permissions']
         permission_name = "%s.legacy_%s_uris" % (app, key.split('_')[0])
         permission = permissions.get(permission_name)
 
@@ -1331,7 +1331,7 @@ def app_ssowatconf():
 
     main_domain = _get_maindomain()
     domains = domain_list()['domains']
-    all_permissions = user_permission_list(full=True, ignore_system_perms=True, full_path=True)['permissions']
+    all_permissions = user_permission_list(full=True, ignore_system_perms=True, absolute_urls=True)['permissions']
 
     permissions = {
         'core_skipped': {

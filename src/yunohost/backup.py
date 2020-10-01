@@ -697,7 +697,7 @@ class BackupManager():
 
             # backup permissions
             logger.debug(m18n.n('backup_permission', app=app))
-            permissions = user_permission_list(full=True, full_path=False)["permissions"]
+            permissions = user_permission_list(full=True)["permissions"]
             this_app_permissions = {name: infos for name, infos in permissions.items() if name.startswith(app + ".")}
             write_to_yaml("%s/permissions.yml" % settings_dir, this_app_permissions)
 
@@ -1158,7 +1158,7 @@ class RestoreManager():
 
         # Backup old permission for apps
         # We need to do that because in case of an app is installed we can't remove the permission for this app
-        old_apps_permission = user_permission_list(ignore_system_perms=True, full=True, full_path=False)["permissions"]
+        old_apps_permission = user_permission_list(ignore_system_perms=True, full=True)["permissions"]
 
         # Start register change on system
         operation_logger = OperationLogger('backup_restore_system')
