@@ -735,7 +735,7 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
         # and (domain, path) to be   : (domain.tld, /app/admin)
         sanitized_url = "/" + url.strip("/")
         domain, path = split_domain_path(app_base_path)
-        path = "/" + path.strip("/") + sanitized_url.strip("/")
+        path = "/" + path.strip("/") + sanitized_url
 
     # uris with domain
     else:
