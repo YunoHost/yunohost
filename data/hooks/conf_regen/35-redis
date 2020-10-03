@@ -1,6 +1,7 @@
 #!/bin/bash
 
 do_pre_regen() {
+  :
 }
 
 do_post_regen() {
