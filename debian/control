@@ -15,7 +15,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , python-psutil, python-requests, python-dnspython, python-openssl
  , python-miniupnpc, python-dbus, python-jinja2
  , python-toml, python-packaging, python-publicsuffix
- , apt, apt-transport-https, dirmngr
+ , apt, apt-transport-https, apt-utils, dirmngr
  , php7.3-common, php7.3-fpm, php7.3-ldap, php7.3-intl
  , mariadb-server, php7.3-mysql
  , openssh-server, iptables, fail2ban, dnsutils, bind9utils
