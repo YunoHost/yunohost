@@ -1889,10 +1889,14 @@ def app_config_apply(operation_logger, app, args):
                         filename = args[generated_name + '[name]']
                         content = args[generated_name]
                         logger.debug("Save uploaded file %s from API into %s", filename, upload_dir)
-                        file_path = os.path.join(upload_dir, filename)
+                        
+                        # Filename is given by user of the API. For security reason, we have replaced 
+                        # os.path.join to avoid the user to be able to rewrite a file in filesystem
+                        # i.e. os.path.join("/foo", "/etc/passwd") == "/etc/passwd"
+                        file_path = os.path.normpath(upload_dir + "/" + filename)
                         i = 2
                         while os.path.exists(file_path):
-                            file_path = os.path.join(upload_dir, filename + (".%d" % i))
+                            file_path = os.path.normpath(upload_dir + "/" + filename + (".%d" % i))
                             i += 1
                         try:
                             with open(file_path, 'wb') as f:
