@@ -59,6 +59,20 @@ class MyMigration(Migration):
                     'showTile': ["FALSE"],
                     'isProtected': ["TRUE"],
                 })
+            elif permission.split('.')[0] == 'ssh':
+                ldap.update('cn=%s,ou=permission' % permission, {
+                    'authHeader': ["FALSE"],
+                    'label': ['SSH'],
+                    'showTile': ["FALSE"],
+                    'isProtected': ["TRUE"],
+                })
+            elif permission.split('.')[0] == 'sftp':
+                ldap.update('cn=%s,ou=permission' % permission, {
+                    'authHeader': ["FALSE"],
+                    'label': ['SFTP'],
+                    'showTile': ["FALSE"],
+                    'isProtected': ["TRUE"],
+                })
             else:
                 label = labels[permission.split('.')[0]].title()
 
