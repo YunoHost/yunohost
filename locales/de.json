@@ -451,5 +451,6 @@
     "diagnosis_description_basesystem": "Grundsystem",
     "diagnosis_security_vulnerable_to_meltdown": "Es scheint, als ob Sie durch die kritische Meltdown-Sicherheitslücke verwundbar sind",
     "diagnosis_regenconf_manually_modified": "Die Konfigurationsdatei <code>{file}</code> scheint manuell verändert worden zu sein.",
-    "diagnosis_regenconf_allgood": "Alle Konfigurationsdateien stimmen mit der empfohlenen Konfiguration überein!"
+    "diagnosis_regenconf_allgood": "Alle Konfigurationsdateien stimmen mit der empfohlenen Konfiguration überein!",
+    "diagnosis_package_installed_from_sury": "Einige System-Pakete sollten gedowngradet werden"
 }
