@@ -13,7 +13,31 @@ do_init_regen() {
   do_pre_regen ""
 
   systemctl daemon-reload
-  
+
+  systemctl restart slapd
+
+  # Drop current existing slapd data
+
+  rm -rf /var/backups/*.ldapdb
+  rm -rf /var/backups/slapd-*
+
+debconf-set-selections << EOF
+slapd slapd/password1 password yunohost
+slapd slapd/password2 password yunohost
+slapd slapd/domain string yunohost.org
+slapd shared/organization  string yunohost.org
+slapd slapd/allow_ldap_v2 boolean false
+slapd slapd/invalid_config boolean true
+slapd slapd/backend select MDB
+slapd slapd/move_old_database boolean true
+slapd slapd/no_configuration boolean false
+slapd slapd/purge_database boolean false
+EOF
+
+  DEBIAN_FRONTEND=noninteractive dpkg-reconfigure slapd -u
+
+  # Regen conf
+
   _regenerate_slapd_conf
 
    # Enforce permissions
@@ -21,7 +45,11 @@ do_init_regen() {
   chown -R openldap:openldap /etc/ldap/schema/
   usermod -aG ssl-cert openldap
 
-  service slapd restart
+  systemctl restart slapd
+
+  # (Re-)init data according to ldap_scheme.yaml
+
+  yunohost tools shell -c "from yunohost.tools import tools_ldapinit; tools_ldapinit()"
 }
 
 _regenerate_slapd_conf() {
@@ -31,7 +59,8 @@ _regenerate_slapd_conf() {
   # so we use a temporary directory slapd_new.d
   rm -Rf /etc/ldap/slapd_new.d
   mkdir /etc/ldap/slapd_new.d
-  slapadd -n0 -l /etc/ldap/slapd.ldif -F /etc/ldap/slapd_new.d/ 2>&1
+  slapadd -n0 -l /etc/ldap/slapd.ldif -F /etc/ldap/slapd_new.d/ 2>&1 \
+      | grep -v "none elapsed\|Closing DB" || true
   # Actual validation (-Q is for quiet, -u is for dry-run)
   slaptest -Q -u -F /etc/ldap/slapd_new.d
 

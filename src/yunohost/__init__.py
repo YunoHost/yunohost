@@ -53,6 +53,7 @@ def check_command_is_valid_before_postinstall(args):
 
     allowed_if_not_postinstalled = ['tools postinstall',
                                     'tools versions',
+                                    'tools shell',
                                     'backup list',
                                     'backup restore',
                                     'log display']

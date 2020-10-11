@@ -8,6 +8,8 @@ do_configure() {
   if [ ! -f /etc/yunohost/installed ]; then
       bash /usr/share/yunohost/hooks/conf_regen/01-yunohost init
       bash /usr/share/yunohost/hooks/conf_regen/02-ssl init
+      bash /usr/share/yunohost/hooks/conf_regen/09-nslcd init
+      bash /usr/share/yunohost/hooks/conf_regen/46-nsswitch init
       bash /usr/share/yunohost/hooks/conf_regen/06-slapd init
       bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
   else
