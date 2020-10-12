@@ -452,5 +452,8 @@
     "diagnosis_security_vulnerable_to_meltdown": "Es scheint, als ob Sie durch die kritische Meltdown-Sicherheitslücke verwundbar sind",
     "diagnosis_regenconf_manually_modified": "Die Konfigurationsdatei <code>{file}</code> scheint manuell verändert worden zu sein.",
     "diagnosis_regenconf_allgood": "Alle Konfigurationsdateien stimmen mit der empfohlenen Konfiguration überein!",
-    "diagnosis_package_installed_from_sury": "Einige System-Pakete sollten gedowngradet werden"
+    "diagnosis_package_installed_from_sury": "Einige System-Pakete sollten gedowngradet werden",
+    "diagnosis_ports_forwarding_tip": "Um dieses Problem zu beheben, müssen Sie höchst wahrscheinlich die Port-Weiterleitung auf Ihrem Internet-Router einrichten wie in <a href='https://yunohost.org/isp_box_config'>https://yunohost.org/isp_box_config</a> beschrieben",
+    "diagnosis_regenconf_manually_modified_details": "Das ist wahrscheinlich OK wenn Sie wissen, was Sie tun! YunoHost wird in Zukunft diese Datei nicht mehr automatisch updaten... Aber seien Sie bitte vorsichtig, da die zukünftigen Upgrades von YunoHost wichtige empfohlene Änderungen enthalten könnten. Falls Sie möchten, können Sie die Unterschiede mit <cmd>yunohost tools regen-conf {category} --dry-run --with-diff</cmd> inspizieren und mit  <cmd>yunohost tools regen-conf {category} --force</cmd> auf das Zurücksetzen die empfohlene Konfiguration erzwingen",
+    "diagnosis_mail_blacklist_website": "Nachdem Sie herausgefunden haben, weshalb Sie auf die Blacklist gesetzt wurden und dies behoben haben, zögern Sie nicht, nachzufragen, ob Ihre IP-Adresse oder Ihre Domäne von auf {blacklist_website} entfernt wird"
 }
