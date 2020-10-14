@@ -66,8 +66,6 @@ STAGING_CERTIFICATION_AUTHORITY = "https://acme-staging.api.letsencrypt.org"
 # For prod
 PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
 
-INTERMEDIATE_CERTIFICATE_URL = "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
-
 #
 # Front-end stuff                                                           #
 #
