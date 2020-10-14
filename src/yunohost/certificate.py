@@ -539,12 +539,6 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
 
         raise YunohostError('certmanager_cert_signing_failed')
 
-    import requests  # lazy loading this module for performance reasons
-    try:
-        intermediate_certificate = requests.get(INTERMEDIATE_CERTIFICATE_URL, timeout=30).text
-    except requests.exceptions.Timeout as e:
-        raise YunohostError('certmanager_couldnt_fetch_intermediate_cert')
-
     # Now save the key and signed certificate
     logger.debug("Saving the key and signed certificate...")
 
@@ -573,7 +567,6 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
 
     with open(domain_cert_file, "w") as f:
         f.write(signed_certificate)
-        f.write(intermediate_certificate)
 
     _set_permissions(domain_cert_file, "root", "ssl-cert", 0o640)
 
