@@ -33,6 +33,7 @@
     "app_manifest_install_ask_password": "Choose an administration password for this app",
     "app_manifest_install_ask_admin": "Choose an administrator user for this app",
     "app_manifest_install_ask_is_public": "Should this app be exposed to anonymous visitors?",
+    "app_name_invalid": "Invalid app name",
     "app_not_upgraded": "The app '{failed_app}' failed to upgrade, and as a consequence the following apps' upgrades have been cancelled: {apps}",
     "app_not_correctly_installed": "{app:s} seems to be incorrectly installed",
     "app_not_installed": "Could not find {app:s} in the list of installed apps: {all_apps}",
