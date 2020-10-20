@@ -159,6 +159,7 @@ ynh_systemd_action() {
     # Start the timeout and try to find line_match
     if [[ -n "${line_match:-}" ]]
     then
+        set +x
         local i=0
         for i in $(seq 1 $timeout)
         do
@@ -176,6 +177,7 @@ ynh_systemd_action() {
             fi
             sleep 1
         done
+        set -x
         if [ $i -ge 3 ]; then
             echo "" >&2
         fi
