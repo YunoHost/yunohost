@@ -569,14 +569,7 @@ app:
                     full: --with-categories
                     help: Also return a list of app categories
                     action: store_true
-        
-        ### app_search()
-        search:
-            action_help: Search installable apps
-            arguments:
-                string:
-                    help: Return matching app name or description with "string"
-            
+
         fetchlist:
             deprecated: true
 
