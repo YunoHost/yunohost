@@ -259,7 +259,7 @@
     "group_creation_failed": "Kann Gruppe '{group}' nicht anlegen",
     "group_unknown": "Die Gruppe '{group:s}' ist unbekannt",
     "group_updated": "Gruppe '{group:s}' erneuert",
-    "group_update_failed": "Kann Gruppe '{group:s}' nicht anpassen",
+    "group_update_failed": "Kann Gruppe '{group:s}' nicht aktualisieren: {error}",
     "log_does_exists": "Es gibt kein Operationsprotokoll mit dem Namen'{log}', verwende'yunohost log list', um alle verfügbaren Operationsprotokolle anzuzeigen",
     "log_operation_unit_unclosed_properly": "Die Operationseinheit wurde nicht richtig geschlossen",
     "global_settings_setting_security_postfix_compatibility": "Kompatibilität vs. Sicherheitskompromiss für den Postfix-Server. Beeinflusst die Chiffren (und andere sicherheitsrelevante Aspekte)",
@@ -461,5 +461,9 @@
     "diagnosis_ports_needed_by": "Diesen Port zu öffnen ist nötig, um die Funktionalität des Typs {category} (service {service}) zu gewährleisten.",
     "diagnosis_mail_queue_too_big": "Zu viele anstehende Nachrichten in der Warteschlange ({nb_pending} emails)",
     "diagnosis_package_installed_from_sury_details": "Einige Pakete wurden versehentlich aus einem Drittanbieter-Repository genannt Sury installiert. Das YunoHost-Team hat die Strategie um diese Pakete zu handhaben verbessert, aber es wird erwartet, dass einige Setups, welche PHP7.3-Applikationen installiert haben und immer noch auf Strech laufen ein paar Inkonsistenzen aufweisen. Um diese Situation zu beheben sollten Sie versuchen den folgenden Befehl auszuführen:  <cmd>{cmd_to_fix}</cmd>",
-    "domain_cannot_add_xmpp_upload": "Eine hinzugefügte Domain darf nicht mit 'xmpp-upload.' beginnen. Dieser Name ist für das XMPP-Upload-Feature von YunoHost reserviert."
+    "domain_cannot_add_xmpp_upload": "Eine hinzugefügte Domain darf nicht mit 'xmpp-upload.' beginnen. Dieser Name ist für das XMPP-Upload-Feature von YunoHost reserviert.",
+    "group_cannot_be_deleted": "Die Gruppe {group} kann nicht manuell entfernt werden.",
+    "group_cannot_edit_primary_group": "Die Gruppe '{group}' kann nicht manuell bearbeitet werden. Es ist die primäre Gruppe, welche dazu gedacht ist, nur einen spezifischen Benutzer zu enthalten.",
+    "diagnosis_processes_killed_by_oom_reaper": "Einige Prozesse wurden vom System beendet, weil nicht genügend Arbeitsspeicher vorhanden ist. Das passiert normalerweise, wenn das System nicht genügend Arbeitsspeicher zur Verfügung hat oder wenn ein Prozess zu viel Speicher verbraucht. Zusammenfassung der beendeten Prozesse: {kills_summary}",
+    "diagnosis_description_ports": "Offene Ports"
 }
