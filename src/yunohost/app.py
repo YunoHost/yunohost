@@ -105,7 +105,44 @@ def app_catalog(full=False, with_categories=False):
     else:
         return {"apps": catalog["apps"], "categories": catalog["categories"]}
 
+def app_search(string):
+    """
+    Return a dict of apps which description or name match the search string
+    """
+    
+    # Get app list from catalog cache
+    catalog = _load_apps_catalog()
+    installed_apps = set(_installed_apps())
+    
+    # Trim info for apps
+    for app, infos in catalog["apps"].items():
+        infos["manifest"]["description"] = _value_for_locale(infos['manifest']['description'])
+        if not (re.search(string, app, flags=re.IGNORECASE) or
+                re.search(string, infos['manifest']['description'], flags=re.IGNORECASE)):
+            del catalog["apps"][app]
+        else:
+            infos["installed"] = app in installed_apps
 
+            catalog["apps"][app] = {
+                "description": infos['manifest']['description'],
+                "level": infos["level"],
+            }
+        
+    # Trim info for categories
+    for category in catalog["categories"]:
+        category["title"] = _value_for_locale(category["title"])
+        category["description"] = _value_for_locale(category["description"])
+        for subtags in category.get("subtags", []):
+            subtags["title"] = _value_for_locale(subtags["title"])
+
+    catalog["categories"] = [{"id": c["id"],
+                                  "description": c["description"]}
+                                 for c in catalog["categories"]]
+    
+    return {"apps": catalog["apps"]}
+    
+
+   
 # Old legacy function...
 def app_fetchlist():
     logger.warning("'yunohost app fetchlist' is deprecated. Please use 'yunohost tools update --apps' instead")
@@ -719,7 +756,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         else:
             # FIXME : watdo if '@' in app ?
             app_name_to_test = None
-
+        
         if '.' in app_name_to_test:
             raise YunohostError('app_name_invalid')
         elif app_name_to_test in raw_app_list:
