@@ -43,8 +43,8 @@
     "domain_cert_gen_failed": "Zertifikat konnte nicht erzeugt werden",
     "domain_created": "Die Domain wurde angelegt",
     "domain_creation_failed": "Konnte Domain nicht erzeugen",
-    "domain_deleted": "Die Domain wurde gelöscht",
-    "domain_deletion_failed": "Konnte Domain nicht löschen",
+    "domain_deleted": "Domain wurde gelöscht",
+    "domain_deletion_failed": "Domain {domain}: {error} konnte nicht gelöscht werden",
     "domain_dyndns_already_subscribed": "Du hast dich schon für eine DynDNS-Domain angemeldet",
     "domain_dyndns_root_unknown": "Unbekannte DynDNS Hauptdomain",
     "domain_exists": "Die Domain existiert bereits",
@@ -210,7 +210,7 @@
     "dyndns_domain_not_provided": "Der DynDNS-Anbieter {provider:s} kann die Domain(s) {domain:s} nicht bereitstellen.",
     "dyndns_could_not_check_available": "Konnte nicht überprüfen, ob {domain:s} auf {provider:s} verfügbar ist.",
     "dyndns_could_not_check_provide": "Konnte nicht überprüft, ob {provider:s} die Domain(s) {domain:s} bereitstellen kann.",
-    "domain_dns_conf_is_just_a_recommendation": "Dieser Befehl zeigt Ihnen, was die * empfohlene * Konfiguration ist. Die DNS-Konfiguration wird NICHT für Sie eingerichtet. Es liegt in Ihrer Verantwortung, Ihre DNS-Zone in Ihrem Registrar gemäß dieser Empfehlung zu konfigurieren.",
+    "domain_dns_conf_is_just_a_recommendation": "Dieser Befehl zeigt Ihnen die * empfohlene * Konfiguration. Die DNS-Konfiguration wird NICHT für Sie eingerichtet. Es liegt in Ihrer Verantwortung, Ihre DNS-Zone in Ihrem Registrar gemäß dieser Empfehlung zu konfigurieren.",
     "dpkg_lock_not_available": "Dieser Befehl kann momentan nicht ausgeführt werden, da anscheinend ein anderes Programm die Sperre von dpkg (dem Systempaket-Manager) verwendet",
     "confirm_app_install_thirdparty": "WARNUNG! Das Installieren von Anwendungen von Drittanbietern kann die Integrität und Sicherheit Ihres Systems beeinträchtigen. Sie sollten Sie wahrscheinlich NICHT installieren, es sei denn, Sie wiẞen, was Sie tun. Sind Sie bereit, dieses Risiko einzugehen? [{answers:s}]",
     "confirm_app_install_danger": "WARNUNG! Diese Anwendung ist noch experimentell (wenn nicht ausdrücklich \"not working\"/\"nicht funktionsfähig\")! Sie sollten sie wahrscheinlich NICHT installieren, es sei denn, Sie wißen, was Sie tun. Es wird keine Unterstützung geleistet, falls diese Anwendung nicht funktioniert oder Ihr System zerstört... Falls Sie bereit bist, dieses Risiko einzugehen, tippe '{answers:s}'",
@@ -460,5 +460,6 @@
     "diagnosis_http_hairpinning_issue": "In Ihrem lokalen Netzwerk scheint Hairpinning nicht aktiviert zu sein.",
     "diagnosis_ports_needed_by": "Diesen Port zu öffnen ist nötig, um die Funktionalität des Typs {category} (service {service}) zu gewährleisten.",
     "diagnosis_mail_queue_too_big": "Zu viele anstehende Nachrichten in der Warteschlange ({nb_pending} emails)",
-    "diagnosis_package_installed_from_sury_details": "Einige Pakete wurden versehentlich aus einem Drittanbieter-Repository genannt Sury installiert. Das YunoHost-Team hat die Strategie um diese Pakete zu handhaben verbessert, aber es wird erwartet, dass einige Setups, welche PHP7.3-Applikationen installiert haben und immer noch auf Strech laufen ein paar Inkonsistenzen aufweisen. Um diese Situation zu beheben sollten Sie versuchen den folgenden Befehl auszuführen:  <cmd>{cmd_to_fix}</cmd>"
+    "diagnosis_package_installed_from_sury_details": "Einige Pakete wurden versehentlich aus einem Drittanbieter-Repository genannt Sury installiert. Das YunoHost-Team hat die Strategie um diese Pakete zu handhaben verbessert, aber es wird erwartet, dass einige Setups, welche PHP7.3-Applikationen installiert haben und immer noch auf Strech laufen ein paar Inkonsistenzen aufweisen. Um diese Situation zu beheben sollten Sie versuchen den folgenden Befehl auszuführen:  <cmd>{cmd_to_fix}</cmd>",
+    "domain_cannot_add_xmpp_upload": "Eine hinzugefügte Domain darf nicht mit 'xmpp-upload.' beginnen. Dieser Name ist für das XMPP-Upload-Feature von YunoHost reserviert."
 }
