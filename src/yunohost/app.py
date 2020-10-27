@@ -2631,22 +2631,6 @@ class UserArgumentParser(YunoHostArgumentFormatParser):
                             error=m18n.n('user_unknown', user=question.value))
 
 
-class AppArgumentParser(YunoHostArgumentFormatParser):
-    argument_type = "app"
-
-    def parse_question(self, question, user_answers):
-        from yunohost.app import app_list
-
-        question = super(AppArgumentParser, self).parse_question(question, user_answers)
-        question.choices = [x["id"] for x in app_list()["apps"]]
-
-        return question
-
-    def _raise_invalid_answer(self, question):
-        raise YunohostError('app_argument_invalid', name=question.name,
-                            error=m18n.n('app_unknown'))
-
-
 class DisplayTextArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "display_text"
 
@@ -2661,7 +2645,6 @@ ARGUMENTS_TYPE_PARSERS = {
     "boolean": BooleanArgumentParser,
     "domain": DomainArgumentParser,
     "user": UserArgumentParser,
-    "app": AppArgumentParser,
     "display_text": DisplayTextArgumentParser,
 }
 
