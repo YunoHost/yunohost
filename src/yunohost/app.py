@@ -285,6 +285,17 @@ def app_map(app=None, raw=False, user=None):
 
             for url in perm_all_urls:
 
+                # Here, we decide to completely ignore regex-type urls ...
+                # Because :
+                # - displaying them in regular "yunohost app map" output creates
+                # a pretty big mess when there are multiple regexes for the same
+                # app ? (c.f. for example lufi)
+                # - it doesn't really make sense when checking app conflicts to
+                # compare regexes ? (Or it could in some cases but ugh ?)
+                #
+                if url.startswith("re:"):
+                    continue
+
                 if not raw:
                     result[url] = perm_label
                 else:
