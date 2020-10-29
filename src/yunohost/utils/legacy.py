@@ -162,6 +162,9 @@ def migrate_legacy_permission_settings(app=None):
     for app in apps:
 
         settings = _get_app_settings(app) or {}
+        if settings.get("label"):
+            user_permission_update(app + ".main", label=settings["label"], sync_perm=False)
+            del settings["label"]
 
         def _setting(name):
             s = settings.get(name)
@@ -203,4 +206,3 @@ def migrate_legacy_permission_settings(app=None):
         _set_app_settings(app, settings)
 
         permission_sync_to_user()
-

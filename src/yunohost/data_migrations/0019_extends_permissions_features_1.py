@@ -6,7 +6,6 @@ from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
-from yunohost.app import app_setting, _installed_apps
 from yunohost.permission import user_permission_list
 from yunohost.utils.legacy import migrate_legacy_permission_settings
 
@@ -39,11 +38,6 @@ class MyMigration(Migration):
         ldap = _get_ldap_interface()
         permission_list = user_permission_list(full=True)["permissions"]
 
-        labels = {}
-        for app in _installed_apps():
-            labels[app] = app_setting(app, 'label') or permission_list[app + ".main"].get("label") or app
-            app_setting(app, 'label', delete=True)
-
         for permission in permission_list:
             if permission.split('.')[0] == 'mail':
                 ldap.update('cn=%s,ou=permission' % permission, {
@@ -74,19 +68,18 @@ class MyMigration(Migration):
                     'isProtected': ["TRUE"],
                 })
             else:
-                label = labels[permission.split('.')[0]].title()
-
+                app, subperm_name = permission.split('.')
                 if permission.endswith(".main"):
                     ldap.update('cn=%s,ou=permission' % permission, {
                         'authHeader': ["TRUE"],
-                        'label': [label],
+                        'label': [app],  # Note that this is later re-changed during the call to migrate_legacy_permission_settings() if a 'label' setting exists
                         'showTile': ["TRUE"],
                         'isProtected': ["FALSE"]
                     })
                 else:
                     ldap.update('cn=%s,ou=permission' % permission, {
                         'authHeader': ["TRUE"],
-                        'label': [permission.split('.')[1]],
+                        'label': [subperm_name.title()],
                         'showTile': ["FALSE"],
                         'isProtected': ["TRUE"]
                     })
