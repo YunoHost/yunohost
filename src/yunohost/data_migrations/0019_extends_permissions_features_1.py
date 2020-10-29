@@ -37,11 +37,11 @@ class MyMigration(Migration):
 
         logger.info(m18n.n("migration_0019_add_new_attributes_in_ldap"))
         ldap = _get_ldap_interface()
-        permission_list = user_permission_list(short=True)["permissions"]
+        permission_list = user_permission_list(full=True)["permissions"]
 
         labels = {}
         for app in _installed_apps():
-            labels[app] = app_setting(app, 'label')
+            labels[app] = app_setting(app, 'label') or permission_list[app + ".main"].get("label") or app
             app_setting(app, 'label', delete=True)
 
         for permission in permission_list:
