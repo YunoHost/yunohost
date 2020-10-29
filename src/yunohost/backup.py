@@ -1364,9 +1364,8 @@ class RestoreManager():
                 "protected_regex"
             ]
             if any(app_setting(app_instance_name, setting) is not None for setting in legacy_permission_settings):
-                from yunohost.tools import _get_migration_by_name
-                extends_permissions_features_1 = _get_migration_by_name("extends_permissions_features_1")
-                extends_permissions_features_1.migrate_skipped_unprotected_protected_uris(app=app_instance_name)
+                from yunohost.utils.legacy import migrate_legacy_permission_settings
+                migrate_legacy_permission_settings(app=app_instance_name)
 
             # Prepare env. var. to pass to script
             env_dict = self._get_env_var(app_instance_name)
