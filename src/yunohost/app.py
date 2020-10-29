@@ -939,7 +939,8 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     path = app_settings.get('path', None)
     if domain and path and user_permission_info(app_instance_name + '.main')['url'] is None:
         permission_url(app_instance_name + ".main", url='/', sync_perm=False)
-    user_permission_update(app_instance_name + ".main", show_tile=True, sync_perm=False)
+    if domain and path:
+        user_permission_update(app_instance_name + ".main", show_tile=True, sync_perm=False)
 
     permission_sync_to_user()
 
