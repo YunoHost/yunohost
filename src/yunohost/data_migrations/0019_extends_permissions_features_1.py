@@ -6,7 +6,7 @@ from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
-from yunohost.app import app_setting, _installed_apps
+from yunohost.app import app_setting, _installed_apps, _get_app_settings, _set_app_settings
 from yunohost.permission import user_permission_list, permission_create, permission_sync_to_user
 from yunohost.utils.legacy import legacy_permission_label
 
@@ -103,17 +103,20 @@ class MyMigration(Migration):
             else:
                 apps = [app]
 
-        def _get_setting(app, name):
-            s = app_setting(app, name)
-            return s.split(',') if s else []
-
         for app in apps:
-            skipped_urls = [uri for uri in _get_setting(app, 'skipped_uris') if uri != '/']
-            skipped_urls += ['re:' + regex for regex in _get_setting(app, 'skipped_regex')]
-            unprotected_urls = [uri for uri in _get_setting(app, 'unprotected_uris') if uri != '/']
-            unprotected_urls += ['re:' + regex for regex in _get_setting(app, 'unprotected_regex')]
-            protected_urls = [uri for uri in _get_setting(app, 'protected_uris') if uri != '/']
-            protected_urls += ['re:' + regex for regex in _get_setting(app, 'protected_regex')]
+
+            settings = _get_app_settings(app) or {}
+
+            def _setting(name):
+                s = settings.get(name)
+                return s.split(',') if s else []
+
+            skipped_urls = [uri for uri in _setting('skipped_uris') if uri != '/']
+            skipped_urls += ['re:' + regex for regex in _setting('skipped_regex')]
+            unprotected_urls = [uri for uri in _setting('unprotected_uris') if uri != '/']
+            unprotected_urls += ['re:' + regex for regex in _setting('unprotected_regex')]
+            protected_urls = [uri for uri in _setting('protected_uris') if uri != '/']
+            protected_urls += ['re:' + regex for regex in _setting('protected_regex')]
 
             if skipped_urls != []:
                 permission_create(app + ".legacy_skipped_uris", additional_urls=skipped_urls,
@@ -129,12 +132,19 @@ class MyMigration(Migration):
                                   show_tile=False, allowed=user_permission_list()['permissions'][app + ".main"]['allowed'],
                                   protected=True, sync_perm=False)
 
-            app_setting(app, 'skipped_uris', delete=True)
-            app_setting(app, 'unprotected_uris', delete=True)
-            app_setting(app, 'protected_uris', delete=True)
-            app_setting(app, 'skipped_regex', delete=True)
-            app_setting(app, 'unprotected_regex', delete=True)
-            app_setting(app, 'protected_regex', delete=True)
+            legacy_permission_settings = [
+                "skipped_uris",
+                "unprotected_uris",
+                "protected_uris",
+                "skipped_regex",
+                "unprotected_regex",
+                "protected_regex"
+            ]
+            for key in legacy_permission_settings:
+                if key in settings:
+                    del settings[key]
+
+            _set_app_settings(app, settings)
 
         permission_sync_to_user()
 
