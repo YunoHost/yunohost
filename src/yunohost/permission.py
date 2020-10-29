@@ -635,9 +635,11 @@ def _get_absolute_url(url, base_path):
     #
     # For example transform:
     #    (/api, domain.tld/nextcloud)     into  domain.tld/nextcloud/api
+    #    (/api, domain.tld/nextcloud/)    into  domain.tld/nextcloud/api
     #    (re:/foo.*, domain.tld/app)      into  re:domain\.tld/app/foo.*
     #    (domain.tld/bar, domain.tld/app) into  domain.tld/bar
     #
+    base_path = base_path.rstrip("/")
     if url is None:
         return None
     if url.startswith('/'):
