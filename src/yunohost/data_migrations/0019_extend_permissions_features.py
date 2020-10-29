@@ -31,7 +31,7 @@ class MyMigration(Migration):
             logger.warning(m18n.n("migration_0019_slapd_config_will_be_overwritten", conf_backup_folder=BACKUP_CONF_DIR))
 
         # Update LDAP schema restart slapd
-        logger.info(m18n.n("migration_0019_update_LDAP_schema"))
+        logger.info(m18n.n("migration_0011_update_LDAP_schema"))
         regen_conf(names=['slapd'], force=True)
 
         logger.info(m18n.n("migration_0019_add_new_attributes_in_ldap"))
