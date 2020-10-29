@@ -1197,7 +1197,6 @@ def app_setting(app, key, value=None, delete=False):
 
     if is_legacy_permission_setting:
 
-        logger.warning("/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.")
         from permission import user_permission_list, user_permission_update, permission_create, permission_delete, permission_url
         permissions = user_permission_list(full=True)['permissions']
         permission_name = "%s.legacy_%s_uris" % (app, key.split('_')[0])
@@ -1228,6 +1227,8 @@ def app_setting(app, key, value=None, delete=False):
 
         # SET
         else:
+            logger.warning("/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.")
+
             urls = value
             # If the request is about the root of the app (/), ( = the vast majority of cases)
             # we interpret this as a change for the main permission
