@@ -102,6 +102,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, abs
                 logger.debug("Uhoh, unknown permission %s ? (Maybe we're in the process or deleting the perm for this app...)" % main_perm_name)
                 continue
             main_perm_label = permissions[main_perm_name]["label"]
+            infos["sublabel"] = infos["label"]
             infos["label"] = "%s (%s)" % (main_perm_label, infos["label"])
 
     if short:
