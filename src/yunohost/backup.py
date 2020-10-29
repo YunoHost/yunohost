@@ -1355,9 +1355,15 @@ class RestoreManager():
                 SetupGroupPermissions.migrate_app_permission(app=app_instance_name)
 
             # Migrate old settings
-            if app_setting(app_instance_name, 'skipped_uris') is not None or \
-               app_setting(app_instance_name, 'unprotected_uris') is not None or \
-               app_setting(app_instance_name, 'protected_uris') is not None:
+            legacy_permission_settings = [
+                "skipped_uris",
+                "unprotected_uris",
+                "protected_uris",
+                "skipped_regex",
+                "unprotected_regex",
+                "protected_regex"
+            ]
+            if any(app_setting(app_instance_name, setting) is not None for setting in legacy_permission_settings):
                 from yunohost.tools import _get_migration_by_name
                 extends_permissions_features_1 = _get_migration_by_name("extends_permissions_features_1")
                 extends_permissions_features_1.migrate_skipped_unprotected_protected_uris(app=app_instance_name)

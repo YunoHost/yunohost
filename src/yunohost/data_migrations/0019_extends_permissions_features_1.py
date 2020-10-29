@@ -132,6 +132,9 @@ class MyMigration(Migration):
             app_setting(app, 'skipped_uris', delete=True)
             app_setting(app, 'unprotected_uris', delete=True)
             app_setting(app, 'protected_uris', delete=True)
+            app_setting(app, 'skipped_regex', delete=True)
+            app_setting(app, 'unprotected_regex', delete=True)
+            app_setting(app, 'protected_regex', delete=True)
 
         permission_sync_to_user()
 
