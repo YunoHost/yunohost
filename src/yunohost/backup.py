@@ -1213,13 +1213,13 @@ class RestoreManager():
 
         # Restore permission for the app which is installed
         for permission_name, permission_infos in old_apps_permission.items():
-            app_name = permission_name.split(".")[0]
+            app_name, perm_name = permission_name.split(".")
             if _is_installed(app_name):
                 permission_create(permission_name, allowed=permission_infos["allowed"],
                                   url=permission_infos["url"],
                                   additional_urls=permission_infos['additional_urls'],
                                   auth_header=permission_infos['auth_header'],
-                                  label=permission_infos['label'],
+                                  label=permission_infos['label'] if perm_name == "main" else permission_infos["sublabel"],
                                   show_tile=permission_infos['show_tile'],
                                   protected=permission_infos["protected"], sync_perm=False)
 
@@ -1340,10 +1340,16 @@ class RestoreManager():
                     else:
                         should_be_allowed = [g for g in permission_infos["allowed"] if g in existing_groups]
 
-                    permission_create(permission_name, allowed=should_be_allowed,
-                                      url=permission_infos.get("url", None), additional_urls=permission_infos.get("additional_urls", None), auth_header=permission_infos.get("auth_header", None),
-                                      label=permission_infos.get("label", None), show_tile=permission_infos.get("show_tile", None),
-                                      protected=permission_infos.get("protected", True), sync_perm=False)
+                    perm_name = permission_name.split(".")[1]
+                    permission_create(permission_name,
+                                      allowed=should_be_allowed,
+                                      url=permission_infos.get("url"),
+                                      additional_urls=permission_infos.get("additional_urls"),
+                                      auth_header=permission_infos.get("auth_header"),
+                                      label=permission_infos.get('label') if perm_name == "main" else permission_infos.get("sublabel"),
+                                      show_tile=permission_infos.get("show_tile", None),
+                                      protected=permission_infos.get("protected", True),
+                                      sync_perm=False)
 
                 permission_sync_to_user()
 
