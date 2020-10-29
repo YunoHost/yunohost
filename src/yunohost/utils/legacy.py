@@ -33,12 +33,12 @@ class SetupGroupPermissions():
                 try:
                     ldap.remove(dn)
                 except Exception as e:
-                    raise YunohostError("migration_0019_failed_to_remove_stale_object", dn=dn, error=e)
+                    raise YunohostError("migration_0011_failed_to_remove_stale_object", dn=dn, error=e)
 
     @staticmethod
     def migrate_LDAP_db():
 
-        logger.info(m18n.n("migration_0019_update_LDAP_database"))
+        logger.info(m18n.n("migration_0011_update_LDAP_database"))
 
         from yunohost.utils.ldap import _get_ldap_interface
         ldap = _get_ldap_interface()
@@ -64,9 +64,9 @@ class SetupGroupPermissions():
             for rdn, attr_dict in ldap_map['depends_children'].items():
                 ldap.add(rdn, attr_dict)
         except Exception as e:
-            raise YunohostError("migration_0019_LDAP_update_failed", error=e)
+            raise YunohostError("migration_0011_LDAP_update_failed", error=e)
 
-        logger.info(m18n.n("migration_0019_create_group"))
+        logger.info(m18n.n("migration_0011_create_group"))
 
         # Create a group for each yunohost user
         user_list = ldap.search('ou=users,dc=yunohost,dc=org',
@@ -81,7 +81,7 @@ class SetupGroupPermissions():
 
     @staticmethod
     def migrate_app_permission(app=None):
-        logger.info(m18n.n("migration_0019_migrate_permission"))
+        logger.info(m18n.n("migration_0011_migrate_permission"))
 
         apps = _installed_apps()
 
