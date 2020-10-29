@@ -39,50 +39,37 @@ class MyMigration(Migration):
         permission_list = user_permission_list(full=True)["permissions"]
 
         for permission in permission_list:
-            if permission.split('.')[0] == 'mail':
-                ldap.update('cn=%s,ou=permission' % permission, {
+            system_perms = {
+                "mail": "E-mail",
+                "xmpp": "XMPP",
+                "ssh": "SSH",
+                "sftp": "STFP"
+            }
+            if permission.split('.')[0] in system_perms:
+                update = {
                     'authHeader': ["FALSE"],
-                    'label': ['E-mail'],
+                    'label': [system_perms[permission.split('.')[0]]],
                     'showTile': ["FALSE"],
                     'isProtected': ["TRUE"],
-                })
-            elif permission.split('.')[0] == 'xmpp':
-                ldap.update('cn=%s,ou=permission' % permission, {
-                    'authHeader': ["FALSE"],
-                    'label': ['XMPP'],
-                    'showTile': ["FALSE"],
-                    'isProtected': ["TRUE"],
-                })
-            elif permission.split('.')[0] == 'ssh':
-                ldap.update('cn=%s,ou=permission' % permission, {
-                    'authHeader': ["FALSE"],
-                    'label': ['SSH'],
-                    'showTile': ["FALSE"],
-                    'isProtected': ["TRUE"],
-                })
-            elif permission.split('.')[0] == 'sftp':
-                ldap.update('cn=%s,ou=permission' % permission, {
-                    'authHeader': ["FALSE"],
-                    'label': ['SFTP'],
-                    'showTile': ["FALSE"],
-                    'isProtected': ["TRUE"],
-                })
+                }
             else:
                 app, subperm_name = permission.split('.')
                 if permission.endswith(".main"):
-                    ldap.update('cn=%s,ou=permission' % permission, {
+                    update = {
                         'authHeader': ["TRUE"],
                         'label': [app],  # Note that this is later re-changed during the call to migrate_legacy_permission_settings() if a 'label' setting exists
                         'showTile': ["TRUE"],
                         'isProtected': ["FALSE"]
-                    })
+                    }
                 else:
-                    ldap.update('cn=%s,ou=permission' % permission, {
+                    update = {
                         'authHeader': ["TRUE"],
                         'label': [subperm_name.title()],
                         'showTile': ["FALSE"],
                         'isProtected': ["TRUE"]
-                    })
+                    }
+
+            ldap.update('cn=%s,ou=permission' % permission, update)
 
     def run(self):
 
