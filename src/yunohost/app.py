@@ -1221,21 +1221,19 @@ def app_setting(app, key, value=None, delete=False):
 
         # DELETE
         if delete:
-            if key in app_settings:
+            # If 'is_public' setting still exists, we interpret this as
+            # coming from a legacy app (because new apps should manage the
+            # is_public state themselves anymore...)
+            #
+            # In that case, we interpret the request for "deleting
+            # unprotected/skipped" setting as willing to make the app
+            # private
+            if 'is_public' in app_settings and 'visitors' in permissions[app + ".main"]['allowed']:
+                if key.startswith('unprotected_') or key.startswith('skipped_'):
+                    user_permission_update(app + ".main", remove="visitors")
 
-                # If 'is_public' setting still exists, we interpret this as
-                # coming from a legacy app (because new apps should manage the
-                # is_public state themselves anymore...)
-                #
-                # In that case, we interpret the request for "deleting
-                # unprotected/skipped" setting as willing to make the app
-                # private
-                if 'is_public' in app_settings and 'visitors' in permissions[app + ".main"]['allowed']:
-                    if key.startswith('unprotected_') or key.startswith('skipped_'):
-                        user_permission_update(app + ".main", remove="visitors")
-                else:
-                    if permission:
-                        permission_delete(permission_name)
+            if permission:
+                permission_delete(permission_name)
 
         # SET
         else:
