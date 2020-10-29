@@ -1240,9 +1240,10 @@ def app_setting(app, key, value=None, delete=False):
                 else:
                     user_permission_update(app + ".main", remove="visitors")
             else:
-                # Add re: in case of regex, as we distingish regex by this since the new permission system
+
+                urls = urls.split(",")
                 if key.endswith('_regex'):
-                    urls = 're:' + urls
+                    urls = ['re:' + url for url in urls]
 
                 if permission:
                     # In case of new regex, save the urls, to add a new time in the additional_urls
@@ -1254,7 +1255,7 @@ def app_setting(app, key, value=None, delete=False):
                         # List of regex to save
                         current_urls_or_regex = [url for url in permission['additional_urls'] if url.startswith('re:')]
 
-                    new_urls = urls.split(',') + current_urls_or_regex
+                    new_urls = urls + current_urls_or_regex
                     # We need to clear urls because in the old setting the new setting override the old one and dont just add some urls
                     permission_url(permission_name, clear_urls=True, sync_perm=False)
                     permission_url(permission_name, add_url=new_urls)
@@ -1265,7 +1266,7 @@ def app_setting(app, key, value=None, delete=False):
                                       # FIXME find a way to limit to only the user allowed to the main permission
                                       allowed=['all_users'] if key.startswith('protected_') else ['all_users', 'visitors'],
                                       url=None,
-                                      additional_urls=urls.split(','),
+                                      additional_urls=urls,
                                       auth_header=not key.startswith('skipped_'),
                                       label=legacy_permission_label(app, key.split('_')[0]),
                                       show_tile=False,
