@@ -1222,7 +1222,7 @@ def app_setting(app, key, value=None, delete=False):
         # DELETE
         if delete:
             # If 'is_public' setting still exists, we interpret this as
-            # coming from a legacy app (because new apps should manage the
+            # coming from a legacy app (because new apps shouldn't manage the
             # is_public state themselves anymore...)
             #
             # In that case, we interpret the request for "deleting
