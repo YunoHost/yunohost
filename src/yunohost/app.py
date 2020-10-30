@@ -299,8 +299,12 @@ def app_map(app=None, raw=False, user=None):
                 if not raw:
                     result[url] = perm_label
                 else:
-                    perm_domain, perm_path = url.split("/", 1)
-                    perm_path = '/' + perm_path
+                    if "/" in url.split("/", 1):
+                        perm_domain, perm_path = url.split("/", 1)
+                        perm_path = '/' + perm_path
+                    else:
+                        perm_domain = url
+                        perm_path = "/"
                     if perm_domain not in result:
                         result[perm_domain] = {}
                     result[perm_domain][perm_path] = {
