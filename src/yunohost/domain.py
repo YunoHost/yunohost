@@ -76,7 +76,7 @@ def domain_list(exclude_subdomains=False):
     result_list = sorted(result_list, cmp_domain)
 
     return {'domains': result_list}
-  
+
     return {
         'domains': result_list,
         'main': _get_maindomain()

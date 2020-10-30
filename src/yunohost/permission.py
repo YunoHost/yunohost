@@ -140,8 +140,8 @@ def user_permission_update(operation_logger, permission, add=None, remove=None,
         raise YunohostError('permission_require_account', permission=permission)
 
     # Refuse to add "visitors" to protected permission
-    if ((add and "visitors" in add and existing_permission["protected"]) or \
-       (remove and "visitors" in remove and existing_permission["protected"])) and not force:
+    if ((add and "visitors" in add and existing_permission["protected"]) or
+            (remove and "visitors" in remove and existing_permission["protected"])) and not force:
         raise YunohostError('permission_protected', permission=permission)
 
     # Fetch currently allowed groups for this permission
@@ -447,7 +447,7 @@ def permission_url(operation_logger, permission,
         ldap.update('cn=%s,ou=permission' % permission, {'URL': [url] if url is not None else [],
                                                          'additionalUrls': new_additional_urls,
                                                          'authHeader': [str(auth_header).upper()],
-                                                         'showTile': [str(show_tile).upper()],})
+                                                         'showTile': [str(show_tile).upper()], })
     except Exception as e:
         raise YunohostError('permission_update_failed', permission=permission, error=e)
 

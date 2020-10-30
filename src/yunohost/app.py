@@ -670,15 +670,15 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
         if confirm in ["danger", "thirdparty"]:
             answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
-                                       answers='Yes, I understand'),
-                                    color="red")
+                                            answers='Yes, I understand'),
+                                     color="red")
             if answer != "Yes, I understand":
                 raise YunohostError("aborting")
 
         else:
             answer = msignals.prompt(m18n.n('confirm_app_install_' + confirm,
-                                       answers='Y/N'),
-                                    color="yellow")
+                                            answers='Y/N'),
+                                     color="yellow")
             if answer.upper() != "Y":
                 raise YunohostError("aborting")
 
@@ -816,7 +816,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     # Initialize the main permission for the app
     # After the install, if apps don't have a domain and path defined, the default url '/' is removed from the permission
-    permission_create(app_instance_name+".main", allowed=["all_users"], label=label, show_tile=False, protected=False)
+    permission_create(app_instance_name + ".main", allowed=["all_users"], label=label, show_tile=False, protected=False)
 
     # Execute the app install script
     install_failed = True
@@ -901,7 +901,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
             # Remove all permission in LDAP
             for permission_name in user_permission_list()["permissions"].keys():
-                if permission_name.startswith(app_instance_name+"."):
+                if permission_name.startswith(app_instance_name + "."):
                     permission_delete(permission_name, force=True, sync_perm=False)
 
             if remove_retcode != 0:
@@ -1074,7 +1074,7 @@ def app_remove(operation_logger, app):
 
     # Remove all permission in LDAP
     for permission_name in user_permission_list()["permissions"].keys():
-        if permission_name.startswith(app+"."):
+        if permission_name.startswith(app + "."):
             permission_delete(permission_name, force=True, sync_perm=False)
 
     permission_sync_to_user()
@@ -1096,7 +1096,7 @@ def app_addaccess(apps, users=[]):
 
     output = {}
     for app in apps:
-        permission = user_permission_update(app+".main", add=users, remove="all_users")
+        permission = user_permission_update(app + ".main", add=users, remove="all_users")
         output[app] = permission["corresponding_users"]
 
     return {'allowed_users': output}
@@ -1117,7 +1117,7 @@ def app_removeaccess(apps, users=[]):
 
     output = {}
     for app in apps:
-        permission = user_permission_update(app+".main", remove=users)
+        permission = user_permission_update(app + ".main", remove=users)
         output[app] = permission["corresponding_users"]
 
     return {'allowed_users': output}
@@ -1137,7 +1137,7 @@ def app_clearaccess(apps):
 
     output = {}
     for app in apps:
-        permission = user_permission_reset(app+".main")
+        permission = user_permission_reset(app + ".main")
         output[app] = permission["corresponding_users"]
 
     return {'allowed_users': output}
@@ -1209,7 +1209,7 @@ def app_setting(app, key, value=None, delete=False):
     # (unprotected, protected, skipped_uri/regex)
     #
 
-    is_legacy_permission_setting = any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"])
+    is_legacy_permission_setting = any(key.startswith(word + "_") for word in ["unprotected", "protected", "skipped"])
 
     if is_legacy_permission_setting:
 
@@ -1286,7 +1286,6 @@ def app_setting(app, key, value=None, delete=False):
                                       show_tile=False,
                                       protected=True)
 
-
     #
     # Regular setting management
     #
@@ -1356,16 +1355,16 @@ def app_ssowatconf():
             "show_tile": False,
             "auth_header": False,
             "public": True,
-            "uris": \
-                [domain + '/yunohost/admin' for domain in domains] + \
-                [domain + '/yunohost/api' for domain in domains] + [
-                    "re:^[^/]*/%.well%-known/ynh%-diagnosis/.*$",
-                    "re:^[^/]*/%.well%-known/acme%-challenge/.*$",
-                    "re:^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$"
-                ]
+            "uris":
+            [domain + '/yunohost/admin' for domain in domains] +
+            [domain + '/yunohost/api' for domain in domains] + [
+                "re:^[^/]*/%.well%-known/ynh%-diagnosis/.*$",
+                "re:^[^/]*/%.well%-known/acme%-challenge/.*$",
+                "re:^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$"
+            ]
         }
     }
-    redirected_regex = {main_domain + '/yunohost[\/]?$': 'https://' + main_domain + '/yunohost/sso/'}
+    redirected_regex = {main_domain + r'/yunohost[\/]?$': 'https://' + main_domain + '/yunohost/sso/'}
     redirected_urls = {}
 
     for app in _installed_apps():
@@ -1825,7 +1824,7 @@ def _get_app_config_panel(app_id):
             "panel": [],
         }
 
-        panels = filter(lambda (key, value): key not in ("name", "version") and isinstance(value, OrderedDict),
+        panels = filter(lambda key_value: key_value[0] not in ("name", "version") and isinstance(key_value[1], OrderedDict),
                         toml_config_panel.items())
 
         for key, value in panels:
@@ -1835,7 +1834,7 @@ def _get_app_config_panel(app_id):
                 "sections": [],
             }
 
-            sections = filter(lambda (k, v): k not in ("name",) and isinstance(v, OrderedDict),
+            sections = filter(lambda k_v1: k_v1[0] not in ("name",) and isinstance(k_v1[1], OrderedDict),
                               value.items())
 
             for section_key, section_value in sections:
@@ -1845,7 +1844,7 @@ def _get_app_config_panel(app_id):
                     "options": [],
                 }
 
-                options = filter(lambda (k, v): k not in ("name",) and isinstance(v, OrderedDict),
+                options = filter(lambda k_v: k_v[0] not in ("name",) and isinstance(k_v[1], OrderedDict),
                                  section_value.items())
 
                 for option_key, option_value in options:
@@ -1884,12 +1883,12 @@ def _get_app_settings(app_id):
             settings = yaml.load(f)
         # If label contains unicode char, this may later trigger issues when building strings...
         # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
-        settings = {k:_encode_string(v) for k,v in settings.items()}
+        settings = {k: _encode_string(v) for k, v in settings.items()}
         if app_id == settings['id']:
             return settings
     except (IOError, TypeError, KeyError):
         logger.error(m18n.n('app_not_correctly_installed',
-                                app=app_id))
+                            app=app_id))
     return {}
 
 
@@ -3095,7 +3094,7 @@ def _patch_legacy_helpers(app_folder):
         },
         # We can't migrate easily port-available
         # .. but at the time of writing this code, only two non-working apps are using it.
-        "yunohost tools port-available": {"important":True},
+        "yunohost tools port-available": {"important": True},
         # Replace
         #    yunohost app checkurl "${domain}${path_url}" -a "${app}"
         # by
@@ -3151,7 +3150,7 @@ def _patch_legacy_helpers(app_folder):
             if filename.split("/")[-1] in ["install", "remove", "upgrade", "backup", "restore"]:
                 source_helpers = "source /usr/share/yunohost/helpers"
                 if source_helpers not in content:
-                    content.replace("#!/bin/bash", "#!/bin/bash\n"+source_helpers)
+                    content.replace("#!/bin/bash", "#!/bin/bash\n" + source_helpers)
                 if source_helpers not in content:
                     content = source_helpers + "\n" + content
 
@@ -3160,4 +3159,4 @@ def _patch_legacy_helpers(app_folder):
 
         if show_warning:
             # And complain about those damn deprecated helpers
-            logger.error("/!\ Packagers ! This app uses a very old deprecated helpers ... Yunohost automatically patched the helpers to use the new recommended practice, but please do consider fixing the upstream code right now ...")
+            logger.error(r"/!\ Packagers ! This app uses a very old deprecated helpers ... Yunohost automatically patched the helpers to use the new recommended practice, but please do consider fixing the upstream code right now ...")

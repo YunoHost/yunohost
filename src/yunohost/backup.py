@@ -882,7 +882,6 @@ class RestoreManager():
             logger.debug("executing the post-install...")
             tools_postinstall(domain, 'Yunohost', True)
 
-
     def clean(self):
         """
         End a restore operations by cleaning the working directory and
@@ -951,7 +950,7 @@ class RestoreManager():
                 continue
 
             hook_paths = self.info['system'][system_part]['paths']
-            hook_paths = [ 'hooks/restore/%s' % os.path.basename(p) for p in hook_paths ]
+            hook_paths = ['hooks/restore/%s' % os.path.basename(p) for p in hook_paths]
 
             # Otherwise, add it from the archive to the system
             # FIXME: Refactor hook_add and use it instead
@@ -1200,7 +1199,7 @@ class RestoreManager():
         # do the migration 0011 : setup group and permission
         #
         # Legacy code
-        if not "all_users" in user_group_list()["groups"].keys():
+        if "all_users" not in user_group_list()["groups"].keys():
             from yunohost.utils.legacy import SetupGroupPermissions
             # Update LDAP schema restart slapd
             logger.info(m18n.n("migration_0011_update_LDAP_schema"))
@@ -1224,7 +1223,6 @@ class RestoreManager():
                                   protected=permission_infos["protected"], sync_perm=False)
 
         permission_sync_to_user()
-
 
     def _restore_apps(self):
         """Restore all apps targeted"""
@@ -1423,7 +1421,7 @@ class RestoreManager():
 
             # Remove all permission in LDAP for this app
             for permission_name in user_permission_list()["permissions"].keys():
-                if permission_name.startswith(app_instance_name+"."):
+                if permission_name.startswith(app_instance_name + "."):
                     permission_delete(permission_name, force=True)
 
             # TODO Cleaning app hooks
@@ -1518,7 +1516,7 @@ class BackupMethod(object):
 
         Return a BackupMethod instance
         """
-        known_methods = {c.method_name:c for c in BackupMethod.__subclasses__()}
+        known_methods = {c.method_name: c for c in BackupMethod.__subclasses__()}
         backup_method = known_methods.get(method, CustomBackupMethod)
         return backup_method(manager, method=method, **kwargs)
 
@@ -1780,14 +1778,14 @@ class CopyBackupMethod(BackupMethod):
 
         filesystem.mkdir(self.work_dir, parent=True)
         ret = subprocess.call(["mount", "-r", "--rbind", self.repo,
-                              self.work_dir])
+                               self.work_dir])
         if ret == 0:
             return
 
         logger.warning("Could not mount the backup in readonly mode with --rbind ... Unmounting")
         # FIXME : Does this stuff really works ? '&&' is going to be interpreted as an argument for mounpoint here ... Not as a classical '&&' ...
         subprocess.call(["mountpoint", "-q", self.work_dir,
-                        "&&", "umount", "-R", self.work_dir])
+                         "&&", "umount", "-R", self.work_dir])
         raise YunohostError('backup_cant_mount_uncompress_archive')
 
     def copy(self, file, target):
@@ -1911,12 +1909,12 @@ class TarBackupMethod(BackupMethod):
                 system_part = system_part.replace("_", "/") + "/"
             subdir_and_files = [
                 tarinfo for tarinfo in tar.getmembers()
-                if tarinfo.name.startswith(leading_dot+system_part)
+                if tarinfo.name.startswith(leading_dot + system_part)
             ]
             tar.extractall(members=subdir_and_files, path=self.work_dir)
         subdir_and_files = [
             tarinfo for tarinfo in tar.getmembers()
-            if tarinfo.name.startswith(leading_dot+"hooks/restore/")
+            if tarinfo.name.startswith(leading_dot + "hooks/restore/")
         ]
         tar.extractall(members=subdir_and_files, path=self.work_dir)
 
@@ -1924,7 +1922,7 @@ class TarBackupMethod(BackupMethod):
         for app in apps_targets:
             subdir_and_files = [
                 tarinfo for tarinfo in tar.getmembers()
-                if tarinfo.name.startswith(leading_dot+"apps/" + app)
+                if tarinfo.name.startswith(leading_dot + "apps/" + app)
             ]
             tar.extractall(members=subdir_and_files, path=self.work_dir)
 
@@ -2176,6 +2174,7 @@ def backup_list(with_info=False, human_readable=False):
     archives = set([os.path.realpath(archive) for archive in archives])
     archives = sorted(archives, key=lambda x: os.path.getctime(x))
     # Extract only filename without the extension
+
     def remove_extension(f):
         if f.endswith(".tar.gz"):
             return os.path.basename(f)[:-len(".tar.gz")]
@@ -2192,7 +2191,7 @@ def backup_list(with_info=False, human_readable=False):
                 logger.warning(str(e))
             except Exception as e:
                 import traceback
-                logger.warning("Could not check infos for archive %s: %s" % (archive, '\n'+traceback.format_exc()))
+                logger.warning("Could not check infos for archive %s: %s" % (archive, '\n' + traceback.format_exc()))
 
         archives = d
 
