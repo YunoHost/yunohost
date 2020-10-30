@@ -1,7 +1,7 @@
 {
     "action_invalid": "Ungültige Aktion '{action:s}'",
     "admin_password": "Administrator-Passwort",
-    "admin_password_change_failed": "Passwort kann nicht geändert werden",
+    "admin_password_change_failed": "Ändern des Passworts nicht möglich",
     "admin_password_changed": "Das Administrator-Kennwort wurde geändert",
     "app_already_installed": "{app:s} ist schon installiert",
     "app_argument_choice_invalid": "Wähle einen der folgenden Werte '{choices:s}' für das Argument '{name:s}'",
@@ -465,5 +465,7 @@
     "group_cannot_be_deleted": "Die Gruppe {group} kann nicht manuell entfernt werden.",
     "group_cannot_edit_primary_group": "Die Gruppe '{group}' kann nicht manuell bearbeitet werden. Es ist die primäre Gruppe, welche dazu gedacht ist, nur einen spezifischen Benutzer zu enthalten.",
     "diagnosis_processes_killed_by_oom_reaper": "Einige Prozesse wurden vom System beendet, weil nicht genügend Arbeitsspeicher vorhanden ist. Das passiert normalerweise, wenn das System nicht genügend Arbeitsspeicher zur Verfügung hat oder wenn ein Prozess zu viel Speicher verbraucht. Zusammenfassung der beendeten Prozesse: {kills_summary}",
-    "diagnosis_description_ports": "Offene Ports"
+    "diagnosis_description_ports": "Offene Ports",
+    "additional_urls_already_added": "Zusätzliche URL '{url:s}' bereits hinzugefügt in der zusätzlichen URL für Berechtigung '{permission:s}'",
+    "additional_urls_already_removed": "Zusätzliche URL '{url:s}' bereits entfernt in der zusätzlichen URL  für Berechtigung '{permission:s}'"
 }
