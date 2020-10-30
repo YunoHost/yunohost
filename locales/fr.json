@@ -96,7 +96,7 @@
     "packages_upgrade_failed": "Impossible de mettre à jour tous les paquets",
     "pattern_backup_archive_name": "Doit être un nom de fichier valide avec un maximum de 30 caractères, et composé de caractères alphanumériques et -_. uniquement",
     "pattern_domain": "Doit être un nom de domaine valide (ex : mon-domaine.fr)",
-    "pattern_email": "Doit être une adresse de courriel valide (ex. : pseudo@example.com)",
+    "pattern_email": "Il faut une adresse électronique valide, sans le symbole '+' (par exemple johndoe@exemple.com)",
     "pattern_firstname": "Doit être un prénom valide",
     "pattern_lastname": "Doit être un nom valide",
     "pattern_mailbox_quota": "Doit avoir une taille suffixée avec b/k/M/G/T ou 0 pour désactiver le quota",
@@ -390,7 +390,7 @@
     "service_restarted": "Le service « {service:s} » a été redémarré",
     "service_reload_or_restart_failed": "Impossible de recharger ou de redémarrer le service '{service:s}'\n\nJournaux historisés récents de ce service : {logs:s}",
     "service_reloaded_or_restarted": "Le service « {service:s} » a été rechargé ou redémarré",
-    "this_action_broke_dpkg": "Cette action a laissé des paquets non configurés par dpkg/apt (les gestionnaires de paquets système). Vous pouvez essayer de résoudre ce problème en vous connectant via SSH et en exécutant `sudo apt install --fix-broken` et/ou `sudo dpkg --configure -a`.",
+    "this_action_broke_dpkg": "Cette action a laissé des paquets non configurés par dpkg/apt (les gestionnaires de paquets du système) … Vous pouvez essayer de résoudre ce problème en vous connectant via SSH et en exécutant `sudo apt install --fix-broken` et/ou `sudo dpkg --configure -a`.",
     "app_action_cannot_be_ran_because_required_services_down": "Ces services requis doivent être en cours d’exécution pour exécuter cette action : {services}. Essayez de les redémarrer pour continuer (et éventuellement rechercher pourquoi ils sont en panne).",
     "admin_password_too_long": "Veuillez choisir un mot de passe comportant moins de 127 caractères",
     "log_regen_conf": "Régénérer les configurations du système '{}'",
@@ -673,7 +673,7 @@
     "migration_description_0018_xtable_to_nftable": "Migrer les anciennes règles de trafic réseau vers le nouveau système basé sur nftables",
     "service_description_php7.3-fpm": "Exécute les applications écrites en PHP avec NGINX",
     "migration_0018_failed_to_reset_legacy_rules": "La réinitialisation des règles iptable legacy a échoué :",
-    "migration_0018_failed_to_migrate_iptables_rules": "La migration des anciennes règles iptables vers nftables a échoué : {error}",
+    "migration_0018_failed_to_migrate_iptables_rules": "Échec de la migration des anciennes règles iptables vers nftables : {error}",
     "migration_0017_not_enough_space": "Laissez suffisamment d'espace disponible dans {path} avant de lancer la migration.",
     "migration_0017_postgresql_11_not_installed": "PostgreSQL 9.6 est installé mais pas posgreSQL 11 ? Il s'est sans doute passé quelque chose d'étrange sur votre système :(...",
     "migration_0017_postgresql_96_not_installed": "PostgreSQL n'a pas été installé sur votre système. Aucune opération à effectuer.",
@@ -690,5 +690,8 @@
     "global_settings_setting_smtp_relay_port": "Port relais SMTP",
     "global_settings_setting_smtp_relay_host": "Relais SMTP à utiliser pour envoyer du courrier à la place de cette instance YunoHost. Utile si vous êtes dans l'une de ces situations : votre port 25 est bloqué par votre FAI ou votre fournisseur VPS, vous avez une IP résidentielle répertoriée sur DUHL, vous ne pouvez pas configurer de DNS inversé ou ce serveur n'est pas directement exposé sur Internet et vous voulez en utiliser un autre pour envoyer des mails.",
     "diagnosis_package_installed_from_sury_details": "Certains paquets ont été installés par inadvertance à partir d'un dépôt tiers appelé Sury. L'équipe YunoHost a amélioré la stratégie de gestion de ces paquets, mais on s'attend à ce que certaines configurations qui ont installé des applications PHP7.3 tout en étant toujours sur Stretch présentent des incohérences. Pour résoudre cette situation, vous devez essayer d'exécuter la commande suivante : <cmd> {cmd_to_fix} </cmd>",
-    "app_argument_password_no_default": "Erreur lors de l'analyse de l'argument de mot de passe '{name}' : l'argument de mot de passe ne peut pas avoir de valeur par défaut pour des raisons de sécurité"
+    "app_argument_password_no_default": "Erreur lors de l'analyse de l'argument de mot de passe '{name}' : l'argument de mot de passe ne peut pas avoir de valeur par défaut pour des raisons de sécurité",
+    "pattern_email_forward": "Il doit s'agir d'une adresse électronique valide, le symbole '+' étant accepté (par exemples : johndoe@exemple.com ou bien johndoe+yunohost@exemple.com)",
+    "global_settings_setting_smtp_relay_password": "Mot de passe SMTP du serveur de courrier électronique",
+    "diagnosis_package_installed_from_sury": "Certains paquets du système devraient être rétrograder vers une version moins récente"
 }
