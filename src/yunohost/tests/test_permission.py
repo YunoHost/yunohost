@@ -307,25 +307,25 @@ def test_permission_list():
     assert res['blog.api']['corresponding_users'] == []
     assert res['wiki.main']['url'] == "/"
     assert res['blog.main']['url'] == "/"
-    assert res['blog.api']['url'] == None
+    assert res['blog.api']['url'] is None
     assert set(res['wiki.main']['additional_urls']) == {'/whatever', '/idontnow'}
-    assert res['wiki.main']['protected'] == False
-    assert res['blog.main']['protected'] == False
-    assert res['blog.api']['protected'] == True
+    assert res['wiki.main']['protected'] is False
+    assert res['blog.main']['protected'] is False
+    assert res['blog.api']['protected'] is True
     assert res['wiki.main']['label'] == "Wiki"
     assert res['blog.main']['label'] == "Blog"
     assert res['blog.api']['label'] == "Blog (api)"
-    assert res['wiki.main']['show_tile'] == True
-    assert res['blog.main']['show_tile'] == False
-    assert res['blog.api']['show_tile'] == False
-    assert res['wiki.main']['auth_header'] == False
-    assert res['blog.main']['auth_header'] == True
-    assert res['blog.api']['auth_header'] == True
+    assert res['wiki.main']['show_tile'] is True
+    assert res['blog.main']['show_tile'] is False
+    assert res['blog.api']['show_tile'] is False
+    assert res['wiki.main']['auth_header'] is False
+    assert res['blog.main']['auth_header'] is True
+    assert res['blog.api']['auth_header'] is True
 
     res = user_permission_list(full=True, absolute_urls=True)['permissions']
     assert res['wiki.main']['url'] == maindomain + "/wiki"
     assert res['blog.main']['url'] == maindomain + "/blog"
-    assert res['blog.api']['url'] == None
+    assert res['blog.api']['url'] is None
     assert set(res['wiki.main']['additional_urls']) == {maindomain + '/wiki/whatever', maindomain + '/wiki/idontnow'}
     assert res['blog.main']['additional_urls'] == []
     assert res['blog.api']['additional_urls'] == []
@@ -344,7 +344,7 @@ def test_permission_create_main(mocker):
     assert "site.main" in res
     assert res['site.main']['allowed'] == ["all_users"]
     assert set(res['site.main']['corresponding_users']) == set(["alice", "bob"])
-    assert res['site.main']['protected'] == False
+    assert res['site.main']['protected'] is False
 
 
 def test_permission_create_extra(mocker):
@@ -356,7 +356,7 @@ def test_permission_create_extra(mocker):
     # all_users is only enabled by default on .main perms
     assert "all_users" not in res['site.test']['allowed']
     assert res['site.test']['corresponding_users'] == []
-    assert res['site.test']['protected'] == False
+    assert res['site.test']['protected'] is False
 
 
 def test_permission_create_with_specific_user():
@@ -376,7 +376,7 @@ def test_permission_create_with_tile_management(mocker):
     res = user_permission_list(full=True)['permissions']
     assert "site.main" in res
     assert res['site.main']['label'] == "The Site"
-    assert res['site.main']['show_tile'] == False
+    assert res['site.main']['show_tile'] is False
 
 def test_permission_create_with_tile_management_with_main_default_value(mocker):
     with message(mocker, "permission_created", permission="site.main"):
@@ -386,7 +386,7 @@ def test_permission_create_with_tile_management_with_main_default_value(mocker):
     res = user_permission_list(full=True)['permissions']
     assert "site.main" in res
     assert res['site.main']['label'] == "Site"
-    assert res['site.main']['show_tile'] == True
+    assert res['site.main']['show_tile'] is True
 
 def test_permission_create_with_tile_management_with_not_main_default_value(mocker):
     with message(mocker, "permission_created", permission="wiki.api"):
@@ -396,7 +396,7 @@ def test_permission_create_with_tile_management_with_not_main_default_value(mock
     res = user_permission_list(full=True)['permissions']
     assert "wiki.api" in res
     assert res['wiki.api']['label'] == "Wiki (api)"
-    assert res['wiki.api']['show_tile'] == True
+    assert res['wiki.api']['show_tile'] is True
 
 
 def test_permission_create_with_urls_management_without_url(mocker):
@@ -406,9 +406,9 @@ def test_permission_create_with_urls_management_without_url(mocker):
 
     res = user_permission_list(full=True)['permissions']
     assert "wiki.api" in res
-    assert res['wiki.api']['url'] == None
+    assert res['wiki.api']['url'] is None
     assert res['wiki.api']['additional_urls'] == []
-    assert res['wiki.api']['auth_header'] == True
+    assert res['wiki.api']['auth_header'] is True
 
 
 def test_permission_create_with_urls_management_simple_domain(mocker):
@@ -421,7 +421,7 @@ def test_permission_create_with_urls_management_simple_domain(mocker):
     assert "site.main" in res
     assert res['site.main']['url'] == maindomain + "/site"
     assert set(res['site.main']['additional_urls']) == {maindomain + "/site/whatever", maindomain + "/site/idontnow"}
-    assert res['site.main']['auth_header'] == False
+    assert res['site.main']['auth_header'] is False
 
 
 @pytest.mark.other_domains(number=2)
@@ -438,7 +438,7 @@ def test_permission_create_with_urls_management_multiple_domain(mocker):
     assert "site.main" in res
     assert res['site.main']['url'] == maindomain + "/site/something"
     assert set(res['site.main']['additional_urls']) == {other_domains[0] + "/blabla", other_domains[1] + "/ahh"}
-    assert res['site.main']['auth_header'] == True
+    assert res['site.main']['auth_header'] is True
 
 
 def test_permission_delete(mocker):
@@ -576,14 +576,14 @@ def test_permission_switch_show_tile(mocker):
         user_permission_update("wiki.main", show_tile="false")
 
     res = user_permission_list(full=True)['permissions']
-    assert res['wiki.main']['show_tile'] == False
+    assert res['wiki.main']['show_tile'] is False
 
     # Try with uppercase
     with message(mocker, "permission_updated", permission="wiki.main"):
         user_permission_update("wiki.main", show_tile="TRUE")
 
     res = user_permission_list(full=True)['permissions']
-    assert res['wiki.main']['show_tile'] == True
+    assert res['wiki.main']['show_tile'] is True
 
 
 def test_permission_switch_show_tile_with_same_value(mocker):
@@ -592,7 +592,7 @@ def test_permission_switch_show_tile_with_same_value(mocker):
         user_permission_update("wiki.main", show_tile="True")
 
     res = user_permission_list(full=True)['permissions']
-    assert res['wiki.main']['show_tile'] == True
+    assert res['wiki.main']['show_tile'] is True
 
 
 #
@@ -726,7 +726,7 @@ def test_permission_clear_additional_url():
     permission_url("wiki.main", clear_urls=True)
 
     res = user_permission_list(full=True)['permissions']
-    assert res['wiki.main']['url'] == None
+    assert res['wiki.main']['url'] is None
     assert res['wiki.main']['additional_urls'] == []
 
 
@@ -734,19 +734,19 @@ def test_permission_switch_auth_header():
     permission_url("wiki.main", auth_header=True)
 
     res = user_permission_list(full=True)['permissions']
-    assert res['wiki.main']['auth_header'] == True
+    assert res['wiki.main']['auth_header'] is True
 
     permission_url("wiki.main", auth_header=False)
 
     res = user_permission_list(full=True)['permissions']
-    assert res['wiki.main']['auth_header'] == False
+    assert res['wiki.main']['auth_header'] is False
 
 
 def test_permission_switch_auth_header_with_same_value():
     permission_url("wiki.main", auth_header=False)
 
     res = user_permission_list(full=True)['permissions']
-    assert res['wiki.main']['auth_header'] == False
+    assert res['wiki.main']['auth_header'] is False
 
 
 # Permission protected
@@ -755,19 +755,19 @@ def test_permission_switch_protected():
     user_permission_update("wiki.main", protected=True)
 
     res = user_permission_list(full=True)['permissions']
-    assert res['wiki.main']['protected'] == True
+    assert res['wiki.main']['protected'] is True
 
     user_permission_update("wiki.main", protected=False)
 
     res = user_permission_list(full=True)['permissions']
-    assert res['wiki.main']['protected'] == False
+    assert res['wiki.main']['protected'] is False
 
 
 def test_permission_switch_protected_with_same_value():
     user_permission_update("wiki.main", protected=False)
 
     res = user_permission_list(full=True)['permissions']
-    assert res['wiki.main']['protected'] == False
+    assert res['wiki.main']['protected'] is False
 
 
 # Test SSOWAT conf generation
@@ -791,17 +791,17 @@ def test_ssowat_conf():
                                                      maindomain + "/wiki/idontnow"}
     assert permissions['blog.main']['uris'] == [maindomain + "/blog"]
 
-    assert permissions['wiki.main']['public'] == False
-    assert permissions['blog.main']['public'] == False
+    assert permissions['wiki.main']['public'] is False
+    assert permissions['blog.main']['public'] is False
 
-    assert permissions['wiki.main']['auth_header'] == False
-    assert permissions['blog.main']['auth_header'] == True
+    assert permissions['wiki.main']['auth_header'] is False
+    assert permissions['blog.main']['auth_header'] is True
 
     assert permissions['wiki.main']['label'] == "Wiki"
     assert permissions['blog.main']['label'] == "Blog"
 
-    assert permissions['wiki.main']['show_tile'] == True
-    assert permissions['blog.main']['show_tile'] == False
+    assert permissions['wiki.main']['show_tile'] is True
+    assert permissions['blog.main']['show_tile'] is False
 
 
 def test_show_tile_cant_be_enabled():
@@ -817,8 +817,8 @@ def test_show_tile_cant_be_enabled():
 
     permissions = user_permission_list(full=True)['permissions']
 
-    assert permissions['site.main']['show_tile'] == False
-    assert permissions['web.main']['show_tile'] == False
+    assert permissions['site.main']['show_tile'] is False
+    assert permissions['web.main']['show_tile'] is False
 
 
 #
@@ -891,16 +891,16 @@ def test_permission_protection_management_by_helper():
                 args="domain=%s&domain_2=%s&path=%s&admin=%s" % (maindomain, other_domains[0], "/urlpermissionapp", "alice"), force=True)
 
     res = user_permission_list(full=True)['permissions']
-    assert res['permissions_app.main']['protected'] == False
-    assert res['permissions_app.admin']['protected'] == True
-    assert res['permissions_app.dev']['protected'] == False
+    assert res['permissions_app.main']['protected'] is False
+    assert res['permissions_app.admin']['protected'] is True
+    assert res['permissions_app.dev']['protected'] is False
 
     app_upgrade(["permissions_app"], file="./tests/apps/permissions_app_ynh")
 
     res = user_permission_list(full=True)['permissions']
-    assert res['permissions_app.main']['protected'] == False
-    assert res['permissions_app.admin']['protected'] == False
-    assert res['permissions_app.dev']['protected'] == True
+    assert res['permissions_app.main']['protected'] is False
+    assert res['permissions_app.admin']['protected'] is False
+    assert res['permissions_app.dev']['protected'] is True
 
 
 @pytest.mark.other_domains(number=1)
