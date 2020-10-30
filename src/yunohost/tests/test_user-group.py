@@ -132,17 +132,21 @@ def test_create_user_already_exists(mocker):
     with raiseYunohostError(mocker, "user_already_exists"):
         user_create("alice", "Alice", "White", maindomain, "test123Ynh")
 
+
 def test_create_user_with_domain_that_doesnt_exists(mocker):
     with raiseYunohostError(mocker, "domain_name_unknown"):
         user_create("alice", "Alice", "White", "doesnt.exists", "test123Ynh")
+
 
 def test_update_user_with_mail_address_already_taken(mocker):
     with raiseYunohostError(mocker, "user_update_failed"):
         user_update("bob", add_mailalias="alice@" + maindomain)
 
+
 def test_update_user_with_mail_address_with_unknown_domain(mocker):
     with raiseYunohostError(mocker, "mail_domain_unknown"):
         user_update("alice", add_mailalias="alice@doesnt.exists")
+
 
 def test_del_user_that_does_not_exist(mocker):
     with raiseYunohostError(mocker, "user_unknown"):

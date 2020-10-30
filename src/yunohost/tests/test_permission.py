@@ -25,6 +25,7 @@ dummy_password = "test123Ynh"
 
 prv_getaddrinfo = socket.getaddrinfo
 
+
 def _permission_create_with_dummy_app(permission, allowed=None,
                                       url=None, additional_urls=None, auth_header=True,
                                       label=None, show_tile=False,
@@ -84,7 +85,7 @@ def setup_function(function):
     global other_domains
     maindomain = _get_maindomain()
 
-    markers = {m.name: {'args':m.args, 'kwargs':m.kwargs} for m in function.__dict__.get("pytestmark",[])}
+    markers = {m.name: {'args': m.args, 'kwargs': m.kwargs} for m in function.__dict__.get("pytestmark", [])}
 
     if "other_domains" in markers:
         other_domains = ["domain_%s.dev" % string.ascii_lowercase[number] for number in range(markers['other_domains']['kwargs']['number'])]
@@ -109,7 +110,7 @@ def setup_function(function):
 
     user_create("alice", "Alice", "White", maindomain, dummy_password)
     user_create("bob", "Bob", "Snow", maindomain, dummy_password)
-    _permission_create_with_dummy_app(permission="wiki.main", url="/", additional_urls=['/whatever','/idontnow'], auth_header=False,
+    _permission_create_with_dummy_app(permission="wiki.main", url="/", additional_urls=['/whatever', '/idontnow'], auth_header=False,
                                       label="Wiki", show_tile=True,
                                       allowed=["all_users"], protected=False, sync_perm=False,
                                       domain=maindomain, path='/wiki')
@@ -118,6 +119,7 @@ def setup_function(function):
                                       protected=False, sync_perm=False,
                                       allowed=["alice"], domain=maindomain, path='/blog')
     _permission_create_with_dummy_app(permission="blog.api", allowed=["visitors"], protected=True, sync_perm=True)
+
 
 def teardown_function(function):
     clean_user_groups_permission()
@@ -378,6 +380,7 @@ def test_permission_create_with_tile_management(mocker):
     assert res['site.main']['label'] == "The Site"
     assert res['site.main']['show_tile'] is False
 
+
 def test_permission_create_with_tile_management_with_main_default_value(mocker):
     with message(mocker, "permission_created", permission="site.main"):
         _permission_create_with_dummy_app("site.main", allowed=["all_users"], show_tile=True, url="/",
@@ -387,6 +390,7 @@ def test_permission_create_with_tile_management_with_main_default_value(mocker):
     assert "site.main" in res
     assert res['site.main']['label'] == "Site"
     assert res['site.main']['show_tile'] is True
+
 
 def test_permission_create_with_tile_management_with_not_main_default_value(mocker):
     with message(mocker, "permission_created", permission="wiki.api"):
@@ -414,7 +418,7 @@ def test_permission_create_with_urls_management_without_url(mocker):
 def test_permission_create_with_urls_management_simple_domain(mocker):
     with message(mocker, "permission_created", permission="site.main"):
         _permission_create_with_dummy_app("site.main", allowed=["all_users"],
-                                          url="/", additional_urls=['/whatever','/idontnow'], auth_header=False,
+                                          url="/", additional_urls=['/whatever', '/idontnow'], auth_header=False,
                                           domain=maindomain, path='/site')
 
     res = user_permission_list(full=True, absolute_urls=True)['permissions']
@@ -659,7 +663,7 @@ def test_permission_main_url_regex():
     assert res["blog.main"]["url"] == "re:/[a-z]+reboy/.*"
 
     res = user_permission_list(full=True, absolute_urls=True)['permissions']
-    assert res["blog.main"]["url"] == "re:%s/blog/[a-z]+reboy/.*" % maindomain.replace('.', '\.')
+    assert res["blog.main"]["url"] == "re:%s/blog/[a-z]+reboy/.*" % maindomain.replace('.', r'\.')
 
 
 def test_permission_main_url_bad_regex(mocker):
@@ -686,7 +690,7 @@ def test_permission_add_additional_regex():
     assert res["blog.main"]["additional_urls"] == ["re:/[a-z]+reboy/.*"]
 
     res = user_permission_list(full=True, absolute_urls=True)['permissions']
-    assert res["blog.main"]["additional_urls"] == ["re:%s/blog/[a-z]+reboy/.*" % maindomain.replace('.', '\.')]
+    assert res["blog.main"]["additional_urls"] == ["re:%s/blog/[a-z]+reboy/.*" % maindomain.replace('.', r'\.')]
 
 
 def test_permission_add_additional_bad_regex(mocker):
