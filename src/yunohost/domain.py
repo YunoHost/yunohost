@@ -31,7 +31,7 @@ from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
-from yunohost.app import app_ssowatconf, _installed_apps, _get_app_settings
+from yunohost.app import app_ssowatconf, _installed_apps, _get_app_settings, _get_conflicting_apps
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
@@ -188,7 +188,7 @@ def domain_remove(operation_logger, domain, force=False):
     from yunohost.utils.ldap import _get_ldap_interface
 
     if not force and domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
+        raise YunohostError('domain_name_unknown', domain=domain)
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
@@ -313,7 +313,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
 
     # Check domain exists
     if new_main_domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
+        raise YunohostError('domain_name_unknown', domain=new_main_domain)
 
     operation_logger.related_to.append(('domain', new_main_domain))
     operation_logger.start()
@@ -368,46 +368,6 @@ def domain_cert_renew(domain_list, force=False, no_checks=False, email=False, st
     return yunohost.certificate.certificate_renew(domain_list, force, no_checks, email, staging)
 
 
-def _get_conflicting_apps(domain, path, ignore_app=None):
-    """
-    Return a list of all conflicting apps with a domain/path (it can be empty)
-
-    Keyword argument:
-        domain -- The domain for the web path (e.g. your.domain.tld)
-        path -- The path to check (e.g. /coffee)
-        ignore_app -- An optional app id to ignore (c.f. the change_url usecase)
-    """
-
-    domain, path = _normalize_domain_path(domain, path)
-
-    # Abort if domain is unknown
-    if domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
-
-    # This import cannot be put on top of file because it would create a
-    # recursive import...
-    from yunohost.app import app_map
-
-    # Fetch apps map
-    apps_map = app_map(raw=True)
-
-    # Loop through all apps to check if path is taken by one of them
-    conflicts = []
-    if domain in apps_map:
-        # Loop through apps
-        for p, a in apps_map[domain].items():
-            if a["id"] == ignore_app:
-                continue
-            if path == p:
-                conflicts.append((p, a["id"], a["label"]))
-            # We also don't want conflicts with other apps starting with
-            # same name
-            elif path.startswith(p) or p.startswith(path):
-                conflicts.append((p, a["id"], a["label"]))
-
-    return conflicts
-
-
 def domain_url_available(domain, path):
     """
     Check availability of a web path
@@ -429,24 +389,6 @@ def _get_maindomain():
 def _set_maindomain(domain):
     with open('/etc/yunohost/current_host', 'w') as f:
         f.write(domain)
-
-
-def _normalize_domain_path(domain, path):
-
-    # We want url to be of the format :
-    #  some.domain.tld/foo
-
-    # Remove http/https prefix if it's there
-    if domain.startswith("https://"):
-        domain = domain[len("https://"):]
-    elif domain.startswith("http://"):
-        domain = domain[len("http://"):]
-
-    # Remove trailing slashes
-    domain = domain.rstrip("/").lower()
-    path = "/" + path.strip("/")
-
-    return domain, path
 
 
 def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):

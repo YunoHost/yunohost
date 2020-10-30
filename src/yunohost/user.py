@@ -126,7 +126,7 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
 
     # Check that the domain exists
     if domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown', domain)
+        raise YunohostError('domain_name_unknown', domain=domain)
 
     mail = username + '@' + domain
     ldap = _get_ldap_interface()
@@ -461,7 +461,7 @@ def user_info(username):
 
         if service_status("dovecot")["status"] != "running":
             logger.warning(m18n.n('mailbox_used_space_dovecot_down'))
-        elif username not in user_permission_list(full=True)["permissions"]["mail.main"]["corresponding_users"]:
+        elif username not in user_permission_info("mail.main")["corresponding_users"]:
             logger.warning(m18n.n('mailbox_disabled', user=username))
         else:
             try:
@@ -768,13 +768,14 @@ def user_group_info(groupname):
 
 def user_permission_list(short=False, full=False):
     import yunohost.permission
-    return yunohost.permission.user_permission_list(short, full)
+    return yunohost.permission.user_permission_list(short, full, absolute_urls=True)
 
 
-def user_permission_update(permission, add=None, remove=None, sync_perm=True):
+def user_permission_update(permission, add=None, remove=None, label=None, show_tile=None, sync_perm=True):
     import yunohost.permission
     return yunohost.permission.user_permission_update(permission,
                                                       add=add, remove=remove,
+                                                      label=label, show_tile=show_tile,
                                                       sync_perm=sync_perm)
 
 

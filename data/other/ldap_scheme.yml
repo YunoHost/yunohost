@@ -73,6 +73,10 @@ depends_children:
             - permissionYnh
         groupPermission:
             - "cn=all_users,ou=groups,dc=yunohost,dc=org"
+        authHeader: "FALSE"
+        label: "E-mail"
+        showTile: "FALSE"
+        isProtected: "TRUE"
     cn=xmpp.main,ou=permission:
         cn: xmpp.main
         gidNumber: "5002"
@@ -81,3 +85,7 @@ depends_children:
             - permissionYnh
         groupPermission:
             - "cn=all_users,ou=groups,dc=yunohost,dc=org"
+        authHeader: "FALSE"
+        label: "XMPP"
+        showTile: "FALSE"
+        isProtected: "TRUE"

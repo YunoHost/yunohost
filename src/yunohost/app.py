@@ -148,6 +148,8 @@ def app_info(app, full=False):
     """
     Get info for a specific app
     """
+    from yunohost.permission import user_permission_list
+
     if not _is_installed(app):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
@@ -175,6 +177,8 @@ def app_info(app, full=False):
     ret['supports_backup_restore'] = (os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "backup")) and
                                       os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "restore")))
     ret['supports_multi_instance'] = is_true(local_manifest.get("multi_instance", False))
+    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    ret['permissions'] = {p: i for p, i in permissions.items() if p.startswith(app + ".") and (i["url"] or i['additional_urls'])}
     return ret
 
 
@@ -208,20 +212,35 @@ def _app_upgradable(app_infos):
 
 def app_map(app=None, raw=False, user=None):
     """
-    List apps by domain
+    Returns a map of url <-> app id such as :
 
-    Keyword argument:
-        user -- Allowed app map for a user
-        raw -- Return complete dict
-        app -- Specific app to map
+    {
+       "domain.tld/foo": "foo__2",
+       "domain.tld/mail: "rainloop",
+       "other.tld/": "bar",
+       "sub.other.tld/pwet": "pwet",
+    }
 
+    When using "raw", the structure changes to :
+
+    {
+        "domain.tld": {
+            "/foo": {"label": "App foo", "id": "foo__2"},
+            "/mail": {"label": "Rainloop", "id: "rainloop"},
+        },
+        "other.tld": {
+            "/": {"label": "Bar", "id": "bar"},
+        },
+        "sub.other.tld": {
+            "/pwet": {"label": "Pwet", "id": "pwet"}
+        }
+    }
     """
 
     from yunohost.permission import user_permission_list
 
     apps = []
     result = {}
-    permissions = user_permission_list(full=True)["permissions"]
 
     if app is not None:
         if not _is_installed(app):
@@ -230,6 +249,7 @@ def app_map(app=None, raw=False, user=None):
     else:
         apps = os.listdir(APPS_SETTING_PATH)
 
+    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
     for app_id in apps:
         app_settings = _get_app_settings(app_id)
         if not app_settings:
@@ -252,75 +272,45 @@ def app_map(app=None, raw=False, user=None):
             if user not in main_perm["corresponding_users"]:
                 continue
 
-        domain = app_settings['domain']
-        path = app_settings['path'].rstrip('/')
-        label = app_settings['label']
+        this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and (i["url"] or i['additional_urls'])}
 
-        def _sanitized_absolute_url(perm_url):
-            # Nominal case : url is relative to the app's path
-            if perm_url.startswith("/"):
-                perm_domain = domain
-                perm_path = path + perm_url.rstrip("/")
-            # Otherwise, the urls starts with a domain name, like domain.tld/foo/bar
-            # We want perm_domain = domain.tld and perm_path = "/foo/bar"
-            else:
-                perm_domain, perm_path = perm_url.split("/", 1)
-                perm_path = "/" + perm_path.rstrip("/")
-
-            # N.B. : having '/' instead of empty string is needed in app_map
-            # but should *not* be done in app_ssowatconf (yeah :[)
-            perm_path = perm_path if perm_path.strip() != "" else "/"
-
-            return perm_domain, perm_path
-
-        this_app_perms = {p: i for p, i in permissions.items() if p.startswith(app_id + ".") and i["url"]}
         for perm_name, perm_info in this_app_perms.items():
             # If we're building the map for a specific user, check the user
             # actually is allowed for this specific perm
             if user and user not in perm_info["corresponding_users"]:
                 continue
-            if perm_info["url"].startswith("re:"):
-                # Here, we have an issue if the chosen url is a regex, because
-                # the url we want to add to the dict is going to be turned into
-                # a clickable link (or analyzed by other parts of yunohost
-                # code...). To put it otherwise : in the current code of ssowat,
-                # you can't give access a user to a regex.
-                #
-                # Instead, as drafted by Josue, we could rework the ssowat logic
-                # about how routes and their permissions are defined. So for example,
-                # have a dict of
-                # {  "/route1": ["visitors", "user1", "user2", ...],  # Public route
-                #    "/route2_with_a_regex$": ["user1", "user2"],     # Private route
-                #    "/route3": None,                                 # Skipped route idk
-                # }
-                # then each time a user try to request and url, we only keep the
-                # longest matching rule and check the user is allowed etc...
-                #
-                # The challenge with this is (beside actually implementing it)
-                # is that it creates a whole new mechanism that ultimately
-                # replace all the existing logic about
-                # protected/unprotected/skipped uris and regexes and we gotta
-                # handle / migrate all the legacy stuff somehow if we don't
-                # want to end up with a total mess in the future idk
-                logger.error("Permission %s can't be added to the SSOwat configuration because it doesn't support regexes so far..." % perm_name)
-                continue
 
-            perm_domain, perm_path = _sanitized_absolute_url(perm_info["url"])
-            if perm_name.endswith(".main"):
-                perm_label = label
-            else:
-                # e.g. if perm_name is wordpress.admin, we want "Blog (Admin)" (where Blog is the label of this app)
-                perm_label = "%s (%s)" % (label, perm_name.rsplit(".")[-1].replace("_", " ").title())
+            perm_label = perm_info['label']
+            perm_all_urls = [] + ([perm_info["url"]] if perm_info["url"] else []) + perm_info['additional_urls']
 
-            if raw:
-                if domain not in result:
-                    result[perm_domain] = {}
-                result[perm_domain][perm_path] = {
-                    'label': perm_label,
-                    'id': app_id
-                }
-            else:
-                result[perm_domain + perm_path] = perm_label
+            for url in perm_all_urls:
+
+                # Here, we decide to completely ignore regex-type urls ...
+                # Because :
+                # - displaying them in regular "yunohost app map" output creates
+                # a pretty big mess when there are multiple regexes for the same
+                # app ? (c.f. for example lufi)
+                # - it doesn't really make sense when checking app conflicts to
+                # compare regexes ? (Or it could in some cases but ugh ?)
+                #
+                if url.startswith("re:"):
+                    continue
+
+                if not raw:
+                    result[url] = perm_label
+                else:
+                    if "/" in url:
+                        perm_domain, perm_path = url.split("/", 1)
+                        perm_path = '/' + perm_path
+                    else:
+                        perm_domain = url
+                        perm_path = "/"
+                    if perm_domain not in result:
+                        result[perm_domain] = {}
+                    result[perm_domain][perm_path] = {
+                        'label': perm_label,
+                        'id': app_id
+                    }
 
     return result
 
@@ -337,7 +327,6 @@ def app_change_url(operation_logger, app, domain, path):
 
     """
     from yunohost.hook import hook_exec, hook_callback
-    from yunohost.domain import _normalize_domain_path, _get_conflicting_apps
 
     installed = _is_installed(app)
     if not installed:
@@ -357,17 +346,7 @@ def app_change_url(operation_logger, app, domain, path):
         raise YunohostError("app_change_url_identical_domains", domain=domain, path=path)
 
     # Check the url is available
-    conflicts = _get_conflicting_apps(domain, path, ignore_app=app)
-    if conflicts:
-        apps = []
-        for path, app_id, app_label in conflicts:
-            apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
-                domain=domain,
-                path=path,
-                app_id=app_id,
-                app_label=app_label,
-            ))
-        raise YunohostError('app_location_unavailable', apps="\n".join(apps))
+    _assert_no_conflicting_apps(domain, path, ignore_app=app)
 
     manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
 
@@ -676,7 +655,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import user_permission_list, permission_create, permission_url, permission_delete, permission_sync_to_user
+    from yunohost.permission import user_permission_list, user_permission_info, user_permission_update, permission_create, permission_url, permission_delete, permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
 
     # Fetch or extract sources
@@ -745,6 +724,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         raise YunohostError('app_id_invalid')
 
     app_id = manifest['id']
+    label = label if label else manifest['name']
 
     # Check requirements
     _check_manifest_requirements(manifest, app_id)
@@ -814,7 +794,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Set initial app settings
     app_settings = {
         'id': app_instance_name,
-        'label': label if label else manifest['name'],
         'install_time': int(time.time()),
         'current_revision': manifest.get('remote', {}).get('revision', "?")
     }
@@ -837,7 +816,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     # Initialize the main permission for the app
     # After the install, if apps don't have a domain and path defined, the default url '/' is removed from the permission
-    permission_create(app_instance_name+".main", url="/", allowed=["all_users"])
+    permission_create(app_instance_name+".main", allowed=["all_users"], label=label, show_tile=False, protected=False)
 
     # Execute the app install script
     install_failed = True
@@ -958,14 +937,14 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     os.system('chown -R root: %s' % app_setting_path)
     os.system('chown -R admin: %s/scripts' % app_setting_path)
 
-    # If an app doesn't have at least a domain and a path, assume it's not a webapp and remove the default "/" permission
+    # If the app haven't set the url of the main permission and domain and path is set set / as main url
     app_settings = _get_app_settings(app_instance_name)
     domain = app_settings.get('domain', None)
     path = app_settings.get('path', None)
-    if not (domain and path):
-        permission_url(app_instance_name + ".main", url=None, sync_perm=False)
-
-    _migrate_legacy_permissions(app_instance_name)
+    if domain and path and user_permission_info(app_instance_name + '.main')['url'] is None:
+        permission_url(app_instance_name + ".main", url='/', sync_perm=False)
+    if domain and path:
+        user_permission_update(app_instance_name + ".main", show_tile=True, sync_perm=False)
 
     permission_sync_to_user()
 
@@ -1017,34 +996,6 @@ def dump_app_log_extract_for_debugging(operation_logger):
     logger.warning("Here's an extract of the logs before the crash. It might help debugging the error:")
     for line in lines_to_display:
         logger.info(line)
-
-
-def _migrate_legacy_permissions(app):
-
-    from yunohost.permission import user_permission_list, user_permission_update
-
-    # Check if app is apparently using the legacy permission management, defined by the presence of something like
-    # ynh_app_setting_set on unprotected_uris (or yunohost app setting)
-    install_script_path = os.path.join(APPS_SETTING_PATH, app, 'scripts/install')
-    install_script_content = open(install_script_path, "r").read()
-    if not re.search(r"(yunohost app setting|ynh_app_setting_set) .*(unprotected|skipped)_uris", install_script_content):
-        return
-
-    app_settings = _get_app_settings(app)
-    app_perm_currently_allowed = user_permission_list()["permissions"][app + ".main"]["allowed"]
-
-    settings_say_it_should_be_public = (app_settings.get("unprotected_uris", None) == "/"
-                                        or app_settings.get("skipped_uris", None) == "/")
-
-    # If the current permission says app is protected, but there are legacy rules saying it should be public...
-    if app_perm_currently_allowed == ["all_users"] and settings_say_it_should_be_public:
-        # Make it public
-        user_permission_update(app + ".main", add="visitors", sync_perm=False)
-
-    # If the current permission says app is public, but there are no setting saying it should be public...
-    if app_perm_currently_allowed == ["visitors"] and not settings_say_it_should_be_public:
-        # Make is private
-        user_permission_update(app + ".main", remove="visitors", sync_perm=False)
 
 
 @is_unit_operation()
@@ -1212,7 +1163,7 @@ def app_makedefault(operation_logger, app, domain=None):
         domain = app_domain
         operation_logger.related_to.append(('domain', domain))
     elif domain not in domain_list()['domains']:
-        raise YunohostError('domain_unknown')
+        raise YunohostError('domain_name_unknown', domain=domain)
 
     if '/' in app_map(raw=True)[domain]:
         raise YunohostError('app_make_default_location_already_used', app=app, domain=app_domain,
@@ -1253,31 +1204,109 @@ def app_setting(app, key, value=None, delete=False):
     """
     app_settings = _get_app_settings(app) or {}
 
-    if value is None and not delete:
-        try:
-            return app_settings[key]
-        except Exception as e:
-            logger.debug("cannot get app setting '%s' for '%s' (%s)", key, app, e)
-            return None
+    #
+    # Legacy permission setting management
+    # (unprotected, protected, skipped_uri/regex)
+    #
 
+    is_legacy_permission_setting = any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"])
+
+    if is_legacy_permission_setting:
+
+        from permission import user_permission_list, user_permission_update, permission_create, permission_delete, permission_url
+        permissions = user_permission_list(full=True)['permissions']
+        permission_name = "%s.legacy_%s_uris" % (app, key.split('_')[0])
+        permission = permissions.get(permission_name)
+
+        # GET
+        if value is None and not delete:
+            # FIXME FIXME FIXME : what about the main url ...?
+            return ','.join(permission['additional_urls']) if permission else None
+
+        # DELETE
+        if delete:
+            # If 'is_public' setting still exists, we interpret this as
+            # coming from a legacy app (because new apps shouldn't manage the
+            # is_public state themselves anymore...)
+            #
+            # In that case, we interpret the request for "deleting
+            # unprotected/skipped" setting as willing to make the app
+            # private
+            if 'is_public' in app_settings and 'visitors' in permissions[app + ".main"]['allowed']:
+                if key.startswith('unprotected_') or key.startswith('skipped_'):
+                    user_permission_update(app + ".main", remove="visitors")
+
+            if permission:
+                permission_delete(permission_name)
+
+        # SET
+        else:
+            logger.warning("/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.")
+
+            urls = value
+            # If the request is about the root of the app (/), ( = the vast majority of cases)
+            # we interpret this as a change for the main permission
+            # (i.e. allowing/disallowing visitors)
+            if urls == '/':
+                if key.startswith("unprotected_") or key.startswith("skipped_"):
+                    permission_url(app + ".main", url='/', sync_perm=False)
+                    user_permission_update(app + ".main", add="visitors")
+                else:
+                    user_permission_update(app + ".main", remove="visitors")
+            else:
+
+                urls = urls.split(",")
+                if key.endswith('_regex'):
+                    urls = ['re:' + url for url in urls]
+
+                if permission:
+                    # In case of new regex, save the urls, to add a new time in the additional_urls
+                    # In case of new urls, we do the same thing but inversed
+                    if key.endswith('_regex'):
+                        # List of urls to save
+                        current_urls_or_regex = [url for url in permission['additional_urls'] if not url.startswith('re:')]
+                    else:
+                        # List of regex to save
+                        current_urls_or_regex = [url for url in permission['additional_urls'] if url.startswith('re:')]
+
+                    new_urls = urls + current_urls_or_regex
+                    # We need to clear urls because in the old setting the new setting override the old one and dont just add some urls
+                    permission_url(permission_name, clear_urls=True, sync_perm=False)
+                    permission_url(permission_name, add_url=new_urls)
+                else:
+                    from utils.legacy import legacy_permission_label
+                    # Let's create a "special" permission for the legacy settings
+                    permission_create(permission=permission_name,
+                                      # FIXME find a way to limit to only the user allowed to the main permission
+                                      allowed=['all_users'] if key.startswith('protected_') else ['all_users', 'visitors'],
+                                      url=None,
+                                      additional_urls=urls,
+                                      auth_header=not key.startswith('skipped_'),
+                                      label=legacy_permission_label(app, key.split('_')[0]),
+                                      show_tile=False,
+                                      protected=True)
+
+
+    #
+    # Regular setting management
+    #
+
+    # GET
+    if value is None and not delete:
+        return app_settings.get(key, None)
+
+    # DELETE
     if delete:
         if key in app_settings:
             del app_settings[key]
+
+    # SET
     else:
-        # FIXME: Allow multiple values for some keys?
         if key in ['redirected_urls', 'redirected_regex']:
             value = yaml.load(value)
-        if any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"]):
-            logger.warning("/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.")
-
         app_settings[key] = value
-    _set_app_settings(app, app_settings)
 
-    # Fucking legacy permission management.
-    # We need this because app temporarily set the app as unprotected to configure it with curl...
-    if key.startswith("unprotected_") or key.startswith("skipped_") and value == "/":
-        from permission import user_permission_update
-        user_permission_update(app + ".main", add="visitors")
+    _set_app_settings(app, app_settings)
 
 
 def app_register_url(app, domain, path):
@@ -1290,10 +1319,6 @@ def app_register_url(app, domain, path):
         path -- The path to be registered (e.g. /coffee)
     """
 
-    # This line can't be moved on top of file, otherwise it creates an infinite
-    # loop of import with tools.py...
-    from .domain import _get_conflicting_apps, _normalize_domain_path
-
     domain, path = _normalize_domain_path(domain, path)
 
     # We cannot change the url of an app already installed simply by changing
@@ -1305,18 +1330,7 @@ def app_register_url(app, domain, path):
             raise YunohostError('app_already_installed_cant_change_url')
 
     # Check the url is available
-    conflicts = _get_conflicting_apps(domain, path)
-    if conflicts:
-        apps = []
-        for path, app_id, app_label in conflicts:
-            apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
-                domain=domain,
-                path=path,
-                app_id=app_id,
-                app_label=app_label,
-            ))
-
-        raise YunohostError('app_location_unavailable', apps="\n".join(apps))
+    _assert_no_conflicting_apps(domain, path)
 
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
@@ -1329,111 +1343,56 @@ def app_ssowatconf():
 
     """
     from yunohost.domain import domain_list, _get_maindomain
-    from yunohost.user import user_list
     from yunohost.permission import user_permission_list
 
     main_domain = _get_maindomain()
     domains = domain_list()['domains']
-    all_permissions = user_permission_list(full=True)['permissions']
+    all_permissions = user_permission_list(full=True, ignore_system_perms=True, absolute_urls=True)['permissions']
 
-    skipped_urls = []
-    skipped_regex = []
-    unprotected_urls = []
-    unprotected_regex = []
-    protected_urls = []
-    protected_regex = []
+    permissions = {
+        'core_skipped': {
+            "users": [],
+            "label": "Core permissions - skipped",
+            "show_tile": False,
+            "auth_header": False,
+            "public": True,
+            "uris": \
+                [domain + '/yunohost/admin' for domain in domains] + \
+                [domain + '/yunohost/api' for domain in domains] + [
+                    "re:^[^/]*/%.well%-known/ynh%-diagnosis/.*$",
+                    "re:^[^/]*/%.well%-known/acme%-challenge/.*$",
+                    "re:^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$"
+                ]
+        }
+    }
     redirected_regex = {main_domain + '/yunohost[\/]?$': 'https://' + main_domain + '/yunohost/sso/'}
     redirected_urls = {}
-
-    def _get_setting(settings, name):
-        s = settings.get(name, None)
-        return s.split(',') if s else []
 
     for app in _installed_apps():
 
         app_settings = read_yaml(APPS_SETTING_PATH + app + '/settings.yml')
 
-        if 'domain' not in app_settings:
-            continue
-        if 'path' not in app_settings:
-            continue
-
-        # This 'no_sso' settings sound redundant to not having $path defined ....
-        # At least from what I can see, all apps using it don't have a path defined ...
-        if 'no_sso' in app_settings:
-            continue
-
-        domain = app_settings['domain']
-        path = app_settings['path'].rstrip('/')
-
-        def _sanitized_absolute_url(perm_url):
-            # Nominal case : url is relative to the app's path
-            if perm_url.startswith("/"):
-                perm_domain = domain
-                perm_path = path + perm_url.rstrip("/")
-            # Otherwise, the urls starts with a domain name, like domain.tld/foo/bar
-            # We want perm_domain = domain.tld and perm_path = "/foo/bar"
-            else:
-                perm_domain, perm_path = perm_url.split("/", 1)
-                perm_path = "/" + perm_path.rstrip("/")
-
-            return perm_domain + perm_path
-
-        # Skipped
-        skipped_urls += [_sanitized_absolute_url(uri) for uri in _get_setting(app_settings, 'skipped_uris')]
-        skipped_regex += _get_setting(app_settings, 'skipped_regex')
-
         # Redirected
         redirected_urls.update(app_settings.get('redirected_urls', {}))
         redirected_regex.update(app_settings.get('redirected_regex', {}))
 
-        # Legacy permission system using (un)protected_uris and _regex managed in app settings...
-        unprotected_urls += [_sanitized_absolute_url(uri) for uri in _get_setting(app_settings, 'unprotected_uris')]
-        protected_urls += [_sanitized_absolute_url(uri) for uri in _get_setting(app_settings, 'protected_uris')]
-        unprotected_regex += _get_setting(app_settings, 'unprotected_regex')
-        protected_regex += _get_setting(app_settings, 'protected_regex')
-
-        # New permission system
-        this_app_perms = {name: info for name, info in all_permissions.items() if name.startswith(app + ".")}
-        for perm_name, perm_info in this_app_perms.items():
-
-            # Ignore permissions for which there's no url defined
-            if not perm_info["url"]:
-                continue
-
-            # FIXME : gotta handle regex-urls here... meh
-            url = _sanitized_absolute_url(perm_info["url"])
-            perm_info["url"] = url
-            if "visitors" in perm_info["allowed"]:
-                if url not in unprotected_urls and url not in skipped_urls:
-                    unprotected_urls.append(url)
-
-                # Legacy stuff : we remove now protected-urls that might have been declared as unprotected earlier...
-                protected_urls = [u for u in protected_urls if u != url]
-            else:
-                if url not in protected_urls:
-                    protected_urls.append(url)
-
-                # Legacy stuff : we remove now unprotected-urls / skipped-urls that might have been declared as protected earlier...
-                unprotected_urls = [u for u in unprotected_urls if u != url]
-                skipped_urls = [u for u in skipped_urls if u != url]
-
-    for domain in domains:
-        skipped_urls.extend([domain + '/yunohost/admin', domain + '/yunohost/api'])
-
-    # Authorize ynh remote diagnosis, ACME challenge and mail autoconfig urls
-    skipped_regex.append("^[^/]*/%.well%-known/ynh%-diagnosis/.*$")
-    skipped_regex.append("^[^/]*/%.well%-known/acme%-challenge/.*$")
-    skipped_regex.append("^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$")
-
-
-    permissions_per_url = {}
+    # New permission system
     for perm_name, perm_info in all_permissions.items():
-        # Ignore permissions for which there's no url defined
-        if not perm_info["url"]:
-            continue
-        permissions_per_url[perm_info["url"]] = perm_info['corresponding_users']
 
+        uris = [] + ([perm_info['url']] if perm_info['url'] else []) + perm_info['additional_urls']
+
+        # Ignore permissions for which there's no url defined
+        if not uris:
+            continue
+
+        permissions[perm_name] = {
+            "users": perm_info['corresponding_users'],
+            "label": perm_info['label'],
+            "show_tile": perm_info['show_tile'] and perm_info['url'] and (not perm_info["url"].startswith('re:')),
+            "auth_header": perm_info['auth_header'],
+            "public": "visitors" in perm_info["allowed"],
+            "uris": uris
+        }
 
     conf_dict = {
         'portal_domain': main_domain,
@@ -1445,17 +1404,9 @@ def app_ssowatconf():
             'Email': 'mail'
         },
         'domains': domains,
-        'skipped_urls': skipped_urls,
-        'unprotected_urls': unprotected_urls,
-        'protected_urls': protected_urls,
-        'skipped_regex': skipped_regex,
-        'unprotected_regex': unprotected_regex,
-        'protected_regex': protected_regex,
         'redirected_urls': redirected_urls,
         'redirected_regex': redirected_regex,
-        'users': {username: app_map(user=username)
-                  for username in user_list()['users'].keys()},
-        'permissions': permissions_per_url,
+        'permissions': permissions,
     }
 
     with open('/etc/ssowat/conf.json', 'w+') as f:
@@ -1465,13 +1416,12 @@ def app_ssowatconf():
 
 
 def app_change_label(app, new_label):
+    from permission import user_permission_update
     installed = _is_installed(app)
     if not installed:
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
-
-    app_setting(app, "label", value=new_label)
-
-    app_ssowatconf()
+    logger.warning(m18n.n('app_label_deprecated'))
+    user_permission_update(app + ".main", label=new_label)
 
 
 # actions todo list:
@@ -2674,8 +2624,6 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
 
 def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
 
-    from yunohost.domain import _get_conflicting_apps, _normalize_domain_path
-
     # If there's only one "domain" and "path", validate that domain/path
     # is an available url and normalize the path.
 
@@ -2689,18 +2637,7 @@ def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
         domain, path = _normalize_domain_path(domain, path)
 
         # Check the url is available
-        conflicts = _get_conflicting_apps(domain, path)
-        if conflicts:
-            apps = []
-            for path, app_id, app_label in conflicts:
-                apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
-                    domain=domain,
-                    path=path,
-                    app_id=app_id,
-                    app_label=app_label,
-                ))
-
-            raise YunohostError('app_location_unavailable', apps="\n".join(apps))
+        _assert_no_conflicting_apps(domain, path)
 
         # (We save this normalized path so that the install script have a
         # standard path format to deal with no matter what the user inputted)
@@ -2723,8 +2660,83 @@ def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
            and re.search(r"(ynh_webpath_register|yunohost app checkurl)", install_script_content):
 
             domain = domain_args[0][1]
-            if _get_conflicting_apps(domain, "/"):
-                raise YunohostError('app_full_domain_unavailable', domain=domain)
+            _assert_no_conflicting_apps(domain, "/", full_domain=True)
+
+
+def _normalize_domain_path(domain, path):
+
+    # We want url to be of the format :
+    #  some.domain.tld/foo
+
+    # Remove http/https prefix if it's there
+    if domain.startswith("https://"):
+        domain = domain[len("https://"):]
+    elif domain.startswith("http://"):
+        domain = domain[len("http://"):]
+
+    # Remove trailing slashes
+    domain = domain.rstrip("/").lower()
+    path = "/" + path.strip("/")
+
+    return domain, path
+
+
+def _get_conflicting_apps(domain, path, ignore_app=None):
+    """
+    Return a list of all conflicting apps with a domain/path (it can be empty)
+
+    Keyword argument:
+        domain -- The domain for the web path (e.g. your.domain.tld)
+        path -- The path to check (e.g. /coffee)
+        ignore_app -- An optional app id to ignore (c.f. the change_url usecase)
+    """
+
+    from yunohost.domain import domain_list
+
+    domain, path = _normalize_domain_path(domain, path)
+
+    # Abort if domain is unknown
+    if domain not in domain_list()['domains']:
+        raise YunohostError('domain_name_unknown', domain=domain)
+
+    # Fetch apps map
+    apps_map = app_map(raw=True)
+
+    # Loop through all apps to check if path is taken by one of them
+    conflicts = []
+    if domain in apps_map:
+        # Loop through apps
+        for p, a in apps_map[domain].items():
+            if a["id"] == ignore_app:
+                continue
+            if path == p:
+                conflicts.append((p, a["id"], a["label"]))
+            # We also don't want conflicts with other apps starting with
+            # same name
+            elif path.startswith(p) or p.startswith(path):
+                conflicts.append((p, a["id"], a["label"]))
+
+    return conflicts
+
+
+def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False):
+
+    conflicts = _get_conflicting_apps(domain, path, ignore_app)
+
+    if conflicts:
+        apps = []
+        for path, app_id, app_label in conflicts:
+            apps.append(" * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
+                domain=domain,
+                path=path,
+                app_id=app_id,
+                app_label=app_label,
+            ))
+
+        if full_domain:
+            raise YunohostError('app_full_domain_unavailable', domain=domain)
+        else:
+            raise YunohostError('app_location_unavailable', apps="\n".join(apps))
 
 
 def _make_environment_dict(args_dict, prefix="APP_ARG_"):

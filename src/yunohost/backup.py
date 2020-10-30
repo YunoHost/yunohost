@@ -1213,9 +1213,15 @@ class RestoreManager():
 
         # Restore permission for the app which is installed
         for permission_name, permission_infos in old_apps_permission.items():
-            app_name = permission_name.split(".")[0]
+            app_name, perm_name = permission_name.split(".")
             if _is_installed(app_name):
-                permission_create(permission_name, url=permission_infos["url"], allowed=permission_infos["allowed"], sync_perm=False)
+                permission_create(permission_name, allowed=permission_infos["allowed"],
+                                  url=permission_infos["url"],
+                                  additional_urls=permission_infos['additional_urls'],
+                                  auth_header=permission_infos['auth_header'],
+                                  label=permission_infos['label'] if perm_name == "main" else permission_infos["sublabel"],
+                                  show_tile=permission_infos['show_tile'],
+                                  protected=permission_infos["protected"], sync_perm=False)
 
         permission_sync_to_user()
 
@@ -1251,6 +1257,7 @@ class RestoreManager():
                              name should be already install)
         """
         from yunohost.user import user_group_list
+        from yunohost.app import app_setting
         from yunohost.permission import permission_create, permission_delete, user_permission_list, permission_sync_to_user
 
         def copytree(src, dst, symlinks=False, ignore=None):
@@ -1333,7 +1340,16 @@ class RestoreManager():
                     else:
                         should_be_allowed = [g for g in permission_infos["allowed"] if g in existing_groups]
 
-                    permission_create(permission_name, url=permission_infos.get("url", None), allowed=should_be_allowed, sync_perm=False)
+                    perm_name = permission_name.split(".")[1]
+                    permission_create(permission_name,
+                                      allowed=should_be_allowed,
+                                      url=permission_infos.get("url"),
+                                      additional_urls=permission_infos.get("additional_urls"),
+                                      auth_header=permission_infos.get("auth_header"),
+                                      label=permission_infos.get('label') if perm_name == "main" else permission_infos.get("sublabel"),
+                                      show_tile=permission_infos.get("show_tile", None),
+                                      protected=permission_infos.get("protected", True),
+                                      sync_perm=False)
 
                 permission_sync_to_user()
 
@@ -1343,6 +1359,19 @@ class RestoreManager():
                 # app (included in its settings.yml)
                 from yunohost.utils.legacy import SetupGroupPermissions
                 SetupGroupPermissions.migrate_app_permission(app=app_instance_name)
+
+            # Migrate old settings
+            legacy_permission_settings = [
+                "skipped_uris",
+                "unprotected_uris",
+                "protected_uris",
+                "skipped_regex",
+                "unprotected_regex",
+                "protected_regex"
+            ]
+            if any(app_setting(app_instance_name, setting) is not None for setting in legacy_permission_settings):
+                from yunohost.utils.legacy import migrate_legacy_permission_settings
+                migrate_legacy_permission_settings(app=app_instance_name)
 
             # Prepare env. var. to pass to script
             env_dict = self._get_env_var(app_instance_name)
