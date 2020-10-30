@@ -299,7 +299,7 @@ def app_map(app=None, raw=False, user=None):
                 if not raw:
                     result[url] = perm_label
                 else:
-                    if "/" in url.split("/", 1):
+                    if "/" in url:
                         perm_domain, perm_path = url.split("/", 1)
                         perm_path = '/' + perm_path
                     else:
