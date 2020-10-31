@@ -178,7 +178,7 @@ def app_info(app, full=False):
                                       os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "restore")))
     ret['supports_multi_instance'] = is_true(local_manifest.get("multi_instance", False))
     permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
-    ret['permissions'] = {p: i for p, i in permissions.items() if p.startswith(app + ".") and (i["url"] or i['additional_urls'])}
+    ret['permissions'] = {p: i for p, i in permissions.items() if p.startswith(app + ".")}
     ret['label'] = permissions.get(app + ".main", {}).get("label")
     if not ret['label']:
         logger.warning("Failed to get label for app %s ?" % app)
