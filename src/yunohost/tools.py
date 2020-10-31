@@ -493,7 +493,7 @@ def _list_upgradable_apps():
 
             yield {
                 'id': app_id,
-                'label': app_dict['settings']['label'],
+                'label': app_dict['label'],
                 'current_version': current_version,
                 'new_version': new_version
             }
