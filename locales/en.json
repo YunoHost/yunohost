@@ -147,6 +147,7 @@
     "diagnosis_basesystem_ynh_single_version": "{package} version: {version} ({repo})",
     "diagnosis_basesystem_ynh_main_version": "Server is running YunoHost {main_version} ({repo})",
     "diagnosis_basesystem_ynh_inconsistent_versions": "You are running inconsistent versions of the YunoHost packages... most probably because of a failed or partial upgrade.",
+    "diagnosis_backports_in_sources_list": "It looks like apt (the package manager) is configured to use the backports repository. Unless you really know what you are doing, we strongly discourage from installing packages from backports, because it's likely to create unstabilities or conflicts on your system.",
     "diagnosis_package_installed_from_sury": "Some system packages should be downgraded",
     "diagnosis_package_installed_from_sury_details": "Some packages were inadvertendly installed from a third-party repository called Sury. The Yunohost team improved the strategy that handle these packages, but it's expected that some setups that installed PHP7.3 apps while still on Stretch have some remaining inconsistencies. To fix this situation, you should try running the following command: <cmd>{cmd_to_fix}</cmd>",
     "diagnosis_display_tip": "To see the issues found, you can go to the Diagnosis section of the webadmin, or run 'yunohost diagnosis show --issues' from the command-line.",
