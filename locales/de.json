@@ -243,7 +243,7 @@
     "app_start_remove": "{app} wird entfernt...",
     "app_start_install": "{app} wird installiert...",
     "app_not_upgraded": "Die App '{failed_app}' konnte nicht aktualisiert werden. Infolgedessen wurden die folgenden App-Upgrades abgebrochen: {apps}",
-    "app_make_default_location_already_used": "Die App \"{app}\" kann nicht als Standard für die Domain \"{domain}\" festgelegt werden. Sie wird bereits von der App \"{other_app}\" verwendet",
+    "app_make_default_location_already_used": "Die App \"{app}\" kann nicht als Standard für die Domain \"{domain}\" festgelegt werden. Sie wird bereits von \"{other_app}\" verwendet",
     "aborting": "Breche ab.",
     "app_action_cannot_be_ran_because_required_services_down": "Diese erforderlichen Dienste sollten zur Durchführung dieser Aktion laufen: {services}. Versuchen Sie, sie neu zu starten, um fortzufahren (und möglicherweise zu untersuchen, warum sie nicht verfügbar sind).",
     "already_up_to_date": "Nichts zu tun. Alles ist bereits auf dem neusten Stand.",
@@ -467,5 +467,6 @@
     "diagnosis_processes_killed_by_oom_reaper": "Einige Prozesse wurden vom System beendet, weil nicht genügend Arbeitsspeicher vorhanden ist. Das passiert normalerweise, wenn das System nicht genügend Arbeitsspeicher zur Verfügung hat oder wenn ein Prozess zu viel Speicher verbraucht. Zusammenfassung der beendeten Prozesse: {kills_summary}",
     "diagnosis_description_ports": "Offene Ports",
     "additional_urls_already_added": "Zusätzliche URL '{url:s}' bereits hinzugefügt in der zusätzlichen URL für Berechtigung '{permission:s}'",
-    "additional_urls_already_removed": "Zusätzliche URL '{url:s}' bereits entfernt in der zusätzlichen URL  für Berechtigung '{permission:s}'"
+    "additional_urls_already_removed": "Zusätzliche URL '{url:s}' bereits entfernt in der zusätzlichen URL  für Berechtigung '{permission:s}'",
+    "app_label_deprecated": "Dieser Befehl ist veraltet! Bitte nutzen Sie den neuen Befehl 'yunohost user permission update' um das Applabel zu verwalten."
 }
