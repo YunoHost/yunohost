@@ -21,12 +21,12 @@ class BaseSystemDiagnoser(Diagnoser):
         # Detect virt technology (if not bare metal) and arch
         # Gotta have this "|| true" because it systemd-detect-virt return 'none'
         # with an error code on bare metal ~.~
-        virt = check_output("systemd-detect-virt || true", shell=True).strip()
+        virt = check_output("systemd-detect-virt || true", shell=True)
         if virt.lower() == "none":
             virt = "bare-metal"
 
         # Detect arch
-        arch = check_output("dpkg --print-architecture").strip()
+        arch = check_output("dpkg --print-architecture")
         hardware = dict(meta={"test": "hardware"},
                         status="INFO",
                         data={"virt": virt, "arch": arch},
@@ -102,7 +102,7 @@ class BaseSystemDiagnoser(Diagnoser):
                 continue
 
             cmd = "LC_ALL=C apt policy %s 2>&1 | grep http -B1 | tr -d '*' | grep '+deb' | grep -v 'gbp' | head -n 1 | awk '{print $1}'" % package
-            version_to_downgrade_to = check_output(cmd).strip()
+            version_to_downgrade_to = check_output(cmd)
             yield (package, version_to_downgrade_to)
 
     def is_vulnerable_to_meltdown(self):

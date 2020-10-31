@@ -206,7 +206,7 @@ class DNSRecordsDiagnoser(Diagnoser):
         Return the expiration datetime of a domain or None
         """
         command = "whois -H %s || echo failed" % (domain)
-        out = check_output(command).strip().split("\n")
+        out = check_output(command).split("\n")
 
         # Reduce output to determine if whois answer is equivalent to NOT FOUND
         filtered_out = [line for line in out

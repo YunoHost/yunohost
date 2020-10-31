@@ -184,7 +184,7 @@ class MyMigration(Migration):
                   " | awk '{print $1}'" \
                   " | { grep 'ynh-deps$' || true; }"
 
-        output = check_output(command).strip()
+        output = check_output(command)
 
         return output.split('\n') if output else []
 
@@ -214,13 +214,13 @@ class MyMigration(Migration):
 
     def validate_and_upgrade_cert_if_necessary(self):
 
-        active_certs = set(check_output("grep -roh '/.*crt.pem' /etc/nginx/").strip().split("\n"))
+        active_certs = set(check_output("grep -roh '/.*crt.pem' /etc/nginx/").split("\n"))
 
         cmd = "LC_ALL=C openssl x509 -in %s -text -noout | grep -i 'Signature Algorithm:' | awk '{print $3}' | uniq"
 
         default_crt = '/etc/yunohost/certs/yunohost.org/crt.pem'
         default_key = '/etc/yunohost/certs/yunohost.org/key.pem'
-        default_signature = check_output(cmd % default_crt).strip() if default_crt in active_certs else None
+        default_signature = check_output(cmd % default_crt) if default_crt in active_certs else None
         if default_signature is not None and (default_signature.startswith("md5") or default_signature.startswith("sha1")):
             logger.warning("%s is using a pretty old certificate incompatible with newer versions of nginx ... attempting to regenerate a fresh one" % default_crt)
 
@@ -233,7 +233,7 @@ class MyMigration(Migration):
                 os.system("mv %s.old %s" % (default_crt, default_crt))
                 os.system("mv %s.old %s" % (default_key, default_key))
 
-        signatures = {cert: check_output(cmd % cert).strip() for cert in active_certs}
+        signatures = {cert: check_output(cmd % cert) for cert in active_certs}
 
         def cert_is_weak(cert):
             sig = signatures[cert]

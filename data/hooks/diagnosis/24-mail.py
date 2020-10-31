@@ -201,7 +201,7 @@ class MailDiagnoser(Diagnoser):
 
         command = 'postqueue -p | grep -v "Mail queue is empty" | grep -c "^[A-Z0-9]" || true'
         try:
-            output = check_output(command).strip()
+            output = check_output(command)
             pending_emails = int(output)
         except (ValueError, CalledProcessError) as e:
             yield dict(meta={"test": "mail_queue"},
