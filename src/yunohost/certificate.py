@@ -483,6 +483,10 @@ def _check_acme_challenge_configuration(domain):
 
 
 def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
+
+    if not os.path.exists(ACCOUNT_KEY_FILE):
+        _generate_account_key()
+
     # Make sure tmp folder exists
     logger.debug("Making sure tmp folders exists...")
 
