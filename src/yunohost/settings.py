@@ -8,7 +8,7 @@ from collections import OrderedDict
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
-from yunohost.service import service_regen_conf
+from yunohost.tools import tools_regen_conf
 
 logger = getActionLogger('yunohost.settings')
 
@@ -325,13 +325,13 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 @post_change_hook("security.nginx.compatibility")
 def reconfigure_nginx(setting_name, old_value, new_value):
     if old_value != new_value:
-        service_regen_conf(names=['nginx'])
+        tools_regen_conf(names=['nginx'])
 
 
 @post_change_hook("security.ssh.compatibility")
 def reconfigure_ssh(setting_name, old_value, new_value):
     if old_value != new_value:
-        service_regen_conf(names=['ssh'])
+        tools_regen_conf(names=['ssh'])
 
 
 @post_change_hook("smtp.allow_ipv6")
@@ -342,7 +342,7 @@ def reconfigure_ssh(setting_name, old_value, new_value):
 @post_change_hook("security.postfix.compatibility")
 def reconfigure_postfix(setting_name, old_value, new_value):
     if old_value != new_value:
-        service_regen_conf(names=['postfix'])
+        tools_regen_conf(names=['postfix'])
 
 
 @post_change_hook("pop3.enabled")
@@ -364,9 +364,14 @@ def reconfigure_dovecot(setting_name, old_value, new_value):
         ]
         subprocess.call(command, env=environment)
         if old_value != new_value:
-            service_regen_conf(names=['dovecot'])
+            tools_regen_conf(names=['dovecot'])
     else:
         if old_value != new_value:
-            service_regen_conf(names=['dovecot'])
+            tools_regen_conf(names=['dovecot'])
         command = ['apt-get', '-y', 'remove', dovecot_package]
         subprocess.call(command, env=environment)
+
+@post_change_hook("panel_overlay.enabled")
+def reconfigure_nginx(setting_name, old_value, new_value):
+    if old_value != new_value:
+        tools_regen_conf(names=['nginx'])
