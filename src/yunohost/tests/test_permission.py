@@ -899,7 +899,7 @@ def test_permission_protection_management_by_helper():
     assert res['permissions_app.admin']['protected'] is True
     assert res['permissions_app.dev']['protected'] is False
 
-    app_upgrade(["permissions_app"], file="./tests/apps/permissions_app_ynh")
+    app_upgrade(["permissions_app"], file=os.path.join(get_test_apps_dir(), "permissions_app_ynh"))
 
     res = user_permission_list(full=True)['permissions']
     assert res['permissions_app.main']['protected'] is False
