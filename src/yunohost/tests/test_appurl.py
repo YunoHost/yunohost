@@ -107,7 +107,7 @@ def test_normalize_permission_path_with_unknown_domain():
 
 
 def test_normalize_permission_path_conflicting_path():
-    app_install("./tests/apps/register_url_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
                 args="domain=%s&path=%s" % (maindomain, "/url/registerapp"), force=True)
 
     with pytest.raises(YunohostError):
