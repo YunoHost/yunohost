@@ -74,7 +74,7 @@ DEFAULTS = OrderedDict([
     ("smtp.relay.user", {"type": "string", "default": ""}),
     ("smtp.relay.password", {"type": "string", "default": ""}),
     ("backup.compress_tar_archives", {"type": "bool", "default": False}),
-    ("panel_overlay.enabled", {"type": "bool", "default": False}),
+    ("panel_overlay.enabled", {"type": "bool", "default": True}),
 ])
 
 
