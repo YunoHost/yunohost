@@ -670,5 +670,6 @@
     "app_argument_password_no_default": "Erreur lors de l'analyse de l'argument de mot de passe '{name}' : l'argument de mot de passe ne peut pas avoir de valeur par défaut pour des raisons de sécurité",
     "pattern_email_forward": "Il doit s'agir d'une adresse électronique valide, le symbole '+' étant accepté (par exemples : johndoe@exemple.com ou bien johndoe+yunohost@exemple.com)",
     "global_settings_setting_smtp_relay_password": "Mot de passe SMTP du serveur de courrier électronique",
-    "diagnosis_package_installed_from_sury": "Certains paquets du système devraient être rétrograder vers une version moins récente"
+    "diagnosis_package_installed_from_sury": "Certains paquets du système devraient être rétrograder vers une version moins récente",
+    "additional_urls_already_added": "URL supplémentaire '{url:s}' déjà ajoutée pour la permission '{permission:s}'"
 }
