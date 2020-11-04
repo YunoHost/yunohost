@@ -565,6 +565,7 @@ class OperationLogger(object):
             'operation': self.operation,
             'parent': self.parent,
             'yunohost_version': get_ynh_package_version("yunohost")["version"],
+            'interface': msettings.get('interface') == 'api',
         }
         if self.related_to is not None:
             data['related_to'] = self.related_to

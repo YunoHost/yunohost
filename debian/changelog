@@ -2,6 +2,32 @@ yunohost (4.1.0) testing; urgency=low
 
   - Tmp bump of the version number to fix CI (c.f. Breaks: yunohost(<<4.1) in moulinette)
 
+yunohost (4.0.8.1) stable; urgency=low
+
+  - [fix] App installs logs were still disclosing secrets when shared sometimes ...
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 04 Nov 2020 17:24:52 +0100
+
+yunohost (4.0.8) stable; urgency=low
+
+  - [fix] Diagnose ssl libs installed from sury (#1053)
+  - [enh] Better problematic apt dependencies auto-investigation mechanism (#1051, 8d4f36e1)
+  - [fix] Force locale to C during postgresql migration to avoid some stupid issue related to locale (d532cd5e)
+  - [fix] Use php7.3 by default in CLI (82c0cc92)
+  - [fix] Typo in fpm_config helper led to install process hanging forever (7dcf4b00)
+
+  Thanks to all contributors <3 ! (Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 16 Sep 2020 16:23:04 +0200
+
+yunohost (4.0.7.1) stable; urgency=low
+
+  - Forbid users from using SSH as a VPN (even if SSH login is disabled) (#1050)
+
+  Thanks to all contributors <3 ! (ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 11 Sep 2020 21:06:09 +0200
+
 yunohost (4.0.7) stable; urgency=low
 
   - [fix] Require explicitly php7.3-foo packages because in some cases Sury's php7.4- packages are installed and php7.3-fpm doesn't get installed ... (1288159a)

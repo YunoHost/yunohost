@@ -396,12 +396,7 @@ def _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, logge
                   for k, v in env.items()]), cmd)
     command.append(cmd.format(script=cmd_script, args=cmd_args))
 
-    if logger.isEnabledFor(log.DEBUG):
-        logger.debug(m18n.n('executing_command', command=' '.join(command)))
-    else:
-        logger.debug(m18n.n('executing_script', script=path))
-
-    logger.debug("About to run the command '%s'" % command)
+    logger.debug("Executing command '%s'" % ' '.join(command))
 
     returncode = call_async_output(
         command, loggers, shell=False, cwd=chdir,
