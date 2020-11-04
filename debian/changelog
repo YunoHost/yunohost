@@ -2,6 +2,14 @@ yunohost (4.1.0) testing; urgency=low
 
   - Tmp bump of the version number to fix CI (c.f. Breaks: yunohost(<<4.1) in moulinette)
 
+yunohost (4.0.8.2) stable; urgency=low
+
+  - [fix] intermediate_certificate is now included in signed certificate (#1067)
+
+  Thanks to all contributors <3 ! (Bram)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 04 Nov 2020 23:32:16 +0100
+
 yunohost (4.0.8.1) stable; urgency=low
 
   - [fix] App installs logs were still disclosing secrets when shared sometimes ...
