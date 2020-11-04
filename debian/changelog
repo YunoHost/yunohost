@@ -1,3 +1,9 @@
+yunohost (4.0.8.1) stable; urgency=low
+
+  - [fix] App installs logs were still disclosing secrets when shared sometimes ...
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 04 Nov 2020 17:24:52 +0100
+
 yunohost (4.0.8) stable; urgency=low
 
   - [fix] Diagnose ssl libs installed from sury (#1053)
