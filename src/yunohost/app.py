@@ -743,7 +743,13 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     env_dict["YNH_APP_ID"] = app_id
     env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
-    operation_logger.extra.update({'env': env_dict})
+
+    env_dict_for_logging = env_dict.copy()
+    for arg_name, arg_value_and_type in args_odict.items():
+        if arg_value_and_type[1] == "password":
+            del env_dict_for_logging["YNH_APP_ARG_%s" % arg_name.upper()]
+
+    operation_logger.extra.update({'env': env_dict_for_logging})
 
     # We'll check that the app didn't brutally edit some system configuration
     manually_modified_files_before_install = manually_modified_files()
