@@ -300,7 +300,6 @@
     "dyndns_registration_failed": "Could not register DynDNS domain: {error:s}",
     "dyndns_domain_not_provided": "DynDNS provider {provider:s} cannot provide domain {domain:s}.",
     "dyndns_unavailable": "The domain '{domain:s}' is unavailable.",
-    "executing_script": "Executing script '{script:s}'...",
     "extracting": "Extracting...",
     "experimental_feature": "Warning: This feature is experimental and not considered stable, you should not use it unless you know what you are doing.",
     "field_invalid": "Invalid field '{:s}'",
