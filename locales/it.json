@@ -358,5 +358,6 @@
     "app_manifest_install_ask_password": "Scegli una password di amministrazione per quest'applicazione",
     "app_manifest_install_ask_path": "Scegli il percorso dove installare quest'applicazione",
     "app_manifest_install_ask_domain": "Scegli il dominio sotto il quale installare quest'applicazione",
-    "app_argument_password_no_default": "Errore nell'analisi dell'argomento '{name}': l'argomento di password non può avere un valore di default per ragioni di sicurezza"
+    "app_argument_password_no_default": "Errore durante il parsing dell'argomento '{name}': l'argomento password non può avere un valore di default per ragioni di sicurezza",
+    "additional_urls_already_added": "L'URL aggiuntivo '{url:s}' è già utilizzato come URL aggiuntivo per il permesso '{permission:s}'"
 }
