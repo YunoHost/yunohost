@@ -2109,11 +2109,22 @@ def backup_restore(name, system=[], apps=[], force=False):
         system = []
         apps = []
 
-    # TODO don't ask this question when restoring apps only and certain system
-    # parts
+    #
+    # Initialize                                                            #
+    #
 
-    # Check if YunoHost is installed
-    if system is not None and os.path.isfile('/etc/yunohost/installed'):
+    restore_manager = RestoreManager(name)
+
+    restore_manager.set_system_targets(system)
+    restore_manager.set_apps_targets(apps)
+
+    restore_manager.assert_enough_free_space()
+
+    #
+    # Add validation if restoring system parts on an already-installed system
+    #
+
+    if restore_manager.targets.targets["system"] != [] and os.path.isfile('/etc/yunohost/installed'):
         logger.warning(m18n.n('yunohost_already_installed'))
         if not force:
             try:
@@ -2127,20 +2138,6 @@ def backup_restore(name, system=[], apps=[], force=False):
                     force = True
             if not force:
                 raise YunohostError('restore_failed')
-
-    # TODO Partial app restore could not work if ldap is not restored before
-    # TODO repair mysql if broken and it's a complete restore
-
-    #
-    # Initialize                                                            #
-    #
-
-    restore_manager = RestoreManager(name)
-
-    restore_manager.set_system_targets(system)
-    restore_manager.set_apps_targets(apps)
-
-    restore_manager.assert_enough_free_space()
 
     #
     # Mount the archive then call the restore for each system part / app    #
