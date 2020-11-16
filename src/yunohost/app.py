@@ -1293,6 +1293,8 @@ def app_setting(app, key, value=None, delete=False):
                                       show_tile=False,
                                       protected=True)
 
+        return
+
     #
     # Regular setting management
     #
