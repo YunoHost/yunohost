@@ -165,8 +165,11 @@ user:
                     full: --change-password
                     help: New password to set
                     metavar: PASSWORD
+                    nargs: "?"
+                    const: 0
                     extra:
                         pattern: *pattern_password
+                        comment: good_practices_about_user_password
                 --add-mailforward:
                     help: Mailforward addresses to add
                     nargs: "*"
