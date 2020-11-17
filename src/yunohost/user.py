@@ -324,7 +324,9 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
     if lastname and firstname:
         new_attr_dict['cn'] = new_attr_dict['displayName'] = [firstname + ' ' + lastname]
 
-    if change_password:
+    if change_password is not None:
+        if not change_password:
+            change_password = msignals.prompt(m18n.n("ask_password"), True, True)
         # Ensure sufficiently complex password
         assert_password_is_strong_enough("user", change_password)
 
