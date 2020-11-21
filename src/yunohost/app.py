@@ -1420,6 +1420,9 @@ def app_ssowatconf():
     with open('/etc/ssowat/conf.json', 'w+') as f:
         json.dump(conf_dict, f, sort_keys=True, indent=4)
 
+    from utils.legacy import translate_legacy_rules_in_ssowant_conf_json_persistent
+    translate_legacy_rules_in_ssowant_conf_json_persistent()
+
     logger.debug(m18n.n('ssowat_conf_generated'))
 
 
