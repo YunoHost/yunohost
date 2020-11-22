@@ -930,7 +930,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
             permission_sync_to_user()
 
-            raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
+            raise YunohostError(failure_message_with_debug_instructions, raw_msg=True, log_ref=operation_logger.name)
 
     # Clean hooks and add new ones
     hook_remove(app_instance_name)
