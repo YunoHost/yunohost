@@ -1326,6 +1326,7 @@ def app_register_url(app, domain, path):
         domain -- The domain on which the app should be registered (e.g. your.domain.tld)
         path -- The path to be registered (e.g. /coffee)
     """
+    from permission import permission_url
 
     domain, path = _normalize_domain_path(domain, path)
 
@@ -1342,6 +1343,8 @@ def app_register_url(app, domain, path):
 
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
+    if domain and path:
+        permission_url(app + ".main", url='/')
 
 
 def app_ssowatconf():
