@@ -658,7 +658,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import user_permission_list, user_permission_info, user_permission_update, permission_create, permission_url, permission_delete, permission_sync_to_user
+    from yunohost.permission import user_permission_list, permission_create, permission_delete, permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
 
     # Fetch or extract sources
@@ -822,7 +822,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
     # Initialize the main permission for the app
-    # After the install, if apps don't have a domain and path defined, the default url '/' is removed from the permission
+    # The permission is initialized with no url associated, and with tile disabled
+    # For web app, the root path of the app will be added as url and the tile
+    # will be enabled during the app install. C.f. 'app_register_url()' below.
     permission_create(app_instance_name + ".main", allowed=["all_users"], label=label, show_tile=False, protected=False)
 
     # Execute the app install script
@@ -943,17 +945,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     os.system('chmod -R 400 %s' % app_setting_path)
     os.system('chown -R root: %s' % app_setting_path)
     os.system('chown -R admin: %s/scripts' % app_setting_path)
-
-    # If the app haven't set the url of the main permission and domain and path is set set / as main url
-    app_settings = _get_app_settings(app_instance_name)
-    domain = app_settings.get('domain', None)
-    path = app_settings.get('path', None)
-    if domain and path and user_permission_info(app_instance_name + '.main')['url'] is None:
-        permission_url(app_instance_name + ".main", url='/', sync_perm=False)
-    if domain and path:
-        user_permission_update(app_instance_name + ".main", show_tile=True, sync_perm=False)
-
-    permission_sync_to_user()
 
     logger.success(m18n.n('installation_complete'))
 
@@ -1220,7 +1211,7 @@ def app_setting(app, key, value=None, delete=False):
 
     if is_legacy_permission_setting:
 
-        from permission import user_permission_list, user_permission_update, permission_create, permission_delete, permission_url
+        from yunohost.permission import user_permission_list, user_permission_update, permission_create, permission_delete, permission_url
         permissions = user_permission_list(full=True)['permissions']
         permission_name = "%s.legacy_%s_uris" % (app, key.split('_')[0])
         permission = permissions.get(permission_name)
@@ -1281,7 +1272,7 @@ def app_setting(app, key, value=None, delete=False):
                     permission_url(permission_name, clear_urls=True, sync_perm=False)
                     permission_url(permission_name, add_url=new_urls)
                 else:
-                    from utils.legacy import legacy_permission_label
+                    from yunohost.utils.legacy import legacy_permission_label
                     # Let's create a "special" permission for the legacy settings
                     permission_create(permission=permission_name,
                                       # FIXME find a way to limit to only the user allowed to the main permission
@@ -1326,6 +1317,7 @@ def app_register_url(app, domain, path):
         domain -- The domain on which the app should be registered (e.g. your.domain.tld)
         path -- The path to be registered (e.g. /coffee)
     """
+    from yunohost.permission import permission_url, user_permission_update, permission_sync_to_user
 
     domain, path = _normalize_domain_path(domain, path)
 
@@ -1342,6 +1334,16 @@ def app_register_url(app, domain, path):
 
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
+
+    # Initially, the .main permission is created with no url at all associated
+    # When the app register/books its web url, we also add the url '/'
+    # (meaning the root of the app, domain.tld/path/)
+    # and enable the tile to the SSO, and both of this should match 95% of apps
+    # For more specific cases, the app is free to change / add urls or disable
+    # the tile using the permission helpers.
+    permission_url(app + ".main", url='/', sync_perm=False)
+    user_permission_update(app + ".main", show_tile=True, sync_perm=False)
+    permission_sync_to_user()
 
 
 def app_ssowatconf():
@@ -1424,7 +1426,7 @@ def app_ssowatconf():
 
 
 def app_change_label(app, new_label):
-    from permission import user_permission_update
+    from yunohost.permission import user_permission_update
     installed = _is_installed(app)
     if not installed:
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
