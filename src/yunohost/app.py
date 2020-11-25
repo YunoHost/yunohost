@@ -1211,7 +1211,7 @@ def app_setting(app, key, value=None, delete=False):
 
     if is_legacy_permission_setting:
 
-        from permission import user_permission_list, user_permission_update, permission_create, permission_delete, permission_url
+        from yunohost.permission import user_permission_list, user_permission_update, permission_create, permission_delete, permission_url
         permissions = user_permission_list(full=True)['permissions']
         permission_name = "%s.legacy_%s_uris" % (app, key.split('_')[0])
         permission = permissions.get(permission_name)
@@ -1272,7 +1272,7 @@ def app_setting(app, key, value=None, delete=False):
                     permission_url(permission_name, clear_urls=True, sync_perm=False)
                     permission_url(permission_name, add_url=new_urls)
                 else:
-                    from utils.legacy import legacy_permission_label
+                    from yunohost.utils.legacy import legacy_permission_label
                     # Let's create a "special" permission for the legacy settings
                     permission_create(permission=permission_name,
                                       # FIXME find a way to limit to only the user allowed to the main permission
@@ -1317,7 +1317,7 @@ def app_register_url(app, domain, path):
         domain -- The domain on which the app should be registered (e.g. your.domain.tld)
         path -- The path to be registered (e.g. /coffee)
     """
-    from permission import permission_url, user_permission_update, permission_sync_to_user
+    from yunohost.permission import permission_url, user_permission_update, permission_sync_to_user
 
     domain, path = _normalize_domain_path(domain, path)
 
@@ -1426,7 +1426,7 @@ def app_ssowatconf():
 
 
 def app_change_label(app, new_label):
-    from permission import user_permission_update
+    from yunohost.permission import user_permission_update
     installed = _is_installed(app)
     if not installed:
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
