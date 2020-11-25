@@ -468,6 +468,7 @@
     "migrations_success_forward": "Migration {id} completed",
     "migrations_to_be_ran_manually":  "Migration {id} has to be run manually. Please go to Tools → Migrations on the webadmin page, or run `yunohost tools migrations migrate`.",
     "not_enough_disk_space": "Not enough free space on '{path:s}'",
+    "invalid_number": "Must be a number",
     "operation_interrupted": "The operation was manually interrupted?",
     "packages_upgrade_failed": "Could not upgrade all the packages",
     "password_listed": "This password is among the most used passwords in the world. Please choose something more unique.",

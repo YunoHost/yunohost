@@ -2593,6 +2593,29 @@ class UserArgumentParser(YunoHostArgumentFormatParser):
                             error=m18n.n('user_unknown', user=question.value))
 
 
+class NumberArgumentParser(YunoHostArgumentFormatParser):
+    argument_type = "number"
+    default_value = ""
+
+    def parse_question(self, question, user_answers):
+        question = super(NumberArgumentParser, self).parse_question(question, user_answers)
+
+        if question.default is None:
+            question.default = 0
+
+        return question
+
+    def _post_parse_value(self, question):
+        if isinstance(question.value, int):
+            return super(NumberArgumentParser, self)._post_parse_value(question)
+
+        try:
+            return int(question.value)
+        except ValueError:
+            raise YunohostError('app_argument_invalid', name=question.name,
+                            error=m18n.n('invalid_number'))
+
+
 class DisplayTextArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "display_text"
 
@@ -2607,6 +2630,7 @@ ARGUMENTS_TYPE_PARSERS = {
     "boolean": BooleanArgumentParser,
     "domain": DomainArgumentParser,
     "user": UserArgumentParser,
+    "number": NumberArgumentParser,
     "display_text": DisplayTextArgumentParser,
 }
 
