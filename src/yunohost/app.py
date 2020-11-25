@@ -2609,10 +2609,10 @@ class NumberArgumentParser(YunoHostArgumentFormatParser):
         if isinstance(question.value, int):
             return super(NumberArgumentParser, self)._post_parse_value(question)
 
-        try:
+        if isinstance(question.value, str) and question.value.isdigit():
             return int(question.value)
-        except ValueError:
-            raise YunohostError('app_argument_invalid', name=question.name,
+
+        raise YunohostError('app_argument_invalid', name=question.name,
                             error=m18n.n('invalid_number'))
 
 
