@@ -1573,7 +1573,7 @@ def app_config_show_panel(operation_logger, app):
                         option["default"] = parsed_values[generated_name]
 
                     args_dict = _parse_args_in_yunohost_format(
-                        [{option["name"]: parsed_values[generated_name]}],
+                        {option["name"]: parsed_values[generated_name]},
                         [option]
                     )
                     option["default"] = args_dict[option["name"]][0]
