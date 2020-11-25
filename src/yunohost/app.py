@@ -2498,8 +2498,9 @@ class PasswordArgumentParser(YunoHostArgumentFormatParser):
         if any(char in question.value for char in self.forbidden_chars):
             raise YunohostError('pattern_password_app', forbidden_chars=self.forbidden_chars)
 
-        from yunohost.utils.password import assert_password_is_strong_enough
-        assert_password_is_strong_enough('user', question.value)
+        if not question.optional:
+            from yunohost.utils.password import assert_password_is_strong_enough
+            assert_password_is_strong_enough('user', question.value)
 
         return super(PasswordArgumentParser, self)._post_parse_value(question)
 
