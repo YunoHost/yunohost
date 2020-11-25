@@ -1114,6 +1114,10 @@ def test_parse_args_in_yunohost_format_number_bad_input():
     with pytest.raises(YunohostError):
         _parse_args_in_yunohost_format(answers, questions)
 
+    answers = {"some_number": 1.5}
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format(answers, questions)
+
 
 def test_parse_args_in_yunohost_format_number_input():
     questions = [{"name": "some_number", "type": "number", "ask": "some question", }]
