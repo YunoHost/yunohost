@@ -95,6 +95,15 @@ def test_parse_args_in_yunohost_format_string_optional_with_input():
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
+def test_parse_args_in_yunohost_format_string_optional_with_empty_input():
+    questions = [{"name": "some_string", "ask": "some question", "optional": True, }]
+    answers = {}
+    expected_result = OrderedDict({"some_string": ("", "string")})
+
+    with patch.object(msignals, "prompt", return_value=""):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
 def test_parse_args_in_yunohost_format_string_optional_with_input_without_ask():
     questions = [{"name": "some_string", "optional": True, }]
     answers = {}
@@ -265,6 +274,22 @@ def test_parse_args_in_yunohost_format_password_optional_with_input():
     expected_result = OrderedDict({"some_password": ("some_value", "password")})
 
     with patch.object(msignals, "prompt", return_value="some_value"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_password_optional_with_empty_input():
+    questions = [
+        {
+            "name": "some_password",
+            "ask": "some question",
+            "type": "password",
+            "optional": True,
+        }
+    ]
+    answers = {}
+    expected_result = OrderedDict({"some_password": ("", "password")})
+
+    with patch.object(msignals, "prompt", return_value=""):
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -441,6 +466,17 @@ def test_parse_args_in_yunohost_format_path_optional_with_input():
     expected_result = OrderedDict({"some_path": ("some_value", "path")})
 
     with patch.object(msignals, "prompt", return_value="some_value"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_path_optional_with_empty_input():
+    questions = [
+        {"name": "some_path", "ask": "some question", "type": "path", "optional": True, }
+    ]
+    answers = {}
+    expected_result = OrderedDict({"some_path": ("", "path")})
+
+    with patch.object(msignals, "prompt", return_value=""):
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -660,6 +696,22 @@ def test_parse_args_in_yunohost_format_boolean_optional_with_input():
     expected_result = OrderedDict({"some_boolean": (1, "boolean")})
 
     with patch.object(msignals, "prompt", return_value="y"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_boolean_optional_with_empty_input():
+    questions = [
+        {
+            "name": "some_boolean",
+            "ask": "some question",
+            "type": "boolean",
+            "optional": True,
+        }
+    ]
+    answers = {}
+    expected_result = OrderedDict({"some_boolean": (0, "boolean")})
+
+    with patch.object(msignals, "prompt", return_value=""):
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
