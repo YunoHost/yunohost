@@ -418,6 +418,24 @@ def test_parse_args_in_yunohost_format_password_strong_enough():
         _parse_args_in_yunohost_format({"some_password": "password"}, questions)
 
 
+def test_parse_args_in_yunohost_format_password_optional_strong_enough():
+    questions = [
+        {
+            "name": "some_password",
+            "ask": "some question",
+            "type": "password",
+            "optional": True,
+        }
+    ]
+
+    with pytest.raises(YunohostError):
+        # too short
+        _parse_args_in_yunohost_format({"some_password": "a"}, questions)
+
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format({"some_password": "password"}, questions)
+
+
 def test_parse_args_in_yunohost_format_path():
     questions = [{"name": "some_path", "type": "path", }]
     answers = {"some_path": "some_value"}
