@@ -298,7 +298,7 @@ ynh_permission_create() {
         fi
     fi
 
-    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission' $url $additional_urls $auth_header $allowed $label $show_tile $protected , sync_perm=False)"
+    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission' $url $additional_urls $auth_header $allowed $label $show_tile $protected)"
 }
 
 # Remove a permission for the app (note that when the app is removed all permission is automatically removed)
@@ -316,7 +316,7 @@ ynh_permission_delete() {
     local permission
     ynh_handle_getopts_args "$@"
 
-    yunohost tools shell -c "from yunohost.permission import permission_delete; permission_delete('$app.$permission', sync_perm=False)"
+    yunohost tools shell -c "from yunohost.permission import permission_delete; permission_delete('$app.$permission')"
 }
 
 # Check if a permission exists
@@ -408,7 +408,7 @@ ynh_permission_url() {
         clear_urls=",clear_urls=True"
     fi
 
-    yunohost tools shell -c "from yunohost.permission import permission_url; permission_url('$app.$permission' $url $add_url $remove_url $auth_header $clear_urls )"
+    yunohost tools shell -c "from yunohost.permission import permission_url; permission_url('$app.$permission' $url $add_url $remove_url $auth_header $clear_urls)"
 }
 
 
@@ -487,7 +487,7 @@ ynh_permission_update() {
         fi
     fi
 
-    yunohost tools shell -c "from yunohost.permission import user_permission_update; user_permission_update('$app.$permission' $add $remove $label $show_tile $protected , force=True, sync_perm=False)"
+    yunohost tools shell -c "from yunohost.permission import user_permission_update; user_permission_update('$app.$permission' $add $remove $label $show_tile $protected , force=True)"
 }
 
 # Check if a permission has an user
