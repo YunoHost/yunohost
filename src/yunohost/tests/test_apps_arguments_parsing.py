@@ -1207,7 +1207,7 @@ def test_parse_args_in_yunohost_format_number_input_test_ask():
 
     with patch.object(msignals, "prompt", return_value="1111") as prompt:
         _parse_args_in_yunohost_format(answers, questions)
-        prompt.assert_called_with(ask_text, False)
+        prompt.assert_called_with("%s (default: 0)" % (ask_text), False)
 
 
 def test_parse_args_in_yunohost_format_number_input_test_ask_with_default():
