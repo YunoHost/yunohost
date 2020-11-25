@@ -256,9 +256,9 @@ def test_parse_args_in_yunohost_format_password_input_no_ask():
 def test_parse_args_in_yunohost_format_password_no_input_optional():
     questions = [{"name": "some_password", "type": "password", "optional": True, }]
     answers = {}
+    expected_result = OrderedDict({"some_password": ("", "password")})
 
-    with pytest.raises(YunohostError):
-        _parse_args_in_yunohost_format(answers, questions)
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_parse_args_in_yunohost_format_password_optional_with_input():
@@ -727,7 +727,7 @@ def test_parse_args_in_yunohost_format_boolean_optional_with_empty_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_boolean": (0, "boolean")})
+    expected_result = OrderedDict({"some_boolean": (0, "boolean")})  # default to false
 
     with patch.object(msignals, "prompt", return_value=""):
         assert _parse_args_in_yunohost_format(answers, questions) == expected_result
