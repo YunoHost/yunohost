@@ -3,12 +3,13 @@
 import os
 import glob
 import datetime
+import subprocess
 
 def get_current_git_branch():
-    with open("../.git/HEAD", "r") as f:
-        head_file = f.readlines()
-        current_branch = head_file[0].split()[1].split("refs/heads/")[1]
+    p = subprocess.Popen("git branch -a --contains | grep remote | cut -d'/' -f3 ", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    stdout, stderr = p.communicate()
 
+    current_branch = stdout.strip().decode('utf-8')
     return current_branch
 
 def render(helpers):
