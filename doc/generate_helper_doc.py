@@ -5,16 +5,16 @@ import glob
 import datetime
 import subprocess
 
-def get_current_git_branch():
+def get_current_commit():
     p = subprocess.Popen("git rev-parse --verify HEAD", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout, stderr = p.communicate()
 
-    current_branch = stdout.strip().decode('utf-8')
-    return current_branch
+    current_commit = stdout.strip().decode('utf-8')
+    return current_commit
 
 def render(helpers):
 
-    current_branch = get_current_git_branch()
+    current_commit = get_current_commit()
 
     data = {"helpers": helpers,
             "date": datetime.datetime.now().strftime("%m/%d/%Y"),
@@ -34,7 +34,7 @@ def render(helpers):
     template = open("helper_doc_template.html", "r").read()
     t = Template(template)
     t.globals['now'] = datetime.datetime.utcnow
-    result = t.render(current_branch=current_branch, data=data, convert=shell_to_html, shell_css=shell_css)
+    result = t.render(current_commit=current_commit, data=data, convert=shell_to_html, shell_css=shell_css)
     open("helpers.html", "w").write(result)
 
 ##############################################################################
