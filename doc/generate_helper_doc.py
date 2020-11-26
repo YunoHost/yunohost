@@ -6,7 +6,7 @@ import datetime
 import subprocess
 
 def get_current_git_branch():
-    p = subprocess.Popen("git branch -a --contains | grep remote | cut -d'/' -f3 ", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+    p = subprocess.Popen("git rev-parse --verify HEAD", shell=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
     stdout, stderr = p.communicate()
 
     current_branch = stdout.strip().decode('utf-8')
