@@ -576,9 +576,10 @@ ynh_app_upstream_version () {
     # Declare an array to define the options of this helper.
     local legacy_args=m
     local -A args_array=( [m]=manifest= )
-    local manifest=""
+    local manifest
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    manifest="${manifest:-}"
 
     if [[ "$manifest" != "" ]] && [[ -e "$manifest" ]];
     then
