@@ -4,8 +4,16 @@ import os
 import glob
 import datetime
 
+def get_current_git_branch():
+    with open("../.git/HEAD", "r") as f:
+        head_file = f.readlines()
+        current_branch = head_file[0].split()[1].split("refs/heads/")[1]
+
+    return current_branch
 
 def render(helpers):
+
+    current_branch = get_current_git_branch()
 
     data = {"helpers": helpers,
             "date": datetime.datetime.now().strftime("%m/%d/%Y"),
@@ -25,7 +33,7 @@ def render(helpers):
     template = open("helper_doc_template.html", "r").read()
     t = Template(template)
     t.globals['now'] = datetime.datetime.utcnow
-    result = t.render(data=data, convert=shell_to_html, shell_css=shell_css)
+    result = t.render(current_branch=current_branch, data=data, convert=shell_to_html, shell_css=shell_css)
     open("helpers.html", "w").write(result)
 
 ##############################################################################
@@ -197,7 +205,7 @@ def main():
 
     for helper_file in helper_files:
         category_name = os.path.basename(helper_file)
-        print "Parsing %s ..." % category_name
+        print("Parsing %s ..." % category_name)
         p = Parser(helper_file)
         p.parse_blocks()
         for b in p.blocks:
