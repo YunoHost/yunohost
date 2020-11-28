@@ -166,7 +166,7 @@ def tools_adminpw(new_password, check_strength=True):
         # An IOError may be thrown if for some reason we can't read/write /etc/passwd
         # A KeyError could also be thrown if 'root' is not in /etc/passwd in the first place (for example because no password defined ?)
         # (c.f. the line about getspnam)
-        except IOError, KeyError:
+        except (IOError, KeyError):
             logger.warning(m18n.n('root_password_desynchronized'))
             return
 
