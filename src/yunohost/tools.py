@@ -163,7 +163,10 @@ def tools_adminpw(new_password, check_strength=True):
             with open('/etc/shadow', 'w') as after_file:
                 after_file.write(before.replace("root:" + hash_root,
                                                 "root:" + new_hash.replace('{CRYPT}', '')))
-        except IOError:
+        # An IOError may be thrown if for some reason we can't read/write /etc/passwd
+        # A KeyError could also be thrown if 'root' is not in /etc/passwd in the first place (for example because no password defined ?)
+        # (c.f. the line about getspnam)
+        except IOError, KeyError:
             logger.warning(m18n.n('root_password_desynchronized'))
             return
 
