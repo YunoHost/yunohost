@@ -1091,6 +1091,165 @@ def test_parse_args_in_yunohost_format_user_two_users_default_input():
                 assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
+
+def test_parse_args_in_yunohost_format_number():
+    questions = [{"name": "some_number", "type": "number", }]
+    answers = {"some_number": 1337}
+    expected_result = OrderedDict({"some_number": (1337, "number")})
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_number_no_input():
+    questions = [{"name": "some_number", "type": "number", }]
+    answers = {}
+
+    expected_result = OrderedDict({"some_number": (0, "number")})
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_number_bad_input():
+    questions = [{"name": "some_number", "type": "number", }]
+    answers = {"some_number": "stuff"}
+
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format(answers, questions)
+
+    answers = {"some_number": 1.5}
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format(answers, questions)
+
+
+def test_parse_args_in_yunohost_format_number_input():
+    questions = [{"name": "some_number", "type": "number", "ask": "some question", }]
+    answers = {}
+
+    expected_result = OrderedDict({"some_number": (1337, "number")})
+    with patch.object(msignals, "prompt", return_value="1337"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+    with patch.object(msignals, "prompt", return_value=1337):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+    expected_result = OrderedDict({"some_number": (0, "number")})
+    with patch.object(msignals, "prompt", return_value=""):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_number_input_no_ask():
+    questions = [{"name": "some_number", "type": "number", }]
+    answers = {}
+    expected_result = OrderedDict({"some_number": (1337, "number")})
+
+    with patch.object(msignals, "prompt", return_value="1337"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_number_no_input_optional():
+    questions = [{"name": "some_number", "type": "number", "optional": True, }]
+    answers = {}
+    expected_result = OrderedDict({"some_number": (0, "number")})  # default to 0
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_number_optional_with_input():
+    questions = [
+        {
+            "name": "some_number",
+            "ask": "some question",
+            "type": "number",
+            "optional": True,
+        }
+    ]
+    answers = {}
+    expected_result = OrderedDict({"some_number": (1337, "number")})
+
+    with patch.object(msignals, "prompt", return_value="1337"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_number_optional_with_input_without_ask():
+    questions = [{"name": "some_number", "type": "number", "optional": True, }]
+    answers = {}
+    expected_result = OrderedDict({"some_number": (0, "number")})
+
+    with patch.object(msignals, "prompt", return_value="0"):
+        assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_number_no_input_default():
+    questions = [
+        {
+            "name": "some_number",
+            "ask": "some question",
+            "type": "number",
+            "default": 1337,
+        }
+    ]
+    answers = {}
+    expected_result = OrderedDict({"some_number": (1337, "number")})
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+
+def test_parse_args_in_yunohost_format_number_bad_default():
+    questions = [
+        {
+            "name": "some_number",
+            "ask": "some question",
+            "type": "number",
+            "default": "bad default",
+        }
+    ]
+    answers = {}
+    with pytest.raises(YunohostError):
+        _parse_args_in_yunohost_format(answers, questions)
+
+
+def test_parse_args_in_yunohost_format_number_input_test_ask():
+    ask_text = "some question"
+    questions = [{"name": "some_number", "type": "number", "ask": ask_text, }]
+    answers = {}
+
+    with patch.object(msignals, "prompt", return_value="1111") as prompt:
+        _parse_args_in_yunohost_format(answers, questions)
+        prompt.assert_called_with("%s (default: 0)" % (ask_text), False)
+
+
+def test_parse_args_in_yunohost_format_number_input_test_ask_with_default():
+    ask_text = "some question"
+    default_value = 1337
+    questions = [{"name": "some_number", "type": "number", "ask": ask_text, "default": default_value, }]
+    answers = {}
+
+    with patch.object(msignals, "prompt", return_value="1111") as prompt:
+        _parse_args_in_yunohost_format(answers, questions)
+        prompt.assert_called_with("%s (default: %s)" % (ask_text, default_value), False)
+
+
+@pytest.mark.skip  # we should do something with this example
+def test_parse_args_in_yunohost_format_number_input_test_ask_with_example():
+    ask_text = "some question"
+    example_value = 1337
+    questions = [{"name": "some_number", "type": "number", "ask": ask_text, "example": example_value, }]
+    answers = {}
+
+    with patch.object(msignals, "prompt", return_value="1111") as prompt:
+        _parse_args_in_yunohost_format(answers, questions)
+        assert ask_text in prompt.call_args[0][0]
+        assert example_value in prompt.call_args[0][0]
+
+
+@pytest.mark.skip  # we should do something with this help
+def test_parse_args_in_yunohost_format_number_input_test_ask_with_help():
+    ask_text = "some question"
+    help_value = 1337
+    questions = [{"name": "some_number", "type": "number", "ask": ask_text, "help": help_value, }]
+    answers = {}
+
+    with patch.object(msignals, "prompt", return_value="1111") as prompt:
+        _parse_args_in_yunohost_format(answers, questions)
+        assert ask_text in prompt.call_args[0][0]
+        assert help_value in prompt.call_args[0][0]
+
 def test_parse_args_in_yunohost_format_display_text():
     questions = [{"name": "some_app", "type": "display_text", "ask": "foobar"}]
     answers = {}
