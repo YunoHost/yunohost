@@ -401,7 +401,7 @@
     "diagnosis_ip_no_ipv4": "Il server non ha IPv4 funzionante.",
     "diagnosis_ip_connected_ipv4": "Il server è connesso ad Internet tramite IPv4!",
     "diagnosis_no_cache": "Nessuna diagnosi nella cache per la categoria '{category}'",
-    "diagnosis_found_warnings": "Trovato {warning} oggetti che potrebbero essere migliorati per {category}.",
+    "diagnosis_found_warnings": "Trovato {warnings} oggetti che potrebbero essere migliorati per {category}.",
     "diagnosis_failed": "Recupero dei risultati della diagnosi per la categoria '{category}' fallito: {error}",
     "diagnosis_everything_ok": "Tutto ok per {category}!",
     "diagnosis_found_errors_and_warnings": "Trovato {errors} problemi (e {warnings} alerts) significativi collegati a {category}!",
