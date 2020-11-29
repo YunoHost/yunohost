@@ -257,7 +257,12 @@ WantedBy=multi-user.target
         ynh_systemd_action --service_name=$fpm_service --action=restart
     else
         # Reload PHP, to not impact other parts of the system using PHP
-        ynh_systemd_action --service_name=$fpm_service --action=reload
+        php-fpm${phpversion} --test 2>/dev/null \
+        && ynh_systemd_action --service_name=$fpm_service --action=reload \
+        || { php-fpm${phpversion} --test || true;
+             rm -f "$finalphpconf";
+             ynh_die --message="The new configuration broke php7.3-fpm?"
+        }
     fi
 }
 
