@@ -319,10 +319,26 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     if not os.path.isfile(path):
         raise YunohostError('file_does_not_exist', path=path)
 
+    def is_relevant_warning(msg):
+
+        # Ignore empty warning messages...
+        if not msg:
+            return False
+
+        # Some of these are shit sent from apt and we don't give a shit about
+        # them because they ain't actual warnings >_>
+        irrelevant_warnings = [
+            r"invalid value for trace file descriptor",
+            r"Creating config file .* with new version",
+            r"Created symlink /etc/systemd",
+            r"dpkg: warning: while removing .* not empty so not removed"
+        ]
+        return all(not re.search(w, msg) for w in irrelevant_warnings)
+
     # Define output loggers and call command
     loggers = (
         lambda l: logger.debug(l.rstrip() + "\r"),
-        lambda l: logger.warning(l.rstrip()) if "invalid value for trace file descriptor" not in l.rstrip() else logger.debug(l.rstrip()),
+        lambda l: logger.warning(l.rstrip()) if is_relevant_warning(l.rstrip()) else logger.debug(l.rstrip()),
         lambda l: logger.info(l.rstrip())
     )
 
