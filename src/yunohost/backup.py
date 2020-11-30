@@ -1374,7 +1374,7 @@ class RestoreManager():
             env_dict.update({
                 'YNH_BACKUP_DIR': self.work_dir,
                 'YNH_BACKUP_CSV': os.path.join(self.work_dir, "backup.csv"),
-                'YNH_APP_BACKUP_DIR': os.path.join(self.work_dir, 'apps', app, 'backup')
+                'YNH_APP_BACKUP_DIR': os.path.join(self.work_dir, 'apps', app_instance_name, 'backup')
             })
 
             operation_logger.extra['env'] = env_dict
@@ -1399,7 +1399,7 @@ class RestoreManager():
             remove_script = os.path.join(app_scripts_in_archive, 'remove')
 
             # Setup environment for remove script
-            env_dict_remove = _make_environment_for_app_script(app)
+            env_dict_remove = _make_environment_for_app_script(app_instance_name)
 
             operation_logger = OperationLogger('remove_on_failed_restore',
                                                [('app', app_instance_name)],
