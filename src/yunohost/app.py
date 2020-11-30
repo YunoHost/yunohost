@@ -359,7 +359,6 @@ def app_change_url(operation_logger, app, domain, path):
     args_list = [value[0] for value in args_odict.values()]
     args_list.append(app)
 
-
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(app, args=args_odict)
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
@@ -813,7 +812,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             del env_dict_for_logging["YNH_APP_ARG_%s" % arg_name.upper()]
 
     operation_logger.extra.update({'env': env_dict_for_logging})
-
 
     # Execute the app install script
     install_failed = True
@@ -2763,21 +2761,22 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
 
 def _make_environment_for_app_script(app, args={}, args_prefix="APP_ARG_"):
 
-        app_setting_path = os.path.join(APPS_SETTING_PATH, app)
+    app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
-        manifest = _get_manifest_of_app(app_setting_path)
-        app_id, app_instance_nb = _parse_app_instance_name(app)
+    manifest = _get_manifest_of_app(app_setting_path)
+    app_id, app_instance_nb = _parse_app_instance_name(app)
 
-        env_dict = {
-            "YNH_APP_ID": app_id,
-            "YNH_APP_INSTANCE_NAME": app,
-            "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
-            "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?")
-        }
+    env_dict = {
+        "YNH_APP_ID": app_id,
+        "YNH_APP_INSTANCE_NAME": app,
+        "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
+        "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?")
+    }
 
-        for arg_name, arg_value_and_type in args.items():
-            env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = arg_value_and_type[0]
-        return env_dict
+    for arg_name, arg_value_and_type in args.items():
+        env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = arg_value_and_type[0]
+
+    return env_dict
 
 
 def _parse_app_instance_name(app_instance_name):
