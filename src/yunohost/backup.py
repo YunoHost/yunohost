@@ -553,7 +553,7 @@ class BackupManager():
         env_var['YNH_BACKUP_CSV'] = tmp_csv
 
         if app is not None:
-            env_var = _make_environment_for_app_script(app)
+            env_var.update(_make_environment_for_app_script(app))
             env_var["YNH_APP_BACKUP_DIR"] = os.path.join(self.work_dir, 'apps', app, 'backup')
 
         return env_var
