@@ -2771,7 +2771,7 @@ def _make_environment_for_app_script(app, args={}, args_prefix="APP_ARG_"):
         env_dict = {
             "YNH_APP_ID": app_id,
             "YNH_APP_INSTANCE_NAME": app,
-            "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb)
+            "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
             "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?")
         }
 
