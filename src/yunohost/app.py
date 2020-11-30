@@ -2777,7 +2777,7 @@ def _make_environment_for_app_script(app, args={}, args_prefix="APP_ARG_"):
 
         for arg_name, arg_value_and_type in args.items():
             env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = arg_value_and_type[0]
-        return env_dic
+        return env_dict
 
 
 def _parse_app_instance_name(app_instance_name):

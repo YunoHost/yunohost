@@ -44,7 +44,7 @@ from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_ya
 
 from yunohost.app import (
     app_info, _is_installed,
-    _make_environment_for_app_script
+    _make_environment_for_app_script,
     dump_app_log_extract_for_debugging,
     _patch_legacy_helpers,
     _patch_legacy_php_versions,
