@@ -1161,8 +1161,8 @@ class RestoreManager():
         logger.debug(m18n.n('restore_running_hooks'))
 
         env_dict = {
-            'YNH_BACKUP_DIR' = self.work_dir
-            'YNH_BACKUP_CSV' = os.path.join(self.work_dir, "backup.csv")
+            'YNH_BACKUP_DIR': self.work_dir,
+            'YNH_BACKUP_CSV': os.path.join(self.work_dir, "backup.csv")
         }
         operation_logger.extra['env'] = env_dict
         operation_logger.flush()
