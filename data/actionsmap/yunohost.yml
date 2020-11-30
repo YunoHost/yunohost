@@ -206,6 +206,23 @@ user:
             arguments:
                 username:
                     help: Username or email to get information
+        
+        ### user_import()
+        import:
+            action_help: Import several users from CSV
+            api: POST /users/import
+            arguments:
+                csv:
+                    help: "CSV file with columns username, email, quota, groups(separated by coma) and optionally password"
+                    type: open
+                -u:
+                    full: --update
+                    help: Update all existing users contained in the csv file (by default those users are ignored)
+                    action: store_true
+                -d:
+                    full: --delete
+                    help: Delete all existing users that are not contained in the csv file (by default those users are ignored)
+                    action: store_true
 
     subcategories:
         group:

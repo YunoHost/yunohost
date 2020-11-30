@@ -566,6 +566,17 @@ def user_info(username):
     return result_dict
 
 
+def user_import(csv, update=False, delete=False):
+    """
+    Import users from CSV
+
+    Keyword argument:
+        csv -- CSV file with columns username, email, quota, groups and optionnally password
+
+    """
+    logger.warning(type(csv))
+    return {}
+
 #
 # Group subcategory
 #
