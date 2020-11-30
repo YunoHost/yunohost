@@ -256,7 +256,13 @@ WantedBy=multi-user.target
         # Restart the service, as this service is either stopped or only for this app
         ynh_systemd_action --service_name=$fpm_service --action=restart
     else
-        # Reload PHP, to not impact other parts of the system using PHP
+        # Validate that the new php conf doesn't break php-fpm entirely
+        php-fpm${phpversion} --test 2>/dev/null \
+        && ynh_systemd_action --service_name=$fpm_service --action=reload \
+        || { php-fpm${phpversion} --test || true;
+             ynh_secure_remove --file="$finalphpconf";
+             ynh_die --message="The new configuration broke php-fpm?"
+        }
         ynh_systemd_action --service_name=$fpm_service --action=reload
     fi
 }
