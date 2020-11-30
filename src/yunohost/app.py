@@ -360,13 +360,7 @@ def app_change_url(operation_logger, app, domain, path):
     args_list.append(app)
 
     # Prepare env. var. to pass to script
-    env_dict = _make_environment_dict(args_odict)
-    app_id, app_instance_nb = _parse_app_instance_name(app)
-    env_dict["YNH_APP_ID"] = app_id
-    env_dict["YNH_APP_INSTANCE_NAME"] = app
-    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
-    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
-
+    env_dict = _make_environment_for_app_script(app, args=args_odict)
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
     env_dict["YNH_APP_OLD_PATH"] = old_path
     env_dict["YNH_APP_NEW_DOMAIN"] = domain
@@ -528,11 +522,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         args_list.append(app_instance_name)
 
         # Prepare env. var. to pass to script
-        env_dict = _make_environment_dict(args_odict)
-        app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
-        env_dict["YNH_APP_ID"] = app_id
-        env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
-        env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+        env_dict = _make_environment_for_app_script(app_instance_name, args=args_odict)
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
@@ -762,20 +752,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Apply dirty patch to make php5 apps compatible with php7
     _patch_legacy_php_versions(extracted_app_folder)
 
-    # Prepare env. var. to pass to script
-    env_dict = _make_environment_dict(args_odict)
-    env_dict["YNH_APP_ID"] = app_id
-    env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
-    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
-    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
-
-    env_dict_for_logging = env_dict.copy()
-    for arg_name, arg_value_and_type in args_odict.items():
-        if arg_value_and_type[1] == "password":
-            del env_dict_for_logging["YNH_APP_ARG_%s" % arg_name.upper()]
-
-    operation_logger.extra.update({'env': env_dict_for_logging})
-
     # We'll check that the app didn't brutally edit some system configuration
     manually_modified_files_before_install = manually_modified_files()
 
@@ -826,6 +802,16 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # For web app, the root path of the app will be added as url and the tile
     # will be enabled during the app install. C.f. 'app_register_url()' below.
     permission_create(app_instance_name + ".main", allowed=["all_users"], label=label, show_tile=False, protected=False)
+
+    # Prepare env. var. to pass to script
+    env_dict = _make_environment_for_app_script(app_instance_name, args=args_odict)
+
+    env_dict_for_logging = env_dict.copy()
+    for arg_name, arg_value_and_type in args_odict.items():
+        if arg_value_and_type[1] == "password":
+            del env_dict_for_logging["YNH_APP_ARG_%s" % arg_name.upper()]
+
+    operation_logger.extra.update({'env': env_dict_for_logging})
 
     # Execute the app install script
     install_failed = True
@@ -1476,12 +1462,7 @@ def app_action_run(operation_logger, app, action, args=None):
     args_odict = _parse_args_for_action(actions[action], args=args_dict)
     args_list = [value[0] for value in args_odict.values()]
 
-    app_id, app_instance_nb = _parse_app_instance_name(app)
-
-    env_dict = _make_environment_dict(args_odict, prefix="ACTION_")
-    env_dict["YNH_APP_ID"] = app_id
-    env_dict["YNH_APP_INSTANCE_NAME"] = app
-    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+    env_dict = _make_environment_for_app_script(app, args=args_odict, args_prefix="ACTION_")
     env_dict["YNH_ACTION"] = action
 
     _, path = tempfile.mkstemp()
@@ -1492,7 +1473,7 @@ def app_action_run(operation_logger, app, action, args=None):
     os.chmod(path, 700)
 
     if action_declaration.get("cwd"):
-        cwd = action_declaration["cwd"].replace("$app", app_id)
+        cwd = action_declaration["cwd"].replace("$app", app)
     else:
         cwd = "/etc/yunohost/apps/" + app
 
@@ -2778,18 +2759,23 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
             raise YunohostError('app_location_unavailable', apps="\n".join(apps))
 
 
-def _make_environment_dict(args_dict, prefix="APP_ARG_"):
-    """
-    Convert a dictionnary containing manifest arguments
-    to a dictionnary of env. var. to be passed to scripts
+def _make_environment_for_app_script(app, args={}, args_prefix="APP_ARG_"):
 
-    Keyword arguments:
-        arg -- A key/value dictionnary of manifest arguments
+    app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
-    """
-    env_dict = {}
-    for arg_name, arg_value_and_type in args_dict.items():
-        env_dict["YNH_%s%s" % (prefix, arg_name.upper())] = arg_value_and_type[0]
+    manifest = _get_manifest_of_app(app_setting_path)
+    app_id, app_instance_nb = _parse_app_instance_name(app)
+
+    env_dict = {
+        "YNH_APP_ID": app_id,
+        "YNH_APP_INSTANCE_NAME": app,
+        "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
+        "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?")
+    }
+
+    for arg_name, arg_value_and_type in args.items():
+        env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = arg_value_and_type[0]
+
     return env_dict
 
 
