@@ -61,7 +61,7 @@ KEY_SIZE = 3072
 VALIDITY_LIMIT = 15  # days
 
 # For tests
-STAGING_CERTIFICATION_AUTHORITY = "https://acme-staging.api.letsencrypt.org"
+STAGING_CERTIFICATION_AUTHORITY = "https://acme-staging-v02.api.letsencrypt.org"
 # For prod
 PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
 
