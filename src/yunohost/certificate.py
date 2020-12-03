@@ -637,6 +637,7 @@ def _get_status(domain):
 
     cert_subject = cert.get_subject().CN
     cert_issuer = cert.get_issuer().CN
+    organization_name = cert.get_issuer().O
     valid_up_to = datetime.strptime(cert.get_notAfter(), "%Y%m%d%H%M%SZ")
     days_remaining = (valid_up_to - datetime.utcnow()).days
 
@@ -646,7 +647,7 @@ def _get_status(domain):
             "verbose": "Self-signed",
         }
 
-    elif cert_issuer.startswith("Let's Encrypt") or cert_issuer == "R3":
+    elif organization_name == "Let's Encrypt":
         CA_type = {
             "code": "lets-encrypt",
             "verbose": "Let's Encrypt",
