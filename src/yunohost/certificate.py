@@ -647,6 +647,12 @@ def _get_status(domain):
             "code": "lets-encrypt",
             "verbose": "Let's Encrypt",
         }
+    
+    elif cert_issuer == "R3":
+        CA_type = {
+            "code": "lets-encrypt",
+            "verbose": "Let's Encrypt",
+        }
 
     elif cert_issuer.startswith("Fake LE"):
         CA_type = {
