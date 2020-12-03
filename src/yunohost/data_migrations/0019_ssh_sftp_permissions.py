@@ -22,7 +22,7 @@ class MyMigration(Migration):
     required = True
 
     def run(self):
-        logger.info(m18n.n("migration_0019_ssh_sftp_permissions"))
+        logger.info(m18n.n("migration_0020_ssh_sftp_permissions"))
 
         from yunohost.utils.ldap import _get_ldap_interface
         ldap = _get_ldap_interface()
