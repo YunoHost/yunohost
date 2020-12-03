@@ -1,6 +1,40 @@
 yunohost (4.1.0) testing; urgency=low
 
-  - Tmp bump of the version number to fix CI (c.f. Breaks: yunohost(<<4.1) in moulinette)
+  - [enh] Extends permissions features, improve legacy settings handling (YunoHost#861)
+  - [enh] During app installs, add a default answer for user-type questions (YunoHost#982)
+  - [enh] Default questions for common app manifest arguments (YunoHost#981)
+  - [enh] Only upgrade apps if version actually changed (YunoHost#864)
+  - [enh] Create uncompressed backup archives by default (instead of .tar.gz) (YunoHost#1020)
+  - [enh] Add possibility to download backups (YunoHost#1046)
+  - [enh] Asking an email address during user creation was confusing, now define it a username@domain by default (admin only chooses the domain) (YunoHost#962)
+  - [enh] Be able to configure an smtp relay (YunoHost#773)
+  - [enh] Add a diagnosis to detect processes rencently killed by oom_reaper (YunoHost/f5acbffb)
+  - [enh] Simplify operation log list (YunoHost#955)
+  - [enh] Smarter sorting of domain list (YunoHost#860)
+  - [fix] Accept '+' sign in mail forward adresses (YunoHost#818)
+  - [enh] Add x509 fingerprint in /etc/issue (YunoHost#1056)
+  - [enh] Add ynh_add_config helper (YunoHost#1055)
+  - [enh] Upgrade n version (YunoHost#1073)
+  - [enh] Clean /usr/bin/yunohost, make it easier to use yunohost as a python lib (YunoHost#922)
+  - [enh] Lazy loading of smtplib to reduce memory footprint a bit (0f2e9ab1)
+  - [enh] Refactor manifest arguments parsing (YunoHost#1013)
+  - [enh] Detect misformated arguments in getopts (YunoHost#1052)
+  - [enh] Refactor app download process, make it github-independent (YunoHost#1049)
+  - [fix] Test at the beginning of postinstall that iptables is working instead of miserably crashing later (YunoHost/f73ae4ee)
+  - [enh] Service logs: journalctl -x in fact makes everything bloated, the supposedly additional info it displays does not contains anything relevant... (YunoHost/452b178d)
+  - [enh] Add redis hook to enforce permissions on /var/log/redis (YunoHost/a1c1057a)
+  - [enh] Add configuration tests for dnsmasq, fail2ban, slapd (YunoHost/6e69df37)
+  - [enh] Remove some old fail2ban jails that do not exists anymore (YunoHost/2c6736df)
+  - [enh] Get rid of yunohost.local in main domain nginx conf (YunoHost/ba884d5b)
+  - [enh] Ignore some unimportant apt warnings (YunoHost/199cc50)
+  - [enh] Create the helper doc on new version (YunoHost#1080)
+  - [enh] The email "abuse@you_domain.tld" is now unavailable for security reason (YunoHost/67e03e6)
+  - [enh] Remove some warnings during backup (YunoHost#1047)
+  - [i18n] Translations updated for Catalan, Chinese (Simplified), French, German, Italian, Occitan, Portuguese
+
+  Thanks to all contributors <3 ! (Aleks, Augustin T., Baptiste W., Bram, Christian W., Colin W., cyxae, ekhae, Éric G., Félix P., Josué, Julien J., Kayou, Leandro N., ljf, Maniack C, ppr, Quentí, Quentin D., SiM, yalh76, Yifei D., xaloc33)
+
+ -- Kay0u <pierre@kayou.io>  Thu, 03 Dec 2020 16:34:38 +0100
 
 yunohost (4.0.8.3) stable; urgency=low
 
