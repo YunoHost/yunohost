@@ -566,7 +566,8 @@ def user_info(username):
     return result_dict
 
 
-def user_import(csv, update=False, delete=False):
+@is_unit_operation()
+def user_import(operation_logger, csv, update=False, delete=False):
     """
     Import users from CSV
 
@@ -574,8 +575,96 @@ def user_import(csv, update=False, delete=False):
         csv -- CSV file with columns username, email, quota, groups and optionnally password
 
     """
-    logger.warning(type(csv))
-    return {}
+    import csv # CSV are needed only in this function
+
+    # Prepare what should be done
+    actions = {
+        'created': [],
+        'updated': [],
+        'deleted': []
+    }
+    is_well_formatted = True
+
+    existing_users = user_list()['users'].keys()
+    reader = csv.DictReader(csv, delimiter=';', quotechar='"')
+    for user in reader:
+        if user['username']:#TODO better check
+            logger.error(m18n.n('user_import_bad_line', line=reader.line_num))
+            is_well_formatted = False
+            continue
+
+        if user['username'] not in existing_users:
+            actions['created'].append(user)
+        else:
+            if update:
+                actions['updated'].append(user)
+            existing_users.remove(user['username'])
+
+    if delete:
+        for user in existing_users:
+            actions['deleted'].append(user)
+
+    if not is_well_formatted:
+        raise YunohostError('user_import_bad_file')
+
+    total = len(actions['created'] + actions['updated'] + actions['deleted'])
+
+    # Apply creation, update and deletion operation
+    result = {
+        'created': 0,
+        'updated': 0,
+        'deleted': 0,
+        'errors': 0
+    }
+
+    if total == 0:
+        logger.info(m18n.n('nothing_to_do'))
+        return
+
+    def on_failure(user, exception):
+        result['errors'] += 1
+        logger.error(user + ': ' + str(exception))
+
+    operation_logger.start()
+    for user in actions['created']:
+        try:
+            user_create(operation_logger, user['username'],
+                        user['firstname'], user['lastname'],
+                        user['domain'], user['password'],
+                        user['mailbox_quota'], user['mail'])
+            result['created'] += 1
+        except Exception as e:
+            on_failure(user['username'], e)
+
+    if update:
+        for user in actions['updated']:
+            try:
+                user_update(operation_logger, user['username'],
+                        user['firstname'], user['lastname'],
+                        user['mail'], user['password'],
+                        mailbox_quota=user['mailbox_quota'])
+                result['updated'] += 1
+            except Exception as e:
+                on_failure(user['username'], e)
+
+    if delete:
+        for user in actions['deleted']:
+            try:
+                user_delete(operation_logger, user, purge=True)
+                result['deleted'] += 1
+            except Exception as e:
+                on_failure(user, e)
+
+    if result['errors']:
+        msg = m18n.n('user_import_partial_failed')
+        if result['created'] + result['updated'] + result['deleted'] == 0:
+            msg = m18n.n('user_import_failed')
+        logger.error(msg)
+        operation_logger.error(msg)
+    else:
+        logger.success(m18n.n('user_import_success'))
+        operation_logger.success()
+    return result
 
 #
 # Group subcategory
