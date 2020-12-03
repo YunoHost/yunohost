@@ -646,7 +646,7 @@ def _get_status(domain):
             "verbose": "Self-signed",
         }
 
-    elif cert_issuer.startswith("Let's Encrypt"):
+    elif cert_issuer.startswith("Let's Encrypt") or cert_issuer == "R3":
         CA_type = {
             "code": "lets-encrypt",
             "verbose": "Let's Encrypt",
