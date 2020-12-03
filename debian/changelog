@@ -1,3 +1,11 @@
+yunohost (4.0.8.3) stable; urgency=low
+
+  - [fix] Certificate renewal for LE (#1092)
+
+  Thanks to all contributors <3 ! (frju365)
+
+ -- Kay0u <pierre@kayou.io>  Thu, 03 Dec 2020 14:01:03 +0000
+
 yunohost (4.0.8.2) stable; urgency=low
 
   - [fix] intermediate_certificate is now included in signed certificate (#1067)
