@@ -397,9 +397,12 @@ def _hook_exec_bash(path, args, chdir, env, return_format, loggers):
 
     logger.debug("Executing command '%s'" % cmd)
 
+    _env = os.environ.copy()
+    _env.update(env)
+
     returncode = call_async_output(
         cmd, loggers, shell=True, cwd=chdir,
-        stdinfo=stdinfo, env=env
+        stdinfo=stdinfo, env=_env
     )
 
     raw_content = None
