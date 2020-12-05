@@ -356,8 +356,6 @@ def app_change_url(operation_logger, app, domain, path):
     # Retrieve arguments list for change_url script
     # TODO: Allow to specify arguments
     args_odict = _parse_args_from_manifest(manifest, 'change_url')
-    args_list = [value[0] for value in args_odict.values()]
-    args_list.append(app)
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(app, args=args_odict)
@@ -389,7 +387,7 @@ def app_change_url(operation_logger, app, domain, path):
     os.system('chmod +x %s' % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts", "change_url")))
 
     if hook_exec(os.path.join(APP_TMP_FOLDER, 'scripts/change_url'),
-                 args=args_list, env=env_dict)[0] != 0:
+                 env=env_dict)[0] != 0:
         msg = "Failed to change '%s' url." % app
         logger.error(msg)
         operation_logger.error(msg)
@@ -420,7 +418,7 @@ def app_change_url(operation_logger, app, domain, path):
     logger.success(m18n.n("app_change_url_success",
                           app=app, domain=domain, path=path))
 
-    hook_callback('post_app_change_url', args=args_list, env=env_dict)
+    hook_callback('post_app_change_url', env=env_dict)
 
 
 def app_upgrade(app=[], url=None, file=None, force=False):
@@ -518,8 +516,6 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         # Retrieve arguments list for upgrade script
         # TODO: Allow to specify arguments
         args_odict = _parse_args_from_manifest(manifest, 'upgrade')
-        args_list = [value[0] for value in args_odict.values()]
-        args_list.append(app_instance_name)
 
         # Prepare env. var. to pass to script
         env_dict = _make_environment_for_app_script(app_instance_name, args=args_odict)
@@ -548,7 +544,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         upgrade_failed = True
         try:
             upgrade_retcode = hook_exec(extracted_app_folder + '/scripts/upgrade',
-                                        args=args_list, env=env_dict)[0]
+                                        env=env_dict)[0]
 
             upgrade_failed = True if upgrade_retcode != 0 else False
             if upgrade_failed:
@@ -625,7 +621,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
             # So much win
             logger.success(m18n.n('app_upgraded', app=app_instance_name))
 
-            hook_callback('post_app_upgrade', args=args_list, env=env_dict)
+            hook_callback('post_app_upgrade', env=env_dict)
             operation_logger.success()
 
     permission_sync_to_user()
@@ -742,10 +738,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Validate domain / path availability for webapps
     _validate_and_normalize_webpath(manifest, args_odict, extracted_app_folder)
 
-    # build arg list tq
-    args_list = [value[0] for value in args_odict.values()]
-    args_list.append(app_instance_name)
-
     # Attempt to patch legacy helpers ...
     _patch_legacy_helpers(extracted_app_folder)
 
@@ -818,7 +810,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     try:
         install_retcode = hook_exec(
             os.path.join(extracted_app_folder, 'scripts/install'),
-            args=args_list, env=env_dict
+            env=env_dict
         )[0]
         # "Common" app install failure : the script failed and returned exit code != 0
         install_failed = True if install_retcode != 0 else False
@@ -934,7 +926,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     logger.success(m18n.n('installation_complete'))
 
-    hook_callback('post_app_install', args=args_list, env=env_dict)
+    hook_callback('post_app_install', env=env_dict)
 
 
 def dump_app_log_extract_for_debugging(operation_logger):
@@ -1021,8 +1013,6 @@ def app_remove(operation_logger, app):
     os.system('chown -R admin: /tmp/yunohost_remove')
     os.system('chmod -R u+rX /tmp/yunohost_remove')
 
-    args_list = [app]
-
     env_dict = {}
     app_id, app_instance_nb = _parse_app_instance_name(app)
     env_dict["YNH_APP_ID"] = app_id
@@ -1034,7 +1024,6 @@ def app_remove(operation_logger, app):
 
     try:
         ret = hook_exec('/tmp/yunohost_remove/scripts/remove',
-                        args=args_list,
                         env=env_dict)[0]
     # Here again, calling hook_exec could fail miserably, or get
     # manually interrupted (by mistake or because script was stuck)
@@ -1047,7 +1036,7 @@ def app_remove(operation_logger, app):
 
     if ret == 0:
         logger.success(m18n.n('app_removed', app=app))
-        hook_callback('post_app_remove', args=args_list, env=env_dict)
+        hook_callback('post_app_remove', env=env_dict)
     else:
         logger.warning(m18n.n('app_not_properly_removed', app=app))
 
@@ -1460,7 +1449,6 @@ def app_action_run(operation_logger, app, action, args=None):
     # Retrieve arguments list for install script
     args_dict = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
     args_odict = _parse_args_for_action(actions[action], args=args_dict)
-    args_list = [value[0] for value in args_odict.values()]
 
     env_dict = _make_environment_for_app_script(app, args=args_odict, args_prefix="ACTION_")
     env_dict["YNH_ACTION"] = action
@@ -1479,7 +1467,6 @@ def app_action_run(operation_logger, app, action, args=None):
 
     retcode = hook_exec(
         path,
-        args=args_list,
         env=env_dict,
         chdir=cwd,
         user=action_declaration.get("user", "root"),
