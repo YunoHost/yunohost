@@ -396,17 +396,13 @@ def _hook_exec_bash(path, args, chdir, env, return_format, loggers):
     # use xtrace on fd 7 which is redirected to stdout
     cmd = 'BASH_XTRACEFD=7 /bin/bash -x "{script}" {args} 7>&1'
 
-    # prepend environment variables
-    cmd = '{0} {1}'.format(
-        ' '.join(['{0}={1}'.format(k, shell_quote(v))
-                  for k, v in env.items()]), cmd)
     command.append(cmd.format(script=cmd_script, args=cmd_args))
 
     logger.debug("Executing command '%s'" % ' '.join(command))
 
     returncode = call_async_output(
         command, loggers, shell=False, cwd=chdir,
-        stdinfo=stdinfo
+        stdinfo=stdinfo, env=env
     )
 
     raw_content = None
