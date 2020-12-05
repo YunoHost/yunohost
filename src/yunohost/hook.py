@@ -390,18 +390,15 @@ def _hook_exec_bash(path, args, chdir, env, return_format, loggers):
         f.write('')
     env['YNH_STDRETURN'] = stdreturn
 
-    # Construct command to execute
-    command = ['sh', '-c']
-
     # use xtrace on fd 7 which is redirected to stdout
-    cmd = 'BASH_XTRACEFD=7 /bin/bash -x "{script}" {args} 7>&1'
+    env['BASH_XTRACEFD'] = 7
+    cmd = '/bin/bash -x "{script}" {args} 7>&1'
+    cmd = cmd.format(script=cmd_script, args=cmd_args)
 
-    command.append(cmd.format(script=cmd_script, args=cmd_args))
-
-    logger.debug("Executing command '%s'" % ' '.join(command))
+    logger.debug("Executing command '%s'" % cmd)
 
     returncode = call_async_output(
-        command, loggers, shell=False, cwd=chdir,
+        cmd, loggers, shell=True, cwd=chdir,
         stdinfo=stdinfo, env=env
     )
 
