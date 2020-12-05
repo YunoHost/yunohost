@@ -391,7 +391,7 @@ def _hook_exec_bash(path, args, chdir, env, return_format, loggers):
     env['YNH_STDRETURN'] = stdreturn
 
     # use xtrace on fd 7 which is redirected to stdout
-    env['BASH_XTRACEFD'] = 7
+    env['BASH_XTRACEFD'] = "7"
     cmd = '/bin/bash -x "{script}" {args} 7>&1'
     cmd = cmd.format(script=cmd_script, args=cmd_args)
 
