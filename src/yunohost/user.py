@@ -317,6 +317,7 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
     from yunohost.app import app_ssowatconf
     from yunohost.utils.password import assert_password_is_strong_enough
     from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.hook import hook_callback
 
     domains = domain_list()['domains']
 
