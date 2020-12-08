@@ -3,3 +3,9 @@
 backup_dir="$1/etc/dkim"
 
 cp -a $backup_dir/. /etc/dkim
+
+chown -R root:root /etc/dkim
+chown _rspamd:root /etc/dkim
+chown _rspamd:root /etc/dkim/*.mail.key
+chmod 600 /etc/dkim/*.mail.txt
+chmod 400 /etc/dkim/*.mail.key
