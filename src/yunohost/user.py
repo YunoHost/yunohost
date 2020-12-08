@@ -525,7 +525,7 @@ def user_import(operation_logger, csv, update=False, delete=False):
     existing_users = user_list()['users'].keys()
     reader = csv.DictReader(csv, delimiter=';', quotechar='"')
     for user in reader:
-        if user['username']:#TODO better check
+        if re.match(r'^[a-z0-9_]+$', user['username']:#TODO better check
             logger.error(m18n.n('user_import_bad_line', line=reader.line_num))
             is_well_formatted = False
             continue
@@ -573,6 +573,7 @@ def user_import(operation_logger, csv, update=False, delete=False):
         except Exception as e:
             on_failure(user['username'], e)
 
+<<<<<<< Updated upstream
     if update:
         for user in actions['updated']:
             try:
@@ -591,6 +592,24 @@ def user_import(operation_logger, csv, update=False, delete=False):
                 result['deleted'] += 1
             except Exception as e:
                 on_failure(user, e)
+=======
+    for user in actions['updated']:
+        try:
+            user_update(operation_logger, user['username'],
+                    user['firstname'], user['lastname'],
+                    user['mail'], user['password'],
+                    mailbox_quota=user['mailbox_quota'])
+            result['updated'] += 1
+        except Exception as e:
+            on_failure(user['username'], e)
+
+    for user in actions['deleted']:
+        try:
+            user_delete(operation_logger, user, purge=True)
+            result['deleted'] += 1
+        except Exception as e:
+            on_failure(user, e)
+>>>>>>> Stashed changes
 
     if result['errors']:
         msg = m18n.n('user_import_partial_failed')
