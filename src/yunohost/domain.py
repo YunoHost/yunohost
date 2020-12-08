@@ -258,7 +258,6 @@ def domain_dns_conf(domain, ttl=None):
 
     """
 
-    domains = domain_list()
     if domain not in domain_list()['domains']:
         raise YunohostError('domain_name_unknown', domain=domain)
 
