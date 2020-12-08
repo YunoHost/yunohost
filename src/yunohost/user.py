@@ -218,11 +218,27 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
     user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
     user_group_update(groupname='all_users', add=username, force=True, sync_perm=True)
 
+    # Trigger post_user_create hooks
+    env_dict = {
+        "YNH_USER_USERNAME": username,
+        "YNH_USER_MAIL": mail,
+        "YNH_USER_PASSWORD": password,
+        "YNH_USER_FIRSTNAME": firstname,
+        "YNH_USER_LASTNAME": lastname
+    }
+
+    # Put a random password instead of the true one to force
+    # packagers to change this
+    # FIXME: Remove this in future version
+    chars = string.ascii_letters + string.digits + string.punctuation
+    fake_password = "".join([random.choice(chars) for i in range(20)])
+    fake_password += " num args are deprecated, please use YNH_USER_PASSWORD"
+    hook_callback('post_user_create',
+                  args=[username, mail, fake_password, firstname, lastname],
+                  env=env_dict)
+
     # TODO: Send a welcome mail to user
     logger.success(m18n.n('user_created'))
-
-    hook_callback('post_user_create',
-                  args=[username, mail, password, firstname, lastname])
 
     return {'fullname': fullname, 'username': username, 'mail': mail}
 
@@ -311,16 +327,21 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
     if not result:
         raise YunohostError('user_unknown', user=username)
     user = result[0]
+    env_dict = {
+        "YNH_USER_USERNAME": username
+    }
 
     # Get modifications from arguments
     new_attr_dict = {}
     if firstname:
         new_attr_dict['givenName'] = [firstname]  # TODO: Validate
         new_attr_dict['cn'] = new_attr_dict['displayName'] = [firstname + ' ' + user['sn'][0]]
+        env_dict["YNH_USER_FIRSTNAME"] = firstname
 
     if lastname:
         new_attr_dict['sn'] = [lastname]  # TODO: Validate
         new_attr_dict['cn'] = new_attr_dict['displayName'] = [user['givenName'][0] + ' ' + lastname]
+        env_dict["YNH_USER_LASTNAME"] = lastname
 
     if lastname and firstname:
         new_attr_dict['cn'] = new_attr_dict['displayName'] = [firstname + ' ' + lastname]
@@ -330,6 +351,7 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
         assert_password_is_strong_enough("user", change_password)
 
         new_attr_dict['userPassword'] = [_hash_user_password(change_password)]
+        env_dict["YNH_USER_PASSWORD"] = change_password
 
     if mail:
         main_domain = _get_maindomain()
@@ -374,6 +396,9 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
                 raise YunohostError('mail_alias_remove_failed', mail=mail)
         new_attr_dict['mail'] = user['mail']
 
+    if 'mail' in new_attr_dict:
+        env_dict["YNH_USER_MAILS"] = ','.join(new_attr_dict['mail'])
+
     if add_mailforward:
         if not isinstance(add_mailforward, list):
             add_mailforward = [add_mailforward]
@@ -393,8 +418,12 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
                 raise YunohostError('mail_forward_remove_failed', mail=mail)
         new_attr_dict['maildrop'] = user['maildrop']
 
+    if 'maildrop' in new_attr_dict:
+        env_dict["YNH_USER_MAILFORWARDS"] = ','.join(new_attr_dict['maildrop'])
+
     if mailbox_quota is not None:
         new_attr_dict['mailuserquota'] = [mailbox_quota]
+        env_dict["YNH_USER_MAILQUOTA"] = mailbox_quota
 
     operation_logger.start()
 
@@ -402,6 +431,9 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
         ldap.update('uid=%s,ou=users' % username, new_attr_dict)
     except Exception as e:
         raise YunohostError('user_update_failed', user=username, error=e)
+
+    # Trigger post_user_update hooks
+    hook_callback('post_user_update', env=env_dict)
 
     logger.success(m18n.n('user_updated'))
     app_ssowatconf()
