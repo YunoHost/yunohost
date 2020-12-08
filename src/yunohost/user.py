@@ -227,15 +227,7 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
         "YNH_USER_LASTNAME": lastname
     }
 
-    # Put a random password instead of the true one to force
-    # packagers to change this
-    # FIXME: Remove this in future version
-    chars = string.ascii_letters + string.digits + string.punctuation
-    fake_password = "".join([random.choice(chars) for i in range(20)])
-    fake_password += " num args are deprecated, please use YNH_USER_PASSWORD"
-    hook_callback('post_user_create',
-                  args=[username, mail, fake_password, firstname, lastname],
-                  env=env_dict)
+    hook_callback('post_user_create', args=[username, mail], env=env_dict)
 
     # TODO: Send a welcome mail to user
     logger.success(m18n.n('user_created'))
