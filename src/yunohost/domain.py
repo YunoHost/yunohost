@@ -258,6 +258,10 @@ def domain_dns_conf(domain, ttl=None):
 
     """
 
+    domains = domain_list()
+    if domain not in domain_list()['domains']:
+        raise YunohostError('domain_name_unknown', domain=domain)
+
     ttl = 3600 if ttl is None else ttl
 
     dns_conf = _build_dns_conf(domain, ttl)
