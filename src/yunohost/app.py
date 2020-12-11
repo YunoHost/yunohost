@@ -1169,7 +1169,7 @@ def app_makedefault(operation_logger, app, domain=None):
 
     ssowat_conf['redirected_urls'][domain + '/'] = app_domain + app_path
 
-    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
+    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf, sort_keys=True, indent=4)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     logger.success(m18n.n('ssowat_conf_updated'))
@@ -1405,8 +1405,7 @@ def app_ssowatconf():
         'permissions': permissions,
     }
 
-    with open('/etc/ssowat/conf.json', 'w+') as f:
-        json.dump(conf_dict, f, sort_keys=True, indent=4)
+    write_to_json('/etc/ssowat/conf.json', conf_dict, sort_keys=True, indent=4)
 
     from utils.legacy import translate_legacy_rules_in_ssowant_conf_json_persistent
     translate_legacy_rules_in_ssowant_conf_json_persistent()
