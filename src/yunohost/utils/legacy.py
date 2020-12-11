@@ -235,6 +235,8 @@ def translate_legacy_rules_in_ssowant_conf_json_persistent():
     protected_urls = persistent.get("protected_urls", []) + ["re:" + r for r in persistent.get("protected_regex", [])]
     unprotected_urls = persistent.get("unprotected_urls", []) + ["re:" + r for r in persistent.get("unprotected_regex", [])]
 
+    known_users = user_list()["users"].keys()
+
     for legacy_rule in legacy_rules:
         if legacy_rule in persistent:
             del persistent[legacy_rule]
@@ -261,7 +263,7 @@ def translate_legacy_rules_in_ssowant_conf_json_persistent():
 
     if protected_urls:
         persistent["permissions"]['custom_protected'] = {
-            "users": [],
+            "users": known_users,
             "label": "Custom permissions - protected",
             "show_tile": False,
             "auth_header": True,
