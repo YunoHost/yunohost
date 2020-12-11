@@ -182,6 +182,9 @@ milter_default_action = accept
 smtp_destination_concurrency_limit = 2
 default_destination_rate_delay = 5s
 
+# Avoid to be blacklisted due to too many recipient
+smtpd_client_recipient_rate_limit=150
+
 # Avoid email adress scanning
 # By default it's possible to detect if the email adress exist
 # So it's easly possible to scan a server to know which email adress is valid
