@@ -269,6 +269,6 @@ def translate_legacy_rules_in_ssowant_conf_json_persistent():
             "uris": protected_urls + persistent["permissions"].get("custom_protected", {}).get("uris", []),
         }
 
-    write_to_json("/etc/ssowat/conf.json.persistent", persistent)
+    write_to_json("/etc/ssowat/conf.json.persistent", persistent, sort_keys=True, indent=4)
 
     logger.warning("Yunohost automatically translated some legacy rules in /etc/ssowat/conf.json.persistent to match the new permission system")
