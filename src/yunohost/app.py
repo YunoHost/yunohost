@@ -1204,8 +1204,7 @@ def app_setting(app, key, value=None, delete=False):
 
         # GET
         if value is None and not delete:
-            # FIXME FIXME FIXME : what about the main url ...?
-            return ','.join(permission['additional_urls']) if permission else None
+            return ','.join(permission['uris'] + permission['additional_urls']) if permission else None
 
         # DELETE
         if delete:
