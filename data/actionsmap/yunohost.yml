@@ -212,7 +212,7 @@ user:
             action_help: Import several users from CSV
             api: POST /users/import
             arguments:
-                csv:
+                csvfile:
                     help: "CSV file with columns username, email, quota, groups(separated by coma) and optionally password"
                     type: open
                 -u:

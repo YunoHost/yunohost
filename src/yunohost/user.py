@@ -99,6 +99,7 @@ def user_create(
     password,
     mailbox_quota="0",
     mail=None,
+    imported=False
 ):
 
     from yunohost.domain import domain_list, _get_maindomain
@@ -167,7 +168,8 @@ def user_create(
     if mail in aliases:
         raise YunohostValidationError("mail_unavailable")
 
-    operation_logger.start()
+    if not imported:
+        operation_logger.start()
 
     # Get random UID/GID
     all_uid = {str(x.pw_uid) for x in pwd.getpwall()}
@@ -247,13 +249,14 @@ def user_create(
     hook_callback("post_user_create", args=[username, mail], env=env_dict)
 
     # TODO: Send a welcome mail to user
-    logger.success(m18n.n("user_created"))
+    if not imported:
+        logger.success(m18n.n('user_created'))
 
     return {"fullname": fullname, "username": username, "mail": mail}
 
 
-@is_unit_operation([("username", "user")])
-def user_delete(operation_logger, username, purge=False):
+@is_unit_operation([('username', 'user')])
+def user_delete(operation_logger, username, purge=False, imported=False):
     """
     Delete user
 
@@ -268,7 +271,8 @@ def user_delete(operation_logger, username, purge=False):
     if username not in user_list()["users"]:
         raise YunohostValidationError("user_unknown", user=username)
 
-    operation_logger.start()
+    if not imported:
+        operation_logger.start()
 
     user_group_update("all_users", remove=username, force=True, sync_perm=False)
     for group, infos in user_group_list()["groups"].items():
@@ -295,13 +299,13 @@ def user_delete(operation_logger, username, purge=False):
     subprocess.call(["nscd", "-i", "passwd"])
 
     if purge:
-        subprocess.call(["rm", "-rf", "/home/{0}".format(username)])
-        subprocess.call(["rm", "-rf", "/var/mail/{0}".format(username)])
+        subprocess.call(['rm', '-rf', '/home/{0}'.format(username)])
+        subprocess.call(['rm', '-rf', '/var/mail/{0}'.format(username)])
 
-    hook_callback("post_user_delete", args=[username, purge])
+    hook_callback('post_user_delete', args=[username, purge])
 
-    logger.success(m18n.n("user_deleted"))
-
+    if not imported:
+        logger.success(m18n.n('user_deleted'))
 
 @is_unit_operation([("username", "user")], exclude=["change_password"])
 def user_update(
@@ -316,6 +320,7 @@ def user_update(
     add_mailalias=None,
     remove_mailalias=None,
     mailbox_quota=None,
+    imported=False
 ):
     """
     Update user informations
@@ -394,34 +399,38 @@ def user_update(
             "admin@" + main_domain,
             "webmaster@" + main_domain,
             "postmaster@" + main_domain,
+            'abuse@' + main_domain,
         ]
-        try:
-            ldap.validate_uniqueness({"mail": mail})
-        except Exception as e:
-            raise YunohostValidationError("user_update_failed", user=username, error=e)
-        if mail[mail.find("@") + 1 :] not in domains:
-            raise YunohostValidationError(
-                "mail_domain_unknown", domain=mail[mail.find("@") + 1 :]
-            )
+        if mail in user['mail']:
+            user['mail'].remove(mail)
+        else:
+            try:
+                ldap.validate_uniqueness({'mail': mail})
+            except Exception as e:
+                raise YunohostError('user_update_failed', user=username, error=e)
+        if mail[mail.find('@') + 1:] not in domains:
+            raise YunohostError('mail_domain_unknown', domain=mail[mail.find('@') + 1:])
         if mail in aliases:
             raise YunohostValidationError("mail_unavailable")
 
-        del user["mail"][0]
-        new_attr_dict["mail"] = [mail] + user["mail"]
+        new_attr_dict['mail'] = [mail] + user['mail'][1:]
 
     if add_mailalias:
         if not isinstance(add_mailalias, list):
             add_mailalias = [add_mailalias]
         for mail in add_mailalias:
-            try:
-                ldap.validate_uniqueness({"mail": mail})
-            except Exception as e:
-                raise YunohostValidationError(
-                    "user_update_failed", user=username, error=e
-                )
-            if mail[mail.find("@") + 1 :] not in domains:
-                raise YunohostValidationError(
-                    "mail_domain_unknown", domain=mail[mail.find("@") + 1 :]
+            if mail in user["mail"]:
+                user["mail"].remove(mail)
+            else:
+                try:
+                    ldap.validate_uniqueness({"mail": mail})
+                except Exception as e:
+                    raise YunohostError(
+                        "user_update_failed", user=username, error=e
+                    )
+            if mail[mail.find("@") + 1:] not in domains:
+                raise YunohostError(
+                    "mail_domain_unknown", domain=mail[mail.find("@") + 1:]
                 )
             user["mail"].append(mail)
         new_attr_dict["mail"] = user["mail"]
@@ -465,7 +474,8 @@ def user_update(
         new_attr_dict["mailuserquota"] = [mailbox_quota]
         env_dict["YNH_USER_MAILQUOTA"] = mailbox_quota
 
-    operation_logger.start()
+    if not imported:
+        operation_logger.start()
 
     try:
         ldap.update("uid=%s,ou=users" % username, new_attr_dict)
@@ -475,9 +485,10 @@ def user_update(
     # Trigger post_user_update hooks
     hook_callback("post_user_update", env=env_dict)
 
-    logger.success(m18n.n("user_updated"))
-    app_ssowatconf()
-    return user_info(username)
+    if not imported:
+        app_ssowatconf()
+        logger.success(m18n.n('user_updated'))
+        return user_info(username)
 
 
 def user_info(username):
@@ -507,11 +518,13 @@ def user_info(username):
         raise YunohostValidationError("user_unknown", user=username)
 
     result_dict = {
-        "username": user["uid"][0],
-        "fullname": user["cn"][0],
-        "firstname": user["givenName"][0],
-        "lastname": user["sn"][0],
-        "mail": user["mail"][0],
+        'username': user['uid'][0],
+        'fullname': user['cn'][0],
+        'firstname': user['givenName'][0],
+        'lastname': user['sn'][0],
+        'mail': user['mail'][0],
+        'mail-aliases': [],
+        'mail-forward': []
     }
 
     if len(user["mail"]) > 1:
@@ -567,7 +580,7 @@ def user_info(username):
 
 
 @is_unit_operation()
-def user_import(operation_logger, csv, update=False, delete=False):
+def user_import(operation_logger, csvfile, update=False, delete=False):
     """
     Import users from CSV
 
@@ -576,24 +589,51 @@ def user_import(operation_logger, csv, update=False, delete=False):
 
     """
     import csv # CSV are needed only in this function
-
-    # Prepare what should be done
+    from moulinette.utils.text import random_ascii
+    from yunohost.permission import permission_sync_to_user
+    from yunohost.app import app_ssowatconf
+    # Pre-validate data and prepare what should be done
     actions = {
         'created': [],
         'updated': [],
         'deleted': []
     }
     is_well_formatted = True
-
+    validators = {
+        'username': r'^[a-z0-9_]+$',
+        'firstname': r'^([^\W\d_]{2,30}[ ,.\'-]{0,3})+$', #FIXME Merge first and lastname and support more name (arabish, chinese...)
+        'lastname': r'^([^\W\d_]{2,30}[ ,.\'-]{0,3})+$',
+        'password': r'^|(.{3,})$',
+        'mailbox_quota': r'^(\d+[bkMGT])|0$',
+        'mail': r'^([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}))$',
+        'alias': r'^|([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$',
+        'forward': r'^|([\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$',
+        'groups': r'^|([a-z0-9_]+(,?[a-z0-9_]+)*)$'
+    }
+    def to_list(str_list):
+        return str_list.split(',') if str_list else []
     existing_users = user_list()['users'].keys()
-    reader = csv.DictReader(csv, delimiter=';', quotechar='"')
+    reader = csv.DictReader(csvfile, delimiter=';', quotechar='"')
     for user in reader:
-        if re.match(r'^[a-z0-9_]+$', user['username']:#TODO better check
-            logger.error(m18n.n('user_import_bad_line', line=reader.line_num))
+        format_errors = [key + ':' + user[key]
+                         for key, validator in validators.items()
+                         if not re.match(validator, user[key])]
+        if format_errors:
+            logger.error(m18n.n('user_import_bad_line',
+                                line=reader.line_num,
+                                details=', '.join(format_errors)))
             is_well_formatted = False
             continue
 
+        user['groups'] = to_list(user['groups'])
+        user['alias'] = to_list(user['alias'])
+        user['forward'] = to_list(user['forward'])
+        user['domain'] = user['mail'].split('@')[1]
         if user['username'] not in existing_users:
+            # Generate password if not exists
+            # This could be used when reset password will be merged
+            if not user['password']:
+                user['password'] = random_ascii(70)
             actions['created'].append(user)
         else:
             if update:
@@ -609,6 +649,10 @@ def user_import(operation_logger, csv, update=False, delete=False):
 
     total = len(actions['created'] + actions['updated'] + actions['deleted'])
 
+    if total == 0:
+        logger.info(m18n.n('nothing_to_do'))
+        return
+
     # Apply creation, update and deletion operation
     result = {
         'created': 0,
@@ -617,62 +661,71 @@ def user_import(operation_logger, csv, update=False, delete=False):
         'errors': 0
     }
 
-    if total == 0:
-        logger.info(m18n.n('nothing_to_do'))
-        return
-
     def on_failure(user, exception):
         result['errors'] += 1
         logger.error(user + ': ' + str(exception))
 
+    def update(user, created=False):
+        remove_alias = None
+        remove_forward = None
+        if not created:
+            info = user_info(user['username'])
+            user['mail'] = None if info['mail'] == user['mail'] else user['mail']
+            remove_alias = list(set(info['mail-aliases']) - set(user['alias']))
+            remove_forward = list(set(info['mail-forward']) - set(user['forward']))
+            user['alias'] = list(set(user['alias']) - set(info['mail-aliases']))
+            user['forward'] = list(set(user['forward']) - set(info['mail-forward']))
+            for group, infos in user_group_list()["groups"].items():
+                if group == "all_users":
+                    continue
+                # If the user is in this group (and it's not the primary group),
+                # remove the member from the group
+                if user['username'] != group and user['username'] in infos["members"]:
+                    user_group_update(group, remove=user['username'], sync_perm=False, imported=True)
+
+        user_update(user['username'],
+                user['firstname'], user['lastname'],
+                user['mail'], user['password'],
+                mailbox_quota=user['mailbox_quota'],
+                mail=user['mail'], add_mailalias=user['alias'],
+                remove_mailalias=remove_alias,
+                remove_mailforward=remove_forward,
+                add_mailforward=user['forward'], imported=True)
+
+        for group in user['groups']:
+            user_group_update(group, add=user['username'], sync_perm=False, imported=True)
+
     operation_logger.start()
-    for user in actions['created']:
-        try:
-            user_create(operation_logger, user['username'],
-                        user['firstname'], user['lastname'],
-                        user['domain'], user['password'],
-                        user['mailbox_quota'], user['mail'])
-            result['created'] += 1
-        except Exception as e:
-            on_failure(user['username'], e)
-
-<<<<<<< Updated upstream
-    if update:
-        for user in actions['updated']:
-            try:
-                user_update(operation_logger, user['username'],
-                        user['firstname'], user['lastname'],
-                        user['mail'], user['password'],
-                        mailbox_quota=user['mailbox_quota'])
-                result['updated'] += 1
-            except Exception as e:
-                on_failure(user['username'], e)
-
-    if delete:
-        for user in actions['deleted']:
-            try:
-                user_delete(operation_logger, user, purge=True)
-                result['deleted'] += 1
-            except Exception as e:
-                on_failure(user, e)
-=======
-    for user in actions['updated']:
-        try:
-            user_update(operation_logger, user['username'],
-                    user['firstname'], user['lastname'],
-                    user['mail'], user['password'],
-                    mailbox_quota=user['mailbox_quota'])
-            result['updated'] += 1
-        except Exception as e:
-            on_failure(user['username'], e)
-
+    # We do delete and update before to avoid mail uniqueness issues
     for user in actions['deleted']:
         try:
-            user_delete(operation_logger, user, purge=True)
+            user_delete(user, purge=True, imported=True)
             result['deleted'] += 1
-        except Exception as e:
+        except YunohostError as e:
             on_failure(user, e)
->>>>>>> Stashed changes
+
+    for user in actions['updated']:
+        try:
+            update(user)
+            result['updated'] += 1
+        except YunohostError as e:
+            on_failure(user['username'], e)
+
+    for user in actions['created']:
+        try:
+            user_create(user['username'],
+                        user['firstname'], user['lastname'],
+                        user['domain'], user['password'],
+                        user['mailbox_quota'], imported=True)
+            update(user, created=True)
+            result['created'] += 1
+        except YunohostError as e:
+            on_failure(user['username'], e)
+
+
+
+    permission_sync_to_user()
+    app_ssowatconf()
 
     if result['errors']:
         msg = m18n.n('user_import_partial_failed')
@@ -684,6 +737,7 @@ def user_import(operation_logger, csv, update=False, delete=False):
         logger.success(m18n.n('user_import_success'))
         operation_logger.success()
     return result
+
 
 #
 # Group subcategory
@@ -857,9 +911,15 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
         logger.debug(m18n.n("group_deleted", group=groupname))
 
 
-@is_unit_operation([("groupname", "group")])
+@is_unit_operation([('groupname', 'group')])
 def user_group_update(
-    operation_logger, groupname, add=None, remove=None, force=False, sync_perm=True
+    operation_logger,
+    groupname,
+    add=None,
+    remove=None,
+    force=False,
+    sync_perm=True,
+    imported=False
 ):
     """
     Update user informations
@@ -929,7 +989,8 @@ def user_group_update(
     ]
 
     if set(new_group) != set(current_group):
-        operation_logger.start()
+        if not imported:
+            operation_logger.start()
         ldap = _get_ldap_interface()
         try:
             ldap.update(
@@ -939,14 +1000,16 @@ def user_group_update(
         except Exception as e:
             raise YunohostError("group_update_failed", group=groupname, error=e)
 
-    if groupname != "all_users":
-        logger.success(m18n.n("group_updated", group=groupname))
-    else:
-        logger.debug(m18n.n("group_updated", group=groupname))
-
     if sync_perm:
         permission_sync_to_user()
-    return user_group_info(groupname)
+
+    if not imported:
+        if groupname != "all_users":
+            logger.success(m18n.n("group_updated", group=groupname))
+        else:
+            logger.debug(m18n.n("group_updated", group=groupname))
+
+        return user_group_info(groupname)
 
 
 def user_group_info(groupname):
