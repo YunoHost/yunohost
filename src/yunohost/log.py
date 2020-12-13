@@ -349,6 +349,9 @@ def is_unit_operation(entities=['app', 'domain', 'group', 'service', 'user'],
             for field in exclude:
                 if field in context:
                     context.pop(field, None)
+            for field, value in context.items():
+                if isinstance(value, file):
+                    context[field] = value.name
             operation_logger = OperationLogger(op_key, related_to, args=context)
 
             try:
