@@ -85,6 +85,19 @@ ynh_add_fpm_config () {
     # Set the default PHP-FPM version by default
     phpversion="${phpversion:-$YNH_PHP_VERSION}"
 
+    local old_phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+
+    # If the PHP version changed, remove the old fpm conf
+    if [ -n "$old_phpversion" ] && [ "$old_phpversion" != "$phpversion" ]
+    then
+        local old_php_fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
+        local old_php_finalphpconf="$old_php_fpm_config_dir/pool.d/$app.conf"
+
+        ynh_backup_if_checksum_is_different --file="$old_php_finalphpconf"
+
+        ynh_remove_fpm_config
+    fi
+
     # If the requested PHP version is not the default version for YunoHost
     if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]
     then
@@ -278,7 +291,7 @@ ynh_remove_fpm_config () {
     local dedicated_service=$(ynh_app_setting_get --app=$app --key=fpm_dedicated_service)
     dedicated_service=${dedicated_service:-0}
     # Get the version of PHP used by this app
-    local phpversion=$(ynh_app_setting_get $app phpversion)
+    local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
 
     # Assume default PHP-FPM version by default
     phpversion="${phpversion:-$YNH_DEFAULT_PHP_VERSION}"
@@ -377,7 +390,7 @@ ynh_install_php () {
 # Requires YunoHost version 3.8.1 or higher.
 ynh_remove_php () {
     # Get the version of PHP used by this app
-    local phpversion=$(ynh_app_setting_get $app phpversion)
+    local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
 
     if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ] || [ -z "$phpversion" ]
     then
