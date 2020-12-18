@@ -1204,7 +1204,7 @@ def app_setting(app, key, value=None, delete=False):
 
         # GET
         if value is None and not delete:
-            return ','.join(permission['uris'] + permission['additional_urls']) if permission else None
+            return ','.join(permission.get('uris', []) + permission['additional_urls']) if permission else None
 
         # DELETE
         if delete:
