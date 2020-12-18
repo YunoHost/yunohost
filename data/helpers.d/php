@@ -274,7 +274,7 @@ WantedBy=multi-user.target
         && ynh_systemd_action --service_name=$fpm_service --action=reload \
         || { php-fpm${phpversion} --test || true;
              ynh_secure_remove --file="$finalphpconf";
-             ynh_die --message="The new configuration broke php-fpm?"
+             ynh_die --message="The new configuration broke php-fpm?";
         }
         ynh_systemd_action --service_name=$fpm_service --action=reload
     fi
