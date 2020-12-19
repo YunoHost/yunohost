@@ -590,5 +590,8 @@
     "app_manifest_install_ask_password": "Causissètz lo senhal administrator per aquesta aplicacion",
     "app_manifest_install_ask_path": "Causissètz lo camin ont volètz installar aquesta aplicacion",
     "app_manifest_install_ask_domain": "Causissètz lo domeni ont volètz installar aquesta aplicacion",
-    "app_argument_password_no_default": "Error pendent l’analisi de l’argument del senhal « {name} » : l’argument de senhal pòt pas aver de valor per defaut per de rason de seguretat"
+    "app_argument_password_no_default": "Error pendent l’analisi de l’argument del senhal « {name} » : l’argument de senhal pòt pas aver de valor per defaut per de rason de seguretat",
+    "app_label_deprecated": "Aquesta comanda es estada renduda obsolèta. Mercés d'utilizar lo nòva \"yunohost user permission update\" per gerir letiquetada de l'aplication",
+    "additional_urls_already_removed": "URL addicionala {url:s} es ja estada elimida per la permission «#permission:s»",
+    "additional_urls_already_added": "URL addicionadal «{url:s}'» es ja estada aponduda per la permission «{permission:s}»"
 }
