@@ -48,27 +48,48 @@ def user_list(fields=None):
 
     from yunohost.utils.ldap import _get_ldap_interface
 
-    user_attrs = {
-        "uid": "username",
-        "cn": "fullname",
-        "mail": "mail",
-        "maildrop": "mail-forward",
-        "homeDirectory": "home_path",
-        "mailuserquota": "mailbox-quota",
+    ldap_attrs = {
+        'username': 'uid',
+        'password': 'uid',
+        'fullname': 'cn',
+        'firstname': 'givenName',
+        'lastname': 'sn',
+        'mail': 'mail',
+        'mail-alias': 'mail',
+        'mail-forward': 'maildrop',
+        'mailbox-quota': 'mailuserquota',
+        'groups': 'memberOf',
+        'shell': 'loginShell',
+        'home-path': 'homeDirectory'
     }
 
-    attrs = ["uid"]
+    def display_default(values, _):
+        return values[0] if len(values) == 1 else values
+
+    display = {
+        'password': lambda values, user: '',
+        'mail': lambda values, user: display_default(values[:1], user),
+        'mail-alias': lambda values, _: values[1:],
+        'mail-forward': lambda values, user: [forward for forward in values if forward != user['uid'][0]],
+        'groups': lambda values, user: [
+            group[3:].split(',')[0]
+            for group in values
+            if not group.startswith('cn=all_users,') and
+            not group.startswith('cn=' + user['uid'][0] + ',')],
+        'shell': lambda values, _: len(values) > 0 and values[0].strip() == "/bin/false"
+    }
+
+    attrs = set(['uid'])
     users = {}
 
-    if fields:
-        keys = user_attrs.keys()
-        for attr in fields:
-            if attr in keys:
-                attrs.append(attr)
-            else:
-                raise YunohostError("field_invalid", attr)
-    else:
-        attrs = ["uid", "cn", "mail", "mailuserquota"]
+    if not fields:
+        fields = ['username', 'fullname', 'mail', 'mailbox-quota', 'shell']
+
+    for field in fields:
+        if field in ldap_attrs:
+            attrs|=set([ldap_attrs[field]])
+        else:
+            raise YunohostError('field_invalid', field)
 
     ldap = _get_ldap_interface()
     result = ldap.search(
@@ -79,12 +100,13 @@ def user_list(fields=None):
 
     for user in result:
         entry = {}
-        for attr, values in user.items():
-            if values:
-                entry[user_attrs[attr]] = values[0]
+        for field in fields:
+            values = []
+            if ldap_attrs[field] in user:
+                values = user[ldap_attrs[field]]
+            entry[field] = display.get(field, display_default)(values, user)
 
-        uid = entry[user_attrs["uid"]]
-        users[uid] = entry
+        users[entry['username']] = entry
 
     return {"users": users}
 
@@ -579,13 +601,49 @@ def user_info(username):
     return result_dict
 
 
+def user_export():
+    """
+    Export users into CSV
+
+    Keyword argument:
+        csv -- CSV file with columns username;firstname;lastname;password;mailbox_quota;mail;alias;forward;groups
+
+    """
+    import csv # CSV are needed only in this function
+    from io import BytesIO
+    fieldnames = [u'username', u'firstname', u'lastname', u'password', u'mailbox-quota', u'mail', u'mail-alias', u'mail-forward', u'groups']
+    with BytesIO() as csv_io:
+        writer = csv.DictWriter(csv_io, fieldnames, delimiter=';', quotechar='"')
+        writer.writeheader()
+        users = user_list(fieldnames)['users']
+        for username, user in users.items():
+            user['mail-alias'] = ','.join(user['mail-alias'])
+            user['mail-forward'] = ','.join(user['mail-forward'])
+            user['groups'] = ','.join(user['groups'])
+            writer.writerow(user)
+
+        body = csv_io.getvalue()
+    if msettings.get('interface') == 'api':
+        # We return a raw bottle HTTPresponse (instead of serializable data like
+        # list/dict, ...), which is gonna be picked and used directly by moulinette
+        from bottle import LocalResponse
+        response = LocalResponse(body=body,
+                        headers={
+                            "Content-Disposition": "attachment; filename='users.csv'",
+                            "Content-Type": "text/csv",
+                        }
+                  )
+        return response
+    else:
+        return body
+
 @is_unit_operation()
 def user_import(operation_logger, csvfile, update=False, delete=False):
     """
     Import users from CSV
 
     Keyword argument:
-        csv -- CSV file with columns username, email, quota, groups and optionnally password
+        csv -- CSV file with columns username;firstname;lastname;password;mailbox_quota;mail;alias;forward;groups
 
     """
     import csv # CSV are needed only in this function
@@ -604,20 +662,35 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         'firstname': r'^([^\W\d_]{2,30}[ ,.\'-]{0,3})+$', #FIXME Merge first and lastname and support more name (arabish, chinese...)
         'lastname': r'^([^\W\d_]{2,30}[ ,.\'-]{0,3})+$',
         'password': r'^|(.{3,})$',
-        'mailbox_quota': r'^(\d+[bkMGT])|0$',
         'mail': r'^([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}))$',
-        'alias': r'^|([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$',
-        'forward': r'^|([\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$',
+        'mail-alias': r'^|([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$',
+        'mail-forward': r'^|([\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$',
+        'mailbox-quota': r'^(\d+[bkMGT])|0$',
         'groups': r'^|([a-z0-9_]+(,?[a-z0-9_]+)*)$'
     }
+
     def to_list(str_list):
         return str_list.split(',') if str_list else []
-    existing_users = user_list()['users'].keys()
+
+    existing_users = user_list()['users']
+    past_lines = []
     reader = csv.DictReader(csvfile, delimiter=';', quotechar='"')
     for user in reader:
-        format_errors = [key + ':' + user[key]
-                         for key, validator in validators.items()
-                         if not re.match(validator, user[key])]
+        # Validation
+        try:
+            format_errors = [key + ':' + str(user[key])
+                            for key, validator in validators.items()
+                         if user[key] is None or not re.match(validator, user[key])]
+        except KeyError, e:
+            logger.error(m18n.n('user_import_missing_column',
+                                column=str(e)))
+            is_well_formatted = False
+            break
+
+        if 'username' in user:
+            if user['username'] in past_lines:
+                format_errors.append('username: %s (duplicated)' % user['username'])
+            past_lines.append(user['username'])
         if format_errors:
             logger.error(m18n.n('user_import_bad_line',
                                 line=reader.line_num,
@@ -625,9 +698,10 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
             is_well_formatted = False
             continue
 
+        # Choose what to do with this line and prepare data
         user['groups'] = to_list(user['groups'])
-        user['alias'] = to_list(user['alias'])
-        user['forward'] = to_list(user['forward'])
+        user['mail-alias'] = to_list(user['mail-alias'])
+        user['mail-forward'] = to_list(user['mail-forward'])
         user['domain'] = user['mail'].split('@')[1]
         if user['username'] not in existing_users:
             # Generate password if not exists
@@ -638,7 +712,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         else:
             if update:
                 actions['updated'].append(user)
-            existing_users.remove(user['username'])
+            del existing_users[user['username']]
 
     if delete:
         for user in existing_users:
@@ -650,7 +724,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
     total = len(actions['created'] + actions['updated'] + actions['deleted'])
 
     if total == 0:
-        logger.info(m18n.n('nothing_to_do'))
+        logger.info(m18n.n('user_import_nothing_to_do'))
         return
 
     # Apply creation, update and deletion operation
@@ -665,14 +739,13 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         result['errors'] += 1
         logger.error(user + ': ' + str(exception))
 
-    def update(user, created=False):
+    def update(user, info=False):
         remove_alias = None
         remove_forward = None
-        if not created:
-            info = user_info(user['username'])
+        if info:
             user['mail'] = None if info['mail'] == user['mail'] else user['mail']
-            remove_alias = list(set(info['mail-aliases']) - set(user['alias']))
-            remove_forward = list(set(info['mail-forward']) - set(user['forward']))
+            remove_alias = list(set(info['mail-aliases']) - set(user['mail-alias']))
+            remove_forward = list(set(info['mail-forward']) - set(user['mail-forward']))
             user['alias'] = list(set(user['alias']) - set(info['mail-aliases']))
             user['forward'] = list(set(user['forward']) - set(info['mail-forward']))
             for group, infos in user_group_list()["groups"].items():
@@ -686,15 +759,16 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         user_update(user['username'],
                 user['firstname'], user['lastname'],
                 user['mail'], user['password'],
-                mailbox_quota=user['mailbox_quota'],
-                mail=user['mail'], add_mailalias=user['alias'],
+                mailbox_quota=user['mailbox-quota'],
+                mail=user['mail'], add_mailalias=user['mail-alias'],
                 remove_mailalias=remove_alias,
                 remove_mailforward=remove_forward,
-                add_mailforward=user['forward'], imported=True)
+                add_mailforward=user['mail-forward'], imported=True)
 
         for group in user['groups']:
             user_group_update(group, add=user['username'], sync_perm=False, imported=True)
 
+    users = user_list()['users']
     operation_logger.start()
     # We do delete and update before to avoid mail uniqueness issues
     for user in actions['deleted']:
@@ -706,7 +780,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
 
     for user in actions['updated']:
         try:
-            update(user)
+            update(user, users[user['username']])
             result['updated'] += 1
         except YunohostError as e:
             on_failure(user['username'], e)
@@ -716,8 +790,8 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
             user_create(user['username'],
                         user['firstname'], user['lastname'],
                         user['domain'], user['password'],
-                        user['mailbox_quota'], imported=True)
-            update(user, created=True)
+                        user['mailbox-quota'], imported=True)
+            update(user)
             result['created'] += 1
         except YunohostError as e:
             on_failure(user['username'], e)
