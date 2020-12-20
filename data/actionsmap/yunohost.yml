@@ -67,7 +67,7 @@ user:
             api: GET /users
             arguments:
                --fields:
-                    help: fields to fetch
+                    help: fields to fetch (username, fullname, mail, mail-alias, mail-forward, mailbox-quota, groups, shell, home-path)
                     nargs: "+"
 
         ### user_create()
@@ -206,6 +206,11 @@ user:
             arguments:
                 username:
                     help: Username or email to get information
+        
+        ### user_export()
+        export:
+            action_help: Export users into CSV
+            api: GET /users/export
         
         ### user_import()
         import:
