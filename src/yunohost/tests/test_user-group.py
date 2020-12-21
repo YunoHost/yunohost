@@ -1,6 +1,5 @@
 import pytest
 
-<<<<<<< HEAD
 from .conftest import message, raiseYunohostError
 
 from yunohost.user import (
@@ -27,7 +26,7 @@ maindomain = ""
 
 def clean_user_groups():
     for u in user_list()["users"]:
-        user_delete(u)
+        user_delete(u, purge=True)
 
     for g in user_group_list()["groups"]:
         if g not in ["all_users", "visitors"]:

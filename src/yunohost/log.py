@@ -32,6 +32,7 @@ import psutil
 
 from datetime import datetime, timedelta
 from logging import FileHandler, getLogger, Formatter
+from io import IOBase
 
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
@@ -374,6 +375,8 @@ def is_unit_operation(
             for field, value in context.items():
                 if isinstance(value, file):
                     context[field] = value.name
+                elif isinstance(value, IOBase):
+                    context[field] = 'IOBase'
             operation_logger = OperationLogger(op_key, related_to, args=context)
 
             try:
