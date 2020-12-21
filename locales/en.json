@@ -627,7 +627,7 @@
     "user_creation_failed": "Could not create user {user}: {error}",
     "user_deleted": "User deleted",
     "user_deletion_failed": "Could not delete user {user}: {error}",
-    "user_home_creation_failed": "Could not create 'home' folder for user",
+    "user_home_creation_failed": "Could not create '{home}' folder for user",
     "user_unknown": "Unknown user: {user:s}",
     "user_update_failed": "Could not update user {user}: {error}",
     "user_updated": "User info changed",
