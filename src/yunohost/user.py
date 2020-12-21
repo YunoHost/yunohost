@@ -170,7 +170,7 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
     uid_guid_found = False
     while not uid_guid_found:
         # LXC uid number is limited to 65536 by default
-        uid = str(random.randint(200, 65000))
+        uid = str(random.randint(1000, 65000))
         uid_guid_found = uid not in all_uid and uid not in all_gid
 
     # Adapt values for LDAP
