@@ -1,5 +1,6 @@
 import pytest
 
+<<<<<<< HEAD
 from .conftest import message, raiseYunohostError
 
 from yunohost.user import (
@@ -8,6 +9,10 @@ from yunohost.user import (
     user_create,
     user_delete,
     user_update,
+    user_import,
+    user_export,
+    CSV_FIELDNAMES,
+    FIRST_ALIASES,
     user_group_list,
     user_group_create,
     user_group_delete,
@@ -108,6 +113,65 @@ def test_del_user(mocker):
     assert "alice" not in user_list()
     assert "alice" not in group_res
     assert "alice" not in group_res["all_users"]["members"]
+
+
+def test_import_user(mocker):
+    import csv
+    from io import BytesIO
+    fieldnames = [u'username', u'firstname', u'lastname', u'password',
+                  u'mailbox-quota', u'mail', u'mail-alias', u'mail-forward',
+                  u'groups']
+    with BytesIO() as csv_io:
+        writer = csv.DictWriter(csv_io, fieldnames, delimiter=';',
+                                quotechar='"')
+        writer.writeheader()
+        writer.writerow({
+            'username': "albert",
+            'firstname': "Albert",
+            'lastname': "Good",
+            'password': "",
+            'mailbox-quota': "1G",
+            'mail': "albert@" + maindomain,
+            'mail-alias': "albert2@" + maindomain,
+            'mail-forward': "albert@example.com",
+            'groups': "dev",
+        })
+        writer.writerow({
+            'username': "alice",
+            'firstname': "Alice",
+            'lastname': "White",
+            'password': "",
+            'mailbox-quota': "1G",
+            'mail': "alice@" + maindomain,
+            'mail-alias': "alice1@" + maindomain + ",alice2@" + maindomain,
+            'mail-forward': "",
+            'groups': "apps",
+        })
+        csv_io.seek(0)
+        with message(mocker, "user_import_success"):
+            user_import(csv_io, update=True, delete=True)
+
+    group_res = user_group_list()['groups']
+    user_res = user_list(CSV_FIELDNAMES)['users']
+    assert "albert" in user_res
+    assert "alice" in user_res
+    assert "bob" not in user_res
+    assert len(user_res['alice']['mail-alias']) == 2
+    assert "albert" in group_res['dev']['members']
+    assert "alice" in group_res['apps']['members']
+
+
+def test_export_user(mocker):
+    result = user_export()
+    should_be = "username;firstname;lastname;password;"
+    should_be += "mailbox-quota;mail;mail-alias;mail-forward;groups"
+    should_be += "\r\nbob;Bob;Snow;;0;bob@" + maindomain + ";;;apps"
+    should_be += "\r\nalice;Alice;White;;0;alice@" + maindomain + ";"
+    should_be += ','.join([alias + maindomain for alias in FIRST_ALIASES])
+    should_be += ";;dev"
+    should_be += "\r\njack;Jack;Black;;0;jack@" + maindomain + ";;;"
+
+    assert result == should_be
 
 
 def test_create_group(mocker):
