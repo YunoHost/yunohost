@@ -33,6 +33,7 @@ olcAuthzPolicy: none
 olcConcurrency: 0
 olcConnMaxPending: 100
 olcConnMaxPendingAuth: 1000
+olcSizeLimit: 10000
 olcIdleTimeout: 0
 olcIndexSubstrIfMaxLen: 4
 olcIndexSubstrIfMinLen: 2
