@@ -218,7 +218,7 @@ user:
             api: POST /users/import
             arguments:
                 csvfile:
-                    help: "CSV file with columns username, email, quota, groups(separated by coma) and optionally password"
+                    help: "CSV file with columns username, firstname, lastname, password, mail, mailbox-quota, mail-alias, mail-forward, groups (separated by coma)"
                     type: open
                 -u:
                     full: --update
