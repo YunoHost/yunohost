@@ -233,8 +233,9 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
         # Attempt to create user home folder
         subprocess.check_call(["mkhomedir_helper", username])
     except subprocess.CalledProcessError:
-        if not os.path.isdir('/home/{0}'.format(username)):
-            logger.warning(m18n.n('user_home_creation_failed'),
+        home = '/home/{0}'.format(username)
+        if not os.path.isdir(home):
+            logger.warning(m18n.n('user_home_creation_failed', home=home),
                            exc_info=1)
 
     # Create group for user and add to group 'all_users'
@@ -658,6 +659,20 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         'errors': 0
     }
 
+    def progress(info=""):
+        progress.nb += 1
+        width = 20
+        bar = int(progress.nb * width / total)
+        bar = "[" + "#" * bar + "." * (width - bar) + "]"
+        if info:
+            bar += " > " + info
+        if progress.old == bar:
+            return
+        progress.old = bar
+        logger.info(bar)
+    progress.nb = 0
+    progress.old = ""
+
     def on_failure(user, exception):
         result['errors'] += 1
         logger.error(user + ': ' + str(exception))
@@ -700,6 +715,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
             result['deleted'] += 1
         except YunohostError as e:
             on_failure(user, e)
+        progress("Deletion")
 
     for user in actions['updated']:
         try:
@@ -707,6 +723,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
             result['updated'] += 1
         except YunohostError as e:
             on_failure(user['username'], e)
+        progress("Update")
 
     for user in actions['created']:
         try:
@@ -718,6 +735,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
             result['created'] += 1
         except YunohostError as e:
             on_failure(user['username'], e)
+        progress("Creation")
 
 
 
