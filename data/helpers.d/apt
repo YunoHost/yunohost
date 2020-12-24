@@ -460,7 +460,8 @@ ynh_remove_extra_repo () {
     name="${name:-$app}"
 
     ynh_secure_remove "/etc/apt/sources.list.d/$name.list"
-    ynh_secure_remove "/etc/apt/preferences.d/$name"
+    # Sury pinning is managed by the regenconf in the core...
+    [[ "$name" == "extra_php_version" ]] || ynh_secure_remove "/etc/apt/preferences.d/$name"
     ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.gpg" > /dev/null
     ynh_secure_remove "/etc/apt/trusted.gpg.d/$name.asc" > /dev/null
 
@@ -547,6 +548,9 @@ ynh_pin_repo () {
     else
         append="tee"
     fi
+
+    # Sury pinning is managed by the regenconf in the core...
+    [[ "$name" != "extra_php_version" ]] || return
 
     mkdir --parents "/etc/apt/preferences.d"
     echo "Package: $package
