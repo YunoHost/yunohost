@@ -668,6 +668,9 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
     For example:
        re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
        re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
+       
+    We can also have less-trivial regexes like:
+        re:^\/api\/.*|\/scripts\/api.js$
     """
 
     from yunohost.domain import domain_list
@@ -692,9 +695,9 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
     if url.startswith('re:'):
 
         # regex without domain
-
-        if url.startswith('re:/'):
-            validate_regex(url[4:])
+        # we check for the first char after 're:'
+        if url[3] in ['/', '^', '\\']:
+            validate_regex(url[3:])
             return url
 
         # regex with domain
