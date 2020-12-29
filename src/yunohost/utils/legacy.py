@@ -104,7 +104,7 @@ class SetupGroupPermissions():
                 allowed = [user for user in permission.split(',') if user in known_users]
             else:
                 allowed = ["all_users"]
-            permission_create(app + ".main", url=url, allowed=allowed, protected=False, sync_perm=False)
+            permission_create(app + ".main", url=url, allowed=allowed, show_tile=True, protected=False, sync_perm=False)
 
             app_setting(app, 'allowed_users', delete=True)
 
@@ -185,12 +185,12 @@ def migrate_legacy_permission_settings(app=None):
         if unprotected_urls != []:
             permission_create(app + ".legacy_unprotected_uris", additional_urls=unprotected_urls,
                               auth_header=True, label=legacy_permission_label(app, "unprotected"),
-                              show_tile=False, allowed='visitors', protected=True, sync_perm=False)
+                              show_tile=True, allowed='visitors', protected=False, sync_perm=False)
         if protected_urls != []:
             permission_create(app + ".legacy_protected_uris", additional_urls=protected_urls,
                               auth_header=True, label=legacy_permission_label(app, "protected"),
-                              show_tile=False, allowed=user_permission_list()['permissions'][app + ".main"]['allowed'],
-                              protected=True, sync_perm=False)
+                              show_tile=True, allowed=user_permission_list()['permissions'][app + ".main"]['allowed'],
+                              protected=False, sync_perm=False)
 
         legacy_permission_settings = [
             "skipped_uris",
