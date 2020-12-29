@@ -1344,7 +1344,7 @@ class RestoreManager():
                                       auth_header=permission_infos.get("auth_header"),
                                       label=permission_infos.get('label') if perm_name == "main" else permission_infos.get("sublabel"),
                                       show_tile=permission_infos.get("show_tile", True),
-                                      protected=permission_infos.get("protected", True),
+                                      protected=permission_infos.get("protected", False),
                                       sync_perm=False)
 
                 permission_sync_to_user()
