@@ -1343,7 +1343,7 @@ class RestoreManager():
                                       additional_urls=permission_infos.get("additional_urls"),
                                       auth_header=permission_infos.get("auth_header"),
                                       label=permission_infos.get('label') if perm_name == "main" else permission_infos.get("sublabel"),
-                                      show_tile=permission_infos.get("show_tile", None),
+                                      show_tile=permission_infos.get("show_tile", True),
                                       protected=permission_infos.get("protected", True),
                                       sync_perm=False)
 
