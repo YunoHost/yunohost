@@ -87,7 +87,7 @@ user:
                         ask: ask_firstname
                         required: True
                         pattern: &pattern_firstname
-                            - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
+                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_firstname"
                 -l:
                     full: --lastname
@@ -95,7 +95,7 @@ user:
                         ask: ask_lastname
                         required: True
                         pattern: &pattern_lastname
-                            - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
+                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_lastname"
                 -m:
                     full: --mail
