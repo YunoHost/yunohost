@@ -882,7 +882,7 @@ class RestoreManager():
         End a restore operations by cleaning the working directory and
         regenerate ssowat conf (if some apps were restored)
         """
-        from permission import permission_sync_to_user
+        from .permission import permission_sync_to_user
 
         permission_sync_to_user()
 

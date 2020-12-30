@@ -385,7 +385,7 @@ def certificate_renew(domain_list, force=False, no_checks=False, email=False, st
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
         except Exception as e:
             import traceback
-            from StringIO import StringIO
+            from io import StringIO
             stack = StringIO()
             traceback.print_exc(file=stack)
             msg = "Certificate renewing for %s failed !" % (domain)

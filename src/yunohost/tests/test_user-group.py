@@ -1,6 +1,6 @@
 import pytest
 
-from conftest import message, raiseYunohostError
+from .conftest import message, raiseYunohostError
 
 from yunohost.user import user_list, user_info, user_create, user_delete, user_update, \
     user_group_list, user_group_create, user_group_delete, user_group_update

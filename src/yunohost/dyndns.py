@@ -105,7 +105,7 @@ def _dyndns_available(provider, domain):
         raise YunohostError('dyndns_could_not_check_available',
                             domain=domain, provider=provider)
 
-    return r == u"Domain %s is available" % domain
+    return r == "Domain %s is available" % domain
 
 
 @is_unit_operation()

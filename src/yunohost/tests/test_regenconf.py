@@ -1,6 +1,6 @@
 import os
 
-from conftest import message
+from .conftest import message
 from yunohost.domain import domain_add, domain_remove, domain_list
 from yunohost.regenconf import regen_conf, manually_modified_files, _get_conf_hashes, _force_clear_hashes
 

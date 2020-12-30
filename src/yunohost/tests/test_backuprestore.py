@@ -3,7 +3,7 @@ import os
 import shutil
 import subprocess
 
-from conftest import message, raiseYunohostError, get_test_apps_dir
+from .conftest import message, raiseYunohostError, get_test_apps_dir
 
 from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed

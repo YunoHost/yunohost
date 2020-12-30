@@ -30,10 +30,10 @@ import shutil
 import yaml
 import time
 import re
-import urlparse
+import urllib.parse
 import subprocess
 import glob
-import urllib
+import urllib.request, urllib.parse, urllib.error
 from collections import OrderedDict
 
 from moulinette import msignals, m18n, msettings
@@ -736,7 +736,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     # Retrieve arguments list for install script
     args_dict = {} if not args else \
-        dict(urlparse.parse_qsl(args, keep_blank_values=True))
+        dict(urllib.parse.parse_qsl(args, keep_blank_values=True))
     args_odict = _parse_args_from_manifest(manifest, 'install', args=args_dict)
 
     # Validate domain / path availability for webapps
@@ -759,7 +759,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Also redact the % escaped version of the password that might appear in
     # the 'args' section of metadata (relevant for password with non-alphanumeric char)
     data_to_redact = [value[0] for value in args_odict.values() if value[1] == "password"]
-    data_to_redact += [urllib.quote(data) for data in data_to_redact if urllib.quote(data) != data]
+    data_to_redact += [urllib.parse.quote(data) for data in data_to_redact if urllib.parse.quote(data) != data]
     operation_logger.data_to_redact.extend(data_to_redact)
 
     operation_logger.related_to = [s for s in operation_logger.related_to if s[0] != "app"]
@@ -1406,7 +1406,7 @@ def app_ssowatconf():
 
     write_to_json('/etc/ssowat/conf.json', conf_dict, sort_keys=True, indent=4)
 
-    from utils.legacy import translate_legacy_rules_in_ssowant_conf_json_persistent
+    from .utils.legacy import translate_legacy_rules_in_ssowant_conf_json_persistent
     translate_legacy_rules_in_ssowant_conf_json_persistent()
 
     logger.debug(m18n.n('ssowat_conf_generated'))
@@ -1456,7 +1456,7 @@ def app_action_run(operation_logger, app, action, args=None):
     action_declaration = actions[action]
 
     # Retrieve arguments list for install script
-    args_dict = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
+    args_dict = dict(urllib.parse.parse_qsl(args, keep_blank_values=True)) if args else {}
     args_odict = _parse_args_for_action(actions[action], args=args_dict)
     args_list = [value[0] for value in args_odict.values()]
 
@@ -1598,7 +1598,7 @@ def app_config_apply(operation_logger, app, args):
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
     }
-    args = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
+    args = dict(urllib.parse.parse_qsl(args, keep_blank_values=True)) if args else {}
 
     for tab in config_panel.get("panel", []):
         tab_id = tab["id"]  # this makes things easier to debug on crash
@@ -1817,8 +1817,7 @@ def _get_app_config_panel(app_id):
             "panel": [],
         }
 
-        panels = filter(lambda key_value: key_value[0] not in ("name", "version") and isinstance(key_value[1], OrderedDict),
-                        toml_config_panel.items())
+        panels = [key_value for key_value in toml_config_panel.items() if key_value[0] not in ("name", "version") and isinstance(key_value[1], OrderedDict)]
 
         for key, value in panels:
             panel = {
@@ -1827,8 +1826,7 @@ def _get_app_config_panel(app_id):
                 "sections": [],
             }
 
-            sections = filter(lambda k_v1: k_v1[0] not in ("name",) and isinstance(k_v1[1], OrderedDict),
-                              value.items())
+            sections = [k_v1 for k_v1 in value.items() if k_v1[0] not in ("name",) and isinstance(k_v1[1], OrderedDict)]
 
             for section_key, section_value in sections:
                 section = {
@@ -1837,8 +1835,7 @@ def _get_app_config_panel(app_id):
                     "options": [],
                 }
 
-                options = filter(lambda k_v: k_v[0] not in ("name",) and isinstance(k_v[1], OrderedDict),
-                                 section_value.items())
+                options = [k_v for k_v in section_value.items() if k_v[0] not in ("name",) and isinstance(k_v[1], OrderedDict)]
 
                 for option_key, option_value in options:
                     option = dict(option_value)
@@ -2315,7 +2312,7 @@ def _encode_string(value):
     """
     Return the string encoded in utf-8 if needed
     """
-    if isinstance(value, unicode):
+    if isinstance(value, str):
         return value.encode('utf8')
     return value
 
@@ -2926,7 +2923,7 @@ def _load_apps_catalog():
         try:
             apps_catalog_content = read_json(cache_file) if os.path.exists(cache_file) else None
         except Exception as e:
-            raise ("Unable to read cache for apps_catalog %s : %s" % (apps_catalog_id, str(e)))
+            raise "Unable to read cache for apps_catalog %s : %s"
 
         # Check that the version of the data matches version ....
         # ... otherwise it means we updated yunohost in the meantime
@@ -2976,7 +2973,7 @@ def is_true(arg):
     """
     if isinstance(arg, bool):
         return arg
-    elif isinstance(arg, basestring):
+    elif isinstance(arg, str):
         return arg.lower() in ['yes', 'true', 'on']
     else:
         logger.debug('arg should be a boolean or a string, got %r', arg)

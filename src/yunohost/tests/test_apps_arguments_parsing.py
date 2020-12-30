@@ -2,7 +2,7 @@ import sys
 import pytest
 
 from mock import patch
-from StringIO import StringIO
+from io import StringIO
 from collections import OrderedDict
 
 from moulinette import msignals
