@@ -2,9 +2,9 @@ Source: yunohost
 Section: utils
 Priority: extra
 Maintainer: YunoHost Contributors <contrib@yunohost.org>
-Build-Depends: debhelper (>=9), dh-systemd, dh-python, python-all (>= 2.7), python-yaml, python-jinja2
+Build-Depends: debhelper (>=9), dh-systemd, dh-python, python3-all (>= 3.7), python3-yaml, python3-jinja2
 Standards-Version: 3.9.6
-X-Python-Version: >= 2.7
+X-Python-Version: >= 3.7
 Homepage: https://yunohost.org/
 
 Package: yunohost
@@ -12,9 +12,9 @@ Essential: yes
 Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
  , moulinette (>= 4.1.0.1), ssowat (>= 4.0)
- , python-psutil, python-requests, python-dnspython, python-openssl
- , python-miniupnpc, python-dbus, python-jinja2
- , python-toml, python-packaging, python-publicsuffix
+ , python3-psutil, python3-requests, python3-dnspython, python3-openssl
+ , python3-miniupnpc, python3-dbus, python3-jinja2
+ , python3-toml, python3-packaging, python3-publicsuffix
  , apt, apt-transport-https, apt-utils, dirmngr
  , php7.3-common, php7.3-fpm, php7.3-ldap, php7.3-intl
  , mariadb-server, php7.3-mysql
@@ -33,7 +33,7 @@ Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog
  , php7.3-gd, php7.3-curl, php-gettext
- , python-pip
+ , python3-pip
  , unattended-upgrades
  , libdbd-ldap-perl, libnet-dns-perl
 Suggests: htop, vim, rsync, acpi-support-base, udisks2
