@@ -143,6 +143,11 @@ def init_logging(interface="cli",
                     'handlers': ['file', 'tty'] if not quiet else ['file'],
                     'propagate': False,
                 },
+                'moulinette.core': {
+                    'level': 'DEBUG' if debug else 'ERROR',
+                    'handlers': ['file', 'tty'] if not quiet else ['file'],
+                    'propagate': False,
+                },
             },
             'root': {
                 'level': 'DEBUG',
