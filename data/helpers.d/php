@@ -132,7 +132,6 @@ ynh_add_fpm_config () {
     ynh_app_setting_set --app=$app --key=fpm_service --value="$fpm_service"
     ynh_app_setting_set --app=$app --key=fpm_dedicated_service --value="$dedicated_service"
     ynh_app_setting_set --app=$app --key=phpversion --value=$phpversion
-    finalphpconf="$fpm_config_dir/pool.d/$app.conf"
 
     # Migrate from mutual PHP service to dedicated one.
     if [ $dedicated_service -eq 1 ]
@@ -151,8 +150,6 @@ ynh_add_fpm_config () {
         fi
     fi
 
-    ynh_backup_if_checksum_is_different --file="$finalphpconf"
-
     if [ $use_template -eq 1 ]
     then
         # Usage 1, use the template in conf/php-fpm.conf
@@ -162,12 +159,6 @@ ynh_add_fpm_config () {
         fi
         # Make sure now that the template indeed exists
         [ -e "$phpfpm_path" ] || ynh_die --message="Unable to find template to configure PHP-FPM."
-        cp "$phpfpm_path" "$finalphpconf"
-        ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$finalphpconf"
-        ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalphpconf"
-        ynh_replace_string --match_string="__USER__" --replace_string="$app" --target_file="$finalphpconf"
-        ynh_replace_string --match_string="__PHPVERSION__" --replace_string="$phpversion" --target_file="$finalphpconf"
-
     else
         # Usage 2, generate a PHP-FPM config file with ynh_get_scalable_phpfpm
 
@@ -178,82 +169,78 @@ ynh_add_fpm_config () {
         # Define the values to use for the configuration of PHP.
         ynh_get_scalable_phpfpm --usage=$usage --footprint=$footprint
 
-        # Copy the default file
-        cp "/etc/php/$phpversion/fpm/pool.d/www.conf" "$finalphpconf"
+        local phpfpm_path="../conf/php-fpm.conf"
+        echo "
+[__APP__]
 
-        # Replace standard variables into the default file
-        ynh_replace_string --match_string="^\[www\]" --replace_string="[$app]" --target_file="$finalphpconf"
-        ynh_replace_string --match_string=".*listen = .*" --replace_string="listen = /var/run/php/php$phpversion-fpm-$app.sock" --target_file="$finalphpconf"
-        ynh_replace_string --match_string="^user = .*" --replace_string="user = $app" --target_file="$finalphpconf"
-        ynh_replace_string --match_string="^group = .*" --replace_string="group = $app" --target_file="$finalphpconf"
-        ynh_replace_string --match_string=".*chdir = .*" --replace_string="chdir = $final_path" --target_file="$finalphpconf"
+user = __APP__
+group = __APP__
 
-        # Configure FPM children
-        ynh_replace_string --match_string=".*pm = .*" --replace_string="pm = $php_pm" --target_file="$finalphpconf"
-        ynh_replace_string --match_string=".*pm.max_children = .*" --replace_string="pm.max_children = $php_max_children" --target_file="$finalphpconf"
-        ynh_replace_string --match_string=".*pm.max_requests = .*" --replace_string="pm.max_requests = 500" --target_file="$finalphpconf"
-        ynh_replace_string --match_string=".*request_terminate_timeout = .*" --replace_string="request_terminate_timeout = 1d" --target_file="$finalphpconf"
+chdir = __FINALPATH__
+
+listen = /var/run/php/php__PHPVERSION__-fpm-__APP__.sock
+listen.owner = www-data
+listen.group = www-data
+
+pm = __PHP_PM__
+pm.max_children = __PHP_MAX_CHILDREN__
+pm.max_requests = 500
+request_terminate_timeout = 1d
+" > $phpfpm_path
+
         if [ "$php_pm" = "dynamic" ]
         then
-            ynh_replace_string --match_string=".*pm.start_servers = .*" --replace_string="pm.start_servers = $php_start_servers" --target_file="$finalphpconf"
-            ynh_replace_string --match_string=".*pm.min_spare_servers = .*" --replace_string="pm.min_spare_servers = $php_min_spare_servers" --target_file="$finalphpconf"
-            ynh_replace_string --match_string=".*pm.max_spare_servers = .*" --replace_string="pm.max_spare_servers = $php_max_spare_servers" --target_file="$finalphpconf"
+            echo "
+pm.start_servers = __PHP_START_SERVERS__
+pm.min_spare_servers = __PHP_MIN_SPARE_SERVERS__
+pm.max_spare_servers = __PHP_MAX_SPARE_SERVERS__
+" >> $phpfpm_path
+
         elif [ "$php_pm" = "ondemand" ]
         then
-            ynh_replace_string --match_string=".*pm.process_idle_timeout = .*" --replace_string="pm.process_idle_timeout = 10s" --target_file="$finalphpconf"
-        fi
-
-        # Comment unused parameters
-        if [ "$php_pm" != "dynamic" ]
-        then
-            ynh_replace_string --match_string=".*\(pm.start_servers = .*\)" --replace_string=";\1" --target_file="$finalphpconf"
-            ynh_replace_string --match_string=".*\(pm.min_spare_servers = .*\)" --replace_string=";\1" --target_file="$finalphpconf"
-            ynh_replace_string --match_string=".*\(pm.max_spare_servers = .*\)" --replace_string=";\1" --target_file="$finalphpconf"
-        fi
-        if [ "$php_pm" != "ondemand" ]
-        then
-            ynh_replace_string --match_string=".*\(pm.process_idle_timeout = .*\)" --replace_string=";\1" --target_file="$finalphpconf"
+            echo "
+pm.process_idle_timeout = 10s
+" >> $phpfpm_path
         fi
 
         # Concatene the extra config.
         if [ -e ../conf/extra_php-fpm.conf ]; then
-            cat ../conf/extra_php-fpm.conf >> "$finalphpconf"
+            cat ../conf/extra_php-fpm.conf >> "$phpfpm_path"
         fi
     fi
 
-    chown root: "$finalphpconf"
-    ynh_store_file_checksum --file="$finalphpconf"
+    local finalphpconf="$fpm_config_dir/pool.d/$app.conf"
+    ynh_add_config --template="$phpfpm_path" --destination="$finalphpconf"
 
     if [ -e "../conf/php-fpm.ini" ]
     then
         ynh_print_warn --message="Packagers ! Please do not use a separate php ini file, merge your directives in the pool file instead."
-        finalphpini="$fpm_config_dir/conf.d/20-$app.ini"
-        ynh_backup_if_checksum_is_different "$finalphpini"
-        cp ../conf/php-fpm.ini "$finalphpini"
-        chown root: "$finalphpini"
-        ynh_store_file_checksum "$finalphpini"
+        ynh_add_config --template="../conf/php-fpm.ini" --destination="$fpm_config_dir/conf.d/20-$app.ini"
     fi
 
     if [ $dedicated_service -eq 1 ]
     then
         # Create a dedicated php-fpm.conf for the service
         local globalphpconf=$fpm_config_dir/php-fpm-$app.conf
-        cp /etc/php/${phpversion}/fpm/php-fpm.conf $globalphpconf
 
-        ynh_replace_string --match_string="^[; ]*pid *=.*" --replace_string="pid = /run/php/php${phpversion}-fpm-$app.pid" --target_file="$globalphpconf"
-        ynh_replace_string --match_string="^[; ]*error_log *=.*" --replace_string="error_log = /var/log/php/fpm-php.$app.log" --target_file="$globalphpconf"
-        ynh_replace_string --match_string="^[; ]*syslog.ident *=.*" --replace_string="syslog.ident = php-fpm-$app" --target_file="$globalphpconf"
-        ynh_replace_string --match_string="^[; ]*include *=.*" --replace_string="include = $finalphpconf" --target_file="$globalphpconf"
+echo "[global]
+pid = /run/php/php__PHPVERSION__-fpm-__APP__.pid
+error_log = /var/log/php/fpm-php.__APP__.log
+syslog.ident = php-fpm-__APP__
+include = __FINALPHPCONF__
+" > ../conf/php-fpm-$app.conf
+
+        ynh_add_config --template="../config/php-fpm-$app.conf" --destination="$globalphpconf"
 
         # Create a config for a dedicated PHP-FPM service for the app
         echo "[Unit]
-Description=PHP $phpversion FastCGI Process Manager for $app
+Description=PHP __PHPVERSION__ FastCGI Process Manager for __APP__
 After=network.target
 
-[Service] 
+[Service]
 Type=notify
-PIDFile=/run/php/php${phpversion}-fpm-$app.pid
-ExecStart=/usr/sbin/php-fpm$phpversion --nodaemonize --fpm-config $globalphpconf
+PIDFile=/run/php/php__PHPVERSION__-fpm-__APP__.pid
+ExecStart=/usr/sbin/php-fpm__PHPVERSION__ --nodaemonize --fpm-config __GLOBALPHPCONF__
 ExecReload=/bin/kill -USR2 \$MAINPID
 
 [Install]
