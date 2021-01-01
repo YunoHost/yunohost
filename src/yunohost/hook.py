@@ -387,9 +387,6 @@ def _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, logge
 
     env['YNH_INTERFACE'] = msettings.get('interface')
 
-    stdinfo = os.path.join(tempfile.mkdtemp(), "stdinfo")
-    env['YNH_STDINFO'] = stdinfo
-
     stdreturn = os.path.join(tempfile.mkdtemp(), "stdreturn")
     with open(stdreturn, 'w') as f:
         f.write('')
@@ -415,10 +412,7 @@ def _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, logge
 
     logger.debug("Executing command '%s'" % ' '.join(command))
 
-    returncode = call_async_output(
-        command, loggers, shell=False, cwd=chdir,
-        stdinfo=stdinfo
-    )
+    returncode = call_async_output(command, loggers, shell=False, cwd=chdir)
 
     raw_content = None
     try:
