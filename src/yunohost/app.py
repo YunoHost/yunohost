@@ -194,19 +194,29 @@ def _app_upgradable(app_infos):
     from packaging import version
 
     # Determine upgradability
-    # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
 
-    # Firstly use the version to know if an upgrade is available
-    app_is_in_catalog = bool(app_infos.get("from_catalog"))
+    app_in_catalog = app_infos.get("from_catalog")
     installed_version = version.parse(app_infos.get("version", "0~ynh0"))
     version_in_catalog = version.parse(app_infos.get("from_catalog", {}).get("manifest", {}).get("version", "0~ynh0"))
 
-    if app_is_in_catalog and '~ynh' in str(installed_version) and '~ynh' in str(version_in_catalog):
+    if not app_in_catalog:
+        return "url_required"
+
+    # Do not advertise upgrades for bad-quality apps
+    if not app_in_catalog.get("level", -1) >= 5 or app_in_catalog.get("state") != "working":
+        return "bad_quality"
+
+    # If the app uses the standard version scheme, use it to determine
+    # upgradability
+    if '~ynh' in str(installed_version) and '~ynh' in str(version_in_catalog):
         if installed_version < version_in_catalog:
             return "yes"
+        else:
+            return "no"
 
-    if not app_is_in_catalog:
-        return "url_required"
+    # Legacy stuff for app with old / non-standard version numbers...
+
+    # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
     if not app_infos["from_catalog"].get("lastUpdate") or not app_infos["from_catalog"].get("git"):
         return "url_required"
 
