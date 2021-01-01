@@ -1,9 +1,10 @@
 #!/usr/bin/env python
 import os
 import psutil
-import subprocess
 import datetime
 import re
+
+from moulinette.utils.process import check_output
 
 from yunohost.diagnosis import Diagnoser
 
@@ -119,7 +120,7 @@ class SystemResourcesDiagnoser(Diagnoser):
         def analyzed_kern_log():
 
             cmd = 'tail -n 10000 /var/log/kern.log | grep "oom_reaper: reaped process" || true'
-            out = subprocess.check_output(cmd, shell=True).strip()
+            out = check_output(cmd)
             lines = out.split("\n") if out else []
 
             now = datetime.datetime.now()

@@ -35,6 +35,7 @@ import copy
 
 from moulinette import msignals, msettings, m18n
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.process import check_output
 
 from yunohost.utils.error import YunohostError
 from yunohost.service import service_status
@@ -467,8 +468,7 @@ def user_info(username):
         else:
             try:
                 cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
-                cmd_result = subprocess.check_output(cmd, stderr=subprocess.STDOUT,
-                                                     shell=True)
+                cmd_result = check_output(cmd)
             except Exception as e:
                 cmd_result = ""
                 logger.warning("Failed to fetch quota info ... : %s " % str(e))

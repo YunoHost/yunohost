@@ -39,7 +39,7 @@ from collections import OrderedDict
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
-from moulinette.utils.process import run_commands
+from moulinette.utils.process import run_commands, check_output
 from moulinette.utils.filesystem import read_file, read_json, read_toml, read_yaml, write_to_file, write_to_json, write_to_yaml, chmod, chown, mkdir
 
 from yunohost.service import service_status, _run_service_command
@@ -411,10 +411,7 @@ def app_change_url(operation_logger, app, domain, path):
         # grab nginx errors
         # the "exit 0" is here to avoid check_output to fail because 'nginx -t'
         # will return != 0 since we are in a failed state
-        nginx_errors = subprocess.check_output("nginx -t; exit 0",
-                                               stderr=subprocess.STDOUT,
-                                               shell=True).rstrip()
-
+        nginx_errors = check_output("nginx -t; exit 0")
         raise YunohostError("app_change_url_failed_nginx_reload", nginx_errors=nginx_errors)
 
     logger.success(m18n.n("app_change_url_success",
@@ -2139,10 +2136,9 @@ def _get_git_last_commit_hash(repository, reference='HEAD'):
 
     """
     try:
-        commit = subprocess.check_output(
-            "git ls-remote --exit-code {0} {1} | awk '{{print $1}}'".format(
-                repository, reference),
-            shell=True)
+        cmd = "git ls-remote --exit-code {0} {1} | awk '{{print $1}}'"\
+            .format(repository, reference)
+        commit = check_output(cmd)
     except subprocess.CalledProcessError:
         logger.exception("unable to get last commit from %s", repository)
         raise ValueError("Unable to get last commit with git")

@@ -41,6 +41,7 @@ from moulinette import msignals, m18n, msettings
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
+from moulinette.utils.process import check_output
 
 from yunohost.app import (
     app_info, _is_installed,
@@ -2386,7 +2387,7 @@ def _recursive_umount(directory):
     Args:
         directory -- a directory path
     """
-    mount_lines = subprocess.check_output("mount").split("\n")
+    mount_lines = check_output("mount").split("\n")
 
     points_to_umount = [line.split(" ")[2]
                         for line in mount_lines
@@ -2412,8 +2413,8 @@ def disk_usage(path):
     # We don't do this in python with os.stat because we don't want
     # to follow symlinks
 
-    du_output = subprocess.check_output(['du', '-sb', path])
-    return int(du_output.split()[0].decode('utf-8'))
+    du_output = check_output(['du', '-sb', path], shell=False)
+    return int(du_output.split()[0])
 
 
 def binary_to_human(n, customary=False):

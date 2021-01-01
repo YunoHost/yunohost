@@ -35,6 +35,7 @@ from datetime import datetime
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
+from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, append_to_file, write_to_file
 
@@ -563,8 +564,7 @@ def _give_lock(action, service, p):
     while son_PID == 0 and p.poll() is None:
         # Call systemctl to get the PID
         # Output of the command is e.g. ControlPID=1234
-        son_PID = subprocess.check_output(cmd_get_son_PID.split()) \
-                            .strip().split("=")[1]
+        son_PID = check_output(cmd_get_son_PID).split("=")[1]
         son_PID = int(son_PID)
         time.sleep(1)
 
@@ -720,7 +720,7 @@ def _get_journalctl_logs(service, number="all"):
     services = _get_services()
     systemd_service = services.get(service, {}).get("actual_systemd_service", service)
     try:
-        return subprocess.check_output("journalctl --no-hostname --no-pager -u {0} -n{1}".format(systemd_service, number), shell=True)
+        return check_output("journalctl --no-hostname --no-pager -u {0} -n{1}".format(systemd_service, number))
     except:
         import traceback
         return "error while get services logs from journalctl:\n%s" % traceback.format_exc()
