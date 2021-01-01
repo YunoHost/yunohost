@@ -51,7 +51,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, abs
     """
 
     # Fetch relevant informations
-    from yunohost.app import app_setting, app_list
+    from yunohost.app import app_setting, _installed_apps
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
     ldap = _get_ldap_interface()
     permissions_infos = ldap.search('ou=permission,dc=yunohost,dc=org',
@@ -60,7 +60,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, abs
                                      'URL', 'additionalUrls', 'authHeader', 'label', 'showTile', 'isProtected'])
 
     # Parse / organize information to be outputed
-    apps = [app["id"] for app in app_list()["apps"]]
+    apps = sorted(_installed_apps())
     apps_base_path = {app: app_setting(app, 'domain') + app_setting(app, 'path')
                       for app in apps
                       if app_setting(app, 'domain') and app_setting(app, 'path')}
