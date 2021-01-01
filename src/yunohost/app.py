@@ -154,12 +154,13 @@ def app_info(app, full=False):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
 
     settings = _get_app_settings(app)
 
     ret = {
         'description': _value_for_locale(local_manifest['description']),
-        'name': local_manifest['name'],
+        'name': permissions.get(app + ".main", {}).get("label", local_manifest['name']),
         'version': local_manifest.get('version', '-'),
     }
 
@@ -180,9 +181,10 @@ def app_info(app, full=False):
     ret['supports_backup_restore'] = (os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "backup")) and
                                       os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "restore")))
     ret['supports_multi_instance'] = is_true(local_manifest.get("multi_instance", False))
-    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
+
     ret['permissions'] = {p: i for p, i in permissions.items() if p.startswith(app + ".")}
     ret['label'] = permissions.get(app + ".main", {}).get("label")
+
     if not ret['label']:
         logger.warning("Failed to get label for app %s ?" % app)
     return ret
