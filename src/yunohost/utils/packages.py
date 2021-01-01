@@ -70,7 +70,11 @@ def meets_version_specifier(pkg_name, specifier):
     op, req_version = re.search(r'(<<|<=|=|>=|>>) *([\d\.]+)', specifier).groups()
     req_version = version.parse(req_version)
 
-    # cmp is a python builtin that returns (-1, 0, 1) depending on comparison
+    # Python2 had a builtin that returns (-1, 0, 1) depending on comparison
+    # c.f. https://stackoverflow.com/a/22490617
+    def cmp(a, b):
+        return (a > b) - (a < b)
+
     deb_operators = {
         "<<": lambda v1, v2: cmp(v1, v2) in [-1],
         "<=": lambda v1, v2: cmp(v1, v2) in [-1, 0],
