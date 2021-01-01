@@ -162,7 +162,7 @@ def domain_add(operation_logger, domain, dyndns=False):
         # Force domain removal silently
         try:
             domain_remove(domain, True)
-        except:
+        except Exception:
             pass
         raise
 
