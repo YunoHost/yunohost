@@ -307,7 +307,7 @@ user:
                     api: GET /users/permissions/<permission>
                     arguments:
                         permission:
-                            help: Name of the permission to fetch info about
+                            help: Name of the permission to fetch info about (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
 
                 ### user_permission_update()
                 update:
@@ -315,7 +315,7 @@ user:
                     api: PUT /users/permissions/<permission>
                     arguments:
                         permission:
-                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
                         -a:
                             full: --add
                             help: Group or usernames to grant this permission to
@@ -346,7 +346,7 @@ user:
                     api: DELETE /users/permissions/<app>
                     arguments:
                         permission:
-                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
 
         ssh:
             subcategory_help: Manage ssh access
