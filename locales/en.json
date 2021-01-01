@@ -277,6 +277,7 @@
     "domain_dyndns_root_unknown": "Unknown DynDNS root domain",
     "domain_exists": "The domain already exists",
     "domain_hostname_failed": "Unable to set new hostname. This might cause an issue later (it might be fine).",
+    "domain_remove_confirm_apps_removal": "Removing this domain will remove those applications:\n{apps}\n\nAre you sure you want to do that? [{answers}]",
     "domain_uninstall_app_first": "Those applications are still installed on your domain:\n{apps}\n\nPlease uninstall them using 'yunohost app remove the_app_id' or move them to another domain using 'yunohost app change-url the_app_id' before proceeding to domain removal",
     "domain_name_unknown": "Domain '{domain}' unknown",
     "domain_unknown": "Unknown domain",

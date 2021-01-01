@@ -448,6 +448,10 @@ domain:
                     help: Domain to delete
                     extra:
                         pattern: *pattern_domain
+                -r:
+                    full: --remove-apps
+                    help: Remove apps installed on the domain
+                    action: store_true
 
         ### domain_dns_conf()
         dns-conf:
