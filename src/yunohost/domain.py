@@ -179,7 +179,8 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     Keyword argument:
         domain -- Domain to delete
         remove_apps -- Remove applications installed on the domain
-        force -- Force the domain removal
+        force -- Force the domain removal and don't not ask confirmation to
+                 remove apps if remove_apps is specified
 
     """
     from yunohost.hook import hook_callback
@@ -211,11 +212,12 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
 
     if apps_on_that_domain:
         if remove_apps:
-            answer = msignals.prompt(m18n.n('domain_remove_confirm_apps_removal',
-                                            apps="\n".join([x[1] for x in apps_on_that_domain]),
-                                            answers='y/N'), color="yellow")
-            if answer.upper() != "Y":
-                raise YunohostError("aborting")
+            if not yes:
+                answer = msignals.prompt(m18n.n('domain_remove_confirm_apps_removal',
+                                                apps="\n".join([x[1] for x in apps_on_that_domain]),
+                                                answers='y/N'), color="yellow")
+                if answer.upper() != "Y":
+                    raise YunohostError("aborting")
 
             for app, _ in apps_on_that_domain:
                 app_remove(app)

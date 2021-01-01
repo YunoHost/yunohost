@@ -452,6 +452,10 @@ domain:
                     full: --remove-apps
                     help: Remove apps installed on the domain
                     action: store_true
+                -f:
+                    full: --force
+                    help: Do not ask confirmation to remove apps
+                    action: store_true
 
         ### domain_dns_conf()
         dns-conf:
