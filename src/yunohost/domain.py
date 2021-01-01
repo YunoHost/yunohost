@@ -206,10 +206,10 @@ def domain_remove(operation_logger, domain, force=False):
         settings = _get_app_settings(app)
         label = app_info(app)["name"]
         if settings.get("domain") == domain:
-            apps_on_that_domain.append("%s \"%s\" (on https://%s%s)" % (app, label, domain, settings["path"]) if "path" in settings else app)
+            apps_on_that_domain.append("    - %s \"%s\" on https://%s%s" % (app, label, domain, settings["path"]) if "path" in settings else app)
 
     if apps_on_that_domain:
-        raise YunohostError('domain_uninstall_app_first', apps=", ".join(apps_on_that_domain))
+        raise YunohostError('domain_uninstall_app_first', apps="\n".join(apps_on_that_domain))
 
     operation_logger.start()
     ldap = _get_ldap_interface()
