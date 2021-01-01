@@ -1873,7 +1873,7 @@ def _get_app_settings(app_id):
             settings = yaml.load(f)
         # If label contains unicode char, this may later trigger issues when building strings...
         # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
-        settings = {k: _encode_string(v) for k, v in settings.items()}
+        settings = {k: v for k, v in settings.items()}
         if app_id == settings['id']:
             return settings
     except (IOError, TypeError, KeyError):
@@ -2300,21 +2300,12 @@ def _value_for_locale(values):
 
     for lang in [m18n.locale, m18n.default_locale]:
         try:
-            return _encode_string(values[lang])
+            return values[lang]
         except KeyError:
             continue
 
     # Fallback to first value
-    return _encode_string(values.values()[0])
-
-
-def _encode_string(value):
-    """
-    Return the string encoded in utf-8 if needed
-    """
-    if isinstance(value, str):
-        return value.encode('utf8')
-    return value
+    return values.values()[0]
 
 
 def _check_manifest_requirements(manifest, app_instance_name):

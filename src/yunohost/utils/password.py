@@ -173,7 +173,7 @@ class PasswordValidator(object):
         # stdin to avoid it being shown in ps -ef --forest...
         command = "grep -q -f - %s" % MOST_USED_PASSWORDS
         p = subprocess.Popen(command.split(), stdin=subprocess.PIPE)
-        p.communicate(input=password)
+        p.communicate(input=password.encode('utf-8'))
         return not bool(p.returncode)
 
 
