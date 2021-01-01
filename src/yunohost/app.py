@@ -163,6 +163,9 @@ def app_info(app, full=False):
         'version': local_manifest.get('version', '-'),
     }
 
+    if "domain" in settings and "path" in settings:
+        ret["domain_path"] = settings["domain"] + settings["path"]
+
     if not full:
         return ret
 
