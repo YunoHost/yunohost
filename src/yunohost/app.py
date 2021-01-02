@@ -623,7 +623,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
             if os.path.exists(os.path.join(extracted_app_folder, "manifest.toml")):
                 os.system('mv "%s/manifest.toml" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
 
-            for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf"]:
+            for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf", "DESCRIPTION.md"]:
                 if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
                     os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
@@ -801,7 +801,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         os.system('cp %s/manifest.toml %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
 
-    for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf"]:
+    for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf", "DESCRIPTION.md"]:
         if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
             os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
