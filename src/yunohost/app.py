@@ -60,7 +60,7 @@ APPS_CATALOG_CRON_PATH = "/etc/cron.daily/yunohost-fetch-apps-catalog"
 APPS_CATALOG_API_VERSION = 2
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 APPS_FILES_TO_SAVE = ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml",
-                      "conf", "DESCRIPTION.md"]
+                      "conf", "DESCRIPTION.md", "CHANGELOG.md"]
 re_app_instance_name = re.compile(
     r'^(?P<appid>[\w-]+?)(__(?P<appinstancenb>[1-9][0-9]*))?$'
 )
@@ -520,6 +520,9 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         _assert_system_is_sane_for_app(manifest, "pre")
 
         app_setting_path = APPS_SETTING_PATH + '/' + app_instance_name
+
+        if 'CHANGELOG.md' in os.listdir(extracted_app_folder):
+            msignals.file_display(os.path.join(extracted_app_folder, "CHANGELOG.md"))
 
         # Retrieve arguments list for upgrade script
         # TODO: Allow to specify arguments
