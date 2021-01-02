@@ -23,8 +23,6 @@ def setup_function(function):
     global maindomain
     maindomain = _get_maindomain()
 
-    print ""
-
     assert backup_test_dependencies_are_met()
 
     clean_tmp_backup_directory()
