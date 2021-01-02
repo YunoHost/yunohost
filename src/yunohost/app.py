@@ -59,7 +59,8 @@ APPS_CATALOG_CONF = '/etc/yunohost/apps_catalog.yml'
 APPS_CATALOG_CRON_PATH = "/etc/cron.daily/yunohost-fetch-apps-catalog"
 APPS_CATALOG_API_VERSION = 2
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
-
+APPS_FILES_TO_SAVE = ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml",
+                      "conf", "DESCRIPTION.md"]
 re_app_instance_name = re.compile(
     r'^(?P<appid>[\w-]+?)(__(?P<appinstancenb>[1-9][0-9]*))?$'
 )
@@ -623,7 +624,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
             if os.path.exists(os.path.join(extracted_app_folder, "manifest.toml")):
                 os.system('mv "%s/manifest.toml" "%s/scripts" %s' % (extracted_app_folder, extracted_app_folder, app_setting_path))
 
-            for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf", "DESCRIPTION.md"]:
+            for file_to_copy in APPS_FILES_TO_SAVE:
                 if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
                     os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
@@ -801,7 +802,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         os.system('cp %s/manifest.toml %s' % (extracted_app_folder, app_setting_path))
     os.system('cp -R %s/scripts %s' % (extracted_app_folder, app_setting_path))
 
-    for file_to_copy in ["actions.json", "actions.toml", "config_panel.json", "config_panel.toml", "conf", "DESCRIPTION.md"]:
+    for file_to_copy in APPS_FILES_TO_SAVE:
         if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
             os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
