@@ -106,7 +106,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, abs
             infos["label"] = "%s (%s)" % (main_perm_label, infos["label"])
 
     if short:
-        permissions = permissions.keys()
+        permissions = list(permissions.keys())
 
     return {'permissions': permissions}
 
@@ -668,7 +668,7 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
     For example:
        re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
        re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
-       
+
     We can also have less-trivial regexes like:
         re:^\/api\/.*|\/scripts\/api.js$
     """

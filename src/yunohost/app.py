@@ -2301,7 +2301,7 @@ def _value_for_locale(values):
             continue
 
     # Fallback to first value
-    return values.values()[0]
+    return list(values.values())[0]
 
 
 def _check_manifest_requirements(manifest, app_instance_name):

@@ -100,7 +100,7 @@ class SetupGroupPermissions():
 
             url = "/" if domain and path else None
             if permission:
-                known_users = user_list()["users"].keys()
+                known_users = list(user_list()["users"].keys())
                 allowed = [user for user in permission.split(',') if user in known_users]
             else:
                 allowed = ["all_users"]
@@ -235,7 +235,7 @@ def translate_legacy_rules_in_ssowant_conf_json_persistent():
     protected_urls = persistent.get("protected_urls", []) + ["re:" + r for r in persistent.get("protected_regex", [])]
     unprotected_urls = persistent.get("unprotected_urls", []) + ["re:" + r for r in persistent.get("unprotected_regex", [])]
 
-    known_users = user_list()["users"].keys()
+    known_users = list(user_list()["users"].keys())
 
     for legacy_rule in legacy_rules:
         if legacy_rule in persistent:

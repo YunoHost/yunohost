@@ -490,7 +490,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
             raise YunohostError('service_unknown', service=name)
 
     if names is []:
-        names = services.keys()
+        names = list(services.keys())
 
     logger.warning(m18n.n("service_regen_conf_is_deprecated"))
 

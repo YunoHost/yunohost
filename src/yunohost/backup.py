@@ -600,7 +600,7 @@ class BackupManager():
                       for hook, infos in ret.items()
                       if any(result["state"] == "failed" for result in infos.values())}
 
-        if ret_succeed.keys() != []:
+        if list(ret_succeed.keys()) != []:
             self.system_return = ret_succeed
 
         # Add files from targets (which they put in the CSV) to the list of
