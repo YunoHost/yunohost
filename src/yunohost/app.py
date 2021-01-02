@@ -2910,7 +2910,7 @@ def _load_apps_catalog():
         try:
             apps_catalog_content = read_json(cache_file) if os.path.exists(cache_file) else None
         except Exception as e:
-            raise "Unable to read cache for apps_catalog %s : %s"
+            raise YunohostError("Unable to read cache for apps_catalog %s : %s" % (cache_file, e), raw_msg=True)
 
         # Check that the version of the data matches version ....
         # ... otherwise it means we updated yunohost in the meantime
