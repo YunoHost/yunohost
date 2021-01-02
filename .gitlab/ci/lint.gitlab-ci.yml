@@ -3,14 +3,6 @@
 ########################################
 # later we must fix lint and format-check jobs and remove "allow_failure"
 
-lint27:
-  stage: lint
-  image: "before-install"
-  needs: []
-  allow_failure: true
-  script:
-    - tox -e py27-lint
-
 lint37:
   stage: lint
   image: "before-install"
@@ -18,13 +10,6 @@ lint37:
   allow_failure: true
   script:
     - tox -e py37-lint
-
-invalidcode27:
-  stage: lint
-  image: "before-install"
-  needs: []
-  script:
-    - tox -e py27-invalidcode
 
 invalidcode37:
   stage: lint
