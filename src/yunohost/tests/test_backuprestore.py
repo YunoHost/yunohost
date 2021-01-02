@@ -148,7 +148,7 @@ def clean_tmp_backup_directory():
     if tmp_backup_directory_is_empty():
         return
 
-    mount_lines = subprocess.check_output("mount").split("\n")
+    mount_lines = subprocess.check_output("mount").decode().split("\n")
 
     points_to_umount = [line.split(" ")[2]
                         for line in mount_lines
@@ -636,6 +636,7 @@ def test_backup_binds_are_readonly(mocker, monkeypatch):
         confssh = os.path.join(self.work_dir, "conf/ssh")
         output = subprocess.check_output("touch %s/test 2>&1 || true" % confssh,
                                          shell=True, env={'LANG': 'en_US.UTF-8'})
+        output = output.decode()
 
         assert "Read-only file system" in output
 
