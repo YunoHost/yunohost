@@ -14,7 +14,6 @@ lint37:
 invalidcode37:
   stage: lint
   image: "before-install"
-  allow_failure: true
   needs: []
   script:
     - tox -e py37-invalidcode

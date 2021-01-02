@@ -831,7 +831,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         logger.error(m18n.n("app_install_failed", app=app_id, error=error))
         failure_message_with_debug_instructions = operation_logger.error(error)
     # Something wrong happened in Yunohost's code (most probably hook_exec)
-    except Exception as e:
+    except Exception:
         import traceback
         error = m18n.n('unexpected_error', error="\n" + traceback.format_exc())
         logger.error(m18n.n("app_install_failed", app=app_id, error=error))

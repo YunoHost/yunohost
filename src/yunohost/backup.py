@@ -1644,7 +1644,7 @@ class BackupMethod(object):
                 try:
                     subprocess.check_call(["mount", "--rbind", src, dest])
                     subprocess.check_call(["mount", "-o", "remount,ro,bind", dest])
-                except Exception as e:
+                except Exception:
                     logger.warning(m18n.n("backup_couldnt_bind", src=src, dest=dest))
                     # To check if dest is mounted, use /proc/mounts that
                     # escape spaces as \040

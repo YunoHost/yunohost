@@ -22,7 +22,7 @@ class SetupGroupPermissions():
         try:
             objects = ldap.search(target + ",dc=yunohost,dc=org")
         # ldap search will raise an exception if no corresponding object is found >.> ...
-        except Exception as e:
+        except Exception:
             logger.debug("%s does not exist, no need to delete it" % target)
             return
 
