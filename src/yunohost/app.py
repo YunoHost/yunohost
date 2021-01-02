@@ -739,6 +739,9 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     else:
         app_instance_name = app_id
 
+    if 'DESCRIPTION.md' in os.listdir(extracted_app_folder):
+        msignals.file_display(os.path.join(extracted_app_folder, "DESCRIPTION.md"))
+
     # Retrieve arguments list for install script
     args_dict = {} if not args else \
         dict(urlparse.parse_qsl(args, keep_blank_values=True))
