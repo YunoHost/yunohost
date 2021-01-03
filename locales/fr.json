@@ -691,5 +691,6 @@
     "migration_0019_rollback_success": "Retour à l'état antérieur du système.",
     "invalid_number": "Doit être un nombre",
     "migration_description_0019_extend_permissions_features": "Étendre et retravailler le système de gestion des permissions applicatives",
-    "diagnosis_basesystem_hardware_model": "Le modèle ou l'architecture du serveur est '{model}'."
+    "diagnosis_basesystem_hardware_model": "Le modèle ou l'architecture du serveur est '{model}'.",
+    "diagnosis_backports_in_sources_list": "Il semble qu'apt (le gestionnaire de paquets) soit configuré pour utiliser le dépôt des rétroportages (backports). A moins que vous ne sachiez vraiment ce que vous faites, nous vous déconseillons fortement d'installer des paquets provenant des rétroportages, car cela risque de créer des instabilités ou des conflits sur votre système."
 }
