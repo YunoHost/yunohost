@@ -104,7 +104,7 @@ class SetupGroupPermissions():
                 allowed = [user for user in permission.split(',') if user in known_users]
             else:
                 allowed = ["all_users"]
-            permission_create(app + ".main", url=url, allowed=allowed, protected=False, sync_perm=False)
+            permission_create(app + ".main", url=url, allowed=allowed, show_tile=True, protected=False, sync_perm=False)
 
             app_setting(app, 'allowed_users', delete=True)
 
@@ -235,6 +235,8 @@ def translate_legacy_rules_in_ssowant_conf_json_persistent():
     protected_urls = persistent.get("protected_urls", []) + ["re:" + r for r in persistent.get("protected_regex", [])]
     unprotected_urls = persistent.get("unprotected_urls", []) + ["re:" + r for r in persistent.get("unprotected_regex", [])]
 
+    known_users = user_list()["users"].keys()
+
     for legacy_rule in legacy_rules:
         if legacy_rule in persistent:
             del persistent[legacy_rule]
@@ -261,7 +263,7 @@ def translate_legacy_rules_in_ssowant_conf_json_persistent():
 
     if protected_urls:
         persistent["permissions"]['custom_protected'] = {
-            "users": [],
+            "users": known_users,
             "label": "Custom permissions - protected",
             "show_tile": False,
             "auth_header": True,
@@ -269,6 +271,6 @@ def translate_legacy_rules_in_ssowant_conf_json_persistent():
             "uris": protected_urls + persistent["permissions"].get("custom_protected", {}).get("uris", []),
         }
 
-    write_to_json("/etc/ssowat/conf.json.persistent", persistent)
+    write_to_json("/etc/ssowat/conf.json.persistent", persistent, sort_keys=True, indent=4)
 
     logger.warning("Yunohost automatically translated some legacy rules in /etc/ssowat/conf.json.persistent to match the new permission system")

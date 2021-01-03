@@ -327,7 +327,8 @@ def hook_exec(path, args=None, raise_on_error=False,
             r"invalid value for trace file descriptor",
             r"Creating config file .* with new version",
             r"Created symlink /etc/systemd",
-            r"dpkg: warning: while removing .* not empty so not removed"
+            r"dpkg: warning: while removing .* not empty so not removed",
+            r"apt-key output should not be parsed"
         ]
         return all(not re.search(w, msg) for w in irrelevant_warnings)
 

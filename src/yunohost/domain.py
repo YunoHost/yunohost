@@ -75,8 +75,6 @@ def domain_list(exclude_subdomains=False):
 
     result_list = sorted(result_list, cmp_domain)
 
-    return {'domains': result_list}
-
     return {
         'domains': result_list,
         'main': _get_maindomain()
@@ -164,7 +162,7 @@ def domain_add(operation_logger, domain, dyndns=False):
         # Force domain removal silently
         try:
             domain_remove(domain, True)
-        except:
+        except Exception:
             pass
         raise
 
@@ -184,7 +182,7 @@ def domain_remove(operation_logger, domain, force=False):
 
     """
     from yunohost.hook import hook_callback
-    from yunohost.app import app_ssowatconf
+    from yunohost.app import app_ssowatconf, app_info
     from yunohost.utils.ldap import _get_ldap_interface
 
     if not force and domain not in domain_list()['domains']:
@@ -206,11 +204,12 @@ def domain_remove(operation_logger, domain, force=False):
 
     for app in _installed_apps():
         settings = _get_app_settings(app)
+        label = app_info(app)["name"]
         if settings.get("domain") == domain:
-            apps_on_that_domain.append("%s (on https://%s%s)" % (app, domain, settings["path"]) if "path" in settings else app)
+            apps_on_that_domain.append("    - %s \"%s\" on https://%s%s" % (app, label, domain, settings["path"]) if "path" in settings else app)
 
     if apps_on_that_domain:
-        raise YunohostError('domain_uninstall_app_first', apps=", ".join(apps_on_that_domain))
+        raise YunohostError('domain_uninstall_app_first', apps="\n".join(apps_on_that_domain))
 
     operation_logger.start()
     ldap = _get_ldap_interface()
@@ -257,6 +256,9 @@ def domain_dns_conf(domain, ttl=None):
         ttl -- Time to live
 
     """
+
+    if domain not in domain_list()['domains']:
+        raise YunohostError('domain_name_unknown', domain=domain)
 
     ttl = 3600 if ttl is None else ttl
 

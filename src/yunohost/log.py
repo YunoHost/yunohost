@@ -89,14 +89,14 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
             pass
 
         try:
-            metadata = read_yaml(md_path)
+            metadata = read_yaml(md_path) or {}  # Making sure this is a dict and not  None..?
         except Exception as e:
             # If we can't read the yaml for some reason, report an error and ignore this entry...
             logger.error(m18n.n('log_corrupted_md_file', md_file=md_path, error=e))
             continue
 
         if with_details:
-            entry["success"] = metadata.get("success", "?") if metadata else "?"
+            entry["success"] = metadata.get("success", "?")
             entry["parent"] = metadata.get("parent")
 
         if with_suboperations:

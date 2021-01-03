@@ -1,3 +1,44 @@
+yunohost (4.1.2) testing; urgency=low
+
+  - [enh] diagnosis: Detect moar hardware name (b685a274)
+  - [fix] permissions: Handle regexes that may start with ^ or \ (bdff5937)
+  - [fix] permissions: Tile/protect status for legacy migration ([#1113](https://github.com/yunohost/yunohost/pull/1113))
+  - [fix] domain: double return prevent new code from working (0c977d8c)
+  - [fix] settings: When encountering unknown setting, also save the regular setting so we don't re-encounter the unknown settings everytime (d77d5afb)
+  - [fix] users: only ask for one letter for first/last name ([#1114](https://github.com/yunohost/yunohost/pull/1114))
+  - [fix] apt/sury: Tweak app helpers to not mess with Sury's pinning ([#1110](https://github.com/yunohost/yunohost/pull/1110))
+  - [i18n] Translations updated for German
+
+  Thanks to all contributors <3 ! (Bram, C. Wehrli, Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Dec 2020 16:26:51 +0100
+
+yunohost (4.1.1) testing; urgency=low
+
+  - [fix] Backup/restore DKIM keys ([#1098](https://github.com/yunohost/yunohost/pull/1098), [#1100](https://github.com/yunohost/yunohost/pull/1100))
+  - [fix] Backup/restore Dyndns keys ([#1101](https://github.com/yunohost/yunohost/pull/1101))
+  - [fix] mail: Add a max limit to number of recipients ([#1094](https://github.com/yunohost/yunohost/pull/1094))
+  - [fix] mail: Do not enforce encryption for relays .. some don't support it ... (11fe9d7e)
+  - [i18n] Translations updated for French, German, Italian, Occitan
+
+  Misc small fixes:
+
+  - [fix] misc: Prevent running `yunohost domain dns-conf` on arbirary domains ([#1099](https://github.com/yunohost/yunohost/pull/1099))
+  - [enh] misc: We don't care that 'apt-key output should not be parsed' (5422a49d)
+  - [fix] dnsmasq: Avoid to define wildcard records locally ([#1102](https://github.com/yunohost/yunohost/pull/1102))
+  - [fix] ssowat: Fix indent ([#1103](https://github.com/yunohost/yunohost/pull/1103))
+  - [fix] nginx: Force-disable gzip for acme-challenge (c5d06af2)
+  - [enh] app helpers: Handle change php version ([#1107](https://github.com/yunohost/yunohost/pull/1107))
+  - [fix] permissions: Misc fixes ([#1104](https://github.com/yunohost/yunohost/pull/1104), [#1105](https://github.com/yunohost/yunohost/pull/1105))
+  - [fix] certificates: Use organization name to check if from Lets Encrypt ([#1093](https://github.com/yunohost/yunohost/pull/1093))
+  - [enh] ldap: Increase ldap search size limit? ([#1074](https://github.com/yunohost/yunohost/pull/1074))
+  - [fix] app helpers: Avoid unecessarily reloading php7.3 too fast ([#1108](https://github.com/yunohost/yunohost/pull/1108))
+  - [fix] log: Fix a small issue where metadata could be None (because of empty yaml maybe?) (f9143d53)
+
+  Thanks to all contributors <3 ! (Christian Wehrli, Eric COURTEAU, Flavio Cristoforetti, Kay0u, Kayou, ljf, ljf (zamentur), Quentí)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 19 Dec 2020 01:33:36 +0100
+
 yunohost (4.1.0) testing; urgency=low
 
   - [enh] Extends permissions features, improve legacy settings handling (YunoHost#861)

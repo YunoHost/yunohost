@@ -51,7 +51,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, abs
     """
 
     # Fetch relevant informations
-    from yunohost.app import app_setting, app_list
+    from yunohost.app import app_setting, _installed_apps
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
     ldap = _get_ldap_interface()
     permissions_infos = ldap.search('ou=permission,dc=yunohost,dc=org',
@@ -60,7 +60,7 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, abs
                                      'URL', 'additionalUrls', 'authHeader', 'label', 'showTile', 'isProtected'])
 
     # Parse / organize information to be outputed
-    apps = [app["id"] for app in app_list()["apps"]]
+    apps = sorted(_installed_apps())
     apps_base_path = {app: app_setting(app, 'domain') + app_setting(app, 'path')
                       for app in apps
                       if app_setting(app, 'domain') and app_setting(app, 'path')}
@@ -668,6 +668,9 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
     For example:
        re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
        re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
+       
+    We can also have less-trivial regexes like:
+        re:^\/api\/.*|\/scripts\/api.js$
     """
 
     from yunohost.domain import domain_list
@@ -692,9 +695,9 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
     if url.startswith('re:'):
 
         # regex without domain
-
-        if url.startswith('re:/'):
-            validate_regex(url[4:])
+        # we check for the first char after 're:'
+        if url[3] in ['/', '^', '\\']:
+            validate_regex(url[3:])
             return url
 
         # regex with domain

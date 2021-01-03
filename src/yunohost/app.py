@@ -154,14 +154,18 @@ def app_info(app, full=False):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
 
     settings = _get_app_settings(app)
 
     ret = {
         'description': _value_for_locale(local_manifest['description']),
-        'name': local_manifest['name'],
+        'name': permissions.get(app + ".main", {}).get("label", local_manifest['name']),
         'version': local_manifest.get('version', '-'),
     }
+
+    if "domain" in settings and "path" in settings:
+        ret["domain_path"] = settings["domain"] + settings["path"]
 
     if not full:
         return ret
@@ -177,9 +181,10 @@ def app_info(app, full=False):
     ret['supports_backup_restore'] = (os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "backup")) and
                                       os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "restore")))
     ret['supports_multi_instance'] = is_true(local_manifest.get("multi_instance", False))
-    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
+
     ret['permissions'] = {p: i for p, i in permissions.items() if p.startswith(app + ".")}
     ret['label'] = permissions.get(app + ".main", {}).get("label")
+
     if not ret['label']:
         logger.warning("Failed to get label for app %s ?" % app)
     return ret
@@ -189,19 +194,29 @@ def _app_upgradable(app_infos):
     from packaging import version
 
     # Determine upgradability
-    # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
 
-    # Firstly use the version to know if an upgrade is available
-    app_is_in_catalog = bool(app_infos.get("from_catalog"))
+    app_in_catalog = app_infos.get("from_catalog")
     installed_version = version.parse(app_infos.get("version", "0~ynh0"))
     version_in_catalog = version.parse(app_infos.get("from_catalog", {}).get("manifest", {}).get("version", "0~ynh0"))
 
-    if app_is_in_catalog and '~ynh' in str(installed_version) and '~ynh' in str(version_in_catalog):
+    if not app_in_catalog:
+        return "url_required"
+
+    # Do not advertise upgrades for bad-quality apps
+    if not app_in_catalog.get("level", -1) >= 5 or app_in_catalog.get("state") != "working":
+        return "bad_quality"
+
+    # If the app uses the standard version scheme, use it to determine
+    # upgradability
+    if '~ynh' in str(installed_version) and '~ynh' in str(version_in_catalog):
         if installed_version < version_in_catalog:
             return "yes"
+        else:
+            return "no"
 
-    if not app_is_in_catalog:
-        return "url_required"
+    # Legacy stuff for app with old / non-standard version numbers...
+
+    # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
     if not app_infos["from_catalog"].get("lastUpdate") or not app_infos["from_catalog"].get("git"):
         return "url_required"
 
@@ -1158,7 +1173,7 @@ def app_makedefault(operation_logger, app, domain=None):
 
     ssowat_conf['redirected_urls'][domain + '/'] = app_domain + app_path
 
-    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
+    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf, sort_keys=True, indent=4)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     logger.success(m18n.n('ssowat_conf_updated'))
@@ -1193,8 +1208,7 @@ def app_setting(app, key, value=None, delete=False):
 
         # GET
         if value is None and not delete:
-            # FIXME FIXME FIXME : what about the main url ...?
-            return ','.join(permission['additional_urls']) if permission else None
+            return ','.join(permission.get('uris', []) + permission['additional_urls']) if permission else None
 
         # DELETE
         if delete:
@@ -1394,8 +1408,7 @@ def app_ssowatconf():
         'permissions': permissions,
     }
 
-    with open('/etc/ssowat/conf.json', 'w+') as f:
-        json.dump(conf_dict, f, sort_keys=True, indent=4)
+    write_to_json('/etc/ssowat/conf.json', conf_dict, sort_keys=True, indent=4)
 
     from utils.legacy import translate_legacy_rules_in_ssowant_conf_json_persistent
     translate_legacy_rules_in_ssowant_conf_json_persistent()
