@@ -2166,7 +2166,7 @@ def backup_list(with_info=False, human_readable=False):
                 d[archive] = backup_info(archive, human_readable=human_readable)
             except YunohostError as e:
                 logger.warning(str(e))
-            except Exception as e:
+            except Exception:
                 import traceback
                 logger.warning("Could not check infos for archive %s: %s" % (archive, '\n' + traceback.format_exc()))
 
