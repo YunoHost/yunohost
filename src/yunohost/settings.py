@@ -322,6 +322,7 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 #
 # ===========================================
 
+@post_change_hook("ssowat.panel_overlay.enabled")
 @post_change_hook("security.nginx.compatibility")
 def reconfigure_nginx(setting_name, old_value, new_value):
     if old_value != new_value:
@@ -370,8 +371,3 @@ def reconfigure_dovecot(setting_name, old_value, new_value):
             tools_regen_conf(names=['dovecot'])
         command = ['apt-get', '-y', 'remove', dovecot_package]
         subprocess.call(command, env=environment)
-
-@post_change_hook("ssowat.panel_overlay.enabled")
-def reconfigure_nginx(setting_name, old_value, new_value):
-    if old_value != new_value:
-        tools_regen_conf(names=['nginx'])
