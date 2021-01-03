@@ -61,7 +61,7 @@ KEY_SIZE = 3072
 VALIDITY_LIMIT = 15  # days
 
 # For tests
-STAGING_CERTIFICATION_AUTHORITY = "https://acme-staging.api.letsencrypt.org"
+STAGING_CERTIFICATION_AUTHORITY = "https://acme-staging-v02.api.letsencrypt.org"
 # For prod
 PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
 
@@ -483,6 +483,10 @@ def _check_acme_challenge_configuration(domain):
 
 
 def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
+
+    if not os.path.exists(ACCOUNT_KEY_FILE):
+        _generate_account_key()
+
     # Make sure tmp folder exists
     logger.debug("Making sure tmp folders exists...")
 
@@ -633,6 +637,7 @@ def _get_status(domain):
 
     cert_subject = cert.get_subject().CN
     cert_issuer = cert.get_issuer().CN
+    organization_name = cert.get_issuer().O
     valid_up_to = datetime.strptime(cert.get_notAfter(), "%Y%m%d%H%M%SZ")
     days_remaining = (valid_up_to - datetime.utcnow()).days
 
@@ -642,7 +647,7 @@ def _get_status(domain):
             "verbose": "Self-signed",
         }
 
-    elif cert_issuer.startswith("Let's Encrypt"):
+    elif organization_name == "Let's Encrypt":
         CA_type = {
             "code": "lets-encrypt",
             "verbose": "Let's Encrypt",

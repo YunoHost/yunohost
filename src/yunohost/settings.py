@@ -263,6 +263,7 @@ def _get_settings():
     if unknown_settings:
         try:
             _save_settings(unknown_settings, location=unknown_settings_path)
+            _save_settings(settings)
         except Exception as e:
             logger.warning("Failed to save unknown settings (because %s), aborting." % e)
 

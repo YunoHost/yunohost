@@ -1,6 +1,123 @@
+yunohost (4.1.2) testing; urgency=low
+
+  - [enh] diagnosis: Detect moar hardware name (b685a274)
+  - [fix] permissions: Handle regexes that may start with ^ or \ (bdff5937)
+  - [fix] permissions: Tile/protect status for legacy migration ([#1113](https://github.com/yunohost/yunohost/pull/1113))
+  - [fix] domain: double return prevent new code from working (0c977d8c)
+  - [fix] settings: When encountering unknown setting, also save the regular setting so we don't re-encounter the unknown settings everytime (d77d5afb)
+  - [fix] users: only ask for one letter for first/last name ([#1114](https://github.com/yunohost/yunohost/pull/1114))
+  - [fix] apt/sury: Tweak app helpers to not mess with Sury's pinning ([#1110](https://github.com/yunohost/yunohost/pull/1110))
+  - [i18n] Translations updated for German
+
+  Thanks to all contributors <3 ! (Bram, C. Wehrli, Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Dec 2020 16:26:51 +0100
+
+yunohost (4.1.1) testing; urgency=low
+
+  - [fix] Backup/restore DKIM keys ([#1098](https://github.com/yunohost/yunohost/pull/1098), [#1100](https://github.com/yunohost/yunohost/pull/1100))
+  - [fix] Backup/restore Dyndns keys ([#1101](https://github.com/yunohost/yunohost/pull/1101))
+  - [fix] mail: Add a max limit to number of recipients ([#1094](https://github.com/yunohost/yunohost/pull/1094))
+  - [fix] mail: Do not enforce encryption for relays .. some don't support it ... (11fe9d7e)
+  - [i18n] Translations updated for French, German, Italian, Occitan
+
+  Misc small fixes:
+
+  - [fix] misc: Prevent running `yunohost domain dns-conf` on arbirary domains ([#1099](https://github.com/yunohost/yunohost/pull/1099))
+  - [enh] misc: We don't care that 'apt-key output should not be parsed' (5422a49d)
+  - [fix] dnsmasq: Avoid to define wildcard records locally ([#1102](https://github.com/yunohost/yunohost/pull/1102))
+  - [fix] ssowat: Fix indent ([#1103](https://github.com/yunohost/yunohost/pull/1103))
+  - [fix] nginx: Force-disable gzip for acme-challenge (c5d06af2)
+  - [enh] app helpers: Handle change php version ([#1107](https://github.com/yunohost/yunohost/pull/1107))
+  - [fix] permissions: Misc fixes ([#1104](https://github.com/yunohost/yunohost/pull/1104), [#1105](https://github.com/yunohost/yunohost/pull/1105))
+  - [fix] certificates: Use organization name to check if from Lets Encrypt ([#1093](https://github.com/yunohost/yunohost/pull/1093))
+  - [enh] ldap: Increase ldap search size limit? ([#1074](https://github.com/yunohost/yunohost/pull/1074))
+  - [fix] app helpers: Avoid unecessarily reloading php7.3 too fast ([#1108](https://github.com/yunohost/yunohost/pull/1108))
+  - [fix] log: Fix a small issue where metadata could be None (because of empty yaml maybe?) (f9143d53)
+
+  Thanks to all contributors <3 ! (Christian Wehrli, Eric COURTEAU, Flavio Cristoforetti, Kay0u, Kayou, ljf, ljf (zamentur), Quentí)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 19 Dec 2020 01:33:36 +0100
+
 yunohost (4.1.0) testing; urgency=low
 
-  - Tmp bump of the version number to fix CI (c.f. Breaks: yunohost(<<4.1) in moulinette)
+  - [enh] Extends permissions features, improve legacy settings handling (YunoHost#861)
+  - [enh] During app installs, add a default answer for user-type questions (YunoHost#982)
+  - [enh] Default questions for common app manifest arguments (YunoHost#981)
+  - [enh] Only upgrade apps if version actually changed (YunoHost#864)
+  - [enh] Create uncompressed backup archives by default (instead of .tar.gz) (YunoHost#1020)
+  - [enh] Add possibility to download backups (YunoHost#1046)
+  - [enh] Asking an email address during user creation was confusing, now define it a username@domain by default (admin only chooses the domain) (YunoHost#962)
+  - [enh] Be able to configure an smtp relay (YunoHost#773)
+  - [enh] Add a diagnosis to detect processes rencently killed by oom_reaper (YunoHost/f5acbffb)
+  - [enh] Simplify operation log list (YunoHost#955)
+  - [enh] Smarter sorting of domain list (YunoHost#860)
+  - [fix] Accept '+' sign in mail forward adresses (YunoHost#818)
+  - [enh] Add x509 fingerprint in /etc/issue (YunoHost#1056)
+  - [enh] Add ynh_add_config helper (YunoHost#1055)
+  - [enh] Upgrade n version (YunoHost#1073)
+  - [enh] Clean /usr/bin/yunohost, make it easier to use yunohost as a python lib (YunoHost#922)
+  - [enh] Lazy loading of smtplib to reduce memory footprint a bit (0f2e9ab1)
+  - [enh] Refactor manifest arguments parsing (YunoHost#1013)
+  - [enh] Detect misformated arguments in getopts (YunoHost#1052)
+  - [enh] Refactor app download process, make it github-independent (YunoHost#1049)
+  - [fix] Test at the beginning of postinstall that iptables is working instead of miserably crashing later (YunoHost/f73ae4ee)
+  - [enh] Service logs: journalctl -x in fact makes everything bloated, the supposedly additional info it displays does not contains anything relevant... (YunoHost/452b178d)
+  - [enh] Add redis hook to enforce permissions on /var/log/redis (YunoHost/a1c1057a)
+  - [enh] Add configuration tests for dnsmasq, fail2ban, slapd (YunoHost/6e69df37)
+  - [enh] Remove some old fail2ban jails that do not exists anymore (YunoHost/2c6736df)
+  - [enh] Get rid of yunohost.local in main domain nginx conf (YunoHost/ba884d5b)
+  - [enh] Ignore some unimportant apt warnings (YunoHost/199cc50)
+  - [enh] Create the helper doc on new version (YunoHost#1080)
+  - [enh] The email "abuse@you_domain.tld" is now unavailable for security reason (YunoHost/67e03e6)
+  - [enh] Remove some warnings during backup (YunoHost#1047)
+  - [i18n] Translations updated for Catalan, Chinese (Simplified), French, German, Italian, Occitan, Portuguese
+
+  Thanks to all contributors <3 ! (Aleks, Augustin T., Baptiste W., Bram, Christian W., Colin W., cyxae, ekhae, Éric G., Félix P., Josué, Julien J., Kayou, Leandro N., ljf, Maniack C, ppr, Quentí, Quentin D., SiM, yalh76, Yifei D., xaloc33)
+
+ -- Kay0u <pierre@kayou.io>  Thu, 03 Dec 2020 16:34:38 +0100
+
+yunohost (4.0.8.3) stable; urgency=low
+
+  - [fix] Certificate renewal for LE (#1092)
+
+  Thanks to all contributors <3 ! (frju365)
+
+ -- Kay0u <pierre@kayou.io>  Thu, 03 Dec 2020 14:01:03 +0000
+
+yunohost (4.0.8.2) stable; urgency=low
+
+  - [fix] intermediate_certificate is now included in signed certificate (#1067)
+
+  Thanks to all contributors <3 ! (Bram)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 04 Nov 2020 23:32:16 +0100
+
+yunohost (4.0.8.1) stable; urgency=low
+
+  - [fix] App installs logs were still disclosing secrets when shared sometimes ...
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 04 Nov 2020 17:24:52 +0100
+
+yunohost (4.0.8) stable; urgency=low
+
+  - [fix] Diagnose ssl libs installed from sury (#1053)
+  - [enh] Better problematic apt dependencies auto-investigation mechanism (#1051, 8d4f36e1)
+  - [fix] Force locale to C during postgresql migration to avoid some stupid issue related to locale (d532cd5e)
+  - [fix] Use php7.3 by default in CLI (82c0cc92)
+  - [fix] Typo in fpm_config helper led to install process hanging forever (7dcf4b00)
+
+  Thanks to all contributors <3 ! (Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 16 Sep 2020 16:23:04 +0200
+
+yunohost (4.0.7.1) stable; urgency=low
+
+  - Forbid users from using SSH as a VPN (even if SSH login is disabled) (#1050)
+
+  Thanks to all contributors <3 ! (ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 11 Sep 2020 21:06:09 +0200
 
 yunohost (4.0.7) stable; urgency=low
 

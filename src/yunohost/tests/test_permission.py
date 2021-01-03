@@ -891,7 +891,7 @@ def test_permission_app_change_url():
 
 @pytest.mark.other_domains(number=1)
 def test_permission_protection_management_by_helper():
-    app_install("./tests/apps/permissions_app_ynh",
+    app_install(os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
                 args="domain=%s&domain_2=%s&path=%s&admin=%s" % (maindomain, other_domains[0], "/urlpermissionapp", "alice"), force=True)
 
     res = user_permission_list(full=True)['permissions']
@@ -899,7 +899,7 @@ def test_permission_protection_management_by_helper():
     assert res['permissions_app.admin']['protected'] is True
     assert res['permissions_app.dev']['protected'] is False
 
-    app_upgrade(["permissions_app"], file="./tests/apps/permissions_app_ynh")
+    app_upgrade(["permissions_app"], file=os.path.join(get_test_apps_dir(), "permissions_app_ynh"))
 
     res = user_permission_list(full=True)['permissions']
     assert res['permissions_app.main']['protected'] is False

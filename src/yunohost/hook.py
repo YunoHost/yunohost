@@ -319,10 +319,27 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     if not os.path.isfile(path):
         raise YunohostError('file_does_not_exist', path=path)
 
+    def is_relevant_warning(msg):
+
+        # Ignore empty warning messages...
+        if not msg:
+            return False
+
+        # Some of these are shit sent from apt and we don't give a shit about
+        # them because they ain't actual warnings >_>
+        irrelevant_warnings = [
+            r"invalid value for trace file descriptor",
+            r"Creating config file .* with new version",
+            r"Created symlink /etc/systemd",
+            r"dpkg: warning: while removing .* not empty so not removed",
+            r"apt-key output should not be parsed"
+        ]
+        return all(not re.search(w, msg) for w in irrelevant_warnings)
+
     # Define output loggers and call command
     loggers = (
         lambda l: logger.debug(l.rstrip() + "\r"),
-        lambda l: logger.warning(l.rstrip()) if "invalid value for trace file descriptor" not in l.rstrip() else logger.debug(l.rstrip()),
+        lambda l: logger.warning(l.rstrip()) if is_relevant_warning(l.rstrip()) else logger.debug(l.rstrip()),
         lambda l: logger.info(l.rstrip())
     )
 
@@ -396,12 +413,7 @@ def _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, logge
                   for k, v in env.items()]), cmd)
     command.append(cmd.format(script=cmd_script, args=cmd_args))
 
-    if logger.isEnabledFor(log.DEBUG):
-        logger.debug(m18n.n('executing_command', command=' '.join(command)))
-    else:
-        logger.debug(m18n.n('executing_script', script=path))
-
-    logger.debug("About to run the command '%s'" % command)
+    logger.debug("Executing command '%s'" % ' '.join(command))
 
     returncode = call_async_output(
         command, loggers, shell=False, cwd=chdir,

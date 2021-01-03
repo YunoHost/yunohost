@@ -154,14 +154,18 @@ def app_info(app, full=False):
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
 
     local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
 
     settings = _get_app_settings(app)
 
     ret = {
         'description': _value_for_locale(local_manifest['description']),
-        'name': local_manifest['name'],
+        'name': permissions.get(app + ".main", {}).get("label", local_manifest['name']),
         'version': local_manifest.get('version', '-'),
     }
+
+    if "domain" in settings and "path" in settings:
+        ret["domain_path"] = settings["domain"] + settings["path"]
 
     if not full:
         return ret
@@ -177,9 +181,10 @@ def app_info(app, full=False):
     ret['supports_backup_restore'] = (os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "backup")) and
                                       os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "restore")))
     ret['supports_multi_instance'] = is_true(local_manifest.get("multi_instance", False))
-    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
+
     ret['permissions'] = {p: i for p, i in permissions.items() if p.startswith(app + ".")}
     ret['label'] = permissions.get(app + ".main", {}).get("label")
+
     if not ret['label']:
         logger.warning("Failed to get label for app %s ?" % app)
     return ret
@@ -189,19 +194,29 @@ def _app_upgradable(app_infos):
     from packaging import version
 
     # Determine upgradability
-    # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
 
-    # Firstly use the version to know if an upgrade is available
-    app_is_in_catalog = bool(app_infos.get("from_catalog"))
+    app_in_catalog = app_infos.get("from_catalog")
     installed_version = version.parse(app_infos.get("version", "0~ynh0"))
     version_in_catalog = version.parse(app_infos.get("from_catalog", {}).get("manifest", {}).get("version", "0~ynh0"))
 
-    if app_is_in_catalog and '~ynh' in str(installed_version) and '~ynh' in str(version_in_catalog):
+    if not app_in_catalog:
+        return "url_required"
+
+    # Do not advertise upgrades for bad-quality apps
+    if not app_in_catalog.get("level", -1) >= 5 or app_in_catalog.get("state") != "working":
+        return "bad_quality"
+
+    # If the app uses the standard version scheme, use it to determine
+    # upgradability
+    if '~ynh' in str(installed_version) and '~ynh' in str(version_in_catalog):
         if installed_version < version_in_catalog:
             return "yes"
+        else:
+            return "no"
 
-    if not app_is_in_catalog:
-        return "url_required"
+    # Legacy stuff for app with old / non-standard version numbers...
+
+    # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
     if not app_infos["from_catalog"].get("lastUpdate") or not app_infos["from_catalog"].get("git"):
         return "url_required"
 
@@ -360,13 +375,7 @@ def app_change_url(operation_logger, app, domain, path):
     args_list.append(app)
 
     # Prepare env. var. to pass to script
-    env_dict = _make_environment_dict(args_odict)
-    app_id, app_instance_nb = _parse_app_instance_name(app)
-    env_dict["YNH_APP_ID"] = app_id
-    env_dict["YNH_APP_INSTANCE_NAME"] = app
-    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
-    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
-
+    env_dict = _make_environment_for_app_script(app, args=args_odict)
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
     env_dict["YNH_APP_OLD_PATH"] = old_path
     env_dict["YNH_APP_NEW_DOMAIN"] = domain
@@ -528,11 +537,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         args_list.append(app_instance_name)
 
         # Prepare env. var. to pass to script
-        env_dict = _make_environment_dict(args_odict)
-        app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
-        env_dict["YNH_APP_ID"] = app_id
-        env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
-        env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+        env_dict = _make_environment_for_app_script(app_instance_name, args=args_odict)
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
@@ -658,7 +663,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
     from yunohost.log import OperationLogger
-    from yunohost.permission import user_permission_list, user_permission_info, user_permission_update, permission_create, permission_url, permission_delete, permission_sync_to_user
+    from yunohost.permission import user_permission_list, permission_create, permission_delete, permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
 
     # Fetch or extract sources
@@ -762,16 +767,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Apply dirty patch to make php5 apps compatible with php7
     _patch_legacy_php_versions(extracted_app_folder)
 
-    # Prepare env. var. to pass to script
-    env_dict = _make_environment_dict(args_odict)
-    env_dict["YNH_APP_ID"] = app_id
-    env_dict["YNH_APP_INSTANCE_NAME"] = app_instance_name
-    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
-    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
-
-    # Start register change on system
-    operation_logger.extra.update({'env': env_dict})
-
     # We'll check that the app didn't brutally edit some system configuration
     manually_modified_files_before_install = manually_modified_files()
 
@@ -818,8 +813,20 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
             os.system('cp -R %s/%s %s' % (extracted_app_folder, file_to_copy, app_setting_path))
 
     # Initialize the main permission for the app
-    # After the install, if apps don't have a domain and path defined, the default url '/' is removed from the permission
+    # The permission is initialized with no url associated, and with tile disabled
+    # For web app, the root path of the app will be added as url and the tile
+    # will be enabled during the app install. C.f. 'app_register_url()' below.
     permission_create(app_instance_name + ".main", allowed=["all_users"], label=label, show_tile=False, protected=False)
+
+    # Prepare env. var. to pass to script
+    env_dict = _make_environment_for_app_script(app_instance_name, args=args_odict)
+
+    env_dict_for_logging = env_dict.copy()
+    for arg_name, arg_value_and_type in args_odict.items():
+        if arg_value_and_type[1] == "password":
+            del env_dict_for_logging["YNH_APP_ARG_%s" % arg_name.upper()]
+
+    operation_logger.extra.update({'env': env_dict_for_logging})
 
     # Execute the app install script
     install_failed = True
@@ -939,17 +946,6 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     os.system('chmod -R 400 %s' % app_setting_path)
     os.system('chown -R root: %s' % app_setting_path)
     os.system('chown -R admin: %s/scripts' % app_setting_path)
-
-    # If the app haven't set the url of the main permission and domain and path is set set / as main url
-    app_settings = _get_app_settings(app_instance_name)
-    domain = app_settings.get('domain', None)
-    path = app_settings.get('path', None)
-    if domain and path and user_permission_info(app_instance_name + '.main')['url'] is None:
-        permission_url(app_instance_name + ".main", url='/', sync_perm=False)
-    if domain and path:
-        user_permission_update(app_instance_name + ".main", show_tile=True, sync_perm=False)
-
-    permission_sync_to_user()
 
     logger.success(m18n.n('installation_complete'))
 
@@ -1188,7 +1184,7 @@ def app_makedefault(operation_logger, app, domain=None):
 
     ssowat_conf['redirected_urls'][domain + '/'] = app_domain + app_path
 
-    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
+    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf, sort_keys=True, indent=4)
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
     logger.success(m18n.n('ssowat_conf_updated'))
@@ -1216,15 +1212,14 @@ def app_setting(app, key, value=None, delete=False):
 
     if is_legacy_permission_setting:
 
-        from permission import user_permission_list, user_permission_update, permission_create, permission_delete, permission_url
+        from yunohost.permission import user_permission_list, user_permission_update, permission_create, permission_delete, permission_url
         permissions = user_permission_list(full=True)['permissions']
         permission_name = "%s.legacy_%s_uris" % (app, key.split('_')[0])
         permission = permissions.get(permission_name)
 
         # GET
         if value is None and not delete:
-            # FIXME FIXME FIXME : what about the main url ...?
-            return ','.join(permission['additional_urls']) if permission else None
+            return ','.join(permission.get('uris', []) + permission['additional_urls']) if permission else None
 
         # DELETE
         if delete:
@@ -1277,7 +1272,7 @@ def app_setting(app, key, value=None, delete=False):
                     permission_url(permission_name, clear_urls=True, sync_perm=False)
                     permission_url(permission_name, add_url=new_urls)
                 else:
-                    from utils.legacy import legacy_permission_label
+                    from yunohost.utils.legacy import legacy_permission_label
                     # Let's create a "special" permission for the legacy settings
                     permission_create(permission=permission_name,
                                       # FIXME find a way to limit to only the user allowed to the main permission
@@ -1288,6 +1283,8 @@ def app_setting(app, key, value=None, delete=False):
                                       label=legacy_permission_label(app, key.split('_')[0]),
                                       show_tile=False,
                                       protected=True)
+
+        return
 
     #
     # Regular setting management
@@ -1320,6 +1317,7 @@ def app_register_url(app, domain, path):
         domain -- The domain on which the app should be registered (e.g. your.domain.tld)
         path -- The path to be registered (e.g. /coffee)
     """
+    from yunohost.permission import permission_url, user_permission_update, permission_sync_to_user
 
     domain, path = _normalize_domain_path(domain, path)
 
@@ -1336,6 +1334,16 @@ def app_register_url(app, domain, path):
 
     app_setting(app, 'domain', value=domain)
     app_setting(app, 'path', value=path)
+
+    # Initially, the .main permission is created with no url at all associated
+    # When the app register/books its web url, we also add the url '/'
+    # (meaning the root of the app, domain.tld/path/)
+    # and enable the tile to the SSO, and both of this should match 95% of apps
+    # For more specific cases, the app is free to change / add urls or disable
+    # the tile using the permission helpers.
+    permission_url(app + ".main", url='/', sync_perm=False)
+    user_permission_update(app + ".main", show_tile=True, sync_perm=False)
+    permission_sync_to_user()
 
 
 def app_ssowatconf():
@@ -1411,14 +1419,16 @@ def app_ssowatconf():
         'permissions': permissions,
     }
 
-    with open('/etc/ssowat/conf.json', 'w+') as f:
-        json.dump(conf_dict, f, sort_keys=True, indent=4)
+    write_to_json('/etc/ssowat/conf.json', conf_dict, sort_keys=True, indent=4)
+
+    from utils.legacy import translate_legacy_rules_in_ssowant_conf_json_persistent
+    translate_legacy_rules_in_ssowant_conf_json_persistent()
 
     logger.debug(m18n.n('ssowat_conf_generated'))
 
 
 def app_change_label(app, new_label):
-    from permission import user_permission_update
+    from yunohost.permission import user_permission_update
     installed = _is_installed(app)
     if not installed:
         raise YunohostError('app_not_installed', app=app, all_apps=_get_all_installed_apps_id())
@@ -1465,12 +1475,7 @@ def app_action_run(operation_logger, app, action, args=None):
     args_odict = _parse_args_for_action(actions[action], args=args_dict)
     args_list = [value[0] for value in args_odict.values()]
 
-    app_id, app_instance_nb = _parse_app_instance_name(app)
-
-    env_dict = _make_environment_dict(args_odict, prefix="ACTION_")
-    env_dict["YNH_APP_ID"] = app_id
-    env_dict["YNH_APP_INSTANCE_NAME"] = app
-    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+    env_dict = _make_environment_for_app_script(app, args=args_odict, args_prefix="ACTION_")
     env_dict["YNH_ACTION"] = action
 
     _, path = tempfile.mkstemp()
@@ -1481,7 +1486,7 @@ def app_action_run(operation_logger, app, action, args=None):
     os.chmod(path, 700)
 
     if action_declaration.get("cwd"):
-        cwd = action_declaration["cwd"].replace("$app", app_id)
+        cwd = action_declaration["cwd"].replace("$app", app)
     else:
         cwd = "/etc/yunohost/apps/" + app
 
@@ -1567,7 +1572,7 @@ def app_config_show_panel(operation_logger, app):
                         option["default"] = parsed_values[generated_name]
 
                     args_dict = _parse_args_in_yunohost_format(
-                        [{option["name"]: parsed_values[generated_name]}],
+                        {option["name"]: parsed_values[generated_name]},
                         [option]
                     )
                     option["default"] = args_dict[option["name"]][0]
@@ -2492,8 +2497,10 @@ class PasswordArgumentParser(YunoHostArgumentFormatParser):
         if any(char in question.value for char in self.forbidden_chars):
             raise YunohostError('pattern_password_app', forbidden_chars=self.forbidden_chars)
 
-        from yunohost.utils.password import assert_password_is_strong_enough
-        assert_password_is_strong_enough('user', question.value)
+        # If it's an optional argument the value should be empty or strong enough
+        if not question.optional or question.value:
+            from yunohost.utils.password import assert_password_is_strong_enough
+            assert_password_is_strong_enough('user', question.value)
 
         return super(PasswordArgumentParser, self)._post_parse_value(question)
 
@@ -2583,6 +2590,29 @@ class UserArgumentParser(YunoHostArgumentFormatParser):
                             error=m18n.n('user_unknown', user=question.value))
 
 
+class NumberArgumentParser(YunoHostArgumentFormatParser):
+    argument_type = "number"
+    default_value = ""
+
+    def parse_question(self, question, user_answers):
+        question = super(NumberArgumentParser, self).parse_question(question, user_answers)
+
+        if question.default is None:
+            question.default = 0
+
+        return question
+
+    def _post_parse_value(self, question):
+        if isinstance(question.value, int):
+            return super(NumberArgumentParser, self)._post_parse_value(question)
+
+        if isinstance(question.value, str) and question.value.isdigit():
+            return int(question.value)
+
+        raise YunohostError('app_argument_invalid', name=question.name,
+                            error=m18n.n('invalid_number'))
+
+
 class DisplayTextArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "display_text"
 
@@ -2597,6 +2627,7 @@ ARGUMENTS_TYPE_PARSERS = {
     "boolean": BooleanArgumentParser,
     "domain": DomainArgumentParser,
     "user": UserArgumentParser,
+    "number": NumberArgumentParser,
     "display_text": DisplayTextArgumentParser,
 }
 
@@ -2741,18 +2772,23 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
             raise YunohostError('app_location_unavailable', apps="\n".join(apps))
 
 
-def _make_environment_dict(args_dict, prefix="APP_ARG_"):
-    """
-    Convert a dictionnary containing manifest arguments
-    to a dictionnary of env. var. to be passed to scripts
+def _make_environment_for_app_script(app, args={}, args_prefix="APP_ARG_"):
 
-    Keyword arguments:
-        arg -- A key/value dictionnary of manifest arguments
+    app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
-    """
-    env_dict = {}
-    for arg_name, arg_value_and_type in args_dict.items():
-        env_dict["YNH_%s%s" % (prefix, arg_name.upper())] = arg_value_and_type[0]
+    manifest = _get_manifest_of_app(app_setting_path)
+    app_id, app_instance_nb = _parse_app_instance_name(app)
+
+    env_dict = {
+        "YNH_APP_ID": app_id,
+        "YNH_APP_INSTANCE_NAME": app,
+        "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
+        "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?")
+    }
+
+    for arg_name, arg_value_and_type in args.items():
+        env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = arg_value_and_type[0]
+
     return env_dict
 
 

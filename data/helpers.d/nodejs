@@ -1,6 +1,6 @@
 #!/bin/bash
 
-n_version=6.5.1
+n_version=6.7.0
 n_install_dir="/opt/node_n"
 node_version_path="$n_install_dir/n/versions/node"
 # N_PREFIX is the directory of n, it needs to be loaded as a environment variable.
@@ -18,7 +18,7 @@ ynh_install_n () {
     # Build an app.src for n
     mkdir --parents "../conf"
     echo "SOURCE_URL=https://github.com/tj/n/archive/v${n_version}.tar.gz
-SOURCE_SUM=5833f15893b9951a9ed59487e87b6c181d96b83a525846255872c4f92f0d25dd" > "../conf/n.src"
+SOURCE_SUM=92e00fa86d1c4e8dc6ca8df7e75fc93afe8f71949890ef67c40555df4efc4abe" > "../conf/n.src"
     # Download and extract n
     ynh_setup_source --dest_dir="$n_install_dir/git" --source_id=n
     # Install n

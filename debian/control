@@ -11,7 +11,7 @@ Package: yunohost
 Essential: yes
 Architecture: all
 Depends: ${python:Depends}, ${misc:Depends}
- , moulinette (>= 4.1), ssowat (>= 4.0)
+ , moulinette (>= 4.1.0.1), ssowat (>= 4.0)
  , python-psutil, python-requests, python-dnspython, python-openssl
  , python-miniupnpc, python-dbus, python-jinja2
  , python-toml, python-packaging, python-publicsuffix

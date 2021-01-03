@@ -44,7 +44,7 @@ from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_ya
 
 from yunohost.app import (
     app_info, _is_installed,
-    _parse_app_instance_name,
+    _make_environment_for_app_script,
     dump_app_log_extract_for_debugging,
     _patch_legacy_helpers,
     _patch_legacy_php_versions,
@@ -553,13 +553,8 @@ class BackupManager():
         env_var['YNH_BACKUP_CSV'] = tmp_csv
 
         if app is not None:
-            app_id, app_instance_nb = _parse_app_instance_name(app)
-            env_var["YNH_APP_ID"] = app_id
-            env_var["YNH_APP_INSTANCE_NAME"] = app
-            env_var["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
-            tmp_app_dir = os.path.join('apps/', app)
-            tmp_app_bkp_dir = os.path.join(self.work_dir, tmp_app_dir, 'backup')
-            env_var["YNH_APP_BACKUP_DIR"] = tmp_app_bkp_dir
+            env_var.update(_make_environment_for_app_script(app))
+            env_var["YNH_APP_BACKUP_DIR"] = os.path.join(self.work_dir, 'apps', app, 'backup')
 
         return env_var
 
@@ -1165,7 +1160,10 @@ class RestoreManager():
 
         logger.debug(m18n.n('restore_running_hooks'))
 
-        env_dict = self._get_env_var()
+        env_dict = {
+            'YNH_BACKUP_DIR': self.work_dir,
+            'YNH_BACKUP_CSV': os.path.join(self.work_dir, "backup.csv")
+        }
         operation_logger.extra['env'] = env_dict
         operation_logger.flush()
         ret = hook_callback('restore',
@@ -1345,8 +1343,8 @@ class RestoreManager():
                                       additional_urls=permission_infos.get("additional_urls"),
                                       auth_header=permission_infos.get("auth_header"),
                                       label=permission_infos.get('label') if perm_name == "main" else permission_infos.get("sublabel"),
-                                      show_tile=permission_infos.get("show_tile", None),
-                                      protected=permission_infos.get("protected", True),
+                                      show_tile=permission_infos.get("show_tile", True),
+                                      protected=permission_infos.get("protected", False),
                                       sync_perm=False)
 
                 permission_sync_to_user()
@@ -1372,7 +1370,12 @@ class RestoreManager():
                 migrate_legacy_permission_settings(app=app_instance_name)
 
             # Prepare env. var. to pass to script
-            env_dict = self._get_env_var(app_instance_name)
+            env_dict = _make_environment_for_app_script(app_instance_name)
+            env_dict.update({
+                'YNH_BACKUP_DIR': self.work_dir,
+                'YNH_BACKUP_CSV': os.path.join(self.work_dir, "backup.csv"),
+                'YNH_APP_BACKUP_DIR': os.path.join(self.work_dir, 'apps', app_instance_name, 'backup')
+            })
 
             operation_logger.extra['env'] = env_dict
             operation_logger.flush()
@@ -1396,11 +1399,7 @@ class RestoreManager():
             remove_script = os.path.join(app_scripts_in_archive, 'remove')
 
             # Setup environment for remove script
-            app_id, app_instance_nb = _parse_app_instance_name(app_instance_name)
-            env_dict_remove = {}
-            env_dict_remove["YNH_APP_ID"] = app_id
-            env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
-            env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
+            env_dict_remove = _make_environment_for_app_script(app_instance_name)
 
             operation_logger = OperationLogger('remove_on_failed_restore',
                                                [('app', app_instance_name)],
@@ -1431,26 +1430,6 @@ class RestoreManager():
         finally:
             # Cleaning temporary scripts directory
             shutil.rmtree(tmp_folder_for_app_restore, ignore_errors=True)
-
-    def _get_env_var(self, app=None):
-        """ Define environment variable for hooks call """
-        env_var = {}
-        env_var['YNH_BACKUP_DIR'] = self.work_dir
-        env_var['YNH_BACKUP_CSV'] = os.path.join(self.work_dir, "backup.csv")
-
-        if app is not None:
-            app_dir_in_archive = os.path.join(self.work_dir, 'apps', app)
-            app_backup_in_archive = os.path.join(app_dir_in_archive, 'backup')
-
-            # Parse app instance name and id
-            app_id, app_instance_nb = _parse_app_instance_name(app)
-
-            env_var["YNH_APP_ID"] = app_id
-            env_var["YNH_APP_INSTANCE_NAME"] = app
-            env_var["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
-            env_var["YNH_APP_BACKUP_DIR"] = app_backup_in_archive
-
-        return env_var
 
 #
 # Backup methods                                                            #
@@ -2109,11 +2088,22 @@ def backup_restore(name, system=[], apps=[], force=False):
         system = []
         apps = []
 
-    # TODO don't ask this question when restoring apps only and certain system
-    # parts
+    #
+    # Initialize                                                            #
+    #
 
-    # Check if YunoHost is installed
-    if system is not None and os.path.isfile('/etc/yunohost/installed'):
+    restore_manager = RestoreManager(name)
+
+    restore_manager.set_system_targets(system)
+    restore_manager.set_apps_targets(apps)
+
+    restore_manager.assert_enough_free_space()
+
+    #
+    # Add validation if restoring system parts on an already-installed system
+    #
+
+    if restore_manager.targets.targets["system"] != [] and os.path.isfile('/etc/yunohost/installed'):
         logger.warning(m18n.n('yunohost_already_installed'))
         if not force:
             try:
@@ -2127,20 +2117,6 @@ def backup_restore(name, system=[], apps=[], force=False):
                     force = True
             if not force:
                 raise YunohostError('restore_failed')
-
-    # TODO Partial app restore could not work if ldap is not restored before
-    # TODO repair mysql if broken and it's a complete restore
-
-    #
-    # Initialize                                                            #
-    #
-
-    restore_manager = RestoreManager(name)
-
-    restore_manager.set_system_targets(system)
-    restore_manager.set_apps_targets(apps)
-
-    restore_manager.assert_enough_free_space()
 
     #
     # Mount the archive then call the restore for each system part / app    #

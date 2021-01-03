@@ -155,6 +155,7 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
         'admin@' + main_domain,
         'webmaster@' + main_domain,
         'postmaster@' + main_domain,
+        'abuse@' + main_domain,
     ]
 
     if mail in aliases:

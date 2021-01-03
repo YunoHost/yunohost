@@ -32,11 +32,17 @@ class BaseSystemDiagnoser(Diagnoser):
                         data={"virt": virt, "arch": arch},
                         summary="diagnosis_basesystem_hardware")
 
-        # Also possibly the board name
+        # Also possibly the board / hardware name
         if os.path.exists("/proc/device-tree/model"):
             model = read_file('/proc/device-tree/model').strip().replace('\x00', '')
             hardware["data"]["model"] = model
-            hardware["details"] = ["diagnosis_basesystem_hardware_board"]
+            hardware["details"] = ["diagnosis_basesystem_hardware_model"]
+        elif os.path.exists("/sys/devices/virtual/dmi/id/sys_vendor"):
+            model = read_file("/sys/devices/virtual/dmi/id/sys_vendor").strip()
+            if os.path.exists("/sys/devices/virtual/dmi/id/product_name"):
+                model = "%s %s" % (model, read_file("/sys/devices/virtual/dmi/id/product_name").strip())
+            hardware["data"]["model"] = model
+            hardware["details"] = ["diagnosis_basesystem_hardware_model"]
 
         yield hardware
 
