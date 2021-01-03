@@ -561,10 +561,10 @@ def user_export():
     if msettings.get('interface') == 'api':
         # We return a raw bottle HTTPresponse (instead of serializable data like
         # list/dict, ...), which is gonna be picked and used directly by moulinette
-        from bottle import LocalResponse
-        response = LocalResponse(body=body,
+        from bottle import HTTPResponse
+        response = HTTPResponse(body=body,
                         headers={
-                            "Content-Disposition": "attachment; filename='users.csv'",
+                            "Content-Disposition": "attachment; filename=users.csv",
                             "Content-Type": "text/csv",
                         })
         return response
@@ -581,6 +581,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         csv -- CSV file with columns username;firstname;lastname;password;mailbox_quota;mail;alias;forward;groups
 
     """
+
     import csv # CSV are needed only in this function
     from moulinette.utils.text import random_ascii
     from yunohost.permission import permission_sync_to_user
