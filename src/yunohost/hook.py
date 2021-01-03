@@ -401,9 +401,6 @@ def _hook_exec_bash(path, args, chdir, env, return_format, loggers):
     _env = os.environ.copy()
     _env.update(env)
 
-    # FIXME : this is a temporary debug to better understand why the test are failing on the CI but not when ran manually...
-    logger.warning(_env)
-
     returncode = call_async_output(
         cmd, loggers, shell=True, cwd=chdir,
         stdinfo=stdinfo, env=_env
