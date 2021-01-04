@@ -3153,6 +3153,13 @@ def _patch_legacy_helpers(app_folder):
             "replace": r"backup_dir=.",
             "important": True
         },
+        # Old $1, $2 in backup/restore scripts...
+        "restore_dir=$1": {
+            "only_for": ["scripts/restore"],
+            "pattern": r"restore_dir=\$1",
+            "replace": r"restore_dir=.",
+            "important": True
+        },
         # Old $1, $2 in install scripts...
         # We ain't patching that shit because it ain't trivial to patch all args...
         "domain=$1": {
