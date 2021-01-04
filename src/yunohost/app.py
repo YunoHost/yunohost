@@ -3138,6 +3138,26 @@ def _patch_legacy_helpers(app_folder):
             "pattern": r"(Automatic diagnosis data from YunoHost( *\n)*)? *(__\w+__)? *\$\(yunohost tools diagnosis.*\)(__\w+__)?",
             "replace": r"",
             "important": False
+        },
+        # Old $1, $2 in backup/restore scripts...
+        "app=$2": {
+            "only_for": ["scripts/backup", "scripts/restore"],
+            "pattern": r"app=\$2",
+            "replace": r"app=$YNH_APP_INSTANCE_NAME",
+            "important": True
+        },
+        # Old $1, $2 in backup/restore scripts...
+        "backup_dir=$1": {
+            "only_for": ["scripts/backup", "scripts/restore"],
+            "pattern": r"backup_dir=\$1",
+            "replace": r"backup_dir=.",
+            "important": True
+        },
+        # Old $1, $2 in install scripts...
+        # We ain't patching that shit because it ain't trivial to patch all args...
+        "domain=$1": {
+            "only_for": ["scripts/install"],
+            "important": True
         }
     }
 
@@ -3156,6 +3176,11 @@ def _patch_legacy_helpers(app_folder):
         show_warning = False
 
         for helper, infos in stuff_to_replace.items():
+
+            # Ignore if not relevant for this file
+            if infos.get("only_for") and not any(filename.endswith(f) for f in infos["only_for"]):
+                continue
+
             # If helper is used, attempt to patch the file
             if helper in content and infos["pattern"]:
                 content = infos["pattern"].sub(infos["replace"], content)
@@ -3163,11 +3188,11 @@ def _patch_legacy_helpers(app_folder):
                 if infos["important"]:
                     show_warning = True
 
-            # If the helpert is *still* in the content, it means that we
+            # If the helper is *still* in the content, it means that we
             # couldn't patch the deprecated helper in the previous lines.  In
             # that case, abort the install or whichever step is performed
             if helper in content and infos["important"]:
-                raise YunohostError("This app is likely pretty old and uses deprecated / outdated helpers that can't be migrated easily. It can't be installed anymore.")
+                raise YunohostError("This app is likely pretty old and uses deprecated / outdated helpers that can't be migrated easily. It can't be installed anymore.", raw_msg=True)
 
         if replaced_stuff:
 
