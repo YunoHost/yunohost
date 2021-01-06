@@ -369,6 +369,12 @@ ynh_permission_has_user() {
     yunohost user permission info "$app.$permission" | grep --word-regexp --quiet "$user"
 }
 
+# Check if a legacy permissions exist
+#
+# usage: ynh_legacy_permissions_exists
+# | exit: Return 1 if the permission doesn't exist, 0 otherwise
+#
+# Requires YunoHost version 4.1.2 or higher.
 ynh_legacy_permissions_exists () {
     for permission in "skipped" "unprotected" "protected"
     do
@@ -379,6 +385,17 @@ ynh_legacy_permissions_exists () {
     return 1
 }
 
+# Remove all legacy permissions
+#
+# usage: ynh_legacy_permissions_delete_all
+#
+# example:
+#   if ynh_legacy_permissions_exists
+#   then
+#       ynh_legacy_permissions_delete_all
+#       # You can recreate the required permissions here with ynh_permission_create
+#   fi
+# Requires YunoHost version 4.1.2 or higher.
 ynh_legacy_permissions_delete_all () {
     for permission in "skipped" "unprotected" "protected"
     do
