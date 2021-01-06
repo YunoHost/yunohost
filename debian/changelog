@@ -1,3 +1,18 @@
+yunohost (4.1.3) testing; urgency=low
+
+  - [enh] Do not advertise upgrades for bad-quality apps ([#1066](https://github.com/yunohost/yunohost/pull/1066))
+  - [enh] Display domain_path of app in the output of app list ([#1120](https://github.com/yunohost/yunohost/pull/1120))
+  - [enh] Diagnosis: report usage of backports repository in apt's sources.list ([#1069](https://github.com/yunohost/yunohost/pull/1069))
+  - [mod] Code cleanup, misc fixes (165d2b32, [#1121](https://github.com/yunohost/yunohost/pull/1121), [#1122](https://github.com/yunohost/yunohost/pull/1122), [#1123](https://github.com/yunohost/yunohost/pull/1123), [#1131](https://github.com/yunohost/yunohost/pull/1131))
+  - [mod] Also display app label on remove_domain with apps ([#1124](https://github.com/yunohost/yunohost/pull/1124))
+  - [enh] Be able to change user password in CLI without writing it in clear ([#1075](https://github.com/YunoHost/yunohost/pull/1075))
+  - [enh] New permissions helpers ([#1117](https://github.com/yunohost/yunohost/pull/1117))
+  - [i18n] Translations updated for French, German
+
+  Thanks to all contributors <3 ! (C. Wehrli, cricriiiiii, Kay0u, Bram, ljf, ppr)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 07 Jan 2021 00:46:09 +0100
+
 yunohost (4.1.2) testing; urgency=low
 
   - [enh] diagnosis: Detect moar hardware name (b685a274)
