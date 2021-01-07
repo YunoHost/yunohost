@@ -606,7 +606,7 @@
     "diagnosis_dns_point_to_doc": "Consulteu la documentació  a <a href='https://yunohost.org/dns_config'>https://yunohost.org/dns_config</a> si necessiteu ajuda per configurar els registres DNS.",
     "diagnosis_mail_outgoing_port_25_ok": "El servidor de correu electrònic SMTP pot enviar correus electrònics (el port de sortida 25 no està bloquejat).",
     "diagnosis_mail_outgoing_port_25_blocked_details": "Primer heu d'intentar desbloquejar el port 25 en la interfície del vostre router o en la interfície del vostre allotjador. (Alguns proveïdors d'allotjament demanen enviar un tiquet de suport en aquests casos).",
-    "diagnosis_mail_ehlo_ok": "El servidor de correu electrònic SMTP no és accessible des de l'exterior i per tant no pot rebre correus electrònics!",
+    "diagnosis_mail_ehlo_ok": "El servidor de correu electrònic SMTP és accessible des de l'exterior i per tant pot rebre correus electrònics!",
     "diagnosis_mail_ehlo_unreachable": "El servidor de correu electrònic SMTP no és accessible des de l'exterior amb IPv{ipversion}. No podrà rebre correus electrònics.",
     "diagnosis_mail_ehlo_bad_answer": "Un servei no SMTP a respost en el port 25 amb IPv{ipversion}",
     "diagnosis_mail_ehlo_bad_answer_details": "Podria ser que sigui per culpa d'una altra màquina responent en lloc del servidor.",
