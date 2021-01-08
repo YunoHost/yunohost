@@ -1,3 +1,9 @@
+yunohost (4.1.4.1) stable; urgency=low
+
+  - [hotfix] Postfix conf always included the relay snippets (b25cde0b)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 08 Jan 2021 16:21:07 +0100
+
 yunohost (4.1.4) stable; urgency=low
 
   - [fix] firewall: force source port for UPnP. ([#1109](https://github.com/yunohost/yunohost/pull/1109))
