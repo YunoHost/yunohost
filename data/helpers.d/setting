@@ -78,6 +78,7 @@ ynh_app_setting_delete() {
 #
 ynh_app_setting()
 {
+    set +o xtrace # set +x
     ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python2.7 - <<EOF
 import os, yaml, sys
 app, action = os.environ['APP'], os.environ['ACTION'].lower()
@@ -102,6 +103,7 @@ else:
     with open(setting_file, "w") as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
 EOF
+    set -o xtrace # set -x
 }
 
 # Check availability of a web path
