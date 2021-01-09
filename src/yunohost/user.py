@@ -122,8 +122,9 @@ def user_list(fields=None):
 
 
 @is_unit_operation([('username', 'user')])
-def user_create(operation_logger, username, firstname, lastname, domain, password,
-                mailbox_quota="0", mail=None, imported=False):
+def user_create(operation_logger, username, domain, password, fullname=None,
+                mailbox_quota="0", mail=None, password_recovery=None,
+                firstname=None, lastname=None, imported=False):
 
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.hook import hook_callback
@@ -133,9 +134,22 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
     # Ensure sufficiently complex password
     assert_password_is_strong_enough("user", password)
 
-    if mail is not None:
-        logger.warning("Packagers ! Using --mail in 'yunohost user create' is deprecated ... please use --domain instead.")
-        domain = mail.split("@")[-1]
+    # Names validation
+    if not fullname:
+        if firstname and lastname:
+            fullname = f"{firstname} {lastname}"
+        elif msettings.get('interface') == 'api':
+            raise YunohostError('fullname_missing')
+        else:
+            while not fullname:
+                fullname = msignals.prompt(m18n.n('ask_fullname'))
+    if not firstname:
+        if lastname:
+            firstname = fullname.replace(f"${lastname}", "").strip()
+        else:
+            firstname = fullname.split(" ").pop(0)
+    if not lastname:
+        lastname = fullname.replace(f"${firstname}", "").strip()
 
     # Validate domain used for email address/xmpp account
     if domain is None:
@@ -156,7 +170,11 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
     if domain not in domain_list()['domains']:
         raise YunohostError('domain_name_unknown', domain=domain)
 
-    mail = username + '@' + domain
+    mail_account = username + '@' + domain
+
+    if mail is None:
+        mail = mail_account
+
     ldap = _get_ldap_interface()
 
     if username in user_list()["users"]:
@@ -180,7 +198,7 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
     main_domain = _get_maindomain()
     aliases = [alias + main_domain for alias in FIRST_ALIASES]
 
-    if mail in aliases:
+    if mail_account in aliases:
         raise YunohostError('mail_unavailable')
 
     if not imported:
@@ -196,8 +214,6 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
         uid = str(random.randint(1001, 65000))
         uid_guid_found = uid not in all_uid and uid not in all_gid
 
-    # Adapt values for LDAP
-    fullname = '%s %s' % (firstname, lastname)
 
     attr_dict = {
         'objectClass': ['mailAccount', 'inetOrgPerson', 'posixAccount', 'userPermissionYnh'],
@@ -207,6 +223,8 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
         'cn': [fullname],
         'uid': [username],
         'mail': mail,  # NOTE: this one seems to be already a list
+        'mailrecovery': [password_recovery] if password_recovery else [],
+        'mailalias': [mail_account],
         'maildrop': [username],
         'mailuserquota': [mailbox_quota],
         'userPassword': [_hash_user_password(password)],
@@ -218,7 +236,7 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
 
     # If it is the first user, add some aliases
     if not ldap.search(base='ou=users,dc=yunohost,dc=org', filter='uid=*'):
-        attr_dict['mail'] = [attr_dict['mail']] + aliases
+        attr_dict['mailalias'] = [attr_dict['mailalias']] + aliases
 
     try:
         ldap.add('uid=%s,ou=users' % username, attr_dict)
@@ -249,7 +267,7 @@ def user_create(operation_logger, username, firstname, lastname, domain, passwor
     if not imported:
         logger.success(m18n.n('user_created'))
 
-    return {'fullname': fullname, 'username': username, 'mail': mail}
+    return {'fullname': name, 'username': username, 'mail': mail}
 
 
 @is_unit_operation([('username', 'user')])
@@ -306,9 +324,11 @@ def user_delete(operation_logger, username, purge=False, imported=False):
 
 
 @is_unit_operation([('username', 'user')], exclude=['change_password'])
-def user_update(operation_logger, username, firstname=None, lastname=None, mail=None,
-                change_password=None, add_mailforward=None, remove_mailforward=None,
+def user_update(operation_logger, username, change_password=None,
+                fullname=None, firstname=None, lastname=None,
+                mail=None, mail_recovery=None,
                 add_mailalias=None, remove_mailalias=None, mailbox_quota=None,
+                add_mailforward=None, remove_mailforward=None,
                 imported=False):
     """
     Update user informations
@@ -445,6 +465,20 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
         return user_info(username)
 
 
+@is_unit_operation([('username', 'user')], exclude=['change_password'])
+def user_reset_password(operation_logger, user, token=None,
+                        change_password=None)
+    """
+    Send a password recovery link by email if exists
+
+    Keyword argument:
+        user -- username or email address
+        token -- token sent by email
+        change_password -- New password to set
+
+    """
+    pass
+
 def user_info(username):
     """
     Get user informations
@@ -479,6 +513,7 @@ def user_info(username):
         'firstname': user['givenName'][0],
         'lastname': user['sn'][0],
         'mail': user['mail'][0],
+        'mail-recovery': user['mailrecovery'][0],
         'mail-aliases': [],
         'mail-forward': []
     }

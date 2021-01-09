@@ -81,25 +81,28 @@ user:
                         pattern: &pattern_username
                             - !!str ^[a-z0-9_]+$
                             - "pattern_username"
+                -n:
+                    full: --fullname
+                    extra:
+                        ask: ask_fullname
+                        required: True
+                        pattern: &pattern_fullname
+                            - !!str ^(\p{L}{1,30}[ ,.'-]{0,3})+$
+                            - "pattern_fullname"
                 -f:
                     full: --firstname
+                    deprecated: true
                     extra:
-                        ask: ask_firstname
-                        required: True
                         pattern: &pattern_firstname
                             - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_firstname"
                 -l:
                     full: --lastname
+                    deprecated: true
                     extra:
-                        ask: ask_lastname
-                        required: True
                         pattern: &pattern_lastname
                             - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_lastname"
-                -m:
-                    full: --mail
-                    help: (Deprecated, see --domain) Main unique email address
                 -p:
                     full: --password
                     help: User password
@@ -126,6 +129,18 @@ user:
                         pattern: &pattern_mailbox_quota
                             - !!str ^(\d+[bkMGT])|0$
                             - "pattern_mailbox_quota"
+                -m:
+                    full: --mail
+                    help: Main email address used by yunohost apps
+                    extra:
+                        pattern: &pattern_email_
+                            - !!str ^[\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                            - "pattern_email"
+                -r:
+                    full: --password-recovery
+                    help: Email to use for password reset
+                    extra:
+                        pattern: *pattern_email
 
         ### user_delete()
         delete:
@@ -147,20 +162,24 @@ user:
             arguments:
                 username:
                     help: Username to update
+                -n:
+                    full: --fullname
+                    extra:
+                        pattern: *pattern_fullname
                 -f:
                     full: --firstname
+                    deprecated: true
                     extra:
                         pattern: *pattern_firstname
                 -l:
                     full: --lastname
+                    deprecated: true
                     extra:
                         pattern: *pattern_lastname
                 -m:
                     full: --mail
                     extra:
-                        pattern: &pattern_email
-                            - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
-                            - "pattern_email"
+                        pattern: *pattern_email
                 -p:
                     full: --change-password
                     help: New password to set
@@ -170,14 +189,17 @@ user:
                     extra:
                         pattern: *pattern_password
                         comment: good_practices_about_user_password
+                -r:
+                    full: --recovery-mail
+                    help: Email to use for password reset
+                    extra:
+                        pattern: *pattern_email
                 --add-mailforward:
                     help: Mailforward addresses to add
                     nargs: "*"
                     metavar: MAIL
                     extra:
-                        pattern: &pattern_email_forward
-                            - !!str ^[\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
-                            - "pattern_email_forward"
+                        pattern: *pattern_email
                 --remove-mailforward:
                     help: Mailforward addresses to remove
                     nargs: "*"
@@ -187,7 +209,9 @@ user:
                     nargs: "*"
                     metavar: MAIL
                     extra:
-                        pattern: *pattern_email
+                        pattern: &pattern_email_account
+                            - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                            - "pattern_email_account"
                 --remove-mailalias:
                     help: Mail aliases to remove
                     nargs: "*"
@@ -198,6 +222,24 @@ user:
                     metavar: "{SIZE|0}"
                     extra:
                         pattern: *pattern_mailbox_quota
+
+        ### user_reset_password()
+        reset-password:
+            action_help: Send a password recovery link by email if exists
+            api: POST /users/reset/<user>
+            configuration:
+                # We need to be able to run the postinstall without being authenticated, otherwise we can't run the postinstall
+                authenticate: false
+            arguments:
+                user:
+                    help: Username or email from which reset password
+                --token:
+                    help: Token send by email
+                --change-password:
+                    help: New password to set
+                    metavar: PASSWORD
+                    extra:
+                        pattern: *pattern_password
 
         ### user_info()
         info:
