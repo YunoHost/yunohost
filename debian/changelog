@@ -1,3 +1,11 @@
+yunohost (4.1.4.2) stable; urgency=low
+
+  - [fix] Prevent info from being redacted (because of foobar_key=) by the logging system (8f1b05f3)
+  - [fix] For some reason sometimes submetadata is None ... (00508c96)
+  - [enh] Reduce the noise in logs because of ynh_app_setting (ac4b62ce)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 09 Jan 2021 18:59:01 +0100
+
 yunohost (4.1.4.1) stable; urgency=low
 
   - [hotfix] Postfix conf always included the relay snippets (b25cde0b)
