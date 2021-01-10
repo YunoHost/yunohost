@@ -212,7 +212,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
 
     if apps_on_that_domain:
         if remove_apps:
-            if not yes:
+            if msettings.get('interface') == "cli" and not force:
                 answer = msignals.prompt(m18n.n('domain_remove_confirm_apps_removal',
                                                 apps="\n".join([x[1] for x in apps_on_that_domain]),
                                                 answers='y/N'), color="yellow")
