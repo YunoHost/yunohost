@@ -171,7 +171,7 @@ class PasswordValidator(object):
         # Grep the password in the file
         # We use '-f -' to feed the pattern (= the password) through
         # stdin to avoid it being shown in ps -ef --forest...
-        command = "grep -q -f - %s" % MOST_USED_PASSWORDS
+        command = "grep -q -F -f - %s" % MOST_USED_PASSWORDS
         p = subprocess.Popen(command.split(), stdin=subprocess.PIPE)
         p.communicate(input=password)
         return not bool(p.returncode)
