@@ -161,7 +161,7 @@ def domain_add(operation_logger, domain, dyndns=False):
     except Exception:
         # Force domain removal silently
         try:
-            domain_remove(domain, True)
+            domain_remove(domain, force=True)
         except Exception:
             pass
         raise
@@ -187,6 +187,9 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     from yunohost.app import app_ssowatconf, app_info, app_remove
     from yunohost.utils.ldap import _get_ldap_interface
 
+    # the 'force' here is related to the exception happening in domain_add ...
+    # we don't want to check the domain exists because the ldap add may have
+    # failed
     if not force and domain not in domain_list()['domains']:
         raise YunohostError('domain_name_unknown', domain=domain)
 
