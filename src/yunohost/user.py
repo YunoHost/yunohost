@@ -326,7 +326,13 @@ def user_update(operation_logger, username, firstname=None, lastname=None, mail=
     if lastname and firstname:
         new_attr_dict['cn'] = new_attr_dict['displayName'] = [firstname + ' ' + lastname]
 
-    if change_password:
+    # change_password is None if user_update is not called to change the password
+    if change_password is not None:
+        # when in the cli interface if the option to change the password is called
+        # without a specified value, change_password will be set to the const 0.
+        # In this case we prompt for the new password.
+        if msettings.get('interface') == 'cli' and not change_password:
+            change_password = msignals.prompt(m18n.n("ask_password"), True, True)
         # Ensure sufficiently complex password
         assert_password_is_strong_enough("user", change_password)
 

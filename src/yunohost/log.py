@@ -256,7 +256,7 @@ def log_display(path, number=None, share=False, filter_irrelevant=False, with_su
                         except Exception:
                             continue
 
-                        if submetadata.get("parent") == base_filename:
+                        if submetadata and submetadata.get("parent") == base_filename:
                             yield {
                                 "name": filename[:-len(METADATA_FILE_EXT)],
                                 "description": _get_description_from_name(filename[:-len(METADATA_FILE_EXT)]),

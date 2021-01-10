@@ -1,3 +1,62 @@
+yunohost (4.1.4.3) stable; urgency=low
+
+  - [fix] ynh_replace_vars in case var is defined but empty (30dde208)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 10 Jan 2021 01:58:35 +0100
+
+yunohost (4.1.4.2) stable; urgency=low
+
+  - [fix] Prevent info from being redacted (because of foobar_key=) by the logging system (8f1b05f3)
+  - [fix] For some reason sometimes submetadata is None ... (00508c96)
+  - [enh] Reduce the noise in logs because of ynh_app_setting (ac4b62ce)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 09 Jan 2021 18:59:01 +0100
+
+yunohost (4.1.4.1) stable; urgency=low
+
+  - [hotfix] Postfix conf always included the relay snippets (b25cde0b)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 08 Jan 2021 16:21:07 +0100
+
+yunohost (4.1.4) stable; urgency=low
+
+  - [fix] firewall: force source port for UPnP. ([#1109](https://github.com/yunohost/yunohost/pull/1109))
+  - Stable release
+
+  Thanks to all contributors <3 ! (Léo Le Bouter)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 08 Jan 2021 03:09:14 +0100
+
+yunohost (4.1.3) testing; urgency=low
+
+  - [enh] Do not advertise upgrades for bad-quality apps ([#1066](https://github.com/yunohost/yunohost/pull/1066))
+  - [enh] Display domain_path of app in the output of app list ([#1120](https://github.com/yunohost/yunohost/pull/1120))
+  - [enh] Diagnosis: report usage of backports repository in apt's sources.list ([#1069](https://github.com/yunohost/yunohost/pull/1069))
+  - [mod] Code cleanup, misc fixes (165d2b32, [#1121](https://github.com/yunohost/yunohost/pull/1121), [#1122](https://github.com/yunohost/yunohost/pull/1122), [#1123](https://github.com/yunohost/yunohost/pull/1123), [#1131](https://github.com/yunohost/yunohost/pull/1131))
+  - [mod] Also display app label on remove_domain with apps ([#1124](https://github.com/yunohost/yunohost/pull/1124))
+  - [enh] Be able to change user password in CLI without writing it in clear ([#1075](https://github.com/YunoHost/yunohost/pull/1075))
+  - [enh] New permissions helpers ([#1117](https://github.com/yunohost/yunohost/pull/1117))
+  - [i18n] Translations updated for French, German
+
+  Thanks to all contributors <3 ! (C. Wehrli, cricriiiiii, Kay0u, Bram, ljf, ppr)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 07 Jan 2021 00:46:09 +0100
+
+yunohost (4.1.2) testing; urgency=low
+
+  - [enh] diagnosis: Detect moar hardware name (b685a274)
+  - [fix] permissions: Handle regexes that may start with ^ or \ (bdff5937)
+  - [fix] permissions: Tile/protect status for legacy migration ([#1113](https://github.com/yunohost/yunohost/pull/1113))
+  - [fix] domain: double return prevent new code from working (0c977d8c)
+  - [fix] settings: When encountering unknown setting, also save the regular setting so we don't re-encounter the unknown settings everytime (d77d5afb)
+  - [fix] users: only ask for one letter for first/last name ([#1114](https://github.com/yunohost/yunohost/pull/1114))
+  - [fix] apt/sury: Tweak app helpers to not mess with Sury's pinning ([#1110](https://github.com/yunohost/yunohost/pull/1110))
+  - [i18n] Translations updated for German
+
+  Thanks to all contributors <3 ! (Bram, C. Wehrli, Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Dec 2020 16:26:51 +0100
+
 yunohost (4.1.1) testing; urgency=low
 
   - [fix] Backup/restore DKIM keys ([#1098](https://github.com/yunohost/yunohost/pull/1098), [#1100](https://github.com/yunohost/yunohost/pull/1100))

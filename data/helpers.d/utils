@@ -393,7 +393,8 @@ ynh_replace_vars () {
     for one_var in "${uniques_vars[@]}"
     do
         # Validate that one_var is indeed defined
-        test -n "${!one_var:-}" || ynh_die --message="\$$one_var wasn't initialized when trying to replace __${one_var^^}__ in $file"
+        # Explanation for the weird '+x' syntax: https://stackoverflow.com/a/13864829
+        test -n "${one_var+x}" || ynh_die --message="Variable \$$one_var wasn't initialized when trying to replace __${one_var^^}__ in $file"
 
         # Escape delimiter in match/replace string
         match_string="__${one_var^^}__"
@@ -583,12 +584,12 @@ ynh_app_upstream_version () {
 
     if [[ "$manifest" != "" ]] && [[ -e "$manifest" ]];
     then
-      version_key=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
+      version_key_=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
     else
-      version_key=$YNH_APP_MANIFEST_VERSION
+      version_key_=$YNH_APP_MANIFEST_VERSION
     fi
 
-    echo "${version_key/~ynh*/}"
+    echo "${version_key_/~ynh*/}"
 }
 
 # Read package version from the manifest
@@ -611,8 +612,8 @@ ynh_app_package_version () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    version_key=$YNH_APP_MANIFEST_VERSION
-    echo "${version_key/*~ynh/}"
+    version_key_=$YNH_APP_MANIFEST_VERSION
+    echo "${version_key_/*~ynh/}"
 }
 
 # Checks the app version to upgrade with the existing app version and returns:

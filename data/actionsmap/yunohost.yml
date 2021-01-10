@@ -87,7 +87,7 @@ user:
                         ask: ask_firstname
                         required: True
                         pattern: &pattern_firstname
-                            - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
+                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_firstname"
                 -l:
                     full: --lastname
@@ -95,7 +95,7 @@ user:
                         ask: ask_lastname
                         required: True
                         pattern: &pattern_lastname
-                            - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
+                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_lastname"
                 -m:
                     full: --mail
@@ -165,8 +165,11 @@ user:
                     full: --change-password
                     help: New password to set
                     metavar: PASSWORD
+                    nargs: "?"
+                    const: 0
                     extra:
                         pattern: *pattern_password
+                        comment: good_practices_about_user_password
                 --add-mailforward:
                     help: Mailforward addresses to add
                     nargs: "*"
@@ -307,7 +310,7 @@ user:
                     api: GET /users/permissions/<permission>
                     arguments:
                         permission:
-                            help: Name of the permission to fetch info about
+                            help: Name of the permission to fetch info about (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
 
                 ### user_permission_update()
                 update:
@@ -315,7 +318,7 @@ user:
                     api: PUT /users/permissions/<permission>
                     arguments:
                         permission:
-                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
                         -a:
                             full: --add
                             help: Group or usernames to grant this permission to
@@ -346,7 +349,7 @@ user:
                     api: DELETE /users/permissions/<app>
                     arguments:
                         permission:
-                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
 
         ssh:
             subcategory_help: Manage ssh access

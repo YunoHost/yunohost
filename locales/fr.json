@@ -54,7 +54,7 @@
     "domain_dyndns_already_subscribed": "Vous avez déjà souscris à un domaine DynDNS",
     "domain_dyndns_root_unknown": "Domaine DynDNS principal inconnu",
     "domain_exists": "Le domaine existe déjà",
-    "domain_uninstall_app_first": "Ces applications sont toujours installées sur votre domaine: {apps}. Veuillez d’abord les désinstaller avant de supprimer ce domaine",
+    "domain_uninstall_app_first": "Ces applications sont toujours installées sur votre domaine :\n{apps}\n\nAfin de pouvoir procéder à la suppression du domaine, vous devez préalablement :\n- soit désinstaller toutes ces applications avec la commande 'yunohost app remove nom-de-l-application' ;\n- soit déplacer toutes ces applications vers un autre domaine avec la commande 'yunohost app change-url nom-de-l-application'",
     "domain_unknown": "Domaine inconnu",
     "done": "Terminé",
     "downloading": "Téléchargement en cours …",
@@ -690,5 +690,7 @@
     "additional_urls_already_removed": "URL supplémentaire '{url:s}' déjà supprimée pour la permission '{permission:s}'",
     "migration_0019_rollback_success": "Retour à l'état antérieur du système.",
     "invalid_number": "Doit être un nombre",
-    "migration_description_0019_extend_permissions_features": "Étendre et retravailler le système de gestion des permissions applicatives"
+    "migration_description_0019_extend_permissions_features": "Étendre et retravailler le système de gestion des permissions applicatives",
+    "diagnosis_basesystem_hardware_model": "Le modèle du serveur est '{model}'.",
+    "diagnosis_backports_in_sources_list": "Il semble qu'apt (le gestionnaire de paquets) soit configuré pour utiliser le dépôt des rétroportages (backports). A moins que vous ne sachiez vraiment ce que vous faites, nous vous déconseillons fortement d'installer des paquets provenant des rétroportages, car cela risque de créer des instabilités ou des conflits sur votre système."
 }
