@@ -1,3 +1,9 @@
+yunohost (4.1.4.3) stable; urgency=low
+
+  - [fix] ynh_replace_vars in case var is defined but empty (30dde208)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 10 Jan 2021 01:58:35 +0100
+
 yunohost (4.1.4.2) stable; urgency=low
 
   - [fix] Prevent info from being redacted (because of foobar_key=) by the logging system (8f1b05f3)
