@@ -1,4 +1,4 @@
-#!/usr/env/python2.7
+#!/usr/env/python3
 
 import os
 import glob
