@@ -1,3 +1,12 @@
+yunohost (4.1.4.4) stable; urgency=low
+
+  - [fix] Add the -F flag to grep command for fixed string mode, prevent special chars in the password to be interpreted as regex pattern ([#1132](https://github.com/yunohost/yunohost/pull/1132))
+  - [fix] apt helpers: explicitly return 0, otherwise the return code of last command is used, which in that case is 1 ... (c56883d0)
+
+  Thanks to all contributors <3 ! (Saxodwarf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 11 Jan 2021 14:17:37 +0100
+
 yunohost (4.1.4.3) stable; urgency=low
 
   - [fix] ynh_replace_vars in case var is defined but empty (30dde208)
