@@ -818,11 +818,11 @@ def _regen_dnsmasq_if_needed():
     for domainconf in domainsconf:
 
         # Look for the IP, it's in the lines with this format :
-        # address=/the.domain.tld/11.22.33.44
+        # host-record=the.domain.tld,11.22.33.44
         for line in open(domainconf).readlines():
-            if not line.startswith("address"):
+            if not line.startswith("host-record"):
                 continue
-            ip = line.strip().split("/")[2]
+            ip = line.strip().split(",")[-1]
 
             # Compared found IP to current IPv4 / IPv6
             #             IPv6                   IPv4
