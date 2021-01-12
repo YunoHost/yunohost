@@ -620,49 +620,26 @@ ynh_app_package_version () {
 #
 # - UPGRADE_APP if the upstream app version has changed
 # - UPGRADE_PACKAGE if only the YunoHost package has changed
-#
-# It stops the current script without error if the package is up-to-date
+# - UPGRADE_FULL if both the upstream app version and the YunoHost package version have changed
+# - UPGRADE_FORCED if the upstream app version and the current installed app version are the same but the parameter --force has been used
+# - DOWNGRADE_FORCED if the upstream app version is bellow the current installed app version but the parameter --force has been used
 #
 # This helper should be used to avoid an upgrade of an app, or the upstream part
 # of it, when it's not needed
 #
 # To force an upgrade, even if the package is up to date,
-# you have to set the variable YNH_FORCE_UPGRADE before.
-# example: sudo YNH_FORCE_UPGRADE=1 yunohost app upgrade MyApp
+# you have to use the parameter --force (or -F).
+# example: sudo yunohost app upgrade MyApp --force
+#
+# Deprecated helper, use the YNH_APP_UPGRADE_TYPE variable instead.
 #
 # usage: ynh_check_app_version_changed
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_check_app_version_changed () {
-    local force_upgrade=${YNH_FORCE_UPGRADE:-0}
-    local package_check=${PACKAGE_CHECK_EXEC:-0}
+    ynh_print_warn --message="The helper ynh_check_app_version_changed is deprecated. Use the YNH_APP_UPGRADE_TYPE variable instead."
+    local return_value=${YNH_APP_UPGRADE_TYPE}
 
-    # By default, upstream app version has changed
-    local return_value="UPGRADE_APP"
-
-    local current_version=$(ynh_read_manifest --manifest="/etc/yunohost/apps/$YNH_APP_INSTANCE_NAME/manifest.json" --manifest_key="version" || echo 1.0)
-    local current_upstream_version="$(ynh_app_upstream_version --manifest="/etc/yunohost/apps/$YNH_APP_INSTANCE_NAME/manifest.json")"
-    local update_version=$(ynh_read_manifest --manifest="../manifest.json" --manifest_key="version" || echo 1.0)
-    local update_upstream_version="$(ynh_app_upstream_version)"
-
-    if [ "$current_version" == "$update_version" ]
-    then
-        # Complete versions are the same
-        if [ "$force_upgrade" != "0" ]
-        then
-            ynh_print_info --message="Upgrade forced by YNH_FORCE_UPGRADE."
-            unset YNH_FORCE_UPGRADE
-        elif [ "$package_check" != "0" ]
-        then
-            ynh_print_info --message="Upgrade forced for package check."
-        else
-            ynh_die "Up-to-date, nothing to do" 0
-        fi
-    elif [ "$current_upstream_version" == "$update_upstream_version" ]
-    then
-        # Upstream versions are the same, only YunoHost package versions differ
-        return_value="UPGRADE_PACKAGE"
-    fi
     echo $return_value
 }
 
@@ -700,12 +677,12 @@ ynh_compare_current_package_version() {
     # Check the syntax of the versions
     if [[ ! $version =~ '~ynh' ]] || [[ ! $current_version =~ '~ynh' ]]
     then
-        ynh_die "Invalid argument for version."
+        ynh_die --message="Invalid argument for version."
     fi
 
     # Check validity of the comparator
     if [[ ! $comparison =~ (lt|le|eq|ne|ge|gt) ]]; then
-        ynh_die "Invialid comparator must be : lt, le, eq, ne, ge, gt"
+        ynh_die --message="Invialid comparator must be : lt, le, eq, ne, ge, gt"
     fi
 
     # Return the return value of dpkg --compare-versions
