@@ -2423,6 +2423,10 @@ class YunoHostArgumentFormatParser(object):
 
         if parsed_question.ask is None:
             parsed_question.ask = "Enter value for '%s':" % parsed_question.name
+        
+        # Empty value is parsed as empty string
+        if parsed_question.default == "":
+            parsed_question.default = None
 
         return parsed_question
 
