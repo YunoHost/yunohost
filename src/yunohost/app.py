@@ -2537,10 +2537,10 @@ class BooleanArgumentParser(YunoHostArgumentFormatParser):
         if isinstance(question.value, bool):
             return 1 if question.value else 0
 
-        if str(question.value).lower() in ["1", "yes", "y"]:
+        if str(question.value).lower() in ["1", "yes", "y", "true"]:
             return 1
 
-        if str(question.value).lower() in ["0", "no", "n"]:
+        if str(question.value).lower() in ["0", "no", "n", "false"]:
             return 0
 
         raise YunohostError('app_argument_choice_invalid', name=question.name,
