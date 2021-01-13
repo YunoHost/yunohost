@@ -618,11 +618,8 @@ ynh_app_package_version () {
 
 # Checks the app version to upgrade with the existing app version and returns:
 #
-# - UPGRADE_APP if the upstream app version has changed
 # - UPGRADE_PACKAGE if only the YunoHost package has changed
-# - UPGRADE_FULL if both the upstream app version and the YunoHost package version have changed
-# - UPGRADE_FORCED if the upstream app version and the current installed app version are the same but the parameter --force has been used
-# - DOWNGRADE_FORCED if the upstream app version is bellow the current installed app version but the parameter --force has been used
+# - UPGRADE_APP otherwise
 #
 # This helper should be used to avoid an upgrade of an app, or the upstream part
 # of it, when it's not needed
@@ -631,14 +628,16 @@ ynh_app_package_version () {
 # you have to use the parameter --force (or -F).
 # example: sudo yunohost app upgrade MyApp --force
 #
-# Deprecated helper, use the YNH_APP_UPGRADE_TYPE variable instead.
-#
 # usage: ynh_check_app_version_changed
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_check_app_version_changed () {
-    ynh_print_warn --message="The helper ynh_check_app_version_changed is deprecated. Use the YNH_APP_UPGRADE_TYPE variable instead."
     local return_value=${YNH_APP_UPGRADE_TYPE}
+
+    if [ "$return_value" == "UPGRADE_FULL" ] || [ "$return_value" == "UPGRADE_FORCED" ] || [ "$return_value" == "DOWNGRADE_FORCED" ]
+    then
+        return_value="UPGRADE_APP"
+    fi
 
     echo $return_value
 }
