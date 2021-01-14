@@ -260,6 +260,10 @@ def test_parse_args_in_yunohost_format_password_no_input_optional():
 
     assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
+    questions = [{"name": "some_password", "type": "password", "optional": True, "default": ""}]
+
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
 
 def test_parse_args_in_yunohost_format_password_optional_with_input():
     questions = [
