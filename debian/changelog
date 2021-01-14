@@ -1,3 +1,17 @@
+yunohost (4.1.5) stable; urgency=low
+
+  - [fix] Update helpers ([#1136](https://github.com/yunohost/yunohost/pull/11346))
+  - [fix] Certificate during regen conf on some setup (1d2b1d9)
+  - [fix] Empty password is not an error if it's optional ([#1135](https://github.com/yunohost/yunohost/pull/11345))
+  - [fix] Remove useless warnings during system backup ([#1138](https://github.com/yunohost/yunohost/pull/11348))
+  - [fix] We can now use "true" or "false" for a boolean ([#1134](https://github.com/yunohost/yunohost/pull/1134))
+  - [i18n] Translations updated for Catalan, French, Italian, Spanish
+
+  Thanks to all contributors <3 ! (Aleks, Kay0u, Omnia89, jorge-vitrubio, YohannEpitech, xaloc33)
+
+
+ -- Kayou <pierre@kayou.io>  Thu, 14 Jan 2021 21:23:39 +0100
+
 yunohost (4.1.4.4) stable; urgency=low
 
   - [fix] Add the -F flag to grep command for fixed string mode, prevent special chars in the password to be interpreted as regex pattern ([#1132](https://github.com/yunohost/yunohost/pull/1132))
