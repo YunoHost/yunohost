@@ -69,7 +69,7 @@
     "domain_dyndns_already_subscribed": "Hai già sottoscritto un dominio DynDNS",
     "domain_dyndns_root_unknown": "Dominio radice DynDNS sconosciuto",
     "domain_hostname_failed": "Impossibile impostare il nuovo hostname. Potrebbe causare problemi in futuro (o anche no).",
-    "domain_uninstall_app_first": "Queste applicazioni sono già installate su questo dominio: {apps}. Disinstallale prima di procedere alla cancellazione di un dominio",
+    "domain_uninstall_app_first": "Queste applicazioni sono già installate su questo dominio:\n{apps}\n\nDisinstallale eseguendo 'yunohost app remove app_id' o spostale in un altro dominio eseguendo 'yunohost app change-url app_id' prima di procedere alla cancellazione del dominio",
     "domain_unknown": "Dominio sconosciuto",
     "done": "Terminato",
     "domains_available": "Domini disponibili:",
@@ -672,5 +672,7 @@
     "diagnosis_mail_queue_ok": "{nb_pending} emails in attesa nelle code",
     "diagnosis_mail_blacklist_website": "Dopo aver identificato il motivo e averlo risolto, sentiti libero di chiedere di rimuovere il tuo IP o dominio da {blacklist_website}",
     "diagnosis_mail_blacklist_reason": "Il motivo della blacklist è: {reason}",
-    "diagnosis_mail_blacklist_listed_by": "Il tuo IP o dominio <code>{item}</code> è nella blacklist {blacklist_name}"
+    "diagnosis_mail_blacklist_listed_by": "Il tuo IP o dominio <code>{item}</code> è nella blacklist {blacklist_name}",
+    "diagnosis_backports_in_sources_list": "Sembra che apt (il package manager) sia configurato per utilizzare le backport del repository. A meno che tu non sappia quello che stai facendo, scoraggiamo fortemente di installare pacchetti tramite esse, perché ci sono alte probabilità di creare conflitti con il tuo sistema.",
+    "diagnosis_basesystem_hardware_model": "Modello server: {model}"
 }
