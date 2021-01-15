@@ -26,6 +26,8 @@
 import os
 import re
 
+from urllib import quote
+
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
@@ -218,8 +220,6 @@ def domain_remove(operation_logger, domain, force=False):
     except Exception as e:
         raise YunohostError('domain_deletion_failed', domain=domain, error=e)
 
-    os.system('rm -rf /etc/yunohost/certs/%s' % domain)
-
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...
     # There are a few ideas why this happens (like backup/restore nginx
@@ -238,6 +238,29 @@ def domain_remove(operation_logger, domain, force=False):
     # cert file which disappeared etc..
     if os.path.exists("/etc/nginx/conf.d/%s.conf" % domain):
         _process_regen_conf("/etc/nginx/conf.d/%s.conf" % domain, new_conf=None, save=True)
+
+    # Remove the nginx domain directory in addition to the domain file
+    os.system('rm -rf /etc/nginx/conf.d/{}.d'.format(domain))
+
+    # Remove smtp autoconfig
+    os.system('rm -rf /var/www/.well-known/{}'.format(domain))
+
+    # Remove certificates
+    os.system('rm -rf /etc/yunohost/certs/{}'.format(domain))
+    os.system('rm -rf /etc/yunohost/certs/{}-history'.format(domain))
+
+    # Remove the DKIM public and private data
+    os.system('rm -f /etc/dkim/{}.mail.key'.format(domain))
+    os.system('rm -f /etc/dkim/{}.mail.txt'.format(domain))
+
+    # Remove metronome
+    os.system('rm -rf /var/xmpp-upload/{}'.format(domain))
+    domain_encoded = quote(domain, safe='').lower().replace('.', '%2e').replace('-','%2d').replace('_', '%5f')
+    os.system('rm -rf /var/lib/metronome/muc%2e' + domain_encoded)
+    os.system('rm -rf /var/lib/metronome/pubsub%2e' + domain_encoded)
+    os.system('rm -rf /var/lib/metronome/vjud%2e' + domain_encoded)
+    os.system('rm -rf /var/lib/metronome/xmpp%2dupload%2e' + domain_encoded)
+    os.system('rm -rf /var/lib/metronome/{}'.format(domain_encoded))
 
     regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
     app_ssowatconf()
