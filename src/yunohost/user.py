@@ -55,6 +55,7 @@ VALIDATORS = {
     'groups': r'^|([a-z0-9_]+(,?[a-z0-9_]+)*)$'
 }
 FIRST_ALIASES = ['root@', 'admin@', 'webmaster@', 'postmaster@', 'abuse@']
+SMTP_TLS_VERSION_SECURED = ['TLSv1.3', 'TLSv1.2']
 
 def user_list(fields=None):
 
@@ -67,6 +68,7 @@ def user_list(fields=None):
         'firstname': 'givenName',
         'lastname': 'sn',
         'mail': 'mail',
+        'recovery': 'recovery',
         'mail-alias': 'mail',
         'mail-forward': 'maildrop',
         'mailbox-quota': 'mailuserquota',
@@ -95,7 +97,7 @@ def user_list(fields=None):
     users = {}
 
     if not fields:
-        fields = ['username', 'fullname', 'mail', 'mailbox-quota', 'shell']
+        fields = ['username', 'fullname', 'mail', 'mailbox-quota', 'recovery', 'shell']
 
     for field in fields:
         if field in ldap_attrs:
@@ -201,6 +203,9 @@ def user_create(operation_logger, username, domain, password, fullname=None,
     if mail_account in aliases:
         raise YunohostError('mail_unavailable')
 
+    if password_recovery and _smtp_is_secured_enough(password_recovery):
+        raise YunohostError('user_mailrecovery_unsecured')
+
     if not imported:
         operation_logger.start()
 
@@ -223,7 +228,7 @@ def user_create(operation_logger, username, domain, password, fullname=None,
         'cn': [fullname],
         'uid': [username],
         'mail': mail,  # NOTE: this one seems to be already a list
-        'mailrecovery': [password_recovery] if password_recovery else [],
+        'recovery': [password_recovery] if password_recovery else [],
         'mailalias': [mail_account],
         'maildrop': [username],
         'mailuserquota': [mailbox_quota],
@@ -326,7 +331,7 @@ def user_delete(operation_logger, username, purge=False, imported=False):
 @is_unit_operation([('username', 'user')], exclude=['change_password'])
 def user_update(operation_logger, username, change_password=None,
                 fullname=None, firstname=None, lastname=None,
-                mail=None, mail_recovery=None,
+                mail=None, password_recovery=None,
                 add_mailalias=None, remove_mailalias=None, mailbox_quota=None,
                 add_mailforward=None, remove_mailforward=None,
                 imported=False):
@@ -403,6 +408,12 @@ def user_update(operation_logger, username, change_password=None,
 
         new_attr_dict['mail'] = [mail] + user['mail'][1:]
 
+    if password_recovery:
+        if _smtp_is_secured_enough(password_recovery):
+            raise YunohostError('user_mailrecovery_unsecured')
+
+        user['recovery'] = password_recovery
+
     if add_mailalias:
         if not isinstance(add_mailalias, list):
             add_mailalias = [add_mailalias]
@@ -477,7 +488,68 @@ def user_reset_password(operation_logger, user, token=None,
         change_password -- New password to set
 
     """
-    pass
+    from moulinette.utils.text import random_ascii
+
+    # FIXME time attack
+
+    # Send reset password token
+    if token is None:
+        token = random_ascii(25)
+        try:
+            info = user_info(user)
+        except YunohostError:
+            return {} # Important: we return nothing to avoid some attack
+
+        if info['recovery']:
+            maindomain = _get_maindomain()
+            from_ = "root@%s" % (maindomain)
+            to = info['recovery']
+            subject = m18n.n('user_password_reset_subject')
+            content = m18n.n('user_password_reset_body', login=info['username'],
+                             token=token)
+            message = """
+From: %s
+To: %s
+Subject: %s
+
+%s
+""" % (from_, to, subject, content)
+            import smtplib
+            smtp = smtplib.SMTP("localhost")
+            smtp.sendmail(from_, [to], message)
+            smtp.quit()
+        return {} # Important: we return nothing to avoid some attack
+
+    # Authenticate with token
+    #TODO store token and read token
+    if token != registered_token:
+        # TODO BAN if too much error like this
+        raise YunoHostError("user_password_reset_token_expired")
+
+    # Ensure sufficiently complex password
+    assert_password_is_strong_enough("user", change_password)
+
+    # Invalidate token
+    # TODO
+
+    # Change password
+    # TODO refactor in a function ?
+    new_attr_dict = {}
+    # when in the cli interface if the option to change the password is called
+    # without a specified value, change_password will be set to the const 0.
+    # In this case we prompt for the new password.
+    if msettings.get('interface') == 'cli' and not change_password:
+        change_password = msignals.prompt(m18n.n("ask_password"), True, True)
+
+    new_attr_dict['userPassword'] = [_hash_user_password(change_password)]
+
+    try:
+        ldap.update('uid=%s,ou=users' % username, new_attr_dict)
+    except Exception as e:
+        raise YunohostError('user_password_update_failed', user=username, error=e)
+
+    return {} # Important: we return nothing to avoid some attack
+
 
 def user_info(username):
     """
@@ -492,7 +564,7 @@ def user_info(username):
     ldap = _get_ldap_interface()
 
     user_attrs = [
-        'cn', 'mail', 'uid', 'maildrop', 'givenName', 'sn', 'mailuserquota'
+        'cn', 'mail', 'uid', 'maildrop', 'recovery', 'givenName', 'sn', 'mailuserquota'
     ]
 
     if len(username.split('@')) == 2:
@@ -513,7 +585,7 @@ def user_info(username):
         'firstname': user['givenName'][0],
         'lastname': user['sn'][0],
         'mail': user['mail'][0],
-        'mail-recovery': user['mailrecovery'][0],
+        'recovery': False,
         'mail-aliases': [],
         'mail-forward': []
     }
@@ -523,6 +595,9 @@ def user_info(username):
 
     if len(user['maildrop']) > 1:
         result_dict['mail-forward'] = user['maildrop'][1:]
+
+    if 'recovery' in user:
+        result_dict['recovery'] = user['mailrecovery'][0]
 
     if 'mailuserquota' in user:
         userquota = user['mailuserquota'][0]
@@ -1152,3 +1227,62 @@ def _hash_user_password(password):
 
     salt = '$6$' + salt + '$'
     return '{CRYPT}' + crypt.crypt(str(password), salt)
+
+
+def _smtp_is_secured_enough(mail):
+    """
+    Test if all SMTP behind a mail are secured enough to send reset password
+    email.
+    """
+
+    from datetime import datetime, timedelta
+
+    domain = mail.split('@')[1]
+
+    # Cache mechanism to avoid evil user who could want to trigger security
+    # test too much
+    if domain in _smtp_is_secured_enough.cache:
+        start, result = _smtp_is_secured_enough.cache[domain]
+        if datetime.now() < start + timedelta(hours=12):
+            return result
+
+    result = False
+    found, mxs = dig(domain, "MX")
+
+    if not found:
+        raise YunohostError("mx_not_found", domain=domain)
+
+    for mx in mxs:
+        mx = mx[:-1] if mx[-1:] == "." else mx + "." + domain
+
+        # Check if it's a true SMTP server
+        try:
+            smtp = SMTP(mx[:-1])
+            ehlo = smtp.ehlo()
+        except socket.gaierror:
+            raise YunohostError("mx_not_found", domain=domain)
+        except smtplib.SMTPException:
+            raise YunohostError("mx_unable_to_connect")
+
+        # Check if it's support STARTTLS
+        if "STARTTLS" not in ehlo:
+            break
+
+        try:
+            smtp.starttls()
+        except smtplib.SMTPException:
+            break
+
+        # Check if it uses a decent TLS version
+        if smtp.sock not in SMTP_TLS_VERSION_SECURED:
+            break
+
+        # Check if it uses a valid and trusted certificate
+        # FIXME
+    else:
+        result = True
+
+
+    _smtp_is_secured_enough.cache[domain] = (datetime.now() ,result)
+    return result
+_smtp_is_secured_enough.cache = {}

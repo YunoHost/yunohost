@@ -190,7 +190,7 @@ user:
                         pattern: *pattern_password
                         comment: good_practices_about_user_password
                 -r:
-                    full: --recovery-mail
+                    full: --password-recovery
                     help: Email to use for password reset
                     extra:
                         pattern: *pattern_email
