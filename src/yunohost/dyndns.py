@@ -34,12 +34,12 @@ from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import write_to_file, read_file
-from moulinette.utils.network import download_json, dig
+from moulinette.utils.network import download_json
 from moulinette.utils.process import check_output
 
 from yunohost.utils.error import YunohostError
 from yunohost.domain import _get_maindomain, _build_dns_conf
-from yunohost.utils.network import get_public_ip
+from yunohost.utils.network import get_public_ip, dig
 from yunohost.log import is_unit_operation
 
 logger = getActionLogger('yunohost.dyndns')
