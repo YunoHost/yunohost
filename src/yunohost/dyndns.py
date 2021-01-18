@@ -34,7 +34,7 @@ from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import write_to_file, read_file
-from moulinette.utils.network import download_json
+from moulinette.utils.network import download_json, dig
 from moulinette.utils.process import check_output
 
 from yunohost.utils.error import YunohostError
@@ -216,8 +216,30 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
         'zone %s' % host,
     ]
 
-    old_ipv4 = check_output("dig @%s +short %s" % (dyn_host, domain)) or None
-    old_ipv6 = check_output("dig @%s +short aaaa %s" % (dyn_host, domain)) or None
+
+    def resolve_domain(domain, rdtype):
+
+        ok, result = dig(domain, rdtype, resolvers=[dyn_host])
+        if ok == "ok":
+            return result[0] if len(result) else None
+        elif result[0] == "Timeout":
+            logger.debug("Timed-out while trying to resolve %s record for %s using %s" % (rdtype, domain, dyn_host))
+        else:
+            return None
+
+        logger.debug("Falling back to external resolvers")
+        ok, result = dig(domain, rdtype, resolvers="force_external")
+        if ok == "ok":
+            return result[0] if len(result) else None
+        elif result[0] == "Timeout":
+            logger.debug("Timed-out while trying to resolve %s record for %s using external resolvers : %s" % (rdtype, domain, result))
+        else:
+            return None
+
+        raise YunohostError("Failed to resolve %s for %s" % (rdtype, domain), raw_msg=True)
+
+    old_ipv4 = resolve_domain(domain, "A")
+    old_ipv6 = resolve_domain(domain, "AAAA")
 
     # Get current IPv4 and IPv6
     ipv4_ = get_public_ip()
