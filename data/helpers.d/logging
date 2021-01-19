@@ -35,7 +35,7 @@ ynh_print_info() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    echo "$message" >> "$YNH_STDINFO"
+    echo "$message" >&$YNH_STDINFO
 }
 
 # Ignore the yunohost-cli log to prevent errors with conditional commands

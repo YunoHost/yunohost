@@ -29,7 +29,7 @@ def is_boolean(value):
     """
     if isinstance(value, bool):
         return True, value
-    elif isinstance(value, basestring):
+    elif isinstance(value, str):
         if str(value).lower() in ['true', 'on', 'yes', 'false', 'off', 'no']:
             return True, str(value).lower() in ['true', 'on', 'yes']
         else:
@@ -141,7 +141,7 @@ def settings_set(key, value):
                 raise YunohostError('global_settings_bad_type_for_setting', setting=key,
                                     received_type=type(value).__name__, expected_type=key_type)
     elif key_type == "string":
-        if not isinstance(value, basestring):
+        if not isinstance(value, str):
             raise YunohostError('global_settings_bad_type_for_setting', setting=key,
                                 received_type=type(value).__name__, expected_type=key_type)
     elif key_type == "enum":

@@ -550,7 +550,7 @@ ynh_pin_repo () {
     fi
 
     # Sury pinning is managed by the regenconf in the core...
-    [[ "$name" != "extra_php_version" ]] || return
+    [[ "$name" != "extra_php_version" ]] || return 0
 
     mkdir --parents "/etc/apt/preferences.d"
     echo "Package: $package

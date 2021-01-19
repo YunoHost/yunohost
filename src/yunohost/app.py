@@ -30,16 +30,16 @@ import shutil
 import yaml
 import time
 import re
-import urlparse
+import urllib.parse
 import subprocess
 import glob
-import urllib
+import urllib.request, urllib.parse, urllib.error
 from collections import OrderedDict
 
 from moulinette import msignals, m18n, msettings
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
-from moulinette.utils.process import run_commands
+from moulinette.utils.process import run_commands, check_output
 from moulinette.utils.filesystem import read_file, read_json, read_toml, read_yaml, write_to_file, write_to_json, write_to_yaml, chmod, chown, mkdir
 
 from yunohost.service import service_status, _run_service_command
@@ -424,10 +424,7 @@ def app_change_url(operation_logger, app, domain, path):
         # grab nginx errors
         # the "exit 0" is here to avoid check_output to fail because 'nginx -t'
         # will return != 0 since we are in a failed state
-        nginx_errors = subprocess.check_output("nginx -t; exit 0",
-                                               stderr=subprocess.STDOUT,
-                                               shell=True).rstrip()
-
+        nginx_errors = check_output("nginx -t; exit 0")
         raise YunohostError("app_change_url_failed_nginx_reload", nginx_errors=nginx_errors)
 
     logger.success(m18n.n("app_change_url_success",
@@ -747,7 +744,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
 
     # Retrieve arguments list for install script
     args_dict = {} if not args else \
-        dict(urlparse.parse_qsl(args, keep_blank_values=True))
+        dict(urllib.parse.parse_qsl(args, keep_blank_values=True))
     args_odict = _parse_args_from_manifest(manifest, 'install', args=args_dict)
 
     # Validate domain / path availability for webapps
@@ -766,7 +763,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
     # Also redact the % escaped version of the password that might appear in
     # the 'args' section of metadata (relevant for password with non-alphanumeric char)
     data_to_redact = [value[0] for value in args_odict.values() if value[1] == "password"]
-    data_to_redact += [urllib.quote(data) for data in data_to_redact if urllib.quote(data) != data]
+    data_to_redact += [urllib.parse.quote(data) for data in data_to_redact if urllib.parse.quote(data) != data]
     operation_logger.data_to_redact.extend(data_to_redact)
 
     operation_logger.related_to = [s for s in operation_logger.related_to if s[0] != "app"]
@@ -841,7 +838,7 @@ def app_install(operation_logger, app, label=None, args=None, no_remove_on_failu
         logger.error(m18n.n("app_install_failed", app=app_id, error=error))
         failure_message_with_debug_instructions = operation_logger.error(error)
     # Something wrong happened in Yunohost's code (most probably hook_exec)
-    except Exception as e:
+    except Exception:
         import traceback
         error = m18n.n('unexpected_error', error="\n" + traceback.format_exc())
         logger.error(m18n.n("app_install_failed", app=app_id, error=error))
@@ -1410,7 +1407,7 @@ def app_ssowatconf():
 
     write_to_json('/etc/ssowat/conf.json', conf_dict, sort_keys=True, indent=4)
 
-    from utils.legacy import translate_legacy_rules_in_ssowant_conf_json_persistent
+    from .utils.legacy import translate_legacy_rules_in_ssowant_conf_json_persistent
     translate_legacy_rules_in_ssowant_conf_json_persistent()
 
     logger.debug(m18n.n('ssowat_conf_generated'))
@@ -1460,7 +1457,7 @@ def app_action_run(operation_logger, app, action, args=None):
     action_declaration = actions[action]
 
     # Retrieve arguments list for install script
-    args_dict = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
+    args_dict = dict(urllib.parse.parse_qsl(args, keep_blank_values=True)) if args else {}
     args_odict = _parse_args_for_action(actions[action], args=args_dict)
 
     env_dict = _make_environment_for_app_script(app, args=args_odict, args_prefix="ACTION_")
@@ -1600,7 +1597,7 @@ def app_config_apply(operation_logger, app, args):
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
     }
-    args = dict(urlparse.parse_qsl(args, keep_blank_values=True)) if args else {}
+    args = dict(urllib.parse.parse_qsl(args, keep_blank_values=True)) if args else {}
 
     for tab in config_panel.get("panel", []):
         tab_id = tab["id"]  # this makes things easier to debug on crash
@@ -1819,8 +1816,7 @@ def _get_app_config_panel(app_id):
             "panel": [],
         }
 
-        panels = filter(lambda key_value: key_value[0] not in ("name", "version") and isinstance(key_value[1], OrderedDict),
-                        toml_config_panel.items())
+        panels = [key_value for key_value in toml_config_panel.items() if key_value[0] not in ("name", "version") and isinstance(key_value[1], OrderedDict)]
 
         for key, value in panels:
             panel = {
@@ -1829,8 +1825,7 @@ def _get_app_config_panel(app_id):
                 "sections": [],
             }
 
-            sections = filter(lambda k_v1: k_v1[0] not in ("name",) and isinstance(k_v1[1], OrderedDict),
-                              value.items())
+            sections = [k_v1 for k_v1 in value.items() if k_v1[0] not in ("name",) and isinstance(k_v1[1], OrderedDict)]
 
             for section_key, section_value in sections:
                 section = {
@@ -1839,8 +1834,7 @@ def _get_app_config_panel(app_id):
                     "options": [],
                 }
 
-                options = filter(lambda k_v: k_v[0] not in ("name",) and isinstance(k_v[1], OrderedDict),
-                                 section_value.items())
+                options = [k_v for k_v in section_value.items() if k_v[0] not in ("name",) and isinstance(k_v[1], OrderedDict)]
 
                 for option_key, option_value in options:
                     option = dict(option_value)
@@ -1878,7 +1872,7 @@ def _get_app_settings(app_id):
             settings = yaml.load(f)
         # If label contains unicode char, this may later trigger issues when building strings...
         # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
-        settings = {k: _encode_string(v) for k, v in settings.items()}
+        settings = {k: v for k, v in settings.items()}
         if app_id == settings['id']:
             return settings
     except (IOError, TypeError, KeyError):
@@ -2144,10 +2138,9 @@ def _get_git_last_commit_hash(repository, reference='HEAD'):
 
     """
     try:
-        commit = subprocess.check_output(
-            "git ls-remote --exit-code {0} {1} | awk '{{print $1}}'".format(
-                repository, reference),
-            shell=True)
+        cmd = "git ls-remote --exit-code {0} {1} | awk '{{print $1}}'"\
+            .format(repository, reference)
+        commit = check_output(cmd)
     except subprocess.CalledProcessError:
         logger.exception("unable to get last commit from %s", repository)
         raise ValueError("Unable to get last commit with git")
@@ -2305,21 +2298,12 @@ def _value_for_locale(values):
 
     for lang in [m18n.locale, m18n.default_locale]:
         try:
-            return _encode_string(values[lang])
+            return values[lang]
         except KeyError:
             continue
 
     # Fallback to first value
-    return _encode_string(values.values()[0])
-
-
-def _encode_string(value):
-    """
-    Return the string encoded in utf-8 if needed
-    """
-    if isinstance(value, unicode):
-        return value.encode('utf8')
-    return value
+    return list(values.values())[0]
 
 
 def _check_manifest_requirements(manifest, app_instance_name):
@@ -2410,6 +2394,10 @@ class YunoHostArgumentFormatParser(object):
 
         if parsed_question.ask is None:
             parsed_question.ask = "Enter value for '%s':" % parsed_question.name
+        
+        # Empty value is parsed as empty string
+        if parsed_question.default == "":
+            parsed_question.default = None
 
         return parsed_question
 
@@ -2524,10 +2512,10 @@ class BooleanArgumentParser(YunoHostArgumentFormatParser):
         if isinstance(question.value, bool):
             return 1 if question.value else 0
 
-        if str(question.value).lower() in ["1", "yes", "y"]:
+        if str(question.value).lower() in ["1", "yes", "y", "true"]:
             return 1
 
-        if str(question.value).lower() in ["0", "no", "n"]:
+        if str(question.value).lower() in ["0", "no", "n", "false"]:
             return 0
 
         raise YunohostError('app_argument_choice_invalid', name=question.name,
@@ -2928,7 +2916,7 @@ def _load_apps_catalog():
         try:
             apps_catalog_content = read_json(cache_file) if os.path.exists(cache_file) else None
         except Exception as e:
-            raise ("Unable to read cache for apps_catalog %s : %s" % (apps_catalog_id, str(e)))
+            raise YunohostError("Unable to read cache for apps_catalog %s : %s" % (cache_file, e), raw_msg=True)
 
         # Check that the version of the data matches version ....
         # ... otherwise it means we updated yunohost in the meantime
@@ -2978,7 +2966,7 @@ def is_true(arg):
     """
     if isinstance(arg, bool):
         return arg
-    elif isinstance(arg, basestring):
+    elif isinstance(arg, str):
         return arg.lower() in ['yes', 'true', 'on']
     else:
         logger.debug('arg should be a boolean or a string, got %r', arg)

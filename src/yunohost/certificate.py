@@ -385,7 +385,7 @@ def certificate_renew(domain_list, force=False, no_checks=False, email=False, st
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
         except Exception as e:
             import traceback
-            from StringIO import StringIO
+            from io import StringIO
             stack = StringIO()
             traceback.print_exc(file=stack)
             msg = "Certificate renewing for %s failed !" % (domain)
@@ -638,7 +638,7 @@ def _get_status(domain):
     cert_subject = cert.get_subject().CN
     cert_issuer = cert.get_issuer().CN
     organization_name = cert.get_issuer().O
-    valid_up_to = datetime.strptime(cert.get_notAfter(), "%Y%m%d%H%M%SZ")
+    valid_up_to = datetime.strptime(cert.get_notAfter().decode('utf-8'), "%Y%m%d%H%M%SZ")
     days_remaining = (valid_up_to - datetime.utcnow()).days
 
     if cert_issuer == _name_self_CA():
@@ -818,11 +818,11 @@ def _regen_dnsmasq_if_needed():
     for domainconf in domainsconf:
 
         # Look for the IP, it's in the lines with this format :
-        # address=/the.domain.tld/11.22.33.44
+        # host-record=the.domain.tld,11.22.33.44
         for line in open(domainconf).readlines():
-            if not line.startswith("address"):
+            if not line.startswith("host-record"):
                 continue
-            ip = line.strip().split("/")[2]
+            ip = line.strip().split(",")[-1]
 
             # Compared found IP to current IPv4 / IPv6
             #             IPv6                   IPv4

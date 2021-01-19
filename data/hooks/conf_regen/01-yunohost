@@ -115,7 +115,7 @@ do_post_regen() {
 }
 
 _update_services() {
-  python2 - << EOF
+  python3 - << EOF
 import yaml
 
 

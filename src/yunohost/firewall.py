@@ -336,7 +336,7 @@ def firewall_upnp(action='status', no_refresh=False):
 
     # Refresh port mapping using UPnP
     if not no_refresh:
-        upnpc = miniupnpc.UPnP()
+        upnpc = miniupnpc.UPnP(localport=1)
         upnpc.discoverdelay = 3000
 
         # Discover UPnP device(s)

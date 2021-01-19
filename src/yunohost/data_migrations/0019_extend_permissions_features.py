@@ -98,7 +98,7 @@ class MyMigration(Migration):
             # Migrate old settings
             migrate_legacy_permission_settings()
 
-        except Exception as e:
+        except Exception:
             logger.warn(m18n.n("migration_0019_migration_failed_trying_to_rollback"))
             os.system("systemctl stop slapd")
             os.system("rm -r /etc/ldap/slapd.d")  # To be sure that we don't keep some part of the old config

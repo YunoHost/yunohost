@@ -98,6 +98,11 @@ class BaseSystemDiagnoser(Diagnoser):
                        summary="diagnosis_package_installed_from_sury",
                        details=["diagnosis_package_installed_from_sury_details"])
 
+        if self.backports_in_sources_list():
+            yield dict(meta={"test": "backports_in_sources_list"},
+                       status="WARNING",
+                       summary="diagnosis_backports_in_sources_list")
+
     def bad_sury_packages(self):
 
         packages_to_check = ["openssl", "libssl1.1", "libssl-dev"]
@@ -110,6 +115,11 @@ class BaseSystemDiagnoser(Diagnoser):
             cmd = "LC_ALL=C apt policy %s 2>&1 | grep http -B1 | tr -d '*' | grep '+deb' | grep -v 'gbp' | head -n 1 | awk '{print $1}'" % package
             version_to_downgrade_to = check_output(cmd)
             yield (package, version_to_downgrade_to)
+
+    def backports_in_sources_list(self):
+
+        cmd = "grep -q -nr '^ *deb .*-backports' /etc/apt/sources.list*"
+        return os.system(cmd) == 0
 
     def is_vulnerable_to_meltdown(self):
         # meltdown CVE: https://security-tracker.debian.org/tracker/CVE-2017-5754
@@ -149,7 +159,8 @@ class BaseSystemDiagnoser(Diagnoser):
             # "missing some kernel info (see -v), accuracy might be reduced"
             # Dunno what to do about that but we probably don't want to harass
             # users with this warning ...
-            output, err = call.communicate()
+            output, _ = call.communicate()
+            output = output.decode()
             assert call.returncode in (0, 2, 3), "Return code: %s" % call.returncode
 
             # If there are multiple lines, sounds like there was some messages

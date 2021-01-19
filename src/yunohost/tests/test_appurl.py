@@ -1,7 +1,7 @@
 import pytest
 import os
 
-from conftest import get_test_apps_dir
+from .conftest import get_test_apps_dir
 
 from yunohost.utils.error import YunohostError
 from yunohost.app import app_install, app_remove, _normalize_domain_path

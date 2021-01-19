@@ -2,7 +2,7 @@ import os
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_json, write_to_json, read_yaml
+from moulinette.utils.filesystem import write_to_json, read_yaml
 
 from yunohost.user import user_list, user_group_create, user_group_update
 from yunohost.app import app_setting, _installed_apps, _get_app_settings, _set_app_settings
@@ -22,7 +22,7 @@ class SetupGroupPermissions():
         try:
             objects = ldap.search(target + ",dc=yunohost,dc=org")
         # ldap search will raise an exception if no corresponding object is found >.> ...
-        except Exception as e:
+        except Exception:
             logger.debug("%s does not exist, no need to delete it" % target)
             return
 
@@ -100,7 +100,7 @@ class SetupGroupPermissions():
 
             url = "/" if domain and path else None
             if permission:
-                known_users = user_list()["users"].keys()
+                known_users = list(user_list()["users"].keys())
                 allowed = [user for user in permission.split(',') if user in known_users]
             else:
                 allowed = ["all_users"]
@@ -211,10 +211,12 @@ def migrate_legacy_permission_settings(app=None):
 
 def translate_legacy_rules_in_ssowant_conf_json_persistent():
 
-    if not os.path.exists("/etc/ssowat/conf.json.persistent"):
+    persistent_file_name = "/etc/ssowat/conf.json.persistent"
+    if not os.path.exists(persistent_file_name):
         return
 
-    persistent = read_json("/etc/ssowat/conf.json.persistent")
+    # Ugly hack to try not to misarably fail migration
+    persistent = read_yaml(persistent_file_name)
 
     legacy_rules = [
         "skipped_urls",
@@ -235,7 +237,7 @@ def translate_legacy_rules_in_ssowant_conf_json_persistent():
     protected_urls = persistent.get("protected_urls", []) + ["re:" + r for r in persistent.get("protected_regex", [])]
     unprotected_urls = persistent.get("unprotected_urls", []) + ["re:" + r for r in persistent.get("unprotected_regex", [])]
 
-    known_users = user_list()["users"].keys()
+    known_users = list(user_list()["users"].keys())
 
     for legacy_rule in legacy_rules:
         if legacy_rule in persistent:
@@ -271,6 +273,6 @@ def translate_legacy_rules_in_ssowant_conf_json_persistent():
             "uris": protected_urls + persistent["permissions"].get("custom_protected", {}).get("uris", []),
         }
 
-    write_to_json("/etc/ssowat/conf.json.persistent", persistent, sort_keys=True, indent=4)
+    write_to_json(persistent_file_name, persistent, sort_keys=True, indent=4)
 
     logger.warning("Yunohost automatically translated some legacy rules in /etc/ssowat/conf.json.persistent to match the new permission system")

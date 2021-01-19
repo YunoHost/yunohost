@@ -2,7 +2,7 @@ import sys
 import pytest
 
 from mock import patch
-from StringIO import StringIO
+from io import StringIO
 from collections import OrderedDict
 
 from moulinette import msignals
@@ -257,6 +257,10 @@ def test_parse_args_in_yunohost_format_password_no_input_optional():
     questions = [{"name": "some_password", "type": "password", "optional": True, }]
     answers = {}
     expected_result = OrderedDict({"some_password": ("", "password")})
+
+    assert _parse_args_in_yunohost_format(answers, questions) == expected_result
+
+    questions = [{"name": "some_password", "type": "password", "optional": True, "default": ""}]
 
     assert _parse_args_in_yunohost_format(answers, questions) == expected_result
 
@@ -616,6 +620,18 @@ def test_parse_args_in_yunohost_format_boolean_all_yes():
         _parse_args_in_yunohost_format({"some_boolean": True}, questions) ==
         expected_result
     )
+    assert (
+        _parse_args_in_yunohost_format({"some_boolean": "True"}, questions) ==
+        expected_result
+    )
+    assert (
+        _parse_args_in_yunohost_format({"some_boolean": "TRUE"}, questions) ==
+        expected_result
+    )
+    assert (
+        _parse_args_in_yunohost_format({"some_boolean": "true"}, questions) ==
+        expected_result
+    )
 
 
 def test_parse_args_in_yunohost_format_boolean_all_no():
@@ -651,6 +667,18 @@ def test_parse_args_in_yunohost_format_boolean_all_no():
     )
     assert (
         _parse_args_in_yunohost_format({"some_boolean": False}, questions) ==
+        expected_result
+    )
+    assert (
+        _parse_args_in_yunohost_format({"some_boolean": "False"}, questions) ==
+        expected_result
+    )
+    assert (
+        _parse_args_in_yunohost_format({"some_boolean": "FALSE"}, questions) ==
+        expected_result
+    )
+    assert (
+        _parse_args_in_yunohost_format({"some_boolean": "false"}, questions) ==
         expected_result
     )
 

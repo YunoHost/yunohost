@@ -65,8 +65,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
 
     operations = {}
 
-    logs = filter(lambda x: x.endswith(METADATA_FILE_EXT),
-                  os.listdir(OPERATIONS_PATH))
+    logs = [x for x in os.listdir(OPERATIONS_PATH) if x.endswith(METADATA_FILE_EXT)]
     logs = list(reversed(sorted(logs)))
 
     if limit is not None:
@@ -257,7 +256,7 @@ def log_display(path, number=None, share=False, filter_irrelevant=False, with_su
                         except Exception:
                             continue
 
-                        if submetadata.get("parent") == base_filename:
+                        if submetadata and submetadata.get("parent") == base_filename:
                             yield {
                                 "name": filename[:-len(METADATA_FILE_EXT)],
                                 "description": _get_description_from_name(filename[:-len(METADATA_FILE_EXT)]),
@@ -337,7 +336,7 @@ def is_unit_operation(entities=['app', 'domain', 'group', 'service', 'user'],
                     entity_type = entity
 
                 if entity in kwargs and kwargs[entity] is not None:
-                    if isinstance(kwargs[entity], basestring):
+                    if isinstance(kwargs[entity], str):
                         related_to.append((entity_type, kwargs[entity]))
                     else:
                         for x in kwargs[entity]:
@@ -596,7 +595,7 @@ class OperationLogger(object):
         """
         if self.ended_at is not None or self.started_at is None:
             return
-        if error is not None and not isinstance(error, basestring):
+        if error is not None and not isinstance(error, str):
             error = str(error)
         self.ended_at = datetime.utcnow()
         self._error = error

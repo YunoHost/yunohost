@@ -4,7 +4,7 @@ import pytest
 import shutil
 import requests
 
-from conftest import message, raiseYunohostError, get_test_apps_dir
+from .conftest import message, raiseYunohostError, get_test_apps_dir
 
 from moulinette.utils.filesystem import mkdir
 
