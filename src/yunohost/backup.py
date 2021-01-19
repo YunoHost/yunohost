@@ -41,6 +41,7 @@ from moulinette import msignals, m18n, msettings
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
+from moulinette.utils.process import check_output
 
 from yunohost.app import (
     app_info, _is_installed,
@@ -176,11 +177,11 @@ class BackupRestoreTargetsManager(object):
             or (exclude and isinstance(exclude, list) and not include)
 
         if include:
-            return [target.encode("Utf-8") for target in self.targets[category]
+            return [target for target in self.targets[category]
                     if self.results[category][target] in include]
 
         if exclude:
-            return [target.encode("Utf-8") for target in self.targets[category]
+            return [target for target in self.targets[category]
                     if self.results[category][target] not in exclude]
 
 
@@ -599,7 +600,7 @@ class BackupManager():
                       for hook, infos in ret.items()
                       if any(result["state"] == "failed" for result in infos.values())}
 
-        if ret_succeed.keys() != []:
+        if list(ret_succeed.keys()) != []:
             self.system_return = ret_succeed
 
         # Add files from targets (which they put in the CSV) to the list of
@@ -882,7 +883,7 @@ class RestoreManager():
         End a restore operations by cleaning the working directory and
         regenerate ssowat conf (if some apps were restored)
         """
-        from permission import permission_sync_to_user
+        from .permission import permission_sync_to_user
 
         permission_sync_to_user()
 
@@ -1643,7 +1644,7 @@ class BackupMethod(object):
                 try:
                     subprocess.check_call(["mount", "--rbind", src, dest])
                     subprocess.check_call(["mount", "-o", "remount,ro,bind", dest])
-                except Exception as e:
+                except Exception:
                     logger.warning(m18n.n("backup_couldnt_bind", src=src, dest=dest))
                     # To check if dest is mounted, use /proc/mounts that
                     # escape spaces as \040
@@ -2165,7 +2166,7 @@ def backup_list(with_info=False, human_readable=False):
                 d[archive] = backup_info(archive, human_readable=human_readable)
             except YunohostError as e:
                 logger.warning(str(e))
-            except Exception as e:
+            except Exception:
                 import traceback
                 logger.warning("Could not check infos for archive %s: %s" % (archive, '\n' + traceback.format_exc()))
 
@@ -2386,7 +2387,7 @@ def _recursive_umount(directory):
     Args:
         directory -- a directory path
     """
-    mount_lines = subprocess.check_output("mount").split("\n")
+    mount_lines = check_output("mount").split("\n")
 
     points_to_umount = [line.split(" ")[2]
                         for line in mount_lines
@@ -2412,8 +2413,8 @@ def disk_usage(path):
     # We don't do this in python with os.stat because we don't want
     # to follow symlinks
 
-    du_output = subprocess.check_output(['du', '-sb', path])
-    return int(du_output.split()[0].decode('utf-8'))
+    du_output = check_output(['du', '-sb', path], shell=False)
+    return int(du_output.split()[0])
 
 
 def binary_to_human(n, customary=False):

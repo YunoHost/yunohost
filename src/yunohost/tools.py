@@ -303,7 +303,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         '/home/yunohost.app'
     ]
 
-    for folder in filter(lambda x: not os.path.exists(x), folders_to_create):
+    for folder in [x for x in folders_to_create if not os.path.exists(x)]:
         os.makedirs(folder)
 
     # Change folders permissions
@@ -953,7 +953,7 @@ def _get_migrations_list():
     # (in particular, pending migrations / not already ran are not listed
     states = tools_migrations_state()["migrations"]
 
-    for migration_file in filter(lambda x: re.match(r"^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
+    for migration_file in [x for x in os.listdir(migrations_path) if re.match(r"^\d+_[a-zA-Z0-9_]+\.py$", x)]:
         m = _load_migration(migration_file)
         m.state = states.get(m.id, "pending")
         migrations.append(m)
@@ -972,7 +972,7 @@ def _get_migration_by_name(migration_name):
         raise AssertionError("Unable to find migration with name %s" % migration_name)
 
     migrations_path = data_migrations.__path__[0]
-    migrations_found = filter(lambda x: re.match(r"^\d+_%s\.py$" % migration_name, x), os.listdir(migrations_path))
+    migrations_found = [x for x in os.listdir(migrations_path) if re.match(r"^\d+_%s\.py$" % migration_name, x)]
 
     assert len(migrations_found) == 1, "Unable to find migration with name %s" % migration_name
 

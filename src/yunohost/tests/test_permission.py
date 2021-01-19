@@ -6,7 +6,7 @@ import os
 import json
 import shutil
 
-from conftest import message, raiseYunohostError, get_test_apps_dir
+from .conftest import message, raiseYunohostError, get_test_apps_dir
 
 from yunohost.app import app_install, app_upgrade, app_remove, app_change_url, app_map, _installed_apps, APPS_SETTING_PATH, _set_app_settings, _get_app_settings
 from yunohost.user import user_list, user_create, user_delete, \

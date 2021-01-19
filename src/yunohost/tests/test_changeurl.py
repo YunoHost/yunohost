@@ -3,7 +3,7 @@ import time
 import requests
 import os
 
-from conftest import get_test_apps_dir
+from .conftest import get_test_apps_dir
 
 from yunohost.app import app_install, app_change_url, app_remove, app_map
 from yunohost.domain import _get_maindomain

@@ -159,7 +159,8 @@ class BaseSystemDiagnoser(Diagnoser):
             # "missing some kernel info (see -v), accuracy might be reduced"
             # Dunno what to do about that but we probably don't want to harass
             # users with this warning ...
-            output, err = call.communicate()
+            output, _ = call.communicate()
+            output = output.decode()
             assert call.returncode in (0, 2, 3), "Return code: %s" % call.returncode
 
             # If there are multiple lines, sounds like there was some messages

@@ -182,7 +182,8 @@ def hook_list(action, list_by='name', show_info=False):
     def _append_folder(d, folder):
         # Iterate over and add hook from a folder
         for f in os.listdir(folder + action):
-            if f[0] == '.' or f[-1] == '~' or f.endswith(".pyc"):
+            if f[0] == '.' or f[-1] == '~' or f.endswith(".pyc") \
+               or (f.startswith("__") and f.endswith("__")):
                 continue
             path = '%s%s/%s' % (folder, action, f)
             priority, name = _extract_filename_parts(f)
@@ -387,9 +388,6 @@ def _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, logge
 
     env['YNH_INTERFACE'] = msettings.get('interface')
 
-    stdinfo = os.path.join(tempfile.mkdtemp(), "stdinfo")
-    env['YNH_STDINFO'] = stdinfo
-
     stdreturn = os.path.join(tempfile.mkdtemp(), "stdreturn")
     with open(stdreturn, 'w') as f:
         f.write('')
@@ -415,10 +413,7 @@ def _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, logge
 
     logger.debug("Executing command '%s'" % ' '.join(command))
 
-    returncode = call_async_output(
-        command, loggers, shell=False, cwd=chdir,
-        stdinfo=stdinfo
-    )
+    returncode = call_async_output(command, loggers, shell=False, cwd=chdir)
 
     raw_content = None
     try:

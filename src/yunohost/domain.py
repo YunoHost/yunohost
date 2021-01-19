@@ -62,18 +62,15 @@ def domain_list(exclude_subdomains=False):
 
         result_list.append(domain)
 
-    def cmp_domain(domain1, domain2):
+    def cmp_domain(domain):
         # Keep the main part of the domain and the extension together
         # eg: this.is.an.example.com -> ['example.com', 'an', 'is', 'this']
-        domain1 = domain1.split('.')
-        domain2 = domain2.split('.')
-        domain1[-1] = domain1[-2] + domain1.pop()
-        domain2[-1] = domain2[-2] + domain2.pop()
-        domain1 = list(reversed(domain1))
-        domain2 = list(reversed(domain2))
-        return cmp(domain1, domain2)
+        domain = domain.split('.')
+        domain[-1] = domain[-2] + domain.pop()
+        domain = list(reversed(domain))
+        return domain
 
-    result_list = sorted(result_list, cmp_domain)
+    result_list = sorted(result_list, key=cmp_domain)
 
     return {
         'domains': result_list,

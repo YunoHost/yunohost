@@ -21,7 +21,6 @@
 
 import os
 import yaml
-import subprocess
 import shutil
 import hashlib
 
@@ -30,6 +29,7 @@ from datetime import datetime
 
 from moulinette import m18n
 from moulinette.utils import log, filesystem
+from moulinette.utils.process import check_output
 
 from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation
@@ -654,10 +654,10 @@ def manually_modified_files():
 def manually_modified_files_compared_to_debian_default(ignore_handled_by_regenconf=False):
 
     # from https://serverfault.com/a/90401
-    files = subprocess.check_output("dpkg-query -W -f='${Conffiles}\n' '*' \
-                                   | awk 'OFS=\"  \"{print $2,$1}' \
-                                   | md5sum -c 2>/dev/null \
-                                   | awk -F': ' '$2 !~ /OK/{print $1}'", shell=True)
+    files = check_output("dpkg-query -W -f='${Conffiles}\n' '*' \
+                        | awk 'OFS=\"  \"{print $2,$1}' \
+                        | md5sum -c 2>/dev/null \
+                        | awk -F': ' '$2 !~ /OK/{print $1}'")
     files = files.strip().split("\n")
 
     if ignore_handled_by_regenconf:

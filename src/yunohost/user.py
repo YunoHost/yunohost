@@ -35,6 +35,7 @@ import copy
 
 from moulinette import msignals, msettings, m18n
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.process import check_output
 
 from yunohost.utils.error import YunohostError
 from yunohost.service import service_status
@@ -473,8 +474,7 @@ def user_info(username):
         else:
             try:
                 cmd = 'doveadm -f flow quota get -u %s' % user['uid'][0]
-                cmd_result = subprocess.check_output(cmd, stderr=subprocess.STDOUT,
-                                                     shell=True)
+                cmd_result = check_output(cmd)
             except Exception as e:
                 cmd_result = ""
                 logger.warning("Failed to fetch quota info ... : %s " % str(e))
@@ -546,7 +546,7 @@ def user_group_list(short=False, full=False, include_primary_groups=True):
             groups[name]["permissions"] = [_ldap_path_extract(p, "cn") for p in infos.get("permission", [])]
 
     if short:
-        groups = groups.keys()
+        groups = list(groups.keys())
 
     return {'groups': groups}
 
@@ -631,7 +631,7 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface
 
-    existing_groups = user_group_list()['groups'].keys()
+    existing_groups = list(user_group_list()['groups'].keys())
     if groupname not in existing_groups:
         raise YunohostError('group_unknown', group=groupname)
 
@@ -639,7 +639,7 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     # without the force option...
     #
     # We also can't delete "all_users" because that's a special group...
-    existing_users = user_list()['users'].keys()
+    existing_users = list(user_list()['users'].keys())
     undeletable_groups = existing_users + ["all_users", "visitors"]
     if groupname in undeletable_groups and not force:
         raise YunohostError('group_cannot_be_deleted', group=groupname)
@@ -675,7 +675,7 @@ def user_group_update(operation_logger, groupname, add=None, remove=None, force=
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface
 
-    existing_users = user_list()['users'].keys()
+    existing_users = list(user_list()['users'].keys())
 
     # Refuse to edit a primary group of a user (e.g. group 'sam' related to user 'sam')
     # Those kind of group should only ever contain the user (e.g. sam) and only this one.

@@ -35,6 +35,7 @@ from datetime import datetime
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
+from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, append_to_file, write_to_file
 
@@ -358,7 +359,7 @@ def _get_and_format_service_status(service, infos):
         # that mean that we don't have a translation for this string
         # that's the only way to test for that for now
         # if we don't have it, uses the one provided by systemd
-        if description.decode('utf-8') == translation_key:
+        if description == translation_key:
             description = str(raw_status.get("Description", ""))
 
     output = {
@@ -489,7 +490,7 @@ def service_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
             raise YunohostError('service_unknown', service=name)
 
     if names is []:
-        names = services.keys()
+        names = list(services.keys())
 
     logger.warning(m18n.n("service_regen_conf_is_deprecated"))
 
@@ -563,8 +564,7 @@ def _give_lock(action, service, p):
     while son_PID == 0 and p.poll() is None:
         # Call systemctl to get the PID
         # Output of the command is e.g. ControlPID=1234
-        son_PID = subprocess.check_output(cmd_get_son_PID.split()) \
-                            .strip().split("=")[1]
+        son_PID = check_output(cmd_get_son_PID).split("=")[1]
         son_PID = int(son_PID)
         time.sleep(1)
 
@@ -599,7 +599,7 @@ def _get_services():
 
     # some services are marked as None to remove them from YunoHost
     # filter this
-    for key, value in services.items():
+    for key, value in list(services.items()):
         if value is None:
             del services[key]
 
@@ -720,7 +720,7 @@ def _get_journalctl_logs(service, number="all"):
     services = _get_services()
     systemd_service = services.get(service, {}).get("actual_systemd_service", service)
     try:
-        return subprocess.check_output("journalctl --no-hostname --no-pager -u {0} -n{1}".format(systemd_service, number), shell=True)
+        return check_output("journalctl --no-hostname --no-pager -u {0} -n{1}".format(systemd_service, number))
     except:
         import traceback
         return "error while get services logs from journalctl:\n%s" % traceback.format_exc()

@@ -3,7 +3,7 @@ import os
 import shutil
 import subprocess
 
-from conftest import message, raiseYunohostError, get_test_apps_dir
+from .conftest import message, raiseYunohostError, get_test_apps_dir
 
 from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed
@@ -22,8 +22,6 @@ def setup_function(function):
 
     global maindomain
     maindomain = _get_maindomain()
-
-    print ""
 
     assert backup_test_dependencies_are_met()
 
@@ -150,7 +148,7 @@ def clean_tmp_backup_directory():
     if tmp_backup_directory_is_empty():
         return
 
-    mount_lines = subprocess.check_output("mount").split("\n")
+    mount_lines = subprocess.check_output("mount").decode().split("\n")
 
     points_to_umount = [line.split(" ")[2]
                         for line in mount_lines
@@ -638,6 +636,7 @@ def test_backup_binds_are_readonly(mocker, monkeypatch):
         confssh = os.path.join(self.work_dir, "conf/ssh")
         output = subprocess.check_output("touch %s/test 2>&1 || true" % confssh,
                                          shell=True, env={'LANG': 'en_US.UTF-8'})
+        output = output.decode()
 
         assert "Read-only file system" in output
 
