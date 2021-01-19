@@ -218,7 +218,13 @@ def dyndns_update(operation_logger, dyn_host="dyndns.yunohost.org", domain=None,
 
     def resolve_domain(domain, rdtype):
 
-        ok, result = dig(domain, rdtype, resolvers=[dyn_host])
+        # FIXME make this work for IPv6-only hosts too..
+        ok, result = dig(dyn_host, "A")
+        dyn_host_ip = result[0] if ok == "ok" and len(result) else None
+        if not dyn_host_ip:
+            raise YunohostError("Failed to resolve %s" % dyn_host)
+     
+        ok, result = dig(domain, rdtype, resolvers=[dyn_host_ip])
         if ok == "ok":
             return result[0] if len(result) else None
         elif result[0] == "Timeout":
