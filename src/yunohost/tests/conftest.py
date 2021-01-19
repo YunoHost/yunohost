@@ -3,7 +3,7 @@ import pytest
 import sys
 
 import moulinette
-from moulinette import m18n
+from moulinette import m18n, msettings
 from yunohost.utils.error import YunohostError
 from contextlib import contextmanager
 sys.path.append("..")
@@ -78,3 +78,4 @@ def pytest_cmdline_main(config):
     sys.path.insert(0, "/usr/lib/moulinette/")
     import yunohost
     yunohost.init(debug=config.option.yunodebug)
+    msettings["interface"] = "test"

@@ -212,7 +212,7 @@ def hook_list(action, list_by='name', show_info=False):
     return {'hooks': result}
 
 
-def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
+def hook_callback(action, hooks=[], args=None, chdir=None,
                   env=None, pre_callback=None, post_callback=None):
     """
     Execute all scripts binded to an action
@@ -221,7 +221,6 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
         action -- Action name
         hooks -- List of hooks names to execute
         args -- Ordered list of arguments to pass to the scripts
-        no_trace -- Do not print each command that will be executed
         chdir -- The directory from where the scripts will be executed
         env -- Dictionnary of environment variables to export
         pre_callback -- An object to call before each script execution with
@@ -282,7 +281,7 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
                 hook_args = pre_callback(name=name, priority=priority,
                                          path=path, args=args)
                 hook_return = hook_exec(path, args=hook_args, chdir=chdir, env=env,
-                                        no_trace=no_trace, raise_on_error=True)[1]
+                                        raise_on_error=True)[1]
             except YunohostError as e:
                 state = 'failed'
                 hook_return = {}
@@ -298,8 +297,8 @@ def hook_callback(action, hooks=[], args=None, no_trace=False, chdir=None,
     return result
 
 
-def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
-              chdir=None, env=None, user="root", return_format="json"):
+def hook_exec(path, args=None, raise_on_error=False,
+              chdir=None, env=None, return_format="json"):
     """
     Execute hook from a file with arguments
 
@@ -307,11 +306,8 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
         path -- Path of the script to execute
         args -- Ordered list of arguments to pass to the script
         raise_on_error -- Raise if the script returns a non-zero exit code
-        no_trace -- Do not print each command that will be executed
         chdir -- The directory from where the script will be executed
         env -- Dictionnary of environment variables to export
-        user -- User with which to run the command
-
     """
 
     # Validate hook path
@@ -350,7 +346,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     if hook_type == 'text/x-python':
         returncode, returndata = _hook_exec_python(path, args, env, loggers)
     else:
-        returncode, returndata = _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, loggers)
+        returncode, returndata = _hook_exec_bash(path, args, chdir, env, return_format, loggers)
 
     # Check and return process' return code
     if returncode is None:
@@ -365,7 +361,7 @@ def hook_exec(path, args=None, raise_on_error=False, no_trace=False,
     return returncode, returndata
 
 
-def _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, loggers):
+def _hook_exec_bash(path, args, chdir, env, return_format, loggers):
 
     from moulinette.utils.process import call_async_output
 
@@ -393,27 +389,20 @@ def _hook_exec_bash(path, args, no_trace, chdir, env, user, return_format, logge
         f.write('')
     env['YNH_STDRETURN'] = stdreturn
 
-    # Construct command to execute
-    if user == "root":
-        command = ['sh', '-c']
-    else:
-        command = ['sudo', '-n', '-u', user, '-H', 'sh', '-c']
+    # use xtrace on fd 7 which is redirected to stdout
+    env['BASH_XTRACEFD'] = "7"
+    cmd = '/bin/bash -x "{script}" {args} 7>&1'
+    cmd = cmd.format(script=cmd_script, args=cmd_args)
 
-    if no_trace:
-        cmd = '/bin/bash "{script}" {args}'
-    else:
-        # use xtrace on fd 7 which is redirected to stdout
-        cmd = 'BASH_XTRACEFD=7 /bin/bash -x "{script}" {args} 7>&1'
+    logger.debug("Executing command '%s'" % cmd)
 
-    # prepend environment variables
-    cmd = '{0} {1}'.format(
-        ' '.join(['{0}={1}'.format(k, shell_quote(v))
-                  for k, v in env.items()]), cmd)
-    command.append(cmd.format(script=cmd_script, args=cmd_args))
+    _env = os.environ.copy()
+    _env.update(env)
 
-    logger.debug("Executing command '%s'" % ' '.join(command))
-
-    returncode = call_async_output(command, loggers, shell=False, cwd=chdir)
+    returncode = call_async_output(
+        cmd, loggers, shell=False, cwd=chdir,
+        env=_env
+    )
 
     raw_content = None
     try:
