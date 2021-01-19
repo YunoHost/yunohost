@@ -1900,8 +1900,8 @@ def _get_app_settings(app_id):
         # So we yolofix the settings if such an issue is found >_>
         # A simple call  to `yunohost app list` (which happens quite often) should be enough
         # to migrate all app settings ... so this can probably be removed once we're past Bullseye...
-        if settings.get("path", "").endswith("/"):
-            settings["path"] = settings["path"].rstrip("/")
+        if settings.get("path", "").endswith("/") or not settings.get("path", "/").startswith("/"):
+            settings["path"] = "/" + settings["path"].strip("/")
             _set_app_settings(app_id, settings)
 
         if app_id == settings['id']:
