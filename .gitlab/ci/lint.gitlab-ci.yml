@@ -34,6 +34,7 @@ format-run:
     - apt-get update -y && apt-get install git hub -y
     - git config --global user.email "yunohost@yunohost.org"
     - git config --global user.name "$GITHUB_USER"
+    - git remote add github "https://github.com/YunoHost/yunohost.git"
   script:
     - hub checkout -b "ci-format-${CI_COMMIT_REF_NAME}" || true
     - tox -e py37-black-run
