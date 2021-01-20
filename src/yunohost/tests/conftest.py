@@ -6,6 +6,7 @@ import moulinette
 from moulinette import m18n, msettings
 from yunohost.utils.error import YunohostError
 from contextlib import contextmanager
+
 sys.path.append("..")
 
 
@@ -43,6 +44,7 @@ def raiseYunohostError(mocker, key, **kwargs):
 def pytest_addoption(parser):
     parser.addoption("--yunodebug", action="store_true", default=False)
 
+
 #
 # Tweak translator to raise exceptions if string keys are not defined       #
 #
@@ -77,5 +79,6 @@ def pytest_cmdline_main(config):
 
     sys.path.insert(0, "/usr/lib/moulinette/")
     import yunohost
+
     yunohost.init(debug=config.option.yunodebug)
     msettings["interface"] = "test"

@@ -17,17 +17,23 @@ class RegenconfDiagnoser(Diagnoser):
         regenconf_modified_files = list(self.manually_modified_files())
 
         if not regenconf_modified_files:
-            yield dict(meta={"test": "regenconf"},
-                       status="SUCCESS",
-                       summary="diagnosis_regenconf_allgood"
-                       )
+            yield dict(
+                meta={"test": "regenconf"},
+                status="SUCCESS",
+                summary="diagnosis_regenconf_allgood",
+            )
         else:
             for f in regenconf_modified_files:
-                yield dict(meta={"test": "regenconf", "category": f['category'], "file": f['path']},
-                           status="WARNING",
-                           summary="diagnosis_regenconf_manually_modified",
-                           details=["diagnosis_regenconf_manually_modified_details"]
-                           )
+                yield dict(
+                    meta={
+                        "test": "regenconf",
+                        "category": f["category"],
+                        "file": f["path"],
+                    },
+                    status="WARNING",
+                    summary="diagnosis_regenconf_manually_modified",
+                    details=["diagnosis_regenconf_manually_modified_details"],
+                )
 
     def manually_modified_files(self):
 
