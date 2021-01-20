@@ -42,6 +42,6 @@ format-run:
     - tox -e py37-black-run
     - hub commit -am "[CI] Format code" || true
     - hub pull-request -m "[CI] Format code" -b Yunohost:dev -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
-#  only:
-#      refs:
-#        - dev
+  only:
+      refs:
+        - dev
