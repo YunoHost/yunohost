@@ -1,3 +1,9 @@
+yunohost (4.2) unstable; urgency=low
+
+  - Placeholder for 4.2 to satisfy CI / debian build during dev
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Jan 2021 05:19:58 +0100
+
 yunohost (4.1.6) stable; urgency=low
 
   - [fix] Make dyndns update more resilient to ns0.yunohost.org being down ([#1140](https://github.com/yunohost/yunohost/pull/1140))
