@@ -60,7 +60,7 @@ def main():
         # Getting the dictionary containning what actions are possible per domain
         actionsmap = ordered_yaml_load(actionsmap)
 
-        for i in actionsmap.keys():
+        for i in list(actionsmap.keys()):
             if i.startswith("_"):
                 del actionsmap[i]
 
@@ -78,7 +78,7 @@ def main():
                 output.write(result)
         else:
             with gzip.open(output_path, mode="w", compresslevel=9) as output:
-                output.write(result)
+                output.write(result.encode())
 
 
 if __name__ == '__main__':
