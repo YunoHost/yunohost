@@ -1873,6 +1873,18 @@ def _get_app_settings(app_id):
         # If label contains unicode char, this may later trigger issues when building strings...
         # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
         settings = {k: v for k, v in settings.items()}
+
+        # Stupid fix for legacy bullshit
+        # In the past, some setups did not have proper normalization for app domain/path
+        # Meaning some setups (as of January 2021) still have path=/foobar/ (with a trailing slash)
+        # resulting in stupid issue unless apps using ynh_app_normalize_path_stuff
+        # So we yolofix the settings if such an issue is found >_>
+        # A simple call  to `yunohost app list` (which happens quite often) should be enough
+        # to migrate all app settings ... so this can probably be removed once we're past Bullseye...
+        if settings.get("path") != "/" and (settings.get("path", "").endswith("/") or not settings.get("path", "/").startswith("/")):
+            settings["path"] = "/" + settings["path"].strip("/")
+            _set_app_settings(app_id, settings)
+
         if app_id == settings['id']:
             return settings
     except (IOError, TypeError, KeyError):
@@ -2394,7 +2406,7 @@ class YunoHostArgumentFormatParser(object):
 
         if parsed_question.ask is None:
             parsed_question.ask = "Enter value for '%s':" % parsed_question.name
-        
+
         # Empty value is parsed as empty string
         if parsed_question.default == "":
             parsed_question.default = None
