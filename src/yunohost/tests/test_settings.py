@@ -4,9 +4,17 @@ import pytest
 
 from yunohost.utils.error import YunohostError
 
-from yunohost.settings import settings_get, settings_list, _get_settings, \
-    settings_set, settings_reset, settings_reset_all, \
-    SETTINGS_PATH_OTHER_LOCATION, SETTINGS_PATH, DEFAULTS
+from yunohost.settings import (
+    settings_get,
+    settings_list,
+    _get_settings,
+    settings_set,
+    settings_reset,
+    settings_reset_all,
+    SETTINGS_PATH_OTHER_LOCATION,
+    SETTINGS_PATH,
+    DEFAULTS,
+)
 
 DEFAULTS["example.bool"] = {"type": "bool", "default": True}
 DEFAULTS["example.int"] = {"type": "int", "default": 42}
@@ -27,7 +35,12 @@ def test_settings_get_bool():
 
 
 def test_settings_get_full_bool():
-    assert settings_get("example.bool", True) == {"type": "bool", "value": True, "default": True, "description": "Dummy bool setting"}
+    assert settings_get("example.bool", True) == {
+        "type": "bool",
+        "value": True,
+        "default": True,
+        "description": "Dummy bool setting",
+    }
 
 
 def test_settings_get_int():
@@ -35,7 +48,12 @@ def test_settings_get_int():
 
 
 def test_settings_get_full_int():
-    assert settings_get("example.int", True) == {"type": "int", "value": 42, "default": 42, "description": "Dummy int setting"}
+    assert settings_get("example.int", True) == {
+        "type": "int",
+        "value": 42,
+        "default": 42,
+        "description": "Dummy int setting",
+    }
 
 
 def test_settings_get_string():
@@ -43,7 +61,12 @@ def test_settings_get_string():
 
 
 def test_settings_get_full_string():
-    assert settings_get("example.string", True) == {"type": "string", "value": "yolo swag", "default": "yolo swag", "description": "Dummy string setting"}
+    assert settings_get("example.string", True) == {
+        "type": "string",
+        "value": "yolo swag",
+        "default": "yolo swag",
+        "description": "Dummy string setting",
+    }
 
 
 def test_settings_get_enum():
@@ -51,7 +74,13 @@ def test_settings_get_enum():
 
 
 def test_settings_get_full_enum():
-    assert settings_get("example.enum", True) == {"type": "enum", "value": "a", "default": "a", "description": "Dummy enum setting", "choices": ["a", "b", "c"]}
+    assert settings_get("example.enum", True) == {
+        "type": "enum",
+        "value": "a",
+        "default": "a",
+        "description": "Dummy enum setting",
+        "choices": ["a", "b", "c"],
+    }
 
 
 def test_settings_get_doesnt_exists():
@@ -120,7 +149,12 @@ def test_settings_set_bad_value_enum():
 
 def test_settings_list_modified():
     settings_set("example.int", 21)
-    assert settings_list()["example.int"] == {'default': 42, 'description': 'Dummy int setting', 'type': 'int', 'value': 21}
+    assert settings_list()["example.int"] == {
+        "default": 42,
+        "description": "Dummy int setting",
+        "type": "int",
+        "value": 21,
+    }
 
 
 def test_reset():

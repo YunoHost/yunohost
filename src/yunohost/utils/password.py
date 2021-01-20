@@ -25,10 +25,18 @@ import json
 import string
 import subprocess
 
-SMALL_PWD_LIST = ["yunohost", "olinuxino", "olinux", "raspberry", "admin",
-                  "root", "test", "rpi"]
+SMALL_PWD_LIST = [
+    "yunohost",
+    "olinuxino",
+    "olinux",
+    "raspberry",
+    "admin",
+    "root",
+    "test",
+    "rpi",
+]
 
-MOST_USED_PASSWORDS = '/usr/share/yunohost/other/password/100000-most-used.txt'
+MOST_USED_PASSWORDS = "/usr/share/yunohost/other/password/100000-most-used.txt"
 
 # Length, digits, lowers, uppers, others
 STRENGTH_LEVELS = [
@@ -44,7 +52,6 @@ def assert_password_is_strong_enough(profile, password):
 
 
 class PasswordValidator(object):
-
     def __init__(self, profile):
         """
         Initialize a password validator.
@@ -60,7 +67,7 @@ class PasswordValidator(object):
             # from settings.py because this file is also meant to be
             # use as a script by ssowat.
             # (or at least that's my understanding -- Alex)
-            settings = json.load(open('/etc/yunohost/settings.json', "r"))
+            settings = json.load(open("/etc/yunohost/settings.json", "r"))
             setting_key = "security.password." + profile + ".strength"
             self.validation_strength = int(settings[setting_key]["value"])
         except Exception:
@@ -173,20 +180,21 @@ class PasswordValidator(object):
         # stdin to avoid it being shown in ps -ef --forest...
         command = "grep -q -F -f - %s" % MOST_USED_PASSWORDS
         p = subprocess.Popen(command.split(), stdin=subprocess.PIPE)
-        p.communicate(input=password.encode('utf-8'))
+        p.communicate(input=password.encode("utf-8"))
         return not bool(p.returncode)
 
 
 # This file is also meant to be used as an executable by
 # SSOwat to validate password from the portal when an user
 # change its password.
-if __name__ == '__main__':
+if __name__ == "__main__":
     if len(sys.argv) < 2:
         import getpass
+
         pwd = getpass.getpass("")
         # print("usage: password.py PASSWORD")
     else:
         pwd = sys.argv[1]
-    status, msg = PasswordValidator('user').validation_summary(pwd)
+    status, msg = PasswordValidator("user").validation_summary(pwd)
     print(msg)
     sys.exit(0)

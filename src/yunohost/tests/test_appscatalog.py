@@ -9,18 +9,20 @@ from moulinette import m18n
 from moulinette.utils.filesystem import read_json, write_to_json, write_to_yaml
 
 from yunohost.utils.error import YunohostError
-from yunohost.app import (_initialize_apps_catalog_system,
-                          _read_apps_catalog_list,
-                          _update_apps_catalog,
-                          _actual_apps_catalog_api_url,
-                          _load_apps_catalog,
-                          app_catalog,
-                          logger,
-                          APPS_CATALOG_CACHE,
-                          APPS_CATALOG_CONF,
-                          APPS_CATALOG_CRON_PATH,
-                          APPS_CATALOG_API_VERSION,
-                          APPS_CATALOG_DEFAULT_URL)
+from yunohost.app import (
+    _initialize_apps_catalog_system,
+    _read_apps_catalog_list,
+    _update_apps_catalog,
+    _actual_apps_catalog_api_url,
+    _load_apps_catalog,
+    app_catalog,
+    logger,
+    APPS_CATALOG_CACHE,
+    APPS_CATALOG_CONF,
+    APPS_CATALOG_CRON_PATH,
+    APPS_CATALOG_API_VERSION,
+    APPS_CATALOG_DEFAULT_URL,
+)
 
 APPS_CATALOG_DEFAULT_URL_FULL = _actual_apps_catalog_api_url(APPS_CATALOG_DEFAULT_URL)
 CRON_FOLDER, CRON_NAME = APPS_CATALOG_CRON_PATH.rsplit("/", 1)
@@ -69,6 +71,7 @@ def cron_job_is_there():
     r = os.system("run-parts -v --test %s | grep %s" % (CRON_FOLDER, CRON_NAME))
     return r == 0
 
+
 #
 # ################################################
 #
@@ -86,7 +89,7 @@ def test_apps_catalog_init(mocker):
     # Initialize ...
     mocker.spy(m18n, "n")
     _initialize_apps_catalog_system()
-    m18n.n.assert_any_call('apps_catalog_init_success')
+    m18n.n.assert_any_call("apps_catalog_init_success")
 
     # Then there's a cron enabled
     assert cron_job_is_there()
@@ -159,8 +162,7 @@ def test_apps_catalog_update_404(mocker):
     with requests_mock.Mocker() as m:
 
         # 404 error
-        m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL,
-                       status_code=404)
+        m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, status_code=404)
 
         with pytest.raises(YunohostError):
             mocker.spy(m18n, "n")
@@ -176,8 +178,9 @@ def test_apps_catalog_update_timeout(mocker):
     with requests_mock.Mocker() as m:
 
         # Timeout
-        m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL,
-                       exc=requests.exceptions.ConnectTimeout)
+        m.register_uri(
+            "GET", APPS_CATALOG_DEFAULT_URL_FULL, exc=requests.exceptions.ConnectTimeout
+        )
 
         with pytest.raises(YunohostError):
             mocker.spy(m18n, "n")
@@ -193,8 +196,9 @@ def test_apps_catalog_update_sslerror(mocker):
     with requests_mock.Mocker() as m:
 
         # SSL error
-        m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL,
-                       exc=requests.exceptions.SSLError)
+        m.register_uri(
+            "GET", APPS_CATALOG_DEFAULT_URL_FULL, exc=requests.exceptions.SSLError
+        )
 
         with pytest.raises(YunohostError):
             mocker.spy(m18n, "n")
@@ -210,8 +214,9 @@ def test_apps_catalog_update_corrupted(mocker):
     with requests_mock.Mocker() as m:
 
         # Corrupted json
-        m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL,
-                       text=DUMMY_APP_CATALOG[:-2])
+        m.register_uri(
+            "GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG[:-2]
+        )
 
         with pytest.raises(YunohostError):
             mocker.spy(m18n, "n")
@@ -252,8 +257,13 @@ def test_apps_catalog_load_with_conflicts_between_lists(mocker):
     # Initialize ...
     _initialize_apps_catalog_system()
 
-    conf = [{"id": "default", "url": APPS_CATALOG_DEFAULT_URL},
-            {"id": "default2", "url": APPS_CATALOG_DEFAULT_URL.replace("yunohost.org", "yolohost.org")}]
+    conf = [
+        {"id": "default", "url": APPS_CATALOG_DEFAULT_URL},
+        {
+            "id": "default2",
+            "url": APPS_CATALOG_DEFAULT_URL.replace("yunohost.org", "yolohost.org"),
+        },
+    ]
 
     write_to_yaml(APPS_CATALOG_CONF, conf)
 
@@ -263,7 +273,11 @@ def test_apps_catalog_load_with_conflicts_between_lists(mocker):
         # Mock the server response with a dummy apps catalog
         # + the same apps catalog for the second list
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
-        m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL.replace("yunohost.org", "yolohost.org"), text=DUMMY_APP_CATALOG)
+        m.register_uri(
+            "GET",
+            APPS_CATALOG_DEFAULT_URL_FULL.replace("yunohost.org", "yolohost.org"),
+            text=DUMMY_APP_CATALOG,
+        )
 
         # Try to load the apps catalog
         # This should implicitly trigger an update in the background

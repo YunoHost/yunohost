@@ -36,18 +36,23 @@ def _get_ldap_interface():
 
     if _ldap_interface is None:
 
-        conf = {"vendor": "ldap",
-                "name": "as-root",
-                "parameters": {'uri': 'ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi',
-                               'base_dn': 'dc=yunohost,dc=org',
-                               'user_rdn': 'gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth'},
-                "extra": {}
-                }
+        conf = {
+            "vendor": "ldap",
+            "name": "as-root",
+            "parameters": {
+                "uri": "ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi",
+                "base_dn": "dc=yunohost,dc=org",
+                "user_rdn": "gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth",
+            },
+            "extra": {},
+        }
 
         try:
             _ldap_interface = ldap.Authenticator(**conf)
         except MoulinetteLdapIsDownError:
-            raise YunohostError("Service slapd is not running but is required to perform this action ... You can try to investigate what's happening with 'systemctl status slapd'")
+            raise YunohostError(
+                "Service slapd is not running but is required to perform this action ... You can try to investigate what's happening with 'systemctl status slapd'"
+            )
 
         assert_slapd_is_running()
 
@@ -58,7 +63,9 @@ def assert_slapd_is_running():
 
     # Assert slapd is running...
     if not os.system("pgrep slapd >/dev/null") == 0:
-        raise YunohostError("Service slapd is not running but is required to perform this action ... You can try to investigate what's happening with 'systemctl status slapd'")
+        raise YunohostError(
+            "Service slapd is not running but is required to perform this action ... You can try to investigate what's happening with 'systemctl status slapd'"
+        )
 
 
 # We regularly want to extract stuff like 'bar' in ldap path like
@@ -68,10 +75,11 @@ def assert_slapd_is_running():
 # e.g. using _ldap_path_extract(path, "foo") on the previous example will
 # return bar
 
+
 def _ldap_path_extract(path, info):
     for element in path.split(","):
         if element.startswith(info + "="):
-            return element[len(info + "="):]
+            return element[len(info + "=") :]
 
 
 # Add this to properly close / delete the ldap interface / authenticator

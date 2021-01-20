@@ -2,8 +2,17 @@ import pytest
 
 from .conftest import message, raiseYunohostError
 
-from yunohost.user import user_list, user_info, user_create, user_delete, user_update, \
-    user_group_list, user_group_create, user_group_delete, user_group_update
+from yunohost.user import (
+    user_list,
+    user_info,
+    user_create,
+    user_delete,
+    user_update,
+    user_group_list,
+    user_group_create,
+    user_group_delete,
+    user_group_update,
+)
 from yunohost.domain import _get_maindomain
 from yunohost.tests.test_permission import check_LDAP_db_integrity
 
@@ -12,10 +21,10 @@ maindomain = ""
 
 
 def clean_user_groups():
-    for u in user_list()['users']:
+    for u in user_list()["users"]:
         user_delete(u)
 
-    for g in user_group_list()['groups']:
+    for g in user_group_list()["groups"]:
         if g not in ["all_users", "visitors"]:
             user_group_delete(g)
 
@@ -46,13 +55,14 @@ def check_LDAP_db_integrity_call():
     yield
     check_LDAP_db_integrity()
 
+
 #
 # List functions
 #
 
 
 def test_list_users():
-    res = user_list()['users']
+    res = user_list()["users"]
 
     assert "alice" in res
     assert "bob" in res
@@ -60,7 +70,7 @@ def test_list_users():
 
 
 def test_list_groups():
-    res = user_group_list()['groups']
+    res = user_group_list()["groups"]
 
     assert "all_users" in res
     assert "alice" in res
@@ -68,8 +78,9 @@ def test_list_groups():
     assert "jack" in res
     for u in ["alice", "bob", "jack"]:
         assert u in res
-        assert u in res[u]['members']
-        assert u in res["all_users"]['members']
+        assert u in res[u]["members"]
+        assert u in res["all_users"]["members"]
+
 
 #
 # Create - Remove functions
@@ -81,11 +92,11 @@ def test_create_user(mocker):
     with message(mocker, "user_created"):
         user_create("albert", "Albert", "Good", maindomain, "test123Ynh")
 
-    group_res = user_group_list()['groups']
-    assert "albert" in user_list()['users']
+    group_res = user_group_list()["groups"]
+    assert "albert" in user_list()["users"]
     assert "albert" in group_res
-    assert "albert" in group_res['albert']['members']
-    assert "albert" in group_res['all_users']['members']
+    assert "albert" in group_res["albert"]["members"]
+    assert "albert" in group_res["all_users"]["members"]
 
 
 def test_del_user(mocker):
@@ -93,10 +104,10 @@ def test_del_user(mocker):
     with message(mocker, "user_deleted"):
         user_delete("alice")
 
-    group_res = user_group_list()['groups']
+    group_res = user_group_list()["groups"]
     assert "alice" not in user_list()
     assert "alice" not in group_res
-    assert "alice" not in group_res['all_users']['members']
+    assert "alice" not in group_res["all_users"]["members"]
 
 
 def test_create_group(mocker):
@@ -104,9 +115,9 @@ def test_create_group(mocker):
     with message(mocker, "group_created", group="adminsys"):
         user_group_create("adminsys")
 
-    group_res = user_group_list()['groups']
+    group_res = user_group_list()["groups"]
     assert "adminsys" in group_res
-    assert "members" in group_res['adminsys'].keys()
+    assert "members" in group_res["adminsys"].keys()
     assert group_res["adminsys"]["members"] == []
 
 
@@ -115,8 +126,9 @@ def test_del_group(mocker):
     with message(mocker, "group_deleted", group="dev"):
         user_group_delete("dev")
 
-    group_res = user_group_list()['groups']
+    group_res = user_group_list()["groups"]
     assert "dev" not in group_res
+
 
 #
 # Error on create / remove function
@@ -174,6 +186,7 @@ def test_del_group_that_does_not_exist(mocker):
     with raiseYunohostError(mocker, "group_unknown"):
         user_group_delete("doesnt_exist")
 
+
 #
 # Update function
 #
@@ -184,40 +197,41 @@ def test_update_user(mocker):
         user_update("alice", firstname="NewName", lastname="NewLast")
 
     info = user_info("alice")
-    assert info['firstname'] == "NewName"
-    assert info['lastname'] == "NewLast"
+    assert info["firstname"] == "NewName"
+    assert info["lastname"] == "NewLast"
 
 
 def test_update_group_add_user(mocker):
     with message(mocker, "group_updated", group="dev"):
         user_group_update("dev", add=["bob"])
 
-    group_res = user_group_list()['groups']
-    assert set(group_res['dev']['members']) == set(["alice", "bob"])
+    group_res = user_group_list()["groups"]
+    assert set(group_res["dev"]["members"]) == set(["alice", "bob"])
 
 
 def test_update_group_add_user_already_in(mocker):
     with message(mocker, "group_user_already_in_group", user="bob", group="apps"):
         user_group_update("apps", add=["bob"])
 
-    group_res = user_group_list()['groups']
-    assert group_res['apps']['members'] == ["bob"]
+    group_res = user_group_list()["groups"]
+    assert group_res["apps"]["members"] == ["bob"]
 
 
 def test_update_group_remove_user(mocker):
     with message(mocker, "group_updated", group="apps"):
         user_group_update("apps", remove=["bob"])
 
-    group_res = user_group_list()['groups']
-    assert group_res['apps']['members'] == []
+    group_res = user_group_list()["groups"]
+    assert group_res["apps"]["members"] == []
 
 
 def test_update_group_remove_user_not_already_in(mocker):
     with message(mocker, "group_user_not_in_group", user="jack", group="apps"):
         user_group_update("apps", remove=["jack"])
 
-    group_res = user_group_list()['groups']
-    assert group_res['apps']['members'] == ["bob"]
+    group_res = user_group_list()["groups"]
+    assert group_res["apps"]["members"] == ["bob"]
+
 
 #
 # Error on update functions
