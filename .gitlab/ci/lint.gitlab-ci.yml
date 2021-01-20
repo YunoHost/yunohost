@@ -34,7 +34,7 @@ format-run:
     - apt-get update -y && apt-get install git hub -y
     - git config --global user.email "yunohost@yunohost.org"
     - git config --global user.name "$GITHUB_USER"
-    - hub clone --single-branch --branch ${CI_COMMIT_REF_NAME} "https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/yunohost.git" github_repo
+    - hub clone --branch ${CI_COMMIT_REF_NAME} "https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/yunohost.git" github_repo
     - cd github_repo
   script:
     # checkout or create and checkout the branch
