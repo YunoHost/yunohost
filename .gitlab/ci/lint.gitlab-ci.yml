@@ -34,10 +34,11 @@ format-run:
     - apt-get update -y && apt-get install git hub -y
     - git config --global user.email "yunohost@yunohost.org"
     - git config --global user.name "$GITHUB_USER"
-    - git remote add github "https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/yunohost.git"
+    - hub clone --single-branch --branch ${CI_COMMIT_REF_NAME} "https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/yunohost.git" github_repo
+    - cd github_repo
   script:
-    - hub pull
-    - hub checkout -b "ci-format-${CI_COMMIT_REF_NAME}" || true
+    # checkout or create and checkout the branch
+    - hub checkout "ci-format-${CI_COMMIT_REF_NAME}" || hub checkout -b "ci-format-${CI_COMMIT_REF_NAME}" || true
     - tox -e py37-black-run
     - hub commit -am "[CI] Format code"
     - hub pull-request -m "[CI] Format code" -b Yunohost:dev -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
