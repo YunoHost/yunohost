@@ -39,7 +39,7 @@ format-run:
     - hub checkout -b "ci-format-${CI_COMMIT_REF_NAME}" || true
     - tox -e py37-black-run
     - hub commit -am "[CI] Format code"
-    - hub pull-request -m "[CI] Format code" -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
+    - hub pull-request -m "[CI] Format code" -b Yunohost:dev -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
 #  only:
 #      refs:
 #        - dev
