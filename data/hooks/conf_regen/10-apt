@@ -15,6 +15,31 @@ Package: $package
 Pin: origin \"packages.sury.org\" 
 Pin-Priority: -1" >> "${pending_dir}/etc/apt/preferences.d/extra_php_version"
     done
+
+        echo "
+# Yes !
+# This is what's preventing you from installing apache2 !
+#
+# Maybe take two fucking minutes to realize that if you try to install
+# apache2, this will break nginx and break the entire YunoHost ecosystem.
+# on your server.
+#
+# So, *NO*
+# DO NOT do this.
+# DO NOT remove these lines.
+#
+# I warned you. I WARNED YOU! But did you listen to me?
+# Oooooh, noooo. You knew it all, didn't you?
+
+Package: apache2
+Pin: release *
+Pin-Priority: -1
+
+Package: apache2-bin
+Pin: release *
+Pin-Priority: -1
+" >> "${pending_dir}/etc/apt/preferences.d/forbid_apache2"
+
 }
 
 do_post_regen() {
