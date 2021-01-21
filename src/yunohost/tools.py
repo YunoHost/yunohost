@@ -792,7 +792,7 @@ def tools_migrations_list(pending=False, done=False):
     return {"migrations": migrations}
 
 
-def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False):
+def tools_migrations_run(targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False):
     """
     Perform migrations
 
