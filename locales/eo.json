@@ -295,7 +295,7 @@
     "restore_extracting": "Eltirante bezonatajn dosierojn el la ar theivo…",
     "upnp_port_open_failed": "Ne povis malfermi havenon per UPnP",
     "log_app_upgrade": "Ĝisdatigu la aplikon '{}'",
-    "log_help_to_get_failed_log": "La operacio '{desc}' ne povis finiĝi. Bonvolu dividi la plenan ŝtipon de ĉi tiu operacio per la komando 'yunohost log display {name} --share' por akiri helpon",
+    "log_help_to_get_failed_log": "La operacio '{desc}' ne povis finiĝi. Bonvolu dividi la plenan ŝtipon de ĉi tiu operacio per la komando 'yunohost log share {name}' por akiri helpon",
     "migration_description_0002_migrate_to_tsig_sha256": "Plibonigu sekurecon de DynDNS TSIG-ĝisdatigoj per SHA-512 anstataŭ MD5",
     "port_already_closed": "Haveno {port:d} estas jam fermita por {ip_version:s} rilatoj",
     "hook_name_unknown": "Nekonata hoko-nomo '{name:s}'",

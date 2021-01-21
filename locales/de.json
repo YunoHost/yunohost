@@ -284,7 +284,7 @@
     "good_practices_about_admin_password": "Sie sind nun dabei, ein neues Administrationspasswort zu definieren. Das Passwort sollte mindestens 8 Zeichen lang sein - obwohl es sinnvoll ist, ein längeres Passwort (z.B. eine Passphrase) und/oder eine Variation von Zeichen (Groß- und Kleinschreibung, Ziffern und Sonderzeichen) zu verwenden.",
     "log_corrupted_md_file": "Die mit Protokollen verknüpfte YAML-Metadatendatei ist beschädigt: '{md_file}\nFehler: {error}''",
     "global_settings_cant_serialize_settings": "Einstellungsdaten konnten nicht serialisiert werden, Grund: {reason:s}",
-    "log_help_to_get_failed_log": "Der Vorgang'{desc}' konnte nicht abgeschlossen werden. Bitte teile das vollständige Protokoll dieser Operation mit dem Befehl 'yunohost log display {name} --share', um Hilfe zu erhalten",
+    "log_help_to_get_failed_log": "Der Vorgang'{desc}' konnte nicht abgeschlossen werden. Bitte teile das vollständige Protokoll dieser Operation mit dem Befehl 'yunohost log share {name}', um Hilfe zu erhalten",
     "backup_no_uncompress_archive_dir": "Dieses unkomprimierte Archivverzeichnis gibt es nicht",
     "log_app_change_url": "Ändere die URL der Anwendung '{}'",
     "global_settings_setting_security_password_user_strength": "Stärke des Benutzerpassworts",

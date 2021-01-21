@@ -280,7 +280,7 @@
     "log_help_to_get_log": "Pour voir le journal de cette opération '{desc}', utilisez la commande 'yunohost log display {name}'",
     "log_link_to_failed_log": "L’opération '{desc}' a échoué ! Pour obtenir de l’aide, merci de partager le journal de l’opération en <a href=\"#/tools/logs/{name}\">cliquant ici</a>",
     "backup_php5_to_php7_migration_may_fail": "Impossible de convertir votre archive pour prendre en charge PHP 7, vous pourriez ne plus pouvoir restaurer vos applications PHP (cause : {error:s})",
-    "log_help_to_get_failed_log": "L’opération '{desc}' a échoué ! Pour obtenir de l’aide, merci de partager le journal de l’opération en utilisant la commande 'yunohost log display {name} --share'",
+    "log_help_to_get_failed_log": "L’opération '{desc}' a échoué ! Pour obtenir de l’aide, merci de partager le journal de l’opération en utilisant la commande 'yunohost log share {name}'",
     "log_does_exists": "Il n’y a pas de journal des opérations avec le nom '{log}', utilisez 'yunohost log list' pour voir tous les journaux d’opérations disponibles",
     "log_operation_unit_unclosed_properly": "L’opération ne s’est pas terminée correctement",
     "log_app_change_url": "Changer l’URL de l’application '{}'",

@@ -1681,7 +1681,7 @@ log:
                     default: 50
                     type: int
                 --share:
-                    help: Share the full log using yunopaste
+                    help: (Deprecated, see yunohost log share) Share the full log using yunopaste
                     action: store_true
                 -i:
                     full: --filter-irrelevant
@@ -1691,6 +1691,14 @@ log:
                     full: --with-suboperations
                     help: Include metadata about sub-operations of this operation... (e.g. initializing groups/permissions when installing an app)
                     action: store_true
+
+        ### log_share()
+        share:
+            action_help: Share the full log on yunopaste (alias to display --share)
+            api: GET /logs/share
+            arguments:
+                path:
+                    help: Log file to share
 
 
 #############################

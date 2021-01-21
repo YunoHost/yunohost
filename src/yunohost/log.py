@@ -282,6 +282,9 @@ def log_display(path, number=None, share=False, filter_irrelevant=False, with_su
 
     return infos
 
+def log_share(path):
+    return log_display(path, share=True)
+
 
 def is_unit_operation(entities=['app', 'domain', 'group', 'service', 'user'],
                       exclude=['password'], operation_key=None):
