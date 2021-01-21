@@ -46,6 +46,7 @@ Conflicts: iptables-persistent
  , redis-server (>= 5:5.0.7)
  , fail2ban (>= 0.11)
  , iptables (>= 1.8.3)
+ , python3-miniupnpc (= 2.1-1+ynh10)
 Description: manageable and configured self-hosting server
  YunoHost aims to make self-hosting accessible to everyone. It configures
  an email, Web and IM server alongside a LDAP base. It also provides
