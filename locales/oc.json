@@ -300,7 +300,7 @@
     "log_corrupted_md_file": "Lo fichièr YAML de metadonadas ligat als jornals d’audit es damatjat : « {md_file} »\nError : {error:s}",
     "log_category_404": "La categoria de jornals d’audit « {category} » existís pas",
     "log_link_to_log": "Jornal complèt d’aquesta operacion : <a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>",
-    "log_help_to_get_log": "Per veire lo jornal d’aquesta operacion « {desc} », utilizatz la comanda « yunohost log display {name} »",
+    "log_help_to_get_log": "Per veire lo jornal d’aquesta operacion « {desc} », utilizatz la comanda « yunohost log show {name}{name} »",
     "backup_php5_to_php7_migration_may_fail": "Impossible de convertir vòstre archiu per prendre en carga PHP 7, la restauracion de vòstras aplicacions PHP pòt reüssir pas a restaurar vòstras aplicacions PHP (rason : {error:s})",
     "log_link_to_failed_log": "L’operacion « {desc} » a pas capitat ! Per obténer d’ajuda, mercés <a href=\"#/tools/logs/{name}\"> de fornir lo jornal complèt de l’operacion</a>",
     "log_help_to_get_failed_log": "L’operacion « {desc} » a pas reüssit ! Per obténer d’ajuda, mercés de partejar lo jornal d’audit complèt d’aquesta operacion en utilizant la comanda « yunohost log share {name} »",

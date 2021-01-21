@@ -278,7 +278,7 @@
     "log_corrupted_md_file": "Il file dei metadati YAML associato con i registri è danneggiato: '{md_file}'\nErrore: {error}",
     "log_category_404": "La categoria di registrazione '{category}' non esiste",
     "log_link_to_log": "Registro completo di questa operazione: '<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>'",
-    "log_help_to_get_log": "Per vedere il registro dell'operazione '{desc}', usa il comando 'yunohost log display {name}'",
+    "log_help_to_get_log": "Per vedere il registro dell'operazione '{desc}', usa il comando 'yunohost log show {name}{name}'",
     "global_settings_setting_security_postfix_compatibility": "Bilanciamento tra compatibilità e sicurezza per il server Postfix. Riguarda gli algoritmi di cifratura (e altri aspetti legati alla sicurezza)",
     "log_link_to_failed_log": "Impossibile completare l'operazione '{desc}'! Per ricevere aiuto, per favore fornisci il registro completo dell'operazione <a href=\"#/tools/logs/{name}\">cliccando qui</a>",
     "log_help_to_get_failed_log": "L'operazione '{desc}' non può essere completata. Per ottenere aiuto, per favore condividi il registro completo dell'operazione utilizzando il comando 'yunohost log share {name}'",

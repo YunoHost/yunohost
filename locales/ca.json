@@ -199,7 +199,7 @@
     "log_corrupted_md_file": "El fitxer de metadades YAML associat amb els registres està malmès: « {md_file} »\nError: {error}",
     "log_category_404": "La categoria de registres « {category} » no existeix",
     "log_link_to_log": "El registre complet d'aquesta operació: «<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>»",
-    "log_help_to_get_log": "Per veure el registre de l'operació « {desc} », utilitzeu l'ordre « yunohost log display {name} »",
+    "log_help_to_get_log": "Per veure el registre de l'operació « {desc} », utilitzeu l'ordre « yunohost log show {name}{name} »",
     "log_link_to_failed_log": "No s'ha pogut completar l'operació « {desc} ». Per obtenir ajuda, <a href=\"#/tools/logs/{name}\">proveïu el registre complete de l'operació clicant aquí</a>",
     "log_help_to_get_failed_log": "No s'ha pogut completar l'operació « {desc} ». Per obtenir ajuda, compartiu el registre complete de l'operació utilitzant l'ordre « yunohost log share {name} »",
     "log_does_exists": "No hi ha cap registre per l'operació amb el nom« {log} », utilitzeu « yunohost log list » per veure tots els registre d'operació disponibles",

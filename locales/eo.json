@@ -397,7 +397,7 @@
     "password_too_simple_4": "La pasvorto bezonas almenaŭ 12 signojn kaj enhavas ciferon, majuskle, pli malaltan kaj specialajn signojn",
     "migration_0003_main_upgrade": "Komencanta ĉefa ĝisdatigo …",
     "regenconf_file_updated": "Agordodosiero '{conf}' ĝisdatigita",
-    "log_help_to_get_log": "Por vidi la protokolon de la operacio '{desc}', uzu la komandon 'yunohost log display {name}'",
+    "log_help_to_get_log": "Por vidi la protokolon de la operacio '{desc}', uzu la komandon 'yunohost log show {name}{name}'",
     "global_settings_setting_security_nginx_compatibility": "Kongruo vs sekureca kompromiso por la TTT-servilo NGINX. Afektas la ĉifradojn (kaj aliajn aspektojn pri sekureco)",
     "no_internet_connection": "La servilo ne estas konektita al la interreto",
     "migration_0008_dsa": "• La DSA-ŝlosilo estos malŝaltita. Tial vi eble bezonos nuligi spuran averton de via SSH-kliento kaj revizii la fingrospuron de via servilo;",

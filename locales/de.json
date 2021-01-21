@@ -269,7 +269,7 @@
     "global_settings_unknown_setting_from_settings_file": "Unbekannter Schlüssel in den Einstellungen: '{setting_key:s}', verwerfen und speichern in /etc/yunohost/settings-unknown.json",
     "log_link_to_log": "Vollständiges Log dieser Operation: '<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>'",
     "global_settings_setting_example_bool": "Beispiel einer booleschen Option",
-    "log_help_to_get_log": "Um das Protokoll der Operation '{desc}' anzuzeigen, verwende  den Befehl 'yunohost log display {name}'",
+    "log_help_to_get_log": "Um das Protokoll der Operation '{desc}' anzuzeigen, verwende  den Befehl 'yunohost log show {name}{name}'",
     "global_settings_setting_security_nginx_compatibility": "Kompatibilität vs. Sicherheitskompromiss für den Webserver NGINX. Beeinflusst die Chiffren (und andere sicherheitsrelevante Aspekte)",
     "backup_php5_to_php7_migration_may_fail": "Dein Archiv konnte nicht für PHP 7 konvertiert werden, Du kannst deine PHP-Anwendungen möglicherweise nicht wiederherstellen (Grund: {error:s})",
     "global_settings_setting_service_ssh_allow_deprecated_dsa_hostkey": "Erlaubt die Verwendung eines (veralteten) DSA-Hostkeys für die SSH-Daemon-Konfiguration",

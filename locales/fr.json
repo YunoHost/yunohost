@@ -277,7 +277,7 @@
     "log_corrupted_md_file": "Le fichier YAML de métadonnées associé aux logs est corrompu : '{md_file}'\nErreur : {error}",
     "log_category_404": "Le journal de la catégorie '{category}' n’existe pas",
     "log_link_to_log": "Journal complet de cette opération : '<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\"> {desc} </a>'",
-    "log_help_to_get_log": "Pour voir le journal de cette opération '{desc}', utilisez la commande 'yunohost log display {name}'",
+    "log_help_to_get_log": "Pour voir le journal de cette opération '{desc}', utilisez la commande 'yunohost log show {name}{name}'",
     "log_link_to_failed_log": "L’opération '{desc}' a échoué ! Pour obtenir de l’aide, merci de partager le journal de l’opération en <a href=\"#/tools/logs/{name}\">cliquant ici</a>",
     "backup_php5_to_php7_migration_may_fail": "Impossible de convertir votre archive pour prendre en charge PHP 7, vous pourriez ne plus pouvoir restaurer vos applications PHP (cause : {error:s})",
     "log_help_to_get_failed_log": "L’opération '{desc}' a échoué ! Pour obtenir de l’aide, merci de partager le journal de l’opération en utilisant la commande 'yunohost log share {name}'",

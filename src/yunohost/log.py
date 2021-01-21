@@ -130,7 +130,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
     return {"operation": operations}
 
 
-def log_display(path, number=None, share=False, filter_irrelevant=False, with_suboperations=False):
+def log_show(path, number=None, share=False, filter_irrelevant=False, with_suboperations=False):
     """
     Display a log file enriched with metadata if any.
 
@@ -283,7 +283,7 @@ def log_display(path, number=None, share=False, filter_irrelevant=False, with_su
     return infos
 
 def log_share(path):
-    return log_display(path, share=True)
+    return log_show(path, share=True)
 
 
 def is_unit_operation(entities=['app', 'domain', 'group', 'service', 'user'],

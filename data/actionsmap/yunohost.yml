@@ -1668,10 +1668,12 @@ log:
                     help: Include metadata about operations that are not the main operation but are sub-operations triggered by another ongoing operation... (e.g. initializing groups/permissions when installing an app)
                     action: store_true
 
-        ### log_display()
-        display:
+        ### log_show()
+        show:
             action_help: Display a log content
-            api: GET /logs/display
+            api: GET /logs/<path>
+            deprecated_alias:
+                - display
             arguments:
                 path:
                     help: Log file which to display the content
@@ -1694,7 +1696,7 @@ log:
 
         ### log_share()
         share:
-            action_help: Share the full log on yunopaste (alias to display --share)
+            action_help: Share the full log on yunopaste (alias to show --share)
             api: GET /logs/share
             arguments:
                 path:
