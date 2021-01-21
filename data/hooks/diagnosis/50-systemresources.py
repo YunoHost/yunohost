@@ -68,6 +68,9 @@ class SystemResourcesDiagnoser(Diagnoser):
 
         disk_partitions = sorted(psutil.disk_partitions(), key=lambda k: k.mountpoint)
 
+        # Ignore /dev/loop stuff which are ~virtual partitions ? (e.g. mounted to /snap/)
+        disk_partitions = [d for d in disk_partitions if not d.device.startswith("/dev/loop")]
+
         for disk_partition in disk_partitions:
             device = disk_partition.device
             mountpoint = disk_partition.mountpoint
