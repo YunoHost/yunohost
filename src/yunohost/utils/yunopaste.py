@@ -20,6 +20,8 @@ def yunopaste(data):
     except Exception as e:
         logger.warning("For some reason, YunoHost was not able to anonymize the pasted data. Sorry about that. Be careful about sharing the link, as it may contain somewhat private infos like domain names or IP addresses. Error: %s" % e)
 
+    data = data.encode()
+
     try:
         r = requests.post("%s/documents" % paste_server, data=data, timeout=30)
     except Exception as e:
