@@ -38,7 +38,15 @@ Pin-Priority: -1
 Package: apache2-bin
 Pin: release *
 Pin-Priority: -1
-" >> "${pending_dir}/etc/apt/preferences.d/forbid_apache2"
+
+# Also yes, bind9 will conflict with dnsmasq.
+# Same story than for apache2.
+# Don't fucking install it.
+
+Package: bind9
+Pin: release *
+Pin-Priority: -1
+" >> "${pending_dir}/etc/apt/preferences.d/ban_packages"
 
 }
 
