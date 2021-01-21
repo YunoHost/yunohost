@@ -281,7 +281,7 @@
     "migration_0003_problematic_apps_warning": "Notatz que las aplicacions seguentas, saique problematicas, son estadas desactivadas. Semblan d’aver estadas installadas d’una lista d’aplicacions o que son pas marcadas coma «working ».  En consequéncia, podèm pas assegurar que tendràn de foncionar aprèp la mesa a nivèl : {problematic_apps}",
     "migrations_migration_has_failed": "La migracion {id} a pas capitat, abandon. Error : {exception}",
     "migrations_skip_migration": "Passatge de la migracion {id}…",
-    "migrations_to_be_ran_manually": "La migracion {id} deu èsser lançada manualament. Mercés d’anar a Aisinas > Migracion dins l’interfàcia admin, o lançar « yunohost tools migrations migrate ».",
+    "migrations_to_be_ran_manually": "La migracion {id} deu èsser lançada manualament. Mercés d’anar a Aisinas > Migracion dins l’interfàcia admin, o lançar « yunohost tools migrations run ».",
     "migrations_need_to_accept_disclaimer": "Per lançar la migracion {id} , avètz d’acceptar aquesta clausa de non-responsabilitat :\n---\n{disclaimer}\n---\nS’acceptatz de lançar la migracion, mercés de tornar executar la comanda amb l’opcion accept-disclaimer.",
     "pattern_backup_archive_name": "Deu èsser un nom de fichièr valid compausat de 30 caractèrs alfanumerics al maximum e  « -_. »",
     "service_description_dovecot": "permet als clients de messatjariá d’accedir/recuperar los corrièls (via IMAP e POP3)",

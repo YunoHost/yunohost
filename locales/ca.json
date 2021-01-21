@@ -292,7 +292,7 @@
     "migrations_migration_has_failed": "La migració {id} ha fallat, cancel·lant. Error: {exception}",
     "migrations_no_migrations_to_run": "No hi ha cap migració a fer",
     "migrations_skip_migration": "Saltant migració {id}...",
-    "migrations_to_be_ran_manually": "La migració {id} s'ha de fer manualment. Aneu a Eines → Migracions a la interfície admin, o executeu «yunohost tools migrations migrate».",
+    "migrations_to_be_ran_manually": "La migració {id} s'ha de fer manualment. Aneu a Eines → Migracions a la interfície admin, o executeu «yunohost tools migrations run».",
     "migrations_need_to_accept_disclaimer": "Per fer la migració {id}, heu d'acceptar aquesta clàusula de no responsabilitat:\n---\n{disclaimer}\n---\nSi accepteu fer la migració, torneu a executar l'ordre amb l'opció «--accept-disclaimer».",
     "no_internet_connection": "El servidor no està connectat a Internet",
     "not_enough_disk_space": "No hi ha prou espai en «{path:s}»",

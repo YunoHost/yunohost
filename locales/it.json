@@ -531,7 +531,7 @@
     "pattern_email_forward": "Dev'essere un indirizzo mail valido, simbolo '+' accettato (es: tizio+tag@example.com)",
     "operation_interrupted": "L'operazione è stata interrotta manualmente?",
     "invalid_number": "Dev'essere un numero",
-    "migrations_to_be_ran_manually": "Migrazione {id} dev'essere eseguita manualmente. Vai in Strumenti → Migrazioni nella pagina webadmin, o esegui `yunohost tools migrations migrate`.",
+    "migrations_to_be_ran_manually": "Migrazione {id} dev'essere eseguita manualmente. Vai in Strumenti → Migrazioni nella pagina webadmin, o esegui `yunohost tools migrations run`.",
     "migrations_success_forward": "Migrazione {id} completata",
     "migrations_skip_migration": "Salto migrazione {id}...",
     "migrations_running_forward": "Eseguo migrazione {id}...",

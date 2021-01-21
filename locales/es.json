@@ -303,7 +303,7 @@
     "permission_created": "Creado el permiso «{permission:s}»",
     "permission_already_exist": "El permiso «{permission}» ya existe",
     "pattern_password_app": "Las contraseñas no pueden incluir los siguientes caracteres: {forbidden_chars}",
-    "migrations_to_be_ran_manually": "La migración {id} hay que ejecutarla manualmente. Vaya a Herramientas → Migraciones en la página web de administración o ejecute `yunohost tools migrations migrate`.",
+    "migrations_to_be_ran_manually": "La migración {id} hay que ejecutarla manualmente. Vaya a Herramientas → Migraciones en la página web de administración o ejecute `yunohost tools migrations run`.",
     "migrations_success_forward": "Migración {id} completada",
     "migrations_skip_migration": "Omitiendo migración {id}…",
     "migrations_running_forward": "Ejecutando migración {id}…",

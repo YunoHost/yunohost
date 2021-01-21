@@ -1519,9 +1519,11 @@ tools:
                         action: store_true
 
               ### tools_migrations_migrate()
-              migrate:
+              run:
                   action_help: Run migrations
-                  api: POST /migrations/migrate
+                  api: POST /migrations/run
+                  deprecated_alias:
+                     - migrate
                   arguments:
                     targets:
                         help: Migrations to run (all pendings by default)

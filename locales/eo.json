@@ -358,7 +358,7 @@
     "dyndns_registration_failed": "Ne povis registri DynDNS-domajnon: {error:s}",
     "migration_0003_not_jessie": "La nuna Debian-distribuo ne estas Jessie!",
     "user_unknown": "Nekonata uzanto: {user:s}",
-    "migrations_to_be_ran_manually": "Migrado {id} devas funkcii permane. Bonvolu iri al Iloj → Migradoj en la retpaĝa paĝo, aŭ kuri `yunohost tools migrations migrate`.",
+    "migrations_to_be_ran_manually": "Migrado {id} devas funkcii permane. Bonvolu iri al Iloj → Migradoj en la retpaĝa paĝo, aŭ kuri `yunohost tools migrations run`.",
     "migration_0008_warning": "Se vi komprenas tiujn avertojn kaj volas ke YunoHost preterlasu vian nunan agordon, faru la migradon. Alie, vi ankaŭ povas salti la migradon, kvankam ĝi ne rekomendas.",
     "certmanager_cert_renew_success": "Ni Ĉifru atestilon renovigitan por la domajno '{domain:s}'",
     "global_settings_reset_success": "Antaŭaj agordoj nun estas rezervitaj al {path:s}",
