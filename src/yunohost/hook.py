@@ -400,7 +400,7 @@ def _hook_exec_bash(path, args, chdir, env, return_format, loggers):
     _env.update(env)
 
     returncode = call_async_output(
-        cmd, loggers, shell=False, cwd=chdir,
+        cmd, loggers, shell=True, cwd=chdir,
         env=_env
     )
 
