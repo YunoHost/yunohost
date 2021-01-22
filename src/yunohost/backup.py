@@ -674,6 +674,7 @@ class BackupManager():
         settings_dir = os.path.join(self.work_dir, 'apps', app, 'settings')
 
         logger.info(m18n.n("app_start_backup", app=app))
+        tmp_script = None  # This is to make sure the var exists later in the 'finally' ...
         try:
             # Prepare backup directory for the app
             filesystem.mkdir(tmp_app_bkp_dir, 0o750, True, uid='admin')
@@ -716,7 +717,8 @@ class BackupManager():
 
         # Remove tmp files in all situations
         finally:
-            filesystem.rm(tmp_script, force=True)
+            if tmp_script:
+                filesystem.rm(tmp_script, force=True)
             filesystem.rm(env_dict["YNH_BACKUP_CSV"], force=True)
 
     #
