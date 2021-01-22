@@ -10,7 +10,7 @@ location /yunohost/admin/ {
     more_set_headers "Content-Security-Policy-Report-Only:";
 
     # Short cache on handlebars templates
-    location ~* \.(?:ms)$ {
+    location ~* \.(js|css|png|jpg|jpeg|gif|ico|json|woff|woff2|ttf|eot)$ {
       expires 5m;
       add_header Cache-Control "public";
     }
