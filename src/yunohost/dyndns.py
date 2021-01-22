@@ -373,29 +373,11 @@ def dyndns_update(
 
 
 def dyndns_installcron():
-    """
-    Install IP update cron
-
-
-    """
-    with open("/etc/cron.d/yunohost-dyndns", "w+") as f:
-        f.write("*/2 * * * * root yunohost dyndns update >> /dev/null\n")
-
-    logger.success(m18n.n("dyndns_cron_installed"))
+    logger.warning("This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'.")
 
 
 def dyndns_removecron():
-    """
-    Remove IP update cron
-
-
-    """
-    try:
-        os.remove("/etc/cron.d/yunohost-dyndns")
-    except Exception as e:
-        raise YunohostError("dyndns_cron_remove_failed", error=e)
-
-    logger.success(m18n.n("dyndns_cron_removed"))
+    logger.warning("This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'.")
 
 
 def _guess_current_dyndns_domain(dyn_host):
