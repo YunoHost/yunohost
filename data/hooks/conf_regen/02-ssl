@@ -90,6 +90,8 @@ do_init_regen() {
 
   chown -R root:ssl-cert /etc/yunohost/certs/yunohost.org/
   chmod o-rwx /etc/yunohost/certs/yunohost.org/
+
+  install -D -m 644 $openssl_conf "${ssl_dir}/openssl.cnf"
 }
 
 do_pre_regen() {
