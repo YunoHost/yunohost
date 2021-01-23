@@ -624,8 +624,6 @@
     "user_update_failed": "Could not update user {user}: {error}",
     "user_updated": "User info changed",
     "yunohost_already_installed": "YunoHost is already installed",
-    "yunohost_ca_creation_failed": "Could not create certificate authority",
-    "yunohost_ca_creation_success": "Local certification authority created.",
     "yunohost_configured": "YunoHost is now configured",
     "yunohost_installing": "Installing YunoHost...",
     "yunohost_not_installed": "YunoHost is not correctly installed. Please run 'yunohost tools postinstall'",
