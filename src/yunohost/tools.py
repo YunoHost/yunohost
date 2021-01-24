@@ -641,7 +641,7 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
             #
             # Here we use a dirty hack to run a command after the current
             # "yunohost tools upgrade", because the upgrade of yunohost
-            # will also trigger other yunohost commands (e.g. "yunohost tools migrations migrate")
+            # will also trigger other yunohost commands (e.g. "yunohost tools migrations run")
             # (also the upgrade of the package, if executed from the webadmin, is
             # likely to kill/restart the api which is in turn likely to kill this
             # command before it ends...)
@@ -792,7 +792,7 @@ def tools_migrations_list(pending=False, done=False):
     return {"migrations": migrations}
 
 
-def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False):
+def tools_migrations_run(targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False):
     """
     Perform migrations
 

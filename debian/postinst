@@ -15,7 +15,7 @@ do_configure() {
       yunohost tools regen-conf --output-as none
 
       echo "Launching migrations..."
-      yunohost tools migrations migrate --auto
+      yunohost tools migrations run --auto
 
       echo "Re-diagnosing server health..."
       yunohost diagnosis run --force
