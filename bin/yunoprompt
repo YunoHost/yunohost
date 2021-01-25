@@ -6,7 +6,7 @@ x509_fingerprint=$(openssl x509  -in /etc/yunohost/certs/yunohost.org/crt.pem -n
 
 # Fetch SSH fingerprints
 i=0
-for key in $(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key.pub 2> /dev/null) ; do 
+for key in $(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key.pub 2> /dev/null) ; do
     output=$(ssh-keygen -l -f $key)
     fingerprint[$i]=" - $(echo $output | cut -d' ' -f2) $(echo $output| cut -d' ' -f4)"
     i=$(($i + 1))
@@ -43,22 +43,21 @@ LOGO_AND_FINGERPRINTS=$(cat << EOF
 
 $LOGO
 
- IP: ${local_ip}
- X509 fingerprint: ${x509_fingerprint}
+ Local IP: ${local_ip:-(no ip detected?)}
+ Local SSL CA X509 fingerprint:
+   ${x509_fingerprint}
  SSH fingerprints:
  ${fingerprint[0]}
  ${fingerprint[1]}
  ${fingerprint[2]}
- ${fingerprint[3]}
- ${fingerprint[4]}
 
 EOF
 )
 
-if [[ -f /etc/yunohost/installed ]]
+echo "$LOGO_AND_FINGERPRINTS" > /etc/issue
+
+if [[ ! -f /etc/yunohost/installed ]]
 then
-    echo "$LOGO_AND_FINGERPRINTS" > /etc/issue
-else
     chvt 2
 
     # Formatting
