@@ -72,7 +72,7 @@ be asked for :
   - the administration password.
 
 You can perform this step :
-  - from your web browser, by accessing : ${local_ip}
+  - from your web browser, by accessing : https://yunohost.local/ or ${local_ip}
   - or in this terminal by answering 'yes' to the following question
 
 If this is your first time with YunoHost, it is strongly recommended to take
