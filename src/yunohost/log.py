@@ -40,13 +40,13 @@ from yunohost.utils.packages import get_ynh_package_version
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml
 
-CATEGORIES_PATH = '/var/log/yunohost/categories/'
-OPERATIONS_PATH = '/var/log/yunohost/categories/operation/'
-METADATA_FILE_EXT = '.yml'
-LOG_FILE_EXT = '.log'
-RELATED_CATEGORIES = ['app', 'domain', 'group', 'service', 'user']
+CATEGORIES_PATH = "/var/log/yunohost/categories/"
+OPERATIONS_PATH = "/var/log/yunohost/categories/operation/"
+METADATA_FILE_EXT = ".yml"
+LOG_FILE_EXT = ".log"
+RELATED_CATEGORIES = ["app", "domain", "group", "service", "user"]
 
-logger = getActionLogger('yunohost.log')
+logger = getActionLogger("yunohost.log")
 
 
 def log_list(limit=None, with_details=False, with_suboperations=False):
@@ -73,7 +73,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
 
     for log in logs:
 
-        base_filename = log[:-len(METADATA_FILE_EXT)]
+        base_filename = log[: -len(METADATA_FILE_EXT)]
         md_path = os.path.join(OPERATIONS_PATH, log)
 
         entry = {
@@ -88,10 +88,12 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
             pass
 
         try:
-            metadata = read_yaml(md_path) or {}  # Making sure this is a dict and not  None..?
+            metadata = (
+                read_yaml(md_path) or {}
+            )  # Making sure this is a dict and not  None..?
         except Exception as e:
             # If we can't read the yaml for some reason, report an error and ignore this entry...
-            logger.error(m18n.n('log_corrupted_md_file', md_file=md_path, error=e))
+            logger.error(m18n.n("log_corrupted_md_file", md_file=md_path, error=e))
             continue
 
         if with_details:
@@ -123,14 +125,16 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
     operations = list(reversed(sorted(operations, key=lambda o: o["name"])))
     # Reverse the order of log when in cli, more comfortable to read (avoid
     # unecessary scrolling)
-    is_api = msettings.get('interface') == 'api'
+    is_api = msettings.get("interface") == "api"
     if not is_api:
         operations = list(reversed(operations))
 
     return {"operation": operations}
 
 
-def log_show(path, number=None, share=False, filter_irrelevant=False, with_suboperations=False):
+def log_show(
+    path, number=None, share=False, filter_irrelevant=False, with_suboperations=False
+):
     """
     Display a log file enriched with metadata if any.
 
@@ -156,7 +160,7 @@ def log_show(path, number=None, share=False, filter_irrelevant=False, with_subop
             r"args_array=.*$",
             r"local -A args_array$",
             r"ynh_handle_getopts_args",
-            r"ynh_script_progression"
+            r"ynh_script_progression",
         ]
     else:
         filters = []
@@ -169,14 +173,14 @@ def log_show(path, number=None, share=False, filter_irrelevant=False, with_subop
     # Normalize log/metadata paths and filenames
     abs_path = path
     log_path = None
-    if not path.startswith('/'):
+    if not path.startswith("/"):
         abs_path = os.path.join(OPERATIONS_PATH, path)
 
     if os.path.exists(abs_path) and not path.endswith(METADATA_FILE_EXT):
         log_path = abs_path
 
     if abs_path.endswith(METADATA_FILE_EXT) or abs_path.endswith(LOG_FILE_EXT):
-        base_path = ''.join(os.path.splitext(abs_path)[:-1])
+        base_path = "".join(os.path.splitext(abs_path)[:-1])
     else:
         base_path = abs_path
     base_filename = os.path.basename(base_path)
@@ -185,17 +189,18 @@ def log_show(path, number=None, share=False, filter_irrelevant=False, with_subop
         log_path = base_path + LOG_FILE_EXT
 
     if not os.path.exists(md_path) and not os.path.exists(log_path):
-        raise YunohostError('log_does_exists', log=path)
+        raise YunohostError("log_does_exists", log=path)
 
     infos = {}
 
     # If it's a unit operation, display the name and the description
     if base_path.startswith(CATEGORIES_PATH):
         infos["description"] = _get_description_from_name(base_filename)
-        infos['name'] = base_filename
+        infos["name"] = base_filename
 
     if share:
         from yunohost.utils.yunopaste import yunopaste
+
         content = ""
         if os.path.exists(md_path):
             content += read_file(md_path)
@@ -207,7 +212,7 @@ def log_show(path, number=None, share=False, filter_irrelevant=False, with_subop
         url = yunopaste(content)
 
         logger.info(m18n.n("log_available_on_yunopaste", url=url))
-        if msettings.get('interface') == 'api':
+        if msettings.get("interface") == "api":
             return {"url": url}
         else:
             return
@@ -217,17 +222,17 @@ def log_show(path, number=None, share=False, filter_irrelevant=False, with_subop
         try:
             metadata = read_yaml(md_path)
         except MoulinetteError as e:
-            error = m18n.n('log_corrupted_md_file', md_file=md_path, error=e)
+            error = m18n.n("log_corrupted_md_file", md_file=md_path, error=e)
             if os.path.exists(log_path):
                 logger.warning(error)
             else:
                 raise YunohostError(error)
         else:
-            infos['metadata_path'] = md_path
-            infos['metadata'] = metadata
+            infos["metadata_path"] = md_path
+            infos["metadata"] = metadata
 
-            if 'log_path' in metadata:
-                log_path = metadata['log_path']
+            if "log_path" in metadata:
+                log_path = metadata["log_path"]
 
             if with_suboperations:
 
@@ -248,19 +253,25 @@ def log_show(path, number=None, share=False, filter_irrelevant=False, with_subop
                             date = _get_datetime_from_name(base_filename)
                         except ValueError:
                             continue
-                        if (date < log_start) or (date > log_start + timedelta(hours=48)):
+                        if (date < log_start) or (
+                            date > log_start + timedelta(hours=48)
+                        ):
                             continue
 
                         try:
-                            submetadata = read_yaml(os.path.join(OPERATIONS_PATH, filename))
+                            submetadata = read_yaml(
+                                os.path.join(OPERATIONS_PATH, filename)
+                            )
                         except Exception:
                             continue
 
                         if submetadata and submetadata.get("parent") == base_filename:
                             yield {
-                                "name": filename[:-len(METADATA_FILE_EXT)],
-                                "description": _get_description_from_name(filename[:-len(METADATA_FILE_EXT)]),
-                                "success": submetadata.get("success", "?")
+                                "name": filename[: -len(METADATA_FILE_EXT)],
+                                "description": _get_description_from_name(
+                                    filename[: -len(METADATA_FILE_EXT)]
+                                ),
+                                "success": submetadata.get("success", "?"),
                             }
 
                 metadata["suboperations"] = list(suboperations())
@@ -268,6 +279,7 @@ def log_show(path, number=None, share=False, filter_irrelevant=False, with_subop
     # Display logs if exist
     if os.path.exists(log_path):
         from yunohost.service import _tail
+
         if number and filters:
             logs = _tail(log_path, int(number * 4))
         elif number:
@@ -277,17 +289,21 @@ def log_show(path, number=None, share=False, filter_irrelevant=False, with_subop
         logs = _filter_lines(logs, filters)
         if number:
             logs = logs[-number:]
-        infos['log_path'] = log_path
-        infos['logs'] = logs
+        infos["log_path"] = log_path
+        infos["logs"] = logs
 
     return infos
+
 
 def log_share(path):
     return log_show(path, share=True)
 
 
-def is_unit_operation(entities=['app', 'domain', 'group', 'service', 'user'],
-                      exclude=['password'], operation_key=None):
+def is_unit_operation(
+    entities=["app", "domain", "group", "service", "user"],
+    exclude=["password"],
+    operation_key=None,
+):
     """
     Configure quickly a unit operation
 
@@ -309,6 +325,7 @@ def is_unit_operation(entities=['app', 'domain', 'group', 'service', 'user'],
     'log_' is present in locales/en.json otherwise it won't be translatable.
 
     """
+
     def decorate(func):
         def func_wrapper(*args, **kwargs):
             op_key = operation_key
@@ -322,9 +339,10 @@ def is_unit_operation(entities=['app', 'domain', 'group', 'service', 'user'],
             # know name of each args (so we need to use kwargs instead of args)
             if len(args) > 0:
                 from inspect import getargspec
+
                 keys = getargspec(func).args
-                if 'operation_logger' in keys:
-                    keys.remove('operation_logger')
+                if "operation_logger" in keys:
+                    keys.remove("operation_logger")
                 for k, arg in enumerate(args):
                     kwargs[keys[k]] = arg
                 args = ()
@@ -364,12 +382,13 @@ def is_unit_operation(entities=['app', 'domain', 'group', 'service', 'user'],
             else:
                 operation_logger.success()
             return result
+
         return func_wrapper
+
     return decorate
 
 
 class RedactingFormatter(Formatter):
-
     def __init__(self, format_string, data_to_redact):
         super(RedactingFormatter, self).__init__(format_string)
         self.data_to_redact = data_to_redact
@@ -389,11 +408,19 @@ class RedactingFormatter(Formatter):
             # This matches stuff like db_pwd=the_secret or admin_password=other_secret
             # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
             # Some names like "key" or "manifest_key" are ignored, used in helpers like ynh_app_setting_set or ynh_read_manifest
-            match = re.search(r'(pwd|pass|password|secret|\w+key|token)=(\S{3,})$', record.strip())
-            if match and match.group(2) not in self.data_to_redact and match.group(1) not in ["key", "manifest_key"]:
+            match = re.search(
+                r"(pwd|pass|password|secret|\w+key|token)=(\S{3,})$", record.strip()
+            )
+            if (
+                match
+                and match.group(2) not in self.data_to_redact
+                and match.group(1) not in ["key", "manifest_key"]
+            ):
                 self.data_to_redact.append(match.group(2))
         except Exception as e:
-            logger.warning("Failed to parse line to try to identify data to redact ... : %s" % e)
+            logger.warning(
+                "Failed to parse line to try to identify data to redact ... : %s" % e
+            )
 
 
 class OperationLogger(object):
@@ -462,13 +489,19 @@ class OperationLogger(object):
         # 4. if among those file, there's an operation log file, we use the id
         # of the most recent file
 
-        recent_operation_logs = sorted(glob.iglob(OPERATIONS_PATH + "*.log"), key=os.path.getctime, reverse=True)[:20]
+        recent_operation_logs = sorted(
+            glob.iglob(OPERATIONS_PATH + "*.log"), key=os.path.getctime, reverse=True
+        )[:20]
 
         proc = psutil.Process().parent()
         while proc is not None:
             # We use proc.open_files() to list files opened / actively used by this proc
             # We only keep files matching a recent yunohost operation log
-            active_logs = sorted([f.path for f in proc.open_files() if f.path in recent_operation_logs], key=os.path.getctime, reverse=True)
+            active_logs = sorted(
+                [f.path for f in proc.open_files() if f.path in recent_operation_logs],
+                key=os.path.getctime,
+                reverse=True,
+            )
             if active_logs != []:
                 # extra the log if from the full path
                 return os.path.basename(active_logs[0])[:-4]
@@ -514,10 +547,12 @@ class OperationLogger(object):
         # N.B. : the subtle thing here is that the class will remember a pointer to the list,
         # so we can directly append stuff to self.data_to_redact and that'll be automatically
         # propagated to the RedactingFormatter
-        self.file_handler.formatter = RedactingFormatter('%(asctime)s: %(levelname)s - %(message)s', self.data_to_redact)
+        self.file_handler.formatter = RedactingFormatter(
+            "%(asctime)s: %(levelname)s - %(message)s", self.data_to_redact
+        )
 
         # Listen to the root logger
-        self.logger = getLogger('yunohost')
+        self.logger = getLogger("yunohost")
         self.logger.addHandler(self.file_handler)
 
     def flush(self):
@@ -529,7 +564,7 @@ class OperationLogger(object):
         for data in self.data_to_redact:
             # N.B. : we need quotes here, otherwise yaml isn't happy about loading the yml later
             dump = dump.replace(data, "'**********'")
-        with open(self.md_path, 'w') as outfile:
+        with open(self.md_path, "w") as outfile:
             outfile.write(dump)
 
     @property
@@ -553,7 +588,7 @@ class OperationLogger(object):
             # We use the name of the first related thing
             name.append(self.related_to[0][1])
 
-        self._name = '-'.join(name)
+        self._name = "-".join(name)
         return self._name
 
     @property
@@ -563,19 +598,19 @@ class OperationLogger(object):
         """
 
         data = {
-            'started_at': self.started_at,
-            'operation': self.operation,
-            'parent': self.parent,
-            'yunohost_version': get_ynh_package_version("yunohost")["version"],
-            'interface': msettings.get('interface'),
+            "started_at": self.started_at,
+            "operation": self.operation,
+            "parent": self.parent,
+            "yunohost_version": get_ynh_package_version("yunohost")["version"],
+            "interface": msettings.get("interface"),
         }
         if self.related_to is not None:
-            data['related_to'] = self.related_to
+            data["related_to"] = self.related_to
         if self.ended_at is not None:
-            data['ended_at'] = self.ended_at
-            data['success'] = self._success
+            data["ended_at"] = self.ended_at
+            data["success"] = self._success
             if self.error is not None:
-                data['error'] = self._error
+                data["error"] = self._error
         # TODO: detect if 'extra' erase some key of 'data'
         data.update(self.extra)
         return data
@@ -608,21 +643,23 @@ class OperationLogger(object):
             self.logger.removeHandler(self.file_handler)
             self.file_handler.close()
 
-        is_api = msettings.get('interface') == 'api'
+        is_api = msettings.get("interface") == "api"
         desc = _get_description_from_name(self.name)
         if error is None:
             if is_api:
-                msg = m18n.n('log_link_to_log', name=self.name, desc=desc)
+                msg = m18n.n("log_link_to_log", name=self.name, desc=desc)
             else:
-                msg = m18n.n('log_help_to_get_log', name=self.name, desc=desc)
+                msg = m18n.n("log_help_to_get_log", name=self.name, desc=desc)
             logger.debug(msg)
         else:
             if is_api:
-                msg = "<strong>" + m18n.n('log_link_to_failed_log',
-                                          name=self.name, desc=desc) + "</strong>"
+                msg = (
+                    "<strong>"
+                    + m18n.n("log_link_to_failed_log", name=self.name, desc=desc)
+                    + "</strong>"
+                )
             else:
-                msg = m18n.n('log_help_to_get_failed_log', name=self.name,
-                             desc=desc)
+                msg = m18n.n("log_help_to_get_failed_log", name=self.name, desc=desc)
             logger.info(msg)
         self.flush()
         return msg
@@ -636,7 +673,7 @@ class OperationLogger(object):
         if self.ended_at is not None or self.started_at is None:
             return
         else:
-            self.error(m18n.n('log_operation_unit_unclosed_properly'))
+            self.error(m18n.n("log_operation_unit_unclosed_properly"))
 
 
 def _get_datetime_from_name(name):

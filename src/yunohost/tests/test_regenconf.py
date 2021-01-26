@@ -2,7 +2,12 @@ import os
 
 from .conftest import message
 from yunohost.domain import domain_add, domain_remove, domain_list
-from yunohost.regenconf import regen_conf, manually_modified_files, _get_conf_hashes, _force_clear_hashes
+from yunohost.regenconf import (
+    regen_conf,
+    manually_modified_files,
+    _get_conf_hashes,
+    _force_clear_hashes,
+)
 
 TEST_DOMAIN = "secondarydomain.test"
 TEST_DOMAIN_NGINX_CONFIG = "/etc/nginx/conf.d/%s.conf" % TEST_DOMAIN
@@ -39,7 +44,7 @@ def clean():
     assert TEST_DOMAIN_NGINX_CONFIG not in _get_conf_hashes("nginx")
     assert TEST_DOMAIN_NGINX_CONFIG not in manually_modified_files()
 
-    regen_conf(['ssh'], force=True)
+    regen_conf(["ssh"], force=True)
 
 
 def test_add_domain():
@@ -107,7 +112,7 @@ def test_ssh_conf_unmanaged_and_manually_modified(mocker):
     assert SSHD_CONFIG in _get_conf_hashes("ssh")
     assert SSHD_CONFIG in manually_modified_files()
 
-    regen_conf(['ssh'], force=True)
+    regen_conf(["ssh"], force=True)
 
     assert SSHD_CONFIG in _get_conf_hashes("ssh")
     assert SSHD_CONFIG not in manually_modified_files()
@@ -157,6 +162,7 @@ def test_stale_hashes_if_file_manually_deleted():
 
     assert not os.path.exists(TEST_DOMAIN_DNSMASQ_CONFIG)
     assert TEST_DOMAIN_DNSMASQ_CONFIG not in _get_conf_hashes("dnsmasq")
+
 
 # This test only works if you comment the part at the end of the regen-conf in
 # dnsmasq that auto-flag /etc/dnsmasq.d/foo.bar as "to be removed" (using touch)

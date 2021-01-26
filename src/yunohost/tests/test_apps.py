@@ -159,7 +159,9 @@ def install_legacy_app(domain, path, public=True):
 def install_full_domain_app(domain):
 
     app_install(
-        os.path.join(get_test_apps_dir(), "full_domain_app_ynh"), args="domain=%s" % domain, force=True
+        os.path.join(get_test_apps_dir(), "full_domain_app_ynh"),
+        args="domain=%s" % domain,
+        force=True,
     )
 
 
@@ -376,7 +378,10 @@ def test_systemfuckedup_during_app_upgrade(mocker, secondary_domain):
 
     with pytest.raises(YunohostError):
         with message(mocker, "app_action_broke_system"):
-            app_upgrade("break_yo_system", file=os.path.join(get_test_apps_dir(), "break_yo_system_ynh"))
+            app_upgrade(
+                "break_yo_system",
+                file=os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
+            )
 
 
 def test_failed_multiple_app_upgrade(mocker, secondary_domain):
@@ -389,7 +394,9 @@ def test_failed_multiple_app_upgrade(mocker, secondary_domain):
             app_upgrade(
                 ["break_yo_system", "legacy_app"],
                 file={
-                    "break_yo_system": os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
+                    "break_yo_system": os.path.join(
+                        get_test_apps_dir(), "break_yo_system_ynh"
+                    ),
                     "legacy": os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
                 },
             )
