@@ -120,20 +120,22 @@ def app_catalog(full=False, with_categories=False):
         return {"apps": catalog["apps"]}
     else:
         return {"apps": catalog["apps"], "categories": catalog["categories"]}
-    
+
 
 def app_search(string):
     """
     Return a dict of apps whose description or name match the search string
     """
-    
+
     # Retrieve a simple dict listing all apps
     catalog_of_apps = app_catalog()
-    
+
     # Selecting apps according to a match in app name or description
     for app in catalog_of_apps["apps"].items():
-        if not (re.search(string, app[0], flags=re.IGNORECASE) or
-                re.search(string, app[1]['description'], flags=re.IGNORECASE)):
+        if not (
+            re.search(string, app[0], flags=re.IGNORECASE)
+            or re.search(string, app[1]["description"], flags=re.IGNORECASE)
+        ):
             del catalog_of_apps["apps"][app[0]]
 
     return catalog_of_apps
@@ -1121,7 +1123,11 @@ def app_install(
 
             permission_sync_to_user()
 
-            raise YunohostError(failure_message_with_debug_instructions, raw_msg=True, log_ref=operation_logger.name)
+            raise YunohostError(
+                failure_message_with_debug_instructions,
+                raw_msg=True,
+                log_ref=operation_logger.name,
+            )
 
     # Clean hooks and add new ones
     hook_remove(app_instance_name)

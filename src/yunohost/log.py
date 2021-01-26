@@ -294,6 +294,7 @@ def log_display(
 
     return infos
 
+
 def log_share(path):
     return log_show(path, share=True)
 
