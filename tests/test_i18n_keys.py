@@ -26,8 +26,8 @@ def find_expected_string_keys():
     #    m18n.n(   "foo"
     #    YunohostError("foo"
     #    # i18n: foo
-    p1 = re.compile(r"m18n\.n\(\s*[\"\'](\w+)[\"\']")
-    p2 = re.compile(r"YunohostError\([\'\"](\w+)[\'\"]")
+    p1 = re.compile(r"m18n\.n\(\n*\s*[\"\'](\w+)[\"\']")
+    p2 = re.compile(r"YunohostError\(\n*\s*[\'\"](\w+)[\'\"]")
     p3 = re.compile(r"# i18n: [\'\"]?(\w+)[\'\"]?")
 
     python_files = glob.glob("src/yunohost/*.py")
@@ -86,7 +86,7 @@ def find_expected_string_keys():
     ):
         yield "log_" + funcname
 
-    p4 = re.compile(r"OperationLogger\([\"\'](\w+)[\"\']")
+    p4 = re.compile(r"OperationLogger\(\n*\s*[\"\'](\w+)[\"\']")
     for python_file in python_files:
         content = open(python_file).read()
         for m in ("log_" + match for match in p4.findall(content)):
@@ -94,7 +94,7 @@ def find_expected_string_keys():
 
     # Global settings descriptions
     # Will be on a line like : ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", ...
-    p5 = re.compile(r" \([\"\'](\w[\w\.]+)[\"\'],")
+    p5 = re.compile(r" \(\n*\s*[\"\'](\w[\w\.]+)[\"\'],")
     content = open("src/yunohost/settings.py").read()
     for m in (
         "global_settings_setting_" + s.replace(".", "_") for s in p5.findall(content)
