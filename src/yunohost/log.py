@@ -294,6 +294,9 @@ def log_display(
 
     return infos
 
+def log_share(path):
+    return log_show(path, share=True)
+
 
 def is_unit_operation(
     entities=["app", "domain", "group", "service", "user"],

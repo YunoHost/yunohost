@@ -722,7 +722,7 @@ def tools_upgrade(
             #
             # Here we use a dirty hack to run a command after the current
             # "yunohost tools upgrade", because the upgrade of yunohost
-            # will also trigger other yunohost commands (e.g. "yunohost tools migrations migrate")
+            # will also trigger other yunohost commands (e.g. "yunohost tools migrations run")
             # (also the upgrade of the package, if executed from the webadmin, is
             # likely to kill/restart the api which is in turn likely to kill this
             # command before it ends...)
