@@ -9,7 +9,7 @@ do_configure() {
 
       # If apps/ is not empty, we're probably already installed in the past and
       # something funky happened ...
-      if [ -d /etc/yunohost/apps/ ] && ls /etc/yunohost/apps/* 2>/dev/null
+      if [ -d /etc/yunohost/apps/ ] && ls /etc/yunohost/apps/* >/dev/null 2>&1
       then
           echo "Sounds like /etc/yunohost/installed mysteriously disappeared ... You should probably contact the Yunohost support ..."
       else
