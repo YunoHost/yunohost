@@ -598,7 +598,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
         subdomain = "xmpp-upload." + domain
         xmpp_records = Diagnoser.get_cached_report("dnsrecords", item={"domain": domain, "category": "xmpp"}).get("data") or {}
         if xmpp_records.get("CNAME:xmpp-upload") == "OK":
-            csr.add_extensions([crypto.X509Extension("subjectAltName", False, "DNS:" + subdomain)])
+            csr.add_extensions([crypto.X509Extension("subjectAltName".encode('utf8'), False, ("DNS:" + subdomain).encode('utf8'))])
         else:
             logger.warning(m18n.n('certmanager_warning_subdomain_dns_record', subdomain=subdomain, domain=domain))
 
@@ -615,7 +615,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     csr_file = output_folder + domain + ".csr"
     logger.debug("Saving to %s.", csr_file)
 
-    with open(csr_file, "w") as f:
+    with open(csr_file, "wb") as f:
         f.write(crypto.dump_certificate_request(crypto.FILETYPE_PEM, csr))
 
 
@@ -726,9 +726,8 @@ def _generate_key(destination_path):
     k = crypto.PKey()
     k.generate_key(crypto.TYPE_RSA, KEY_SIZE)
 
-    with open(destination_path, "w") as f:
+    with open(destination_path, "wb") as f:
         f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
-
 
 def _set_permissions(path, user, group, permissions):
     uid = pwd.getpwnam(user).pw_uid
