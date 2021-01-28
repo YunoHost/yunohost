@@ -650,7 +650,7 @@
     "migration_description_0018_xtable_to_nftable": "Migrer les anciennes règles de trafic réseau vers le nouveau système basé sur nftables",
     "service_description_php7.3-fpm": "Exécute les applications écrites en PHP avec NGINX",
     "migration_0018_failed_to_reset_legacy_rules": "La réinitialisation des règles iptable par défaut a échoué : {error}",
-    "migration_0018_failed_to_migrate_iptables_rules": "La migration des règles iptables héritées vers nftables a échoué: {error}",
+    "migration_0018_failed_to_migrate_iptables_rules": "Échec de la migration des anciennes règles iptables vers nftables : {error}",
     "migration_0017_not_enough_space": "Laissez suffisamment d'espace disponible dans {path} avant de lancer la migration.",
     "migration_0017_postgresql_11_not_installed": "PostgreSQL 9.6 est installé mais pas posgreSQL 11 ? Il s'est sans doute passé quelque chose d'étrange sur votre système :(...",
     "migration_0017_postgresql_96_not_installed": "PostgreSQL n'a pas été installé sur votre système. Aucune opération à effectuer.",
