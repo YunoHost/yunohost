@@ -249,6 +249,9 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     if os.path.isfile('/etc/yunohost/installed'):
         raise YunohostError('yunohost_already_installed')
 
+    if os.path.isdir("/etc/yunohost/apps") and os.listdir("/etc/yunohost/apps") != []:
+        raise YunohostError("It looks like you're trying to re-postinstall a system that was already working previously ... If you recently had some bug or issues with your installation, please first discuss with the team on how to fix the situation instead of savagely re-running the postinstall ...", raw_msg=True)
+
     # Check password
     if not force_password:
         assert_password_is_strong_enough("admin", password)
