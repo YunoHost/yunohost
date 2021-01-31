@@ -149,11 +149,9 @@ ynh_systemd_action() {
         # If a log is specified for this service, show also the content of this log
         if [ -e "$log_path" ]
         then
-            ynh_print_err --message="--"
             ynh_exec_err tail --lines=$length "$log_path"
         fi
-        # Fail the app script, since the service failed.
-        ynh_die
+        return 1
     fi
 
     # Start the timeout and try to find line_match
