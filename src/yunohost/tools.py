@@ -59,8 +59,6 @@ def tools_versions():
 def tools_ldapinit():
     """
     YunoHost LDAP initialization
-
-
     """
 
     with open('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml') as f:
@@ -299,12 +297,6 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     operation_logger.start()
     logger.info(m18n.n('yunohost_installing'))
-
-    regen_conf(['nslcd', 'nsswitch'], force=True)
-
-    # Initialize LDAP for YunoHost
-    # TODO: Improve this part by integrate ldapinit into conf_regen hook
-    tools_ldapinit()
 
     # New domain config
     domain_add(domain, dyndns)
