@@ -229,7 +229,7 @@ def _detect_virt():
 
 @is_unit_operation()
 def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
-                      force_password=False):
+                      force_password=False, force_diskspace=False):
     """
     YunoHost post-install
 
@@ -242,6 +242,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     """
     from yunohost.utils.password import assert_password_is_strong_enough
     from yunohost.domain import domain_main_domain
+    import psutil
 
     dyndns_provider = "dyndns.yunohost.org"
 
@@ -251,6 +252,14 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     if os.path.isdir("/etc/yunohost/apps") and os.listdir("/etc/yunohost/apps") != []:
         raise YunohostError("It looks like you're trying to re-postinstall a system that was already working previously ... If you recently had some bug or issues with your installation, please first discuss with the team on how to fix the situation instead of savagely re-running the postinstall ...", raw_msg=True)
+
+    # Check there's at least 10 GB on the rootfs...
+    disk_partitions = sorted(psutil.disk_partitions(), key=lambda k: k.mountpoint)
+    main_disk_partitions = [d for d in disk_partitions if d.mountpoint in ['/', '/var']]
+    main_space = sum([psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions])
+    GB = 1024**3
+    if not force_diskspace and main_space < 10 * GB:
+        raise YunohostError("postinstall_low_rootfsspace")
 
     # Check password
     if not force_password:

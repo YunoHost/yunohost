@@ -104,6 +104,26 @@ class SystemResourcesDiagnoser(Diagnoser):
             yield item
 
         #
+        # Check for minimal space on / + /var
+        # because some stupid VPS provider only configure a stupidly
+        # low amount of disk space for the root partition
+        # which later causes issue when it gets full...
+        #
+
+        main_disk_partitions = [d for d in disk_partitions if d.mountpoint in ['/', '/var']]
+        main_space = sum([psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions])
+        if main_space < 10 * GB:
+            yield dict(meta={"test": "rootfstotalspace"},
+                       data={"space": human_size(main_space)},
+                       status="ERROR",
+                       summary="diagnosis_rootfstotalspace_critical")
+        if main_space < 14 * GB:
+            yield dict(meta={"test": "rootfstotalspace"},
+                       data={"space": human_size(main_space)},
+                       status="WARNING",
+                       summary="diagnosis_rootfstotalspace_warning")
+
+        #
         # Recent kills by oom_reaper
         #
 
