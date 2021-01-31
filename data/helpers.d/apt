@@ -32,7 +32,7 @@ ynh_wait_dpkg_free() {
                 if echo "$dpkg_file" | grep --perl-regexp --quiet "^[[:digit:]]+$"
                 then
                     # If so, that a remaining of dpkg.
-                    ynh_print_err "E: dpkg was interrupted, you must manually run 'sudo dpkg --configure -a' to correct the problem."
+                    ynh_print_err "dpkg was interrupted, you must manually run 'sudo dpkg --configure -a' to correct the problem."
                     set -o xtrace # set -x
                     return 1
                 fi

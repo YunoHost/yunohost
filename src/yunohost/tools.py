@@ -33,7 +33,7 @@ from importlib import import_module
 from moulinette import msignals, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
-from moulinette.utils.filesystem import write_to_json, read_yaml, write_to_yaml
+from moulinette.utils.filesystem import read_yaml, write_to_yaml
 
 from yunohost.app import _update_apps_catalog, app_info, app_upgrade, _initialize_apps_catalog_system
 from yunohost.domain import domain_add
@@ -227,7 +227,7 @@ def _detect_virt():
 
 @is_unit_operation()
 def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
-                      force_password=False):
+                      force_password=False, force_diskspace=False):
     """
     YunoHost post-install
 
@@ -240,12 +240,24 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     """
     from yunohost.utils.password import assert_password_is_strong_enough
     from yunohost.domain import domain_main_domain
+    import psutil
 
     dyndns_provider = "dyndns.yunohost.org"
 
     # Do some checks at first
     if os.path.isfile('/etc/yunohost/installed'):
         raise YunohostError('yunohost_already_installed')
+
+    if os.path.isdir("/etc/yunohost/apps") and os.listdir("/etc/yunohost/apps") != []:
+        raise YunohostError("It looks like you're trying to re-postinstall a system that was already working previously ... If you recently had some bug or issues with your installation, please first discuss with the team on how to fix the situation instead of savagely re-running the postinstall ...", raw_msg=True)
+
+    # Check there's at least 10 GB on the rootfs...
+    disk_partitions = sorted(psutil.disk_partitions(), key=lambda k: k.mountpoint)
+    main_disk_partitions = [d for d in disk_partitions if d.mountpoint in ['/', '/var']]
+    main_space = sum([psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions])
+    GB = 1024**3
+    if not force_diskspace and main_space < 10 * GB:
+        raise YunohostError("postinstall_low_rootfsspace")
 
     # Check password
     if not force_password:
@@ -286,58 +298,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     operation_logger.start()
     logger.info(m18n.n('yunohost_installing'))
 
-    # Create required folders
-    folders_to_create = [
-        '/etc/yunohost/apps',
-        '/etc/yunohost/certs',
-        '/var/cache/yunohost/repo',
-        '/home/yunohost.backup',
-        '/home/yunohost.app'
-    ]
-
-    for folder in [x for x in folders_to_create if not os.path.exists(x)]:
-        os.makedirs(folder)
-
-    # Change folders permissions
-    os.system('chmod 755 /home/yunohost.app')
-
-    # Init ssowat's conf.json.persistent
-    if not os.path.exists('/etc/ssowat/conf.json.persistent'):
-        write_to_json('/etc/ssowat/conf.json.persistent', {})
-
-    os.system('chmod 644 /etc/ssowat/conf.json.persistent')
-
-    # Create SSL CA
-    regen_conf(['ssl'], force=True)
-    ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
-    # (Update the serial so that it's specific to this very instance)
-    os.system("openssl rand -hex 19 > %s/serial" % ssl_dir)
-    commands = [
-        'rm %s/index.txt' % ssl_dir,
-        'touch %s/index.txt' % ssl_dir,
-        'cp %s/openssl.cnf %s/openssl.ca.cnf' % (ssl_dir, ssl_dir),
-        'sed -i s/yunohost.org/%s/g %s/openssl.ca.cnf ' % (domain, ssl_dir),
-        'openssl req -x509 -new -config %s/openssl.ca.cnf -days 3650 -out %s/ca/cacert.pem -keyout %s/ca/cakey.pem -nodes -batch -subj /CN=%s/O=%s' % (ssl_dir, ssl_dir, ssl_dir, domain, os.path.splitext(domain)[0]),
-        'cp %s/ca/cacert.pem /etc/ssl/certs/ca-yunohost_crt.pem' % ssl_dir,
-        'update-ca-certificates'
-    ]
-
-    for command in commands:
-        p = subprocess.Popen(
-            command.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
-        out, _ = p.communicate()
-
-        if p.returncode != 0:
-            logger.warning(out)
-            raise YunohostError('yunohost_ca_creation_failed')
-        else:
-            logger.debug(out)
-
-    logger.success(m18n.n('yunohost_ca_creation_success'))
-
     # New domain config
-    regen_conf(['nsswitch'], force=True)
     domain_add(domain, dyndns)
     domain_main_domain(domain)
 
@@ -357,12 +318,6 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         _update_apps_catalog()
     except Exception as e:
         logger.warning(str(e))
-
-    # Create the archive directory (makes it easier for people to upload backup
-    # archives, otherwise it's only created after running `yunohost backup
-    # create` once.
-    from yunohost.backup import _create_archive_dir
-    _create_archive_dir()
 
     # Init migrations (skip them, no need to run them on a fresh system)
     _skip_all_migrations()
@@ -633,7 +588,7 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
             #
             # Here we use a dirty hack to run a command after the current
             # "yunohost tools upgrade", because the upgrade of yunohost
-            # will also trigger other yunohost commands (e.g. "yunohost tools migrations migrate")
+            # will also trigger other yunohost commands (e.g. "yunohost tools migrations run")
             # (also the upgrade of the package, if executed from the webadmin, is
             # likely to kill/restart the api which is in turn likely to kill this
             # command before it ends...)
@@ -784,7 +739,7 @@ def tools_migrations_list(pending=False, done=False):
     return {"migrations": migrations}
 
 
-def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False):
+def tools_migrations_run(targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False):
     """
     Perform migrations
 
