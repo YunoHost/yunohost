@@ -82,6 +82,8 @@ def firewall_allow(protocol, port, ipv4_only=False, ipv6_only=False,
         # Add port forwarding with UPnP
         if not no_upnp and port not in firewall['uPnP'][p]:
             firewall['uPnP'][p].append(port)
+            if firewall['uPnP'][p + "_TO_CLOSE"] and port in firewall['uPnP'][p + "_TO_CLOSE"]:
+                firewall['uPnP'][p + "_TO_CLOSE"].remove(port)
 
     # Update and reload firewall
     _update_firewall_file(firewall)
@@ -139,6 +141,9 @@ def firewall_disallow(protocol, port, ipv4_only=False, ipv6_only=False,
         # Remove port forwarding with UPnP
         if upnp and port in firewall['uPnP'][p]:
             firewall['uPnP'][p].remove(port)
+            if not firewall['uPnP'][p + "_TO_CLOSE"]:
+                firewall['uPnP'][p + "_TO_CLOSE"] = []
+            firewall['uPnP'][p + "_TO_CLOSE"].append(port)
 
     # Update and reload firewall
     _update_firewall_file(firewall)
@@ -356,6 +361,16 @@ def firewall_upnp(action='status', no_refresh=False):
             else:
                 # Iterate over ports
                 for protocol in ['TCP', 'UDP']:
+                    if firewall['uPnP'][protocol + "_TO_CLOSE"]:
+                        for port in firewall['uPnP'][protocol + "_TO_CLOSE"]:
+                            # Clean the mapping of this port
+                            if upnpc.getspecificportmapping(port, protocol):
+                                try:
+                                    upnpc.deleteportmapping(port, protocol)
+                                except:
+                                    pass
+                        firewall['uPnP'][protocol + "_TO_CLOSE"] = []
+
                     for port in firewall['uPnP'][protocol]:
                         # Clean the mapping of this port
                         if upnpc.getspecificportmapping(port, protocol):
@@ -373,15 +388,14 @@ def firewall_upnp(action='status', no_refresh=False):
                             logger.debug('unable to add port %d using UPnP',
                                          port, exc_info=1)
                             enabled = False
+                    
+                _update_firewall_file(firewall)
 
     if enabled != firewall['uPnP']['enabled']:
         firewall = firewall_list(raw=True)
         firewall['uPnP']['enabled'] = enabled
 
-        # Make a backup and update firewall file
-        os.system("cp {0} {0}.old".format(FIREWALL_FILE))
-        with open(FIREWALL_FILE, 'w') as f:
-            yaml.safe_dump(firewall, f, default_flow_style=False)
+        _update_firewall_file(firewall)
 
         if not no_refresh:
             # Display success message if needed
