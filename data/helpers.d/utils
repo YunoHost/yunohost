@@ -322,6 +322,7 @@ ynh_add_config () {
     ynh_backup_if_checksum_is_different --file="$destination"
 
     cp "$template_path" "$destination"
+    chown root: "$destination"
 
     ynh_replace_vars --file="$destination"
 
