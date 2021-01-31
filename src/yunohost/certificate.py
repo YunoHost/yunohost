@@ -641,7 +641,7 @@ def _get_status(domain):
     valid_up_to = datetime.strptime(cert.get_notAfter().decode('utf-8'), "%Y%m%d%H%M%SZ")
     days_remaining = (valid_up_to - datetime.utcnow()).days
 
-    if cert_issuer == _name_self_CA():
+    if cert_issuer == 'yunohost.org' or cert_issuer == _name_self_CA():
         CA_type = {
             "code": "self-signed",
             "verbose": "Self-signed",
