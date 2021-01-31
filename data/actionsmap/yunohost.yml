@@ -581,6 +581,13 @@ app:
                     full: --with-categories
                     help: Also return a list of app categories
                     action: store_true
+                    
+        ### app_search()
+        search:
+            action_help: Search installable apps
+            arguments:
+                string:
+                    help: Return matching app name or description with "string"
 
         fetchlist:
             deprecated: true
@@ -1522,10 +1529,12 @@ tools:
                         help: list only migrations already performed
                         action: store_true
 
-              ### tools_migrations_migrate()
-              migrate:
+              ### tools_migrations_run()
+              run:
                   action_help: Run migrations
-                  api: POST /migrations/migrate
+                  api: POST /migrations/run
+                  deprecated_alias:
+                     - migrate
                   arguments:
                     targets:
                         help: Migrations to run (all pendings by default)
@@ -1672,10 +1681,12 @@ log:
                     help: Include metadata about operations that are not the main operation but are sub-operations triggered by another ongoing operation... (e.g. initializing groups/permissions when installing an app)
                     action: store_true
 
-        ### log_display()
-        display:
+        ### log_show()
+        show:
             action_help: Display a log content
-            api: GET /logs/display
+            api: GET /logs/<path>
+            deprecated_alias:
+                - display
             arguments:
                 path:
                     help: Log file which to display the content
@@ -1685,7 +1696,7 @@ log:
                     default: 50
                     type: int
                 --share:
-                    help: Share the full log using yunopaste
+                    help: (Deprecated, see yunohost log share) Share the full log using yunopaste
                     action: store_true
                 -i:
                     full: --filter-irrelevant
@@ -1695,6 +1706,14 @@ log:
                     full: --with-suboperations
                     help: Include metadata about sub-operations of this operation... (e.g. initializing groups/permissions when installing an app)
                     action: store_true
+
+        ### log_share()
+        share:
+            action_help: Share the full log on yunopaste (alias to show --share)
+            api: GET /logs/share
+            arguments:
+                path:
+                    help: Log file to share
 
 
 #############################

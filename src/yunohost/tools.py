@@ -250,6 +250,9 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     if os.path.isfile('/etc/yunohost/installed'):
         raise YunohostError('yunohost_already_installed')
 
+    if os.path.isdir("/etc/yunohost/apps") and os.listdir("/etc/yunohost/apps") != []:
+        raise YunohostError("It looks like you're trying to re-postinstall a system that was already working previously ... If you recently had some bug or issues with your installation, please first discuss with the team on how to fix the situation instead of savagely re-running the postinstall ...", raw_msg=True)
+
     # Check there's at least 10 GB on the rootfs...
     disk_partitions = sorted(psutil.disk_partitions(), key=lambda k: k.mountpoint)
     main_disk_partitions = [d for d in disk_partitions if d.mountpoint in ['/', '/var']]
@@ -650,7 +653,7 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
             #
             # Here we use a dirty hack to run a command after the current
             # "yunohost tools upgrade", because the upgrade of yunohost
-            # will also trigger other yunohost commands (e.g. "yunohost tools migrations migrate")
+            # will also trigger other yunohost commands (e.g. "yunohost tools migrations run")
             # (also the upgrade of the package, if executed from the webadmin, is
             # likely to kill/restart the api which is in turn likely to kill this
             # command before it ends...)
@@ -801,7 +804,7 @@ def tools_migrations_list(pending=False, done=False):
     return {"migrations": migrations}
 
 
-def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False):
+def tools_migrations_run(targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False):
     """
     Perform migrations
 

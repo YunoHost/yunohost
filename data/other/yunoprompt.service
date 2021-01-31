@@ -1,6 +1,7 @@
 [Unit]
 Description=YunoHost boot prompt
 After=getty@tty2.service
+After=network.target
 
 [Service]
 Type=simple
