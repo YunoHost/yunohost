@@ -149,9 +149,6 @@ def init_logging(interface="cli",
 
     #  Logging configuration for CLI (or any other interface than api...)     #
     if interface != "api":
-
-        logging_configuration["main_logger"] = "yunohost"
-
         configure_logging(logging_configuration)
 
     #  Logging configuration for API                                          #
