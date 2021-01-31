@@ -327,37 +327,7 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
 
     os.system('chmod 644 /etc/ssowat/conf.json.persistent')
 
-    # Create SSL CA
-    regen_conf(['ssl'], force=True)
-    ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
-    # (Update the serial so that it's specific to this very instance)
-    os.system("openssl rand -hex 19 > %s/serial" % ssl_dir)
-    commands = [
-        'rm %s/index.txt' % ssl_dir,
-        'touch %s/index.txt' % ssl_dir,
-        'cp %s/openssl.cnf %s/openssl.ca.cnf' % (ssl_dir, ssl_dir),
-        'sed -i s/yunohost.org/%s/g %s/openssl.ca.cnf ' % (domain, ssl_dir),
-        'openssl req -x509 -new -config %s/openssl.ca.cnf -days 3650 -out %s/ca/cacert.pem -keyout %s/ca/cakey.pem -nodes -batch -subj /CN=%s/O=%s' % (ssl_dir, ssl_dir, ssl_dir, domain, os.path.splitext(domain)[0]),
-        'cp %s/ca/cacert.pem /etc/ssl/certs/ca-yunohost_crt.pem' % ssl_dir,
-        'update-ca-certificates'
-    ]
-
-    for command in commands:
-        p = subprocess.Popen(
-            command.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
-        out, _ = p.communicate()
-
-        if p.returncode != 0:
-            logger.warning(out)
-            raise YunohostError('yunohost_ca_creation_failed')
-        else:
-            logger.debug(out)
-
-    logger.success(m18n.n('yunohost_ca_creation_success'))
-
     # New domain config
-    regen_conf(['nsswitch'], force=True)
     domain_add(domain, dyndns)
     domain_main_domain(domain)
 
