@@ -489,5 +489,7 @@
     "global_settings_setting_smtp_relay_port": "SMTP Relay Port",
     "global_settings_setting_smtp_allow_ipv6": "Erlaube die Nutzung von IPv6 um Mails zu empfangen und zu versenden",
     "global_settings_setting_pop3_enabled": "Aktiviere das POP3 Protokoll für den Mailserver",
-    "domain_cannot_remove_main_add_new_one": "Du kannst \"{domain:s}\" nicht entfernen da es die Hauptdomain und deine einzige Domain ist, erst musst erst eine andere Domain hinzufügen indem du eingibst \"yunohost domain add <andere-domian.de>\", setze es dann als deine Hauptdomain indem du eingibst \"yunohost domain main-domain -n <andere-domain.de>\", erst jetzt kannst du die domain \"{domain:s}\" entfernen."
+    "domain_cannot_remove_main_add_new_one": "Du kannst \"{domain:s}\" nicht entfernen da es die Hauptdomain und deine einzige Domain ist, erst musst erst eine andere Domain hinzufügen indem du eingibst \"yunohost domain add <andere-domian.de>\", setze es dann als deine Hauptdomain indem du eingibst \"yunohost domain main-domain -n <andere-domain.de>\", erst jetzt kannst du die domain \"{domain:s}\" entfernen.",
+    "diagnosis_rootfstotalspace_critical": "Das Root-Filesystem hat noch freien Speicher von {space}. Das ist besorngiserregend! Der Speicher wird schnell aufgebraucht sein. 16 GB für das Root-Filesystem werden empfohlen.",
+    "diagnosis_rootfstotalspace_warning": "Das Root-Filesystem hat noch freien Speicher von {space}. Möglich, dass das in Ordnung ist. Vielleicht ist er aber auch schneller aufgebraucht. 16 GB für das Root-Filesystem werden empfohlen."
 }
