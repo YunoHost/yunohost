@@ -399,6 +399,15 @@ ynh_delete_file_checksum () {
     ynh_app_setting_delete --app=$app --key=$checksum_setting_name
 }
 
+# Checks a backup archive exists
+#
+# [internal]
+#
+ynh_backup_archive_exists () {
+    yunohost backup list --output-as json --quiet \
+        | jq -e --arg archive "$1" '.archives | index($archive)' >/dev/null
+}
+
 # Make a backup in case of failed upgrade
 #
 # usage:
@@ -423,7 +432,7 @@ ynh_backup_before_upgrade () {
     if [ "$NO_BACKUP_UPGRADE" -eq 0 ]
     then
         # Check if a backup already exists with the prefix 1
-        if yunohost backup list | grep --quiet $app_bck-pre-upgrade1
+        if ynh_backup_archive_exists "$app_bck-pre-upgrade1"
         then
             # Prefix becomes 2 to preserve the previous backup
             backup_number=2
@@ -435,7 +444,7 @@ ynh_backup_before_upgrade () {
         if [ "$?" -eq 0 ]
         then
             # If the backup succeeded, remove the previous backup
-            if yunohost backup list | grep --quiet $app_bck-pre-upgrade$old_backup_number
+            if ynh_backup_archive_exists "$app_bck-pre-upgrade$old_backup_number"
             then
                 # Remove the previous backup only if it exists
                 yunohost backup delete $app_bck-pre-upgrade$old_backup_number > /dev/null
@@ -467,7 +476,7 @@ ynh_restore_upgradebackup () {
     if [ "$NO_BACKUP_UPGRADE" -eq 0 ]
     then
         # Check if an existing backup can be found before removing and restoring the application.
-        if yunohost backup list | grep --quiet $app_bck-pre-upgrade$backup_number
+        if ynh_backup_archive_exists "$app_bck-pre-upgrade$backup_number"
         then
             # Remove the application then restore it
             yunohost app remove $app

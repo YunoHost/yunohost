@@ -504,12 +504,7 @@ ynh_secure_remove () {
 #
 # [internal]
 #
-# example: yunohost user info tata --output-as plain | ynh_get_plain_key mail
-#
-# usage: ynh_get_plain_key key [subkey [subsubkey ...]]
-# | ret: string - the key's value
-#
-# Requires YunoHost version 2.2.4 or higher.
+# (Deprecated, use --output-as json and jq instead)
 ynh_get_plain_key() {
     local prefix="#"
     local founded=0
