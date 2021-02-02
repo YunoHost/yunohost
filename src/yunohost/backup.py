@@ -703,7 +703,7 @@ class BackupManager():
         except:
             abs_tmp_app_dir = os.path.join(self.work_dir, 'apps/', app)
             shutil.rmtree(abs_tmp_app_dir, ignore_errors=True)
-            logger.exception(m18n.n('backup_app_failed', app=app))
+            logger.error(m18n.n('backup_app_failed', app=app))
             self.targets.set_result("apps", app, "Error")
         else:
             # Add app info
@@ -945,7 +945,7 @@ class RestoreManager():
             if system_part not in self.info['system'] or\
                     'paths' not in self.info['system'][system_part] or\
                     len(self.info['system'][system_part]['paths']) == 0:
-                logger.exception(m18n.n('restore_hook_unavailable', part=system_part))
+                logger.error(m18n.n('restore_hook_unavailable', part=system_part))
                 self.targets.set_result("system", system_part, "Skipped")
                 continue
 
@@ -1392,7 +1392,7 @@ class RestoreManager():
                       env=env_dict)[0]
         except:
             msg = m18n.n('restore_app_failed', app=app_instance_name)
-            logger.exception(msg)
+            logger.error(msg)
             operation_logger.error(msg)
 
             if msettings.get('interface') != 'api':

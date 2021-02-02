@@ -148,7 +148,7 @@ def tools_adminpw(new_password, check_strength=True):
     try:
         ldap.update("cn=admin", {"userPassword": [new_hash], })
     except:
-        logger.exception('unable to change admin password')
+        logger.error('unable to change admin password')
         raise YunohostError('admin_password_change_failed')
     else:
         # Write as root password

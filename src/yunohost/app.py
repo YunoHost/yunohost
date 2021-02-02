@@ -104,16 +104,16 @@ def app_catalog(full=False, with_categories=False):
         return {"apps": catalog["apps"]}
     else:
         return {"apps": catalog["apps"], "categories": catalog["categories"]}
-    
+
 
 def app_search(string):
     """
     Return a dict of apps whose description or name match the search string
     """
-    
+
     # Retrieve a simple dict listing all apps
     catalog_of_apps = app_catalog()
-    
+
     # Selecting apps according to a match in app name or description
     for app in catalog_of_apps["apps"].items():
         if not (re.search(string, app[0], flags=re.IGNORECASE) or
@@ -2171,7 +2171,7 @@ def _get_git_last_commit_hash(repository, reference='HEAD'):
             .format(repository, reference)
         commit = check_output(cmd)
     except subprocess.CalledProcessError:
-        logger.exception("unable to get last commit from %s", repository)
+        logger.error("unable to get last commit from %s", repository)
         raise ValueError("Unable to get last commit with git")
     else:
         return commit.strip()
