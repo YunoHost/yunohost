@@ -30,10 +30,9 @@ import shutil
 import yaml
 import time
 import re
-import urllib.parse
 import subprocess
 import glob
-import urllib.request, urllib.parse, urllib.error
+import urllib.parse
 from collections import OrderedDict
 
 from moulinette import msignals, m18n, msettings
@@ -912,7 +911,7 @@ def app_install(
     args_odict = _parse_args_from_manifest(manifest, "install", args=args_dict)
 
     # Validate domain / path availability for webapps
-    _validate_and_normalize_webpath(manifest, args_odict, extracted_app_folder)
+    _validate_and_normalize_webpath(args_odict, extracted_app_folder)
 
     # Attempt to patch legacy helpers ...
     _patch_legacy_helpers(extracted_app_folder)
@@ -3040,7 +3039,7 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions):
     return parsed_answers_dict
 
 
-def _validate_and_normalize_webpath(manifest, args_dict, app_folder):
+def _validate_and_normalize_webpath(args_dict, app_folder):
 
     # If there's only one "domain" and "path", validate that domain/path
     # is an available url and normalize the path.

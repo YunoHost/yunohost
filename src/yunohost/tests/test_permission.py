@@ -199,11 +199,11 @@ def teardown_function(function):
 
     try:
         app_remove("permissions_app")
-    except:
+    except Exception:
         pass
     try:
         app_remove("legacy_app")
-    except:
+    except Exception:
         pass
 
 

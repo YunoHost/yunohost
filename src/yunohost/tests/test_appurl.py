@@ -16,7 +16,7 @@ def setup_function(function):
 
     try:
         app_remove("register_url_app")
-    except:
+    except Exception:
         pass
 
 
@@ -24,7 +24,7 @@ def teardown_function(function):
 
     try:
         app_remove("register_url_app")
-    except:
+    except Exception:
         pass
 
 

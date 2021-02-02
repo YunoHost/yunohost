@@ -229,8 +229,8 @@ class MyMigration(Migration):
             os.system("apt-mark unhold {}".format(package))
 
     def apt_install(self, cmd):
-        def is_relevant(l):
-            return "Reading database ..." not in l.rstrip()
+        def is_relevant(line):
+            return "Reading database ..." not in line.rstrip()
 
         callbacks = (
             lambda l: logger.info("+ " + l.rstrip() + "\r")

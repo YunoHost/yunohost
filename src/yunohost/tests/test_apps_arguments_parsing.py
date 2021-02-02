@@ -7,7 +7,7 @@ from collections import OrderedDict
 
 from moulinette import msignals
 
-from yunohost import domain, user, app
+from yunohost import domain, user
 from yunohost.app import _parse_args_in_yunohost_format, PasswordArgumentParser
 from yunohost.utils.error import YunohostError
 

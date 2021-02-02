@@ -120,7 +120,9 @@ def _list_upgradable_apt_packages():
     upgradable_raw = check_output("LC_ALL=C apt list --upgradable")
 
     # Dirty parsing of the output
-    upgradable_raw = [l.strip() for l in upgradable_raw.split("\n") if l.strip()]
+    upgradable_raw = [
+        line.strip() for line in upgradable_raw.split("\n") if line.strip()
+    ]
     for line in upgradable_raw:
 
         # Remove stupid warning and verbose messages >.>

@@ -839,7 +839,7 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
        re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
 
     We can also have less-trivial regexes like:
-        re:^\/api\/.*|\/scripts\/api.js$
+        re:^/api/.*|/scripts/api.js$
     """
 
     from yunohost.domain import domain_list
