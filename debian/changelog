@@ -4,6 +4,23 @@ yunohost (4.2) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Jan 2021 05:19:58 +0100
 
+yunohost (4.1.7) stable; urgency=low
+
+  - [fix] diagnosis: Handle case where DKIM record is split into several pieces (4b876ff0)
+  - [fix] i18n: de locale was broken (4725e054)
+  - [enh] diagnosis: Ignore /dev/loop devices in systemresources (536fd9be)
+  - [fix] backup: fix a small issue dur to var not existing in some edge case ... (2fc016e3)
+  - [fix] settings: service_regen_conf is deprecated in favor of regen_conf (62e84d8b)
+  - [fix] users: If uid is less than 1001, nsswitch ignores it (4e335e07, aef3ee14)
+  - [enh] misc: fixes/enh in yunoprompt (5ab5c83d, 9fbd1a02)
+  - [enh] helpers: Add ynh_exec_as (b94ff1c2, 6b2d76dd)
+  - [fix] helpers: Do not ynh_die if systemctl action fails, to avoid exiting during a remove script (29fe7c31)
+  - [fix] misc: logger.exception -> logger.error (08e7b42c)
+
+  Thanks to all contributors <3 ! (ericgaspar, Kayou, ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 02 Feb 2021 04:18:01 +0100
+
 yunohost (4.1.6) stable; urgency=low
 
   - [fix] Make dyndns update more resilient to ns0.yunohost.org being down ([#1140](https://github.com/yunohost/yunohost/pull/1140))
