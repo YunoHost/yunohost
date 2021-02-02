@@ -27,7 +27,7 @@ regen_local_ca() {
     rm -f index.txt
     touch index.txt
     cp /usr/share/yunohost/templates/ssl/openssl.cnf openssl.ca.cnf
-    sed -i 's/yunohost.org/${domain}/g' openssl.ca.cnf
+    sed -i "s/yunohost.org/${domain}/g" openssl.ca.cnf
     openssl req -x509 \
         -new \
         -config openssl.ca.cnf \
