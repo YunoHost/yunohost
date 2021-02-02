@@ -48,7 +48,4 @@ class YunohostError(MoulinetteError):
         if not self.log_ref:
             return super(YunohostError, self).content()
         else:
-            return {
-                "error": self.strerror,
-                "log_ref": self.log_ref
-            }
+            return {"error": self.strerror, "log_ref": self.log_ref}
