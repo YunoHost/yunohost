@@ -735,7 +735,7 @@ class BackupManager:
             }
             write_to_yaml("%s/permissions.yml" % settings_dir, this_app_permissions)
 
-        except:
+        except Exception:
             abs_tmp_app_dir = os.path.join(self.work_dir, "apps/", app)
             shutil.rmtree(abs_tmp_app_dir, ignore_errors=True)
             logger.error(m18n.n("backup_app_failed", app=app))
@@ -1507,7 +1507,7 @@ class RestoreManager:
                 raise_on_error=True,
                 env=env_dict,
             )[0]
-        except:
+        except Exception:
             msg = m18n.n("restore_app_failed", app=app_instance_name)
             logger.error(msg)
             operation_logger.error(msg)
@@ -1944,7 +1944,7 @@ class TarBackupMethod(BackupMethod):
                 self._archive_file,
                 "w:gz" if self._archive_file.endswith(".gz") else "w",
             )
-        except:
+        except Exception:
             logger.debug(
                 "unable to open '%s' for writing", self._archive_file, exc_info=1
             )
@@ -1995,7 +1995,7 @@ class TarBackupMethod(BackupMethod):
                 self._archive_file,
                 "r:gz" if self._archive_file.endswith(".gz") else "r",
             )
-        except:
+        except Exception:
             logger.debug(
                 "cannot open backup archive '%s'", self._archive_file, exc_info=1
             )
@@ -2466,7 +2466,7 @@ def backup_info(name, with_details=False, human_readable=False):
         with open(info_file) as f:
             # Retrieve backup info
             info = json.load(f)
-    except:
+    except Exception:
         logger.debug("unable to load '%s'", info_file, exc_info=1)
         raise YunohostError(
             "backup_archive_cant_retrieve_info_json", archive=archive_file
@@ -2552,7 +2552,7 @@ def backup_delete(name):
     for backup_file in files_to_delete:
         try:
             os.remove(backup_file)
-        except:
+        except Exception:
             logger.debug("unable to delete '%s'", backup_file, exc_info=1)
             logger.warning(m18n.n("backup_delete_error", path=backup_file))
 

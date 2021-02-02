@@ -673,7 +673,7 @@ def _get_services():
     try:
         with open("/etc/yunohost/services.yml", "r") as f:
             services = yaml.load(f) or {}
-    except:
+    except Exception:
         return {}
 
     # some services are marked as None to remove them from YunoHost
@@ -807,7 +807,7 @@ def _get_journalctl_logs(service, number="all"):
                 systemd_service, number
             )
         )
-    except:
+    except Exception:
         import traceback
 
         return (

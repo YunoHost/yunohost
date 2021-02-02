@@ -107,7 +107,7 @@ def certificate_status(domain_list, full=False):
             try:
                 _check_domain_is_ready_for_ACME(domain)
                 status["ACME_eligible"] = True
-            except:
+            except Exception:
                 status["ACME_eligible"] = False
 
         del status["domain"]

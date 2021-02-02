@@ -445,7 +445,7 @@ def _get_regenconf_infos():
     try:
         with open(REGEN_CONF_FILE, "r") as f:
             return yaml.load(f)
-    except:
+    except Exception:
         return {}
 
 
@@ -498,7 +498,7 @@ def _get_files_diff(orig_file, new_file, as_string=False, skip_header=True):
         try:
             next(diff)
             next(diff)
-        except:
+        except Exception:
             pass
 
     if as_string:
@@ -683,7 +683,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
                 # Raise an exception if an os.stat() call on either pathname fails.
                 # (os.stats returns a series of information from a file like type, size...)
                 copy_succeed = os.path.samefile(system_conf, new_conf)
-            except:
+            except Exception:
                 copy_succeed = False
             finally:
                 if not copy_succeed:

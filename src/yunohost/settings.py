@@ -157,7 +157,7 @@ def settings_set(key, value):
             if isinstance(value, str):
                 try:
                     value = int(value)
-                except:
+                except Exception:
                     raise YunohostError(
                         "global_settings_bad_type_for_setting",
                         setting=key,

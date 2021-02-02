@@ -171,7 +171,7 @@ def tools_adminpw(new_password, check_strength=True):
                 "userPassword": [new_hash],
             },
         )
-    except:
+    except Exception:
         logger.error("unable to change admin password")
         raise YunohostError("admin_password_change_failed")
     else:
@@ -315,7 +315,7 @@ def tools_postinstall(
         # If an exception is thrown, most likely we don't have internet
         # connectivity or something. Assume that this domain isn't manageable
         # and inform the user that we could not contact the dyndns host server.
-        except:
+        except Exception:
             logger.warning(
                 m18n.n("dyndns_provider_unreachable", provider=dyndns_provider)
             )

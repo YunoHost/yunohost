@@ -182,7 +182,7 @@ def dyndns_subscribe(
         os.system("rm -f %s" % key_file)
         try:
             error = json.loads(r.text)["error"]
-        except:
+        except Exception:
             error = 'Server error, code: %s. (Message: "%s")' % (r.status_code, r.text)
         raise YunohostError("dyndns_registration_failed", error=error)
 

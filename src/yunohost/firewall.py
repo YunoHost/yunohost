@@ -335,7 +335,7 @@ def firewall_upnp(action="status", no_refresh=False):
         try:
             # Remove old cron job
             os.remove("/etc/cron.d/yunohost-firewall")
-        except:
+        except Exception:
             pass
         action = "status"
         no_refresh = False
@@ -360,7 +360,7 @@ def firewall_upnp(action="status", no_refresh=False):
         try:
             # Remove cron job
             os.remove(UPNP_CRON_JOB)
-        except:
+        except Exception:
             pass
         enabled = False
         if action == "status":
@@ -384,7 +384,7 @@ def firewall_upnp(action="status", no_refresh=False):
             try:
                 # Select UPnP device
                 upnpc.selectigd()
-            except:
+            except Exception:
                 logger.debug("unable to select UPnP device", exc_info=1)
                 enabled = False
             else:
@@ -396,7 +396,7 @@ def firewall_upnp(action="status", no_refresh=False):
                             if upnpc.getspecificportmapping(port, protocol):
                                 try:
                                     upnpc.deleteportmapping(port, protocol)
-                                except:
+                                except Exception:
                                     pass
                         firewall["uPnP"][protocol + "_TO_CLOSE"] = []
 
@@ -405,7 +405,7 @@ def firewall_upnp(action="status", no_refresh=False):
                         if upnpc.getspecificportmapping(port, protocol):
                             try:
                                 upnpc.deleteportmapping(port, protocol)
-                            except:
+                            except Exception:
                                 pass
                         if not enabled:
                             continue
@@ -419,7 +419,7 @@ def firewall_upnp(action="status", no_refresh=False):
                                 "yunohost firewall: port %d" % port,
                                 "",
                             )
-                        except:
+                        except Exception:
                             logger.debug(
                                 "unable to add port %d using UPnP", port, exc_info=1
                             )
@@ -488,7 +488,7 @@ def _get_ssh_port(default=22):
         m = searchf(r"^Port[ \t]+([0-9]+)$", "/etc/ssh/sshd_config", count=-1)
         if m:
             return int(m)
-    except:
+    except Exception:
         pass
     return default
 
