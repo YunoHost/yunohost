@@ -43,7 +43,7 @@ def yunopaste(data):
 
     try:
         url = json.loads(r.text)["key"]
-    except:
+    except Exception:
         raise YunohostError(
             "Uhoh, couldn't parse the answer from paste.yunohost.org : %s" % r.text,
             raw_msg=True,

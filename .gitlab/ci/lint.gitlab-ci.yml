@@ -7,7 +7,6 @@ lint37:
   stage: lint
   image: "before-install"
   needs: []
-  allow_failure: true
   script:
     - tox -e py37-lint
 
@@ -22,7 +21,6 @@ format-check:
   stage: lint
   image: "before-install"
   needs: []
-  allow_failure: true
   script:
     - tox -e py37-black-check
 

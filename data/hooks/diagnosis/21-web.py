@@ -82,7 +82,7 @@ class WebDiagnoser(Diagnoser):
                         summary="diagnosis_http_hairpinning_issue",
                         details=["diagnosis_http_hairpinning_issue_details"],
                     )
-                except:
+                except Exception:
                     # Well I dunno what to do if that's another exception
                     # type... That'll most probably *not* be an hairpinning
                     # issue but something else super weird ...

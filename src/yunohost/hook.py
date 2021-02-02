@@ -165,8 +165,8 @@ def hook_list(action, list_by="name", show_info=False):
             def _append_hook(d, priority, name, path):
                 # Use the name as key and a list of hooks info - the
                 # executed ones with this name - as value
-                l = d.get(name, list())
-                for h in l:
+                name_list = d.get(name, list())
+                for h in name_list:
                     # Only one priority for the hook is accepted
                     if h["priority"] == priority:
                         # Custom hooks overwrite system ones and they
@@ -174,8 +174,8 @@ def hook_list(action, list_by="name", show_info=False):
                         if h["path"] != path:
                             h["path"] = path
                         return
-                l.append({"priority": priority, "path": path})
-                d[name] = l
+                name_list.append({"priority": priority, "path": path})
+                d[name] = name_list
 
         else:
             if list_by == "name":

@@ -193,11 +193,11 @@ class IPDiagnoser(Diagnoser):
         content = read_file("/etc/resolv.conf").strip().split("\n")
         # Ignore comments and empty lines
         content = [
-            l.strip()
-            for l in content
-            if l.strip()
-            and not l.strip().startswith("#")
-            and not l.strip().startswith("search")
+            line.strip()
+            for line in content
+            if line.strip()
+            and not line.strip().startswith("#")
+            and not line.strip().startswith("search")
         ]
         # We should only find a "nameserver 127.0.0.1"
         return len(content) == 1 and content[0].split() == ["nameserver", "127.0.0.1"]

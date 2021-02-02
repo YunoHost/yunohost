@@ -607,9 +607,9 @@ def _get_DKIM(domain):
         dkim = re.match(
             (
                 r"^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+"
-                '[^"]*"v=(?P<v>[^";]+);'
+                r'[^"]*"v=(?P<v>[^";]+);'
                 r'[\s"]*k=(?P<k>[^";]+);'
-                '[\s"]*p=(?P<p>[^";]+)'
+                r'[\s"]*p=(?P<p>[^";]+)'
             ),
             dkim_content,
             re.M | re.S,
@@ -618,10 +618,10 @@ def _get_DKIM(domain):
         dkim = re.match(
             (
                 r"^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+"
-                '[^"]*"v=(?P<v>[^";]+);'
+                r'[^"]*"v=(?P<v>[^";]+);'
                 r'[\s"]*h=(?P<h>[^";]+);'
                 r'[\s"]*k=(?P<k>[^";]+);'
-                '[\s"]*p=(?P<p>[^";]+)'
+                r'[\s"]*p=(?P<p>[^";]+)'
             ),
             dkim_content,
             re.M | re.S,
