@@ -2174,7 +2174,7 @@ def _get_git_last_commit_hash(repository, reference='HEAD'):
                 repository, reference),
             shell=True)
     except subprocess.CalledProcessError:
-        logger.exception("unable to get last commit from %s", repository)
+        logger.error("unable to get last commit from %s", repository)
         raise ValueError("Unable to get last commit with git")
     else:
         return commit.strip()
