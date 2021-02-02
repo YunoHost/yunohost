@@ -58,6 +58,7 @@ do_init_regen() {
   chmod 640 $LOGFILE
 
   # Make sure this conf exists
+  mkdir -p ${ssl_dir}
   cp /usr/share/yunohost/templates/ssl/openssl.cnf ${ssl_dir}/openssl.ca.cnf
 
   # create default certificates
