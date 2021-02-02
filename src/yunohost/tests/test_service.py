@@ -2,7 +2,14 @@ import os
 
 from .conftest import raiseYunohostError
 
-from yunohost.service import _get_services, _save_services, service_status, service_add, service_remove, service_log
+from yunohost.service import (
+    _get_services,
+    _save_services,
+    service_status,
+    service_add,
+    service_remove,
+    service_log,
+)
 
 
 def setup_function(function):
@@ -55,7 +62,7 @@ def test_service_log():
 
 def test_service_status_unknown_service(mocker):
 
-    with raiseYunohostError(mocker, 'service_unknown'):
+    with raiseYunohostError(mocker, "service_unknown"):
         service_status(["ssh", "doesnotexists"])
 
 
@@ -83,7 +90,7 @@ def test_service_remove_service_that_doesnt_exists(mocker):
 
     assert "dummyservice" not in service_status().keys()
 
-    with raiseYunohostError(mocker, 'service_unknown'):
+    with raiseYunohostError(mocker, "service_unknown"):
         service_remove("dummyservice")
 
     assert "dummyservice" not in service_status().keys()

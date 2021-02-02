@@ -27,38 +27,47 @@ class BaseSystemDiagnoser(Diagnoser):
 
         # Detect arch
         arch = check_output("dpkg --print-architecture")
-        hardware = dict(meta={"test": "hardware"},
-                        status="INFO",
-                        data={"virt": virt, "arch": arch},
-                        summary="diagnosis_basesystem_hardware")
+        hardware = dict(
+            meta={"test": "hardware"},
+            status="INFO",
+            data={"virt": virt, "arch": arch},
+            summary="diagnosis_basesystem_hardware",
+        )
 
         # Also possibly the board / hardware name
         if os.path.exists("/proc/device-tree/model"):
-            model = read_file('/proc/device-tree/model').strip().replace('\x00', '')
+            model = read_file("/proc/device-tree/model").strip().replace("\x00", "")
             hardware["data"]["model"] = model
             hardware["details"] = ["diagnosis_basesystem_hardware_model"]
         elif os.path.exists("/sys/devices/virtual/dmi/id/sys_vendor"):
             model = read_file("/sys/devices/virtual/dmi/id/sys_vendor").strip()
             if os.path.exists("/sys/devices/virtual/dmi/id/product_name"):
-                model = "%s %s" % (model, read_file("/sys/devices/virtual/dmi/id/product_name").strip())
+                model = "%s %s" % (
+                    model,
+                    read_file("/sys/devices/virtual/dmi/id/product_name").strip(),
+                )
             hardware["data"]["model"] = model
             hardware["details"] = ["diagnosis_basesystem_hardware_model"]
 
         yield hardware
 
         # Kernel version
-        kernel_version = read_file('/proc/sys/kernel/osrelease').strip()
-        yield dict(meta={"test": "kernel"},
-                   data={"kernel_version": kernel_version},
-                   status="INFO",
-                   summary="diagnosis_basesystem_kernel")
+        kernel_version = read_file("/proc/sys/kernel/osrelease").strip()
+        yield dict(
+            meta={"test": "kernel"},
+            data={"kernel_version": kernel_version},
+            status="INFO",
+            summary="diagnosis_basesystem_kernel",
+        )
 
         # Debian release
         debian_version = read_file("/etc/debian_version").strip()
-        yield dict(meta={"test": "host"},
-                   data={"debian_version": debian_version},
-                   status="INFO",
-                   summary="diagnosis_basesystem_host")
+        yield dict(
+            meta={"test": "host"},
+            data={"debian_version": debian_version},
+            status="INFO",
+            summary="diagnosis_basesystem_host",
+        )
 
         # Yunohost packages versions
         # We check if versions are consistent (e.g. all 3.6 and not 3 packages with 3.6 and the other with 3.5)
@@ -67,41 +76,62 @@ class BaseSystemDiagnoser(Diagnoser):
         # Here, ynh_core_version is for example "3.5.4.12", so [:3] is "3.5" and we check it's the same for all packages
         ynh_packages = ynh_packages_version()
         ynh_core_version = ynh_packages["yunohost"]["version"]
-        consistent_versions = all(infos["version"][:3] == ynh_core_version[:3] for infos in ynh_packages.values())
-        ynh_version_details = [("diagnosis_basesystem_ynh_single_version",
-                                {"package": package,
-                                 "version": infos["version"],
-                                 "repo": infos["repo"]}
-                                )
-                               for package, infos in ynh_packages.items()]
+        consistent_versions = all(
+            infos["version"][:3] == ynh_core_version[:3]
+            for infos in ynh_packages.values()
+        )
+        ynh_version_details = [
+            (
+                "diagnosis_basesystem_ynh_single_version",
+                {
+                    "package": package,
+                    "version": infos["version"],
+                    "repo": infos["repo"],
+                },
+            )
+            for package, infos in ynh_packages.items()
+        ]
 
-        yield dict(meta={"test": "ynh_versions"},
-                   data={"main_version": ynh_core_version, "repo": ynh_packages["yunohost"]["repo"]},
-                   status="INFO" if consistent_versions else "ERROR",
-                   summary="diagnosis_basesystem_ynh_main_version" if consistent_versions else "diagnosis_basesystem_ynh_inconsistent_versions",
-                   details=ynh_version_details)
+        yield dict(
+            meta={"test": "ynh_versions"},
+            data={
+                "main_version": ynh_core_version,
+                "repo": ynh_packages["yunohost"]["repo"],
+            },
+            status="INFO" if consistent_versions else "ERROR",
+            summary="diagnosis_basesystem_ynh_main_version"
+            if consistent_versions
+            else "diagnosis_basesystem_ynh_inconsistent_versions",
+            details=ynh_version_details,
+        )
 
         if self.is_vulnerable_to_meltdown():
-            yield dict(meta={"test": "meltdown"},
-                       status="ERROR",
-                       summary="diagnosis_security_vulnerable_to_meltdown",
-                       details=["diagnosis_security_vulnerable_to_meltdown_details"]
-                       )
+            yield dict(
+                meta={"test": "meltdown"},
+                status="ERROR",
+                summary="diagnosis_security_vulnerable_to_meltdown",
+                details=["diagnosis_security_vulnerable_to_meltdown_details"],
+            )
 
         bad_sury_packages = list(self.bad_sury_packages())
         if bad_sury_packages:
-            cmd_to_fix = "apt install --allow-downgrades " \
-                         + " ".join(["%s=%s" % (package, version) for package, version in bad_sury_packages])
-            yield dict(meta={"test": "packages_from_sury"},
-                       data={"cmd_to_fix": cmd_to_fix},
-                       status="WARNING",
-                       summary="diagnosis_package_installed_from_sury",
-                       details=["diagnosis_package_installed_from_sury_details"])
+            cmd_to_fix = "apt install --allow-downgrades " + " ".join(
+                ["%s=%s" % (package, version) for package, version in bad_sury_packages]
+            )
+            yield dict(
+                meta={"test": "packages_from_sury"},
+                data={"cmd_to_fix": cmd_to_fix},
+                status="WARNING",
+                summary="diagnosis_package_installed_from_sury",
+                details=["diagnosis_package_installed_from_sury_details"],
+            )
 
         if self.backports_in_sources_list():
-            yield dict(meta={"test": "backports_in_sources_list"},
-                       status="WARNING",
-                       summary="diagnosis_backports_in_sources_list")
+            yield dict(
+                meta={"test": "backports_in_sources_list"},
+                status="WARNING",
+                summary="diagnosis_backports_in_sources_list",
+            )
 
     def bad_sury_packages(self):
 
@@ -112,7 +142,10 @@ class BaseSystemDiagnoser(Diagnoser):
             if os.system(cmd) != 0:
                 continue
 
-            cmd = "LC_ALL=C apt policy %s 2>&1 | grep http -B1 | tr -d '*' | grep '+deb' | grep -v 'gbp' | head -n 1 | awk '{print $1}'" % package
+            cmd = (
+                "LC_ALL=C apt policy %s 2>&1 | grep http -B1 | tr -d '*' | grep '+deb' | grep -v 'gbp' | head -n 1 | awk '{print $1}'"
+                % package
+            )
             version_to_downgrade_to = check_output(cmd)
             yield (package, version_to_downgrade_to)
 
@@ -136,8 +169,12 @@ class BaseSystemDiagnoser(Diagnoser):
         cache_file = "/tmp/yunohost-meltdown-diagnosis"
         dpkg_log = "/var/log/dpkg.log"
         if os.path.exists(cache_file):
-            if not os.path.exists(dpkg_log) or os.path.getmtime(cache_file) > os.path.getmtime(dpkg_log):
-                self.logger_debug("Using cached results for meltdown checker, from %s" % cache_file)
+            if not os.path.exists(dpkg_log) or os.path.getmtime(
+                cache_file
+            ) > os.path.getmtime(dpkg_log):
+                self.logger_debug(
+                    "Using cached results for meltdown checker, from %s" % cache_file
+                )
                 return read_json(cache_file)[0]["VULNERABLE"]
 
         # script taken from https://github.com/speed47/spectre-meltdown-checker
@@ -149,10 +186,12 @@ class BaseSystemDiagnoser(Diagnoser):
         # [{"NAME":"MELTDOWN","CVE":"CVE-2017-5754","VULNERABLE":false,"INFOS":"PTI mitigates the vulnerability"}]
         try:
             self.logger_debug("Running meltdown vulnerability checker")
-            call = subprocess.Popen("bash %s --batch json --variant 3" %
-                                    SCRIPT_PATH, shell=True,
-                                    stdout=subprocess.PIPE,
-                                    stderr=subprocess.PIPE)
+            call = subprocess.Popen(
+                "bash %s --batch json --variant 3" % SCRIPT_PATH,
+                shell=True,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+            )
 
             # TODO / FIXME : here we are ignoring error messages ...
             # in particular on RPi2 and other hardware, the script complains about
@@ -176,11 +215,17 @@ class BaseSystemDiagnoser(Diagnoser):
             assert CVEs[0]["NAME"] == "MELTDOWN"
         except Exception as e:
             import traceback
+
             traceback.print_exc()
-            self.logger_warning("Something wrong happened when trying to diagnose Meltdown vunerability, exception: %s" % e)
+            self.logger_warning(
+                "Something wrong happened when trying to diagnose Meltdown vunerability, exception: %s"
+                % e
+            )
             raise Exception("Command output for failed meltdown check: '%s'" % output)
 
-        self.logger_debug("Writing results from meltdown checker to cache file, %s" % cache_file)
+        self.logger_debug(
+            "Writing results from meltdown checker to cache file, %s" % cache_file
+        )
         write_to_json(cache_file, CVEs)
         return CVEs[0]["VULNERABLE"]
 
