@@ -168,7 +168,9 @@ def log_show(
     def _filter_lines(lines, filters=[]):
 
         filters = [re.compile(f) for f in filters]
-        return [line for line in lines if not any(f.search(line.strip()) for f in filters)]
+        return [
+            line for line in lines if not any(f.search(line.strip()) for f in filters)
+        ]
 
     # Normalize log/metadata paths and filenames
     abs_path = path
