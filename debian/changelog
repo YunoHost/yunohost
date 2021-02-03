@@ -4,6 +4,12 @@ yunohost (4.2) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Jan 2021 05:19:58 +0100
 
+yunohost (4.1.7.1) stable; urgency=low
+
+  - [enh] helpers: Fix ynh_exec_as regression (ac38e53a7)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 03 Feb 2021 16:59:05 +0100
+
 yunohost (4.1.7) stable; urgency=low
 
   - [fix] diagnosis: Handle case where DKIM record is split into several pieces (4b876ff0)
