@@ -90,7 +90,7 @@ def firewall_allow(
         if not no_upnp and port not in firewall["uPnP"][p]:
             firewall["uPnP"][p].append(port)
             if (
-                firewall["uPnP"][p + "_TO_CLOSE"]
+                p + "_TO_CLOSE" in firewall["uPnP"]
                 and port in firewall["uPnP"][p + "_TO_CLOSE"]
             ):
                 firewall["uPnP"][p + "_TO_CLOSE"].remove(port)
@@ -158,7 +158,7 @@ def firewall_disallow(
         # Remove port forwarding with UPnP
         if upnp and port in firewall["uPnP"][p]:
             firewall["uPnP"][p].remove(port)
-            if not firewall["uPnP"][p + "_TO_CLOSE"]:
+            if p + "_TO_CLOSE" not in firewall["uPnP"]:
                 firewall["uPnP"][p + "_TO_CLOSE"] = []
             firewall["uPnP"][p + "_TO_CLOSE"].append(port)
 
@@ -390,7 +390,7 @@ def firewall_upnp(action="status", no_refresh=False):
             else:
                 # Iterate over ports
                 for protocol in ["TCP", "UDP"]:
-                    if firewall["uPnP"][protocol + "_TO_CLOSE"]:
+                    if protocol + "_TO_CLOSE" in firewall["uPnP"]:
                         for port in firewall["uPnP"][protocol + "_TO_CLOSE"]:
                             # Clean the mapping of this port
                             if upnpc.getspecificportmapping(port, protocol):
