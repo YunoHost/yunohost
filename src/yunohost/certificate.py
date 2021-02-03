@@ -445,7 +445,7 @@ def certificate_renew(
 
             if email:
                 logger.error("Sending email with details to root ...")
-                _email_renewing_failed(domain, msg + "\n" + e, stack.getvalue())
+                _email_renewing_failed(domain, msg + "\n" + str(e), stack.getvalue())
         else:
             logger.success(m18n.n("certmanager_cert_renew_success", domain=domain))
             operation_logger.success()
