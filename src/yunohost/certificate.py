@@ -659,33 +659,38 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     csr.get_subject().CN = domain
 
     from yunohost.domain import domain_list
-
-    # For "parent" domains, include xmpp-upload subdomain in subject alternate names
+    # For "parent" domains, include xmpp-upload and muc subdomains in subject
+    # alternate names
     if domain in domain_list(exclude_subdomains=True)["domains"]:
-        subdomain = "xmpp-upload." + domain
         xmpp_records = (
             Diagnoser.get_cached_report(
                 "dnsrecords", item={"domain": domain, "category": "xmpp"}
             ).get("data")
             or {}
         )
-        if xmpp_records.get("CNAME:xmpp-upload") == "OK":
+        sanlist = []
+        for sub in ('xmpp-upload', 'muc'):
+            subdomain = sub + "." + domain
+            if xmpp_records.get("CNAME:" + sub) == "OK":
+                sanlist.append(("DNS:" + subdomain))
+            else:
+                logger.warning(
+                    m18n.n(
+                        "certmanager_warning_subdomain_dns_record",
+                        subdomain=subdomain,
+                        domain=domain,
+                    )
+                )
+
+        if sanlist:
             csr.add_extensions(
                 [
                     crypto.X509Extension(
                         "subjectAltName".encode("utf8"),
                         False,
-                        ("DNS:" + subdomain).encode("utf8"),
+                        (", ".join(sanlist)).encode("utf-8"),
                     )
                 ]
-            )
-        else:
-            logger.warning(
-                m18n.n(
-                    "certmanager_warning_subdomain_dns_record",
-                    subdomain=subdomain,
-                    domain=domain,
-                )
             )
 
     # Set the key
