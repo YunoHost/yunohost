@@ -1,3 +1,9 @@
+yunohost (11.0.0~alpha) unstable; urgency=low
+
+  - Placeholder for 11.0
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Feb 2021 00:02:38 +0100
+
 yunohost (4.2.5.2) stable; urgency=low
 
   - Fix install in chroot ... *again* (806b7acf)
