@@ -22,6 +22,6 @@ generate-helpers-doc:
     - hub pull-request -m "[CI] Helper for ${CI_COMMIT_REF_NAME}" -p # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
   artifacts:
     paths:
-      - doc/helpers.html
+      - doc/helpers.md
   only:
     - tags
