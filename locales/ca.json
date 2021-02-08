@@ -714,5 +714,8 @@
     "additional_urls_already_removed": "URL addicional «{url:s}» ja ha estat eliminada per al permís «{permission:s}»",
     "additional_urls_already_added": "URL addicional «{url:s}» ja ha estat afegida per al permís «{permission:s}»",
     "diagnosis_backports_in_sources_list": "Sembla que apt (el gestor de paquets) està configurat per utilitzar el repositori backports. A menys de saber el que esteu fent, recomanem fortament no instal·lar paquets de backports, ja que poder causar inestabilitats o conflictes en el sistema.",
-    "diagnosis_basesystem_hardware_model": "El model del servidor és {model}"
+    "diagnosis_basesystem_hardware_model": "El model del servidor és {model}",
+    "postinstall_low_rootfsspace": "El sistema de fitxers arrel té un total de menys de 10 GB d'espai, el que es preocupant! És molt probable que us quedeu sense espai ràpidament! Es recomana tenir un mínim de 16 GB per al sistema de fitxers arrel. Si voleu instal·lar YunoHost tot i aquest avís, torneu a executar la postinstal·lació amb --force-diskspace",
+    "diagnosis_rootfstotalspace_critical": "El sistema de fitxers arrel només té {space} en total i és preocupant! És molt probable que us quedeu sense espai ràpidament! Es recomanar tenir un mínim de 16 GB per al sistema de fitxers arrel.",
+    "diagnosis_rootfstotalspace_warning": "El sistema de fitxers arrel només té {space} en total. Això no hauria de causar cap problema, però haureu de parar atenció ja que us podrieu quedar sense espai ràpidament… Es recomanar tenir un mínim de 16 GB per al sistema de fitxers arrel."
 }
