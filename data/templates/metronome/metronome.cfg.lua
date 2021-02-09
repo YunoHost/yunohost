@@ -95,6 +95,10 @@ allow_registration = false
 -- Use LDAP storage backend for all stores
 storage = "ldap"
 
+-- stanza optimization
+csi_config_queue_all_muc_messages_but_mentions = false;
+
+
 -- Logging configuration
 log = {
 	info = "/var/log/metronome/metronome.log"; -- Change 'info' to 'debug' for verbose logging
