@@ -5,6 +5,12 @@ set -e
 do_pre_regen() {
   pending_dir=$1
 
+  # generate secrets for xmpp upload
+  [[ -f /etc/yunohost/http_file_secret ]] \
+     || tr -dc A-Za-z0-9 </dev/urandom | head -c 64 > /etc/yunohost/http_file_secret
+  [[ -f /etc/yunohost/http_file_delete_secret ]] \
+     || tr -dc A-Za-z0-9 </dev/urandom | head -c 64 > /etc/yunohost/http_file_delete_secret
+
   cd /usr/share/yunohost/templates/metronome
 
   # create directories for pending conf
@@ -14,6 +20,8 @@ do_pre_regen() {
 
   # retrieve variables
   main_domain=$(cat /etc/yunohost/current_host)
+  http_file_secret=$(cat /etc/yunohost/http_file_secret)
+  http_file_delete_secret=$(cat /etc/yunohost/http_file_delete_secret)
 
   # install main conf file
   cat metronome.cfg.lua \
@@ -24,8 +32,19 @@ do_pre_regen() {
   for domain in $YNH_DOMAINS; do
     cat domain.tpl.cfg.lua \
       | sed "s/{{ domain }}/${domain}/g" \
+      | sed "s/{{ HTTP_FILE_SECRET }}/${http_file_secret}/g" \
+      | sed "s/{{ HTTP_FILE_DELETE_SECRET }}/${http_file_delete_secret}/g" \
       > "${metronome_conf_dir}/${domain}.cfg.lua"
   done
+
+  # create the upload endpoint
+  [[ -d "/var/www/metronome/xmmp-upload" ]] \
+    || mkdir -p /var/www/metronome/upload/
+
+  cat share.tpl.php \
+    | sed "s/{{ HTTP_FILE_SECRET }}/${http_file_secret}/g" \
+    | sed "s/{{ HTTP_FILE_DELETE_SECRET }}/${http_file_delete_secret}/g" \
+  > "/var/www/metronome/upload/share.php"
 
   # remove old domain conf files
   conf_files=$(ls -1 /etc/metronome/conf.d \
@@ -50,11 +69,12 @@ do_post_regen() {
   # create metronome directories for domains
   for domain in $domain_list; do
     mkdir -p "/var/lib/metronome/${domain//./%2e}/pep"
-    # http_upload directory must be writable by metronome and readable by nginx
-    mkdir -p  "/var/xmpp-upload/${domain}/upload"
-    chmod g+s "/var/xmpp-upload/${domain}/upload"
-    chown -R metronome:www-data "/var/xmpp-upload/${domain}"
   done
+
+  # http_upload directory must be writable and readable by nginx
+  mkdir -p  "/var/xmpp-upload/"
+  chown -R www-data: "/var/xmpp-upload/"
+  chmod 700 "/var/xmpp-upload/"
 
   # fix some permissions
 

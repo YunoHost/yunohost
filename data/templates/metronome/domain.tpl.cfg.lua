@@ -59,16 +59,17 @@ Component "pubsub.{{ domain }}" "pubsub"
   unrestricted_node_creation = true -- Anyone can create a PubSub node (from any server)
 
 ---Set up a HTTP Upload service
-Component "xmpp-upload.{{ domain }}" "http_upload"
+Component "xmpp-upload.{{ domain }}" "http_upload_external"
   name = "{{ domain }} Sharing Service"
 
-  http_file_path = "/var/xmpp-upload/{{ domain }}/upload"
-  http_external_url = "https://xmpp-upload.{{ domain }}:443"
-  http_file_base_path = "/upload"
-  http_file_size_limit = 6*1024*1024
-  http_file_quota = 60*1024*1024
-  http_upload_file_size_limit = 100 * 1024 * 1024 -- bytes
-  http_upload_quota = 10 * 1024 * 1024 * 1024 -- bytes
+  modules_enabled = {
+    "http_upload_external";
+  }
+
+  http_file_external_url = "https://xmpp-upload.{{ domain }}/upload/share.php/"
+  http_file_external_delete_url = "https://xmpp-upload.{{ domain }}/upload/share.php/"
+  http_file_secret = "{{ HTTP_FILE_SECRET }}"
+  http_file_delete_secret = "{{ HTTP_FILE_DELETE_SECRET }}" 
 
 ---Set up a VJUD service
 Component "vjud.{{ domain }}" "vjud"
