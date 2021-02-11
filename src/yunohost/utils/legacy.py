@@ -13,7 +13,6 @@ from yunohost.app import (
 )
 from yunohost.permission import (
     permission_create,
-    user_permission_list,
     user_permission_update,
     permission_sync_to_user,
 )
