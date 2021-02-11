@@ -280,7 +280,7 @@ def migrate_legacy_permission_settings(app=None):
                 auth_header=True,
                 label=legacy_permission_label(app, "protected"),
                 show_tile=False,
-                allowed=user_permission_list()["permissions"][app + ".main"]["allowed"],
+                allowed=[],
                 protected=True,
                 sync_perm=False,
             )
