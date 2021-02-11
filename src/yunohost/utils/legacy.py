@@ -189,7 +189,7 @@ def migrate_legacy_permission_settings(app=None):
         if protected_urls != []:
             permission_create(app + ".legacy_protected_uris", additional_urls=protected_urls,
                               auth_header=True, label=legacy_permission_label(app, "protected"),
-                              show_tile=False, allowed=user_permission_list()['permissions'][app + ".main"]['allowed'],
+                              show_tile=False, allowed=[],
                               protected=True, sync_perm=False)
 
         legacy_permission_settings = [
