@@ -6,16 +6,25 @@ do_configure() {
   rm -rf /var/cache/moulinette/*
 
   if [ ! -f /etc/yunohost/installed ]; then
-      bash /usr/share/yunohost/hooks/conf_regen/01-yunohost init
-      bash /usr/share/yunohost/hooks/conf_regen/02-ssl init
-      bash /usr/share/yunohost/hooks/conf_regen/06-slapd init
-      bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
+      # If apps/ is not empty, we're probably already installed in the past and
+      # something funky happened ...
+      if [ -d /etc/yunohost/apps/ ] && ls /etc/yunohost/apps/* >/dev/null 2>&1
+      then
+          echo "Sounds like /etc/yunohost/installed mysteriously disappeared ... You should probably contact the Yunohost support ..."
+      else
+          bash /usr/share/yunohost/hooks/conf_regen/01-yunohost init
+          bash /usr/share/yunohost/hooks/conf_regen/02-ssl init
+          bash /usr/share/yunohost/hooks/conf_regen/09-nslcd init
+          bash /usr/share/yunohost/hooks/conf_regen/46-nsswitch init
+          bash /usr/share/yunohost/hooks/conf_regen/06-slapd init
+          bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
+      fi
   else
       echo "Regenerating configuration, this might take a while..."
       yunohost tools regen-conf --output-as none
 
       echo "Launching migrations..."
-      yunohost tools migrations migrate --auto
+      yunohost tools migrations run --auto
 
       echo "Re-diagnosing server health..."
       yunohost diagnosis run --force

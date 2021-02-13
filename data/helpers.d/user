@@ -163,3 +163,19 @@ ynh_system_user_delete () {
         delgroup $username
     fi
 }
+
+# Execute a command as another user
+#
+# usage: ynh_exec_as $USER COMMAND [ARG ...]
+#
+# Requires YunoHost version 4.1.7 or higher.
+ynh_exec_as() {
+    local user=$1
+    shift 1
+
+    if [[ $user = $(whoami) ]]; then
+        eval "$@"
+    else
+        sudo -u "$user" "$@"
+    fi
+}

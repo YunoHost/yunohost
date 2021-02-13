@@ -3,14 +3,6 @@
 ########################################
 # later we must fix lint and format-check jobs and remove "allow_failure"
 
-lint27:
-  stage: lint
-  image: "before-install"
-  needs: []
-  allow_failure: true
-  script:
-    - tox -e py27-lint
-
 lint37:
   stage: lint
   image: "before-install"
@@ -19,17 +11,9 @@ lint37:
   script:
     - tox -e py37-lint
 
-invalidcode27:
-  stage: lint
-  image: "before-install"
-  needs: []
-  script:
-    - tox -e py27-invalidcode
-
 invalidcode37:
   stage: lint
   image: "before-install"
-  allow_failure: true
   needs: []
   script:
     - tox -e py37-invalidcode
@@ -37,7 +21,27 @@ invalidcode37:
 format-check:
   stage: lint
   image: "before-install"
-  needs: []
   allow_failure: true
+  needs: []
   script:
-    - tox -e py37-black
+    - tox -e py37-black-check
+
+format-run:
+  stage: lint
+  image: "before-install"
+  needs: []
+  before_script:
+    - apt-get update -y && apt-get install git hub -y
+    - git config --global user.email "yunohost@yunohost.org"
+    - git config --global user.name "$GITHUB_USER"
+    - hub clone --branch ${CI_COMMIT_REF_NAME} "https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/yunohost.git" github_repo
+    - cd github_repo
+  script:
+    # checkout or create and checkout the branch
+    - hub checkout "ci-format-${CI_COMMIT_REF_NAME}" || hub checkout -b "ci-format-${CI_COMMIT_REF_NAME}"
+    - tox -e py37-black-run
+    - hub commit -am "[CI] Format code" || true
+    - hub pull-request -m "[CI] Format code" -b Yunohost:dev -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
+  only:
+      refs:
+        - dev

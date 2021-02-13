@@ -1,3 +1,108 @@
+yunohost (4.2) unstable; urgency=low
+
+  - Placeholder for 4.2 to satisfy CI / debian build during dev
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Jan 2021 05:19:58 +0100
+
+yunohost (4.1.7.1) stable; urgency=low
+
+  - [enh] helpers: Fix ynh_exec_as regression (ac38e53a7)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 03 Feb 2021 16:59:05 +0100
+
+yunohost (4.1.7) stable; urgency=low
+
+  - [fix] diagnosis: Handle case where DKIM record is split into several pieces (4b876ff0)
+  - [fix] i18n: de locale was broken (4725e054)
+  - [enh] diagnosis: Ignore /dev/loop devices in systemresources (536fd9be)
+  - [fix] backup: fix a small issue dur to var not existing in some edge case ... (2fc016e3)
+  - [fix] settings: service_regen_conf is deprecated in favor of regen_conf (62e84d8b)
+  - [fix] users: If uid is less than 1001, nsswitch ignores it (4e335e07, aef3ee14)
+  - [enh] misc: fixes/enh in yunoprompt (5ab5c83d, 9fbd1a02)
+  - [enh] helpers: Add ynh_exec_as (b94ff1c2, 6b2d76dd)
+  - [fix] helpers: Do not ynh_die if systemctl action fails, to avoid exiting during a remove script (29fe7c31)
+  - [fix] misc: logger.exception -> logger.error (08e7b42c)
+
+  Thanks to all contributors <3 ! (ericgaspar, Kayou, ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 02 Feb 2021 04:18:01 +0100
+
+yunohost (4.1.6) stable; urgency=low
+
+  - [fix] Make dyndns update more resilient to ns0.yunohost.org being down ([#1140](https://github.com/yunohost/yunohost/pull/1140))
+  - [fix] Stupid yolopatch for not-normalized app path settings ([#1141](https://github.com/yunohost/yunohost/pull/1141))
+  - [i18n] Update translations for German
+
+  Thanks to all contributors <3 ! (Christian W., Daniel, penguin321)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Jan 2021 01:46:02 +0100
+
+yunohost (4.1.5) stable; urgency=low
+
+  - [fix] Update helpers ([#1136](https://github.com/yunohost/yunohost/pull/11346))
+  - [fix] Certificate during regen conf on some setup (1d2b1d9)
+  - [fix] Empty password is not an error if it's optional ([#1135](https://github.com/yunohost/yunohost/pull/11345))
+  - [fix] Remove useless warnings during system backup ([#1138](https://github.com/yunohost/yunohost/pull/11348))
+  - [fix] We can now use "true" or "false" for a boolean ([#1134](https://github.com/yunohost/yunohost/pull/1134))
+  - [i18n] Translations updated for Catalan, French, Italian, Spanish
+
+  Thanks to all contributors <3 ! (Aleks, Kay0u, Omnia89, jorge-vitrubio, YohannEpitech, xaloc33)
+
+ -- Kayou <pierre@kayou.io>  Thu, 14 Jan 2021 21:23:39 +0100
+
+yunohost (4.1.4.4) stable; urgency=low
+
+  - [fix] Add the -F flag to grep command for fixed string mode, prevent special chars in the password to be interpreted as regex pattern ([#1132](https://github.com/yunohost/yunohost/pull/1132))
+  - [fix] apt helpers: explicitly return 0, otherwise the return code of last command is used, which in that case is 1 ... (c56883d0)
+
+  Thanks to all contributors <3 ! (Saxodwarf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 11 Jan 2021 14:17:37 +0100
+
+yunohost (4.1.4.3) stable; urgency=low
+
+  - [fix] ynh_replace_vars in case var is defined but empty (30dde208)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 10 Jan 2021 01:58:35 +0100
+
+yunohost (4.1.4.2) stable; urgency=low
+
+  - [fix] Prevent info from being redacted (because of foobar_key=) by the logging system (8f1b05f3)
+  - [fix] For some reason sometimes submetadata is None ... (00508c96)
+  - [enh] Reduce the noise in logs because of ynh_app_setting (ac4b62ce)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 09 Jan 2021 18:59:01 +0100
+
+yunohost (4.1.4.1) stable; urgency=low
+
+  - [hotfix] Postfix conf always included the relay snippets (b25cde0b)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 08 Jan 2021 16:21:07 +0100
+
+yunohost (4.1.4) stable; urgency=low
+
+  - [fix] firewall: force source port for UPnP. ([#1109](https://github.com/yunohost/yunohost/pull/1109))
+  - Stable release
+
+  Thanks to all contributors <3 ! (Léo Le Bouter)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 08 Jan 2021 03:09:14 +0100
+
+yunohost (4.1.3) testing; urgency=low
+
+  - [enh] Do not advertise upgrades for bad-quality apps ([#1066](https://github.com/yunohost/yunohost/pull/1066))
+  - [enh] Display domain_path of app in the output of app list ([#1120](https://github.com/yunohost/yunohost/pull/1120))
+  - [enh] Diagnosis: report usage of backports repository in apt's sources.list ([#1069](https://github.com/yunohost/yunohost/pull/1069))
+  - [mod] Code cleanup, misc fixes (165d2b32, [#1121](https://github.com/yunohost/yunohost/pull/1121), [#1122](https://github.com/yunohost/yunohost/pull/1122), [#1123](https://github.com/yunohost/yunohost/pull/1123), [#1131](https://github.com/yunohost/yunohost/pull/1131))
+  - [mod] Also display app label on remove_domain with apps ([#1124](https://github.com/yunohost/yunohost/pull/1124))
+  - [enh] Be able to change user password in CLI without writing it in clear ([#1075](https://github.com/YunoHost/yunohost/pull/1075))
+  - [enh] New permissions helpers ([#1117](https://github.com/yunohost/yunohost/pull/1117))
+  - [i18n] Translations updated for French, German
+
+  Thanks to all contributors <3 ! (C. Wehrli, cricriiiiii, Kay0u, Bram, ljf, ppr)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 07 Jan 2021 00:46:09 +0100
+
 yunohost (4.1.2) testing; urgency=low
 
   - [enh] diagnosis: Detect moar hardware name (b685a274)
