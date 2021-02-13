@@ -26,7 +26,7 @@
 import os
 import re
 
-from moulinette import m18n, msettings
+from moulinette import m18n, msettings, msignals
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
@@ -167,7 +167,7 @@ def domain_add(operation_logger, domain, dyndns=False):
     except Exception:
         # Force domain removal silently
         try:
-            domain_remove(domain, True)
+            domain_remove(domain, force=True)
         except Exception:
             pass
         raise
@@ -178,21 +178,26 @@ def domain_add(operation_logger, domain, dyndns=False):
 
 
 @is_unit_operation()
-def domain_remove(operation_logger, domain, force=False):
+def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     """
     Delete domains
 
     Keyword argument:
         domain -- Domain to delete
-        force -- Force the domain removal
+        remove_apps -- Remove applications installed on the domain
+        force -- Force the domain removal and don't not ask confirmation to
+                 remove apps if remove_apps is specified
 
     """
     from yunohost.hook import hook_callback
-    from yunohost.app import app_ssowatconf, app_info
+    from yunohost.app import app_ssowatconf, app_info, app_remove
     from yunohost.utils.ldap import _get_ldap_interface
 
-    if not force and domain not in domain_list()["domains"]:
-        raise YunohostError("domain_name_unknown", domain=domain)
+    # the 'force' here is related to the exception happening in domain_add ...
+    # we don't want to check the domain exists because the ldap add may have
+    # failed
+    if not force and domain not in domain_list()['domains']:
+        raise YunohostError('domain_name_unknown', domain=domain)
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
@@ -215,16 +220,21 @@ def domain_remove(operation_logger, domain, force=False):
         settings = _get_app_settings(app)
         label = app_info(app)["name"]
         if settings.get("domain") == domain:
-            apps_on_that_domain.append(
-                '    - %s "%s" on https://%s%s' % (app, label, domain, settings["path"])
-                if "path" in settings
-                else app
-            )
+            apps_on_that_domain.append((app, "    - %s \"%s\" on https://%s%s" % (app, label, domain, settings["path"]) if "path" in settings else app))
 
     if apps_on_that_domain:
-        raise YunohostError(
-            "domain_uninstall_app_first", apps="\n".join(apps_on_that_domain)
-        )
+        if remove_apps:
+            if msettings.get('interface') == "cli" and not force:
+                answer = msignals.prompt(m18n.n('domain_remove_confirm_apps_removal',
+                                                apps="\n".join([x[1] for x in apps_on_that_domain]),
+                                                answers='y/N'), color="yellow")
+                if answer.upper() != "Y":
+                    raise YunohostError("aborting")
+
+            for app, _ in apps_on_that_domain:
+                app_remove(app)
+        else:
+            raise YunohostError('domain_uninstall_app_first', apps="\n".join([x[1] for x in apps_on_that_domain]))
 
     operation_logger.start()
     ldap = _get_ldap_interface()
