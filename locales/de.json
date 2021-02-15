@@ -525,5 +525,14 @@
     "log_dyndns_subscribe": "Für eine YunoHost-Subdomain registrieren '{}'",
     "log_domain_remove": "Entfernen der Domäne '{}' aus der Systemkonfiguration",
     "log_domain_add": "Hinzufügen der Domäne '{}' zur Systemkonfiguration",
-    "log_remove_on_failed_install": "Entfernen von '{}' nach einer fehlgeschlagenen Installation"
+    "log_remove_on_failed_install": "Entfernen von '{}' nach einer fehlgeschlagenen Installation",
+    "migration_0015_still_on_stretch_after_main_upgrade": "Etwas ist schiefgelaufen während dem Haupt-Upgrade. Das System scheint immer noch auf Debian Stretch zu laufen",
+    "migration_0015_yunohost_upgrade": "Beginne YunoHost-Core-Upgrade...",
+    "migration_description_0019_extend_permissions_features": "Erweitern und überarbeiten des Applikationsberechtigungs-Managementsystems",
+    "migrating_legacy_permission_settings": "Migrieren der Legacy-Berechtigungseinstellungen...",
+    "migration_description_0017_postgresql_9p6_to_11": "Migrieren der Datenbanken von PostgreSQL 9.6 nach 11",
+    "migration_0015_main_upgrade": "Beginne Haupt-Upgrade...",
+    "migration_0015_not_stretch": "Die aktuelle Debian-Distribution ist nicht Stretch!",
+    "migration_0015_not_enough_free_space": "Der freie Speicher in /var/ ist sehr gering! Sie sollten minimal 1GB frei haben, um diese Migration durchzuführen.",
+    "domain_remove_confirm_apps_removal": "Wenn Sie diese Domäne löschen, werden folgende Applikationen entfernt:\n{apps}\n\nSind Sie sicher? [{answers}]"
 }
