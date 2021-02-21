@@ -1,3 +1,13 @@
+yunohost (4.1.7.2) testing; urgency=low
+
+  - [fix] When migration legacy protected permissions, all users were allowed on the new perm (29bd3c4a)
+  - [fix] Mysql is a fucking joke (... trying to fix the mysql issue on RPi ...) (cd4fdb2b)
+  - [fix] Replace \t when converting legacy conf.json.persistent... (f398f463)
+
+  Thanks to all contributors <3 ! (ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 21 Feb 2021 05:25:49 +0100
+
 yunohost (4.1.7.1) stable; urgency=low
 
   - [enh] helpers: Fix ynh_exec_as regression (ac38e53a7)
