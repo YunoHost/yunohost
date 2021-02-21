@@ -13,7 +13,6 @@ from yunohost.app import (
 )
 from yunohost.permission import (
     permission_create,
-    user_permission_list,
     user_permission_update,
     permission_sync_to_user,
 )
@@ -280,7 +279,7 @@ def migrate_legacy_permission_settings(app=None):
                 auth_header=True,
                 label=legacy_permission_label(app, "protected"),
                 show_tile=False,
-                allowed=user_permission_list()["permissions"][app + ".main"]["allowed"],
+                allowed=[],
                 protected=True,
                 sync_perm=False,
             )
