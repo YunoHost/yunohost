@@ -215,6 +215,9 @@ def translate_legacy_rules_in_ssowant_conf_json_persistent():
     if not os.path.exists(persistent_file_name):
         return
 
+    # Ugly hack because for some reason so many people have tabs in their conf.json.persistent ...
+    os.system(r"sed -i 's/\t/    /g' /etc/ssowat/conf.json.persistent")
+
     # Ugly hack to try not to misarably fail migration
     persistent = read_yaml(persistent_file_name)
 
