@@ -251,27 +251,41 @@ def migrate_legacy_permission_settings(app=None):
         protected_urls += ["re:" + regex for regex in _setting("protected_regex")]
 
         if skipped_urls != []:
-            permission_create(
-                app + ".legacy_skipped_uris",
-                additional_urls=skipped_urls,
-                auth_header=False,
-                label=legacy_permission_label(app, "skipped"),
-                show_tile=False,
-                allowed="visitors",
-                protected=True,
-                sync_perm=False,
-            )
+            try:
+                permission_create(
+                    app + ".legacy_skipped_uris",
+                    additional_urls=skipped_urls,
+                    auth_header=False,
+                    label=legacy_permission_label(app, "skipped"),
+                    show_tile=False,
+                    allowed="visitors",
+                    protected=True,
+                    sync_perm=False,
+                )
+            except YunohostError as e:
+                if e.key == "domain_name_unknown":
+                    logger.error("Failed to create legacy permission %s : %e" % (app + ".legacy_skipped_uris", str(e)))
+                else:
+                    raise
+
         if unprotected_urls != []:
-            permission_create(
-                app + ".legacy_unprotected_uris",
-                additional_urls=unprotected_urls,
-                auth_header=True,
-                label=legacy_permission_label(app, "unprotected"),
-                show_tile=False,
-                allowed="visitors",
-                protected=True,
-                sync_perm=False,
-            )
+            try:
+                permission_create(
+                    app + ".legacy_unprotected_uris",
+                    additional_urls=unprotected_urls,
+                    auth_header=True,
+                    label=legacy_permission_label(app, "unprotected"),
+                    show_tile=False,
+                    allowed="visitors",
+                    protected=True,
+                    sync_perm=False,
+                )
+            except YunohostError as e:
+                if e.key == "domain_name_unknown":
+                    logger.error("Failed to create legacy permission %s : %e" % (app + ".legacy_unprotected_uris", str(e)))
+                else:
+                    raise
+
         if protected_urls != []:
             permission_create(
                 app + ".legacy_protected_uris",

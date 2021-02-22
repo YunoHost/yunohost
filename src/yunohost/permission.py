@@ -879,7 +879,7 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
         path = "/" + path
 
         if domain.replace("%", "").replace("\\", "") not in domains:
-            raise YunohostError("domain_name_unknown", domain=domain)
+            raise YunohostError("domain_name_unknown", domain=domain.replace("%", "").replace("\\", ""))
 
         validate_regex(path)
 
