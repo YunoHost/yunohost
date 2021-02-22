@@ -6,7 +6,7 @@ readonly MEDIA_GROUP=multimedia
 readonly MEDIA_DIRECTORY=/home/yunohost.multimedia
 
 # We only do this if multimedia directory is enabled (= the folder exists)
-[ -e "$MEDIA_DIRECTORY" ] || exit
+[ -e "$MEDIA_DIRECTORY" ] || exit 0
 
 mkdir -p "$MEDIA_DIRECTORY/$user"
 mkdir -p "$MEDIA_DIRECTORY/$user/Music"
