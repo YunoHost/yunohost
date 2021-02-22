@@ -534,5 +534,13 @@
     "migration_0015_main_upgrade": "Beginne Haupt-Upgrade...",
     "migration_0015_not_stretch": "Die aktuelle Debian-Distribution ist nicht Stretch!",
     "migration_0015_not_enough_free_space": "Der freie Speicher in /var/ ist sehr gering! Sie sollten minimal 1GB frei haben, um diese Migration durchzuführen.",
-    "domain_remove_confirm_apps_removal": "Wenn Sie diese Domäne löschen, werden folgende Applikationen entfernt:\n{apps}\n\nSind Sie sicher? [{answers}]"
+    "domain_remove_confirm_apps_removal": "Wenn Sie diese Domäne löschen, werden folgende Applikationen entfernt:\n{apps}\n\nSind Sie sicher? [{answers}]",
+    "migration_0015_cleaning_up": "Bereinigung des Cache und der Pakete, welche nicht mehr benötigt werden...",
+    "migration_0017_postgresql_96_not_installed": "PostgreSQL wurde auf ihrem System nicht installiert. Nichts zu tun.",
+    "migration_0015_system_not_fully_up_to_date": "Ihr System ist nicht vollständig auf dem neuesten Stand. Bitte führen Sie ein reguläres Upgrade durch, bevor Sie die Migration auf Buster durchführen.",
+    "migration_0015_modified_files": "Bitte beachten Sie, dass die folgenden Dateien als manuell bearbeitet erkannt wurden und beim nächsten Upgrade überschrieben werden könnten: {manually_modified_files}",
+    "migration_0015_general_warning": "Bitte beachten Sie, dass diese Migration eine heikle Angelegenheit darstellt. Das YunoHost-Team hat alles unternommen, um sie zu testen und zu überarbeiten. Dennoch ist es möglich, dass diese Migration Teile des Systems oder Applikationen beschädigen könnte.\n\nDeshalb ist folgendes zu empfehlen:\n…- Führen Sie ein Backup aller kritischen Daten und Applikationen durch. Mehr unter https://yunohost.org/backup;\n…- Seien Sie geduldig nachdem Sie die Migration gestartet haben: Abhängig von Ihrer Internetverbindung und Ihrer Hardware kann es einige Stunden dauern, bis das Upgrade fertig ist.",
+    "migration_0015_problematic_apps_warning": "Bitte beachten Sie, dass folgende möglicherweise problematischen Applikationen auf Ihrer Installation erkannt wurden. Es scheint, als ob sie nicht aus dem YunoHost-Applikationskatalog installiert oder nicht als 'working' gekennzeichnet worden sind. Folglich kann nicht garantiert werden, dass sie nach dem Upgrade immer noch funktionieren: {problematic_apps}",
+    "migration_0015_specific_upgrade": "Start des Upgrades der Systempakete, deren Upgrade separat durchgeführt werden muss...",
+    "migration_0015_weak_certs": "Die folgenden Zertifikate verwenden immer noch schwache Signierungsalgorithmen und müssen aktualisiert werden um mit der nächsten Version von nginx kompatibel zu sein: {certs}"
 }
