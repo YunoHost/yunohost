@@ -692,5 +692,9 @@
     "invalid_number": "Doit être un nombre",
     "migration_description_0019_extend_permissions_features": "Étendre et retravailler le système de gestion des permissions applicatives",
     "diagnosis_basesystem_hardware_model": "Le modèle du serveur est {model}",
-    "diagnosis_backports_in_sources_list": "Il semble qu'apt (le gestionnaire de paquets) soit configuré pour utiliser le dépôt des rétroportages (backports). A moins que vous ne sachiez vraiment ce que vous faites, nous vous déconseillons fortement d'installer des paquets provenant des rétroportages, car cela risque de créer des instabilités ou des conflits sur votre système."
+    "diagnosis_backports_in_sources_list": "Il semble qu'apt (le gestionnaire de paquets) soit configuré pour utiliser le dépôt des rétroportages (backports). A moins que vous ne sachiez vraiment ce que vous faites, nous vous déconseillons fortement d'installer des paquets provenant des rétroportages, car cela risque de créer des instabilités ou des conflits sur votre système.",
+    "postinstall_low_rootfsspace": "Le système de fichiers racine ne fait que {space} ! Vous allez certainement les remplir très rapidement ! Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers. Si vous voulez installer YunoHost malgré cet avertissement, relancez le postinstall avec --force-diskspace",
+    "domain_remove_confirm_apps_removal": "Le retrait de ce domaine retirera aussi ces applications :\n{apps}\n\nÊtes vous sûr de vouloir cela ? [{answers}]",
+    "diagnosis_rootfstotalspace_critical": "Le système de fichiers racine ne fait que {space} ! Vous allez certainement les remplir très rapidement ! Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers.",
+    "diagnosis_rootfstotalspace_warning": "Le système de fichiers racine n'est que de {space}. Ça peut suffire, mais faites attention car vous risquez de les remplire rapidement... Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers."
 }
