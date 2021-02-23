@@ -396,6 +396,7 @@ ynh_replace_vars () {
         match_string="__${one_var^^}__"
         match_string=${match_string//${delimit}/"\\${delimit}"}
         replace_string="${!one_var}"
+        replace_string=${replace_string//\\/\\\\}
         replace_string=${replace_string//${delimit}/"\\${delimit}"}
 
         # Actually replace (sed is used instead of ynh_replace_string to avoid triggering an epic amount of debug logs)
