@@ -22,12 +22,12 @@ ynh_add_nginx_config () {
 
     if [ "${path_url:-}" != "/" ]
     then
-        ynh_replace_string --match_string="^#sub_path_only" --replace_string="" --target_file="../conf/nginx.conf"
+        ynh_replace_string --match_string="^#sub_path_only" --replace_string="" --target_file="$YNH_APP_BASEDIR/conf/nginx.conf"
     else
-        ynh_replace_string --match_string="^#root_path_only" --replace_string="" --target_file="../conf/nginx.conf"
+        ynh_replace_string --match_string="^#root_path_only" --replace_string="" --target_file="$YNH_APP_BASEDIR/conf/nginx.conf"
     fi
 
-    ynh_add_config --template="../conf/nginx.conf" --destination="$finalnginxconf"
+    ynh_add_config --template="$YNH_APP_BASEDIR/conf/nginx.conf" --destination="$finalnginxconf"
 
 
     ynh_systemd_action --service_name=nginx --action=reload
