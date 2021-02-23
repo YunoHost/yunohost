@@ -704,9 +704,7 @@ class BackupManager:
         settings_dir = os.path.join(self.work_dir, "apps", app, "settings")
 
         logger.info(m18n.n("app_start_backup", app=app))
-        tmp_script = (
-            None  # This is to make sure the var exists later in the 'finally' ...
-        )
+        tmp_folder = tempfile.mkdtemp()
         try:
             # Prepare backup directory for the app
             filesystem.mkdir(tmp_app_bkp_dir, 0o750, True, uid="admin")
@@ -715,8 +713,8 @@ class BackupManager:
             shutil.copytree(app_setting_path, settings_dir)
 
             # Copy app backup script in a temporary folder and execute it
-            _, tmp_script = tempfile.mkstemp(prefix="backup_")
             app_script = os.path.join(app_setting_path, "scripts/backup")
+            tmp_script = os.path.join(tmp_folder, "backup")
             subprocess.call(["install", "-Dm555", app_script, tmp_script])
 
             hook_exec(
@@ -752,8 +750,8 @@ class BackupManager:
 
         # Remove tmp files in all situations
         finally:
-            if tmp_script:
-                filesystem.rm(tmp_script, force=True)
+            if tmp_folder and os.path.exists(tmp_folder):
+                shutil.rmtree(tmp_folder)
             filesystem.rm(env_dict["YNH_BACKUP_CSV"], force=True)
 
     #
