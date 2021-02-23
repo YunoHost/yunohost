@@ -269,6 +269,7 @@
     "diagnosis_processes_killed_by_oom_reaper": "Some processes were recently killed by the system because it ran out of memory. This is typically symptomatic of a lack of memory on the system or of a process that ate up to much memory. Summary of the processes killed:\n{kills_summary}",
     "domain_cannot_remove_main": "You cannot remove '{domain:s}' since it's the main domain, you first need to set another domain as the main domain using 'yunohost domain main-domain -n <another-domain>'; here is the list of candidate domains: {other_domains:s}",
     "domain_cannot_add_xmpp_upload": "You cannot add domains starting with 'xmpp-upload.'. This kind of name is reserved for the XMPP upload feature integrated in YunoHost.",
+    "domain_cannot_add_muc_upload": "You cannot add domains starting with 'muc.'. This kind of name is reserved for the XMPP multi-users chat feature integrated in YunoHost.",
     "domain_cannot_remove_main_add_new_one": "You cannot remove '{domain:s}' since it's the main domain and your only domain, you need to first add another domain using 'yunohost domain add <another-domain.com>', then set is as the main domain using 'yunohost domain main-domain -n <another-domain.com>' and then you can remove the domain '{domain:s}' using 'yunohost domain remove {domain:s}'.'",
     "domain_cert_gen_failed": "Could not generate certificate",
     "domain_created": "Domain created",
