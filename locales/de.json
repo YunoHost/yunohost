@@ -569,5 +569,10 @@
     "migrations_exclusive_options": "'--auto', '--skip' und '--force-rerun' sind Optionen, die sich gegenseitig ausschliessen.",
     "migrations_no_such_migration": "Es existiert keine Migration genannt '{id}'",
     "migrations_running_forward": "Durchführen der Migrationen {id}...",
-    "migrations_skip_migration": "Überspringe Migrationen {id}..."
+    "migrations_skip_migration": "Überspringe Migrationen {id}...",
+    "password_too_simple_2": "Dieses Passwort gehört zu den meistverwendeten der Welt. Bitte nehmen Sie etwas einzigartigeres.",
+    "password_listed": "Dieses Passwort gehört zu den meistverwendeten der Welt. Bitte nehmen Sie etwas einzigartigeres.",
+    "operation_interrupted": "Wurde die Operation manuell unterbrochen?",
+    "invalid_number": "Muss eine Zahl sein",
+    "migrations_to_be_ran_manually": "Die Migration {id} muss manuell durchgeführt werden. Bitte gehen Sie zu Werkzeuge → Migrationen auf der Webadmin-Seite oder führen Sie 'yunohost tools migrations run' aus."
 }
