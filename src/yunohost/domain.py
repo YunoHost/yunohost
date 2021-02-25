@@ -119,11 +119,11 @@ def domain_add(operation_logger, domain, dyndns=False):
     # DynDNS domain
     if dyndns:
 
-        # Do not allow to subscribe to multiple dyndns domains...
-        if os.path.exists("/etc/cron.d/yunohost-dyndns"):
-            raise YunohostError("domain_dyndns_already_subscribed")
+        from yunohost.dyndns import dyndns_subscribe, _dyndns_provides, _guess_current_dyndns_domain
 
-        from yunohost.dyndns import dyndns_subscribe, _dyndns_provides
+        # Do not allow to subscribe to multiple dyndns domains...
+        if _guess_current_dyndns_domain("dyndns.yunohost.org") != (None, None):
+            raise YunohostError('domain_dyndns_already_subscribed')
 
         # Check that this domain can effectively be provided by
         # dyndns.yunohost.org. (i.e. is it a nohost.me / noho.st)
@@ -244,6 +244,9 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
         raise YunohostError("domain_deletion_failed", domain=domain, error=e)
 
     os.system("rm -rf /etc/yunohost/certs/%s" % domain)
+
+    # Delete dyndns keys for this domain (if any)
+    os.system('rm -rf /etc/yunohost/dyndns/K%s.+*' % domain)
 
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...

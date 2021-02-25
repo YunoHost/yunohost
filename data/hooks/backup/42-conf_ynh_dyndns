@@ -8,4 +8,3 @@ cd "$YNH_CWD"
 
 # Backup the configuration
 ynh_exec_warn_less ynh_backup --src_path="/etc/yunohost/dyndns" --not_mandatory
-ynh_exec_warn_less ynh_backup --src_path="/etc/cron.d/yunohost-dyndns" --not_mandatory

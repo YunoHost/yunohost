@@ -1363,13 +1363,11 @@ dyndns:
 
         ### dyndns_installcron()
         installcron:
-            action_help: Install IP update cron
-            api: POST /dyndns/cron
+            deprecated: true
 
         ### dyndns_removecron()
         removecron:
-            action_help: Remove IP update cron
-            api: DELETE /dyndns/cron
+            deprecated: true
 
 
 #############################

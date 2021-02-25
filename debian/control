@@ -27,7 +27,7 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , redis-server
  , metronome (>=3.14.0)
  , acl
- , git, curl, wget, cron, unzip, jq, bc
+ , git, curl, wget, cron, unzip, jq, bc, at
  , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping

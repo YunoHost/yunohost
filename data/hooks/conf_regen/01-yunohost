@@ -86,6 +86,17 @@ SHELL=/bin/bash
 0 7,19 * * * root : YunoHost Automatic Diagnosis; sleep \$((RANDOM\\%1200)); yunohost diagnosis run --email > /dev/null 2>/dev/null || echo "Running the automatic diagnosis failed miserably"
 EOF
 
+  # If we subscribed to a dyndns domain, add the corresponding cron
+  # - delay between 0 and 60 secs to spread the check over a 1 min window
+  # - do not run the command if some process already has the lock, to avoid queuing hundreds of commands...
+  if ls -l /etc/yunohost/dyndns/K*.private 2>/dev/null
+  then
+    cat > $pending_dir/etc/cron.d/yunohost-dyndns << EOF
+SHELL=/bin/bash
+*/10 * * * * root : YunoHost DynDNS update; sleep \$((RANDOM\\%60)); test -e /var/run/moulinette_yunohost.lock || yunohost dyndns update >> /dev/null
+EOF
+  fi
+
   # legacy stuff to avoid yunohost reporting etckeeper as manually modified
   # (this make sure that the hash is null / file is flagged as to-delete)
   mkdir -p $pending_dir/etc/etckeeper
