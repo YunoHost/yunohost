@@ -389,8 +389,11 @@ ynh_replace_vars () {
     for one_var in "${uniques_vars[@]}"
     do
         # Validate that one_var is indeed defined
-        # Explanation for the weird '+x' syntax: https://stackoverflow.com/a/13864829
-        test -n "${one_var+x}" || ynh_die --message="Variable \$$one_var wasn't initialized when trying to replace __${one_var^^}__ in $file"
+        # -v checks if the variable is defined, for example:
+        #     -v FOO  tests if $FOO is defined
+        #     -v $FOO tests if ${!FOO} is defined
+        # More info: https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash/17538964#comment96392525_17538964
+        [[ -v "${one_var:-}" ]] || ynh_die --message="Variable \$$one_var wasn't initialized when trying to replace __${one_var^^}__ in $file"
 
         # Escape delimiter in match/replace string
         match_string="__${one_var^^}__"
