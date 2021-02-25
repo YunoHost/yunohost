@@ -27,7 +27,7 @@ ynh_find_port () {
 
 # Test if a port is available
 #
-# example: ynh_port_available --port=1234 || ynh_die "Port 1234 is needs to be available for this app"
+# example: ynh_port_available --port=1234 || ynh_die --message="Port 1234 is needs to be available for this app"
 #
 # usage: ynh_find_port --port=XYZ
 # | arg: -p, --port=    - port to check

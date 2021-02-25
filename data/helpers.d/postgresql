@@ -295,10 +295,10 @@ ynh_psql_remove_db() {
 ynh_psql_test_if_first_run() {
 
     # Make sure postgresql is indeed installed
-    dpkg --list | grep -q "ii  postgresql-$PSQL_VERSION" || ynh_die "postgresql-$PSQL_VERSION is not installed !?"
+    dpkg --list | grep -q "ii  postgresql-$PSQL_VERSION" || ynh_die --message="postgresql-$PSQL_VERSION is not installed !?"
 
     # Check for some weird issue where postgresql could be installed but etc folder would not exist ...
-    [ -e "/etc/postgresql/$PSQL_VERSION" ] || ynh_die "It looks like postgresql was not properly configured ? /etc/postgresql/$PSQL_VERSION is missing ... Could be due to a locale issue, c.f.https://serverfault.com/questions/426989/postgresql-etc-postgresql-doesnt-exist"
+    [ -e "/etc/postgresql/$PSQL_VERSION" ] || ynh_die --message="It looks like postgresql was not properly configured ? /etc/postgresql/$PSQL_VERSION is missing ... Could be due to a locale issue, c.f.https://serverfault.com/questions/426989/postgresql-etc-postgresql-doesnt-exist"
 
     # Make sure postgresql is started and enabled
     # (N.B. : to check the active state, we check the cluster state because

@@ -337,7 +337,7 @@ ynh_install_php () {
 
     if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ]
     then
-        ynh_die "Do not use ynh_install_php to install php$YNH_DEFAULT_PHP_VERSION"
+        ynh_die --message="Do not use ynh_install_php to install php$YNH_DEFAULT_PHP_VERSION"
     fi
 
     # Create the file if doesn't exist already
@@ -611,9 +611,9 @@ ynh_install_composer () {
     curl -sS https://getcomposer.org/installer \
         | COMPOSER_HOME="$workdir/.composer" \
         php${phpversion} -- --quiet --install-dir="$workdir" --version=$composerversion \
-        || ynh_die "Unable to install Composer."
+        || ynh_die --message="Unable to install Composer."
 
     # install dependencies
     ynh_composer_exec --phpversion="${phpversion}" --workdir="$workdir" --commands="install --no-dev $install_args" \
-        || ynh_die "Unable to install core dependencies with Composer."
+        || ynh_die --message="Unable to install core dependencies with Composer."
 }
