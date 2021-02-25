@@ -123,7 +123,7 @@ def dyndns_subscribe(
 
     """
 
-    if _guess_current_dyndns_domain(dyn_host) != (None, None):
+    if _guess_current_dyndns_domain(subscribe_host) != (None, None):
         raise YunohostError('domain_dyndns_already_subscribed')
 
     if domain is None:
@@ -169,7 +169,7 @@ def dyndns_subscribe(
     try:
         r = requests.post(
             "https://%s/key/%s?key_algo=hmac-sha512"
-            % (subscribe_host, base64.b64encode(key)),
+            % (subscribe_host, base64.b64encode(key.encode()).decode()),
             data={"subdomain": domain},
             timeout=30,
         )
@@ -188,13 +188,14 @@ def dyndns_subscribe(
 
     # Yunohost regen conf will add the dyndns cron job if a private key exists
     # in /etc/yunohost/dyndns
-    regen_conf("yunohost")
+    regen_conf(["yunohost"])
 
     # Add some dyndns update in 2 and 4 minutes from now such that user should
     # not have to wait 10ish minutes for the conf to propagate
     cmd = "at -M now + {t} >/dev/null 2>&1 <<< \"/bin/bash -c 'yunohost dyndns update'\""
-    subprocess.check_call(cmd.format(t="2 min"), shell=True)
-    subprocess.check_call(cmd.format(t="4 min"), shell=True)
+    # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
+    subprocess.check_call(["bash", "-c", cmd.format(t="2 min")])
+    subprocess.check_call(["bash", "-c", cmd.format(t="4 min")])
 
     logger.success(m18n.n('dyndns_registered'))
 
