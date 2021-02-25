@@ -376,7 +376,11 @@ class RedactingFormatter(Formatter):
         msg = super(RedactingFormatter, self).format(record)
         self.identify_data_to_redact(msg)
         for data in self.data_to_redact:
-            msg = msg.replace(data, "**********")
+            # we check that data is not empty string,
+            # otherwise this may lead to super epic stuff
+            # (try to run "foo".replace("", "bar"))
+            if data:
+                msg = msg.replace(data, "**********")
         return msg
 
     def identify_data_to_redact(self, record):
