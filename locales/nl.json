@@ -103,7 +103,7 @@
     "app_action_cannot_be_ran_because_required_services_down": "De volgende diensten moeten actief zijn om deze actie uit te voeren: {services}. Probeer om deze te herstarten om verder te gaan (en om eventueel te onderzoeken waarom ze niet werken).",
     "aborting": "Annulatie.",
     "app_upgrade_app_name": "Bezig {app} te upgraden...",
-    "app_make_default_location_already_used": "Kan '{app}' niet de standaardapp maken op het domein, '{domein}' wordt al gebruikt door '{other_app}'",
+    "app_make_default_location_already_used": "Kan '{app}' niet de standaardapp maken op het domein, '{domain}' wordt al gebruikt door '{other_app}'",
     "app_install_failed": "Kan {app} niet installeren: {error}",
     "app_remove_after_failed_install": "Bezig de app te verwijderen na gefaalde installatie...",
     "app_manifest_install_ask_domain": "Kies het domein waar deze app op geïnstalleerd moet worden",
