@@ -1,3 +1,5 @@
+#!/bin/bash
+
 readonly MEDIA_GROUP=multimedia
 readonly MEDIA_DIRECTORY=/home/yunohost.multimedia
 
@@ -53,10 +55,13 @@ ynh_multimedia_build_main_dir() {
 # | arg: -d, --dest_dir= - Destination directory - The name and the place of the symbolic link, relative to "/home/yunohost.multimedia"
 ynh_multimedia_addfolder() {
 
-	# Declare an array to define the options of this helper.
-	declare -Ar args_array=( [s]=source_dir= [d]=dest_dir= )
+    # Declare an array to define the options of this helper.
+    local legacy_args=sd
+    local -A args_array=( [s]=source_dir= [d]=dest_dir= )
 	local source_dir
 	local dest_dir
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
 
     # Ajout d'un lien symbolique vers le dossier à partager
 	ln -sfn "$source_dir" "$MEDIA_DIRECTORY/$dest_dir"
@@ -77,6 +82,7 @@ ynh_multimedia_addfolder() {
 # | arg: -u, --user_name= - The name of the user which gain this access.
 ynh_multimedia_addaccess () {
 	# Declare an array to define the options of this helper.
+    local legacy_args=u
 	declare -Ar args_array=( [u]=user_name=)
 	local user_name
 	# Manage arguments with getopts
