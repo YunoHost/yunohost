@@ -185,7 +185,8 @@ ynh_permission_exists() {
     local permission
     ynh_handle_getopts_args "$@"
 
-    yunohost user permission list --short | grep --word-regexp --quiet "$app.$permission"
+    yunohost user permission list --output-as json --quiet \
+        | jq -e --arg perm "$app.$permission" '.permissions[$perm]' >/dev/null
 }
 
 # Redefine the url associated to a permission
@@ -366,7 +367,8 @@ ynh_permission_has_user() {
         return 1
     fi
 
-    yunohost user permission info "$app.$permission" | grep --word-regexp --quiet "$user"
+    yunohost user permission info "$app.$permission" --output-as json --quiet \
+       | jq -e --arg user $user '.corresponding_users | index($user)' >/dev/null
 }
 
 # Check if a legacy permissions exist
