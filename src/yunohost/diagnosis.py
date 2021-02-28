@@ -449,9 +449,8 @@ class Diagnoser():
     @staticmethod
     def get_description(id_):
         key = "diagnosis_description_" + id_
-        descr = m18n.n(key)
         # If no description available, fallback to id
-        return descr if descr != key else id_
+        return m18n.n(key) if m18n.key_exists(key) else id_
 
     @staticmethod
     def i18n(report, force_remove_html_tags=False):
