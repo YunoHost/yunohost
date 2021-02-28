@@ -386,7 +386,7 @@ ynh_replace_vars () {
     # Replace others variables
 
     # List other unique (__ __) variables in $file
-    local uniques_vars=( $(grep -oP '__[A-Z0-9_]+?__' $file | sort --unique | sed "s@__\([^.]*\)__@\L\1@g" ))
+    local uniques_vars=( $(grep -oP '__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__' $file | sort --unique | sed "s@__\([^.]*\)__@\L\1@g" ))
 
     # Do the replacement
     local delimit=@
