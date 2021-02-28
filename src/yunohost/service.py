@@ -397,14 +397,11 @@ def _get_and_format_service_status(service, infos):
 
     # If no description was there, try to get it from the .json locales
     if not description:
-        translation_key = "service_description_%s" % service
-        description = m18n.n(translation_key)
 
-        # If descrption is still equal to the translation key,
-        # that mean that we don't have a translation for this string
-        # that's the only way to test for that for now
-        # if we don't have it, uses the one provided by systemd
-        if description == translation_key:
+        translation_key = "service_description_%s" % service
+        if m18n.key_exists(translation_key):
+            description = m18n.key_exists(translation_key)
+        else:
             description = str(raw_status.get("Description", ""))
 
     output = {
