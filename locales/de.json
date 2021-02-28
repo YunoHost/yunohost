@@ -79,7 +79,7 @@
     "ldap_initialized": "LDAP wurde initialisiert",
     "mail_alias_remove_failed": "E-Mail Alias '{mail:s}' konnte nicht entfernt werden",
     "mail_domain_unknown": "Die Domäne '{domain:s}' dieser E-Mail-Adresse ist ungültig. Wähle bitte eine Domäne, welche durch diesen Server verwaltet wird.",
-    "mail_forward_remove_failed": "Mailweiterleitung '{mail:s}' konnte nicht entfernt werden",
+    "mail_forward_remove_failed": "Mailweiterleitung für '{mail:s}' konnte nicht deaktiviert werden",
     "main_domain_change_failed": "Die Hauptdomain konnte nicht geändert werden",
     "main_domain_changed": "Die Hauptdomain wurde geändert",
     "no_internet_connection": "Der Server ist nicht mit dem Internet verbunden",
