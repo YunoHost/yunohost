@@ -6,7 +6,6 @@ do_configure() {
   rm -rf /var/cache/moulinette/*
 
   if [ ! -f /etc/yunohost/installed ]; then
-
       # If apps/ is not empty, we're probably already installed in the past and
       # something funky happened ...
       if [ -d /etc/yunohost/apps/ ] && ls /etc/yunohost/apps/* >/dev/null 2>&1
@@ -15,6 +14,8 @@ do_configure() {
       else
           bash /usr/share/yunohost/hooks/conf_regen/01-yunohost init
           bash /usr/share/yunohost/hooks/conf_regen/02-ssl init
+          bash /usr/share/yunohost/hooks/conf_regen/09-nslcd init
+          bash /usr/share/yunohost/hooks/conf_regen/46-nsswitch init
           bash /usr/share/yunohost/hooks/conf_regen/06-slapd init
           bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
       fi

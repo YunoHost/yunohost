@@ -34,7 +34,7 @@ from moulinette.utils.log import getActionLogger
 from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation
 
-logger = getActionLogger('yunohost.user')
+logger = getActionLogger("yunohost.user")
 
 SYSTEM_PERMS = ["mail", "xmpp", "sftp", "ssh"]
 
@@ -45,7 +45,9 @@ SYSTEM_PERMS = ["mail", "xmpp", "sftp", "ssh"]
 #
 
 
-def user_permission_list(short=False, full=False, ignore_system_perms=False, absolute_urls=False):
+def user_permission_list(
+    short=False, full=False, ignore_system_perms=False, absolute_urls=False
+):
     """
     List permissions and corresponding accesses
     """
@@ -53,32 +55,50 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, abs
     # Fetch relevant informations
     from yunohost.app import app_setting, _installed_apps
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
+
     ldap = _get_ldap_interface()
-    permissions_infos = ldap.search('ou=permission,dc=yunohost,dc=org',
-                                    '(objectclass=permissionYnh)',
-                                    ["cn", 'groupPermission', 'inheritPermission',
-                                     'URL', 'additionalUrls', 'authHeader', 'label', 'showTile', 'isProtected'])
+    permissions_infos = ldap.search(
+        "ou=permission,dc=yunohost,dc=org",
+        "(objectclass=permissionYnh)",
+        [
+            "cn",
+            "groupPermission",
+            "inheritPermission",
+            "URL",
+            "additionalUrls",
+            "authHeader",
+            "label",
+            "showTile",
+            "isProtected",
+        ],
+    )
 
     # Parse / organize information to be outputed
     apps = sorted(_installed_apps())
-    apps_base_path = {app: app_setting(app, 'domain') + app_setting(app, 'path')
-                      for app in apps
-                      if app_setting(app, 'domain') and app_setting(app, 'path')}
+    apps_base_path = {
+        app: app_setting(app, "domain") + app_setting(app, "path")
+        for app in apps
+        if app_setting(app, "domain") and app_setting(app, "path")
+    }
 
     permissions = {}
     for infos in permissions_infos:
 
-        name = infos['cn'][0]
+        name = infos["cn"][0]
         if ignore_system_perms and name.split(".")[0] in SYSTEM_PERMS:
             continue
 
-        app = name.split('.')[0]
+        app = name.split(".")[0]
 
         perm = {}
-        perm["allowed"] = [_ldap_path_extract(p, "cn") for p in infos.get('groupPermission', [])]
+        perm["allowed"] = [
+            _ldap_path_extract(p, "cn") for p in infos.get("groupPermission", [])
+        ]
 
         if full:
-            perm["corresponding_users"] = [_ldap_path_extract(p, "uid") for p in infos.get('inheritPermission', [])]
+            perm["corresponding_users"] = [
+                _ldap_path_extract(p, "uid") for p in infos.get("inheritPermission", [])
+            ]
             perm["auth_header"] = infos.get("authHeader", [False])[0] == "TRUE"
             perm["label"] = infos.get("label", [None])[0]
             perm["show_tile"] = infos.get("showTile", [False])[0] == "TRUE"
@@ -87,19 +107,29 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, abs
             perm["additional_urls"] = infos.get("additionalUrls", [])
 
             if absolute_urls:
-                app_base_path = apps_base_path[app] if app in apps_base_path else ""  # Meh in some situation where the app is currently installed/removed, this function may be called and we still need to act as if the corresponding permission indeed exists ... dunno if that's really the right way to proceed but okay.
+                app_base_path = (
+                    apps_base_path[app] if app in apps_base_path else ""
+                )  # Meh in some situation where the app is currently installed/removed, this function may be called and we still need to act as if the corresponding permission indeed exists ... dunno if that's really the right way to proceed but okay.
                 perm["url"] = _get_absolute_url(perm["url"], app_base_path)
-                perm["additional_urls"] = [_get_absolute_url(url, app_base_path) for url in perm["additional_urls"]]
+                perm["additional_urls"] = [
+                    _get_absolute_url(url, app_base_path)
+                    for url in perm["additional_urls"]
+                ]
 
         permissions[name] = perm
 
     # Make sure labels for sub-permissions are the form " Applabel (Sublabel) "
     if full:
-        subpermissions = {k: v for k, v in permissions.items() if not k.endswith(".main")}
+        subpermissions = {
+            k: v for k, v in permissions.items() if not k.endswith(".main")
+        }
         for name, infos in subpermissions.items():
             main_perm_name = name.split(".")[0] + ".main"
             if main_perm_name not in permissions:
-                logger.debug("Uhoh, unknown permission %s ? (Maybe we're in the process or deleting the perm for this app...)" % main_perm_name)
+                logger.debug(
+                    "Uhoh, unknown permission %s ? (Maybe we're in the process or deleting the perm for this app...)"
+                    % main_perm_name
+                )
                 continue
             main_perm_label = permissions[main_perm_name]["label"]
             infos["sublabel"] = infos["label"]
@@ -108,13 +138,21 @@ def user_permission_list(short=False, full=False, ignore_system_perms=False, abs
     if short:
         permissions = list(permissions.keys())
 
-    return {'permissions': permissions}
+    return {"permissions": permissions}
 
 
 @is_unit_operation()
-def user_permission_update(operation_logger, permission, add=None, remove=None,
-                           label=None, show_tile=None,
-                           protected=None, force=False, sync_perm=True):
+def user_permission_update(
+    operation_logger,
+    permission,
+    add=None,
+    remove=None,
+    label=None,
+    show_tile=None,
+    protected=None,
+    force=False,
+    sync_perm=True,
+):
     """
     Allow or Disallow a user or group to a permission for a specific application
 
@@ -137,43 +175,57 @@ def user_permission_update(operation_logger, permission, add=None, remove=None,
 
     # Refuse to add "visitors" to mail, xmpp ... they require an account to make sense.
     if add and "visitors" in add and permission.split(".")[0] in SYSTEM_PERMS:
-        raise YunohostError('permission_require_account', permission=permission)
+        raise YunohostError("permission_require_account", permission=permission)
 
     # Refuse to add "visitors" to protected permission
-    if ((add and "visitors" in add and existing_permission["protected"]) or
-            (remove and "visitors" in remove and existing_permission["protected"])) and not force:
-        raise YunohostError('permission_protected', permission=permission)
+    if (
+        (add and "visitors" in add and existing_permission["protected"])
+        or (remove and "visitors" in remove and existing_permission["protected"])
+    ) and not force:
+        raise YunohostError("permission_protected", permission=permission)
 
     # Fetch currently allowed groups for this permission
 
     current_allowed_groups = existing_permission["allowed"]
-    operation_logger.related_to.append(('app', permission.split(".")[0]))
+    operation_logger.related_to.append(("app", permission.split(".")[0]))
 
     # Compute new allowed group list (and make sure what we're doing make sense)
 
     new_allowed_groups = copy.copy(current_allowed_groups)
-    all_existing_groups = user_group_list()['groups'].keys()
+    all_existing_groups = user_group_list()["groups"].keys()
 
     if add:
         groups_to_add = [add] if not isinstance(add, list) else add
         for group in groups_to_add:
             if group not in all_existing_groups:
-                raise YunohostError('group_unknown', group=group)
+                raise YunohostError("group_unknown", group=group)
             if group in current_allowed_groups:
-                logger.warning(m18n.n('permission_already_allowed', permission=permission, group=group))
+                logger.warning(
+                    m18n.n(
+                        "permission_already_allowed", permission=permission, group=group
+                    )
+                )
             else:
-                operation_logger.related_to.append(('group', group))
+                operation_logger.related_to.append(("group", group))
                 new_allowed_groups += [group]
 
     if remove:
         groups_to_remove = [remove] if not isinstance(remove, list) else remove
         for group in groups_to_remove:
             if group not in current_allowed_groups:
-                logger.warning(m18n.n('permission_already_disallowed', permission=permission, group=group))
+                logger.warning(
+                    m18n.n(
+                        "permission_already_disallowed",
+                        permission=permission,
+                        group=group,
+                    )
+                )
             else:
-                operation_logger.related_to.append(('group', group))
+                operation_logger.related_to.append(("group", group))
 
-        new_allowed_groups = [g for g in new_allowed_groups if g not in groups_to_remove]
+        new_allowed_groups = [
+            g for g in new_allowed_groups if g not in groups_to_remove
+        ]
 
     # If we end up with something like allowed groups is ["all_users", "volunteers"]
     # we shall warn the users that they should probably choose between one or
@@ -191,17 +243,32 @@ def user_permission_update(operation_logger, permission, add=None, remove=None,
         else:
             show_tile = False
 
-    if existing_permission['url'] and existing_permission['url'].startswith('re:') and show_tile:
-        logger.warning(m18n.n('regex_incompatible_with_tile', regex=existing_permission['url'], permission=permission))
+    if (
+        existing_permission["url"]
+        and existing_permission["url"].startswith("re:")
+        and show_tile
+    ):
+        logger.warning(
+            m18n.n(
+                "regex_incompatible_with_tile",
+                regex=existing_permission["url"],
+                permission=permission,
+            )
+        )
 
     # Commit the new allowed group list
     operation_logger.start()
 
-    new_permission = _update_ldap_group_permission(permission=permission, allowed=new_allowed_groups,
-                                                   label=label, show_tile=show_tile,
-                                                   protected=protected, sync_perm=sync_perm)
+    new_permission = _update_ldap_group_permission(
+        permission=permission,
+        allowed=new_allowed_groups,
+        label=label,
+        show_tile=show_tile,
+        protected=protected,
+        sync_perm=sync_perm,
+    )
 
-    logger.debug(m18n.n('permission_updated', permission=permission))
+    logger.debug(m18n.n("permission_updated", permission=permission))
 
     return new_permission
 
@@ -229,12 +296,14 @@ def user_permission_reset(operation_logger, permission, sync_perm=True):
 
     # Update permission with default (all_users)
 
-    operation_logger.related_to.append(('app', permission.split(".")[0]))
+    operation_logger.related_to.append(("app", permission.split(".")[0]))
     operation_logger.start()
 
-    new_permission = _update_ldap_group_permission(permission=permission, allowed="all_users", sync_perm=sync_perm)
+    new_permission = _update_ldap_group_permission(
+        permission=permission, allowed="all_users", sync_perm=sync_perm
+    )
 
-    logger.debug(m18n.n('permission_updated', permission=permission))
+    logger.debug(m18n.n("permission_updated", permission=permission))
 
     return new_permission
 
@@ -253,9 +322,11 @@ def user_permission_info(permission):
 
     # Fetch existing permission
 
-    existing_permission = user_permission_list(full=True)["permissions"].get(permission, None)
+    existing_permission = user_permission_list(full=True)["permissions"].get(
+        permission, None
+    )
     if existing_permission is None:
-        raise YunohostError('permission_not_found', permission=permission)
+        raise YunohostError("permission_not_found", permission=permission)
 
     return existing_permission
 
@@ -270,10 +341,18 @@ def user_permission_info(permission):
 
 
 @is_unit_operation()
-def permission_create(operation_logger, permission, allowed=None,
-                      url=None, additional_urls=None, auth_header=True,
-                      label=None, show_tile=False,
-                      protected=False, sync_perm=True):
+def permission_create(
+    operation_logger,
+    permission,
+    allowed=None,
+    url=None,
+    additional_urls=None,
+    auth_header=True,
+    label=None,
+    show_tile=False,
+    protected=False,
+    sync_perm=True,
+):
     """
     Create a new permission for a specific application
 
@@ -301,6 +380,7 @@ def permission_create(operation_logger, permission, allowed=None,
 
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.user import user_group_list
+
     ldap = _get_ldap_interface()
 
     # By default, manipulate main permission
@@ -308,9 +388,10 @@ def permission_create(operation_logger, permission, allowed=None,
         permission = permission + ".main"
 
     # Validate uniqueness of permission in LDAP
-    if ldap.get_conflict({'cn': permission},
-                         base_dn='ou=permission,dc=yunohost,dc=org'):
-        raise YunohostError('permission_already_exist', permission=permission)
+    if ldap.get_conflict(
+        {"cn": permission}, base_dn="ou=permission,dc=yunohost,dc=org"
+    ):
+        raise YunohostError("permission_already_exist", permission=permission)
 
     # Get random GID
     all_gid = {x.gr_gid for x in grp.getgrall()}
@@ -323,13 +404,19 @@ def permission_create(operation_logger, permission, allowed=None,
     app, subperm = permission.split(".")
 
     attr_dict = {
-        'objectClass': ['top', 'permissionYnh', 'posixGroup'],
-        'cn': str(permission),
-        'gidNumber': gid,
-        'authHeader': ['TRUE'],
-        'label': [str(label) if label else (subperm if subperm != "main" else app.title())],
-        'showTile': ['FALSE'],  # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
-        'isProtected': ['FALSE']  # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
+        "objectClass": ["top", "permissionYnh", "posixGroup"],
+        "cn": str(permission),
+        "gidNumber": gid,
+        "authHeader": ["TRUE"],
+        "label": [
+            str(label) if label else (subperm if subperm != "main" else app.title())
+        ],
+        "showTile": [
+            "FALSE"
+        ],  # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
+        "isProtected": [
+            "FALSE"
+        ],  # Dummy value, it will be fixed when we call '_update_ldap_group_permission'
     }
 
     if allowed is not None:
@@ -337,34 +424,53 @@ def permission_create(operation_logger, permission, allowed=None,
             allowed = [allowed]
 
     # Validate that the groups to add actually exist
-    all_existing_groups = user_group_list()['groups'].keys()
+    all_existing_groups = user_group_list()["groups"].keys()
     for group in allowed or []:
         if group not in all_existing_groups:
-            raise YunohostError('group_unknown', group=group)
+            raise YunohostError("group_unknown", group=group)
 
-    operation_logger.related_to.append(('app', permission.split(".")[0]))
+    operation_logger.related_to.append(("app", permission.split(".")[0]))
     operation_logger.start()
 
     try:
-        ldap.add('cn=%s,ou=permission' % permission, attr_dict)
+        ldap.add("cn=%s,ou=permission" % permission, attr_dict)
     except Exception as e:
-        raise YunohostError('permission_creation_failed', permission=permission, error=e)
+        raise YunohostError(
+            "permission_creation_failed", permission=permission, error=e
+        )
 
-    permission_url(permission, url=url, add_url=additional_urls, auth_header=auth_header,
-                   sync_perm=False)
+    permission_url(
+        permission,
+        url=url,
+        add_url=additional_urls,
+        auth_header=auth_header,
+        sync_perm=False,
+    )
 
-    new_permission = _update_ldap_group_permission(permission=permission, allowed=allowed,
-                                                   label=label, show_tile=show_tile,
-                                                   protected=protected, sync_perm=sync_perm)
+    new_permission = _update_ldap_group_permission(
+        permission=permission,
+        allowed=allowed,
+        label=label,
+        show_tile=show_tile,
+        protected=protected,
+        sync_perm=sync_perm,
+    )
 
-    logger.debug(m18n.n('permission_created', permission=permission))
+    logger.debug(m18n.n("permission_created", permission=permission))
     return new_permission
 
 
 @is_unit_operation()
-def permission_url(operation_logger, permission,
-                   url=None, add_url=None, remove_url=None, auth_header=None,
-                   clear_urls=False, sync_perm=True):
+def permission_url(
+    operation_logger,
+    permission,
+    url=None,
+    add_url=None,
+    remove_url=None,
+    auth_header=None,
+    clear_urls=False,
+    sync_perm=True,
+):
     """
     Update urls related to a permission for a specific application
 
@@ -378,19 +484,20 @@ def permission_url(operation_logger, permission,
     """
     from yunohost.app import app_setting
     from yunohost.utils.ldap import _get_ldap_interface
+
     ldap = _get_ldap_interface()
 
     # By default, manipulate main permission
     if "." not in permission:
         permission = permission + ".main"
 
-    app = permission.split('.')[0]
+    app = permission.split(".")[0]
 
     if url or add_url:
-        domain = app_setting(app, 'domain')
-        path = app_setting(app, 'path')
+        domain = app_setting(app, "domain")
+        path = app_setting(app, "path")
         if domain is None or path is None:
-            raise YunohostError('unknown_main_domain_path', app=app)
+            raise YunohostError("unknown_main_domain_path", app=app)
         else:
             app_main_path = domain + path
 
@@ -398,15 +505,17 @@ def permission_url(operation_logger, permission,
 
     existing_permission = user_permission_info(permission)
 
-    show_tile = existing_permission['show_tile']
+    show_tile = existing_permission["show_tile"]
 
     if url is None:
         url = existing_permission["url"]
     else:
         url = _validate_and_sanitize_permission_url(url, app_main_path, app)
 
-        if url.startswith('re:') and existing_permission['show_tile']:
-            logger.warning(m18n.n('regex_incompatible_with_tile', regex=url, permission=permission))
+        if url.startswith("re:") and existing_permission["show_tile"]:
+            logger.warning(
+                m18n.n("regex_incompatible_with_tile", regex=url, permission=permission)
+            )
             show_tile = False
 
     current_additional_urls = existing_permission["additional_urls"]
@@ -415,7 +524,11 @@ def permission_url(operation_logger, permission,
     if add_url:
         for ur in add_url:
             if ur in current_additional_urls:
-                logger.warning(m18n.n('additional_urls_already_added', permission=permission, url=ur))
+                logger.warning(
+                    m18n.n(
+                        "additional_urls_already_added", permission=permission, url=ur
+                    )
+                )
             else:
                 ur = _validate_and_sanitize_permission_url(ur, app_main_path, app)
                 new_additional_urls += [ur]
@@ -423,12 +536,16 @@ def permission_url(operation_logger, permission,
     if remove_url:
         for ur in remove_url:
             if ur not in current_additional_urls:
-                logger.warning(m18n.n('additional_urls_already_removed', permission=permission, url=ur))
+                logger.warning(
+                    m18n.n(
+                        "additional_urls_already_removed", permission=permission, url=ur
+                    )
+                )
 
         new_additional_urls = [u for u in new_additional_urls if u not in remove_url]
 
     if auth_header is None:
-        auth_header = existing_permission['auth_header']
+        auth_header = existing_permission["auth_header"]
 
     if clear_urls:
         url = None
@@ -440,21 +557,26 @@ def permission_url(operation_logger, permission,
 
     # Actually commit the change
 
-    operation_logger.related_to.append(('app', permission.split(".")[0]))
+    operation_logger.related_to.append(("app", permission.split(".")[0]))
     operation_logger.start()
 
     try:
-        ldap.update('cn=%s,ou=permission' % permission, {'URL': [url] if url is not None else [],
-                                                         'additionalUrls': new_additional_urls,
-                                                         'authHeader': [str(auth_header).upper()],
-                                                         'showTile': [str(show_tile).upper()], })
+        ldap.update(
+            "cn=%s,ou=permission" % permission,
+            {
+                "URL": [url] if url is not None else [],
+                "additionalUrls": new_additional_urls,
+                "authHeader": [str(auth_header).upper()],
+                "showTile": [str(show_tile).upper()],
+            },
+        )
     except Exception as e:
-        raise YunohostError('permission_update_failed', permission=permission, error=e)
+        raise YunohostError("permission_update_failed", permission=permission, error=e)
 
     if sync_perm:
         permission_sync_to_user()
 
-    logger.debug(m18n.n('permission_updated', permission=permission))
+    logger.debug(m18n.n("permission_updated", permission=permission))
     return user_permission_info(permission)
 
 
@@ -472,9 +594,10 @@ def permission_delete(operation_logger, permission, force=False, sync_perm=True)
         permission = permission + ".main"
 
     if permission.endswith(".main") and not force:
-        raise YunohostError('permission_cannot_remove_main')
+        raise YunohostError("permission_cannot_remove_main")
 
     from yunohost.utils.ldap import _get_ldap_interface
+
     ldap = _get_ldap_interface()
 
     # Make sure this permission exists
@@ -483,17 +606,19 @@ def permission_delete(operation_logger, permission, force=False, sync_perm=True)
 
     # Actually delete the permission
 
-    operation_logger.related_to.append(('app', permission.split(".")[0]))
+    operation_logger.related_to.append(("app", permission.split(".")[0]))
     operation_logger.start()
 
     try:
-        ldap.remove('cn=%s,ou=permission' % permission)
+        ldap.remove("cn=%s,ou=permission" % permission)
     except Exception as e:
-        raise YunohostError('permission_deletion_failed', permission=permission, error=e)
+        raise YunohostError(
+            "permission_deletion_failed", permission=permission, error=e
+        )
 
     if sync_perm:
         permission_sync_to_user()
-    logger.debug(m18n.n('permission_deleted', permission=permission))
+    logger.debug(m18n.n("permission_deleted", permission=permission))
 
 
 def permission_sync_to_user():
@@ -505,6 +630,7 @@ def permission_sync_to_user():
     from yunohost.app import app_ssowatconf
     from yunohost.user import user_group_list
     from yunohost.utils.ldap import _get_ldap_interface
+
     ldap = _get_ldap_interface()
 
     groups = user_group_list(full=True)["groups"]
@@ -516,7 +642,13 @@ def permission_sync_to_user():
         currently_allowed_users = set(permission_infos["corresponding_users"])
 
         # These are the users that should be allowed because they are member of a group that is allowed for this permission ...
-        should_be_allowed_users = set([user for group in permission_infos["allowed"] for user in groups[group]["members"]])
+        should_be_allowed_users = set(
+            [
+                user
+                for group in permission_infos["allowed"]
+                for user in groups[group]["members"]
+            ]
+        )
 
         # Note that a LDAP operation with the same value that is in LDAP crash SLAP.
         # So we need to check before each ldap operation that we really change something in LDAP
@@ -524,47 +656,55 @@ def permission_sync_to_user():
             # We're all good, this permission is already correctly synchronized !
             continue
 
-        new_inherited_perms = {'inheritPermission': ["uid=%s,ou=users,dc=yunohost,dc=org" % u for u in should_be_allowed_users],
-                               'memberUid': should_be_allowed_users}
+        new_inherited_perms = {
+            "inheritPermission": [
+                "uid=%s,ou=users,dc=yunohost,dc=org" % u
+                for u in should_be_allowed_users
+            ],
+            "memberUid": should_be_allowed_users,
+        }
 
         # Commit the change with the new inherited stuff
         try:
-            ldap.update('cn=%s,ou=permission' % permission_name, new_inherited_perms)
+            ldap.update("cn=%s,ou=permission" % permission_name, new_inherited_perms)
         except Exception as e:
-            raise YunohostError('permission_update_failed', permission=permission_name, error=e)
+            raise YunohostError(
+                "permission_update_failed", permission=permission_name, error=e
+            )
 
     logger.debug("The permission database has been resynchronized")
 
     app_ssowatconf()
 
     # Reload unscd, otherwise the group ain't propagated to the LDAP database
-    os.system('nscd --invalidate=passwd')
-    os.system('nscd --invalidate=group')
+    os.system("nscd --invalidate=passwd")
+    os.system("nscd --invalidate=group")
 
 
-def _update_ldap_group_permission(permission, allowed,
-                                  label=None, show_tile=None,
-                                  protected=None, sync_perm=True):
+def _update_ldap_group_permission(
+    permission, allowed, label=None, show_tile=None, protected=None, sync_perm=True
+):
     """
-        Internal function that will rewrite user permission
+    Internal function that will rewrite user permission
 
-        permission      -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
-        allowed         -- (optional) A list of group/user to allow for the permission
-        label           -- (optional) Define a name for the permission. This label will be shown on the SSO and in the admin
-        show_tile       -- (optional) Define if a tile will be shown in the SSO
-        protected       -- (optional) Define if the permission can be added/removed to the visitor group
+    permission      -- Name of the permission (e.g. mail or nextcloud or wordpress.editors)
+    allowed         -- (optional) A list of group/user to allow for the permission
+    label           -- (optional) Define a name for the permission. This label will be shown on the SSO and in the admin
+    show_tile       -- (optional) Define if a tile will be shown in the SSO
+    protected       -- (optional) Define if the permission can be added/removed to the visitor group
 
 
-        Assumptions made, that should be checked before calling this function:
-        - the permission does currently exists ...
-        - the 'allowed' list argument is *different* from the current
-          permission state ... otherwise ldap will miserably fail in such
-          case...
-        - the 'allowed' list contains *existing* groups.
+    Assumptions made, that should be checked before calling this function:
+    - the permission does currently exists ...
+    - the 'allowed' list argument is *different* from the current
+      permission state ... otherwise ldap will miserably fail in such
+      case...
+    - the 'allowed' list contains *existing* groups.
     """
 
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
+
     ldap = _get_ldap_interface()
 
     existing_permission = user_permission_info(permission)
@@ -575,7 +715,9 @@ def _update_ldap_group_permission(permission, allowed,
         allowed = [allowed] if not isinstance(allowed, list) else allowed
         # Guarantee uniqueness of values in allowed, which would otherwise make ldap.update angry.
         allowed = set(allowed)
-        update['groupPermission'] = ['cn=' + g + ',ou=groups,dc=yunohost,dc=org' for g in allowed]
+        update["groupPermission"] = [
+            "cn=" + g + ",ou=groups,dc=yunohost,dc=org" for g in allowed
+        ]
 
     if label is not None:
         update["label"] = [str(label)]
@@ -586,18 +728,25 @@ def _update_ldap_group_permission(permission, allowed,
     if show_tile is not None:
 
         if show_tile is True:
-            if not existing_permission['url']:
-                logger.warning(m18n.n('show_tile_cant_be_enabled_for_url_not_defined', permission=permission))
+            if not existing_permission["url"]:
+                logger.warning(
+                    m18n.n(
+                        "show_tile_cant_be_enabled_for_url_not_defined",
+                        permission=permission,
+                    )
+                )
                 show_tile = False
-            elif existing_permission['url'].startswith('re:'):
-                logger.warning(m18n.n('show_tile_cant_be_enabled_for_regex', permission=permission))
+            elif existing_permission["url"].startswith("re:"):
+                logger.warning(
+                    m18n.n("show_tile_cant_be_enabled_for_regex", permission=permission)
+                )
                 show_tile = False
         update["showTile"] = [str(show_tile).upper()]
 
     try:
-        ldap.update('cn=%s,ou=permission' % permission, update)
+        ldap.update("cn=%s,ou=permission" % permission, update)
     except Exception as e:
-        raise YunohostError('permission_update_failed', permission=permission, error=e)
+        raise YunohostError("permission_update_failed", permission=permission, error=e)
 
     # Trigger permission sync if asked
 
@@ -620,13 +769,33 @@ def _update_ldap_group_permission(permission, allowed,
     effectively_added_users = new_corresponding_users - old_corresponding_users
     effectively_removed_users = old_corresponding_users - new_corresponding_users
 
-    effectively_added_group = new_allowed_users - old_allowed_users - effectively_added_users
-    effectively_removed_group = old_allowed_users - new_allowed_users - effectively_removed_users
+    effectively_added_group = (
+        new_allowed_users - old_allowed_users - effectively_added_users
+    )
+    effectively_removed_group = (
+        old_allowed_users - new_allowed_users - effectively_removed_users
+    )
 
     if effectively_added_users or effectively_added_group:
-        hook_callback('post_app_addaccess', args=[app, ','.join(effectively_added_users), sub_permission, ','.join(effectively_added_group)])
+        hook_callback(
+            "post_app_addaccess",
+            args=[
+                app,
+                ",".join(effectively_added_users),
+                sub_permission,
+                ",".join(effectively_added_group),
+            ],
+        )
     if effectively_removed_users or effectively_removed_group:
-        hook_callback('post_app_removeaccess', args=[app, ','.join(effectively_removed_users), sub_permission, ','.join(effectively_removed_group)])
+        hook_callback(
+            "post_app_removeaccess",
+            args=[
+                app,
+                ",".join(effectively_removed_users),
+                sub_permission,
+                ",".join(effectively_removed_group),
+            ],
+        )
 
     return new_permission
 
@@ -642,10 +811,10 @@ def _get_absolute_url(url, base_path):
     base_path = base_path.rstrip("/")
     if url is None:
         return None
-    if url.startswith('/'):
+    if url.startswith("/"):
         return base_path + url.rstrip("/")
-    if url.startswith('re:/'):
-        return 're:' + base_path.replace('.', '\\.') + url[3:]
+    if url.startswith("re:/"):
+        return "re:" + base_path.replace(".", "\\.") + url[3:]
     else:
         return url
 
@@ -670,49 +839,51 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
        re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
 
     We can also have less-trivial regexes like:
-        re:^\/api\/.*|\/scripts\/api.js$
+        re:^/api/.*|/scripts/api.js$
     """
 
     from yunohost.domain import domain_list
     from yunohost.app import _assert_no_conflicting_apps
 
-    domains = domain_list()['domains']
+    domains = domain_list()["domains"]
 
     #
     # Regexes
     #
 
     def validate_regex(regex):
-        if '%' in regex:
-            logger.warning("/!\\ Packagers! You are probably using a lua regex. You should use a PCRE regex instead.")
+        if "%" in regex:
+            logger.warning(
+                "/!\\ Packagers! You are probably using a lua regex. You should use a PCRE regex instead."
+            )
             return
 
         try:
             re.compile(regex)
         except Exception:
-            raise YunohostError('invalid_regex', regex=regex)
+            raise YunohostError("invalid_regex", regex=regex)
 
-    if url.startswith('re:'):
+    if url.startswith("re:"):
 
         # regex without domain
         # we check for the first char after 're:'
-        if url[3] in ['/', '^', '\\']:
+        if url[3] in ["/", "^", "\\"]:
             validate_regex(url[3:])
             return url
 
         # regex with domain
 
-        if '/' not in url:
-            raise YunohostError('regex_with_only_domain')
-        domain, path = url[3:].split('/', 1)
-        path = '/' + path
+        if "/" not in url:
+            raise YunohostError("regex_with_only_domain")
+        domain, path = url[3:].split("/", 1)
+        path = "/" + path
 
-        if domain.replace('%', '').replace('\\', '') not in domains:
-            raise YunohostError('domain_name_unknown', domain=domain)
+        if domain.replace("%", "").replace("\\", "") not in domains:
+            raise YunohostError("domain_name_unknown", domain=domain)
 
         validate_regex(path)
 
-        return 're:' + domain + path
+        return "re:" + domain + path
 
     #
     # "Regular" URIs
@@ -720,13 +891,13 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
 
     def split_domain_path(url):
         url = url.strip("/")
-        (domain, path) = url.split('/', 1) if "/" in url else (url, "/")
+        (domain, path) = url.split("/", 1) if "/" in url else (url, "/")
         if path != "/":
             path = "/" + path
         return (domain, path)
 
     # uris without domain
-    if url.startswith('/'):
+    if url.startswith("/"):
         # if url is for example /admin/
         # we want sanitized_url to be: /admin
         # and (domain, path) to be   : (domain.tld, /app/admin)
@@ -743,7 +914,7 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
         sanitized_url = domain + path
 
         if domain not in domains:
-            raise YunohostError('domain_name_unknown', domain=domain)
+            raise YunohostError("domain_name_unknown", domain=domain)
 
     _assert_no_conflicting_apps(domain, path, ignore_app=app)
 

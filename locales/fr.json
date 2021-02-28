@@ -54,7 +54,7 @@
     "domain_dyndns_already_subscribed": "Vous avez déjà souscris à un domaine DynDNS",
     "domain_dyndns_root_unknown": "Domaine DynDNS principal inconnu",
     "domain_exists": "Le domaine existe déjà",
-    "domain_uninstall_app_first": "Ces applications sont toujours installées sur votre domaine :\n{apps}\n\nAfin de pouvoir procéder à la suppression du domaine, vous devez préalablement :\n- soit désinstaller toutes ces applications avec la commande 'yunohost app remove nom-de-l-application' ;\n- soit déplacer toutes ces applications vers un autre domaine avec la commande 'yunohost app change-url nom-de-l-application'",
+    "domain_uninstall_app_first": "Ces applications sont toujours installées sur votre domaine :\n{apps}\n\nVeuillez les désinstaller avec la commande 'yunohost app remove nom-de-l-application' ou les déplacer vers un autre domaine avec la commande 'yunohost app change-url nom-de-l-application' avant de procéder à la suppression du domaine",
     "domain_unknown": "Domaine inconnu",
     "done": "Terminé",
     "downloading": "Téléchargement en cours …",
@@ -327,7 +327,7 @@
     "password_too_simple_3": "Le mot de passe doit comporter au moins 8 caractères et contenir des chiffres, des majuscules, des minuscules et des caractères spéciaux",
     "password_too_simple_4": "Le mot de passe doit comporter au moins 12 caractères et contenir des chiffres, des majuscules, des minuscules et des caractères spéciaux",
     "root_password_desynchronized": "Le mot de passe administrateur a été changé, mais YunoHost n’a pas pu le propager au mot de passe root !",
-    "aborting": "Annulation.",
+    "aborting": "Annulation en cours.",
     "app_not_upgraded": "L’application {failed_app} n’a pas été mise à jour et par conséquence les applications suivantes n’ont pas été mises à jour : {apps}",
     "app_start_install": "Installation de {app}...",
     "app_start_remove": "Suppression de {app}...",
@@ -650,7 +650,7 @@
     "migration_description_0018_xtable_to_nftable": "Migrer les anciennes règles de trafic réseau vers le nouveau système basé sur nftables",
     "service_description_php7.3-fpm": "Exécute les applications écrites en PHP avec NGINX",
     "migration_0018_failed_to_reset_legacy_rules": "La réinitialisation des règles iptable par défaut a échoué : {error}",
-    "migration_0018_failed_to_migrate_iptables_rules": "La migration des règles iptables héritées vers nftables a échoué: {error}",
+    "migration_0018_failed_to_migrate_iptables_rules": "Échec de la migration des anciennes règles iptables vers nftables : {error}",
     "migration_0017_not_enough_space": "Laissez suffisamment d'espace disponible dans {path} avant de lancer la migration.",
     "migration_0017_postgresql_11_not_installed": "PostgreSQL 9.6 est installé mais pas posgreSQL 11 ? Il s'est sans doute passé quelque chose d'étrange sur votre système :(...",
     "migration_0017_postgresql_96_not_installed": "PostgreSQL n'a pas été installé sur votre système. Aucune opération à effectuer.",
@@ -692,5 +692,9 @@
     "invalid_number": "Doit être un nombre",
     "migration_description_0019_extend_permissions_features": "Étendre et retravailler le système de gestion des permissions applicatives",
     "diagnosis_basesystem_hardware_model": "Le modèle du serveur est {model}",
-    "diagnosis_backports_in_sources_list": "Il semble qu'apt (le gestionnaire de paquets) soit configuré pour utiliser le dépôt des rétroportages (backports). A moins que vous ne sachiez vraiment ce que vous faites, nous vous déconseillons fortement d'installer des paquets provenant des rétroportages, car cela risque de créer des instabilités ou des conflits sur votre système."
+    "diagnosis_backports_in_sources_list": "Il semble qu'apt (le gestionnaire de paquets) soit configuré pour utiliser le dépôt des rétroportages (backports). A moins que vous ne sachiez vraiment ce que vous faites, nous vous déconseillons fortement d'installer des paquets provenant des rétroportages, car cela risque de créer des instabilités ou des conflits sur votre système.",
+    "postinstall_low_rootfsspace": "Le système de fichiers racine a une taille totale inférieure à 10 GB, ce qui est inquiétant ! Vous allez certainement arriver à court d'espace disque rapidement ! Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers. Si vous voulez installer YunoHost malgré cet avertissement, relancez le postinstall avec --force-diskspace",
+    "domain_remove_confirm_apps_removal": "Le retrait de ce domaine retirera aussi ces applications :\n{apps}\n\nÊtes vous sûr de vouloir cela ? [{answers}]",
+    "diagnosis_rootfstotalspace_critical": "Le système de fichiers racine ne fait que {space} ! Vous allez certainement les remplir très rapidement ! Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers.",
+    "diagnosis_rootfstotalspace_warning": "Le système de fichiers racine n'est que de {space}. Ça peut suffire, mais faites attention car vous risquez de les remplire rapidement... Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers."
 }

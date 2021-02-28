@@ -17,7 +17,7 @@ ynh_user_exists() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    yunohost user list --output-as json | grep --quiet "\"username\": \"${username}\""
+    yunohost user list --output-as json --quiet | jq -e ".users.${username}" >/dev/null
 }
 
 # Retrieve a YunoHost user information
@@ -39,7 +39,7 @@ ynh_user_get_info() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    yunohost user info "$username" --output-as plain | ynh_get_plain_key "$key"
+    yunohost user info "$username" --output-as json --quiet | jq -r ".$key"
 }
 
 # Get the list of YunoHost users
@@ -51,8 +51,7 @@ ynh_user_get_info() {
 #
 # Requires YunoHost version 2.4.0 or higher.
 ynh_user_list() {
-    yunohost user list --output-as plain --quiet \
-        | awk '/^##username$/{getline; print}'
+    yunohost user list --output-as json --quiet | jq -r ".users | keys[]"
 }
 
 # Check if a user exists on the system
@@ -166,24 +165,16 @@ ynh_system_user_delete () {
 
 # Execute a command as another user
 #
-# usage: ynh_exec_as --user=USER --command=COMMAND [ARG ...]
-# | arg: -u, --user=        - the user that will execute the command
-# | arg: -n, --command=     - the command to be executed
+# usage: ynh_exec_as $USER COMMAND [ARG ...]
 #
 # Requires YunoHost version 4.1.7 or higher.
-ynh_exec_as()
-{
-    # Declare an array to define the options of this helper.
-    local legacy_args=uc
-    local -A args_array=( [u]=user= [c]=command= )
-    local user
-    local command
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
+ynh_exec_as() {
+    local user=$1
+    shift 1
 
     if [[ $user = $(whoami) ]]; then
-        eval "$command"
+        eval "$@"
     else
-        sudo -u "$user" "$command"
+        sudo -u "$user" "$@"
     fi
 }

@@ -451,6 +451,14 @@ domain:
                     help: Domain to delete
                     extra:
                         pattern: *pattern_domain
+                -r:
+                    full: --remove-apps
+                    help: Remove apps installed on the domain
+                    action: store_true
+                -f:
+                    full: --force
+                    help: Do not ask confirmation to remove apps
+                    action: store_true
 
         ### domain_dns_conf()
         dns-conf:
@@ -1355,13 +1363,11 @@ dyndns:
 
         ### dyndns_installcron()
         installcron:
-            action_help: Install IP update cron
-            api: POST /dyndns/cron
+            deprecated: true
 
         ### dyndns_removecron()
         removecron:
-            action_help: Remove IP update cron
-            api: DELETE /dyndns/cron
+            deprecated: true
 
 
 #############################

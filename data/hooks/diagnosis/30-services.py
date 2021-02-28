@@ -18,8 +18,13 @@ class ServicesDiagnoser(Diagnoser):
 
         for service, result in sorted(all_result.items()):
 
-            item = dict(meta={"service": service},
-                        data={"status": result["status"], "configuration": result["configuration"]})
+            item = dict(
+                meta={"service": service},
+                data={
+                    "status": result["status"],
+                    "configuration": result["configuration"],
+                },
+            )
 
             if result["status"] != "running":
                 item["status"] = "ERROR" if result["status"] != "unknown" else "WARNING"

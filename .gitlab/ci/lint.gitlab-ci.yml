@@ -21,8 +21,8 @@ invalidcode37:
 format-check:
   stage: lint
   image: "before-install"
-  needs: []
   allow_failure: true
+  needs: []
   script:
     - tox -e py37-black-check
 

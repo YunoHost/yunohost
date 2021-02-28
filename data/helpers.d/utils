@@ -1,5 +1,7 @@
 #!/bin/bash
 
+YNH_APP_BASEDIR=$([[ "$(basename $0)" =~ ^backup|restore$ ]] && echo '../settings' || echo '..')
+
 # Handle script crashes / failures
 #
 # [internal]
@@ -112,12 +114,7 @@ ynh_setup_source () {
     ynh_handle_getopts_args "$@"
     source_id="${source_id:-app}" # If the argument is not given, source_id equals "app"
 
-    local src_file_path="$YNH_CWD/../conf/${source_id}.src"
-    # In case of restore script the src file is in an other path.
-    # So try to use the restore path if the general path point to no file.
-    if [ ! -e "$src_file_path" ]; then
-        src_file_path="$YNH_CWD/../settings/conf/${source_id}.src"
-    fi
+    local src_file_path="$YNH_APP_BASEDIR/conf/${source_id}.src"
 
     # Load value from configuration file (see above for a small doc about this file
     # format)
@@ -309,10 +306,8 @@ ynh_add_config () {
     ynh_handle_getopts_args "$@"
     local template_path
 
-    if [ -f "../conf/$template" ]; then
-        template_path="../conf/$template"
-    elif [ -f "../settings/conf/$template" ]; then
-        template_path="../settings/conf/$template"
+    if [ -f "$YNH_APP_BASEDIR/conf/$template" ]; then
+        template_path="$YNH_APP_BASEDIR/conf/$template"
     elif [ -f "$template" ]; then
         template_path=$template
     else
@@ -321,7 +316,8 @@ ynh_add_config () {
 
     ynh_backup_if_checksum_is_different --file="$destination"
 
-    cp "$template_path" "$destination"
+    cp -f "$template_path" "$destination"
+    chown root: "$destination"
 
     ynh_replace_vars --file="$destination"
 
@@ -386,20 +382,24 @@ ynh_replace_vars () {
     # Replace others variables
 
     # List other unique (__ __) variables in $file
-    local uniques_vars=( $(grep -o '__[A-Z0-9_]*__' $file | sort --unique | sed "s@__\([^.]*\)__@\L\1@g" ))
+    local uniques_vars=( $(grep -oP '__[A-Z0-9_]+?__' $file | sort --unique | sed "s@__\([^.]*\)__@\L\1@g" ))
 
     # Do the replacement
     local delimit=@
     for one_var in "${uniques_vars[@]}"
     do
         # Validate that one_var is indeed defined
-        # Explanation for the weird '+x' syntax: https://stackoverflow.com/a/13864829
-        test -n "${one_var+x}" || ynh_die --message="Variable \$$one_var wasn't initialized when trying to replace __${one_var^^}__ in $file"
+        # -v checks if the variable is defined, for example:
+        #     -v FOO  tests if $FOO is defined
+        #     -v $FOO tests if ${!FOO} is defined
+        # More info: https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash/17538964#comment96392525_17538964
+        [[ -v "${one_var:-}" ]] || ynh_die --message="Variable \$$one_var wasn't initialized when trying to replace __${one_var^^}__ in $file"
 
         # Escape delimiter in match/replace string
         match_string="__${one_var^^}__"
         match_string=${match_string//${delimit}/"\\${delimit}"}
         replace_string="${!one_var}"
+        replace_string=${replace_string//\\/\\\\}
         replace_string=${replace_string//${delimit}/"\\${delimit}"}
 
         # Actually replace (sed is used instead of ynh_replace_string to avoid triggering an epic amount of debug logs)
@@ -503,12 +503,7 @@ ynh_secure_remove () {
 #
 # [internal]
 #
-# example: yunohost user info tata --output-as plain | ynh_get_plain_key mail
-#
-# usage: ynh_get_plain_key key [subkey [subsubkey ...]]
-# | ret: string - the key's value
-#
-# Requires YunoHost version 2.2.4 or higher.
+# (Deprecated, use --output-as json and jq instead)
 ynh_get_plain_key() {
     local prefix="#"
     local founded=0

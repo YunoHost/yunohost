@@ -33,14 +33,15 @@ from moulinette.utils import process
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.text import prependlines
 
-FIREWALL_FILE = '/etc/yunohost/firewall.yml'
-UPNP_CRON_JOB = '/etc/cron.d/yunohost-firewall-upnp'
+FIREWALL_FILE = "/etc/yunohost/firewall.yml"
+UPNP_CRON_JOB = "/etc/cron.d/yunohost-firewall-upnp"
 
-logger = getActionLogger('yunohost.firewall')
+logger = getActionLogger("yunohost.firewall")
 
 
-def firewall_allow(protocol, port, ipv4_only=False, ipv6_only=False,
-                   no_upnp=False, no_reload=False):
+def firewall_allow(
+    protocol, port, ipv4_only=False, ipv6_only=False, no_upnp=False, no_reload=False
+):
     """
     Allow connections on a port
 
@@ -56,20 +57,26 @@ def firewall_allow(protocol, port, ipv4_only=False, ipv6_only=False,
     firewall = firewall_list(raw=True)
 
     # Validate port
-    if not isinstance(port, int) and ':' not in port:
+    if not isinstance(port, int) and ":" not in port:
         port = int(port)
 
     # Validate protocols
-    protocols = ['TCP', 'UDP']
-    if protocol != 'Both' and protocol in protocols:
-        protocols = [protocol, ]
+    protocols = ["TCP", "UDP"]
+    if protocol != "Both" and protocol in protocols:
+        protocols = [
+            protocol,
+        ]
 
     # Validate IP versions
-    ipvs = ['ipv4', 'ipv6']
+    ipvs = ["ipv4", "ipv6"]
     if ipv4_only and not ipv6_only:
-        ipvs = ['ipv4', ]
+        ipvs = [
+            "ipv4",
+        ]
     elif ipv6_only and not ipv4_only:
-        ipvs = ['ipv6', ]
+        ipvs = [
+            "ipv6",
+        ]
 
     for p in protocols:
         # Iterate over IP versions to add port
@@ -78,12 +85,15 @@ def firewall_allow(protocol, port, ipv4_only=False, ipv6_only=False,
                 firewall[i][p].append(port)
             else:
                 ipv = "IPv%s" % i[3]
-                logger.warning(m18n.n('port_already_opened', port=port, ip_version=ipv))
+                logger.warning(m18n.n("port_already_opened", port=port, ip_version=ipv))
         # Add port forwarding with UPnP
-        if not no_upnp and port not in firewall['uPnP'][p]:
-            firewall['uPnP'][p].append(port)
-            if firewall['uPnP'][p + "_TO_CLOSE"] and port in firewall['uPnP'][p + "_TO_CLOSE"]:
-                firewall['uPnP'][p + "_TO_CLOSE"].remove(port)
+        if not no_upnp and port not in firewall["uPnP"][p]:
+            firewall["uPnP"][p].append(port)
+            if (
+                p + "_TO_CLOSE" in firewall["uPnP"]
+                and port in firewall["uPnP"][p + "_TO_CLOSE"]
+            ):
+                firewall["uPnP"][p + "_TO_CLOSE"].remove(port)
 
     # Update and reload firewall
     _update_firewall_file(firewall)
@@ -91,8 +101,9 @@ def firewall_allow(protocol, port, ipv4_only=False, ipv6_only=False,
         return firewall_reload()
 
 
-def firewall_disallow(protocol, port, ipv4_only=False, ipv6_only=False,
-                      upnp_only=False, no_reload=False):
+def firewall_disallow(
+    protocol, port, ipv4_only=False, ipv6_only=False, upnp_only=False, no_reload=False
+):
     """
     Disallow connections on a port
 
@@ -108,24 +119,30 @@ def firewall_disallow(protocol, port, ipv4_only=False, ipv6_only=False,
     firewall = firewall_list(raw=True)
 
     # Validate port
-    if not isinstance(port, int) and ':' not in port:
+    if not isinstance(port, int) and ":" not in port:
         port = int(port)
 
     # Validate protocols
-    protocols = ['TCP', 'UDP']
-    if protocol != 'Both' and protocol in protocols:
-        protocols = [protocol, ]
+    protocols = ["TCP", "UDP"]
+    if protocol != "Both" and protocol in protocols:
+        protocols = [
+            protocol,
+        ]
 
     # Validate IP versions and UPnP
-    ipvs = ['ipv4', 'ipv6']
+    ipvs = ["ipv4", "ipv6"]
     upnp = True
     if ipv4_only and ipv6_only:
         upnp = True  # automatically disallow UPnP
     elif ipv4_only:
-        ipvs = ['ipv4', ]
+        ipvs = [
+            "ipv4",
+        ]
         upnp = upnp_only
     elif ipv6_only:
-        ipvs = ['ipv6', ]
+        ipvs = [
+            "ipv6",
+        ]
         upnp = upnp_only
     elif upnp_only:
         ipvs = []
@@ -137,13 +154,13 @@ def firewall_disallow(protocol, port, ipv4_only=False, ipv6_only=False,
                 firewall[i][p].remove(port)
             else:
                 ipv = "IPv%s" % i[3]
-                logger.warning(m18n.n('port_already_closed', port=port, ip_version=ipv))
+                logger.warning(m18n.n("port_already_closed", port=port, ip_version=ipv))
         # Remove port forwarding with UPnP
-        if upnp and port in firewall['uPnP'][p]:
-            firewall['uPnP'][p].remove(port)
-            if not firewall['uPnP'][p + "_TO_CLOSE"]:
-                firewall['uPnP'][p + "_TO_CLOSE"] = []
-            firewall['uPnP'][p + "_TO_CLOSE"].append(port)
+        if upnp and port in firewall["uPnP"][p]:
+            firewall["uPnP"][p].remove(port)
+            if p + "_TO_CLOSE" not in firewall["uPnP"]:
+                firewall["uPnP"][p + "_TO_CLOSE"] = []
+            firewall["uPnP"][p + "_TO_CLOSE"].append(port)
 
     # Update and reload firewall
     _update_firewall_file(firewall)
@@ -168,21 +185,22 @@ def firewall_list(raw=False, by_ip_version=False, list_forwarded=False):
 
     # Retrieve all ports for IPv4 and IPv6
     ports = {}
-    for i in ['ipv4', 'ipv6']:
+    for i in ["ipv4", "ipv6"]:
         f = firewall[i]
         # Combine TCP and UDP ports
-        ports[i] = sorted(set(f['TCP']) | set(f['UDP']))
+        ports[i] = sorted(set(f["TCP"]) | set(f["UDP"]))
 
     if not by_ip_version:
         # Combine IPv4 and IPv6 ports
-        ports = sorted(set(ports['ipv4']) | set(ports['ipv6']))
+        ports = sorted(set(ports["ipv4"]) | set(ports["ipv6"]))
 
     # Format returned dict
     ret = {"opened_ports": ports}
     if list_forwarded:
         # Combine TCP and UDP forwarded ports
-        ret['forwarded_ports'] = sorted(
-            set(firewall['uPnP']['TCP']) | set(firewall['uPnP']['UDP']))
+        ret["forwarded_ports"] = sorted(
+            set(firewall["uPnP"]["TCP"]) | set(firewall["uPnP"]["UDP"])
+        )
     return ret
 
 
@@ -202,20 +220,22 @@ def firewall_reload(skip_upnp=False):
 
     # Check if SSH port is allowed
     ssh_port = _get_ssh_port()
-    if ssh_port not in firewall_list()['opened_ports']:
-        firewall_allow('TCP', ssh_port, no_reload=True)
+    if ssh_port not in firewall_list()["opened_ports"]:
+        firewall_allow("TCP", ssh_port, no_reload=True)
 
     # Retrieve firewall rules and UPnP status
     firewall = firewall_list(raw=True)
-    upnp = firewall_upnp()['enabled'] if not skip_upnp else False
+    upnp = firewall_upnp()["enabled"] if not skip_upnp else False
 
     # IPv4
     try:
         process.check_output("iptables -w -L")
     except process.CalledProcessError as e:
-        logger.debug('iptables seems to be not available, it outputs:\n%s',
-                     prependlines(e.output.rstrip(), '> '))
-        logger.warning(m18n.n('iptables_unavailable'))
+        logger.debug(
+            "iptables seems to be not available, it outputs:\n%s",
+            prependlines(e.output.rstrip(), "> "),
+        )
+        logger.warning(m18n.n("iptables_unavailable"))
     else:
         rules = [
             "iptables -w -F",
@@ -223,10 +243,12 @@ def firewall_reload(skip_upnp=False):
             "iptables -w -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT",
         ]
         # Iterate over ports and add rule
-        for protocol in ['TCP', 'UDP']:
-            for port in firewall['ipv4'][protocol]:
-                rules.append("iptables -w -A INPUT -p %s --dport %s -j ACCEPT"
-                             % (protocol, process.quote(str(port))))
+        for protocol in ["TCP", "UDP"]:
+            for port in firewall["ipv4"][protocol]:
+                rules.append(
+                    "iptables -w -A INPUT -p %s --dport %s -j ACCEPT"
+                    % (protocol, process.quote(str(port)))
+                )
         rules += [
             "iptables -w -A INPUT -i lo -j ACCEPT",
             "iptables -w -A INPUT -p icmp -j ACCEPT",
@@ -242,9 +264,11 @@ def firewall_reload(skip_upnp=False):
     try:
         process.check_output("ip6tables -L")
     except process.CalledProcessError as e:
-        logger.debug('ip6tables seems to be not available, it outputs:\n%s',
-                     prependlines(e.output.rstrip(), '> '))
-        logger.warning(m18n.n('ip6tables_unavailable'))
+        logger.debug(
+            "ip6tables seems to be not available, it outputs:\n%s",
+            prependlines(e.output.rstrip(), "> "),
+        )
+        logger.warning(m18n.n("ip6tables_unavailable"))
     else:
         rules = [
             "ip6tables -w -F",
@@ -252,10 +276,12 @@ def firewall_reload(skip_upnp=False):
             "ip6tables -w -A INPUT -m state --state RELATED,ESTABLISHED -j ACCEPT",
         ]
         # Iterate over ports and add rule
-        for protocol in ['TCP', 'UDP']:
-            for port in firewall['ipv6'][protocol]:
-                rules.append("ip6tables -w -A INPUT -p %s --dport %s -j ACCEPT"
-                             % (protocol, process.quote(str(port))))
+        for protocol in ["TCP", "UDP"]:
+            for port in firewall["ipv6"][protocol]:
+                rules.append(
+                    "ip6tables -w -A INPUT -p %s --dport %s -j ACCEPT"
+                    % (protocol, process.quote(str(port)))
+                )
         rules += [
             "ip6tables -w -A INPUT -i lo -j ACCEPT",
             "ip6tables -w -A INPUT -p icmpv6 -j ACCEPT",
@@ -268,10 +294,11 @@ def firewall_reload(skip_upnp=False):
         reloaded = True
 
     if not reloaded:
-        raise YunohostError('firewall_reload_failed')
+        raise YunohostError("firewall_reload_failed")
 
-    hook_callback('post_iptable_rules',
-                  args=[upnp, os.path.exists("/proc/net/if_inet6")])
+    hook_callback(
+        "post_iptable_rules", args=[upnp, os.path.exists("/proc/net/if_inet6")]
+    )
 
     if upnp:
         # Refresh port forwarding with UPnP
@@ -280,13 +307,13 @@ def firewall_reload(skip_upnp=False):
     _run_service_command("reload", "fail2ban")
 
     if errors:
-        logger.warning(m18n.n('firewall_rules_cmd_failed'))
+        logger.warning(m18n.n("firewall_rules_cmd_failed"))
     else:
-        logger.success(m18n.n('firewall_reloaded'))
+        logger.success(m18n.n("firewall_reloaded"))
     return firewall_list()
 
 
-def firewall_upnp(action='status', no_refresh=False):
+def firewall_upnp(action="status", no_refresh=False):
     """
     Manage port forwarding using UPnP
 
@@ -300,44 +327,46 @@ def firewall_upnp(action='status', no_refresh=False):
 
     """
     firewall = firewall_list(raw=True)
-    enabled = firewall['uPnP']['enabled']
+    enabled = firewall["uPnP"]["enabled"]
 
     # Compatibility with previous version
-    if action == 'reload':
+    if action == "reload":
         logger.debug("'reload' action is deprecated and will be removed")
         try:
             # Remove old cron job
-            os.remove('/etc/cron.d/yunohost-firewall')
-        except:
+            os.remove("/etc/cron.d/yunohost-firewall")
+        except Exception:
             pass
-        action = 'status'
+        action = "status"
         no_refresh = False
 
-    if action == 'status' and no_refresh:
+    if action == "status" and no_refresh:
         # Only return current state
-        return {'enabled': enabled}
-    elif action == 'enable' or (enabled and action == 'status'):
+        return {"enabled": enabled}
+    elif action == "enable" or (enabled and action == "status"):
         # Add cron job
-        with open(UPNP_CRON_JOB, 'w+') as f:
-            f.write('*/50 * * * * root '
-                    '/usr/bin/yunohost firewall upnp status >>/dev/null\n')
+        with open(UPNP_CRON_JOB, "w+") as f:
+            f.write(
+                "*/50 * * * * root "
+                "/usr/bin/yunohost firewall upnp status >>/dev/null\n"
+            )
         # Open port 1900 to receive discovery message
-        if 1900 not in firewall['ipv4']['UDP']:
-            firewall_allow('UDP', 1900, no_upnp=True, no_reload=True)
+        if 1900 not in firewall["ipv4"]["UDP"]:
+            firewall_allow("UDP", 1900, no_upnp=True, no_reload=True)
             if not enabled:
                 firewall_reload(skip_upnp=True)
         enabled = True
-    elif action == 'disable' or (not enabled and action == 'status'):
+    elif action == "disable" or (not enabled and action == "status"):
         try:
             # Remove cron job
             os.remove(UPNP_CRON_JOB)
-        except:
+        except Exception:
             pass
         enabled = False
-        if action == 'status':
+        if action == "status":
             no_refresh = True
     else:
-        raise YunohostError('action_invalid', action=action)
+        raise YunohostError("action_invalid", action=action)
 
     # Refresh port mapping using UPnP
     if not no_refresh:
@@ -345,77 +374,84 @@ def firewall_upnp(action='status', no_refresh=False):
         upnpc.discoverdelay = 3000
 
         # Discover UPnP device(s)
-        logger.debug('discovering UPnP devices...')
+        logger.debug("discovering UPnP devices...")
         nb_dev = upnpc.discover()
-        logger.debug('found %d UPnP device(s)', int(nb_dev))
+        logger.debug("found %d UPnP device(s)", int(nb_dev))
         if nb_dev < 1:
-            logger.error(m18n.n('upnp_dev_not_found'))
+            logger.error(m18n.n("upnp_dev_not_found"))
             enabled = False
         else:
             try:
                 # Select UPnP device
                 upnpc.selectigd()
-            except:
-                logger.debug('unable to select UPnP device', exc_info=1)
+            except Exception:
+                logger.debug("unable to select UPnP device", exc_info=1)
                 enabled = False
             else:
                 # Iterate over ports
-                for protocol in ['TCP', 'UDP']:
-                    if firewall['uPnP'][protocol + "_TO_CLOSE"]:
-                        for port in firewall['uPnP'][protocol + "_TO_CLOSE"]:
+                for protocol in ["TCP", "UDP"]:
+                    if protocol + "_TO_CLOSE" in firewall["uPnP"]:
+                        for port in firewall["uPnP"][protocol + "_TO_CLOSE"]:
                             # Clean the mapping of this port
                             if upnpc.getspecificportmapping(port, protocol):
                                 try:
                                     upnpc.deleteportmapping(port, protocol)
-                                except:
+                                except Exception:
                                     pass
-                        firewall['uPnP'][protocol + "_TO_CLOSE"] = []
+                        firewall["uPnP"][protocol + "_TO_CLOSE"] = []
 
-                    for port in firewall['uPnP'][protocol]:
+                    for port in firewall["uPnP"][protocol]:
                         # Clean the mapping of this port
                         if upnpc.getspecificportmapping(port, protocol):
                             try:
                                 upnpc.deleteportmapping(port, protocol)
-                            except:
+                            except Exception:
                                 pass
                         if not enabled:
                             continue
                         try:
                             # Add new port mapping
-                            upnpc.addportmapping(port, protocol, upnpc.lanaddr,
-                                                 port, 'yunohost firewall: port %d' % port, '')
-                        except:
-                            logger.debug('unable to add port %d using UPnP',
-                                         port, exc_info=1)
+                            upnpc.addportmapping(
+                                port,
+                                protocol,
+                                upnpc.lanaddr,
+                                port,
+                                "yunohost firewall: port %d" % port,
+                                "",
+                            )
+                        except Exception:
+                            logger.debug(
+                                "unable to add port %d using UPnP", port, exc_info=1
+                            )
                             enabled = False
-                    
+
                 _update_firewall_file(firewall)
 
-    if enabled != firewall['uPnP']['enabled']:
+    if enabled != firewall["uPnP"]["enabled"]:
         firewall = firewall_list(raw=True)
-        firewall['uPnP']['enabled'] = enabled
+        firewall["uPnP"]["enabled"] = enabled
 
         _update_firewall_file(firewall)
 
         if not no_refresh:
             # Display success message if needed
-            if action == 'enable' and enabled:
-                logger.success(m18n.n('upnp_enabled'))
-            elif action == 'disable' and not enabled:
-                logger.success(m18n.n('upnp_disabled'))
+            if action == "enable" and enabled:
+                logger.success(m18n.n("upnp_enabled"))
+            elif action == "disable" and not enabled:
+                logger.success(m18n.n("upnp_disabled"))
             # Make sure to disable UPnP
-            elif action != 'disable' and not enabled:
-                firewall_upnp('disable', no_refresh=True)
+            elif action != "disable" and not enabled:
+                firewall_upnp("disable", no_refresh=True)
 
-    if not enabled and (action == 'enable' or 1900 in firewall['ipv4']['UDP']):
+    if not enabled and (action == "enable" or 1900 in firewall["ipv4"]["UDP"]):
         # Close unused port 1900
-        firewall_disallow('UDP', 1900, no_reload=True)
+        firewall_disallow("UDP", 1900, no_reload=True)
         if not no_refresh:
             firewall_reload(skip_upnp=True)
 
-    if action == 'enable' and not enabled:
-        raise YunohostError('upnp_port_open_failed')
-    return {'enabled': enabled}
+    if action == "enable" and not enabled:
+        raise YunohostError("upnp_port_open_failed")
+    return {"enabled": enabled}
 
 
 def firewall_stop():
@@ -426,7 +462,7 @@ def firewall_stop():
     """
 
     if os.system("iptables -w -P INPUT ACCEPT") != 0:
-        raise YunohostError('iptables_unavailable')
+        raise YunohostError("iptables_unavailable")
 
     os.system("iptables -w -F")
     os.system("iptables -w -X")
@@ -437,7 +473,7 @@ def firewall_stop():
         os.system("ip6tables -X")
 
     if os.path.exists(UPNP_CRON_JOB):
-        firewall_upnp('disable')
+        firewall_upnp("disable")
 
 
 def _get_ssh_port(default=22):
@@ -447,12 +483,12 @@ def _get_ssh_port(default=22):
     one if it's not defined.
     """
     from moulinette.utils.text import searchf
+
     try:
-        m = searchf(r'^Port[ \t]+([0-9]+)$',
-                    '/etc/ssh/sshd_config', count=-1)
+        m = searchf(r"^Port[ \t]+([0-9]+)$", "/etc/ssh/sshd_config", count=-1)
         if m:
             return int(m)
-    except:
+    except Exception:
         pass
     return default
 
@@ -460,13 +496,17 @@ def _get_ssh_port(default=22):
 def _update_firewall_file(rules):
     """Make a backup and write new rules to firewall file"""
     os.system("cp {0} {0}.old".format(FIREWALL_FILE))
-    with open(FIREWALL_FILE, 'w') as f:
+    with open(FIREWALL_FILE, "w") as f:
         yaml.safe_dump(rules, f, default_flow_style=False)
 
 
 def _on_rule_command_error(returncode, cmd, output):
     """Callback for rules commands error"""
     # Log error and continue commands execution
-    logger.debug('"%s" returned non-zero exit status %d:\n%s',
-                 cmd, returncode, prependlines(output.rstrip(), '> '))
+    logger.debug(
+        '"%s" returned non-zero exit status %d:\n%s',
+        cmd,
+        returncode,
+        prependlines(output.rstrip(), "> "),
+    )
     return True

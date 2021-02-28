@@ -26,18 +26,24 @@
 import os
 import re
 
-from moulinette import m18n, msettings
+from moulinette import m18n, msettings, msignals
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import write_to_file
 
-from yunohost.app import app_ssowatconf, _installed_apps, _get_app_settings, _get_conflicting_apps
+from yunohost.app import (
+    app_ssowatconf,
+    _installed_apps,
+    _get_app_settings,
+    _get_conflicting_apps,
+)
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
 
-logger = getActionLogger('yunohost.domain')
+logger = getActionLogger("yunohost.domain")
 
 
 def domain_list(exclude_subdomains=False):
@@ -51,7 +57,12 @@ def domain_list(exclude_subdomains=False):
     from yunohost.utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
-    result = [entry['virtualdomain'][0] for entry in ldap.search('ou=domains,dc=yunohost,dc=org', 'virtualdomain=*', ['virtualdomain'])]
+    result = [
+        entry["virtualdomain"][0]
+        for entry in ldap.search(
+            "ou=domains,dc=yunohost,dc=org", "virtualdomain=*", ["virtualdomain"]
+        )
+    ]
 
     result_list = []
     for domain in result:
@@ -65,17 +76,14 @@ def domain_list(exclude_subdomains=False):
     def cmp_domain(domain):
         # Keep the main part of the domain and the extension together
         # eg: this.is.an.example.com -> ['example.com', 'an', 'is', 'this']
-        domain = domain.split('.')
+        domain = domain.split(".")
         domain[-1] = domain[-2] + domain.pop()
         domain = list(reversed(domain))
         return domain
 
     result_list = sorted(result_list, key=cmp_domain)
 
-    return {
-        'domains': result_list,
-        'main': _get_maindomain()
-    }
+    return {"domains": result_list, "main": _get_maindomain()}
 
 
 @is_unit_operation()
@@ -98,9 +106,9 @@ def domain_add(operation_logger, domain, dyndns=False):
     ldap = _get_ldap_interface()
 
     try:
-        ldap.validate_uniqueness({'virtualdomain': domain})
+        ldap.validate_uniqueness({"virtualdomain": domain})
     except MoulinetteError:
-        raise YunohostError('domain_exists')
+        raise YunohostError("domain_exists")
 
     operation_logger.start()
 
@@ -111,36 +119,37 @@ def domain_add(operation_logger, domain, dyndns=False):
     # DynDNS domain
     if dyndns:
 
-        # Do not allow to subscribe to multiple dyndns domains...
-        if os.path.exists('/etc/cron.d/yunohost-dyndns'):
-            raise YunohostError('domain_dyndns_already_subscribed')
+        from yunohost.dyndns import dyndns_subscribe, _dyndns_provides, _guess_current_dyndns_domain
 
-        from yunohost.dyndns import dyndns_subscribe, _dyndns_provides
+        # Do not allow to subscribe to multiple dyndns domains...
+        if _guess_current_dyndns_domain("dyndns.yunohost.org") != (None, None):
+            raise YunohostError('domain_dyndns_already_subscribed')
 
         # Check that this domain can effectively be provided by
         # dyndns.yunohost.org. (i.e. is it a nohost.me / noho.st)
         if not _dyndns_provides("dyndns.yunohost.org", domain):
-            raise YunohostError('domain_dyndns_root_unknown')
+            raise YunohostError("domain_dyndns_root_unknown")
 
         # Actually subscribe
         dyndns_subscribe(domain=domain)
 
     try:
         import yunohost.certificate
+
         yunohost.certificate._certificate_install_selfsigned([domain], False)
 
         attr_dict = {
-            'objectClass': ['mailDomain', 'top'],
-            'virtualdomain': domain,
+            "objectClass": ["mailDomain", "top"],
+            "virtualdomain": domain,
         }
 
         try:
-            ldap.add('virtualdomain=%s,ou=domains' % domain, attr_dict)
+            ldap.add("virtualdomain=%s,ou=domains" % domain, attr_dict)
         except Exception as e:
-            raise YunohostError('domain_creation_failed', domain=domain, error=e)
+            raise YunohostError("domain_creation_failed", domain=domain, error=e)
 
         # Don't regen these conf if we're still in postinstall
-        if os.path.exists('/etc/yunohost/installed'):
+        if os.path.exists("/etc/yunohost/installed"):
             # Sometime we have weird issues with the regenconf where some files
             # appears as manually modified even though they weren't touched ...
             # There are a few ideas why this happens (like backup/restore nginx
@@ -152,36 +161,41 @@ def domain_add(operation_logger, domain, dyndns=False):
             # because it's one of the major service, but in the long term we
             # should identify the root of this bug...
             _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
-            regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix', 'rspamd'])
+            regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd"])
             app_ssowatconf()
 
     except Exception:
         # Force domain removal silently
         try:
-            domain_remove(domain, True)
+            domain_remove(domain, force=True)
         except Exception:
             pass
         raise
 
-    hook_callback('post_domain_add', args=[domain])
+    hook_callback("post_domain_add", args=[domain])
 
-    logger.success(m18n.n('domain_created'))
+    logger.success(m18n.n("domain_created"))
 
 
 @is_unit_operation()
-def domain_remove(operation_logger, domain, force=False):
+def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     """
     Delete domains
 
     Keyword argument:
         domain -- Domain to delete
-        force -- Force the domain removal
+        remove_apps -- Remove applications installed on the domain
+        force -- Force the domain removal and don't not ask confirmation to
+                 remove apps if remove_apps is specified
 
     """
     from yunohost.hook import hook_callback
-    from yunohost.app import app_ssowatconf, app_info
+    from yunohost.app import app_ssowatconf, app_info, app_remove
     from yunohost.utils.ldap import _get_ldap_interface
 
+    # the 'force' here is related to the exception happening in domain_add ...
+    # we don't want to check the domain exists because the ldap add may have
+    # failed
     if not force and domain not in domain_list()['domains']:
         raise YunohostError('domain_name_unknown', domain=domain)
 
@@ -191,10 +205,13 @@ def domain_remove(operation_logger, domain, force=False):
         other_domains.remove(domain)
 
         if other_domains:
-            raise YunohostError('domain_cannot_remove_main',
-                                domain=domain, other_domains="\n * " + ("\n * ".join(other_domains)))
+            raise YunohostError(
+                "domain_cannot_remove_main",
+                domain=domain,
+                other_domains="\n * " + ("\n * ".join(other_domains)),
+            )
         else:
-            raise YunohostError('domain_cannot_remove_main_add_new_one', domain=domain)
+            raise YunohostError("domain_cannot_remove_main_add_new_one", domain=domain)
 
     # Check if apps are installed on the domain
     apps_on_that_domain = []
@@ -203,19 +220,33 @@ def domain_remove(operation_logger, domain, force=False):
         settings = _get_app_settings(app)
         label = app_info(app)["name"]
         if settings.get("domain") == domain:
-            apps_on_that_domain.append("    - %s \"%s\" on https://%s%s" % (app, label, domain, settings["path"]) if "path" in settings else app)
+            apps_on_that_domain.append((app, "    - %s \"%s\" on https://%s%s" % (app, label, domain, settings["path"]) if "path" in settings else app))
 
     if apps_on_that_domain:
-        raise YunohostError('domain_uninstall_app_first', apps="\n".join(apps_on_that_domain))
+        if remove_apps:
+            if msettings.get('interface') == "cli" and not force:
+                answer = msignals.prompt(m18n.n('domain_remove_confirm_apps_removal',
+                                                apps="\n".join([x[1] for x in apps_on_that_domain]),
+                                                answers='y/N'), color="yellow")
+                if answer.upper() != "Y":
+                    raise YunohostError("aborting")
+
+            for app, _ in apps_on_that_domain:
+                app_remove(app)
+        else:
+            raise YunohostError('domain_uninstall_app_first', apps="\n".join([x[1] for x in apps_on_that_domain]))
 
     operation_logger.start()
     ldap = _get_ldap_interface()
     try:
-        ldap.remove('virtualdomain=' + domain + ',ou=domains')
+        ldap.remove("virtualdomain=" + domain + ",ou=domains")
     except Exception as e:
-        raise YunohostError('domain_deletion_failed', domain=domain, error=e)
+        raise YunohostError("domain_deletion_failed", domain=domain, error=e)
 
-    os.system('rm -rf /etc/yunohost/certs/%s' % domain)
+    os.system("rm -rf /etc/yunohost/certs/%s" % domain)
+
+    # Delete dyndns keys for this domain (if any)
+    os.system('rm -rf /etc/yunohost/dyndns/K%s.+*' % domain)
 
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...
@@ -234,14 +265,16 @@ def domain_remove(operation_logger, domain, force=False):
     # catastrophic consequences of nginx breaking because it can't load the
     # cert file which disappeared etc..
     if os.path.exists("/etc/nginx/conf.d/%s.conf" % domain):
-        _process_regen_conf("/etc/nginx/conf.d/%s.conf" % domain, new_conf=None, save=True)
+        _process_regen_conf(
+            "/etc/nginx/conf.d/%s.conf" % domain, new_conf=None, save=True
+        )
 
-    regen_conf(names=['nginx', 'metronome', 'dnsmasq', 'postfix'])
+    regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix"])
     app_ssowatconf()
 
-    hook_callback('post_domain_remove', args=[domain])
+    hook_callback("post_domain_remove", args=[domain])
 
-    logger.success(m18n.n('domain_deleted'))
+    logger.success(m18n.n("domain_deleted"))
 
 
 def domain_dns_conf(domain, ttl=None):
@@ -254,8 +287,8 @@ def domain_dns_conf(domain, ttl=None):
 
     """
 
-    if domain not in domain_list()['domains']:
-        raise YunohostError('domain_name_unknown', domain=domain)
+    if domain not in domain_list()["domains"]:
+        raise YunohostError("domain_name_unknown", domain=domain)
 
     ttl = 3600 if ttl is None else ttl
 
@@ -289,7 +322,7 @@ def domain_dns_conf(domain, ttl=None):
             for record in record_list:
                 result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
-    if msettings.get('interface') == 'cli':
+    if msettings.get("interface") == "cli":
         logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 
     return result
@@ -308,63 +341,58 @@ def domain_main_domain(operation_logger, new_main_domain=None):
 
     # If no new domain specified, we return the current main domain
     if not new_main_domain:
-        return {'current_main_domain': _get_maindomain()}
+        return {"current_main_domain": _get_maindomain()}
 
     # Check domain exists
-    if new_main_domain not in domain_list()['domains']:
-        raise YunohostError('domain_name_unknown', domain=new_main_domain)
+    if new_main_domain not in domain_list()["domains"]:
+        raise YunohostError("domain_name_unknown", domain=new_main_domain)
 
-    operation_logger.related_to.append(('domain', new_main_domain))
+    operation_logger.related_to.append(("domain", new_main_domain))
     operation_logger.start()
 
     # Apply changes to ssl certs
-    ssl_key = "/etc/ssl/private/yunohost_key.pem"
-    ssl_crt = "/etc/ssl/private/yunohost_crt.pem"
-    new_ssl_key = "/etc/yunohost/certs/%s/key.pem" % new_main_domain
-    new_ssl_crt = "/etc/yunohost/certs/%s/crt.pem" % new_main_domain
-
     try:
-        if os.path.exists(ssl_key) or os.path.lexists(ssl_key):
-            os.remove(ssl_key)
-        if os.path.exists(ssl_crt) or os.path.lexists(ssl_crt):
-            os.remove(ssl_crt)
+        write_to_file("/etc/yunohost/current_host", new_main_domain)
 
-        os.symlink(new_ssl_key, ssl_key)
-        os.symlink(new_ssl_crt, ssl_crt)
-
-        _set_maindomain(new_main_domain)
+        _set_hostname(new_main_domain)
     except Exception as e:
         logger.warning("%s" % e, exc_info=1)
-        raise YunohostError('main_domain_change_failed')
-
-    _set_hostname(new_main_domain)
+        raise YunohostError("main_domain_change_failed")
 
     # Generate SSOwat configuration file
     app_ssowatconf()
 
     # Regen configurations
-    try:
-        with open('/etc/yunohost/installed', 'r'):
-            regen_conf()
-    except IOError:
-        pass
+    if os.path.exists("/etc/yunohost/installed"):
+        regen_conf()
 
-    logger.success(m18n.n('main_domain_changed'))
+    logger.success(m18n.n("main_domain_changed"))
 
 
 def domain_cert_status(domain_list, full=False):
     import yunohost.certificate
+
     return yunohost.certificate.certificate_status(domain_list, full)
 
 
-def domain_cert_install(domain_list, force=False, no_checks=False, self_signed=False, staging=False):
+def domain_cert_install(
+    domain_list, force=False, no_checks=False, self_signed=False, staging=False
+):
     import yunohost.certificate
-    return yunohost.certificate.certificate_install(domain_list, force, no_checks, self_signed, staging)
+
+    return yunohost.certificate.certificate_install(
+        domain_list, force, no_checks, self_signed, staging
+    )
 
 
-def domain_cert_renew(domain_list, force=False, no_checks=False, email=False, staging=False):
+def domain_cert_renew(
+    domain_list, force=False, no_checks=False, email=False, staging=False
+):
     import yunohost.certificate
-    return yunohost.certificate.certificate_renew(domain_list, force, no_checks, email, staging)
+
+    return yunohost.certificate.certificate_renew(
+        domain_list, force, no_checks, email, staging
+    )
 
 
 def domain_url_available(domain, path):
@@ -380,14 +408,9 @@ def domain_url_available(domain, path):
 
 
 def _get_maindomain():
-    with open('/etc/yunohost/current_host', 'r') as f:
+    with open("/etc/yunohost/current_host", "r") as f:
         maindomain = f.readline().rstrip()
     return maindomain
-
-
-def _set_maindomain(domain):
-    with open('/etc/yunohost/current_host', 'w') as f:
-        f.write(domain)
 
 
 def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
@@ -498,10 +521,22 @@ def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
     ####################
 
     records = {
-        "basic": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in basic],
-        "xmpp": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in xmpp],
-        "mail": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in mail],
-        "extra": [{"name": name, "ttl": ttl_, "type": type_, "value": value} for name, ttl_, type_, value in extra],
+        "basic": [
+            {"name": name, "ttl": ttl_, "type": type_, "value": value}
+            for name, ttl_, type_, value in basic
+        ],
+        "xmpp": [
+            {"name": name, "ttl": ttl_, "type": type_, "value": value}
+            for name, ttl_, type_, value in xmpp
+        ],
+        "mail": [
+            {"name": name, "ttl": ttl_, "type": type_, "value": value}
+            for name, ttl_, type_, value in mail
+        ],
+        "extra": [
+            {"name": name, "ttl": ttl_, "type": type_, "value": value}
+            for name, ttl_, type_, value in extra
+        ],
     }
 
     ##################
@@ -510,7 +545,7 @@ def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
 
     # Defined by custom hooks ships in apps for example ...
 
-    hook_results = hook_callback('custom_dns_rules', args=[domain])
+    hook_results = hook_callback("custom_dns_rules", args=[domain])
     for hook_name, results in hook_results.items():
         #
         # There can be multiple results per hook name, so results look like
@@ -526,18 +561,28 @@ def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
         #  [...]
         #
         # Loop over the sub-results
-        custom_records = [v['stdreturn'] for v in results.values()
-                          if v and v['stdreturn']]
+        custom_records = [
+            v["stdreturn"] for v in results.values() if v and v["stdreturn"]
+        ]
 
         records[hook_name] = []
         for record_list in custom_records:
             # Check that record_list is indeed a list of dict
             # with the required keys
-            if not isinstance(record_list, list) \
-               or any(not isinstance(record, dict) for record in record_list) \
-               or any(key not in record for record in record_list for key in ["name", "ttl", "type", "value"]):
+            if (
+                not isinstance(record_list, list)
+                or any(not isinstance(record, dict) for record in record_list)
+                or any(
+                    key not in record
+                    for record in record_list
+                    for key in ["name", "ttl", "type", "value"]
+                )
+            ):
                 # Display an error, mainly for app packagers trying to implement a hook
-                logger.warning("Ignored custom record from hook '%s' because the data is not a *list* of dict with keys name, ttl, type and value. Raw data : %s" % (hook_name, record_list))
+                logger.warning(
+                    "Ignored custom record from hook '%s' because the data is not a *list* of dict with keys name, ttl, type and value. Raw data : %s"
+                    % (hook_name, record_list)
+                )
                 continue
 
             records[hook_name].extend(record_list)
@@ -546,7 +591,7 @@ def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
 
 
 def _get_DKIM(domain):
-    DKIM_file = '/etc/dkim/{domain}.mail.txt'.format(domain=domain)
+    DKIM_file = "/etc/dkim/{domain}.mail.txt".format(domain=domain)
 
     if not os.path.isfile(DKIM_file):
         return (None, None)
@@ -572,19 +617,27 @@ def _get_DKIM(domain):
 
     # Legacy DKIM format
     if is_legacy_format:
-        dkim = re.match((
-            r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
-            '[^"]*"v=(?P<v>[^";]+);'
-            r'[\s"]*k=(?P<k>[^";]+);'
-            '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+        dkim = re.match(
+            (
+                r"^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+"
+                r'[^"]*"v=(?P<v>[^";]+);'
+                r'[\s"]*k=(?P<k>[^";]+);'
+                r'[\s"]*p=(?P<p>[^";]+)'
+            ),
+            dkim_content,
+            re.M | re.S,
         )
     else:
-        dkim = re.match((
-            r'^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+'
-            '[^"]*"v=(?P<v>[^";]+);'
-            r'[\s"]*h=(?P<h>[^";]+);'
-            r'[\s"]*k=(?P<k>[^";]+);'
-            '[\s"]*p=(?P<p>[^";]+)'), dkim_content, re.M | re.S
+        dkim = re.match(
+            (
+                r"^(?P<host>[a-z_\-\.]+)[\s]+([0-9]+[\s]+)?IN[\s]+TXT[\s]+"
+                r'[^"]*"v=(?P<v>[^";]+);'
+                r'[\s"]*h=(?P<h>[^";]+);'
+                r'[\s"]*k=(?P<k>[^";]+);'
+                r'[\s"]*p=(?P<p>[^";]+)'
+            ),
+            dkim_content,
+            re.M | re.S,
         )
 
     if not dkim:
@@ -592,16 +645,18 @@ def _get_DKIM(domain):
 
     if is_legacy_format:
         return (
-            dkim.group('host'),
-            '"v={v}; k={k}; p={p}"'.format(v=dkim.group('v'),
-                                           k=dkim.group('k'),
-                                           p=dkim.group('p'))
+            dkim.group("host"),
+            '"v={v}; k={k}; p={p}"'.format(
+                v=dkim.group("v"), k=dkim.group("k"), p=dkim.group("p")
+            ),
         )
     else:
         return (
-            dkim.group('host'),
-            '"v={v}; h={h}; k={k}; p={p}"'.format(v=dkim.group('v'),
-                                                  h=dkim.group('h'),
-                                                  k=dkim.group('k'),
-                                                  p=dkim.group('p'))
+            dkim.group("host"),
+            '"v={v}; h={h}; k={k}; p={p}"'.format(
+                v=dkim.group("v"),
+                h=dkim.group("h"),
+                k=dkim.group("k"),
+                p=dkim.group("p"),
+            ),
         )

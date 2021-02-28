@@ -2,6 +2,11 @@
 
 set -e
 
+do_init_regen() {
+  do_pre_regen ""
+  systemctl restart nslcd
+}
+
 do_pre_regen() {
   pending_dir=$1
 
@@ -14,7 +19,7 @@ do_post_regen() {
   regen_conf_files=$1
 
   [[ -z "$regen_conf_files" ]] \
-    || service nslcd restart
+    || systemctl restart nslcd
 }
 
 FORCE=${2:-0}
@@ -26,6 +31,9 @@ case "$1" in
     ;;
   post)
     do_post_regen $4
+    ;;
+  init)
+    do_init_regen
     ;;
   *)
     echo "hook called with unknown argument \`$1'" >&2

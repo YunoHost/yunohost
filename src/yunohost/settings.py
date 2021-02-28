@@ -10,7 +10,7 @@ from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from yunohost.regenconf import regen_conf
 
-logger = getActionLogger('yunohost.settings')
+logger = getActionLogger("yunohost.settings")
 
 SETTINGS_PATH = "/etc/yunohost/settings.json"
 SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
@@ -30,8 +30,8 @@ def is_boolean(value):
     if isinstance(value, bool):
         return True, value
     elif isinstance(value, str):
-        if str(value).lower() in ['true', 'on', 'yes', 'false', 'off', 'no']:
-            return True, str(value).lower() in ['true', 'on', 'yes']
+        if str(value).lower() in ["true", "on", "yes", "false", "off", "no"]:
+            return True, str(value).lower() in ["true", "on", "yes"]
         else:
             return False, None
     else:
@@ -53,28 +53,49 @@ def is_boolean(value):
 # * string
 # * enum (in the form of a python list)
 
-DEFAULTS = OrderedDict([
-    # Password Validation
-    # -1 disabled, 0 alert if listed, 1 8-letter, 2 normal, 3 strong, 4 strongest
-    ("security.password.admin.strength", {"type": "int", "default": 1}),
-    ("security.password.user.strength", {"type": "int", "default": 1}),
-
-    ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", "default": False}),
-    ("security.ssh.compatibility", {"type": "enum", "default": "modern",
-                                    "choices": ["intermediate", "modern"]}),
-    ("security.nginx.compatibility", {"type": "enum", "default": "intermediate",
-                                      "choices": ["intermediate", "modern"]}),
-    ("security.postfix.compatibility", {"type": "enum", "default": "intermediate",
-                                        "choices": ["intermediate", "modern"]}),
-
-    ("pop3.enabled", {"type": "bool", "default": False}),
-    ("smtp.allow_ipv6", {"type": "bool", "default": True}),
-    ("smtp.relay.host", {"type": "string", "default": ""}),
-    ("smtp.relay.port", {"type": "int", "default": 587}),
-    ("smtp.relay.user", {"type": "string", "default": ""}),
-    ("smtp.relay.password", {"type": "string", "default": ""}),
-    ("backup.compress_tar_archives", {"type": "bool", "default": False}),
-])
+DEFAULTS = OrderedDict(
+    [
+        # Password Validation
+        # -1 disabled, 0 alert if listed, 1 8-letter, 2 normal, 3 strong, 4 strongest
+        ("security.password.admin.strength", {"type": "int", "default": 1}),
+        ("security.password.user.strength", {"type": "int", "default": 1}),
+        (
+            "service.ssh.allow_deprecated_dsa_hostkey",
+            {"type": "bool", "default": False},
+        ),
+        (
+            "security.ssh.compatibility",
+            {
+                "type": "enum",
+                "default": "modern",
+                "choices": ["intermediate", "modern"],
+            },
+        ),
+        (
+            "security.nginx.compatibility",
+            {
+                "type": "enum",
+                "default": "intermediate",
+                "choices": ["intermediate", "modern"],
+            },
+        ),
+        (
+            "security.postfix.compatibility",
+            {
+                "type": "enum",
+                "default": "intermediate",
+                "choices": ["intermediate", "modern"],
+            },
+        ),
+        ("pop3.enabled", {"type": "bool", "default": False}),
+        ("smtp.allow_ipv6", {"type": "bool", "default": True}),
+        ("smtp.relay.host", {"type": "string", "default": ""}),
+        ("smtp.relay.port", {"type": "int", "default": 587}),
+        ("smtp.relay.user", {"type": "string", "default": ""}),
+        ("smtp.relay.password", {"type": "string", "default": ""}),
+        ("backup.compress_tar_archives", {"type": "bool", "default": False}),
+    ]
+)
 
 
 def settings_get(key, full=False):
@@ -88,12 +109,12 @@ def settings_get(key, full=False):
     settings = _get_settings()
 
     if key not in settings:
-        raise YunohostError('global_settings_key_doesnt_exists', settings_key=key)
+        raise YunohostError("global_settings_key_doesnt_exists", settings_key=key)
 
     if full:
         return settings[key]
 
-    return settings[key]['value']
+    return settings[key]["value"]
 
 
 def settings_list():
@@ -116,7 +137,7 @@ def settings_set(key, value):
     settings = _get_settings()
 
     if key not in settings:
-        raise YunohostError('global_settings_key_doesnt_exists', settings_key=key)
+        raise YunohostError("global_settings_key_doesnt_exists", settings_key=key)
 
     key_type = settings[key]["type"]
 
@@ -125,33 +146,51 @@ def settings_set(key, value):
         if boolean_value[0]:
             value = boolean_value[1]
         else:
-            raise YunohostError('global_settings_bad_type_for_setting', setting=key,
-                                received_type=type(value).__name__, expected_type=key_type)
+            raise YunohostError(
+                "global_settings_bad_type_for_setting",
+                setting=key,
+                received_type=type(value).__name__,
+                expected_type=key_type,
+            )
     elif key_type == "int":
         if not isinstance(value, int) or isinstance(value, bool):
             if isinstance(value, str):
                 try:
                     value = int(value)
-                except:
-                    raise YunohostError('global_settings_bad_type_for_setting',
-                                        setting=key,
-                                        received_type=type(value).__name__,
-                                        expected_type=key_type)
+                except Exception:
+                    raise YunohostError(
+                        "global_settings_bad_type_for_setting",
+                        setting=key,
+                        received_type=type(value).__name__,
+                        expected_type=key_type,
+                    )
             else:
-                raise YunohostError('global_settings_bad_type_for_setting', setting=key,
-                                    received_type=type(value).__name__, expected_type=key_type)
+                raise YunohostError(
+                    "global_settings_bad_type_for_setting",
+                    setting=key,
+                    received_type=type(value).__name__,
+                    expected_type=key_type,
+                )
     elif key_type == "string":
         if not isinstance(value, str):
-            raise YunohostError('global_settings_bad_type_for_setting', setting=key,
-                                received_type=type(value).__name__, expected_type=key_type)
+            raise YunohostError(
+                "global_settings_bad_type_for_setting",
+                setting=key,
+                received_type=type(value).__name__,
+                expected_type=key_type,
+            )
     elif key_type == "enum":
         if value not in settings[key]["choices"]:
-            raise YunohostError('global_settings_bad_choice_for_enum', setting=key,
-                                choice=str(value),
-                                available_choices=", ".join(settings[key]["choices"]))
+            raise YunohostError(
+                "global_settings_bad_choice_for_enum",
+                setting=key,
+                choice=str(value),
+                available_choices=", ".join(settings[key]["choices"]),
+            )
     else:
-        raise YunohostError('global_settings_unknown_type', setting=key,
-                            unknown_type=key_type)
+        raise YunohostError(
+            "global_settings_unknown_type", setting=key, unknown_type=key_type
+        )
 
     old_value = settings[key].get("value")
     settings[key]["value"] = value
@@ -175,7 +214,7 @@ def settings_reset(key):
     settings = _get_settings()
 
     if key not in settings:
-        raise YunohostError('global_settings_key_doesnt_exists', settings_key=key)
+        raise YunohostError("global_settings_key_doesnt_exists", settings_key=key)
 
     settings[key]["value"] = settings[key]["default"]
     _save_settings(settings)
@@ -196,7 +235,9 @@ def settings_reset_all():
     # addition but we'll see if this is a common need.
     # Another solution would be to use etckeeper and integrate those
     # modification inside of it and take advantage of its git history
-    old_settings_backup_path = SETTINGS_PATH_OTHER_LOCATION % datetime.utcnow().strftime("%F_%X")
+    old_settings_backup_path = (
+        SETTINGS_PATH_OTHER_LOCATION % datetime.utcnow().strftime("%F_%X")
+    )
     _save_settings(settings, location=old_settings_backup_path)
 
     for value in settings.values():
@@ -206,12 +247,13 @@ def settings_reset_all():
 
     return {
         "old_settings_backup_path": old_settings_backup_path,
-        "message": m18n.n("global_settings_reset_success", path=old_settings_backup_path)
+        "message": m18n.n(
+            "global_settings_reset_success", path=old_settings_backup_path
+        ),
     }
 
 
 def _get_settings():
-
     def get_setting_description(key):
         if key.startswith("example"):
             # (This is for dummy stuff used during unit tests)
@@ -254,18 +296,24 @@ def _get_settings():
                     settings[key] = value
                     settings[key]["description"] = get_setting_description(key)
                 else:
-                    logger.warning(m18n.n('global_settings_unknown_setting_from_settings_file',
-                                          setting_key=key))
+                    logger.warning(
+                        m18n.n(
+                            "global_settings_unknown_setting_from_settings_file",
+                            setting_key=key,
+                        )
+                    )
                     unknown_settings[key] = value
     except Exception as e:
-        raise YunohostError('global_settings_cant_open_settings', reason=e)
+        raise YunohostError("global_settings_cant_open_settings", reason=e)
 
     if unknown_settings:
         try:
             _save_settings(unknown_settings, location=unknown_settings_path)
             _save_settings(settings)
         except Exception as e:
-            logger.warning("Failed to save unknown settings (because %s), aborting." % e)
+            logger.warning(
+                "Failed to save unknown settings (because %s), aborting." % e
+            )
 
     return settings
 
@@ -280,13 +328,13 @@ def _save_settings(settings, location=SETTINGS_PATH):
     try:
         result = json.dumps(settings_without_description, indent=4)
     except Exception as e:
-        raise YunohostError('global_settings_cant_serialize_settings', reason=e)
+        raise YunohostError("global_settings_cant_serialize_settings", reason=e)
 
     try:
         with open(location, "w") as settings_fd:
             settings_fd.write(result)
     except Exception as e:
-        raise YunohostError('global_settings_cant_write_settings', reason=e)
+        raise YunohostError("global_settings_cant_write_settings", reason=e)
 
 
 # Meant to be a dict of setting_name -> function to call
@@ -295,10 +343,16 @@ post_change_hooks = {}
 
 def post_change_hook(setting_name):
     def decorator(func):
-        assert setting_name in DEFAULTS.keys(), "The setting %s does not exists" % setting_name
-        assert setting_name not in post_change_hooks, "You can only register one post change hook per setting (in particular for %s)" % setting_name
+        assert setting_name in DEFAULTS.keys(), (
+            "The setting %s does not exists" % setting_name
+        )
+        assert setting_name not in post_change_hooks, (
+            "You can only register one post change hook per setting (in particular for %s)"
+            % setting_name
+        )
         post_change_hooks[setting_name] = func
         return func
+
     return decorator
 
 
@@ -322,16 +376,17 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 #
 # ===========================================
 
+
 @post_change_hook("security.nginx.compatibility")
 def reconfigure_nginx(setting_name, old_value, new_value):
     if old_value != new_value:
-        regen_conf(names=['nginx'])
+        regen_conf(names=["nginx"])
 
 
 @post_change_hook("security.ssh.compatibility")
 def reconfigure_ssh(setting_name, old_value, new_value):
     if old_value != new_value:
-        regen_conf(names=['ssh'])
+        regen_conf(names=["ssh"])
 
 
 @post_change_hook("smtp.allow_ipv6")
@@ -342,31 +397,31 @@ def reconfigure_ssh(setting_name, old_value, new_value):
 @post_change_hook("security.postfix.compatibility")
 def reconfigure_postfix(setting_name, old_value, new_value):
     if old_value != new_value:
-        regen_conf(names=['postfix'])
+        regen_conf(names=["postfix"])
 
 
 @post_change_hook("pop3.enabled")
 def reconfigure_dovecot(setting_name, old_value, new_value):
-    dovecot_package = 'dovecot-pop3d'
+    dovecot_package = "dovecot-pop3d"
 
     environment = os.environ.copy()
-    environment.update({'DEBIAN_FRONTEND': 'noninteractive'})
+    environment.update({"DEBIAN_FRONTEND": "noninteractive"})
 
     if new_value == "True":
         command = [
-            'apt-get',
-            '-y',
-            '--no-remove',
-            '-o Dpkg::Options::=--force-confdef',
-            '-o Dpkg::Options::=--force-confold',
-            'install',
+            "apt-get",
+            "-y",
+            "--no-remove",
+            "-o Dpkg::Options::=--force-confdef",
+            "-o Dpkg::Options::=--force-confold",
+            "install",
             dovecot_package,
         ]
         subprocess.call(command, env=environment)
         if old_value != new_value:
-            regen_conf(names=['dovecot'])
+            regen_conf(names=["dovecot"])
     else:
         if old_value != new_value:
-            regen_conf(names=['dovecot'])
-        command = ['apt-get', '-y', 'remove', dovecot_package]
+            regen_conf(names=["dovecot"])
+        command = ["apt-get", "-y", "remove", dovecot_package]
         subprocess.call(command, env=environment)

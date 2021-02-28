@@ -25,9 +25,9 @@ import logging
 from moulinette.utils.process import check_output
 from packaging import version
 
-logger = logging.getLogger('yunohost.utils.packages')
+logger = logging.getLogger("yunohost.utils.packages")
 
-YUNOHOST_PACKAGES = ['yunohost', 'yunohost-admin', 'moulinette', 'ssowat']
+YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "moulinette", "ssowat"]
 
 
 def get_ynh_package_version(package):
@@ -45,8 +45,7 @@ def get_ynh_package_version(package):
         return {"version": "?", "repo": "?"}
     out = check_output(cmd).split()
     # Output looks like : "yunohost (1.2.3) testing; urgency=medium"
-    return {"version": out[1].strip("()"),
-            "repo": out[2].strip(";")}
+    return {"version": out[1].strip("()"), "repo": out[2].strip(";")}
 
 
 def meets_version_specifier(pkg_name, specifier):
@@ -63,11 +62,11 @@ def meets_version_specifier(pkg_name, specifier):
     # context
     assert pkg_name in YUNOHOST_PACKAGES
     pkg_version = get_ynh_package_version(pkg_name)["version"]
-    pkg_version = re.split(r'\~|\+|\-', pkg_version)[0]
+    pkg_version = re.split(r"\~|\+|\-", pkg_version)[0]
     pkg_version = version.parse(pkg_version)
 
     # Extract operator and version specifier
-    op, req_version = re.search(r'(<<|<=|=|>=|>>) *([\d\.]+)', specifier).groups()
+    op, req_version = re.search(r"(<<|<=|=|>=|>>) *([\d\.]+)", specifier).groups()
     req_version = version.parse(req_version)
 
     # Python2 had a builtin that returns (-1, 0, 1) depending on comparison
@@ -80,7 +79,7 @@ def meets_version_specifier(pkg_name, specifier):
         "<=": lambda v1, v2: cmp(v1, v2) in [-1, 0],
         "=": lambda v1, v2: cmp(v1, v2) in [0],
         ">=": lambda v1, v2: cmp(v1, v2) in [0, 1],
-        ">>": lambda v1, v2: cmp(v1, v2) in [1]
+        ">>": lambda v1, v2: cmp(v1, v2) in [1],
     }
 
     return deb_operators[op](pkg_version, req_version)
@@ -92,6 +91,7 @@ def ynh_packages_version(*args, **kwargs):
     # they don't seem to serve any purpose
     """Return the version of each YunoHost package"""
     from collections import OrderedDict
+
     packages = OrderedDict()
     for package in YUNOHOST_PACKAGES:
         packages[package] = get_ynh_package_version(package)
@@ -106,8 +106,7 @@ def dpkg_is_broken():
     # ref: https://sources.debian.org/src/apt/1.4.9/apt-pkg/deb/debsystem.cc/#L141-L174
     if not os.path.isdir("/var/lib/dpkg/updates/"):
         return False
-    return any(re.match("^[0-9]+$", f)
-               for f in os.listdir("/var/lib/dpkg/updates/"))
+    return any(re.match("^[0-9]+$", f) for f in os.listdir("/var/lib/dpkg/updates/"))
 
 
 def dpkg_lock_available():
@@ -121,7 +120,9 @@ def _list_upgradable_apt_packages():
     upgradable_raw = check_output("LC_ALL=C apt list --upgradable")
 
     # Dirty parsing of the output
-    upgradable_raw = [l.strip() for l in upgradable_raw.split("\n") if l.strip()]
+    upgradable_raw = [
+        line.strip() for line in upgradable_raw.split("\n") if line.strip()
+    ]
     for line in upgradable_raw:
 
         # Remove stupid warning and verbose messages >.>
@@ -132,7 +133,7 @@ def _list_upgradable_apt_packages():
         # yunohost/stable 3.5.0.2+201903211853 all [upgradable from: 3.4.2.4+201903080053]
         line = line.split()
         if len(line) != 6:
-            logger.warning("Failed to parse this line : %s" % ' '.join(line))
+            logger.warning("Failed to parse this line : %s" % " ".join(line))
             continue
 
         yield {

@@ -11,7 +11,7 @@ from moulinette.interfaces.cli import colorize, get_locale
 
 
 def is_installed():
-    return os.path.isfile('/etc/yunohost/installed')
+    return os.path.isfile("/etc/yunohost/installed")
 
 
 def cli(debug, quiet, output_as, timeout, args, parser):
@@ -22,12 +22,7 @@ def cli(debug, quiet, output_as, timeout, args, parser):
     if not is_installed():
         check_command_is_valid_before_postinstall(args)
 
-    ret = moulinette.cli(
-        args,
-        output_as=output_as,
-        timeout=timeout,
-        top_parser=parser
-    )
+    ret = moulinette.cli(args, output_as=output_as, timeout=timeout, top_parser=parser)
     sys.exit(ret)
 
 
@@ -36,7 +31,7 @@ def api(debug, host, port):
     init_logging(interface="api", debug=debug)
 
     def is_installed_api():
-        return {'installed': is_installed()}
+        return {"installed": is_installed()}
 
     # FIXME : someday, maybe find a way to disable route /postinstall if
     # postinstall already done ...
@@ -44,22 +39,25 @@ def api(debug, host, port):
     ret = moulinette.api(
         host=host,
         port=port,
-        routes={('GET', '/installed'): is_installed_api},
+        routes={("GET", "/installed"): is_installed_api},
     )
     sys.exit(ret)
 
 
 def check_command_is_valid_before_postinstall(args):
 
-    allowed_if_not_postinstalled = ['tools postinstall',
-                                    'tools versions',
-                                    'backup list',
-                                    'backup restore',
-                                    'log display']
+    allowed_if_not_postinstalled = [
+        "tools postinstall",
+        "tools versions",
+        "tools shell",
+        "backup list",
+        "backup restore",
+        "log display",
+    ]
 
-    if (len(args) < 2 or (args[0] + ' ' + args[1] not in allowed_if_not_postinstalled)):
+    if len(args) < 2 or (args[0] + " " + args[1] not in allowed_if_not_postinstalled):
         init_i18n()
-        print(colorize(m18n.g('error'), 'red') + " " + m18n.n('yunohost_not_installed'))
+        print(colorize(m18n.g("error"), "red") + " " + m18n.n("yunohost_not_installed"))
         sys.exit(1)
 
 
@@ -71,6 +69,7 @@ def init(interface="cli", debug=False, quiet=False, logdir="/var/log/yunohost"):
     init_logging(interface=interface, debug=debug, quiet=quiet, logdir=logdir)
     init_i18n()
     from moulinette.core import MoulinetteLock
+
     lock = MoulinetteLock("yunohost", timeout=30)
     lock.acquire()
     return lock
@@ -79,14 +78,11 @@ def init(interface="cli", debug=False, quiet=False, logdir="/var/log/yunohost"):
 def init_i18n():
     # This should only be called when not willing to go through moulinette.cli
     # or moulinette.api but still willing to call m18n.n/g...
-    m18n.load_namespace('yunohost')
+    m18n.load_namespace("yunohost")
     m18n.set_locale(get_locale())
 
 
-def init_logging(interface="cli",
-                 debug=False,
-                 quiet=False,
-                 logdir="/var/log/yunohost"):
+def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yunohost"):
 
     logfile = os.path.join(logdir, "yunohost-%s.log" % interface)
 
