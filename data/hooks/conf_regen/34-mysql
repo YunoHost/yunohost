@@ -19,6 +19,7 @@ do_post_regen() {
       # dpkg-reconfigure will initialize mysql (if it ain't already)
       # It enabled auth_socket for root, so no need to define any root password...
       # c.f. : cat /var/lib/dpkg/info/mariadb-server-10.3.postinst | grep install_db -C3
+      MYSQL_PKG="$(dpkg --list | sed -ne 's/^ii  \(mariadb-server-[[:digit:].]\+\) .*$/\1/p')"
       dpkg-reconfigure -freadline -u "$MYSQL_PKG" 2>&1
 
       systemctl -q is-active mariadb.service \
