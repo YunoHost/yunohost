@@ -154,14 +154,8 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
 
         # This is for when launching yunohost-api in debug mode, we want to display stuff in the console
         if debug:
-            logging_configuration["handlers"]["console"] = {
-                'class': 'logging.StreamHandler',
-                'formatter': 'console',
-                'stream': 'ext://sys.stdout',
-                'filters': ['action'],
-            },
-            logging_configuration["loggers"]["yunohost"]["handlers"].append("console")
-            logging_configuration["loggers"]["moulinette"]["handlers"].append("console")
-            logging_configuration["root"]["handlers"].append("console")
+            logging_configuration["loggers"]["yunohost"]["handlers"].append("cli")
+            logging_configuration["loggers"]["moulinette"]["handlers"].append("cli")
+            logging_configuration["root"]["handlers"].append("cli")
 
         configure_logging(logging_configuration)
