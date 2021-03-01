@@ -209,12 +209,13 @@ ynh_mysql_setup_db () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    local new_db_pwd=$(ynh_string_random)	# Generate a random password
+    # Generate a random password
+    local new_db_pwd=$(ynh_string_random)
     # If $db_pwd is not provided, use new_db_pwd instead for db_pwd
     db_pwd="${db_pwd:-$new_db_pwd}"
 
-    ynh_mysql_create_db "$db_name" "$db_user" "$db_pwd"	# Create the database
-    ynh_app_setting_set --app=$app --key=mysqlpwd --value=$db_pwd	# Store the password in the app's config
+    ynh_mysql_create_db "$db_name" "$db_user" "$db_pwd"
+    ynh_app_setting_set --app=$app --key=mysqlpwd --value=$db_pwd
 }
 
 # Remove a database if it exists, and the associated user
@@ -225,22 +226,22 @@ ynh_mysql_setup_db () {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_mysql_remove_db () {
-	# Declare an array to define the options of this helper.
-	local legacy_args=un
-	declare -Ar args_array=( [u]=db_user= [n]=db_name= )
-	local db_user
-	local db_name
-	# Manage arguments with getopts
-	ynh_handle_getopts_args "$@"
+    # Declare an array to define the options of this helper.
+    local legacy_args=un
+    declare -Ar args_array=( [u]=db_user= [n]=db_name= )
+    local db_user
+    local db_name
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
 
-	if mysqlshow | grep -q "^| $db_name "; then
-		ynh_mysql_drop_db $db_name
-	else
-		ynh_print_warn --message="Database $db_name not found"
-	fi
+    if mysqlshow | grep -q "^| $db_name "; then
+        ynh_mysql_drop_db $db_name
+    else
+        ynh_print_warn --message="Database $db_name not found"
+    fi
 
-	# Remove mysql user if it exists
-	if ynh_mysql_user_exists --user=$db_user; then
-		ynh_mysql_drop_user $db_user
-	fi
+    # Remove mysql user if it exists
+    if ynh_mysql_user_exists --user=$db_user; then
+        ynh_mysql_drop_user $db_user
+    fi
 }
