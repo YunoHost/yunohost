@@ -4,7 +4,20 @@ yunohost (4.2) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Jan 2021 05:19:58 +0100
 
-yunohost (4.1.7.2) testing; urgency=low
+yunohost (4.1.7.3) stable; urgency=low
+
+  - [fix] log: Some secrets were not redacted (0c172cd3)
+  - [fix] log: For some reason sometimes we were redacting 'empty string' which made everything explode (88b414c8)
+  - [fix] helpers: Various fixes for ynh_add_config / ynh_replace_vars (a43cd72c, 2728801d, 9bbc3b72, 2402a1db, 6ce02270)
+  - [fix] helpers: Fix permission helpers doc format (d12f403f)
+  - [fix] helpers: ynh_systemd_action did not properly clean the 'tail' process when service action failed (05969184)
+  - [fix] i18n: Translation typo in italian translation ... (bd8644a6)
+
+  Thanks to all contributors <3 ! (Kay0u, yalh76)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 02 Mar 2021 02:03:35 +0100
+
+yunohost (4.1.7.2) stable; urgency=low
 
   - [fix] When migration legacy protected permissions, all users were allowed on the new perm (29bd3c4a)
   - [fix] Mysql is a fucking joke (... trying to fix the mysql issue on RPi ...) (cd4fdb2b)
