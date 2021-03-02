@@ -387,7 +387,7 @@ class RedactingFormatter(Formatter):
             # This matches stuff like db_pwd=the_secret or admin_password=other_secret
             # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
             # Some names like "key" or "manifest_key" are ignored, used in helpers like ynh_app_setting_set or ynh_read_manifest
-            match = re.search(r'(pwd|pass|password|secret|\w+key|token)=(\S{3,})$', record.strip())
+            match = re.search(r'(pwd|pass|password|secret\w*|\w+key|token)=(\S{3,})$', record.strip())
             if match and match.group(2) not in self.data_to_redact and match.group(1) not in ["key", "manifest_key"]:
                 self.data_to_redact.append(match.group(2))
         except Exception as e:
