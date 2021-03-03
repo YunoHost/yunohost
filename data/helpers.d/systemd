@@ -3,11 +3,12 @@
 # Create a dedicated systemd config
 #
 # usage: ynh_add_systemd_config [--service=service] [--template=template]
-# | arg: -s, --service=     - Service name (optionnal, $app by default)
-# | arg: -t, --template=    - Name of template file (optionnal, this is 'systemd' by default, meaning ./conf/systemd.service will be used as template)
+# | arg: -s, --service=     - Service name (optionnal, `$app` by default)
+# | arg: -t, --template=    - Name of template file (optionnal, this is 'systemd' by default, meaning `../conf/systemd.service` will be used as template)
 #
-# This will use the template ../conf/<templatename>.service
-# See the documentation of ynh_add_config for a description of the template
+# This will use the template `../conf/<templatename>.service`.
+#
+# See the documentation of `ynh_add_config` for a description of the template
 # format and how placeholders are replaced with actual variables.
 #
 # Requires YunoHost version 2.7.11 or higher.
@@ -59,10 +60,10 @@ ynh_remove_systemd_config () {
 # Start (or other actions) a service,  print a log in case of failure and optionnaly wait until the service is completely started
 #
 # usage: ynh_systemd_action [--service_name=service_name] [--action=action] [ [--line_match="line to match"] [--log_path=log_path] [--timeout=300] [--length=20] ]
-# | arg: -n, --service_name= - Name of the service to start. Default : $app
+# | arg: -n, --service_name= - Name of the service to start. Default : `$app`
 # | arg: -a, --action=       - Action to perform with systemctl. Default: start
 # | arg: -l, --line_match=   - Line to match - The line to find in the log to attest the service have finished to boot. If not defined it don't wait until the service is completely started.
-# | arg: -p, --log_path=     - Log file - Path to the log file. Default : /var/log/$app/$app.log
+# | arg: -p, --log_path=     - Log file - Path to the log file. Default : `/var/log/$app/$app.log`
 # | arg: -t, --timeout=      - Timeout - The maximum time to wait before ending the watching. Default : 300 seconds.
 # | arg: -e, --length=       - Length of the error log : Default : 20
 #
@@ -180,4 +181,3 @@ ynh_clean_check_starting () {
         ynh_secure_remove --file="$templog" 2>&1
     fi
 }
-
