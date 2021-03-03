@@ -598,5 +598,9 @@
     "permission_currently_allowed_for_all_users": "Diese Berechtigung wird derzeit allen Benutzern zusätzlich zu anderen Gruppen erteilt. Möglicherweise möchten Sie entweder die Berechtigung 'all_users' entfernen oder die anderen Gruppen entfernen, für die sie derzeit zulässig sind.",
     "permission_creation_failed": "Berechtigungserstellung nicht möglich '{permission}' : {error}",
     "permission_created": "Berechtigung '{permission: s}' erstellt",
-    "permission_cannot_remove_main": "Entfernung einer Hauptberechtigung nicht genehmigt"
+    "permission_cannot_remove_main": "Entfernung einer Hauptberechtigung nicht genehmigt",
+    "regenconf_file_updated": "Konfigurationsdatei '{conf}' aktualisiert",
+    "regenconf_file_removed": "Konfigurationsdatei '{conf}' entfernt",
+    "regenconf_file_remove_failed": "Konnte die Konfigurationsdatei '{conf}' nicht entfernen",
+    "postinstall_low_rootfsspace": "Das Root-Filesystem hat insgesamt weniger als 10GB freien Speicherplatz zur Verfügung, was ziemlich besorgniserregend ist! Sie werden sehr bald keinen freien Speicherplatz mehr haben! Für das Root-Filesystem werden mindestens 16GB empfohlen. Wenn Sie YunoHost trotz dieser Warnung installieren wollen, wiederholen Sie den Befehl mit --force-diskspace"
 }
