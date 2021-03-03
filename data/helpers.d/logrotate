@@ -7,16 +7,14 @@
 # | arg: -n, --nonappend        - (optional) Replace the config file instead of appending this new config.
 # | arg: -u, --specific_user=   - run logrotate as the specified user and group. If not specified logrotate is runned as root.
 #
-# If no --logfile is provided, /var/log/${app} will be used as default.
-# logfile can be just a directory, or a full path to a logfile :
-# /parentdir/logdir
-# /parentdir/logdir/logfile.log
+# If no `--logfile` is provided, `/var/log/$app` will be used as default.
+# `logfile` can point to a directory or a file.
 #
 # It's possible to use this helper multiple times, each config will be added to
-# the same logrotate config file.  Unless you use the option --non-append
+# the same logrotate config file. Unless you use the option `--non-append`
 #
 # Requires YunoHost version 2.6.4 or higher.
-# Requires YunoHost version 3.2.0 or higher for the argument --specific_user
+# Requires YunoHost version 3.2.0 or higher for the argument `--specific_user`
 ynh_use_logrotate () {
     # Declare an array to define the options of this helper.
     local legacy_args=lnuya
