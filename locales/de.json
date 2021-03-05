@@ -602,5 +602,7 @@
     "regenconf_file_updated": "Konfigurationsdatei '{conf}' aktualisiert",
     "regenconf_file_removed": "Konfigurationsdatei '{conf}' entfernt",
     "regenconf_file_remove_failed": "Konnte die Konfigurationsdatei '{conf}' nicht entfernen",
-    "postinstall_low_rootfsspace": "Das Root-Filesystem hat insgesamt weniger als 10GB freien Speicherplatz zur Verfügung, was ziemlich besorgniserregend ist! Sie werden sehr bald keinen freien Speicherplatz mehr haben! Für das Root-Filesystem werden mindestens 16GB empfohlen. Wenn Sie YunoHost trotz dieser Warnung installieren wollen, wiederholen Sie den Befehl mit --force-diskspace"
+    "postinstall_low_rootfsspace": "Das Root-Filesystem hat insgesamt weniger als 10GB freien Speicherplatz zur Verfügung, was ziemlich besorgniserregend ist! Sie werden sehr bald keinen freien Speicherplatz mehr haben! Für das Root-Filesystem werden mindestens 16GB empfohlen. Wenn Sie YunoHost trotz dieser Warnung installieren wollen, wiederholen Sie den Befehl mit --force-diskspace",
+    "regenconf_up_to_date": "Die Konfiguration ist bereits aktuell für die Kategorie '{category}'",
+    "regenconf_now_managed_by_yunohost": "Die Konfigurationsdatei '{conf}' wird jetzt von YunoHost (Kategorie {category}) verwaltet."
 }
