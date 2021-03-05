@@ -56,6 +56,13 @@ olcAttributeTypes: ( 1.3.6.1.4.1.40328.1.20.2.7
         SUBSTR caseIgnoreSubstringsMatch
         SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{16} SINGLE-VALUE )
 #
+olcAttributeTypes: ( 1.3.6.1.4.1.40328.1.20.2.8
+        NAME 'wildcarddomain'
+        DESC 'A wildcard domain name'
+        EQUALITY caseIgnoreMatch
+        SUBSTR caseIgnoreSubstringsMatch
+        SYNTAX 1.3.6.1.4.1.1466.115.121.1.15{512})
+#
 # Mail Account Objectclass
 olcObjectClasses: ( 1.3.6.1.4.1.40328.1.1.2.1
         NAME 'mailAccount'

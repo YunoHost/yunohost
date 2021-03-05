@@ -187,6 +187,7 @@ olcDbIndex: mail eq
 olcDbIndex: memberUid eq
 olcDbIndex: uniqueMember eq
 olcDbIndex: virtualdomain eq
+olcDbIndex: wildcarddomain eq
 olcDbIndex: permission eq
 olcDbMaxSize: 10485760
 structuralObjectClass: olcMdbConfig

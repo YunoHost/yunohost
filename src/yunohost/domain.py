@@ -63,6 +63,12 @@ def domain_list(exclude_subdomains=False):
             "ou=domains,dc=yunohost,dc=org", "virtualdomain=*", ["virtualdomain"]
         )
     ]
+    result_wildcard = [
+        entry["wildcarddomain"][0]
+        for entry in ldap.search(
+            "ou=domains,dc=yunohost,dc=org", "wildcarddomain=*", ["wildcarddomain"]
+        )
+    ]
 
     result_list = []
     for domain in result:
@@ -83,7 +89,7 @@ def domain_list(exclude_subdomains=False):
 
     result_list = sorted(result_list, key=cmp_domain)
 
-    return {"domains": result_list, "main": _get_maindomain()}
+    return {"domains": result_list, "wildcard_domains": result_wildcard, "main": _get_maindomain()}
 
 
 @is_unit_operation()
@@ -273,6 +279,152 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     app_ssowatconf()
 
     hook_callback("post_domain_remove", args=[domain])
+
+    logger.success(m18n.n("domain_deleted"))
+
+
+@is_unit_operation()
+def domain_wildcard_add(operation_logger, wildcard_domain):
+    from yunohost.hook import hook_callback
+    from yunohost.app import app_ssowatconf
+    from yunohost.utils.ldap import _get_ldap_interface
+
+    ldap = _get_ldap_interface()
+
+    try:
+        ldap.validate_uniqueness({"wildcarddomain": wildcard_domain})
+    except MoulinetteError:
+        raise YunohostError("domain_exists")
+
+    operation_logger.start()
+
+    # Lower domain to avoid some edge cases issues
+    # See: https://forum.yunohost.org/t/invalid-domain-causes-diagnosis-web-to-fail-fr-on-demand/11765
+    wildcard_domain = wildcard_domain.lower()
+
+    try:
+        import yunohost.certificate
+
+        yunohost.certificate._certificate_install_selfsigned([wildcard_domain], False)
+
+        attr_dict = {
+            "objectClass": ["mailDomain", "top"],
+            "wildcarddomain": wildcard_domain,
+        }
+
+        try:
+            ldap.add("wildcarddomain=%s,ou=domains" % wildcard_domain, attr_dict)
+        except Exception as e:
+            raise YunohostError("domain_creation_failed", domain=wildcard_domain, error=e)
+
+        # Don't regen these conf if we're still in postinstall
+        if os.path.exists("/etc/yunohost/installed"):
+            # Sometime we have weird issues with the regenconf where some files
+            # appears as manually modified even though they weren't touched ...
+            # There are a few ideas why this happens (like backup/restore nginx
+            # conf ... which we shouldnt do ...). This in turns creates funky
+            # situation where the regenconf may refuse to re-create the conf
+            # (when re-creating a domain..)
+            # So here we force-clear the has out of the regenconf if it exists.
+            # This is a pretty ad hoc solution and only applied to nginx
+            # because it's one of the major service, but in the long term we
+            # should identify the root of this bug...
+            _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % wildcard_domain])
+            regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd"])
+            app_ssowatconf()
+
+    except Exception:
+        # Force domain removal silently
+        try:
+            domain_wildcard_remove(wildcard_domain, force=True)
+        except Exception:
+            pass
+        raise
+
+    hook_callback("post_domain_add", args=[wildcard_domain])
+
+    logger.success(m18n.n("domain_created"))
+
+
+@is_unit_operation()
+def domain_wildcard_remove(operation_logger, wildcard_domain, force=False):
+    """
+    Delete domains
+
+    Keyword argument:
+        domain -- Domain to delete
+        remove_apps -- Remove applications installed on the domain
+        force -- Force the domain removal and don't not ask confirmation to
+                 remove apps if remove_apps is specified
+
+    """
+    from yunohost.hook import hook_callback
+    from yunohost.app import app_ssowatconf, app_info, app_remove
+    from yunohost.utils.ldap import _get_ldap_interface
+
+    # the 'force' here is related to the exception happening in domain_add ...
+    # we don't want to check the domain exists because the ldap add may have
+    # failed
+    if not force and wildcard_domain not in domain_list()['wildcard_domains']:
+        raise YunohostError('domain_name_unknown', domain=wildcard_domain)
+
+    # Check if apps are installed on the domain
+    #apps_on_that_domain = []
+    #
+    #for app in _installed_apps():
+    #    settings = _get_app_settings(app)
+    #    label = app_info(app)["name"]
+    #    if settings.get("domain") == domain:
+    #        apps_on_that_domain.append((app, "    - %s \"%s\" on https://%s%s" % (app, label, domain, settings["path"]) if "path" in settings else app))
+    #
+    #if apps_on_that_domain:
+    #    if remove_apps:
+    #        if msettings.get('interface') == "cli" and not force:
+    #            answer = msignals.prompt(m18n.n('domain_remove_confirm_apps_removal',
+    #                                            apps="\n".join([x[1] for x in apps_on_that_domain]),
+    #                                            answers='y/N'), color="yellow")
+    #            if answer.upper() != "Y":
+    #                raise YunohostError("aborting")
+    #
+    #        for app, _ in apps_on_that_domain:
+    #            app_remove(app)
+    #    else:
+    #        raise YunohostError('domain_uninstall_app_first', apps="\n".join([x[1] for x in apps_on_that_domain]))
+
+    operation_logger.start()
+    ldap = _get_ldap_interface()
+    try:
+        ldap.remove("wildcarddomain=" + wildcard_domain + ",ou=domains")
+    except Exception as e:
+        raise YunohostError("domain_deletion_failed", domain=wildcard_domain, error=e)
+
+    os.system("rm -rf /etc/yunohost/certs/%s" % wildcard_domain)
+
+    # Sometime we have weird issues with the regenconf where some files
+    # appears as manually modified even though they weren't touched ...
+    # There are a few ideas why this happens (like backup/restore nginx
+    # conf ... which we shouldnt do ...). This in turns creates funky
+    # situation where the regenconf may refuse to re-create the conf
+    # (when re-creating a domain..)
+    #
+    # So here we force-clear the has out of the regenconf if it exists.
+    # This is a pretty ad hoc solution and only applied to nginx
+    # because it's one of the major service, but in the long term we
+    # should identify the root of this bug...
+    _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % wildcard_domain])
+    # And in addition we even force-delete the file Otherwise, if the file was
+    # manually modified, it may not get removed by the regenconf which leads to
+    # catastrophic consequences of nginx breaking because it can't load the
+    # cert file which disappeared etc..
+    if os.path.exists("/etc/nginx/conf.d/%s.conf" % wildcard_domain):
+        _process_regen_conf(
+            "/etc/nginx/conf.d/%s.conf" % wildcard_domain, new_conf=None, save=True
+        )
+
+    regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix"])
+    app_ssowatconf()
+
+    hook_callback("post_domain_remove", args=[wildcard_domain])
 
     logger.success(m18n.n("domain_deleted"))
 

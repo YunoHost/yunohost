@@ -556,6 +556,37 @@ domain:
                 path:
                     help: The path to check (e.g. /coffee)
 
+    subcategories:
+        wildcard:
+            subcategory_help: Manage wildcard domains
+            actions:
+
+                ### domain_wildcard_add()
+                add:
+                    action_help: Add a wildcard domain
+                    api: POST /domains/wildcard
+                    arguments:
+                        wildcard_domain:
+                            help: Wildcard domain to add
+                            extra:
+                                pattern:
+                                    - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                                    - "Must be a valid wildcard domain (e.g. *.my-domain.org)"
+                ### domain_wildcard_remove()
+                remove:
+                    action_help: Remove a wildcard domain
+                    api: DELETE /domains/wildcard/<wildcard_domain>
+                    arguments:
+                        wildcard_domain:
+                            help: Wildcard domain to remove
+                            extra:
+                                pattern:
+                                    - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                                    - "Must be a valid wildcard domain (e.g. *.my-domain.org)"
+                        -f:
+                            full: --force
+                            help: Do not ask confirmation to remove apps
+                            action: store_true
 
          ### domain_info()
 #        info:
