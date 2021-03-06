@@ -1,3 +1,13 @@
 {
-    "password_too_simple_1": "Heslo musí být aspoň 8 znaků dlouhé"
+    "password_too_simple_1": "Heslo musí být aspoň 8 znaků dlouhé",
+    "app_already_installed": "{app:s} je již nainstalován/a",
+    "already_up_to_date": "Neprovedena žádná akce. Vše je již aktuální.",
+    "admin_password_too_long": "Zvolte prosím heslo kratší než 127 znaků",
+    "admin_password_changed": "Heslo správce bylo změněno",
+    "admin_password_change_failed": "Nebylo možné změnit heslo",
+    "admin_password": "Heslo správce",
+    "additional_urls_already_removed": "Dotatečný odkaz '{url:s}' byl již odebrán u oprávnění '{permission:s}'",
+    "additional_urls_already_added": "Dotatečný odkaz '{url:s}' byl již přidán v dodatečných odkazech pro oprávnění '{permission:s}'",
+    "action_invalid": "Nesprávné akce '{action:s}'",
+    "aborting": "Přerušení."
 }
