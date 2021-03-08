@@ -18,7 +18,7 @@ ynh_install_n () {
     # Build an app.src for n
     mkdir --parents "../conf"
     echo "SOURCE_URL=https://github.com/tj/n/archive/v${n_version}.tar.gz
-SOURCE_SUM=2933855140f980fc6d1d6103ea07cd4d915b17dea5e17e43921330ea89978b5b" > "../conf/n.src"
+SOURCE_SUM=2933855140f980fc6d1d6103ea07cd4d915b17dea5e17e43921330ea89978b5b" > "$YNH_APP_BASEDIR/conf/n.src"
     # Download and extract n
     ynh_setup_source --dest_dir="$n_install_dir/git" --source_id=n
     # Install n
