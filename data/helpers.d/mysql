@@ -1,7 +1,5 @@
 #!/bin/bash
 
-MYSQL_ROOT_PWD_FILE=/etc/yunohost/mysql
-
 # Open a connection as a user
 #
 # example: ynh_mysql_connect_as --user="user" --password="pass" <<< "UPDATE ...;"
@@ -49,8 +47,7 @@ ynh_mysql_execute_as_root() {
         database="--database=$database"
     fi
 
-    ynh_mysql_connect_as --user="root" --password="$(cat $MYSQL_ROOT_PWD_FILE)" \
-        $database <<< "$sql"
+    mysql -B "$database" <<< "$sql"
 }
 
 # Execute a command from a file as root user
@@ -75,9 +72,7 @@ ynh_mysql_execute_file_as_root() {
         database="--database=$database"
     fi
 
-
-    ynh_mysql_connect_as --user="root" --password="$(cat $MYSQL_ROOT_PWD_FILE)" \
-        $database < "$file"
+    mysql -B "$database" < "$file"
 }
 
 # Create a database and grant optionnaly privilegies to a user
@@ -140,7 +135,7 @@ ynh_mysql_dump_db() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    mysqldump --user="root" --password="$(cat $MYSQL_ROOT_PWD_FILE)" --single-transaction --skip-dump-date "$database"
+    mysqldump --single-transaction --skip-dump-date "$database"
 }
 
 # Create a user
@@ -214,12 +209,13 @@ ynh_mysql_setup_db () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    local new_db_pwd=$(ynh_string_random)	# Generate a random password
+    # Generate a random password
+    local new_db_pwd=$(ynh_string_random)
     # If $db_pwd is not provided, use new_db_pwd instead for db_pwd
     db_pwd="${db_pwd:-$new_db_pwd}"
 
-    ynh_mysql_create_db "$db_name" "$db_user" "$db_pwd"	# Create the database
-    ynh_app_setting_set --app=$app --key=mysqlpwd --value=$db_pwd	# Store the password in the app's config
+    ynh_mysql_create_db "$db_name" "$db_user" "$db_pwd"
+    ynh_app_setting_set --app=$app --key=mysqlpwd --value=$db_pwd
 }
 
 # Remove a database if it exists, and the associated user
@@ -232,16 +228,14 @@ ynh_mysql_setup_db () {
 ynh_mysql_remove_db () {
     # Declare an array to define the options of this helper.
     local legacy_args=un
-    local -A args_array=( [u]=db_user= [n]=db_name= )
+    local -Ar args_array=( [u]=db_user= [n]=db_name= )
     local db_user
     local db_name
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    local mysql_root_password=$(cat $MYSQL_ROOT_PWD_FILE)
-    if mysqlshow --user=root --password=$mysql_root_password | grep --quiet "^| $db_name"
-    then	# Check if the database exists
-        ynh_mysql_drop_db $db_name	# Remove the database	
+    if mysqlshow | grep -q "^| $db_name "; then
+        ynh_mysql_drop_db $db_name
     else
         ynh_print_warn --message="Database $db_name not found"
     fi

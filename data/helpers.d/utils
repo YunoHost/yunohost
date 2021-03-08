@@ -135,12 +135,15 @@ ynh_setup_source () {
     if [ "$src_filename" = "" ]; then
         src_filename="${source_id}.${src_format}"
     fi
-    local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
 
+    # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
+    local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
     if test -e "$local_src"
-    then    # Use the local source file if it is present
+    then
         cp $local_src $src_filename
-    else    # If not, download the source
+    else
+        [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
+
         # NB. we have to declare the var as local first,
         # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
         # because local always return 0 ...
