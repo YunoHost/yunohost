@@ -16,7 +16,6 @@ export N_PREFIX="$n_install_dir"
 ynh_install_n () {
     ynh_print_info --message="Installation of N - Node.js version management"
     # Build an app.src for n
-    mkdir --parents "../conf"
     echo "SOURCE_URL=https://github.com/tj/n/archive/v${n_version}.tar.gz
 SOURCE_SUM=fa80a8685f0fb1b4187fc0a1228b44f0ea2f244e063fe8f443b8913ea595af89" > "$YNH_APP_BASEDIR/conf/n.src"
     # Download and extract n
