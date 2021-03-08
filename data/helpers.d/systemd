@@ -20,8 +20,9 @@ ynh_add_systemd_config () {
     local others_var
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    local service="${service:-$app}"
-    local template="${template:-systemd.service}"
+    service="${service:-$app}"
+    template="${template:-systemd.service}"
+    others_var="${others_var:-}"
 
     [[ -z "$others_var" ]] || ynh_print_warn --message="Packagers: using --others_var is unecessary since Yunohost 4.2"
 
