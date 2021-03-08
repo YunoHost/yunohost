@@ -1,9 +1,16 @@
 #!/bin/bash
 
-backup_dir="$1/conf/dkim"
+backup_dir="$1/conf/mail"
 
 cp -a $backup_dir/etc/dkim/. /etc/dkim
 
 chown -R root:root /etc/dkim
 chown _rspamd:root /etc/dkim
 chown _rspamd:root /etc/dkim/*.mail.key
+
+cp -a $backup_dir/etc/postfix/. /etc/postfix
+chown -R root:root /etc/postfix
+
+cp -a $backup_dir/aliases /etc/aliases
+chown -R root:root /etc/aliases
+postalias /etc/aliases
