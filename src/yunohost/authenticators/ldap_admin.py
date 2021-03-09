@@ -12,7 +12,7 @@ from moulinette.core import MoulinetteError
 from moulinette.authentication import BaseAuthenticator
 from yunohost.utils.error import YunohostError
 
-logger = logging.getLogger("yunohost.authenticators.lpda_admin")
+logger = logging.getLogger("yunohost.authenticators.ldap_admin")
 
 class Authenticator(BaseAuthenticator):
 
