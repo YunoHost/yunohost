@@ -288,7 +288,7 @@ def domain_dns_conf(domain):
     if domain not in domain_list()["domains"]:
         raise YunohostError("domain_name_unknown", domain=domain)
 
-    domains_settings = _get_domain_and_subdomains_settings(domain)
+    domains_settings = _get_domain_settings(domain, True)
 
     dns_conf = _build_dns_conf(domains_settings)
 
@@ -464,7 +464,6 @@ def _build_dns_conf(domains):
 
 
     for domain_name, domain in domains.items():
-        print(domain_name)
         ttl = domain["ttl"]
 
         owned_dns_zone = "owned_dns_zone" in domains[root] and domains[root]["owned_dns_zone"] == True
@@ -493,7 +492,7 @@ def _build_dns_conf(domains):
         if domain["mail"] == True:
 
             mail += [
-                [name, ttl, "MX", "10 %s." % domain],
+                [name, ttl, "MX", "10 %s." % domain_name],
                 [name, ttl, "TXT", '"v=spf1 a mx -all"'],
             ]
 
