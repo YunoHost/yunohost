@@ -202,10 +202,10 @@ import yaml
 
 
 with open('services.yml') as f:
-    new_services = yaml.load(f)
+    new_services = yaml.safe_load(f)
 
 with open('/etc/yunohost/services.yml') as f:
-    services = yaml.load(f) or {}
+    services = yaml.safe_load(f) or {}
 
 updated = False
 
