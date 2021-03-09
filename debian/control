@@ -31,7 +31,7 @@ Depends: ${python3:Depends}, ${misc:Depends}
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog
- , php7.4-gd, php7.4-curl, php-gettext
+ , php7.4-gd, php7.4-curl, php-php-gettext
  , python3-pip
  , unattended-upgrades
  , libdbd-ldap-perl, libnet-dns-perl
