@@ -25,6 +25,7 @@
 """
 import os
 import re
+import sys
 
 from moulinette import m18n, msettings, msignals
 from moulinette.core import MoulinetteError
@@ -275,22 +276,21 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     logger.success(m18n.n("domain_deleted"))
 
 
-def domain_dns_conf(domain, ttl=None):
+def domain_dns_conf(domain):
     """
     Generate DNS configuration for a domain
 
     Keyword argument:
         domain -- Domain name
-        ttl -- Time to live
 
     """
 
     if domain not in domain_list()["domains"]:
         raise YunohostError("domain_name_unknown", domain=domain)
 
-    ttl = 3600 if ttl is None else ttl
+    domains_settings = _get_domain_and_subdomains_settings(domain)
 
-    dns_conf = _build_dns_conf(domain, ttl)
+    dns_conf = _build_dns_conf(domains_settings)
 
     result = ""
 
@@ -411,7 +411,7 @@ def _get_maindomain():
     return maindomain
 
 
-def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
+def _build_dns_conf(domains):
     """
     Internal function that will returns a data structure containing the needed
     information to generate/adapt the dns configuration
@@ -451,72 +451,92 @@ def _build_dns_conf(domain, ttl=3600, include_empty_AAAA_if_no_ipv6=False):
     }
     """
 
+    root = min(domains.keys(), key=(lambda k: len(k)))
+
+    basic = []
+    mail = []
+    xmpp = []
+    extra = []
     ipv4 = get_public_ip()
     ipv6 = get_public_ip(6)
 
-    ###########################
-    # Basic ipv4/ipv6 records #
-    ###########################
+    name_prefix = root.partition(".")[0]
 
-    basic = []
-    if ipv4:
-        basic.append(["@", ttl, "A", ipv4])
 
-    if ipv6:
-        basic.append(["@", ttl, "AAAA", ipv6])
-    elif include_empty_AAAA_if_no_ipv6:
-        basic.append(["@", ttl, "AAAA", None])
+    for domain_name, domain in domains.items():
+        print(domain_name)
+        ttl = domain["ttl"]
 
-    #########
-    # Email #
-    #########
+        owned_dns_zone = "owned_dns_zone" in domains[root] and domains[root]["owned_dns_zone"] == True
+        if domain_name == root:
+            name = name_prefix if not owned_dns_zone else  "@"
+        else:
+            name = domain_name[0:-(1 + len(root))] 
+            if not owned_dns_zone:
+                name +=  "." + name_prefix
 
-    mail = [
-        ["@", ttl, "MX", "10 %s." % domain],
-        ["@", ttl, "TXT", '"v=spf1 a mx -all"'],
-    ]
+        ###########################
+        # Basic ipv4/ipv6 records #
+        ###########################
+        if ipv4:
+            basic.append([name, ttl, "A", ipv4])
 
-    # DKIM/DMARC record
-    dkim_host, dkim_publickey = _get_DKIM(domain)
+        if ipv6:
+            basic.append([name, ttl, "AAAA", ipv6])
+        # TODO
+        # elif include_empty_AAAA_if_no_ipv6:
+        #     basic.append(["@", ttl, "AAAA", None])
 
-    if dkim_host:
-        mail += [
-            [dkim_host, ttl, "TXT", dkim_publickey],
-            ["_dmarc", ttl, "TXT", '"v=DMARC1; p=none"'],
-        ]
+        #########
+        # Email #
+        #########
+        if domain["mail"] == True:
 
-    ########
-    # XMPP #
-    ########
+            mail += [
+                [name, ttl, "MX", "10 %s." % domain],
+                [name, ttl, "TXT", '"v=spf1 a mx -all"'],
+            ]
 
-    xmpp = [
-        ["_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain],
-        ["_xmpp-server._tcp", ttl, "SRV", "0 5 5269 %s." % domain],
-        ["muc", ttl, "CNAME", "@"],
-        ["pubsub", ttl, "CNAME", "@"],
-        ["vjud", ttl, "CNAME", "@"],
-        ["xmpp-upload", ttl, "CNAME", "@"],
-    ]
+            # DKIM/DMARC record
+            dkim_host, dkim_publickey = _get_DKIM(domain)
 
-    #########
-    # Extra #
-    #########
+            if dkim_host:
+                mail += [
+                    [dkim_host, ttl, "TXT", dkim_publickey],
+                    ["_dmarc", ttl, "TXT", '"v=DMARC1; p=none"'],
+                ]
 
-    extra = []
+        ########
+        # XMPP #
+        ########
+        if domain["xmpp"] == True:
+            xmpp += [
+                ["_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain_name],
+                ["_xmpp-server._tcp", ttl, "SRV", "0 5 5269 %s." % domain_name],
+                ["muc", ttl, "CNAME", name],
+                ["pubsub", ttl, "CNAME", name],
+                ["vjud", ttl, "CNAME", name],
+                ["xmpp-upload", ttl, "CNAME", name],
+            ]
 
-    if ipv4:
-        extra.append(["*", ttl, "A", ipv4])
+        #########
+        # Extra #
+        #########
 
-    if ipv6:
-        extra.append(["*", ttl, "AAAA", ipv6])
-    elif include_empty_AAAA_if_no_ipv6:
-        extra.append(["*", ttl, "AAAA", None])
 
-    extra.append(["@", ttl, "CAA", '128 issue "letsencrypt.org"'])
+        if ipv4:
+            extra.append(["*", ttl, "A", ipv4])
 
-    ####################
-    # Standard records #
-    ####################
+        if ipv6:
+            extra.append(["*", ttl, "AAAA", ipv6])
+        elif include_empty_AAAA_if_no_ipv6:
+            extra.append(["*", ttl, "AAAA", None])
+
+        extra.append([name, ttl, "CAA", '128 issue "letsencrypt.org"'])
+
+        ####################
+        # Standard records #
+        ####################
 
     records = {
         "basic": [
@@ -665,17 +685,17 @@ def _get_domain_and_subdomains_settings(domain):
     Give data about a domain and its subdomains
     """
     return {
-        "cmercier.fr" : {
-            "main": true,
-            "xmpp": true,
-            "mail": true,
-            "owned_dns_zone": true,
+        "node.cmercier.fr" : {
+            "main": True,
+            "xmpp": True,
+            "mail": True,
+            "owned_dns_zone": True,
             "ttl": 3600,
         },
-        "node.cmercier.fr" : {
-            "main": false,
-            "xmpp": false,
-            "mail": false,
+        "sub.node.cmercier.fr" : {
+            "main": False,
+            "xmpp": True,
+            "mail": False,
             "ttl": 3600,
         },
     }
