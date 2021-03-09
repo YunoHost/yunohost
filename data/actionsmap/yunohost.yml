@@ -33,18 +33,9 @@
 #     Global parameters     #
 #############################
 _global:
-    configuration:
-        authenticate:
-            - api
-        authenticator:
-            default:
-                vendor: ldap
-                help: admin_password
-                parameters:
-                    uri: ldap://localhost:389
-                    base_dn: dc=yunohost,dc=org
-                    user_rdn: cn=admin,dc=yunohost,dc=org
-        argument_auth: false
+    authentication:
+        api: ldap_admin
+        cli: null
     arguments:
         -v:
             full: --version
@@ -1404,9 +1395,9 @@ tools:
         postinstall:
             action_help: YunoHost post-install
             api: POST /postinstall
-            configuration:
+            authentication:
                 # We need to be able to run the postinstall without being authenticated, otherwise we can't run the postinstall
-                authenticate: false
+                api: null
             arguments:
                 -d:
                     full: --domain
