@@ -45,7 +45,7 @@ from yunohost.hook import hook_callback
 
 logger = getActionLogger("yunohost.domain")
 
-DOMAIN_SETTINGS_PATH = "/etc/yunohost/domains/"
+DOMAIN_SETTINGS_PATH = "/etc/yunohost/domains.yml"
 
 def domain_list(exclude_subdomains=False):
     """
@@ -661,7 +661,7 @@ def _get_DKIM(domain):
 
 
 def _get_domain_and_subdomains_settings(domain):
-    """ 
+    """
     Give data about a domain and its subdomains
     """
     return {
@@ -679,4 +679,73 @@ def _get_domain_and_subdomains_settings(domain):
             "ttl": 3600,
         },
     }
+
+def _load_domain_settings():
+    """
+    Retrieve entries in domains.yml
+    And fill the holes if any
+    """
+    # Retrieve entries in the YAML
+    if os.path.exists(DOMAIN_SETTINGS_PATH) and os.path.isfile(DOMAIN_SETTINGS_PATH):
+        old_domains = yaml.load(open(DOMAIN_SETTINGS_PATH, "r+"))
+    else:
+        old_domains = dict()
+
+    # Create sanitized data
+    new_domains = dict()
+
+    get_domain_list = domain_list()
+
+    # Load main domain
+    maindomain = get_domain_list["main"]
+
+    for domain in get_domain_list["domains"]:
+        # Update each setting if not present
+        new_domains[domain] = {
+            # Set "main" value
+            "main": True if domain == maindomain else False
+        }
+        # Set other values (default value if missing)
+        for setting, default in [ ("xmpp", True), ("mail", True), ("owned_dns_zone", True), ("ttl", 3600) ]:
+            if domain in old_domains.keys() and setting in old_domains[domain].keys():
+                new_domains[domain][setting] = old_domains[domain][setting]
+            else:
+                new_domains[domain][setting] = default
+
+    return new_domains
+
+
+def domain_settings(domain):
+    """
+    Get settings of a domain
+
+    Keyword arguments:
+        domain -- The domain name
+    """
+    return _get_domain_settings(domain, False)
+
+def _get_domain_settings(domain, subdomains):
+    """
+    Get settings of a domain
+
+    Keyword arguments:
+        domain -- The domain name
+        subdomains -- Do we include the subdomains? Default is False
+
+    """
+    domains = _load_domain_settings()
+    if not domain in domains.keys():
+        return {}
+
+    only_wanted_domains = dict()
+    for entry in domains.keys():
+        if subdomains:
+            if domain in entry:
+                only_wanted_domains[entry] = domains[entry]
+        else:
+            if domain == entry:
+                only_wanted_domains[entry] = domains[entry]
+
+
+    return only_wanted_domains
 
