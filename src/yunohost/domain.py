@@ -45,6 +45,7 @@ from yunohost.hook import hook_callback
 
 logger = getActionLogger("yunohost.domain")
 
+DOMAIN_SETTINGS_PATH = "/etc/yunohost/domains/"
 
 def domain_list(exclude_subdomains=False):
     """
@@ -657,3 +658,25 @@ def _get_DKIM(domain):
                 p=dkim.group("p"),
             ),
         )
+
+
+def _get_domain_and_subdomains_settings(domain):
+    """ 
+    Give data about a domain and its subdomains
+    """
+    return {
+        "cmercier.fr" : {
+            "main": true,
+            "xmpp": true,
+            "mail": true,
+            "owned_dns_zone": true,
+            "ttl": 3600,
+        },
+        "node.cmercier.fr" : {
+            "main": false,
+            "xmpp": false,
+            "mail": false,
+            "ttl": 3600,
+        },
+    }
+
