@@ -424,7 +424,7 @@
     "service_description_rspamd": "Filtra SPAM, e altre funzionalità legate alle mail",
     "service_description_redis-server": "Un database specializzato usato per un veloce accesso ai dati, task queue, e comunicazioni tra programmi",
     "service_description_postfix": "Usato per inviare e ricevere email",
-    "service_description_php7.3-fpm": "Esegue app scritte in PHP con NGINX",
+    "service_description_php7.4-fpm": "Esegue app scritte in PHP con NGINX",
     "service_description_nginx": "Serve o permette l'accesso a tutti i siti pubblicati sul tuo server",
     "service_description_mysql": "Memorizza i dati delle app (database SQL)",
     "service_description_metronome": "Gestisce gli account di messaggistica instantanea XMPP",

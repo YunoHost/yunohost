@@ -3410,10 +3410,10 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     services = manifest.get("services", [])
 
-    # Some apps use php-fpm or php5-fpm which is now php7.0-fpm
+    # Some apps use php-fpm, php5-fpm or php7.x-fpm which is now php7.4-fpm
     def replace_alias(service):
-        if service in ["php-fpm", "php5-fpm", "php7.0-fpm"]:
-            return "php7.3-fpm"
+        if service in ["php-fpm", "php5-fpm", "php7.0-fpm", "php7.3-fpm"]:
+            return "php7.4-fpm"
         else:
             return service
 
@@ -3422,7 +3422,7 @@ def _assert_system_is_sane_for_app(manifest, when):
     # We only check those, mostly to ignore "custom" services
     # (added by apps) and because those are the most popular
     # services
-    service_filter = ["nginx", "php7.3-fpm", "mysql", "postfix"]
+    service_filter = ["nginx", "php7.4-fpm", "mysql", "postfix"]
     services = [str(s) for s in services if s in service_filter]
 
     if "nginx" not in services:
@@ -3465,19 +3465,22 @@ def _assert_system_is_sane_for_app(manifest, when):
 
 
 LEGACY_PHP_VERSION_REPLACEMENTS = [
-    ("/etc/php5", "/etc/php/7.3"),
-    ("/etc/php/7.0", "/etc/php/7.3"),
-    ("/var/run/php5-fpm", "/var/run/php/php7.3-fpm"),
-    ("/var/run/php/php7.0-fpm", "/var/run/php/php7.3-fpm"),
-    ("php5", "php7.3"),
-    ("php7.0", "php7.3"),
+    ("/etc/php5", "/etc/php/7.4"),
+    ("/etc/php/7.0", "/etc/php/7.4"),
+    ("/etc/php/7.3", "/etc/php/7.4"),
+    ("/var/run/php5-fpm", "/var/run/php/php7.4-fpm"),
+    ("/var/run/php/php7.0-fpm", "/var/run/php/php7.4-fpm"),
+    ("/var/run/php/php7.3-fpm", "/var/run/php/php7.4-fpm"),
+    ("php5", "php7.4"),
+    ("php7.0", "php7.4"),
+    ("php7.3", "php7.4"),
     (
         'phpversion="${phpversion:-7.0}"',
-        'phpversion="${phpversion:-7.3}"',
+        'phpversion="${phpversion:-7.4}"',
     ),  # Many helpers like the composer ones use 7.0 by default ...
     (
         '"$phpversion" == "7.0"',
-        '$(bc <<< "$phpversion >= 7.3") -eq 1',
+        '$(bc <<< "$phpversion >= 7.4") -eq 1',
     ),  # patch ynh_install_php to refuse installing/removing php <= 7.3
 ]
 
@@ -3514,11 +3517,11 @@ def _patch_legacy_php_versions_in_settings(app_folder):
     settings = read_yaml(os.path.join(app_folder, "settings.yml"))
 
     if settings.get("fpm_config_dir") == "/etc/php/7.0/fpm":
-        settings["fpm_config_dir"] = "/etc/php/7.3/fpm"
+        settings["fpm_config_dir"] = "/etc/php/7.4/fpm"
     if settings.get("fpm_service") == "php7.0-fpm":
-        settings["fpm_service"] = "php7.3-fpm"
+        settings["fpm_service"] = "php7.4-fpm"
     if settings.get("phpversion") == "7.0":
-        settings["phpversion"] = "7.3"
+        settings["phpversion"] = "7.4"
 
     # We delete these checksums otherwise the file will appear as manually modified
     list_to_remove = ["checksum__etc_php_7.0_fpm_pool", "checksum__etc_nginx_conf.d"]

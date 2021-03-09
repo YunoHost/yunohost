@@ -53,8 +53,8 @@ Pin-Priority: -1
 do_post_regen() {
   regen_conf_files=$1
 
-  # Make sure php7.3 is the default version when using php in cli
-  update-alternatives --set php /usr/bin/php7.3
+  # Make sure php7.4 is the default version when using php in cli
+  update-alternatives --set php /usr/bin/php7.4
 }
 
 FORCE=${2:-0}

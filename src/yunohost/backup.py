@@ -1183,7 +1183,7 @@ class RestoreManager:
 
     def _patch_legacy_php_versions_in_csv_file(self):
         """
-        Apply dirty patch to redirect php5 and php7.0 files to php7.3
+        Apply dirty patch to redirect php5 and php7.0 files to php7.4
         """
 
         backup_csv = os.path.join(self.work_dir, "backup.csv")
