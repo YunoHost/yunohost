@@ -77,13 +77,27 @@ do_pre_regen() {
       cp services.yml /etc/yunohost/services.yml
   fi
 
+  mkdir -p $pending_dir/etc/cron.d/
+  mkdir -p $pending_dir/etc/cron.daily/
+
   # add cron job for diagnosis to be ran at 7h and 19h + a random delay between
   # 0 and 20min, meant to avoid every instances running their diagnosis at
   # exactly the same time, which may overload the diagnosis server.
-  mkdir -p $pending_dir/etc/cron.d/
   cat > $pending_dir/etc/cron.d/yunohost-diagnosis << EOF
 SHELL=/bin/bash
 0 7,19 * * * root : YunoHost Automatic Diagnosis; sleep \$((RANDOM\\%1200)); yunohost diagnosis run --email > /dev/null 2>/dev/null || echo "Running the automatic diagnosis failed miserably"
+EOF
+
+  # Cron job that upgrade the app list everyday
+  cat > $pending_dir/etc/cron.daily/yunohost-fetch-apps-catalog << EOF
+#!/bin/bash
+(sleep \$((RANDOM%3600)); yunohost tools update --apps > /dev/null) &
+EOF
+
+  # Cron job that renew lets encrypt certificates if there's any that needs renewal
+  cat > $pending_dir/etc/cron.daily/yunohost-certificate-renew << EOF
+#!/bin/bash
+yunohost domain cert-renew --email
 EOF
 
   # If we subscribed to a dyndns domain, add the corresponding cron
@@ -136,6 +150,10 @@ do_post_regen() {
   chmod 750 /etc/yunohost/certs
   find /etc/yunohost/certs/ -type f -exec chmod 640 {} \;
   find /etc/yunohost/certs/ -type d -exec chmod 750 {} \;
+
+  find /etc/cron.*/yunohost-* -type f -exec chmod 755 {} \;
+  find /etc/cron.d/yunohost-* -type f -exec chmod 644 {} \;
+  find /etc/cron.*/yunohost-* -type f -exec chmod root:root {} \;
 
   # Misc configuration / state files
   chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
