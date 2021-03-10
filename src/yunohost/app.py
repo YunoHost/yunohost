@@ -3432,6 +3432,7 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     # Wait if a service is reloading
     test_nb = 0
+
     while test_nb < 16:
         if not any(s for s in services if service_status(s)["status"] == "reloading"):
             break
