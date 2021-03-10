@@ -5,7 +5,6 @@ import logging
 import ldap
 import ldap.sasl
 import time
-import ldap.modlist as modlist
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
