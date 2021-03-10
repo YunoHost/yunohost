@@ -3465,6 +3465,14 @@ def _assert_system_is_sane_for_app(manifest, when):
     if "fail2ban" not in services:
         services.append("fail2ban")
 
+    # Wait if a service is reloading
+    test_nb = 0
+    while test_nb < 10:
+        if not any(s for s in services if service_status(s)["status"] == "reloading"):
+            break
+        time.sleep(0.5)
+        test_nb+=1
+
     # List services currently down and raise an exception if any are found
     faulty_services = [s for s in services if service_status(s)["status"] != "running"]
     if faulty_services:
