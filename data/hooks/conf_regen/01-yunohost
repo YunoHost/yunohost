@@ -94,6 +94,22 @@ do_post_regen() {
   # Enfore permissions #
   ######################
 
+  if [ -d /home/yunohost.backup ]
+  then
+    chmod 750 /home/yunohost.backup
+    chown admin:root /home/yunohost.backup
+  fi
+  if [ -d /home/yunohost.backup/archives ]
+  then
+    chmod 750 /home/yunohost.backup/archives
+    chown admin:root /home/yunohost.backup/archives
+  fi
+  if [ -d /home/yunohost.conf ]
+  then
+    chmod 750 /home/yunohost.conf
+    chown root:root /home/yunohost.conf
+  fi
+
   # Certs
   # We do this with find because there could be a lot of them...
   chown -R root:ssl-cert /etc/yunohost/certs
