@@ -35,7 +35,7 @@ from logging import FileHandler, getLogger, Formatter
 
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.packages import get_ynh_package_version
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml
@@ -635,6 +635,14 @@ class OperationLogger(object):
             return
         if error is not None and not isinstance(error, str):
             error = str(error)
+
+        # When the error happen's in the is_unit_operation try/except,
+        # we want to inject the log ref in the exception, such that it may be
+        # transmitted to the webadmin which can then redirect to the appropriate
+        # log page
+        if isinstance(error, Exception) and not isinstance(error, YunohostValidationError):
+            error.log_ref = operation_logger.name
+
         self.ended_at = datetime.utcnow()
         self._error = error
         self._success = error is None

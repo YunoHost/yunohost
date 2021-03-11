@@ -1124,8 +1124,7 @@ def app_install(
 
             raise YunohostError(
                 failure_message_with_debug_instructions,
-                raw_msg=True,
-                log_ref=operation_logger.name,
+                raw_msg=True
             )
 
     # Clean hooks and add new ones
