@@ -49,3 +49,7 @@ class YunohostError(MoulinetteError):
             return super(YunohostError, self).content()
         else:
             return {"error": self.strerror, "log_ref": self.log_ref}
+
+
+class YunohostValidationError(YunohostError):
+    pass

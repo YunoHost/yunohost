@@ -25,9 +25,11 @@ def find_expected_string_keys():
     # Try to find :
     #    m18n.n(   "foo"
     #    YunohostError("foo"
+    #    YunohostValidationError("foo"
     #    # i18n: foo
     p1 = re.compile(r"m18n\.n\(\n*\s*[\"\'](\w+)[\"\']")
     p2 = re.compile(r"YunohostError\(\n*\s*[\'\"](\w+)[\'\"]")
+    p2 = re.compile(r"YunohostValidationError\(\n*\s*[\'\"](\w+)[\'\"]")
     p3 = re.compile(r"# i18n: [\'\"]?(\w+)[\'\"]?")
 
     python_files = glob.glob("src/yunohost/*.py")

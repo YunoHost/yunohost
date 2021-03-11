@@ -37,7 +37,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file
 
 from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.network import get_public_ip
 
 from yunohost.diagnosis import Diagnoser
@@ -90,7 +90,7 @@ def certificate_status(domain_list, full=False):
         for domain in domain_list:
             # Is it in Yunohost domain list?
             if domain not in yunohost_domains_list:
-                raise YunohostError("domain_name_unknown", domain=domain)
+                raise YunohostValidationError("domain_name_unknown", domain=domain)
 
     certificates = {}
 
@@ -166,7 +166,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
             status = _get_status(domain)
 
             if status["summary"]["code"] in ("good", "great"):
-                raise YunohostError(
+                raise YunohostValidationError(
                     "certmanager_attempt_to_replace_valid_cert", domain=domain
                 )
 
@@ -267,12 +267,12 @@ def _certificate_install_letsencrypt(
         for domain in domain_list:
             yunohost_domains_list = yunohost.domain.domain_list()["domains"]
             if domain not in yunohost_domains_list:
-                raise YunohostError("domain_name_unknown", domain=domain)
+                raise YunohostValidationError("domain_name_unknown", domain=domain)
 
             # Is it self-signed?
             status = _get_status(domain)
             if not force and status["CA_type"]["code"] != "self-signed":
-                raise YunohostError(
+                raise YunohostValidationError(
                     "certmanager_domain_cert_not_selfsigned", domain=domain
                 )
 
@@ -370,25 +370,25 @@ def certificate_renew(
 
             # Is it in Yunohost dmomain list?
             if domain not in yunohost.domain.domain_list()["domains"]:
-                raise YunohostError("domain_name_unknown", domain=domain)
+                raise YunohostValidationError("domain_name_unknown", domain=domain)
 
             status = _get_status(domain)
 
             # Does it expire soon?
             if status["validity"] > VALIDITY_LIMIT and not force:
-                raise YunohostError(
+                raise YunohostValidationError(
                     "certmanager_attempt_to_renew_valid_cert", domain=domain
                 )
 
             # Does it have a Let's Encrypt cert?
             if status["CA_type"]["code"] != "lets-encrypt":
-                raise YunohostError(
+                raise YunohostValidationError(
                     "certmanager_attempt_to_renew_nonLE_cert", domain=domain
                 )
 
             # Check ACME challenge configured for given domain
             if not _check_acme_challenge_configuration(domain):
-                raise YunohostError(
+                raise YunohostValidationError(
                     "certmanager_acme_not_configured_for_domain", domain=domain
                 )
 
@@ -898,20 +898,20 @@ def _check_domain_is_ready_for_ACME(domain):
     )
 
     if not dnsrecords or not httpreachable:
-        raise YunohostError("certmanager_domain_not_diagnosed_yet", domain=domain)
+        raise YunohostValidationError("certmanager_domain_not_diagnosed_yet", domain=domain)
 
     # Check if IP from DNS matches public IP
     if not dnsrecords.get("status") in [
         "SUCCESS",
         "WARNING",
     ]:  # Warning is for missing IPv6 record which ain't critical for ACME
-        raise YunohostError(
+        raise YunohostValidationError(
             "certmanager_domain_dns_ip_differs_from_public_ip", domain=domain
         )
 
     # Check if domain seems to be accessible through HTTP?
     if not httpreachable.get("status") == "SUCCESS":
-        raise YunohostError("certmanager_domain_http_not_working", domain=domain)
+        raise YunohostValidationError("certmanager_domain_http_not_working", domain=domain)
 
 
 # FIXME / TODO : ideally this should not be needed. There should be a proper

@@ -23,7 +23,7 @@ class MyMigration(Migration):
             return
 
         if not self.package_is_installed("postgresql-11"):
-            raise YunohostError("migration_0017_postgresql_11_not_installed")
+            raise YunohostValidationError("migration_0017_postgresql_11_not_installed")
 
         # Make sure there's a 9.6 cluster
         try:
@@ -37,7 +37,7 @@ class MyMigration(Migration):
         if not space_used_by_directory(
             "/var/lib/postgresql/9.6"
         ) > free_space_in_directory("/var/lib/postgresql"):
-            raise YunohostError(
+            raise YunohostValidationError(
                 "migration_0017_not_enough_space", path="/var/lib/postgresql/"
             )
 

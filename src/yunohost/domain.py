@@ -101,16 +101,14 @@ def domain_add(operation_logger, domain, dyndns=False):
     from yunohost.utils.ldap import _get_ldap_interface
 
     if domain.startswith("xmpp-upload."):
-        raise YunohostError("domain_cannot_add_xmpp_upload")
+        raise YunohostValidationError("domain_cannot_add_xmpp_upload")
 
     ldap = _get_ldap_interface()
 
     try:
         ldap.validate_uniqueness({"virtualdomain": domain})
     except MoulinetteError:
-        raise YunohostError("domain_exists")
-
-    operation_logger.start()
+        raise YunohostValidationError("domain_exists")
 
     # Lower domain to avoid some edge cases issues
     # See: https://forum.yunohost.org/t/invalid-domain-causes-diagnosis-web-to-fail-fr-on-demand/11765
@@ -119,17 +117,21 @@ def domain_add(operation_logger, domain, dyndns=False):
     # DynDNS domain
     if dyndns:
 
-        from yunohost.dyndns import dyndns_subscribe, _dyndns_provides, _guess_current_dyndns_domain
+        from yunohost.dyndns import _dyndns_provides, _guess_current_dyndns_domain
 
         # Do not allow to subscribe to multiple dyndns domains...
         if _guess_current_dyndns_domain("dyndns.yunohost.org") != (None, None):
-            raise YunohostError('domain_dyndns_already_subscribed')
+            raise YunohostValidationError('domain_dyndns_already_subscribed')
 
         # Check that this domain can effectively be provided by
         # dyndns.yunohost.org. (i.e. is it a nohost.me / noho.st)
         if not _dyndns_provides("dyndns.yunohost.org", domain):
-            raise YunohostError("domain_dyndns_root_unknown")
+            raise YunohostValidationError("domain_dyndns_root_unknown")
 
+    operation_logger.start()
+
+    if dyndns:
+        from yunohost.dyndns import dndns_subscribe
         # Actually subscribe
         dyndns_subscribe(domain=domain)
 
@@ -197,7 +199,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     # we don't want to check the domain exists because the ldap add may have
     # failed
     if not force and domain not in domain_list()['domains']:
-        raise YunohostError('domain_name_unknown', domain=domain)
+        raise YunohostValidationError('domain_name_unknown', domain=domain)
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
@@ -205,13 +207,13 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
         other_domains.remove(domain)
 
         if other_domains:
-            raise YunohostError(
+            raise YunohostValidationError(
                 "domain_cannot_remove_main",
                 domain=domain,
                 other_domains="\n * " + ("\n * ".join(other_domains)),
             )
         else:
-            raise YunohostError("domain_cannot_remove_main_add_new_one", domain=domain)
+            raise YunohostValidationError("domain_cannot_remove_main_add_new_one", domain=domain)
 
     # Check if apps are installed on the domain
     apps_on_that_domain = []
@@ -234,9 +236,10 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
             for app, _ in apps_on_that_domain:
                 app_remove(app)
         else:
-            raise YunohostError('domain_uninstall_app_first', apps="\n".join([x[1] for x in apps_on_that_domain]))
+            raise YunohostValidationError('domain_uninstall_app_first', apps="\n".join([x[1] for x in apps_on_that_domain]))
 
     operation_logger.start()
+
     ldap = _get_ldap_interface()
     try:
         ldap.remove("virtualdomain=" + domain + ",ou=domains")
@@ -288,7 +291,7 @@ def domain_dns_conf(domain, ttl=None):
     """
 
     if domain not in domain_list()["domains"]:
-        raise YunohostError("domain_name_unknown", domain=domain)
+        raise YunohostValidationError("domain_name_unknown", domain=domain)
 
     ttl = 3600 if ttl is None else ttl
 
@@ -345,7 +348,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
 
     # Check domain exists
     if new_main_domain not in domain_list()["domains"]:
-        raise YunohostError("domain_name_unknown", domain=new_main_domain)
+        raise YunohostValidationError("domain_name_unknown", domain=new_main_domain)
 
     operation_logger.related_to.append(("domain", new_main_domain))
     operation_logger.start()

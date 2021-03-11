@@ -191,7 +191,7 @@ def log_show(
         log_path = base_path + LOG_FILE_EXT
 
     if not os.path.exists(md_path) and not os.path.exists(log_path):
-        raise YunohostError("log_does_exists", log=path)
+        raise YunohostValidationError("log_does_exists", log=path)
 
     infos = {}
 
