@@ -60,24 +60,31 @@ CAN_BIND=${CAN_BIND:-1}
 #
 # Requires YunoHost version 2.4.0 or higher.
 # Requires YunoHost version 3.5.0 or higher for the argument --not_mandatory
-ynh_backup() {
-    # TODO find a way to avoid injection by file strange naming !
-
-    # Declare an array to define the options of this helper.
-    local legacy_args=sdbm
-    local -A args_array=( [s]=src_path= [d]=dest_path= [b]=is_big [m]=not_mandatory )
-    local src_path
-    local dest_path
-    local is_big
-    local not_mandatory
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-    dest_path="${dest_path:-}"
-    is_big="${is_big:-0}"
-    not_mandatory="${not_mandatory:-0}"
-
-    BACKUP_CORE_ONLY=${BACKUP_CORE_ONLY:-0}
-    test -n "${app:-}" && do_not_backup_data=$(ynh_app_setting_get --app=$app --key=do_not_backup_data)
+ynh_backup() {                                                                                                                                                                                                     
+    # TODO find a way to avoid injection by file strange naming !                                                                                                                                                  
+                                                                                                                                                                                                                   
+    # Declare an array to define the options of this helper.                                                                                                                                                       
+    local legacy_args=sdbm                                                                                                                                                                                         
+    local -A args_array=( [s]=src_path= [d]=dest_path= [b]=is_big [m]=not_mandatory )                                                                                                                              
+    local src_path                                                                                                                                                                                                 
+    local dest_path                                                                                                                                                                                                
+    local is_big                                                                                                                                                                                                   
+    local not_mandatory                                                                                                                                                                                            
+    # Manage arguments with getopts                                                                                                                                                                                
+    ynh_handle_getopts_args "$@"                                                                                                                                                                                   
+    dest_path="${dest_path:-}"                                                                                                                                                                                     
+    is_big="${is_big:-0}"                                                                                                                                                                                          
+    not_mandatory="${not_mandatory:-0}"                                                                                                                                                                            
+                                                                                                                                                                                                                   
+    BACKUP_CORE_ONLY=${BACKUP_CORE_ONLY:-0}                                                                                                                                                                        
+    SKIP_BIG_DATA=${SKIP_BIG_DATA:-0}                                                                                                                                                                              
+    test -n "${app:-}" && do_not_backup_data=$(ynh_app_setting_get --app=$app --key=do_not_backup_data)                                                                                                            
+                                                                                                                                                                                                                   
+    if [ $is_big -eq 1 ] && [ $SKIP_BIG_DATA -eq 1 ]                                                                                                                                                               
+    then                                                                                                                                                                                                           
+        ynh_print_warn --message="$src_path will not be saved, because 'SKIP_BIG_DATA' is set."                                                                                                                    
+        return 0                                                                                                                                                                                                   
+    fi      
 
     # If backing up core only (used by ynh_backup_before_upgrade),
     # don't backup big data items
