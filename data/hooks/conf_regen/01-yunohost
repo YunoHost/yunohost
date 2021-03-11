@@ -128,6 +128,11 @@ do_post_regen() {
   # Enfore permissions #
   ######################
 
+  chmod 750 /home/yunohost.conf
+  chmod 750 /home/yunohost.backup
+  chmod 750 /home/yunohost.backup/archives
+  chown root:root /home/yunohost.conf
+  chown admin:root /home/yunohost.backup
   chown admin:root /home/yunohost.backup/archives
 
   # Certs
