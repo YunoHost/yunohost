@@ -25,6 +25,8 @@ from moulinette import m18n
 
 class YunohostError(MoulinetteError):
 
+    http_code = 500
+
     """
     Yunohost base exception
 
@@ -52,4 +54,5 @@ class YunohostError(MoulinetteError):
 
 
 class YunohostValidationError(YunohostError):
-    pass
+
+    http_code = 400
