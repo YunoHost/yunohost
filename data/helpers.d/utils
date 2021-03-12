@@ -553,7 +553,7 @@ ynh_read_manifest () {
 
     if [ ! -e "$manifest" ]; then
         # If the manifest isn't found, try the common place for backup and restore script.
-        manifest="../settings/manifest.json"
+        manifest="$YNH_APP_BASEDIR/manifest.json"
     fi
 
     jq ".$manifest_key" "$manifest" --raw-output

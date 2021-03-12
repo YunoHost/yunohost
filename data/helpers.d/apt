@@ -224,13 +224,10 @@ ynh_install_app_dependencies () {
     # Add a comma for each space between packages. But not add a comma if the space separate a version specification. (See  below)
     dependencies="$(echo "$dependencies" | sed 's/\([^\<=\>]\)\ \([^(]\)/\1, \2/g')"
     local dependencies=${dependencies//|/ | }
-    local manifest_path="../manifest.json"
-    if [ ! -e "$manifest_path" ]; then
-        manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
-    fi
+    local manifest_path="$YNH_APP_BASEDIR/manifest.json"
 
-    local version=$(grep '\"version\": ' "$manifest_path" | cut --delimiter='"' --fields=4)	# Retrieve the version number in the manifest file.
-    if [ ${#version} -eq 0 ]; then
+    local version=$(jq -r '.version' "$manifest_path")
+    if [ -z "${version}" ] || [ "$version" == "null" ]; then
         version="1.0"
     fi
     local dep_app=${app//_/-}	# Replace all '_' by '-'
