@@ -160,6 +160,11 @@ ynh_setup_source () {
     # Extract source into the app dir
     mkdir --parents "$dest_dir"
 
+    if [ -n "${final_path:-}" ] && [ "$dest_dir" == "$final_path" ]
+    then
+        _ynh_apply_default_permissions $dest_dir
+    fi
+
     if ! "$src_extract"
     then
         mv $src_filename $dest_dir
@@ -319,8 +324,17 @@ ynh_add_config () {
 
     ynh_backup_if_checksum_is_different --file="$destination"
 
+    # Make sure to set the permissions before we copy the file
+    # This is to cover a case where an attacker could have
+    # created a file beforehand to have control over it
+    # (cp won't overwrite ownership / modes by default...)
+    touch $destination
+    chown root:root $destination
+    chmod 750 $destination
+
     cp -f "$template_path" "$destination"
-    chown root: "$destination"
+
+    _ynh_apply_default_permissions $destination
 
     ynh_replace_vars --file="$destination"
 
@@ -684,4 +698,38 @@ ynh_compare_current_package_version() {
 
     # Return the return value of dpkg --compare-versions
     dpkg --compare-versions $current_version $comparison $version
+}
+
+# Check if we should enforce sane default permissions (= disable rwx for 'others')
+# on file/folders handled with ynh_setup_source and ynh_add_config
+#
+# [internal]
+#
+# Having a file others-readable or a folder others-executable(=enterable)
+# is a security risk comparable to "chmod 777"
+#
+# Configuration files may contain secrets. Or even just being able to enter a
+# folder may allow an attacker to do nasty stuff (maybe a file or subfolder has
+# some write permission enabled for 'other' and the attacker may edit the
+# content or create files as leverage for priviledge escalation ...)
+#
+# The sane default should be to set ownership to $app:$app.
+# In specific case, you may want to set the ownership to $app:www-data
+# for example if nginx needs access to static files.
+#
+_ynh_apply_default_permissions() {
+    local target=$1
+
+    local ynh_requirement=$(jq -r '.requirements.yunohost' $YNH_APP_BASEDIR/manifest.json)
+
+    if [ -z "$ynh_requirements" ] || [ "$ynh_requirements" == "null" ] || dpkg --compare-versions $ynh_requirements ge 4.2
+    then
+        chmod o-rwx $target
+        if ynh_system_user_exists $app
+        then
+            chown $app:$app $target
+        else
+            chown root:root $target
+        fi
+    fi
 }
