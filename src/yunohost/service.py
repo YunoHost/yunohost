@@ -400,7 +400,7 @@ def _get_and_format_service_status(service, infos):
 
         translation_key = "service_description_%s" % service
         if m18n.key_exists(translation_key):
-            description = m18n.key_exists(translation_key)
+            description = m18n.n(translation_key)
         else:
             description = str(raw_status.get("Description", ""))
 
