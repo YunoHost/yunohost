@@ -1069,7 +1069,7 @@ def app_install(
             env_dict_remove["YNH_APP_ID"] = app_id
             env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
             env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
-            env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
+            env_dict_remove["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
 
             # Execute remove script
             operation_logger_remove = OperationLogger(
