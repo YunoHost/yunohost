@@ -171,12 +171,12 @@ ynh_systemd_action() {
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_clean_check_starting () {
-    if [ -n "$pid_tail" ]
+    if [ -n "${pid_tail:-}" ]
     then
         # Stop the execution of tail.
         kill -SIGTERM $pid_tail 2>&1
     fi
-    if [ -n "$templog" ]
+    if [ -n "${templog:-}" ]
     then
         ynh_secure_remove --file="$templog" 2>&1
     fi
