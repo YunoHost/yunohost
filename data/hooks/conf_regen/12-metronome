@@ -38,7 +38,7 @@ do_pre_regen() {
   done
 
   # create the upload endpoint
-  [[ -d "/var/www/metronome/xmmp-upload" ]] \
+  [[ -d "/var/www/metronome/upload" ]] \
     || mkdir -p /var/www/metronome/upload/
 
   cat share.tpl.php \
