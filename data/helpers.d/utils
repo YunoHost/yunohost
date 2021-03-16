@@ -194,6 +194,7 @@ ynh_setup_source () {
         else
             ynh_die --message="Archive format unrecognized."
         fi
+        ynh_secure_remove --file="$src_filename"
     fi
 
     # Apply patches
