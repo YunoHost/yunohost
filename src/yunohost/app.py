@@ -1761,7 +1761,7 @@ def app_action_run(operation_logger, app, action, args=None):
     if action_declaration.get("cwd"):
         cwd = action_declaration["cwd"].replace("$app", app)
     else:
-        cwd = "/etc/yunohost/apps/" + app
+        cwd = os.path.join(APPS_SETTING_PATH, app)
 
     retcode = hook_exec(
         path,
@@ -3636,7 +3636,11 @@ def _patch_legacy_helpers(app_folder):
         if not os.path.isfile(filename):
             continue
 
-        content = read_file(filename)
+        try:
+            content = read_file(filename)
+        except Exception:
+            continue
+        
         replaced_stuff = False
         show_warning = False
 
