@@ -767,6 +767,7 @@ def domain_set_settings(domain, ttl=None, xmpp=None, mail=None, owned_dns_zone=N
     domains = _load_domain_settings()
 
     if not domain in domains.keys():
+        # TODO add locales
         raise YunohostError("domain_name_unknown", domain=domain)
 
     setting_set = False
@@ -775,9 +776,11 @@ def domain_set_settings(domain, ttl=None, xmpp=None, mail=None, owned_dns_zone=N
         try:
             ttl = int(ttl)
         except:
+            # TODO add locales
             raise YunohostError("bad_value_type", value_type=type(ttl))
 
         if ttl < 0:
+            # TODO add locales
             raise YunohostError("must_be_positive", value_type=type(ttl))
 
         domains[domain]["ttl"] = ttl
@@ -787,6 +790,7 @@ def domain_set_settings(domain, ttl=None, xmpp=None, mail=None, owned_dns_zone=N
         try:
             xmpp = xmpp in ["True", "true", "1"]
         except:
+            # TODO add locales
             raise YunohostError("bad_value_type", value_type=type(xmpp))
         domains[domain]["xmpp"] = xmpp
         setting_set = True
@@ -795,6 +799,7 @@ def domain_set_settings(domain, ttl=None, xmpp=None, mail=None, owned_dns_zone=N
         try:
             mail = mail in ["True", "true", "1"]
         except:
+            # TODO add locales
             raise YunohostError("bad_value_type", value_type=type(mail))
 
         domains[domain]["mail"] = mail
@@ -804,12 +809,14 @@ def domain_set_settings(domain, ttl=None, xmpp=None, mail=None, owned_dns_zone=N
         try:
             owned_dns_zone = owned_dns_zone in ["True", "true", "1"]
         except:
+            # TODO add locales
             raise YunohostError("bad_value_type", value_type=type(owned_dns_zone))
 
         domains[domain]["owned_dns_zone"] = owned_dns_zone
         setting_set = True
 
     if not setting_set:
+        # TODO add locales
         raise YunohostError("no_setting_given")
 
     # Save the settings to the .yaml file
