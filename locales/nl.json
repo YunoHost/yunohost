@@ -54,7 +54,7 @@
     "pattern_password": "Wachtwoord moet tenminste 3 karakters lang zijn",
     "port_already_closed": "Poort {port:d} is al gesloten voor {ip_version:s} verbindingen",
     "port_already_opened": "Poort {port:d} is al open voor {ip_version:s} verbindingen",
-    "restore_app_failed": "De app '{app:s}' kon niet worden terug gezet",
+    "app_restore_failed": "De app '{app:s}' kon niet worden terug gezet: {error:s}",
     "restore_hook_unavailable": "De herstel-hook '{part:s}' is niet beschikbaar op dit systeem",
     "service_add_failed": "Kan service '{service:s}' niet toevoegen",
     "service_already_started": "Service '{service:s}' draait al",

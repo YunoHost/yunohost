@@ -473,7 +473,7 @@ def test_restore_app_script_failure_handling(monkeypatch, mocker):
 
     assert not _is_installed("wordpress")
 
-    with message(mocker, "restore_app_failed", app="wordpress"):
+    with message(mocker, "app_restore_failed", app="wordpress"):
         with raiseYunohostError(mocker, "restore_nothings_done"):
             backup_restore(
                 system=None, name=backup_list()["archives"][0], apps=["wordpress"]

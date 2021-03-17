@@ -523,7 +523,7 @@
     "regex_with_only_domain": "You can't use a regex for domain, only for path",
     "restore_already_installed_app": "An app with the ID '{app:s}' is already installed",
     "restore_already_installed_apps": "The following apps can't be restored because they are already installed: {apps}",
-    "restore_app_failed": "Could not restore {app:s}",
+    "restore_app_failed": "Could not restore {app:s}: {error: s}",
     "restore_backup_too_old": "This backup archive can not be restored because it comes from a too-old YunoHost version.",
     "restore_cleaning_failed": "Could not clean up the temporary restoration directory",
     "restore_complete": "Restoration completed",
