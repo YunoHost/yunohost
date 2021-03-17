@@ -26,6 +26,7 @@
 import os
 import re
 import sys
+import yaml
 
 from moulinette import m18n, msettings, msignals
 from moulinette.core import MoulinetteError
@@ -466,11 +467,11 @@ def _build_dns_conf(domains):
     for domain_name, domain in domains.items():
         ttl = domain["ttl"]
 
-        owned_dns_zone = "owned_dns_zone" in domains[root] and domains[root]["owned_dns_zone"] == True
+        owned_dns_zone = "owned_dns_zone" in domains[root] and domains[root]["owned_dns_zone"]
         if domain_name == root:
             name = name_prefix if not owned_dns_zone else  "@"
         else:
-            name = domain_name[0:-(1 + len(root))] 
+            name = domain_name[0:-(1 + len(root))]
             if not owned_dns_zone:
                 name +=  "." + name_prefix
 
@@ -489,7 +490,7 @@ def _build_dns_conf(domains):
         #########
         # Email #
         #########
-        if domain["mail"] == True:
+        if domain["mail"]:
 
             mail += [
                 [name, ttl, "MX", "10 %s." % domain_name],
@@ -508,7 +509,7 @@ def _build_dns_conf(domains):
         ########
         # XMPP #
         ########
-        if domain["xmpp"] == True:
+        if domain["xmpp"]:
             xmpp += [
                 ["_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain_name],
                 ["_xmpp-server._tcp", ttl, "SRV", "0 5 5269 %s." % domain_name],
@@ -679,26 +680,6 @@ def _get_DKIM(domain):
         )
 
 
-def _get_domain_and_subdomains_settings(domain):
-    """
-    Give data about a domain and its subdomains
-    """
-    return {
-        "node.cmercier.fr" : {
-            "main": True,
-            "xmpp": True,
-            "mail": True,
-            "owned_dns_zone": True,
-            "ttl": 3600,
-        },
-        "sub.node.cmercier.fr" : {
-            "main": False,
-            "xmpp": True,
-            "mail": False,
-            "ttl": 3600,
-        },
-    }
-
 def _load_domain_settings():
     """
     Retrieve entries in domains.yml
@@ -707,7 +688,8 @@ def _load_domain_settings():
     # Retrieve entries in the YAML
     if os.path.exists(DOMAIN_SETTINGS_PATH) and os.path.isfile(DOMAIN_SETTINGS_PATH):
         old_domains = yaml.load(open(DOMAIN_SETTINGS_PATH, "r+"))
-    else:
+
+    if old_domains is None:
         old_domains = dict()
 
     # Create sanitized data
@@ -719,14 +701,16 @@ def _load_domain_settings():
     maindomain = get_domain_list["main"]
 
     for domain in get_domain_list["domains"]:
+        is_maindomain = domain == maindomain
+        domain_in_old_domains = domain in old_domains.keys()
         # Update each setting if not present
         new_domains[domain] = {
             # Set "main" value
-            "main": True if domain == maindomain else False
+            "main": is_maindomain
         }
         # Set other values (default value if missing)
-        for setting, default in [ ("xmpp", True), ("mail", True), ("owned_dns_zone", True), ("ttl", 3600) ]:
-            if domain in old_domains.keys() and setting in old_domains[domain].keys():
+        for setting, default in [ ("xmpp", is_maindomain), ("mail", is_maindomain), ("owned_dns_zone", True), ("ttl", 3600) ]:
+            if domain_in_old_domains and setting in old_domains[domain].keys():
                 new_domains[domain][setting] = old_domains[domain][setting]
             else:
                 new_domains[domain][setting] = default
@@ -742,6 +726,7 @@ def domain_settings(domain):
         domain -- The domain name
     """
     return _get_domain_settings(domain, False)
+
 
 def _get_domain_settings(domain, subdomains):
     """
@@ -765,6 +750,71 @@ def _get_domain_settings(domain, subdomains):
             if domain == entry:
                 only_wanted_domains[entry] = domains[entry]
 
-
     return only_wanted_domains
+
+
+def domain_set_settings(domain, ttl=None, xmpp=None, mail=None, owned_dns_zone=None):
+    """
+    Set some settings of a domain, for DNS generation.
+
+    Keyword arguments:
+        domain -- The domain name
+        --ttl  -- the Time To Live for this domains DNS record
+        --xmpp -- configure XMPP DNS records for this domain
+        --mail -- configure mail DNS records for this domain
+        --owned_dns_zone -- is this domain DNS zone owned? (is it a full domain or a subdomain?)
+    """
+    domains = _load_domain_settings()
+
+    if not domain in domains.keys():
+        raise YunohostError("domain_name_unknown", domain=domain)
+
+    setting_set = False
+
+    if ttl is not None:
+        try:
+            ttl = int(ttl)
+        except:
+            raise YunohostError("bad_value_type", value_type=type(ttl))
+
+        if ttl < 0:
+            raise YunohostError("must_be_positive", value_type=type(ttl))
+
+        domains[domain]["ttl"] = ttl
+        setting_set = True
+
+    if xmpp is not None:
+        try:
+            xmpp = xmpp in ["True", "true", "1"]
+        except:
+            raise YunohostError("bad_value_type", value_type=type(xmpp))
+        domains[domain]["xmpp"] = xmpp
+        setting_set = True
+
+    if mail is not None:
+        try:
+            mail = mail in ["True", "true", "1"]
+        except:
+            raise YunohostError("bad_value_type", value_type=type(mail))
+
+        domains[domain]["mail"] = mail
+        setting_set = True
+
+    if owned_dns_zone is not None:
+        try:
+            owned_dns_zone = owned_dns_zone in ["True", "true", "1"]
+        except:
+            raise YunohostError("bad_value_type", value_type=type(owned_dns_zone))
+
+        domains[domain]["owned_dns_zone"] = owned_dns_zone
+        setting_set = True
+
+    if not setting_set:
+        raise YunohostError("no_setting_given")
+
+    # Save the settings to the .yaml file
+    with open(DOMAIN_SETTINGS_PATH, 'w') as file:
+        yaml.dump(domains, file)
+
+    return domains[domain]
 

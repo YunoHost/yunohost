@@ -466,6 +466,26 @@ domain:
             arguments:
                 domain:
                     help: Target domain
+
+        set-settings:
+            action_help: Set settings of a domain
+            api: POST /domains/<domain>/settings
+            arguments:
+                domain:
+                    help: Target domain
+                -t:
+                  full: --ttl
+                  help: Time To Live of this domain's DNS records
+                -x:
+                  full: --xmpp
+                  help: Configure XMPP in this domain's DNS records? True or False
+                -m:
+                  full: --mail
+                  help: Configure mail in this domain's DNS records? True or False
+                -o:
+                  full: --owned-dns-zone
+                  help: Is this domain owned as a DNS zone? Is it a full domain, i.e not a subdomain? True or False
+
         ### domain_dns_conf()
         dns-conf:
             action_help: Generate sample DNS configuration for a domain
