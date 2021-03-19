@@ -1411,25 +1411,40 @@ tools:
         ### tools_update()
         update:
             action_help: YunoHost update
-            api: PUT /update
+            api: PUT /update/<target>
             arguments:
+                target:
+                    help: What to update, "apps" (application catalog) or "system" (fetch available package upgrades, equivalent to apt update), "all" for both
+                    choices:
+                        - apps
+                        - system
+                        - all
+                    nargs: "?"
+                    metavar: TARGET
+                    default: all
                 --apps:
-                    help: Fetch the application list to check which apps can be upgraded
+                    help: (Deprecated, see first positional arg) Fetch the application list to check which apps can be upgraded
                     action: store_true
                 --system:
-                    help: Fetch available system packages upgrades (equivalent to apt update)
+                    help: (Deprecated, see first positional arg) Fetch available system packages upgrades (equivalent to apt update)
                     action: store_true
 
         ### tools_upgrade()
         upgrade:
             action_help: YunoHost upgrade
-            api: PUT /upgrade
+            api: PUT /upgrade/<target>
             arguments:
+                target:
+                    help: What to upgrade, either "apps" (all apps) or "system" (all system packages)
+                    choices:
+                        - apps
+                        - system
+                    nargs: "?"
                 --apps:
-                    help: List of apps to upgrade (all by default)
-                    nargs: "*"
+                    help: (Deprecated, see first positional arg) Upgrade all applications
+                    action: store_true
                 --system:
-                    help: Upgrade only the system packages
+                    help: (Deprecated, see first positional arg) Upgrade only the system packages
                     action: store_true
 
         ### tools_shell()

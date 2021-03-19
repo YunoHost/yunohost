@@ -147,7 +147,7 @@ def app_fetchlist():
     )
     from yunohost.tools import tools_update
 
-    tools_update(apps=True)
+    tools_update(target="apps")
 
 
 def app_list(full=False, installed=False, filter=None):
