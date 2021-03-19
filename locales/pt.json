@@ -139,5 +139,6 @@
     "backup_copying_to_organize_the_archive": "Copiando {size:s}MB para organizar o arquivo",
     "app_change_url_identical_domains": "O antigo e o novo domínio / url_path são idênticos ('{domain:s}{path:s}'), nada para fazer.",
     "password_too_simple_1": "A senha precisa ter pelo menos 8 caracteres",
-    "admin_password_too_long": "Escolha uma senha que contenha menos de 127 caracteres"
+    "admin_password_too_long": "Escolha uma senha que contenha menos de 127 caracteres",
+    "aborting": "Abortando."
 }

@@ -87,7 +87,7 @@ user:
                         ask: ask_firstname
                         required: True
                         pattern: &pattern_firstname
-                            - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
+                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_firstname"
                 -l:
                     full: --lastname
@@ -95,7 +95,7 @@ user:
                         ask: ask_lastname
                         required: True
                         pattern: &pattern_lastname
-                            - !!str ^([^\W\d_]{2,30}[ ,.'-]{0,3})+$
+                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_lastname"
                 -m:
                     full: --mail
@@ -165,8 +165,11 @@ user:
                     full: --change-password
                     help: New password to set
                     metavar: PASSWORD
+                    nargs: "?"
+                    const: 0
                     extra:
                         pattern: *pattern_password
+                        comment: good_practices_about_user_password
                 --add-mailforward:
                     help: Mailforward addresses to add
                     nargs: "*"
@@ -307,7 +310,7 @@ user:
                     api: GET /users/permissions/<permission>
                     arguments:
                         permission:
-                            help: Name of the permission to fetch info about
+                            help: Name of the permission to fetch info about (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
 
                 ### user_permission_update()
                 update:
@@ -315,7 +318,7 @@ user:
                     api: PUT /users/permissions/<permission>
                     arguments:
                         permission:
-                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
                         -a:
                             full: --add
                             help: Group or usernames to grant this permission to
@@ -330,6 +333,15 @@ user:
                             metavar: GROUP_OR_USER
                             extra:
                                 pattern: *pattern_username
+                        -l:
+                            full: --label
+                            help: Label for this permission. This label will be shown on the SSO and in the admin
+                        -s:
+                            full: --show_tile
+                            help: Define if a tile will be shown in the SSO
+                            choices:
+                                - 'True'
+                                - 'False'
 
                 ## user_permission_reset()
                 reset:
@@ -337,7 +349,7 @@ user:
                     api: DELETE /users/permissions/<app>
                     arguments:
                         permission:
-                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors)
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
 
         ssh:
             subcategory_help: Manage ssh access
@@ -439,6 +451,14 @@ domain:
                     help: Domain to delete
                     extra:
                         pattern: *pattern_domain
+                -r:
+                    full: --remove-apps
+                    help: Remove apps installed on the domain
+                    action: store_true
+                -f:
+                    full: --force
+                    help: Do not ask confirmation to remove apps
+                    action: store_true
 
         ### domain_dns_conf()
         dns-conf:
@@ -569,6 +589,13 @@ app:
                     full: --with-categories
                     help: Also return a list of app categories
                     action: store_true
+                    
+        ### app_search()
+        search:
+            action_help: Search installable apps
+            arguments:
+                string:
+                    help: Return matching app name or description with "string"
 
         fetchlist:
             deprecated: true
@@ -1336,13 +1363,11 @@ dyndns:
 
         ### dyndns_installcron()
         installcron:
-            action_help: Install IP update cron
-            api: POST /dyndns/cron
+            deprecated: true
 
         ### dyndns_removecron()
         removecron:
-            action_help: Remove IP update cron
-            api: DELETE /dyndns/cron
+            deprecated: true
 
 
 #############################
@@ -1404,6 +1429,10 @@ tools:
                 --force-password:
                     help: Use this if you really want to set a weak password
                     action: store_true
+                --force-diskspace:
+                    help: Use this if you really want to install Yunohost on a setup with less than 10 GB on the root filesystem
+                    action: store_true
+
 
         ### tools_update()
         update:
@@ -1506,10 +1535,12 @@ tools:
                         help: list only migrations already performed
                         action: store_true
 
-              ### tools_migrations_migrate()
-              migrate:
+              ### tools_migrations_run()
+              run:
                   action_help: Run migrations
-                  api: POST /migrations/migrate
+                  api: POST /migrations/run
+                  deprecated_alias:
+                     - migrate
                   arguments:
                     targets:
                         help: Migrations to run (all pendings by default)
@@ -1656,10 +1687,12 @@ log:
                     help: Include metadata about operations that are not the main operation but are sub-operations triggered by another ongoing operation... (e.g. initializing groups/permissions when installing an app)
                     action: store_true
 
-        ### log_display()
-        display:
+        ### log_show()
+        show:
             action_help: Display a log content
-            api: GET /logs/display
+            api: GET /logs/<path>
+            deprecated_alias:
+                - display
             arguments:
                 path:
                     help: Log file which to display the content
@@ -1669,7 +1702,7 @@ log:
                     default: 50
                     type: int
                 --share:
-                    help: Share the full log using yunopaste
+                    help: (Deprecated, see yunohost log share) Share the full log using yunopaste
                     action: store_true
                 -i:
                     full: --filter-irrelevant
@@ -1679,6 +1712,14 @@ log:
                     full: --with-suboperations
                     help: Include metadata about sub-operations of this operation... (e.g. initializing groups/permissions when installing an app)
                     action: store_true
+
+        ### log_share()
+        share:
+            action_help: Share the full log on yunopaste (alias to show --share)
+            api: GET /logs/share
+            arguments:
+                path:
+                    help: Log file to share
 
 
 #############################

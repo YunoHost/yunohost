@@ -28,14 +28,16 @@ class WebDiagnoser(Diagnoser):
             # probably because nginx conf manually modified...
             nginx_conf = "/etc/nginx/conf.d/%s.conf" % domain
             if ".well-known/ynh-diagnosis/" not in read_file(nginx_conf):
-                yield dict(meta={"domain": domain},
-                           status="WARNING",
-                           summary="diagnosis_http_nginx_conf_not_up_to_date",
-                           details=["diagnosis_http_nginx_conf_not_up_to_date_details"])
+                yield dict(
+                    meta={"domain": domain},
+                    status="WARNING",
+                    summary="diagnosis_http_nginx_conf_not_up_to_date",
+                    details=["diagnosis_http_nginx_conf_not_up_to_date_details"],
+                )
             else:
                 domains_to_check.append(domain)
 
-        self.nonce = ''.join(random.choice("0123456789abcedf") for i in range(16))
+        self.nonce = "".join(random.choice("0123456789abcedf") for i in range(16))
         os.system("rm -rf /tmp/.well-known/ynh-diagnosis/")
         os.system("mkdir -p /tmp/.well-known/ynh-diagnosis/")
         os.system("touch /tmp/.well-known/ynh-diagnosis/%s" % self.nonce)
@@ -74,11 +76,13 @@ class WebDiagnoser(Diagnoser):
                 try:
                     requests.head("http://" + global_ipv4, timeout=5)
                 except requests.exceptions.Timeout:
-                    yield dict(meta={"test": "hairpinning"},
-                               status="WARNING",
-                               summary="diagnosis_http_hairpinning_issue",
-                               details=["diagnosis_http_hairpinning_issue_details"])
-                except:
+                    yield dict(
+                        meta={"test": "hairpinning"},
+                        status="WARNING",
+                        summary="diagnosis_http_hairpinning_issue",
+                        details=["diagnosis_http_hairpinning_issue_details"],
+                    )
+                except Exception:
                     # Well I dunno what to do if that's another exception
                     # type... That'll most probably *not* be an hairpinning
                     # issue but something else super weird ...
@@ -89,17 +93,20 @@ class WebDiagnoser(Diagnoser):
         results = {}
         for ipversion in ipversions:
             try:
-                r = Diagnoser.remote_diagnosis('check-http',
-                                               data={'domains': domains,
-                                                     "nonce": self.nonce},
-                                               ipversion=ipversion)
+                r = Diagnoser.remote_diagnosis(
+                    "check-http",
+                    data={"domains": domains, "nonce": self.nonce},
+                    ipversion=ipversion,
+                )
                 results[ipversion] = r["http"]
             except Exception as e:
-                yield dict(meta={"reason": "remote_diagnosis_failed", "ipversion": ipversion},
-                           data={"error": str(e)},
-                           status="WARNING",
-                           summary="diagnosis_http_could_not_diagnose",
-                           details=["diagnosis_http_could_not_diagnose_details"])
+                yield dict(
+                    meta={"reason": "remote_diagnosis_failed", "ipversion": ipversion},
+                    data={"error": str(e)},
+                    status="WARNING",
+                    summary="diagnosis_http_could_not_diagnose",
+                    details=["diagnosis_http_could_not_diagnose_details"],
+                )
                 continue
 
         ipversions = results.keys()
@@ -109,22 +116,32 @@ class WebDiagnoser(Diagnoser):
         for domain in domains:
 
             # If both IPv4 and IPv6 (if applicable) are good
-            if all(results[ipversion][domain]["status"] == "ok" for ipversion in ipversions):
+            if all(
+                results[ipversion][domain]["status"] == "ok" for ipversion in ipversions
+            ):
                 if 4 in ipversions:
                     self.do_hairpinning_test = True
-                yield dict(meta={"domain": domain},
-                           status="SUCCESS",
-                           summary="diagnosis_http_ok")
+                yield dict(
+                    meta={"domain": domain},
+                    status="SUCCESS",
+                    summary="diagnosis_http_ok",
+                )
             # If both IPv4 and IPv6 (if applicable) are failed
-            elif all(results[ipversion][domain]["status"] != "ok" for ipversion in ipversions):
+            elif all(
+                results[ipversion][domain]["status"] != "ok" for ipversion in ipversions
+            ):
                 detail = results[4 if 4 in ipversions else 6][domain]["status"]
-                yield dict(meta={"domain": domain},
-                           status="ERROR",
-                           summary="diagnosis_http_unreachable",
-                           details=[detail.replace("error_http_check", "diagnosis_http")])
+                yield dict(
+                    meta={"domain": domain},
+                    status="ERROR",
+                    summary="diagnosis_http_unreachable",
+                    details=[detail.replace("error_http_check", "diagnosis_http")],
+                )
             # If only IPv4 is failed or only IPv6 is failed (if applicable)
             else:
-                passed, failed = (4, 6) if results[4][domain]["status"] == "ok" else (6, 4)
+                passed, failed = (
+                    (4, 6) if results[4][domain]["status"] == "ok" else (6, 4)
+                )
                 detail = results[failed][domain]["status"]
 
                 # Failing in ipv4 is critical.
@@ -132,17 +149,24 @@ class WebDiagnoser(Diagnoser):
                 # It's an acceptable situation and we shall not report an
                 # error
                 def ipv6_is_important_for_this_domain():
-                    dnsrecords = Diagnoser.get_cached_report("dnsrecords", item={"domain": domain, "category": "basic"}) or {}
+                    dnsrecords = (
+                        Diagnoser.get_cached_report(
+                            "dnsrecords", item={"domain": domain, "category": "basic"}
+                        )
+                        or {}
+                    )
                     AAAA_status = dnsrecords.get("data", {}).get("AAAA:@")
 
                     return AAAA_status in ["OK", "WRONG"]
 
                 if failed == 4 or ipv6_is_important_for_this_domain():
-                    yield dict(meta={"domain": domain},
-                               data={"passed": passed, "failed": failed},
-                               status="ERROR",
-                               summary="diagnosis_http_partially_unreachable",
-                               details=[detail.replace("error_http_check", "diagnosis_http")])
+                    yield dict(
+                        meta={"domain": domain},
+                        data={"passed": passed, "failed": failed},
+                        status="ERROR",
+                        summary="diagnosis_http_partially_unreachable",
+                        details=[detail.replace("error_http_check", "diagnosis_http")],
+                    )
                 # So otherwise we report a success (note that this info is
                 # later used to know that ACME challenge is doable)
                 #
@@ -151,14 +175,18 @@ class WebDiagnoser(Diagnoser):
                 # fetching the other info...)
                 else:
                     self.do_hairpinning_test = True
-                    yield dict(meta={"domain": domain},
-                               status="SUCCESS",
-                               summary="diagnosis_http_ok")
-                    yield dict(meta={"test": "ipv6", "domain": domain},
-                               data={"passed": passed, "failed": failed},
-                               status="INFO",
-                               summary="diagnosis_http_partially_unreachable",
-                               details=[detail.replace("error_http_check", "diagnosis_http")])
+                    yield dict(
+                        meta={"domain": domain},
+                        status="SUCCESS",
+                        summary="diagnosis_http_ok",
+                    )
+                    yield dict(
+                        meta={"test": "ipv6", "domain": domain},
+                        data={"passed": passed, "failed": failed},
+                        status="INFO",
+                        summary="diagnosis_http_partially_unreachable",
+                        details=[detail.replace("error_http_check", "diagnosis_http")],
+                    )
 
 
 def main(args, env, loggers):
