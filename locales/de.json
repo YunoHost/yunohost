@@ -605,5 +605,9 @@
     "postinstall_low_rootfsspace": "Das Root-Filesystem hat insgesamt weniger als 10GB freien Speicherplatz zur Verfügung, was ziemlich besorgniserregend ist! Sie werden sehr bald keinen freien Speicherplatz mehr haben! Für das Root-Filesystem werden mindestens 16GB empfohlen. Wenn Sie YunoHost trotz dieser Warnung installieren wollen, wiederholen Sie den Befehl mit --force-diskspace",
     "regenconf_up_to_date": "Die Konfiguration ist bereits aktuell für die Kategorie '{category}'",
     "regenconf_now_managed_by_yunohost": "Die Konfigurationsdatei '{conf}' wird jetzt von YunoHost (Kategorie {category}) verwaltet.",
-    "regenconf_updated": "Konfiguration aktualisiert für '{category}'"
+    "regenconf_updated": "Konfiguration aktualisiert für '{category}'",
+    "regenconf_pending_applying": "Wende die anstehende Konfiguration für die Kategorie {category} an...",
+    "regenconf_failed": "Konnte die Konfiguration für die Kategorie(n) {categories} nicht neu erstellen",
+    "regenconf_dry_pending_applying": "Überprüfe die anstehende Konfiguration, welche für die Kategorie {category}' aktualisiert worden wäre…",
+    "regenconf_would_be_updated": "Die Konfiguration wäre für die Kategorie '{category}' aktualisiert worden"
 }
