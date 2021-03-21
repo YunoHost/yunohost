@@ -686,6 +686,7 @@ def _load_domain_settings():
     And fill the holes if any
     """
     # Retrieve entries in the YAML
+    old_domains = None
     if os.path.exists(DOMAIN_SETTINGS_PATH) and os.path.isfile(DOMAIN_SETTINGS_PATH):
         old_domains = yaml.load(open(DOMAIN_SETTINGS_PATH, "r+"))
 
