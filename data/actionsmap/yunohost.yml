@@ -1551,7 +1551,9 @@ tools:
               ### tools_migrations_run()
               run:
                   action_help: Run migrations
-                  api: PUT /migrations/<targets>
+                  api:
+                    - PUT /migrations
+                    - PUT /migrations/<targets>
                   deprecated_alias:
                      - migrate
                   arguments:
