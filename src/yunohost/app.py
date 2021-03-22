@@ -257,8 +257,9 @@ def _app_upgradable(app_infos):
         return "url_required"
 
     # Do not advertise upgrades for bad-quality apps
+    level = app_in_catalog.get("level", -1)
     if (
-        not app_in_catalog.get("level", -1) >= 5
+        not (isinstance(level, int) and level >= 5)
         or app_in_catalog.get("state") != "working"
     ):
         return "bad_quality"
