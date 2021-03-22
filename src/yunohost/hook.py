@@ -32,7 +32,7 @@ from glob import iglob
 from importlib import import_module
 
 from moulinette import m18n, msettings
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils import log
 from moulinette.utils.filesystem import read_json
 
@@ -117,7 +117,7 @@ def hook_info(action, name):
             )
 
     if not hooks:
-        raise YunohostError("hook_name_unknown", name=name)
+        raise YunohostValidationError("hook_name_unknown", name=name)
     return {
         "action": action,
         "name": name,
@@ -186,7 +186,7 @@ def hook_list(action, list_by="name", show_info=False):
                 d.add(name)
 
     else:
-        raise YunohostError("hook_list_by_invalid")
+        raise YunohostValidationError("hook_list_by_invalid")
 
     def _append_folder(d, folder):
         # Iterate over and add hook from a folder
@@ -273,7 +273,7 @@ def hook_callback(
             try:
                 hl = hooks_names[n]
             except KeyError:
-                raise YunohostError("hook_name_unknown", n)
+                raise YunohostValidationError("hook_name_unknown", n)
             # Iterate over hooks with this name
             for h in hl:
                 # Update hooks dict

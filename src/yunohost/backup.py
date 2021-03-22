@@ -63,7 +63,7 @@ from yunohost.hook import (
 from yunohost.tools import tools_postinstall
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.settings import settings_get
 
@@ -348,7 +348,7 @@ class BackupManager:
 
             # Try to recursively unmount stuff (from a previously failed backup ?)
             if not _recursive_umount(self.work_dir):
-                raise YunohostError("backup_output_directory_not_empty")
+                raise YunohostValidationError("backup_output_directory_not_empty")
             else:
                 # If umount succeeded, remove the directory (we checked that
                 # we're in /home/yunohost.backup/tmp so that should be okay...
@@ -1027,7 +1027,7 @@ class RestoreManager:
         already_installed = [app for app in to_be_restored if _is_installed(app)]
         if already_installed != []:
             if already_installed == to_be_restored:
-                raise YunohostError(
+                raise YunohostValidationError(
                     "restore_already_installed_apps", apps=", ".join(already_installed)
                 )
             else:
@@ -1133,14 +1133,14 @@ class RestoreManager:
             return True
         elif free_space > needed_space:
             # TODO Add --force options to avoid the error raising
-            raise YunohostError(
+            raise YunohostValidationError(
                 "restore_may_be_not_enough_disk_space",
                 free_space=free_space,
                 needed_space=needed_space,
                 margin=margin,
             )
         else:
-            raise YunohostError(
+            raise YunohostValidationError(
                 "restore_not_enough_disk_space",
                 free_space=free_space,
                 needed_space=needed_space,
@@ -1729,7 +1729,7 @@ class BackupMethod(object):
                 free_space,
                 backup_size,
             )
-            raise YunohostError("not_enough_disk_space", path=self.repo)
+            raise YunohostValidationError("not_enough_disk_space", path=self.repo)
 
     def _organize_files(self):
         """
@@ -2186,7 +2186,7 @@ def backup_create(
 
     # Validate there is no archive with the same name
     if name and name in backup_list()["archives"]:
-        raise YunohostError("backup_archive_name_exists")
+        raise YunohostValidationError("backup_archive_name_exists")
 
     # By default we backup using the tar method
     if not methods:
@@ -2201,14 +2201,14 @@ def backup_create(
             r"^/(|(bin|boot|dev|etc|lib|root|run|sbin|sys|usr|var)(|/.*))$",
             output_directory,
         ):
-            raise YunohostError("backup_output_directory_forbidden")
+            raise YunohostValidationError("backup_output_directory_forbidden")
 
     if "copy" in methods:
         if not output_directory:
-            raise YunohostError("backup_output_directory_required")
+            raise YunohostValidationError("backup_output_directory_required")
         # Check that output directory is empty
         elif os.path.isdir(output_directory) and os.listdir(output_directory):
-            raise YunohostError("backup_output_directory_not_empty")
+            raise YunohostValidationError("backup_output_directory_not_empty")
 
     # If no --system or --apps given, backup everything
     if system is None and apps is None:
@@ -2381,7 +2381,7 @@ def backup_download(name):
     if not os.path.lexists(archive_file):
         archive_file += ".gz"
         if not os.path.lexists(archive_file):
-            raise YunohostError("backup_archive_name_unknown", name=name)
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
@@ -2389,7 +2389,7 @@ def backup_download(name):
 
         # Raise exception if link is broken (e.g. on unmounted external storage)
         if not os.path.exists(archive_file):
-            raise YunohostError("backup_archive_broken_link", path=archive_file)
+            raise YunohostValidationError("backup_archive_broken_link", path=archive_file)
 
     # We return a raw bottle HTTPresponse (instead of serializable data like
     # list/dict, ...), which is gonna be picked and used directly by moulinette
@@ -2415,7 +2415,7 @@ def backup_info(name, with_details=False, human_readable=False):
     if not os.path.lexists(archive_file):
         archive_file += ".gz"
         if not os.path.lexists(archive_file):
-            raise YunohostError("backup_archive_name_unknown", name=name)
+            raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
@@ -2423,7 +2423,7 @@ def backup_info(name, with_details=False, human_readable=False):
 
         # Raise exception if link is broken (e.g. on unmounted external storage)
         if not os.path.exists(archive_file):
-            raise YunohostError("backup_archive_broken_link", path=archive_file)
+            raise YunohostValidationError("backup_archive_broken_link", path=archive_file)
 
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 
@@ -2531,7 +2531,7 @@ def backup_delete(name):
 
     """
     if name not in backup_list()["archives"]:
-        raise YunohostError("backup_archive_name_unknown", name=name)
+        raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     hook_callback("pre_backup_delete", args=[name])
 
