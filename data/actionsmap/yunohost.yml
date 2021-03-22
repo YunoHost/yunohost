@@ -519,7 +519,7 @@ domain:
         ### certificate_install()
         cert-install:
             action_help: Install Let's Encrypt certificates for given domains (all by default).
-            api: POST /domains/<domain_list>/cert
+            api: PUT /domains/<domain_list>/cert
             arguments:
                 domain_list:
                     help: Domains for which to install the certificates
