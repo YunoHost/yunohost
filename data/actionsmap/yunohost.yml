@@ -319,20 +319,6 @@ user:
                     arguments:
                         permission:
                             help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
-                        -a:
-                            full: --add
-                            help: Group or usernames to grant this permission to
-                            nargs: "*"
-                            metavar: GROUP_OR_USER
-                            extra:
-                                pattern: *pattern_username
-                        -r:
-                            full: --remove
-                            help: Group or usernames revoke this permission from
-                            nargs: "*"
-                            metavar: GROUP_OR_USER
-                            extra:
-                                pattern: *pattern_username
                         -l:
                             full: --label
                             help: Label for this permission. This label will be shown on the SSO and in the admin
@@ -343,10 +329,38 @@ user:
                                 - 'True'
                                 - 'False'
 
+                ## user_permission_add()
+                add:
+                    action_help: Grant permission to group or user
+                    api: PUT /users/permissions/<permission>/add/<names>
+                    arguments:
+                        permission:
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                        names:
+                            help: Group or usernames to grant this permission to
+                            nargs: "*"
+                            metavar: GROUP_OR_USER
+                            extra:
+                                pattern: *pattern_username
+
+                ## user_permission_remove()
+                remove:
+                    action_help: Revoke permission to group or user
+                    api: PUT /users/permissions/<permission>/remove/<names>
+                    arguments:
+                        permission:
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                        names:
+                            help: Group or usernames to revoke this permission to
+                            nargs: "*"
+                            metavar: GROUP_OR_USER
+                            extra:
+                                pattern: *pattern_username
+
                 ## user_permission_reset()
                 reset:
                     action_help: Reset allowed groups to the default (all_users) for a given permission
-                    api: DELETE /users/permissions/<app>
+                    api: DELETE /users/permissions/<permission>
                     arguments:
                         permission:
                             help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)

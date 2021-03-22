@@ -868,18 +868,31 @@ def user_permission_list(short=False, full=False):
     return yunohost.permission.user_permission_list(short, full, absolute_urls=True)
 
 
-def user_permission_update(
-    permission, add=None, remove=None, label=None, show_tile=None, sync_perm=True
+def user_permission_update(permission, label=None, show_tile=None, sync_perm=True):
+    import yunohost.permission
+
+    return yunohost.permission.user_permission_update(
+        permission, label=label, show_tile=show_tile, sync_perm=sync_perm
+    )
+
+
+def user_permission_add(
+    permission, names, protected=None, force=False, sync_perm=True
 ):
     import yunohost.permission
 
     return yunohost.permission.user_permission_update(
-        permission,
-        add=add,
-        remove=remove,
-        label=label,
-        show_tile=show_tile,
-        sync_perm=sync_perm,
+        permission, add=names, protected=protected, force=force, sync_perm=sync_perm
+    )
+
+
+def user_permission_remove(
+    permission, names, protected=None, force=False, sync_perm=True
+):
+    import yunohost.permission
+
+    return yunohost.permission.user_permission_update(
+        permission, remove=names, protected=protected, force=force, sync_perm=sync_perm
     )
 
 
