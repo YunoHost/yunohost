@@ -42,6 +42,7 @@ from yunohost.app import (
 )
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.network import get_public_ip
+from yunohost.utils.dns import get_public_suffix
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
 
@@ -703,12 +704,13 @@ def _load_domain_settings():
 
     for domain in get_domain_list["domains"]:
         is_maindomain = domain == maindomain
+        default_owned_dns_zone = True if domain == get_public_suffix(domain) else False
         domain_in_old_domains = domain in old_domains.keys()
         # Update each setting if not present
         new_domains[domain] = {}
         # new_domains[domain] = { "main": is_maindomain }
         # Set other values (default value if missing)
-        for setting, default in [ ("xmpp", is_maindomain), ("mail", is_maindomain), ("owned_dns_zone", True), ("ttl", 3600) ]:
+        for setting, default in [ ("xmpp", is_maindomain), ("mail", is_maindomain), ("owned_dns_zone", default_owned_dns_zone), ("ttl", 3600) ]:
             if domain_in_old_domains and setting in old_domains[domain].keys():
                 new_domains[domain][setting] = old_domains[domain][setting]
             else:
