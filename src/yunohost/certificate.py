@@ -197,6 +197,8 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
             out, _ = p.communicate()
 
+            out = out.decode("utf-8")
+
             if p.returncode != 0:
                 logger.warning(out)
                 raise YunohostError("domain_cert_gen_failed")
