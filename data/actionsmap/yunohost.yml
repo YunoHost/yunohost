@@ -1611,6 +1611,7 @@ hook:
         ### hook_list()
         list:
             action_help: List available hooks for an action
+            api: GET /hooks/<action>
             arguments:
                 action:
                     help: Action name
