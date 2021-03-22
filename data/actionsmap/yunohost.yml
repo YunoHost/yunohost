@@ -587,7 +587,7 @@ app:
 
         catalog:
             action_help: Show the catalog of installable application
-            api: GET /appscatalog
+            api: GET /apps/catalog
             arguments:
                 -f:
                     full: --full
@@ -597,7 +597,7 @@ app:
                     full: --with-categories
                     help: Also return a list of app categories
                     action: store_true
-                    
+
         ### app_search()
         search:
             action_help: Search installable apps
@@ -851,7 +851,7 @@ app:
               ### app_config_apply()
               apply:
                   action_help: apply the new configuration
-                  api: POST /apps/<app>/config
+                  api: PUT /apps/<app>/config
                   arguments:
                       app:
                           help: App name
@@ -1500,7 +1500,7 @@ tools:
         ### tools_regen_conf()
         regen-conf:
             action_help: Regenerate the configuration file(s)
-            api: 
+            api:
                 - PUT /regenconf
                 - PUT /regenconf/<names>
             arguments:
