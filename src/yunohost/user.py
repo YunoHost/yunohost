@@ -857,6 +857,34 @@ def user_group_info(groupname):
     }
 
 
+def user_group_add(groupname, usernames, force=False, sync_perm=True):
+    """
+    Add user(s) to a group
+
+    Keyword argument:
+        groupname -- Groupname to update
+        usernames -- User(s) to add in the group
+
+    """
+    return user_group_update(
+        groupname, add=usernames, force=force, sync_perm=sync_perm
+    )
+
+
+def user_group_remove(groupname, usernames, force=False, sync_perm=True):
+    """
+    Remove user(s) from a group
+
+    Keyword argument:
+        groupname -- Groupname to update
+        usernames -- User(s) to remove from the group
+
+    """
+    return user_group_update(
+        groupname, remove=usernames, force=force, sync_perm=sync_perm
+    )
+
+
 #
 # Permission subcategory
 #

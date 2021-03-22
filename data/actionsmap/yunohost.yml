@@ -252,30 +252,6 @@ user:
                             extra:
                                 pattern: *pattern_groupname
 
-                ### user_group_update()
-                update:
-                    action_help: Update group
-                    api: PUT /users/groups/<groupname>
-                    arguments:
-                        groupname:
-                            help: Name of the group to be updated
-                            extra:
-                                pattern: *pattern_groupname
-                        -a:
-                            full: --add
-                            help: User(s) to add in the group
-                            nargs: "*"
-                            metavar: USERNAME
-                            extra:
-                                pattern: *pattern_username
-                        -r:
-                            full: --remove
-                            help: User(s) to remove in the group
-                            nargs: "*"
-                            metavar: USERNAME
-                            extra:
-                                pattern: *pattern_username
-
                 ### user_group_info()
                 info:
                     action_help: Get information about a specific group
@@ -283,6 +259,38 @@ user:
                     arguments:
                         groupname:
                             help: Name of the group to fetch info about
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_group_add()
+                add:
+                    action_help: Update group
+                    api: PUT /users/groups/<groupname>/add/<usernames>
+                    arguments:
+                        groupname:
+                            help: Name of the group to add user(s) to
+                            extra:
+                                pattern: *pattern_groupname
+                        usernames:
+                            help: User(s) to add in the group
+                            nargs: "*"
+                            metavar: USERNAME
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_group_remove()
+                remove:
+                    action_help: Update group
+                    api: PUT /users/groups/<groupname>/remove/<usernames>
+                    arguments:
+                        groupname:
+                            help: Name of the group to remove user(s) from
+                            extra:
+                                pattern: *pattern_groupname
+                        usernames:
+                            help: User(s) to remove from the group
+                            nargs: "*"
+                            metavar: USERNAME
                             extra:
                                 pattern: *pattern_username
 
