@@ -1210,7 +1210,7 @@ firewall:
         ### firewall_allow()
         allow:
             action_help: Allow connections on a port
-            api: POST /firewall/<port>
+            api: PUT /firewall/<protocol>/allow/<port>
             arguments:
                 protocol:
                     help: "Protocol type to allow (TCP/UDP/Both)"
@@ -1243,7 +1243,7 @@ firewall:
         ### firewall_disallow()
         disallow:
             action_help: Disallow connections on a port
-            api: DELETE /firewall/<port>
+            api: PUT /firewall/<protocol>/disallow/<port>
             arguments:
                 protocol:
                     help: "Protocol type to allow (TCP/UDP/Both)"
