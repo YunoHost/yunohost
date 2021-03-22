@@ -631,17 +631,18 @@ class OperationLogger(object):
         """
         Close properly the unit operation
         """
-        if self.ended_at is not None or self.started_at is None:
-            return
-        if error is not None and not isinstance(error, str):
-            error = str(error)
 
         # When the error happen's in the is_unit_operation try/except,
         # we want to inject the log ref in the exception, such that it may be
         # transmitted to the webadmin which can then redirect to the appropriate
         # log page
         if isinstance(error, Exception) and not isinstance(error, YunohostValidationError):
-            error.log_ref = operation_logger.name
+            error.log_ref = self.name
+
+        if self.ended_at is not None or self.started_at is None:
+            return
+        if error is not None and not isinstance(error, str):
+            error = str(error)
 
         self.ended_at = datetime.utcnow()
         self._error = error
