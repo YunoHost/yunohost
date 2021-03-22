@@ -63,7 +63,7 @@ from yunohost.hook import (
 from yunohost.tools import tools_postinstall
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.settings import settings_get
 
