@@ -5,7 +5,7 @@ import os
 import pwd
 import subprocess
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.error import YunohostValidationError
 from moulinette.utils.filesystem import read_file, write_to_file, chown, chmod, mkdir
 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"

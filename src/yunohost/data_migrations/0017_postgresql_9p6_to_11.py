@@ -1,7 +1,7 @@
 import subprocess
 
 from moulinette import m18n
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration

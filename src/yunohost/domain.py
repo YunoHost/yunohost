@@ -28,7 +28,7 @@ import re
 
 from moulinette import m18n, msettings, msignals
 from moulinette.core import MoulinetteError
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import write_to_file
 
@@ -131,7 +131,7 @@ def domain_add(operation_logger, domain, dyndns=False):
     operation_logger.start()
 
     if dyndns:
-        from yunohost.dyndns import dndns_subscribe
+        from yunohost.dyndns import dyndns_subscribe
         # Actually subscribe
         dyndns_subscribe(domain=domain)
 
