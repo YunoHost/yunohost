@@ -13,7 +13,7 @@ yunohost (4.2.0) testing; urgency=low
   - [fix] misc: Abort postinstall if /etc/yunohost/apps ain't empty ([#1147](https://github.com/yunohost/yunohost/pull/1147))
   - [mod] misc: No need for mysql root password anymore ([#912](https://github.com/YunoHost/yunohost/pull/912))
   - [fix] app operations: wait for services to finish reloading (4a19a60b)
-  - [enh] ux: Support more complex errors such that the webadmin can autoredirect to the proper log view ([#1077](https://github.com/yunohost/yunohost/pull/1077))
+  - [enh] ux: Improve error semantic such that the webadmin can autoredirect to the proper log view ([#1077](https://github.com/yunohost/yunohost/pull/1077), [#1187](https://github.com/YunoHost/yunohost/pull/1187))
   - [mod] cli/api: Misc command and routes renaming / aliasing ([#1146](https://github.com/yunohost/yunohost/pull/1146))
   - [enh] cli: Add a new "yunohost app search" command ([#1070](https://github.com/yunohost/yunohost/pull/1070))
   - [enh] cli: Add '--remove-apps' (and '--force') options to "yunohost domain remove" ([#1125](https://github.com/yunohost/yunohost/pull/1125))
