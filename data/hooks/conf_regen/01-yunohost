@@ -50,6 +50,8 @@ do_init_regen() {
   chown root:root /etc/ssowat/conf.json.persistent
 
   mkdir -p /var/cache/yunohost/repo
+  chown root:root /var/cache/yunohost
+  chmod 700 /var/cache/yunohost
 }
 
 do_pre_regen() {
@@ -141,6 +143,9 @@ do_post_regen() {
   chmod 750 /etc/yunohost/certs
   find /etc/yunohost/certs/ -type f -exec chmod 640 {} \;
   find /etc/yunohost/certs/ -type d -exec chmod 750 {} \;
+
+  chown root:root /var/cache/yunohost
+  chmod 700 /var/cache/yunohost
 
   # Misc configuration / state files
   chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
