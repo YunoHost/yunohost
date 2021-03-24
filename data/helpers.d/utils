@@ -21,6 +21,9 @@ YNH_APP_BASEDIR=$([[ "$(basename $0)" =~ ^backup|restore$ ]] && echo '../setting
 # Requires YunoHost version 2.6.4 or higher.
 ynh_exit_properly () {
     local exit_code=$?
+
+    rm -rf "/var/cache/yunohost/download/"
+
     if [ "$exit_code" -eq 0 ]; then
         exit 0	# Exit without error if the script ended correctly
     fi
@@ -127,8 +130,13 @@ ynh_setup_source () {
         src_filename="${source_id}.${src_format}"
     fi
 
+
     # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
+
+    mkdir -p /var/cache/yunohost/download/${YNH_APP_ID}/
+    src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${src_filename}"
+
     if test -e "$local_src"
     then
         cp $local_src $src_filename
@@ -672,7 +680,7 @@ ynh_compare_current_package_version() {
 
     # Check validity of the comparator
     if [[ ! $comparison =~ (lt|le|eq|ne|ge|gt) ]]; then
-        ynh_die --message="Invialid comparator must be : lt, le, eq, ne, ge, gt"
+        ynh_die --message="Invalid comparator must be : lt, le, eq, ne, ge, gt"
     fi
 
     # Return the return value of dpkg --compare-versions
