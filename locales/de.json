@@ -609,5 +609,12 @@
     "regenconf_pending_applying": "Wende die anstehende Konfiguration für die Kategorie {category} an...",
     "regenconf_failed": "Konnte die Konfiguration für die Kategorie(n) {categories} nicht neu erstellen",
     "regenconf_dry_pending_applying": "Überprüfe die anstehende Konfiguration, welche für die Kategorie {category}' aktualisiert worden wäre…",
-    "regenconf_would_be_updated": "Die Konfiguration wäre für die Kategorie '{category}' aktualisiert worden"
+    "regenconf_would_be_updated": "Die Konfiguration wäre für die Kategorie '{category}' aktualisiert worden",
+    "restore_system_part_failed": "Die Systemteile '{part:s}' konnten nicht wiederhergestellt werden",
+    "restore_removing_tmp_dir_failed": "Ein altes, temporäres Directory konnte nicht entfernt werden",
+    "restore_not_enough_disk_space": "Nicht genug Speicher (Speicher: {free_space:d} B, benötigter Speicher: {needed_space:d} B, Sicherheitspuffer: {margin:d} B)",
+    "restore_may_be_not_enough_disk_space": "Dein System scheint nicht genug Speicherplatz zu haben (frei: {free_space:d} B, benötigter Platz: {needed_space:d} B, Sicherheitspuffer: {margin:d} B)",
+    "restore_extracting": "Packe die benötigten Dateien aus dem Archiv aus…",
+    "restore_already_installed_apps": "Folgende Apps können nicht wiederhergestellt werden, weil sie schon installiert sind: {apps}",
+    "regex_with_only_domain": "Du kannst regex nicht als Domain verwenden, sondern nur als Pfad"
 }
