@@ -616,5 +616,6 @@
     "restore_may_be_not_enough_disk_space": "Dein System scheint nicht genug Speicherplatz zu haben (frei: {free_space:d} B, benötigter Platz: {needed_space:d} B, Sicherheitspuffer: {margin:d} B)",
     "restore_extracting": "Packe die benötigten Dateien aus dem Archiv aus…",
     "restore_already_installed_apps": "Folgende Apps können nicht wiederhergestellt werden, weil sie schon installiert sind: {apps}",
-    "regex_with_only_domain": "Du kannst regex nicht als Domain verwenden, sondern nur als Pfad"
+    "regex_with_only_domain": "Du kannst regex nicht als Domain verwenden, sondern nur als Pfad",
+    "root_password_desynchronized": "Das Admin-Passwort wurde verändert, aber das root Passwort ist immer noch das alte."
 }
