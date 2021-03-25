@@ -4,6 +4,7 @@ import re
 import os
 import pwd
 
+from yunohost.utils.error import YunohostValidationError
 from moulinette.utils.filesystem import read_file, write_to_file, chown, chmod, mkdir
 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
@@ -14,7 +15,9 @@ def user_ssh_list_keys(username):
     if not user:
         raise Exception("User with username '%s' doesn't exists" % username)
 
-    authorized_keys_file = os.path.join(user["homeDirectory"][0], ".ssh", "authorized_keys")
+    authorized_keys_file = os.path.join(
+        user["homeDirectory"][0], ".ssh", "authorized_keys"
+    )
 
     if not os.path.exists(authorized_keys_file):
         return {"keys": []}
@@ -32,10 +35,12 @@ def user_ssh_list_keys(username):
 
         # assuming a key per non empty line
         key = line.strip()
-        keys.append({
-            "key": key,
-            "name": last_comment,
-        })
+        keys.append(
+            {
+                "key": key,
+                "name": last_comment,
+            }
+        )
 
         last_comment = ""
 
@@ -47,12 +52,18 @@ def user_ssh_add_key(username, key, comment):
     if not user:
         raise Exception("User with username '%s' doesn't exists" % username)
 
-    authorized_keys_file = os.path.join(user["homeDirectory"][0], ".ssh", "authorized_keys")
+    authorized_keys_file = os.path.join(
+        user["homeDirectory"][0], ".ssh", "authorized_keys"
+    )
 
     if not os.path.exists(authorized_keys_file):
         # ensure ".ssh" exists
-        mkdir(os.path.join(user["homeDirectory"][0], ".ssh"),
-              force=True, parents=True, uid=user["uid"][0])
+        mkdir(
+            os.path.join(user["homeDirectory"][0], ".ssh"),
+            force=True,
+            parents=True,
+            uid=user["uid"][0],
+        )
 
         # create empty file to set good permissions
         write_to_file(authorized_keys_file, "")
@@ -81,10 +92,14 @@ def user_ssh_remove_key(username, key):
     if not user:
         raise Exception("User with username '%s' doesn't exists" % username)
 
-    authorized_keys_file = os.path.join(user["homeDirectory"][0], ".ssh", "authorized_keys")
+    authorized_keys_file = os.path.join(
+        user["homeDirectory"][0], ".ssh", "authorized_keys"
+    )
 
     if not os.path.exists(authorized_keys_file):
-        raise Exception("this key doesn't exists ({} dosesn't exists)".format(authorized_keys_file))
+        raise Exception(
+            "this key doesn't exists ({} dosesn't exists)".format(authorized_keys_file)
+        )
 
     authorized_keys_content = read_file(authorized_keys_file)
 
@@ -103,6 +118,7 @@ def user_ssh_remove_key(username, key):
 
     write_to_file(authorized_keys_file, authorized_keys_content)
 
+
 #
 # Helpers
 #
@@ -120,8 +136,11 @@ def _get_user_for_ssh(username, attrs=None):
         #     default is “yes”.
         sshd_config_content = read_file(SSHD_CONFIG_PATH)
 
-        if re.search("^ *PermitRootLogin +(no|forced-commands-only) *$",
-                     sshd_config_content, re.MULTILINE):
+        if re.search(
+            "^ *PermitRootLogin +(no|forced-commands-only) *$",
+            sshd_config_content,
+            re.MULTILINE,
+        ):
             return {"PermitRootLogin": False}
 
         return {"PermitRootLogin": True}
@@ -129,31 +148,34 @@ def _get_user_for_ssh(username, attrs=None):
     if username == "root":
         root_unix = pwd.getpwnam("root")
         return {
-            'username': 'root',
-            'fullname': '',
-            'mail': '',
-            'ssh_allowed': ssh_root_login_status()["PermitRootLogin"],
-            'shell': root_unix.pw_shell,
-            'home_path': root_unix.pw_dir,
+            "username": "root",
+            "fullname": "",
+            "mail": "",
+            "ssh_allowed": ssh_root_login_status()["PermitRootLogin"],
+            "shell": root_unix.pw_shell,
+            "home_path": root_unix.pw_dir,
         }
 
     if username == "admin":
         admin_unix = pwd.getpwnam("admin")
         return {
-            'username': 'admin',
-            'fullname': '',
-            'mail': '',
-            'ssh_allowed': admin_unix.pw_shell.strip() != "/bin/false",
-            'shell': admin_unix.pw_shell,
-            'home_path': admin_unix.pw_dir,
+            "username": "admin",
+            "fullname": "",
+            "mail": "",
+            "ssh_allowed": admin_unix.pw_shell.strip() != "/bin/false",
+            "shell": admin_unix.pw_shell,
+            "home_path": admin_unix.pw_dir,
         }
 
     # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
     from yunohost.utils.ldap import _get_ldap_interface
+
     ldap = _get_ldap_interface()
-    user = ldap.search('ou=users,dc=yunohost,dc=org',
-                       '(&(objectclass=person)(uid=%s))' % username,
-                       attrs)
+    user = ldap.search(
+        "ou=users,dc=yunohost,dc=org",
+        "(&(objectclass=person)(uid=%s))" % username,
+        attrs,
+    )
 
     assert len(user) in (0, 1)
 

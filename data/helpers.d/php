@@ -85,6 +85,19 @@ ynh_add_fpm_config () {
     # Set the default PHP-FPM version by default
     phpversion="${phpversion:-$YNH_PHP_VERSION}"
 
+    local old_phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+
+    # If the PHP version changed, remove the old fpm conf
+    if [ -n "$old_phpversion" ] && [ "$old_phpversion" != "$phpversion" ]
+    then
+        local old_php_fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
+        local old_php_finalphpconf="$old_php_fpm_config_dir/pool.d/$app.conf"
+
+        ynh_backup_if_checksum_is_different --file="$old_php_finalphpconf"
+
+        ynh_remove_fpm_config
+    fi
+
     # If the requested PHP version is not the default version for YunoHost
     if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]
     then
@@ -119,7 +132,6 @@ ynh_add_fpm_config () {
     ynh_app_setting_set --app=$app --key=fpm_service --value="$fpm_service"
     ynh_app_setting_set --app=$app --key=fpm_dedicated_service --value="$dedicated_service"
     ynh_app_setting_set --app=$app --key=phpversion --value=$phpversion
-    finalphpconf="$fpm_config_dir/pool.d/$app.conf"
 
     # Migrate from mutual PHP service to dedicated one.
     if [ $dedicated_service -eq 1 ]
@@ -138,23 +150,12 @@ ynh_add_fpm_config () {
         fi
     fi
 
-    ynh_backup_if_checksum_is_different --file="$finalphpconf"
-
     if [ $use_template -eq 1 ]
     then
         # Usage 1, use the template in conf/php-fpm.conf
-        local phpfpm_path="../conf/php-fpm.conf"
-        if [ ! -e "$phpfpm_path" ]; then
-            phpfpm_path="../settings/conf/php-fpm.conf"	# Into the restore script, the PHP-FPM template is not at the same place
-        fi
+        local phpfpm_path="$YNH_APP_BASEDIR/conf/php-fpm.conf"
         # Make sure now that the template indeed exists
         [ -e "$phpfpm_path" ] || ynh_die --message="Unable to find template to configure PHP-FPM."
-        cp "$phpfpm_path" "$finalphpconf"
-        ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$finalphpconf"
-        ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalphpconf"
-        ynh_replace_string --match_string="__USER__" --replace_string="$app" --target_file="$finalphpconf"
-        ynh_replace_string --match_string="__PHPVERSION__" --replace_string="$phpversion" --target_file="$finalphpconf"
-
     else
         # Usage 2, generate a PHP-FPM config file with ynh_get_scalable_phpfpm
 
@@ -165,87 +166,83 @@ ynh_add_fpm_config () {
         # Define the values to use for the configuration of PHP.
         ynh_get_scalable_phpfpm --usage=$usage --footprint=$footprint
 
-        # Copy the default file
-        cp "/etc/php/$phpversion/fpm/pool.d/www.conf" "$finalphpconf"
+        local phpfpm_path="$YNH_APP_BASEDIR/conf/php-fpm.conf"
+        echo "
+[__APP__]
 
-        # Replace standard variables into the default file
-        ynh_replace_string --match_string="^\[www\]" --replace_string="[$app]" --target_file="$finalphpconf"
-        ynh_replace_string --match_string=".*listen = .*" --replace_string="listen = /var/run/php/php$phpversion-fpm-$app.sock" --target_file="$finalphpconf"
-        ynh_replace_string --match_string="^user = .*" --replace_string="user = $app" --target_file="$finalphpconf"
-        ynh_replace_string --match_string="^group = .*" --replace_string="group = $app" --target_file="$finalphpconf"
-        ynh_replace_string --match_string=".*chdir = .*" --replace_string="chdir = $final_path" --target_file="$finalphpconf"
+user = __APP__
+group = __APP__
 
-        # Configure FPM children
-        ynh_replace_string --match_string=".*pm = .*" --replace_string="pm = $php_pm" --target_file="$finalphpconf"
-        ynh_replace_string --match_string=".*pm.max_children = .*" --replace_string="pm.max_children = $php_max_children" --target_file="$finalphpconf"
-        ynh_replace_string --match_string=".*pm.max_requests = .*" --replace_string="pm.max_requests = 500" --target_file="$finalphpconf"
-        ynh_replace_string --match_string=".*request_terminate_timeout = .*" --replace_string="request_terminate_timeout = 1d" --target_file="$finalphpconf"
+chdir = __FINALPATH__
+
+listen = /var/run/php/php__PHPVERSION__-fpm-__APP__.sock
+listen.owner = www-data
+listen.group = www-data
+
+pm = __PHP_PM__
+pm.max_children = __PHP_MAX_CHILDREN__
+pm.max_requests = 500
+request_terminate_timeout = 1d
+" > $phpfpm_path
+
         if [ "$php_pm" = "dynamic" ]
         then
-            ynh_replace_string --match_string=".*pm.start_servers = .*" --replace_string="pm.start_servers = $php_start_servers" --target_file="$finalphpconf"
-            ynh_replace_string --match_string=".*pm.min_spare_servers = .*" --replace_string="pm.min_spare_servers = $php_min_spare_servers" --target_file="$finalphpconf"
-            ynh_replace_string --match_string=".*pm.max_spare_servers = .*" --replace_string="pm.max_spare_servers = $php_max_spare_servers" --target_file="$finalphpconf"
+            echo "
+pm.start_servers = __PHP_START_SERVERS__
+pm.min_spare_servers = __PHP_MIN_SPARE_SERVERS__
+pm.max_spare_servers = __PHP_MAX_SPARE_SERVERS__
+" >> $phpfpm_path
+
         elif [ "$php_pm" = "ondemand" ]
         then
-            ynh_replace_string --match_string=".*pm.process_idle_timeout = .*" --replace_string="pm.process_idle_timeout = 10s" --target_file="$finalphpconf"
-        fi
-
-        # Comment unused parameters
-        if [ "$php_pm" != "dynamic" ]
-        then
-            ynh_replace_string --match_string=".*\(pm.start_servers = .*\)" --replace_string=";\1" --target_file="$finalphpconf"
-            ynh_replace_string --match_string=".*\(pm.min_spare_servers = .*\)" --replace_string=";\1" --target_file="$finalphpconf"
-            ynh_replace_string --match_string=".*\(pm.max_spare_servers = .*\)" --replace_string=";\1" --target_file="$finalphpconf"
-        fi
-        if [ "$php_pm" != "ondemand" ]
-        then
-            ynh_replace_string --match_string=".*\(pm.process_idle_timeout = .*\)" --replace_string=";\1" --target_file="$finalphpconf"
+            echo "
+pm.process_idle_timeout = 10s
+" >> $phpfpm_path
         fi
 
         # Concatene the extra config.
-        if [ -e ../conf/extra_php-fpm.conf ]; then
-            cat ../conf/extra_php-fpm.conf >> "$finalphpconf"
+        if [ -e $YNH_APP_BASEDIR/conf/extra_php-fpm.conf ]; then
+            cat $YNH_APP_BASEDIR/conf/extra_php-fpm.conf >> "$phpfpm_path"
         fi
     fi
 
-    chown root: "$finalphpconf"
-    ynh_store_file_checksum --file="$finalphpconf"
+    local finalphpconf="$fpm_config_dir/pool.d/$app.conf"
+    ynh_add_config --template="$phpfpm_path" --destination="$finalphpconf"
 
-    if [ -e "../conf/php-fpm.ini" ]
+    if [ -e "$YNH_APP_BASEDIR/conf/php-fpm.ini" ]
     then
         ynh_print_warn --message="Packagers ! Please do not use a separate php ini file, merge your directives in the pool file instead."
-        finalphpini="$fpm_config_dir/conf.d/20-$app.ini"
-        ynh_backup_if_checksum_is_different "$finalphpini"
-        cp ../conf/php-fpm.ini "$finalphpini"
-        chown root: "$finalphpini"
-        ynh_store_file_checksum "$finalphpini"
+        ynh_add_config --template="$YNH_APP_BASEDIR/conf/php-fpm.ini" --destination="$fpm_config_dir/conf.d/20-$app.ini"
     fi
 
     if [ $dedicated_service -eq 1 ]
     then
         # Create a dedicated php-fpm.conf for the service
         local globalphpconf=$fpm_config_dir/php-fpm-$app.conf
-        cp /etc/php/${phpversion}/fpm/php-fpm.conf $globalphpconf
 
-        ynh_replace_string --match_string="^[; ]*pid *=.*" --replace_string="pid = /run/php/php${phpversion}-fpm-$app.pid" --target_file="$globalphpconf"
-        ynh_replace_string --match_string="^[; ]*error_log *=.*" --replace_string="error_log = /var/log/php/fpm-php.$app.log" --target_file="$globalphpconf"
-        ynh_replace_string --match_string="^[; ]*syslog.ident *=.*" --replace_string="syslog.ident = php-fpm-$app" --target_file="$globalphpconf"
-        ynh_replace_string --match_string="^[; ]*include *=.*" --replace_string="include = $finalphpconf" --target_file="$globalphpconf"
+echo "[global]
+pid = /run/php/php__PHPVERSION__-fpm-__APP__.pid
+error_log = /var/log/php/fpm-php.__APP__.log
+syslog.ident = php-fpm-__APP__
+include = __FINALPHPCONF__
+" > $YNH_APP_BASEDIR/conf/php-fpm-$app.conf
+
+        ynh_add_config --template="../config/php-fpm-$app.conf" --destination="$globalphpconf"
 
         # Create a config for a dedicated PHP-FPM service for the app
         echo "[Unit]
-Description=PHP $phpversion FastCGI Process Manager for $app
+Description=PHP __PHPVERSION__ FastCGI Process Manager for __APP__
 After=network.target
 
-[Service] 
+[Service]
 Type=notify
-PIDFile=/run/php/php${phpversion}-fpm-$app.pid
-ExecStart=/usr/sbin/php-fpm$phpversion --nodaemonize --fpm-config $globalphpconf
+PIDFile=/run/php/php__PHPVERSION__-fpm-__APP__.pid
+ExecStart=/usr/sbin/php-fpm__PHPVERSION__ --nodaemonize --fpm-config __GLOBALPHPCONF__
 ExecReload=/bin/kill -USR2 \$MAINPID
 
 [Install]
 WantedBy=multi-user.target
-" > ../conf/$fpm_service
+" > $YNH_APP_BASEDIR/conf/$fpm_service
 
         # Create this dedicated PHP-FPM service
         ynh_add_systemd_config --service=$fpm_service --template=$fpm_service
@@ -257,12 +254,12 @@ WantedBy=multi-user.target
         ynh_systemd_action --service_name=$fpm_service --action=restart
     else
         # Validate that the new php conf doesn't break php-fpm entirely
-        php-fpm${phpversion} --test 2>/dev/null \
-        && ynh_systemd_action --service_name=$fpm_service --action=reload \
-        || { php-fpm${phpversion} --test || true;
-             ynh_secure_remove --file="$finalphpconf";
-             ynh_die --message="The new configuration broke php-fpm?"
-        }
+        if ! php-fpm${phpversion} --test 2>/dev/null
+        then
+            php-fpm${phpversion} --test || true
+            ynh_secure_remove --file="$finalphpconf"
+            ynh_die --message="The new configuration broke php-fpm?"
+        fi
         ynh_systemd_action --service_name=$fpm_service --action=reload
     fi
 }
@@ -278,7 +275,7 @@ ynh_remove_fpm_config () {
     local dedicated_service=$(ynh_app_setting_get --app=$app --key=fpm_dedicated_service)
     dedicated_service=${dedicated_service:-0}
     # Get the version of PHP used by this app
-    local phpversion=$(ynh_app_setting_get $app phpversion)
+    local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
 
     # Assume default PHP-FPM version by default
     phpversion="${phpversion:-$YNH_DEFAULT_PHP_VERSION}"
@@ -340,7 +337,7 @@ ynh_install_php () {
 
     if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ]
     then
-        ynh_die "Do not use ynh_install_php to install php$YNH_DEFAULT_PHP_VERSION"
+        ynh_die --message="Do not use ynh_install_php to install php$YNH_DEFAULT_PHP_VERSION"
     fi
 
     # Create the file if doesn't exist already
@@ -354,7 +351,7 @@ ynh_install_php () {
     fi
 
     # Add an extra repository for those packages
-    ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --priority=995 --name=extra_php_version --priority=600
+    ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version --priority=600
 
     # Install requested dependencies from this extra repository.
     # Install PHP-FPM first, otherwise PHP will install apache as a dependency.
@@ -377,7 +374,7 @@ ynh_install_php () {
 # Requires YunoHost version 3.8.1 or higher.
 ynh_remove_php () {
     # Get the version of PHP used by this app
-    local phpversion=$(ynh_app_setting_get $app phpversion)
+    local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
 
     if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ] || [ -z "$phpversion" ]
     then
@@ -559,4 +556,66 @@ ynh_get_scalable_phpfpm () {
             ynh_debug --message="pm.max_spare_servers = $php_max_spare_servers"
         fi
     fi
+}
+
+readonly YNH_DEFAULT_COMPOSER_VERSION=1.10.17
+# Declare the actual composer version to use.
+# A packager willing to use another version of composer can override the variable into its _common.sh.
+YNH_COMPOSER_VERSION=${YNH_COMPOSER_VERSION:-$YNH_DEFAULT_COMPOSER_VERSION}
+
+# Execute a command with Composer
+#
+# usage: ynh_composer_exec [--phpversion=phpversion] [--workdir=$final_path] --commands="commands"
+# | arg: -v, --phpversion - PHP version to use with composer
+# | arg: -w, --workdir - The directory from where the command will be executed. Default $final_path.
+# | arg: -c, --commands - Commands to execute.
+#
+ynh_composer_exec () {
+    # Declare an array to define the options of this helper.
+    local legacy_args=vwc
+    declare -Ar args_array=( [v]=phpversion= [w]=workdir= [c]=commands= )
+    local phpversion
+    local workdir
+    local commands
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    workdir="${workdir:-$final_path}"
+    phpversion="${phpversion:-$YNH_PHP_VERSION}"
+
+    COMPOSER_HOME="$workdir/.composer" \
+        php${phpversion} "$workdir/composer.phar" $commands \
+        -d "$workdir" --quiet --no-interaction
+}
+
+# Install and initialize Composer in the given directory
+#
+# usage: ynh_install_composer [--phpversion=phpversion] [--workdir=$final_path] [--install_args="--optimize-autoloader"] [--composerversion=composerversion]
+# | arg: -v, --phpversion - PHP version to use with composer
+# | arg: -w, --workdir - The directory from where the command will be executed. Default $final_path.
+# | arg: -a, --install_args - Additional arguments provided to the composer install. Argument --no-dev already include
+# | arg: -c, --composerversion - Composer version to install
+#
+ynh_install_composer () {
+    # Declare an array to define the options of this helper.
+    local legacy_args=vwac
+    declare -Ar args_array=( [v]=phpversion= [w]=workdir= [a]=install_args= [c]=composerversion=)
+    local phpversion
+    local workdir
+    local install_args
+    local composerversion
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    workdir="${workdir:-$final_path}"
+    phpversion="${phpversion:-$YNH_PHP_VERSION}"
+    install_args="${install_args:-}"
+    composerversion="${composerversion:-$YNH_COMPOSER_VERSION}"
+
+    curl -sS https://getcomposer.org/installer \
+        | COMPOSER_HOME="$workdir/.composer" \
+        php${phpversion} -- --quiet --install-dir="$workdir" --version=$composerversion \
+        || ynh_die --message="Unable to install Composer."
+
+    # install dependencies
+    ynh_composer_exec --phpversion="${phpversion}" --workdir="$workdir" --commands="install --no-dev $install_args" \
+        || ynh_die --message="Unable to install core dependencies with Composer."
 }

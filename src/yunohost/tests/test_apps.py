@@ -4,7 +4,7 @@ import pytest
 import shutil
 import requests
 
-from conftest import message, raiseYunohostError, get_test_apps_dir
+from .conftest import message, raiseYunohostError, get_test_apps_dir
 
 from moulinette.utils.filesystem import mkdir
 
@@ -55,18 +55,11 @@ def clean():
         for folderpath in glob.glob("/var/www/*%s*" % test_app):
             shutil.rmtree(folderpath, ignore_errors=True)
 
-        os.system(
-            "bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP DATABASE %s' \""
-            % test_app
-        )
-        os.system(
-            "bash -c \"mysql -u root --password=$(cat /etc/yunohost/mysql) 2>/dev/null <<< 'DROP USER %s@localhost'\""
-            % test_app
-        )
+        os.system("bash -c \"mysql -B 2>/dev/null <<< 'DROP DATABASE %s' \"" % test_app)
+        os.system("bash -c \"mysql -B 2>/dev/null <<< 'DROP USER %s@localhost'\"" % test_app)
 
-    os.system(
-        "systemctl reset-failed nginx"
-    )  # Reset failed quota for service to avoid running into start-limit rate ?
+    # Reset failed quota for service to avoid running into start-limit rate ?
+    os.system("systemctl reset-failed nginx")
     os.system("systemctl start nginx")
 
     # Clean permissions
@@ -159,7 +152,9 @@ def install_legacy_app(domain, path, public=True):
 def install_full_domain_app(domain):
 
     app_install(
-        os.path.join(get_test_apps_dir(), "full_domain_app_ynh"), args="domain=%s" % domain, force=True
+        os.path.join(get_test_apps_dir(), "full_domain_app_ynh"),
+        args="domain=%s" % domain,
+        force=True,
     )
 
 
@@ -376,7 +371,10 @@ def test_systemfuckedup_during_app_upgrade(mocker, secondary_domain):
 
     with pytest.raises(YunohostError):
         with message(mocker, "app_action_broke_system"):
-            app_upgrade("break_yo_system", file=os.path.join(get_test_apps_dir(), "break_yo_system_ynh"))
+            app_upgrade(
+                "break_yo_system",
+                file=os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
+            )
 
 
 def test_failed_multiple_app_upgrade(mocker, secondary_domain):
@@ -389,7 +387,9 @@ def test_failed_multiple_app_upgrade(mocker, secondary_domain):
             app_upgrade(
                 ["break_yo_system", "legacy_app"],
                 file={
-                    "break_yo_system": os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
+                    "break_yo_system": os.path.join(
+                        get_test_apps_dir(), "break_yo_system_ynh"
+                    ),
                     "legacy": os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
                 },
             )

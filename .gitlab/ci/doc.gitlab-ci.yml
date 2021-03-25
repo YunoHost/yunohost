@@ -14,7 +14,7 @@ generate-helpers-doc:
     - cd doc
     - python generate_helper_doc.py
     - hub clone https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/doc.git doc_repo
-    - cp helpers.html doc_repo/packaging_apps_helpers.md
+    - cp helpers.md doc_repo/pages/02.contribute/04.packaging_apps/11.helpers/packaging_apps_helpers.md
     - cd doc_repo
     # replace ${CI_COMMIT_REF_NAME} with ${CI_COMMIT_TAG} ?
     - hub checkout -b "${CI_COMMIT_REF_NAME}"
@@ -22,6 +22,6 @@ generate-helpers-doc:
     - hub pull-request -m "[CI] Helper for ${CI_COMMIT_REF_NAME}" -p # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
   artifacts:
     paths:
-      - doc/helpers.html
+      - doc/helpers.md
   only:
     - tags

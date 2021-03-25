@@ -53,12 +53,8 @@ smtpd_tls_session_cache_database = btree:${data_directory}/smtpd_scache
 smtpd_tls_loglevel=1
 
 # -- TLS for outgoing connections
-{% if relay_host != "" %}
-smtp_tls_security_level = encrypt
-{% else %}
 # Use TLS if this is supported by the remote SMTP server, otherwise use plaintext.
 smtp_tls_security_level = may
-{% endif %}
 smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
 smtp_tls_exclude_ciphers = aNULL, MD5, DES, ADH, RC4, 3DES
 smtp_tls_mandatory_ciphers= high
@@ -181,6 +177,9 @@ milter_default_action = accept
 # Avoid to send simultaneously too many emails
 smtp_destination_concurrency_limit = 2
 default_destination_rate_delay = 5s
+
+# Avoid to be blacklisted due to too many recipient
+smtpd_client_recipient_rate_limit=150
 
 # Avoid email adress scanning
 # By default it's possible to detect if the email adress exist

@@ -26,11 +26,13 @@ do_pre_regen() {
   
   # Add possibility to specify a relay
   # Could be useful with some isp with no 25 port open or more complex setup
+  export relay_port=""
+  export relay_user=""
   export relay_host="$(yunohost settings get 'smtp.relay.host')"
   if [ -n "${relay_host}" ]
   then
-    export relay_port="$(yunohost settings get 'smtp.relay.port')"
-    export relay_user="$(yunohost settings get 'smtp.relay.user')"
+    relay_port="$(yunohost settings get 'smtp.relay.port')"
+    relay_user="$(yunohost settings get 'smtp.relay.user')"
     relay_password="$(yunohost settings get 'smtp.relay.password')"
     
     # Avoid to display "Relay account paswword" to other users
