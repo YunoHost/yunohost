@@ -461,20 +461,24 @@ def _build_dns_conf(domains):
     extra = []
     ipv4 = get_public_ip()
     ipv6 = get_public_ip(6)
+    owned_dns_zone = "owned_dns_zone" in domains[root] and domains[root]["owned_dns_zone"]
 
-    name_prefix = root.partition(".")[0]
-
+    root_prefix = root.partition(".")[0]
+    child_domain_suffix = ""
 
     for domain_name, domain in domains.items():
         ttl = domain["ttl"]
 
-        owned_dns_zone = "owned_dns_zone" in domains[root] and domains[root]["owned_dns_zone"]
         if domain_name == root:
-            name = name_prefix if not owned_dns_zone else  "@"
+            name = root_prefix if not owned_dns_zone else  "@"
         else:
             name = domain_name[0:-(1 + len(root))]
             if not owned_dns_zone:
-                name +=  "." + name_prefix
+                name += "." + root_prefix
+        
+        if name != "@":
+            child_domain_suffix = "." + name
+            
 
         ###########################
         # Basic ipv4/ipv6 records #
@@ -514,10 +518,10 @@ def _build_dns_conf(domains):
             xmpp += [
                 ["_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain_name],
                 ["_xmpp-server._tcp", ttl, "SRV", "0 5 5269 %s." % domain_name],
-                ["muc", ttl, "CNAME", name],
-                ["pubsub", ttl, "CNAME", name],
-                ["vjud", ttl, "CNAME", name],
-                ["xmpp-upload", ttl, "CNAME", name],
+                ["muc" + child_domain_suffix, ttl, "CNAME", name],
+                ["pubsub" + child_domain_suffix, ttl, "CNAME", name],
+                ["vjud" + child_domain_suffix, ttl, "CNAME", name],
+                ["xmpp-upload" + child_domain_suffix, ttl, "CNAME", name],
             ]
 
         #########
