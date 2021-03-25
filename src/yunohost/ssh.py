@@ -13,7 +13,7 @@ SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
 def user_ssh_list_keys(username):
     user = _get_user_for_ssh(username, ["homeDirectory"])
     if not user:
-        raise Exception("User with username '%s' doesn't exists" % username)
+        raise YunohostValidationError("user_unknown", user=username)
 
     authorized_keys_file = os.path.join(
         user["homeDirectory"][0], ".ssh", "authorized_keys"
@@ -50,7 +50,7 @@ def user_ssh_list_keys(username):
 def user_ssh_add_key(username, key, comment):
     user = _get_user_for_ssh(username, ["homeDirectory", "uid"])
     if not user:
-        raise Exception("User with username '%s' doesn't exists" % username)
+        raise YunohostValidationError("user_unknown", user=username)
 
     authorized_keys_file = os.path.join(
         user["homeDirectory"][0], ".ssh", "authorized_keys"
@@ -90,21 +90,26 @@ def user_ssh_add_key(username, key, comment):
 def user_ssh_remove_key(username, key):
     user = _get_user_for_ssh(username, ["homeDirectory", "uid"])
     if not user:
-        raise Exception("User with username '%s' doesn't exists" % username)
+        raise YunohostValidationError("user_unknown", user=username)
 
     authorized_keys_file = os.path.join(
         user["homeDirectory"][0], ".ssh", "authorized_keys"
     )
 
     if not os.path.exists(authorized_keys_file):
-        raise Exception(
-            "this key doesn't exists ({} dosesn't exists)".format(authorized_keys_file)
+        raise YunohostValidationError(
+            "this key doesn't exists ({} dosesn't exists)".format(authorized_keys_file),
+            raw_msg=True
         )
 
     authorized_keys_content = read_file(authorized_keys_file)
 
     if key not in authorized_keys_content:
-        raise Exception("Key '{}' is not present in authorized_keys".format(key))
+        raise YunohostValidationError(
+            "Key '{}' is not present in authorized_keys".format(key),
+            raw_msg=True
+        )
+
 
     # don't delete the previous comment because we can't verify if it's legit
 
