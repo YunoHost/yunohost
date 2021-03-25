@@ -711,10 +711,8 @@ def _load_domain_settings():
         default_owned_dns_zone = True if domain == get_public_suffix(domain) else False
         domain_in_old_domains = domain in old_domains.keys()
         # Update each setting if not present
-        new_domains[domain] = {
-            # Set "main" value
-            "main": is_maindomain
-        }
+        new_domains[domain] = {}
+        # new_domains[domain] = { "main": is_maindomain }
         # Set other values (default value if missing)
         for setting, default in [ ("xmpp", is_maindomain), ("mail", is_maindomain), ("owned_dns_zone", default_owned_dns_zone), ("ttl", 3600) ]:
             if domain_in_old_domains and setting in old_domains[domain].keys():
@@ -725,14 +723,26 @@ def _load_domain_settings():
     return new_domains
 
 
-def domain_settings(domain):
+def domain_config_show(domain):
     """
-    Get settings of a domain
+    Show settings of a domain
 
     Keyword arguments:
         domain -- The domain name
     """
     return _get_domain_settings(domain, False)
+
+
+def domain_config_get(domain, key):
+    """
+    Show a setting of a domain
+
+    Keyword arguments:
+        domain -- The domain name
+        key -- ttl, xmpp, mail, owned_dns_zone
+    """
+    settings = _get_domain_settings(domain, False)
+    return settings[domain][key]
 
 
 def _get_domain_settings(domain, subdomains):
@@ -746,7 +756,7 @@ def _get_domain_settings(domain, subdomains):
     """
     domains = _load_domain_settings()
     if not domain in domains.keys():
-        return {}
+        raise YunohostError("domain_name_unknown", domain=domain)
 
     only_wanted_domains = dict()
     for entry in domains.keys():
@@ -760,16 +770,19 @@ def _get_domain_settings(domain, subdomains):
     return only_wanted_domains
 
 
-def domain_set_settings(domain, ttl=None, xmpp=None, mail=None, owned_dns_zone=None):
+def domain_config_set(domain, key, value):
+    #(domain, ttl=None, xmpp=None, mail=None, owned_dns_zone=None):
     """
     Set some settings of a domain, for DNS generation.
 
     Keyword arguments:
         domain -- The domain name
-        --ttl  -- the Time To Live for this domains DNS record
-        --xmpp -- configure XMPP DNS records for this domain
-        --mail -- configure mail DNS records for this domain
-        --owned_dns_zone -- is this domain DNS zone owned? (is it a full domain or a subdomain?)
+        key must be one of this strings:
+            ttl  -- the Time To Live for this domains DNS record
+            xmpp -- configure XMPP DNS records for this domain
+            mail -- configure mail DNS records for this domain
+            owned_dns_zone -- is this domain DNS zone owned? (is it a full domain or a subdomain?)
+        value must be set according to the key
     """
     domains = _load_domain_settings()
 
@@ -777,11 +790,9 @@ def domain_set_settings(domain, ttl=None, xmpp=None, mail=None, owned_dns_zone=N
         # TODO add locales
         raise YunohostError("domain_name_unknown", domain=domain)
 
-    setting_set = False
-
-    if ttl is not None:
+    if "ttl" == key:
         try:
-            ttl = int(ttl)
+            ttl = int(value)
         except:
             # TODO add locales
             raise YunohostError("bad_value_type", value_type=type(ttl))
@@ -791,38 +802,17 @@ def domain_set_settings(domain, ttl=None, xmpp=None, mail=None, owned_dns_zone=N
             raise YunohostError("must_be_positive", value_type=type(ttl))
 
         domains[domain]["ttl"] = ttl
-        setting_set = True
 
-    if xmpp is not None:
-        try:
-            xmpp = xmpp in ["True", "true", "1"]
-        except:
-            # TODO add locales
-            raise YunohostError("bad_value_type", value_type=type(xmpp))
-        domains[domain]["xmpp"] = xmpp
-        setting_set = True
+    elif "xmpp" == key:
+        domains[domain]["xmpp"] = value in ["True", "true", "1"]
 
-    if mail is not None:
-        try:
-            mail = mail in ["True", "true", "1"]
-        except:
-            # TODO add locales
-            raise YunohostError("bad_value_type", value_type=type(mail))
+    elif "mail" == key:
+        domains[domain]["mail"] = value in ["True", "true", "1"]
 
-        domains[domain]["mail"] = mail
-        setting_set = True
+    elif "owned_dns_zone" == key:
+        domains[domain]["owned_dns_zone"] = value in ["True", "true", "1"]
 
-    if owned_dns_zone is not None:
-        try:
-            owned_dns_zone = owned_dns_zone in ["True", "true", "1"]
-        except:
-            # TODO add locales
-            raise YunohostError("bad_value_type", value_type=type(owned_dns_zone))
-
-        domains[domain]["owned_dns_zone"] = owned_dns_zone
-        setting_set = True
-
-    if not setting_set:
+    else:
         # TODO add locales
         raise YunohostError("no_setting_given")
 

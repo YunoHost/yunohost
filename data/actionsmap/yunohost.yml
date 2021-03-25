@@ -460,31 +460,6 @@ domain:
                     help: Do not ask confirmation to remove apps
                     action: store_true
 
-        settings:
-            action_help: Get settings for a domain
-            api: GET /domains/<domain>/settings
-            arguments:
-                domain:
-                    help: Target domain
-
-        set-settings:
-            action_help: Set settings of a domain
-            api: POST /domains/<domain>/settings
-            arguments:
-                domain:
-                    help: Target domain
-                -t:
-                  full: --ttl
-                  help: Time To Live of this domain's DNS records
-                -x:
-                  full: --xmpp
-                  help: Configure XMPP in this domain's DNS records? True or False
-                -m:
-                  full: --mail
-                  help: Configure mail in this domain's DNS records? True or False
-                -o:
-                  full: --owned-dns-zone
-                  help: Is this domain owned as a DNS zone? Is it a full domain, i.e not a subdomain? True or False
 
         ### domain_dns_conf()
         dns-conf:
@@ -493,6 +468,8 @@ domain:
             arguments:
                 domain:
                     help: Target domain
+                    extra:
+                        pattern: *pattern_domain
 
         ### domain_maindomain()
         main-domain:
@@ -574,6 +551,62 @@ domain:
                         pattern: *pattern_domain
                 path:
                     help: The path to check (e.g. /coffee)
+
+    subcategories:
+        config:
+            subcategory_help: Domains DNS settings
+            actions:
+                # domain_config_list
+                list:
+                    action_help: Get settings for all domains
+                    api: GET /domains/list
+                    arguments:
+                        domain:
+                            help: Target domain
+                            extra:
+                                pattern: *pattern_domain
+
+                # domain_config_show
+                show:
+                    action_help: Get settings for all domains
+                    api: GET /domains/<domain>/show
+                    arguments:
+                        domain:
+                            help: Target domain
+                            extra:
+                                pattern: *pattern_domain
+
+                # domain_config_get
+                get:
+                    action_help: Get specific setting of a domain
+                    api: GET /domains/<domain>/<key>
+                    arguments:
+                        domain:
+                            help: Target domain
+                            extra:
+                                pattern: *pattern_domain
+                        key:
+                            help: Setting requested. One of ttl, xmpp, mail, owned_dns_zone
+                            extra:
+                                pattern: &pattern_domain_key
+                                    - !!str ^(ttl)|(xmpp)|(mail)|(owned_dns_zone)|$
+                                    - "pattern_domain_key"
+
+                # domain_config_set
+                set:
+                    action_help: Set a setting of a domain
+                    api: POST /domains/<domain>/<key>
+                    arguments:
+                        domain:
+                            help: Target domain
+                            extra:
+                                pattern: *pattern_domain
+                        key:
+                            help: Setting requested. One of ttl (Time To Live of this domain's DNS records), xmpp (Configure XMPP in this domain's DNS records?), mail (Configure mail in this domain's DNS records?), owned_dns_zone (Is it a full domain, i.e not a subdomain?)
+                            extra:
+                                pattern: *pattern_domain_key
+                        value:
+                            help: Value of the setting. Must be a positive integer number for "ttl", or one of ("True", "False", "true", "false", "1", "0") for other settings
 
 
          ### domain_info()
