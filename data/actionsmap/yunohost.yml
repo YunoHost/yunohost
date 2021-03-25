@@ -560,11 +560,6 @@ domain:
                 list:
                     action_help: Get settings for all domains
                     api: GET /domains/list
-                    arguments:
-                        domain:
-                            help: Target domain
-                            extra:
-                                pattern: *pattern_domain
 
                 # domain_config_show
                 show:

@@ -719,6 +719,16 @@ def _load_domain_settings():
     return new_domains
 
 
+def domain_config_list():
+    """
+    Show settings of all domains
+
+    Keyword arguments:
+        domain -- The domain name
+    """
+    return _load_domain_settings()
+
+
 def domain_config_show(domain):
     """
     Show settings of a domain
