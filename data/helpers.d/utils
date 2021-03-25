@@ -330,7 +330,7 @@ ynh_add_config () {
     # (cp won't overwrite ownership / modes by default...)
     touch $destination
     chown root:root $destination
-    chmod 750 $destination
+    chmod 640 $destination
 
     cp -f "$template_path" "$destination"
 
@@ -725,11 +725,11 @@ _ynh_apply_default_permissions() {
     if [ -z "$ynh_requirements" ] || [ "$ynh_requirements" == "null" ] || dpkg --compare-versions $ynh_requirements ge 4.2
     then
         chmod o-rwx $target
+        chmod g-w $target
+        chown -R root:root $target
         if ynh_system_user_exists $app
         then
             chown $app:$app $target
-        else
-            chown root:root $target
         fi
     fi
 }
