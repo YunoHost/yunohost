@@ -153,10 +153,7 @@ ynh_add_fpm_config () {
     if [ $use_template -eq 1 ]
     then
         # Usage 1, use the template in conf/php-fpm.conf
-        local phpfpm_path="../conf/php-fpm.conf"
-        if [ ! -e "$phpfpm_path" ]; then
-            phpfpm_path="../settings/conf/php-fpm.conf"	# Into the restore script, the PHP-FPM template is not at the same place
-        fi
+        local phpfpm_path="$YNH_APP_BASEDIR/conf/php-fpm.conf"
         # Make sure now that the template indeed exists
         [ -e "$phpfpm_path" ] || ynh_die --message="Unable to find template to configure PHP-FPM."
     else
@@ -169,7 +166,7 @@ ynh_add_fpm_config () {
         # Define the values to use for the configuration of PHP.
         ynh_get_scalable_phpfpm --usage=$usage --footprint=$footprint
 
-        local phpfpm_path="../conf/php-fpm.conf"
+        local phpfpm_path="$YNH_APP_BASEDIR/conf/php-fpm.conf"
         echo "
 [__APP__]
 
@@ -204,18 +201,18 @@ pm.process_idle_timeout = 10s
         fi
 
         # Concatene the extra config.
-        if [ -e ../conf/extra_php-fpm.conf ]; then
-            cat ../conf/extra_php-fpm.conf >> "$phpfpm_path"
+        if [ -e $YNH_APP_BASEDIR/conf/extra_php-fpm.conf ]; then
+            cat $YNH_APP_BASEDIR/conf/extra_php-fpm.conf >> "$phpfpm_path"
         fi
     fi
 
     local finalphpconf="$fpm_config_dir/pool.d/$app.conf"
     ynh_add_config --template="$phpfpm_path" --destination="$finalphpconf"
 
-    if [ -e "../conf/php-fpm.ini" ]
+    if [ -e "$YNH_APP_BASEDIR/conf/php-fpm.ini" ]
     then
         ynh_print_warn --message="Packagers ! Please do not use a separate php ini file, merge your directives in the pool file instead."
-        ynh_add_config --template="../conf/php-fpm.ini" --destination="$fpm_config_dir/conf.d/20-$app.ini"
+        ynh_add_config --template="$YNH_APP_BASEDIR/conf/php-fpm.ini" --destination="$fpm_config_dir/conf.d/20-$app.ini"
     fi
 
     if [ $dedicated_service -eq 1 ]
@@ -228,7 +225,7 @@ pid = /run/php/php__PHPVERSION__-fpm-__APP__.pid
 error_log = /var/log/php/fpm-php.__APP__.log
 syslog.ident = php-fpm-__APP__
 include = __FINALPHPCONF__
-" > ../conf/php-fpm-$app.conf
+" > $YNH_APP_BASEDIR/conf/php-fpm-$app.conf
 
         ynh_add_config --template="../config/php-fpm-$app.conf" --destination="$globalphpconf"
 
@@ -245,7 +242,7 @@ ExecReload=/bin/kill -USR2 \$MAINPID
 
 [Install]
 WantedBy=multi-user.target
-" > ../conf/$fpm_service
+" > $YNH_APP_BASEDIR/conf/$fpm_service
 
         # Create this dedicated PHP-FPM service
         ynh_add_systemd_config --service=$fpm_service --template=$fpm_service
@@ -340,7 +337,7 @@ ynh_install_php () {
 
     if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ]
     then
-        ynh_die "Do not use ynh_install_php to install php$YNH_DEFAULT_PHP_VERSION"
+        ynh_die --message="Do not use ynh_install_php to install php$YNH_DEFAULT_PHP_VERSION"
     fi
 
     # Create the file if doesn't exist already
@@ -572,6 +569,7 @@ YNH_COMPOSER_VERSION=${YNH_COMPOSER_VERSION:-$YNH_DEFAULT_COMPOSER_VERSION}
 # | arg: -v, --phpversion - PHP version to use with composer
 # | arg: -w, --workdir - The directory from where the command will be executed. Default $final_path.
 # | arg: -c, --commands - Commands to execute.
+#
 ynh_composer_exec () {
     # Declare an array to define the options of this helper.
     local legacy_args=vwc
@@ -596,6 +594,7 @@ ynh_composer_exec () {
 # | arg: -w, --workdir - The directory from where the command will be executed. Default $final_path.
 # | arg: -a, --install_args - Additional arguments provided to the composer install. Argument --no-dev already include
 # | arg: -c, --composerversion - Composer version to install
+#
 ynh_install_composer () {
     # Declare an array to define the options of this helper.
     local legacy_args=vwac
@@ -614,9 +613,9 @@ ynh_install_composer () {
     curl -sS https://getcomposer.org/installer \
         | COMPOSER_HOME="$workdir/.composer" \
         php${phpversion} -- --quiet --install-dir="$workdir" --version=$composerversion \
-        || ynh_die "Unable to install Composer."
+        || ynh_die --message="Unable to install Composer."
 
     # install dependencies
     ynh_composer_exec --phpversion="${phpversion}" --workdir="$workdir" --commands="install --no-dev $install_args" \
-        || ynh_die "Unable to install core dependencies with Composer."
+        || ynh_die --message="Unable to install core dependencies with Composer."
 }

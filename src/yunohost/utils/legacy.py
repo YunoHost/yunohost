@@ -13,7 +13,6 @@ from yunohost.app import (
 )
 from yunohost.permission import (
     permission_create,
-    user_permission_list,
     user_permission_update,
     permission_sync_to_user,
 )
@@ -280,7 +279,7 @@ def migrate_legacy_permission_settings(app=None):
                 auth_header=True,
                 label=legacy_permission_label(app, "protected"),
                 show_tile=False,
-                allowed=user_permission_list()["permissions"][app + ".main"]["allowed"],
+                allowed=[],
                 protected=True,
                 sync_perm=False,
             )
@@ -307,6 +306,9 @@ def translate_legacy_rules_in_ssowant_conf_json_persistent():
     persistent_file_name = "/etc/ssowat/conf.json.persistent"
     if not os.path.exists(persistent_file_name):
         return
+
+    # Ugly hack because for some reason so many people have tabs in their conf.json.persistent ...
+    os.system(r"sed -i 's/\t/    /g' /etc/ssowat/conf.json.persistent")
 
     # Ugly hack to try not to misarably fail migration
     persistent = read_yaml(persistent_file_name)

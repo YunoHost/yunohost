@@ -25,6 +25,8 @@ from moulinette import m18n
 
 class YunohostError(MoulinetteError):
 
+    http_code = 500
+
     """
     Yunohost base exception
 
@@ -49,3 +51,8 @@ class YunohostError(MoulinetteError):
             return super(YunohostError, self).content()
         else:
             return {"error": self.strerror, "log_ref": self.log_ref}
+
+
+class YunohostValidationError(YunohostError):
+
+    http_code = 400

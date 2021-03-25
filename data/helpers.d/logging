@@ -102,8 +102,7 @@ ynh_print_err () {
 
 # Execute a command and print the result as an error
 #
-# usage: ynh_exec_err your_command
-# usage: ynh_exec_err "your_command | other_command"
+# usage: ynh_exec_err "your_command [ | other_command ]"
 # | arg: command - command to execute
 #
 # When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
@@ -117,8 +116,7 @@ ynh_exec_err () {
 
 # Execute a command and print the result as a warning
 #
-# usage: ynh_exec_warn your_command
-# usage: ynh_exec_warn "your_command | other_command"
+# usage: ynh_exec_warn "your_command [ | other_command ]"
 # | arg: command - command to execute
 #
 # When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
@@ -132,8 +130,7 @@ ynh_exec_warn () {
 
 # Execute a command and force the result to be printed on stdout
 #
-# usage: ynh_exec_warn_less your_command
-# usage: ynh_exec_warn_less "your_command | other_command"
+# usage: ynh_exec_warn_less "your_command [ | other_command ]"
 # | arg: command - command to execute
 #
 # When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
@@ -147,8 +144,7 @@ ynh_exec_warn_less () {
 
 # Execute a command and redirect stdout in /dev/null
 #
-# usage: ynh_exec_quiet your_command
-# usage: ynh_exec_quiet "your_command | other_command"
+# usage: ynh_exec_quiet "your_command [ | other_command ]"
 # | arg: command - command to execute
 #
 # When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
@@ -162,8 +158,7 @@ ynh_exec_quiet () {
 
 # Execute a command and redirect stdout and stderr in /dev/null
 #
-# usage: ynh_exec_fully_quiet your_command
-# usage: ynh_exec_fully_quiet "your_command | other_command"
+# usage: ynh_exec_fully_quiet "your_command [ | other_command ]"
 # | arg: command - command to execute
 #
 # When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
@@ -363,8 +358,7 @@ ynh_debug () {
 
 # Execute a command and print the result as debug
 #
-# usage: ynh_debug_exec your_command
-# usage: ynh_debug_exec "your_command | other_command"
+# usage: ynh_debug_exec "your_command [ | other_command ]"
 # | arg: command - command to execute
 #
 # When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.

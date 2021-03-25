@@ -7,4 +7,3 @@ cd "$YNH_CWD"
 
 # Restore file if exists
 ynh_restore_file --origin_path="/etc/yunohost/dyndns" --not_mandatory
-ynh_restore_file --origin_path="/etc/cron.d/yunohost-dyndns" --not_mandatory

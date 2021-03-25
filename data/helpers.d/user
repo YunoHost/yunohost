@@ -2,11 +2,11 @@
 
 # Check if a YunoHost user exists
 #
-# example: ynh_user_exists 'toto' || exit 1
-#
 # usage: ynh_user_exists --username=username
 # | arg: -u, --username=    - the username to check
-# | exit: Return 1 if the user doesn't exist, 0 otherwise
+# | ret: 0 if the user exists, 1 otherwise.
+#
+# example: ynh_user_exists 'toto' || echo "User does not exist"
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_user_exists() {
@@ -17,17 +17,17 @@ ynh_user_exists() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    yunohost user list --output-as json | grep --quiet "\"username\": \"${username}\""
+    yunohost user list --output-as json --quiet | jq -e ".users.${username}" >/dev/null
 }
 
 # Retrieve a YunoHost user information
 #
-# example: mail=$(ynh_user_get_info 'toto' 'mail')
-#
 # usage: ynh_user_get_info --username=username --key=key
 # | arg: -u, --username=    - the username to retrieve info from
 # | arg: -k, --key=         - the key to retrieve
-# | ret: string - the key's value
+# | ret: the value associate to that key
+#
+# example: mail=$(ynh_user_get_info 'toto' 'mail')
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_user_get_info() {
@@ -39,27 +39,26 @@ ynh_user_get_info() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    yunohost user info "$username" --output-as plain | ynh_get_plain_key "$key"
+    yunohost user info "$username" --output-as json --quiet | jq -r ".$key"
 }
 
 # Get the list of YunoHost users
 #
-# example: for u in $(ynh_user_list); do ...
-#
 # usage: ynh_user_list
-# | ret: string - one username per line
+# | ret: one username per line as strings
+#
+# example: for u in $(ynh_user_list); do ... ; done
 #
 # Requires YunoHost version 2.4.0 or higher.
 ynh_user_list() {
-    yunohost user list --output-as plain --quiet \
-        | awk '/^##username$/{getline; print}'
+    yunohost user list --output-as json --quiet | jq -r ".users | keys[]"
 }
 
 # Check if a user exists on the system
 #
 # usage: ynh_system_user_exists --username=username
 # | arg: -u, --username=    - the username to check
-# | exit: Return 1 if the user doesn't exist, 0 otherwise
+# | ret: 0 if the user exists, 1 otherwise.
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_system_user_exists() {
@@ -77,7 +76,7 @@ ynh_system_user_exists() {
 #
 # usage: ynh_system_group_exists --group=group
 # | arg: -g, --group=   - the group to check
-# | exit: Return 1 if the group doesn't exist, 0 otherwise
+# | ret: 0 if the group exists, 1 otherwise.
 #
 # Requires YunoHost version 3.5.0.2 or higher.
 ynh_system_group_exists() {
@@ -93,16 +92,19 @@ ynh_system_group_exists() {
 
 # Create a system user
 #
-# examples:
-#   # Create a nextcloud user with no home directory and /usr/sbin/nologin login shell (hence no login capability)
-#   ynh_system_user_create --username=nextcloud
-#   # Create a discourse user using /var/www/discourse as home directory and the default login shell
-#   ynh_system_user_create --username=discourse --home_dir=/var/www/discourse --use_shell 
-#
 # usage: ynh_system_user_create --username=user_name [--home_dir=home_dir] [--use_shell]
 # | arg: -u, --username=    - Name of the system user that will be create
 # | arg: -h, --home_dir=    - Path of the home dir for the user. Usually the final path of the app. If this argument is omitted, the user will be created without home
 # | arg: -s, --use_shell    - Create a user using the default login shell if present. If this argument is omitted, the user will be created with /usr/sbin/nologin shell
+#
+# Create a nextcloud user with no home directory and /usr/sbin/nologin login shell (hence no login capability) :
+# ```
+# ynh_system_user_create --username=nextcloud
+# ```
+# Create a discourse user using /var/www/discourse as home directory and the default login shell :
+# ```
+# ynh_system_user_create --username=discourse --home_dir=/var/www/discourse --use_shell
+# ```
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_system_user_create () {
