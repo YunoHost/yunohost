@@ -63,9 +63,10 @@ ynh_abort_if_errors () {
 
 # Download, check integrity, uncompress and patch the source from app.src
 #
-# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id]
+# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"]
 # | arg: -d, --dest_dir=    - Directory where to setup sources
 # | arg: -s, --source_id=   - Name of the source, defaults to `app`
+# | arg: -k, --keep=        - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs/'
 #
 # This helper will read `conf/${source_id}.src`, download and install the sources.
 #
@@ -100,13 +101,15 @@ ynh_abort_if_errors () {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_setup_source () {
     # Declare an array to define the options of this helper.
-    local legacy_args=ds
-    local -A args_array=( [d]=dest_dir= [s]=source_id= )
+    local legacy_args=dsk
+    local -A args_array=( [d]=dest_dir= [s]=source_id= [k]=keep= )
     local dest_dir
     local source_id
+    local keep
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    source_id="${source_id:-app}" # If the argument is not given, source_id equals "app"
+    source_id="${source_id:-app}"
+    keep="${keep:-}"
 
     local src_file_path="$YNH_APP_BASEDIR/conf/${source_id}.src"
 
@@ -155,6 +158,24 @@ ynh_setup_source () {
     # Check the control sum
     echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status \
         || ynh_die --message="Corrupt source"
+
+    # Keep files to be backup/restored at the end of the helper
+    # Assuming $dest_dir already exists
+    rm -rf /var/cache/yunohost/files_to_keep_during_setup_source/
+    if [ -n "$keep" ] && [ -e "$dest_dir" ]
+    then
+        local keep_dir=/var/cache/yunohost/files_to_keep_during_setup_source/${YNH_APP_ID}
+        mkdir -p $keep_dir
+        local stuff_to_keep
+        for stuff_to_keep in $keep
+        do
+            if [ -e "$dest_dir/$stuff_to_keep" ]
+            then
+                mkdir --parents "$(dirname "$keep_dir/$stuff_to_keep")"
+                cp --archive "$dest_dir/$stuff_to_keep" "$keep_dir/$stuff_to_keep"
+            fi
+        done
+    fi
 
     # Extract source into the app dir
     mkdir --parents "$dest_dir"
@@ -209,6 +230,23 @@ ynh_setup_source () {
     if test -e "$YNH_APP_BASEDIR/sources/extra_files/${source_id}"; then
         cp --archive $YNH_APP_BASEDIR/sources/extra_files/$source_id/. "$dest_dir"
     fi
+
+    # Keep files to be backup/restored at the end of the helper
+    # Assuming $dest_dir already exists
+    if [ -n "$keep" ]
+    then
+        local keep_dir=/var/cache/yunohost/files_to_keep_during_setup_source/${YNH_APP_ID}
+        local stuff_to_keep
+        for stuff_to_keep in $keep
+        do
+            if [ -e "$keep_dir/$stuff_to_keep" ]
+            then
+                mkdir --parents "$(dirname "$dest_dir/$stuff_to_keep")"
+                cp --archive "$keep_dir/$stuff_to_keep" "$dest_dir/$stuff_to_keep"
+            fi
+        done
+    fi
+    rm -rf /var/cache/yunohost/files_to_keep_during_setup_source/
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
