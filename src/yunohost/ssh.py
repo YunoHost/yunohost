@@ -151,8 +151,6 @@ def _get_user_for_ssh(username, attrs=None):
             "username": "root",
             "fullname": "",
             "mail": "",
-            "ssh_allowed": ssh_root_login_status()["PermitRootLogin"],
-            "shell": root_unix.pw_shell,
             "home_path": root_unix.pw_dir,
         }
 
@@ -162,8 +160,6 @@ def _get_user_for_ssh(username, attrs=None):
             "username": "admin",
             "fullname": "",
             "mail": "",
-            "ssh_allowed": admin_unix.pw_shell.strip() != "/bin/false",
-            "shell": admin_unix.pw_shell,
             "home_path": admin_unix.pw_dir,
         }
 
