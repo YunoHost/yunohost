@@ -1,3 +1,5 @@
+#!/bin/bash
+
 readonly NORMAL=$(printf '\033[0m')
 readonly BOLD=$(printf '\033[1m')
 readonly RED=$(printf '\033[31m')
