@@ -28,11 +28,12 @@ yunohost (4.2.0) testing; urgency=low
   - [enh] helpers: Define YNH_APP_BASEDIR to be able to properly point to conf folder depending on the app script we're running ([#1172](https://github.com/yunohost/yunohost/pull/1172))
   - [enh] helpers: Use jq / output-as json to get info from yunohost commands instead of scraping with grep ([#1160](https://github.com/yunohost/yunohost/pull/1160))
   - [fix] helpers: Misc fixes/enh (b85d959d, db93b82b, ce04570b, 07f8d6d7)
-  - [i18n] Translations updated for Catalan, Chinese (Simplified), Czech, Dutch, French, German, Occitan
+  - [fix] helpers: download ynh_setup_source stuff in /var/cache/yunohost to prevent situations where it ends up in /etc/yunohost/apps/ (d98ec6ce)
+  - [i18n] Translations updated for Catalan, Chinese (Simplified), Czech, Dutch, French, German, Italian, Occitan, Polish
 
-  Thanks to all contributors <3 ! (Bram, Christian W., Daniel, Dave, Éric G., Félix P., Kay0u, ljf, Mathieu M., Miloš K., MrMorals, Nils V.Z., penguin321, ppr, Quentí, Radek S, Scapharnaum, Sébastien M., xaloc33, yalh76, Yifei D.)
-
- -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 19 Mar 2021 17:52:40 +0100
+  Thanks to all contributors <3 ! (Bram, Christian W., Daniel, Dave, Éric G., Félix P., Flavio C., Kay0u, Krzysztof N., ljf, Mathieu M., Miloš K., MrMorals, Nils V.Z., penguin321, ppr, Quentí, Radek S, Scapharnaum, Sébastien M., xaloc33, yalh76, Yifei D.)
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 25 Mar 2021 01:00:00 +0100
 
 yunohost (4.1.7.4) stable; urgency=low
 
