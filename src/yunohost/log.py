@@ -30,6 +30,7 @@ import yaml
 import glob
 import psutil
 
+from time import strftime
 from datetime import datetime, timedelta
 from logging import FileHandler, getLogger, Formatter
 
@@ -576,7 +577,7 @@ class OperationLogger(object):
         if self._name is not None:
             return self._name
 
-        name = [self.started_at.strftime("%Y%m%d-%H%M%S")]
+        strftime("%Y%m%d-%H%M%S", self.started_at)
         name += [self.operation]
 
         if hasattr(self, "name_parameter_override"):
