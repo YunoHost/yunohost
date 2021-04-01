@@ -153,7 +153,7 @@ do_post_regen() {
 
   find /etc/cron.*/yunohost-* -type f -exec chmod 755 {} \;
   find /etc/cron.d/yunohost-* -type f -exec chmod 644 {} \;
-  find /etc/cron.*/yunohost-* -type f -exec chmod root:root {} \;
+  find /etc/cron.*/yunohost-* -type f -exec chown root:root {} \;
 
   # Misc configuration / state files
   chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
