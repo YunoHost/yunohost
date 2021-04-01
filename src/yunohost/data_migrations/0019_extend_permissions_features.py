@@ -17,6 +17,15 @@ class MyMigration(Migration):
     Add protected attribute in LDAP permission
     """
 
+    @Migration.ldap_migration
+    def run(self, backup_folder):
+
+        # Update LDAP database
+        self.add_new_ldap_attributes()
+
+        # Migrate old settings
+        migrate_legacy_permission_settings()
+
     def add_new_ldap_attributes(self):
 
         from yunohost.utils.ldap import _get_ldap_interface
@@ -75,12 +84,3 @@ class MyMigration(Migration):
                     }
 
             ldap.update("cn=%s,ou=permission" % permission, update)
-
-    @ldap_migration
-    def run(self, backup_folder):
-
-        # Update LDAP database
-        self.add_new_ldap_attributes()
-
-        # Migrate old settings
-        migrate_legacy_permission_settings()

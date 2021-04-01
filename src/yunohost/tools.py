@@ -28,6 +28,7 @@ import os
 import yaml
 import subprocess
 import pwd
+import time
 from importlib import import_module
 
 from moulinette import msignals, m18n
@@ -1144,7 +1145,7 @@ class Migration(object):
                 os.system(f"cp -r --preserve /etc/yunohost/apps {backup_folder}/apps_settings")
             except Exception as e:
                 raise YunohostError(
-                    "migration_ldap_can_not_backup_before_migration", error=e
+                    "migration_ldap_can_not_backup_before_migration", error=str(e)
                 )
             finally:
                 os.system("systemctl start slapd")
@@ -1165,3 +1166,5 @@ class Migration(object):
                 raise
             else:
                 os.system(f"rm -r {backup_folder}")
+
+        return func

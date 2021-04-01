@@ -5,7 +5,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_yaml
 
 from yunohost.tools import Migration
-from yunohost.permission import user_permission_update
+from yunohost.permission import user_permission_update, permission_sync_to_user
 
 logger = getActionLogger('yunohost.migration')
 
@@ -21,7 +21,7 @@ class MyMigration(Migration):
 
     dependencies = ["extend_permissions_features"]
 
-    @ldap_migration
+    @Migration.ldap_migration
     def run(self, *args):
 
         from yunohost.utils.ldap import _get_ldap_interface
