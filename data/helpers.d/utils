@@ -21,6 +21,9 @@ YNH_APP_BASEDIR=$([[ "$(basename $0)" =~ ^backup|restore$ ]] && echo '../setting
 # Requires YunoHost version 2.6.4 or higher.
 ynh_exit_properly () {
     local exit_code=$?
+
+    rm -rf "/var/cache/yunohost/download/"
+
     if [ "$exit_code" -eq 0 ]; then
         exit 0	# Exit without error if the script ended correctly
     fi
@@ -48,9 +51,8 @@ ynh_exit_properly () {
 # usage: ynh_abort_if_errors
 #
 # This configure the rest of the script execution such that, if an error occurs
-# or if an empty variable is used, the execution of the script stops
-# immediately and a call to `ynh_clean_setup` is triggered if it has been
-# defined by your script.
+# or if an empty variable is used, the execution of the script stops immediately
+# and a call to `ynh_clean_setup` is triggered if it has been defined by your script.
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_abort_if_errors () {
@@ -61,58 +63,53 @@ ynh_abort_if_errors () {
 
 # Download, check integrity, uncompress and patch the source from app.src
 #
-# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id]
+# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"]
 # | arg: -d, --dest_dir=    - Directory where to setup sources
-# | arg: -s, --source_id=   - Name of the app, if the package contains more than one app
+# | arg: -s, --source_id=   - Name of the source, defaults to `app`
+# | arg: -k, --keep=        - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs/'
 #
-# The file conf/app.src need to contains:
+# This helper will read `conf/${source_id}.src`, download and install the sources.
 #
+# The src file need to contains:
+# ```
 # SOURCE_URL=Address to download the app archive
 # SOURCE_SUM=Control sum
-# # (Optional) Program to check the integrity (sha256sum, md5sum...)
-# # default: sha256
+# # (Optional) Program to check the integrity (sha256sum, md5sum...). Default: sha256
 # SOURCE_SUM_PRG=sha256
-# # (Optional) Archive format
-# # default: tar.gz
+# # (Optional) Archive format. Default: tar.gz
 # SOURCE_FORMAT=tar.gz
-# # (Optional) Put false if sources are directly in the archive root
-# # default: true
-# # Instead of true, SOURCE_IN_SUBDIR could be the number of sub directories
-# # to remove.
+# # (Optional) Put false if sources are directly in the archive root. Default: true
+# # Instead of true, SOURCE_IN_SUBDIR could be the number of sub directories to remove.
 # SOURCE_IN_SUBDIR=false
-# # (Optionnal) Name of the local archive (offline setup support)
-# # default: ${src_id}.${src_format}
+# # (Optionnal) Name of the local archive (offline setup support). Default: ${src_id}.${src_format}
 # SOURCE_FILENAME=example.tar.gz
-# # (Optional) If it set as false don't extract the source.
+# # (Optional) If it set as false don't extract the source. Default: true
 # # (Useful to get a debian package or a python wheel.)
-# # default: true
 # SOURCE_EXTRACT=(true|false)
+# ```
 #
-# Details:
-# This helper downloads sources from SOURCE_URL if there is no local source
-# archive in /opt/yunohost-apps-src/APP_ID/SOURCE_FILENAME
-#
-# Next, it checks the integrity with "SOURCE_SUM_PRG -c --status" command.
-#
-# If it's ok, the source archive will be uncompressed in $dest_dir. If the
-# SOURCE_IN_SUBDIR is true, the first level directory of the archive will be
-# removed.
-# If SOURCE_IN_SUBDIR is a numeric value, 2 for example, the 2 first level
-# directories will be removed
-#
-# Finally, patches named sources/patches/${src_id}-*.patch and extra files in
-# sources/extra_files/$src_id will be applied to dest_dir
+# The helper will:
+# - Check if there is a local source archive in `/opt/yunohost-apps-src/$APP_ID/$SOURCE_FILENAME`
+# - Download `$SOURCE_URL` if there is no local archive
+# - Check the integrity with `$SOURCE_SUM_PRG -c --status`
+# - Uncompress the archive to `$dest_dir`.
+#   - If `$SOURCE_IN_SUBDIR` is true, the first level directory of the archive will be removed.
+#   - If `$SOURCE_IN_SUBDIR` is a numeric value, the N first level directories will be removed.
+# - Patches named `sources/patches/${src_id}-*.patch` will be applied to `$dest_dir`
+# - Extra files in `sources/extra_files/$src_id` will be copied to dest_dir
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_setup_source () {
     # Declare an array to define the options of this helper.
-    local legacy_args=ds
-    local -A args_array=( [d]=dest_dir= [s]=source_id= )
+    local legacy_args=dsk
+    local -A args_array=( [d]=dest_dir= [s]=source_id= [k]=keep= )
     local dest_dir
     local source_id
+    local keep
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    source_id="${source_id:-app}" # If the argument is not given, source_id equals "app"
+    source_id="${source_id:-app}"
+    keep="${keep:-}"
 
     local src_file_path="$YNH_APP_BASEDIR/conf/${source_id}.src"
 
@@ -136,8 +133,13 @@ ynh_setup_source () {
         src_filename="${source_id}.${src_format}"
     fi
 
+
     # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
+
+    mkdir -p /var/cache/yunohost/download/${YNH_APP_ID}/
+    src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${src_filename}"
+
     if test -e "$local_src"
     then
         cp $local_src $src_filename
@@ -156,6 +158,24 @@ ynh_setup_source () {
     # Check the control sum
     echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status \
         || ynh_die --message="Corrupt source"
+
+    # Keep files to be backup/restored at the end of the helper
+    # Assuming $dest_dir already exists
+    rm -rf /var/cache/yunohost/files_to_keep_during_setup_source/
+    if [ -n "$keep" ] && [ -e "$dest_dir" ]
+    then
+        local keep_dir=/var/cache/yunohost/files_to_keep_during_setup_source/${YNH_APP_ID}
+        mkdir -p $keep_dir
+        local stuff_to_keep
+        for stuff_to_keep in $keep
+        do
+            if [ -e "$dest_dir/$stuff_to_keep" ]
+            then
+                mkdir --parents "$(dirname "$keep_dir/$stuff_to_keep")"
+                cp --archive "$dest_dir/$stuff_to_keep" "$keep_dir/$stuff_to_keep"
+            fi
+        done
+    fi
 
     # Extract source into the app dir
     mkdir --parents "$dest_dir"
@@ -197,34 +217,53 @@ ynh_setup_source () {
     fi
 
     # Apply patches
-    if (( $(find $YNH_CWD/../sources/patches/ -type f -name "${source_id}-*.patch" 2> /dev/null | wc --lines) > "0" ))
+    local patches_folder=$(realpath $YNH_APP_BASEDIR/sources/patches/)
+    if (( $(find $patches_folder -type f -name "${source_id}-*.patch" 2> /dev/null | wc --lines) > "0" ))
     then
         (cd "$dest_dir"
-        for p in $YNH_CWD/../sources/patches/${source_id}-*.patch
+        for p in $patches_folder/${source_id}-*.patch
         do
+            echo $p
             patch --strip=1 < $p
         done) || ynh_die --message="Unable to apply patches"
     fi
 
     # Add supplementary files
-    if test -e "$YNH_CWD/../sources/extra_files/${source_id}"; then
-        cp --archive $YNH_CWD/../sources/extra_files/$source_id/. "$dest_dir"
+    if test -e "$YNH_APP_BASEDIR/sources/extra_files/${source_id}"; then
+        cp --archive $YNH_APP_BASEDIR/sources/extra_files/$source_id/. "$dest_dir"
     fi
+
+    # Keep files to be backup/restored at the end of the helper
+    # Assuming $dest_dir already exists
+    if [ -n "$keep" ]
+    then
+        local keep_dir=/var/cache/yunohost/files_to_keep_during_setup_source/${YNH_APP_ID}
+        local stuff_to_keep
+        for stuff_to_keep in $keep
+        do
+            if [ -e "$keep_dir/$stuff_to_keep" ]
+            then
+                mkdir --parents "$(dirname "$dest_dir/$stuff_to_keep")"
+                cp --archive "$keep_dir/$stuff_to_keep" "$dest_dir/$stuff_to_keep"
+            fi
+        done
+    fi
+    rm -rf /var/cache/yunohost/files_to_keep_during_setup_source/
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
 #
-# example: ynh_local_curl "/install.php?installButton" "foo=$var1" "bar=$var2"
-#
 # usage: ynh_local_curl "page_uri" "key1=value1" "key2=value2" ...
-# | arg: page_uri    - Path (relative to $path_url) of the page where POST data will be sent
+# | arg: page_uri    - Path (relative to `$path_url`) of the page where POST data will be sent
 # | arg: key1=value1 - (Optionnal) POST key and corresponding value
 # | arg: key2=value2 - (Optionnal) Another POST key and corresponding value
 # | arg: ...         - (Optionnal) More POST keys and values
 #
+# example: ynh_local_curl "/install.php?installButton" "foo=$var1" "bar=$var2"
+#
 # For multiple calls, cookies are persisted between each call for the same app
 #
-# $domain and $path_url should be defined externally (and correspond to the domain.tld and the /path (of the app?))
+# `$domain` and `$path_url` should be defined externally (and correspond to the domain.tld and the /path (of the app?))
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_local_curl () {
@@ -253,7 +292,7 @@ ynh_local_curl () {
 
     # Wait untils nginx has fully reloaded (avoid curl fail with http2)
     sleep 2
-    
+
     local cookiefile=/tmp/ynh-$app-cookie.txt
     touch $cookiefile
     chown root $cookiefile
@@ -265,20 +304,22 @@ ynh_local_curl () {
 
 # Create a dedicated config file from a template
 #
+# usage: ynh_add_config --template="template" --destination="destination"
+# | arg: -t, --template=     - Template config file to use
+# | arg: -d, --destination=    - Destination of the config file
+#
 # examples:
 #    ynh_add_config --template=".env" --destination="$final_path/.env"
 #    ynh_add_config --template="../conf/.env" --destination="$final_path/.env"
 #    ynh_add_config --template="/etc/nginx/sites-available/default" --destination="etc/nginx/sites-available/mydomain.conf"
 #
-# usage: ynh_add_config --template="template" --destination="destination"
-# | arg: -t, --template=     - Template config file to use
-# | arg: -d, --destination=    - Destination of the config file
-#
 # The template can be by default the name of a file in the conf directory
-# of a YunoHost Package, a relative path or an absolute path
-# The helper will use the template $template to generate a config file
-# $destination by replacing the following keywords with global variables
+# of a YunoHost Package, a relative path or an absolute path.
+#
+# The helper will use the template `template` to generate a config file
+# `destination` by replacing the following keywords with global variables
 # that should be defined before calling this helper :
+# ```
 #   __PATH__                by $path_url
 #   __NAME__                by $app
 #   __NAMETOCHANGE__        by $app
@@ -286,15 +327,18 @@ ynh_local_curl () {
 #   __FINALPATH__           by $final_path
 #   __PHPVERSION__          by $YNH_PHP_VERSION
 #   __YNH_NODE_LOAD_PATH__  by $ynh_node_load_PATH
-#
+# ```
 # And any dynamic variables that should be defined before calling this helper like:
+# ```
 #   __DOMAIN__   by $domain
 #   __APP__      by $app
 #   __VAR_1__    by $var_1
 #   __VAR_2__    by $var_2
+# ```
 #
 # The helper will verify the checksum and backup the destination file
 # if it's different before applying the new template.
+#
 # And it will calculate and store the destination file checksum
 # into the app settings when configuration is done.
 #
@@ -553,22 +597,23 @@ ynh_read_manifest () {
 
     if [ ! -e "$manifest" ]; then
         # If the manifest isn't found, try the common place for backup and restore script.
-        manifest="../settings/manifest.json"
+        manifest="$YNH_APP_BASEDIR/manifest.json"
     fi
 
     jq ".$manifest_key" "$manifest" --raw-output
 }
 
-# Read the upstream version from the manifest, or from the env variable $YNH_APP_MANIFEST_VERSION if not given
+# Read the upstream version from the manifest or `$YNH_APP_MANIFEST_VERSION`
 #
 # usage: ynh_app_upstream_version [--manifest="manifest.json"]
 # | arg: -m, --manifest=    - Path of the manifest to read
 # | ret: the version number of the upstream app
 #
-# The version number in the manifest is defined by <upstreamversion>~ynh<packageversion>
-# For example : 4.3-2~ynh3
-# This include the number before ~ynh
-# In the last example it return 4.3-2
+# If the `manifest` is not specified, the envvar `$YNH_APP_MANIFEST_VERSION` will be used.
+#
+# The version number in the manifest is defined by `<upstreamversion>~ynh<packageversion>`.
+#
+# For example, if the manifest contains `4.3-2~ynh3` the function will return `4.3-2`
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_app_upstream_version () {
@@ -596,10 +641,9 @@ ynh_app_upstream_version () {
 # | arg: -m, --manifest=    - Path of the manifest to read
 # | ret: the version number of the package
 #
-# The version number in the manifest is defined by <upstreamversion>~ynh<packageversion>
-# For example : 4.3-2~ynh3
-# This include the number after ~ynh
-# In the last example it return 3
+# The version number in the manifest is defined by `<upstreamversion>~ynh<packageversion>`.
+#
+# For example, if the manifest contains `4.3-2~ynh3` the function will return `3`
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_app_package_version () {
@@ -616,18 +660,16 @@ ynh_app_package_version () {
 
 # Checks the app version to upgrade with the existing app version and returns:
 #
-# - UPGRADE_PACKAGE if only the YunoHost package has changed
-# - UPGRADE_APP otherwise
+# usage: ynh_check_app_version_changed
+# | ret: `UPGRADE_APP` if the upstream version changed, `UPGRADE_PACKAGE` otherwise.
 #
 # This helper should be used to avoid an upgrade of an app, or the upstream part
 # of it, when it's not needed
 #
-# To force an upgrade, even if the package is up to date,
-# you have to use the parameter --force (or -F).
-# example: sudo yunohost app upgrade MyApp --force
-#
-# usage: ynh_check_app_version_changed
-#
+# You can force an upgrade, even if the package is up to date, with the `--force` (or `-F`) argument :
+# ```
+# sudo yunohost app upgrade <appname> --force
+# ```
 # Requires YunoHost version 3.5.0 or higher.
 ynh_check_app_version_changed () {
     local return_value=${YNH_APP_UPGRADE_TYPE}
@@ -641,24 +683,23 @@ ynh_check_app_version_changed () {
 }
 
 # Compare the current package version against another version given as an argument.
-# This is really useful when we need to do some actions only for some old package versions.
+#
+# usage: ynh_compare_current_package_version --comparison (lt|le|eq|ne|ge|gt) --version <X~ynhY>
+# | arg: --comparison - Comparison type. Could be : `lt` (lower than), `le` (lower or equal), `eq` (equal), `ne` (not equal), `ge` (greater or equal), `gt` (greater than)
+# | arg: --version - The version to compare. Need to be a version in the yunohost package version type (like `2.3.1~ynh4`)
+# | ret: 0 if the evaluation is true, 1 if false.
 #
 # example: ynh_compare_current_package_version --comparison lt --version 2.3.2~ynh1
-# This example will check if the installed version is lower than (lt) the version 2.3.2~ynh1
 #
-# Generally you might probably use it as follow in the upgrade script
+# This helper is usually used when we need to do some actions only for some old package versions.
 #
+# Generally you might probably use it as follow in the upgrade script :
+# ```
 # if ynh_compare_current_package_version --comparison lt --version 2.3.2~ynh1
 # then
 #     # Do something that is needed for the package version older than 2.3.2~ynh1
 # fi
-#
-# usage: ynh_compare_current_package_version --comparison lt|le|eq|ne|ge|gt
-# | arg: --comparison - Comparison type. Could be : lt (lower than), le (lower or equal),
-# | eq (equal), ne (not equal), ge (greater or equal), gt (greater than)
-# | arg: --version - The version to compare. Need to be a version in the yunohost package version type (like 2.3.1~ynh4)
-#
-# Return 0 if the evaluation is true. 1 if false.
+# ```
 #
 # Requires YunoHost version 3.8.0 or higher.
 ynh_compare_current_package_version() {
@@ -679,7 +720,7 @@ ynh_compare_current_package_version() {
 
     # Check validity of the comparator
     if [[ ! $comparison =~ (lt|le|eq|ne|ge|gt) ]]; then
-        ynh_die --message="Invialid comparator must be : lt, le, eq, ne, ge, gt"
+        ynh_die --message="Invalid comparator must be : lt, le, eq, ne, ge, gt"
     fi
 
     # Return the return value of dpkg --compare-versions

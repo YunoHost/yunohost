@@ -28,7 +28,7 @@ import yaml
 import miniupnpc
 
 from moulinette import m18n
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils import process
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.text import prependlines
@@ -366,7 +366,7 @@ def firewall_upnp(action="status", no_refresh=False):
         if action == "status":
             no_refresh = True
     else:
-        raise YunohostError("action_invalid", action=action)
+        raise YunohostValidationError("action_invalid", action=action)
 
     # Refresh port mapping using UPnP
     if not no_refresh:

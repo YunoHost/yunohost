@@ -34,7 +34,7 @@ from glob import glob
 from datetime import datetime
 
 from moulinette import m18n
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, append_to_file, write_to_file
@@ -145,7 +145,7 @@ def service_remove(name):
     services = _get_services()
 
     if name not in services:
-        raise YunohostError("service_unknown", service=name)
+        raise YunohostValidationError("service_unknown", service=name)
 
     del services[name]
     try:
@@ -325,7 +325,7 @@ def service_status(names=[]):
         # Validate service names requested
         for name in names:
             if name not in services.keys():
-                raise YunohostError("service_unknown", service=name)
+                raise YunohostValidationError("service_unknown", service=name)
 
         # Filter only requested servivces
         services = {k: v for k, v in services.items() if k in names}
@@ -400,7 +400,7 @@ def _get_and_format_service_status(service, infos):
 
         translation_key = "service_description_%s" % service
         if m18n.key_exists(translation_key):
-            description = m18n.key_exists(translation_key)
+            description = m18n.n(translation_key)
         else:
             description = str(raw_status.get("Description", ""))
 
@@ -465,6 +465,7 @@ def _get_and_format_service_status(service, infos):
         if p.returncode == 0:
             output["configuration"] = "valid"
         else:
+            out = out.decode()
             output["configuration"] = "broken"
             output["configuration-details"] = out.strip().split("\n")
 
@@ -484,7 +485,7 @@ def service_log(name, number=50):
     number = int(number)
 
     if name not in services.keys():
-        raise YunohostError("service_unknown", service=name)
+        raise YunohostValidationError("service_unknown", service=name)
 
     log_list = services[name].get("log", [])
 
@@ -545,7 +546,7 @@ def service_regen_conf(
 
     for name in names:
         if name not in services.keys():
-            raise YunohostError("service_unknown", service=name)
+            raise YunohostValidationError("service_unknown", service=name)
 
     if names is []:
         names = list(services.keys())
@@ -568,7 +569,7 @@ def _run_service_command(action, service):
     """
     services = _get_services()
     if service not in services.keys():
-        raise YunohostError("service_unknown", service=service)
+        raise YunohostValidationError("service_unknown", service=service)
 
     possible_actions = [
         "start",

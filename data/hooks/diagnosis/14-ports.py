@@ -43,7 +43,7 @@ class PortsDiagnoser(Diagnoser):
         for ipversion in ipversions:
             try:
                 r = Diagnoser.remote_diagnosis(
-                    "check-ports", data={"ports": ports.keys()}, ipversion=ipversion
+                    "check-ports", data={"ports": list(ports)}, ipversion=ipversion
                 )
                 results[ipversion] = r["ports"]
             except Exception as e:

@@ -47,10 +47,11 @@ ynh_wait_dpkg_free() {
 
 # Check either a package is installed or not
 #
-# example: ynh_package_is_installed --package=yunohost && echo "ok"
+# example: ynh_package_is_installed --package=yunohost && echo "installed"
 #
 # usage: ynh_package_is_installed --package=name
 # | arg: -p, --package=     - the package name to check
+# | ret: 0 if the package is installed, 1 else.
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_package_is_installed() {
@@ -180,7 +181,7 @@ ynh_package_install_from_equivs () {
     # Build and install the package
     local TMPDIR=$(mktemp --directory)
 
-    # Force the compatibility level at 10, levels below are deprecated 
+    # Force the compatibility level at 10, levels below are deprecated
     echo 10 > /usr/share/equivs/template/debian/compat
 
     # Note that the cd executes into a sub shell
@@ -194,7 +195,7 @@ ynh_package_install_from_equivs () {
     LC_ALL=C dpkg --force-depends --install "./${pkgname}_${pkgversion}_all.deb" 2>&1 | tee ./dpkg_log)
 
     ynh_package_install --fix-broken || \
-        { # If the installation failed 
+        { # If the installation failed
         # (the following is ran inside { } to not start a subshell otherwise ynh_die wouldnt exit the original process)
         # Parse the list of problematic dependencies from dpkg's log ...
         # (relevant lines look like: "foo-ynh-deps depends on bar; however:")
@@ -216,7 +217,8 @@ ynh_package_install_from_equivs () {
 # example : ynh_install_app_dependencies dep1 dep2 "dep3|dep4|dep5"
 #
 # usage: ynh_install_app_dependencies dep [dep [...]]
-# | arg: dep - the package name to install in dependence. Writing "dep3|dep4|dep5" can be used to specify alternatives. For example : dep1 dep2 "dep3|dep4|dep5" will require to install dep1 and dep 2 and (dep3 or dep4 or dep5).
+# | arg: dep - the package name to install in dependence.
+# | arg: "dep1|dep2|…" - You can specify alternatives. It will require to install (dep1 or dep2, etc).
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_install_app_dependencies () {
@@ -224,13 +226,10 @@ ynh_install_app_dependencies () {
     # Add a comma for each space between packages. But not add a comma if the space separate a version specification. (See  below)
     dependencies="$(echo "$dependencies" | sed 's/\([^\<=\>]\)\ \([^(]\)/\1, \2/g')"
     local dependencies=${dependencies//|/ | }
-    local manifest_path="../manifest.json"
-    if [ ! -e "$manifest_path" ]; then
-        manifest_path="../settings/manifest.json"	# Into the restore script, the manifest is not at the same place
-    fi
+    local manifest_path="$YNH_APP_BASEDIR/manifest.json"
 
-    local version=$(grep '\"version\": ' "$manifest_path" | cut --delimiter='"' --fields=4)	# Retrieve the version number in the manifest file.
-    if [ ${#version} -eq 0 ]; then
+    local version=$(jq -r '.version' "$manifest_path")
+    if [ -z "${version}" ] || [ "$version" == "null" ]; then
         version="1.0"
     fi
     local dep_app=${app//_/-}	# Replace all '_' by '-'
@@ -253,7 +252,7 @@ ynh_install_app_dependencies () {
     # Epic ugly hack to fix the goddamn dependency nightmare of sury
     # Sponsored by the "Djeezusse Fokin Kraiste Why Do Adminsys Has To Be So Fucking Complicated I Should Go Grow Potatoes Instead Of This Shit" collective
     # https://github.com/YunoHost/issues/issues/1407
-    # 
+    #
     # If we require to install php dependency
     if echo $dependencies | grep --quiet 'php'
     then

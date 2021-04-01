@@ -12,15 +12,14 @@
 #
 # usage 2: ynh_add_fail2ban_config --use_template [--others_var="list of others variables to replace"]
 # | arg: -t, --use_template - Use this helper in template mode
-# | arg: -v, --others_var=  - List of others variables to replace separeted by a space
-# |                           for example : 'var_1 var_2 ...'
+# | arg: -v, --others_var=  - List of others variables to replace separeted by a space for example : 'var_1 var_2 ...'
 #
-# This will use a template in ../conf/f2b_jail.conf and ../conf/f2b_filter.conf
-# See the documentation of ynh_add_config for a description of the template
+# This will use a template in `../conf/f2b_jail.conf` and `../conf/f2b_filter.conf`
+# See the documentation of `ynh_add_config` for a description of the template
 # format and how placeholders are replaced with actual variables.
 #
 # Generally your template will look like that by example (for synapse):
-#
+# ```
 # f2b_jail.conf:
 #     [__APP__]
 #     enabled = true
@@ -28,7 +27,8 @@
 #     filter = __APP__
 #     logpath = /var/log/__APP__/logfile.log
 #     maxretry = 3
-#
+# ```
+# ```
 # f2b_filter.conf:
 #     [INCLUDES]
 #     before = common.conf
@@ -41,22 +41,25 @@
 #    failregex = ^%(__synapse_start_line)s INFO \- POST\-(\d+)\- <HOST> \- \d+ \- Received request\: POST /_matrix/client/r0/login\??<SKIPLINES>%(__synapse_start_line)s INFO \- POST\-\1\- Got login request with identifier: \{u'type': u'm.id.user', u'user'\: u'(.+?)'\}, medium\: None, address: None, user\: u'\5'<SKIPLINES>%(__synapse_start_line)s WARNING \- \- (Attempted to login as @\5\:.+ but they do not exist|Failed password login for user @\5\:.+)$
 #
 #     ignoreregex =
+# ```
 #
 # -----------------------------------------------------------------------------
 #
 # Note about the "failregex" option:
-#          regex to match the password failure messages in the logfile. The
-#          host must be matched by a group named "host". The tag "<HOST>" can
-#          be used for standard IP/hostname matching and is only an alias for
-#          (?:::f{4,6}:)?(?P<host>[\w\-.^_]+)
 #
-#          You can find some more explainations about how to make a regex here :
-#          https://www.fail2ban.org/wiki/index.php/MANUAL_0_8#Filters
+# regex to match the password failure messages in the logfile. The host must be
+# matched by a group named "`host`". The tag "`<HOST>`" can be used for standard
+# IP/hostname matching and is only an alias for `(?:::f{4,6}:)?(?P<host>[\w\-.^_]+)`
+#
+# You can find some more explainations about how to make a regex here :
+# https://www.fail2ban.org/wiki/index.php/MANUAL_0_8#Filters
 #
 # Note that the logfile need to exist before to call this helper !!
 #
 # To validate your regex you can test with this command:
+# ```
 # fail2ban-regex /var/log/YOUR_LOG_FILE_PATH /etc/fail2ban/filter.d/YOUR_APP.conf
+# ```
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_add_fail2ban_config () {
