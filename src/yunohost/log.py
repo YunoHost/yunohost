@@ -636,7 +636,7 @@ class OperationLogger(object):
         # we want to inject the log ref in the exception, such that it may be
         # transmitted to the webadmin which can then redirect to the appropriate
         # log page
-        if isinstance(error, Exception) and not isinstance(error, YunohostValidationError):
+        if self.started_at and isinstance(error, Exception) and not isinstance(error, YunohostValidationError):
             error.log_ref = self.name
 
         if self.ended_at is not None or self.started_at is None:
