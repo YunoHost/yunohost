@@ -21,12 +21,15 @@ function log_failed()
     echo "${BOLD}${RED}✘ Failed${NORMAL}"
 }
 
+# =========================================================
+
 source /usr/share/yunohost/helpers
 for TEST_SUITE in $(ls test_helpers.d/*)
 do
     source $TEST_SUITE
 done
 
+# Hack to list all known function, keep only those starting by ynhtest_
 TESTS=$(declare -F | grep ' ynhtest_' | awk '{print $3}')
 
 global_result=0
