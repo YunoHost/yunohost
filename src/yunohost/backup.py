@@ -2277,6 +2277,11 @@ def backup_restore(name, system=[], apps=[], force=False):
     # Initialize                                                            #
     #
 
+    if name.endswith(".tar.gz"):
+        name = name[:-len(".tar.gz")]
+    elif name.endswith(".tar"):
+        name = name[:-len(".tar")]
+
     restore_manager = RestoreManager(name)
 
     restore_manager.set_system_targets(system)
@@ -2409,6 +2414,12 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
+
+    if name.endswith(".tar.gz"):
+        name = name[:-len(".tar.gz")]
+    elif name.endswith(".tar"):
+        name = name[:-len(".tar")]
+
     archive_file = "%s/%s.tar" % (ARCHIVES_PATH, name)
 
     # Check file exist (even if it's a broken symlink)
