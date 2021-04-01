@@ -19,9 +19,8 @@ class MyMigration(Migration):
         Add new permissions around SSH/SFTP features
     """
 
-    required = True
-
-    def run(self):
+    @ldap_migration
+    def run(self, *args):
         logger.info(m18n.n("migration_0020_ssh_sftp_permissions"))
 
         from yunohost.utils.ldap import _get_ldap_interface
