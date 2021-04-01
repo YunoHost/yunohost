@@ -22,7 +22,7 @@ function log_failed()
 }
 
 source /usr/share/yunohost/helpers
-for TEST_SUITE in $(ls helpers.tests/*)
+for TEST_SUITE in $(ls test_helpers.d/*)
 do
     source $TEST_SUITE
 done
