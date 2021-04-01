@@ -1,15 +1,28 @@
-EXAMPLE_SRC="
-SOURCE_URL=https://github.com/Hextris/hextris/archive/8872ec47d694628e2fe668ebaa90b13d5626d95f.tar.gz
-SOURCE_SUM=67f3fbd54c405717a25fb1e6f71d2b46e94c7ac6971861dd99ae5e58f6609892
-"
+_make_dummy_src() {
+echo "test coucou"
+    if [ ! -e $HTTPSERVER_DIR/dummy.tar.gz ]
+    then
+        pushd "$HTTPSERVER_DIR"
+            mkdir dummy
+            pushd dummy
+            echo "Lorem Ipsum" > index.html
+            echo '{"foo": "bar"}' > conf.json
+            mkdir assets
+            echo '.some.css { }' > assets/main.css
+            echo 'var some="js";' > assets/main.js
+            popd
+            tar -czf dummy.tar.gz dummy
+        popd
+    fi
+    echo "SOURCE_URL=http://127.0.0.1:$HTTPSERVER_PORT/dummy.tar.gz"
+    echo "SOURCE_SUM=$(sha256sum $HTTPSERVER_DIR/dummy.tar.gz | awk '{print $1}')"
+}
 
 ynhtest_setup_source_nominal() {
-    mkdir -p /tmp/var/www/
-    final_path="$(mktemp -d -p /tmp/var/www)"
-    mkdir ../conf
-    echo "$EXAMPLE_SRC" > ../conf/test.src 
+    final_path="$(mktemp -d -p $VAR_WWW)"
+    _make_dummy_src > ../conf/dummy.src
     
-    ynh_setup_source --dest_dir="$final_path" --source_id="test"
+    ynh_setup_source --dest_dir="$final_path" --source_id="dummy"
 
     test -e "$final_path"
     test -e "$final_path/index.html"
@@ -17,41 +30,36 @@ ynhtest_setup_source_nominal() {
 
 
 ynhtest_setup_source_nominal_upgrade() {
-    mkdir -p /tmp/var/www/
-    final_path="$(mktemp -d -p /tmp/var/www)"
-    mkdir ../conf
-    echo "$EXAMPLE_SRC" > ../conf/test.src 
-    
-    ynh_setup_source --dest_dir="$final_path" --source_id="test"
+    final_path="$(mktemp -d -p $VAR_WWW)"
+    _make_dummy_src > ../conf/dummy.src
 
-    test -e "$final_path"
-    test -e "$final_path/index.html"
+    ynh_setup_source --dest_dir="$final_path" --source_id="dummy"
+
+    test "$(cat $final_path/index.html)" == "Lorem Ipsum"
+    echo $?
     
     # Except index.html to get overwritten during next ynh_setup_source
-    echo "HELLOWORLD" > $final_path/index.html
-    test "$(cat $final_path/index.html)" == "HELLOWORLD"
+    echo "IEditedYou!" > $final_path/index.html
+    test "$(cat $final_path/index.html)" == "IEditedYou!"
 
-    ynh_setup_source --dest_dir="$final_path" --source_id="test"
+    ynh_setup_source --dest_dir="$final_path" --source_id="dummy"
 
-    test "$(cat $final_path/index.html)" != "HELLOWORLD"
+    test "$(cat $final_path/index.html)" == "Lorem Ipsum"
 }
 
 
 ynhtest_setup_source_with_keep() {
-    mkdir -p /tmp/var/www/
-    final_path="$(mktemp -d -p /tmp/var/www)"
-    mkdir ../conf
-    echo "$EXAMPLE_SRC" > ../conf/test.src 
+    final_path="$(mktemp -d -p $VAR_WWW)"
+    _make_dummy_src > ../conf/dummy.src
 
-    echo "HELLOWORLD" > $final_path/index.html
-    echo "HELLOWORLD" > $final_path/test.conf.txt
+    echo "IEditedYou!" > $final_path/index.html
+    echo "IEditedYou!" > $final_path/test.txt
 
-    ynh_setup_source --dest_dir="$final_path" --source_id="test" --keep="index.html test.conf.txt"
+    ynh_setup_source --dest_dir="$final_path" --source_id="dummy" --keep="index.html test.txt"
 
     test -e "$final_path"
     test -e "$final_path/index.html"
-    test -e "$final_path/test.conf.txt"
-    test "$(cat $final_path/index.html)" == "HELLOWORLD"
-    test "$(cat $final_path/test.conf.txt)" == "HELLOWORLD"
+    test -e "$final_path/test.txt"
+    test "$(cat $final_path/index.html)" == "IEditedYou!"
+    test "$(cat $final_path/test.txt)" == "IEditedYou!"
 }
-

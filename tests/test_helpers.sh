@@ -21,6 +21,26 @@ function log_failed()
     echo "${BOLD}${RED}✘ Failed${NORMAL}"
 }
 
+function cleanup()
+{
+    [ -n "$HTTPSERVER" ] && kill "$HTTPSERVER"
+    [ -d "$HTTPSERVER_DIR" ] && rm -rf "$HTTPSERVER_DIR"
+    [ -d "$VAR_WWW" ] && rm -rf "$VAR_WWW"
+}
+trap cleanup EXIT SIGINT
+
+# =========================================================
+
+# Dummy http server, to serve archives for ynh_setup_source
+HTTPSERVER_DIR=$(mktemp -d)
+HTTPSERVER_PORT=1312
+pushd "$HTTPSERVER_DIR"
+python -m SimpleHTTPServer $HTTPSERVER_PORT &>/dev/null &
+HTTPSERVER="$!"
+popd
+
+VAR_WWW=$(mktemp -d)/var/www
+mkdir -p $VAR_WWW
 # =========================================================
 
 source /usr/share/yunohost/helpers
@@ -34,19 +54,27 @@ TESTS=$(declare -F | grep ' ynhtest_' | awk '{print $3}')
 
 global_result=0
 
+echo $TESTS
+
 for TEST in $TESTS
 do
     log_test $TEST
     cd $(mktemp -d)
     (app=ynhtest
      YNH_APP_ID=$app
+     mkdir conf
      mkdir scripts
      cd scripts
-     set -eu
+     set -eux
      $TEST
-    ) > ./test.log 2>&1 \
-    && log_passed \
-    || { echo -e "\n----------"; cat ./test.log; echo -e "----------"; log_failed; global_result=1; }
+    ) > ./test.log 2>&1
+
+    if [[ $? == 0 ]]
+    then
+        set +x; log_passed;
+    else
+        set +x; echo -e "\n----------"; cat ./test.log; echo -e "----------"; log_failed; global_result=1;
+    fi
 done
 
 exit $global_result
