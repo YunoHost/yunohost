@@ -19,25 +19,19 @@ class MyMigration(Migration):
         Add new permissions around SSH/SFTP features
     """
 
+    dependencies = ["extend_permissions_features"]
+
     @ldap_migration
     def run(self, *args):
-        logger.info(m18n.n("migration_0020_ssh_sftp_permissions"))
 
         from yunohost.utils.ldap import _get_ldap_interface
         ldap = _get_ldap_interface()
 
-        add_perm_to_users = False
-
         # Add SSH and SFTP permissions
         ldap_map = read_yaml('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml')
-        for rdn, attr_dict in ldap_map['depends_children'].items():
-            try:
-                ldap.search(rdn + ",dc=yunohost,dc=org")
-            # ldap search will raise an exception if no corresponding object is found >.> ...
-            except Exception:
-                if rdn == "cn=ssh.main,ou=permission":
-                    add_perm_to_users = True
-                ldap.add(rdn, attr_dict)
+
+        ldap.add("cn=ssh.main,ou=permission", ldap_map['depends_children']["cn=ssh.main,ou=permission"])
+        ldap.add("cn=sftp.main,ou=permission", ldap_map['depends_children']["cn=sftp.main,ou=permission"])
 
         # Add a bash terminal to each users
         users = ldap.search('ou=users,dc=yunohost,dc=org', filter="(loginShell=*)", attrs=["dn", "uid", "loginShell"])
@@ -45,8 +39,11 @@ class MyMigration(Migration):
             if user['loginShell'][0] == '/bin/false':
                 dn=user['dn'][0].replace(',dc=yunohost,dc=org', '')
                 ldap.update(dn, {'loginShell': ['/bin/bash']})
-            elif add_perm_to_users:
+            else:
                 user_permission_update("ssh.main", add=user["uid"][0], sync_perm=False)
+
+        permission_sync_to_user()
+
 
         # Somehow this is needed otherwise the PAM thing doesn't forget about the
         # old loginShell value ?

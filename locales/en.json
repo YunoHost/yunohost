@@ -451,7 +451,6 @@
     "migration_0018_failed_to_reset_legacy_rules": "Failed to reset legacy iptables rules: {error}",
     "migration_0019_add_new_attributes_in_ldap": "Add new attributes for permissions in LDAP database",
     "migration_0019_slapd_config_will_be_overwritten": "It looks like you manually edited the slapd configuration. For this critical migration, YunoHost needs to force the update of the slapd configuration. The original files will be backuped in {conf_backup_folder}.",
-    "migration_0020_ssh_sftp_permissions": "SSH/SFTP permissions",
     "migrations_already_ran": "Those migrations are already done: {ids}",
     "migrations_cant_reach_migration_file": "Could not access migrations files at the path '%s'",
     "migrations_dependencies_not_satisfied": "Run these migrations: '{dependencies_id}', before migration {id}.",
