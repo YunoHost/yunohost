@@ -47,8 +47,6 @@ from moulinette.utils.filesystem import (
     write_to_file,
     write_to_json,
     write_to_yaml,
-    chmod,
-    chown,
     mkdir,
 )
 
