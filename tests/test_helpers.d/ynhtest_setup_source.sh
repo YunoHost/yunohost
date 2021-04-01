@@ -28,7 +28,6 @@ ynhtest_setup_source_nominal() {
     test -e "$final_path/index.html"
 }
 
-
 ynhtest_setup_source_nominal_upgrade() {
     final_path="$(mktemp -d -p $VAR_WWW)"
     _make_dummy_src > ../conf/dummy.src
@@ -36,7 +35,6 @@ ynhtest_setup_source_nominal_upgrade() {
     ynh_setup_source --dest_dir="$final_path" --source_id="dummy"
 
     test "$(cat $final_path/index.html)" == "Lorem Ipsum"
-    echo $?
     
     # Except index.html to get overwritten during next ynh_setup_source
     echo "IEditedYou!" > $final_path/index.html
@@ -62,4 +60,22 @@ ynhtest_setup_source_with_keep() {
     test -e "$final_path/test.txt"
     test "$(cat $final_path/index.html)" == "IEditedYou!"
     test "$(cat $final_path/test.txt)" == "IEditedYou!"
+}
+
+ynhtest_setup_source_with_patch() {
+    final_path="$(mktemp -d -p $VAR_WWW)"
+    _make_dummy_src > ../conf/dummy.src
+
+    mkdir -p ../sources/patches
+    cat > ../sources/patches/dummy-index.html.patch << EOF
+--- a/index.html
++++ b/index.html
+@@ -1 +1,1 @@
+-Lorem Ipsum
++Lorem Ipsum dolor sit amet
+EOF
+
+    ynh_setup_source --dest_dir="$final_path" --source_id="dummy"
+
+    test "$(cat $final_path/index.html)" == "Lorem Ipsum dolor sit amet"
 }

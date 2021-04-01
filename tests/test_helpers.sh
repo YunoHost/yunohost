@@ -34,10 +34,10 @@ trap cleanup EXIT SIGINT
 # Dummy http server, to serve archives for ynh_setup_source
 HTTPSERVER_DIR=$(mktemp -d)
 HTTPSERVER_PORT=1312
-pushd "$HTTPSERVER_DIR"
+pushd "$HTTPSERVER_DIR" >/dev/null
 python -m SimpleHTTPServer $HTTPSERVER_PORT &>/dev/null &
 HTTPSERVER="$!"
-popd
+popd >/dev/null
 
 VAR_WWW=$(mktemp -d)/var/www
 mkdir -p $VAR_WWW
@@ -53,8 +53,6 @@ done
 TESTS=$(declare -F | grep ' ynhtest_' | awk '{print $3}')
 
 global_result=0
-
-echo $TESTS
 
 for TEST in $TESTS
 do
