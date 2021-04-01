@@ -498,6 +498,7 @@
     "permission_created": "Permission '{permission:s}' created",
     "permission_creation_failed": "Could not create permission '{permission}': {error}",
     "permission_currently_allowed_for_all_users": "This permission is currently granted to all users in addition to other groups. You probably want to either remove the 'all_users' permission or remove the other groups it is currently granted to.",
+    "permission_cant_add_to_all_users": "The permission {permission} can not be added to all users.",
     "permission_deleted": "Permission '{permission:s}' deleted",
     "permission_deletion_failed": "Could not delete permission '{permission}': {error}",
     "permission_not_found": "Permission '{permission:s}' not found",
