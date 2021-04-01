@@ -29,6 +29,8 @@ done
 
 TESTS=$(declare -F | grep ' ynhtest_' | awk '{print $3}')
 
+global_result=0
+
 for TEST in $TESTS
 do
     log_test $TEST
@@ -41,5 +43,7 @@ do
      $TEST
     ) > ./test.log 2>&1 \
     && log_passed \
-    || { echo -e "\n----------"; cat ./test.log; echo -e "----------"; log_failed;  }
+    || { echo -e "\n----------"; cat ./test.log; echo -e "----------"; log_failed; global_result=1; }
 done
+
+exit $global_result
