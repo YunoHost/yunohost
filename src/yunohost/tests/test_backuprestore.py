@@ -107,7 +107,8 @@ def teardown_function(function):
 
     if "with_custom_domain" in markers:
         domain = markers["with_custom_domain"]["args"][0]
-        domain_remove(domain)
+        if domain != maindomain:
+            domain_remove(domain)
 
 
 @pytest.fixture(autouse=True)
