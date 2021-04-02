@@ -1,12 +1,10 @@
 import os
 from moulinette import m18n
-from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import write_to_json, read_yaml
 
-from yunohost.user import user_list, user_group_create, user_group_update
+from yunohost.user import user_list
 from yunohost.app import (
-    app_setting,
     _installed_apps,
     _get_app_settings,
     _set_app_settings,

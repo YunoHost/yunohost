@@ -1219,7 +1219,6 @@ class RestoreManager:
         if system_targets == []:
             return
 
-        from yunohost.user import user_group_list
         from yunohost.permission import (
             permission_create,
             permission_delete,
@@ -1341,7 +1340,6 @@ class RestoreManager:
                              name should be already install)
         """
         from yunohost.user import user_group_list
-        from yunohost.app import app_setting
         from yunohost.permission import (
             permission_create,
             permission_delete,
