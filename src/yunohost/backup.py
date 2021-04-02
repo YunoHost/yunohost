@@ -1282,17 +1282,8 @@ class RestoreManager:
 
         regen_conf()
 
-        # Check that at least a group exists (all_users) to know if we need to
-        # do the migration 0011 : setup group and permission
-        #
-        # Legacy code
-        if "all_users" not in user_group_list()["groups"].keys():
-            from yunohost.utils.legacy import SetupGroupPermissions
-
-            # Update LDAP schema restart slapd
-            logger.info(m18n.n("migration_0011_update_LDAP_schema"))
-            regen_conf(names=["slapd"], force=True)
-            SetupGroupPermissions.migrate_LDAP_db()
+        # TODO : here, we should have a way to go through all migrations
+        # and apply stuff if needed
 
         # Remove all permission for all app which is still in the LDAP
         for permission_name in user_permission_list(ignore_system_perms=True)[
@@ -1425,50 +1416,45 @@ class RestoreManager:
             restore_script = os.path.join(tmp_folder_for_app_restore, "restore")
 
             # Restore permissions
-            if os.path.isfile("%s/permissions.yml" % app_settings_new_path):
+            if not os.path.isfile("%s/permissions.yml" % app_settings_new_path):
+                raise YunohostError("Didnt find a permssions.yml for the app !?", raw_msg=True)
 
-                permissions = read_yaml("%s/permissions.yml" % app_settings_new_path)
-                existing_groups = user_group_list()["groups"]
+            permissions = read_yaml("%s/permissions.yml" % app_settings_new_path)
+            existing_groups = user_group_list()["groups"]
 
-                for permission_name, permission_infos in permissions.items():
+            for permission_name, permission_infos in permissions.items():
 
-                    if "allowed" not in permission_infos:
-                        logger.warning(
-                            "'allowed' key corresponding to allowed groups for permission %s not found when restoring app %s … You might have to reconfigure permissions yourself."
-                            % (permission_name, app_instance_name)
-                        )
-                        should_be_allowed = ["all_users"]
-                    else:
-                        should_be_allowed = [
-                            g
-                            for g in permission_infos["allowed"]
-                            if g in existing_groups
-                        ]
-
-                    perm_name = permission_name.split(".")[1]
-                    permission_create(
-                        permission_name,
-                        allowed=should_be_allowed,
-                        url=permission_infos.get("url"),
-                        additional_urls=permission_infos.get("additional_urls"),
-                        auth_header=permission_infos.get("auth_header"),
-                        label=permission_infos.get("label")
-                        if perm_name == "main"
-                        else permission_infos.get("sublabel"),
-                        show_tile=permission_infos.get("show_tile", True),
-                        protected=permission_infos.get("protected", False),
-                        sync_perm=False,
+                if "allowed" not in permission_infos:
+                    logger.warning(
+                        "'allowed' key corresponding to allowed groups for permission %s not found when restoring app %s … You might have to reconfigure permissions yourself."
+                        % (permission_name, app_instance_name)
                     )
+                    should_be_allowed = ["all_users"]
+                else:
+                    should_be_allowed = [
+                        g
+                        for g in permission_infos["allowed"]
+                        if g in existing_groups
+                    ]
 
-                permission_sync_to_user()
+                perm_name = permission_name.split(".")[1]
+                permission_create(
+                    permission_name,
+                    allowed=should_be_allowed,
+                    url=permission_infos.get("url"),
+                    additional_urls=permission_infos.get("additional_urls"),
+                    auth_header=permission_infos.get("auth_header"),
+                    label=permission_infos.get("label")
+                    if perm_name == "main"
+                    else permission_infos.get("sublabel"),
+                    show_tile=permission_infos.get("show_tile", True),
+                    protected=permission_infos.get("protected", False),
+                    sync_perm=False,
+                )
 
-                os.remove("%s/permissions.yml" % app_settings_new_path)
-            else:
-                # Otherwise, we need to migrate the legacy permissions of this
-                # app (included in its settings.yml)
-                from yunohost.utils.legacy import SetupGroupPermissions
+            permission_sync_to_user()
 
-                SetupGroupPermissions.migrate_app_permission(app=app_instance_name)
+            os.remove("%s/permissions.yml" % app_settings_new_path)
 
             # Migrate old settings
             legacy_permission_settings = [
