@@ -36,6 +36,7 @@ from datetime import datetime
 from glob import glob
 from collections import OrderedDict
 from functools import reduce
+from packaging import version
 
 from moulinette import msignals, m18n, msettings
 from moulinette.utils import filesystem
@@ -858,6 +859,9 @@ class RestoreManager:
         # FIXME this way to get the info is not compatible with copy or custom
         # backup methods
         self.info = backup_info(name, with_details=True)
+        if not self.info["from_yunohost_version"] or version.parse(self.info["from_yunohost_version"]) < version.parse("3.8.0"):
+            raise YunohostValidationError("restore_backup_too_old")
+
         self.archive_path = self.info["path"]
         self.name = name
         self.method = BackupMethod.create(method, self)
@@ -2530,6 +2534,7 @@ def backup_info(name, with_details=False, human_readable=False):
 
         result["apps"] = info["apps"]
         result["system"] = info[system_key]
+        result["from_yunohost_version"] = info.get("from_yunohost_version")
     return result
 
 

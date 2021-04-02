@@ -528,6 +528,7 @@
     "restore_already_installed_app": "An app with the ID '{app:s}' is already installed",
     "restore_already_installed_apps": "The following apps can't be restored because they are already installed: {apps}",
     "restore_app_failed": "Could not restore {app:s}",
+    "restore_backup_too_old": "This backup archive can not be restored because it comes from a too-old YunoHost version.",
     "restore_cleaning_failed": "Could not clean up the temporary restoration directory",
     "restore_complete": "Restoration completed",
     "restore_confirm_yunohost_installed": "Do you really want to restore an already installed system? [{answers:s}]",
