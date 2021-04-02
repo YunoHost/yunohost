@@ -36,7 +36,7 @@ class MyMigration(Migration):
             )
 
         # Update LDAP schema restart slapd
-        logger.info(m18n.n("migration_0011_update_LDAP_schema"))
+        logger.info(m18n.n("migration_update_LDAP_schema"))
         regen_conf(names=["slapd"], force=True)
 
         logger.info(m18n.n("migration_0019_add_new_attributes_in_ldap"))
