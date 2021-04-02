@@ -1121,7 +1121,7 @@ def _tools_migrations_run_after_system_restore(backup_version):
                 raise
 
 
-def _tools_migrations_run_after_system_restore(backup_version, app_id):
+def _tools_migrations_run_before_app_restore(backup_version, app_id):
 
     all_migrations = _get_migrations_list()
 
