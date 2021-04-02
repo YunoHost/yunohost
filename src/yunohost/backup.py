@@ -61,7 +61,7 @@ from yunohost.hook import (
     hook_exec,
     CUSTOM_HOOK_FOLDER,
 )
-from yunohost.tools import tools_postinstall
+from yunohost.tools import tools_postinstall, _tools_migrations_run_after_system_restore, _tools_migrations_run_before_app_restore
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -1282,16 +1282,15 @@ class RestoreManager:
 
         regen_conf()
 
-        # TODO : here, we should have a way to go through all migrations
-        # and apply stuff if needed
+        _tools_migrations_run_after_system_restore(backup_version=self.info["from_yunohost_version"])
 
-        # Remove all permission for all app which is still in the LDAP
+        # Remove all permission for all app still in the LDAP
         for permission_name in user_permission_list(ignore_system_perms=True)[
             "permissions"
         ].keys():
             permission_delete(permission_name, force=True, sync_perm=False)
 
-        # Restore permission for the app which is installed
+        # Restore permission for apps installed
         for permission_name, permission_infos in old_apps_permission.items():
             app_name, perm_name = permission_name.split(".")
             if _is_installed(app_name):
@@ -1456,22 +1455,7 @@ class RestoreManager:
 
             os.remove("%s/permissions.yml" % app_settings_new_path)
 
-            # Migrate old settings
-            legacy_permission_settings = [
-                "skipped_uris",
-                "unprotected_uris",
-                "protected_uris",
-                "skipped_regex",
-                "unprotected_regex",
-                "protected_regex",
-            ]
-            if any(
-                app_setting(app_instance_name, setting) is not None
-                for setting in legacy_permission_settings
-            ):
-                from yunohost.utils.legacy import migrate_legacy_permission_settings
-
-                migrate_legacy_permission_settings(app=app_instance_name)
+            _tools_migrations_run_before_app_restore(backup_version=self.info["from_yunohost_version"], app_id=app_instance_name)
 
             # Prepare env. var. to pass to script
             env_dict = _make_environment_for_app_script(app_instance_name)

@@ -78,6 +78,32 @@ class MyMigration(Migration):
 
             ldap.update("cn=%s,ou=permission" % permission, update)
 
+    introduced_in_version = "4.1"
+
+    def run_after_system_restore(self):
+        # Update LDAP database
+        self.add_new_ldap_attributes()
+
+    def run_before_system_restore(self, app_id):
+        from yunohost.app import app_setting
+        from yunohost.utils.legacy import migrate_legacy_permission_settings
+
+        # Migrate old settings
+        legacy_permission_settings = [
+            "skipped_uris",
+            "unprotected_uris",
+            "protected_uris",
+            "skipped_regex",
+            "unprotected_regex",
+            "protected_regex",
+        ]
+        if any(
+            app_setting(app_id, setting) is not None
+            for setting in legacy_permission_settings
+        ):
+            migrate_legacy_permission_settings(app=app_id)
+
+
     def run(self):
 
         # FIXME : what do we really want to do here ...
