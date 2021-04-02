@@ -640,13 +640,13 @@ def test_restore_archive_with_bad_archive(mocker):
 
     # Break the archive
     os.system(
-        "head -n 1000 /home/yunohost.backup/archives/backup_wordpress_from_3p8.tar.gz > /home/yunohost.backup/archives/backup_wordpress_from_3p8.tar.gz"
+        "head -n 1000 /home/yunohost.backup/archives/backup_wordpress_from_3p8.tar.gz > /home/yunohost.backup/archives/backup_wordpress_from_3p8_bad.tar.gz"
     )
 
-    assert "backup_wordpress_from_3p8" in backup_list()["archives"]
+    assert "backup_wordpress_from_3p8_bad" in backup_list()["archives"]
 
-    with raiseYunohostError(mocker, "backup_archive_open_failed"):
-        backup_restore(name="backup_wordpress_from_3p8", force=True)
+    with raiseYunohostError(mocker, "backup_archive_corrupted"):
+        backup_restore(name="backup_wordpress_from_3p8_bad", force=True)
 
     clean_tmp_backup_directory()
 

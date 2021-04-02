@@ -2418,7 +2418,7 @@ def backup_info(name, with_details=False, human_readable=False):
 
         try:
             files_in_archive = tar.getnames()
-        except IOError as e:
+        except (IOError, EOFError) as e:
             raise YunohostError(
                 "backup_archive_corrupted", archive=archive_file, error=str(e)
             )
@@ -2532,6 +2532,8 @@ def backup_delete(name):
         files_to_delete.append(actual_archive)
 
     for backup_file in files_to_delete:
+        if not os.path.exists(backup_file):
+            continue
         try:
             os.remove(backup_file)
         except Exception:
