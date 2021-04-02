@@ -222,14 +222,6 @@ def add_archive_wordpress_from_3p8():
 
     os.system(
         "cp "
-        + os.path.join(
-            get_test_apps_dir(), "backup_wordpress_from_3p8/backup.info.json"
-        )
-        + " /home/yunohost.backup/archives/backup_wordpress_from_3p8.info.json"
-    )
-
-    os.system(
-        "cp "
         + os.path.join(get_test_apps_dir(), "backup_wordpress_from_3p8/backup.tar.gz")
         + " /home/yunohost.backup/archives/backup_wordpress_from_3p8.tar.gz"
     )
@@ -238,12 +230,6 @@ def add_archive_wordpress_from_3p8():
 def add_archive_system_from_3p8():
 
     os.system("mkdir -p /home/yunohost.backup/archives")
-
-    os.system(
-        "cp "
-        + os.path.join(get_test_apps_dir(), "backup_system_from_3p8/backup.info.json")
-        + " /home/yunohost.backup/archives/backup_system_from_3p8.info.json"
-    )
 
     os.system(
         "cp "
