@@ -793,25 +793,28 @@ class BackupManager:
             self.size_details["apps"][app_key] = 0
 
         for row in self.paths_to_backup:
-            if row["dest"] != "info.json":
-                size = disk_usage(row["source"])
+            if row["dest"] == "info.json":
+                continue
 
-                # Add size to apps details
-                splitted_dest = row["dest"].split("/")
-                category = splitted_dest[0]
-                if category == "apps":
-                    for app_key in self.apps_return:
-                        if row["dest"].startswith("apps/" + app_key):
-                            self.size_details["apps"][app_key] += size
-                            break
-                # OR Add size to the correct system element
-                elif category == "data" or category == "conf":
-                    for system_key in self.system_return:
-                        if row["dest"].startswith(system_key.replace("_", "/")):
-                            self.size_details["system"][system_key] += size
-                            break
+            size = disk_usage(row["source"])
 
-                self.size += size
+            # Add size to apps details
+            splitted_dest = row["dest"].split("/")
+            category = splitted_dest[0]
+            if category == "apps":
+                for app_key in self.apps_return:
+                    if row["dest"].startswith("apps/" + app_key):
+                        self.size_details["apps"][app_key] += size
+                        break
+
+            # OR Add size to the correct system element
+            elif category == "data" or category == "conf":
+                for system_key in self.system_return:
+                    if row["dest"].startswith(system_key.replace("_", "/")):
+                        self.size_details["system"][system_key] += size
+                        break
+
+            self.size += size
 
         return self.size
 
