@@ -3451,14 +3451,15 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     # Wait if a service is reloading
     test_nb = 0
-    while test_nb < 10:
+    while test_nb < 16:
         if not any(s for s in services if service_status(s)["status"] == "reloading"):
             break
         time.sleep(0.5)
         test_nb+=1
 
     # List services currently down and raise an exception if any are found
-    faulty_services = [s for s in services if service_status(s)["status"] != "running"]
+    services_status = {s:service_status(s) for s in services}
+    faulty_services = [f"{s} ({status['status']})" for s, status in services_status.items() if status['status'] != "running"]
     if faulty_services:
         if when == "pre":
             raise YunohostValidationError(
