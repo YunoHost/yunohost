@@ -467,13 +467,13 @@ def test_restore_app_script_failure_handling(monkeypatch, mocker):
     def custom_hook_exec(name, *args, **kwargs):
         if os.path.basename(name).startswith("restore"):
             monkeypatch.undo()
-            raise Exception
+            return (1, None)
 
     monkeypatch.setattr("yunohost.backup.hook_exec", custom_hook_exec)
 
     assert not _is_installed("wordpress")
 
-    with message(mocker, "app_restore_failed", app="wordpress"):
+    with message(mocker, "app_restore_script_failed"):
         with raiseYunohostError(mocker, "restore_nothings_done"):
             backup_restore(
                 system=None, name=backup_list()["archives"][0], apps=["wordpress"]
