@@ -538,8 +538,8 @@ class BackupManager:
         # Add unlisted files from backup tmp dir
         self._add_to_list_to_backup("backup.csv")
         self._add_to_list_to_backup("info.json")
-        if len(self.apps_return) > 0:
-            self._add_to_list_to_backup("apps")
+        for app in self.apps_return.keys():
+            self._add_to_list_to_backup(f"apps/{app}")
         if os.path.isdir(os.path.join(self.work_dir, "conf")):
             self._add_to_list_to_backup("conf")
         if os.path.isdir(os.path.join(self.work_dir, "data")):
