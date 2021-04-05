@@ -761,9 +761,9 @@ ynh_compare_current_package_version() {
 _ynh_apply_default_permissions() {
     local target=$1
 
-    local ynh_requirement=$(jq -r '.requirements.yunohost' $YNH_APP_BASEDIR/manifest.json)
+    local ynh_requirement=$(jq -r '.requirements.yunohost' $YNH_APP_BASEDIR/manifest.json | tr -d '>= ')
 
-    if [ -z "$ynh_requirements" ] || [ "$ynh_requirements" == "null" ] || dpkg --compare-versions $ynh_requirements ge 4.2
+    if [ -z "$ynh_requirement" ] || [ "$ynh_requirement" == "null" ] || dpkg --compare-versions $ynh_requirement ge 4.2
     then
         chmod o-rwx $target
         chmod g-w $target
