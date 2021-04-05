@@ -222,15 +222,18 @@ ynh_setup_source () {
     fi
 
     # Apply patches
-    local patches_folder=$(realpath $YNH_APP_BASEDIR/sources/patches/)
-    if (( $(find $patches_folder -type f -name "${source_id}-*.patch" 2> /dev/null | wc --lines) > "0" ))
+    if [ -d "$YNH_APP_BASEDIR/sources/patches/" ]
     then
-        (cd "$dest_dir"
-        for p in $patches_folder/${source_id}-*.patch
-        do
-            echo $p
-            patch --strip=1 < $p
-        done) || ynh_die --message="Unable to apply patches"
+        local patches_folder=$(realpath $YNH_APP_BASEDIR/sources/patches/)
+        if (( $(find $patches_folder -type f -name "${source_id}-*.patch" 2> /dev/null | wc --lines) > "0" ))
+        then
+            (cd "$dest_dir"
+            for p in $patches_folder/${source_id}-*.patch
+            do
+                echo $p
+                patch --strip=1 < $p
+            done) || ynh_die --message="Unable to apply patches"
+        fi
     fi
 
     # Add supplementary files
