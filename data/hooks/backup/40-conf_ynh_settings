@@ -11,3 +11,4 @@ backup_dir="${1}/conf/ynh"
 
 # Backup the configuration
 ynh_backup "/etc/yunohost/current_host" "${backup_dir}/current_host"
+[ ! -e "/etc/yunohost/settings.json" ] || ynh_backup "/etc/yunohost/settings.json" "${backup_dir}/settings.json"
