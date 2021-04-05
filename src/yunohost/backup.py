@@ -2138,7 +2138,7 @@ class CustomBackupMethod(BackupMethod):
 @is_unit_operation()
 def backup_create(
     operation_logger,
-    name=None, description=None, methods=[], output_directory=None, system=[], apps=[]
+    name=None, description=None, methods=[], output_directory=None, system=[], apps=[], dry_run=False
 ):
     """
     Create a backup local archive
@@ -2220,8 +2220,15 @@ def backup_create(
     # Collect files to be backup (by calling app backup script / system hooks)
     backup_manager.collect_files()
 
+    if dry_run:
+        return {
+            "size": backup_manager.size,
+            "size_details": backup_manager.size_details
+        }
+
     # Apply backup methods on prepared files
     logger.info(m18n.n("backup_actually_backuping"))
+    logger.info(m18n.n("backup_create_size_estimation", size=binary_to_human(backup_manager.size) + "B"))
     backup_manager.backup()
 
     logger.success(m18n.n("backup_created"))

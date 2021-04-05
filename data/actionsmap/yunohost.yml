@@ -890,6 +890,9 @@ backup:
                 --apps:
                     help: List of application names to backup (or all if none given)
                     nargs: "*"
+                --dry-run:
+                    help: "'Simulate' the backup and return the size details per item to backup"
+                    action: store_true
 
         ### backup_restore()
         restore:
