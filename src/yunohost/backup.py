@@ -63,7 +63,7 @@ from yunohost.hook import (
 )
 from yunohost.tools import tools_postinstall, _tools_migrations_run_after_system_restore, _tools_migrations_run_before_app_restore
 from yunohost.regenconf import regen_conf
-from yunohost.log import OperationLogger
+from yunohost.log import OperationLogger, is_unit_operation
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.settings import settings_get
@@ -2135,7 +2135,9 @@ class CustomBackupMethod(BackupMethod):
 #
 
 
+@is_unit_operation()
 def backup_create(
+    operation_logger,
     name=None, description=None, methods=[], output_directory=None, system=[], apps=[]
 ):
     """
@@ -2191,6 +2193,8 @@ def backup_create(
     # Intialize                                                             #
     #
 
+    operation_logger.start()
+
     # Create yunohost archives directory if it does not exists
     _create_archive_dir()
 
@@ -2205,6 +2209,10 @@ def backup_create(
     backup_manager.set_system_targets(system)
     backup_manager.set_apps_targets(apps)
 
+    for app in backup_manager.targets.list("apps", exclude=["Skipped"]):
+        operation_logger.related_to.append(("app", app))
+    operation_logger.flush()
+
     #
     # Collect files and put them in the archive                             #
     #
@@ -2217,6 +2225,7 @@ def backup_create(
     backup_manager.backup()
 
     logger.success(m18n.n("backup_created"))
+    operation_logger.success()
 
     return {
         "name": backup_manager.name,
