@@ -170,7 +170,7 @@
     "port_already_closed": "Lo pòrt {port:d} es ja tampat per las connexions {ip_version:s}",
     "port_already_opened": "Lo pòrt {port:d} es ja dubèrt per las connexions {ip_version:s}",
     "restore_already_installed_app": "Una aplicacion es ja installada amb l’id « {app:s} »",
-    "restore_app_failed": "Impossible de restaurar l’aplicacion « {app:s} »",
+    "app_restore_failed": "Impossible de restaurar l’aplicacion « {app:s} »: {error:s}",
     "backup_ask_for_copying_if_needed": "Volètz far una salvagarda en utilizant {size:s} Mo temporàriament ? (Aqueste biais de far es emplegat perque unes fichièrs an pas pogut èsser preparats amb un metòde mai eficaç.)",
     "yunohost_not_installed": "YunoHost es pas installat o corrèctament installat. Mercés d’executar « yunohost tools postinstall »",
     "backup_output_directory_forbidden": "Causissètz un repertòri de destinacion deferent. Las salvagardas pòdon pas se realizar dins los repertòris bin, /boot, /dev, /etc, /lib, /root, /run, /sbin, /sys, /usr, /var ou /home/yunohost.backup/archives",
