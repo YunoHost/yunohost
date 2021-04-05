@@ -50,5 +50,5 @@ slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org \
   || die 2 "Unable to restore LDAP database"
 chown -R openldap: /var/lib/ldap
 
-service slapd start
+systemctl start slapd
 rm -rf "$TMPDIR"
