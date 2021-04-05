@@ -29,6 +29,7 @@ import yaml
 import subprocess
 import pwd
 from importlib import import_module
+from packaging import version
 
 from moulinette import msignals, m18n
 from moulinette.utils.log import getActionLogger
@@ -1099,6 +1100,44 @@ def _skip_all_migrations():
     for migration in all_migrations:
         new_states["migrations"][migration.id] = "skipped"
     write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
+
+
+def _tools_migrations_run_after_system_restore(backup_version):
+
+    all_migrations = _get_migrations_list()
+
+    for migration in all_migrations:
+        if hasattr(migration, "introduced_in_version") \
+           and version.parse(migration.introduced_in_version) > version.parse(backup_version) \
+           and hasattr(migration, "run_after_system_restore"):
+            try:
+                logger.info(m18n.n("migrations_running_forward", id=migration.id))
+                migration.run_after_system_restore()
+            except Exception as e:
+                msg = m18n.n(
+                    "migrations_migration_has_failed", exception=e, id=migration.id
+                )
+                logger.error(msg, exc_info=1)
+                raise
+
+
+def _tools_migrations_run_before_app_restore(backup_version, app_id):
+
+    all_migrations = _get_migrations_list()
+
+    for migration in all_migrations:
+        if hasattr(migration, "introduced_in_version") \
+           and version.parse(migration.introduced_in_version) > version.parse(backup_version) \
+           and hasattr(migration, "run_before_app_restore"):
+            try:
+                logger.info(m18n.n("migrations_running_forward", id=migration.id))
+                migration.run_before_app_restore(app_id)
+            except Exception as e:
+                msg = m18n.n(
+                    "migrations_migration_has_failed", exception=e, id=migration.id
+                )
+                logger.error(msg, exc_info=1)
+                raise
 
 
 class Migration(object):
