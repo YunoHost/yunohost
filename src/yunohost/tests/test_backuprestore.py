@@ -427,7 +427,7 @@ def test_backup_with_different_output_directory(mocker):
     archives_info = backup_info(archives[0], with_details=True)
     assert archives_info["apps"] == {}
     assert len(archives_info["system"].keys()) == 1
-    assert "conf_ssh" in archives_info["system"].keys()
+    assert "conf_ynh_settings" in archives_info["system"].keys()
 
 
 @pytest.mark.clean_opt_dir
@@ -675,7 +675,7 @@ def test_backup_binds_are_readonly(mocker, monkeypatch):
     def custom_mount_and_backup(self):
         self._organize_files()
 
-        conf = os.path.join(self.work_dir, "conf/")
+        conf = os.path.join(self.work_dir, "conf/ynh")
         output = subprocess.check_output(
             "touch %s/test 2>&1 || true" % conf,
             shell=True,
