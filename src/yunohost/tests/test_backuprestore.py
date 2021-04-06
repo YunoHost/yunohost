@@ -413,7 +413,7 @@ def test_backup_with_different_output_directory(mocker):
     # Create the backup
     with message(mocker, "backup_created"):
         backup_create(
-            system=["conf_ssh"],
+            system=["conf_ynh_settings"],
             apps=None,
             output_directory="/opt/test_backup_output_directory",
             name="backup",
@@ -436,7 +436,7 @@ def test_backup_using_copy_method(mocker):
     # Create the backup
     with message(mocker, "backup_created"):
         backup_create(
-            system=["conf_nginx"],
+            system=["conf_ynh_settings"],
             apps=None,
             output_directory="/opt/test_backup_output_directory",
             methods=["copy"],
@@ -675,9 +675,9 @@ def test_backup_binds_are_readonly(mocker, monkeypatch):
     def custom_mount_and_backup(self):
         self._organize_files()
 
-        confssh = os.path.join(self.work_dir, "conf/ssh")
+        conf = os.path.join(self.work_dir, "conf/")
         output = subprocess.check_output(
-            "touch %s/test 2>&1 || true" % confssh,
+            "touch %s/test 2>&1 || true" % conf,
             shell=True,
             env={"LANG": "en_US.UTF-8"},
         )
