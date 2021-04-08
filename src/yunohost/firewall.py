@@ -188,18 +188,19 @@ def firewall_list(raw=False, by_ip_version=False, list_forwarded=False):
     for i in ["ipv4", "ipv6"]:
         f = firewall[i]
         # Combine TCP and UDP ports
-        ports[i] = sorted(set(f["TCP"]) | set(f["UDP"]))
+        ports[i] = sorted(set(f["TCP"]) | set(f["UDP"]), key=lambda p: int(p.split(':')[0]) if isinstance(p, str) else p)
 
     if not by_ip_version:
         # Combine IPv4 and IPv6 ports
-        ports = sorted(set(ports["ipv4"]) | set(ports["ipv6"]))
+        ports = sorted(set(ports["ipv4"]) | set(ports["ipv6"]), key=lambda p: int(p.split(':')[0]) if isinstance(p, str) else p)
 
     # Format returned dict
     ret = {"opened_ports": ports}
     if list_forwarded:
         # Combine TCP and UDP forwarded ports
         ret["forwarded_ports"] = sorted(
-            set(firewall["uPnP"]["TCP"]) | set(firewall["uPnP"]["UDP"])
+            set(firewall["uPnP"]["TCP"]) | set(firewall["uPnP"]["UDP"]),
+            key=lambda p: int(p.split(':')[0]) if isinstance(p, str) else p
         )
     return ret
 
