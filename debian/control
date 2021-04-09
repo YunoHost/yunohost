@@ -27,6 +27,7 @@ Depends: ${python:Depends}, ${misc:Depends}
  , rspamd, opendkim-tools, postsrsd, procmail, mailutils
  , redis-server
  , metronome (>=3.14.0)
+ , acl
  , git, curl, wget, cron, unzip, jq, bc
  , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
 Recommends: yunohost-admin
