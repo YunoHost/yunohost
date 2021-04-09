@@ -295,6 +295,9 @@ user:
                     action_help: List permissions and corresponding accesses
                     api: GET /users/permissions
                     arguments:
+                        apps:
+                            help: Apps to list permission for (all by default)
+                            nargs: "*"
                         -s:
                             full: --short
                             help: Only list permission names

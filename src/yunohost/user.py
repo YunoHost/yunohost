@@ -862,10 +862,10 @@ def user_group_info(groupname):
 #
 
 
-def user_permission_list(short=False, full=False):
+def user_permission_list(short=False, full=False, apps=[]):
     import yunohost.permission
 
-    return yunohost.permission.user_permission_list(short, full, absolute_urls=True)
+    return yunohost.permission.user_permission_list(short, full, absolute_urls=True, apps=apps)
 
 
 def user_permission_update(

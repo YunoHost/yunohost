@@ -46,7 +46,7 @@ SYSTEM_PERMS = ["mail", "xmpp", "sftp", "ssh"]
 
 
 def user_permission_list(
-    short=False, full=False, ignore_system_perms=False, absolute_urls=False
+    short=False, full=False, ignore_system_perms=False, absolute_urls=False, apps=[]
 ):
     """
     List permissions and corresponding accesses
@@ -74,7 +74,9 @@ def user_permission_list(
     )
 
     # Parse / organize information to be outputed
-    apps = sorted(_installed_apps())
+    if apps:
+        ignore_system_perms = True
+    apps = apps if apps else sorted(_installed_apps())
     apps_base_path = {
         app: app_setting(app, "domain") + app_setting(app, "path")
         for app in apps
@@ -85,10 +87,13 @@ def user_permission_list(
     for infos in permissions_infos:
 
         name = infos["cn"][0]
-        if ignore_system_perms and name.split(".")[0] in SYSTEM_PERMS:
-            continue
-
         app = name.split(".")[0]
+
+        if app in SYSTEM_PERMS:
+            if ignore_system_perms:
+                continue
+        elif app not in apps:
+            continue
 
         perm = {}
         perm["allowed"] = [

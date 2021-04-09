@@ -194,7 +194,7 @@ def app_info(app, full=False):
         )
 
     local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
-    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    permissions = user_permission_list(full=True, absolute_urls=True, apps=[app])["permissions"]
 
     settings = _get_app_settings(app)
 
@@ -229,9 +229,7 @@ def app_info(app, full=False):
         local_manifest.get("multi_instance", False)
     )
 
-    ret["permissions"] = {
-        p: i for p, i in permissions.items() if p.startswith(app + ".")
-    }
+    ret["permissions"] = permissions
     ret["label"] = permissions.get(app + ".main", {}).get("label")
 
     if not ret["label"]:
@@ -1435,7 +1433,7 @@ def app_setting(app, key, value=None, delete=False):
             permission_url,
         )
 
-        permissions = user_permission_list(full=True)["permissions"]
+        permissions = user_permission_list(full=True, apps=[app])["permissions"]
         permission_name = "%s.legacy_%s_uris" % (app, key.split("_")[0])
         permission = permissions.get(permission_name)
 
