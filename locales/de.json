@@ -96,7 +96,7 @@
     "port_already_closed": "Der Port {port:d} wurde bereits für {ip_version:s} Verbindungen geschlossen",
     "port_already_opened": "Der Port {port:d} wird bereits von {ip_version:s} benutzt",
     "restore_already_installed_app": "Es ist bereits eine App mit der ID '{app:s}' installiet",
-    "restore_app_failed": "'{app:s}' konnte nicht wiederhergestellt werden",
+    "restore_app_failed": "'{app:s}' konnte nicht wiederhergestellt werden: {error:s}",
     "restore_cleaning_failed": "Das temporäre Dateiverzeichnis für Systemrestaurierung konnte nicht gelöscht werden",
     "restore_complete": "Vollständig wiederhergestellt",
     "restore_confirm_yunohost_installed": "Möchtest du die Wiederherstellung wirklich starten? [{answers:s}]",

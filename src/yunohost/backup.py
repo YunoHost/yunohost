@@ -1392,7 +1392,6 @@ class RestoreManager:
             self.targets.set_result("apps", app_instance_name, "Warning")
             return
 
-        logger.debug(m18n.n("restore_running_app_script", app=app_instance_name))
         try:
             # Restore app settings
             app_settings_new_path = os.path.join(
@@ -1401,7 +1400,7 @@ class RestoreManager:
             app_scripts_new_path = os.path.join(app_settings_new_path, "scripts")
             shutil.copytree(app_settings_in_archive, app_settings_new_path)
             filesystem.chmod(app_settings_new_path, 0o400, 0o400, True)
-            filesystem.chown(app_scripts_new_path, "admin", None, True)
+            filesystem.chown(app_scripts_new_path, "root", None, True)
 
             # Copy the app scripts to a writable temporary folder
             # FIXME : use 'install -Dm555' or something similar to what's done
@@ -1409,7 +1408,7 @@ class RestoreManager:
             tmp_folder_for_app_restore = tempfile.mkdtemp(prefix="restore")
             copytree(app_scripts_in_archive, tmp_folder_for_app_restore)
             filesystem.chmod(tmp_folder_for_app_restore, 0o550, 0o550, True)
-            filesystem.chown(tmp_folder_for_app_restore, "admin", None, True)
+            filesystem.chown(tmp_folder_for_app_restore, "root", None, True)
             restore_script = os.path.join(tmp_folder_for_app_restore, "restore")
 
             # Restore permissions
@@ -1454,81 +1453,111 @@ class RestoreManager:
             os.remove("%s/permissions.yml" % app_settings_new_path)
 
             _tools_migrations_run_before_app_restore(backup_version=self.info["from_yunohost_version"], app_id=app_instance_name)
-
-            # Prepare env. var. to pass to script
-            env_dict = _make_environment_for_app_script(app_instance_name)
-            env_dict.update(
-                {
-                    "YNH_BACKUP_DIR": self.work_dir,
-                    "YNH_BACKUP_CSV": os.path.join(self.work_dir, "backup.csv"),
-                    "YNH_APP_BACKUP_DIR": os.path.join(
-                        self.work_dir, "apps", app_instance_name, "backup"
-                    ),
-                }
-            )
-
-            operation_logger.extra["env"] = env_dict
-            operation_logger.flush()
-
-            # Execute app restore script
-            hook_exec(
-                restore_script,
-                chdir=app_backup_in_archive,
-                raise_on_error=True,
-                env=env_dict,
-            )[0]
         except Exception:
-            msg = m18n.n("restore_app_failed", app=app_instance_name)
+            import traceback
+            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+            msg = m18n.n("app_restore_failed", app=app_instance_name, error=error)
             logger.error(msg)
             operation_logger.error(msg)
 
-            if msettings.get("interface") != "api":
-                dump_app_log_extract_for_debugging(operation_logger)
-
             self.targets.set_result("apps", app_instance_name, "Error")
 
-            remove_script = os.path.join(app_scripts_in_archive, "remove")
-
-            # Setup environment for remove script
-            env_dict_remove = _make_environment_for_app_script(app_instance_name)
-
-            operation_logger = OperationLogger(
-                "remove_on_failed_restore",
-                [("app", app_instance_name)],
-                env=env_dict_remove,
-            )
-            operation_logger.start()
-
-            # Execute remove script
-            if hook_exec(remove_script, env=env_dict_remove)[0] != 0:
-                msg = m18n.n("app_not_properly_removed", app=app_instance_name)
-                logger.warning(msg)
-                operation_logger.error(msg)
-            else:
-                operation_logger.success()
-
-            # Cleaning app directory
+            # Cleanup
             shutil.rmtree(app_settings_new_path, ignore_errors=True)
+            shutil.rmtree(tmp_folder_for_app_restore, ignore_errors=True)
 
-            # Remove all permission in LDAP for this app
-            for permission_name in user_permission_list()["permissions"].keys():
-                if permission_name.startswith(app_instance_name + "."):
-                    permission_delete(permission_name, force=True)
+            return
 
-            # TODO Cleaning app hooks
-        else:
-            self.targets.set_result("apps", app_instance_name, "Success")
-            operation_logger.success()
+        logger.debug(m18n.n("restore_running_app_script", app=app_instance_name))
+
+        # Prepare env. var. to pass to script
+        env_dict = _make_environment_for_app_script(app_instance_name)
+        env_dict.update(
+            {
+                "YNH_BACKUP_DIR": self.work_dir,
+                "YNH_BACKUP_CSV": os.path.join(self.work_dir, "backup.csv"),
+                "YNH_APP_BACKUP_DIR": os.path.join(
+                    self.work_dir, "apps", app_instance_name, "backup"
+                ),
+            }
+        )
+
+        operation_logger.extra["env"] = env_dict
+        operation_logger.flush()
+
+        # Execute the app install script
+        restore_failed = True
+        try:
+            restore_retcode = hook_exec(
+                restore_script,
+                chdir=app_backup_in_archive,
+                env=env_dict,
+            )[0]
+            # "Common" app restore failure : the script failed and returned exit code != 0
+            restore_failed = True if restore_retcode != 0 else False
+            if restore_failed:
+                error = m18n.n("app_restore_script_failed")
+                logger.error(m18n.n("app_restore_failed", app=app_instance_name, error=error))
+                failure_message_with_debug_instructions = operation_logger.error(error)
+                if msettings.get("interface") != "api":
+                    dump_app_log_extract_for_debugging(operation_logger)
+        # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
+        except (KeyboardInterrupt, EOFError):
+            error = m18n.n("operation_interrupted")
+            logger.error(m18n.n("app_restore_failed", app=app_instance_name, error=error))
+            failure_message_with_debug_instructions = operation_logger.error(error)
+        # Something wrong happened in Yunohost's code (most probably hook_exec)
+        except Exception:
+            import traceback
+            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+            logger.error(m18n.n("app_restore_failed", app=app_instance_name, error=error))
+            failure_message_with_debug_instructions = operation_logger.error(error)
         finally:
             # Cleaning temporary scripts directory
             shutil.rmtree(tmp_folder_for_app_restore, ignore_errors=True)
 
+            if not restore_failed:
+                self.targets.set_result("apps", app_instance_name, "Success")
+                operation_logger.success()
+            else:
+
+                self.targets.set_result("apps", app_instance_name, "Error")
+
+                remove_script = os.path.join(app_scripts_in_archive, "remove")
+
+                # Setup environment for remove script
+                env_dict_remove = _make_environment_for_app_script(app_instance_name)
+
+                remove_operation_logger = OperationLogger(
+                    "remove_on_failed_restore",
+                    [("app", app_instance_name)],
+                    env=env_dict_remove,
+                )
+                remove_operation_logger.start()
+
+                # Execute remove script
+                if hook_exec(remove_script, env=env_dict_remove)[0] != 0:
+                    msg = m18n.n("app_not_properly_removed", app=app_instance_name)
+                    logger.warning(msg)
+                    remove_operation_logger.error(msg)
+                else:
+                    remove_operation_logger.success()
+
+                # Cleaning app directory
+                shutil.rmtree(app_settings_new_path, ignore_errors=True)
+
+                # Remove all permission in LDAP for this app
+                for permission_name in user_permission_list()["permissions"].keys():
+                    if permission_name.startswith(app_instance_name + "."):
+                        permission_delete(permission_name, force=True)
+
+                # TODO Cleaning app hooks
+
+                logger.error(failure_message_with_debug_instructions)
 
 #
 # Backup methods                                                            #
 #
-
-
 class BackupMethod(object):
 
     """

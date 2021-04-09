@@ -120,7 +120,7 @@
     "pattern_username": "Caratteri minuscoli alfanumerici o trattini bassi soli",
     "port_already_closed": "La porta {port:d} è già chiusa per le connessioni {ip_version:s}",
     "restore_already_installed_app": "Un'applicazione con l'ID '{app:s}' è già installata",
-    "restore_app_failed": "Impossibile ripristinare l'applicazione '{app:s}'",
+    "app_restore_failed": "Impossibile ripristinare l'applicazione '{app:s}': {error:s}",
     "restore_cleaning_failed": "Impossibile pulire la directory temporanea di ripristino",
     "restore_complete": "Ripristino completo",
     "restore_confirm_yunohost_installed": "Sei sicuro di volere ripristinare un sistema già installato? {answers:s}",

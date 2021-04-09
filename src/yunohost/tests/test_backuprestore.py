@@ -413,7 +413,7 @@ def test_backup_with_different_output_directory(mocker):
     # Create the backup
     with message(mocker, "backup_created"):
         backup_create(
-            system=["conf_ssh"],
+            system=["conf_ynh_settings"],
             apps=None,
             output_directory="/opt/test_backup_output_directory",
             name="backup",
@@ -427,7 +427,7 @@ def test_backup_with_different_output_directory(mocker):
     archives_info = backup_info(archives[0], with_details=True)
     assert archives_info["apps"] == {}
     assert len(archives_info["system"].keys()) == 1
-    assert "conf_ssh" in archives_info["system"].keys()
+    assert "conf_ynh_settings" in archives_info["system"].keys()
 
 
 @pytest.mark.clean_opt_dir
@@ -436,7 +436,7 @@ def test_backup_using_copy_method(mocker):
     # Create the backup
     with message(mocker, "backup_created"):
         backup_create(
-            system=["conf_nginx"],
+            system=["conf_ynh_settings"],
             apps=None,
             output_directory="/opt/test_backup_output_directory",
             methods=["copy"],
@@ -467,13 +467,13 @@ def test_restore_app_script_failure_handling(monkeypatch, mocker):
     def custom_hook_exec(name, *args, **kwargs):
         if os.path.basename(name).startswith("restore"):
             monkeypatch.undo()
-            raise Exception
+            return (1, None)
 
     monkeypatch.setattr("yunohost.backup.hook_exec", custom_hook_exec)
 
     assert not _is_installed("wordpress")
 
-    with message(mocker, "restore_app_failed", app="wordpress"):
+    with message(mocker, "app_restore_script_failed"):
         with raiseYunohostError(mocker, "restore_nothings_done"):
             backup_restore(
                 system=None, name=backup_list()["archives"][0], apps=["wordpress"]
@@ -675,9 +675,9 @@ def test_backup_binds_are_readonly(mocker, monkeypatch):
     def custom_mount_and_backup(self):
         self._organize_files()
 
-        confssh = os.path.join(self.work_dir, "conf/ssh")
+        conf = os.path.join(self.work_dir, "conf/ynh/dkim")
         output = subprocess.check_output(
-            "touch %s/test 2>&1 || true" % confssh,
+            "touch %s/test 2>&1 || true" % conf,
             shell=True,
             env={"LANG": "en_US.UTF-8"},
         )
