@@ -85,12 +85,43 @@ do_post_regen() {
   # Enfore permissions #
   ######################
 
+  chmod 750 /home/admin
+  if [ -d /home/yunohost.backup ]
+  then
+    chmod 750 /home/yunohost.backup
+    chown admin:root /home/yunohost.backup
+  fi
+  if [ -d /home/yunohost.backup/archives ]
+  then
+    chmod 750 /home/yunohost.backup/archives
+    chown admin:root /home/yunohost.backup/archives
+  fi
+  if [ -d /home/yunohost.conf ]
+  then
+    chmod 750 /home/yunohost.conf
+    chown root:root /home/yunohost.conf
+  fi
+
   # Certs
   # We do this with find because there could be a lot of them...
   chown -R root:ssl-cert /etc/yunohost/certs
   chmod 750 /etc/yunohost/certs
   find /etc/yunohost/certs/ -type f -exec chmod 640 {} \;
   find /etc/yunohost/certs/ -type d -exec chmod 750 {} \;
+
+  find /etc/cron.*/yunohost-* -type f -exec chmod 755 {} \;
+  find /etc/cron.d/yunohost-* -type f -exec chmod 644 {} \;
+  find /etc/cron.*/yunohost-* -type f -exec chown root:root {} \;
+
+  chown root:root /var/cache/yunohost
+  chmod 700 /var/cache/yunohost
+  chown root:root /var/cache/moulinette
+  chmod 700 /var/cache/moulinette
+
+  setfacl -m g:all_users:--- /var/www
+  setfacl -m g:all_users:--- /var/log/nginx
+  setfacl -m g:all_users:--- /etc/yunohost
+  setfacl -m g:all_users:--- /etc/ssowat
 
   # Misc configuration / state files
   chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
