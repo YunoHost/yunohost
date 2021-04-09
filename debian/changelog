@@ -1,3 +1,9 @@
+yunohost (4.2.1) testing; urgency=low
+
+  - security: Various permissions tweaks to protect from malicious yunohost users (aefc100a, fc26837a)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 10 Apr 2021 01:08:04 +0200
+
 yunohost (4.2.0) testing; urgency=low
 
   - [mod] Python2 -> Python3 ([#1116](https://github.com/yunohost/yunohost/pull/1116), a97a9df3, 1387dff4, b53859db, f5ab4443, f9478b93, dc6033c3)
