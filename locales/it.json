@@ -120,7 +120,7 @@
     "pattern_username": "Caratteri minuscoli alfanumerici o trattini bassi soli",
     "port_already_closed": "La porta {port:d} è già chiusa per le connessioni {ip_version:s}",
     "restore_already_installed_app": "Un'applicazione con l'ID '{app:s}' è già installata",
-    "restore_app_failed": "Impossibile ripristinare l'applicazione '{app:s}'",
+    "app_restore_failed": "Impossibile ripristinare l'applicazione '{app:s}': {error:s}",
     "restore_cleaning_failed": "Impossibile pulire la directory temporanea di ripristino",
     "restore_complete": "Ripristino completo",
     "restore_confirm_yunohost_installed": "Sei sicuro di volere ripristinare un sistema già installato? {answers:s}",
@@ -674,5 +674,9 @@
     "diagnosis_mail_blacklist_reason": "Il motivo della blacklist è: {reason}",
     "diagnosis_mail_blacklist_listed_by": "Il tuo IP o dominio <code>{item}</code> è nella blacklist {blacklist_name}",
     "diagnosis_backports_in_sources_list": "Sembra che apt (il package manager) sia configurato per utilizzare le backport del repository. A meno che tu non sappia quello che stai facendo, scoraggiamo fortemente di installare pacchetti tramite esse, perché ci sono alte probabilità di creare conflitti con il tuo sistema.",
-    "diagnosis_basesystem_hardware_model": "Modello server: {model}"
+    "diagnosis_basesystem_hardware_model": "Modello server: {model}",
+    "postinstall_low_rootfsspace": "La radice del filesystem ha uno spazio totale inferiore ai 10 GB, ed è piuttosto preoccupante! Consumerai tutta la memoria molto velocemente! Raccomandiamo di avere almeno 16 GB per la radice del filesystem. Se vuoi installare YunoHost ignorando questo avviso, esegui nuovamente il postinstall con l'argomento --force-diskspace",
+    "domain_remove_confirm_apps_removal": "Rimuovere questo dominio rimuoverà anche le seguenti applicazioni:\n{apps}\n\nSei sicuro di voler continuare? [{answers}]",
+    "diagnosis_rootfstotalspace_critical": "La radice del filesystem ha un totale di solo {space}, ed è piuttosto preoccupante! Probabilmente consumerai tutta la memoria molto velocemente! Raccomandiamo di avere almeno 16 GB per la radice del filesystem.",
+    "diagnosis_rootfstotalspace_warning": "La radice del filesystem ha un totale di solo {space}. Potrebbe non essere un problema, ma stai attento perché potresti consumare tutta la memoria velocemente... Raccomandiamo di avere almeno 16 GB per la radice del filesystem."
 }

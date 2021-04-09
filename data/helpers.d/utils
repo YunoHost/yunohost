@@ -21,6 +21,9 @@ YNH_APP_BASEDIR=$([[ "$(basename $0)" =~ ^backup|restore$ ]] && echo '../setting
 # Requires YunoHost version 2.6.4 or higher.
 ynh_exit_properly () {
     local exit_code=$?
+
+    rm -rf "/var/cache/yunohost/download/"
+
     if [ "$exit_code" -eq 0 ]; then
         exit 0	# Exit without error if the script ended correctly
     fi
@@ -60,9 +63,10 @@ ynh_abort_if_errors () {
 
 # Download, check integrity, uncompress and patch the source from app.src
 #
-# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id]
+# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"]
 # | arg: -d, --dest_dir=    - Directory where to setup sources
 # | arg: -s, --source_id=   - Name of the source, defaults to `app`
+# | arg: -k, --keep=        - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs/'
 #
 # This helper will read `conf/${source_id}.src`, download and install the sources.
 #
@@ -97,13 +101,15 @@ ynh_abort_if_errors () {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_setup_source () {
     # Declare an array to define the options of this helper.
-    local legacy_args=ds
-    local -A args_array=( [d]=dest_dir= [s]=source_id= )
+    local legacy_args=dsk
+    local -A args_array=( [d]=dest_dir= [s]=source_id= [k]=keep= )
     local dest_dir
     local source_id
+    local keep
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    source_id="${source_id:-app}" # If the argument is not given, source_id equals "app"
+    source_id="${source_id:-app}"
+    keep="${keep:-}"
 
     local src_file_path="$YNH_APP_BASEDIR/conf/${source_id}.src"
 
@@ -127,8 +133,13 @@ ynh_setup_source () {
         src_filename="${source_id}.${src_format}"
     fi
 
+
     # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
+
+    mkdir -p /var/cache/yunohost/download/${YNH_APP_ID}/
+    src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${src_filename}"
+
     if test -e "$local_src"
     then
         cp $local_src $src_filename
@@ -148,8 +159,31 @@ ynh_setup_source () {
     echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status \
         || ynh_die --message="Corrupt source"
 
+    # Keep files to be backup/restored at the end of the helper
+    # Assuming $dest_dir already exists
+    rm -rf /var/cache/yunohost/files_to_keep_during_setup_source/
+    if [ -n "$keep" ] && [ -e "$dest_dir" ]
+    then
+        local keep_dir=/var/cache/yunohost/files_to_keep_during_setup_source/${YNH_APP_ID}
+        mkdir -p $keep_dir
+        local stuff_to_keep
+        for stuff_to_keep in $keep
+        do
+            if [ -e "$dest_dir/$stuff_to_keep" ]
+            then
+                mkdir --parents "$(dirname "$keep_dir/$stuff_to_keep")"
+                cp --archive "$dest_dir/$stuff_to_keep" "$keep_dir/$stuff_to_keep"
+            fi
+        done
+    fi
+
     # Extract source into the app dir
     mkdir --parents "$dest_dir"
+
+    if [ -n "${final_path:-}" ] && [ "$dest_dir" == "$final_path" ]
+    then
+        _ynh_apply_default_permissions $dest_dir
+    fi
 
     if ! "$src_extract"
     then
@@ -188,19 +222,41 @@ ynh_setup_source () {
     fi
 
     # Apply patches
-    if (( $(find $YNH_CWD/../sources/patches/ -type f -name "${source_id}-*.patch" 2> /dev/null | wc --lines) > "0" ))
+    if [ -d "$YNH_APP_BASEDIR/sources/patches/" ]
     then
-        (cd "$dest_dir"
-        for p in $YNH_CWD/../sources/patches/${source_id}-*.patch
-        do
-            patch --strip=1 < $p
-        done) || ynh_die --message="Unable to apply patches"
+        local patches_folder=$(realpath $YNH_APP_BASEDIR/sources/patches/)
+        if (( $(find $patches_folder -type f -name "${source_id}-*.patch" 2> /dev/null | wc --lines) > "0" ))
+        then
+            (cd "$dest_dir"
+            for p in $patches_folder/${source_id}-*.patch
+            do
+                echo $p
+                patch --strip=1 < $p
+            done) || ynh_die --message="Unable to apply patches"
+        fi
     fi
 
     # Add supplementary files
-    if test -e "$YNH_CWD/../sources/extra_files/${source_id}"; then
-        cp --archive $YNH_CWD/../sources/extra_files/$source_id/. "$dest_dir"
+    if test -e "$YNH_APP_BASEDIR/sources/extra_files/${source_id}"; then
+        cp --archive $YNH_APP_BASEDIR/sources/extra_files/$source_id/. "$dest_dir"
     fi
+
+    # Keep files to be backup/restored at the end of the helper
+    # Assuming $dest_dir already exists
+    if [ -n "$keep" ]
+    then
+        local keep_dir=/var/cache/yunohost/files_to_keep_during_setup_source/${YNH_APP_ID}
+        local stuff_to_keep
+        for stuff_to_keep in $keep
+        do
+            if [ -e "$keep_dir/$stuff_to_keep" ]
+            then
+                mkdir --parents "$(dirname "$dest_dir/$stuff_to_keep")"
+                cp --archive "$keep_dir/$stuff_to_keep" "$dest_dir/$stuff_to_keep"
+            fi
+        done
+    fi
+    rm -rf /var/cache/yunohost/files_to_keep_during_setup_source/
 }
 
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
@@ -315,8 +371,17 @@ ynh_add_config () {
 
     ynh_backup_if_checksum_is_different --file="$destination"
 
+    # Make sure to set the permissions before we copy the file
+    # This is to cover a case where an attacker could have
+    # created a file beforehand to have control over it
+    # (cp won't overwrite ownership / modes by default...)
+    touch $destination
+    chown root:root $destination
+    chmod 640 $destination
+
     cp -f "$template_path" "$destination"
-    chown root: "$destination"
+
+    _ynh_apply_default_permissions $destination
 
     ynh_replace_vars --file="$destination"
 
@@ -672,9 +737,43 @@ ynh_compare_current_package_version() {
 
     # Check validity of the comparator
     if [[ ! $comparison =~ (lt|le|eq|ne|ge|gt) ]]; then
-        ynh_die --message="Invialid comparator must be : lt, le, eq, ne, ge, gt"
+        ynh_die --message="Invalid comparator must be : lt, le, eq, ne, ge, gt"
     fi
 
     # Return the return value of dpkg --compare-versions
     dpkg --compare-versions $current_version $comparison $version
+}
+
+# Check if we should enforce sane default permissions (= disable rwx for 'others')
+# on file/folders handled with ynh_setup_source and ynh_add_config
+#
+# [internal]
+#
+# Having a file others-readable or a folder others-executable(=enterable)
+# is a security risk comparable to "chmod 777"
+#
+# Configuration files may contain secrets. Or even just being able to enter a
+# folder may allow an attacker to do nasty stuff (maybe a file or subfolder has
+# some write permission enabled for 'other' and the attacker may edit the
+# content or create files as leverage for priviledge escalation ...)
+#
+# The sane default should be to set ownership to $app:$app.
+# In specific case, you may want to set the ownership to $app:www-data
+# for example if nginx needs access to static files.
+#
+_ynh_apply_default_permissions() {
+    local target=$1
+
+    local ynh_requirement=$(jq -r '.requirements.yunohost' $YNH_APP_BASEDIR/manifest.json | tr -d '>= ')
+
+    if [ -z "$ynh_requirement" ] || [ "$ynh_requirement" == "null" ] || dpkg --compare-versions $ynh_requirement ge 4.2
+    then
+        chmod o-rwx $target
+        chmod g-w $target
+        chown -R root:root $target
+        if ynh_system_user_exists $app
+        then
+            chown $app:$app $target
+        fi
+    fi
 }

@@ -6,7 +6,7 @@ from datetime import datetime
 from collections import OrderedDict
 
 from moulinette import m18n
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.log import getActionLogger
 from yunohost.regenconf import regen_conf
 
@@ -94,9 +94,9 @@ DEFAULTS = OrderedDict(
         ("smtp.relay.user", {"type": "string", "default": ""}),
         ("smtp.relay.password", {"type": "string", "default": ""}),
         ("backup.compress_tar_archives", {"type": "bool", "default": False}),
+        ("ssowat.panel_overlay.enabled", {"type": "bool", "default": True}),
     ]
 )
-
 
 def settings_get(key, full=False):
     """
@@ -109,7 +109,7 @@ def settings_get(key, full=False):
     settings = _get_settings()
 
     if key not in settings:
-        raise YunohostError("global_settings_key_doesnt_exists", settings_key=key)
+        raise YunohostValidationError("global_settings_key_doesnt_exists", settings_key=key)
 
     if full:
         return settings[key]
@@ -137,7 +137,7 @@ def settings_set(key, value):
     settings = _get_settings()
 
     if key not in settings:
-        raise YunohostError("global_settings_key_doesnt_exists", settings_key=key)
+        raise YunohostValidationError("global_settings_key_doesnt_exists", settings_key=key)
 
     key_type = settings[key]["type"]
 
@@ -146,7 +146,7 @@ def settings_set(key, value):
         if boolean_value[0]:
             value = boolean_value[1]
         else:
-            raise YunohostError(
+            raise YunohostValidationError(
                 "global_settings_bad_type_for_setting",
                 setting=key,
                 received_type=type(value).__name__,
@@ -158,14 +158,14 @@ def settings_set(key, value):
                 try:
                     value = int(value)
                 except Exception:
-                    raise YunohostError(
+                    raise YunohostValidationError(
                         "global_settings_bad_type_for_setting",
                         setting=key,
                         received_type=type(value).__name__,
                         expected_type=key_type,
                     )
             else:
-                raise YunohostError(
+                raise YunohostValidationError(
                     "global_settings_bad_type_for_setting",
                     setting=key,
                     received_type=type(value).__name__,
@@ -173,7 +173,7 @@ def settings_set(key, value):
                 )
     elif key_type == "string":
         if not isinstance(value, str):
-            raise YunohostError(
+            raise YunohostValidationError(
                 "global_settings_bad_type_for_setting",
                 setting=key,
                 received_type=type(value).__name__,
@@ -181,14 +181,14 @@ def settings_set(key, value):
             )
     elif key_type == "enum":
         if value not in settings[key]["choices"]:
-            raise YunohostError(
+            raise YunohostValidationError(
                 "global_settings_bad_choice_for_enum",
                 setting=key,
                 choice=str(value),
                 available_choices=", ".join(settings[key]["choices"]),
             )
     else:
-        raise YunohostError(
+        raise YunohostValidationError(
             "global_settings_unknown_type", setting=key, unknown_type=key_type
         )
 
@@ -214,7 +214,7 @@ def settings_reset(key):
     settings = _get_settings()
 
     if key not in settings:
-        raise YunohostError("global_settings_key_doesnt_exists", settings_key=key)
+        raise YunohostValidationError("global_settings_key_doesnt_exists", settings_key=key)
 
     settings[key]["value"] = settings[key]["default"]
     _save_settings(settings)
@@ -304,7 +304,7 @@ def _get_settings():
                     )
                     unknown_settings[key] = value
     except Exception as e:
-        raise YunohostError("global_settings_cant_open_settings", reason=e)
+        raise YunohostValidationError("global_settings_cant_open_settings", reason=e)
 
     if unknown_settings:
         try:
@@ -376,7 +376,7 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 #
 # ===========================================
 
-
+@post_change_hook("ssowat.panel_overlay.enabled")
 @post_change_hook("security.nginx.compatibility")
 def reconfigure_nginx(setting_name, old_value, new_value):
     if old_value != new_value:

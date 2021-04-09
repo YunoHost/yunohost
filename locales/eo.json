@@ -479,7 +479,7 @@
     "service_restarted": "Servo '{service:s}' rekomencis",
     "pattern_username": "Devas esti minuskulaj literoj kaj minuskloj nur",
     "extracting": "Eltirante…",
-    "restore_app_failed": "Ne povis restarigi la programon '{app:s}'",
+    "app_restore_failed": "Ne povis restarigi la programon '{app:s}': {error:s}",
     "yunohost_configured": "YunoHost nun estas agordita",
     "certmanager_self_ca_conf_file_not_found": "Ne povis trovi agorddosieron por mem-subskriba aŭtoritato (dosiero: {file:s})",
     "log_app_remove": "Forigu la aplikon '{}'",

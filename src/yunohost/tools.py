@@ -29,6 +29,7 @@ import yaml
 import subprocess
 import pwd
 from importlib import import_module
+from packaging import version
 
 from moulinette import msignals, m18n
 from moulinette.utils.log import getActionLogger
@@ -51,7 +52,7 @@ from yunohost.utils.packages import (
     _list_upgradable_apt_packages,
     ynh_packages_version,
 )
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation, OperationLogger
 
 # FIXME this is a duplicate from apps.py
@@ -156,7 +157,7 @@ def tools_adminpw(new_password, check_strength=True):
     # UNIX seems to not like password longer than 127 chars ...
     # e.g. SSH login gets broken (or even 'su admin' when entering the password)
     if len(new_password) >= 127:
-        raise YunohostError("admin_password_too_long")
+        raise YunohostValidationError("admin_password_too_long")
 
     new_hash = _hash_user_password(new_password)
 
@@ -285,10 +286,10 @@ def tools_postinstall(
 
     # Do some checks at first
     if os.path.isfile("/etc/yunohost/installed"):
-        raise YunohostError("yunohost_already_installed")
+        raise YunohostValidationError("yunohost_already_installed")
 
     if os.path.isdir("/etc/yunohost/apps") and os.listdir("/etc/yunohost/apps") != []:
-        raise YunohostError(
+        raise YunohostValidationError(
             "It looks like you're trying to re-postinstall a system that was already working previously ... If you recently had some bug or issues with your installation, please first discuss with the team on how to fix the situation instead of savagely re-running the postinstall ...",
             raw_msg=True,
         )
@@ -301,7 +302,7 @@ def tools_postinstall(
     )
     GB = 1024 ** 3
     if not force_diskspace and main_space < 10 * GB:
-        raise YunohostError("postinstall_low_rootfsspace")
+        raise YunohostValidationError("postinstall_low_rootfsspace")
 
     # Check password
     if not force_password:
@@ -331,14 +332,14 @@ def tools_postinstall(
                 dyndns = True
             # If not, abort the postinstall
             else:
-                raise YunohostError("dyndns_unavailable", domain=domain)
+                raise YunohostValidationError("dyndns_unavailable", domain=domain)
         else:
             dyndns = False
     else:
         dyndns = False
 
     if os.system("iptables -V >/dev/null 2>/dev/null") != 0:
-        raise YunohostError(
+        raise YunohostValidationError(
             "iptables/nftables does not seems to be working on your setup. You may be in a container or your kernel does have the proper modules loaded. Sometimes, rebooting the machine may solve the issue.",
             raw_msg=True,
         )
@@ -537,11 +538,11 @@ def tools_upgrade(
     from yunohost.utils import packages
 
     if packages.dpkg_is_broken():
-        raise YunohostError("dpkg_is_broken")
+        raise YunohostValidationError("dpkg_is_broken")
 
     # Check for obvious conflict with other dpkg/apt commands already running in parallel
     if not packages.dpkg_lock_available():
-        raise YunohostError("dpkg_lock_not_available")
+        raise YunohostValidationError("dpkg_lock_not_available")
 
     # Legacy options management (--system, --apps)
     if target is None:
@@ -549,10 +550,10 @@ def tools_upgrade(
         logger.warning("Using 'yunohost tools upgrade' with --apps / --system is deprecated, just write 'yunohost tools upgrade apps' or 'system' (no -- prefix anymore)")
 
         if (system, apps) == (True, True):
-            raise YunohostError("tools_upgrade_cant_both")
+            raise YunohostValidationError("tools_upgrade_cant_both")
 
         if (system, apps) == (False, False):
-            raise YunohostError("tools_upgrade_at_least_one")
+            raise YunohostValidationError("tools_upgrade_at_least_one")
 
         target = "apps" if apps else "system"
 
@@ -840,7 +841,7 @@ def tools_migrations_list(pending=False, done=False):
 
     # Check for option conflict
     if pending and done:
-        raise YunohostError("migrations_list_conflict_pending_done")
+        raise YunohostValidationError("migrations_list_conflict_pending_done")
 
     # Get all migrations
     migrations = _get_migrations_list()
@@ -890,17 +891,17 @@ def tools_migrations_run(
             if m.id == target or m.name == target or m.id.split("_")[0] == target:
                 return m
 
-        raise YunohostError("migrations_no_such_migration", id=target)
+        raise YunohostValidationError("migrations_no_such_migration", id=target)
 
     # auto, skip and force are exclusive options
     if auto + skip + force_rerun > 1:
-        raise YunohostError("migrations_exclusive_options")
+        raise YunohostValidationError("migrations_exclusive_options")
 
     # If no target specified
     if not targets:
         # skip, revert or force require explicit targets
         if skip or force_rerun:
-            raise YunohostError("migrations_must_provide_explicit_targets")
+            raise YunohostValidationError("migrations_must_provide_explicit_targets")
 
         # Otherwise, targets are all pending migrations
         targets = [m for m in all_migrations if m.state == "pending"]
@@ -912,11 +913,11 @@ def tools_migrations_run(
         pending = [t.id for t in targets if t.state == "pending"]
 
         if skip and done:
-            raise YunohostError("migrations_not_pending_cant_skip", ids=", ".join(done))
+            raise YunohostValidationError("migrations_not_pending_cant_skip", ids=", ".join(done))
         if force_rerun and pending:
-            raise YunohostError("migrations_pending_cant_rerun", ids=", ".join(pending))
+            raise YunohostValidationError("migrations_pending_cant_rerun", ids=", ".join(pending))
         if not (skip or force_rerun) and done:
-            raise YunohostError("migrations_already_ran", ids=", ".join(done))
+            raise YunohostValidationError("migrations_already_ran", ids=", ".join(done))
 
     # So, is there actually something to do ?
     if not targets:
@@ -1114,6 +1115,44 @@ def _skip_all_migrations():
     for migration in all_migrations:
         new_states["migrations"][migration.id] = "skipped"
     write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
+
+
+def _tools_migrations_run_after_system_restore(backup_version):
+
+    all_migrations = _get_migrations_list()
+
+    for migration in all_migrations:
+        if hasattr(migration, "introduced_in_version") \
+           and version.parse(migration.introduced_in_version) > version.parse(backup_version) \
+           and hasattr(migration, "run_after_system_restore"):
+            try:
+                logger.info(m18n.n("migrations_running_forward", id=migration.id))
+                migration.run_after_system_restore()
+            except Exception as e:
+                msg = m18n.n(
+                    "migrations_migration_has_failed", exception=e, id=migration.id
+                )
+                logger.error(msg, exc_info=1)
+                raise
+
+
+def _tools_migrations_run_before_app_restore(backup_version, app_id):
+
+    all_migrations = _get_migrations_list()
+
+    for migration in all_migrations:
+        if hasattr(migration, "introduced_in_version") \
+           and version.parse(migration.introduced_in_version) > version.parse(backup_version) \
+           and hasattr(migration, "run_before_app_restore"):
+            try:
+                logger.info(m18n.n("migrations_running_forward", id=migration.id))
+                migration.run_before_app_restore(app_id)
+            except Exception as e:
+                msg = m18n.n(
+                    "migrations_migration_has_failed", exception=e, id=migration.id
+                )
+                logger.error(msg, exc_info=1)
+                raise
 
 
 class Migration(object):

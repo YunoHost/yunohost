@@ -36,7 +36,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import write_to_file, read_file
 from moulinette.utils.network import download_json
 
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.domain import _get_maindomain, _build_dns_conf
 from yunohost.utils.network import get_public_ip, dig
 from yunohost.log import is_unit_operation
@@ -124,7 +124,7 @@ def dyndns_subscribe(
     """
 
     if _guess_current_dyndns_domain(subscribe_host) != (None, None):
-        raise YunohostError('domain_dyndns_already_subscribed')
+        raise YunohostValidationError('domain_dyndns_already_subscribed')
 
     if domain is None:
         domain = _get_maindomain()
@@ -132,13 +132,13 @@ def dyndns_subscribe(
 
     # Verify if domain is provided by subscribe_host
     if not _dyndns_provides(subscribe_host, domain):
-        raise YunohostError(
+        raise YunohostValidationError(
             "dyndns_domain_not_provided", domain=domain, provider=subscribe_host
         )
 
     # Verify if domain is available
     if not _dyndns_available(subscribe_host, domain):
-        raise YunohostError("dyndns_unavailable", domain=domain)
+        raise YunohostValidationError("dyndns_unavailable", domain=domain)
 
     operation_logger.start()
 
@@ -231,7 +231,7 @@ def dyndns_update(
         (domain, key) = _guess_current_dyndns_domain(dyn_host)
 
     if domain is None:
-        raise YunohostError('dyndns_no_domain_registered')
+        raise YunohostValidationError('dyndns_no_domain_registered')
 
     # If key is not given, pick the first file we find with the domain given
     else:
@@ -239,7 +239,7 @@ def dyndns_update(
             keys = glob.glob("/etc/yunohost/dyndns/K{0}.+*.private".format(domain))
 
             if not keys:
-                raise YunohostError("dyndns_key_not_found")
+                raise YunohostValidationError("dyndns_key_not_found")
 
             key = keys[0]
 
@@ -260,7 +260,7 @@ def dyndns_update(
         ok, result = dig(dyn_host, "A")
         dyn_host_ip = result[0] if ok == "ok" and len(result) else None
         if not dyn_host_ip:
-            raise YunohostError("Failed to resolve %s" % dyn_host)
+            raise YunohostError("Failed to resolve %s" % dyn_host, raw_msg=True)
 
         ok, result = dig(domain, rdtype, resolvers=[dyn_host_ip])
         if ok == "ok":

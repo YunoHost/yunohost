@@ -327,7 +327,7 @@
     "regenconf_failed": "No s'ha pogut regenerar la configuració per la/les categoria/es : {categories}",
     "regenconf_pending_applying": "Aplicació de la configuració pendent per la categoria «{category}»...",
     "restore_already_installed_app": "Una aplicació amb la ID «{app:s}» ja està instal·lada",
-    "restore_app_failed": "No s'ha pogut restaurar {app:s}",
+    "app_restore_failed": "No s'ha pogut restaurar {app:s}: {error:s}",
     "restore_cleaning_failed": "No s'ha pogut netejar el directori temporal de restauració",
     "restore_complete": "Restauració completada",
     "restore_confirm_yunohost_installed": "Esteu segur de voler restaurar un sistema ja instal·lat? [{answers:s}]",

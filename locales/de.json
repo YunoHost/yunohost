@@ -96,7 +96,7 @@
     "port_already_closed": "Der Port {port:d} wurde bereits für {ip_version:s} Verbindungen geschlossen",
     "port_already_opened": "Der Port {port:d} wird bereits von {ip_version:s} benutzt",
     "restore_already_installed_app": "Es ist bereits eine App mit der ID '{app:s}' installiet",
-    "restore_app_failed": "App '{app:s}' konnte nicht wiederhergestellt werden",
+    "app_restore_failed": "App '{app:s}' konnte nicht wiederhergestellt werden: {error:s}",
     "restore_cleaning_failed": "Das temporäre Wiederherstellungsverzeichnis konnte nicht geleert werden",
     "restore_complete": "Wiederherstellung abgeschlossen",
     "restore_confirm_yunohost_installed": "Möchtest du die Wiederherstellung wirklich starten? [{answers:s}]",
@@ -605,5 +605,16 @@
     "postinstall_low_rootfsspace": "Das Root-Filesystem hat insgesamt weniger als 10GB freien Speicherplatz zur Verfügung, was ziemlich besorgniserregend ist! Sie werden sehr bald keinen freien Speicherplatz mehr haben! Für das Root-Filesystem werden mindestens 16GB empfohlen. Wenn Sie YunoHost trotz dieser Warnung installieren wollen, wiederholen Sie den Befehl mit --force-diskspace",
     "regenconf_up_to_date": "Die Konfiguration ist bereits aktuell für die Kategorie '{category}'",
     "regenconf_now_managed_by_yunohost": "Die Konfigurationsdatei '{conf}' wird jetzt von YunoHost (Kategorie {category}) verwaltet.",
-    "regenconf_updated": "Konfiguration aktualisiert für '{category}'"
+    "regenconf_updated": "Konfiguration aktualisiert für '{category}'",
+    "regenconf_pending_applying": "Wende die anstehende Konfiguration für die Kategorie {category} an...",
+    "regenconf_failed": "Konnte die Konfiguration für die Kategorie(n) {categories} nicht neu erstellen",
+    "regenconf_dry_pending_applying": "Überprüfe die anstehende Konfiguration, welche für die Kategorie {category}' aktualisiert worden wäre…",
+    "regenconf_would_be_updated": "Die Konfiguration wäre für die Kategorie '{category}' aktualisiert worden",
+    "restore_system_part_failed": "Die Systemteile '{part:s}' konnten nicht wiederhergestellt werden",
+    "restore_removing_tmp_dir_failed": "Ein altes, temporäres Directory konnte nicht entfernt werden",
+    "restore_not_enough_disk_space": "Nicht genug Speicher (Speicher: {free_space:d} B, benötigter Speicher: {needed_space:d} B, Sicherheitspuffer: {margin:d} B)",
+    "restore_may_be_not_enough_disk_space": "Dein System scheint nicht genug Speicherplatz zu haben (frei: {free_space:d} B, benötigter Platz: {needed_space:d} B, Sicherheitspuffer: {margin:d} B)",
+    "restore_extracting": "Packe die benötigten Dateien aus dem Archiv aus…",
+    "restore_already_installed_apps": "Folgende Apps können nicht wiederhergestellt werden, weil sie schon installiert sind: {apps}",
+    "regex_with_only_domain": "Du kannst regex nicht als Domain verwenden, sondern nur als Pfad"
 }

@@ -1,8 +1,39 @@
-yunohost (4.2) unstable; urgency=low
+yunohost (4.2.0) testing; urgency=low
 
-  - Placeholder for 4.2 to satisfy CI / debian build during dev
+  - [mod] Python2 -> Python3 ([#1116](https://github.com/yunohost/yunohost/pull/1116), a97a9df3, 1387dff4, b53859db, f5ab4443, f9478b93, dc6033c3)
+  - [mod] refactoring: Drop legacy-way of passing arguments in hook_exec, prevent exposing secrets in command line args ([#1096](https://github.com/yunohost/yunohost/pull/1096))
+  - [mod] refactoring: use regen_conf instead of service_regen_conf in settings.py (9c11fd58)
+  - [mod] refactoring: More consistent local CA management for simpler postinstall ([#1062](https://github.com/yunohost/yunohost/pull/1062))
+  - [mod] refactoring: init folders during .deb install instead of regen conf ([#1063](https://github.com/yunohost/yunohost/pull/1063))
+  - [mod] refactoring: init ldap before the postinstall ([#1064](https://github.com/yunohost/yunohost/pull/1064))
+  - [mod] refactoring: simpler and more consistent logging initialization ([#1119](https://github.com/yunohost/yunohost/pull/1119), 0884a0c1)
+  - [mod] code-quality: add CI job to auto-format code, fix linter errors ([#1142](https://github.com/yunohost/yunohost/pull/1142), [#1161](https://github.com/yunohost/yunohost/pull/1161), 97f26015, [#1162](https://github.com/yunohost/yunohost/pull/1162))
+  - [mod] misc: Prevent the installation of apache2 ... ([#1148](https://github.com/yunohost/yunohost/pull/1148))
+  - [mod] misc: Drop old cache rules for .ms files, not relevant anymore ([#1150](https://github.com/yunohost/yunohost/pull/1150))
+  - [fix] misc: Abort postinstall if /etc/yunohost/apps ain't empty ([#1147](https://github.com/yunohost/yunohost/pull/1147))
+  - [mod] misc: No need for mysql root password anymore ([#912](https://github.com/YunoHost/yunohost/pull/912))
+  - [fix] app operations: wait for services to finish reloading (4a19a60b)
+  - [enh] ux: Improve error semantic such that the webadmin can autoredirect to the proper log view ([#1077](https://github.com/yunohost/yunohost/pull/1077), [#1187](https://github.com/YunoHost/yunohost/pull/1187))
+  - [mod] cli/api: Misc command and routes renaming / aliasing ([#1146](https://github.com/yunohost/yunohost/pull/1146))
+  - [enh] cli: Add a new "yunohost app search" command ([#1070](https://github.com/yunohost/yunohost/pull/1070))
+  - [enh] cli: Add '--remove-apps' (and '--force') options to "yunohost domain remove" ([#1125](https://github.com/yunohost/yunohost/pull/1125))
+  - [enh] diagnosis: Report low total space for rootfs ([#1145](https://github.com/yunohost/yunohost/pull/1145))
+  - [fix] upnp: Handle port closing ([#1154](https://github.com/yunohost/yunohost/pull/1154))
+  - [fix] dyndns: clean old madness, improve update strategy, improve cron management, delete dyndns key upon domain removal ([#1149](https://github.com/yunohost/yunohost/pull/1149))
+  - [enh] helpers: Adding composer helper ([#1090](https://github.com/yunohost/yunohost/pull/1090))
+  - [enh] helpers: Upgrade n to v7.0.2 ([#1178](https://github.com/yunohost/yunohost/pull/1178))
+  - [enh] helpers: Add multimedia helpers and hooks ([#1129](https://github.com/yunohost/yunohost/pull/1129), 47420c62)
+  - [enh] helpers: Normalize conf template handling for nginx, php-fpm, systemd and fail2ban using ynh_add_config ([#1118](https://github.com/yunohost/yunohost/pull/1118))
+  - [fix] helpers, doc: Update template for the new doc (grav) ([#1167](https://github.com/yunohost/yunohost/pull/1167), [#1168](https://github.com/yunohost/yunohost/pull/1168), 59d3e387)
+  - [enh] helpers: Define YNH_APP_BASEDIR to be able to properly point to conf folder depending on the app script we're running ([#1172](https://github.com/yunohost/yunohost/pull/1172))
+  - [enh] helpers: Use jq / output-as json to get info from yunohost commands instead of scraping with grep ([#1160](https://github.com/yunohost/yunohost/pull/1160))
+  - [fix] helpers: Misc fixes/enh (b85d959d, db93b82b, ce04570b, 07f8d6d7)
+  - [fix] helpers: download ynh_setup_source stuff in /var/cache/yunohost to prevent situations where it ends up in /etc/yunohost/apps/ (d98ec6ce)
+  - [i18n] Translations updated for Catalan, Chinese (Simplified), Czech, Dutch, French, German, Italian, Occitan, Polish
 
- -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 20 Jan 2021 05:19:58 +0100
+  Thanks to all contributors <3 ! (Bram, Christian W., Daniel, Dave, Éric G., Félix P., Flavio C., Kay0u, Krzysztof N., ljf, Mathieu M., Miloš K., MrMorals, Nils V.Z., penguin321, ppr, Quentí, Radek S, Scapharnaum, Sébastien M., xaloc33, yalh76, Yifei D.)
+ 
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 25 Mar 2021 01:00:00 +0100
 
 yunohost (4.1.7.4) stable; urgency=low
 

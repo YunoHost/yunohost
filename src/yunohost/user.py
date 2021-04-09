@@ -37,7 +37,7 @@ from moulinette import msignals, msettings, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
 
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.service import service_status
 from yunohost.log import is_unit_operation
 
@@ -125,7 +125,7 @@ def user_create(
     # Validate domain used for email address/xmpp account
     if domain is None:
         if msettings.get("interface") == "api":
-            raise YunohostError("Invalide usage, specify domain argument")
+            raise YunohostValidationError("Invalid usage, you should specify a domain argument")
         else:
             # On affiche les differents domaines possibles
             msignals.display(m18n.n("domains_available"))
@@ -141,24 +141,24 @@ def user_create(
 
     # Check that the domain exists
     if domain not in domain_list()["domains"]:
-        raise YunohostError("domain_name_unknown", domain=domain)
+        raise YunohostValidationError("domain_name_unknown", domain=domain)
 
     mail = username + "@" + domain
     ldap = _get_ldap_interface()
 
     if username in user_list()["users"]:
-        raise YunohostError("user_already_exists", user=username)
+        raise YunohostValidationError("user_already_exists", user=username)
 
     # Validate uniqueness of username and mail in LDAP
     try:
         ldap.validate_uniqueness({"uid": username, "mail": mail, "cn": username})
     except Exception as e:
-        raise YunohostError("user_creation_failed", user=username, error=e)
+        raise YunohostValidationError("user_creation_failed", user=username, error=e)
 
     # Validate uniqueness of username in system users
     all_existing_usernames = {x.pw_name for x in pwd.getpwall()}
     if username in all_existing_usernames:
-        raise YunohostError("system_username_exists")
+        raise YunohostValidationError("system_username_exists")
 
     main_domain = _get_maindomain()
     aliases = [
@@ -170,7 +170,7 @@ def user_create(
     ]
 
     if mail in aliases:
-        raise YunohostError("mail_unavailable")
+        raise YunohostValidationError("mail_unavailable")
 
     operation_logger.start()
 
@@ -264,7 +264,7 @@ def user_delete(operation_logger, username, purge=False):
     from yunohost.utils.ldap import _get_ldap_interface
 
     if username not in user_list()["users"]:
-        raise YunohostError("user_unknown", user=username)
+        raise YunohostValidationError("user_unknown", user=username)
 
     operation_logger.start()
 
@@ -347,7 +347,7 @@ def user_update(
         attrs=attrs_to_fetch,
     )
     if not result:
-        raise YunohostError("user_unknown", user=username)
+        raise YunohostValidationError("user_unknown", user=username)
     user = result[0]
     env_dict = {"YNH_USER_USERNAME": username}
 
@@ -396,13 +396,13 @@ def user_update(
         try:
             ldap.validate_uniqueness({"mail": mail})
         except Exception as e:
-            raise YunohostError("user_update_failed", user=username, error=e)
+            raise YunohostValidationError("user_update_failed", user=username, error=e)
         if mail[mail.find("@") + 1 :] not in domains:
-            raise YunohostError(
+            raise YunohostValidationError(
                 "mail_domain_unknown", domain=mail[mail.find("@") + 1 :]
             )
         if mail in aliases:
-            raise YunohostError("mail_unavailable")
+            raise YunohostValidationError("mail_unavailable")
 
         del user["mail"][0]
         new_attr_dict["mail"] = [mail] + user["mail"]
@@ -414,9 +414,9 @@ def user_update(
             try:
                 ldap.validate_uniqueness({"mail": mail})
             except Exception as e:
-                raise YunohostError("user_update_failed", user=username, error=e)
+                raise YunohostValidationError("user_update_failed", user=username, error=e)
             if mail[mail.find("@") + 1 :] not in domains:
-                raise YunohostError(
+                raise YunohostValidationError(
                     "mail_domain_unknown", domain=mail[mail.find("@") + 1 :]
                 )
             user["mail"].append(mail)
@@ -429,7 +429,7 @@ def user_update(
             if len(user["mail"]) > 1 and mail in user["mail"][1:]:
                 user["mail"].remove(mail)
             else:
-                raise YunohostError("mail_alias_remove_failed", mail=mail)
+                raise YunohostValidationError("mail_alias_remove_failed", mail=mail)
         new_attr_dict["mail"] = user["mail"]
 
     if "mail" in new_attr_dict:
@@ -451,7 +451,7 @@ def user_update(
             if len(user["maildrop"]) > 1 and mail in user["maildrop"][1:]:
                 user["maildrop"].remove(mail)
             else:
-                raise YunohostError("mail_forward_remove_failed", mail=mail)
+                raise YunohostValidationError("mail_forward_remove_failed", mail=mail)
         new_attr_dict["maildrop"] = user["maildrop"]
 
     if "maildrop" in new_attr_dict:
@@ -500,7 +500,7 @@ def user_info(username):
     if result:
         user = result[0]
     else:
-        raise YunohostError("user_unknown", user=username)
+        raise YunohostValidationError("user_unknown", user=username)
 
     result_dict = {
         "username": user["uid"][0],
@@ -638,7 +638,7 @@ def user_group_create(
         {"cn": groupname}, base_dn="ou=groups,dc=yunohost,dc=org"
     )
     if conflict:
-        raise YunohostError("group_already_exist", group=groupname)
+        raise YunohostValidationError("group_already_exist", group=groupname)
 
     # Validate uniqueness of groupname in system group
     all_existing_groupnames = {x.gr_name for x in grp.getgrall()}
@@ -651,7 +651,7 @@ def user_group_create(
                 "sed --in-place '/^%s:/d' /etc/group" % groupname, shell=True
             )
         else:
-            raise YunohostError("group_already_exist_on_system", group=groupname)
+            raise YunohostValidationError("group_already_exist_on_system", group=groupname)
 
     if not gid:
         # Get random GID
@@ -705,7 +705,7 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
 
     existing_groups = list(user_group_list()["groups"].keys())
     if groupname not in existing_groups:
-        raise YunohostError("group_unknown", group=groupname)
+        raise YunohostValidationError("group_unknown", group=groupname)
 
     # Refuse to delete primary groups of a user (e.g. group 'sam' related to user 'sam')
     # without the force option...
@@ -714,7 +714,7 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     existing_users = list(user_list()["users"].keys())
     undeletable_groups = existing_users + ["all_users", "visitors"]
     if groupname in undeletable_groups and not force:
-        raise YunohostError("group_cannot_be_deleted", group=groupname)
+        raise YunohostValidationError("group_cannot_be_deleted", group=groupname)
 
     operation_logger.start()
     ldap = _get_ldap_interface()
@@ -756,11 +756,11 @@ def user_group_update(
     # We also can't edit "all_users" without the force option because that's a special group...
     if not force:
         if groupname == "all_users":
-            raise YunohostError("group_cannot_edit_all_users")
+            raise YunohostValidationError("group_cannot_edit_all_users")
         elif groupname == "visitors":
-            raise YunohostError("group_cannot_edit_visitors")
+            raise YunohostValidationError("group_cannot_edit_visitors")
         elif groupname in existing_users:
-            raise YunohostError("group_cannot_edit_primary_group", group=groupname)
+            raise YunohostValidationError("group_cannot_edit_primary_group", group=groupname)
 
     # We extract the uid for each member of the group to keep a simple flat list of members
     current_group = user_group_info(groupname)["members"]
@@ -771,7 +771,7 @@ def user_group_update(
 
         for user in users_to_add:
             if user not in existing_users:
-                raise YunohostError("user_unknown", user=user)
+                raise YunohostValidationError("user_unknown", user=user)
 
             if user in current_group:
                 logger.warning(
@@ -843,7 +843,7 @@ def user_group_info(groupname):
     )
 
     if not result:
-        raise YunohostError("group_unknown", group=groupname)
+        raise YunohostValidationError("group_unknown", group=groupname)
 
     infos = result[0]
 

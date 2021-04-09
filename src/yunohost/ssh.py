@@ -5,7 +5,7 @@ import os
 import pwd
 import subprocess
 
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostValidationError
 from moulinette.utils.filesystem import read_file, write_to_file, chown, chmod, mkdir
 
 SSHD_CONFIG_PATH = "/etc/ssh/sshd_config"
@@ -21,7 +21,7 @@ def user_ssh_allow(username):
     # TODO it would be good to support different kind of shells
 
     if not _get_user_for_ssh(username):
-        raise YunohostError("user_unknown", user=username)
+        raise YunohostValidationError("user_unknown", user=username)
 
     from yunohost.utils.ldap import _get_ldap_interface
 
@@ -43,7 +43,7 @@ def user_ssh_disallow(username):
     # TODO it would be good to support different kind of shells
 
     if not _get_user_for_ssh(username):
-        raise YunohostError("user_unknown", user=username)
+        raise YunohostValidationError("user_unknown", user=username)
 
     from yunohost.utils.ldap import _get_ldap_interface
 
