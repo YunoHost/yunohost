@@ -215,6 +215,11 @@ def user_create(operation_logger, username, firstname, lastname, mail, password,
             logger.warning(m18n.n('user_home_creation_failed'),
                            exc_info=1)
 
+    try:
+        subprocess.check_call(["setfacl", "-m", "g:all_users:---", "/home/%s" % username])
+    except subprocess.CalledProcessError:
+        logger.warning("Failed to protect /home/%s" % username, exc_info=1)
+
     # Create group for user and add to group 'all_users'
     user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
     user_group_update(groupname='all_users', add=username, force=True, sync_perm=True)

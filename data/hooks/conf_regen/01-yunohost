@@ -123,6 +123,11 @@ do_post_regen() {
   setfacl -m g:all_users:--- /etc/yunohost
   setfacl -m g:all_users:--- /etc/ssowat
 
+  for USER in $(yunohost user list --quiet --output-as json | jq -r '.users | .[] | .username')
+  do
+    [ ! -e "/home/$USER" ] || setfacl -m g:all_users:--- /home/$USER
+  done
+
   # Misc configuration / state files
   chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
   chmod 600 $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
