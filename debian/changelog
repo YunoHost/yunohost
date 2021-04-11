@@ -1,3 +1,13 @@
+yunohost (4.2.1.1) testing; urgency=low
+
+  - [fix] services.py, python3: missing decode() in subprocess output fetch (357c151c)
+  - [fix] log.py: don't inject log_ref if the operation didnt start yet (f878d61f)
+  - [fix] dyndns.py: Missing raw_msg=True (008e9f1d)
+  - [fix] firewall.py: Don't miserably crash when there are port ranges (6fd5f7e8)
+  - [fix] nginx conf: CSP rules for admin was blocking small images used for checkboxes, radio, pacman in the new webadmin (575fab8a)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 11 Apr 2021 20:15:11 +0200
+
 yunohost (4.2.1) testing; urgency=low
 
   - security: Various permissions tweaks to protect from malicious yunohost users (aefc100a, fc26837a)
