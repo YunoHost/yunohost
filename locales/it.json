@@ -410,7 +410,7 @@
     "diagnosis_cant_run_because_of_dep": "Impossibile lanciare la diagnosi per {category} mentre ci sono problemi importanti collegati a {dep}.",
     "diagnosis_cache_still_valid": "(La cache della diagnosi di {category} è ancora valida. Non la ricontrollo di nuovo per ora!)",
     "diagnosis_failed_for_category": "Diagnosi fallita per la categoria '{category}:{error}",
-    "diagnosis_display_tip": "Per vedere i problemi rilevati, puoi andare alla sezione Diagnosi del amministratore, o eseguire 'yunohost diagnosis show --issues' dalla riga di comando.",
+    "diagnosis_display_tip": "Per vedere i problemi rilevati, puoi andare alla sezione Diagnosi del amministratore, o eseguire 'yunohost diagnosis show --issues --human-readable' dalla riga di comando.",
     "diagnosis_package_installed_from_sury_details": "Alcuni pacchetti sono stati inavvertitamente installati da un repository di terze parti chiamato Sury. Il team di Yunohost ha migliorato la gestione di tali pacchetti, ma ci si aspetta che alcuni setup di app PHP7.3 abbiano delle incompatibilità anche se sono ancora in Stretch. Per sistemare questa situazione, dovresti provare a lanciare il seguente comando: <cmd>{cmd_to_fix}</cmd>",
     "diagnosis_package_installed_from_sury": "Alcuni pacchetti di sistema dovrebbero fare il downgrade",
     "diagnosis_mail_ehlo_bad_answer": "Un servizio diverso da SMTP ha risposto sulla porta 25 su IPv{ipversion}",

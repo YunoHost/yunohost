@@ -499,7 +499,7 @@
     "diagnosis_basesystem_kernel": "Lo servidor fonciona amb lo nuclèu Linuxl {kernel_version}",
     "diagnosis_basesystem_ynh_single_version": "{package} version : {version} ({repo})",
     "diagnosis_basesystem_ynh_inconsistent_versions": "Utilizatz de versions inconsistentas dels paquets de YunoHost… probablament a causa d'una actualizacion fracassada o parciala.",
-    "diagnosis_display_tip_cli": "Podètz executar « yunohost diagnosis show --issues » per mostrar las errors trobadas.",
+    "diagnosis_display_tip_cli": "Podètz executar « yunohost diagnosis show --issues --human-readable » per mostrar las errors trobadas.",
     "diagnosis_ignored_issues": "(+ {nb_ignored} problèma(es) ignorat(s))",
     "diagnosis_everything_ok": "Tot sembla corrècte per {category} !",
     "diagnosis_ip_connected_ipv4": "Lo servidor es connectat a Internet via IPv4 !",
