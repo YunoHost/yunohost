@@ -515,7 +515,7 @@
     "diagnosis_basesystem_ynh_inconsistent_versions": "Esteu utilitzant versions inconsistents dels paquets de YunoHost… probablement a causa d'una actualització fallida o parcial.",
     "diagnosis_display_tip_web": "Podeu anar a la secció de Diagnòstics (en la pantalla principal) per veure els errors que s'han trobat.",
     "diagnosis_failed_for_category": "Ha fallat el diagnòstic per la categoria «{category}»: {error}",
-    "diagnosis_display_tip_cli": "Podeu executar «yunohost diagnosis show --issues» per mostrar els errors que s'han trobat.",
+    "diagnosis_display_tip_cli": "Podeu executar «yunohost diagnosis show --issues --human-readable» per mostrar els errors que s'han trobat.",
     "diagnosis_cache_still_valid": "(La memòria cau encara és vàlida pel diagnòstic de {category}. No es tornar a diagnosticar de moment!)",
     "diagnosis_cant_run_because_of_dep": "No es pot fer el diagnòstic per {category} mentre hi ha problemes importants relacionats amb {dep}.",
     "diagnosis_ignored_issues": "(+ {nb_ignored} problema(es) ignorat(s))",
