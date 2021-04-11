@@ -569,7 +569,7 @@
     "log_app_action_run": "Lancer l’action de l’application '{}'",
     "log_app_config_show_panel": "Montrer le panneau de configuration de l’application '{}'",
     "log_app_config_apply": "Appliquer la configuration à l’application '{}'",
-    "diagnosis_never_ran_yet": "Il apparaît que le serveur a été installé récemment et qu’il n’y a pas encore eu de diagnostic. Vous devriez en lancer un depuis le webmin ou en utilisant 'yunohost diagnosis run' depuis la ligne de commande.",
+    "diagnosis_never_ran_yet": "Il apparaît que le serveur a été installé récemment et qu’il n’y a pas encore eu de diagnostic. Vous devriez en lancer un depuis la web-admin ou en utilisant 'yunohost diagnosis run' depuis la ligne de commande.",
     "diagnosis_description_web": "Web",
     "diagnosis_basesystem_hardware_board": "Le modèle de carte du serveur est {model}",
     "diagnosis_basesystem_hardware": "L’architecture du serveur est {virt} {arch}",
@@ -696,5 +696,6 @@
     "postinstall_low_rootfsspace": "Le système de fichiers racine a une taille totale inférieure à 10 GB, ce qui est inquiétant ! Vous allez certainement arriver à court d'espace disque rapidement ! Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers. Si vous voulez installer YunoHost malgré cet avertissement, relancez le postinstall avec --force-diskspace",
     "domain_remove_confirm_apps_removal": "Le retrait de ce domaine retirera aussi ces applications :\n{apps}\n\nÊtes vous sûr de vouloir cela ? [{answers}]",
     "diagnosis_rootfstotalspace_critical": "Le système de fichiers racine ne fait que {space} ! Vous allez certainement le remplir très rapidement ! Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers.",
-    "diagnosis_rootfstotalspace_warning": "Le système de fichiers racine n'est que de {space}. Cela peut suffire, mais faites attention car vous risquez de les remplir rapidement... Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers."
+    "diagnosis_rootfstotalspace_warning": "Le système de fichiers racine n'est que de {space}. Cela peut suffire, mais faites attention car vous risquez de les remplir rapidement... Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers.",
+    "app_restore_script_failed": "Une erreur s'est produite dans le script de restauration de l'application"
 }
