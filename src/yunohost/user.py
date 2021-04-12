@@ -862,6 +862,34 @@ def user_group_info(groupname):
     }
 
 
+def user_group_add(groupname, usernames, force=False, sync_perm=True):
+    """
+    Add user(s) to a group
+
+    Keyword argument:
+        groupname -- Groupname to update
+        usernames -- User(s) to add in the group
+
+    """
+    return user_group_update(
+        groupname, add=usernames, force=force, sync_perm=sync_perm
+    )
+
+
+def user_group_remove(groupname, usernames, force=False, sync_perm=True):
+    """
+    Remove user(s) from a group
+
+    Keyword argument:
+        groupname -- Groupname to update
+        usernames -- User(s) to remove from the group
+
+    """
+    return user_group_update(
+        groupname, remove=usernames, force=force, sync_perm=sync_perm
+    )
+
+
 #
 # Permission subcategory
 #
@@ -873,18 +901,31 @@ def user_permission_list(short=False, full=False, apps=[]):
     return yunohost.permission.user_permission_list(short, full, absolute_urls=True, apps=apps)
 
 
-def user_permission_update(
-    permission, add=None, remove=None, label=None, show_tile=None, sync_perm=True
+def user_permission_update(permission, label=None, show_tile=None, sync_perm=True):
+    import yunohost.permission
+
+    return yunohost.permission.user_permission_update(
+        permission, label=label, show_tile=show_tile, sync_perm=sync_perm
+    )
+
+
+def user_permission_add(
+    permission, names, protected=None, force=False, sync_perm=True
 ):
     import yunohost.permission
 
     return yunohost.permission.user_permission_update(
-        permission,
-        add=add,
-        remove=remove,
-        label=label,
-        show_tile=show_tile,
-        sync_perm=sync_perm,
+        permission, add=names, protected=protected, force=force, sync_perm=sync_perm
+    )
+
+
+def user_permission_remove(
+    permission, names, protected=None, force=False, sync_perm=True
+):
+    import yunohost.permission
+
+    return yunohost.permission.user_permission_update(
+        permission, remove=names, protected=protected, force=force, sync_perm=sync_perm
     )
 
 

@@ -221,7 +221,15 @@ def diagnosis_run(
         logger.warning(m18n.n("diagnosis_display_tip"))
 
 
-def diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
+def diagnosis_ignore(filter, list=False):
+    return _diagnosis_ignore(add_filter=filter, list=list)
+
+
+def diagnosis_unignore(filter):
+    return _diagnosis_ignore(remove_filter=filter)
+
+
+def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
     """
     This action is meant for the admin to ignore issues reported by the
     diagnosis system if they are known and understood by the admin.  For
