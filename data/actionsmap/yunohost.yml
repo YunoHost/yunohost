@@ -264,7 +264,7 @@ user:
 
                 ### user_group_add()
                 add:
-                    action_help: Update group
+                    action_help: Add users to group
                     api: PUT /users/groups/<groupname>/add/<usernames>
                     arguments:
                         groupname:
@@ -280,7 +280,7 @@ user:
 
                 ### user_group_remove()
                 remove:
-                    action_help: Update group
+                    action_help: Remove users from group
                     api: PUT /users/groups/<groupname>/remove/<usernames>
                     arguments:
                         groupname:
