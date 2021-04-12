@@ -72,6 +72,10 @@ DEFAULTS = OrderedDict(
             },
         ),
         (
+            "security.ssh.port",
+            {"type": "int", "default": 22},
+        ),
+        (
             "security.nginx.compatibility",
             {
                 "type": "enum",
@@ -383,6 +387,7 @@ def reconfigure_nginx(setting_name, old_value, new_value):
         regen_conf(names=["nginx"])
 
 
+@post_change_hook("security.ssh.port")
 @post_change_hook("security.ssh.compatibility")
 def reconfigure_ssh(setting_name, old_value, new_value):
     if old_value != new_value:
