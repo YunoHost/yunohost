@@ -324,9 +324,9 @@ def app_map(app=None, raw=False, user=None):
             app,
         ]
     else:
-        apps = os.listdir(APPS_SETTING_PATH)
+        apps = _installed_apps()
 
-    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    permissions = user_permission_list(full=True, absolute_urls=True, apps=apps)["permissions"]
     for app_id in apps:
         app_settings = _get_app_settings(app_id)
         if not app_settings:
@@ -1096,9 +1096,8 @@ def app_install(
                 )
 
             # Remove all permission in LDAP
-            for permission_name in user_permission_list()["permissions"].keys():
-                if permission_name.startswith(app_instance_name + "."):
-                    permission_delete(permission_name, force=True, sync_perm=False)
+            for permission_name in user_permission_list(apps=[app_instance_name])["permissions"].keys():
+                permission_delete(permission_name, force=True, sync_perm=False)
 
             if remove_retcode != 0:
                 msg = m18n.n("app_not_properly_removed", app=app_instance_name)
