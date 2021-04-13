@@ -1546,8 +1546,9 @@ class RestoreManager:
                 shutil.rmtree(app_settings_new_path, ignore_errors=True)
 
                 # Remove all permission in LDAP for this app
-                for permission_name in user_permission_list(apps=[app_instance_name])["permissions"].keys():
-                    permission_delete(permission_name, force=True)
+                for permission_name in user_permission_list()["permissions"].keys():
+                    if permission_name.startswith(app_instance_name + "."):
+                        permission_delete(permission_name, force=True)
 
                 # TODO Cleaning app hooks
 
