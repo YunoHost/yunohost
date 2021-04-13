@@ -432,7 +432,7 @@ def certificate_renew(
 
             stack = StringIO()
             traceback.print_exc(file=stack)
-            msg = "Certificate renewing for %s failed !" % (domain)
+            msg = "Certificate renewing for %s failed!" % (domain)
             if no_checks:
                 msg += (
                     "\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s."
