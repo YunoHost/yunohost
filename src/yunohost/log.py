@@ -340,9 +340,9 @@ def is_unit_operation(
             # Indeed, we use convention naming in this decorator and we need to
             # know name of each args (so we need to use kwargs instead of args)
             if len(args) > 0:
-                from inspect import getargspec
+                from inspect import signature
 
-                keys = getargspec(func).args
+                keys = list(signature(func).parameters.keys())
                 if "operation_logger" in keys:
                     keys.remove("operation_logger")
                 for k, arg in enumerate(args):
