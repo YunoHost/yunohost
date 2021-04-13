@@ -89,10 +89,7 @@ def user_permission_list(
         name = infos["cn"][0]
         app = name.split(".")[0]
 
-        if app in SYSTEM_PERMS:
-            if ignore_system_perms:
-                continue
-        elif app not in apps:
+        if app in SYSTEM_PERMS and ignore_system_perms:
             continue
 
         perm = {}
