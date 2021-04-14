@@ -726,11 +726,10 @@ class BackupManager:
 
             # backup permissions
             logger.debug(m18n.n("backup_permission", app=app))
-            permissions = user_permission_list(full=True)["permissions"]
+            permissions = user_permission_list(full=True, apps=[app])["permissions"]
             this_app_permissions = {
                 name: infos
                 for name, infos in permissions.items()
-                if name.startswith(app + ".")
             }
             write_to_yaml("%s/permissions.yml" % settings_dir, this_app_permissions)
 

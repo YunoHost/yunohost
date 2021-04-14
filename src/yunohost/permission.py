@@ -74,13 +74,13 @@ def user_permission_list(
     )
 
     # Parse / organize information to be outputed
-    if apps:
-        ignore_system_perms = True
-    apps = apps if apps else sorted(_installed_apps())
+    installed_apps = sorted(_installed_apps())
+    filter_ = apps
+    apps = filter_ if filter_ else installed_apps
     apps_base_path = {
         app: app_setting(app, "domain") + app_setting(app, "path")
         for app in apps
-        if app_setting(app, "domain") and app_setting(app, "path")
+        if app in installed_apps and app_setting(app, "domain") and app_setting(app, "path")
     }
 
     permissions = {}
@@ -89,10 +89,9 @@ def user_permission_list(
         name = infos["cn"][0]
         app = name.split(".")[0]
 
-        if app in SYSTEM_PERMS:
-            if ignore_system_perms:
-                continue
-        elif app not in apps:
+        if ignore_system_perms and app in SYSTEM_PERMS:
+            continue
+        if filter_ and app not in apps:
             continue
 
         perm = {}

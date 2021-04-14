@@ -324,9 +324,9 @@ def app_map(app=None, raw=False, user=None):
             app,
         ]
     else:
-        apps = os.listdir(APPS_SETTING_PATH)
+        apps = _installed_apps()
 
-    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    permissions = user_permission_list(full=True, absolute_urls=True, apps=apps)["permissions"]
     for app_id in apps:
         app_settings = _get_app_settings(app_id)
         if not app_settings:
@@ -1263,15 +1263,14 @@ def app_remove(operation_logger, app):
     else:
         logger.warning(m18n.n("app_not_properly_removed", app=app))
 
+    # Remove all permission in LDAP
+    for permission_name in user_permission_list(apps=[app])["permissions"].keys():
+        permission_delete(permission_name, force=True, sync_perm=False)
+
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
     shutil.rmtree("/tmp/yunohost_remove")
     hook_remove(app)
-
-    # Remove all permission in LDAP
-    for permission_name in user_permission_list()["permissions"].keys():
-        if permission_name.startswith(app + "."):
-            permission_delete(permission_name, force=True, sync_perm=False)
 
     permission_sync_to_user()
     _assert_system_is_sane_for_app(manifest, "post")
