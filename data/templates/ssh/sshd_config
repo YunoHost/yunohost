@@ -2,7 +2,7 @@
 # by YunoHost
 
 Protocol 2
-Port 22
+Port {{ port }}
 
 {% if ipv6_enabled == "true" %}ListenAddress ::{% endif %}
 ListenAddress 0.0.0.0
