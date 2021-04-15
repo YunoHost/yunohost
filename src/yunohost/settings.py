@@ -9,6 +9,7 @@ from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.log import getActionLogger
 from yunohost.regenconf import regen_conf
+from yunohost.firewall import firewall_reload
 
 logger = getActionLogger("yunohost.settings")
 
@@ -397,6 +398,7 @@ def reconfigure_ssh(setting_name, old_value, new_value):
 def reconfigure_ssh_and_fail2ban(setting_name, old_value, new_value):
     if old_value != new_value:
         regen_conf(names=["ssh", "fail2ban"])
+        firewall_reload()
 
 
 @post_change_hook("smtp.allow_ipv6")
