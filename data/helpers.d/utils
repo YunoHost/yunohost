@@ -176,6 +176,7 @@ ynh_setup_source () {
         else
             unzip -quo $src_filename -d "$dest_dir"
         fi
+        ynh_secure_remove --file="$src_filename"
     else
         local strip=""
         if [ "$src_in_subdir" != "false" ]
