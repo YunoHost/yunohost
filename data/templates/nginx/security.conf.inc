@@ -33,6 +33,9 @@ more_set_headers "X-Download-Options : noopen";
 more_set_headers "X-Permitted-Cross-Domain-Policies : none";
 more_set_headers "X-Frame-Options : SAMEORIGIN";
 
+# Disable the disaster privacy thing that is FLoC
+more_set_headers "Permissions-Policy : interest-cohort=()";
+
 # Disable gzip to protect against BREACH
 # Read https://trac.nginx.org/nginx/ticket/1720 (text/html cannot be disabled!)
 gzip off;
