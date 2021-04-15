@@ -67,7 +67,7 @@ do_post_regen() {
   chown -R metronome: /etc/metronome/conf.d/
 
   [[ -z "$regen_conf_files" ]] \
-    || service metronome restart
+    || systemctl restart metronome
 }
 
 FORCE=${2:-0}
