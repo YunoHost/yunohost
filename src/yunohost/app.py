@@ -3638,7 +3638,7 @@ def _patch_legacy_helpers(app_folder):
 
         try:
             content = read_file(filename)
-        except Exception:
+        except MoulinetteError:
             continue
         
         replaced_stuff = False
