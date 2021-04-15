@@ -53,6 +53,7 @@ from yunohost.app import (
     _patch_legacy_php_versions,
     _patch_legacy_php_versions_in_settings,
     LEGACY_PHP_VERSION_REPLACEMENTS,
+    _make_tmp_workdir_for_app
 )
 from yunohost.hook import (
     hook_list,
@@ -644,7 +645,7 @@ class BackupManager:
 
         restore_hooks_dir = os.path.join(self.work_dir, "hooks", "restore")
         if not os.path.exists(restore_hooks_dir):
-            filesystem.mkdir(restore_hooks_dir, mode=0o750, parents=True, uid="admin")
+            filesystem.mkdir(restore_hooks_dir, mode=0o700, parents=True, uid="root")
 
         restore_hooks = hook_list("restore")["hooks"]
 
@@ -705,21 +706,17 @@ class BackupManager:
         settings_dir = os.path.join(self.work_dir, "apps", app, "settings")
 
         logger.info(m18n.n("app_start_backup", app=app))
-        tmp_folder = tempfile.mkdtemp()
+        tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
         try:
             # Prepare backup directory for the app
-            filesystem.mkdir(tmp_app_bkp_dir, 0o750, True, uid="admin")
+            filesystem.mkdir(tmp_app_bkp_dir, 0o700, True, uid="root")
 
             # Copy the app settings to be able to call _common.sh
             shutil.copytree(app_setting_path, settings_dir)
 
-            # Copy app backup script in a temporary folder and execute it
-            app_script = os.path.join(app_setting_path, "scripts/backup")
-            tmp_script = os.path.join(tmp_folder, "backup")
-            subprocess.call(["install", "-Dm555", app_script, tmp_script])
-
             hook_exec(
-                tmp_script, raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict
+                f"{tmp_workdir_for_app}/scripts/backup",
+                raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict
             )[0]
 
             self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
@@ -750,8 +747,7 @@ class BackupManager:
 
         # Remove tmp files in all situations
         finally:
-            if tmp_folder and os.path.exists(tmp_folder):
-                shutil.rmtree(tmp_folder)
+            shutil.rmtree(tmp_workdir_for_app)
             filesystem.rm(env_dict["YNH_BACKUP_CSV"], force=True)
 
     #
@@ -1402,13 +1398,11 @@ class RestoreManager:
             filesystem.chown(app_scripts_new_path, "root", None, True)
 
             # Copy the app scripts to a writable temporary folder
-            # FIXME : use 'install -Dm555' or something similar to what's done
-            # in the backup method ?
-            tmp_folder_for_app_restore = tempfile.mkdtemp(prefix="restore")
-            copytree(app_scripts_in_archive, tmp_folder_for_app_restore)
-            filesystem.chmod(tmp_folder_for_app_restore, 0o550, 0o550, True)
-            filesystem.chown(tmp_folder_for_app_restore, "root", None, True)
-            restore_script = os.path.join(tmp_folder_for_app_restore, "restore")
+            tmp_workdir_for_app = _make_tmp_workdir_for_app()
+            copytree(app_scripts_in_archive, tmp_workdir_for_app)
+            filesystem.chmod(tmp_workdir_for_app, 0o700, 0o700, True)
+            filesystem.chown(tmp_workdir_for_app, "root", None, True)
+            restore_script = os.path.join(tmp_workdir_for_app, "restore")
 
             # Restore permissions
             if not os.path.isfile("%s/permissions.yml" % app_settings_new_path):
@@ -1463,7 +1457,7 @@ class RestoreManager:
 
             # Cleanup
             shutil.rmtree(app_settings_new_path, ignore_errors=True)
-            shutil.rmtree(tmp_folder_for_app_restore, ignore_errors=True)
+            shutil.rmtree(tmp_workdir_for_app, ignore_errors=True)
 
             return
 
@@ -1513,7 +1507,7 @@ class RestoreManager:
             failure_message_with_debug_instructions = operation_logger.error(error)
         finally:
             # Cleaning temporary scripts directory
-            shutil.rmtree(tmp_folder_for_app_restore, ignore_errors=True)
+            shutil.rmtree(tmp_workdir_for_app, ignore_errors=True)
 
             if not restore_failed:
                 self.targets.set_result("apps", app_instance_name, "Success")
@@ -1869,7 +1863,7 @@ class CopyBackupMethod(BackupMethod):
 
             dest_parent = os.path.dirname(dest)
             if not os.path.exists(dest_parent):
-                filesystem.mkdir(dest_parent, 0o750, True, uid="admin")
+                filesystem.mkdir(dest_parent, 0o700, True, uid="admin")
 
             if os.path.isdir(source):
                 shutil.copytree(source, dest)
