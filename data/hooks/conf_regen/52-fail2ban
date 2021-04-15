@@ -24,7 +24,7 @@ do_post_regen() {
   regen_conf_files=$1
 
   [[ -z "$regen_conf_files" ]] \
-    || service fail2ban restart
+    || systemctl reload fail2ban
 }
 
 FORCE=${2:-0}
