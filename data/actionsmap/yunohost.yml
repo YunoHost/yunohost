@@ -608,6 +608,14 @@ app:
                 string:
                     help: Return matching app name or description with "string"
 
+        ### app_manifest()
+        manifest:
+            action_help: Return the manifest of a given app from the manifest, or from a remote git repo
+            api: GET /apps/manifest
+            arguments:
+                app:
+                    help: Name, local path or git URL of the app to fetch the manifest of
+
         fetchlist:
             deprecated: true
 
@@ -679,7 +687,7 @@ app:
                     help: Do not ask confirmation if the app is not safe to use (low quality, experimental or 3rd party)
                     action: store_true
 
-        ### app_remove() TODO: Write help
+        ### app_remove()
         remove:
             action_help: Remove app
             api: DELETE /apps/<app>

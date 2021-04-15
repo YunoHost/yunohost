@@ -786,6 +786,21 @@ def app_upgrade(app=[], url=None, file=None, force=False):
     logger.success(m18n.n("upgrade_complete"))
 
 
+def app_manifest(app):
+
+    raw_app_list = _load_apps_catalog()["apps"]
+
+    if app in raw_app_list or ("@" in app) or ("http://" in app) or ("https://" in app):
+        manifest, extracted_app_folder = _fetch_app_from_git(app)
+    elif os.path.exists(app):
+        manifest, extracted_app_folder = _extract_app_from_file(app)
+    else:
+        raise YunohostValidationError("app_unknown")
+
+    shutil.rmtree(extracted_app_folder)
+
+    return manifest
+
 @is_unit_operation()
 def app_install(
     operation_logger,
