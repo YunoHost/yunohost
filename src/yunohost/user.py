@@ -53,7 +53,6 @@ def user_list(fields=None):
         "cn": "fullname",
         "mail": "mail",
         "maildrop": "mail-forward",
-        "loginShell": "shell",
         "homeDirectory": "home_path",
         "mailuserquota": "mailbox-quota",
     }
@@ -69,7 +68,7 @@ def user_list(fields=None):
             else:
                 raise YunohostError("field_invalid", attr)
     else:
-        attrs = ["uid", "cn", "mail", "mailuserquota", "loginShell"]
+        attrs = ["uid", "cn", "mail", "mailuserquota"]
 
     ldap = _get_ldap_interface()
     result = ldap.search(
@@ -82,12 +81,6 @@ def user_list(fields=None):
         entry = {}
         for attr, values in user.items():
             if values:
-                if attr == "loginShell":
-                    if values[0].strip() == "/bin/false":
-                        entry["ssh_allowed"] = False
-                    else:
-                        entry["ssh_allowed"] = True
-
                 entry[user_attrs[attr]] = values[0]
 
         uid = entry[user_attrs["uid"]]
@@ -206,7 +199,7 @@ def user_create(
         "gidNumber": [uid],
         "uidNumber": [uid],
         "homeDirectory": ["/home/" + username],
-        "loginShell": ["/bin/false"],
+        "loginShell": ["/bin/bash"],
     }
 
     # If it is the first user, add some aliases
@@ -945,14 +938,6 @@ def user_permission_info(permission):
 # SSH subcategory
 #
 import yunohost.ssh
-
-
-def user_ssh_allow(username):
-    return yunohost.ssh.user_ssh_allow(username)
-
-
-def user_ssh_disallow(username):
-    return yunohost.ssh.user_ssh_disallow(username)
 
 
 def user_ssh_list_keys(username):

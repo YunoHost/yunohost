@@ -188,6 +188,10 @@ def user_permission_update(
     ) and not force:
         raise YunohostValidationError("permission_protected", permission=permission)
 
+    # Refuse to add "all_users" to ssh/sftp permissions
+    if permission.split(".")[0] in ["ssh", "sftp"] and (add and "all_users" in add) and not force:
+        raise YunohostValidationError("permission_cant_add_to_all_users", permission=permission)
+
     # Fetch currently allowed groups for this permission
 
     current_allowed_groups = existing_permission["allowed"]

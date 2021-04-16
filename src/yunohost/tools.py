@@ -28,6 +28,7 @@ import os
 import yaml
 import subprocess
 import pwd
+import time
 from importlib import import_module
 from packaging import version
 
@@ -1121,9 +1122,15 @@ def _tools_migrations_run_after_system_restore(backup_version):
 
     all_migrations = _get_migrations_list()
 
+    current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
+    backup_version = version.parse(backup_version)
+
+    if backup_version == current_version:
+        return
+
     for migration in all_migrations:
         if hasattr(migration, "introduced_in_version") \
-           and version.parse(migration.introduced_in_version) > version.parse(backup_version) \
+           and version.parse(migration.introduced_in_version) > backup_version \
            and hasattr(migration, "run_after_system_restore"):
             try:
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
@@ -1140,9 +1147,15 @@ def _tools_migrations_run_before_app_restore(backup_version, app_id):
 
     all_migrations = _get_migrations_list()
 
+    current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
+    backup_version = version.parse(backup_version)
+
+    if backup_version == current_version:
+        return
+
     for migration in all_migrations:
         if hasattr(migration, "introduced_in_version") \
-           and version.parse(migration.introduced_in_version) > version.parse(backup_version) \
+           and version.parse(migration.introduced_in_version) > backup_version \
            and hasattr(migration, "run_before_app_restore"):
             try:
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
@@ -1153,7 +1166,6 @@ def _tools_migrations_run_before_app_restore(backup_version, app_id):
                 )
                 logger.error(msg, exc_info=1)
                 raise
-
 
 class Migration(object):
 
@@ -1179,3 +1191,44 @@ class Migration(object):
     @property
     def description(self):
         return m18n.n("migration_description_%s" % self.id)
+
+    def ldap_migration(run):
+
+        def func(self):
+
+            # Backup LDAP before the migration
+            logger.info(m18n.n("migration_ldap_backup_before_migration"))
+            try:
+                backup_folder = "/home/yunohost.backup/premigration/" + time.strftime(
+                    "%Y%m%d-%H%M%S", time.gmtime()
+                )
+                os.makedirs(backup_folder, 0o750)
+                os.system("systemctl stop slapd")
+                os.system(f"cp -r --preserve /etc/ldap {backup_folder}/ldap_config")
+                os.system(f"cp -r --preserve /var/lib/ldap {backup_folder}/ldap_db")
+                os.system(f"cp -r --preserve /etc/yunohost/apps {backup_folder}/apps_settings")
+            except Exception as e:
+                raise YunohostError(
+                    "migration_ldap_can_not_backup_before_migration", error=str(e)
+                )
+            finally:
+                os.system("systemctl start slapd")
+
+            try:
+                run(self, backup_folder)
+            except Exception:
+                logger.warning(m18n.n("migration_ldap_migration_failed_trying_to_rollback"))
+                os.system("systemctl stop slapd")
+                # To be sure that we don't keep some part of the old config
+                os.system("rm -r /etc/ldap/slapd.d")
+                os.system(f"cp -r --preserve {backup_folder}/ldap_config/. /etc/ldap/")
+                os.system(f"cp -r --preserve {backup_folder}/ldap_db/. /var/lib/ldap/")
+                os.system(f"cp -r --preserve {backup_folder}/apps_settings/. /etc/yunohost/apps/")
+                os.system("systemctl start slapd")
+                os.system(f"rm -r {backup_folder}")
+                logger.info(m18n.n("migration_ldap_rollback_success"))
+                raise
+            else:
+                os.system(f"rm -r {backup_folder}")
+
+        return func

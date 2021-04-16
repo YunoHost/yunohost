@@ -379,25 +379,6 @@ user:
         ssh:
             subcategory_help: Manage ssh access
             actions:
-                ### user_ssh_enable()
-                allow:
-                    action_help: Allow the user to uses ssh
-                    api: POST /users/ssh/enable
-                    arguments:
-                        username:
-                            help: Username of the user
-                            extra:
-                                pattern: *pattern_username
-
-                ### user_ssh_disable()
-                disallow:
-                    action_help: Disallow the user to uses ssh
-                    api: POST /users/ssh/disable
-                    arguments:
-                        username:
-                            help: Username of the user
-                            extra:
-                                pattern: *pattern_username
 
                 ### user_ssh_keys_list()
                 list-keys:
@@ -435,7 +416,6 @@ user:
                                 pattern: *pattern_username
                         key:
                             help: The key to be removed
-
 
 #############################
 #          Domain           #
