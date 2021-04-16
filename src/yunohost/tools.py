@@ -1122,9 +1122,15 @@ def _tools_migrations_run_after_system_restore(backup_version):
 
     all_migrations = _get_migrations_list()
 
+    current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
+    backup_version = version.parse(backup_version)
+
+    if backup_version == current_version:
+        return
+
     for migration in all_migrations:
         if hasattr(migration, "introduced_in_version") \
-           and version.parse(migration.introduced_in_version) > version.parse(backup_version) \
+           and version.parse(migration.introduced_in_version) > backup_version \
            and hasattr(migration, "run_after_system_restore"):
             try:
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
@@ -1141,9 +1147,15 @@ def _tools_migrations_run_before_app_restore(backup_version, app_id):
 
     all_migrations = _get_migrations_list()
 
+    current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
+    backup_version = version.parse(backup_version)
+
+    if backup_version == current_version:
+        return
+
     for migration in all_migrations:
         if hasattr(migration, "introduced_in_version") \
-           and version.parse(migration.introduced_in_version) > version.parse(backup_version) \
+           and version.parse(migration.introduced_in_version) > backup_version \
            and hasattr(migration, "run_before_app_restore"):
             try:
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
