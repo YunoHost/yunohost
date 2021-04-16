@@ -3605,7 +3605,11 @@ def _patch_legacy_helpers(app_folder):
         if not os.path.isfile(filename):
             continue
 
-        content = read_file(filename)
+        try:
+            content = read_file(filename)
+        except MoulinetteError:
+            continue
+        
         replaced_stuff = False
         show_warning = False
 
