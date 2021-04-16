@@ -3457,6 +3457,11 @@ def _assert_system_is_sane_for_app(manifest, when):
     # List services currently down and raise an exception if any are found
     services_status = {s:service_status(s) for s in services}
     faulty_services = [f"{s} ({status['status']})" for s, status in services_status.items() if status['status'] != "running"]
+
+    # Stupid tmp fix to try to track why the tests are failing
+    if "php7.3-fpm" in [s for s, status in services_status.items() if status['status'] != "running"]:
+        os.system("journalctl -u php7.3-fpm -n 300 --no-hostname --no-pager")
+
     if faulty_services:
         if when == "pre":
             raise YunohostValidationError(
