@@ -1,4 +1,0 @@
-backup_dir="$1/conf/ynh/firewall"
-
-cp -a $backup_dir/. /etc/yunohost
-yunohost firewall reload

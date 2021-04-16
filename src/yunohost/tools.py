@@ -30,6 +30,7 @@ import subprocess
 import pwd
 import time
 from importlib import import_module
+from packaging import version
 
 from moulinette import msignals, m18n
 from moulinette.utils.log import getActionLogger
@@ -405,22 +406,29 @@ def tools_regen_conf(
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
-def tools_update(apps=False, system=False):
+def tools_update(target=None, apps=False, system=False):
     """
     Update apps & system package cache
-
-    Keyword arguments:
-        system -- Fetch available system packages upgrades (equivalent to apt update)
-        apps -- Fetch the application list to check which apps can be upgraded
     """
 
-    # If neither --apps nor --system specified, do both
-    if not apps and not system:
-        apps = True
-        system = True
+    # Legacy options (--system, --apps)
+    if apps or system:
+        logger.warning("Using 'yunohost tools update' with --apps / --system is deprecated, just write 'yunohost tools update apps system' (no -- prefix anymore)")
+        if apps and system:
+            target = "all"
+        elif apps:
+            target = "apps"
+        else:
+            target = "system"
+
+    elif not target:
+        target = "all"
+
+    if target not in ["system", "apps", "all"]:
+        raise YunohostError("Unknown target %s, should be 'system', 'apps' or 'all'" % target, raw_msg=True)
 
     upgradable_system_packages = []
-    if system:
+    if target in ["system", "all"]:
 
         # Update APT cache
         # LC_ALL=C is here to make sure the results are in english
@@ -468,7 +476,7 @@ def tools_update(apps=False, system=False):
         logger.debug(m18n.n("done"))
 
     upgradable_apps = []
-    if apps:
+    if target in ["apps", "all"]:
         try:
             _update_apps_catalog()
         except YunohostError as e:
@@ -519,7 +527,7 @@ def _list_upgradable_apps():
 
 @is_unit_operation()
 def tools_upgrade(
-    operation_logger, apps=None, system=False, allow_yunohost_upgrade=True
+    operation_logger, target=None, apps=False, system=False, allow_yunohost_upgrade=True
 ):
     """
     Update apps & package cache, then display changelog
@@ -537,26 +545,34 @@ def tools_upgrade(
     if not packages.dpkg_lock_available():
         raise YunohostValidationError("dpkg_lock_not_available")
 
-    if system is not False and apps is not None:
-        raise YunohostValidationError("tools_upgrade_cant_both")
+    # Legacy options management (--system, --apps)
+    if target is None:
 
-    if system is False and apps is None:
-        raise YunohostValidationError("tools_upgrade_at_least_one")
+        logger.warning("Using 'yunohost tools upgrade' with --apps / --system is deprecated, just write 'yunohost tools upgrade apps' or 'system' (no -- prefix anymore)")
+
+        if (system, apps) == (True, True):
+            raise YunohostValidationError("tools_upgrade_cant_both")
+
+        if (system, apps) == (False, False):
+            raise YunohostValidationError("tools_upgrade_at_least_one")
+
+        target = "apps" if apps else "system"
+
+    if target not in ["apps", "system"]:
+        raise Exception("Uhoh ?! tools_upgrade should have 'apps' or 'system' value for argument target")
 
     #
     # Apps
     # This is basically just an alias to yunohost app upgrade ...
     #
 
-    if apps is not None:
+    if target == "apps":
 
         # Make sure there's actually something to upgrade
 
         upgradable_apps = [app["id"] for app in _list_upgradable_apps()]
 
-        if not upgradable_apps or (
-            len(apps) and all(app not in upgradable_apps for app in apps)
-        ):
+        if not upgradable_apps:
             logger.info(m18n.n("apps_already_up_to_date"))
             return
 
@@ -574,7 +590,7 @@ def tools_upgrade(
     # System
     #
 
-    if system is True:
+    if target == "system":
 
         # Check that there's indeed some packages to upgrade
         upgradables = list(_list_upgradable_apt_packages())
@@ -1102,6 +1118,42 @@ def _skip_all_migrations():
     write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
 
 
+def _tools_migrations_run_after_system_restore(backup_version):
+
+    all_migrations = _get_migrations_list()
+
+    for migration in all_migrations:
+        if hasattr(migration, "introduced_in_version") \
+           and version.parse(migration.introduced_in_version) > version.parse(backup_version) \
+           and hasattr(migration, "run_after_system_restore"):
+            try:
+                logger.info(m18n.n("migrations_running_forward", id=migration.id))
+                migration.run_after_system_restore()
+            except Exception as e:
+                msg = m18n.n(
+                    "migrations_migration_has_failed", exception=e, id=migration.id
+                )
+                logger.error(msg, exc_info=1)
+                raise
+
+
+def _tools_migrations_run_before_app_restore(backup_version, app_id):
+
+    all_migrations = _get_migrations_list()
+
+    for migration in all_migrations:
+        if hasattr(migration, "introduced_in_version") \
+           and version.parse(migration.introduced_in_version) > version.parse(backup_version) \
+           and hasattr(migration, "run_before_app_restore"):
+            try:
+                logger.info(m18n.n("migrations_running_forward", id=migration.id))
+                migration.run_before_app_restore(app_id)
+            except Exception as e:
+                msg = m18n.n(
+                    "migrations_migration_has_failed", exception=e, id=migration.id
+                )
+                logger.error(msg, exc_info=1)
+                raise
 
 class Migration(object):
 

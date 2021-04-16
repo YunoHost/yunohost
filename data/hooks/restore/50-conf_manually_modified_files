@@ -1,0 +1,13 @@
+#!/bin/bash
+
+source /usr/share/yunohost/helpers
+ynh_abort_if_errors
+YNH_CWD="${YNH_BACKUP_DIR%/}/conf/manually_modified_files"
+cd "$YNH_CWD"
+
+for file in $(cat ./manually_modified_files_list)
+do
+    ynh_restore_file --origin_path="$file" --not_mandatory
+done
+
+ynh_restore_file --origin_path="/etc/ssowat/conf.json.persistent" --not_mandatory

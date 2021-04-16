@@ -19,13 +19,11 @@ from yunohost.app import (
     logger,
     APPS_CATALOG_CACHE,
     APPS_CATALOG_CONF,
-    APPS_CATALOG_CRON_PATH,
     APPS_CATALOG_API_VERSION,
     APPS_CATALOG_DEFAULT_URL,
 )
 
 APPS_CATALOG_DEFAULT_URL_FULL = _actual_apps_catalog_api_url(APPS_CATALOG_DEFAULT_URL)
-CRON_FOLDER, CRON_NAME = APPS_CATALOG_CRON_PATH.rsplit("/", 1)
 
 DUMMY_APP_CATALOG = """{
    "apps": {
@@ -50,10 +48,6 @@ def setup_function(function):
     # Clear apps catalog cache
     shutil.rmtree(APPS_CATALOG_CACHE, ignore_errors=True)
 
-    # Clear apps_catalog cron
-    if os.path.exists(APPS_CATALOG_CRON_PATH):
-        os.remove(APPS_CATALOG_CRON_PATH)
-
     # Clear apps_catalog conf
     if os.path.exists(APPS_CATALOG_CONF):
         os.remove(APPS_CATALOG_CONF)
@@ -67,11 +61,6 @@ def teardown_function(function):
     shutil.rmtree(APPS_CATALOG_CACHE, ignore_errors=True)
 
 
-def cron_job_is_there():
-    r = os.system("run-parts -v --test %s | grep %s" % (CRON_FOLDER, CRON_NAME))
-    return r == 0
-
-
 #
 # ################################################
 #
@@ -83,16 +72,11 @@ def test_apps_catalog_init(mocker):
     assert not glob.glob(APPS_CATALOG_CACHE + "/*")
     # Conf doesn't exist yet
     assert not os.path.exists(APPS_CATALOG_CONF)
-    # Conf doesn't exist yet
-    assert not os.path.exists(APPS_CATALOG_CRON_PATH)
 
     # Initialize ...
     mocker.spy(m18n, "n")
     _initialize_apps_catalog_system()
     m18n.n.assert_any_call("apps_catalog_init_success")
-
-    # Then there's a cron enabled
-    assert cron_job_is_there()
 
     # And a conf with at least one list
     assert os.path.exists(APPS_CATALOG_CONF)

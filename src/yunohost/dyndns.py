@@ -260,7 +260,7 @@ def dyndns_update(
         ok, result = dig(dyn_host, "A")
         dyn_host_ip = result[0] if ok == "ok" and len(result) else None
         if not dyn_host_ip:
-            raise YunohostError("Failed to resolve %s" % dyn_host)
+            raise YunohostError("Failed to resolve %s" % dyn_host, raw_msg=True)
 
         ok, result = dig(domain, rdtype, resolvers=[dyn_host_ip])
         if ok == "ok":

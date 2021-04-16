@@ -99,6 +99,7 @@ def domain_add(operation_logger, domain, dyndns=False):
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
     from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.certificate import _certificate_install_selfsigned
 
     if domain.startswith("xmpp-upload."):
         raise YunohostValidationError("domain_cannot_add_xmpp_upload")
@@ -135,11 +136,9 @@ def domain_add(operation_logger, domain, dyndns=False):
         # Actually subscribe
         dyndns_subscribe(domain=domain)
 
+    _certificate_install_selfsigned([domain], False)
+
     try:
-        import yunohost.certificate
-
-        yunohost.certificate._certificate_install_selfsigned([domain], False)
-
         attr_dict = {
             "objectClass": ["mailDomain", "top"],
             "virtualdomain": domain,
@@ -166,13 +165,13 @@ def domain_add(operation_logger, domain, dyndns=False):
             regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd"])
             app_ssowatconf()
 
-    except Exception:
+    except Exception as e:
         # Force domain removal silently
         try:
             domain_remove(domain, force=True)
         except Exception:
             pass
-        raise
+        raise e
 
     hook_callback("post_domain_add", args=[domain])
 

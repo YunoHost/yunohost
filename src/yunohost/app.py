@@ -47,8 +47,6 @@ from moulinette.utils.filesystem import (
     write_to_file,
     write_to_json,
     write_to_yaml,
-    chmod,
-    chown,
     mkdir,
 )
 
@@ -66,7 +64,6 @@ APP_TMP_FOLDER = INSTALL_TMP + "/from_file"
 
 APPS_CATALOG_CACHE = "/var/cache/yunohost/repo"
 APPS_CATALOG_CONF = "/etc/yunohost/apps_catalog.yml"
-APPS_CATALOG_CRON_PATH = "/etc/cron.daily/yunohost-fetch-apps-catalog"
 APPS_CATALOG_API_VERSION = 2
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 
@@ -147,7 +144,7 @@ def app_fetchlist():
     )
     from yunohost.tools import tools_update
 
-    tools_update(apps=True)
+    tools_update(target="apps")
 
 
 def app_list(full=False, installed=False, filter=None):
@@ -197,7 +194,7 @@ def app_info(app, full=False):
         )
 
     local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
-    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    permissions = user_permission_list(full=True, absolute_urls=True, apps=[app])["permissions"]
 
     settings = _get_app_settings(app)
 
@@ -232,9 +229,7 @@ def app_info(app, full=False):
         local_manifest.get("multi_instance", False)
     )
 
-    ret["permissions"] = {
-        p: i for p, i in permissions.items() if p.startswith(app + ".")
-    }
+    ret["permissions"] = permissions
     ret["label"] = permissions.get(app + ".main", {}).get("label")
 
     if not ret["label"]:
@@ -329,9 +324,9 @@ def app_map(app=None, raw=False, user=None):
             app,
         ]
     else:
-        apps = os.listdir(APPS_SETTING_PATH)
+        apps = _installed_apps()
 
-    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    permissions = user_permission_list(full=True, absolute_urls=True, apps=apps)["permissions"]
     for app_id in apps:
         app_settings = _get_app_settings(app_id)
         if not app_settings:
@@ -1268,15 +1263,14 @@ def app_remove(operation_logger, app):
     else:
         logger.warning(m18n.n("app_not_properly_removed", app=app))
 
+    # Remove all permission in LDAP
+    for permission_name in user_permission_list(apps=[app])["permissions"].keys():
+        permission_delete(permission_name, force=True, sync_perm=False)
+
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
     shutil.rmtree("/tmp/yunohost_remove")
     hook_remove(app)
-
-    # Remove all permission in LDAP
-    for permission_name in user_permission_list()["permissions"].keys():
-        if permission_name.startswith(app + "."):
-            permission_delete(permission_name, force=True, sync_perm=False)
 
     permission_sync_to_user()
     _assert_system_is_sane_for_app(manifest, "post")
@@ -1438,7 +1432,7 @@ def app_setting(app, key, value=None, delete=False):
             permission_url,
         )
 
-        permissions = user_permission_list(full=True)["permissions"]
+        permissions = user_permission_list(full=True, apps=[app])["permissions"]
         permission_name = "%s.legacy_%s_uris" % (app, key.split("_")[0])
         permission = permissions.get(permission_name)
 
@@ -3232,28 +3226,15 @@ def _parse_app_instance_name(app_instance_name):
 def _initialize_apps_catalog_system():
     """
     This function is meant to intialize the apps_catalog system with YunoHost's default app catalog.
-
-    It also creates the cron job that will update the list every day
     """
 
     default_apps_catalog_list = [{"id": "default", "url": APPS_CATALOG_DEFAULT_URL}]
 
-    cron_job = []
-    cron_job.append("#!/bin/bash")
-    # We add a random delay between 0 and 60 min to avoid every instance fetching
-    # the apps catalog at the same time every night
-    cron_job.append("(sleep $((RANDOM%3600));")
-    cron_job.append("yunohost tools update --apps > /dev/null) &")
     try:
         logger.debug(
             "Initializing apps catalog system with YunoHost's default app list"
         )
         write_to_yaml(APPS_CATALOG_CONF, default_apps_catalog_list)
-
-        logger.debug("Installing apps catalog fetch daily cron job")
-        write_to_file(APPS_CATALOG_CRON_PATH, "\n".join(cron_job))
-        chown(APPS_CATALOG_CRON_PATH, uid="root", gid="root")
-        chmod(APPS_CATALOG_CRON_PATH, 0o755)
     except Exception as e:
         raise YunohostError(
             "Could not initialize the apps catalog system... : %s" % str(e)
@@ -3467,14 +3448,15 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     # Wait if a service is reloading
     test_nb = 0
-    while test_nb < 10:
+    while test_nb < 16:
         if not any(s for s in services if service_status(s)["status"] == "reloading"):
             break
         time.sleep(0.5)
         test_nb+=1
 
     # List services currently down and raise an exception if any are found
-    faulty_services = [s for s in services if service_status(s)["status"] != "running"]
+    services_status = {s:service_status(s) for s in services}
+    faulty_services = [f"{s} ({status['status']})" for s, status in services_status.items() if status['status'] != "running"]
     if faulty_services:
         if when == "pre":
             raise YunohostValidationError(

@@ -222,6 +222,11 @@ def user_create(
         if not os.path.isdir("/home/{0}".format(username)):
             logger.warning(m18n.n("user_home_creation_failed"), exc_info=1)
 
+    try:
+        subprocess.check_call(["setfacl", "-m", "g:all_users:---", "/home/%s" % username])
+    except subprocess.CalledProcessError:
+        logger.warning("Failed to protect /home/%s" % username, exc_info=1)
+
     # Create group for user and add to group 'all_users'
     user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
     user_group_update(groupname="all_users", add=username, force=True, sync_perm=True)
@@ -850,29 +855,70 @@ def user_group_info(groupname):
     }
 
 
+def user_group_add(groupname, usernames, force=False, sync_perm=True):
+    """
+    Add user(s) to a group
+
+    Keyword argument:
+        groupname -- Groupname to update
+        usernames -- User(s) to add in the group
+
+    """
+    return user_group_update(
+        groupname, add=usernames, force=force, sync_perm=sync_perm
+    )
+
+
+def user_group_remove(groupname, usernames, force=False, sync_perm=True):
+    """
+    Remove user(s) from a group
+
+    Keyword argument:
+        groupname -- Groupname to update
+        usernames -- User(s) to remove from the group
+
+    """
+    return user_group_update(
+        groupname, remove=usernames, force=force, sync_perm=sync_perm
+    )
+
+
 #
 # Permission subcategory
 #
 
 
-def user_permission_list(short=False, full=False):
+def user_permission_list(short=False, full=False, apps=[]):
     import yunohost.permission
 
-    return yunohost.permission.user_permission_list(short, full, absolute_urls=True)
+    return yunohost.permission.user_permission_list(short, full, absolute_urls=True, apps=apps)
 
 
-def user_permission_update(
-    permission, add=None, remove=None, label=None, show_tile=None, sync_perm=True
+def user_permission_update(permission, label=None, show_tile=None, sync_perm=True):
+    import yunohost.permission
+
+    return yunohost.permission.user_permission_update(
+        permission, label=label, show_tile=show_tile, sync_perm=sync_perm
+    )
+
+
+def user_permission_add(
+    permission, names, protected=None, force=False, sync_perm=True
 ):
     import yunohost.permission
 
     return yunohost.permission.user_permission_update(
-        permission,
-        add=add,
-        remove=remove,
-        label=label,
-        show_tile=show_tile,
-        sync_perm=sync_perm,
+        permission, add=names, protected=protected, force=force, sync_perm=sync_perm
+    )
+
+
+def user_permission_remove(
+    permission, names, protected=None, force=False, sync_perm=True
+):
+    import yunohost.permission
+
+    return yunohost.permission.user_permission_update(
+        permission, remove=names, protected=protected, force=force, sync_perm=sync_perm
     )
 
 

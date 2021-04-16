@@ -1,9 +1,0 @@
-#!/bin/bash
-
-backup_dir="$1/conf/dkim"
-
-cp -a $backup_dir/etc/dkim/. /etc/dkim
-
-chown -R root:root /etc/dkim
-chown _rspamd:root /etc/dkim
-chown _rspamd:root /etc/dkim/*.mail.key

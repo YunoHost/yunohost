@@ -465,6 +465,7 @@ def _get_and_format_service_status(service, infos):
         if p.returncode == 0:
             output["configuration"] = "valid"
         else:
+            out = out.decode()
             output["configuration"] = "broken"
             output["configuration-details"] = out.strip().split("\n")
 
