@@ -1205,7 +1205,7 @@ class Migration(object):
             try:
                 run(self, backup_folder)
             except Exception:
-                logger.warn(m18n.n("migration_ldap_migration_failed_trying_to_rollback"))
+                logger.warning(m18n.n("migration_ldap_migration_failed_trying_to_rollback"))
                 os.system("systemctl stop slapd")
                 # To be sure that we don't keep some part of the old config
                 os.system("rm -r /etc/ldap/slapd.d")
