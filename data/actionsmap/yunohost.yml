@@ -610,7 +610,7 @@ app:
 
         ### app_manifest()
         manifest:
-            action_help: Return the manifest of a given app from the manifest, or from a remote git repo
+            action_help: Return the manifest of a given app from the catalog, or from a remote git repo
             api: GET /apps/manifest
             arguments:
                 app:
