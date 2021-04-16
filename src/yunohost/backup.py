@@ -538,8 +538,8 @@ class BackupManager:
         # Add unlisted files from backup tmp dir
         self._add_to_list_to_backup("backup.csv")
         self._add_to_list_to_backup("info.json")
-        if len(self.apps_return) > 0:
-            self._add_to_list_to_backup("apps")
+        for app in self.apps_return.keys():
+            self._add_to_list_to_backup(f"apps/{app}")
         if os.path.isdir(os.path.join(self.work_dir, "conf")):
             self._add_to_list_to_backup("conf")
         if os.path.isdir(os.path.join(self.work_dir, "data")):
@@ -792,25 +792,28 @@ class BackupManager:
             self.size_details["apps"][app_key] = 0
 
         for row in self.paths_to_backup:
-            if row["dest"] != "info.json":
-                size = disk_usage(row["source"])
+            if row["dest"] == "info.json":
+                continue
 
-                # Add size to apps details
-                splitted_dest = row["dest"].split("/")
-                category = splitted_dest[0]
-                if category == "apps":
-                    for app_key in self.apps_return:
-                        if row["dest"].startswith("apps/" + app_key):
-                            self.size_details["apps"][app_key] += size
-                            break
-                # OR Add size to the correct system element
-                elif category == "data" or category == "conf":
-                    for system_key in self.system_return:
-                        if row["dest"].startswith(system_key.replace("_", "/")):
-                            self.size_details["system"][system_key] += size
-                            break
+            size = disk_usage(row["source"])
 
-                self.size += size
+            # Add size to apps details
+            splitted_dest = row["dest"].split("/")
+            category = splitted_dest[0]
+            if category == "apps":
+                for app_key in self.apps_return:
+                    if row["dest"].startswith("apps/" + app_key):
+                        self.size_details["apps"][app_key] += size
+                        break
+
+            # OR Add size to the correct system element
+            elif category == "data" or category == "conf":
+                for system_key in self.system_return:
+                    if row["dest"].startswith(system_key.replace("_", "/")):
+                        self.size_details["system"][system_key] += size
+                        break
+
+            self.size += size
 
         return self.size
 
@@ -2166,7 +2169,7 @@ class CustomBackupMethod(BackupMethod):
 @is_unit_operation()
 def backup_create(
     operation_logger,
-    name=None, description=None, methods=[], output_directory=None, system=[], apps=[]
+    name=None, description=None, methods=[], output_directory=None, system=[], apps=[], dry_run=False
 ):
     """
     Create a backup local archive
@@ -2248,8 +2251,15 @@ def backup_create(
     # Collect files to be backup (by calling app backup script / system hooks)
     backup_manager.collect_files()
 
+    if dry_run:
+        return {
+            "size": backup_manager.size,
+            "size_details": backup_manager.size_details
+        }
+
     # Apply backup methods on prepared files
     logger.info(m18n.n("backup_actually_backuping"))
+    logger.info(m18n.n("backup_create_size_estimation", size=binary_to_human(backup_manager.size) + "B"))
     backup_manager.backup()
 
     logger.success(m18n.n("backup_created"))

@@ -95,6 +95,7 @@
     "backup_copying_to_organize_the_archive": "Copying {size:s}MB to organize the archive",
     "backup_couldnt_bind": "Could not bind {src:s} to {dest:s}.",
     "backup_created": "Backup created",
+    "backup_create_size_estimation": "The archive will contain about {size} of data.",
     "backup_creation_failed": "Could not create the backup archive",
     "backup_csv_addition_failed": "Could not add files to backup into the CSV file",
     "backup_csv_creation_failed": "Could not create the CSV file needed for restoration",
