@@ -1,8 +1,4 @@
-import time
-import os
-
 from moulinette import m18n
-from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
