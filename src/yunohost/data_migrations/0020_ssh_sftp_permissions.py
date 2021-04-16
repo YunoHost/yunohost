@@ -19,6 +19,7 @@ class MyMigration(Migration):
         Add new permissions around SSH/SFTP features
     """
 
+    introduced_in_version = "4.2.2"
     dependencies = ["extend_permissions_features"]
 
     @Migration.ldap_migration
@@ -37,14 +38,20 @@ class MyMigration(Migration):
         users = ldap.search('ou=users,dc=yunohost,dc=org', filter="(loginShell=*)", attrs=["dn", "uid", "loginShell"])
         for user in users:
             if user['loginShell'][0] == '/bin/false':
-                dn=user['dn'][0].replace(',dc=yunohost,dc=org', '')
+                dn = user['dn'][0].replace(',dc=yunohost,dc=org', '')
                 ldap.update(dn, {'loginShell': ['/bin/bash']})
             else:
                 user_permission_update("ssh.main", add=user["uid"][0], sync_perm=False)
 
         permission_sync_to_user()
 
-
         # Somehow this is needed otherwise the PAM thing doesn't forget about the
         # old loginShell value ?
         subprocess.call(['nscd', '-i', 'passwd'])
+
+    def run_after_system_restore(self):
+        self.run()
+
+    def run_before_app_restore(self, app_id):
+        # Nothing to do during app backup restore for this migration
+        pass

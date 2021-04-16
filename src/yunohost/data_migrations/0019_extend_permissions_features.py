@@ -91,7 +91,7 @@ class MyMigration(Migration):
         # Update LDAP database
         self.add_new_ldap_attributes()
 
-    def run_before_system_restore(self, app_id):
+    def run_before_app_restore(self, app_id):
         from yunohost.app import app_setting
         from yunohost.utils.legacy import migrate_legacy_permission_settings
 
@@ -109,56 +109,3 @@ class MyMigration(Migration):
             for setting in legacy_permission_settings
         ):
             migrate_legacy_permission_settings(app=app_id)
-
-
-    def run(self):
-
-        # FIXME : what do we really want to do here ...
-        # Imho we should just force-regen the conf in all case, and maybe
-        # just display a warning if we detect that the conf was manually modified
-
-        # Backup LDAP and the apps settings before to do the migration
-        logger.info(m18n.n("migration_0019_backup_before_migration"))
-        try:
-            backup_folder = "/home/yunohost.backup/premigration/" + time.strftime(
-                "%Y%m%d-%H%M%S", time.gmtime()
-            )
-            os.makedirs(backup_folder, 0o750)
-            os.system("systemctl stop slapd")
-            os.system("cp -r --preserve /etc/ldap %s/ldap_config" % backup_folder)
-            os.system("cp -r --preserve /var/lib/ldap %s/ldap_db" % backup_folder)
-            os.system(
-                "cp -r --preserve /etc/yunohost/apps %s/apps_settings" % backup_folder
-            )
-        except Exception as e:
-            raise YunohostError(
-                "migration_0019_can_not_backup_before_migration", error=e
-            )
-        finally:
-            os.system("systemctl start slapd")
-
-        try:
-            # Update LDAP database
-            self.add_new_ldap_attributes()
-
-            # Migrate old settings
-            migrate_legacy_permission_settings()
-
-        except Exception:
-            logger.warn(m18n.n("migration_0019_migration_failed_trying_to_rollback"))
-            os.system("systemctl stop slapd")
-            os.system(
-                "rm -r /etc/ldap/slapd.d"
-            )  # To be sure that we don't keep some part of the old config
-            os.system("cp -r --preserve %s/ldap_config/. /etc/ldap/" % backup_folder)
-            os.system("cp -r --preserve %s/ldap_db/. /var/lib/ldap/" % backup_folder)
-            os.system(
-                "cp -r --preserve %s/apps_settings/. /etc/yunohost/apps/"
-                % backup_folder
-            )
-            os.system("systemctl start slapd")
-            os.system("rm -r " + backup_folder)
-            logger.info(m18n.n("migration_0019_rollback_success"))
-            raise
-        else:
-            os.system("rm -r " + backup_folder)
