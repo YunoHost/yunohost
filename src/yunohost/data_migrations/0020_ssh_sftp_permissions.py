@@ -1,4 +1,5 @@
 import subprocess
+import os
 
 from moulinette import m18n
 from moulinette.utils.log import getActionLogger
@@ -6,6 +7,7 @@ from moulinette.utils.filesystem import read_yaml
 
 from yunohost.tools import Migration
 from yunohost.permission import user_permission_update, permission_sync_to_user
+from yunohost.regenconf import manually_modified_files
 
 logger = getActionLogger('yunohost.migration')
 
@@ -48,6 +50,10 @@ class MyMigration(Migration):
         # Somehow this is needed otherwise the PAM thing doesn't forget about the
         # old loginShell value ?
         subprocess.call(['nscd', '-i', 'passwd'])
+
+        if '/etc/ssh/sshd_config' in manually_modified_files() \
+            and os.system("grep -q '^ *AllowGroups\\|^ *AllowUsers' /etc/ssh/sshd_config") != 0:
+                logger.error(m18n.n('diagnosis_sshd_config_insecure'))
 
     def run_after_system_restore(self):
         self.run()

@@ -35,6 +35,16 @@ class RegenconfDiagnoser(Diagnoser):
                     details=["diagnosis_regenconf_manually_modified_details"],
                 )
 
+        if any(f["path"] == '/etc/ssh/sshd_config' for f in regenconf_modified_files) \
+            and os.system("grep -q '^ *AllowGroups\\|^ *AllowUsers' /etc/ssh/sshd_config") != 0:
+                yield dict(
+                   meta={
+                       "test": "sshd_config_insecure"
+                   },
+                   status="ERROR",
+                   summary="diagnosis_sshd_config_insecure",
+                )
+
     def manually_modified_files(self):
 
         for category, infos in _get_regenconf_infos().items():
