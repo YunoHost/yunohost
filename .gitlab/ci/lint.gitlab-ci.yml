@@ -3,6 +3,7 @@
 ########################################
 # later we must fix lint and format-check jobs and remove "allow_failure"
 
+---
 lint37:
   stage: lint
   image: "before-install"
@@ -43,5 +44,5 @@ format-run:
     - hub commit -am "[CI] Format code" || true
     - hub pull-request -m "[CI] Format code" -b Yunohost:dev -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
   only:
-      refs:
-        - dev
+    refs:
+      - dev
