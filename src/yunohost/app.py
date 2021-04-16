@@ -3460,6 +3460,7 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     # Stupid tmp fix to try to track why the tests are failing
     if "php7.3-fpm" in [s for s, status in services_status.items() if status['status'] != "running"]:
+        logger.info([status for s, status in services_status.items() if status['status'] != "running"])
         os.system("journalctl -u php7.3-fpm -n 300 --no-hostname --no-pager")
 
     if faulty_services:
