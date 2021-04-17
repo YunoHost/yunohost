@@ -413,7 +413,9 @@ def tools_update(target=None, apps=False, system=False):
 
     # Legacy options (--system, --apps)
     if apps or system:
-        logger.warning("Using 'yunohost tools update' with --apps / --system is deprecated, just write 'yunohost tools update apps system' (no -- prefix anymore)")
+        logger.warning(
+            "Using 'yunohost tools update' with --apps / --system is deprecated, just write 'yunohost tools update apps system' (no -- prefix anymore)"
+        )
         if apps and system:
             target = "all"
         elif apps:
@@ -425,7 +427,10 @@ def tools_update(target=None, apps=False, system=False):
         target = "all"
 
     if target not in ["system", "apps", "all"]:
-        raise YunohostError("Unknown target %s, should be 'system', 'apps' or 'all'" % target, raw_msg=True)
+        raise YunohostError(
+            "Unknown target %s, should be 'system', 'apps' or 'all'" % target,
+            raw_msg=True,
+        )
 
     upgradable_system_packages = []
     if target in ["system", "all"]:
@@ -548,7 +553,9 @@ def tools_upgrade(
     # Legacy options management (--system, --apps)
     if target is None:
 
-        logger.warning("Using 'yunohost tools upgrade' with --apps / --system is deprecated, just write 'yunohost tools upgrade apps' or 'system' (no -- prefix anymore)")
+        logger.warning(
+            "Using 'yunohost tools upgrade' with --apps / --system is deprecated, just write 'yunohost tools upgrade apps' or 'system' (no -- prefix anymore)"
+        )
 
         if (system, apps) == (True, True):
             raise YunohostValidationError("tools_upgrade_cant_both")
@@ -559,7 +566,9 @@ def tools_upgrade(
         target = "apps" if apps else "system"
 
     if target not in ["apps", "system"]:
-        raise Exception("Uhoh ?! tools_upgrade should have 'apps' or 'system' value for argument target")
+        raise Exception(
+            "Uhoh ?! tools_upgrade should have 'apps' or 'system' value for argument target"
+        )
 
     #
     # Apps
@@ -914,9 +923,13 @@ def tools_migrations_run(
         pending = [t.id for t in targets if t.state == "pending"]
 
         if skip and done:
-            raise YunohostValidationError("migrations_not_pending_cant_skip", ids=", ".join(done))
+            raise YunohostValidationError(
+                "migrations_not_pending_cant_skip", ids=", ".join(done)
+            )
         if force_rerun and pending:
-            raise YunohostValidationError("migrations_pending_cant_rerun", ids=", ".join(pending))
+            raise YunohostValidationError(
+                "migrations_pending_cant_rerun", ids=", ".join(pending)
+            )
         if not (skip or force_rerun) and done:
             raise YunohostValidationError("migrations_already_ran", ids=", ".join(done))
 
@@ -1129,9 +1142,11 @@ def _tools_migrations_run_after_system_restore(backup_version):
         return
 
     for migration in all_migrations:
-        if hasattr(migration, "introduced_in_version") \
-           and version.parse(migration.introduced_in_version) > backup_version \
-           and hasattr(migration, "run_after_system_restore"):
+        if (
+            hasattr(migration, "introduced_in_version")
+            and version.parse(migration.introduced_in_version) > backup_version
+            and hasattr(migration, "run_after_system_restore")
+        ):
             try:
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
                 migration.run_after_system_restore()
@@ -1154,9 +1169,11 @@ def _tools_migrations_run_before_app_restore(backup_version, app_id):
         return
 
     for migration in all_migrations:
-        if hasattr(migration, "introduced_in_version") \
-           and version.parse(migration.introduced_in_version) > backup_version \
-           and hasattr(migration, "run_before_app_restore"):
+        if (
+            hasattr(migration, "introduced_in_version")
+            and version.parse(migration.introduced_in_version) > backup_version
+            and hasattr(migration, "run_before_app_restore")
+        ):
             try:
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
                 migration.run_before_app_restore(app_id)
@@ -1166,6 +1183,7 @@ def _tools_migrations_run_before_app_restore(backup_version, app_id):
                 )
                 logger.error(msg, exc_info=1)
                 raise
+
 
 class Migration(object):
 
@@ -1193,7 +1211,6 @@ class Migration(object):
         return m18n.n("migration_description_%s" % self.id)
 
     def ldap_migration(run):
-
         def func(self):
 
             # Backup LDAP before the migration
@@ -1206,7 +1223,9 @@ class Migration(object):
                 os.system("systemctl stop slapd")
                 os.system(f"cp -r --preserve /etc/ldap {backup_folder}/ldap_config")
                 os.system(f"cp -r --preserve /var/lib/ldap {backup_folder}/ldap_db")
-                os.system(f"cp -r --preserve /etc/yunohost/apps {backup_folder}/apps_settings")
+                os.system(
+                    f"cp -r --preserve /etc/yunohost/apps {backup_folder}/apps_settings"
+                )
             except Exception as e:
                 raise YunohostError(
                     "migration_ldap_can_not_backup_before_migration", error=str(e)
@@ -1217,13 +1236,17 @@ class Migration(object):
             try:
                 run(self, backup_folder)
             except Exception:
-                logger.warning(m18n.n("migration_ldap_migration_failed_trying_to_rollback"))
+                logger.warning(
+                    m18n.n("migration_ldap_migration_failed_trying_to_rollback")
+                )
                 os.system("systemctl stop slapd")
                 # To be sure that we don't keep some part of the old config
                 os.system("rm -r /etc/ldap/slapd.d")
                 os.system(f"cp -r --preserve {backup_folder}/ldap_config/. /etc/ldap/")
                 os.system(f"cp -r --preserve {backup_folder}/ldap_db/. /var/lib/ldap/")
-                os.system(f"cp -r --preserve {backup_folder}/apps_settings/. /etc/yunohost/apps/")
+                os.system(
+                    f"cp -r --preserve {backup_folder}/apps_settings/. /etc/yunohost/apps/"
+                )
                 os.system("systemctl start slapd")
                 os.system(f"rm -r {backup_folder}")
                 logger.info(m18n.n("migration_ldap_rollback_success"))

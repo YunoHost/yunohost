@@ -99,17 +99,15 @@ def user_ssh_remove_key(username, key):
     if not os.path.exists(authorized_keys_file):
         raise YunohostValidationError(
             "this key doesn't exists ({} dosesn't exists)".format(authorized_keys_file),
-            raw_msg=True
+            raw_msg=True,
         )
 
     authorized_keys_content = read_file(authorized_keys_file)
 
     if key not in authorized_keys_content:
         raise YunohostValidationError(
-            "Key '{}' is not present in authorized_keys".format(key),
-            raw_msg=True
+            "Key '{}' is not present in authorized_keys".format(key), raw_msg=True
         )
-
 
     # don't delete the previous comment because we can't verify if it's legit
 

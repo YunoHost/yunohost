@@ -193,7 +193,9 @@ def app_info(app, full=False):
         )
 
     local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
-    permissions = user_permission_list(full=True, absolute_urls=True, apps=[app])["permissions"]
+    permissions = user_permission_list(full=True, absolute_urls=True, apps=[app])[
+        "permissions"
+    ]
 
     settings = _get_app_settings(app)
 
@@ -325,7 +327,9 @@ def app_map(app=None, raw=False, user=None):
     else:
         apps = _installed_apps()
 
-    permissions = user_permission_list(full=True, absolute_urls=True, apps=apps)["permissions"]
+    permissions = user_permission_list(full=True, absolute_urls=True, apps=apps)[
+        "permissions"
+    ]
     for app_id in apps:
         app_settings = _get_app_settings(app_id)
         if not app_settings:
@@ -782,6 +786,7 @@ def app_manifest(app):
 
     return manifest
 
+
 @is_unit_operation()
 def app_install(
     operation_logger,
@@ -1106,10 +1111,7 @@ def app_install(
 
             permission_sync_to_user()
 
-            raise YunohostError(
-                failure_message_with_debug_instructions,
-                raw_msg=True
-            )
+            raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
 
     # Clean hooks and add new ones
     hook_remove(app_instance_name)
@@ -2232,9 +2234,13 @@ def _extract_app_from_file(path):
     extracted_app_folder = _make_tmp_workdir_for_app()
 
     if ".zip" in path:
-        extract_result = os.system(f"unzip '{path}' -d {extracted_app_folder} > /dev/null 2>&1")
+        extract_result = os.system(
+            f"unzip '{path}' -d {extracted_app_folder} > /dev/null 2>&1"
+        )
     elif ".tar" in path:
-        extract_result = os.system(f"tar -xf '{path}' -C {extracted_app_folder} > /dev/null 2>&1")
+        extract_result = os.system(
+            f"tar -xf '{path}' -C {extracted_app_folder} > /dev/null 2>&1"
+        )
     elif os.path.isdir(path):
         shutil.rmtree(extracted_app_folder)
         if path[-1] != "/":
@@ -2746,7 +2752,9 @@ class YunoHostArgumentFormatParser(object):
         # we don't have an answer, check optional and default_value
         if question.value is None or question.value == "":
             if not question.optional and question.default is None:
-                raise YunohostValidationError("app_argument_required", name=question.name)
+                raise YunohostValidationError(
+                    "app_argument_required", name=question.name
+                )
             else:
                 question.value = (
                     getattr(self, "default_value", None)
@@ -2804,7 +2812,9 @@ class PasswordArgumentParser(YunoHostArgumentFormatParser):
         )
 
         if question.default is not None:
-            raise YunohostValidationError("app_argument_password_no_default", name=question.name)
+            raise YunohostValidationError(
+                "app_argument_password_no_default", name=question.name
+            )
 
         return question
 
@@ -3114,7 +3124,9 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
         if full_domain:
             raise YunohostValidationError("app_full_domain_unavailable", domain=domain)
         else:
-            raise YunohostValidationError("app_location_unavailable", apps="\n".join(apps))
+            raise YunohostValidationError(
+                "app_location_unavailable", apps="\n".join(apps)
+            )
 
 
 def _make_environment_for_app_script(app, args={}, args_prefix="APP_ARG_"):
@@ -3340,6 +3352,7 @@ def _load_apps_catalog():
 # ############################### #
 #
 
+
 def _make_tmp_workdir_for_app(app=None):
 
     # Create parent dir if it doesn't exists yet
@@ -3425,11 +3438,15 @@ def _assert_system_is_sane_for_app(manifest, when):
         if not any(s for s in services if service_status(s)["status"] == "reloading"):
             break
         time.sleep(0.5)
-        test_nb+=1
+        test_nb += 1
 
     # List services currently down and raise an exception if any are found
-    services_status = {s:service_status(s) for s in services}
-    faulty_services = [f"{s} ({status['status']})" for s, status in services_status.items() if status['status'] != "running"]
+    services_status = {s: service_status(s) for s in services}
+    faulty_services = [
+        f"{s} ({status['status']})"
+        for s, status in services_status.items()
+        if status["status"] != "running"
+    ]
 
     if faulty_services:
         if when == "pre":

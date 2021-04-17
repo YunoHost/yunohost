@@ -122,7 +122,7 @@ def domain_add(operation_logger, domain, dyndns=False):
 
         # Do not allow to subscribe to multiple dyndns domains...
         if _guess_current_dyndns_domain("dyndns.yunohost.org") != (None, None):
-            raise YunohostValidationError('domain_dyndns_already_subscribed')
+            raise YunohostValidationError("domain_dyndns_already_subscribed")
 
         # Check that this domain can effectively be provided by
         # dyndns.yunohost.org. (i.e. is it a nohost.me / noho.st)
@@ -133,6 +133,7 @@ def domain_add(operation_logger, domain, dyndns=False):
 
     if dyndns:
         from yunohost.dyndns import dyndns_subscribe
+
         # Actually subscribe
         dyndns_subscribe(domain=domain)
 
@@ -197,8 +198,8 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     # the 'force' here is related to the exception happening in domain_add ...
     # we don't want to check the domain exists because the ldap add may have
     # failed
-    if not force and domain not in domain_list()['domains']:
-        raise YunohostValidationError('domain_name_unknown', domain=domain)
+    if not force and domain not in domain_list()["domains"]:
+        raise YunohostValidationError("domain_name_unknown", domain=domain)
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
@@ -212,7 +213,9 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
                 other_domains="\n * " + ("\n * ".join(other_domains)),
             )
         else:
-            raise YunohostValidationError("domain_cannot_remove_main_add_new_one", domain=domain)
+            raise YunohostValidationError(
+                "domain_cannot_remove_main_add_new_one", domain=domain
+            )
 
     # Check if apps are installed on the domain
     apps_on_that_domain = []
@@ -221,21 +224,37 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
         settings = _get_app_settings(app)
         label = app_info(app)["name"]
         if settings.get("domain") == domain:
-            apps_on_that_domain.append((app, "    - %s \"%s\" on https://%s%s" % (app, label, domain, settings["path"]) if "path" in settings else app))
+            apps_on_that_domain.append(
+                (
+                    app,
+                    '    - %s "%s" on https://%s%s'
+                    % (app, label, domain, settings["path"])
+                    if "path" in settings
+                    else app,
+                )
+            )
 
     if apps_on_that_domain:
         if remove_apps:
-            if msettings.get('interface') == "cli" and not force:
-                answer = msignals.prompt(m18n.n('domain_remove_confirm_apps_removal',
-                                                apps="\n".join([x[1] for x in apps_on_that_domain]),
-                                                answers='y/N'), color="yellow")
+            if msettings.get("interface") == "cli" and not force:
+                answer = msignals.prompt(
+                    m18n.n(
+                        "domain_remove_confirm_apps_removal",
+                        apps="\n".join([x[1] for x in apps_on_that_domain]),
+                        answers="y/N",
+                    ),
+                    color="yellow",
+                )
                 if answer.upper() != "Y":
                     raise YunohostError("aborting")
 
             for app, _ in apps_on_that_domain:
                 app_remove(app)
         else:
-            raise YunohostValidationError('domain_uninstall_app_first', apps="\n".join([x[1] for x in apps_on_that_domain]))
+            raise YunohostValidationError(
+                "domain_uninstall_app_first",
+                apps="\n".join([x[1] for x in apps_on_that_domain]),
+            )
 
     operation_logger.start()
 
@@ -248,7 +267,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     os.system("rm -rf /etc/yunohost/certs/%s" % domain)
 
     # Delete dyndns keys for this domain (if any)
-    os.system('rm -rf /etc/yunohost/dyndns/K%s.+*' % domain)
+    os.system("rm -rf /etc/yunohost/dyndns/K%s.+*" % domain)
 
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...

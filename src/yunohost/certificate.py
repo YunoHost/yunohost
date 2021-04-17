@@ -455,6 +455,7 @@ def certificate_renew(
 # Back-end stuff                                                            #
 #
 
+
 def _email_renewing_failed(domain, exception_message, stack=""):
     from_ = "certmanager@%s (Certificate Manager)" % domain
     to_ = "root"
@@ -872,7 +873,9 @@ def _check_domain_is_ready_for_ACME(domain):
     )
 
     if not dnsrecords or not httpreachable:
-        raise YunohostValidationError("certmanager_domain_not_diagnosed_yet", domain=domain)
+        raise YunohostValidationError(
+            "certmanager_domain_not_diagnosed_yet", domain=domain
+        )
 
     # Check if IP from DNS matches public IP
     if not dnsrecords.get("status") in [
@@ -885,7 +888,9 @@ def _check_domain_is_ready_for_ACME(domain):
 
     # Check if domain seems to be accessible through HTTP?
     if not httpreachable.get("status") == "SUCCESS":
-        raise YunohostValidationError("certmanager_domain_http_not_working", domain=domain)
+        raise YunohostValidationError(
+            "certmanager_domain_http_not_working", domain=domain
+        )
 
 
 # FIXME / TODO : ideally this should not be needed. There should be a proper

@@ -118,7 +118,9 @@ def user_create(
     # Validate domain used for email address/xmpp account
     if domain is None:
         if msettings.get("interface") == "api":
-            raise YunohostValidationError("Invalid usage, you should specify a domain argument")
+            raise YunohostValidationError(
+                "Invalid usage, you should specify a domain argument"
+            )
         else:
             # On affiche les differents domaines possibles
             msignals.display(m18n.n("domains_available"))
@@ -223,7 +225,9 @@ def user_create(
             logger.warning(m18n.n("user_home_creation_failed"), exc_info=1)
 
     try:
-        subprocess.check_call(["setfacl", "-m", "g:all_users:---", "/home/%s" % username])
+        subprocess.check_call(
+            ["setfacl", "-m", "g:all_users:---", "/home/%s" % username]
+        )
     except subprocess.CalledProcessError:
         logger.warning("Failed to protect /home/%s" % username, exc_info=1)
 
@@ -412,7 +416,9 @@ def user_update(
             try:
                 ldap.validate_uniqueness({"mail": mail})
             except Exception as e:
-                raise YunohostValidationError("user_update_failed", user=username, error=e)
+                raise YunohostValidationError(
+                    "user_update_failed", user=username, error=e
+                )
             if mail[mail.find("@") + 1 :] not in domains:
                 raise YunohostValidationError(
                     "mail_domain_unknown", domain=mail[mail.find("@") + 1 :]
@@ -649,7 +655,9 @@ def user_group_create(
                 "sed --in-place '/^%s:/d' /etc/group" % groupname, shell=True
             )
         else:
-            raise YunohostValidationError("group_already_exist_on_system", group=groupname)
+            raise YunohostValidationError(
+                "group_already_exist_on_system", group=groupname
+            )
 
     if not gid:
         # Get random GID
@@ -758,7 +766,9 @@ def user_group_update(
         elif groupname == "visitors":
             raise YunohostValidationError("group_cannot_edit_visitors")
         elif groupname in existing_users:
-            raise YunohostValidationError("group_cannot_edit_primary_group", group=groupname)
+            raise YunohostValidationError(
+                "group_cannot_edit_primary_group", group=groupname
+            )
 
     # We extract the uid for each member of the group to keep a simple flat list of members
     current_group = user_group_info(groupname)["members"]
@@ -864,9 +874,7 @@ def user_group_add(groupname, usernames, force=False, sync_perm=True):
         usernames -- User(s) to add in the group
 
     """
-    return user_group_update(
-        groupname, add=usernames, force=force, sync_perm=sync_perm
-    )
+    return user_group_update(groupname, add=usernames, force=force, sync_perm=sync_perm)
 
 
 def user_group_remove(groupname, usernames, force=False, sync_perm=True):
@@ -891,7 +899,9 @@ def user_group_remove(groupname, usernames, force=False, sync_perm=True):
 def user_permission_list(short=False, full=False, apps=[]):
     import yunohost.permission
 
-    return yunohost.permission.user_permission_list(short, full, absolute_urls=True, apps=apps)
+    return yunohost.permission.user_permission_list(
+        short, full, absolute_urls=True, apps=apps
+    )
 
 
 def user_permission_update(permission, label=None, show_tile=None, sync_perm=True):
@@ -902,9 +912,7 @@ def user_permission_update(permission, label=None, show_tile=None, sync_perm=Tru
     )
 
 
-def user_permission_add(
-    permission, names, protected=None, force=False, sync_perm=True
-):
+def user_permission_add(permission, names, protected=None, force=False, sync_perm=True):
     import yunohost.permission
 
     return yunohost.permission.user_permission_update(
