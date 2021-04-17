@@ -53,7 +53,7 @@ from yunohost.app import (
     _patch_legacy_php_versions,
     _patch_legacy_php_versions_in_settings,
     LEGACY_PHP_VERSION_REPLACEMENTS,
-    _make_tmp_workdir_for_app
+    _make_tmp_workdir_for_app,
 )
 from yunohost.hook import (
     hook_list,
@@ -62,7 +62,11 @@ from yunohost.hook import (
     hook_exec,
     CUSTOM_HOOK_FOLDER,
 )
-from yunohost.tools import tools_postinstall, _tools_migrations_run_after_system_restore, _tools_migrations_run_before_app_restore
+from yunohost.tools import (
+    tools_postinstall,
+    _tools_migrations_run_after_system_restore,
+    _tools_migrations_run_before_app_restore,
+)
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger, is_unit_operation
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -716,7 +720,9 @@ class BackupManager:
 
             hook_exec(
                 f"{tmp_workdir_for_app}/scripts/backup",
-                raise_on_error=True, chdir=tmp_app_bkp_dir, env=env_dict
+                raise_on_error=True,
+                chdir=tmp_app_bkp_dir,
+                env=env_dict,
             )[0]
 
             self._import_to_list_to_backup(env_dict["YNH_BACKUP_CSV"])
@@ -724,10 +730,7 @@ class BackupManager:
             # backup permissions
             logger.debug(m18n.n("backup_permission", app=app))
             permissions = user_permission_list(full=True, apps=[app])["permissions"]
-            this_app_permissions = {
-                name: infos
-                for name, infos in permissions.items()
-            }
+            this_app_permissions = {name: infos for name, infos in permissions.items()}
             write_to_yaml("%s/permissions.yml" % settings_dir, this_app_permissions)
 
         except Exception:
@@ -857,7 +860,9 @@ class RestoreManager:
         # FIXME this way to get the info is not compatible with copy or custom
         # backup methods
         self.info = backup_info(name, with_details=True)
-        if not self.info["from_yunohost_version"] or version.parse(self.info["from_yunohost_version"]) < version.parse("3.8.0"):
+        if not self.info["from_yunohost_version"] or version.parse(
+            self.info["from_yunohost_version"]
+        ) < version.parse("3.8.0"):
             raise YunohostValidationError("restore_backup_too_old")
 
         self.archive_path = self.info["path"]
@@ -1279,7 +1284,9 @@ class RestoreManager:
 
         regen_conf()
 
-        _tools_migrations_run_after_system_restore(backup_version=self.info["from_yunohost_version"])
+        _tools_migrations_run_after_system_restore(
+            backup_version=self.info["from_yunohost_version"]
+        )
 
         # Remove all permission for all app still in the LDAP
         for permission_name in user_permission_list(ignore_system_perms=True)[
@@ -1409,7 +1416,9 @@ class RestoreManager:
 
             # Restore permissions
             if not os.path.isfile("%s/permissions.yml" % app_settings_new_path):
-                raise YunohostError("Didnt find a permssions.yml for the app !?", raw_msg=True)
+                raise YunohostError(
+                    "Didnt find a permssions.yml for the app !?", raw_msg=True
+                )
 
             permissions = read_yaml("%s/permissions.yml" % app_settings_new_path)
             existing_groups = user_group_list()["groups"]
@@ -1424,9 +1433,7 @@ class RestoreManager:
                     should_be_allowed = ["all_users"]
                 else:
                     should_be_allowed = [
-                        g
-                        for g in permission_infos["allowed"]
-                        if g in existing_groups
+                        g for g in permission_infos["allowed"] if g in existing_groups
                     ]
 
                 perm_name = permission_name.split(".")[1]
@@ -1448,9 +1455,13 @@ class RestoreManager:
 
             os.remove("%s/permissions.yml" % app_settings_new_path)
 
-            _tools_migrations_run_before_app_restore(backup_version=self.info["from_yunohost_version"], app_id=app_instance_name)
+            _tools_migrations_run_before_app_restore(
+                backup_version=self.info["from_yunohost_version"],
+                app_id=app_instance_name,
+            )
         except Exception:
             import traceback
+
             error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
             msg = m18n.n("app_restore_failed", app=app_instance_name, error=error)
             logger.error(msg)
@@ -1493,20 +1504,27 @@ class RestoreManager:
             restore_failed = True if restore_retcode != 0 else False
             if restore_failed:
                 error = m18n.n("app_restore_script_failed")
-                logger.error(m18n.n("app_restore_failed", app=app_instance_name, error=error))
+                logger.error(
+                    m18n.n("app_restore_failed", app=app_instance_name, error=error)
+                )
                 failure_message_with_debug_instructions = operation_logger.error(error)
                 if msettings.get("interface") != "api":
                     dump_app_log_extract_for_debugging(operation_logger)
         # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
             error = m18n.n("operation_interrupted")
-            logger.error(m18n.n("app_restore_failed", app=app_instance_name, error=error))
+            logger.error(
+                m18n.n("app_restore_failed", app=app_instance_name, error=error)
+            )
             failure_message_with_debug_instructions = operation_logger.error(error)
         # Something wrong happened in Yunohost's code (most probably hook_exec)
         except Exception:
             import traceback
+
             error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-            logger.error(m18n.n("app_restore_failed", app=app_instance_name, error=error))
+            logger.error(
+                m18n.n("app_restore_failed", app=app_instance_name, error=error)
+            )
             failure_message_with_debug_instructions = operation_logger.error(error)
         finally:
             # Cleaning temporary scripts directory
@@ -1550,6 +1568,7 @@ class RestoreManager:
                 # TODO Cleaning app hooks
 
                 logger.error(failure_message_with_debug_instructions)
+
 
 #
 # Backup methods                                                            #
@@ -2163,7 +2182,13 @@ class CustomBackupMethod(BackupMethod):
 @is_unit_operation()
 def backup_create(
     operation_logger,
-    name=None, description=None, methods=[], output_directory=None, system=[], apps=[], dry_run=False
+    name=None,
+    description=None,
+    methods=[],
+    output_directory=None,
+    system=[],
+    apps=[],
+    dry_run=False,
 ):
     """
     Create a backup local archive
@@ -2248,12 +2273,17 @@ def backup_create(
     if dry_run:
         return {
             "size": backup_manager.size,
-            "size_details": backup_manager.size_details
+            "size_details": backup_manager.size_details,
         }
 
     # Apply backup methods on prepared files
     logger.info(m18n.n("backup_actually_backuping"))
-    logger.info(m18n.n("backup_create_size_estimation", size=binary_to_human(backup_manager.size) + "B"))
+    logger.info(
+        m18n.n(
+            "backup_create_size_estimation",
+            size=binary_to_human(backup_manager.size) + "B",
+        )
+    )
     backup_manager.backup()
 
     logger.success(m18n.n("backup_created"))
@@ -2291,9 +2321,9 @@ def backup_restore(name, system=[], apps=[], force=False):
     #
 
     if name.endswith(".tar.gz"):
-        name = name[:-len(".tar.gz")]
+        name = name[: -len(".tar.gz")]
     elif name.endswith(".tar"):
-        name = name[:-len(".tar")]
+        name = name[: -len(".tar")]
 
     restore_manager = RestoreManager(name)
 
@@ -2407,7 +2437,9 @@ def backup_download(name):
 
         # Raise exception if link is broken (e.g. on unmounted external storage)
         if not os.path.exists(archive_file):
-            raise YunohostValidationError("backup_archive_broken_link", path=archive_file)
+            raise YunohostValidationError(
+                "backup_archive_broken_link", path=archive_file
+            )
 
     # We return a raw bottle HTTPresponse (instead of serializable data like
     # list/dict, ...), which is gonna be picked and used directly by moulinette
@@ -2429,9 +2461,9 @@ def backup_info(name, with_details=False, human_readable=False):
     """
 
     if name.endswith(".tar.gz"):
-        name = name[:-len(".tar.gz")]
+        name = name[: -len(".tar.gz")]
     elif name.endswith(".tar"):
-        name = name[:-len(".tar")]
+        name = name[: -len(".tar")]
 
     archive_file = "%s/%s.tar" % (ARCHIVES_PATH, name)
 
@@ -2447,7 +2479,9 @@ def backup_info(name, with_details=False, human_readable=False):
 
         # Raise exception if link is broken (e.g. on unmounted external storage)
         if not os.path.exists(archive_file):
-            raise YunohostValidationError("backup_archive_broken_link", path=archive_file)
+            raise YunohostValidationError(
+                "backup_archive_broken_link", path=archive_file
+            )
 
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 

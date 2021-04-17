@@ -103,6 +103,7 @@ DEFAULTS = OrderedDict(
     ]
 )
 
+
 def settings_get(key, full=False):
     """
     Get an entry value in the settings
@@ -114,7 +115,9 @@ def settings_get(key, full=False):
     settings = _get_settings()
 
     if key not in settings:
-        raise YunohostValidationError("global_settings_key_doesnt_exists", settings_key=key)
+        raise YunohostValidationError(
+            "global_settings_key_doesnt_exists", settings_key=key
+        )
 
     if full:
         return settings[key]
@@ -142,7 +145,9 @@ def settings_set(key, value):
     settings = _get_settings()
 
     if key not in settings:
-        raise YunohostValidationError("global_settings_key_doesnt_exists", settings_key=key)
+        raise YunohostValidationError(
+            "global_settings_key_doesnt_exists", settings_key=key
+        )
 
     key_type = settings[key]["type"]
 
@@ -219,7 +224,9 @@ def settings_reset(key):
     settings = _get_settings()
 
     if key not in settings:
-        raise YunohostValidationError("global_settings_key_doesnt_exists", settings_key=key)
+        raise YunohostValidationError(
+            "global_settings_key_doesnt_exists", settings_key=key
+        )
 
     settings[key]["value"] = settings[key]["default"]
     _save_settings(settings)
@@ -380,6 +387,7 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 #     # Do some stuff
 #
 # ===========================================
+
 
 @post_change_hook("ssowat.panel_overlay.enabled")
 @post_change_hook("security.nginx.compatibility")

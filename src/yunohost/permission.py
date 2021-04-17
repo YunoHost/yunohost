@@ -80,7 +80,9 @@ def user_permission_list(
     apps_base_path = {
         app: app_setting(app, "domain") + app_setting(app, "path")
         for app in apps
-        if app in installed_apps and app_setting(app, "domain") and app_setting(app, "path")
+        if app in installed_apps
+        and app_setting(app, "domain")
+        and app_setting(app, "path")
     }
 
     permissions = {}
@@ -179,7 +181,9 @@ def user_permission_update(
 
     # Refuse to add "visitors" to mail, xmpp ... they require an account to make sense.
     if add and "visitors" in add and permission.split(".")[0] in SYSTEM_PERMS:
-        raise YunohostValidationError("permission_require_account", permission=permission)
+        raise YunohostValidationError(
+            "permission_require_account", permission=permission
+        )
 
     # Refuse to add "visitors" to protected permission
     if (
@@ -189,8 +193,14 @@ def user_permission_update(
         raise YunohostValidationError("permission_protected", permission=permission)
 
     # Refuse to add "all_users" to ssh/sftp permissions
-    if permission.split(".")[0] in ["ssh", "sftp"] and (add and "all_users" in add) and not force:
-        raise YunohostValidationError("permission_cant_add_to_all_users", permission=permission)
+    if (
+        permission.split(".")[0] in ["ssh", "sftp"]
+        and (add and "all_users" in add)
+        and not force
+    ):
+        raise YunohostValidationError(
+            "permission_cant_add_to_all_users", permission=permission
+        )
 
     # Fetch currently allowed groups for this permission
 

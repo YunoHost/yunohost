@@ -30,7 +30,7 @@ def setup_function(function):
 def teardown_function(function):
     os.system("mv /etc/yunohost/settings.json.saved /etc/yunohost/settings.json")
     for filename in glob.glob("/etc/yunohost/settings-*.json"):
-        os.remove(filename) 
+        os.remove(filename)
 
 
 def test_settings_get_bool():
