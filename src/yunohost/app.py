@@ -3431,11 +3431,6 @@ def _assert_system_is_sane_for_app(manifest, when):
     services_status = {s:service_status(s) for s in services}
     faulty_services = [f"{s} ({status['status']})" for s, status in services_status.items() if status['status'] != "running"]
 
-    # Stupid tmp fix to try to track why the tests are failing
-    if "php7.3-fpm" in [s for s, status in services_status.items() if status['status'] != "running"]:
-        logger.info([status for s, status in services_status.items() if status['status'] != "running"])
-        os.system("journalctl -u php7.3-fpm -n 300 --no-hostname --no-pager")
-
     if faulty_services:
         if when == "pre":
             raise YunohostValidationError(
@@ -3609,7 +3604,7 @@ def _patch_legacy_helpers(app_folder):
             content = read_file(filename)
         except MoulinetteError:
             continue
-        
+
         replaced_stuff = False
         show_warning = False
 
