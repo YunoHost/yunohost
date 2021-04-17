@@ -63,7 +63,3 @@ class MyMigration(Migration):
 
     def run_after_system_restore(self):
         self.run()
-
-    def run_before_app_restore(self, app_id):
-        # Nothing to do during app backup restore for this migration
-        pass
