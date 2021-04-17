@@ -287,6 +287,12 @@ ynh_remove_fpm_config () {
         fpm_service="php$YNH_DEFAULT_PHP_VERSION-fpm"
     fi
 
+    ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
+    if [ -e $fpm_config_dir/conf.d/20-$app.ini ]
+    then
+        ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini"
+    fi
+
     if [ $dedicated_service -eq 1 ]
     then
         # Remove the dedicated service PHP-FPM service for the app
@@ -297,12 +303,6 @@ ynh_remove_fpm_config () {
         yunohost service remove $fpm_service
     elif ynh_package_is_installed --package="php${phpversion}-fpm"; then
         ynh_systemd_action --service_name=$fpm_service --action=reload
-    fi
-
-    ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
-    if [ -e $fpm_config_dir/conf.d/20-$app.ini ]
-    then
-        ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini"
     fi
 
     # If the PHP version used is not the default version for YunoHost
