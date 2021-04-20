@@ -3360,9 +3360,21 @@ def _make_tmp_workdir_for_app(app=None):
     if not os.path.exists(APP_TMP_WORKDIRS):
         os.makedirs(APP_TMP_WORKDIRS)
 
-    # Cleanup old dirs
+    now = int(time.time())
+
+    # Cleanup old dirs (if any)
     for dir_ in os.listdir(APP_TMP_WORKDIRS):
-        shutil.rmtree(os.path.join(APP_TMP_WORKDIRS, dir_))
+        path = os.path.join(APP_TMP_WORKDIRS, dir_)
+        # We only delete folders older than an arbitary 12 hours
+        # This is to cover the stupid case of upgrades
+        # Where many app will call 'yunohost backup create'
+        # from the upgrade script itself,
+        # which will also call this function while the upgrade
+        # script itself is running in one of those dir...
+        # It could be that there are other edge cases
+        # such as app-install-during-app-install
+        if os.stat(path).st_mtime < now - 12 * 3600:
+            shutil.rmtree(path)
     tmpdir = tempfile.mkdtemp(prefix="app_", dir=APP_TMP_WORKDIRS)
 
     # Copy existing app scripts, conf, ... if an app arg was provided
