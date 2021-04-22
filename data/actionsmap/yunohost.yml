@@ -673,7 +673,7 @@ app:
             api: DELETE /apps/<app>
             arguments:
                 app:
-                    help: App(s) to delete
+                    help: App to delete
 
         ### app_upgrade()
         upgrade:
