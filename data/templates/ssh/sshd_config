@@ -65,7 +65,7 @@ ClientAliveInterval 60
 AcceptEnv LANG LC_*
 
 # Disallow user without ssh or sftp permissions
-AllowGroups ssh.main sftp.main admins root
+AllowGroups ssh.main sftp.main ssh.app sftp.app admins root
 
 # Allow users to create tunnels or forwarding
 AllowTcpForwarding yes

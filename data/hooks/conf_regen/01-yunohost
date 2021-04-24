@@ -187,6 +187,10 @@ do_post_regen() {
   [[ ! -e /etc/yunohost/hooks.d ]] || (chown root /etc/yunohost/hooks.d && chmod 700 /etc/yunohost/hooks.d)
   [[ ! -e /etc/yunohost/apps ]] || (chown root /etc/yunohost/apps && chmod 700 /etc/yunohost/apps)
 
+  # Create ssh.app and sftp.app groups if they don't exist yet
+  grep -q '^ssh.app:' /etc/group || groupadd ssh.app
+  grep -q '^sftp.app:' /etc/group || groupadd sftp.app
+
   # Propagates changes in systemd service config overrides
   [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || { systemctl daemon-reload; systemctl restart ntp; }
   [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || systemctl daemon-reload
