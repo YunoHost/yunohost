@@ -193,7 +193,8 @@ def app_info(app, full=False):
             "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
         )
 
-    local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+    setting_path = os.path.join(APPS_SETTING_PATH, app)
+    local_manifest = _get_manifest_of_app(setting_path)
     permissions = user_permission_list(full=True, absolute_urls=True, apps=[app])[
         "permissions"
     ]
@@ -212,6 +213,7 @@ def app_info(app, full=False):
     if not full:
         return ret
 
+    ret["setting_path"] = setting_path
     ret["manifest"] = local_manifest
     ret["manifest"]["arguments"] = _set_default_ask_questions(
         ret["manifest"].get("arguments", {})
@@ -222,11 +224,11 @@ def app_info(app, full=False):
     ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
     ret["upgradable"] = _app_upgradable(ret)
     ret["supports_change_url"] = os.path.exists(
-        os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")
+        os.path.join(setting_path, "scripts", "change_url")
     )
     ret["supports_backup_restore"] = os.path.exists(
-        os.path.join(APPS_SETTING_PATH, app, "scripts", "backup")
-    ) and os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "restore"))
+        os.path.join(setting_path, "scripts", "backup")
+    ) and os.path.exists(os.path.join(setting_path, "scripts", "restore"))
     ret["supports_multi_instance"] = is_true(
         local_manifest.get("multi_instance", False)
     )
