@@ -582,5 +582,8 @@
     "restore_extracting": "Packe die benötigten Dateien aus dem Archiv aus…",
     "restore_already_installed_apps": "Folgende Apps können nicht wiederhergestellt werden, weil sie schon installiert sind: {apps}",
     "regex_with_only_domain": "Du kannst regex nicht als Domain verwenden, sondern nur als Pfad",
-    "root_password_desynchronized": "Das Admin-Passwort wurde verändert, aber das root Passwort ist immer noch das alte."
+    "root_password_desynchronized": "Das Admin-Passwort wurde verändert, aber das root Passwort ist immer noch das alte.",
+    "regenconf_need_to_explicitly_specify_ssh": "Die SSH-Konfiguration wurde manuell modifiziert, aber Sie müssen explizit die Kategorie 'SSH' mit --force spezifizieren, um die Änderungen tatsächlich anzuwenden.",
+    "migration_update_LDAP_schema": "Aktualisiere das LDAP-Schema...",
+    "log_backup_create": "Erstelle ein Backup-Archiv"
 }
