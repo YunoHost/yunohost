@@ -1,3 +1,43 @@
+yunohost (4.2.2) testing; urgency=low
+
+  - permissions: Add SFTP / SSH permissions ([#606](https://github.com/yunohost/yunohost/pull/606))
+  - refactoring: Uniformize API routes ([#1192](https://github.com/yunohost/yunohost/pull/1192))
+  - settings: New setting to disable the 'YunoHost' panel overlay in apps ([#1071](https://github.com/yunohost/yunohost/pull/1071), 08fbfa2e)
+  - settings: New setting for custom ssh port ([#1209](https://github.com/yunohost/yunohost/pull/1209), 37c0825e, 95999fea)
+  - security: Redact 'passphrase' settings from logs ([#1206](https://github.com/yunohost/yunohost/pull/1206))
+  - security: Sane default permissions for files added using ynh_add_config and ynh_setup_source ([#1188](https://github.com/yunohost/yunohost/pull/1188))
+  - backup: Support having .tar / .tar.gz in the archive name arg of backup_info/restore (00ec7b2f)
+  - backup: Don't backup crons + manage crons from the regenconf ([#1184](https://github.com/yunohost/yunohost/pull/1184))
+  - backup: Drop support for archive restore from prior 3.8 ([#1203](https://github.com/yunohost/yunohost/pull/1203))
+  - backup: Introduce hooks during restore to apply migrations between archive version and current version ([#1203](https://github.com/yunohost/yunohost/pull/1203))
+  - backup: Create a proper operation log for backup_create (fe9f0731)
+  - backup: Improve error management for app restore ([#1191](https://github.com/yunohost/yunohost/pull/1191))
+  - backup: Rework content of system backups ([#1185](https://github.com/yunohost/yunohost/pull/1185))
+  - backup: Add a --dry-run option to backup_create to fetch an estimate of the backup size ([#1205](https://github.com/yunohost/yunohost/pull/1205))
+  - helpers: Add --keep option to ynh_setup_source to keep files that may be overwritten during upgrade ([#1200](https://github.com/yunohost/yunohost/pull/1200))
+  - helpers: Bump 'n' to version 7.1.0 ([#1197](https://github.com/yunohost/yunohost/pull/1197))
+  - mail: Support SMTPS Relay ([#1159](https://github.com/yunohost/yunohost/pull/1159))
+  - nginx: add header to disallow FLoC ([#1211](https://github.com/yunohost/yunohost/pull/1211))
+  - app: Add route to fetch app manifest for custom app installs in a forge-agnostic way ([#1213](https://github.com/yunohost/yunohost/pull/1213))
+  - perf: add optional 'apps' argument to user_permission_list to speed up user_info / user_list (e6312db3)
+  - ux: Add '--human-readable' to recommended command to display diagnosis issues in cli ([#1207](https://github.com/yunohost/yunohost/pull/1207))
+  - Misc enh/fixes, code quality (42f8c9dc, 86f22d1b, 1468073f, b33e7c16, d1f0064b, c3754dd6, 02a30125, aabe5f19, ce9f6b3d, d7786662, f9419c96, c92e495b, 0616d632, 92eb9704, [#1190](https://github.com/yunohost/yunohost/pull/1190), [#1201](https://github.com/yunohost/yunohost/pull/1201), [#1210](https://github.com/yunohost/yunohost/pull/1210), [#1214](https://github.com/yunohost/yunohost/pull/1214), [#1215](https://github.com/yunohost/yunohost/pull/1215))
+  - i18n: Translations updated for French, German
+
+  Thanks to all contributors <3 ! (axolotle, Bram, cyxae, Daniel, Éric G., grenagit, Josué, Kay0u, lapineige, ljf, Scapharnaum)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 17 Apr 2021 03:45:49 +0200
+
+yunohost (4.2.1.1) testing; urgency=low
+
+  - [fix] services.py, python3: missing decode() in subprocess output fetch (357c151c)
+  - [fix] log.py: don't inject log_ref if the operation didnt start yet (f878d61f)
+  - [fix] dyndns.py: Missing raw_msg=True (008e9f1d)
+  - [fix] firewall.py: Don't miserably crash when there are port ranges (6fd5f7e8)
+  - [fix] nginx conf: CSP rules for admin was blocking small images used for checkboxes, radio, pacman in the new webadmin (575fab8a)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 11 Apr 2021 20:15:11 +0200
+
 yunohost (4.2.1) testing; urgency=low
 
   - security: Various permissions tweaks to protect from malicious yunohost users (aefc100a, fc26837a)

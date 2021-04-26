@@ -1,5 +1,6 @@
 import os
 import json
+import glob
 import pytest
 
 from yunohost.utils.error import YunohostError
@@ -28,6 +29,8 @@ def setup_function(function):
 
 def teardown_function(function):
     os.system("mv /etc/yunohost/settings.json.saved /etc/yunohost/settings.json")
+    for filename in glob.glob("/etc/yunohost/settings-*.json"):
+        os.remove(filename)
 
 
 def test_settings_get_bool():
