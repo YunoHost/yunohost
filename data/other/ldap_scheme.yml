@@ -89,3 +89,25 @@ depends_children:
         label: "XMPP"
         showTile: "FALSE"
         isProtected: "TRUE"
+    cn=ssh.main,ou=permission:
+        cn: ssh.main
+        gidNumber: "5003"
+        objectClass:
+            - posixGroup
+            - permissionYnh
+        groupPermission: []
+        authHeader: "FALSE"
+        label: "SSH"
+        showTile: "FALSE"
+        isProtected: "TRUE"
+    cn=sftp.main,ou=permission:
+        cn: sftp.main
+        gidNumber: "5004"
+        objectClass:
+            - posixGroup
+            - permissionYnh
+        groupPermission: []
+        authHeader: "FALSE"
+        label: "SFTP"
+        showTile: "FALSE"
+        isProtected: "TRUE"

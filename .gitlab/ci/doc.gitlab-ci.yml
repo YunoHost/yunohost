@@ -12,7 +12,7 @@ generate-helpers-doc:
     - git config --global user.name "$GITHUB_USER"
   script:
     - cd doc
-    - python generate_helper_doc.py
+    - python3 generate_helper_doc.py
     - hub clone https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/doc.git doc_repo
     - cp helpers.md doc_repo/pages/02.contribute/04.packaging_apps/11.helpers/packaging_apps_helpers.md
     - cd doc_repo

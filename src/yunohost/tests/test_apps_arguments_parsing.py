@@ -1206,7 +1206,6 @@ def test_parse_args_in_yunohost_format_user_empty():
         "some_user": {
             "ssh_allowed": False,
             "username": "some_user",
-            "shell": "/bin/false",
             "mailbox-quota": "0",
             "mail": "p@ynh.local",
             "fullname": "the first name the last name",
@@ -1232,7 +1231,6 @@ def test_parse_args_in_yunohost_format_user():
         username: {
             "ssh_allowed": False,
             "username": "some_user",
-            "shell": "/bin/false",
             "mailbox-quota": "0",
             "mail": "p@ynh.local",
             "fullname": "the first name the last name",
@@ -1261,7 +1259,6 @@ def test_parse_args_in_yunohost_format_user_two_users():
         username: {
             "ssh_allowed": False,
             "username": "some_user",
-            "shell": "/bin/false",
             "mailbox-quota": "0",
             "mail": "p@ynh.local",
             "fullname": "the first name the last name",
@@ -1269,7 +1266,6 @@ def test_parse_args_in_yunohost_format_user_two_users():
         other_user: {
             "ssh_allowed": False,
             "username": "some_user",
-            "shell": "/bin/false",
             "mailbox-quota": "0",
             "mail": "z@ynh.local",
             "fullname": "john doe",
@@ -1304,7 +1300,6 @@ def test_parse_args_in_yunohost_format_user_two_users_wrong_answer():
         username: {
             "ssh_allowed": False,
             "username": "some_user",
-            "shell": "/bin/false",
             "mailbox-quota": "0",
             "mail": "p@ynh.local",
             "fullname": "the first name the last name",
@@ -1312,7 +1307,6 @@ def test_parse_args_in_yunohost_format_user_two_users_wrong_answer():
         other_user: {
             "ssh_allowed": False,
             "username": "some_user",
-            "shell": "/bin/false",
             "mailbox-quota": "0",
             "mail": "z@ynh.local",
             "fullname": "john doe",
@@ -1339,7 +1333,6 @@ def test_parse_args_in_yunohost_format_user_two_users_no_default():
         username: {
             "ssh_allowed": False,
             "username": "some_user",
-            "shell": "/bin/false",
             "mailbox-quota": "0",
             "mail": "p@ynh.local",
             "fullname": "the first name the last name",
@@ -1347,7 +1340,6 @@ def test_parse_args_in_yunohost_format_user_two_users_no_default():
         other_user: {
             "ssh_allowed": False,
             "username": "some_user",
-            "shell": "/bin/false",
             "mailbox-quota": "0",
             "mail": "z@ynh.local",
             "fullname": "john doe",
@@ -1369,7 +1361,6 @@ def test_parse_args_in_yunohost_format_user_two_users_default_input():
         username: {
             "ssh_allowed": False,
             "username": "some_user",
-            "shell": "/bin/false",
             "mailbox-quota": "0",
             "mail": "p@ynh.local",
             "fullname": "the first name the last name",
@@ -1377,7 +1368,6 @@ def test_parse_args_in_yunohost_format_user_two_users_default_input():
         other_user: {
             "ssh_allowed": False,
             "username": "some_user",
-            "shell": "/bin/false",
             "mailbox-quota": "0",
             "mail": "z@ynh.local",
             "fullname": "john doe",
