@@ -668,7 +668,7 @@ class BackupManager:
             self.targets.set_result("system", part, "Error")
 
     def _collect_apps_files(self):
-        """ Prepare backup for each selected apps """
+        """Prepare backup for each selected apps"""
 
         apps_targets = self.targets.list("apps", exclude=["Skipped"])
 
@@ -1214,7 +1214,7 @@ class RestoreManager:
                 writer.writerow(row)
 
     def _restore_system(self):
-        """ Restore user and system parts """
+        """Restore user and system parts"""
 
         system_targets = self.targets.list("system", exclude=["Skipped"])
 
@@ -1872,7 +1872,7 @@ class CopyBackupMethod(BackupMethod):
     method_name = "copy"
 
     def backup(self):
-        """ Copy prepared files into a the repo """
+        """Copy prepared files into a the repo"""
         # Check free space in output
         self._check_is_enough_free_space()
 
@@ -2626,7 +2626,7 @@ def backup_delete(name):
 
 
 def _create_archive_dir():
-    """ Create the YunoHost archives directory if doesn't exist """
+    """Create the YunoHost archives directory if doesn't exist"""
     if not os.path.isdir(ARCHIVES_PATH):
         if os.path.lexists(ARCHIVES_PATH):
             raise YunohostError("backup_output_symlink_dir_broken", path=ARCHIVES_PATH)
@@ -2637,7 +2637,7 @@ def _create_archive_dir():
 
 
 def _call_for_each_path(self, callback, csv_path=None):
-    """ Call a callback for each path in csv """
+    """Call a callback for each path in csv"""
     if csv_path is None:
         csv_path = self.csv_path
     with open(csv_path, "r") as backup_file:
