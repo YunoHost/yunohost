@@ -1,3 +1,15 @@
+yunohost (4.2.3) testing; urgency=low
+
+  - Fix a stupid issue where an app's tmp work dir would be deleted during upgrade because of the backup process (50af0393)
+  - cli ux: Don't suggest that we can remove multiple apps (4ae72cc3)
+  - ynh_port_available: also check ports used by other apps in settings.yml (381f789f)
+  - ssh: Add ssh.app, sftp.app groups to cover my_webapp and borg needing ssh access ([#1216](https://github.com/yunohost/yunohost/pull/1216))
+  - i18n: Translations updated for German
+
+  Thanks to all contributors <3 ! (Bram, Christian W.)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 26 Apr 2021 16:29:17 +0200
+
 yunohost (4.2.2) testing; urgency=low
 
   - permissions: Add SFTP / SSH permissions ([#606](https://github.com/yunohost/yunohost/pull/606))
