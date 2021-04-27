@@ -745,16 +745,20 @@ def domain_setting(domain, key, value=None, delete=False):
         # TODO add locales
         raise YunohostError("domain_name_unknown", domain=domain)
     
-    domain_settings = _get_domain_settings(domain, False) or {}
+    domain_settings = domains[domain]
 
     # GET
     if value is None and not delete:
-        return domain_settings.get(key, None)
+        if not key in domain_settings:
+            raise YunohostValidationError("This key doesn't exist!")
+
+        return domain_settings[key]
 
     # DELETE
     if delete:
         if key in domain_settings:
             del domain_settings[key]
+            _set_domain_settings(domain, domain_settings)
 
     # SET
     else:
@@ -770,6 +774,7 @@ def domain_setting(domain, key, value=None, delete=False):
                 # TODO add locales
                 raise YunohostError("must_be_positive", value_type=type(ttl))
         domain_settings[key] = value
+        _set_domain_settings(domain, domain_settings)
 
 def _get_domain_settings(domain, subdomains):
     """

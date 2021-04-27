@@ -557,7 +557,7 @@ domain:
             api: GET /domains/<domain>/settings
             arguments:
                 domain:
-                    help: Domaine name
+                    help: Domain name
                 key:
                     help: Key to get/set
                 -v:
