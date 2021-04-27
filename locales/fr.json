@@ -98,7 +98,7 @@
     "port_already_closed": "Le port {port:d} est déjà fermé pour les connexions {ip_version:s}",
     "port_already_opened": "Le port {port:d} est déjà ouvert pour les connexions {ip_version:s}",
     "restore_already_installed_app": "Une application est déjà installée avec l’identifiant '{app:s}'",
-    "app_restore_failed": "Impossible de restaurer '{app:s}': {error:s}",
+    "app_restore_failed": "Impossible de restaurer {app:s} : {error:s}",
     "restore_cleaning_failed": "Impossible de nettoyer le dossier temporaire de restauration",
     "restore_complete": "Restauration terminée",
     "restore_confirm_yunohost_installed": "Voulez-vous vraiment restaurer un système déjà installé ? [{answers:s}]",
@@ -623,5 +623,9 @@
     "domain_remove_confirm_apps_removal": "Le retrait de ce domaine retirera aussi ces applications :\n{apps}\n\nÊtes vous sûr de vouloir cela ? [{answers}]",
     "diagnosis_rootfstotalspace_critical": "Le système de fichiers racine ne fait que {space} ! Vous allez certainement le remplir très rapidement ! Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers.",
     "diagnosis_rootfstotalspace_warning": "Le système de fichiers racine n'est que de {space}. Cela peut suffire, mais faites attention car vous risquez de les remplir rapidement... Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers.",
-    "app_restore_script_failed": "Une erreur s'est produite dans le script de restauration de l'application"
+    "app_restore_script_failed": "Une erreur s'est produite dans le script de restauration de l'application",
+    "restore_backup_too_old": "Cette archive de sauvegarde ne peut être restaurée car elle provient d'une version trop ancienne de YunoHost.",
+    "migration_update_LDAP_schema": "Mise à jour du schéma LDAP...",
+    "log_backup_create": "Créer une archive de sauvegarde",
+    "global_settings_setting_ssowat_panel_overlay_enabled": "Activer la superposition du panneau SSOwat"
 }
