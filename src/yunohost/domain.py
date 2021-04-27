@@ -27,6 +27,10 @@ import os
 import re
 import sys
 import yaml
+import functools
+
+from lexicon.config import ConfigResolver
+from lexicon.client import Client
 
 from moulinette import m18n, msettings, msignals
 from moulinette.core import MoulinetteError
@@ -103,7 +107,6 @@ def domain_add(operation_logger, domain, dyndns=False):
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
     from yunohost.utils.ldap import _get_ldap_interface
-    from yunohost.certificate import _certificate_install_selfsigned
 
     if domain.startswith("xmpp-upload."):
         raise YunohostValidationError("domain_cannot_add_xmpp_upload")
@@ -126,7 +129,7 @@ def domain_add(operation_logger, domain, dyndns=False):
 
         # Do not allow to subscribe to multiple dyndns domains...
         if _guess_current_dyndns_domain("dyndns.yunohost.org") != (None, None):
-            raise YunohostValidationError("domain_dyndns_already_subscribed")
+            raise YunohostValidationError('domain_dyndns_already_subscribed')
 
         # Check that this domain can effectively be provided by
         # dyndns.yunohost.org. (i.e. is it a nohost.me / noho.st)
@@ -137,13 +140,14 @@ def domain_add(operation_logger, domain, dyndns=False):
 
     if dyndns:
         from yunohost.dyndns import dyndns_subscribe
-
         # Actually subscribe
         dyndns_subscribe(domain=domain)
 
-    _certificate_install_selfsigned([domain], False)
-
     try:
+        import yunohost.certificate
+
+        yunohost.certificate._certificate_install_selfsigned([domain], False)
+
         attr_dict = {
             "objectClass": ["mailDomain", "top"],
             "virtualdomain": domain,
@@ -170,13 +174,13 @@ def domain_add(operation_logger, domain, dyndns=False):
             regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd"])
             app_ssowatconf()
 
-    except Exception as e:
+    except Exception:
         # Force domain removal silently
         try:
             domain_remove(domain, force=True)
         except Exception:
             pass
-        raise e
+        raise
 
     hook_callback("post_domain_add", args=[domain])
 
@@ -202,8 +206,8 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     # the 'force' here is related to the exception happening in domain_add ...
     # we don't want to check the domain exists because the ldap add may have
     # failed
-    if not force and domain not in domain_list()["domains"]:
-        raise YunohostValidationError("domain_name_unknown", domain=domain)
+    if not force and domain not in domain_list()['domains']:
+        raise YunohostValidationError('domain_name_unknown', domain=domain)
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
@@ -217,9 +221,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
                 other_domains="\n * " + ("\n * ".join(other_domains)),
             )
         else:
-            raise YunohostValidationError(
-                "domain_cannot_remove_main_add_new_one", domain=domain
-            )
+            raise YunohostValidationError("domain_cannot_remove_main_add_new_one", domain=domain)
 
     # Check if apps are installed on the domain
     apps_on_that_domain = []
@@ -228,37 +230,21 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
         settings = _get_app_settings(app)
         label = app_info(app)["name"]
         if settings.get("domain") == domain:
-            apps_on_that_domain.append(
-                (
-                    app,
-                    '    - %s "%s" on https://%s%s'
-                    % (app, label, domain, settings["path"])
-                    if "path" in settings
-                    else app,
-                )
-            )
+            apps_on_that_domain.append((app, "    - %s \"%s\" on https://%s%s" % (app, label, domain, settings["path"]) if "path" in settings else app))
 
     if apps_on_that_domain:
         if remove_apps:
-            if msettings.get("interface") == "cli" and not force:
-                answer = msignals.prompt(
-                    m18n.n(
-                        "domain_remove_confirm_apps_removal",
-                        apps="\n".join([x[1] for x in apps_on_that_domain]),
-                        answers="y/N",
-                    ),
-                    color="yellow",
-                )
+            if msettings.get('interface') == "cli" and not force:
+                answer = msignals.prompt(m18n.n('domain_remove_confirm_apps_removal',
+                                                apps="\n".join([x[1] for x in apps_on_that_domain]),
+                                                answers='y/N'), color="yellow")
                 if answer.upper() != "Y":
                     raise YunohostError("aborting")
 
             for app, _ in apps_on_that_domain:
                 app_remove(app)
         else:
-            raise YunohostValidationError(
-                "domain_uninstall_app_first",
-                apps="\n".join([x[1] for x in apps_on_that_domain]),
-            )
+            raise YunohostValidationError('domain_uninstall_app_first', apps="\n".join([x[1] for x in apps_on_that_domain]))
 
     operation_logger.start()
 
@@ -271,7 +257,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     os.system("rm -rf /etc/yunohost/certs/%s" % domain)
 
     # Delete dyndns keys for this domain (if any)
-    os.system("rm -rf /etc/yunohost/dyndns/K%s.+*" % domain)
+    os.system('rm -rf /etc/yunohost/dyndns/K%s.+*' % domain)
 
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...
@@ -558,8 +544,9 @@ def _build_dns_conf(domains):
 
         if ipv6:
             extra.append(["*", ttl, "AAAA", ipv6])
-        elif include_empty_AAAA_if_no_ipv6:
-            extra.append(["*", ttl, "AAAA", None])
+        # TODO
+        # elif include_empty_AAAA_if_no_ipv6:
+        #     extra.append(["*", ttl, "AAAA", None])
 
         extra.append([name, ttl, "CAA", '128 issue "letsencrypt.org"'])
 
@@ -838,3 +825,105 @@ def _set_domain_settings(domain, domain_settings):
     with open(DOMAIN_SETTINGS_PATH, 'w') as file:
         yaml.dump(domains, file, default_flow_style=False)
 
+
+def domain_push_config(domain):
+    """
+    Send DNS records to the previously-configured registrar of the domain.
+    """
+    # Generate the records
+    if domain not in domain_list()["domains"]:
+        raise YunohostValidationError("domain_name_unknown", domain=domain)
+
+    domains_settings = _get_domain_settings(domain, True)
+
+    dns_conf = _build_dns_conf(domains_settings)
+
+    # Flatten the DNS conf
+    flatten_dns_conf = []
+    for key in dns_conf:
+        list_of_records = dns_conf[key]
+        for record in list_of_records:
+            # FIXME Lexicon does not support CAA records
+            # See https://github.com/AnalogJ/lexicon/issues/282 and https://github.com/AnalogJ/lexicon/pull/371
+            # They say it's trivial to implement it!
+            # And yet, it is still not done/merged
+            if record["type"] != "CAA":
+                # Add .domain.tdl to the name entry
+                record["name"] = "{}.{}".format(record["name"], domain)
+                flatten_dns_conf.append(record)
+
+    # Get provider info
+    # TODO
+    provider = {
+        "name": "gandi",
+        "options": {
+            "api_protocol": "rest",
+            "auth_token": "vhcIALuRJKtoZiZyxfDYWLom"
+        }
+    }
+
+    # Construct the base data structure to use lexicon's API.
+    base_config = {
+        "provider_name": provider["name"],
+        "domain": domain, # domain name
+    }
+    base_config[provider["name"]] = provider["options"]
+
+    # Get types present in the generated records
+    types = set()
+
+    for record in flatten_dns_conf:
+        types.add(record["type"])
+
+    # Fetch all types present in the generated records
+    distant_records = {}
+
+    for key in types:
+        record_config = {
+            "action": "list",
+            "type": key,
+        }
+        final_lexicon = ConfigResolver().with_dict(dict_object=base_config).with_dict(dict_object=record_config)
+        # print('final_lexicon:', final_lexicon);
+        client = Client(final_lexicon)
+        distant_records[key] = client.execute()
+
+    for key in types:
+        for distant_record in distant_records[key]:
+            print('distant_record:', distant_record);
+    for local_record in flatten_dns_conf:
+        print('local_record:', local_record);
+
+    # Push the records
+    for record in flatten_dns_conf:
+        # For each record, first check if one record exists for the same (type, name) couple
+        it_exists = False
+        # TODO do not push if local and distant records are exactly the same ?
+        # is_the_same_record = False
+
+        for distant_record in distant_records[record["type"]]:
+            if distant_record["type"] == record["type"] and distant_record["name"] == record["name"]:
+                it_exists = True
+                # previous TODO
+                # if distant_record["ttl"] = ... and distant_record["name"] ...
+                #     is_the_same_record = True
+
+        # Finally, push the new record or update the existing one
+        record_config = {
+            "action": "update" if it_exists else "create", # create, list, update, delete
+            "type": record["type"], # specify a type for record filtering, case sensitive in some cases.
+            "name": record["name"],
+            "content": record["value"],
+            # FIXME Delte TTL, doesn't work with Gandi.
+            # See https://github.com/AnalogJ/lexicon/issues/726 (similar issue)
+            # But I think there is another issue with Gandi. Or I'm misusing the API...
+            # "ttl": record["ttl"],
+        }
+        final_lexicon = ConfigResolver().with_dict(dict_object=base_config).with_dict(dict_object=record_config)
+        client = Client(final_lexicon)
+        print('pushed_record:', record_config, "→", end=' ')
+        results = client.execute()
+        print('results:', results);
+        # print("Failed" if results == False else "Ok")
+
+# def domain_config_fetch(domain, key, value):

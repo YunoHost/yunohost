@@ -447,6 +447,16 @@ domain:
                     help: Subscribe to the DynDNS service
                     action: store_true
 
+        ### domain_push_config()
+        push_config:
+            action_help: Push DNS records to registrar
+            api: GET /domains/push
+            arguments:
+                domain:
+                    help: Domain name to add
+                    extra:
+                        pattern: *pattern_domain
+
         ### domain_remove()
         remove:
             action_help: Delete domains
