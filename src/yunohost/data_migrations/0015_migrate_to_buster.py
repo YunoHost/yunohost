@@ -43,7 +43,7 @@ class MyMigration(Migration):
         #
         logger.info(m18n.n("migration_0015_patching_sources_list"))
         self.patch_apt_sources_list()
-        tools_update(system=True)
+        tools_update(target="system")
 
         # Tell libc6 it's okay to restart system stuff during the upgrade
         os.system(
@@ -88,7 +88,7 @@ class MyMigration(Migration):
 
         apps_packages = self.get_apps_equivs_packages()
         self.hold(apps_packages)
-        tools_upgrade(system=True, allow_yunohost_upgrade=False)
+        tools_upgrade(target="system", allow_yunohost_upgrade=False)
 
         if self.debian_major_version() == 9:
             raise YunohostError("migration_0015_still_on_stretch_after_main_upgrade")
@@ -103,7 +103,7 @@ class MyMigration(Migration):
         #
         logger.info(m18n.n("migration_0015_yunohost_upgrade"))
         self.unhold(apps_packages)
-        tools_upgrade(system=True)
+        tools_upgrade(target="system")
 
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
@@ -141,7 +141,7 @@ class MyMigration(Migration):
         # (but we don't if 'stretch' is already in the sources.list ...
         # which means maybe a previous upgrade crashed and we're re-running it)
         if " buster " not in read_file("/etc/apt/sources.list"):
-            tools_update(system=True)
+            tools_update(target="system")
             upgradable_system_packages = list(_list_upgradable_apt_packages())
             if upgradable_system_packages:
                 raise YunohostError("migration_0015_system_not_fully_up_to_date")

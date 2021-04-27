@@ -2,7 +2,3 @@ backup_dir="$1/data/mail"
 
 cp -a $backup_dir/. /var/mail/ || echo 'No mail found'
 chown -R vmail:mail /var/mail/
-
-# Restart services to use migrated certs
-service postfix restart
-service dovecot restart

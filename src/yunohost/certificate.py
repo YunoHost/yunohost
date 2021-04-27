@@ -317,8 +317,6 @@ def _certificate_install_letsencrypt(
                     % domain
                 )
         else:
-            _install_cron(no_checks=no_checks)
-
             logger.success(m18n.n("certmanager_cert_install_success", domain=domain))
 
             operation_logger.success()
@@ -434,7 +432,7 @@ def certificate_renew(
 
             stack = StringIO()
             traceback.print_exc(file=stack)
-            msg = "Certificate renewing for %s failed !" % (domain)
+            msg = "Certificate renewing for %s failed!" % (domain)
             if no_checks:
                 msg += (
                     "\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s."
@@ -456,31 +454,6 @@ def certificate_renew(
 #
 # Back-end stuff                                                            #
 #
-
-
-def _install_cron(no_checks=False):
-    cron_job_file = "/etc/cron.daily/yunohost-certificate-renew"
-
-    # we need to check if "--no-checks" isn't already put inside the existing
-    # crontab, if it's the case it's probably because another domain needed it
-    # at some point so we keep it
-    if not no_checks and os.path.exists(cron_job_file):
-        with open(cron_job_file, "r") as f:
-            # no the best test in the world but except if we uses a shell
-            # script parser I'm not expected a much more better way to do that
-            no_checks = "--no-checks" in f.read()
-
-    command = "yunohost domain cert-renew --email\n"
-
-    if no_checks:
-        # handle trailing "\n with ":-1"
-        command = command[:-1] + " --no-checks\n"
-
-    with open(cron_job_file, "w") as f:
-        f.write("#!/bin/bash\n")
-        f.write(command)
-
-    _set_permissions(cron_job_file, "root", "root", 0o755)
 
 
 def _email_renewing_failed(domain, exception_message, stack=""):
@@ -900,7 +873,9 @@ def _check_domain_is_ready_for_ACME(domain):
     )
 
     if not dnsrecords or not httpreachable:
-        raise YunohostValidationError("certmanager_domain_not_diagnosed_yet", domain=domain)
+        raise YunohostValidationError(
+            "certmanager_domain_not_diagnosed_yet", domain=domain
+        )
 
     # Check if IP from DNS matches public IP
     if not dnsrecords.get("status") in [
@@ -913,7 +888,9 @@ def _check_domain_is_ready_for_ACME(domain):
 
     # Check if domain seems to be accessible through HTTP?
     if not httpreachable.get("status") == "SUCCESS":
-        raise YunohostValidationError("certmanager_domain_http_not_working", domain=domain)
+        raise YunohostValidationError(
+            "certmanager_domain_http_not_working", domain=domain
+        )
 
 
 # FIXME / TODO : ideally this should not be needed. There should be a proper

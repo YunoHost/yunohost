@@ -124,7 +124,7 @@ def dyndns_subscribe(
     """
 
     if _guess_current_dyndns_domain(subscribe_host) != (None, None):
-        raise YunohostValidationError('domain_dyndns_already_subscribed')
+        raise YunohostValidationError("domain_dyndns_already_subscribed")
 
     if domain is None:
         domain = _get_maindomain()
@@ -192,12 +192,14 @@ def dyndns_subscribe(
 
     # Add some dyndns update in 2 and 4 minutes from now such that user should
     # not have to wait 10ish minutes for the conf to propagate
-    cmd = "at -M now + {t} >/dev/null 2>&1 <<< \"/bin/bash -c 'yunohost dyndns update'\""
+    cmd = (
+        "at -M now + {t} >/dev/null 2>&1 <<< \"/bin/bash -c 'yunohost dyndns update'\""
+    )
     # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
     subprocess.check_call(["bash", "-c", cmd.format(t="2 min")])
     subprocess.check_call(["bash", "-c", cmd.format(t="4 min")])
 
-    logger.success(m18n.n('dyndns_registered'))
+    logger.success(m18n.n("dyndns_registered"))
 
 
 @is_unit_operation()
@@ -231,7 +233,7 @@ def dyndns_update(
         (domain, key) = _guess_current_dyndns_domain(dyn_host)
 
     if domain is None:
-        raise YunohostValidationError('dyndns_no_domain_registered')
+        raise YunohostValidationError("dyndns_no_domain_registered")
 
     # If key is not given, pick the first file we find with the domain given
     else:
@@ -260,7 +262,7 @@ def dyndns_update(
         ok, result = dig(dyn_host, "A")
         dyn_host_ip = result[0] if ok == "ok" and len(result) else None
         if not dyn_host_ip:
-            raise YunohostError("Failed to resolve %s" % dyn_host)
+            raise YunohostError("Failed to resolve %s" % dyn_host, raw_msg=True)
 
         ok, result = dig(domain, rdtype, resolvers=[dyn_host_ip])
         if ok == "ok":
@@ -374,11 +376,15 @@ def dyndns_update(
 
 
 def dyndns_installcron():
-    logger.warning("This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'.")
+    logger.warning(
+        "This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'."
+    )
 
 
 def dyndns_removecron():
-    logger.warning("This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'.")
+    logger.warning(
+        "This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'."
+    )
 
 
 def _guess_current_dyndns_domain(dyn_host):

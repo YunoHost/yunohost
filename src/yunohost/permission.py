@@ -46,7 +46,7 @@ SYSTEM_PERMS = ["mail", "xmpp", "sftp", "ssh"]
 
 
 def user_permission_list(
-    short=False, full=False, ignore_system_perms=False, absolute_urls=False
+    short=False, full=False, ignore_system_perms=False, absolute_urls=False, apps=[]
 ):
     """
     List permissions and corresponding accesses
@@ -74,21 +74,27 @@ def user_permission_list(
     )
 
     # Parse / organize information to be outputed
-    apps = sorted(_installed_apps())
+    installed_apps = sorted(_installed_apps())
+    filter_ = apps
+    apps = filter_ if filter_ else installed_apps
     apps_base_path = {
         app: app_setting(app, "domain") + app_setting(app, "path")
         for app in apps
-        if app_setting(app, "domain") and app_setting(app, "path")
+        if app in installed_apps
+        and app_setting(app, "domain")
+        and app_setting(app, "path")
     }
 
     permissions = {}
     for infos in permissions_infos:
 
         name = infos["cn"][0]
-        if ignore_system_perms and name.split(".")[0] in SYSTEM_PERMS:
-            continue
-
         app = name.split(".")[0]
+
+        if ignore_system_perms and app in SYSTEM_PERMS:
+            continue
+        if filter_ and app not in apps:
+            continue
 
         perm = {}
         perm["allowed"] = [
@@ -175,7 +181,9 @@ def user_permission_update(
 
     # Refuse to add "visitors" to mail, xmpp ... they require an account to make sense.
     if add and "visitors" in add and permission.split(".")[0] in SYSTEM_PERMS:
-        raise YunohostValidationError("permission_require_account", permission=permission)
+        raise YunohostValidationError(
+            "permission_require_account", permission=permission
+        )
 
     # Refuse to add "visitors" to protected permission
     if (
@@ -183,6 +191,16 @@ def user_permission_update(
         or (remove and "visitors" in remove and existing_permission["protected"])
     ) and not force:
         raise YunohostValidationError("permission_protected", permission=permission)
+
+    # Refuse to add "all_users" to ssh/sftp permissions
+    if (
+        permission.split(".")[0] in ["ssh", "sftp"]
+        and (add and "all_users" in add)
+        and not force
+    ):
+        raise YunohostValidationError(
+            "permission_cant_add_to_all_users", permission=permission
+        )
 
     # Fetch currently allowed groups for this permission
 

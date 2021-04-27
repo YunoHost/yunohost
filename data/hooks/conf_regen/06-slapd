@@ -147,7 +147,7 @@ do_post_regen() {
   su openldap -s "/bin/bash" -c "/usr/sbin/slapindex"
 
   echo "Reloading slapd"
-  service slapd force-reload
+  systemctl force-reload slapd
 
   # on slow hardware/vm this regen conf would exit before the admin user that
   # is stored in ldap is available because ldap seems to slow to restart
