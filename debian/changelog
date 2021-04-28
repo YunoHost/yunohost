@@ -1,3 +1,12 @@
+yunohost (4.2.3.1) testing; urgency=low
+
+  - [fix] Recreate the admins group which for some reason didnt exist on old setups .. (ee83c3f9)
+  - [i18n] Translations updated for French
+
+  Thanks to all contributors <3 ! (Éric G., ppr)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 28 Apr 2021 17:59:14 +0200
+
 yunohost (4.2.3) testing; urgency=low
 
   - Fix a stupid issue where an app's tmp work dir would be deleted during upgrade because of the backup process (50af0393)
