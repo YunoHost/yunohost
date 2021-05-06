@@ -88,6 +88,12 @@ ynh_systemd_action() {
     log_path="${log_path:-/var/log/$service_name/$service_name.log}"
     timeout=${timeout:-300}
 
+    # Manage case of service already stopped
+    if [ "$action" == "stop" ] && ! systemctl is-active --quiet $service_name
+    then
+        return 0
+    fi
+
     # Start to read the log
     if [[ -n "$line_match" ]]
     then
