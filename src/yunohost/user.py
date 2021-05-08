@@ -413,7 +413,7 @@ def user_update(
         ]
 
     # change_password is None if user_update is not called to change the password
-    if change_password is not None:
+    if change_password is not None and change_password != '':
         # when in the cli interface if the option to change the password is called
         # without a specified value, change_password will be set to the const 0.
         # In this case we prompt for the new password.
