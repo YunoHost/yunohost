@@ -616,8 +616,8 @@ def user_export():
 
     """
     import csv  # CSV are needed only in this function
-    from io import BytesIO
-    with BytesIO() as csv_io:
+    from io import StringIO
+    with StringIO() as csv_io:
         writer = csv.DictWriter(csv_io, CSV_FIELDNAMES,
                                 delimiter=';', quotechar='"')
         writer.writeheader()
@@ -677,7 +677,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
             format_errors = [key + ':' + str(user[key])
                             for key, validator in VALIDATORS.items()
                          if user[key] is None or not re.match(validator, user[key])]
-        except KeyError, e:
+        except KeyError as e:
             logger.error(m18n.n('user_import_missing_column',
                                 column=str(e)))
             is_well_formatted = False
