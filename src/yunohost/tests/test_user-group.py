@@ -116,7 +116,7 @@ def test_del_user(mocker):
 
 def test_import_user(mocker):
     import csv
-    from io import BytesIO
+    from io import StringIO
     fieldnames = [u'username', u'firstname', u'lastname', u'password',
                   u'mailbox-quota', u'mail', u'mail-alias', u'mail-forward',
                   u'groups']
