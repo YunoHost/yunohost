@@ -499,7 +499,7 @@ Subject: %s
     import smtplib
 
     smtp = smtplib.SMTP("localhost")
-    smtp.sendmail(from_, [to_], message.encode('utf-8'))
+    smtp.sendmail(from_, [to_], message.encode("utf-8"))
     smtp.quit()
 
 
