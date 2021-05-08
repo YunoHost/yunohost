@@ -1,3 +1,15 @@
+yunohost (4.2.4) stable; urgency=low
+
+  - python3: smtplib's sendmail miserably crashes with encoding issue if accent in mail body (af567c6f)
+  - ssh_config: add conf block for sftp apps (51478d14)
+  - ynh_systemd_action: Fix case where service is already stopped ([#1222](https://github.com/yunohost/yunohost/pull/1222))
+  - [i18n] Translations updated for German, Italian, Occitan
+  - Releasing as stable
+
+  Thanks to all contributors <3 ! (Christian Wehrli, Flavio Cristoforetti, Quentí, yalh76)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 08 May 2021 15:05:43 +0200
+
 yunohost (4.2.3.1) testing; urgency=low
 
   - [fix] Recreate the admins group which for some reason didnt exist on old setups .. (ee83c3f9)
