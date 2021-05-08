@@ -472,8 +472,8 @@
     "diagnosis_services_bad_status_tip": "Podètz ensajar de <a href='#/services/{service}'>reaviar lo servici</a>, e se non fonciona pas, podètz agachar <a href='#/services/{service}'>los jornals de servici a la pagina web d’administracion</a>(en linha de comanda podètz utilizar <cmd>yunohost service restart {service}</cmd> e <cmd>yunohost service log {service}</cmd>).",
     "diagnosis_http_connection_error": "Error de connexion : connexion impossibla al domeni demandat, benlèu qu’es pas accessible.",
     "group_user_already_in_group": "L’utilizaire {user} es ja dins lo grop « {group} »",
-    "diagnosis_ip_broken_resolvconf": "La resolucion del nom de domeni sembla copada sul servidor, poiriá èsser ligada al fait que /etc/resolv.conf manda pas a 127.0.0.1.",
-    "diagnosis_ip_weird_resolvconf": "La resolucion del nom de domeni sembla foncionar, mas siatz prudent en utilizant un fichièr /etc/resolv.con personalizat.",
+    "diagnosis_ip_broken_resolvconf": "La resolucion del nom de domeni sembla copada sul servidor, poiriá èsser ligada al fait que <code>/etc/resolv.conf</code> manda pas a <code>127.0.0.1</code>.",
+    "diagnosis_ip_weird_resolvconf": "La resolucion del nom de domeni sembla foncionar, mas sembla qu’utiilizatz un fichièr <code>/etc/resolv.conf</code> personalizat.",
     "diagnosis_diskusage_verylow": "Lo lòc d’emmagazinatge <code>{mountpoint}</code> (sul periferic <code>{device}</code>) a solament {free} ({free_percent}%). Deuriatz considerar de liberar un pauc d’espaci.",
     "global_settings_setting_pop3_enabled": "Activar lo protocòl POP3 pel servidor de corrièr",
     "diagnosis_diskusage_ok": "Lo lòc d’emmagazinatge <code>{mountpoint}</code> (sul periferic <code>{device}</code>) a encara {free} ({free_percent}%) de liure !",
@@ -513,5 +513,13 @@
     "log_app_action_run": "Executar l’accion de l’aplicacion « {} »",
     "diagnosis_basesystem_hardware_model": "Lo modèl del servidor es {model}",
     "backup_archive_cant_retrieve_info_json": "Obtencion impossibla de las informacions de l’archiu « {archive} »... Se pòt pas recuperar lo fichièr info.json (o es pas un fichièr json valid).",
-    "app_packaging_format_not_supported": "Se pòt pas installar aquesta aplicacion pr’amor que son format es pas pres en carga per vòstra version de YunoHost. Deuriatz considerar actualizar lo sistèma."
+    "app_packaging_format_not_supported": "Se pòt pas installar aquesta aplicacion pr’amor que son format es pas pres en carga per vòstra version de YunoHost. Deuriatz considerar actualizar lo sistèma.",
+    "diagnosis_mail_fcrdns_ok": "Vòstre DNS inverse es corrèctament configurat !",
+    "diagnosis_mail_outgoing_port_25_ok": "Lo servidor de messatge SMTP pòt enviar de corrièls (lo pòrt 25 es pas blocat).",
+    "diagnosis_domain_expiration_warning": "D’unes domenis expiraràn lèu !",
+    "diagnosis_domain_expiration_success": "Vòstres domenis son enregistrats e expiraràn pas lèu.",
+    "diagnosis_domain_not_found_details": "Lo domeni {domain} existís pas a la basa de donadas WHOIS o a expirat !",
+    "diagnosis_domain_expiration_not_found": "Impossible de verificar la data d’expiracion d’unes domenis",
+    "backup_create_size_estimation": "L’archiu contendrà apr’aquí {size} de donadas.",
+    "app_restore_script_failed": "Una error s’es producha a l’interior del script de restauracion de l’aplicacion"
 }

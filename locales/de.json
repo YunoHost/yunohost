@@ -585,5 +585,10 @@
     "root_password_desynchronized": "Das Admin-Passwort wurde verändert, aber das root Passwort ist immer noch das alte.",
     "regenconf_need_to_explicitly_specify_ssh": "Die SSH-Konfiguration wurde manuell modifiziert, aber Sie müssen explizit die Kategorie 'SSH' mit --force spezifizieren, um die Änderungen tatsächlich anzuwenden.",
     "migration_update_LDAP_schema": "Aktualisiere das LDAP-Schema...",
-    "log_backup_create": "Erstelle ein Backup-Archiv"
+    "log_backup_create": "Erstelle ein Backup-Archiv",
+    "diagnosis_sshd_config_inconsistent": "Es sieht aus, als ob der SSH-Port manuell geändert wurde in /etc/ssh/ssh_config. Seit YunoHost 4.2 ist eine neue globale Einstellung 'security.ssh.port' verfügbar um zu verhindern, dass die Konfiguration manuell verändert wird.",
+    "diagnosis_sshd_config_insecure": "Die SSH-Konfiguration wurde scheinbar manuell abgeändert, und ist unsicher, weil sie keine 'AllowGroups'- oder 'AllowUsers' -Direktiven für die Begrenzung des Zugriffs durch autorisierte Benutzer enthält.",
+    "backup_create_size_estimation": "Das Archiv wird etwa {size} Daten enthalten",
+    "app_restore_script_failed": "Im Wiederherstellungsskript der Anwendung ist ein Fehler aufgetreten",
+    "app_restore_failed": "Konnte {apps:s} nicht wiederherstellen: {error:s}"
 }
