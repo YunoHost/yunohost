@@ -373,10 +373,11 @@ def is_unit_operation(
                 if field in context:
                     context.pop(field, None)
             for field, value in context.items():
-                if isinstance(value, file):
-                    context[field] = value.name
-                elif isinstance(value, IOBase):
-                    context[field] = 'IOBase'
+                if isinstance(value, IOBase):
+                    try:
+                        context[field] = value.name
+                    except:
+                        context[field] = 'IOBase'
             operation_logger = OperationLogger(op_key, related_to, args=context)
 
             try:
