@@ -2017,7 +2017,7 @@ class TarBackupMethod(BackupMethod):
 
         try:
             files_in_archive = tar.getnames()
-        except IOError as e:
+        except (IOError, EOFError, tarfile.ReadError) as e:
             raise YunohostError(
                 "backup_archive_corrupted", archive=self._archive_file, error=str(e)
             )
@@ -2493,7 +2493,7 @@ def backup_info(name, with_details=False, human_readable=False):
 
         try:
             files_in_archive = tar.getnames()
-        except (IOError, EOFError) as e:
+        except (IOError, EOFError, tarfile.ReadError) as e:
             raise YunohostError(
                 "backup_archive_corrupted", archive=archive_file, error=str(e)
             )
