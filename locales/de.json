@@ -590,5 +590,12 @@
     "diagnosis_sshd_config_insecure": "Die SSH-Konfiguration wurde scheinbar manuell abgeändert, und ist unsicher, weil sie keine 'AllowGroups'- oder 'AllowUsers' -Direktiven für die Begrenzung des Zugriffs durch autorisierte Benutzer enthält.",
     "backup_create_size_estimation": "Das Archiv wird etwa {size} Daten enthalten",
     "app_restore_script_failed": "Im Wiederherstellungsskript der Anwendung ist ein Fehler aufgetreten",
-    "app_restore_failed": "Konnte {app:s} nicht wiederherstellen: {error:s}"
+    "app_restore_failed": "Konnte {app:s} nicht wiederherstellen: {error:s}",
+    "migration_ldap_rollback_success": "System-Rollback erfolgreich.",
+    "migration_ldap_migration_failed_trying_to_rollback": "Migrieren war nicht möglich... Versuch, ein Rollback des Systems durchzuführen.",
+    "migration_ldap_backup_before_migration": "Vor der eigentlichen Migration ein Backup der LDAP-Datenbank und der Applikations-Einstellungen erstellen.",
+    "migration_description_0020_ssh_sftp_permissions": "Unterstützung für SSH- und SFTP-Berechtigungen hinzufügen",
+    "global_settings_setting_ssowat_panel_overlay_enabled": "Das SSOwat-Overlay-Panel aktivieren",
+    "global_settings_setting_security_ssh_port": "SSH-Port",
+    "diagnosis_sshd_config_inconsistent_details": "Bitte führen Sie <cmd>yunohost settings set security.ssh.port -v YOUR_SSH_PORT</cmd> aus, um den SSH-Port festzulegen, und prüfen Sie <cmd> yunohost tools regen-conf ssh --dry-run --with-diff</cmd> und <cmd>yunohost tools regen-conf ssh --force</cmd> um Ihre conf auf die YunoHost-Empfehlung zurückzusetzen."
 }
