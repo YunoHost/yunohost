@@ -92,6 +92,8 @@ ynh_use_nodejs () {
     node_PATH="$PATH"
     # Create an alias to easily load the PATH
     ynh_node_load_PATH="PATH=$node_PATH"
+    # Same var but in lower case to be compatible with ynh_replace_vars...
+    ynh_node_load_path="PATH=$node_PATH"
 }
 
 # Install a specific version of nodejs
