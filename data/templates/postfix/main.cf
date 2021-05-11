@@ -54,7 +54,12 @@ smtpd_tls_loglevel=1
 
 # -- TLS for outgoing connections
 # Use TLS if this is supported by the remote SMTP server, otherwise use plaintext.
+{% if relay_port == "465" %}
+smtp_tls_wrappermode = yes
+smtp_tls_security_level = encrypt
+{% else %}
 smtp_tls_security_level = may
+{% endif %}
 smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
 smtp_tls_exclude_ciphers = aNULL, MD5, DES, ADH, RC4, 3DES
 smtp_tls_mandatory_ciphers= high

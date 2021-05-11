@@ -252,30 +252,6 @@ user:
                             extra:
                                 pattern: *pattern_groupname
 
-                ### user_group_update()
-                update:
-                    action_help: Update group
-                    api: PUT /users/groups/<groupname>
-                    arguments:
-                        groupname:
-                            help: Name of the group to be updated
-                            extra:
-                                pattern: *pattern_groupname
-                        -a:
-                            full: --add
-                            help: User(s) to add in the group
-                            nargs: "*"
-                            metavar: USERNAME
-                            extra:
-                                pattern: *pattern_username
-                        -r:
-                            full: --remove
-                            help: User(s) to remove in the group
-                            nargs: "*"
-                            metavar: USERNAME
-                            extra:
-                                pattern: *pattern_username
-
                 ### user_group_info()
                 info:
                     action_help: Get information about a specific group
@@ -283,6 +259,38 @@ user:
                     arguments:
                         groupname:
                             help: Name of the group to fetch info about
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_group_add()
+                add:
+                    action_help: Add users to group
+                    api: PUT /users/groups/<groupname>/add/<usernames>
+                    arguments:
+                        groupname:
+                            help: Name of the group to add user(s) to
+                            extra:
+                                pattern: *pattern_groupname
+                        usernames:
+                            help: User(s) to add in the group
+                            nargs: "*"
+                            metavar: USERNAME
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_group_remove()
+                remove:
+                    action_help: Remove users from group
+                    api: PUT /users/groups/<groupname>/remove/<usernames>
+                    arguments:
+                        groupname:
+                            help: Name of the group to remove user(s) from
+                            extra:
+                                pattern: *pattern_groupname
+                        usernames:
+                            help: User(s) to remove from the group
+                            nargs: "*"
+                            metavar: USERNAME
                             extra:
                                 pattern: *pattern_username
 
@@ -295,6 +303,9 @@ user:
                     action_help: List permissions and corresponding accesses
                     api: GET /users/permissions
                     arguments:
+                        apps:
+                            help: Apps to list permission for (all by default)
+                            nargs: "*"
                         -s:
                             full: --short
                             help: Only list permission names
@@ -319,20 +330,6 @@ user:
                     arguments:
                         permission:
                             help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
-                        -a:
-                            full: --add
-                            help: Group or usernames to grant this permission to
-                            nargs: "*"
-                            metavar: GROUP_OR_USER
-                            extra:
-                                pattern: *pattern_username
-                        -r:
-                            full: --remove
-                            help: Group or usernames revoke this permission from
-                            nargs: "*"
-                            metavar: GROUP_OR_USER
-                            extra:
-                                pattern: *pattern_username
                         -l:
                             full: --label
                             help: Label for this permission. This label will be shown on the SSO and in the admin
@@ -343,10 +340,38 @@ user:
                                 - 'True'
                                 - 'False'
 
+                ## user_permission_add()
+                add:
+                    action_help: Grant permission to group or user
+                    api: PUT /users/permissions/<permission>/add/<names>
+                    arguments:
+                        permission:
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                        names:
+                            help: Group or usernames to grant this permission to
+                            nargs: "*"
+                            metavar: GROUP_OR_USER
+                            extra:
+                                pattern: *pattern_username
+
+                ## user_permission_remove()
+                remove:
+                    action_help: Revoke permission to group or user
+                    api: PUT /users/permissions/<permission>/remove/<names>
+                    arguments:
+                        permission:
+                            help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                        names:
+                            help: Group or usernames to revoke this permission to
+                            nargs: "*"
+                            metavar: GROUP_OR_USER
+                            extra:
+                                pattern: *pattern_username
+
                 ## user_permission_reset()
                 reset:
                     action_help: Reset allowed groups to the default (all_users) for a given permission
-                    api: DELETE /users/permissions/<app>
+                    api: DELETE /users/permissions/<permission>
                     arguments:
                         permission:
                             help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
@@ -354,25 +379,6 @@ user:
         ssh:
             subcategory_help: Manage ssh access
             actions:
-                ### user_ssh_enable()
-                allow:
-                    action_help: Allow the user to uses ssh
-                    api: POST /users/ssh/enable
-                    arguments:
-                        username:
-                            help: Username of the user
-                            extra:
-                                pattern: *pattern_username
-
-                ### user_ssh_disable()
-                disallow:
-                    action_help: Disallow the user to uses ssh
-                    api: POST /users/ssh/disable
-                    arguments:
-                        username:
-                            help: Username of the user
-                            extra:
-                                pattern: *pattern_username
 
                 ### user_ssh_keys_list()
                 list-keys:
@@ -410,7 +416,6 @@ user:
                                 pattern: *pattern_username
                         key:
                             help: The key to be removed
-
 
 #############################
 #          Domain           #
@@ -482,7 +487,7 @@ domain:
                 - maindomain
             api:
                 - GET /domains/main
-                - PUT /domains/main
+                - PUT /domains/<new_main_domain>/main
             arguments:
                 -n:
                     full: --new-main-domain
@@ -493,7 +498,7 @@ domain:
         ### certificate_status()
         cert-status:
             action_help: List status of current certificates (all by default).
-            api: GET /domains/cert-status/<domain_list>
+            api: GET /domains/<domain_list>/cert
             arguments:
                 domain_list:
                     help: Domains to check
@@ -505,7 +510,7 @@ domain:
         ### certificate_install()
         cert-install:
             action_help: Install Let's Encrypt certificates for given domains (all by default).
-            api: POST /domains/cert-install/<domain_list>
+            api: PUT /domains/<domain_list>/cert
             arguments:
                 domain_list:
                     help: Domains for which to install the certificates
@@ -526,7 +531,7 @@ domain:
         ### certificate_renew()
         cert-renew:
             action_help: Renew the Let's Encrypt certificates for given domains (all by default).
-            api: POST /domains/cert-renew/<domain_list>
+            api: PUT /domains/<domain_list>/cert/renew
             arguments:
                 domain_list:
                     help: Domains for which to renew the certificates
@@ -547,7 +552,7 @@ domain:
         ### domain_url_available()
         url-available:
             action_help: Check availability of a web path
-            api: GET /domain/urlavailable
+            api: GET /domain/<domain>/urlavailable
             arguments:
                 domain:
                     help: The domain for the web path (e.g. your.domain.tld)
@@ -555,20 +560,6 @@ domain:
                         pattern: *pattern_domain
                 path:
                     help: The path to check (e.g. /coffee)
-
-
-         ### domain_info()
-#        info:
-#            action_help: Get domain informations
-#            api: GET /domains/<domain>
-#            arguments:
-#                domain:
-#                    help: ""
-#                    extra:
-#                        pattern:
-#                            - '^([a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)(\.[a-zA-Z0-9]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)*(\.[a-zA-Z]{1}([a-zA-Z0-9\-]*[a-zA-Z0-9])*)$'
-#                            - "Must be a valid domain name (e.g. my-domain.org)"
-
 
 #############################
 #            App            #
@@ -579,7 +570,7 @@ app:
 
         catalog:
             action_help: Show the catalog of installable application
-            api: GET /appscatalog
+            api: GET /apps/catalog
             arguments:
                 -f:
                     full: --full
@@ -589,13 +580,21 @@ app:
                     full: --with-categories
                     help: Also return a list of app categories
                     action: store_true
-                    
+
         ### app_search()
         search:
             action_help: Search installable apps
             arguments:
                 string:
                     help: Return matching app name or description with "string"
+
+        ### app_manifest()
+        manifest:
+            action_help: Return the manifest of a given app from the catalog, or from a remote git repo
+            api: GET /apps/manifest
+            arguments:
+                app:
+                    help: Name, local path or git URL of the app to fetch the manifest of
 
         fetchlist:
             deprecated: true
@@ -631,7 +630,7 @@ app:
         ### app_map()
         map:
             action_help: Show the mapping between urls and apps
-            api: GET /appsmap
+            api: GET /apps/map
             arguments:
                 -a:
                     full: --app
@@ -668,18 +667,18 @@ app:
                     help: Do not ask confirmation if the app is not safe to use (low quality, experimental or 3rd party)
                     action: store_true
 
-        ### app_remove() TODO: Write help
+        ### app_remove()
         remove:
             action_help: Remove app
             api: DELETE /apps/<app>
             arguments:
                 app:
-                    help: App(s) to delete
+                    help: App to delete
 
         ### app_upgrade()
         upgrade:
             action_help: Upgrade app
-            api: PUT /upgrade/apps
+            api: PUT /apps/<app>/upgrade
             arguments:
                 app:
                     help: App(s) to upgrade (default all)
@@ -737,7 +736,6 @@ app:
         ### app_register_url()
         register-url:
             action_help: Book/register a web path for a given app
-            api: PUT /tools/registerurl
             arguments:
                 app:
                     help: App which will use the web path
@@ -761,7 +759,6 @@ app:
         ### app_ssowatconf()
         ssowatconf:
             action_help: Regenerate SSOwat configuration file
-            api: PUT /ssowatconf
 
         ### app_change_label()
         change-label:
@@ -776,7 +773,6 @@ app:
         ### app_addaccess() TODO: Write help
         addaccess:
             action_help: Grant access right to users (everyone by default)
-            api: PUT /access
             deprecated: true
             arguments:
                 apps:
@@ -788,7 +784,6 @@ app:
         ### app_removeaccess() TODO: Write help
         removeaccess:
             action_help: Revoke access right to users (everyone by default)
-            api: DELETE /access
             deprecated: true
             arguments:
                 apps:
@@ -800,7 +795,6 @@ app:
         ### app_clearaccess()
         clearaccess:
             action_help: Reset access rights for the app
-            api: POST /access
             deprecated: true
             arguments:
                 apps:
@@ -848,7 +842,7 @@ app:
               ### app_config_apply()
               apply:
                   action_help: apply the new configuration
-                  api: POST /apps/<app>/config
+                  api: PUT /apps/<app>/config
                   arguments:
                       app:
                           help: App name
@@ -866,7 +860,7 @@ backup:
         ### backup_create()
         create:
             action_help: Create a backup local archive. If neither --apps or --system are given, this will backup all apps and all system parts. If only --apps if given, this will only backup apps and no system parts. Similarly, if only --system is given, this will only backup system parts and no apps.
-            api: POST /backup
+            api: POST /backups
             arguments:
                 -n:
                     full: --name
@@ -890,11 +884,14 @@ backup:
                 --apps:
                     help: List of application names to backup (or all if none given)
                     nargs: "*"
+                --dry-run:
+                    help: "'Simulate' the backup and return the size details per item to backup"
+                    action: store_true
 
         ### backup_restore()
         restore:
             action_help: Restore from a local backup archive. If neither --apps or --system are given, this will restore all apps and all system parts in the archive. If only --apps if given, this will only restore apps and no system parts. Similarly, if only --system is given, this will only restore system parts and no apps.
-            api: POST /backup/restore/<name>
+            api: PUT /backups/<name>/restore
             arguments:
                 name:
                     help: Name of the local backup archive
@@ -911,7 +908,7 @@ backup:
         ### backup_list()
         list:
             action_help: List available local backup archives
-            api: GET /backup/archives
+            api: GET /backups
             arguments:
                 -i:
                     full: --with-info
@@ -925,7 +922,7 @@ backup:
         ### backup_info()
         info:
             action_help: Show info about a local backup archive
-            api: GET /backup/archives/<name>
+            api: GET /backups/<name>
             arguments:
                 name:
                     help: Name of the local backup archive
@@ -941,7 +938,7 @@ backup:
         ### backup_download()
         download:
             action_help: (API only) Request to download the file
-            api: GET /backup/download/<name>
+            api: GET /backups/<name>/download
             arguments:
                 name:
                     help: Name of the local backup archive
@@ -949,7 +946,7 @@ backup:
         ### backup_delete()
         delete:
             action_help: Delete a backup archive
-            api: DELETE /backup/archives/<name>
+            api: DELETE /backups/<name>
             arguments:
                 name:
                     help: Name of the archive to delete
@@ -1016,7 +1013,6 @@ service:
         ### service_add()
         add:
             action_help: Add a service
-            # api: POST /services
             arguments:
                 name:
                     help: Service name to add
@@ -1054,7 +1050,6 @@ service:
         ### service_remove()
         remove:
             action_help: Remove a service
-            # api: DELETE /services
             arguments:
                 name:
                     help: Service name to remove
@@ -1062,7 +1057,7 @@ service:
         ### service_start()
         start:
             action_help: Start one or more services
-            api: PUT /services/<names>
+            api: PUT /services/<names>/start
             arguments:
                 names:
                     help: Service name to start
@@ -1072,7 +1067,7 @@ service:
         ### service_stop()
         stop:
             action_help: Stop one or more services
-            api: DELETE /services/<names>
+            api: PUT /services/<names>/stop
             arguments:
                 names:
                     help: Service name to stop
@@ -1120,7 +1115,7 @@ service:
         ### service_disable()
         disable:
             action_help: Disable one or more services
-            api: DELETE /services/<names>/enable
+            api: PUT /services/<names>/disable
             arguments:
                 names:
                     help: Service name to disable
@@ -1155,7 +1150,6 @@ service:
         ### service_regen_conf()
         regen-conf:
             action_help: Regenerate the configuration file(s) for a service
-            api: PUT /services/regenconf
             deprecated_alias:
                 - regenconf
             arguments:
@@ -1207,19 +1201,10 @@ firewall:
                     help: List forwarded ports with UPnP
                     action: store_true
 
-        ### firewall_reload()
-        reload:
-            action_help: Reload all firewall rules
-            api: PUT /firewall
-            arguments:
-                --skip-upnp:
-                    help: Do not refresh port forwarding using UPnP
-                    action: store_true
-
         ### firewall_allow()
         allow:
             action_help: Allow connections on a port
-            api: POST /firewall/port
+            api: PUT /firewall/<protocol>/allow/<port>
             arguments:
                 protocol:
                     help: "Protocol type to allow (TCP/UDP/Both)"
@@ -1249,11 +1234,10 @@ firewall:
                     help: Do not reload firewall rules
                     action: store_true
 
-
         ### firewall_disallow()
         disallow:
             action_help: Disallow connections on a port
-            api: DELETE /firewall/port
+            api: PUT /firewall/<protocol>/disallow/<port>
             arguments:
                 protocol:
                     help: "Protocol type to allow (TCP/UDP/Both)"
@@ -1281,11 +1265,10 @@ firewall:
                     help: Do not reload firewall rules
                     action: store_true
 
-
         ### firewall_upnp()
         upnp:
             action_help: Manage port forwarding using UPnP
-            api: GET /firewall/upnp
+            api: PUT /firewall/upnp/<action>
             arguments:
                 action:
                     choices:
@@ -1299,10 +1282,19 @@ firewall:
                     help: Do not refresh port forwarding
                     action: store_true
 
+
+        ### firewall_reload()
+        reload:
+            action_help: Reload all firewall rules
+            arguments:
+                --skip-upnp:
+                    help: Do not refresh port forwarding using UPnP
+                    action: store_true
+
         ### firewall_stop()
         stop:
             action_help: Stop iptables and ip6tables
-            api: DELETE /firewall
+
 
 
 
@@ -1316,7 +1308,6 @@ dyndns:
         ### dyndns_subscribe()
         subscribe:
             action_help: Subscribe to a DynDNS service
-            api: POST /dyndns
             arguments:
                 --subscribe-host:
                     help: Dynette HTTP API to subscribe to
@@ -1333,7 +1324,6 @@ dyndns:
         ### dyndns_update()
         update:
             action_help: Update IP on DynDNS platform
-            api: PUT /dyndns
             arguments:
                 --dyn-host:
                     help: Dynette DNS server to inform
@@ -1437,25 +1427,40 @@ tools:
         ### tools_update()
         update:
             action_help: YunoHost update
-            api: PUT /update
+            api: PUT /update/<target>
             arguments:
+                target:
+                    help: What to update, "apps" (application catalog) or "system" (fetch available package upgrades, equivalent to apt update), "all" for both
+                    choices:
+                        - apps
+                        - system
+                        - all
+                    nargs: "?"
+                    metavar: TARGET
+                    default: all
                 --apps:
-                    help: Fetch the application list to check which apps can be upgraded
+                    help: (Deprecated, see first positional arg) Fetch the application list to check which apps can be upgraded
                     action: store_true
                 --system:
-                    help: Fetch available system packages upgrades (equivalent to apt update)
+                    help: (Deprecated, see first positional arg) Fetch available system packages upgrades (equivalent to apt update)
                     action: store_true
 
         ### tools_upgrade()
         upgrade:
             action_help: YunoHost upgrade
-            api: PUT /upgrade
+            api: PUT /upgrade/<target>
             arguments:
+                target:
+                    help: What to upgrade, either "apps" (all apps) or "system" (all system packages)
+                    choices:
+                        - apps
+                        - system
+                    nargs: "?"
                 --apps:
-                    help: List of apps to upgrade (all by default)
-                    nargs: "*"
+                    help: (Deprecated, see first positional arg) Upgrade all applications
+                    action: store_true
                 --system:
-                    help: Upgrade only the system packages
+                    help: (Deprecated, see first positional arg) Upgrade only the system packages
                     action: store_true
 
         ### tools_shell()
@@ -1489,7 +1494,9 @@ tools:
         ### tools_regen_conf()
         regen-conf:
             action_help: Regenerate the configuration file(s)
-            api: PUT /tools/regenconf
+            api:
+                - PUT /regenconf
+                - PUT /regenconf/<names>
             arguments:
                 names:
                     help: Categories to regenerate configuration of (all by default)
@@ -1538,7 +1545,9 @@ tools:
               ### tools_migrations_run()
               run:
                   action_help: Run migrations
-                  api: POST /migrations/run
+                  api:
+                    - PUT /migrations
+                    - PUT /migrations/<targets>
                   deprecated_alias:
                      - migrate
                   arguments:
@@ -1561,7 +1570,6 @@ tools:
               ### tools_migrations_state()
               state:
                   action_help: Show current migrations state
-                  api: GET /migrations/state
 
 
 #############################
@@ -1590,7 +1598,6 @@ hook:
         ### hook_info()
         info:
             action_help: Get information about a given hook
-            api: GET /hooks/<action>/<name>
             arguments:
                 action:
                     help: Action name
@@ -1620,7 +1627,6 @@ hook:
         ### hook_callback()
         callback:
             action_help: Execute all scripts binded to an action
-            api: POST /hooks/<action>
             arguments:
                 action:
                     help: Action name
@@ -1716,7 +1722,7 @@ log:
         ### log_share()
         share:
             action_help: Share the full log on yunopaste (alias to show --share)
-            api: GET /logs/share
+            api: GET /logs/<path>/share
             arguments:
                 path:
                     help: Log file to share
@@ -1731,11 +1737,11 @@ diagnosis:
 
         list:
             action_help: List diagnosis categories
-            api: GET /diagnosis/list
+            api: GET /diagnosis/categories
 
         show:
             action_help: Show most recents diagnosis results
-            api: GET /diagnosis/show
+            api: GET /diagnosis
             arguments:
                 categories:
                     help: Diagnosis categories to display (all by default)
@@ -1753,9 +1759,20 @@ diagnosis:
                     help: Show a human-readable output
                     action: store_true
 
+        get:
+            action_help: Low-level command to fetch raw data and status about a specific diagnosis test
+            api: GET /diagnosis/<category>
+            arguments:
+                category:
+                    help: Diagnosis category to fetch results from
+                item:
+                    help: "List of criteria describing the test. Must correspond exactly to the 'meta' infos in 'yunohost diagnosis show'"
+                    metavar: CRITERIA
+                    nargs: "*"
+
         run:
             action_help: Run diagnosis
-            api: POST /diagnosis/run
+            api: PUT /diagnosis/run
             arguments:
                 categories:
                     help: Diagnosis categories to run (all by default)
@@ -1772,27 +1789,21 @@ diagnosis:
 
         ignore:
             action_help: Configure some diagnosis results to be ignored and therefore not considered as actual issues
-            api: POST /diagnosis/ignore
+            api: PUT /diagnosis/ignore
             arguments:
-                --add-filter:
+                --filter:
                     help: "Add a filter. The first element should be a diagnosis category, and other criterias can be provided using the infos from the 'meta' sections in 'yunohost diagnosis show'. For example: 'dnsrecords domain=yolo.test category=xmpp'"
-                    nargs: "*"
-                    metavar: CRITERIA
-                --remove-filter:
-                    help: Remove a filter (it should be an existing filter as listed with --list)
                     nargs: "*"
                     metavar: CRITERIA
                 --list:
                     help: List active ignore filters
                     action: store_true
 
-        get:
-            action_help: Low-level command to fetch raw data and status about a specific diagnosis test
-            api: GET /diagnosis/item/<category>
+        unignore:
+            action_help: Configure some diagnosis results to be unignored and therefore considered as actual issues
+            api: PUT /diagnosis/unignore
             arguments:
-                category:
-                    help: Diagnosis category to fetch results from
-                item:
-                    help: "List of criteria describing the test. Must correspond exactly to the 'meta' infos in 'yunohost diagnosis show'"
-                    metavar: CRITERIA
+                --filter:
+                    help: Remove a filter (it should be an existing filter as listed with --list)
                     nargs: "*"
+                    metavar: CRITERIA

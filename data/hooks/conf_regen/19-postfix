@@ -76,7 +76,7 @@ do_post_regen() {
   fi
 
   [[ -z "$regen_conf_files" ]] \
-    || { service postfix restart && service postsrsd restart; }
+    || { systemctl restart postfix && systemctl restart postsrsd; }
 
 }
 

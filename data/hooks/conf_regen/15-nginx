@@ -47,6 +47,12 @@ do_pre_regen() {
 
   # install / update plain conf files
   cp plain/* "$nginx_conf_dir"
+  # remove the panel overlay if this is specified in settings
+  panel_overlay=$(yunohost settings get 'ssowat.panel_overlay.enabled')
+  if [ "$panel_overlay" == "false" ] || [ "$panel_overlay" == "False" ]
+  then
+    echo "#" > "${nginx_conf_dir}/yunohost_panel.conf.inc"
+  fi
 
   # retrieve variables
   main_domain=$(cat /etc/yunohost/current_host)

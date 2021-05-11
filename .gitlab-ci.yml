@@ -1,3 +1,4 @@
+---
 stages:
   - build
   - install
@@ -12,7 +13,7 @@ default:
   interruptible: true
 
 variables:
-    YNH_BUILD_DIR: "ynh-build"
+  YNH_BUILD_DIR: "ynh-build"
 
 include:
   - local: .gitlab/ci/build.gitlab-ci.yml

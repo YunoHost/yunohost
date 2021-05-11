@@ -1,6 +1,0 @@
-backup_dir="$1/conf/cron"
-
-cp -a $backup_dir/. /etc/cron.d
-
-# Restart just in case
-service cron restart

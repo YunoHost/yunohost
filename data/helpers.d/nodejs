@@ -73,6 +73,7 @@ ynh_use_nodejs () {
     fi
     # Create an alias to easily load the PATH
     ynh_node_load_PATH="PATH=$PATH"
+    # Same var but in lower case to be compatible with ynh_replace_vars...
     ynh_nodejs_load_path="PATH=$PATH"
 
     # Sets the local application-specific Node.js version

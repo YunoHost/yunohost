@@ -126,6 +126,20 @@ do_post_regen() {
   then
       systemctl daemon-reload
       systemctl restart slapd
+      sleep 3
+  fi
+
+  # For some reason, old setups don't have the admins group defined...
+  if ! slapcat | grep -q 'cn=admins,ou=groups,dc=yunohost,dc=org'
+  then
+      slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org <<< \
+"dn: cn=admins,ou=groups,dc=yunohost,dc=org
+cn: admins
+gidNumber: 4001
+memberUid: admin
+objectClass: posixGroup
+objectClass: top"
+      nscd -i groups
   fi
 
   [ -z "$regen_conf_files" ] && exit 0
@@ -147,7 +161,7 @@ do_post_regen() {
   su openldap -s "/bin/bash" -c "/usr/sbin/slapindex"
 
   echo "Reloading slapd"
-  service slapd force-reload
+  systemctl force-reload slapd
 
   # on slow hardware/vm this regen conf would exit before the admin user that
   # is stored in ldap is available because ldap seems to slow to restart

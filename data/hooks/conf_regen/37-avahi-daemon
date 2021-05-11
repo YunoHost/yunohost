@@ -15,7 +15,7 @@ do_post_regen() {
   regen_conf_files=$1
 
   [[ -z "$regen_conf_files" ]] \
-    || service avahi-daemon restart
+    || systemctl restart avahi-daemon
 }
 
 FORCE=${2:-0}

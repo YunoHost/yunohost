@@ -182,7 +182,7 @@ ynh_permission_exists() {
     local permission
     ynh_handle_getopts_args "$@"
 
-    yunohost user permission list --output-as json --quiet \
+    yunohost user permission list "$app" --output-as json --quiet \
         | jq -e --arg perm "$app.$permission" '.permissions[$perm]' >/dev/null
 }
 

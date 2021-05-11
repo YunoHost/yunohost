@@ -53,6 +53,12 @@ root-tests:
   script:
     - python3 -m pytest tests
 
+test-helpers:
+  extends: .test-stage
+  script:
+    - cd tests
+    - bash test_helpers.sh
+
 test-apps:
   extends: .test-stage
   script:

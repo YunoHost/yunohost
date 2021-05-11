@@ -33,9 +33,11 @@ import re
 import subprocess
 import glob
 import urllib.parse
+import tempfile
 from collections import OrderedDict
 
 from moulinette import msignals, m18n, msettings
+from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
 from moulinette.utils.process import run_commands, check_output
@@ -47,26 +49,21 @@ from moulinette.utils.filesystem import (
     write_to_file,
     write_to_json,
     write_to_yaml,
-    chmod,
-    chown,
     mkdir,
 )
 
 from yunohost.service import service_status, _run_service_command
 from yunohost.utils import packages
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation, OperationLogger
 
 logger = getActionLogger("yunohost.app")
 
-APPS_PATH = "/usr/share/yunohost/apps"
 APPS_SETTING_PATH = "/etc/yunohost/apps/"
-INSTALL_TMP = "/var/cache/yunohost"
-APP_TMP_FOLDER = INSTALL_TMP + "/from_file"
+APP_TMP_WORKDIRS = "/var/cache/yunohost/app_tmp_work_dirs"
 
 APPS_CATALOG_CACHE = "/var/cache/yunohost/repo"
 APPS_CATALOG_CONF = "/etc/yunohost/apps_catalog.yml"
-APPS_CATALOG_CRON_PATH = "/etc/cron.daily/yunohost-fetch-apps-catalog"
 APPS_CATALOG_API_VERSION = 2
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 
@@ -147,7 +144,7 @@ def app_fetchlist():
     )
     from yunohost.tools import tools_update
 
-    tools_update(apps=True)
+    tools_update(target="apps")
 
 
 def app_list(full=False, installed=False, filter=None):
@@ -192,12 +189,14 @@ def app_info(app, full=False):
     from yunohost.permission import user_permission_list
 
     if not _is_installed(app):
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
         )
 
     local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
-    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    permissions = user_permission_list(full=True, absolute_urls=True, apps=[app])[
+        "permissions"
+    ]
 
     settings = _get_app_settings(app)
 
@@ -232,9 +231,7 @@ def app_info(app, full=False):
         local_manifest.get("multi_instance", False)
     )
 
-    ret["permissions"] = {
-        p: i for p, i in permissions.items() if p.startswith(app + ".")
-    }
+    ret["permissions"] = permissions
     ret["label"] = permissions.get(app + ".main", {}).get("label")
 
     if not ret["label"]:
@@ -322,16 +319,18 @@ def app_map(app=None, raw=False, user=None):
 
     if app is not None:
         if not _is_installed(app):
-            raise YunohostError(
+            raise YunohostValidationError(
                 "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
             )
         apps = [
             app,
         ]
     else:
-        apps = os.listdir(APPS_SETTING_PATH)
+        apps = _installed_apps()
 
-    permissions = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    permissions = user_permission_list(full=True, absolute_urls=True, apps=apps)[
+        "permissions"
+    ]
     for app_id in apps:
         app_settings = _get_app_settings(app_id)
         if not app_settings:
@@ -422,14 +421,14 @@ def app_change_url(operation_logger, app, domain, path):
 
     installed = _is_installed(app)
     if not installed:
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
         )
 
     if not os.path.exists(
         os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")
     ):
-        raise YunohostError("app_change_url_no_script", app_name=app)
+        raise YunohostValidationError("app_change_url_no_script", app_name=app)
 
     old_domain = app_setting(app, "domain")
     old_path = app_setting(app, "path")
@@ -439,7 +438,7 @@ def app_change_url(operation_logger, app, domain, path):
     domain, path = _normalize_domain_path(domain, path)
 
     if (domain, path) == (old_domain, old_path):
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_change_url_identical_domains", domain=domain, path=path
         )
 
@@ -464,34 +463,12 @@ def app_change_url(operation_logger, app, domain, path):
     operation_logger.extra.update({"env": env_dict})
     operation_logger.start()
 
-    if os.path.exists(os.path.join(APP_TMP_FOLDER, "scripts")):
-        shutil.rmtree(os.path.join(APP_TMP_FOLDER, "scripts"))
-
-    shutil.copytree(
-        os.path.join(APPS_SETTING_PATH, app, "scripts"),
-        os.path.join(APP_TMP_FOLDER, "scripts"),
-    )
-
-    if os.path.exists(os.path.join(APP_TMP_FOLDER, "conf")):
-        shutil.rmtree(os.path.join(APP_TMP_FOLDER, "conf"))
-
-    shutil.copytree(
-        os.path.join(APPS_SETTING_PATH, app, "conf"),
-        os.path.join(APP_TMP_FOLDER, "conf"),
-    )
+    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
+    change_url_script = os.path.join(tmp_workdir_for_app, "scripts/change_url")
 
     # Execute App change_url script
-    os.system("chown -R admin: %s" % INSTALL_TMP)
-    os.system("chmod +x %s" % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts")))
-    os.system(
-        "chmod +x %s"
-        % os.path.join(os.path.join(APP_TMP_FOLDER, "scripts", "change_url"))
-    )
-
-    if (
-        hook_exec(os.path.join(APP_TMP_FOLDER, "scripts/change_url"), env=env_dict)[0]
-        != 0
-    ):
+    ret = hook_exec(change_url_script, env=env_dict)[0]
+    if ret != 0:
         msg = "Failed to change '%s' url." % app
         logger.error(msg)
         operation_logger.error(msg)
@@ -501,6 +478,7 @@ def app_change_url(operation_logger, app, domain, path):
         app_setting(app, "domain", value=old_domain)
         app_setting(app, "path", value=old_path)
         return
+    shutil.rmtree(tmp_workdir_for_app)
 
     # this should idealy be done in the change_url script but let's avoid common mistakes
     app_setting(app, "domain", value=domain)
@@ -552,12 +530,12 @@ def app_upgrade(app=[], url=None, file=None, force=False):
 
     # Abort if any of those app is in fact not installed..
     for app in [app_ for app_ in apps if not _is_installed(app_)]:
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
         )
 
     if len(apps) == 0:
-        raise YunohostError("apps_already_up_to_date")
+        raise YunohostValidationError("apps_already_up_to_date")
     if len(apps) > 1:
         logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(apps)))
 
@@ -625,7 +603,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         _check_manifest_requirements(manifest, app_instance_name=app_instance_name)
         _assert_system_is_sane_for_app(manifest, "pre")
 
-        app_setting_path = APPS_SETTING_PATH + "/" + app_instance_name
+        app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
 
         # Retrieve arguments list for upgrade script
         # TODO: Allow to specify arguments
@@ -650,9 +628,6 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         related_to = [("app", app_instance_name)]
         operation_logger = OperationLogger("app_upgrade", related_to, env=env_dict)
         operation_logger.start()
-
-        # Execute App upgrade script
-        os.system("chown -hR admin: %s" % INSTALL_TMP)
 
         # Execute the app upgrade script
         upgrade_failed = True
@@ -780,6 +755,12 @@ def app_upgrade(app=[], url=None, file=None, force=False):
                         % (extracted_app_folder, file_to_copy, app_setting_path)
                     )
 
+            # Clean and set permissions
+            shutil.rmtree(extracted_app_folder)
+            os.system("chmod 600 %s" % app_setting_path)
+            os.system("chmod 400 %s/settings.yml" % app_setting_path)
+            os.system("chown -R root: %s" % app_setting_path)
+
             # So much win
             logger.success(m18n.n("app_upgraded", app=app_instance_name))
 
@@ -789,6 +770,22 @@ def app_upgrade(app=[], url=None, file=None, force=False):
     permission_sync_to_user()
 
     logger.success(m18n.n("upgrade_complete"))
+
+
+def app_manifest(app):
+
+    raw_app_list = _load_apps_catalog()["apps"]
+
+    if app in raw_app_list or ("@" in app) or ("http://" in app) or ("https://" in app):
+        manifest, extracted_app_folder = _fetch_app_from_git(app)
+    elif os.path.exists(app):
+        manifest, extracted_app_folder = _extract_app_from_file(app)
+    else:
+        raise YunohostValidationError("app_unknown")
+
+    shutil.rmtree(extracted_app_folder)
+
+    return manifest
 
 
 @is_unit_operation()
@@ -820,10 +817,6 @@ def app_install(
         permission_sync_to_user,
     )
     from yunohost.regenconf import manually_modified_files
-
-    # Fetch or extract sources
-    if not os.path.exists(INSTALL_TMP):
-        os.makedirs(INSTALL_TMP)
 
     def confirm_install(confirm):
         # Ignore if there's nothing for confirm (good quality app), if --force is used
@@ -881,11 +874,11 @@ def app_install(
         confirm_install("thirdparty")
         manifest, extracted_app_folder = _extract_app_from_file(app)
     else:
-        raise YunohostError("app_unknown")
+        raise YunohostValidationError("app_unknown")
 
     # Check ID
     if "id" not in manifest or "__" in manifest["id"]:
-        raise YunohostError("app_id_invalid")
+        raise YunohostValidationError("app_id_invalid")
 
     app_id = manifest["id"]
     label = label if label else manifest["name"]
@@ -898,7 +891,7 @@ def app_install(
     instance_number = _installed_instance_number(app_id, last=True) + 1
     if instance_number > 1:
         if "multi_instance" not in manifest or not is_true(manifest["multi_instance"]):
-            raise YunohostError("app_already_installed", app=app_id)
+            raise YunohostValidationError("app_already_installed", app=app_id)
 
         # Change app_id to the forked app id
         app_instance_name = app_id + "__" + str(instance_number)
@@ -958,10 +951,6 @@ def app_install(
     }
     _set_app_settings(app_instance_name, app_settings)
 
-    os.system("chown -R admin: " + extracted_app_folder)
-
-    # Execute App install script
-    os.system("chown -hR admin: %s" % INSTALL_TMP)
     # Move scripts and manifest to the right place
     if os.path.exists(os.path.join(extracted_app_folder, "manifest.json")):
         os.system("cp %s/manifest.json %s" % (extracted_app_folder, app_setting_path))
@@ -1123,11 +1112,7 @@ def app_install(
 
             permission_sync_to_user()
 
-            raise YunohostError(
-                failure_message_with_debug_instructions,
-                raw_msg=True,
-                log_ref=operation_logger.name,
-            )
+            raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
 
     # Clean hooks and add new ones
     hook_remove(app_instance_name)
@@ -1137,9 +1122,9 @@ def app_install(
 
     # Clean and set permissions
     shutil.rmtree(extracted_app_folder)
-    os.system("chmod -R 400 %s" % app_setting_path)
+    os.system("chmod 600 %s" % app_setting_path)
+    os.system("chmod 400 %s/settings.yml" % app_setting_path)
     os.system("chown -R root: %s" % app_setting_path)
-    os.system("chown -R admin: %s/scripts" % app_setting_path)
 
     logger.success(m18n.n("installation_complete"))
 
@@ -1210,7 +1195,7 @@ def app_remove(operation_logger, app):
     )
 
     if not _is_installed(app):
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
         )
 
@@ -1218,13 +1203,7 @@ def app_remove(operation_logger, app):
 
     logger.info(m18n.n("app_start_remove", app=app))
 
-    app_setting_path = APPS_SETTING_PATH + app
-
-    # TODO: display fail messages from script
-    try:
-        shutil.rmtree("/tmp/yunohost_remove")
-    except Exception:
-        pass
+    app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
     # Attempt to patch legacy helpers ...
     _patch_legacy_helpers(app_setting_path)
@@ -1234,13 +1213,8 @@ def app_remove(operation_logger, app):
     _patch_legacy_php_versions(app_setting_path)
 
     manifest = _get_manifest_of_app(app_setting_path)
-
-    os.system(
-        "cp -a %s /tmp/yunohost_remove && chown -hR admin: /tmp/yunohost_remove"
-        % app_setting_path
-    )
-    os.system("chown -R admin: /tmp/yunohost_remove")
-    os.system("chmod -R u+rX /tmp/yunohost_remove")
+    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
+    remove_script = f"{tmp_workdir_for_app}/scripts/remove"
 
     env_dict = {}
     app_id, app_instance_nb = _parse_app_instance_name(app)
@@ -1252,7 +1226,7 @@ def app_remove(operation_logger, app):
     operation_logger.flush()
 
     try:
-        ret = hook_exec("/tmp/yunohost_remove/scripts/remove", env=env_dict)[0]
+        ret = hook_exec(remove_script, env=env_dict)[0]
     # Here again, calling hook_exec could fail miserably, or get
     # manually interrupted (by mistake or because script was stuck)
     # In that case we still want to proceed with the rest of the
@@ -1262,6 +1236,8 @@ def app_remove(operation_logger, app):
         import traceback
 
         logger.error(m18n.n("unexpected_error", error="\n" + traceback.format_exc()))
+    finally:
+        shutil.rmtree(tmp_workdir_for_app)
 
     if ret == 0:
         logger.success(m18n.n("app_removed", app=app))
@@ -1269,15 +1245,14 @@ def app_remove(operation_logger, app):
     else:
         logger.warning(m18n.n("app_not_properly_removed", app=app))
 
+    # Remove all permission in LDAP
+    for permission_name in user_permission_list(apps=[app])["permissions"].keys():
+        permission_delete(permission_name, force=True, sync_perm=False)
+
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
-    shutil.rmtree("/tmp/yunohost_remove")
-    hook_remove(app)
 
-    # Remove all permission in LDAP
-    for permission_name in user_permission_list()["permissions"].keys():
-        if permission_name.startswith(app + "."):
-            permission_delete(permission_name, force=True, sync_perm=False)
+    hook_remove(app)
 
     permission_sync_to_user()
     _assert_system_is_sane_for_app(manifest, "post")
@@ -1373,10 +1348,10 @@ def app_makedefault(operation_logger, app, domain=None):
         domain = app_domain
         operation_logger.related_to.append(("domain", domain))
     elif domain not in domain_list()["domains"]:
-        raise YunohostError("domain_name_unknown", domain=domain)
+        raise YunohostValidationError("domain_name_unknown", domain=domain)
 
     if "/" in app_map(raw=True)[domain]:
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_make_default_location_already_used",
             app=app,
             domain=app_domain,
@@ -1439,7 +1414,7 @@ def app_setting(app, key, value=None, delete=False):
             permission_url,
         )
 
-        permissions = user_permission_list(full=True)["permissions"]
+        permissions = user_permission_list(full=True, apps=[app])["permissions"]
         permission_name = "%s.legacy_%s_uris" % (app, key.split("_")[0])
         permission = permissions.get(permission_name)
 
@@ -1579,7 +1554,7 @@ def app_register_url(app, domain, path):
     if _is_installed(app):
         settings = _get_app_settings(app)
         if "path" in settings.keys() and "domain" in settings.keys():
-            raise YunohostError("app_already_installed_cant_change_url")
+            raise YunohostValidationError("app_already_installed_cant_change_url")
 
     # Check the url is available
     _assert_no_conflicting_apps(domain, path)
@@ -1695,7 +1670,7 @@ def app_change_label(app, new_label):
 
     installed = _is_installed(app)
     if not installed:
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
         )
     logger.warning(m18n.n("app_label_deprecated"))
@@ -1724,14 +1699,13 @@ def app_action_run(operation_logger, app, action, args=None):
     logger.warning(m18n.n("experimental_feature"))
 
     from yunohost.hook import hook_exec
-    import tempfile
 
     # will raise if action doesn't exist
     actions = app_action_list(app)["actions"]
     actions = {x["id"]: x for x in actions}
 
     if action not in actions:
-        raise YunohostError(
+        raise YunohostValidationError(
             "action '%s' not available for app '%s', available actions are: %s"
             % (action, app, ", ".join(actions.keys())),
             raw_msg=True,
@@ -1762,8 +1736,9 @@ def app_action_run(operation_logger, app, action, args=None):
     if action_declaration.get("cwd"):
         cwd = action_declaration["cwd"].replace("$app", app)
     else:
-        cwd = "/etc/yunohost/apps/" + app
+        cwd = os.path.join(APPS_SETTING_PATH, app)
 
+    # FIXME: this should probably be ran in a tmp workdir...
     retcode = hook_exec(
         path,
         env=env_dict,
@@ -1818,6 +1793,7 @@ def app_config_show_panel(operation_logger, app):
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
     }
 
+    # FIXME: this should probably be ran in a tmp workdir...
     return_code, parsed_values = hook_exec(
         config_script, args=["show"], env=env, return_format="plain_dict"
     )
@@ -1885,7 +1861,7 @@ def app_config_apply(operation_logger, app, args):
 
     installed = _is_installed(app)
     if not installed:
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
         )
 
@@ -1930,6 +1906,7 @@ def app_config_apply(operation_logger, app, args):
                 "Ignore key '%s' from arguments because it is not in the config", key
             )
 
+    # FIXME: this should probably be ran in a tmp workdir...
     return_code = hook_exec(
         config_script,
         args=["apply"],
@@ -2200,7 +2177,7 @@ def _get_app_settings(app_id):
 
     """
     if not _is_installed(app_id):
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_not_installed", app=app_id, all_apps=_get_all_installed_apps_id()
         )
     try:
@@ -2244,43 +2221,32 @@ def _set_app_settings(app_id, settings):
         yaml.safe_dump(settings, f, default_flow_style=False)
 
 
-def _extract_app_from_file(path, remove=False):
+def _extract_app_from_file(path):
     """
-    Unzip or untar application tarball in APP_TMP_FOLDER, or copy it from a directory
+    Unzip / untar / copy application tarball or directory to a tmp work directory
 
     Keyword arguments:
         path -- Path of the tarball or directory
-        remove -- Remove the tarball after extraction
-
-    Returns:
-        Dict manifest
-
     """
     logger.debug(m18n.n("extracting"))
 
-    if os.path.exists(APP_TMP_FOLDER):
-        shutil.rmtree(APP_TMP_FOLDER)
-    os.makedirs(APP_TMP_FOLDER)
-
     path = os.path.abspath(path)
+
+    extracted_app_folder = _make_tmp_workdir_for_app()
 
     if ".zip" in path:
         extract_result = os.system(
-            "unzip %s -d %s > /dev/null 2>&1" % (path, APP_TMP_FOLDER)
+            f"unzip '{path}' -d {extracted_app_folder} > /dev/null 2>&1"
         )
-        if remove:
-            os.remove(path)
     elif ".tar" in path:
         extract_result = os.system(
-            "tar -xf %s -C %s > /dev/null 2>&1" % (path, APP_TMP_FOLDER)
+            f"tar -xf '{path}' -C {extracted_app_folder} > /dev/null 2>&1"
         )
-        if remove:
-            os.remove(path)
     elif os.path.isdir(path):
-        shutil.rmtree(APP_TMP_FOLDER)
+        shutil.rmtree(extracted_app_folder)
         if path[-1] != "/":
             path = path + "/"
-        extract_result = os.system('cp -a "%s" %s' % (path, APP_TMP_FOLDER))
+        extract_result = os.system(f"cp -a '{path}' {extracted_app_folder}")
     else:
         extract_result = 1
 
@@ -2288,7 +2254,6 @@ def _extract_app_from_file(path, remove=False):
         raise YunohostError("app_extraction_failed")
 
     try:
-        extracted_app_folder = APP_TMP_FOLDER
         if len(os.listdir(extracted_app_folder)) == 1:
             for folder in os.listdir(extracted_app_folder):
                 extracted_app_folder = extracted_app_folder + "/" + folder
@@ -2515,24 +2480,11 @@ def _get_git_last_commit_hash(repository, reference="HEAD"):
 
 def _fetch_app_from_git(app):
     """
-    Unzip or untar application tarball in APP_TMP_FOLDER
+    Unzip or untar application tarball to a tmp directory
 
     Keyword arguments:
         app -- App_id or git repo URL
-
-    Returns:
-        Dict manifest
-
     """
-    extracted_app_folder = APP_TMP_FOLDER
-
-    app_tmp_archive = "{0}.zip".format(extracted_app_folder)
-    if os.path.exists(extracted_app_folder):
-        shutil.rmtree(extracted_app_folder)
-    if os.path.exists(app_tmp_archive):
-        os.remove(app_tmp_archive)
-
-    logger.debug(m18n.n("downloading"))
 
     # Extract URL, branch and revision to download
     if ("@" in app) or ("http://" in app) or ("https://" in app):
@@ -2547,14 +2499,18 @@ def _fetch_app_from_git(app):
         app_id, _ = _parse_app_instance_name(app)
 
         if app_id not in app_dict:
-            raise YunohostError("app_unknown")
+            raise YunohostValidationError("app_unknown")
         elif "git" not in app_dict[app_id]:
-            raise YunohostError("app_unsupported_remote_type")
+            raise YunohostValidationError("app_unsupported_remote_type")
 
         app_info = app_dict[app_id]
         url = app_info["git"]["url"]
         branch = app_info["git"]["branch"]
         revision = str(app_info["git"]["revision"])
+
+    extracted_app_folder = _make_tmp_workdir_for_app()
+
+    logger.debug(m18n.n("downloading"))
 
     # Download only this commit
     try:
@@ -2685,7 +2641,7 @@ def _check_manifest_requirements(manifest, app_instance_name):
 
     packaging_format = int(manifest.get("packaging_format", 0))
     if packaging_format not in [0, 1]:
-        raise YunohostError("app_packaging_format_not_supported")
+        raise YunohostValidationError("app_packaging_format_not_supported")
 
     requirements = manifest.get("requirements", dict())
 
@@ -2698,7 +2654,7 @@ def _check_manifest_requirements(manifest, app_instance_name):
     for pkgname, spec in requirements.items():
         if not packages.meets_version_specifier(pkgname, spec):
             version = packages.ynh_packages_version()[pkgname]["version"]
-            raise YunohostError(
+            raise YunohostValidationError(
                 "app_requirements_unmeet",
                 pkgname=pkgname,
                 version=version,
@@ -2797,7 +2753,9 @@ class YunoHostArgumentFormatParser(object):
         # we don't have an answer, check optional and default_value
         if question.value is None or question.value == "":
             if not question.optional and question.default is None:
-                raise YunohostError("app_argument_required", name=question.name)
+                raise YunohostValidationError(
+                    "app_argument_required", name=question.name
+                )
             else:
                 question.value = (
                     getattr(self, "default_value", None)
@@ -2817,7 +2775,7 @@ class YunoHostArgumentFormatParser(object):
         return (question.value, self.argument_type)
 
     def _raise_invalid_answer(self, question):
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_argument_choice_invalid",
             name=question.name,
             choices=", ".join(question.choices),
@@ -2855,13 +2813,15 @@ class PasswordArgumentParser(YunoHostArgumentFormatParser):
         )
 
         if question.default is not None:
-            raise YunohostError("app_argument_password_no_default", name=question.name)
+            raise YunohostValidationError(
+                "app_argument_password_no_default", name=question.name
+            )
 
         return question
 
     def _post_parse_value(self, question):
         if any(char in question.value for char in self.forbidden_chars):
-            raise YunohostError(
+            raise YunohostValidationError(
                 "pattern_password_app", forbidden_chars=self.forbidden_chars
             )
 
@@ -2914,7 +2874,7 @@ class BooleanArgumentParser(YunoHostArgumentFormatParser):
         if str(question.value).lower() in ["0", "no", "n", "false"]:
             return 0
 
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_argument_choice_invalid",
             name=question.name,
             choices="yes, no, y, n, 1, 0",
@@ -2939,7 +2899,7 @@ class DomainArgumentParser(YunoHostArgumentFormatParser):
         return question
 
     def _raise_invalid_answer(self, question):
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_argument_invalid", name=question.name, error=m18n.n("domain_unknown")
         )
 
@@ -2965,7 +2925,7 @@ class UserArgumentParser(YunoHostArgumentFormatParser):
         return question
 
     def _raise_invalid_answer(self, question):
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_argument_invalid",
             name=question.name,
             error=m18n.n("user_unknown", user=question.value),
@@ -2993,7 +2953,7 @@ class NumberArgumentParser(YunoHostArgumentFormatParser):
         if isinstance(question.value, str) and question.value.isdigit():
             return int(question.value)
 
-        raise YunohostError(
+        raise YunohostValidationError(
             "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
         )
 
@@ -3124,7 +3084,7 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
 
     # Abort if domain is unknown
     if domain not in domain_list()["domains"]:
-        raise YunohostError("domain_name_unknown", domain=domain)
+        raise YunohostValidationError("domain_name_unknown", domain=domain)
 
     # Fetch apps map
     apps_map = app_map(raw=True)
@@ -3163,9 +3123,11 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
             )
 
         if full_domain:
-            raise YunohostError("app_full_domain_unavailable", domain=domain)
+            raise YunohostValidationError("app_full_domain_unavailable", domain=domain)
         else:
-            raise YunohostError("app_location_unavailable", apps="\n".join(apps))
+            raise YunohostValidationError(
+                "app_location_unavailable", apps="\n".join(apps)
+            )
 
 
 def _make_environment_for_app_script(app, args={}, args_prefix="APP_ARG_"):
@@ -3233,28 +3195,15 @@ def _parse_app_instance_name(app_instance_name):
 def _initialize_apps_catalog_system():
     """
     This function is meant to intialize the apps_catalog system with YunoHost's default app catalog.
-
-    It also creates the cron job that will update the list every day
     """
 
     default_apps_catalog_list = [{"id": "default", "url": APPS_CATALOG_DEFAULT_URL}]
 
-    cron_job = []
-    cron_job.append("#!/bin/bash")
-    # We add a random delay between 0 and 60 min to avoid every instance fetching
-    # the apps catalog at the same time every night
-    cron_job.append("(sleep $((RANDOM%3600));")
-    cron_job.append("yunohost tools update --apps > /dev/null) &")
     try:
         logger.debug(
             "Initializing apps catalog system with YunoHost's default app list"
         )
         write_to_yaml(APPS_CATALOG_CONF, default_apps_catalog_list)
-
-        logger.debug("Installing apps catalog fetch daily cron job")
-        write_to_file(APPS_CATALOG_CRON_PATH, "\n".join(cron_job))
-        chown(APPS_CATALOG_CRON_PATH, uid="root", gid="root")
-        chmod(APPS_CATALOG_CRON_PATH, 0o755)
     except Exception as e:
         raise YunohostError(
             "Could not initialize the apps catalog system... : %s" % str(e)
@@ -3405,6 +3354,36 @@ def _load_apps_catalog():
 #
 
 
+def _make_tmp_workdir_for_app(app=None):
+
+    # Create parent dir if it doesn't exists yet
+    if not os.path.exists(APP_TMP_WORKDIRS):
+        os.makedirs(APP_TMP_WORKDIRS)
+
+    now = int(time.time())
+
+    # Cleanup old dirs (if any)
+    for dir_ in os.listdir(APP_TMP_WORKDIRS):
+        path = os.path.join(APP_TMP_WORKDIRS, dir_)
+        # We only delete folders older than an arbitary 12 hours
+        # This is to cover the stupid case of upgrades
+        # Where many app will call 'yunohost backup create'
+        # from the upgrade script itself,
+        # which will also call this function while the upgrade
+        # script itself is running in one of those dir...
+        # It could be that there are other edge cases
+        # such as app-install-during-app-install
+        if os.stat(path).st_mtime < now - 12 * 3600:
+            shutil.rmtree(path)
+    tmpdir = tempfile.mkdtemp(prefix="app_", dir=APP_TMP_WORKDIRS)
+
+    # Copy existing app scripts, conf, ... if an app arg was provided
+    if app:
+        os.system(f"cp -a {APPS_SETTING_PATH}/{app}/* {tmpdir}")
+
+    return tmpdir
+
+
 def is_true(arg):
     """
     Convert a string into a boolean
@@ -3468,17 +3447,23 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     # Wait if a service is reloading
     test_nb = 0
-    while test_nb < 10:
+    while test_nb < 16:
         if not any(s for s in services if service_status(s)["status"] == "reloading"):
             break
         time.sleep(0.5)
-        test_nb+=1
+        test_nb += 1
 
     # List services currently down and raise an exception if any are found
-    faulty_services = [s for s in services if service_status(s)["status"] != "running"]
+    services_status = {s: service_status(s) for s in services}
+    faulty_services = [
+        f"{s} ({status['status']})"
+        for s, status in services_status.items()
+        if status["status"] != "running"
+    ]
+
     if faulty_services:
         if when == "pre":
-            raise YunohostError(
+            raise YunohostValidationError(
                 "app_action_cannot_be_ran_because_required_services_down",
                 services=", ".join(faulty_services),
             )
@@ -3489,7 +3474,7 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     if packages.dpkg_is_broken():
         if when == "pre":
-            raise YunohostError("dpkg_is_broken")
+            raise YunohostValidationError("dpkg_is_broken")
         elif when == "post":
             raise YunohostError("this_action_broke_dpkg")
 
@@ -3645,7 +3630,11 @@ def _patch_legacy_helpers(app_folder):
         if not os.path.isfile(filename):
             continue
 
-        content = read_file(filename)
+        try:
+            content = read_file(filename)
+        except MoulinetteError:
+            continue
+
         replaced_stuff = False
         show_warning = False
 
@@ -3668,7 +3657,7 @@ def _patch_legacy_helpers(app_folder):
             # couldn't patch the deprecated helper in the previous lines.  In
             # that case, abort the install or whichever step is performed
             if helper in content and infos["important"]:
-                raise YunohostError(
+                raise YunohostValidationError(
                     "This app is likely pretty old and uses deprecated / outdated helpers that can't be migrated easily. It can't be installed anymore.",
                     raw_msg=True,
                 )

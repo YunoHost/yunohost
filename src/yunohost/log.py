@@ -35,7 +35,7 @@ from logging import FileHandler, getLogger, Formatter
 
 from moulinette import m18n, msettings
 from moulinette.core import MoulinetteError
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.packages import get_ynh_package_version
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml
@@ -191,7 +191,7 @@ def log_show(
         log_path = base_path + LOG_FILE_EXT
 
     if not os.path.exists(md_path) and not os.path.exists(log_path):
-        raise YunohostError("log_does_exists", log=path)
+        raise YunohostValidationError("log_does_exists", log=path)
 
     infos = {}
 
@@ -340,9 +340,9 @@ def is_unit_operation(
             # Indeed, we use convention naming in this decorator and we need to
             # know name of each args (so we need to use kwargs instead of args)
             if len(args) > 0:
-                from inspect import getargspec
+                from inspect import signature
 
-                keys = getargspec(func).args
+                keys = list(signature(func).parameters.keys())
                 if "operation_logger" in keys:
                     keys.remove("operation_logger")
                 for k, arg in enumerate(args):
@@ -414,8 +414,15 @@ class RedactingFormatter(Formatter):
             # This matches stuff like db_pwd=the_secret or admin_password=other_secret
             # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
             # Some names like "key" or "manifest_key" are ignored, used in helpers like ynh_app_setting_set or ynh_read_manifest
-            match = re.search(r'(pwd|pass|password|secret\w*|\w+key|token)=(\S{3,})$', record.strip())
-            if match and match.group(2) not in self.data_to_redact and match.group(1) not in ["key", "manifest_key"]:
+            match = re.search(
+                r"(pwd|pass|password|passphrase|secret\w*|\w+key|token)=(\S{3,})$",
+                record.strip(),
+            )
+            if (
+                match
+                and match.group(2) not in self.data_to_redact
+                and match.group(1) not in ["key", "manifest_key"]
+            ):
                 self.data_to_redact.append(match.group(2))
         except Exception as e:
             logger.warning(
@@ -631,10 +638,23 @@ class OperationLogger(object):
         """
         Close properly the unit operation
         """
+
+        # When the error happen's in the is_unit_operation try/except,
+        # we want to inject the log ref in the exception, such that it may be
+        # transmitted to the webadmin which can then redirect to the appropriate
+        # log page
+        if (
+            self.started_at
+            and isinstance(error, Exception)
+            and not isinstance(error, YunohostValidationError)
+        ):
+            error.log_ref = self.name
+
         if self.ended_at is not None or self.started_at is None:
             return
         if error is not None and not isinstance(error, str):
             error = str(error)
+
         self.ended_at = datetime.utcnow()
         self._error = error
         self._success = error is None

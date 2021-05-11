@@ -25,10 +25,12 @@ def find_expected_string_keys():
     # Try to find :
     #    m18n.n(   "foo"
     #    YunohostError("foo"
+    #    YunohostValidationError("foo"
     #    # i18n: foo
     p1 = re.compile(r"m18n\.n\(\n*\s*[\"\'](\w+)[\"\']")
     p2 = re.compile(r"YunohostError\(\n*\s*[\'\"](\w+)[\'\"]")
-    p3 = re.compile(r"# i18n: [\'\"]?(\w+)[\'\"]?")
+    p3 = re.compile(r"YunohostValidationError\(\n*\s*[\'\"](\w+)[\'\"]")
+    p4 = re.compile(r"# i18n: [\'\"]?(\w+)[\'\"]?")
 
     python_files = glob.glob("src/yunohost/*.py")
     python_files.extend(glob.glob("src/yunohost/utils/*.py"))
@@ -47,6 +49,10 @@ def find_expected_string_keys():
                 continue
             yield m
         for m in p3.findall(content):
+            if m.endswith("_"):
+                continue
+            yield m
+        for m in p4.findall(content):
             yield m
 
     # For each diagnosis, try to find strings like "diagnosis_stuff_foo" (c.f. diagnosis summaries)
