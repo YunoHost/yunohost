@@ -949,11 +949,11 @@ def _name_self_CA():
 
 
 def _tail(n, file_path):
-    stdin, stdout = os.popen2("tail -n %s '%s'" % (n, file_path))
-
-    stdin.close()
-
-    lines = stdout.readlines()
-    stdout.close()
-
-    return "".join(lines)
+    p = subprocess.Popen("tail -n %s '%s'" % (n, file_path), close_fds=True, 
+                         shell=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+    
+    p.stdin.close()
+    lines = p.stdout.readlines()
+    p.stdout.close()
+    
+    return str(b"".join(lines))
