@@ -12,16 +12,12 @@ do_init_regen() {
 
   do_pre_regen ""
 
-  systemctl daemon-reload
-
-  systemctl restart slapd
-
   # Drop current existing slapd data
 
   rm -rf /var/backups/*.ldapdb
   rm -rf /var/backups/slapd-*
 
-debconf-set-selections << EOF
+  debconf-set-selections << EOF
 slapd slapd/password1 password yunohost
 slapd slapd/password2 password yunohost
 slapd slapd/domain string yunohost.org
@@ -45,11 +41,11 @@ EOF
   chown -R openldap:openldap /etc/ldap/schema/
   usermod -aG ssl-cert openldap
 
-  systemctl restart slapd
 
-  # (Re-)init data according to ldap_scheme.yaml
+  # (Re-)init data according to default ldap entries
+  slapadd -n1 -l /usr/share/yunohost/yunohost-config/moulinette/ldap_default_entries.ldif 2>&1 \
+      | grep -v "none elapsed\|Closing DB" || true
 
-  yunohost tools shell -c "from yunohost.tools import tools_ldapinit; tools_ldapinit()"
 }
 
 _regenerate_slapd_conf() {

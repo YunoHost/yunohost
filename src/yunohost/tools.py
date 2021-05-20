@@ -67,79 +67,6 @@ def tools_versions():
     return ynh_packages_version()
 
 
-def tools_ldapinit():
-    """
-    YunoHost LDAP initialization
-    """
-
-    with open("/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml") as f:
-        ldap_map = yaml.load(f)
-
-    from yunohost.utils.ldap import _get_ldap_interface
-
-    ldap = _get_ldap_interface()
-
-    for rdn, attr_dict in ldap_map["parents"].items():
-        try:
-            ldap.add(rdn, attr_dict)
-        except Exception as e:
-            logger.warn(
-                "Error when trying to inject '%s' -> '%s' into ldap: %s"
-                % (rdn, attr_dict, e)
-            )
-
-    for rdn, attr_dict in ldap_map["children"].items():
-        try:
-            ldap.add(rdn, attr_dict)
-        except Exception as e:
-            logger.warn(
-                "Error when trying to inject '%s' -> '%s' into ldap: %s"
-                % (rdn, attr_dict, e)
-            )
-
-    for rdn, attr_dict in ldap_map["depends_children"].items():
-        try:
-            ldap.add(rdn, attr_dict)
-        except Exception as e:
-            logger.warn(
-                "Error when trying to inject '%s' -> '%s' into ldap: %s"
-                % (rdn, attr_dict, e)
-            )
-
-    admin_dict = {
-        "cn": ["admin"],
-        "uid": ["admin"],
-        "description": ["LDAP Administrator"],
-        "gidNumber": ["1007"],
-        "uidNumber": ["1007"],
-        "homeDirectory": ["/home/admin"],
-        "loginShell": ["/bin/bash"],
-        "objectClass": ["organizationalRole", "posixAccount", "simpleSecurityObject"],
-        "userPassword": ["yunohost"],
-    }
-
-    ldap.update("cn=admin", admin_dict)
-
-    # Force nscd to refresh cache to take admin creation into account
-    subprocess.call(["nscd", "-i", "passwd"])
-
-    # Check admin actually exists now
-    try:
-        pwd.getpwnam("admin")
-    except KeyError:
-        logger.error(m18n.n("ldap_init_failed_to_create_admin"))
-        raise YunohostError("installation_failed")
-
-    try:
-        # Attempt to create user home folder
-        subprocess.check_call(["mkhomedir_helper", "admin"])
-    except subprocess.CalledProcessError:
-        if not os.path.isdir("/home/{0}".format("admin")):
-            logger.warning(m18n.n("user_home_creation_failed"), exc_info=1)
-
-    logger.success(m18n.n("ldap_initialized"))
-
-
 def tools_adminpw(new_password, check_strength=True):
     """
     Change admin password
@@ -170,7 +97,15 @@ def tools_adminpw(new_password, check_strength=True):
         ldap.update(
             "cn=admin",
             {
-                "userPassword": [new_hash],
+                "cn": ["admin"],
+                "uid": ["admin"],
+                "description": ["LDAP Administrator"],
+                "gidNumber": ["1007"],
+                "uidNumber": ["1007"],
+                "homeDirectory": ["/home/admin"],
+                "loginShell": ["/bin/bash"],
+                "objectClass": ["organizationalRole", "posixAccount", "simpleSecurityObject"],
+                "userPassword": [new_hash]
             },
         )
     except Exception:
@@ -352,8 +287,9 @@ def tools_postinstall(
     domain_add(domain, dyndns)
     domain_main_domain(domain)
 
-    # Change LDAP admin password
+    # Update LDAP admin and create home dir
     tools_adminpw(password, check_strength=not force_password)
+    _create_admin_home()
 
     # Enable UPnP silently and reload firewall
     firewall_upnp("enable", no_refresh=True)
@@ -398,6 +334,29 @@ def tools_postinstall(
     logger.success(m18n.n("yunohost_configured"))
 
     logger.warning(m18n.n("yunohost_postinstall_end_tip"))
+
+
+def _create_admin_home():
+    """
+    Create admin home dir
+    """
+
+    # Force nscd to refresh cache to take admin creation into account
+    subprocess.call(["nscd", "-i", "passwd"])
+
+    # Check admin actually exists now
+    try:
+        pwd.getpwnam("admin")
+    except KeyError:
+        logger.error(m18n.n("ldap_init_failed_to_create_admin"))
+        raise YunohostError("installation_failed")
+
+    try:
+        # Attempt to create user home folder
+        subprocess.check_call(["mkhomedir_helper", "admin"])
+    except subprocess.CalledProcessError:
+        if not os.path.isdir("/home/{0}".format("admin")):
+            logger.warning(m18n.n("user_home_creation_failed"), exc_info=1)
 
 
 def tools_regen_conf(
