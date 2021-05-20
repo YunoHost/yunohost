@@ -29,8 +29,8 @@ import sys
 import yaml
 import functools
 
-from lexicon.config import ConfigResolver
-from lexicon.client import Client
+# from lexicon.config import ConfigResolver
+# from lexicon.client import Client
 
 from moulinette import m18n, msettings, msignals
 from moulinette.core import MoulinetteError
@@ -43,6 +43,7 @@ from yunohost.app import (
     _installed_apps,
     _get_app_settings,
     _get_conflicting_apps,
+    _parse_args_in_yunohost_format
 )
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.network import get_public_ip
@@ -53,6 +54,7 @@ from yunohost.hook import hook_callback
 logger = getActionLogger("yunohost.domain")
 
 DOMAIN_SETTINGS_PATH = "/etc/yunohost/domains.yml"
+REGISTRAR_LIST_PATH = "/usr/share/yunohost/other/providers_list.yml"
 
 def domain_list(exclude_subdomains=False):
     """
@@ -825,105 +827,150 @@ def _set_domain_settings(domain, domain_settings):
     with open(DOMAIN_SETTINGS_PATH, 'w') as file:
         yaml.dump(domains, file, default_flow_style=False)
 
+# def domain_get_registrar():
+def domain_registrar_set(domain, registrar, args):
+    
+    domains = _load_domain_settings()
+    if not domain in domains.keys():
+        raise YunohostError("domain_name_unknown", domain=domain)
 
-def domain_push_config(domain):
-    """
-    Send DNS records to the previously-configured registrar of the domain.
-    """
-    # Generate the records
-    if domain not in domain_list()["domains"]:
-        raise YunohostValidationError("domain_name_unknown", domain=domain)
+    registrars = yaml.load(open(REGISTRAR_LIST_PATH, "r+"))
+    if not registrar in registrars.keys():
+        # FIXME créer l'erreur
+        raise YunohostError("registrar_unknown")
+    
+    parameters = registrars[registrar]
+    ask_args = []
+    for parameter in parameters:
+        ask_args.append({
+            'name' : parameter,
+            'type': 'string',
+            'example': '',
+            'default': '',
+        })
+    args_dict = (
+        {} if not args else dict(urllib.parse.parse_qsl(args, keep_blank_values=True))
+    )
+    parsed_answer_dict = _parse_args_in_yunohost_format(args_dict, ask_args)
 
-    domains_settings = _get_domain_settings(domain, True)
-
-    dns_conf = _build_dns_conf(domains_settings)
-
-    # Flatten the DNS conf
-    flatten_dns_conf = []
-    for key in dns_conf:
-        list_of_records = dns_conf[key]
-        for record in list_of_records:
-            # FIXME Lexicon does not support CAA records
-            # See https://github.com/AnalogJ/lexicon/issues/282 and https://github.com/AnalogJ/lexicon/pull/371
-            # They say it's trivial to implement it!
-            # And yet, it is still not done/merged
-            if record["type"] != "CAA":
-                # Add .domain.tdl to the name entry
-                record["name"] = "{}.{}".format(record["name"], domain)
-                flatten_dns_conf.append(record)
-
-    # Get provider info
-    # TODO
-    provider = {
-        "name": "gandi",
-        "options": {
-            "api_protocol": "rest",
-            "auth_token": "vhcIALuRJKtoZiZyxfDYWLom"
+    domain_provider = {
+        'name': registrar,
+        'options': {
+            
         }
     }
+    for arg_name, arg_value_and_type in parsed_answer_dict.items():
+        domain_provider['options'][arg_name] = arg_value_and_type[0]
+        
+    domain_settings = domains[domain]
+    domain_settings["provider"] = domain_provider
 
-    # Construct the base data structure to use lexicon's API.
-    base_config = {
-        "provider_name": provider["name"],
-        "domain": domain, # domain name
-    }
-    base_config[provider["name"]] = provider["options"]
+    # Save the settings to the .yaml file
+    with open(DOMAIN_SETTINGS_PATH, 'w') as file:
+        yaml.dump(domains, file, default_flow_style=False)
+    
 
-    # Get types present in the generated records
-    types = set()
 
-    for record in flatten_dns_conf:
-        types.add(record["type"])
 
-    # Fetch all types present in the generated records
-    distant_records = {}
 
-    for key in types:
-        record_config = {
-            "action": "list",
-            "type": key,
-        }
-        final_lexicon = ConfigResolver().with_dict(dict_object=base_config).with_dict(dict_object=record_config)
-        # print('final_lexicon:', final_lexicon);
-        client = Client(final_lexicon)
-        distant_records[key] = client.execute()
+# def domain_push_config(domain):
+#     """
+#     Send DNS records to the previously-configured registrar of the domain.
+#     """
+#     # Generate the records
+#     if domain not in domain_list()["domains"]:
+#         raise YunohostValidationError("domain_name_unknown", domain=domain)
 
-    for key in types:
-        for distant_record in distant_records[key]:
-            print('distant_record:', distant_record);
-    for local_record in flatten_dns_conf:
-        print('local_record:', local_record);
+#     domains_settings = _get_domain_settings(domain, True)
 
-    # Push the records
-    for record in flatten_dns_conf:
-        # For each record, first check if one record exists for the same (type, name) couple
-        it_exists = False
-        # TODO do not push if local and distant records are exactly the same ?
-        # is_the_same_record = False
+#     dns_conf = _build_dns_conf(domains_settings)
 
-        for distant_record in distant_records[record["type"]]:
-            if distant_record["type"] == record["type"] and distant_record["name"] == record["name"]:
-                it_exists = True
-                # previous TODO
-                # if distant_record["ttl"] = ... and distant_record["name"] ...
-                #     is_the_same_record = True
+#     # Flatten the DNS conf
+#     flatten_dns_conf = []
+#     for key in dns_conf:
+#         list_of_records = dns_conf[key]
+#         for record in list_of_records:
+#             # FIXME Lexicon does not support CAA records
+#             # See https://github.com/AnalogJ/lexicon/issues/282 and https://github.com/AnalogJ/lexicon/pull/371
+#             # They say it's trivial to implement it!
+#             # And yet, it is still not done/merged
+#             if record["type"] != "CAA":
+#                 # Add .domain.tdl to the name entry
+#                 record["name"] = "{}.{}".format(record["name"], domain)
+#                 flatten_dns_conf.append(record)
 
-        # Finally, push the new record or update the existing one
-        record_config = {
-            "action": "update" if it_exists else "create", # create, list, update, delete
-            "type": record["type"], # specify a type for record filtering, case sensitive in some cases.
-            "name": record["name"],
-            "content": record["value"],
-            # FIXME Delte TTL, doesn't work with Gandi.
-            # See https://github.com/AnalogJ/lexicon/issues/726 (similar issue)
-            # But I think there is another issue with Gandi. Or I'm misusing the API...
-            # "ttl": record["ttl"],
-        }
-        final_lexicon = ConfigResolver().with_dict(dict_object=base_config).with_dict(dict_object=record_config)
-        client = Client(final_lexicon)
-        print('pushed_record:', record_config, "→", end=' ')
-        results = client.execute()
-        print('results:', results);
-        # print("Failed" if results == False else "Ok")
+#     # Get provider info
+#     # TODO
+#     provider = {
+#         "name": "gandi",
+#         "options": {
+#             "api_protocol": "rest",
+#             "auth_token": "vhcIALuRJKtoZiZyxfDYWLom"
+#         }
+#     }
+
+#     # Construct the base data structure to use lexicon's API.
+#     base_config = {
+#         "provider_name": provider["name"],
+#         "domain": domain, # domain name
+#     }
+#     base_config[provider["name"]] = provider["options"]
+
+#     # Get types present in the generated records
+#     types = set()
+
+#     for record in flatten_dns_conf:
+#         types.add(record["type"])
+
+#     # Fetch all types present in the generated records
+#     distant_records = {}
+
+#     for key in types:
+#         record_config = {
+#             "action": "list",
+#             "type": key,
+#         }
+#         final_lexicon = ConfigResolver().with_dict(dict_object=base_config).with_dict(dict_object=record_config)
+#         # print('final_lexicon:', final_lexicon);
+#         client = Client(final_lexicon)
+#         distant_records[key] = client.execute()
+
+#     for key in types:
+#         for distant_record in distant_records[key]:
+#             print('distant_record:', distant_record);
+#     for local_record in flatten_dns_conf:
+#         print('local_record:', local_record);
+
+#     # Push the records
+#     for record in flatten_dns_conf:
+#         # For each record, first check if one record exists for the same (type, name) couple
+#         it_exists = False
+#         # TODO do not push if local and distant records are exactly the same ?
+#         # is_the_same_record = False
+
+#         for distant_record in distant_records[record["type"]]:
+#             if distant_record["type"] == record["type"] and distant_record["name"] == record["name"]:
+#                 it_exists = True
+#                 # previous TODO
+#                 # if distant_record["ttl"] = ... and distant_record["name"] ...
+#                 #     is_the_same_record = True
+
+#         # Finally, push the new record or update the existing one
+#         record_config = {
+#             "action": "update" if it_exists else "create", # create, list, update, delete
+#             "type": record["type"], # specify a type for record filtering, case sensitive in some cases.
+#             "name": record["name"],
+#             "content": record["value"],
+#             # FIXME Delte TTL, doesn't work with Gandi.
+#             # See https://github.com/AnalogJ/lexicon/issues/726 (similar issue)
+#             # But I think there is another issue with Gandi. Or I'm misusing the API...
+#             # "ttl": record["ttl"],
+#         }
+#         final_lexicon = ConfigResolver().with_dict(dict_object=base_config).with_dict(dict_object=record_config)
+#         client = Client(final_lexicon)
+#         print('pushed_record:', record_config, "→", end=' ')
+#         results = client.execute()
+#         print('results:', results);
+#         # print("Failed" if results == False else "Ok")
 
 # def domain_config_fetch(domain, key, value):

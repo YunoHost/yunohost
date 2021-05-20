@@ -582,6 +582,30 @@ domain:
                     full: --delete
                     help: Delete the key
                     action: store_true
+    subcategories:
+        registrar:
+            subcategory_help: Manage domains registrars
+            actions: 
+                ### domain_registrar_set()
+                set: 
+                    action_help: Set domain registrar
+                    api: POST /domains/registrar
+                    arguments:
+                        domain:
+                            help: Domain name
+                        registrar:
+                            help: registrar_key, see yunohost domain registrar list
+                        -a:
+                            full: --args
+                            help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path")
+                ### domain_registrar_set()
+                get:
+                    action_help: Get domain registrar
+                    api: GET /domains/registrar
+                ### domain_registrar_list()
+                list:
+                    action_help: List available registrars
+                    api: GET /domains/registrar/list
 
 #############################
 #            App            #

@@ -2977,6 +2977,7 @@ ARGUMENTS_TYPE_PARSERS = {
 }
 
 
+
 def _parse_args_in_yunohost_format(user_answers, argument_questions):
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.

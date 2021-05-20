@@ -1,218 +1,218 @@
-- aliyun
+aliyun:
     - auth_key_id
     - auth_secret
-- aurora
+aurora:
     - auth_api_key
     - auth_secret_key
-- azure
+azure:
     - auth_client_id
     - auth_client_secret
     - auth_tenant_id
     - auth_subscription_id
     - resource_group
-- cloudflare
+cloudflare:
     - auth_username
     - auth_token
     - zone_id
-- cloudns
+cloudns:
     - auth_id
     - auth_subid
     - auth_subuser
     - auth_password
     - weight
     - port
-- cloudxns
+cloudxns:
     - auth_username
     - auth_token
-- conoha
+conoha:
     - auth_region
     - auth_token
     - auth_username
     - auth_password
     - auth_tenant_id
-- constellix
+constellix:
     - auth_username
     - auth_token
-- digitalocean
+digitalocean:
     - auth_token
-- dinahosting
+dinahosting:
     - auth_username
     - auth_password
-- directadmin
+directadmin:
     - auth_password
     - auth_username
     - endpoint
-- dnsimple
+dnsimple:
     - auth_token
     - auth_username
     - auth_password
     - auth_2fa
-- dnsmadeeasy
+dnsmadeeasy:
     - auth_username
     - auth_token
-- dnspark
+dnspark:
     - auth_username
     - auth_token
-- dnspod
+dnspod:
     - auth_username
     - auth_token
-- dreamhost
+dreamhost:
     - auth_token
-- dynu
+dynu:
     - auth_token
-- easydns
+easydns:
     - auth_username
     - auth_token
-- easyname
-    - auth_username
-    - auth_password
-- euserv
+easyname:
     - auth_username
     - auth_password
-- exoscale
+euserv:
+    - auth_username
+    - auth_password
+exoscale:
     - auth_key
     - auth_secret
-- gandi
+gandi:
     - auth_token
     - api_protocol
-- gehirn
+gehirn:
     - auth_token
     - auth_secret
-- glesys
+glesys:
     - auth_username
     - auth_token
-- godaddy
+godaddy:
     - auth_key
     - auth_secret
-- googleclouddns
+googleclouddns:
     - auth_service_account_info 
-- gransy
+gransy:
     - auth_username
     - auth_password
-- gratisdns
+gratisdns:
     - auth_username
     - auth_password
-- henet
+henet:
     - auth_username
     - auth_password
-- hetzner
+hetzner:
     - auth_token
-- hostingde
+hostingde:
     - auth_token
-- hover
+hover:
     - auth_username
     - auth_password
-- infoblox
+infoblox:
     - auth_user
     - auth_psw
     - ib_view
     - ib_host
-- infomaniak
+infomaniak:
     - auth_token
-- internetbs
+internetbs:
     - auth_key
     - auth_password
-- inwx
+inwx:
     - auth_username
     - auth_password
-- joker
+joker:
     - auth_token
-- linode
+linode:
     - auth_token
-- linode4
+linode4:
     - auth_token
-- localzone
+localzone:
     - filename
-- luadns
+luadns:
     - auth_username
     - auth_token
-- memset
+memset:
     - auth_token
-- mythicbeasts
+mythicbeasts:
     - auth_username
     - auth_password
     - auth_token
-- namecheap
+namecheap:
     - auth_token
     - auth_username
     - auth_client_ip
     - auth_sandbox
-- namesilo
+namesilo:
     - auth_token
-- netcup
+netcup:
     - auth_customer_id
     - auth_api_key
     - auth_api_password
-- nfsn
+nfsn:
     - auth_username
     - auth_token
-- njalla
+njalla:
     - auth_token
-- nsone
+nsone:
     - auth_token
-- onapp
+onapp:
     - auth_username
     - auth_token
     - auth_server
-- online
+online:
     - auth_token
-- ovh
+ovh:
     - auth_entrypoint
     - auth_application_key
     - auth_application_secret
     - auth_consumer_key
-- plesk
+plesk:
     - auth_username
     - auth_password
     - plesk_server
-- pointhq
+pointhq:
     - auth_username
     - auth_token
-- powerdns
+powerdns:
     - auth_token
     - pdns_server
     - pdns_server_id
     - pdns_disable_notify
-- rackspace
+rackspace:
     - auth_account
     - auth_username
     - auth_api_key
     - auth_token
     - sleep_time
-- rage4
+rage4:
     - auth_username
     - auth_token
-- rcodezero
+rcodezero:
     - auth_token
-- route53
+route53:
     - auth_access_key
     - auth_access_secret
     - private_zone
     - auth_username
     - auth_token
-- safedns
+safedns:
     - auth_token
-- sakuracloud
+sakuracloud:
     - auth_token
     - auth_secret
-- softlayer
+softlayer:
     - auth_username
     - auth_api_key
-- transip
+transip:
     - auth_username
     - auth_api_key
-- ultradns
+ultradns:
     - auth_token
     - auth_username
     - auth_password
-- vultr
+vultr:
     - auth_token
-- yandex
+yandex:
     - auth_token
-- zeit
+zeit:
     - auth_token
-- zilore
+zilore:
     - auth_key
-- zonomi
+zonomi:
     - auth_token
     - auth_entrypoint
