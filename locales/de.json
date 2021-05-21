@@ -600,5 +600,10 @@
     "diagnosis_sshd_config_inconsistent_details": "Bitte führen Sie <cmd>yunohost settings set security.ssh.port -v YOUR_SSH_PORT</cmd> aus, um den SSH-Port festzulegen, und prüfen Sie <cmd> yunohost tools regen-conf ssh --dry-run --with-diff</cmd> und <cmd>yunohost tools regen-conf ssh --force</cmd> um Ihre conf auf die YunoHost-Empfehlung zurückzusetzen.",
     "regex_incompatible_with_tile": "/!\\ Packagers! Für Berechtigung '{permission}' ist show_tile auf 'true' gesetzt und deshalb können Sie keine regex-URL als Hauptdomäne setzen",
     "permission_cant_add_to_all_users": "Die Berechtigung {permission} konnte nicht allen Benutzern gegeben werden.",
-    "migration_ldap_can_not_backup_before_migration": "Das System-Backup konnte nicht abgeschlossen werden, bevor die Migration fehlschlug. Fehler: {error:s}"
+    "migration_ldap_can_not_backup_before_migration": "Das System-Backup konnte nicht abgeschlossen werden, bevor die Migration fehlschlug. Fehler: {error:s}",
+    "service_description_fail2ban": "Schützt gegen Brute-Force-Angriffe und andere Angriffe aus dem Internet",
+    "service_description_dovecot": "Ermöglicht es E-Mail-Clients auf Konten zuzugreifen (IMAP und POP3)",
+    "service_description_dnsmasq": "Verarbeitet die Auflösung des Domainnamens (DNS)",
+    "service_description_avahi-daemon": "Erlaubt, den Server im lokalen Netz über 'yunohost.local' zu erreichen",
+    "restore_backup_too_old": "Dieses Backup kann nicht wieder hergestellt werden, weil es von einer zu alten YunoHost Version stammt."
 }
