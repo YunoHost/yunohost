@@ -727,7 +727,7 @@ def _load_domain_settings():
         new_domains[domain] = {}
         # new_domains[domain] = { "main": is_maindomain }
         # Set other values (default value if missing)
-        for setting, default in [ ("xmpp", is_maindomain), ("mail", is_maindomain), ("owned_dns_zone", default_owned_dns_zone), ("ttl", 3600) ]:
+        for setting, default in [ ("xmpp", is_maindomain), ("mail", is_maindomain), ("owned_dns_zone", default_owned_dns_zone), ("ttl", 3600), ("provider", False)]:
             if domain_in_old_domains and setting in old_domains[domain].keys():
                 new_domains[domain][setting] = old_domains[domain][setting]
             else:
