@@ -885,6 +885,13 @@ def domain_push_config(domain):
 
     dns_conf = _build_dns_conf(domains_settings)
 
+    provider = domains_settings[domain]["provider"]
+
+    if provider == False:
+        # FIXME add locales
+        raise YunohostValidationError("registrar_is_not_set", domain=domain)
+
+
     # Flatten the DNS conf
     flatten_dns_conf = []
     for key in dns_conf:
@@ -898,16 +905,6 @@ def domain_push_config(domain):
                 # Add .domain.tdl to the name entry
                 record["name"] = "{}.{}".format(record["name"], domain)
                 flatten_dns_conf.append(record)
-
-    # Get provider info
-    # TODO
-    provider = {
-        "name": "gandi",
-        "options": {
-            "api_protocol": "rest",
-            "auth_token": "vhcIALuRJKtoZiZyxfDYWLom"
-        }
-    }
 
     # Construct the base data structure to use lexicon's API.
     base_config = {
@@ -951,7 +948,7 @@ def domain_push_config(domain):
         for distant_record in distant_records[record["type"]]:
             if distant_record["type"] == record["type"] and distant_record["name"] == record["name"]:
                 it_exists = True
-                # previous TODO
+                # see previous TODO
                 # if distant_record["ttl"] = ... and distant_record["name"] ...
                 #     is_the_same_record = True
 
@@ -961,7 +958,7 @@ def domain_push_config(domain):
             "type": record["type"], # specify a type for record filtering, case sensitive in some cases.
             "name": record["name"],
             "content": record["value"],
-            # FIXME Delte TTL, doesn't work with Gandi.
+            # FIXME Removed TTL, because it doesn't work with Gandi.
             # See https://github.com/AnalogJ/lexicon/issues/726 (similar issue)
             # But I think there is another issue with Gandi. Or I'm misusing the API...
             # "ttl": record["ttl"],
