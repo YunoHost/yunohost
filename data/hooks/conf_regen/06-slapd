@@ -32,22 +32,29 @@ EOF
 
   DEBIAN_FRONTEND=noninteractive dpkg-reconfigure slapd -u
 
-  # Regen conf
-
-  _regenerate_slapd_conf
-
-   # Enforce permissions
+  # Enforce permissions
   chown root:openldap /etc/ldap/slapd.ldif
   chown -R openldap:openldap /etc/ldap/schema/
   usermod -aG ssl-cert openldap
 
-
   # (Re-)init data according to default ldap entries
-  slapadd -n1 -l /usr/share/yunohost/yunohost-config/moulinette/ldap_default_entries.ldif 2>&1 \
+  echo '  Initializing LDAP with Yunohost DB structure'
+
+  rm -rf /etc/ldap/slapd.d
+  mkdir -p /etc/ldap/slapd.d
+  slapadd -F /etc/ldap/slapd.d -b cn=config -l "/etc/ldap/slapd.ldif" 2>&1 \
       | grep -v "none elapsed\|Closing DB" || true
+  chown -R openldap: /etc/ldap/slapd.d
 
-  slapcat
+  rm -rf /var/lib/ldap
+  mkdir -p /var/lib/ldap
+  slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org -l /usr/share/yunohost/yunohost-config/moulinette/ldap_default_entries.ldif 2>&1 \
+      | grep -v "none elapsed\|Closing DB" || true
+  chown -R openldap: /var/lib/ldap
 
+  nscd -i groups
+
+  systemctl restart slapd
 }
 
 _regenerate_slapd_conf() {
@@ -57,7 +64,7 @@ _regenerate_slapd_conf() {
   # so we use a temporary directory slapd_new.d
   rm -Rf /etc/ldap/slapd_new.d
   mkdir /etc/ldap/slapd_new.d
-  slapadd -n0 -l /etc/ldap/slapd.ldif -F /etc/ldap/slapd_new.d/ 2>&1 \
+  slapadd -b cn=config -l /etc/ldap/slapd.ldif -F /etc/ldap/slapd_new.d/ 2>&1 \
       | grep -v "none elapsed\|Closing DB" || true
   # Actual validation (-Q is for quiet, -u is for dry-run)
   slaptest -Q -u -F /etc/ldap/slapd_new.d

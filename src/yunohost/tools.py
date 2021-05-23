@@ -97,19 +97,11 @@ def tools_adminpw(new_password, check_strength=True):
         ldap.update(
             "cn=admin",
             {
-                "cn": ["admin"],
-                "uid": ["admin"],
-                "description": ["LDAP Administrator"],
-                "gidNumber": ["1007"],
-                "uidNumber": ["1007"],
-                "homeDirectory": ["/home/admin"],
-                "loginShell": ["/bin/bash"],
-                "objectClass": ["organizationalRole", "posixAccount", "simpleSecurityObject"],
                 "userPassword": [new_hash]
             },
         )
-    except Exception:
-        logger.error("unable to change admin password")
+    except Exception as e:
+        logger.error("unable to change admin password : %s" % e)
         raise YunohostError("admin_password_change_failed")
     else:
         # Write as root password

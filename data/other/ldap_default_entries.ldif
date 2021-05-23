@@ -1,3 +1,19 @@
+dn: dc=yunohost,dc=org
+objectClass: top
+objectClass: dcObject
+objectClass: organization
+o: yunohost.org
+dc: yunohost
+
+dn: cn=admin,ou=sudo,dc=yunohost,dc=org
+cn: admin
+objectClass: sudoRole
+objectClass: top
+sudoCommand: ALL
+sudoUser: admin
+sudoOption: !authenticate
+sudoHost: ALL
+
 dn: ou=users,dc=yunohost,dc=org
 objectClass: organizationalUnit
 objectClass: top
@@ -28,14 +44,17 @@ objectClass: organizationalUnit
 objectClass: top
 ou: sudo
 
-dn: cn=admin,ou=sudo,dc=yunohost,dc=org
+dn: cn=admin,dc=yunohost,dc=org
+objectClass: organizationalRole
+objectClass: posixAccount
+objectClass: simpleSecurityObject
 cn: admin
-sudoCommand: ALL
-sudoUser: admin
-objectClass: sudoRole
-objectClass: top
-sudoOption: !authenticate
-sudoHost: ALL
+uid: admin
+uidNumber: 1007
+gidNumber: 1007
+homeDirectory: /home/admin
+loginShell: /bin/bash
+userPassword: yunohost
 
 dn: cn=admins,ou=groups,dc=yunohost,dc=org
 objectClass: posixGroup
