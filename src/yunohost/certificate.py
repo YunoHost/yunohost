@@ -949,4 +949,5 @@ def _name_self_CA():
 
 
 def _tail(n, file_path):
+    from moulinette.utils.process import check_output
     return check_output("tail -n %s '%s'" % (n, file_path))
