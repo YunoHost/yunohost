@@ -55,6 +55,9 @@ EOF
   chown -R openldap: /var/lib/ldap
 
   nscd -i groups
+  nscd -i passwd
+
+  mkhomedir_helper admin
 
   systemctl restart slapd
 }
