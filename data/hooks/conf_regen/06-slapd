@@ -4,6 +4,9 @@ set -e
 
 tmp_backup_dir_file="/tmp/slapd-backup-dir.txt"
 
+config="/usr/share/yunohost/templates/slapd/config.ldif"
+db_init="/usr/share/yunohost/templates/slapd/db_init.ldif"
+
 do_init_regen() {
   if [[ $EUID -ne 0 ]]; then
       echo "You must be root to run this script" 1>&2
@@ -33,7 +36,6 @@ EOF
   DEBIAN_FRONTEND=noninteractive dpkg-reconfigure slapd -u
 
   # Enforce permissions
-  chown root:openldap /etc/ldap/slapd.ldif
   chown -R openldap:openldap /etc/ldap/schema/
   usermod -aG ssl-cert openldap
 
@@ -42,13 +44,13 @@ EOF
 
   rm -rf /etc/ldap/slapd.d
   mkdir -p /etc/ldap/slapd.d
-  slapadd -F /etc/ldap/slapd.d -b cn=config -l "/etc/ldap/slapd.ldif" 2>&1 \
+  slapadd -F /etc/ldap/slapd.d -b cn=config -l "$config" 2>&1 \
       | grep -v "none elapsed\|Closing DB" || true
   chown -R openldap: /etc/ldap/slapd.d
 
   rm -rf /var/lib/ldap
   mkdir -p /var/lib/ldap
-  slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org -l /usr/share/yunohost/yunohost-config/moulinette/ldap_default_entries.ldif 2>&1 \
+  slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org -l "$db_init" 2>&1 \
       | grep -v "none elapsed\|Closing DB" || true
   chown -R openldap: /var/lib/ldap
 
@@ -64,7 +66,7 @@ _regenerate_slapd_conf() {
   # so we use a temporary directory slapd_new.d
   rm -Rf /etc/ldap/slapd_new.d
   mkdir /etc/ldap/slapd_new.d
-  slapadd -b cn=config -l /etc/ldap/slapd.ldif -F /etc/ldap/slapd_new.d/ 2>&1 \
+  slapadd -b cn=config -l "$config" -F /etc/ldap/slapd_new.d/ 2>&1 \
       | grep -v "none elapsed\|Closing DB" || true
   # Actual validation (-Q is for quiet, -u is for dry-run)
   slaptest -Q -u -F /etc/ldap/slapd_new.d
@@ -106,7 +108,7 @@ do_pre_regen() {
   cd /usr/share/yunohost/templates/slapd
 
   # copy configuration files
-  cp -a ldap.conf slapd.ldif "$ldap_dir"
+  cp -a ldap.conf "$ldap_dir"
   cp -a sudo.ldif mailserver.ldif permission.ldif "$schema_dir"
 
   mkdir -p ${pending_dir}/etc/systemd/system/slapd.service.d/
@@ -122,7 +124,6 @@ do_post_regen() {
   echo "Enforce permissions on ldap/slapd directories and certs ..."
   # penldap user should be in the ssl-cert group to let it access the certificate for TLS
   usermod -aG ssl-cert openldap
-  chown root:openldap /etc/ldap/slapd.ldif
   chown -R openldap:openldap /etc/ldap/schema/
   chown -R openldap:openldap /etc/ldap/slapd.d/
 
@@ -144,13 +145,15 @@ gidNumber: 4001
 memberUid: admin
 objectClass: posixGroup
 objectClass: top"
+      chown -R openldap: /var/lib/ldap
+      systemctl restart slapd
       nscd -i groups
   fi
 
   [ -z "$regen_conf_files" ] && exit 0
 
   # regenerate LDAP config directory from slapd.conf
-  echo "Regenerate LDAP config directory from slapd.ldif"
+  echo "Regenerate LDAP config directory from config.ldif"
   _regenerate_slapd_conf
 
   # If there's a backup, re-import its data
@@ -198,9 +201,6 @@ case "$1" in
     ;;
   init)
     do_init_regen
-    ;;
-  apply_config)
-    do_post_regen /etc/ldap/slapd.ldif
     ;;
   *)
     echo "hook called with unknown argument \`$1'" >&2
