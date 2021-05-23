@@ -46,6 +46,8 @@ EOF
   slapadd -n1 -l /usr/share/yunohost/yunohost-config/moulinette/ldap_default_entries.ldif 2>&1 \
       | grep -v "none elapsed\|Closing DB" || true
 
+  slapcat
+
 }
 
 _regenerate_slapd_conf() {
