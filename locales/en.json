@@ -598,7 +598,7 @@
     "system_upgraded": "System upgraded",
     "system_username_exists": "Username already exists in the list of system users",
     "this_action_broke_dpkg": "This action broke dpkg/APT (the system package managers)... You can try to solve this issue by connecting through SSH and running `sudo apt install --fix-broken` and/or `sudo dpkg --configure -a`.",
-    "tools_upgrade_at_least_one": "Please specify '--apps', or '--system'",
+    "tools_upgrade_at_least_one": "Please specify 'apps', or 'system'",
     "tools_upgrade_cant_both": "Cannot upgrade both system and apps at the same time",
     "tools_upgrade_cant_hold_critical_packages": "Could not hold critical packages…",
     "tools_upgrade_cant_unhold_critical_packages": "Could not unhold critical packages…",
