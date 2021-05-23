@@ -105,7 +105,7 @@
     "service_disabled": "Der Dienst '{service:s}' wurde erfolgreich deaktiviert",
     "service_enable_failed": "Der Dienst '{service:s}' konnte beim Hochfahren nicht gestartet werden.\n\nKürzlich erstelle Logs des Dienstes: {logs:s}",
     "service_enabled": "Der Dienst '{service:s}' wird nun beim Hochfahren des Systems automatisch gestartet.",
-    "service_remove_failed": "Der Dienst '{service:s}' konnte nicht entfernt werden",
+    "service_remove_failed": "Konnte den Dienst '{service:s}' nicht entfernen",
     "service_removed": "Der Dienst '{service:s}' wurde erfolgreich entfernt",
     "service_start_failed": "Der Dienst '{service:s}' konnte nicht gestartet werden\n\nKürzlich erstellte Logs des Dienstes: {logs:s}",
     "service_started": "Der Dienst '{service:s}' wurde erfolgreich gestartet",
