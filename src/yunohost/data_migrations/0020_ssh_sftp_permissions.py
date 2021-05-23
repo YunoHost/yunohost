@@ -3,7 +3,6 @@ import os
 
 from moulinette import m18n
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_yaml
 
 from yunohost.tools import Migration
 from yunohost.permission import user_permission_update, permission_sync_to_user
@@ -37,20 +36,34 @@ class MyMigration(Migration):
         existing_perms = [perm["cn"][0] for perm in existing_perms_raw]
 
         # Add SSH and SFTP permissions
-        ldap_map = read_yaml(
-            "/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml"
-        )
-
         if "sftp.main" not in existing_perms:
             ldap.add(
                 "cn=sftp.main,ou=permission",
-                ldap_map["depends_children"]["cn=sftp.main,ou=permission"],
+                {
+                    "cn": "sftp.main",
+                    "gidNumber": "5004",
+                    "objectClass": ["posixGroup", "permissionYnh"],
+                    "groupPermission": [],
+                    "authHeader": "FALSE",
+                    "label": "SFTP",
+                    "showTile": "FALSE",
+                    "isProtected": "TRUE",
+                }
             )
 
         if "ssh.main" not in existing_perms:
             ldap.add(
                 "cn=ssh.main,ou=permission",
-                ldap_map["depends_children"]["cn=ssh.main,ou=permission"],
+                {
+                    "cn": "ssh.main",
+                    "gidNumber": "5003",
+                    "objectClass": ["posixGroup", "permissionYnh"],
+                    "groupPermission": [],
+                    "authHeader": "FALSE",
+                    "label": "SSH",
+                    "showTile": "FALSE",
+                    "isProtected": "TRUE",
+                }
             )
 
             # Add a bash terminal to each users
