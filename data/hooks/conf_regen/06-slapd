@@ -57,9 +57,9 @@ EOF
   nscd -i groups
   nscd -i passwd
 
-  mkhomedir_helper admin
-
   systemctl restart slapd
+
+  mkhomedir_helper admin
 }
 
 _regenerate_slapd_conf() {
