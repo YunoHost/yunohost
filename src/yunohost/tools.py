@@ -25,9 +25,7 @@
 """
 import re
 import os
-import yaml
 import subprocess
-import pwd
 import time
 from importlib import import_module
 from packaging import version
