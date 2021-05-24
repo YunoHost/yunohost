@@ -40,7 +40,7 @@ EOF
   usermod -aG ssl-cert openldap
 
   # (Re-)init data according to default ldap entries
-  echo '  Initializing LDAP with Yunohost DB structure'
+  echo '  Initializing LDAP with YunoHost DB structure'
 
   rm -rf /etc/ldap/slapd.d
   mkdir -p /etc/ldap/slapd.d
