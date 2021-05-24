@@ -176,7 +176,7 @@ def dig(
     # In diagnosis dnsrecords, with 10 domains this means at least 12min, too long.
     resolver.timeout = 1.0
     # resolver.lifetime is the timeout for resolver.query()
-    # By default set it to 7 seconds to allow 6 resolvers to be unreachable.
+    # By default set it to 5 seconds to allow 4 resolvers to be unreachable.
     resolver.lifetime = timeout
     try:
         answers = resolver.query(qname, rdtype)
