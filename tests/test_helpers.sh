@@ -43,7 +43,6 @@ VAR_WWW=$(mktemp -d)/var/www
 mkdir -p $VAR_WWW
 # =========================================================
 
-source /usr/share/yunohost/helpers
 for TEST_SUITE in $(ls test_helpers.d/*)
 do
     source $TEST_SUITE
@@ -58,11 +57,12 @@ for TEST in $TESTS
 do
     log_test $TEST
     cd $(mktemp -d)
-    (app=ynhtest
-     YNH_APP_ID=$app
-     mkdir conf
+    (mkdir conf
      mkdir scripts
      cd scripts
+     source /usr/share/yunohost/helpers
+     app=ynhtest
+     YNH_APP_ID=$app
      set -eux
      $TEST
     ) > ./test.log 2>&1
