@@ -94,9 +94,7 @@ def tools_adminpw(new_password, check_strength=True):
     try:
         ldap.update(
             "cn=admin",
-            {
-                "userPassword": [new_hash]
-            },
+            {"userPassword": [new_hash]},
         )
     except Exception as e:
         logger.error("unable to change admin password : %s" % e)

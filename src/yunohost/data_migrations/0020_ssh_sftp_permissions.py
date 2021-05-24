@@ -48,7 +48,7 @@ class MyMigration(Migration):
                     "label": "SFTP",
                     "showTile": "FALSE",
                     "isProtected": "TRUE",
-                }
+                },
             )
 
         if "ssh.main" not in existing_perms:
@@ -63,7 +63,7 @@ class MyMigration(Migration):
                     "label": "SSH",
                     "showTile": "FALSE",
                     "isProtected": "TRUE",
-                }
+                },
             )
 
             # Add a bash terminal to each users
