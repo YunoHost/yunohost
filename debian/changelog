@@ -1,3 +1,9 @@
+yunohost (4.2.5.2) stable; urgency=low
+
+  - Fix install in chroot ... *again* (806b7acf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 24 May 2021 22:11:02 +0200
+
 yunohost (4.2.5.1) stable; urgency=low
 
   - Releasing as stable
