@@ -68,6 +68,8 @@ objectClass: posixGroup
 objectClass: groupOfNamesYnh
 gidNumber: 4002
 cn: all_users
+permission: cn=mail.main,ou=permission,dc=yunohost,dc=org
+permission: cn=xmpp.main,ou=permission,dc=yunohost,dc=org
 
 dn: cn=visitors,ou=groups,dc=yunohost,dc=org
 objectClass: posixGroup
