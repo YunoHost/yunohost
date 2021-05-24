@@ -246,7 +246,7 @@
     "tools_upgrade_cant_unhold_critical_packages": "无法解压关键软件包…",
     "tools_upgrade_cant_hold_critical_packages": "无法保存重要软件包…",
     "tools_upgrade_cant_both": "无法同时升级系统和应用程序",
-    "tools_upgrade_at_least_one": "请指定'--apps', 或 '--system'",
+    "tools_upgrade_at_least_one": "请指定'apps', 或 'system'",
     "this_action_broke_dpkg": "此操作破坏了dpkg / APT（系统软件包管理器）...您可以尝试通过SSH连接并运行`sudo apt install --fix-broken`和/或`sudo dpkg --configure -a`来解决此问题。",
     "system_username_exists": "用户名已存在于系统用户列表中",
     "system_upgraded": "系统升级",
