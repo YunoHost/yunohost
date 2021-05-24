@@ -1307,7 +1307,7 @@ def app_clearaccess(apps):
 
     """
     from yunohost.permission import user_permission_reset
-    
+
     output = {}
     for app in apps:
         permission = user_permission_reset(app + ".main")
