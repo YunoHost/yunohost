@@ -1,3 +1,23 @@
+yunohost (4.2.5) testing; urgency=low
+
+  - [fix] backup: Also catch tarfile.ReadError as possible archive corruption error (4aaf0154)
+  - [enh] helpers: Update n to version 7.2.2 ([#1224](https://github.com/yunohost/yunohost/pull/1224))
+  - [fix] helpers: Define ynh_node_load_path to be compatible with ynh_replace_vars (06f8c1cc)
+  - [doc] helpers: Add requirements for new helpers (2b0df6c3)
+  - [fix] helpers: Set YNH_APP_BASEDIR as an absolute path ([#1229](https://github.com/yunohost/yunohost/pull/1229), 27300282)
+  - [fix] Tweak yunohost-api systemd config as an attempt to fix the API being down after yunohost upgrades (52e30704)
+  - [fix] python3: encoding issue in nftable migrations (0f10b91f)
+  - [fix] python3: Email on certificate renewing failed ([#1227](https://github.com/yunohost/yunohost/pull/1227))
+  - [fix] permissions: Remove warnings about legacy permission system (now reported in the linter) ([#1228](https://github.com/yunohost/yunohost/pull/1228))
+  - [fix] diagnosis, mail: Remove SPFBL because it triggers false positive ([#1231](https://github.com/yunohost/yunohost/pull/1231))
+  - [fix] diagnosis: DNS diagnosis taking an awful amount of time because of timeout ([#1233](https://github.com/yunohost/yunohost/pull/1233))
+  - [fix] install: Be able to init slapd in a chroot ([#1230](https://github.com/yunohost/yunohost/pull/1230))
+  - [i18n] Translations updated for Catalan, Chinese (Simplified), Czech, French, Galician, German
+
+  Thanks to all contributors <3 ! (Christian Wehrli, Éric Gaspar, José M, ljf, Radek S, Salamandar, Stephan Schneider, xaloc33, yahoo～～)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 24 May 2021 17:20:47 +0200
+
 yunohost (4.2.4) stable; urgency=low
 
   - python3: smtplib's sendmail miserably crashes with encoding issue if accent in mail body (af567c6f)
