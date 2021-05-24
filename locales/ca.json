@@ -503,7 +503,7 @@
     "group_already_exist_on_system_but_removing_it": "El grup {group} ja existeix en els grups del sistema, però YunoHost l'eliminarà...",
     "certmanager_warning_subdomain_dns_record": "El subdomini «{subdomain:s}» no resol a la mateixa adreça IP que «{domain:s}». Algunes funcions no estaran disponibles fins que no s'hagi arreglat i s'hagi regenerat el certificat.",
     "domain_cannot_add_xmpp_upload": "No podeu afegir dominis començant per «xmpp-upload.». Aquest tipus de nom està reservat per a la funció de pujada de XMPP integrada a YunoHost.",
-    "diagnosis_display_tip": "Per veure els problemes que s'han trobat, podeu anar a la secció de Diagnòstic a la pàgina web d'administració, o utilitzar « yunohost diagnostic show --issues » a la línia de comandes.",
+    "diagnosis_display_tip": "Per veure els problemes que s'han trobat, podeu anar a la secció de Diagnòstic a la pàgina web d'administració, o utilitzar « yunohost diagnostic show --issues --human-readable» a la línia de comandes.",
     "diagnosis_mail_outgoing_port_25_blocked_relay_vpn": "Alguns proveïdors no permeten desbloquejar el port de sortida 25 perquè no els hi importa la Neutralitat de la Xarxa.<br> - Alguns d'ells ofereixen l'alternativa d'<a href='https://yunohost.org/#/smtp_relay'>utilitzar un relay de servidor de correu electrònic</a> tot i que implica que el relay serà capaç d'espiar el tràfic de correus electrònics.<br>- Una alternativa respectuosa amb la privacitat és utilitzar una VPN *amb una IP pública dedicada* per sortejar aquest tipus de limitació. Vegeu <a href='https://yunohost.org/#/vpn_advantage'>https://yunohost.org/#/vpn_advantage</a><br>- També podeu considerar canviar-vos a <a href='https://yunohost.org/#/isp'>un proveïdor més respectuós de la neutralitat de la xarxa</a>",
     "diagnosis_ip_global": "IP global:  <code>{global}</code>",
     "diagnosis_ip_local": "IP local: <code>{local}</code>",
@@ -621,5 +621,9 @@
     "diagnosis_basesystem_hardware_model": "El model del servidor és {model}",
     "postinstall_low_rootfsspace": "El sistema de fitxers arrel té un total de menys de 10 GB d'espai, el que es preocupant! És molt probable que us quedeu sense espai ràpidament! Es recomana tenir un mínim de 16 GB per al sistema de fitxers arrel. Si voleu instal·lar YunoHost tot i aquest avís, torneu a executar la postinstal·lació amb --force-diskspace",
     "diagnosis_rootfstotalspace_critical": "El sistema de fitxers arrel només té {space} en total i és preocupant! És molt probable que us quedeu sense espai ràpidament! Es recomanar tenir un mínim de 16 GB per al sistema de fitxers arrel.",
-    "diagnosis_rootfstotalspace_warning": "El sistema de fitxers arrel només té {space} en total. Això no hauria de causar cap problema, però haureu de parar atenció ja que us podrieu quedar sense espai ràpidament… Es recomanar tenir un mínim de 16 GB per al sistema de fitxers arrel."
+    "diagnosis_rootfstotalspace_warning": "El sistema de fitxers arrel només té {space} en total. Això no hauria de causar cap problema, però haureu de parar atenció ja que us podrieu quedar sense espai ràpidament… Es recomanar tenir un mínim de 16 GB per al sistema de fitxers arrel.",
+    "diagnosis_sshd_config_inconsistent": "Sembla que el port SSH s'ha modificat manualment a /etc/ssh/sshd_config. Des de YunoHost 4.2, hi ha un nou paràmetre global «security.ssh.port» per evitar modificar manualment la configuració.",
+    "diagnosis_sshd_config_insecure": "Sembla que la configuració SSH s'ha modificat manualment, i no es segura ha que no conté la directiva «AllowGroups» o «AllowUsers» per limitar l'accés a usuaris autoritzats.",
+    "backup_create_size_estimation": "L'arxiu tindrà aproximadament {size} de dades.",
+    "app_restore_script_failed": "S'ha produït un error en el script de restauració de l'aplicació"
 }
