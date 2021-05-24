@@ -59,7 +59,14 @@ EOF
 
   systemctl restart slapd
 
-  mkhomedir_helper admin
+  # We don't use mkhomedir_helper because 'admin' may not be recognized
+  # when this script is ran in a chroot (e.g. ISO install)
+  # We also refer to admin as uid 1007 for the same reason
+  if [ ! -d /home/admin ]
+  then
+      cp -r /etc/skel /home/admin
+      chown -R 1007:1007 /home/admin
+  fi
 }
 
 _regenerate_slapd_conf() {
