@@ -450,7 +450,7 @@ domain:
         ### domain_push_config()
         push_config:
             action_help: Push DNS records to registrar
-            api: GET /domains/push
+            api: GET /domains/<domain>/push
             arguments:
                 domain:
                     help: Domain name to add
@@ -568,11 +568,13 @@ domain:
                     help: The path to check (e.g. /coffee)
         ### domain_setting()
         setting:
-            action_help: Set or get an app setting value
+            action_help: Set or get a domain setting value
             api: GET /domains/<domain>/settings
             arguments:
                 domain:
                     help: Domain name
+                    extra:
+                        pattern: *pattern_domain
                 key:
                     help: Key to get/set
                 -v:
@@ -589,23 +591,38 @@ domain:
                 ### domain_registrar_set()
                 set: 
                     action_help: Set domain registrar
-                    api: POST /domains/registrar
+                    api: POST /domains/<domain>/registrar
                     arguments:
                         domain:
                             help: Domain name
+                            extra:
+                                pattern: *pattern_domain
                         registrar:
                             help: registrar_key, see yunohost domain registrar list
                         -a:
                             full: --args
-                            help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path")
+                            help: Serialized arguments for registrar API (i.e. "auth_token=TOKEN&auth_username=USER").
                 ### domain_registrar_set()
                 get:
                     action_help: Get domain registrar
-                    api: GET /domains/registrar
+                    api: GET /domains/<domain>/registrar
+                    arguments:
+                        domain:
+                            help: Domain name
+                            extra:
+                                pattern: *pattern_domain
                 ### domain_registrar_list()
                 list:
-                    action_help: List available registrars
-                    api: GET /domains/registrar/list
+                    action_help: List registrars configured by DNS zone
+                    api: GET /domains/registrars
+                catalog:
+                    action_help: List supported registrars API
+                    api: GET /domains/registrars/catalog
+                    arguments:
+                        -f:
+                            full: --full
+                            help: Display all details, including info to create forms
+                            action: store_true
 
 #############################
 #            App            #

@@ -131,7 +131,7 @@ def domain_add(operation_logger, domain, dyndns=False):
 
         # Do not allow to subscribe to multiple dyndns domains...
         if _guess_current_dyndns_domain("dyndns.yunohost.org") != (None, None):
-            raise YunohostValidationError('domain_dyndns_already_subscribed')
+            raise YunohostValidationError("domain_dyndns_already_subscribed")
 
         # Check that this domain can effectively be provided by
         # dyndns.yunohost.org. (i.e. is it a nohost.me / noho.st)
@@ -208,8 +208,8 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     # the 'force' here is related to the exception happening in domain_add ...
     # we don't want to check the domain exists because the ldap add may have
     # failed
-    if not force and domain not in domain_list()['domains']:
-        raise YunohostValidationError('domain_name_unknown', domain=domain)
+    if not force and domain not in domain_list()["domains"]:
+        raise YunohostValidationError("domain_name_unknown", domain=domain)
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
@@ -223,7 +223,9 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
                 other_domains="\n * " + ("\n * ".join(other_domains)),
             )
         else:
-            raise YunohostValidationError("domain_cannot_remove_main_add_new_one", domain=domain)
+            raise YunohostValidationError(
+                "domain_cannot_remove_main_add_new_one", domain=domain
+            )
 
     # Check if apps are installed on the domain
     apps_on_that_domain = []
@@ -515,12 +517,12 @@ def _build_dns_conf(domains):
             ]
 
             # DKIM/DMARC record
-            dkim_host, dkim_publickey = _get_DKIM(domain)
+            dkim_host, dkim_publickey = _get_DKIM(domain_name)
 
             if dkim_host:
                 mail += [
                     [dkim_host, ttl, "TXT", dkim_publickey],
-                    ["_dmarc", ttl, "TXT", '"v=DMARC1; p=none"'],
+                    [f"_dmarc{child_domain_suffix}", ttl, "TXT", '"v=DMARC1; p=none"'],
                 ]
 
         ########
@@ -528,8 +530,8 @@ def _build_dns_conf(domains):
         ########
         if domain["xmpp"]:
             xmpp += [
-                ["_xmpp-client._tcp", ttl, "SRV", "0 5 5222 %s." % domain_name],
-                ["_xmpp-server._tcp", ttl, "SRV", "0 5 5269 %s." % domain_name],
+                [f"_xmpp-client._tcp{child_domain_suffix}", ttl, "SRV", f"0 5 5222 {domain_name}."],
+                [f"_xmpp-server._tcp{child_domain_suffix}", ttl, "SRV", f"0 5 5269 {domain_name}."],
                 ["muc" + child_domain_suffix, ttl, "CNAME", name],
                 ["pubsub" + child_domain_suffix, ttl, "CNAME", name],
                 ["vjud" + child_domain_suffix, ttl, "CNAME", name],
@@ -542,10 +544,10 @@ def _build_dns_conf(domains):
 
 
         if ipv4:
-            extra.append(["*", ttl, "A", ipv4])
+            extra.append([f"*{child_domain_suffix}", ttl, "A", ipv4])
 
         if ipv6:
-            extra.append(["*", ttl, "AAAA", ipv6])
+            extra.append([f"*{child_domain_suffix}", ttl, "AAAA", ipv6])
         # TODO
         # elif include_empty_AAAA_if_no_ipv6:
         #     extra.append(["*", ttl, "AAAA", None])
@@ -727,7 +729,7 @@ def _load_domain_settings():
         new_domains[domain] = {}
         # new_domains[domain] = { "main": is_maindomain }
         # Set other values (default value if missing)
-        for setting, default in [ ("xmpp", is_maindomain), ("mail", is_maindomain), ("owned_dns_zone", default_owned_dns_zone), ("ttl", 3600), ("provider", False)]:
+        for setting, default in [ ("xmpp", is_maindomain), ("mail", True), ("owned_dns_zone", default_owned_dns_zone), ("ttl", 3600), ("provider", False)]:
             if domain_in_old_domains and setting in old_domains[domain].keys():
                 new_domains[domain][setting] = old_domains[domain][setting]
             else:
@@ -773,7 +775,7 @@ def domain_setting(domain, key, value=None, delete=False):
         if "ttl" == key:
             try:
                 ttl = int(value)
-            except:
+            except ValueError:
                 # TODO add locales
                 raise YunohostError("bad_value_type", value_type=type(ttl))
 
@@ -934,7 +936,7 @@ def domain_push_config(domain):
 
     for key in types:
         for distant_record in distant_records[key]:
-            print('distant_record:', distant_record);
+            logger.debug(f"distant_record: {distant_record}");
     for local_record in flatten_dns_conf:
         print('local_record:', local_record);
 
