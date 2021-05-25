@@ -1,4 +1,17 @@
 {
     "password_too_simple_1": "O contrasinal ten que ter 8 caracteres como mínimo",
-    "aborting": "Abortando."
+    "aborting": "Abortando.",
+    "app_already_up_to_date": "{app:s} xa está actualizada",
+    "app_already_installed_cant_change_url": "Esta app xa está instalada. O URL non pode cambiarse só con esta acción. Miran en `app changeurl` se está dispoñible.",
+    "app_already_installed": "{app:s} xa está instalada",
+    "app_action_broke_system": "Esta acción semella que estragou estos servizos importantes: {services}",
+    "app_action_cannot_be_ran_because_required_services_down": "Estos servizos requeridos deberían estar en execución para realizar esta acción: {services}. Intenta reinicialos para continuar (e tamén intenta saber por que están apagados).",
+    "already_up_to_date": "Nada que facer. Todo está ao día.",
+    "admin_password_too_long": "Elixe un contrasinal menor de 127 caracteres",
+    "admin_password_changed": "Realizado o cambio de contrasinal de administración",
+    "admin_password_change_failed": "Non se puido cambiar o contrasinal",
+    "admin_password": "Contrasinal de administración",
+    "additional_urls_already_removed": "URL adicional '{url:s}' xa foi eliminada das URL adicionais para o permiso '{permission:s}'",
+    "additional_urls_already_added": "URL adicional '{url:s}' xa fora engadida ás URL adicionais para o permiso '{permission:s}'",
+    "action_invalid": "Acción non válida '{action:s}'"
 }
