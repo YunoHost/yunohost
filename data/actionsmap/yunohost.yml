@@ -1420,7 +1420,7 @@ tools:
                     help: Use this if you really want to set a weak password
                     action: store_true
                 --force-diskspace:
-                    help: Use this if you really want to install Yunohost on a setup with less than 10 GB on the root filesystem
+                    help: Use this if you really want to install YunoHost on a setup with less than 10 GB on the root filesystem
                     action: store_true
 
 

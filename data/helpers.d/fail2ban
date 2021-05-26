@@ -79,7 +79,7 @@ ynh_add_fail2ban_config () {
     others_var="${others_var:-}"
     use_template="${use_template:-0}"
 
-    [[ -z "$others_var" ]] || ynh_print_warn --message="Packagers: using --others_var is unecessary since Yunohost 4.2"
+    [[ -z "$others_var" ]] || ynh_print_warn --message="Packagers: using --others_var is unecessary since YunoHost 4.2"
 
     if [ $use_template -ne 1 ]
     then
