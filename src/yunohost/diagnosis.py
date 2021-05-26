@@ -465,9 +465,9 @@ class Diagnoser:
         new_report = {"id": self.id_, "cached_for": self.cache_duration, "items": items}
 
         self.logger_debug("Updating cache %s" % self.cache_file)
-        self.write_cache(new_report)
         Diagnoser.i18n(new_report)
         add_ignore_flag_to_issues(new_report)
+        self.write_cache(new_report)
 
         errors = [
             item

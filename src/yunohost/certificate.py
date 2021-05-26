@@ -881,13 +881,13 @@ def _check_domain_is_ready_for_ACME(domain):
     if not dnsrecords.get("status") in [
         "SUCCESS",
         "WARNING",
-    ]:  # Warning is for missing IPv6 record which ain't critical for ACME
+    ] and not dnsrecords.get("ignored"):  # Warning is for missing IPv6 record which ain't critical for ACME
         raise YunohostValidationError(
             "certmanager_domain_dns_ip_differs_from_public_ip", domain=domain
         )
 
     # Check if domain seems to be accessible through HTTP?
-    if not httpreachable.get("status") == "SUCCESS":
+    if not httpreachable.get("status") == "SUCCESS" and not dnsrecords.get("ignored"):
         raise YunohostValidationError(
             "certmanager_domain_http_not_working", domain=domain
         )
