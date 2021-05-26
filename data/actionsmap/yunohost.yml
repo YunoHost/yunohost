@@ -403,7 +403,7 @@ user:
                             help: The key to be added
                         -c:
                             full: --comment
-                            help: Optionnal comment about the key
+                            help: Optional comment about the key
 
                 ### user_ssh_keys_remove()
                 remove-key:
