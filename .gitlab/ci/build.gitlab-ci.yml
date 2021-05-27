@@ -5,6 +5,7 @@
     YNH_SOURCE: "https://github.com/yunohost"
   before_script:
     - mkdir -p $YNH_BUILD_DIR
+    - DEBIAN_FRONTEND=noninteractive apt update
   artifacts:
     paths:
       - $YNH_BUILD_DIR/*.deb
