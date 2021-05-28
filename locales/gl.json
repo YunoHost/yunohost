@@ -13,5 +13,10 @@
     "admin_password": "Contrasinal de administración",
     "additional_urls_already_removed": "URL adicional '{url:s}' xa foi eliminada das URL adicionais para o permiso '{permission:s}'",
     "additional_urls_already_added": "URL adicional '{url:s}' xa fora engadida ás URL adicionais para o permiso '{permission:s}'",
-    "action_invalid": "Acción non válida '{action:s}'"
+    "action_invalid": "Acción non válida '{action:s}'",
+    "app_change_url_failed_nginx_reload": "Non se recargou NGINX. Aquí tes a saída de 'nginx -t':\n{nginx_errors:s}",
+    "app_argument_required": "Requírese o argumento '{name}'",
+    "app_argument_password_no_default": "Erro ao procesar o argumento do contrasinal '{name}': o argumento do contrasinal non pode ter un valor por defecto por razón de seguridade",
+    "app_argument_invalid": "Elixe un valor válido para o argumento '{name:s}': {error:s}",
+    "app_argument_choice_invalid": "Usa unha destas opcións '{choices:s}' para o argumento '{name:s}'"
 }
