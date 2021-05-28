@@ -9,7 +9,6 @@ CAN_BIND=${CAN_BIND:-1}
 # | arg: -d, --dest_path=       - destination file or directory inside the backup dir
 # | arg: -b, --is_big           - Indicate data are big (mail, video, image ...)
 # | arg: -m, --not_mandatory    - Indicate that if the file is missing, the backup can ignore it.
-# | arg: arg - Deprecated arg
 #
 # This helper can be used both in a system backup hook, and in an app backup script
 #
@@ -301,18 +300,6 @@ ynh_restore_file () {
     else
         mv "$archive_path" "${dest_path}"
     fi
-}
-
-# Deprecated helper since it's a dangerous one!
-#
-# [internal]
-#
-ynh_bind_or_cp() {
-    local AS_ROOT=${3:-0}
-    local NO_ROOT=0
-    [[ "${AS_ROOT}" = "1" ]] || NO_ROOT=1
-    ynh_print_warn --message="This helper is deprecated, you should use ynh_backup instead"
-    ynh_backup "$1" "$2" 1
 }
 
 # Calculate and store a file checksum into the app settings

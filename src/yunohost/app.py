@@ -137,40 +137,13 @@ def app_search(string):
     return catalog_of_apps
 
 
-# Old legacy function...
-def app_fetchlist():
-    logger.warning(
-        "'yunohost app fetchlist' is deprecated. Please use 'yunohost tools update --apps' instead"
-    )
-    from yunohost.tools import tools_update
-
-    tools_update(target="apps")
-
-
-def app_list(full=False, installed=False, filter=None):
+def app_list(full=False):
     """
     List installed apps
     """
 
-    # Old legacy argument ... app_list was a combination of app_list and
-    # app_catalog before 3.8 ...
-    if installed:
-        logger.warning(
-            "Argument --installed ain't needed anymore when using 'yunohost app list'. It directly returns the list of installed apps.."
-        )
-
-    # Filter is a deprecated option...
-    if filter:
-        logger.warning(
-            "Using -f $appname in 'yunohost app list' is deprecated. Just use 'yunohost app list | grep -q 'id: $appname' to check a specific app is installed"
-        )
-
     out = []
     for app_id in sorted(_installed_apps()):
-
-        if filter and not app_id.startswith(filter):
-            continue
-
         try:
             app_info_dict = app_info(app_id, full=full)
         except Exception as e:
@@ -1258,64 +1231,6 @@ def app_remove(operation_logger, app):
     _assert_system_is_sane_for_app(manifest, "post")
 
 
-def app_addaccess(apps, users=[]):
-    """
-    Grant access right to users (everyone by default)
-
-    Keyword argument:
-        users
-        apps
-
-    """
-    from yunohost.permission import user_permission_update
-
-    output = {}
-    for app in apps:
-        permission = user_permission_update(
-            app + ".main", add=users, remove="all_users"
-        )
-        output[app] = permission["corresponding_users"]
-
-    return {"allowed_users": output}
-
-
-def app_removeaccess(apps, users=[]):
-    """
-    Revoke access right to users (everyone by default)
-
-    Keyword argument:
-        users
-        apps
-
-    """
-    from yunohost.permission import user_permission_update
-
-    output = {}
-    for app in apps:
-        permission = user_permission_update(app + ".main", remove=users)
-        output[app] = permission["corresponding_users"]
-
-    return {"allowed_users": output}
-
-
-def app_clearaccess(apps):
-    """
-    Reset access rights for the app
-
-    Keyword argument:
-        apps
-
-    """
-    from yunohost.permission import user_permission_reset
-
-    output = {}
-    for app in apps:
-        permission = user_permission_reset(app + ".main")
-        output[app] = permission["corresponding_users"]
-
-    return {"allowed_users": output}
-
-
 @is_unit_operation()
 def app_makedefault(operation_logger, app, domain=None):
     """
@@ -1642,10 +1557,6 @@ def app_ssowatconf():
     }
 
     write_to_json("/etc/ssowat/conf.json", conf_dict, sort_keys=True, indent=4)
-
-    from .utils.legacy import translate_legacy_rules_in_ssowant_conf_json_persistent
-
-    translate_legacy_rules_in_ssowant_conf_json_persistent()
 
     logger.debug(m18n.n("ssowat_conf_generated"))
 
@@ -3542,36 +3453,10 @@ def _patch_legacy_helpers(app_folder):
     files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
 
     stuff_to_replace = {
-        # Replace
-        #    sudo yunohost app initdb $db_user -p $db_pwd
-        # by
-        #    ynh_mysql_setup_db --db_user=$db_user --db_name=$db_user --db_pwd=$db_pwd
-        "yunohost app initdb": {
-            "pattern": r"(sudo )?yunohost app initdb \"?(\$\{?\w+\}?)\"?\s+-p\s\"?(\$\{?\w+\}?)\"?",
-            "replace": r"ynh_mysql_setup_db --db_user=\2 --db_name=\2 --db_pwd=\3",
-            "important": True,
-        },
-        # Replace
-        #    sudo yunohost app checkport whaterver
-        # by
-        #    ynh_port_available whatever
-        "yunohost app checkport": {
-            "pattern": r"(sudo )?yunohost app checkport",
-            "replace": r"ynh_port_available",
-            "important": True,
-        },
-        # We can't migrate easily port-available
-        # .. but at the time of writing this code, only two non-working apps are using it.
+        "yunohost app initdb": {"important": True},
+        "yunohost app checkport": {"important": True},
         "yunohost tools port-available": {"important": True},
-        # Replace
-        #    yunohost app checkurl "${domain}${path_url}" -a "${app}"
-        # by
-        #    ynh_webpath_register --app=${app} --domain=${domain} --path_url=${path_url}
-        "yunohost app checkurl": {
-            "pattern": r"(sudo )?yunohost app checkurl \"?(\$\{?\w+\}?)\/?(\$\{?\w+\}?)\"?\s+-a\s\"?(\$\{?\w+\}?)\"?",
-            "replace": r"ynh_webpath_register --app=\4 --domain=\2 --path_url=\3",
-            "important": True,
-        },
+        "yunohost app checkurl": {"important": True},
         # Remove
         #    Automatic diagnosis data from YunoHost
         #    __PRE_TAG1__$(yunohost tools diagnosis | ...)__PRE_TAG2__"
@@ -3582,26 +3467,11 @@ def _patch_legacy_helpers(app_folder):
             "important": False,
         },
         # Old $1, $2 in backup/restore scripts...
-        "app=$2": {
-            "only_for": ["scripts/backup", "scripts/restore"],
-            "pattern": r"app=\$2",
-            "replace": r"app=$YNH_APP_INSTANCE_NAME",
-            "important": True,
-        },
+        "app=$2": {"only_for": ["scripts/backup", "scripts/restore"], "important": True},
         # Old $1, $2 in backup/restore scripts...
-        "backup_dir=$1": {
-            "only_for": ["scripts/backup", "scripts/restore"],
-            "pattern": r"backup_dir=\$1",
-            "replace": r"backup_dir=.",
-            "important": True,
-        },
+        "backup_dir=$1": {"only_for": ["scripts/backup", "scripts/restore"], "important": True},
         # Old $1, $2 in backup/restore scripts...
-        "restore_dir=$1": {
-            "only_for": ["scripts/restore"],
-            "pattern": r"restore_dir=\$1",
-            "replace": r"restore_dir=.",
-            "important": True,
-        },
+        "restore_dir=$1": {"only_for": ["scripts/restore"], "important": True},
         # Old $1, $2 in install scripts...
         # We ain't patching that shit because it ain't trivial to patch all args...
         "domain=$1": {"only_for": ["scripts/install"], "important": True},
