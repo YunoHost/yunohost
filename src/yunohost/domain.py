@@ -744,28 +744,26 @@ def _load_domain_settings():
     for domain in get_domain_list["domains"]:
         # Retrieve entries in the YAML
         filepath = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
-        old_domain = {}
+        on_disk_settings = {}
         if os.path.exists(filepath) and os.path.isfile(filepath):
-            old_domain = yaml.load(open(filepath, "r+"))
+            on_disk_settings = yaml.load(open(filepath, "r+"))
             # If the file is empty or "corrupted"
-            if not type(old_domain) is set:
-                old_domain = {}
+            if not type(on_disk_settings) is dict:
+                on_disk_settings = {}
+        # Generate defaults
         is_maindomain = domain == maindomain
         default_owned_dns_zone = True if domain == get_public_suffix(domain) else False
+        default_settings = {
+            "xmpp": is_maindomain,
+            "mail": True,
+            "owned_dns_zone": default_owned_dns_zone,
+            "ttl": 3600,
+            "provider": {},
+        }
         # Update each setting if not present
-        new_domains[domain] = {}
-        # Set other values (default value if missing)
-        for setting, default in [
-            ("xmpp", is_maindomain),
-            ("mail", True),
-            ("owned_dns_zone", default_owned_dns_zone),
-            ("ttl", 3600),
-            ("provider", {}),
-        ]:
-            if old_domain != {} and setting in old_domain.keys():
-                new_domains[domain][setting] = old_domain[setting]
-            else:
-                new_domains[domain][setting] = default
+        default_settings.update(on_disk_settings)
+        # Add the domain to the list
+        new_domains[domain] = default_settings
 
     return new_domains
 
