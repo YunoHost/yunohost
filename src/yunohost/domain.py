@@ -53,7 +53,7 @@ from yunohost.hook import hook_callback
 
 logger = getActionLogger("yunohost.domain")
 
-DOMAIN_SETTINGS_PATH = "/etc/yunohost/domains.yml"
+DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 REGISTRAR_LIST_PATH = "/usr/share/yunohost/other/providers_list.yml"
 
 
@@ -732,39 +732,38 @@ def _load_domain_settings():
     Retrieve entries in domains.yml
     And fill the holes if any
     """
-    # Retrieve entries in the YAML
-    old_domains = None
-    if os.path.exists(DOMAIN_SETTINGS_PATH) and os.path.isfile(DOMAIN_SETTINGS_PATH):
-        old_domains = yaml.load(open(DOMAIN_SETTINGS_PATH, "r+"))
-
-    if old_domains is None:
-        old_domains = dict()
+    # Retrieve actual domain list
+    get_domain_list = domain_list()
 
     # Create sanitized data
     new_domains = dict()
-
-    get_domain_list = domain_list()
 
     # Load main domain
     maindomain = get_domain_list["main"]
 
     for domain in get_domain_list["domains"]:
+        # Retrieve entries in the YAML
+        filepath = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
+        old_domain = {}
+        if os.path.exists(filepath) and os.path.isfile(filepath):
+            old_domain = yaml.load(open(filepath, "r+"))
+            # If the file is empty or "corrupted"
+            if not type(old_domain) is set:
+                old_domain = {}
         is_maindomain = domain == maindomain
         default_owned_dns_zone = True if domain == get_public_suffix(domain) else False
-        domain_in_old_domains = domain in old_domains.keys()
         # Update each setting if not present
         new_domains[domain] = {}
-        # new_domains[domain] = { "main": is_maindomain }
         # Set other values (default value if missing)
         for setting, default in [
             ("xmpp", is_maindomain),
             ("mail", True),
             ("owned_dns_zone", default_owned_dns_zone),
             ("ttl", 3600),
-            ("provider", False),
+            ("provider", {}),
         ]:
-            if domain_in_old_domains and setting in old_domains[domain].keys():
-                new_domains[domain][setting] = old_domains[domain][setting]
+            if old_domain != {} and setting in old_domain.keys():
+                new_domains[domain][setting] = old_domain[setting]
             else:
                 new_domains[domain][setting] = default
 
@@ -858,11 +857,13 @@ def _set_domain_settings(domain, domain_settings):
     if not domain in domains.keys():
         raise YunohostError("domain_name_unknown", domain=domain)
 
-    domains[domain] = domain_settings
-
+    # First create the DOMAIN_SETTINGS_DIR if it doesn't exist
+    if not os.path.exists(DOMAIN_SETTINGS_DIR):
+        os.mkdir(DOMAIN_SETTINGS_DIR)
     # Save the settings to the .yaml file
-    with open(DOMAIN_SETTINGS_PATH, "w") as file:
-        yaml.dump(domains, file, default_flow_style=False)
+    filepath = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
+    with open(filepath, "w") as file:
+        yaml.dump(domain_settings, file, default_flow_style=False)
 
 
 # def domain_get_registrar():
@@ -901,8 +902,7 @@ def domain_registrar_set(domain, registrar, args):
     domain_settings["provider"] = domain_provider
 
     # Save the settings to the .yaml file
-    with open(DOMAIN_SETTINGS_PATH, "w") as file:
-        yaml.dump(domains, file, default_flow_style=False)
+    _set_domain_settings(domain, domain_settings)
 
 
 def domain_push_config(domain):
