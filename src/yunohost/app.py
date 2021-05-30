@@ -3475,6 +3475,7 @@ LEGACY_PHP_VERSION_REPLACEMENTS = [
     ("php5", "php7.4"),
     ("php7.0", "php7.4"),
     ("php7.3", "php7.4"),
+    ('YNH_PHP_VERSION="7.3"', 'YNH_PHP_VERSION="7.4"'),
     (
         'phpversion="${phpversion:-7.0}"',
         'phpversion="${phpversion:-7.4}"',
