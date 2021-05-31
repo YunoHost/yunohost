@@ -1845,7 +1845,7 @@ def app_config_apply(operation_logger, app, args):
     logger.warning(m18n.n("experimental_feature"))
 
     from yunohost.hook import hook_exec
-
+    from base64 import b64decode
     installed = _is_installed(app)
     if not installed:
         raise YunohostValidationError(
@@ -1889,8 +1889,8 @@ def app_config_apply(operation_logger, app, args):
                         filename = args[generated_name + '[name]']
                         content = args[generated_name]
                         logger.debug("Save uploaded file %s from API into %s", filename, upload_dir)
-                        
-                        # Filename is given by user of the API. For security reason, we have replaced 
+
+                        # Filename is given by user of the API. For security reason, we have replaced
                         # os.path.join to avoid the user to be able to rewrite a file in filesystem
                         # i.e. os.path.join("/foo", "/etc/passwd") == "/etc/passwd"
                         file_path = os.path.normpath(upload_dir + "/" + filename)
@@ -1900,7 +1900,7 @@ def app_config_apply(operation_logger, app, args):
                             i += 1
                         try:
                             with open(file_path, 'wb') as f:
-                                f.write(content.decode("base64"))
+                                f.write(b64decode(content))
                         except IOError as e:
                             raise YunohostError("cannot_write_file", file=file_path, error=str(e))
                         except Exception as e:
