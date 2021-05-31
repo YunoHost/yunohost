@@ -1,0 +1,259 @@
+#!/bin/bash
+
+ynh_lowerdot_to_uppersnake() {
+    local lowerdot
+    lowerdot=$(echo "$1" | cut -d= -f1 | sed "s/\./_/g")
+    echo "${lowerdot^^}"
+}
+
+# Get a value from heterogeneous file (yaml, json, php, python...)
+#
+# usage: ynh_value_get --file=PATH --key=KEY
+# | arg: -f, --file=     - the path to the file
+# | arg: -k, --key=     - the key to get
+#
+# This helpers match several var affectation use case in several languages
+# We don't use jq or equivalent to keep comments and blank space in files
+# This helpers work line by line, it is not able to work correctly 
+# if you have several identical keys in your files
+# 
+# Example of line this helpers can managed correctly
+# .yml
+#     title: YunoHost documentation
+#     email: 'yunohost@yunohost.org'
+# .json
+#     "theme": "colib'ris",
+#     "port": 8102
+#     "some_boolean":     false,
+#     "user": null
+# .ini
+#     some_boolean = On
+#     action = "Clear"
+#     port = 20
+# .php
+#     $user=
+#     user => 20
+# .py
+#     USER = 8102
+#     user = 'https://donate.local'
+#     CUSTOM['user'] = 'YunoHost'
+# Requires YunoHost version 4.3 or higher.
+ynh_value_get() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=fk
+    local -A args_array=( [f]=file= [k]=key= )
+    local file
+    local key
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    local var_part="[ \t]*(\$?\w*\[)?[ \t]*[\"']?${key}[\"']?[ \t]*\]?[ \t]*[:=]>?[ \t]*"
+    
+    local crazy_value="$(grep -i -o -P "^${var_part}\K.*(?=[ \t,\n;]*\$)" ${file} | head -n1)"
+    
+    local first_char="${crazy_value:0:1}"
+    if [[ "$first_char" == '"' ]] ; then
+        echo "$crazy_value" | grep -m1 -o -P '"\K([^"](\\")?)*[^\\](?=")' | head -n1  | sed 's/\\"/"/g'
+    elif [[ "$first_char" == "'" ]] ; then
+        echo "$crazy_value" | grep -m1 -o -P "'\K([^'](\\\\')?)*[^\\\\](?=')" | head -n1  | sed "s/\\\\'/'/g"
+    else
+        echo "$crazy_value"
+    fi
+}
+
+# Set a value into heterogeneous file (yaml, json, php, python...)
+#
+# usage: ynh_value_set --file=PATH --key=KEY --value=VALUE
+# | arg: -f, --file=     - the path to the file
+# | arg: -k, --key=     - the key to set
+# | arg: -v, --value=     - the value to set
+#
+# Requires YunoHost version 4.3 or higher.
+ynh_value_set() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=fkv
+    local -A args_array=( [f]=file= [k]=key= [v]=value=)
+    local file
+    local key
+    local value
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    local var_part="[ \t]*(\$?\w*\[)?[ \t]*[\"']?${key}[\"']?[ \t]*\]?[ \t]*[:=]>?[ \t]*"
+    
+    local crazy_value="$(grep -i -o -P "^${var_part}\K.*(?=[ \t,\n;]*\$)" ${file} | head -n1)"
+    local var_part="^[ \t]*(\$?\w*\[)?[ \t]*[\"']?${key}[\"']?[ \t]*\]?[ \t]*[:=]>?[ \t]*"
+    local first_char="${crazy_value:0:1}"
+    if [[ "$first_char" == '"' ]] ; then
+        value="$(echo "$value" | sed 's/"/\\"/g')"
+        sed -ri "s%^(${var_part}\")[^\"]*(\"[ \t\n,;]*)\$%\1${value}\2%i" ${file}
+    elif [[ "$first_char" == "'" ]] ; then
+        value="$(echo "$value" | sed "s/'/\\\\'/g")"
+        sed -ri "s%^(${var_part}')[^']*('[ \t\n,;]*)\$%\1${value}\2%i" ${file}
+    else
+        if [[ "$value" == *"'"* ]] || [[ "$value" == *'"'* ]] ; then
+            value="\"$(echo "$value" | sed 's/"/\\"/g')\""
+        fi
+        sed -ri "s%^(${var_part}')[^']*('[ \t\n,;]*)\$%\1${value}\2%i" ${file}
+    fi
+}
+
+_ynh_panel_get() {
+    
+    # From settings
+    local params_sources
+    params_sources=`python3 << EOL
+import toml
+from collections import OrderedDict
+with open("/etc/yunohost/apps/vpnclient/config_panel.toml", "r") as f:
+    file_content = f.read()
+loaded_toml = toml.loads(file_content, _dict=OrderedDict)
+
+for panel_name,panel in loaded_toml.items():
+    if isinstance(panel, dict):
+        for section_name, section in panel.items():
+            if isinstance(section, dict):
+                for name, param in section.items():
+                    if isinstance(param, dict) and param.get('source', '') == 'settings':
+                        print("%s.%s.%s=%s" %(panel_name, section_name, name, param.get('source', 'settings')))
+EOL
+`
+    for param_source in params_sources
+    do
+        local _dot_setting=$(echo "$param_source" | cut -d= -f1)
+        local _snake_setting="YNH_CONFIG_$(ynh_lowerdot_to_uppersnake $dot_setting)"
+        local short_setting=$(echo "$_dot_setting" | cut -d. -f3)
+        local _getter="get__${short_setting}"
+        local source="$(echo $param_source | cut -d= -f2)"
+
+        # Get value from getter if exists
+        if type $getter | grep -q '^function$' 2>/dev/null; then
+            old[$short_setting]="$($getter)"
+        
+        # Get value from app settings
+        elif [[ "$source" == "settings" ]] ; then
+            old[$short_setting]="$(ynh_app_setting_get $app $short_setting)"
+        
+        # Get value from a kind of key/value file
+        elif [[ "$source" == *":"* ]] ; then
+            local source_key="$(echo "$source" | cut -d: -f1)"
+            source_key=${source_key:-$short_setting}
+            local source_file="$(echo "$source" | cut -d: -f2)"
+            old[$short_setting]="$(ynh_value_get --file="${source_file}" --key="${source_key}")"
+        
+        # Specific case for files (all content of the file is the source)
+        else
+            old[$short_setting]="$source"
+        fi
+
+    done
+    
+    
+}
+
+_ynh_panel_apply() {
+    for short_setting in "${!dot_settings[@]}"
+    do
+        local setter="set__${short_setting}"
+        local source="$sources[$short_setting]"
+        
+        # Apply setter if exists
+        if type $setter | grep -q '^function$' 2>/dev/null; then
+            $setter
+
+        # Copy file in right place 
+        elif [[ "$source" == "settings" ]] ; then
+            ynh_app_setting_set $app $short_setting "$new[$short_setting]"
+        
+        # Get value from a kind of key/value file
+        elif [[ "$source" == *":"* ]]
+        then
+            local source_key="$(echo "$source" | cut -d: -f1)"
+            source_key=${source_key:-$short_setting}
+            local source_file="$(echo "$source" | cut -d: -f2)"
+            ynh_value_set --file="${source_file}" --key="${source_key}" --value="$new[$short_setting]"
+
+        # Specific case for files (all content of the file is the source)
+        else
+            cp "$new[$short_setting]" "$source"
+        fi
+    done
+}
+
+_ynh_panel_show() {
+    for short_setting in "${!old[@]}"
+    do
+        local key="YNH_CONFIG_$(ynh_lowerdot_to_uppersnake $dot_settings[$short_setting])"
+	    ynh_return "$key=${old[$short_setting]}"
+    done
+}
+
+_ynh_panel_validate() {
+    # Change detection
+    local is_error=true
+    #for changed_status in "${!changed[@]}"
+    for short_setting in "${!dot_settings[@]}"
+    do
+        #TODO file hash
+                file_hash[$setting]=$(sha256sum "$_source" | cut -d' ' -f1)
+                file_hash[$form_setting]=$(sha256sum "${!form_setting}" | cut -d' ' -f1)
+                if [[ "${file_hash[$setting]}" != "${file_hash[$form_setting]}" ]]
+                then
+                    changed[$setting]=true
+                fi
+        if [[ "$new[$short_setting]" == "$old[$short_setting]" ]]
+        then
+            changed[$short_setting]=false
+        else
+            changed[$short_setting]=true
+            is_error=false
+        fi
+    done
+    
+    # Run validation if something is changed
+    if [[ "$is_error" == "false" ]]
+    then
+
+        for short_setting in "${!dot_settings[@]}"
+        do
+            local result="$(validate__$short_setting)"
+            local key="YNH_ERROR_$(ynh_lowerdot_to_uppersnake $dot_settings[$short_setting])"
+            if [ -n "$result" ]
+            then
+                ynh_return "$key=$result"
+                is_error=true
+            fi
+        done
+    fi
+
+    if [[ "$is_error" == "true" ]]
+    then
+        ynh_die
+    fi 
+    
+}
+
+ynh_panel_get() {
+    _ynh_panel_get
+}
+
+ynh_panel_init() {
+    declare -A old=()
+    declare -A changed=()
+    declare -A file_hash=()
+    
+    ynh_panel_get
+}
+
+ynh_panel_show() {
+    _ynh_panel_show
+}
+
+ynh_panel_validate() {
+    _ynh_panel_validate
+}
+
+ynh_panel_apply() {
+    _ynh_panel_apply
+}
+
