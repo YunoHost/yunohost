@@ -123,7 +123,7 @@ EOL
         local _dot_setting=$(echo "$param_source" | cut -d= -f1)
         local _snake_setting="YNH_CONFIG_$(ynh_lowerdot_to_uppersnake $dot_setting)"
         local short_setting=$(echo "$_dot_setting" | cut -d. -f3)
-        local _getter="get__${short_setting}"
+        local getter="get__${short_setting}"
         local source="$(echo $param_source | cut -d= -f2)"
 
         # Get value from getter if exists
@@ -195,12 +195,12 @@ _ynh_panel_validate() {
     for short_setting in "${!dot_settings[@]}"
     do
         #TODO file hash
-                file_hash[$setting]=$(sha256sum "$_source" | cut -d' ' -f1)
-                file_hash[$form_setting]=$(sha256sum "${!form_setting}" | cut -d' ' -f1)
-                if [[ "${file_hash[$setting]}" != "${file_hash[$form_setting]}" ]]
-                then
-                    changed[$setting]=true
-                fi
+        file_hash[$setting]=$(sha256sum "$_source" | cut -d' ' -f1)
+        file_hash[$form_setting]=$(sha256sum "${!form_setting}" | cut -d' ' -f1)
+        if [[ "${file_hash[$setting]}" != "${file_hash[$form_setting]}" ]]
+        then
+            changed[$setting]=true
+        fi
         if [[ "$new[$short_setting]" == "$old[$short_setting]" ]]
         then
             changed[$short_setting]=false
@@ -216,10 +216,13 @@ _ynh_panel_validate() {
 
         for short_setting in "${!dot_settings[@]}"
         do
-            local result="$(validate__$short_setting)"
-            local key="YNH_ERROR_$(ynh_lowerdot_to_uppersnake $dot_settings[$short_setting])"
+            local result=""
+            if type validate__$short_setting | grep -q '^function$' 2>/dev/null; then
+                result="$(validate__$short_setting)"
+            fi
             if [ -n "$result" ]
             then
+                local key="YNH_ERROR_$(ynh_lowerdot_to_uppersnake $dot_settings[$short_setting])"
                 ynh_return "$key=$result"
                 is_error=true
             fi
@@ -237,14 +240,6 @@ ynh_panel_get() {
     _ynh_panel_get
 }
 
-ynh_panel_init() {
-    declare -A old=()
-    declare -A changed=()
-    declare -A file_hash=()
-    
-    ynh_panel_get
-}
-
 ynh_panel_show() {
     _ynh_panel_show
 }
@@ -255,5 +250,17 @@ ynh_panel_validate() {
 
 ynh_panel_apply() {
     _ynh_panel_apply
+}
+
+ynh_panel_run() {
+    declare -A old=()
+    declare -A changed=()
+    declare -A file_hash=()
+    
+    ynh_panel_get
+    case $1 in
+        show) ynh_panel_show;;
+        apply) ynh_panel_validate && ynh_panel_apply;;
+    esac
 }
 
