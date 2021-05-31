@@ -22,7 +22,7 @@ N_CURRENT_DEBIAN = 10
 N_CURRENT_YUNOHOST = 4
 
 N_NEXT_DEBAN = 11
-N_NEXT_YUNOHOST == 11
+N_NEXT_YUNOHOST = 11
 
 class MyMigration(Migration):
 
@@ -54,16 +54,16 @@ class MyMigration(Migration):
         )
 
         #
-        # Specific packages upgrades
+        # Patch yunohost conflicts
         #
-        logger.info(m18n.n("migration_0021_specific_upgrade"))
+        logger.info(m18n.n("migration_0021_patch_yunohost_conflicts"))
+
+        self.patch_yunohost_conflicts()
 
         #
         # Main upgrade
         #
         logger.info(m18n.n("migration_0021_main_upgrade"))
-
-        self.patch_yunohost_conflicts()
 
         apps_packages = self.get_apps_equivs_packages()
         self.hold(apps_packages)
@@ -248,5 +248,6 @@ class MyMigration(Migration):
             # We want to keep conflicting with apache/bind9 tho
             new_conflicts = "Conflicts: apache2, bind9"
 
-            command = f"sed -i /var/lib/dpkg/status 's@{conflicts}@{new_conflicts}@g'"
+            command = f"sed -i /var/lib/dpkg/status -e 's@{conflicts}@{new_conflicts}@g'"
+            logger.debug(f"Running: {command}")
             os.system(command)
