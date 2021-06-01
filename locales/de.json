@@ -612,5 +612,14 @@
     "service_description_postfix": "Wird benutzt, um E-Mails zu senden und zu empfangen",
     "service_description_nginx": "Stellt Daten aller Websiten auf dem Server bereit",
     "service_description_mysql": "Apeichert Anwendungsdaten (SQL Datenbank)",
-    "service_description_metronome": "XMPP Sofortnachrichtenkonten verwalten"
+    "service_description_metronome": "XMPP Sofortnachrichtenkonten verwalten",
+    "service_description_yunohost-firewall": "Verwaltet offene und geschlossene Ports zur Verbindung mit Diensten",
+    "service_description_yunohost-api": "Verwaltet die Interaktionen zwischen der Weboberfläche von YunoHost und dem System",
+    "service_description_ssh": "Ermöglicht die Verbindung zu Ihrem Server über ein Terminal (SSH-Protokoll)",
+    "service_description_php7.3-fpm": "Führt in PHP geschriebene Apps mit NGINX aus",
+    "server_reboot_confirm": "Der Server wird sofort heruntergefahren, sind Sie sicher? [{answers:s}]",
+    "server_reboot": "Der Server wird neu gestartet",
+    "server_shutdown_confirm": "Der Server wird sofort heruntergefahren, sind Sie sicher? [{answers:s}]",
+    "server_shutdown": "Der Server wird heruntergefahren",
+    "root_password_replaced_by_admin_password": "Ihr Root Passwort wurde durch Ihr Admin Passwort ersetzt."
 }
