@@ -91,7 +91,7 @@ inet_interfaces = all
 
 #### Fit to the maximum message size to 25mb, more than allowed by GMail or Yahoo ####
 # /!\ This size is the size of the attachment in base64. 
-# Base64_SIZE = ORIGINAL_SIZE * 1,37 *1024*1024 + 980
+# BASE64_SIZE_IN_BYTE = ORIGINAL_SIZE_IN_MEGABYTE * 1,37 *1024*1024 + 980
 # See https://serverfault.com/questions/346895/postfix-mail-size-counting
 message_size_limit = 35914708
 
