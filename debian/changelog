@@ -1,3 +1,16 @@
+yunohost (4.2.5.3) stable; urgency=low
+
+  - [fix] doc, helpers: Helper doc auto-generation job (f2886510)
+  - [fix] doc: Manpage generation ([#1237](https://github.com/yunohost/yunohost/pull/1237))
+  - [fix] misc: Yunohost -> YunoHost ([#1235](https://github.com/yunohost/yunohost/pull/1235))
+  - [enh] email: Accept attachment of 25MB instead of 21,8MB ([#1243](https://github.com/yunohost/yunohost/pull/1243))
+  - [fix] helpers: echo -n is pointless in ynh_systemd_action ([#1241](https://github.com/yunohost/yunohost/pull/1241))
+  - [i18n] Translations updated for Chinese (Simplified), French, Galician, German, Italian
+
+  Thanks to all contributors <3 ! (Éric Gaspar, José M, Kay0u, Leandro Noferini, ljf, Meta Meta, Noo Langoo, qwerty287, yahoo～～)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 02 Jun 2021 20:20:54 +0200
+
 yunohost (4.2.5.2) stable; urgency=low
 
   - Fix install in chroot ... *again* (806b7acf)
