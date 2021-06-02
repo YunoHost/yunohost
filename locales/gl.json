@@ -89,5 +89,19 @@
     "app_extraction_failed": "Non se puideron extraer os ficheiros de instalación",
     "app_change_url_success": "A URL de {app:s} agora é {domain:s}{path:s}",
     "app_change_url_no_script": "A app '{app_name:s}' non soporta o cambio de URL. Pode que debas actualizala.",
-    "app_change_url_identical_domains": "O antigo e o novo dominio/url_path son idénticos ('{domain:s}{path:s}'), nada que facer."
+    "app_change_url_identical_domains": "O antigo e o novo dominio/url_path son idénticos ('{domain:s}{path:s}'), nada que facer.",
+    "backup_deleted": "Copia de apoio eliminada",
+    "backup_delete_error": "Non se eliminou '{paht:s}'",
+    "backup_custom_mount_error": "O método personalizado de copia non superou o paso 'mount'",
+    "backup_custom_backup_error": "O método personalizado da copia non superou o paso 'backup'",
+    "backup_csv_creation_failed": "Non se creou o ficheiro CSV necesario para restablecer a copia",
+    "backup_csv_addition_failed": "Non se engadiron os ficheiros a copiar ao ficheiro CSV",
+    "backup_creation_failed": "Non se puido crear o arquivo de copia de apoio",
+    "backup_create_size_estimation": "O arquivo vai conter arredor de {size} de datos.",
+    "backup_created": "Copia de apoio creada",
+    "backup_couldnt_bind": "Non se puido ligar {src:s} a {dest:s}.",
+    "backup_copying_to_organize_the_archive": "Copiando {size:s}MB para organizar o arquivo",
+    "backup_cleaning_failed": "Non se puido baleirar o cartafol temporal para a copia",
+    "backup_cant_mount_uncompress_archive": "Non se puido montar o arquivo sen comprimir porque está protexido contra escritura",
+    "backup_ask_for_copying_if_needed": "Queres realizar a copia de apoio utilizando temporalmente {size:s}MB? (Faise deste xeito porque algúns ficheiros non hai xeito de preparalos usando unha forma máis eficiente)."
 }
