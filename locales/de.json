@@ -621,5 +621,7 @@
     "server_reboot": "Der Server wird neu gestartet",
     "server_shutdown_confirm": "Der Server wird sofort heruntergefahren, sind Sie sicher? [{answers:s}]",
     "server_shutdown": "Der Server wird heruntergefahren",
-    "root_password_replaced_by_admin_password": "Ihr Root Passwort wurde durch Ihr Admin Passwort ersetzt."
+    "root_password_replaced_by_admin_password": "Ihr Root Passwort wurde durch Ihr Admin Passwort ersetzt.",
+    "show_tile_cant_be_enabled_for_regex": "Momentan können Sie 'show_tile' nicht aktivieren, weil die URL für die Berechtigung '{permission}' ein regulärer Ausdruck ist",
+    "show_tile_cant_be_enabled_for_url_not_defined": "Momentan können Sie 'show_tile' nicht aktivieren, weil Sie zuerst eine URL für die Berechtigung '{permission}' definieren müssen"
 }
