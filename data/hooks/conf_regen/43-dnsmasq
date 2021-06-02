@@ -7,7 +7,7 @@ do_pre_regen() {
   pending_dir=$1
 
   declare -a ip_yuno=(ip.yunohost.org 0-ip.yunohost.org)
-  declare -a ip_yuno6=(ip.yunohost.org 0-ip6.yunohost.org)
+  declare -a ip_yuno6=(ip6.yunohost.org 0-ip6.yunohost.org)
 
   cd /usr/share/yunohost/templates/dnsmasq
 
