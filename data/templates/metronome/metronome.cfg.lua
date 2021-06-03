@@ -32,6 +32,7 @@ modules_enabled = {
 		"private"; -- Private XML storage (for room bookmarks, etc.)
 		"vcard"; -- Allow users to set vCards
 		"pep"; -- Allows setting of mood, tune, etc.
+		"pubsub";  -- Publish-subscribe XEP-0060
 		"posix"; -- POSIX functionality, sends server to background, enables syslog, etc.
 		"bidi"; -- Enables Bidirectional Server-to-Server Streams.
  
