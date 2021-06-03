@@ -602,9 +602,9 @@ domain:
                         -a:
                             full: --args
                             help: Serialized arguments for registrar API (i.e. "auth_token=TOKEN&auth_username=USER").
-                ### domain_registrar_set()
-                get:
-                    action_help: Get domain registrar
+                ### domain_registrar_info()
+                info:
+                    action_help: Display info about registrar settings used for a domain
                     api: GET /domains/<domain>/registrar
                     arguments:
                         domain:

@@ -864,7 +864,22 @@ def _set_domain_settings(domain, domain_settings):
         yaml.dump(domain_settings, file, default_flow_style=False)
 
 
-# def domain_get_registrar():
+def domain_registrar_info(domain):
+
+    domains = _load_domain_settings()
+    if not domain in domains.keys():
+        raise YunohostError("domain_name_unknown", domain=domain)
+    
+    provider = domains[domain]["provider"]
+    
+    if provider:
+        logger.info("Registrar name : " + provider['name'])
+        for option in provider['options']:
+            logger.info("Option " + option + " : "+provider['options'][option])
+    else:
+        logger.info("Registrar settings are not set for " + domain)
+
+
 def domain_registrar_set(domain, registrar, args):
 
     domains = _load_domain_settings()
