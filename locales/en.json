@@ -426,6 +426,7 @@
     "migration_description_0018_xtable_to_nftable": "Migrate old network traffic rules to the new nftable system",
     "migration_description_0019_extend_permissions_features": "Extend/rework the app permission management system",
     "migration_description_0020_ssh_sftp_permissions": "Add SSH and SFTP permissions support",
+    "migration_description_0022_php73_to_php74_pools": "Migrate php7.3-fpm 'pool' conf files to php7.4",
     "migration_ldap_backup_before_migration": "Creating a backup of LDAP database and apps settings prior to the actual migration.",
     "migration_ldap_can_not_backup_before_migration": "The backup of the system could not be completed before the migration failed. Error: {error:s}",
     "migration_ldap_migration_failed_trying_to_rollback": "Could not migrate... trying to roll back the system.",
