@@ -19,6 +19,7 @@
 
 """
 from publicsuffix import PublicSuffixList
+from yunohost.utils.network import dig
 
 YNH_DYNDNS_DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
 
