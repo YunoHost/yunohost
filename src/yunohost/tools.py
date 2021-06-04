@@ -484,7 +484,7 @@ def tools_upgrade(
         # Actually start the upgrades
 
         try:
-            app_upgrade(app=apps)
+            app_upgrade(app=upgradable_apps)
         except Exception as e:
             logger.warning("unable to upgrade apps: %s" % str(e))
             logger.error(m18n.n("app_upgrade_some_app_failed"))
