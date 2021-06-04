@@ -36,3 +36,24 @@ def get_public_suffix(domain):
         public_suffix =  domain_prefix.plit(".")[-1] + "." + public_suffix
 
     return public_suffix
+
+def get_dns_zone_from_domain(domain):
+    """
+    Get the DNS zone of a domain
+
+    Keyword arguments:
+        domain -- The domain name
+        
+    """
+    separator = "."
+    domain_subs = domain.split(separator)
+    for i in range(0, len(domain_subs)):
+        answer = dig(separator.join(domain_subs), rdtype="NS", full_answers=True)
+        if answer[0] == "ok" :
+            return separator.join(domain_subs)
+        elif answer[1][0] == "NXDOMAIN" :
+            return None
+        domain_subs.pop(0)
+
+    # Should not be executed
+    return None
