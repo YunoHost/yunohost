@@ -185,7 +185,27 @@ def dig(
 
     return ("ok", answers)
 
+def get_dns_zone_from_domain(domain):
+    """
+    Get the DNS zone of a domain
 
+    Keyword arguments:
+        domain -- The domain name
+        
+    """
+    separator = "."
+    domain_subs = domain.split(separator)
+    for i in range(0, len(domain_subs)):
+        answer = dig(separator.join(domain_subs), rdtype="NS", full_answers=True)
+        if answer[0] == "ok" :
+            return separator.join(domain_subs)
+        elif answer[1][0] == "NXDOMAIN" :
+            return None
+        domain_subs.pop(0)
+
+    # Should not be executed
+    return None
+    
 def _extract_inet(string, skip_netmask=False, skip_loopback=True):
     """
     Extract IP addresses (v4 and/or v6) from a string limited to one
