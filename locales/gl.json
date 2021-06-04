@@ -103,5 +103,18 @@
     "backup_copying_to_organize_the_archive": "Copiando {size:s}MB para organizar o arquivo",
     "backup_cleaning_failed": "Non se puido baleirar o cartafol temporal para a copia",
     "backup_cant_mount_uncompress_archive": "Non se puido montar o arquivo sen comprimir porque está protexido contra escritura",
-    "backup_ask_for_copying_if_needed": "Queres realizar a copia de apoio utilizando temporalmente {size:s}MB? (Faise deste xeito porque algúns ficheiros non hai xeito de preparalos usando unha forma máis eficiente)."
+    "backup_ask_for_copying_if_needed": "Queres realizar a copia de apoio utilizando temporalmente {size:s}MB? (Faise deste xeito porque algúns ficheiros non hai xeito de preparalos usando unha forma máis eficiente).",
+    "backup_running_hooks": "Executando os ganchos da copia...",
+    "backup_permission": "Permiso de copia para {app:s}",
+    "backup_output_symlink_dir_broken": "O directorio de arquivo '{path:s}' é unha ligazón simbólica rota. Pode ser que esqueceses re/montar ou conectar o medio de almacenaxe ao que apunta.",
+    "backup_output_directory_required": "Debes proporcionar un directorio de saída para a copia",
+    "backup_output_directory_not_empty": "Debes elexir un directorio de saída baleiro",
+    "backup_output_directory_forbidden": "Elixe un directorio de saída diferente. As copias non poden crearse en /bin, /boot, /dev, /etc, /lib, /root, /sbin, /sys, /usr, /var ou subcartafoles de /home/yunohost.backup/archives",
+    "backup_nothings_done": "Nada que gardar",
+    "backup_no_uncompress_archive_dir": "Non hai tal directorio do arquivo descomprimido",
+    "backup_mount_archive_for_restore": "Preparando o arquivo para restauración...",
+    "backup_method_tar_finished": "Creouse o arquivo de copia TAR",
+    "backup_method_custom_finished": "O método de copia personalizado '{method:s}' rematou",
+    "backup_method_copy_finished": "Rematou o copiado dos ficheiros",
+    "backup_hook_unknown": "O gancho da copia '{hook:s}' é descoñecido"
 }

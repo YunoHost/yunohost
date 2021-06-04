@@ -249,7 +249,7 @@
     "global_settings_unknown_setting_from_settings_file": "Chiave sconosciuta nelle impostazioni: '{setting_key:s}', scartata e salvata in /etc/yunohost/settings-unknown.json",
     "global_settings_setting_service_ssh_allow_deprecated_dsa_hostkey": "Consenti l'uso del hostkey DSA (deprecato) per la configurazione del demone SSH",
     "global_settings_unknown_type": "Situazione inaspettata, l'impostazione {setting:s} sembra essere di tipo {unknown_type:s} ma non è un tipo supportato dal sistema.",
-    "good_practices_about_admin_password": "Stai per definire una nuova password di amministratore. La password deve essere almeno di 8 caratteri - anche se è buona pratica utilizzare password più lunghe (es. una frase, una serie di parole) e/o utilizzare vari tipi di caratteri (maiuscole, minuscole, numeri e simboli).",
+    "good_practices_about_admin_password": "Stai per impostare una nuova password di amministratore. La password deve essere almeno di 8 caratteri - anche se è buona pratica utilizzare password più lunghe (es. una frase, una serie di parole) e/o utilizzare vari tipi di caratteri (maiuscole, minuscole, numeri e simboli).",
     "log_corrupted_md_file": "Il file dei metadati YAML associato con i registri è danneggiato: '{md_file}'\nErrore: {error}",
     "log_link_to_log": "Registro completo di questa operazione: '<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>'",
     "log_help_to_get_log": "Per vedere il registro dell'operazione '{desc}', usa il comando 'yunohost log show {name}{name}'",
