@@ -47,7 +47,7 @@ from yunohost.app import (
 )
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.network import get_public_ip
-from yunohost.utils.dns import get_public_suffix
+from yunohost.utils.dns import get_dns_zone_from_domain
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
 
@@ -354,6 +354,7 @@ def domain_dns_conf(domain):
                 result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     if msettings.get("interface") == "cli":
+        # FIXME Update this to point to our "dns push" doc
         logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 
     return result
@@ -493,7 +494,8 @@ def _build_dns_conf(domains):
     ipv4 = get_public_ip()
     ipv6 = get_public_ip(6)
     owned_dns_zone = (
-        "owned_dns_zone" in domains[root] and domains[root]["owned_dns_zone"]
+        # TODO test this
+        "dns_zone" in domains[root] and domains[root]["dns_zone"] == root
     )
 
     root_prefix = root.partition(".")[0]
@@ -727,9 +729,10 @@ def _get_DKIM(domain):
         )
 
 
+# FIXME split the loading of the domain settings → domain by domain (& file by file)
 def _load_domain_settings():
     """
-    Retrieve entries in domains.yml
+    Retrieve entries in domains/[domain].yml
     And fill the holes if any
     """
     # Retrieve actual domain list
@@ -752,11 +755,11 @@ def _load_domain_settings():
                 on_disk_settings = {}
         # Generate defaults
         is_maindomain = domain == maindomain
-        default_owned_dns_zone = True if domain == get_public_suffix(domain) else False
+        dns_zone = get_dns_zone_from_domain(domain)
         default_settings = {
             "xmpp": is_maindomain,
             "mail": True,
-            "owned_dns_zone": default_owned_dns_zone,
+            "dns_zone": dns_zone,
             "ttl": 3600,
             "provider": {},
         }
@@ -833,6 +836,8 @@ def _get_domain_settings(domain, subdomains):
     only_wanted_domains = dict()
     for entry in domains.keys():
         if subdomains:
+            # FIXME does example.co is seen as a subdomain of example.com?
+            # TODO _is_subdomain_of_domain
             if domain in entry:
                 only_wanted_domains[entry] = domains[entry]
         else:
