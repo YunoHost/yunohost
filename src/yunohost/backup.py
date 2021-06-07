@@ -2658,7 +2658,7 @@ def _recursive_umount(directory):
     points_to_umount = [
         line.split(" ")[2]
         for line in mount_lines
-        if len(line) >= 3 and line.split(" ")[2].startswith(directory)
+        if len(line) >= 3 and line.split(" ")[2].startswith(os.path.realpath(directory))
     ]
 
     everything_went_fine = True
