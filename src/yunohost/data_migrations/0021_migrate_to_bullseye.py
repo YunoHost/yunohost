@@ -177,12 +177,14 @@ class MyMigration(Migration):
         # - replace single 'buster' occurence by 'bulleye'
         # - comments lines containing "backports"
         # - replace 'buster/updates' by 'bullseye/updates' (or same with -)
+        # Special note about the security suite:
+        # https://www.debian.org/releases/bullseye/amd64/release-notes/ch-information.en.html#security-archive
         for f in sources_list:
             command = (
                 f"sed -i {f} "
                 "-e 's@ buster @ bullseye @g' "
                 "-e '/backports/ s@^#*@#@' "
-                "-e 's@ buster/updates @ bullseye/updates @g' "
+                "-e 's@ buster/updates @ bullseye-security @g' "
                 "-e 's@ buster-@ bullseye-@g' "
             )
             os.system(command)
