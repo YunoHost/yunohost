@@ -503,26 +503,6 @@ ynh_get_debian_release () {
     echo $(lsb_release --codename --short)
 }
 
-# Create a directory under /tmp
-#
-# [internal]
-#
-# Deprecated helper
-#
-# usage: ynh_mkdir_tmp
-# | ret: the created directory path
-ynh_mkdir_tmp() {
-    ynh_print_warn --message="The helper ynh_mkdir_tmp is deprecated."
-    ynh_print_warn --message="You should use 'mktemp -d' instead and manage permissions \
-properly with chmod/chown."
-    local TMP_DIR=$(mktemp --directory)
-
-    # Give rights to other users could be a security risk.
-    # But for retrocompatibility we need it. (This helpers is deprecated)
-    chmod 755 $TMP_DIR
-    echo $TMP_DIR
-}
-
 # Remove a file or a directory securely
 #
 # usage: ynh_secure_remove --file=path_to_remove
@@ -563,38 +543,6 @@ ynh_secure_remove () {
     else
         ynh_print_info --message="'$file' wasn't deleted because it doesn't exist."
     fi
-}
-
-# Extract a key from a plain command output
-#
-# [internal]
-#
-# (Deprecated, use --output-as json and jq instead)
-ynh_get_plain_key() {
-    local prefix="#"
-    local founded=0
-    # We call this key_ so that it's not caught as
-    # an info to be redacted by the core
-    local key_=$1
-    shift
-    while read line
-    do
-        if [[ "$founded" == "1" ]]
-        then
-            [[ "$line" =~ ^${prefix}[^#] ]] && return
-            echo $line
-        elif [[ "$line" =~ ^${prefix}${key_}$ ]]
-        then
-            if [[ -n "${1:-}" ]]
-            then
-                prefix+="#"
-                key_=$1
-                shift
-            else
-                founded=1
-            fi
-        fi
-    done
 }
 
 # Read the value of a key in a ynh manifest file

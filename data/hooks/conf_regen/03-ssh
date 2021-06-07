@@ -7,10 +7,6 @@ set -e
 do_pre_regen() {
     pending_dir=$1
 
-    # If the (legacy) 'from_script' flag is here,
-    # we won't touch anything in the ssh config.
-    [[ ! -f /etc/yunohost/from_script ]] || return 0
-
     cd /usr/share/yunohost/templates/ssh
 
     # do not listen to IPv6 if unavailable
@@ -33,10 +29,6 @@ do_pre_regen() {
 
 do_post_regen() {
     regen_conf_files=$1
-
-    # If the (legacy) 'from_script' flag is here,
-    # we won't touch anything in the ssh config.
-    [[ ! -f /etc/yunohost/from_script ]] || return 0
 
     # If no file changed, there's nothing to do
     [[ -n "$regen_conf_files" ]] || return 0

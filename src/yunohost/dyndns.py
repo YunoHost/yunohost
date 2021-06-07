@@ -375,18 +375,6 @@ def dyndns_update(
         )
 
 
-def dyndns_installcron():
-    logger.warning(
-        "This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'."
-    )
-
-
-def dyndns_removecron():
-    logger.warning(
-        "This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'."
-    )
-
-
 def _guess_current_dyndns_domain(dyn_host):
     """
     This function tries to guess which domain should be updated by

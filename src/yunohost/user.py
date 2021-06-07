@@ -98,7 +98,6 @@ def user_create(
     domain,
     password,
     mailbox_quota="0",
-    mail=None,
 ):
 
     from yunohost.domain import domain_list, _get_maindomain
@@ -108,12 +107,6 @@ def user_create(
 
     # Ensure sufficiently complex password
     assert_password_is_strong_enough("user", password)
-
-    if mail is not None:
-        logger.warning(
-            "Packagers ! Using --mail in 'yunohost user create' is deprecated ... please use --domain instead."
-        )
-        domain = mail.split("@")[-1]
 
     # Validate domain used for email address/xmpp account
     if domain is None:
