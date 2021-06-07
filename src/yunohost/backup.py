@@ -860,9 +860,13 @@ class RestoreManager:
         # FIXME this way to get the info is not compatible with copy or custom
         # backup methods
         self.info = backup_info(name, with_details=True)
-        if not self.info["from_yunohost_version"] or version.parse(
-            self.info["from_yunohost_version"]
-        ) < version.parse("3.8.0"):
+
+        from_version = self.info.get("from_yunohost_version", "")
+        # Remove any '~foobar' in the version ... c.f ~alpha, ~beta version during
+        # early dev for next debian version
+        from_version = re.sub(r'~\w+', '', from_version)
+
+        if not from_version or version.parse(from_version) < version.parse("3.8.0"):
             raise YunohostValidationError("restore_backup_too_old")
 
         self.archive_path = self.info["path"]

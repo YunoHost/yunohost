@@ -3386,12 +3386,21 @@ LEGACY_PHP_VERSION_REPLACEMENTS = [
     ("php5", "php7.4"),
     ("php7.0", "php7.4"),
     ("php7.3", "php7.4"),
+    ('YNH_PHP_VERSION="7.3"', 'YNH_PHP_VERSION="7.4"'),
     (
         'phpversion="${phpversion:-7.0}"',
         'phpversion="${phpversion:-7.4}"',
     ),  # Many helpers like the composer ones use 7.0 by default ...
     (
+        'phpversion="${phpversion:-7.3}"',
+        'phpversion="${phpversion:-7.4}"',
+    ),  # Many helpers like the composer ones use 7.0 by default ...
+    (
         '"$phpversion" == "7.0"',
+        '$(bc <<< "$phpversion >= 7.4") -eq 1',
+    ),  # patch ynh_install_php to refuse installing/removing php <= 7.3
+    (
+        '"$phpversion" == "7.3"',
         '$(bc <<< "$phpversion >= 7.4") -eq 1',
     ),  # patch ynh_install_php to refuse installing/removing php <= 7.3
 ]
@@ -3428,15 +3437,15 @@ def _patch_legacy_php_versions_in_settings(app_folder):
 
     settings = read_yaml(os.path.join(app_folder, "settings.yml"))
 
-    if settings.get("fpm_config_dir") == "/etc/php/7.0/fpm":
+    if settings.get("fpm_config_dir") in ["/etc/php/7.0/fpm", "/etc/php/7.3/fpm"]:
         settings["fpm_config_dir"] = "/etc/php/7.4/fpm"
-    if settings.get("fpm_service") == "php7.0-fpm":
+    if settings.get("fpm_service") in ["php7.0-fpm", "php7.3-fpm"]:
         settings["fpm_service"] = "php7.4-fpm"
-    if settings.get("phpversion") == "7.0":
+    if settings.get("phpversion") in ["7.0", "7.3"]:
         settings["phpversion"] = "7.4"
 
     # We delete these checksums otherwise the file will appear as manually modified
-    list_to_remove = ["checksum__etc_php_7.0_fpm_pool", "checksum__etc_nginx_conf.d"]
+    list_to_remove = ["checksum__etc_php_7.3_fpm_pool", "checksum__etc_php_7.0_fpm_pool", "checksum__etc_nginx_conf.d"]
     settings = {
         k: v
         for k, v in settings.items()

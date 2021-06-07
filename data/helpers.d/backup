@@ -206,14 +206,14 @@ ynh_restore () {
 # usage: _get_archive_path ORIGIN_PATH
 _get_archive_path () {
     # For security reasons we use csv python library to read the CSV
-    python -c "
+    python3 -c "
 import sys
 import csv
 with open(sys.argv[1], 'r') as backup_file:
     backup_csv = csv.DictReader(backup_file, fieldnames=['source', 'dest'])
     for row in backup_csv:
         if row['source']==sys.argv[2].strip('\"'):
-            print row['dest']
+            print(row['dest'])
             sys.exit(0)
     raise Exception('Original path for %s not found' % sys.argv[2])
     "  "${YNH_BACKUP_CSV}" "$1"
