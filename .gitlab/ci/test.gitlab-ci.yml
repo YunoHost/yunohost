@@ -50,10 +50,29 @@ full-tests:
     reports:
       junit: report.xml
 
-root-tests:
+test-i18n-keys:
   extends: .test-stage
   script:
-    - python3 -m pytest tests
+    - python3 -m pytest tests tests/test_i18n_keys.py
+  only:
+    changes:
+      - locales/*
+
+test-i18n-keys:
+  extends: .test-stage
+  script:
+    - python3 -m pytest tests tests/test_translation_format_consistency.py
+  only:
+    changes:
+      - locales/*
+
+test-actionmap:
+  extends: .test-stage
+  script:
+    - python3 -m pytest tests tests/test_actionmap.py
+  only:
+    changes:
+      - data/actionsmap/*.yml
 
 test-helpers:
   extends: .test-stage
