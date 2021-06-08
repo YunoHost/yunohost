@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-
+# Just a test
 """ License
 
     Copyright (C) 2013 YunoHost
