@@ -12,6 +12,15 @@ default:
   # All jobs are interruptible by default
   interruptible: true
 
+# see: https://docs.gitlab.com/ee/ci/yaml/#switch-between-branch-pipelines-and-merge-request-pipelines
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"' # If we move to gitlab one day
+    - if: '$CI_PIPELINE_SOURCE == "external_pull_request_event"' # For github PR
+    - if: '$CI_COMMIT_REF_NAME =~ /$CI_DEFAULT_BRANCH/  && $CI_PIPELINE_SOURCE == "push"' # If it's not the default branch and if it's a push, then do not trigger a build
+      when: never
+    - when: always
+
 variables:
   YNH_BUILD_DIR: "ynh-build"
 
