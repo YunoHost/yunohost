@@ -116,5 +116,21 @@
     "backup_method_tar_finished": "Creouse o arquivo de copia TAR",
     "backup_method_custom_finished": "O método de copia personalizado '{method:s}' rematou",
     "backup_method_copy_finished": "Rematou o copiado dos ficheiros",
-    "backup_hook_unknown": "O gancho da copia '{hook:s}' é descoñecido"
+    "backup_hook_unknown": "O gancho da copia '{hook:s}' é descoñecido",
+    "certmanager_domain_cert_not_selfsigned": "O certificado para o dominio {domain:s} non está auto-asinado. Tes a certeza de querer substituílo? (Usa '--force' para facelo.)",
+    "certmanager_domain_not_diagnosed_yet": "Por agora non hai resultado de diagnóstico para o dominio {domain}. Volve facer o diagnóstico para a categoría 'Rexistros DNS' e 'Web' na sección de diagnóstico para comprobar se o dominio é compatible con Let's Encrypt. (Ou se sabes o que estás a facer, usa '--no-checks' para desactivar esas comprobacións.)",
+    "certmanager_certificate_fetching_or_enabling_failed": "Fallou o intento de usar o novo certificado para '{domain:s}'...",
+    "certmanager_cert_signing_failed": "Non se puido asinar o novo certificado",
+    "certmanager_cert_renew_success": "Certificado Let's Encrypt renovado para o dominio '{domain:s}'",
+    "certmanager_cert_install_success_selfsigned": "O certificado auto-asinado está instalado para o dominio '{domain:s}'",
+    "certmanager_cert_install_success": "O certificado Let's Encrypt está instalado para o dominio '{domain:s}'",
+    "certmanager_cannot_read_cert": "Algo fallou ao intentar abrir o certificado actual para o dominio {domain:s} (ficheiro: {file:s}), razón: {reason:s}",
+    "certmanager_attempt_to_replace_valid_cert": "Estás intentando sobrescribir un certificado correcto e en bo estado para o dominio {domain:s}! (Usa --force para obviar)",
+    "certmanager_attempt_to_renew_valid_cert": "O certificado para o dominio '{domain:s}' non caduca pronto! (Podes usar --force se sabes o que estás a facer)",
+    "certmanager_attempt_to_renew_nonLE_cert": "O certificado para o dominio '{domain:s}' non está proporcionado por Let's Encrypt. Non se pode renovar automáticamente!",
+    "certmanager_acme_not_configured_for_domain": "Non se realizou o desafío ACME para {domain} porque a súa configuración nginx non ten a parte do código correspondente... Comproba que a túa configuración nginx está ao día utilizando `yunohost tools regen-conf nginx --dry-run --with-diff`.",
+    "backup_with_no_restore_script_for_app": "'{app:s}' non ten script de restablecemento, non poderás restablecer automáticamente a copia de apoio desta app.",
+    "backup_with_no_backup_script_for_app": "A app '{app:s}' non ten script para a copia. Ignorada.",
+    "backup_unable_to_organize_files": "Non se puido usar o método rápido para organizar ficheiros no arquivo",
+    "backup_system_part_failed": "Non se puido facer copia da parte do sistema '{part:s}'"
 }
