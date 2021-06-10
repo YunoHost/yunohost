@@ -119,7 +119,7 @@ def user_list(fields=None):
                 values = user[ldap_attrs[field]]
             entry[field] = display.get(field, display_default)(values, user)
 
-        users[entry['username']] = entry
+        users[user['uid'][0]] = entry
 
     return {"users": users}
 
