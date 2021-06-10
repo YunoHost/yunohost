@@ -58,7 +58,7 @@ test-i18n-keys:
     changes:
       - locales/*
 
-test-i18n-keys:
+test-translation-format-consistency:
   extends: .test-stage
   script:
     - python3 -m pytest tests tests/test_translation_format_consistency.py
