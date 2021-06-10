@@ -37,6 +37,8 @@ full-tests:
     - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns --force-diskspace
   script:
     - python3 -m pytest --cov=yunohost tests/ src/yunohost/tests/ --junitxml=report.xml
+    - cd tests
+    - bash test_helpers.sh
   needs:
       - job: build-yunohost
         artifacts: true
@@ -48,10 +50,29 @@ full-tests:
     reports:
       junit: report.xml
 
-root-tests:
+test-i18n-keys:
   extends: .test-stage
   script:
-    - python3 -m pytest tests
+    - python3 -m pytest tests tests/test_i18n_keys.py
+  only:
+    changes:
+      - locales/*
+
+test-translation-format-consistency:
+  extends: .test-stage
+  script:
+    - python3 -m pytest tests tests/test_translation_format_consistency.py
+  only:
+    changes:
+      - locales/*
+
+test-actionmap:
+  extends: .test-stage
+  script:
+    - python3 -m pytest tests tests/test_actionmap.py
+  only:
+    changes:
+      - data/actionsmap/*.yml
 
 test-helpers:
   extends: .test-stage

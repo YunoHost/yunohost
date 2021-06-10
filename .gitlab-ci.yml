@@ -5,6 +5,7 @@ stages:
   - tests
   - lint
   - doc
+  - translation
 
 default:
   tags:
