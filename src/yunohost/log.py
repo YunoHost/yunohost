@@ -417,6 +417,7 @@ class RedactingFormatter(Formatter):
             match = re.search(
                 r"(pwd|pass|password|passphrase|secret\w*|\w+key|token)=(\S{3,})$",
                 record.strip(),
+                re.IGNORECASE
             )
             if (
                 match
