@@ -54,6 +54,7 @@ from yunohost.hook import hook_callback
 logger = getActionLogger("yunohost.domain")
 
 DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
+REGISTRAR_SETTINGS_DIR = "/etc/yunohost/registrars"
 REGISTRAR_LIST_PATH = "/usr/share/yunohost/other/providers_list.yml"
 
 
@@ -771,6 +772,22 @@ def _load_domain_settings():
     return new_domains
 
 
+def _load_registrar_setting(dns_zone):
+    """
+    Retrieve entries in registrars/[dns_zone].yml
+    """
+
+    on_disk_settings = {}
+    filepath = f"{REGISTRAR_SETTINGS_DIR}/{dns_zone}.yml"
+    if os.path.exists(filepath) and os.path.isfile(filepath):
+        on_disk_settings = yaml.load(open(filepath, "r+"))
+        # If the file is empty or "corrupted"
+        if not type(on_disk_settings) is dict:
+            on_disk_settings = {}
+
+    return on_disk_settings
+
+
 def domain_setting(domain, key, value=None, delete=False):
     """
     Set or get an app setting value
@@ -869,27 +886,32 @@ def _set_domain_settings(domain, domain_settings):
         yaml.dump(domain_settings, file, default_flow_style=False)
 
 
-def domain_registrar_info(domain):
-
+def _load_zone_of_domain(domain):
     domains = _load_domain_settings()
     if not domain in domains.keys():
+        # TODO add locales
         raise YunohostError("domain_name_unknown", domain=domain)
+
+    return domains[domain]["dns_zone"]
+
+
+def domain_registrar_info(domain):
+
+    dns_zone = _load_zone_of_domain(domain)
+    registrar_info = _load_registrar_setting(dns_zone)
+    if not registrar_info:
+        # TODO add locales
+        raise YunohostError("no_registrar_set_for_this_dns_zone", dns_zone=dns_zone)
     
-    provider = domains[domain]["provider"]
-    
-    if provider:
-        logger.info("Registrar name : " + provider['name'])
-        for option in provider['options']:
-            logger.info("Option " + option + " : "+provider['options'][option])
-    else:
-        logger.info("Registrar settings are not set for " + domain)
+    logger.info("Registrar name: " + registrar_info['name'])
+    for option_key, option_value in registrar_info['options'].items():
+        logger.info("Option " + option_key + ": " + option_value)
 
 
 def domain_registrar_set(domain, registrar, args):
 
-    domains = _load_domain_settings()
-    if not domain in domains.keys():
-        raise YunohostError("domain_name_unknown", domain=domain)
+    dns_zone = _load_zone_of_domain(domain)
+    registrar_info = _load_registrar_setting(dns_zone)
 
     registrars = yaml.load(open(REGISTRAR_LIST_PATH, "r+"))
     if not registrar in registrars.keys():
@@ -916,11 +938,13 @@ def domain_registrar_set(domain, registrar, args):
     for arg_name, arg_value_and_type in parsed_answer_dict.items():
         domain_provider["options"][arg_name] = arg_value_and_type[0]
 
-    domain_settings = domains[domain]
-    domain_settings["provider"] = domain_provider
-
+    # First create the REGISTRAR_SETTINGS_DIR if it doesn't exist
+    if not os.path.exists(REGISTRAR_SETTINGS_DIR):
+        os.mkdir(REGISTRAR_SETTINGS_DIR)
     # Save the settings to the .yaml file
-    _set_domain_settings(domain, domain_settings)
+    filepath = f"{REGISTRAR_SETTINGS_DIR}/{dns_zone}.yml"
+    with open(filepath, "w") as file:
+        yaml.dump(domain_provider, file, default_flow_style=False)
 
 
 def domain_push_config(domain):
