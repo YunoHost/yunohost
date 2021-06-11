@@ -403,7 +403,7 @@ user:
                             help: The key to be added
                         -c:
                             full: --comment
-                            help: Optionnal comment about the key
+                            help: Optional comment about the key
 
                 ### user_ssh_keys_remove()
                 remove-key:
@@ -1483,7 +1483,7 @@ tools:
                     help: Use this if you really want to set a weak password
                     action: store_true
                 --force-diskspace:
-                    help: Use this if you really want to install Yunohost on a setup with less than 10 GB on the root filesystem
+                    help: Use this if you really want to install YunoHost on a setup with less than 10 GB on the root filesystem
                     action: store_true
 
 

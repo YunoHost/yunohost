@@ -6,6 +6,8 @@ readonly MEDIA_DIRECTORY=/home/yunohost.multimedia
 # Initialize the multimedia directory system
 #
 # usage: ynh_multimedia_build_main_dir
+#
+# Requires YunoHost version 4.2 or higher.
 ynh_multimedia_build_main_dir() {
 
     ## Création du groupe multimedia
@@ -55,6 +57,7 @@ ynh_multimedia_build_main_dir() {
 #
 # This "directory" will be a symbolic link to a existing directory.
 #
+# Requires YunoHost version 4.2 or higher.
 ynh_multimedia_addfolder() {
 
     # Declare an array to define the options of this helper.
@@ -83,6 +86,7 @@ ynh_multimedia_addfolder() {
 #
 # | arg: -u, --user_name= - The name of the user which gain this access.
 #
+# Requires YunoHost version 4.2 or higher.
 ynh_multimedia_addaccess () {
 	# Declare an array to define the options of this helper.
     local legacy_args=u

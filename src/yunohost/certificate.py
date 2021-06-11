@@ -499,7 +499,7 @@ Subject: %s
     import smtplib
 
     smtp = smtplib.SMTP("localhost")
-    smtp.sendmail(from_, [to_], message)
+    smtp.sendmail(from_, [to_], message.encode("utf-8"))
     smtp.quit()
 
 
@@ -949,11 +949,6 @@ def _name_self_CA():
 
 
 def _tail(n, file_path):
-    stdin, stdout = os.popen2("tail -n %s '%s'" % (n, file_path))
+    from moulinette.utils.process import check_output
 
-    stdin.close()
-
-    lines = stdout.readlines()
-    stdout.close()
-
-    return "".join(lines)
+    return check_output(f"tail -n {n} '{file_path}'")

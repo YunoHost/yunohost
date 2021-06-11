@@ -1,7 +1,7 @@
-# OpenLDAP server configuration for Yunohost
+# OpenLDAP server configuration for YunoHost
 # ------------------------------------------
 #
-# Because of the Yunohost's regen-conf mechanism, it is NOT POSSIBLE to
+# Because of the YunoHost's regen-conf mechanism, it is NOT POSSIBLE to
 # edit the config database using an LDAP request.
 #
 # If you wish to edit the config database, you should edit THIS file
@@ -192,7 +192,7 @@ olcDbMaxSize: 10485760
 structuralObjectClass: olcMdbConfig
 
 #
-# Configure Memberof Overlay (used for Yunohost permission)
+# Configure Memberof Overlay (used for YunoHost permission)
 #
 
 # Link user <-> group

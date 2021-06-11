@@ -7,9 +7,9 @@ Type=simple
 Environment=DAEMON_OPTS=
 EnvironmentFile=-/etc/default/yunohost-api
 ExecStart=/usr/bin/yunohost-api $DAEMON_OPTS
-ExecReload=/bin/kill -HUP $MAINPID
 Restart=always
-RestartSec=1
+RestartSec=5
+TimeoutStopSec=30
 
 [Install]
 WantedBy=multi-user.target

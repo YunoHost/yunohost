@@ -66,19 +66,19 @@ then
     echo "$LOGO_AND_FINGERPRINTS"
     cat << EOF
 ===============================================================================
-You should now proceed with Yunohost post-installation. This is where you will
-be asked for :
-  - the main domain of your server ;
+You should now proceed with YunoHost post-installation. This is where you will
+be asked for:
+  - the main domain of your server;
   - the administration password.
 
-You can perform this step :
-  - from your web browser, by accessing : https://yunohost.local/ or ${local_ip}
+You can perform this step:
+  - from your web browser, by accessing: https://yunohost.local/ or ${local_ip}
   - or in this terminal by answering 'yes' to the following question
 
 If this is your first time with YunoHost, it is strongly recommended to take
 time to read the administator documentation and in particular the sections
 'Finalizing your setup' and 'Getting to know YunoHost'. It is available at
-the following URL : https://yunohost.org/admindoc
+the following URL: https://yunohost.org/admindoc
 ===============================================================================
 EOF
 

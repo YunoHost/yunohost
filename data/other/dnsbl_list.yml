@@ -164,12 +164,6 @@
   ipv4: false
   ipv6: true
   domain: false
-- name: SPFBL.net RBL 
-  dns_server: dnsbl.spfbl.net
-  website: https://spfbl.net/en/dnsbl/
-  ipv4: true
-  ipv6: true
-  domain: true
 - name: Suomispam Blacklist 
   dns_server: bl.suomispam.net 
   website: http://suomispam.net/ 

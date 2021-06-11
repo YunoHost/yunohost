@@ -235,5 +235,5 @@ def translate_legacy_rules_in_ssowant_conf_json_persistent():
     write_to_json(persistent_file_name, persistent, sort_keys=True, indent=4)
 
     logger.warning(
-        "Yunohost automatically translated some legacy rules in /etc/ssowat/conf.json.persistent to match the new permission system"
+        "YunoHost automatically translated some legacy rules in /etc/ssowat/conf.json.persistent to match the new permission system"
     )

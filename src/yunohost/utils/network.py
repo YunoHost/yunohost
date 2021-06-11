@@ -169,7 +169,15 @@ def dig(
     resolver = dns.resolver.Resolver(configure=False)
     resolver.use_edns(0, 0, edns_size)
     resolver.nameservers = resolvers
-    resolver.timeout = timeout
+    # resolver.timeout is used to trigger the next DNS query on resolvers list.
+    # In python-dns 1.16, this value is set to 2.0. However, this means that if
+    # the 3 first dns resolvers in list are down, we wait 6 seconds before to
+    # run the DNS query to a DNS resolvers up...
+    # In diagnosis dnsrecords, with 10 domains this means at least 12min, too long.
+    resolver.timeout = 1.0
+    # resolver.lifetime is the timeout for resolver.query()
+    # By default set it to 5 seconds to allow 4 resolvers to be unreachable.
+    resolver.lifetime = timeout
     try:
         answers = resolver.query(qname, rdtype)
     except (
