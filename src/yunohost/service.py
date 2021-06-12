@@ -653,9 +653,6 @@ def _get_services():
 
     # Dirty hack to check the status of ynh-vpnclient
     if "ynh-vpnclient" in services:
-        status_check = "systemctl is-active openvpn@client.service"
-        if "test_status" not in services["ynh-vpnclient"]:
-            services["ynh-vpnclient"]["test_status"] = status_check
         if "log" not in services["ynh-vpnclient"]:
             services["ynh-vpnclient"]["log"] = ["/var/log/ynh-vpnclient.log"]
 
