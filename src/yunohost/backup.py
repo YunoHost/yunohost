@@ -866,7 +866,7 @@ class RestoreManager:
         # early dev for next debian version
         from_version = re.sub(r'~\w+', '', from_version)
 
-        if not from_version or version.parse(from_version) < version.parse("3.8.0"):
+        if not from_version or version.parse(from_version) < version.parse("4.2.0"):
             raise YunohostValidationError("restore_backup_too_old")
 
         self.archive_path = self.info["path"]
