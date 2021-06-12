@@ -35,7 +35,7 @@ trap cleanup EXIT SIGINT
 HTTPSERVER_DIR=$(mktemp -d)
 HTTPSERVER_PORT=1312
 pushd "$HTTPSERVER_DIR" >/dev/null
-python -m SimpleHTTPServer $HTTPSERVER_PORT &>/dev/null &
+python3 -m http.server $HTTPSERVER_PORT --bind 127.0.0.1 &>/dev/null &
 HTTPSERVER="$!"
 popd >/dev/null
 

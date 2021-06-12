@@ -1,3 +1,34 @@
+yunohost (4.2.6) stable; urgency=low
+
+  - [fix] metronome/xmpp: deactivate stanza mention optimization / have quick notification in chat group ([#1164](https://github.com/YunoHost/yunohost/pull/1164))
+  - [enh] metronome/xmpp: activate module pubsub ([#1170](https://github.com/YunoHost/yunohost/pull/1170))
+  - [fix] upgrade: undefined 'apps' variable (923f703e)
+  - [fix] python3: fix string split in postgresql migration (14d4cec8)
+  - [fix] python3: python2 was still used in helpers (bd196c87)
+  - [fix] security: fail2ban rule for yunohost-api login (b837d3da)
+  - [fix] backup: Apply realpath to find mounted points to unmount ([#1239](https://github.com/YunoHost/yunohost/pull/1239))
+  - [mod] dnsmasq: Remove LDN from resolver list (a97fce05)
+  - [fix] logs: redact borg's passphrase (dbe5e51e, c8d4bbf8)
+  - [i18n] Translations updated for Galician, German, Italian
+  - Misc fixes/enh for tests and CI (8a5213c8, e5a03cab, [#1249](https://github.com/YunoHost/yunohost/pull/1249), [#1251](https://github.com/YunoHost/yunohost/pull/1251))
+
+  Thanks to all contributors <3 ! (Christian Wehrli, Flavio Cristoforetti, Gabriel, José M, Kay0u, ljf, tofbouf, yalh76)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 11 Jun 2021 20:12:20 +0200
+
+yunohost (4.2.5.3) stable; urgency=low
+
+  - [fix] doc, helpers: Helper doc auto-generation job (f2886510)
+  - [fix] doc: Manpage generation ([#1237](https://github.com/yunohost/yunohost/pull/1237))
+  - [fix] misc: Yunohost -> YunoHost ([#1235](https://github.com/yunohost/yunohost/pull/1235))
+  - [enh] email: Accept attachment of 25MB instead of 21,8MB ([#1243](https://github.com/yunohost/yunohost/pull/1243))
+  - [fix] helpers: echo -n is pointless in ynh_systemd_action ([#1241](https://github.com/yunohost/yunohost/pull/1241))
+  - [i18n] Translations updated for Chinese (Simplified), French, Galician, German, Italian
+
+  Thanks to all contributors <3 ! (Éric Gaspar, José M, Kay0u, Leandro Noferini, ljf, Meta Meta, Noo Langoo, qwerty287, yahoo～～)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 02 Jun 2021 20:20:54 +0200
+
 yunohost (4.2.5.2) stable; urgency=low
 
   - Fix install in chroot ... *again* (806b7acf)
