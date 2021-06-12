@@ -665,7 +665,7 @@ def _get_services():
     if "postgresql" in services:
         if "description" in services["postgresql"]:
             del services["postgresql"]["description"]
-        services["postgresql"]["actual_systemd_service"] = "postgresql@11-main"
+        services["postgresql"]["actual_systemd_service"] = "postgresql@13-main"
 
     return services
 
