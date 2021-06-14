@@ -181,3 +181,12 @@ test-service:
   only:
     changes:
       - src/yunohost/service.py
+
+test-ldapauth:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - python3 -m pytest tests/test_ldapauth.py
+  only:
+    changes:
+      - src/yunohost/authenticators/*.py
