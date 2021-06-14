@@ -32,8 +32,9 @@ ynh_multimedia_build_main_dir() {
         ln -sfn "$MEDIA_DIRECTORY/share" "$MEDIA_DIRECTORY/$user/Share"
         # Création du lien symbolique dans le home de l'utilisateur.
         #link will only be created if the home directory of the user exists and if it's located in '/home' folder
-        if [[ -d "$(getent passwd $user | cut -d: -f6)" && "$(getent passwd $user | cut -d: -f6 | grep home)" ]]; then
-            ln -sfn "$MEDIA_DIRECTORY/$user" "/home/$user/Multimedia"
+        home="$(getent passwd $user | cut -d: -f6)"
+        if [[ -d "$home" && "$(echo "$home" | grep home)" ]]; then
+            ln -sfn "$MEDIA_DIRECTORY/$user" "$home/Multimedia"
         fi
         # Propriétaires des dossiers utilisateurs.
         chown -R $user "$MEDIA_DIRECTORY/$user"
