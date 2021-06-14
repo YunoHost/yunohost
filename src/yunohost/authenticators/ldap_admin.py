@@ -21,12 +21,16 @@ class Authenticator(BaseAuthenticator):
         self.basedn = "dc=yunohost,dc=org"
         self.admindn = "cn=admin,dc=yunohost,dc=org"
 
-    def authenticate(self, password=None):
+    def authenticate(self, credentials=None):
+
+        # TODO : change authentication format
+        # to support another dn to support multi-admins
+
         def _reconnect():
             con = ldap.ldapobject.ReconnectLDAPObject(
                 self.uri, retry_max=10, retry_delay=0.5
             )
-            con.simple_bind_s(self.admindn, password)
+            con.simple_bind_s(self.admindn, credentials)
             return con
 
         try:
