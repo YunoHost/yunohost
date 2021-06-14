@@ -1,6 +1,6 @@
 #!/bin/bash
 
-n_version=7.0.2
+n_version=7.2.2
 n_install_dir="/opt/node_n"
 node_version_path="$n_install_dir/n/versions/node"
 # N_PREFIX is the directory of n, it needs to be loaded as a environment variable.
@@ -17,7 +17,7 @@ ynh_install_n () {
     ynh_print_info --message="Installation of N - Node.js version management"
     # Build an app.src for n
     echo "SOURCE_URL=https://github.com/tj/n/archive/v${n_version}.tar.gz
-SOURCE_SUM=fa80a8685f0fb1b4187fc0a1228b44f0ea2f244e063fe8f443b8913ea595af89" > "$YNH_APP_BASEDIR/conf/n.src"
+SOURCE_SUM=9654440b0e7169cf3be5897a563258116b21ec6e7e7e266acc56979d3ebec6a2" > "$YNH_APP_BASEDIR/conf/n.src"
     # Download and extract n
     ynh_setup_source --dest_dir="$n_install_dir/git" --source_id=n
     # Install n
@@ -27,11 +27,14 @@ SOURCE_SUM=fa80a8685f0fb1b4187fc0a1228b44f0ea2f244e063fe8f443b8913ea595af89" > "
 
 # Load the version of node for an app, and set variables.
 #
-# ynh_use_nodejs has to be used in any app scripts before using node for the first time.
+# usage: ynh_use_nodejs
+#
+# `ynh_use_nodejs` has to be used in any app scripts before using node for the first time.
 # This helper will provide alias and variables to use in your scripts.
 #
-# To use npm or node, use the alias `ynh_npm` and `ynh_node`
-# Those alias will use the correct version installed for the app
+# To use npm or node, use the alias `ynh_npm` and `ynh_node`.
+#
+# Those alias will use the correct version installed for the app.
 # For example: use `ynh_npm install` instead of `npm install`
 #
 # With `sudo` or `ynh_exec_as`, use instead the fallback variables `$ynh_npm` and `$ynh_node`
@@ -39,29 +42,31 @@ SOURCE_SUM=fa80a8685f0fb1b4187fc0a1228b44f0ea2f244e063fe8f443b8913ea595af89" > "
 # Exemple: `ynh_exec_as $app $ynh_node_load_PATH $ynh_npm install`
 #
 # $PATH contains the path of the requested version of node.
-# However, $PATH is duplicated into $node_PATH to outlast any manipulation of $PATH
+# However, $PATH is duplicated into $node_PATH to outlast any manipulation of `$PATH`
 # You can use the variable `$ynh_node_load_PATH` to quickly load your node version
-#  in $PATH for an usage into a separate script.
+# in $PATH for an usage into a separate script.
 # Exemple: $ynh_node_load_PATH $final_path/script_that_use_npm.sh`
 #
 #
 # Finally, to start a nodejs service with the correct version, 2 solutions
 #  Either the app is dependent of node or npm, but does not called it directly.
-#  In such situation, you need to load PATH
-#    `Environment="__NODE_ENV_PATH__"`
-#    `ExecStart=__FINALPATH__/my_app`
-#     You will replace __NODE_ENV_PATH__ with $ynh_node_load_PATH
+#  In such situation, you need to load PATH :
+# ```
+# Environment="__NODE_ENV_PATH__"
+# ExecStart=__FINALPATH__/my_app
+# ```
+# You will replace __NODE_ENV_PATH__ with $ynh_node_load_PATH.
 #
 #  Or node start the app directly, then you don't need to load the PATH variable
-#    `ExecStart=__YNH_NODE__ my_app run`
-#     You will replace __YNH_NODE__ with $ynh_node
+# ```
+# ExecStart=__YNH_NODE__ my_app run
+# ```
+# You will replace __YNH_NODE__ with $ynh_node
 #
 #
 # 2 other variables are also available
 #   - $nodejs_path: The absolute path to node binaries for the chosen version.
 #   - $nodejs_version: Just the version number of node for this app. Stored as 'nodejs_version' in settings.yml.
-#
-# usage: ynh_use_nodejs
 #
 # Requires YunoHost version 2.7.12 or higher.
 ynh_use_nodejs () {
@@ -87,6 +92,8 @@ ynh_use_nodejs () {
     node_PATH="$PATH"
     # Create an alias to easily load the PATH
     ynh_node_load_PATH="PATH=$node_PATH"
+    # Same var but in lower case to be compatible with ynh_replace_vars...
+    ynh_node_load_path="PATH=$node_PATH"
 }
 
 # Install a specific version of nodejs
@@ -96,10 +103,10 @@ ynh_use_nodejs () {
 # usage: ynh_install_nodejs --nodejs_version=nodejs_version
 # | arg: -n, --nodejs_version=      - Version of node to install. When possible, your should prefer to use major version number (e.g. 8 instead of 8.10.0). The crontab will then handle the update of minor versions when needed.
 #
-# n (Node version management) uses the PATH variable to store the path of the version of node it is going to use.
+# `n` (Node version management) uses the `PATH` variable to store the path of the version of node it is going to use.
 # That's how it changes the version
 #
-# Refer to ynh_use_nodejs for more information about available commands and variables
+# Refer to `ynh_use_nodejs` for more information about available commands and variables
 #
 # Requires YunoHost version 2.7.12 or higher.
 ynh_install_nodejs () {
@@ -176,11 +183,11 @@ ynh_install_nodejs () {
 
 # Remove the version of node used by the app.
 #
-# This helper will check if another app uses the same version of node,
-# if not, this version of node will be removed.
-# If no other app uses node, n will be also removed.
-#
 # usage: ynh_remove_nodejs
+#
+# This helper will check if another app uses the same version of node.
+# - If not, this version of node will be removed.
+# - If no other app uses node, n will be also removed.
 #
 # Requires YunoHost version 2.7.12 or higher.
 ynh_remove_nodejs () {

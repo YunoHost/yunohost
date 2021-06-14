@@ -2,15 +2,17 @@
 
 # Create a new permission for the app
 #
-# example 1: ynh_permission_create --permission=admin --url=/admin --additional_urls=domain.tld/admin /superadmin --allowed=alice bob \
-#                                  --label="My app admin" --show_tile=true
+# Example 1: `ynh_permission_create --permission=admin --url=/admin --additional_urls=domain.tld/admin /superadmin --allowed=alice bob \
+#                                  --label="My app admin" --show_tile=true`
 #
 # This example will create a new permission permission with this following effect:
 # - A tile named "My app admin" in the SSO will be available for the users alice and bob. This tile will point to the relative url '/admin'.
 # - Only the user alice and bob will have the access to theses following url: /admin, domain.tld/admin, /superadmin
 #
 #
-# example 2: ynh_permission_create --permission=api --url=domain.tld/api --auth_header=false --allowed=visitors \
+# Example 2:
+#
+#     ynh_permission_create --permission=api --url=domain.tld/api --auth_header=false --allowed=visitors \
 #                                  --label="MyApp API" --protected=true
 #
 # This example will create a new protected permission. So the admin won't be able to add/remove the visitors group of this permission.
@@ -18,7 +20,7 @@
 # With this permission all client will be allowed to access to the url 'domain.tld/api'.
 # Note that in this case no tile will be show on the SSO.
 # Note that the auth_header parameter is to 'false'. So no authentication header will be passed to the application.
-# Generally the API is requested by an application and enabling the auth_header has no advantage and could bring some issues in some case. 
+# Generally the API is requested by an application and enabling the auth_header has no advantage and could bring some issues in some case.
 # So in this case it's better to disable this option for all API.
 #
 #
@@ -36,14 +38,14 @@
 #
 # If provided, 'url' or 'additional_urls' is assumed to be relative to the app domain/path if they
 # start with '/'.  For example:
-#    /                             -> domain.tld/app
-#    /admin                        -> domain.tld/app/admin
-#    domain.tld/app/api            -> domain.tld/app/api
+#     /                             -> domain.tld/app
+#     /admin                        -> domain.tld/app/admin
+#     domain.tld/app/api            -> domain.tld/app/api
 #
 # 'url' or 'additional_urls' can be treated as a PCRE (not lua) regex if it starts with "re:".
 # For example:
-#    re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
-#    re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
+#     re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
+#     re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
 #
 # Note that globally the parameter 'url' and 'additional_urls' are same. The only difference is:
 # - 'url' is only one url, 'additional_urls' can be a list of urls. There are no limitation of 'additional_urls'
@@ -56,7 +58,7 @@
 #        - "Remote-User": username
 #        - "Email": user email
 #
-# Generally this feature is usefull to authenticate automatically the user in the application but in some case the application don't work with theses header and theses header need to be disabled to have the application to work correctly. 
+# Generally this feature is usefull to authenticate automatically the user in the application but in some case the application don't work with theses header and theses header need to be disabled to have the application to work correctly.
 # See https://github.com/YunoHost/issues/issues/1420 for more informations
 #
 #
@@ -180,13 +182,13 @@ ynh_permission_exists() {
     local permission
     ynh_handle_getopts_args "$@"
 
-    yunohost user permission list --output-as json --quiet \
+    yunohost user permission list "$app" --output-as json --quiet \
         | jq -e --arg perm "$app.$permission" '.permissions[$perm]' >/dev/null
 }
 
 # Redefine the url associated to a permission
 #
-# usage: ynh_permission_url --permission "permission" [--url="url"] [--add_url="new-url" [ "other-new-url" ]] [--remove_url="old-url" [ "other-old-url" ]] 
+# usage: ynh_permission_url --permission "permission" [--url="url"] [--add_url="new-url" [ "other-new-url" ]] [--remove_url="old-url" [ "other-old-url" ]]
 #                                                     [--auth_header=true|false] [--clear_urls]
 # | arg: -p, --permission=   - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
 # | arg: -u, --url=          - (optional) URL for which access will be allowed/forbidden. Note that if you want to remove url you can pass an empty sting as arguments ("").

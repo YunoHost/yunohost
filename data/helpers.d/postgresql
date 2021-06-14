@@ -5,14 +5,14 @@ PSQL_VERSION=11
 
 # Open a connection as a user
 #
-# examples: 
-#    ynh_psql_connect_as 'user' 'pass' <<< "UPDATE ...;"
-#    ynh_psql_connect_as 'user' 'pass' < /path/to/file.sql
-#
 # usage: ynh_psql_connect_as --user=user --password=password [--database=database]
 # | arg: -u, --user=        - the user name to connect as
 # | arg: -p, --password=    - the user password
 # | arg: -d, --database=    - the database to connect to
+#
+# examples:
+#    ynh_psql_connect_as 'user' 'pass' <<< "UPDATE ...;"
+#    ynh_psql_connect_as 'user' 'pass' < /path/to/file.sql
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_psql_connect_as() {
@@ -127,11 +127,11 @@ ynh_psql_drop_db() {
 
 # Dump a database
 #
-# example: ynh_psql_dump_db 'roundcube' > ./dump.sql
-#
 # usage: ynh_psql_dump_db --database=database
 # | arg: -d, --database=    - the database name to dump
 # | ret: the psqldump output
+#
+# example: ynh_psql_dump_db 'roundcube' > ./dump.sql
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_psql_dump_db() {
@@ -243,7 +243,7 @@ ynh_psql_setup_db() {
         local new_db_pwd=$(ynh_string_random) # Generate a random password
         # If $db_pwd is not provided, use new_db_pwd instead for db_pwd
         db_pwd="${db_pwd:-$new_db_pwd}"
-        
+
         ynh_psql_create_user "$db_user" "$db_pwd"
     elif [ -z $db_pwd ]; then
         ynh_die --message="The user $db_user exists, please provide his password"
@@ -286,10 +286,11 @@ ynh_psql_remove_db() {
 }
 
 # Create a master password and set up global settings
-# It also make sure that postgresql is installed and running
-# Please always call this script in install and restore scripts
 #
 # usage: ynh_psql_test_if_first_run
+#
+# It also make sure that postgresql is installed and running
+# Please always call this script in install and restore scripts
 #
 # Requires YunoHost version 2.7.13 or higher.
 ynh_psql_test_if_first_run() {

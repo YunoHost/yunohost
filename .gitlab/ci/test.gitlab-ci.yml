@@ -37,6 +37,8 @@ full-tests:
     - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns --force-diskspace
   script:
     - python3 -m pytest --cov=yunohost tests/ src/yunohost/tests/ --junitxml=report.xml
+    - cd tests
+    - bash test_helpers.sh
   needs:
       - job: build-yunohost
         artifacts: true
@@ -48,73 +50,134 @@ full-tests:
     reports:
       junit: report.xml
 
-root-tests:
+test-i18n-keys:
   extends: .test-stage
   script:
-    - python3 -m pytest tests
+    - python3 -m pytest tests tests/test_i18n_keys.py
+  only:
+    changes:
+      - locales/*
+
+test-translation-format-consistency:
+  extends: .test-stage
+  script:
+    - python3 -m pytest tests tests/test_translation_format_consistency.py
+  only:
+    changes:
+      - locales/*
+
+test-actionmap:
+  extends: .test-stage
+  script:
+    - python3 -m pytest tests tests/test_actionmap.py
+  only:
+    changes:
+      - data/actionsmap/*.yml
+
+test-helpers:
+  extends: .test-stage
+  script:
+    - cd tests
+    - bash test_helpers.sh
+  only:
+    changes:
+      - data/helpers.d/*
 
 test-apps:
   extends: .test-stage
   script:
     - cd src/yunohost
     - python3 -m pytest tests/test_apps.py
+  only:
+    changes:
+      - src/yunohost/app.py
 
 test-appscatalog:
   extends: .test-stage
   script:
     - cd src/yunohost
     - python3 -m pytest tests/test_appscatalog.py
+  only:
+    changes:
+      - src/yunohost/app.py
 
 test-appurl:
   extends: .test-stage
   script:
     - cd src/yunohost
     - python3 -m pytest tests/test_appurl.py
+  only:
+    changes:
+      - src/yunohost/app.py
 
 test-apps-arguments-parsing:
   extends: .test-stage
   script:
     - cd src/yunohost
     - python3 -m pytest tests/test_apps_arguments_parsing.py
-
-test-backuprestore:
-  extends: .test-stage
-  script:
-    - cd src/yunohost
-    - python3 -m pytest tests/test_backuprestore.py
+  only:
+    changes:
+      - src/yunohost/app.py
 
 test-changeurl:
   extends: .test-stage
   script:
     - cd src/yunohost
     - python3 -m pytest tests/test_changeurl.py
+  only:
+    changes:
+      - src/yunohost/app.py
+
+test-backuprestore:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - python3 -m pytest tests/test_backuprestore.py
+  only:
+    changes:
+      - src/yunohost/backup.py
 
 test-permission:
   extends: .test-stage
   script:
     - cd src/yunohost
     - python3 -m pytest tests/test_permission.py
+  only:
+    changes:
+      - src/yunohost/permission.py
 
 test-settings:
   extends: .test-stage
   script:
     - cd src/yunohost
     - python3 -m pytest tests/test_settings.py
+  only:
+    changes:
+      - src/yunohost/settings.py
 
 test-user-group:
   extends: .test-stage
   script:
     - cd src/yunohost
     - python3 -m pytest tests/test_user-group.py
-    
+  only:
+    changes:
+      - src/yunohost/user.py
+
 test-regenconf:
   extends: .test-stage
   script:
     - cd src/yunohost
     - python3 -m pytest tests/test_regenconf.py
+  only:
+    changes:
+      - src/yunohost/regenconf.py
 
 test-service:
   extends: .test-stage
   script:
     - cd src/yunohost
     - python3 -m pytest tests/test_service.py
+  only:
+    changes:
+      - src/yunohost/service.py

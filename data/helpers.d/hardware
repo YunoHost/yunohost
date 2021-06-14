@@ -7,7 +7,7 @@
 # | arg: -t, --total        - Count total RAM+swap
 # | arg: -s, --ignore_swap  - Ignore swap, consider only real RAM
 # | arg: -o, --only_swap    - Ignore real RAM, consider only swap
-# | ret: the amount of free ram
+# | ret: the amount of free ram, in MB (MegaBytes)
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_get_ram () {
@@ -35,7 +35,7 @@ ynh_get_ram () {
         local free_ram=$(vmstat --stats --unit M | grep "free memory" | awk '{print $1}')
         local free_swap=$(vmstat --stats --unit M | grep "free swap" | awk '{print $1}')
         local free_ram_swap=$(( free_ram + free_swap ))
-        
+
         # Use the total amount of free ram
         local ram=$free_ram_swap
         if [ $ignore_swap -eq 1 ]
@@ -52,7 +52,7 @@ ynh_get_ram () {
         local total_ram=$(vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
         local total_swap=$(vmstat --stats --unit M | grep "total swap" | awk '{print $1}')
         local total_ram_swap=$(( total_ram + total_swap ))
-    
+
         local ram=$total_ram_swap
         if [ $ignore_swap -eq 1 ]
         then
@@ -70,13 +70,13 @@ ynh_get_ram () {
 
 # Return 0 or 1 depending if the system has a given amount of RAM+swap free or total
 #
-# usage: ynh_require_ram --required=RAM required in Mb [--free|--total] [--ignore_swap|--only_swap]
-# | arg: -r, --required=    - The amount to require, in Mb
+# usage: ynh_require_ram --required=RAM [--free|--total] [--ignore_swap|--only_swap]
+# | arg: -r, --required=    - The amount to require, in MB
 # | arg: -f, --free         - Count free RAM+swap
 # | arg: -t, --total        - Count total RAM+swap
 # | arg: -s, --ignore_swap  - Ignore swap, consider only real RAM
 # | arg: -o, --only_swap    - Ignore real RAM, consider only swap
-# | exit: Return 1 if the ram is under the requirement, 0 otherwise.
+# | ret: 1 if the ram is under the requirement, 0 otherwise.
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_require_ram () {

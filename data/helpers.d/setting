@@ -77,7 +77,7 @@ ynh_app_setting_delete() {
 # [internal]
 #
 ynh_app_setting()
-{   
+{
     set +o xtrace # set +x
     ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python3 - <<EOF
 import os, yaml, sys
@@ -108,11 +108,11 @@ EOF
 
 # Check availability of a web path
 #
-# example: ynh_webpath_available --domain=some.domain.tld --path_url=/coffee
-#
 # usage: ynh_webpath_available --domain=domain --path_url=path
 # | arg: -d, --domain=      - the domain/host of the url
 # | arg: -p, --path_url=    - the web path to check the availability of
+#
+# example: ynh_webpath_available --domain=some.domain.tld --path_url=/coffee
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_webpath_available () {
@@ -129,12 +129,12 @@ ynh_webpath_available () {
 
 # Register/book a web path for an app
 #
-# example: ynh_webpath_register --app=wordpress --domain=some.domain.tld --path_url=/coffee
-#
 # usage: ynh_webpath_register --app=app --domain=domain --path_url=path
 # | arg: -a, --app=         - the app for which the domain should be registered
 # | arg: -d, --domain=      - the domain/host of the web path
 # | arg: -p, --path_url=    - the web path to be registered
+#
+# example: ynh_webpath_register --app=wordpress --domain=some.domain.tld --path_url=/coffee
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_webpath_register () {
