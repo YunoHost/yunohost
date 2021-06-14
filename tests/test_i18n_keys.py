@@ -33,6 +33,7 @@ def find_expected_string_keys():
     python_files = glob.glob("src/yunohost/*.py")
     python_files.extend(glob.glob("src/yunohost/utils/*.py"))
     python_files.extend(glob.glob("src/yunohost/data_migrations/*.py"))
+    python_files.extend(glob.glob("src/yunohost/authenticators/*.py"))
     python_files.extend(glob.glob("data/hooks/diagnosis/*.py"))
     python_files.append("bin/yunohost")
 

@@ -94,7 +94,7 @@ class LDAPInterface():
             con = _reconnect()
         except ldap.SERVER_DOWN:
             # ldap is down, attempt to restart it before really failing
-            logger.warning(m18n.g("ldap_server_is_down_restart_it"))
+            logger.warning(m18n.n("ldap_server_is_down_restart_it"))
             os.system("systemctl restart slapd")
             time.sleep(10)  # waits 10 secondes so we are sure that slapd has restarted
             try:
