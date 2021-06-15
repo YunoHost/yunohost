@@ -33,7 +33,7 @@ import subprocess
 from glob import glob
 from datetime import datetime
 
-from moulinette import m18n
+from moulinette import m18n, console
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
@@ -806,9 +806,7 @@ def _get_journalctl_logs(service, number="all"):
             )
         )
     except Exception:
-        import traceback
-
         return (
             "error while get services logs from journalctl:\n%s"
-            % traceback.format_exc()
+            % console.format_exception()
         )

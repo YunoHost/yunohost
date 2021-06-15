@@ -28,7 +28,7 @@ import re
 import os
 import time
 
-from moulinette import m18n, msettings
+from moulinette import m18n, msettings, console
 from moulinette.utils import log
 from moulinette.utils.filesystem import (
     read_json,
@@ -197,13 +197,11 @@ def diagnosis_run(
         try:
             code, report = hook_exec(path, args={"force": force}, env=None)
         except Exception:
-            import traceback
-
             logger.error(
                 m18n.n(
                     "diagnosis_failed_for_category",
                     category=category,
-                    error="\n" + traceback.format_exc(),
+                    error="\n" + console.format_exception(),
                 )
             )
         else:

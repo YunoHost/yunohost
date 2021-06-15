@@ -36,7 +36,7 @@ import urllib.parse
 import tempfile
 from collections import OrderedDict
 
-from moulinette import msignals, m18n, msettings
+from moulinette import msignals, m18n, msettings, console
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
@@ -655,9 +655,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
             failure_message_with_debug_instructions = operation_logger.error(error)
         # Something wrong happened in Yunohost's code (most probably hook_exec)
         except Exception:
-            import traceback
-
-            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+            error = m18n.n("unexpected_error", error="\n" + console.format_exception())
             logger.error(
                 m18n.n("app_install_failed", app=app_instance_name, error=error)
             )
@@ -1014,9 +1012,7 @@ def app_install(
         failure_message_with_debug_instructions = operation_logger.error(error)
     # Something wrong happened in Yunohost's code (most probably hook_exec)
     except Exception:
-        import traceback
-
-        error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+        error = m18n.n("unexpected_error", error="\n" + console.format_exception())
         logger.error(m18n.n("app_install_failed", app=app_id, error=error))
         failure_message_with_debug_instructions = operation_logger.error(error)
     finally:
@@ -1083,10 +1079,8 @@ def app_install(
             # removal (permissions, /etc/yunohost/apps/{app} ...)
             except (KeyboardInterrupt, EOFError, Exception):
                 remove_retcode = -1
-                import traceback
-
                 logger.error(
-                    m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+                    m18n.n("unexpected_error", error="\n" + console.format_exception())
                 )
 
             # Remove all permission in LDAP
@@ -1233,9 +1227,7 @@ def app_remove(operation_logger, app):
     # removal (permissions, /etc/yunohost/apps/{app} ...)
     except (KeyboardInterrupt, EOFError, Exception):
         ret = -1
-        import traceback
-
-        logger.error(m18n.n("unexpected_error", error="\n" + traceback.format_exc()))
+        logger.error(m18n.n("unexpected_error", error="\n" + console.format_exception()))
     finally:
         shutil.rmtree(tmp_workdir_for_app)
 

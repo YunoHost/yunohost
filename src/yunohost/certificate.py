@@ -32,7 +32,7 @@ import glob
 
 from datetime import datetime
 
-from moulinette import m18n
+from moulinette import m18n, console
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file
 
@@ -427,11 +427,6 @@ def certificate_renew(
         try:
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
         except Exception as e:
-            import traceback
-            from io import StringIO
-
-            stack = StringIO()
-            traceback.print_exc(file=stack)
             msg = "Certificate renewing for %s failed!" % (domain)
             if no_checks:
                 msg += (
@@ -440,7 +435,7 @@ def certificate_renew(
                 )
             logger.error(msg)
             operation_logger.error(msg)
-            logger.error(stack.getvalue())
+            logger.error(console.format_exception())
             logger.error(str(e))
 
             if email:
@@ -692,9 +687,7 @@ def _get_status(domain):
     try:
         cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(cert_file).read())
     except Exception as exception:
-        import traceback
-
-        traceback.print_exc(file=sys.stdout)
+        console.print_exception()
         raise YunohostError(
             "certmanager_cannot_read_cert",
             domain=domain,

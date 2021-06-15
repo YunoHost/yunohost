@@ -30,7 +30,7 @@ import time
 from importlib import import_module
 from packaging import version
 
-from moulinette import msignals, m18n
+from moulinette import msignals, m18n, console
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml
@@ -1032,9 +1032,7 @@ def _load_migration(migration_file):
         module = import_module("yunohost.data_migrations.{}".format(migration_id))
         return module.MyMigration(migration_id)
     except Exception as e:
-        import traceback
-
-        traceback.print_exc()
+        console.print_exception()
 
         raise YunohostError(
             "migrations_failed_to_load_migration", id=migration_id, error=e

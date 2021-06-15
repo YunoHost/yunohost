@@ -38,7 +38,7 @@ from collections import OrderedDict
 from functools import reduce
 from packaging import version
 
-from moulinette import msignals, m18n, msettings
+from moulinette import msignals, m18n, msettings, console
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
@@ -1460,9 +1460,7 @@ class RestoreManager:
                 app_id=app_instance_name,
             )
         except Exception:
-            import traceback
-
-            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+            error = m18n.n("unexpected_error", error="\n" + console.format_exception())
             msg = m18n.n("app_restore_failed", app=app_instance_name, error=error)
             logger.error(msg)
             operation_logger.error(msg)
@@ -1519,9 +1517,7 @@ class RestoreManager:
             failure_message_with_debug_instructions = operation_logger.error(error)
         # Something wrong happened in Yunohost's code (most probably hook_exec)
         except Exception:
-            import traceback
-
-            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+            error = m18n.n("unexpected_error", error="\n" + console.format_exception())
             logger.error(
                 m18n.n("app_restore_failed", app=app_instance_name, error=error)
             )
@@ -2403,11 +2399,9 @@ def backup_list(with_info=False, human_readable=False):
             except YunohostError as e:
                 logger.warning(str(e))
             except Exception:
-                import traceback
-
                 logger.warning(
                     "Could not check infos for archive %s: %s"
-                    % (archive, "\n" + traceback.format_exc())
+                    % (archive, "\n" + console.format_exception())
                 )
 
         archives = d

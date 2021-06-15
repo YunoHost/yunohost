@@ -4,6 +4,7 @@ import os
 import json
 import subprocess
 
+from moulinette import console
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file, read_json, write_to_json
 from yunohost.diagnosis import Diagnoser
@@ -214,9 +215,7 @@ class BaseSystemDiagnoser(Diagnoser):
             assert len(CVEs) == 1
             assert CVEs[0]["NAME"] == "MELTDOWN"
         except Exception as e:
-            import traceback
-
-            traceback.print_exc()
+            console.print_exception()
             self.logger_warning(
                 "Something wrong happened when trying to diagnose Meltdown vunerability, exception: %s"
                 % e
