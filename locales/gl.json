@@ -132,5 +132,7 @@
     "backup_with_no_restore_script_for_app": "'{app:s}' non ten script de restablecemento, non poderás restablecer automáticamente a copia de apoio desta app.",
     "backup_with_no_backup_script_for_app": "A app '{app:s}' non ten script para a copia. Ignorada.",
     "backup_unable_to_organize_files": "Non se puido usar o método rápido para organizar ficheiros no arquivo",
-    "backup_system_part_failed": "Non se puido facer copia da parte do sistema '{part:s}'"
+    "backup_system_part_failed": "Non se puido facer copia da parte do sistema '{part:s}'",
+    "certmanager_domain_http_not_working": "O dominio {domain:s} semella non ser accesible a través de HTTP. Comproba a categoría 'Web' no diagnóstico para máis info. (Se sabes o que estás a facer, utiliza '--no-checks' para obviar estas comprobacións.)",
+    "certmanager_domain_dns_ip_differs_from_public_ip": "Os rexistros DNS para o dominio '{domain:s}' son diferentes aos da IP deste servidor. Comproba a categoría 'Rexistros DNS' (básico) no diagnóstico para ter máis info. Se cambiaches recentemente o rexistro A, agarda a que se propague o cambio (están dispoñibles ferramentas en liña para comprobar estos cambios). (Se sabes o que estás a facer, utiliza '--no-checks' para obviar estas comprobacións.)"
 }
