@@ -151,12 +151,6 @@
   ipv4: true
   ipv6: false
   domain: false
-- name: Invaluement 
-  dns_server: sip.invaluement.com
-  website: https://www.invaluement.com/ 
-  ipv4: true
-  ipv6: false
-  domain: false
 # Added cause it supports IPv6
 - name: AntiCaptcha.NET IPv6
   dns_server: dnsbl6.anticaptcha.net
