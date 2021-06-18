@@ -169,7 +169,7 @@
     "certmanager_acme_not_configured_for_domain": "Die ACME Challenge kann im Moment nicht für {domain} ausgeführt werden, weil in ihrer nginx conf das entsprechende Code-Snippet fehlt... Bitte stellen Sie sicher, dass Ihre nginx-Konfiguration mit 'yunohost tools regen-conf nginx --dry-run --with-diff' auf dem neuesten Stand ist.",
     "certmanager_unable_to_parse_self_CA_name": "Der Name der Zertifizierungsstelle für selbstsignierte Zertifikate konnte nicht aufgelöst werden (Datei: {file:s})",
     "domain_hostname_failed": "Sie können keinen neuen Hostnamen verwenden. Das kann zukünftige Probleme verursachen (es kann auch sein, dass es funktioniert).",
-    "app_already_installed_cant_change_url": "Diese Application ist bereits installiert. Die URL kann durch diese Funktion nicht modifiziert werden. Überprüfe ob `app changeurl` verfügbar ist.",
+    "app_already_installed_cant_change_url": "Diese Applikation ist bereits installiert. Die URL kann durch diese Funktion nicht modifiziert werden. Überprüfe ob `app changeurl` verfügbar ist.",
     "app_change_url_failed_nginx_reload": "NGINX konnte nicht neu gestartet werden. Hier ist der Output von 'nginx -t':\n{nginx_errors:s}",
     "app_change_url_identical_domains": "Die alte und neue domain/url_path sind identisch: ('{domain:s} {path:s}'). Es gibt nichts zu tun.",
     "app_already_up_to_date": "{app:s} ist bereits aktuell",
