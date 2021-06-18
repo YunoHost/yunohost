@@ -809,7 +809,7 @@ def domain_setting(domain, key, value=None, delete=False):
     # GET
     if value is None and not delete:
         if not key in domain_settings:
-            raise YunohostValidationError("This key doesn't exist!")
+            raise YunohostValidationError("domain_property_unknown", property=key)
 
         return domain_settings[key]
 
@@ -827,11 +827,10 @@ def domain_setting(domain, key, value=None, delete=False):
                 ttl = int(value)
             except ValueError:
                 # TODO add locales
-                raise YunohostError("bad_value_type", value_type=type(ttl))
+                raise YunohostError("invalid_number", value_type=type(ttl))
 
             if ttl < 0:
-                # TODO add locales
-                raise YunohostError("must_be_positive", value_type=type(ttl))
+                raise YunohostError("pattern_positive_number", value_type=type(ttl))
         domain_settings[key] = value
         _set_domain_settings(domain, domain_settings)
 
@@ -900,7 +899,7 @@ def domain_registrar_info(domain):
     registrar_info = _load_registrar_setting(dns_zone)
     if not registrar_info:
         # TODO add locales
-        raise YunohostError("no_registrar_set_for_this_dns_zone", dns_zone=dns_zone)
+        raise YunohostError("registrar_is_not_set", dns_zone=dns_zone)
     
     logger.info("Registrar name: " + registrar_info['name'])
     for option_key, option_value in registrar_info['options'].items():
@@ -924,7 +923,7 @@ def domain_registrar_set(domain, registrar, args):
     registrars = yaml.load(open(REGISTRAR_LIST_PATH, "r+"))
     if not registrar in registrars.keys():
         # FIXME créer l'erreur
-        raise YunohostError("registrar_unknown")
+        raise YunohostError("domain_registrar_unknown")
 
     parameters = registrars[registrar]
     ask_args = []
