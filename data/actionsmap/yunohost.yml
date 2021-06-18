@@ -615,6 +615,7 @@ domain:
                 list:
                     action_help: List registrars configured by DNS zone
                     api: GET /domains/registrars
+                ### domain_registrar_catalog()
                 catalog:
                     action_help: List supported registrars API
                     api: GET /domains/registrars/catalog

@@ -29,8 +29,7 @@ import sys
 import yaml
 import functools
 
-from lexicon.config import ConfigResolver
-from lexicon.client import Client
+from lexicon import *
 
 from moulinette import m18n, msettings, msignals
 from moulinette.core import MoulinetteError
@@ -907,6 +906,15 @@ def domain_registrar_info(domain):
     for option_key, option_value in registrar_info['options'].items():
         logger.info("Option " + option_key + ": " + option_value)
 
+def domain_registrar_catalog(full):
+    registrars = yaml.load(open(REGISTRAR_LIST_PATH, "r+"))
+    for registrar in registrars:
+        logger.info("Registrar : " + registrar)
+        if full : 
+            logger.info("Options : ")
+            for option in registrars[registrar]:
+                logger.info("\t- " + option)
+        
 
 def domain_registrar_set(domain, registrar, args):
 
