@@ -729,14 +729,24 @@ def _get_DKIM(domain):
         )
 
 
-# FIXME split the loading of the domain settings → domain by domain (& file by file)
-def _load_domain_settings():
+def _load_domain_settings(for_domains=[]):
     """
-    Retrieve entries in domains/[domain].yml
+    Retrieve entries in /etc/yunohost/domains/[domain].yml
     And fill the holes if any
     """
     # Retrieve actual domain list
     get_domain_list = domain_list()
+    domains = []
+
+    if for_domains:
+        # keep only the requested domains
+        domains = filter(lambda domain : domain in for_domains, get_domain_list["domains"])
+        # check that all requested domains are there
+        unknown_domains = filter(lambda domain : not domain in domains, for_domains)
+        unknown_domain = next(unknown_domains, None)
+        if unknown_domain != None:
+            raise YunohostValidationError("domain_name_unknown", domain=unknown_domain)
+
 
     # Create sanitized data
     new_domains = dict()
@@ -744,7 +754,7 @@ def _load_domain_settings():
     # Load main domain
     maindomain = get_domain_list["main"]
 
-    for domain in get_domain_list["domains"]:
+    for domain in domains:
         # Retrieve entries in the YAML
         filepath = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
         on_disk_settings = {}
@@ -799,7 +809,8 @@ def domain_setting(domain, key, value=None, delete=False):
 
     """
 
-    domains = _load_domain_settings()
+    domains = _load_domain_settings([ domain ])
+
     if not domain in domains.keys():
         # TODO add locales
         raise YunohostError("domain_name_unknown", domain=domain)
@@ -871,8 +882,7 @@ def _set_domain_settings(domain, domain_settings):
         settings -- Dict with doamin settings
 
     """
-    domains = _load_domain_settings()
-    if not domain in domains.keys():
+    if domain not in domain_list()["domains"]:
         raise YunohostError("domain_name_unknown", domain=domain)
 
     # First create the DOMAIN_SETTINGS_DIR if it doesn't exist
@@ -885,9 +895,7 @@ def _set_domain_settings(domain, domain_settings):
 
 
 def _load_zone_of_domain(domain):
-    domains = _load_domain_settings()
-    if not domain in domains.keys():
-        # TODO add locales
+    if domain not in domain_list()["domains"]:
         raise YunohostError("domain_name_unknown", domain=domain)
 
     return domains[domain]["dns_zone"]

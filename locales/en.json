@@ -285,7 +285,7 @@
     "domain_dyndns_already_subscribed": "You have already subscribed to a DynDNS domain",
     "domain_dyndns_root_unknown": "Unknown DynDNS root domain",
     "domain_exists": "The domain already exists",
-    "domain_property_unknown": "The property {property} dooesn't exist",
+    "domain_property_unknown": "The property {property} doesn't exist",
     "domain_hostname_failed": "Unable to set new hostname. This might cause an issue later (it might be fine).",
     "domain_registrar_unknown": "This registrar is unknown. Look for yours with the command `yunohost domain catalog`",
     "domain_remove_confirm_apps_removal": "Removing this domain will remove those applications:\n{apps}\n\nAre you sure you want to do that? [{answers}]",
