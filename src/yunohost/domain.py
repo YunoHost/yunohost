@@ -729,20 +729,20 @@ def _get_DKIM(domain):
         )
 
 
-def _load_domain_settings(for_domains=[]):
+def _load_domain_settings(domains=[]):
     """
     Retrieve entries in /etc/yunohost/domains/[domain].yml
     And fill the holes if any
     """
     # Retrieve actual domain list
     get_domain_list = domain_list()
-    domains = []
 
-    if for_domains:
-        # keep only the requested domains
-        domains = filter(lambda domain : domain in for_domains, get_domain_list["domains"])
-        # check that all requested domains are there
-        unknown_domains = filter(lambda domain : not domain in domains, for_domains)
+    if domains:
+        # check existence of requested domains
+        all_known_domains = get_domain_list["domains"]
+        # filter inexisting domains
+        unknown_domains = filter(lambda domain : not domain in all_known_domains, domains)
+        # get first unknown domain
         unknown_domain = next(unknown_domains, None)
         if unknown_domain != None:
             raise YunohostValidationError("domain_name_unknown", domain=unknown_domain)
@@ -812,7 +812,6 @@ def domain_setting(domain, key, value=None, delete=False):
     domains = _load_domain_settings([ domain ])
 
     if not domain in domains.keys():
-        # TODO add locales
         raise YunohostError("domain_name_unknown", domain=domain)
 
     domain_settings = domains[domain]
