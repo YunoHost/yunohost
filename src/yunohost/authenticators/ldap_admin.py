@@ -21,7 +21,7 @@ class Authenticator(BaseAuthenticator):
         self.basedn = "dc=yunohost,dc=org"
         self.admindn = "cn=admin,dc=yunohost,dc=org"
 
-    def authenticate(self, credentials=None):
+    def _authenticate_credentials(self, credentials=None):
 
         # TODO : change authentication format
         # to support another dn to support multi-admins
