@@ -182,5 +182,16 @@
     "diagnosis_no_cache": "Aínda non hai datos na caché para '{category}'",
     "diagnosis_failed": "Non se puido obter o resultado do diagnóstico para '{category}': {error}",
     "diagnosis_everything_ok": "Semella todo correcto en {category}!",
-    "diagnosis_found_warnings": "Atoparonse {warnings} elemento(s) que poderían optimizarse en {category}."
+    "diagnosis_found_warnings": "Atoparonse {warnings} elemento(s) que poderían optimizarse en {category}.",
+    "diagnosis_services_bad_status": "O servizo {service} está {status} :(",
+    "diagnosis_services_conf_broken": "A configuración do {servizo} está estragada!",
+    "diagnosis_services_running": "O servizo {service} está en execución!",
+    "diagnosis_domain_expires_in": "{domain} caduca en {days} días.",
+    "diagnosis_domain_expiration_error": "Algúns dominios van caducan MOI PRONTO!",
+    "diagnosis_domain_expiration_warning": "Algúns dominios van caducar pronto!",
+    "diagnosis_domain_expiration_success": "Os teus dominios están rexistrados e non van caducar pronto.",
+    "diagnosis_domain_expiration_not_found_details": "A información WHOIS para o dominio {domain} non semella conter información acerca da data de caducidade?",
+    "diagnosis_domain_not_found_details": "O dominio {domain} non existe na base de datos de WHOIS ou está caducado!",
+    "diagnosis_domain_expiration_not_found": "Non se puido comprobar a data de caducidade para algúns dominios",
+    "diagnosis_dns_try_dyndns_update_force": "A xestión DNS deste dominio debería estar xestionada directamente por YunoHost. Se non fose o caso, podes intentar forzar unha actualización executando <cmd>yunohost dyndns update --force</cmd>."
 }
