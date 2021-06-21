@@ -107,7 +107,7 @@
     "service_removed": "Der Dienst '{service:s}' wurde erfolgreich entfernt",
     "service_start_failed": "Der Dienst '{service:s}' konnte nicht gestartet werden\n\nKürzlich erstellte Logs des Dienstes: {logs:s}",
     "service_started": "Der Dienst '{service:s}' wurde erfolgreich gestartet",
-    "service_stop_failed": "Der Dienst '{service:s}' kann nicht gestoppt werden\n\nAktuelle Service-Logs: {log:s}",
+    "service_stop_failed": "Der Dienst '{service:s}' kann nicht gestoppt werden\n\nAktuelle Service-Logs: {logs:s}",
     "service_stopped": "Der Dienst '{service:s}' wurde erfolgreich beendet",
     "service_unknown": "Unbekannter Dienst '{service:s}'",
     "ssowat_conf_generated": "Konfiguration von SSOwat neu erstellt",
