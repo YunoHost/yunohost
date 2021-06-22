@@ -36,6 +36,8 @@ import urllib.parse
 import tempfile
 from collections import OrderedDict
 
+from rich.style import Style
+
 from moulinette import msignals, m18n, msettings, console, Table, TableForDict
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -112,11 +114,32 @@ def app_catalog(full=False, with_categories=False):
             for c in catalog["categories"]
         ]
 
+    def colorize_row_from_levels(table, columns, row, values):
+        level = row[1]["level"]
+        if not isinstance(level, int) and not level.isdigit():
+            table.add_row(*values)
+            return
+
+        level = int(level)
+        style = None
+
+        if level > 7:
+            style = Style(color="blue")
+        elif level > 6:
+            style = Style(color="green")
+        elif level > 4:
+            style = Style(color="yellow")
+        else:
+            style = Style(color="red")
+
+        table.add_row(*values, style=style)
+
     if not with_categories:
         return TableForDict(
             {"apps": catalog["apps"]},
             title="Available applications catalog",
             columns=[{"key": TableForDict.key, "header": "Application id"}, "description", "level"],
+            row_function=colorize_row_from_levels,
         )
     else:
         return {"apps": catalog["apps"], "categories": catalog["categories"]}
