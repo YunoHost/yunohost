@@ -184,7 +184,7 @@
     "diagnosis_everything_ok": "Semella todo correcto en {category}!",
     "diagnosis_found_warnings": "Atoparonse {warnings} elemento(s) que poderían optimizarse en {category}.",
     "diagnosis_services_bad_status": "O servizo {service} está {status} :(",
-    "diagnosis_services_conf_broken": "A configuración do {servizo} está estragada!",
+    "diagnosis_services_conf_broken": "A configuración do {service} está estragada!",
     "diagnosis_services_running": "O servizo {service} está en execución!",
     "diagnosis_domain_expires_in": "{domain} caduca en {days} días.",
     "diagnosis_domain_expiration_error": "Algúns dominios van caducan MOI PRONTO!",
