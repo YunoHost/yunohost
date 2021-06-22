@@ -10,6 +10,7 @@ remove-stale-translated-strings:
     - apt-get update -y && apt-get install git hub -y
     - git config --global user.email "yunohost@yunohost.org"
     - git config --global user.name "$GITHUB_USER"
+    - git remote set-url origin https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/yunohost.git
   script:
     - cd tests # Maybe move this script location to another folder?
     # create a local branch that will overwrite distant one
