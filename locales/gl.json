@@ -193,5 +193,15 @@
     "diagnosis_domain_expiration_not_found_details": "A información WHOIS para o dominio {domain} non semella conter información acerca da data de caducidade?",
     "diagnosis_domain_not_found_details": "O dominio {domain} non existe na base de datos de WHOIS ou está caducado!",
     "diagnosis_domain_expiration_not_found": "Non se puido comprobar a data de caducidade para algúns dominios",
-    "diagnosis_dns_try_dyndns_update_force": "A xestión DNS deste dominio debería estar xestionada directamente por YunoHost. Se non fose o caso, podes intentar forzar unha actualización executando <cmd>yunohost dyndns update --force</cmd>."
+    "diagnosis_dns_try_dyndns_update_force": "A xestión DNS deste dominio debería estar xestionada directamente por YunoHost. Se non fose o caso, podes intentar forzar unha actualización executando <cmd>yunohost dyndns update --force</cmd>.",
+    "diagnosis_swap_ok": "O sistema ten {total} de swap!",
+    "diagnosis_swap_notsomuch": "O sistema só ten {total} de swap. Deberías considerar ter polo menos {recommended} para evitar situacións onde o sistema esgote a memoria.",
+    "diagnosis_swap_none": "O sistema non ten partición swap. Deberías considerar engadir polo menos {recommended} de swap para evitar situación onde o sistema esgote a memoria.",
+    "diagnosis_ram_ok": "Ao sistema aínda lle queda {available} ({available_percent}%) de RAM dispoñible dun total de {total}.",
+    "diagnosis_ram_low": "O sistema ten {available} ({available_percent}%) da RAM dispoñible (total {total}). Ten coidado.",
+    "diagnosis_ram_verylow": "Ao sistema só lle queda {available} ({available_percent}%) de RAM dispoñible! (total {total})",
+    "diagnosis_diskusage_ok": "A almacenaxe <code>{mountpoint}</code> (no dispositivo <code>{device}</code>) aínda ten {free} ({free_percent}%) de espazo restante (de {total})!",
+    "diagnosis_diskusage_low": "A almacenaxe <code>{mountpoint}</code> (no dispositivo <code>{device}</code>) só lle queda {free} ({free_percent}%) de espazo libre (de {total}). Ten coidado.",
+    "diagnosis_diskusage_verylow": "A almacenaxe <code>{mountpoint}</code> (no dispositivo <code>{device}</code>) só lle queda {free} ({free_percent}%) de espazo libre (de {total}). Deberías considerar liberar algún espazo!",
+    "diagnosis_services_bad_status_tip": "Podes intentar <a href='#/services/{service}'>reiniciar o servizo</a>, e se isto non funciona, mira os <a href='#/services/{service}'>rexistros do servizo na webadmin</a> (desde a liña de comandos con <cmd>yunohost service restart {service}</cmd> e <cmd>yunohost service log {service}</cmd>)."
 }
