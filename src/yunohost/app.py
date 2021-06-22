@@ -140,6 +140,7 @@ def app_catalog(full=False, with_categories=False):
             title="Available applications catalog",
             columns=[{"key": TableForDict.key, "header": "Application id"}, "description", "level"],
             row_function=colorize_row_from_levels,
+            caption="you can filter this list using 'yunohost app search'",
         )
     else:
         return {"apps": catalog["apps"], "categories": catalog["categories"]}
