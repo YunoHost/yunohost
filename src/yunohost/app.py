@@ -36,7 +36,7 @@ import urllib.parse
 import tempfile
 from collections import OrderedDict
 
-from moulinette import msignals, m18n, msettings, console
+from moulinette import msignals, m18n, msettings, console, Table, TableForDict
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
@@ -113,7 +113,11 @@ def app_catalog(full=False, with_categories=False):
         ]
 
     if not with_categories:
-        return {"apps": catalog["apps"]}
+        return TableForDict(
+            {"apps": catalog["apps"]},
+            title="Available applications catalog",
+            columns=[{"key": TableForDict.key, "header": "Application id"}, "description", "level"],
+        )
     else:
         return {"apps": catalog["apps"], "categories": catalog["categories"]}
 
@@ -179,7 +183,11 @@ def app_list(full=False, installed=False, filter=None):
         app_info_dict["id"] = app_id
         out.append(app_info_dict)
 
-    return {"apps": out}
+    return Table(
+        {"apps": out},
+        columns=["id", "name", "description", "domain_path", "version"],
+        title="Installed applications"
+    )
 
 
 def app_info(app, full=False):
