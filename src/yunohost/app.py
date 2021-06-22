@@ -153,13 +153,18 @@ def app_search(string):
     # Retrieve a simple dict listing all apps
     catalog_of_apps = app_catalog()
 
+    to_delete = []
+
     # Selecting apps according to a match in app name or description
     for app in catalog_of_apps["apps"].items():
         if not (
             re.search(string, app[0], flags=re.IGNORECASE)
             or re.search(string, app[1]["description"], flags=re.IGNORECASE)
         ):
-            del catalog_of_apps["apps"][app[0]]
+            to_delete.append(app[0])
+
+    for app in to_delete:
+        del catalog_of_apps["apps"][app]
 
     return catalog_of_apps
 
