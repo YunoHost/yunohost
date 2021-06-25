@@ -29,7 +29,8 @@ import sys
 import yaml
 import functools
 
-from lexicon import *
+from lexicon.client import Client
+from lexicon.config import ConfigResolver
 
 from moulinette import m18n, msettings, msignals
 from moulinette.core import MoulinetteError
@@ -54,7 +55,7 @@ logger = getActionLogger("yunohost.domain")
 
 DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 REGISTRAR_SETTINGS_DIR = "/etc/yunohost/registrars"
-REGISTRAR_LIST_PATH = "/usr/share/yunohost/other/providers_list.yml"
+REGISTRAR_LIST_PATH = "/usr/share/yunohost/other/registrar_list.yml"
 
 
 def domain_list(exclude_subdomains=False):
@@ -321,9 +322,7 @@ def domain_dns_conf(domain):
     if domain not in domain_list()["domains"]:
         raise YunohostValidationError("domain_name_unknown", domain=domain)
 
-    domains_settings = _get_domain_settings(domain, True)
-
-    dns_conf = _build_dns_conf(domains_settings)
+    dns_conf = _build_dns_conf(domain)
 
     result = ""
 
@@ -445,10 +444,13 @@ def _get_maindomain():
     return maindomain
 
 
-def _build_dns_conf(domains):
+def _build_dns_conf(domain):
     """
     Internal function that will returns a data structure containing the needed
     information to generate/adapt the dns configuration
+
+    Arguments:
+        domains -- List of a domain and its subdomains
 
     The returned datastructure will have the following form:
     {
@@ -485,7 +487,7 @@ def _build_dns_conf(domains):
     }
     """
 
-    root = min(domains.keys(), key=(lambda k: len(k)))
+    domains = _get_domain_settings(domain, True)
 
     basic = []
     mail = []
@@ -495,19 +497,19 @@ def _build_dns_conf(domains):
     ipv6 = get_public_ip(6)
     owned_dns_zone = (
         # TODO test this
-        "dns_zone" in domains[root] and domains[root]["dns_zone"] == root
+        "dns_zone" in domains[domain] and domains[domain]["dns_zone"] == domain
     )
 
-    root_prefix = root.partition(".")[0]
+    root_prefix = domain.partition(".")[0]
     child_domain_suffix = ""
 
     for domain_name, domain in domains.items():
         ttl = domain["ttl"]
 
-        if domain_name == root:
-            name = root_prefix if not owned_dns_zone else "@"
+        if domain_name == domain:
+            name = "@" if owned_dns_zone else root_prefix
         else:
-            name = domain_name[0 : -(1 + len(root))]
+            name = domain_name[0 : -(1 + len(domain))]
             if not owned_dns_zone:
                 name += "." + root_prefix
 
@@ -746,6 +748,8 @@ def _load_domain_settings(domains=[]):
         unknown_domain = next(unknown_domains, None)
         if unknown_domain != None:
             raise YunohostValidationError("domain_name_unknown", domain=unknown_domain)
+    else:
+        domains = domain_list()["domains"]
 
 
     # Create sanitized data
@@ -771,7 +775,6 @@ def _load_domain_settings(domains=[]):
             "mail": True,
             "dns_zone": dns_zone,
             "ttl": 3600,
-            "provider": {},
         }
         # Update each setting if not present
         default_settings.update(on_disk_settings)
@@ -845,6 +848,10 @@ def domain_setting(domain, key, value=None, delete=False):
         _set_domain_settings(domain, domain_settings)
 
 
+def _is_subdomain_of(subdomain, domain):
+    return True if re.search("(^|\\.)" + domain + "$", subdomain) else False
+
+
 def _get_domain_settings(domain, subdomains):
     """
     Get settings of a domain
@@ -861,9 +868,7 @@ def _get_domain_settings(domain, subdomains):
     only_wanted_domains = dict()
     for entry in domains.keys():
         if subdomains:
-            # FIXME does example.co is seen as a subdomain of example.com?
-            # TODO _is_subdomain_of_domain
-            if domain in entry:
+            if _is_subdomain_of(entry, domain):
                 only_wanted_domains[entry] = domains[entry]
         else:
             if domain == entry:
@@ -948,9 +953,9 @@ def domain_registrar_set(domain, registrar, args):
     )
     parsed_answer_dict = _parse_args_in_yunohost_format(args_dict, ask_args)
 
-    domain_provider = {"name": registrar, "options": {}}
+    domain_registrar = {"name": registrar, "options": {}}
     for arg_name, arg_value_and_type in parsed_answer_dict.items():
-        domain_provider["options"][arg_name] = arg_value_and_type[0]
+        domain_registrar["options"][arg_name] = arg_value_and_type[0]
 
     # First create the REGISTRAR_SETTINGS_DIR if it doesn't exist
     if not os.path.exists(REGISTRAR_SETTINGS_DIR):
@@ -958,7 +963,7 @@ def domain_registrar_set(domain, registrar, args):
     # Save the settings to the .yaml file
     filepath = f"{REGISTRAR_SETTINGS_DIR}/{dns_zone}.yml"
     with open(filepath, "w") as file:
-        yaml.dump(domain_provider, file, default_flow_style=False)
+        yaml.dump(domain_registrar, file, default_flow_style=False)
 
 
 def domain_push_config(domain):
@@ -969,13 +974,13 @@ def domain_push_config(domain):
     if domain not in domain_list()["domains"]:
         raise YunohostValidationError("domain_name_unknown", domain=domain)
 
-    domains_settings = _get_domain_settings(domain, True)
+    dns_conf = _build_dns_conf(domain)
 
-    dns_conf = _build_dns_conf(domains_settings)
+    domain_settings = _load_domain_settings([ domain ])
+    dns_zone = domain_settings[domain]["dns_zone"]
+    registrar_setting = _load_registrar_setting(dns_zone)
 
-    provider = domains_settings[domain]["provider"]
-
-    if provider == False:
+    if not registrar_setting:
         # FIXME add locales
         raise YunohostValidationError("registrar_is_not_set", domain=domain)
 
@@ -995,10 +1000,10 @@ def domain_push_config(domain):
 
     # Construct the base data structure to use lexicon's API.
     base_config = {
-        "provider_name": provider["name"],
+        "provider_name": registrar_setting["name"],
         "domain": domain,  # domain name
     }
-    base_config[provider["name"]] = provider["options"]
+    base_config[registrar_setting["name"]] = registrar_setting["options"]
 
     # Get types present in the generated records
     types = set()
