@@ -225,7 +225,7 @@ syslog.ident = php-fpm-__APP__
 include = __FINALPHPCONF__
 " > $YNH_APP_BASEDIR/conf/php-fpm-$app.conf
 
-        ynh_add_config --template="../config/php-fpm-$app.conf" --destination="$globalphpconf"
+        ynh_add_config --template="$YNH_APP_BASEDIR/conf/php-fpm-$app.conf" --destination="$globalphpconf"
 
         # Create a config for a dedicated PHP-FPM service for the app
         echo "[Unit]
