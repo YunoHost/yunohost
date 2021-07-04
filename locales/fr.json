@@ -96,7 +96,7 @@
     "port_already_closed": "Le port {port:d} est déjà fermé pour les connexions {ip_version:s}",
     "port_already_opened": "Le port {port:d} est déjà ouvert pour les connexions {ip_version:s}",
     "restore_already_installed_app": "Une application est déjà installée avec l’identifiant '{app:s}'",
-    "app_restore_failed": "Impossible de restaurer {app:s}: {error:s}",
+    "app_restore_failed": "Impossible de restaurer {app:s} : {error:s}",
     "restore_cleaning_failed": "Impossible de nettoyer le dossier temporaire de restauration",
     "restore_complete": "Restauration terminée",
     "restore_confirm_yunohost_installed": "Voulez-vous vraiment restaurer un système déjà installé ? [{answers:s}]",
