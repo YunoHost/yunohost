@@ -2,8 +2,8 @@
 
 """
 WIP
-Pythonic declaration of mDNS .local domains.
-Heavily based off https://github.com/jstasiak/python-zeroconf/blob/master/tests/test_asyncio.py
+Pythonic declaration of mDNS .local domains for YunoHost
+Based off https://github.com/jstasiak/python-zeroconf/blob/master/tests/test_asyncio.py
 """
 
 import os
@@ -18,6 +18,7 @@ from typing import List
 
 sys.path.insert(0, "/usr/lib/moulinette/")
 from yunohost.domain import domain_list
+from yunohost.utils.network import get_network_interfaces
 
 from zeroconf import IPVersion
 from zeroconf.asyncio import AsyncServiceInfo, AsyncZeroconf
@@ -47,21 +48,26 @@ if __name__ == '__main__':
 
     local_domains = [ d for d in domain_list()['domains'] if d.endswith('.local') ]
 
+    # TODO: Create setting to list interfaces
+    wanted_interfaces = [ 'zt3jnskpna' ]
+    interfaces = get_network_interfaces()
+    ips = []
+    for i in wanted_interfaces:
+        try:
+            ips.append(socket.inet_pton(socket.AF_INET, interfaces[i]['ipv4'].split('/')[0]))
+        except:
+            pass
+        try:
+            ips.append(socket.inet_pton(socket.AF_INET6, interfaces[i]['ipv6'].split('/')[0]))
+        except:
+            pass
+
     parser = argparse.ArgumentParser()
     parser.add_argument('--debug', action='store_true')
-    version_group = parser.add_mutually_exclusive_group()
-    version_group.add_argument('--v6', action='store_true')
-    version_group.add_argument('--v6-only', action='store_true')
     args = parser.parse_args()
 
     if args.debug:
         logging.getLogger('zeroconf').setLevel(logging.DEBUG)
-    if args.v6:
-        ip_version = IPVersion.All
-    elif args.v6_only:
-        ip_version = IPVersion.V6Only
-    else:
-        ip_version = IPVersion.V4Only
 
     infos = []
     for d in local_domains:
@@ -70,14 +76,14 @@ if __name__ == '__main__':
             AsyncServiceInfo(
                 type_="_device-info._tcp.local.",
                 name=d_domain+f"._device-info._tcp.local.",
-                addresses=[socket.inet_aton("127.0.0.1")],
+                addresses=ips,
                 port=80,
-                server=d,
+                server=d+'.',
             )
         )
 
     print("Registration of .local domains, press Ctrl-C to exit...")
-    aiozc = AsyncZeroconf(ip_version=ip_version)
+    aiozc = AsyncZeroconf()
     loop = asyncio.get_event_loop()
     loop.run_until_complete(register_services(infos))
     print("Registration complete.")
