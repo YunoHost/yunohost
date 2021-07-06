@@ -100,6 +100,7 @@ DEFAULTS = OrderedDict(
         ("smtp.relay.password", {"type": "string", "default": ""}),
         ("backup.compress_tar_archives", {"type": "bool", "default": False}),
         ("ssowat.panel_overlay.enabled", {"type": "bool", "default": True}),
+        ("mdns.interfaces", {"type": "string", "default": ""}),
     ]
 )
 

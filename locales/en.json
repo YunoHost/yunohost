@@ -321,6 +321,7 @@
     "global_settings_cant_write_settings": "Could not save settings file, reason: {reason:s}",
     "global_settings_key_doesnt_exists": "The key '{settings_key:s}' does not exist in the global settings, you can see all the available keys by running 'yunohost settings list'",
     "global_settings_reset_success": "Previous settings now backed up to {path:s}",
+    "global_settings_setting_mdns_interfaces": "Space-separated list of interfaces for mDNS broadcast. Leave empty to disable mDNS.",
     "global_settings_setting_pop3_enabled": "Enable the POP3 protocol for the mail server",
     "global_settings_setting_security_nginx_compatibility": "Compatibility vs. security tradeoff for the web server NGINX. Affects the ciphers (and other security-related aspects)",
     "global_settings_setting_security_password_admin_strength": "Admin password strength",
