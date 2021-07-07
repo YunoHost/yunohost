@@ -517,6 +517,10 @@ def app_upgrade(app=[], url=None, file=None, force=False):
     from yunohost.regenconf import manually_modified_files
 
     apps = app
+    # Check if disk space available
+    size = os.statvfs('/')
+    if (size.f_bavail * size.f_frsize) / 1024 <= 512000:
+	    raise YunohostValidationError("disk_space_not_sufficient_update")
     # If no app is specified, upgrade all apps
     if not apps:
         # FIXME : not sure what's supposed to happen if there is a url and a file but no apps...
@@ -875,6 +879,11 @@ def app_install(
         manifest, extracted_app_folder = _extract_app_from_file(app)
     else:
         raise YunohostValidationError("app_unknown")
+    
+    # Check if disk space available
+    size = os.statvfs('/')
+    if (size.f_bavail * size.f_frsize) / 1024 <= 512000:
+	    raise YunohostValidationError("disk_space_not_sufficient_install")
 
     # Check ID
     if "id" not in manifest or "__" in manifest["id"]:

@@ -44,6 +44,8 @@
     "backup_output_directory_required": "Vous devez spécifier un dossier de destination pour la sauvegarde",
     "backup_running_hooks": "Exécution des scripts de sauvegarde...",
     "custom_app_url_required": "Vous devez spécifier une URL pour mettre à jour votre application personnalisée {app:s}",
+    "disk_space_not_sufficient_install": "Il ne reste pas assez d'espace disque pour installer cette application",
+    "disk_space_not_sufficient_update": "Il ne reste pas assez d'espace disque pour mettre à jour cette application",
     "domain_cert_gen_failed": "Impossible de générer le certificat",
     "domain_created": "Le domaine a été créé",
     "domain_creation_failed": "Impossible de créer le domaine {domain} : {error}",
