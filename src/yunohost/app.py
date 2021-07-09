@@ -36,7 +36,7 @@ import urllib.parse
 import tempfile
 from collections import OrderedDict
 
-from moulinette import prompt, m18n, msettings
+from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
@@ -643,7 +643,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
                     m18n.n("app_upgrade_failed", app=app_instance_name, error=error)
                 )
                 failure_message_with_debug_instructions = operation_logger.error(error)
-                if msettings.get("interface") != "api":
+                if Moulinette.interface.type != "api":
                     dump_app_log_extract_for_debugging(operation_logger)
         # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
@@ -821,11 +821,11 @@ def app_install(
     def confirm_install(confirm):
         # Ignore if there's nothing for confirm (good quality app), if --force is used
         # or if request on the API (confirm already implemented on the API side)
-        if confirm is None or force or msettings.get("interface") == "api":
+        if confirm is None or force or Moulinette.interface.type == "api":
             return
 
         if confirm in ["danger", "thirdparty"]:
-            answer = prompt(
+            answer = Moulinette.prompt(
                 m18n.n("confirm_app_install_" + confirm, answers="Yes, I understand"),
                 color="red",
             )
@@ -833,7 +833,7 @@ def app_install(
                 raise YunohostError("aborting")
 
         else:
-            answer = prompt(
+            answer = Moulinette.prompt(
                 m18n.n("confirm_app_install_" + confirm, answers="Y/N"), color="yellow"
             )
             if answer.upper() != "Y":
@@ -1005,7 +1005,7 @@ def app_install(
             error = m18n.n("app_install_script_failed")
             logger.error(m18n.n("app_install_failed", app=app_id, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
-            if msettings.get("interface") != "api":
+            if Moulinette.interface.type != "api":
                 dump_app_log_extract_for_debugging(operation_logger)
     # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
@@ -2729,7 +2729,7 @@ class YunoHostArgumentFormatParser(object):
             )
 
             try:
-                question.value = prompt(
+                question.value = Moulinette.prompt(
                     text_for_user_input_in_cli, self.hide_user_input_in_prompt
                 )
             except NotImplementedError:

@@ -31,7 +31,7 @@ import mimetypes
 from glob import iglob
 from importlib import import_module
 
-from moulinette import m18n, msettings
+from moulinette import m18n, Moulinette
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils import log
 from moulinette.utils.filesystem import read_json
@@ -409,7 +409,7 @@ def _hook_exec_bash(path, args, chdir, env, return_format, loggers):
         env = {}
     env["YNH_CWD"] = chdir
 
-    env["YNH_INTERFACE"] = msettings.get("interface")
+    env["YNH_INTERFACE"] = Moulinette.interface.type
 
     stdreturn = os.path.join(tempfile.mkdtemp(), "stdreturn")
     with open(stdreturn, "w") as f:
