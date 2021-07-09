@@ -36,7 +36,7 @@ import urllib.parse
 import tempfile
 from collections import OrderedDict
 
-from moulinette import msignals, m18n, msettings
+from moulinette import prompt, m18n, msettings
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
@@ -825,7 +825,7 @@ def app_install(
             return
 
         if confirm in ["danger", "thirdparty"]:
-            answer = msignals.prompt(
+            answer = prompt(
                 m18n.n("confirm_app_install_" + confirm, answers="Yes, I understand"),
                 color="red",
             )
@@ -833,7 +833,7 @@ def app_install(
                 raise YunohostError("aborting")
 
         else:
-            answer = msignals.prompt(
+            answer = prompt(
                 m18n.n("confirm_app_install_" + confirm, answers="Y/N"), color="yellow"
             )
             if answer.upper() != "Y":
@@ -2729,7 +2729,7 @@ class YunoHostArgumentFormatParser(object):
             )
 
             try:
-                question.value = msignals.prompt(
+                question.value = prompt(
                     text_for_user_input_in_cli, self.hide_user_input_in_prompt
                 )
             except NotImplementedError:

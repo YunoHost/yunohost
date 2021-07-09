@@ -33,6 +33,7 @@
 #     Global parameters     #
 #############################
 _global:
+    name: yunohost.admin
     authentication:
         api: ldap_admin
         cli: null

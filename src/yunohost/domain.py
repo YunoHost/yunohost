@@ -26,7 +26,7 @@
 import os
 import re
 
-from moulinette import m18n, msettings, msignals
+from moulinette import m18n, msettings, prompt
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.log import getActionLogger
@@ -237,7 +237,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     if apps_on_that_domain:
         if remove_apps:
             if msettings.get("interface") == "cli" and not force:
-                answer = msignals.prompt(
+                answer = prompt(
                     m18n.n(
                         "domain_remove_confirm_apps_removal",
                         apps="\n".join([x[1] for x in apps_on_that_domain]),

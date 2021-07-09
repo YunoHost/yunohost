@@ -38,7 +38,7 @@ from collections import OrderedDict
 from functools import reduce
 from packaging import version
 
-from moulinette import msignals, m18n, msettings
+from moulinette import prompt, m18n, msettings
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
@@ -1839,7 +1839,7 @@ class BackupMethod(object):
         # Ask confirmation for copying
         if size > MB_ALLOWED_TO_ORGANIZE:
             try:
-                i = msignals.prompt(
+                i = prompt(
                     m18n.n(
                         "backup_ask_for_copying_if_needed",
                         answers="y/N",
@@ -2343,7 +2343,7 @@ def backup_restore(name, system=[], apps=[], force=False):
         if not force:
             try:
                 # Ask confirmation for restoring
-                i = msignals.prompt(
+                i = prompt(
                     m18n.n("restore_confirm_yunohost_installed", answers="y/N")
                 )
             except NotImplemented:
