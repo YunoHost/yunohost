@@ -205,5 +205,6 @@
     "diagnosis_diskusage_verylow": "A almacenaxe <code>{mountpoint}</code> (no dispositivo <code>{device}</code>) só lle queda {free} ({free_percent}%) de espazo libre (de {total}). Deberías considerar liberar algún espazo!",
     "diagnosis_services_bad_status_tip": "Podes intentar <a href='#/services/{service}'>reiniciar o servizo</a>, e se isto non funciona, mira os <a href='#/services/{service}'>rexistros do servizo na webadmin</a> (desde a liña de comandos con <cmd>yunohost service restart {service}</cmd> e <cmd>yunohost service log {service}</cmd>).",
     "diagnosis_mail_outgoing_port_25_ok": "O servidor de email SMTP pode enviar emails (porto 25 de saída non está bloqueado).",
-    "diagnosis_swap_tip": "Por favor ten en conta que se o servidor ten a swap instalada nunha tarxeta SD ou almacenaxe SSD podería reducir drásticamente a expectativa de vida do dispositivo."
+    "diagnosis_swap_tip": "Por favor ten en conta que se o servidor ten a swap instalada nunha tarxeta SD ou almacenaxe SSD podería reducir drásticamente a expectativa de vida do dispositivo.",
+    "diagnosis_mail_outgoing_port_25_blocked": "O servidor SMTP de email non pode enviar emails a outros servidores porque o porto saínte 25 está bloqueado en IPv{ipversion}."
 }
