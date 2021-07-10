@@ -258,7 +258,13 @@ def firewall_reload(skip_upnp=False):
             "iptables -w -A INPUT -p icmp -j ACCEPT",
             "iptables -w -P INPUT DROP",
         ]
-
+        # Set of nft rules for allowing SSDP discovery
+        # See https://github.com/mqus/nft-rules/blob/master/files/SSDP_client.md
+        rules += [
+            "nft add set filter ssdp_out {type inet_service \\; timeout 5s \\;}",
+            "nft add rule filter OUTPUT ip daddr 239.255.255.250 udp dport 1900 set add udp sport @ssdp_out",
+            "nft add rule filter INPUT udp dport @ssdp_out accept",
+        ]
         # Execute each rule
         if process.run_commands(rules, callback=_on_rule_command_error):
             errors = True
@@ -291,7 +297,11 @@ def firewall_reload(skip_upnp=False):
             "ip6tables -w -A INPUT -p icmpv6 -j ACCEPT",
             "ip6tables -w -P INPUT DROP",
         ]
-
+        rules += [
+            "nft add set ip6 filter ssdp_out {type inet_service \\; timeout 5s \\;}",
+            "nft add rule ip6 filter OUTPUT ip6 daddr {FF02::C, FF05::C, FF08::C, FF0E::C} udp dport 1900 set add udp sport @ssdp_out",
+            "nft add rule ip6 filter INPUT udp dport @ssdp_out accept",
+        ]
         # Execute each rule
         if process.run_commands(rules, callback=_on_rule_command_error):
             errors = True
@@ -338,7 +348,7 @@ def firewall_upnp(action="status", no_refresh=False):
         # Add cron job
         with open(UPNP_CRON_JOB, "w+") as f:
             f.write(
-                "*/10 * * * * root "
+                "*/12 * * * * root "
                 "/usr/bin/yunohost firewall upnp status >>/dev/null\n"
             )
         enabled = True
@@ -355,22 +365,12 @@ def firewall_upnp(action="status", no_refresh=False):
     # Refresh port mapping
     refresh_success = True
     if not no_refresh:
-        # Open port to receive discovery message
-        process.run_commands(
-            ["iptables -w -A INPUT -p udp --dport %d -j ACCEPT" % SSDP_CLIENT_PORT],
-            callback=_on_rule_command_error,
-        )
-        upnpc = miniupnpc.UPnP(localport=SSDP_CLIENT_PORT)
+        upnpc = miniupnpc.UPnP()
         upnpc.discoverdelay = 3000
         # Discover UPnP device(s)
         logger.debug("discovering UPnP devices...")
         nb_dev = upnpc.discover()
         logger.debug("found %d UPnP device(s)", int(nb_dev))
-        # Close discovery port
-        process.run_commands(
-            ["iptables -w -D INPUT -p udp --dport %d -j ACCEPT" % SSDP_CLIENT_PORT],
-            callback=_on_rule_command_error,
-        )
 
         if nb_dev < 1:
             logger.error(m18n.n("upnp_dev_not_found"))
