@@ -35,11 +35,6 @@ from moulinette.utils.text import prependlines
 
 FIREWALL_FILE = "/etc/yunohost/firewall.yml"
 UPNP_CRON_JOB = "/etc/cron.d/yunohost-firewall-upnp"
-# A UDP port to use for the SSDP discovery phase of UPNP.
-# Assigned by IANA to "Fujitsu ICL Terminal Emulator Program A", so no-one else is
-# likely to use it (unlike port 1900 which is used by SSDP servers such
-# as miniupnpd)
-SSDP_CLIENT_PORT = 1901
 logger = getActionLogger("yunohost.firewall")
 
 
@@ -233,10 +228,10 @@ def firewall_reload(skip_upnp=False):
 
     # IPv4
     try:
-        process.check_output("iptables -w -L")
+        process.check_output("nft list ruleset -n -a")
     except process.CalledProcessError as e:
         logger.debug(
-            "iptables seems to be not available, it outputs:\n%s",
+            "nftables/nft seems to be not available, it outputs:\n%s",
             prependlines(e.output.rstrip(), "> "),
         )
         logger.warning(m18n.n("iptables_unavailable"))
@@ -272,10 +267,10 @@ def firewall_reload(skip_upnp=False):
 
     # IPv6
     try:
-        process.check_output("ip6tables -L")
+        process.check_output("nft list ruleset -n -a")
     except process.CalledProcessError as e:
         logger.debug(
-            "ip6tables seems to be not available, it outputs:\n%s",
+            "ip6tables/nft seems to be not available, it outputs:\n%s",
             prependlines(e.output.rstrip(), "> "),
         )
         logger.warning(m18n.n("ip6tables_unavailable"))
