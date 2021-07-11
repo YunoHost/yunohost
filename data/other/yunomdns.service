@@ -1,0 +1,13 @@
+[Unit]
+Description=YunoHost mDNS service
+After=network.target
+
+[Service]
+User=avahi
+Group=avahi
+Type=simple
+ExecStart=/usr/bin/yunomdns
+StandardOutput=syslog
+
+[Install]
+WantedBy=default.target

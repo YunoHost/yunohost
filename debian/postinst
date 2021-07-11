@@ -38,6 +38,10 @@ do_configure() {
 
   # Yunoprompt
   systemctl enable yunoprompt.service
+
+  # Yunomdns
+  chown avahi:avahi /etc/yunohost/mdns.yml
+  systemctl enable yunomdns.service
 }
 
 # summary of how this script can be called:

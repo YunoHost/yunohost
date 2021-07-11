@@ -52,6 +52,8 @@ yunohost-firewall:
   need_lock: true
   test_status: iptables -S | grep "^-A INPUT" | grep " --dport" | grep -q ACCEPT
   category: security
+yunomdns:
+  needs_exposed_ports: [5353]
 glances: null
 nsswitch: null
 ssl: null
