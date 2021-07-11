@@ -54,6 +54,7 @@ yunohost-firewall:
   category: security
 yunomdns:
   needs_exposed_ports: [5353]
+  category: mdns
 glances: null
 nsswitch: null
 ssl: null

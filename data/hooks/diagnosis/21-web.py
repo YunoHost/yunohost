@@ -34,6 +34,12 @@ class WebDiagnoser(Diagnoser):
                     summary="diagnosis_http_nginx_conf_not_up_to_date",
                     details=["diagnosis_http_nginx_conf_not_up_to_date_details"],
                 )
+            elif domain.endswith('.local'):
+                yield dict(
+                    meta={"domain": domain},
+                    status="INFO",
+                    summary="diagnosis_http_localdomain",
+                )
             else:
                 domains_to_check.append(domain)
 

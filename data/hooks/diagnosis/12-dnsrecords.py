@@ -29,8 +29,9 @@ class DNSRecordsDiagnoser(Diagnoser):
         for domain in all_domains:
             self.logger_debug("Diagnosing DNS conf for %s" % domain)
             is_subdomain = domain.split(".", 1)[1] in all_domains
+            is_localdomain = domain.endswith(".local")
             for report in self.check_domain(
-                domain, domain == main_domain, is_subdomain=is_subdomain
+                domain, domain == main_domain, is_subdomain=is_subdomain, is_localdomain=is_localdomain
             ):
                 yield report
 
@@ -48,7 +49,7 @@ class DNSRecordsDiagnoser(Diagnoser):
         for report in self.check_expiration_date(domains_from_registrar):
             yield report
 
-    def check_domain(self, domain, is_main_domain, is_subdomain):
+    def check_domain(self, domain, is_main_domain, is_subdomain, is_localdomain):
 
         expected_configuration = _build_dns_conf(
             domain, include_empty_AAAA_if_no_ipv6=True
@@ -58,6 +59,24 @@ class DNSRecordsDiagnoser(Diagnoser):
         # For subdomains, we only diagnosis A and AAAA records
         if is_subdomain:
             categories = ["basic"]
+
+        if is_localdomain:
+            categories = []
+            if is_subdomain:
+                yield dict(
+                    meta={"domain": domain, "category": "basic"},
+                    results={},
+                    status="WARNING",
+                    summary="diagnosis_domain_subdomain_localdomain",
+                )
+            else:
+                yield dict(
+                    meta={"domain": domain, "category": "basic"},
+                    results={},
+                    status="INFO",
+                    summary="diagnosis_domain_localdomain",
+                )
+
 
         for category in categories:
 
