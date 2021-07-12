@@ -100,6 +100,8 @@ DEFAULTS = OrderedDict(
         ("smtp.relay.password", {"type": "string", "default": ""}),
         ("backup.compress_tar_archives", {"type": "bool", "default": False}),
         ("ssowat.panel_overlay.enabled", {"type": "bool", "default": True}),
+        ("security.webadmin.allowlist.enabled", {"type": "bool", "default": False}),
+        ("security.webadmin.allowlist", {"type": "string", "default": ""}),
     ]
 )
 
@@ -391,6 +393,8 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 
 @post_change_hook("ssowat.panel_overlay.enabled")
 @post_change_hook("security.nginx.compatibility")
+@post_change_hook("security.webadmin.allowlist.enabled")
+@post_change_hook("security.webadmin.allowlist")
 def reconfigure_nginx(setting_name, old_value, new_value):
     if old_value != new_value:
         regen_conf(names=["nginx"])
