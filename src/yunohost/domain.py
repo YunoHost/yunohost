@@ -899,7 +899,8 @@ def _set_domain_settings(domain, domain_settings):
 
 
 def _load_zone_of_domain(domain):
-    if domain not in domain_list()["domains"]:
+    domains = _load_domain_settings([domain])
+    if domain not in domains.keys():
         raise YunohostError("domain_name_unknown", domain=domain)
 
     return domains[domain]["dns_zone"]
