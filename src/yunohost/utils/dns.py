@@ -39,6 +39,7 @@ def get_public_suffix(domain):
     return public_suffix
 
 def get_dns_zone_from_domain(domain):
+    # TODO Check if this function is YNH_DYNDNS_DOMAINS compatible
     """
     Get the DNS zone of a domain
 
@@ -49,12 +50,15 @@ def get_dns_zone_from_domain(domain):
     separator = "."
     domain_subs = domain.split(separator)
     for i in range(0, len(domain_subs)):
-        answer = dig(separator.join(domain_subs), rdtype="NS", full_answers=True)
+        current_domain = separator.join(domain_subs)
+        answer = dig(current_domain, rdtype="NS", full_answers=True, resolvers="force_external")
+        print(answer)
         if answer[0] == "ok" :
-            return separator.join(domain_subs)
-        elif answer[1][0] == "NXDOMAIN" :
-            return None
+            # Domain is dns_zone
+            return current_domain
+        if separator.join(domain_subs[1:]) == get_public_suffix(current_domain):
+            # Couldn't check if domain is dns zone,
+            # returning private suffix
+            return current_domain
         domain_subs.pop(0)
-
-    # Should not be executed
     return None
