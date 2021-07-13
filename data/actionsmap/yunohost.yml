@@ -620,6 +620,9 @@ domain:
                     action_help: List supported registrars API
                     api: GET /domains/registrars/catalog
                     arguments:
+                        -r:
+                            full: --registrar-name
+                            help: Display given registrar info to create form
                         -f:
                             full: --full
                             help: Display all details, including info to create forms

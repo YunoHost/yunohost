@@ -917,15 +917,22 @@ def domain_registrar_info(domain):
     for option_key, option_value in registrar_info['options'].items():
         logger.info("Option " + option_key + ": " + option_value)
 
-def domain_registrar_catalog(full):
-    registrars = yaml.load(open(REGISTRAR_LIST_PATH, "r+"))
-    for registrar in registrars:
-        logger.info("Registrar : " + registrar)
-        if full : 
-            logger.info("Options : ")
-            for option in registrars[registrar]:
-                logger.info("\t- " + option)
+def _print_registrar_info(registrar_name, full, options):
+    logger.info("Registrar : " + registrar_name)
+    if full : 
+        logger.info("Options : ")
+        for option in options:
+            logger.info("\t- " + option)
         
+def domain_registrar_catalog(registrar_name, full):
+    registrars = yaml.load(open(REGISTRAR_LIST_PATH, "r+"))
+
+    if registrar_name and registrar_name in registrars.keys() :
+        _print_registrar_info(registrar_name, True, registrars[registrar_name])
+    else:
+        for registrar in registrars:
+            _print_registrar_info(registrar, full, registrars[registrar])
+
 
 def domain_registrar_set(domain, registrar, args):
 
