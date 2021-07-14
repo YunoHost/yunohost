@@ -98,8 +98,6 @@
     "log_user_delete": "Slett '{}' bruker",
     "log_user_group_delete": "Slett '{}' gruppe",
     "log_user_group_update": "Oppdater '{}' gruppe",
-    "ldap_init_failed_to_create_admin": "LDAP-igangsettelse kunne ikke opprette admin-bruker",
-    "ldap_initialized": "LDAP-igangsatt",
     "app_unknown": "Ukjent program",
     "app_upgrade_app_name": "Oppgraderer {app}…",
     "app_upgrade_failed": "Kunne ikke oppgradere {app:s}",
