@@ -20,8 +20,8 @@ Pin-Priority: -1" >> "${pending_dir}/etc/apt/preferences.d/extra_php_version"
 
 # PLEASE READ THIS WARNING AND DON'T EDIT THIS FILE
 
-# You are probably reading this file cause you tryed to install apache2 or 
-# bind9. This 2 packages conflict with YunoHost.
+# You are probably reading this file because you tried to install apache2 or 
+# bind9. These 2 packages conflict with YunoHost.
 
 # Installing apache2 will break nginx and break the entire YunoHost ecosystem
 # on your server, therefore don't remove those lines! 
