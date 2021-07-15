@@ -509,7 +509,7 @@ def _build_dns_conf(domain):
         if domain_name == domain:
             name = "@" if owned_dns_zone else root_prefix
         else:
-            name = domain_name[0 : -(1 + len(domain))]
+            name = domain_name
             if not owned_dns_zone:
                 name += "." + root_prefix
 

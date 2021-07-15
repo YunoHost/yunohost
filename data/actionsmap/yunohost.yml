@@ -448,7 +448,7 @@ domain:
                     action: store_true
 
         ### domain_push_config()
-        push_config:
+        push-config:
             action_help: Push DNS records to registrar
             api: GET /domains/<domain>/push
             arguments:

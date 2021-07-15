@@ -52,7 +52,6 @@ def get_dns_zone_from_domain(domain):
     for i in range(0, len(domain_subs)):
         current_domain = separator.join(domain_subs)
         answer = dig(current_domain, rdtype="NS", full_answers=True, resolvers="force_external")
-        print(answer)
         if answer[0] == "ok" :
             # Domain is dns_zone
             return current_domain
