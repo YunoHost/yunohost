@@ -125,16 +125,14 @@ def app_search(string):
 
     # Retrieve a simple dict listing all apps
     catalog_of_apps = app_catalog()
-
+    result = {"apps": {}}
     # Selecting apps according to a match in app name or description
     for app in catalog_of_apps["apps"].items():
-        if not (
-            re.search(string, app[0], flags=re.IGNORECASE)
-            or re.search(string, app[1]["description"], flags=re.IGNORECASE)
-        ):
-            del catalog_of_apps["apps"][app[0]]
+        if re.search(string, app[0], flags=re.IGNORECASE) \
+           or re.search(string, app[1]["description"], flags=re.IGNORECASE):
+            result["apps"][app[0]] = app
 
-    return catalog_of_apps
+    return result
 
 
 # Old legacy function...
