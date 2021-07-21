@@ -531,11 +531,14 @@ def _build_dns_conf(domain):
         #########
         # Email #
         #########
-        if domain["mail"]:
-
+        if domain["mail_in"]:
             mail += [
-                [name, ttl, "MX", "10 %s." % domain_name],
-                [name, ttl, "TXT", '"v=spf1 a mx -all"'],
+                [name, ttl, "MX", "10 %s." % domain_name]
+            ]
+
+        if domain["mail_out"]:
+            mail += [
+                [name, ttl, "TXT", '"v=spf1 a mx -all"']
             ]
 
             # DKIM/DMARC record
@@ -772,7 +775,8 @@ def _load_domain_settings(domains=[]):
         dns_zone = get_dns_zone_from_domain(domain)
         default_settings = {
             "xmpp": is_maindomain,
-            "mail": True,
+            "mail_in": True,
+            "mail_out": True,
             "dns_zone": dns_zone,
             "ttl": 3600,
         }
@@ -805,12 +809,14 @@ def domain_setting(domain, key, value=None, delete=False):
     Set or get an app setting value
 
     Keyword argument:
-        value -- Value to set
-        app -- App ID
+        domain -- Domain Name
         key -- Key to get/set
+        value -- Value to set
         delete -- Delete the key
 
     """
+
+    boolean_keys = ["mail_in", "mail_out", "xmpp"]
 
     domains = _load_domain_settings([ domain ])
 
@@ -834,17 +840,22 @@ def domain_setting(domain, key, value=None, delete=False):
 
     # SET
     else:
+        if key in boolean_keys:
+            value = True if value.lower() in ['true', '1', 't', 'y', 'yes', "iloveynh"] else False
 
         if "ttl" == key:
             try:
-                ttl = int(value)
+                value = int(value)
             except ValueError:
                 # TODO add locales
-                raise YunohostError("invalid_number", value_type=type(ttl))
+                raise YunohostError("invalid_number", value_type=type(value))
 
-            if ttl < 0:
-                raise YunohostError("pattern_positive_number", value_type=type(ttl))
+            if value < 0:
+                raise YunohostError("pattern_positive_number", value_type=type(value))
+        
+        # Set new value
         domain_settings[key] = value
+        # Save settings
         _set_domain_settings(domain, domain_settings)
 
 
