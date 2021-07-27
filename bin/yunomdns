@@ -16,11 +16,10 @@ import yaml
 import asyncio
 import logging
 import socket
-import time
+from time import sleep
 from typing import List, Dict
 
-from zeroconf import DNSEntry, DNSRecord
-from zeroconf.asyncio import AsyncServiceInfo, AsyncZeroconf
+from zeroconf import Zeroconf, ServiceInfo
 
 # Helper command taken from Moulinette
 def check_output(args, stderr=subprocess.STDOUT, shell=True, **kwargs):
@@ -97,30 +96,6 @@ def get_network_interfaces():
     }
 
     return devices
-
-# async commands
-async def register_services(aiozcs: Dict[AsyncZeroconf, List[AsyncServiceInfo]]) -> None:
-    tasks = []
-    for aiozc, infos in aiozcs.items():
-        for info in infos:
-            tasks.append(aiozc.async_register_service(info))
-    background_tasks = await asyncio.gather(*tasks)
-    await asyncio.gather(*background_tasks)
-
-async def unregister_services(aiozcs: Dict[AsyncZeroconf, List[AsyncServiceInfo]]) -> None:
-    for aiozc, infos in aiozcs.items():
-        for info in infos:
-            tasks.append(aiozc.async_unregister_service(info))
-    background_tasks = await asyncio.gather(*tasks)
-    await asyncio.gather(*background_tasks)
-
-async def close_aiozcs(aiozcs: Dict[AsyncZeroconf, List[AsyncServiceInfo]]) -> None:
-    tasks = []
-    for aiozc in aiozcs:
-        tasks.append(aiozc.async_close())
-    background_tasks = await asyncio.gather(*tasks)
-    await asyncio.gather(*background_tasks)
-
 
 if __name__ == '__main__':
     logging.basicConfig(level=logging.DEBUG)
@@ -212,9 +187,7 @@ if __name__ == '__main__':
         print('No interface listed for broadcast.')
         sys.exit(0)
 
-    aiozcs = {}
-    tasks = []
-    loop = asyncio.get_event_loop()
+    zcs = {}
     interfaces = get_network_interfaces()
     for interface in config['interfaces']:
         infos = [] # List of ServiceInfo objects, to feed Zeroconf
@@ -240,44 +213,39 @@ if __name__ == '__main__':
 
         # If at least one IP is listed
         if addressed:
-            # Create a ServiceInfo object for each .local domain
+            # Create a Zeroconf object, and store the ServiceInfos
+            zc = Zeroconf(interfaces=ips)
+            zcs[zc]=[]
             for d in config['domains']:
                 d_domain=d.replace('.local','')
-                infos.append(
-                    AsyncServiceInfo(
-                        type_='_device-info._tcp.local.',
-                        name=interface+' '+d_domain+'._device-info._tcp.local.',
-                        addresses=b_ips,
-                        port=80,
-                        server=d+'.',
-                    )
-                )
-                infos.append(
-                    AsyncServiceInfo(
-                        type_='_http._tcp.local.',
-                        name=interface+' '+d_domain+'._http._tcp.local.',
-                        addresses=b_ips,
-                        port=80,
-                        server=d+'.',
-                    )
-                )
-                print('Adding '+d+' with addresses '+str(ips)+' on interface '+interface)
-            # Create an AsyncZeroconf object, and store registration task
-            aiozc = AsyncZeroconf(interfaces=ips)
-            aiozcs[aiozc]=infos
+                if '.' in d_domain:
+                    print(d_domain+'.local: subdomains are not supported.')
+                else:
+                    # Create a ServiceInfo object for each .local domain
+                    zcs[zc].append(ServiceInfo(
+                                  type_='_device-info._tcp.local.',
+                                  name=interface+': '+d_domain+'._device-info._tcp.local.',
+                                  addresses=b_ips,
+                                  port=80,
+                                  server=d+'.',
+                              ))
+                    print('Adding '+d+' with addresses '+str(ips)+' on interface '+interface)
 
     # Run registration
-    loop.run_until_complete(register_services(aiozcs))
-    print("Registration complete. Press Ctrl-c or stop service to exit...")
+    print("Registering...")
+    for zc, infos in zcs.items():
+        for info in infos:
+            zc.register_service(info)
 
     try:
+        print("Registered. Press Ctrl+C or stop service to stop.")
         while True:
-            time.sleep(1)
+            sleep(1)
     except KeyboardInterrupt:
         pass
     finally:
         print("Unregistering...")
-        loop.run_until_complete(unregister_services(aiozcs))
-        print("Unregistration complete.")
-        loop.run_until_complete(close_aiozcs(aiozcs))
-
+        for zc, infos in zcs.items():
+            for info in infos:
+                zc.unregister_service(info)
+            zc.close()
