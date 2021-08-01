@@ -4,7 +4,7 @@ import os
 import re
 
 from datetime import datetime, timedelta
-from publicsuffix import PublicSuffixList
+from publicsuffixlist import PublicSuffixList
 
 from moulinette.utils.process import check_output
 
@@ -37,7 +37,7 @@ class DNSRecordsDiagnoser(Diagnoser):
         # Check if a domain buy by the user will expire soon
         psl = PublicSuffixList()
         domains_from_registrar = [
-            psl.get_public_suffix(domain) for domain in all_domains
+            psl.publicsuffix(domain) for domain in all_domains
         ]
         domains_from_registrar = [
             domain for domain in domains_from_registrar if "." in domain

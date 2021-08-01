@@ -18,7 +18,7 @@
     along with this program; if not, see http://www.gnu.org/licenses
 
 """
-from publicsuffix import PublicSuffixList
+from publicsuffixlist import PublicSuffixList
 from yunohost.utils.network import dig
 
 YNH_DYNDNS_DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
@@ -31,7 +31,7 @@ def get_public_suffix(domain):
     # Load domain public suffixes
     psl = PublicSuffixList()
 
-    public_suffix = psl.get_public_suffix(domain)
+    public_suffix = psl.publicsuffix(domain)
     if public_suffix in YNH_DYNDNS_DOMAINS:
         domain_prefix = domain_name[0:-(1 + len(public_suffix))]
         public_suffix =  domain_prefix.plit(".")[-1] + "." + public_suffix
