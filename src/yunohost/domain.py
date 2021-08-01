@@ -281,6 +281,9 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     # Delete dyndns keys for this domain (if any)
     os.system("rm -rf /etc/yunohost/dyndns/K%s.+*" % domain)
 
+    # Delete settings file for this domain
+    os.system(f"rm -rf {DOMAIN_SETTINGS_DIR}/{domain}.yml")
+
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...
     # There are a few ideas why this happens (like backup/restore nginx
@@ -752,7 +755,7 @@ def _load_domain_settings(domains=[]):
         if unknown_domain != None:
             raise YunohostValidationError("domain_name_unknown", domain=unknown_domain)
     else:
-        domains = domain_list()["domains"]
+        domains = get_domain_list["domains"]
 
 
     # Create sanitized data
