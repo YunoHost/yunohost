@@ -310,5 +310,6 @@
     "domain_created": "Dominio creado",
     "domain_cert_gen_failed": "Non se puido crear o certificado",
     "domain_cannot_remove_main_add_new_one": "Non podes eliminar '{domain:s}' porque é o dominio principal e único dominio, primeiro tes que engadir outro dominio usando 'yunohost domain add <outro-dominio>', e despois establecelo como o dominio principal utilizando 'yunohost domain main-domain -n <outro-dominio>' e entón poderás eliminar '{domain:s}' con 'yunohost domain remove {domain:s}'.'",
-    "domain_cannot_add_xmpp_upload": "Non podes engadir dominios que comecen con 'xmpp-upload.'. Este tipo de nome está reservado para a función se subida de XMPP integrada en YunoHost."
+    "domain_cannot_add_xmpp_upload": "Non podes engadir dominios que comecen con 'xmpp-upload.'. Este tipo de nome está reservado para a función se subida de XMPP integrada en YunoHost.",
+    "file_does_not_exist": "O ficheiro {path:s} non existe."
 }
