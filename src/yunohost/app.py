@@ -129,9 +129,8 @@ def app_search(string):
     # Selecting apps according to a match in app name or description
     matching_apps = {"apps": {}}
     for app in catalog_of_apps["apps"].items():
-        if (
-            re.search(string, app[0], flags=re.IGNORECASE)
-            or re.search(string, app[1]["description"], flags=re.IGNORECASE)
+        if re.search(string, app[0], flags=re.IGNORECASE) or re.search(
+            string, app[1]["description"], flags=re.IGNORECASE
         ):
             matching_apps["apps"][app[0]] = app[1]
 
