@@ -332,5 +332,18 @@
     "global_settings_bad_type_for_setting": "Tipo incorrecto do axuste {setting}, recibido {received_type}, agardábase {expected_type}",
     "global_settings_bad_choice_for_enum": "Elección incorrecta para o axuste {setting}, recibido '{choice}', mais as opcións dispoñibles son: {available_choices}",
     "firewall_rules_cmd_failed": "Fallou algún comando das regras do cortalumes. Máis info no rexistro.",
-    "firewall_reloaded": "Recargouse o cortalumes"
+    "firewall_reloaded": "Recargouse o cortalumes",
+    "group_creation_failed": "Non se puido crear o grupo '{group}': {error}",
+    "group_created": "Creouse o grupo '{group}'",
+    "group_already_exist_on_system_but_removing_it": "O grupo {group} xa é un dos grupos do sistema, pero YunoHost vaino eliminar...",
+    "group_already_exist_on_system": "O grupo {group} xa é un dos grupos do sistema",
+    "group_already_exist": "Xa existe o grupo {group}",
+    "good_practices_about_user_password": "Vas definir o novo contrasinal de usuaria. O contrasinal debe ter 8 caracteres como mínimo—aínda que se recomenda utilizar un máis longo (ex. unha frase de paso) e/ou utilizar caracteres variados (maiúsculas, minúsculas, números e caracteres especiais).",
+    "good_practices_about_admin_password": "Vas definir o novo contrasinal de administración. O contrasinal debe ter 8 caracteres como mínimo—aínda que se recomenda utilizar un máis longo (ex. unha frase de paso) e/ou utilizar caracteres variados (maiúsculas, minúsculas, números e caracteres especiais).",
+    "global_settings_unknown_type": "Situación non agardada, o axuste {setting} semella ter o tipo {unknown_type} pero non é un valor soportado polo sistema.",
+    "global_settings_setting_backup_compress_tar_archives": "Ao crear novas copias de apoio, comprime os arquivos (.tar.gz) en lugar de non facelo (.tar). Nota: activando esta opción creas arquivos máis lixeiros, mais o procedemento da primeira copia será significativamente máis longo e esixente coa CPU.",
+    "global_settings_setting_smtp_relay_password": "Contrasinal no repetidor SMTP",
+    "global_settings_setting_smtp_relay_user": "Conta de usuaria no repetidor SMTP",
+    "global_settings_setting_smtp_relay_port": "Porto do repetidor SMTP",
+    "global_settings_setting_smtp_relay_host": "Servidor repetidor SMTP para enviar emails no lugar da túa instancia yunohost. É útil se estás nunha destas situacións: o teu porto 25 está bloqueado polo teu provedor ISP u VPN, se tes unha IP residencial nunha lista DUHL, se non podes configurar DNS inversa ou se este servidor non ten conexión directa a internet e queres utilizar outro para enviar os emails."
 }
