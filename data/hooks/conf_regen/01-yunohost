@@ -138,7 +138,7 @@ EOF
 
   # Don't suspend computer on LidSwitch
   mkdir -p ${pending_dir}/etc/systemd/logind.conf.d/
-  cat > ${pending_dir}/etc/systemd/logind.conf.d/yunohost.conf << EOF
+  cat > ${pending_dir}/etc/systemd/logind.conf.d/ynh-override.conf << EOF
 [Login]
 HandleLidSwitch=ignore
 HandleLidSwitchDocked=ignore
