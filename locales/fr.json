@@ -619,7 +619,7 @@
     "diagnosis_rootfstotalspace_critical": "Le système de fichiers racine ne fait que {space} ! Vous allez certainement le remplir très rapidement ! Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers.",
     "diagnosis_rootfstotalspace_warning": "Le système de fichiers racine n'est que de {space}. Cela peut suffire, mais faites attention car vous risquez de les remplir rapidement... Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers.",
     "app_restore_script_failed": "Une erreur s'est produite dans le script de restauration de l'application",
-    "restore_backup_too_old": "Cette sauvegarde ne peut pas être restaurée car elle provient d'une version trop ancienne YunoHost.",
+    "restore_backup_too_old": "Cette sauvegarde ne peut pas être restaurée car elle provient d'une version trop ancienne de YunoHost.",
     "migration_update_LDAP_schema": "Mise à jour du schéma LDAP...",
     "log_backup_create": "Créer une archive de sauvegarde",
     "global_settings_setting_ssowat_panel_overlay_enabled": "Activer la superposition de la vignette SSOwat",
