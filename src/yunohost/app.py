@@ -127,14 +127,14 @@ def app_search(string):
     catalog_of_apps = app_catalog()
 
     # Selecting apps according to a match in app name or description
+    matching_apps = {"apps": {}}
     for app in catalog_of_apps["apps"].items():
-        if not (
-            re.search(string, app[0], flags=re.IGNORECASE)
-            or re.search(string, app[1]["description"], flags=re.IGNORECASE)
+        if re.search(string, app[0], flags=re.IGNORECASE) or re.search(
+            string, app[1]["description"], flags=re.IGNORECASE
         ):
-            del catalog_of_apps["apps"][app[0]]
+            matching_apps["apps"][app[0]] = app[1]
 
-    return catalog_of_apps
+    return matching_apps
 
 
 # Old legacy function...

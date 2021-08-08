@@ -21,5 +21,7 @@ remove-stale-translated-strings:
     - git push -f origin "ci-remove-stale-translated-strings-${CI_COMMIT_REF_NAME}":"ci-remove-stale-translated-strings-${CI_COMMIT_REF_NAME}"
     - hub pull-request -m "[CI] Remove stale translated strings" -b Yunohost:dev -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
   only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
     changes:
       - locales/*
