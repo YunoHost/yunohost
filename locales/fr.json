@@ -14,7 +14,7 @@
     "app_not_correctly_installed": "{app} semble être mal installé",
     "app_not_installed": "Nous n’avons pas trouvé {app} dans la liste des applications installées : {all_apps}",
     "app_not_properly_removed": "{app} n’a pas été supprimé correctement",
-    "app_removed": "{app} supprimé",
+    "app_removed": "{app} désinstallé",
     "app_requirements_checking": "Vérification des paquets requis pour {app}...",
     "app_requirements_unmeet": "Les pré-requis de {app} ne sont pas satisfaits, le paquet {pkgname} ({version}) doit être {spec}",
     "app_sources_fetch_failed": "Impossible de récupérer les fichiers sources, l’URL est-elle correcte ?",

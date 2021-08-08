@@ -40,7 +40,7 @@
     "app_not_correctly_installed": "{app} seems to be incorrectly installed",
     "app_not_installed": "Could not find {app} in the list of installed apps: {all_apps}",
     "app_not_properly_removed": "{app} has not been properly removed",
-    "app_removed": "{app} removed",
+    "app_removed": "{app} uninstalled",
     "app_requirements_checking": "Checking required packages for {app}...",
     "app_requirements_unmeet": "Requirements are not met for {app}, the package {pkgname} ({version}) must be {spec}",
     "app_remove_after_failed_install": "Removing the app following the installation failure...",
