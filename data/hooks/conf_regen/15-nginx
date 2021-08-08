@@ -83,6 +83,13 @@ do_pre_regen() {
 
   done
 
+  export webadmin_allowlist_enabled=$(yunohost settings get security.webadmin.allowlist.enabled)
+  if [ "$webadmin_allowlist_enabled" == "True" ]
+  then
+    export webadmin_allowlist=$(yunohost settings get security.webadmin.allowlist)
+  fi
+  ynh_render_template "yunohost_admin.conf.inc" "${nginx_conf_dir}/yunohost_admin.conf.inc"
+  ynh_render_template "yunohost_api.conf.inc" "${nginx_conf_dir}/yunohost_api.conf.inc"
   ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
   mkdir -p $nginx_conf_dir/default.d/
   cp "redirect_to_admin.conf" $nginx_conf_dir/default.d/
