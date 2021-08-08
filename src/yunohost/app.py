@@ -518,8 +518,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
 
     apps = app
     # Check if disk space available
-    size = os.statvfs('/')
-    if (size.f_bavail * size.f_frsize) / 1024 <= 512000:
+    if free_space_in_directory("/") <= 512 * 1000 * 1000:
 	    raise YunohostValidationError("disk_space_not_sufficient_update")
     # If no app is specified, upgrade all apps
     if not apps:
@@ -882,7 +881,7 @@ def app_install(
     
     # Check if disk space available
     size = os.statvfs('/')
-    if (size.f_bavail * size.f_frsize) / 1024 <= 512000:
+    if free_space_in_directory("/") <= 512 * 1000 * 1000:
 	    raise YunohostValidationError("disk_space_not_sufficient_install")
 
     # Check ID
