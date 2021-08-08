@@ -55,6 +55,7 @@ from moulinette.utils.filesystem import (
 from yunohost.service import service_status, _run_service_command
 from yunohost.utils import packages
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.log import is_unit_operation, OperationLogger
 
 logger = getActionLogger("yunohost.app")
@@ -878,11 +879,10 @@ def app_install(
         manifest, extracted_app_folder = _extract_app_from_file(app)
     else:
         raise YunohostValidationError("app_unknown")
-    
+
     # Check if disk space available
-    size = os.statvfs('/')
     if free_space_in_directory("/") <= 512 * 1000 * 1000:
-	    raise YunohostValidationError("disk_space_not_sufficient_install")
+        raise YunohostValidationError("disk_space_not_sufficient_install")
 
     # Check ID
     if "id" not in manifest or "__" in manifest["id"]:
