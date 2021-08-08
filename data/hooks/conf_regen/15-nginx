@@ -25,6 +25,8 @@ do_init_regen() {
   export compatibility="intermediate"
   ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
   ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
+  ynh_render_template "yunohost_admin.conf.inc" "${nginx_conf_dir}/yunohost_admin.conf.inc"
+  ynh_render_template "yunohost_api.conf.inc" "${nginx_conf_dir}/yunohost_api.conf.inc"
 
   mkdir -p $nginx_conf_dir/default.d/
   cp "redirect_to_admin.conf" $nginx_conf_dir/default.d/
