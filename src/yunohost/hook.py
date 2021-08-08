@@ -320,7 +320,13 @@ def hook_callback(
 
 
 def hook_exec(
-    path, args=None, raise_on_error=False, chdir=None, env=None, user="root", return_format="json"
+    path,
+    args=None,
+    raise_on_error=False,
+    chdir=None,
+    env=None,
+    user="root",
+    return_format="json",
 ):
     """
     Execute hook from a file with arguments
@@ -419,9 +425,9 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
 
     # Construct command to execute
     if user == "root":
-        command = ['sh', '-c']
+        command = ["sh", "-c"]
     else:
-        command = ['sudo', '-n', '-u', user, '-H', 'sh', '-c']
+        command = ["sudo", "-n", "-u", user, "-H", "sh", "-c"]
 
     # use xtrace on fd 7 which is redirected to stdout
     env["BASH_XTRACEFD"] = "7"

@@ -520,7 +520,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
     apps = app
     # Check if disk space available
     if free_space_in_directory("/") <= 512 * 1000 * 1000:
-	    raise YunohostValidationError("disk_space_not_sufficient_update")
+        raise YunohostValidationError("disk_space_not_sufficient_update")
     # If no app is specified, upgrade all apps
     if not apps:
         # FIXME : not sure what's supposed to happen if there is a url and a file but no apps...
