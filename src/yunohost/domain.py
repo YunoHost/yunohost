@@ -116,7 +116,7 @@ def domain_add(operation_logger, domain, dyndns=False):
     domain = domain.lower()
 
     # Non-latin characters (e.g. café.com => xn--caf-dma.com)
-    domain = domain.encode('idna').decode('utf-8')
+    domain = domain.encode("idna").decode("utf-8")
 
     # DynDNS domain
     if dyndns:
