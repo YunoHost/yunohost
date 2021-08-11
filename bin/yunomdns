@@ -6,10 +6,8 @@ Pythonic declaration of mDNS .local domains for YunoHost
 """
 
 import subprocess
-import os
 import re
 import sys
-import argparse
 import yaml
 
 import socket
@@ -96,30 +94,6 @@ def get_network_interfaces():
 
 if __name__ == '__main__':
 
-
-    ###
-    #  ARGUMENTS
-    ###
-
-    parser = argparse.ArgumentParser(description='''
-                                                 mDNS broadcast for .local domains.
-                                                 Configuration file: /etc/yunohost/mdns.yml
-                                                 Subdomains are not supported.
-                                                 ''')
-    parser.add_argument('--regen', nargs='?', const='as_stored', choices=['domains', 'interfaces', 'all', 'as_stored'],
-                        help='''
-                             Regenerates selection into the configuration file then starts mDNS broadcasting.
-                             ''')
-    parser.add_argument('--set-regen', choices=['domains', 'interfaces', 'all', 'none'],
-                      help='''
-                           Set which part of the configuration to be regenerated.
-                           Implies --regen as_stored, with newly stored parameter.
-                           ''')
-    able = parser.add_mutually_exclusive_group()
-    able.add_argument('--enable', action='store_true', help='Enables mDNS broadcast, and regenerates the configuration')
-    able.add_argument('--disable', action='store_true')
-    args = parser.parse_args()
-
     ###
     #  CONFIG
     ###
@@ -128,48 +102,11 @@ if __name__ == '__main__':
         config = yaml.load(f) or {}
     updated = False
 
-    if args.enable:
-        config['enabled'] = True
-        args.regen = 'as_stored'
-        updated = True
+    required_fields = ["interfaces", "domains"]
+    missing_fields = [field for field in required_fields if field not in config]
 
-    if args.disable:
-        config['enabled'] = False
-        updated = True
-
-    if args.set_regen:
-        config['regen'] = args.set_regen
-        args.regen = 'as_stored'
-        updated = True
-
-    if args.regen:
-        if args.regen == 'as_stored':
-            r = config['regen']
-        else:
-            r = args.regen
-        if r == 'none':
-            print('Regeneration disabled.')
-        if r == 'interfaces' or r == 'all':
-            config['interfaces'] = [ i for i in get_network_interfaces() ]
-            print('Regenerated interfaces list: ' + str(config['interfaces']))
-        if r == 'domains' or r == 'all':
-            import glob
-            config['domains'] = [ d.rsplit('/',1)[1][:-2] for d in glob.glob('/etc/nginx/conf.d/*.local.d') ]
-            print('Regenerated domains list: ' + str(config['domains']))
-        updated = True
-
-    if updated:
-        with open('/etc/yunohost/mdns.yml', 'w') as f:
-            yaml.safe_dump(config, f, default_flow_style=False)
-            print('Configuration file updated.')
-
-    ###
-    #  MAIN SCRIPT
-    ###
-
-    if config['enabled'] is not True:
-        print('YunomDNS is disabled.')
-        sys.exit(0)
+    if missing_fields:
+        print("The fields %s are required" % ', '.join(missing_fields))
 
     if config['interfaces'] is None:
         print('No interface listed for broadcast.')
