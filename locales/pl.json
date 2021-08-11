@@ -1,12 +1,12 @@
 {
     "password_too_simple_1": "Hasło musi mieć co najmniej 8 znaków",
-    "app_already_up_to_date": "{app:s} jest obecnie aktualna",
-    "app_already_installed": "{app:s} jest już zainstalowane",
+    "app_already_up_to_date": "{app} jest obecnie aktualna",
+    "app_already_installed": "{app} jest już zainstalowane",
     "already_up_to_date": "Nic do zrobienia. Wszystko jest obecnie aktualne.",
     "admin_password_too_long": "Proszę wybrać hasło krótsze niż 127 znaków",
     "admin_password_changed": "Hasło administratora zostało zmienione",
     "admin_password_change_failed": "Nie można zmienić hasła",
     "admin_password": "Hasło administratora",
-    "action_invalid": "Nieprawidłowa operacja '{action:s}'",
+    "action_invalid": "Nieprawidłowa operacja '{action}'",
     "aborting": "Przerywanie."
 }

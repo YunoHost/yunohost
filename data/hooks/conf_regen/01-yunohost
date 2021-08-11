@@ -130,6 +130,16 @@ Conflicts=yunohost-firewall.service
 ConditionFileIsExecutable=!/etc/init.d/yunohost-firewall
 ConditionPathExists=!/etc/systemd/system/multi-user.target.wants/yunohost-firewall.service
 EOF
+
+  # Don't suspend computer on LidSwitch
+  mkdir -p ${pending_dir}/etc/systemd/logind.conf.d/
+  cat > ${pending_dir}/etc/systemd/logind.conf.d/ynh-override.conf << EOF
+[Login]
+HandleLidSwitch=ignore
+HandleLidSwitchDocked=ignore
+HandleLidSwitchExternalPower=ignore
+EOF
+
 }
 
 do_post_regen() {

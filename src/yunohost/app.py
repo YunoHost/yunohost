@@ -55,6 +55,7 @@ from moulinette.utils.filesystem import (
 from yunohost.service import service_status, _run_service_command
 from yunohost.utils import packages
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.log import is_unit_operation, OperationLogger
 
 logger = getActionLogger("yunohost.app")
@@ -127,14 +128,14 @@ def app_search(string):
     catalog_of_apps = app_catalog()
 
     # Selecting apps according to a match in app name or description
+    matching_apps = {"apps": {}}
     for app in catalog_of_apps["apps"].items():
-        if not (
-            re.search(string, app[0], flags=re.IGNORECASE)
-            or re.search(string, app[1]["description"], flags=re.IGNORECASE)
+        if re.search(string, app[0], flags=re.IGNORECASE) or re.search(
+            string, app[1]["description"], flags=re.IGNORECASE
         ):
-            del catalog_of_apps["apps"][app[0]]
+            matching_apps["apps"][app[0]] = app[1]
 
-    return catalog_of_apps
+    return matching_apps
 
 
 def app_list(full=False):
@@ -490,6 +491,9 @@ def app_upgrade(app=[], url=None, file=None, force=False):
     from yunohost.regenconf import manually_modified_files
 
     apps = app
+    # Check if disk space available
+    if free_space_in_directory("/") <= 512 * 1000 * 1000:
+        raise YunohostValidationError("disk_space_not_sufficient_update")
     # If no app is specified, upgrade all apps
     if not apps:
         # FIXME : not sure what's supposed to happen if there is a url and a file but no apps...
@@ -848,6 +852,10 @@ def app_install(
         manifest, extracted_app_folder = _extract_app_from_file(app)
     else:
         raise YunohostValidationError("app_unknown")
+
+    # Check if disk space available
+    if free_space_in_directory("/") <= 512 * 1000 * 1000:
+        raise YunohostValidationError("disk_space_not_sufficient_install")
 
     # Check ID
     if "id" not in manifest or "__" in manifest["id"]:

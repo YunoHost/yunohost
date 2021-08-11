@@ -4,6 +4,33 @@ yunohost (11.0.0~alpha) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Feb 2021 00:02:38 +0100
 
+yunohost (4.2.7) stable; urgency=low
+
+  Notable changes:
+  - [fix] app: 'yunohost app search' was broken (8cf92576)
+  - [fix] app: actions were broken, fix by reintroducing user arg in hook exec ([#1264](https://github.com/yunohost/yunohost/pull/1264))
+  - [enh] app: Add check for available disk space before app install/upgrade ([#1266](https://github.com/yunohost/yunohost/pull/1266))
+  - [enh] domains: Better support for non latin domain name ([#1270](https://github.com/yunohost/yunohost/pull/1270))
+  - [enh] security: Add settings to restrict webadmin access to a list of IPs ([#1271](https://github.com/yunohost/yunohost/pull/1271))
+  - [enh] misc: Avoid to suspend server if we close lidswitch ([#1275](https://github.com/yunohost/yunohost/pull/1275))
+  - [i18n] Translations updated for French, Galician, German
+
+  Misc fixes, improvements:
+  - [fix] logs: Sometimes metadata ends up being empty for some reason and ends up being loaded as None, making the "in" operator crash :| (50129f3a)
+  - [fix] nginx: Invalid HTML in yunohost_panel #1837 (1c15f644)
+  - [fix] ssh: set .ssh folder permissions to 600 ([#1269](https://github.com/yunohost/yunohost/pull/1269))
+  - [fix] firewall: upnpc.getspecificportmapping expects an int, can't handle port ranges ? (ee70dfe5)
+  - [fix] php helpers: fix conf path for dedicated php server (7349b229)
+  - [fix] php helpers: Increase memory limit for composer ([#1278](https://github.com/yunohost/yunohost/pull/1278))
+  - [enh] nodejs helpers: Upgrade n version to 7.3.0 ([#1262](https://github.com/yunohost/yunohost/pull/1262))
+  - [fix] doc: Example command in yunopaste usage was outdated (a8df60da)
+  - [fix] doc, diagnosis: update links to SMTP relay configuration ([#1277](https://github.com/yunohost/yunohost/pull/1277))
+  - [i18n] Translations fixes/cleanups (780c3cb8, b61082b1, 271e3a26, 4e4173d1, fab248ce, d49ad748)
+
+  Thanks to all contributors <3 ! (Bram, Christian Wehrli, cyxae, Éric Gaspar, José M, Kay0u, Le Libre Au Quotidien, ljf, Luca, Meta Meta, ppr, Stylix58, Tagada, yalh76)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 08 Aug 2021 19:27:27 +0200
+
 yunohost (4.2.6.1) stable; urgency=low
 
   - [fix] Remove invaluement from free dnsbl list (71489307)
