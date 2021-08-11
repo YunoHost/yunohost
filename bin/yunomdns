@@ -3,7 +3,6 @@
 """
 WIP
 Pythonic declaration of mDNS .local domains for YunoHost
-Based off https://github.com/jstasiak/python-zeroconf/blob/master/tests/test_asyncio.py
 """
 
 import subprocess
@@ -13,8 +12,6 @@ import sys
 import argparse
 import yaml
 
-import asyncio
-import logging
 import socket
 from time import sleep
 from typing import List, Dict
@@ -98,7 +95,6 @@ def get_network_interfaces():
     return devices
 
 if __name__ == '__main__':
-    logging.basicConfig(level=logging.DEBUG)
 
 
     ###
@@ -110,7 +106,6 @@ if __name__ == '__main__':
                                                  Configuration file: /etc/yunohost/mdns.yml
                                                  Subdomains are not supported.
                                                  ''')
-    parser.add_argument('--debug', action='store_true')
     parser.add_argument('--regen', nargs='?', const='as_stored', choices=['domains', 'interfaces', 'all', 'as_stored'],
                         help='''
                              Regenerates selection into the configuration file then starts mDNS broadcasting.
@@ -124,13 +119,6 @@ if __name__ == '__main__':
     able.add_argument('--enable', action='store_true', help='Enables mDNS broadcast, and regenerates the configuration')
     able.add_argument('--disable', action='store_true')
     args = parser.parse_args()
-
-    if args.debug:
-        logging.getLogger('zeroconf').setLevel(logging.DEBUG)
-        logging.getLogger('asyncio').setLevel(logging.DEBUG)
-    else:
-        logging.getLogger('zeroconf').setLevel(logging.WARNING)
-        logging.getLogger('asyncio').setLevel(logging.WARNING)
 
     ###
     #  CONFIG
