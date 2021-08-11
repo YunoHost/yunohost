@@ -167,6 +167,8 @@ if __name__ == '__main__':
         if r == 'domains' or r == 'all':
             import glob
             config['domains'] = [ d.rsplit('/',1)[1][:-2] for d in glob.glob('/etc/nginx/conf.d/*.local.d') ]
+            if 'yunohost.local' not in config['domains']:
+                config['domains'].append('yunohost.local')
             print('Regenerated domains list: ' + str(config['domains']))
         updated = True
 
