@@ -134,7 +134,7 @@ def user_create(
     password,
     mailbox_quota="0",
     mail=None,
-    imported=False
+    from_import=False
 ):
 
     from yunohost.domain import domain_list, _get_maindomain
@@ -197,7 +197,7 @@ def user_create(
     if mail in aliases:
         raise YunohostValidationError("mail_unavailable")
 
-    if not imported:
+    if not from_import:
         operation_logger.start()
 
     # Get random UID/GID
@@ -282,14 +282,14 @@ def user_create(
     hook_callback("post_user_create", args=[username, mail], env=env_dict)
 
     # TODO: Send a welcome mail to user
-    if not imported:
+    if not from_import:
         logger.success(m18n.n('user_created'))
 
     return {"fullname": fullname, "username": username, "mail": mail}
 
 
 @is_unit_operation([('username', 'user')])
-def user_delete(operation_logger, username, purge=False, imported=False):
+def user_delete(operation_logger, username, purge=False, from_import=False):
     """
     Delete user
 
@@ -304,7 +304,7 @@ def user_delete(operation_logger, username, purge=False, imported=False):
     if username not in user_list()["users"]:
         raise YunohostValidationError("user_unknown", user=username)
 
-    if not imported:
+    if not from_import:
         operation_logger.start()
 
     user_group_update("all_users", remove=username, force=True, sync_perm=False)
@@ -337,7 +337,7 @@ def user_delete(operation_logger, username, purge=False, imported=False):
 
     hook_callback('post_user_delete', args=[username, purge])
 
-    if not imported:
+    if not from_import:
         logger.success(m18n.n('user_deleted'))
 
 @is_unit_operation([("username", "user")], exclude=["change_password"])
@@ -353,7 +353,7 @@ def user_update(
     add_mailalias=None,
     remove_mailalias=None,
     mailbox_quota=None,
-    imported=False
+    from_import=False
 ):
     """
     Update user informations
@@ -502,7 +502,7 @@ def user_update(
         new_attr_dict["mailuserquota"] = [mailbox_quota]
         env_dict["YNH_USER_MAILQUOTA"] = mailbox_quota
 
-    if not imported:
+    if not from_import:
         operation_logger.start()
 
     try:
@@ -513,7 +513,7 @@ def user_update(
     # Trigger post_user_update hooks
     hook_callback("post_user_update", env=env_dict)
 
-    if not imported:
+    if not from_import:
         app_ssowatconf()
         logger.success(m18n.n('user_updated'))
         return user_info(username)
@@ -764,7 +764,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
                 # If the user is in this group (and it's not the primary group),
                 # remove the member from the group
                 if user['username'] != group and user['username'] in infos["members"]:
-                    user_group_update(group, remove=user['username'], sync_perm=False, imported=True)
+                    user_group_update(group, remove=user['username'], sync_perm=False, from_import=True)
 
         user_update(user['username'],
                 user['firstname'], user['lastname'],
@@ -773,17 +773,17 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
                 mail=user['mail'], add_mailalias=user['mail-alias'],
                 remove_mailalias=remove_alias,
                 remove_mailforward=remove_forward,
-                add_mailforward=user['mail-forward'], imported=True)
+                add_mailforward=user['mail-forward'], from_import=True)
 
         for group in user['groups']:
-            user_group_update(group, add=user['username'], sync_perm=False, imported=True)
+            user_group_update(group, add=user['username'], sync_perm=False, from_import=True)
 
     users = user_list(CSV_FIELDNAMES)['users']
     operation_logger.start()
     # We do delete and update before to avoid mail uniqueness issues
     for user in actions['deleted']:
         try:
-            user_delete(user, purge=True, imported=True)
+            user_delete(user, purge=True, from_import=True)
             result['deleted'] += 1
         except YunohostError as e:
             on_failure(user, e)
@@ -802,7 +802,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
             user_create(user['username'],
                         user['firstname'], user['lastname'],
                         user['domain'], user['password'],
-                        user['mailbox-quota'], imported=True)
+                        user['mailbox-quota'], from_import=True)
             update(user)
             result['created'] += 1
         except YunohostError as e:
@@ -1006,7 +1006,7 @@ def user_group_update(
     remove=None,
     force=False,
     sync_perm=True,
-    imported=False
+    from_import=False
 ):
     """
     Update user informations
@@ -1076,7 +1076,7 @@ def user_group_update(
     ]
 
     if set(new_group) != set(current_group):
-        if not imported:
+        if not from_import:
             operation_logger.start()
         ldap = _get_ldap_interface()
         try:
@@ -1090,7 +1090,7 @@ def user_group_update(
     if sync_perm:
         permission_sync_to_user()
 
-    if not imported:
+    if not from_import:
         if groupname != "all_users":
             logger.success(m18n.n("group_updated", group=groupname))
         else:
