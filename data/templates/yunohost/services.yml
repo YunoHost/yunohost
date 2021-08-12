@@ -52,7 +52,6 @@ yunohost-firewall:
   test_status: iptables -S | grep "^-A INPUT" | grep " --dport" | grep -q ACCEPT
   category: security
 yunomdns:
-  needs_exposed_ports: [5353]
   category: mdns
 glances: null
 nsswitch: null
