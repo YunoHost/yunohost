@@ -80,7 +80,7 @@ ynh_validate_ip()
 
     [ "$family" == "4" ] || [ "$family" == "6" ] || return 1
 
-  python /dev/stdin << EOF
+    python3 /dev/stdin << EOF
 import socket
 import sys
 family = { "4" : socket.AF_INET, "6" : socket.AF_INET6 }

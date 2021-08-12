@@ -115,6 +115,9 @@ def domain_add(operation_logger, domain, dyndns=False):
     # See: https://forum.yunohost.org/t/invalid-domain-causes-diagnosis-web-to-fail-fr-on-demand/11765
     domain = domain.lower()
 
+    # Non-latin characters (e.g. café.com => xn--caf-dma.com)
+    domain = domain.encode("idna").decode("utf-8")
+
     # DynDNS domain
     if dyndns:
 

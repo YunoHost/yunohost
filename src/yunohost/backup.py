@@ -71,6 +71,7 @@ from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger, is_unit_operation
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.packages import ynh_packages_version
+from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.settings import settings_get
 
 BACKUP_PATH = "/home/yunohost.backup"
@@ -2017,7 +2018,7 @@ class TarBackupMethod(BackupMethod):
 
         try:
             files_in_archive = tar.getnames()
-        except IOError as e:
+        except (IOError, EOFError, tarfile.ReadError) as e:
             raise YunohostError(
                 "backup_archive_corrupted", archive=self._archive_file, error=str(e)
             )
@@ -2493,7 +2494,7 @@ def backup_info(name, with_details=False, human_readable=False):
 
         try:
             files_in_archive = tar.getnames()
-        except (IOError, EOFError) as e:
+        except (IOError, EOFError, tarfile.ReadError) as e:
             raise YunohostError(
                 "backup_archive_corrupted", archive=archive_file, error=str(e)
             )
@@ -2658,7 +2659,7 @@ def _recursive_umount(directory):
     points_to_umount = [
         line.split(" ")[2]
         for line in mount_lines
-        if len(line) >= 3 and line.split(" ")[2].startswith(directory)
+        if len(line) >= 3 and line.split(" ")[2].startswith(os.path.realpath(directory))
     ]
 
     everything_went_fine = True
@@ -2670,11 +2671,6 @@ def _recursive_umount(directory):
             continue
 
     return everything_went_fine
-
-
-def free_space_in_directory(dirpath):
-    stat = os.statvfs(dirpath)
-    return stat.f_frsize * stat.f_bavail
 
 
 def disk_usage(path):

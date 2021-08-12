@@ -223,7 +223,7 @@ def log_show(
     # Display metadata if exist
     if os.path.exists(md_path):
         try:
-            metadata = read_yaml(md_path)
+            metadata = read_yaml(md_path) or {}
         except MoulinetteError as e:
             error = m18n.n("log_corrupted_md_file", md_file=md_path, error=e)
             if os.path.exists(log_path):
@@ -422,7 +422,7 @@ class RedactingFormatter(Formatter):
             # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
             # Some names like "key" or "manifest_key" are ignored, used in helpers like ynh_app_setting_set or ynh_read_manifest
             match = re.search(
-                r"(pwd|pass|password|passphrase|secret\w*|\w+key|token)=(\S{3,})$",
+                r"(pwd|pass|password|passphrase|secret\w*|\w+key|token|PASSPHRASE)=(\S{3,})$",
                 record.strip(),
             )
             if (

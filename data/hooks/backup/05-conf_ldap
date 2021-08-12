@@ -11,7 +11,6 @@ backup_dir="${1}/conf/ldap"
 
 # Backup the configuration
 ynh_backup "/etc/ldap/ldap.conf" "${backup_dir}/ldap.conf"
-ynh_backup "/etc/ldap/slapd.ldif" "${backup_dir}/slapd.ldif"
 slapcat -b cn=config -l "${backup_dir}/cn=config.master.ldif"
 
 # Backup the database

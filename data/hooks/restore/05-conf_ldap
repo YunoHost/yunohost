@@ -33,7 +33,6 @@ die() {
 mv /etc/ldap/slapd.d "$TMPDIR"
 mkdir -p /etc/ldap/slapd.d
 cp -a "${backup_dir}/ldap.conf" /etc/ldap/ldap.conf
-cp -a "${backup_dir}/slapd.ldif" /etc/ldap/slapd.ldif
 # Legacy thing but we need it to force the regen-conf in case of it exist
 [ ! -e "${backup_dir}/slapd.conf" ] \
     || cp -a "${backup_dir}/slapd.conf" /etc/ldap/slapd.conf
