@@ -3,8 +3,8 @@ Description=YunoHost mDNS service
 After=network.target
 
 [Service]
-User=avahi
-Group=avahi
+User=mdns
+Group=mdns
 Type=simple
 ExecStart=/usr/bin/yunomdns
 StandardOutput=syslog
