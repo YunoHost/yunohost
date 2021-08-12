@@ -749,34 +749,34 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         result['errors'] += 1
         logger.error(user + ': ' + str(exception))
 
-    def update(user, info=False):
+    def update(new_infos, old_infos=False):
         remove_alias = None
         remove_forward = None
         if info:
-            user['mail'] = None if info['mail'] == user['mail'] else user['mail']
-            remove_alias = list(set(info['mail-alias']) - set(user['mail-alias']))
-            remove_forward = list(set(info['mail-forward']) - set(user['mail-forward']))
-            user['mail-alias'] = list(set(user['mail-alias']) - set(info['mail-alias']))
-            user['mail-forward'] = list(set(user['mail-forward']) - set(info['mail-forward']))
+            new_infos['mail'] = None if old_infos['mail'] == new_infos['mail'] else new_infos['mail']
+            remove_alias = list(set(old_infos['mail-alias']) - set(new_infos['mail-alias']))
+            remove_forward = list(set(old_infos['mail-forward']) - set(new_infos['mail-forward']))
+            new_infos['mail-alias'] = list(set(new_infos['mail-alias']) - set(old_infos['mail-alias']))
+            new_infos['mail-forward'] = list(set(new_infos['mail-forward']) - set(old_infos['mail-forward']))
             for group, infos in user_group_list()["groups"].items():
                 if group == "all_users":
                     continue
                 # If the user is in this group (and it's not the primary group),
                 # remove the member from the group
-                if user['username'] != group and user['username'] in infos["members"]:
-                    user_group_update(group, remove=user['username'], sync_perm=False, from_import=True)
+                if new_infos['username'] != group and new_infos['username'] in infos["members"]:
+                    user_group_update(group, remove=new_infos['username'], sync_perm=False, from_import=True)
 
-        user_update(user['username'],
-                user['firstname'], user['lastname'],
-                user['mail'], user['password'],
-                mailbox_quota=user['mailbox-quota'],
-                mail=user['mail'], add_mailalias=user['mail-alias'],
-                remove_mailalias=remove_alias,
-                remove_mailforward=remove_forward,
-                add_mailforward=user['mail-forward'], from_import=True)
+        user_update(new_infos['username'],
+                    new_infos['firstname'], new_infos['lastname'],
+                    new_infos['mail'], new_infos['password'],
+                    mailbox_quota=new_infos['mailbox-quota'],
+                    mail=new_infos['mail'], add_mailalias=new_infos['mail-alias'],
+                    remove_mailalias=remove_alias,
+                    remove_mailforward=remove_forward,
+                    add_mailforward=new_infos['mail-forward'], from_import=True)
 
-        for group in user['groups']:
-            user_group_update(group, add=user['username'], sync_perm=False, from_import=True)
+        for group in new_infos['groups']:
+            user_group_update(group, add=new_infos['username'], sync_perm=False, from_import=True)
 
     users = user_list(CSV_FIELDNAMES)['users']
     operation_logger.start()
@@ -808,8 +808,6 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         except YunohostError as e:
             on_failure(user['username'], e)
         progress("Creation")
-
-
 
     permission_sync_to_user()
     app_ssowatconf()
