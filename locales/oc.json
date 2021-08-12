@@ -193,7 +193,7 @@
     "user_unknown": "Utilizaire « {user:s} » desconegut",
     "user_update_failed": "Modificacion impossibla de l’utilizaire",
     "user_updated": "L’utilizaire es estat modificat",
-    "service_description_avahi-daemon": "permet d’aténher vòstre servidor via yunohost.local sus vòstre ret local",
+    "service_description_mdns": "permet d’aténher vòstre servidor via yunohost.local sus vòstre ret local",
     "service_description_dnsmasq": "gerís la resolucion dels noms de domeni (DNS)",
     "updating_apt_cache": "Actualizacion de la lista dels paquets disponibles…",
     "server_reboot_confirm": "Lo servidor es per reaviar sul pic, o volètz vertadièrament ? {answers:s}",

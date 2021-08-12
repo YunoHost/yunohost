@@ -83,7 +83,7 @@
     "yunohost_installing": "عملية تنصيب يونوهوست جارية …",
     "yunohost_not_installed": "إنَّ واي يونوهوست ليس مُنَصَّب أو هو مثبت حاليا بشكل خاطئ. قم بتنفيذ الأمر 'yunohost tools postinstall'",
     "migrations_list_conflict_pending_done": "لا يمكنك استخدام --previous و --done معًا على نفس سطر الأوامر.",
-    "service_description_avahi-daemon": "يسمح لك بالنفاذ إلى خادومك عبر الشبكة المحلية باستخدام yunohost.local",
+    "service_description_mdns": "يسمح لك بالنفاذ إلى خادومك عبر الشبكة المحلية باستخدام yunohost.local",
     "service_description_metronome": "يُدير حسابات الدردشة الفورية XMPP",
     "service_description_nginx": "يقوم بتوفير النفاذ و السماح بالوصول إلى كافة مواقع الويب المستضافة على خادومك",
     "service_description_postfix": "يقوم بإرسال و تلقي الرسائل البريدية الإلكترونية",

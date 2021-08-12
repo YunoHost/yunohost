@@ -238,7 +238,7 @@
     "service_description_fail2ban": "Protege contra ataques de fuerza bruta y otras clases de ataques desde Internet",
     "service_description_dovecot": "Permite a los clientes de correo acceder/obtener correo (vía IMAP y POP3)",
     "service_description_dnsmasq": "Maneja la resolución de nombres de dominio (DNS)",
-    "service_description_avahi-daemon": "Permite acceder a su servidor usando «yunohost.local» en su red local",
+    "service_description_mdns": "Permite acceder a su servidor usando «yunohost.local» en su red local",
     "server_reboot_confirm": "El servidor se reiniciará inmediatamente ¿está seguro? [{answers:s}]",
     "server_reboot": "El servidor se reiniciará",
     "server_shutdown_confirm": "El servidor se apagará inmediatamente ¿está seguro? [{answers:s}]",

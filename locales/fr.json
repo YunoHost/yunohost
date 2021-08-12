@@ -232,7 +232,7 @@
     "migrations_list_conflict_pending_done": "Vous ne pouvez pas utiliser --previous et --done simultanément.",
     "migrations_to_be_ran_manually": "La migration {id} doit être lancée manuellement. Veuillez aller dans Outils > Migrations dans l’interface admin, ou lancer `yunohost tools migrations run`.",
     "migrations_need_to_accept_disclaimer": "Pour lancer la migration {id}, vous devez accepter cet avertissement :\n---\n{disclaimer}\n---\nSi vous acceptez de lancer la migration, veuillez relancer la commande avec l’option --accept-disclaimer.",
-    "service_description_avahi-daemon": "Vous permet d’atteindre votre serveur en utilisant « yunohost.local » sur votre réseau local",
+    "service_description_mdns": "Vous permet d’atteindre votre serveur en utilisant « yunohost.local » sur votre réseau local",
     "service_description_dnsmasq": "Gère la résolution des noms de domaine (DNS)",
     "service_description_dovecot": "Permet aux clients de messagerie d’accéder/récupérer les courriels (via IMAP et POP3)",
     "service_description_fail2ban": "Protège contre les attaques brute-force et autres types d’attaques venant d’Internet",
