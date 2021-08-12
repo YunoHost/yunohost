@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 
 """
-WIP
 Pythonic declaration of mDNS .local domains for YunoHost
 """
 
@@ -101,7 +100,7 @@ if __name__ == '__main__':
     ###
 
     with open('/etc/yunohost/mdns.yml', 'r') as f:
-        config = yaml.load(f) or {}
+        config = yaml.safe_load(f) or {}
     updated = False
 
     required_fields = ["interfaces", "domains"]
