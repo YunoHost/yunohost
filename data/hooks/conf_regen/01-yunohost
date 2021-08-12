@@ -3,7 +3,6 @@
 set -e
 
 services_path="/etc/yunohost/services.yml"
-mdns_path="/etc/yunohost/mdns.yml"
 
 do_init_regen() {
   if [[ $EUID -ne 0 ]]; then
@@ -19,11 +18,9 @@ do_init_regen() {
   [[ -f /etc/yunohost/current_host ]] \
     || echo "yunohost.org" > /etc/yunohost/current_host
 
-  # copy default services, mdns, and firewall
+  # copy default services and firewall
   [[ -f $services_path ]] \
     || cp services.yml "$services_path"
-  [[ -f $mdns_path ]] \
-    || cp mdns.yml "$mdns_path"
   [[ -f /etc/yunohost/firewall.yml ]] \
     || cp firewall.yml /etc/yunohost/firewall.yml
 

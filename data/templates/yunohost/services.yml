@@ -1,4 +1,3 @@
-avahi-daemon: {}
 dnsmasq:
   test_conf: dnsmasq --test
 dovecot:
@@ -71,3 +70,4 @@ rmilter: null
 php5-fpm: null
 php7.0-fpm: null
 nslcd: null
+avahi-daemon: null

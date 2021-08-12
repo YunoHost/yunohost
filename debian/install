@@ -5,7 +5,6 @@ doc/yunohost.8.gz /usr/share/man/man8/
 data/actionsmap/* /usr/share/moulinette/actionsmap/
 data/hooks/* /usr/share/yunohost/hooks/
 data/other/yunoprompt.service /etc/systemd/system/
-data/other/yunomdns.service /etc/systemd/system/
 data/other/password/* /usr/share/yunohost/other/password/
 data/other/dpkg-origins/yunohost /etc/dpkg/origins
 data/other/dnsbl_list.yml /usr/share/yunohost/other/
