@@ -96,11 +96,11 @@ def user_list(fields=None):
     users = {}
 
     if not fields:
-        fields = ['username', 'fullname', 'mail', 'mailbox-quota', 'shell']
+        fields = ['username', 'fullname', 'mail', 'mailbox-quota']
 
     for field in fields:
         if field in ldap_attrs:
-            attrs |= set([ldap_attrs[field]])
+            attrs.add(ldap_attrs[field])
         else:
             raise YunohostError('field_invalid', field)
 
@@ -252,7 +252,7 @@ def user_create(
         # Attempt to create user home folder
         subprocess.check_call(["mkhomedir_helper", username])
     except subprocess.CalledProcessError:
-        home = '/home/{0}'.format(username)
+        home = f'/home/{username}'
         if not os.path.isdir(home):
             logger.warning(m18n.n('user_home_creation_failed', home=home),
                            exc_info=1)
@@ -427,8 +427,10 @@ def user_update(
         main_domain = _get_maindomain()
         aliases = [alias + main_domain for alias in FIRST_ALIASES]
 
+        # If the requested mail address is already as main address or as an alias by this user
         if mail in user['mail']:
             user['mail'].remove(mail)
+        # Othewise, check that this mail address is not already used by this user
         else:
             try:
                 ldap.validate_uniqueness({'mail': mail})
@@ -445,6 +447,7 @@ def user_update(
         if not isinstance(add_mailalias, list):
             add_mailalias = [add_mailalias]
         for mail in add_mailalias:
+            # (c.f. similar stuff as before)
             if mail in user["mail"]:
                 user["mail"].remove(mail)
             else:
@@ -647,7 +650,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
     Import users from CSV
 
     Keyword argument:
-        csv -- CSV file with columns username;firstname;lastname;password;mailbox_quota;mail;alias;forward;groups
+        csvfile -- CSV file with columns username;firstname;lastname;password;mailbox_quota;mail;alias;forward;groups
 
     """
 
@@ -655,6 +658,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
     from moulinette.utils.text import random_ascii
     from yunohost.permission import permission_sync_to_user
     from yunohost.app import app_ssowatconf
+
     # Pre-validate data and prepare what should be done
     actions = {
         'created': [],
