@@ -65,14 +65,14 @@ class DNSRecordsDiagnoser(Diagnoser):
             if is_subdomain:
                 yield dict(
                     meta={"domain": domain, "category": "basic"},
-                    results={},
+                    data={},
                     status="WARNING",
                     summary="diagnosis_domain_subdomain_localdomain",
                 )
             else:
                 yield dict(
                     meta={"domain": domain, "category": "basic"},
-                    results={},
+                    data={},
                     status="INFO",
                     summary="diagnosis_domain_localdomain",
                 )
