@@ -99,13 +99,13 @@ ynh_value_set() {
 }
 
 _ynh_panel_get() {
-    
+    set +x 
     # From settings
     local params_sources
     params_sources=`python3 << EOL
 import toml
 from collections import OrderedDict
-with open("/etc/yunohost/apps/vpnclient/config_panel.toml", "r") as f:
+with open("../config_panel.toml", "r") as f:
     file_content = f.read()
 loaded_toml = toml.loads(file_content, _dict=OrderedDict)
 
@@ -114,20 +114,23 @@ for panel_name,panel in loaded_toml.items():
         for section_name, section in panel.items():
             if isinstance(section, dict):
                 for name, param in section.items():
-                    if isinstance(param, dict) and param.get('source', '') == 'settings':
+                    if isinstance(param, dict) and param.get('type', 'string') not in ['info', 'warning', 'error']:
                         print("%s.%s.%s=%s" %(panel_name, section_name, name, param.get('source', 'settings')))
 EOL
 `
-    for param_source in params_sources
+    for param_source in $params_sources
     do
         local _dot_setting=$(echo "$param_source" | cut -d= -f1)
-        local _snake_setting="YNH_CONFIG_$(ynh_lowerdot_to_uppersnake $dot_setting)"
+        local _snake_setting="YNH_CONFIG_$(ynh_lowerdot_to_uppersnake $_dot_setting)"
         local short_setting=$(echo "$_dot_setting" | cut -d. -f3)
         local getter="get__${short_setting}"
         local source="$(echo $param_source | cut -d= -f2)"
+        sources[${short_setting}]="$source"
+        file_hash[${short_setting}]=""
+        dot_settings[${short_setting}]="${_dot_setting}"
 
         # Get value from getter if exists
-        if type $getter | grep -q '^function$' 2>/dev/null; then
+        if type -t $getter 2>/dev/null | grep -q '^function$' 2>/dev/null; then
             old[$short_setting]="$($getter)"
         
         # Get value from app settings
@@ -144,38 +147,43 @@ EOL
         # Specific case for files (all content of the file is the source)
         else
             old[$short_setting]="$source"
+            file_hash[$short_setting]="true"
         fi
-
+        set +u 
+        new[$short_setting]="${!_snake_setting}"
+        set -u
     done
+    set -x
     
     
 }
 
 _ynh_panel_apply() {
-    for short_setting in "${!dot_settings[@]}"
+    for short_setting in "${!old[@]}"
     do
         local setter="set__${short_setting}"
-        local source="$sources[$short_setting]"
-        
-        # Apply setter if exists
-        if type $setter | grep -q '^function$' 2>/dev/null; then
-            $setter
+        local source="${sources[$short_setting]}"
+        if [ "${changed[$short_setting]}" == "true" ] ; then 
+            # Apply setter if exists
+            if type -t $setter 2>/dev/null | grep -q '^function$' 2>/dev/null; then
+                $setter
 
-        # Copy file in right place 
-        elif [[ "$source" == "settings" ]] ; then
-            ynh_app_setting_set $app $short_setting "$new[$short_setting]"
-        
-        # Get value from a kind of key/value file
-        elif [[ "$source" == *":"* ]]
-        then
-            local source_key="$(echo "$source" | cut -d: -f1)"
-            source_key=${source_key:-$short_setting}
-            local source_file="$(echo "$source" | cut -d: -f2)"
-            ynh_value_set --file="${source_file}" --key="${source_key}" --value="$new[$short_setting]"
+            # Copy file in right place 
+            elif [[ "$source" == "settings" ]] ; then
+                ynh_app_setting_set $app $short_setting "${new[$short_setting]}"
+            
+            # Get value from a kind of key/value file
+            elif [[ "$source" == *":"* ]]
+            then
+                local source_key="$(echo "$source" | cut -d: -f1)"
+                source_key=${source_key:-$short_setting}
+                local source_file="$(echo "$source" | cut -d: -f2)"
+                ynh_value_set --file="${source_file}" --key="${source_key}" --value="${new[$short_setting]}"
 
-        # Specific case for files (all content of the file is the source)
-        else
-            cp "$new[$short_setting]" "$source"
+            # Specific case for files (all content of the file is the source)
+            else
+                cp "${new[$short_setting]}" "$source"
+            fi
         fi
     done
 }
@@ -189,24 +197,32 @@ _ynh_panel_show() {
 }
 
 _ynh_panel_validate() {
+    set +x
     # Change detection
     local is_error=true
     #for changed_status in "${!changed[@]}"
-    for short_setting in "${!dot_settings[@]}"
+    for short_setting in "${!old[@]}"
     do
-        #TODO file hash
-        file_hash[$setting]=$(sha256sum "$_source" | cut -d' ' -f1)
-        file_hash[$form_setting]=$(sha256sum "${!form_setting}" | cut -d' ' -f1)
-        if [[ "${file_hash[$setting]}" != "${file_hash[$form_setting]}" ]]
-        then
-            changed[$setting]=true
-        fi
-        if [[ "$new[$short_setting]" == "$old[$short_setting]" ]]
-        then
-            changed[$short_setting]=false
+        changed[$short_setting]=false
+        if [ ! -z "${file_hash[${short_setting}]}" ] ; then
+            file_hash[old__$short_setting]=""
+            file_hash[new__$short_setting]=""
+            if [ -f "${old[$short_setting]}" ] ; then
+                file_hash[old__$short_setting]=$(sha256sum "${old[$short_setting]}" | cut -d' ' -f1)
+            fi
+            if [ -f "${new[$short_setting]}" ] ; then
+                file_hash[new__$short_setting]=$(sha256sum "${new[$short_setting]}" | cut -d' ' -f1)
+                if [[ "${file_hash[old__$short_setting]}" != "${file_hash[new__$short_setting]}" ]]
+                then
+                    changed[$short_setting]=true
+                fi
+            fi
         else
-            changed[$short_setting]=true
-            is_error=false
+            if [[ "${new[$short_setting]}" != "${old[$short_setting]}" ]]
+            then
+                changed[$short_setting]=true
+                is_error=false
+            fi
         fi
     done
     
@@ -214,10 +230,10 @@ _ynh_panel_validate() {
     if [[ "$is_error" == "false" ]]
     then
 
-        for short_setting in "${!dot_settings[@]}"
+        for short_setting in "${!old[@]}"
         do
             local result=""
-            if type validate__$short_setting | grep -q '^function$' 2>/dev/null; then
+            if type -t validate__$short_setting | grep -q '^function$' 2>/dev/null; then
                 result="$(validate__$short_setting)"
             fi
             if [ -n "$result" ]
@@ -233,6 +249,7 @@ _ynh_panel_validate() {
     then
         ynh_die
     fi 
+    set -x
     
 }
 
@@ -253,9 +270,12 @@ ynh_panel_apply() {
 }
 
 ynh_panel_run() {
-    declare -A old=()
-    declare -A changed=()
-    declare -A file_hash=()
+    declare -Ag old=()
+    declare -Ag new=()
+    declare -Ag changed=()
+    declare -Ag file_hash=()
+    declare -Ag sources=()
+    declare -Ag dot_settings=()
     
     ynh_panel_get
     case $1 in
