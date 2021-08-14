@@ -831,6 +831,18 @@ def app_install(
         "install_time": int(time.time()),
         "current_revision": manifest.get("remote", {}).get("revision", "?"),
     }
+
+    # If packaging_format v2+, save all install questions as settings
+    packaging_format = int(manifest.get("packaging_format", 0))
+    if packaging_format >= 2:
+        for arg_name, arg_value_and_type in args_odict.items():
+
+            # ... except is_public because it should not be saved and should only be about initializing permisisons
+            if arg_name == "is_public":
+                continue
+
+            app_settings[arg_name] = arg_value_and_type[0]
+
     _set_app_settings(app_instance_name, app_settings)
 
     # Move scripts and manifest to the right place
@@ -2400,6 +2412,24 @@ def _make_environment_for_app_script(
 
     for arg_name, arg_value in args.items():
         env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = str(arg_value)
+
+    # If packaging format v2, load all settings
+    packaging_format = int(manifest.get("packaging_format", 0))
+    if packaging_format >= 2:
+        env_dict["app"] = app
+        for setting_name, setting_value in _get_app_settings(app):
+
+            # Ignore special internal settings like checksum__
+            # (not a huge deal to load them but idk...)
+            if setting_name.startswith("checksum__"):
+                continue
+
+            env_dict[setting_name] = str(setting_value)
+
+        # Special weird case for backward compatibility...
+        # 'path' was loaded into 'path_url' .....
+        if 'path' in env_dict:
+            env_dict["path_url"] = env_dict["path"]
 
     return env_dict
 
