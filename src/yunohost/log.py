@@ -372,6 +372,8 @@ def is_unit_operation(
             for field in exclude:
                 if field in context:
                     context.pop(field, None)
+
+            # Manage file or stream
             for field, value in context.items():
                 if isinstance(value, IOBase):
                     try:
