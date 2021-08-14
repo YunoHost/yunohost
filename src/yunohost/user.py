@@ -46,7 +46,7 @@ logger = getActionLogger("yunohost.user")
 CSV_FIELDNAMES = [u'username', u'firstname', u'lastname', u'password', u'mailbox-quota', u'mail', u'mail-alias', u'mail-forward', u'groups']
 VALIDATORS = {
     'username': r'^[a-z0-9_]+$',
-    'firstname': r'^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$', #FIXME Merge first and lastname and support more name (arabish, chinese...)
+    'firstname': r'^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$',
     'lastname': r'^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$',
     'password': r'^|(.{3,})$',
     'mail': r'^([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}))$',
