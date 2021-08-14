@@ -2145,7 +2145,7 @@ def _get_app_config_panel(app_id):
         for key, value in panels:
             panel = {
                 "id": key,
-                "name": value["name"],
+                "name": value.get("name", ""),
                 "sections": [],
             }
 
@@ -2158,7 +2158,7 @@ def _get_app_config_panel(app_id):
             for section_key, section_value in sections:
                 section = {
                     "id": section_key,
-                    "name": section_value["name"],
+                    "name": section_value.get("name", ""),
                     "options": [],
                 }
 
