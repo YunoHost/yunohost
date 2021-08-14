@@ -222,7 +222,7 @@ user:
                     type: open
                 -u:
                     full: --update
-                    help: Update all existing users contained in the csv file (by default those users are ignored)
+                    help: Update all existing users contained in the csv file (by default existing users are ignored)
                     action: store_true
                 -d:
                     full: --delete
