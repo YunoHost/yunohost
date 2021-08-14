@@ -226,7 +226,7 @@ user:
                     action: store_true
                 -d:
                     full: --delete
-                    help: Delete all existing users that are not contained in the csv file (by default those users are ignored)
+                    help: Delete all existing users that are not contained in the csv file (by default existing users are kept)
                     action: store_true
 
     subcategories:
