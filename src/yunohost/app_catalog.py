@@ -58,8 +58,8 @@ def app_catalog(full=False, with_categories=False):
                 "level": infos["level"],
             }
         else:
-            infos["manifest"]["arguments"] = _set_default_ask_questions(
-                infos["manifest"].get("arguments", {})
+            infos["manifest"]["install"] = _set_default_ask_questions(
+                infos["manifest"].get("install", {})
             )
 
     # Trim info for categories if not using --full

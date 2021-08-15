@@ -95,7 +95,6 @@ APP_FILES_TO_COPY = [
     "doc",
 ]
 
-
 def app_list(full=False, installed=False, filter=None):
     """
     List installed apps
@@ -161,8 +160,8 @@ def app_info(app, full=False):
 
     ret["setting_path"] = setting_path
     ret["manifest"] = local_manifest
-    ret["manifest"]["arguments"] = _set_default_ask_questions(
-        ret["manifest"].get("arguments", {})
+    ret["manifest"]["install"] = _set_default_ask_questions(
+        ret["manifest"].get("install", {})
     )
     ret["settings"] = settings
 
@@ -179,7 +178,7 @@ def app_info(app, full=False):
         os.path.join(setting_path, "scripts", "backup")
     ) and os.path.exists(os.path.join(setting_path, "scripts", "restore"))
     ret["supports_multi_instance"] = is_true(
-        local_manifest.get("multi_instance", False)
+        local_manifest.get("integration", {}).get("multi_instance", False)
     )
     ret["supports_config_panel"] = os.path.exists(
         os.path.join(setting_path, "config_panel.toml")
@@ -836,13 +835,13 @@ def app_install(
     # If packaging_format v2+, save all install questions as settings
     packaging_format = int(manifest.get("packaging_format", 0))
     if packaging_format >= 2:
-        for arg_name, arg_value_and_type in args_odict.items():
+        for arg_name, arg_value in args.items():
 
-            # ... except is_public because it should not be saved and should only be about initializing permisisons
+            # ... except is_public ....
             if arg_name == "is_public":
                 continue
 
-            app_settings[arg_name] = arg_value_and_type[0]
+            app_settings[arg_name] = arg_value
 
     _set_app_settings(app_instance_name, app_settings)
 
@@ -1751,15 +1750,7 @@ def _get_app_actions(app_id):
         for key, value in toml_actions.items():
             action = dict(**value)
             action["id"] = key
-
-            arguments = []
-            for argument_name, argument in value.get("arguments", {}).items():
-                argument = dict(**argument)
-                argument["name"] = argument_name
-
-                arguments.append(argument)
-
-            action["arguments"] = arguments
+            action["arguments"] = value.get("arguments", {})
             actions.append(action)
 
         return actions
@@ -2015,21 +2006,19 @@ def _convert_v1_manifest_to_v2(manifest):
     return manifest
 
 
-def _set_default_ask_questions(arguments):
+def _set_default_ask_questions(questions, script_name="install"):
 
     # arguments is something like
-    # { "install": [
-    #       { "name": "domain",
+    # { "domain":
+    #       {
     #         "type": "domain",
     #         ....
     #       },
-    #       { "name": "path",
-    #         "type": "path"
+    #    "path": {
+    #         "type": "path",
     #         ...
     #       },
     #       ...
-    #   ],
-    #  "upgrade": [ ... ]
     # }
 
     # We set a default for any question with these matching (type, name)
@@ -2041,38 +2030,29 @@ def _set_default_ask_questions(arguments):
         ("path", "path"),  # i18n: app_manifest_install_ask_path
         ("password", "password"),  # i18n: app_manifest_install_ask_password
         ("user", "admin"),  # i18n: app_manifest_install_ask_admin
-        ("boolean", "is_public"),
-    ]  # i18n: app_manifest_install_ask_is_public
+        ("boolean", "is_public"),  # i18n: app_manifest_install_ask_is_public
+    ]
 
-    for script_name, arg_list in arguments.items():
+    for question_name, question in questions.items():
+        question["name"] = question_name
 
-        # We only support questions for install so far, and for other
-        if script_name != "install":
-            continue
-
-        for arg in arg_list:
-
-            # Do not override 'ask' field if provided by app ?... Or shall we ?
-            # if "ask" in arg:
-            #    continue
-
-            # If this arg corresponds to a question with default ask message...
-            if any(
-                (arg.get("type"), arg["name"]) == question
-                for question in questions_with_default
-            ):
-                # The key is for example "app_manifest_install_ask_domain"
-                key = "app_manifest_%s_ask_%s" % (script_name, arg["name"])
-                arg["ask"] = m18n.n(key)
+        # If this question corresponds to a question with default ask message...
+        if any(
+            (question.get("type"), question["name"]) == q
+            for q in questions_with_default
+        ):
+            # The key is for example "app_manifest_install_ask_domain"
+            key = "app_manifest_%s_ask_%s" % (script_name, question["name"])
+            question["ask"] = m18n.n(key)
 
             # Also it in fact doesn't make sense for any of those questions to have an example value nor a default value...
-            if arg.get("type") in ["domain", "user", "password"]:
+            if question.get("type") in ["domain", "user", "password"]:
                 if "example" in arg:
-                    del arg["example"]
+                    del question["example"]
                 if "default" in arg:
-                    del arg["domain"]
+                    del question["domain"]
 
-    return arguments
+    return questions
 
 
 def _is_app_repo_url(string: str) -> bool:
@@ -2306,7 +2286,7 @@ def _check_manifest_requirements(manifest: Dict):
     """Check if required packages are met from the manifest"""
 
     packaging_format = int(manifest.get("packaging_format", 0))
-    if packaging_format not in [0, 1]:
+    if packaging_format not in [2]:
         raise YunohostValidationError("app_packaging_format_not_supported")
 
     requirements = manifest.get("requirements", dict())
