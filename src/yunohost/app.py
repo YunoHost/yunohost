@@ -32,6 +32,7 @@ import time
 import re
 import subprocess
 import tempfile
+import copy
 from collections import OrderedDict
 from typing import List, Tuple, Dict, Any
 
@@ -1929,21 +1930,7 @@ def _get_manifest_of_app(path):
     #     ¦   ¦   },
 
     if os.path.exists(os.path.join(path, "manifest.toml")):
-        manifest_toml = read_toml(os.path.join(path, "manifest.toml"))
-
-        manifest = manifest_toml.copy()
-
-        install_arguments = []
-        for name, values in (
-            manifest_toml.get("arguments", {}).get("install", {}).items()
-        ):
-            args = values.copy()
-            args["name"] = name
-
-            install_arguments.append(args)
-
-        manifest["arguments"]["install"] = install_arguments
-
+        manifest = read_toml(os.path.join(path, "manifest.toml"))
     elif os.path.exists(os.path.join(path, "manifest.json")):
         manifest = read_json(os.path.join(path, "manifest.json"))
     else:
@@ -1953,7 +1940,78 @@ def _get_manifest_of_app(path):
             raw_msg=True,
         )
 
-    manifest["arguments"] = _set_default_ask_questions(manifest.get("arguments", {}))
+    if int(manifest.get("packaging_format", 0)) <= 1:
+        manifest = _convert_v1_manifest_to_v2(manifest)
+
+    manifest["install"] = _set_default_ask_questions(manifest.get("install", {}))
+    return manifest
+
+
+def _convert_v1_manifest_to_v2(manifest):
+
+    manifest = copy.deepcopy(manifest)
+
+    if "upstream" not in manifest:
+        manifest["upstream"] = {}
+
+    if "license" in manifest and "license" not in manifest["upstream"]:
+        manifest["upstream"]["license"] = manifest["license"]
+
+    if "url" in manifest and "website" not in manifest["upstream"]:
+        manifest["upstream"]["website"] = manifest["url"]
+
+    manifest["integration"] = {
+        "yunohost": manifest.get("requirements", {}).get("yunohost"),
+        "architectures": "all",
+        "multi_instance": manifest.get("multi_instance", False),
+        "ldap": "?",
+        "sso": "?",
+    }
+
+    maintainer = manifest.get("maintainer", {}).get("name")
+    manifest["maintainers"] = [maintainer] if maintainer else []
+
+    install_questions = manifest["arguments"]["install"]
+    manifest["install"] = {}
+    for question in install_questions:
+        name = question.pop("name")
+        if "ask" in question and name in ["domain", "path", "admin", "is_public", "password"]:
+            question.pop("ask")
+        if question.get("example") and question.get("type") in ["domain", "path", "user", "boolean", "password"]:
+            question.pop("example")
+
+        manifest["install"][name] = question
+
+    manifest["resources"] = {
+        "disk": {
+            "build": "50M",     # This is an *estimate* minimum value for the disk needed at build time (e.g. during install/upgrade) and during regular usage
+            "usage": "50M"      # Please only use round values such as: 10M, 100M, 200M, 400M, 800M, 1G, 2G, 4G, 8G
+        },
+        "ram": {
+            "build": "50M",     # This is an *estimate* minimum value for the RAM needed at build time (i.e. during install/upgrade) and during regular usage
+            "usage": "10M",     # Please only use round values like ["10M", "100M", "200M", "400M", "800M", "1G", "2G", "4G", "8G"]
+            "include_swap": False
+        },
+        "route": {},
+        "install_dir": {
+            "base_dir": "/var/www/",  # This means that the app shall be installed in /var/www/$app which is the standard for webapps. You may change this to /opt/ if the app is a system app.
+            "alias": "final_path"
+        }
+    }
+
+    if "domain" in manifest["install"] and "path" in manifest["install"]:
+        manifest["resources"]["route"]["url"] = "{domain}{path}"
+    elif "path" not in manifest["install"]:
+        manifest["resources"]["route"]["url"] = "{domain}/"
+    else:
+        del manifest["resources"]["route"]
+
+    keys_to_keep = ["packaging_format", "id", "name", "description", "version", "maintainers", "upstream", "integration", "install", "resources"]
+
+    keys_to_del = [key for key in manifest.keys() if key not in keys_to_keep]
+    for key in keys_to_del:
+        del manifest[key]
+
     return manifest
 
 
