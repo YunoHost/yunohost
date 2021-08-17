@@ -179,7 +179,7 @@ def firewall_list(raw=False, by_ip_version=False, list_forwarded=False):
 
     """
     with open(FIREWALL_FILE) as f:
-        firewall = yaml.load(f)
+        firewall = yaml.safe_load(f)
     if raw:
         return firewall
 

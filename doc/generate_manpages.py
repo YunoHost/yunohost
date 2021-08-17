@@ -33,7 +33,7 @@ def ordered_yaml_load(stream):
         yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
         lambda loader, node: OrderedDict(loader.construct_pairs(node)),
     )
-    return yaml.load(stream, OrderedLoader)
+    return yaml.safe_load(stream, OrderedLoader)
 
 
 def main():

@@ -670,7 +670,7 @@ def _get_services():
     """
     try:
         with open("/etc/yunohost/services.yml", "r") as f:
-            services = yaml.load(f) or {}
+            services = yaml.safe_load(f) or {}
     except Exception:
         return {}
 
