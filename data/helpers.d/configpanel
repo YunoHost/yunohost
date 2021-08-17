@@ -115,19 +115,16 @@ for panel_name,panel in loaded_toml.items():
             if isinstance(section, dict):
                 for name, param in section.items():
                     if isinstance(param, dict) and param.get('type', 'string') not in ['info', 'warning', 'error']:
-                        print("%s.%s.%s=%s" %(panel_name, section_name, name, param.get('source', 'settings')))
+                        print("%s=%s" % (name, param.get('source', 'settings')))
 EOL
 `
     for param_source in $params_sources
     do
-        local _dot_setting=$(echo "$param_source" | cut -d= -f1)
-        local _snake_setting="YNH_CONFIG_$(ynh_lowerdot_to_uppersnake $_dot_setting)"
-        local short_setting=$(echo "$_dot_setting" | cut -d. -f3)
+        local short_setting="$(echo $param_source | cut -d= -f1)"
         local getter="get__${short_setting}"
         local source="$(echo $param_source | cut -d= -f2)"
         sources[${short_setting}]="$source"
         file_hash[${short_setting}]=""
-        dot_settings[${short_setting}]="${_dot_setting}"
 
         # Get value from getter if exists
         if type -t $getter 2>/dev/null | grep -q '^function$' 2>/dev/null; then
@@ -149,9 +146,6 @@ EOL
             old[$short_setting]="$source"
             file_hash[$short_setting]="true"
         fi
-        set +u 
-        new[$short_setting]="${!_snake_setting}"
-        set -u
     done
     set -x
     
@@ -191,8 +185,7 @@ _ynh_panel_apply() {
 _ynh_panel_show() {
     for short_setting in "${!old[@]}"
     do
-        local key="YNH_CONFIG_$(ynh_lowerdot_to_uppersnake $dot_settings[$short_setting])"
-	    ynh_return "$key=${old[$short_setting]}"
+	    ynh_return "${short_setting}=${old[$short_setting]}"
     done
 }
 
@@ -238,7 +231,7 @@ _ynh_panel_validate() {
             fi
             if [ -n "$result" ]
             then
-                local key="YNH_ERROR_$(ynh_lowerdot_to_uppersnake $dot_settings[$short_setting])"
+                local key="YNH_ERROR_${$short_setting}"
                 ynh_return "$key=$result"
                 is_error=true
             fi
@@ -247,7 +240,7 @@ _ynh_panel_validate() {
 
     if [[ "$is_error" == "true" ]]
     then
-        ynh_die
+        ynh_die ""
     fi 
     set -x
     
@@ -275,7 +268,6 @@ ynh_panel_run() {
     declare -Ag changed=()
     declare -Ag file_hash=()
     declare -Ag sources=()
-    declare -Ag dot_settings=()
     
     ynh_panel_get
     case $1 in

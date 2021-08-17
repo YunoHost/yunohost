@@ -1782,59 +1782,49 @@ def app_config_show_panel(operation_logger, app):
         }
 
     env = {
-        "YNH_APP_ID": app_id,
-        "YNH_APP_INSTANCE_NAME": app,
-        "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
+        "app_id": app_id,
+        "app": app,
+        "app_instance_nb": str(app_instance_nb),
     }
 
-    # FIXME: this should probably be ran in a tmp workdir...
-    return_code, parsed_values = hook_exec(
-        config_script, args=["show"], env=env, return_format="plain_dict"
-    )
-
-    if return_code != 0:
-        raise Exception(
-            "script/config show return value code: %s (considered as an error)",
-            return_code,
+    try:
+        ret, parsed_values = hook_exec(
+            config_script, args=["show"], env=env, return_format="plain_dict"
         )
+    # Here again, calling hook_exec could fail miserably, or get
+    # manually interrupted (by mistake or because script was stuck)
+    except (KeyboardInterrupt, EOFError, Exception):
+        raise YunohostError("unexpected_error")
 
     logger.debug("Generating global variables:")
     for tab in config_panel.get("panel", []):
-        tab_id = tab["id"]  # this makes things easier to debug on crash
         for section in tab.get("sections", []):
-            section_id = section["id"]
             for option in section.get("options", []):
-                option_name = option["name"]
-                generated_name = (
-                    "YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_name)
-                ).upper()
-                option["name"] = generated_name
                 logger.debug(
-                    " * '%s'.'%s'.'%s' -> %s",
+                    " * '%s'.'%s'.'%s'",
                     tab.get("name"),
                     section.get("name"),
                     option.get("name"),
-                    generated_name,
                 )
 
-                if generated_name in parsed_values:
+                if option['name'] in parsed_values:
                     # code is not adapted for that so we have to mock expected format :/
                     if option.get("type") == "boolean":
-                        if parsed_values[generated_name].lower() in ("true", "1", "y"):
-                            option["default"] = parsed_values[generated_name]
+                        if parsed_values[option['name']].lower() in ("true", "1", "y"):
+                            option["default"] = parsed_values[option['name']]
                         else:
                             del option["default"]
                     else:
-                        option["default"] = parsed_values[generated_name]
+                        option["default"] = parsed_values[option['name']]
 
                     args_dict = _parse_args_in_yunohost_format(
-                        {option["name"]: parsed_values[generated_name]}, [option]
+                        parsed_values, [option]
                     )
                     option["default"] = args_dict[option["name"]][0]
                 else:
                     logger.debug(
                         "Variable '%s' is not declared by config script, using default",
-                        generated_name,
+                        option['name'],
                     )
                     # do nothing, we'll use the default if present
 
@@ -1869,32 +1859,26 @@ def app_config_apply(operation_logger, app, args):
     operation_logger.start()
     app_id, app_instance_nb = _parse_app_instance_name(app)
     env = {
-        "YNH_APP_ID": app_id,
-        "YNH_APP_INSTANCE_NAME": app,
-        "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
+        "app_id": app_id,
+        "app": app,
+        "app_instance_nb": str(app_instance_nb),
     }
     args = dict(urllib.parse.parse_qsl(args, keep_blank_values=True)) if args else {}
 
     upload_dir = None
     for tab in config_panel.get("panel", []):
-        tab_id = tab["id"]  # this makes things easier to debug on crash
         for section in tab.get("sections", []):
-            section_id = section["id"]
             for option in section.get("options", []):
-                option_name = option["name"]
-                generated_name = (
-                    "YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_name)
-                ).upper()
 
-                if generated_name in args:
+                if option['name'] in args:
                     # Upload files from API
                     # A file arg contains a string with "FILENAME:BASE64_CONTENT"
                     if 'type' in option and option["type"] == "file" \
                        and msettings.get('interface') == 'api':
                         if upload_dir is None:
                             upload_dir = tempfile.mkdtemp(prefix='tmp_configpanel_')
-                        filename = args[generated_name + '[name]']
-                        content = args[generated_name]
+                        filename = args[option['name'] + '[name]']
+                        content = args[option['name']]
                         logger.debug("Save uploaded file %s from API into %s", filename, upload_dir)
 
                         # Filename is given by user of the API. For security reason, we have replaced
@@ -1912,14 +1896,14 @@ def app_config_apply(operation_logger, app, args):
                             raise YunohostError("cannot_write_file", file=file_path, error=str(e))
                         except Exception as e:
                             raise YunohostError("error_writing_file", file=file_path, error=str(e))
-                        args[generated_name] = file_path
+                        args[option['name']] = file_path
 
                     logger.debug(
-                        "include into env %s=%s", generated_name, args[generated_name]
+                        "include into env %s=%s", option['name'], args[option['name']]
                     )
-                    env[generated_name] = args[generated_name]
+                    env[option['name']] = args[option['name']]
                 else:
-                    logger.debug("no value for key id %s", generated_name)
+                    logger.debug("no value for key id %s", option['name'])
 
     # for debug purpose
     for key in args:
@@ -1928,25 +1912,21 @@ def app_config_apply(operation_logger, app, args):
                 "Ignore key '%s' from arguments because it is not in the config", key
             )
 
-    # FIXME: this should probably be ran in a tmp workdir...
-    return_code = hook_exec(
-        config_script,
-        args=["apply"],
-        env=env,
-    )[0]
-
-    # Delete files uploaded from API
-    if msettings.get('interface') == 'api':
-        if upload_dir is not None:
-            shutil.rmtree(upload_dir)
-
-    if return_code != 0:
-        msg = (
-            "'script/config apply' return value code: %s (considered as an error)"
-            % return_code
+    try:
+        hook_exec(
+            config_script,
+            args=["apply"],
+            env=env
         )
-        operation_logger.error(msg)
-        raise Exception(msg)
+    # Here again, calling hook_exec could fail miserably, or get
+    # manually interrupted (by mistake or because script was stuck)
+    except (KeyboardInterrupt, EOFError, Exception):
+        raise YunohostError("unexpected_error")
+    finally:
+        # Delete files uploaded from API
+        if msettings.get('interface') == 'api':
+            if upload_dir is not None:
+                shutil.rmtree(upload_dir)
 
     logger.success("Config updated as expected")
     return {
@@ -2991,16 +2971,30 @@ class DisplayTextArgumentParser(YunoHostArgumentFormatParser):
     def parse(self, question, user_answers):
         print(question["ask"])
 
+class FileArgumentParser(YunoHostArgumentFormatParser):
+    argument_type = "file"
+
+
 
 ARGUMENTS_TYPE_PARSERS = {
     "string": StringArgumentParser,
+    "text": StringArgumentParser,
+    "select": StringArgumentParser,
+    "tags": StringArgumentParser,
+    "email": StringArgumentParser,
+    "url": StringArgumentParser,
+    "date": StringArgumentParser,
+    "time": StringArgumentParser,
+    "color": StringArgumentParser,
     "password": PasswordArgumentParser,
     "path": PathArgumentParser,
     "boolean": BooleanArgumentParser,
     "domain": DomainArgumentParser,
     "user": UserArgumentParser,
     "number": NumberArgumentParser,
+    "range": NumberArgumentParser,
     "display_text": DisplayTextArgumentParser,
+    "file": FileArgumentParser,
 }
 
 
