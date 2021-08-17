@@ -1518,7 +1518,7 @@ def app_setting(app, key, value=None, delete=False):
     # SET
     else:
         if key in ["redirected_urls", "redirected_regex"]:
-            value = yaml.load(value)
+            value = yaml.safe_load(value)
         app_settings[key] = value
 
     _set_app_settings(app, app_settings)
@@ -2175,7 +2175,7 @@ def _get_app_settings(app_id):
         )
     try:
         with open(os.path.join(APPS_SETTING_PATH, app_id, "settings.yml")) as f:
-            settings = yaml.load(f)
+            settings = yaml.safe_load(f)
         # If label contains unicode char, this may later trigger issues when building strings...
         # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
         settings = {k: v for k, v in settings.items()}

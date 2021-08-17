@@ -444,7 +444,7 @@ def _get_regenconf_infos():
     """
     try:
         with open(REGEN_CONF_FILE, "r") as f:
-            return yaml.load(f)
+            return yaml.safe_load(f)
     except Exception:
         return {}
 
