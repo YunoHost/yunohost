@@ -619,7 +619,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
-        env_dict["YNH_APP_NO_BACKUP_UPGRADE"] = no_safety_backup
+        env_dict["NO_BACKUP_UPGRADE"] = no_safety_backup
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
