@@ -1189,12 +1189,13 @@ def dump_app_log_extract_for_debugging(operation_logger):
 
 
 @is_unit_operation()
-def app_remove(operation_logger, app):
+def app_remove(operation_logger, app, purge=False):
     """
     Remove app
 
-    Keyword argument:
+    Keyword arguments:
         app -- App(s) to delete
+        purge -- Remove with all app data
 
     """
     from yunohost.hook import hook_exec, hook_remove, hook_callback
@@ -1232,6 +1233,7 @@ def app_remove(operation_logger, app):
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
     env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
+    env_dict["YNH_APP_PURGE"] = purge
     operation_logger.extra.update({"env": env_dict})
     operation_logger.flush()
 

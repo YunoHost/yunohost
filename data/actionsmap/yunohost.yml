@@ -673,7 +673,11 @@ app:
             api: DELETE /apps/<app>
             arguments:
                 app:
-                    help: App to delete
+                    help: App to remove
+                -p:
+                    full: --purge
+                    help: Also remove all application data
+                    action: store_true
 
         ### app_upgrade()
         upgrade:
