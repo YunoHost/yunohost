@@ -239,6 +239,7 @@
     "diagnosis_rootfstotalspace_critical": "The root filesystem only has a total of {space} which is quite worrisome! You will likely run out of disk space very quickly! It's recommended to have at least 16 GB for the root filesystem.",
     "diagnosis_security_vulnerable_to_meltdown": "You appear vulnerable to the Meltdown criticial security vulnerability",
     "diagnosis_security_vulnerable_to_meltdown_details": "To fix this, you should upgrade your system and reboot to load the new linux kernel (or contact your server provider if this doesn't work). See https://meltdownattack.com/ for more infos.",
+    "diagnosis_high_number_auth_failures": "There's been a suspiciously high number of authentication failures recently. You may want to make sure that fail2ban is running and is correctly configured, or use a custom port for SSH as explained in https://yunohost.org/security.",
     "diagnosis_description_basesystem": "Base system",
     "diagnosis_description_ip": "Internet connectivity",
     "diagnosis_description_dnsrecords": "DNS records",
