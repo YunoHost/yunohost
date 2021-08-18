@@ -144,6 +144,14 @@ HandleLidSwitch=ignore
 HandleLidSwitchDocked=ignore
 HandleLidSwitchExternalPower=ignore
 EOF
+  
+  mkdir -p ${pending_dir}/etc/systemd/
+  if [[ "$(yunohost settings get 'security.experimental.enabled')" == "True" ]]
+  then
+      cp proc-hidepid.service ${pending_dir}/etc/systemd/system/proc-hidepid.service
+  else
+      touch ${pending_dir}/etc/systemd/system/proc-hidepid.service
+  fi
 
 }
 
@@ -204,6 +212,13 @@ do_post_regen() {
   # Propagates changes in systemd service config overrides
   [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || { systemctl daemon-reload; systemctl restart ntp; }
   [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || systemctl daemon-reload
+  [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] || systemctl daemon-reload
+  if [[ "$regen_conf_files" =~ "proc-hidepid.service" ]]
+  then
+    systemctl daemon-reload
+    action=$([[ -e /etc/systemd/system/proc-hidepid.service ]] && echo 'enable' || echo 'disable')
+    systemctl $action proc-hidepid --quiet --now
+  fi
 }
 
 _update_services() {
