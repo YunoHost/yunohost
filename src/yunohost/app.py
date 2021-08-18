@@ -502,7 +502,7 @@ def app_change_url(operation_logger, app, domain, path):
     hook_callback("post_app_change_url", env=env_dict)
 
 
-def app_upgrade(app=[], url=None, file=None, force=False):
+def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False):
     """
     Upgrade app
 
@@ -510,6 +510,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         file -- Folder or tarball for upgrade
         app -- App(s) to upgrade (default all)
         url -- Git url to fetch for upgrade
+        no_safety_backup -- Disable the safety backup during upgrade
 
     """
     from packaging import version
@@ -618,6 +619,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
+        env_dict["NO_BACKUP_UPGRADE"] = no_safety_backup
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()

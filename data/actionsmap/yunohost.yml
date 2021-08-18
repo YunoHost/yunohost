@@ -693,6 +693,10 @@ app:
                     full: --force
                     help: Force the update, even though the app is up to date
                     action: store_true
+                -b:
+                    full: --no-safety-backup
+                    help: Disable the safety backup during upgrade
+                    action: store_true
 
         ### app_change_url()
         change-url:
