@@ -676,7 +676,7 @@ app:
                     help: App to remove
                 -p:
                     full: --purge
-                    help: Remove with all app data
+                    help: Also remove all application data
                     action: store_true
 
         ### app_upgrade()
