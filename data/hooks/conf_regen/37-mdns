@@ -51,6 +51,12 @@ do_post_regen() {
       systemctl daemon-reload
   fi
 
+  # Legacy stuff to enable the new yunomdns service on legacy systems
+  if [[ -e /etc/avahi/avahi-daemon.conf ]] && grep -q 'yunohost' /etc/avahi/avahi-daemon.conf
+  then
+      systemctl enable yunomdns
+  fi
+
   [[ -z "$regen_conf_files" ]] \
     || systemctl restart yunomdns
 }
