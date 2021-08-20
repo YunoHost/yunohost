@@ -1,10 +1,5 @@
 #!/bin/bash
 
-ynh_lowerdot_to_uppersnake() {
-    local lowerdot
-    lowerdot=$(echo "$1" | cut -d= -f1 | sed "s/\./_/g")
-    echo "${lowerdot^^}"
-}
 
 # Get a value from heterogeneous file (yaml, json, php, python...)
 #
@@ -99,7 +94,6 @@ ynh_value_set() {
 }
 
 _ynh_panel_get() {
-    set +x 
     # From settings
     local params_sources
     params_sources=`python3 << EOL
@@ -114,7 +108,7 @@ for panel_name,panel in loaded_toml.items():
         for section_name, section in panel.items():
             if isinstance(section, dict):
                 for name, param in section.items():
-                    if isinstance(param, dict) and param.get('type', 'string') not in ['info', 'warning', 'error']:
+                    if isinstance(param, dict) and param.get('type', 'string') not in ['success', 'info', 'warning', 'danger', 'display_text', 'markdown']:
                         print("%s=%s" % (name, param.get('source', 'settings')))
 EOL
 `
@@ -147,7 +141,6 @@ EOL
             file_hash[$short_setting]="true"
         fi
     done
-    set -x
     
     
 }
@@ -164,7 +157,7 @@ _ynh_panel_apply() {
 
             # Copy file in right place 
             elif [[ "$source" == "settings" ]] ; then
-                ynh_app_setting_set $app $short_setting "${new[$short_setting]}"
+                ynh_app_setting_set $app $short_setting "${!short_setting}"
             
             # Get value from a kind of key/value file
             elif [[ "$source" == *":"* ]]
@@ -172,11 +165,11 @@ _ynh_panel_apply() {
                 local source_key="$(echo "$source" | cut -d: -f1)"
                 source_key=${source_key:-$short_setting}
                 local source_file="$(echo "$source" | cut -d: -f2)"
-                ynh_value_set --file="${source_file}" --key="${source_key}" --value="${new[$short_setting]}"
+                ynh_value_set --file="${source_file}" --key="${source_key}" --value="${!short_setting}"
 
             # Specific case for files (all content of the file is the source)
             else
-                cp "${new[$short_setting]}" "$source"
+                cp "${!short_setting}" "$source"
             fi
         fi
     done
@@ -185,25 +178,25 @@ _ynh_panel_apply() {
 _ynh_panel_show() {
     for short_setting in "${!old[@]}"
     do
-	    ynh_return "${short_setting}=${old[$short_setting]}"
+	    ynh_return "${short_setting}: \"${old[$short_setting]}\""
     done
 }
 
 _ynh_panel_validate() {
-    set +x
     # Change detection
     local is_error=true
     #for changed_status in "${!changed[@]}"
     for short_setting in "${!old[@]}"
     do
         changed[$short_setting]=false
+        [ -z ${!short_setting+x} ] && continue
         if [ ! -z "${file_hash[${short_setting}]}" ] ; then
             file_hash[old__$short_setting]=""
             file_hash[new__$short_setting]=""
             if [ -f "${old[$short_setting]}" ] ; then
                 file_hash[old__$short_setting]=$(sha256sum "${old[$short_setting]}" | cut -d' ' -f1)
             fi
-            if [ -f "${new[$short_setting]}" ] ; then
+            if [ -f "${!short_setting}" ] ; then
                 file_hash[new__$short_setting]=$(sha256sum "${new[$short_setting]}" | cut -d' ' -f1)
                 if [[ "${file_hash[old__$short_setting]}" != "${file_hash[new__$short_setting]}" ]]
                 then
@@ -211,7 +204,7 @@ _ynh_panel_validate() {
                 fi
             fi
         else
-            if [[ "${new[$short_setting]}" != "${old[$short_setting]}" ]]
+            if [[ "${!short_setting}" != "${old[$short_setting]}" ]]
             then
                 changed[$short_setting]=true
                 is_error=false
@@ -242,7 +235,6 @@ _ynh_panel_validate() {
     then
         ynh_die ""
     fi 
-    set -x
     
 }
 
@@ -264,15 +256,14 @@ ynh_panel_apply() {
 
 ynh_panel_run() {
     declare -Ag old=()
-    declare -Ag new=()
     declare -Ag changed=()
     declare -Ag file_hash=()
     declare -Ag sources=()
     
     ynh_panel_get
     case $1 in
-        show) ynh_panel_show;;
-        apply) ynh_panel_validate && ynh_panel_apply;;
+        show) ynh_panel_get && ynh_panel_show;;
+        apply) ynh_panel_get && ynh_panel_validate && ynh_panel_apply;;
     esac
 }
 
