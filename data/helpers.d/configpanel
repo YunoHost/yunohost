@@ -44,7 +44,8 @@ ynh_value_get() {
 
     local var_part='^[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*'
     
-    local crazy_value="$(grep -i -o -P '^[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*\K.*(?=[ \t,\n;]*$)' ${file} | head -n1)"
+    local crazy_value="$((grep -i -o -P '^[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*\K.*(?=[ \t,\n;]*$)' ${file} || echo YNH_NULL)  | head -n1)"
+    #"
     
     local first_char="${crazy_value:0:1}"
     if [[ "$first_char" == '"' ]] ; then
@@ -74,22 +75,22 @@ ynh_value_set() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    local var_part="[ \t]*(\$?\w*\[)?[ \t]*[\"']?${key}[\"']?[ \t]*\]?[ \t]*[:=]>?[ \t]*"
+    local var_part='^[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*'
     
-    local crazy_value="$(grep -i -o -P "^${var_part}\K.*(?=[ \t,\n;]*\$)" ${file} | head -n1)"
+    local crazy_value="$(grep -i -o -P "${var_part}\K.*(?=[ \t,\n;]*\$)" ${file} | head -n1)"
     local var_part="^[ \t]*(\$?\w*\[)?[ \t]*[\"']?${key}[\"']?[ \t]*\]?[ \t]*[:=]>?[ \t]*"
     local first_char="${crazy_value:0:1}"
     if [[ "$first_char" == '"' ]] ; then
         value="$(echo "$value" | sed 's/"/\\"/g')"
-        sed -ri "s%^(${var_part}\")[^\"]*(\"[ \t\n,;]*)\$%\1${value}\2%i" ${file}
+        sed -ri "s%(${var_part}\")[^\"]*(\"[ \t\n,;]*)\$%\1${value}\2%i" ${file}
     elif [[ "$first_char" == "'" ]] ; then
         value="$(echo "$value" | sed "s/'/\\\\'/g")"
-        sed -ri "s%^(${var_part}')[^']*('[ \t\n,;]*)\$%\1${value}\2%i" ${file}
+        sed -ri "s%(${var_part}')[^']*('[ \t\n,;]*)\$%\1${value}\2%i" ${file}
     else
         if [[ "$value" == *"'"* ]] || [[ "$value" == *'"'* ]] ; then
             value="\"$(echo "$value" | sed 's/"/\\"/g')\""
         fi
-        sed -ri "s%^(${var_part}')[^']*('[ \t\n,;]*)\$%\1${value}\2%i" ${file}
+        sed -ri "s%(${var_part}')[^']*('[ \t\n,;]*)\$%\1${value}\2%i" ${file}
     fi
 }
 
@@ -124,12 +125,12 @@ EOL
         if type -t $getter 2>/dev/null | grep -q '^function$' 2>/dev/null; then
             old[$short_setting]="$($getter)"
         
-        # Get value from app settings
-        elif [[ "$source" == "settings" ]] ; then
-            old[$short_setting]="$(ynh_app_setting_get $app $short_setting)"
+        # Get value from app settings or from another file
+        elif [[ "$source" == "settings" ]] || [[ "$source" == *":"* ]] ; then
+            if [[ "$source" == "settings" ]] ; then
+                source=":/etc/yunohost/apps/$app/settings.yml"
+            fi
         
-        # Get value from a kind of key/value file
-        elif [[ "$source" == *":"* ]] ; then
             local source_key="$(echo "$source" | cut -d: -f1)"
             source_key=${source_key:-$short_setting}
             local source_file="$(echo "$source" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
@@ -137,7 +138,8 @@ EOL
         
         # Specific case for files (all content of the file is the source)
         else
-            old[$short_setting]="$source"
+            
+            old[$short_setting]="$(ls $source 2> /dev/null || echo YNH_NULL)"
             file_hash[$short_setting]="true"
         fi
     done
@@ -164,12 +166,13 @@ _ynh_panel_apply() {
             then
                 local source_key="$(echo "$source" | cut -d: -f1)"
                 source_key=${source_key:-$short_setting}
-                local source_file="$(echo "$source" | cut -d: -f2)"
+                local source_file="$(echo "$source" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
                 ynh_value_set --file="${source_file}" --key="${source_key}" --value="${!short_setting}"
 
             # Specific case for files (all content of the file is the source)
             else
-                cp "${!short_setting}" "$source"
+                local source_file="$(echo "$source" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
+                cp "${!short_setting}" "$source_file"
             fi
         fi
     done
@@ -178,7 +181,9 @@ _ynh_panel_apply() {
 _ynh_panel_show() {
     for short_setting in "${!old[@]}"
     do
-	    ynh_return "${short_setting}: \"${old[$short_setting]}\""
+        if [[ "${old[$short_setting]}" != YNH_NULL ]] ; then
+	        ynh_return "${short_setting}: \"${old[$short_setting]}\""
+        fi
     done
 }
 
@@ -197,10 +202,11 @@ _ynh_panel_validate() {
                 file_hash[old__$short_setting]=$(sha256sum "${old[$short_setting]}" | cut -d' ' -f1)
             fi
             if [ -f "${!short_setting}" ] ; then
-                file_hash[new__$short_setting]=$(sha256sum "${new[$short_setting]}" | cut -d' ' -f1)
+                file_hash[new__$short_setting]=$(sha256sum "${!short_setting}" | cut -d' ' -f1)
                 if [[ "${file_hash[old__$short_setting]}" != "${file_hash[new__$short_setting]}" ]]
                 then
                     changed[$short_setting]=true
+                    is_error=false
                 fi
             fi
         else
@@ -218,6 +224,7 @@ _ynh_panel_validate() {
 
         for short_setting in "${!old[@]}"
         do
+            [[ "${changed[$short_setting]}" == "false" ]] && continue
             local result=""
             if type -t validate__$short_setting | grep -q '^function$' 2>/dev/null; then
                 result="$(validate__$short_setting)"
@@ -225,7 +232,7 @@ _ynh_panel_validate() {
             if [ -n "$result" ]
             then
                 local key="YNH_ERROR_${$short_setting}"
-                ynh_return "$key=$result"
+                ynh_return "$key: $result"
                 is_error=true
             fi
         done
