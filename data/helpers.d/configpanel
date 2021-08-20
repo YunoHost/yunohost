@@ -42,9 +42,9 @@ ynh_value_get() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    local var_part="[ \t]*(\$?\w*\[)?[ \t]*[\"']?${key}[\"']?[ \t]*\]?[ \t]*[:=]>?[ \t]*"
+    local var_part='^[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*'
     
-    local crazy_value="$(grep -i -o -P "^${var_part}\K.*(?=[ \t,\n;]*\$)" ${file} | head -n1)"
+    local crazy_value="$(grep -i -o -P '^[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*\K.*(?=[ \t,\n;]*$)' ${file} | head -n1)"
     
     local first_char="${crazy_value:0:1}"
     if [[ "$first_char" == '"' ]] ; then
