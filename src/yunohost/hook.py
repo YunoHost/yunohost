@@ -34,7 +34,7 @@ from importlib import import_module
 from moulinette import m18n, msettings
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils import log
-from moulinette.utils.filesystem import read_json
+from moulinette.utils.filesystem import read_yaml
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"
@@ -326,7 +326,7 @@ def hook_exec(
     chdir=None,
     env=None,
     user="root",
-    return_format="json",
+    return_format="yaml",
 ):
     """
     Execute hook from a file with arguments
@@ -447,10 +447,10 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
             raw_content = f.read()
         returncontent = {}
 
-        if return_format == "json":
+        if return_format == "yaml":
             if raw_content != "":
                 try:
-                    returncontent = read_json(stdreturn)
+                    returncontent = read_yaml(stdreturn)
                 except Exception as e:
                     raise YunohostError(
                         "hook_json_return_error",
