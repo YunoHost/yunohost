@@ -82,5 +82,10 @@ def pytest_cmdline_main(config):
 
     yunohost.init(debug=config.option.yunodebug)
     class DummyInterface():
+
         type = "test"
+
+        def prompt(*args, **kwargs):
+            raise NotImplementedError
+
     Moulinette._interface = DummyInterface()
