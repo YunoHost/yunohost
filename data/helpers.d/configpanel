@@ -132,7 +132,7 @@ EOL
         elif [[ "$source" == *":"* ]] ; then
             local source_key="$(echo "$source" | cut -d: -f1)"
             source_key=${source_key:-$short_setting}
-            local source_file="$(echo "$source" | cut -d: -f2)"
+            local source_file="$(echo "$source" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
             old[$short_setting]="$(ynh_value_get --file="${source_file}" --key="${source_key}")"
         
         # Specific case for files (all content of the file is the source)
