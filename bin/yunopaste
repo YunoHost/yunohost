@@ -34,7 +34,7 @@ Haste server.
 
 For example, to paste the output of the YunoHost diagnosis, you
 can simply execute the following:
-  yunohost tools diagnosis | ${0}
+  yunohost diagnosis show | ${0}
 
 It will return the URL where you can access the pasted data.
 

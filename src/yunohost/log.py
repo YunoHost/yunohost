@@ -221,7 +221,7 @@ def log_show(
     # Display metadata if exist
     if os.path.exists(md_path):
         try:
-            metadata = read_yaml(md_path)
+            metadata = read_yaml(md_path) or {}
         except MoulinetteError as e:
             error = m18n.n("log_corrupted_md_file", md_file=md_path, error=e)
             if os.path.exists(log_path):

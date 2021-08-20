@@ -6,8 +6,8 @@
 
 <div align="center">
 
-[![Build status](https://travis-ci.org/YunoHost/yunohost.svg?branch=stretch-unstable)](https://travis-ci.org/YunoHost/yunohost)
-[![GitHub license](https://img.shields.io/github/license/YunoHost/yunohost)](https://github.com/YunoHost/yunohost/blob/stretch-unstable/LICENSE)
+[![Build status](https://shields.io/gitlab/pipeline/yunohost/yunohost/dev)](https://gitlab.com/yunohost/yunohost/-/pipelines)
+[![GitHub license](https://img.shields.io/github/license/YunoHost/yunohost)](https://github.com/YunoHost/yunohost/blob/dev/LICENSE)
 [![Mastodon Follow](https://img.shields.io/mastodon/follow/28084)](https://mastodon.social/@yunohost)
 
 </div>

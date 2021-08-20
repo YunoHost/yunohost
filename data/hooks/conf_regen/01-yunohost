@@ -135,6 +135,16 @@ Conflicts=yunohost-firewall.service
 ConditionFileIsExecutable=!/etc/init.d/yunohost-firewall
 ConditionPathExists=!/etc/systemd/system/multi-user.target.wants/yunohost-firewall.service
 EOF
+
+  # Don't suspend computer on LidSwitch
+  mkdir -p ${pending_dir}/etc/systemd/logind.conf.d/
+  cat > ${pending_dir}/etc/systemd/logind.conf.d/ynh-override.conf << EOF
+[Login]
+HandleLidSwitch=ignore
+HandleLidSwitchDocked=ignore
+HandleLidSwitchExternalPower=ignore
+EOF
+
 }
 
 do_post_regen() {
@@ -202,10 +212,10 @@ import yaml
 
 
 with open('services.yml') as f:
-    new_services = yaml.load(f)
+    new_services = yaml.safe_load(f)
 
 with open('/etc/yunohost/services.yml') as f:
-    services = yaml.load(f) or {}
+    services = yaml.safe_load(f) or {}
 
 updated = False
 

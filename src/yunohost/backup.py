@@ -71,6 +71,7 @@ from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger, is_unit_operation
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.packages import ynh_packages_version
+from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.settings import settings_get
 
 BACKUP_PATH = "/home/yunohost.backup"
@@ -2670,11 +2671,6 @@ def _recursive_umount(directory):
             continue
 
     return everything_went_fine
-
-
-def free_space_in_directory(dirpath):
-    stat = os.statvfs(dirpath)
-    return stat.f_frsize * stat.f_bavail
 
 
 def disk_usage(path):

@@ -109,7 +109,7 @@ def find_expected_string_keys():
         yield m
 
     # Keys for the actionmap ...
-    for category in yaml.load(open("data/actionsmap/yunohost.yml")).values():
+    for category in yaml.safe_load(open("data/actionsmap/yunohost.yml")).values():
         if "actions" not in category.keys():
             continue
         for action in category["actions"].values():
