@@ -1939,14 +1939,11 @@ ynh_panel_run $1
         "app_instance_nb": str(app_instance_nb),
     })
 
-    try:
-        _, parsed_values = hook_exec(
-            config_script, args=[action], env=env
-        )
-    except (KeyboardInterrupt, EOFError, Exception):
-        logger.error('Unable to extract some values')
-        parsed_values = {}
+    _, parsed_values = hook_exec(
+        config_script, args=[action], env=env
+    )
     return parsed_values
+
 
 def _get_all_installed_apps_id():
     """
