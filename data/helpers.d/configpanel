@@ -181,26 +181,39 @@ _ynh_panel_apply() {
 _ynh_panel_show() {
     for short_setting in "${!old[@]}"
     do
+<<<<<<< HEAD
         if [[ "${old[$short_setting]}" != YNH_NULL ]] ; then
 	        ynh_return "${short_setting}: \"${old[$short_setting]}\""
         fi
+=======
+        local key="YNH_CONFIG_$(ynh_lowerdot_to_uppersnake $dot_settings[$short_setting])"
+	    ynh_return "$key=${old[$short_setting]}"
+>>>>>>> 596d05ae81d24712c87ec0de72f8deb8248bca9a
     done
 }
 
 _ynh_panel_validate() {
+<<<<<<< HEAD
+=======
+    set +x
+>>>>>>> 596d05ae81d24712c87ec0de72f8deb8248bca9a
     # Change detection
     local is_error=true
     #for changed_status in "${!changed[@]}"
     for short_setting in "${!old[@]}"
     do
         changed[$short_setting]=false
+<<<<<<< HEAD
         [ -z ${!short_setting+x} ] && continue
+=======
+>>>>>>> 596d05ae81d24712c87ec0de72f8deb8248bca9a
         if [ ! -z "${file_hash[${short_setting}]}" ] ; then
             file_hash[old__$short_setting]=""
             file_hash[new__$short_setting]=""
             if [ -f "${old[$short_setting]}" ] ; then
                 file_hash[old__$short_setting]=$(sha256sum "${old[$short_setting]}" | cut -d' ' -f1)
             fi
+<<<<<<< HEAD
             if [ -f "${!short_setting}" ] ; then
                 file_hash[new__$short_setting]=$(sha256sum "${!short_setting}" | cut -d' ' -f1)
                 if [[ "${file_hash[old__$short_setting]}" != "${file_hash[new__$short_setting]}" ]]
@@ -211,6 +224,17 @@ _ynh_panel_validate() {
             fi
         else
             if [[ "${!short_setting}" != "${old[$short_setting]}" ]]
+=======
+            if [ -f "${new[$short_setting]}" ] ; then
+                file_hash[new__$short_setting]=$(sha256sum "${new[$short_setting]}" | cut -d' ' -f1)
+                if [[ "${file_hash[old__$short_setting]}" != "${file_hash[new__$short_setting]}" ]]
+                then
+                    changed[$short_setting]=true
+                fi
+            fi
+        else
+            if [[ "${new[$short_setting]}" != "${old[$short_setting]}" ]]
+>>>>>>> 596d05ae81d24712c87ec0de72f8deb8248bca9a
             then
                 changed[$short_setting]=true
                 is_error=false
@@ -224,15 +248,23 @@ _ynh_panel_validate() {
 
         for short_setting in "${!old[@]}"
         do
+<<<<<<< HEAD
             [[ "${changed[$short_setting]}" == "false" ]] && continue
+=======
+>>>>>>> 596d05ae81d24712c87ec0de72f8deb8248bca9a
             local result=""
             if type -t validate__$short_setting | grep -q '^function$' 2>/dev/null; then
                 result="$(validate__$short_setting)"
             fi
             if [ -n "$result" ]
             then
+<<<<<<< HEAD
                 local key="YNH_ERROR_${$short_setting}"
                 ynh_return "$key: $result"
+=======
+                local key="YNH_ERROR_$(ynh_lowerdot_to_uppersnake $dot_settings[$short_setting])"
+                ynh_return "$key=$result"
+>>>>>>> 596d05ae81d24712c87ec0de72f8deb8248bca9a
                 is_error=true
             fi
         done
@@ -240,8 +272,14 @@ _ynh_panel_validate() {
 
     if [[ "$is_error" == "true" ]]
     then
+<<<<<<< HEAD
         ynh_die ""
     fi 
+=======
+        ynh_die
+    fi 
+    set -x
+>>>>>>> 596d05ae81d24712c87ec0de72f8deb8248bca9a
     
 }
 
@@ -263,6 +301,7 @@ ynh_panel_apply() {
 
 ynh_panel_run() {
     declare -Ag old=()
+<<<<<<< HEAD
     declare -Ag changed=()
     declare -Ag file_hash=()
     declare -Ag sources=()
@@ -271,6 +310,18 @@ ynh_panel_run() {
     case $1 in
         show) ynh_panel_get && ynh_panel_show;;
         apply) ynh_panel_get && ynh_panel_validate && ynh_panel_apply;;
+=======
+    declare -Ag new=()
+    declare -Ag changed=()
+    declare -Ag file_hash=()
+    declare -Ag sources=()
+    declare -Ag dot_settings=()
+    
+    ynh_panel_get
+    case $1 in
+        show) ynh_panel_show;;
+        apply) ynh_panel_validate && ynh_panel_apply;;
+>>>>>>> 596d05ae81d24712c87ec0de72f8deb8248bca9a
     esac
 }
 
