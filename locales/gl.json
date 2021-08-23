@@ -436,5 +436,13 @@
     "log_regen_conf": "Rexerar configuración do sistema '{}'",
     "log_letsencrypt_cert_renew": "Anovar certificado Let's Encrypt para '{}'",
     "log_selfsigned_cert_install": "Instalar certificado auto-asinado para o dominio '{}'",
-    "log_permission_url": "Actualizar url relativo ao permiso '{}'"
+    "log_permission_url": "Actualizar url relativo ao permiso '{}'",
+    "migration_0015_general_warning": "Ten en conta que a migración é unha operación delicada. O equipo YunoHost esforzouse revisando e comprobandoa, aínda así algo podería fallar en partes do teu sistema ou as súas apps.\n\nPor tanto, é recomendable:\n- realiza unha copia de apoio de tódolos datos ou apps importantes. Máis info en https://yunohost.org/backup;\n - ten paciencia tras iniciar o proceso: dependendo da túa conexión de internet e hardware podería demorar varias horas a actualización de tódolos compoñentes.",
+    "migration_0015_system_not_fully_up_to_date": "O teu sistema non está ao día. Realiza unha actualización común antes de realizar a migración a Buster.",
+    "migration_0015_not_enough_free_space": "Queda moi pouco espazo en /var/! Deberías ter polo menos 1GB libre para realizar a migración.",
+    "migration_0015_not_stretch": "A distribución Debian actual non é Stretch!",
+    "migration_0015_yunohost_upgrade": "Iniciando a actualización do núcleo YunoHost...",
+    "migration_0015_still_on_stretch_after_main_upgrade": "Algo foi mal durante a actualiza ión principal, o sistema semella que aínda está en Debian Stretch",
+    "migration_0015_main_upgrade": "Iniciando a actualización principal...",
+    "migration_0015_patching_sources_list": "Correxindo os sources.lists..."
 }
