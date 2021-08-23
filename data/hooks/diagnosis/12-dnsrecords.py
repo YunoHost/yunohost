@@ -13,6 +13,7 @@ from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
 
 YNH_DYNDNS_DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
+SPECIAL_USE_TLDS = ["local", "localhost", "onion", "test"]
 
 
 class DNSRecordsDiagnoser(Diagnoser):
@@ -29,8 +30,9 @@ class DNSRecordsDiagnoser(Diagnoser):
         for domain in all_domains:
             self.logger_debug("Diagnosing DNS conf for %s" % domain)
             is_subdomain = domain.split(".", 1)[1] in all_domains
+            is_specialusedomain = any(domain.endswith("." + tld) for tld in SPECIAL_USE_TLDS)
             for report in self.check_domain(
-                domain, domain == main_domain, is_subdomain=is_subdomain
+                domain, domain == main_domain, is_subdomain=is_subdomain, is_specialusedomain=is_specialusedomain
             ):
                 yield report
 
@@ -48,7 +50,7 @@ class DNSRecordsDiagnoser(Diagnoser):
         for report in self.check_expiration_date(domains_from_registrar):
             yield report
 
-    def check_domain(self, domain, is_main_domain, is_subdomain):
+    def check_domain(self, domain, is_main_domain, is_subdomain, is_specialusedomain):
 
         expected_configuration = _build_dns_conf(
             domain, include_empty_AAAA_if_no_ipv6=True
@@ -58,6 +60,16 @@ class DNSRecordsDiagnoser(Diagnoser):
         # For subdomains, we only diagnosis A and AAAA records
         if is_subdomain:
             categories = ["basic"]
+
+        if is_specialusedomain:
+            categories = []
+            yield dict(
+                meta={"domain": domain},
+                data={},
+                status="INFO",
+                summary="diagnosis_dns_specialusedomain",
+            )
+
 
         for category in categories:
 
