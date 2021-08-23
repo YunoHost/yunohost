@@ -16,12 +16,12 @@ def setup_function(function):
 
 
 def test_authenticate():
-    LDAPAuth().authenticate(credentials="yunohost")
+    LDAPAuth().authenticate_credentials(credentials="yunohost")
 
 
 def test_authenticate_with_wrong_password():
     with pytest.raises(MoulinetteError) as exception:
-        LDAPAuth().authenticate(credentials="bad_password_lul")
+        LDAPAuth().authenticate_credentials(credentials="bad_password_lul")
 
     translation = m18n.g("invalid_password")
     expected_msg = translation.format()
@@ -35,7 +35,7 @@ def test_authenticate_server_down(mocker):
     mocker.patch("os.system")
     mocker.patch("time.sleep")
     with pytest.raises(MoulinetteError) as exception:
-        LDAPAuth().authenticate(credentials="yunohost")
+        LDAPAuth().authenticate_credentials(credentials="yunohost")
 
     translation = m18n.n("ldap_server_down")
     expected_msg = translation.format()
@@ -44,15 +44,15 @@ def test_authenticate_server_down(mocker):
 
 def test_authenticate_change_password():
 
-    LDAPAuth().authenticate(credentials="yunohost")
+    LDAPAuth().authenticate_credentials(credentials="yunohost")
 
     tools_adminpw("plopette", check_strength=False)
 
     with pytest.raises(MoulinetteError) as exception:
-        LDAPAuth().authenticate(credentials="yunohost")
+        LDAPAuth().authenticate_credentials(credentials="yunohost")
 
     translation = m18n.g("invalid_password")
     expected_msg = translation.format()
     assert expected_msg in str(exception)
 
-    LDAPAuth().authenticate(credentials="plopette")
+    LDAPAuth().authenticate_credentials(credentials="plopette")
