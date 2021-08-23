@@ -18,6 +18,7 @@ do_configure() {
           bash /usr/share/yunohost/hooks/conf_regen/46-nsswitch init
           bash /usr/share/yunohost/hooks/conf_regen/06-slapd init
           bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
+          bash /usr/share/yunohost/hooks/conf_regen/37-mdns init
       fi
   else
       echo "Regenerating configuration, this might take a while..."
