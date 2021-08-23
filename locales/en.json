@@ -561,7 +561,7 @@
     "service_already_started": "The service '{service}' is running already",
     "service_already_stopped": "The service '{service}' has already been stopped",
     "service_cmd_exec_failed": "Could not execute the command '{command}'",
-    "service_description_mdns": "Allows you to reach your server using 'yunohost.local' in your local network",
+    "service_description_yunomdns": "Allows you to reach your server using 'yunohost.local' in your local network",
     "service_description_dnsmasq": "Handles domain name resolution (DNS)",
     "service_description_dovecot": "Allows e-mail clients to access/fetch email (via IMAP and POP3)",
     "service_description_fail2ban": "Protects against brute-force and other kinds of attacks from the Internet",
