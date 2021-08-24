@@ -444,5 +444,20 @@
     "migration_0015_yunohost_upgrade": "Iniciando a actualización do núcleo YunoHost...",
     "migration_0015_still_on_stretch_after_main_upgrade": "Algo foi mal durante a actualiza ión principal, o sistema semella que aínda está en Debian Stretch",
     "migration_0015_main_upgrade": "Iniciando a actualización principal...",
-    "migration_0015_patching_sources_list": "Correxindo os sources.lists..."
+    "migration_0015_patching_sources_list": "Correxindo os sources.lists...",
+    "migrations_already_ran": "Xa se realizaron estas migracións: {ids}",
+    "migration_0019_slapd_config_will_be_overwritten": "Semella que editaches manualmente a configuración slapd. Para esta migración crítica YunoHost precisa forzar a actualización da configuración slapd. Os ficheiros orixinais van ser copiados en {conf_backup_folder}.",
+    "migration_0019_add_new_attributes_in_ldap": "Engadir novos atributos para os permisos na base de datos LDAP",
+    "migration_0018_failed_to_reset_legacy_rules": "Fallou o restablecemento das regras antigas de iptables: {error}",
+    "migration_0018_failed_to_migrate_iptables_rules": "Fallou a migración das regras antigas de iptables a nftables: {erro}",
+    "migration_0017_not_enough_space": "Crea espazo suficiente en {path} para executar a migración.",
+    "migration_0017_postgresql_11_not_installed": "PostgreSQL 9.6 está instado, pero non postgresql 11? Algo raro debeu acontecer no teu sistema :(...",
+    "migration_0017_postgresql_96_not_installed": "PostgreSQL non está instalado no teu sistema. Nada que facer.",
+    "migration_0015_weak_certs": "Os seguintes certificados están a utilizar algoritmos de sinatura débiles e teñen que ser actualizados para ser compatibles coa seguinte versión de nginx: {certs}",
+    "migration_0015_cleaning_up": "Limpando a caché e paquetes que xa non son útiles...",
+    "migration_0015_specific_upgrade": "Iniciando a actualización dos paquetes do sistema que precisan ser actualizados de xeito independente...",
+    "migration_0015_modified_files": "Ten en conta que os seguintes ficheiros semella que foron modificados manualmente e poderían ser sobrescritos na actualización: {manually_modified_files}",
+    "migration_0015_problematic_apps_warning": "Ten en conta que se detectaron as seguintes apps que poderían ser problemáticas. Semella que non foron instaladas usando o catálogo de YunoHost, ou non están marcadas como 'funcionais'. En consecuencia, non se pode garantir que seguirán funcionando após a actualización: {problematic_apps}",
+    "diagnosis_http_localdomain": "O dominio {domain}, cun TLD .local, non é de agardar que sexa accesible desde o exterior da rede local.",
+    "diagnosis_dns_specialusedomain": "O dominio {domain} baséase un dominio de nivel alto e uso especial (TLD) polo que non é de agardar que realmente teña rexistros DNS."
 }
