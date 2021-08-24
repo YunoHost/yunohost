@@ -1861,11 +1861,13 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
     operation_logger.start()
 
     # Prepare pre answered questions
-    args = {}
     if args:
         args = dict(urllib.parse.parse_qsl(args, keep_blank_values=True)) if args else {}
     elif value is not None:
         args = {key: value}
+    else:
+        args = {}
+
 
     upload_dir = None
 
