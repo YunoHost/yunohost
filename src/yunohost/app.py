@@ -1908,14 +1908,15 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
         for section in panel.get("sections", []):
             services_to_reload |= set(section.get('services', []))
             for option in section.get("options", []):
-                services_to_reload |= set(section.get('options', []))
+                services_to_reload |= set(option.get('services', []))
 
     services_to_reload = list(services_to_reload)
     services_to_reload.sort(key = 'nginx'.__eq__)
     for service in services_to_reload:
         if service == "__APP__":
             service = app
-        if not _run_service_command('reload_or_restart', service):
+        logger.debug(f"Reloading {service}")
+        if not _run_service_command('reload-or-restart', service):
             services = _get_services()
             test_conf = services[service].get('test_conf')
             errors = check_output(f"{test_conf}; exit 0") if test_conf else ''
@@ -2937,7 +2938,7 @@ class BooleanArgumentParser(YunoHostArgumentFormatParser):
     default_value = False
 
     def parse_question(self, question, user_answers):
-        question = super(BooleanArgumentParser, self).parse_question(
+        question = super().parse_question(
             question, user_answers
         )
 
@@ -3031,18 +3032,33 @@ class NumberArgumentParser(YunoHostArgumentFormatParser):
     default_value = ""
 
     def parse_question(self, question, user_answers):
-        question = super(NumberArgumentParser, self).parse_question(
+        question_parsed = super().parse_question(
             question, user_answers
         )
-
+        question_parsed.min = question.get('min', None)
+        question_parsed.max = question.get('max', None)
         if question.default is None:
-            question.default = 0
+            question_parsed.default = 0
 
-        return question
+        return question_parsed
 
+    def _prevalidate(self, question):
+        super()._prevalidate(question)
+        if question.min is not None and question.value < question.min:
+            raise YunohostValidationError(
+                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
+            )
+        if question.max is not None and question.value > question.max:
+            raise YunohostValidationError(
+                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
+            )
+        if not isinstance(question.value, int) and not (isinstance(question.value, str) and question.value.isdigit()):
+            raise YunohostValidationError(
+                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
+            )
     def _post_parse_value(self, question):
         if isinstance(question.value, int):
-            return super(NumberArgumentParser, self)._post_parse_value(question)
+            return super()._post_parse_value(question)
 
         if isinstance(question.value, str) and question.value.isdigit():
             return int(question.value)
