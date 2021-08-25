@@ -2764,6 +2764,7 @@ class YunoHostArgumentFormatParser(object):
         parsed_question.optional = question.get("optional", False)
         parsed_question.ask = question.get("ask")
         parsed_question.help = question.get("help")
+        parsed_question.pattern = question.get("pattern")
         parsed_question.helpLink = question.get("helpLink")
         parsed_question.value = user_answers.get(parsed_question.name)
 
@@ -2776,48 +2777,65 @@ class YunoHostArgumentFormatParser(object):
 
         return parsed_question
 
-    def parse(self, question, user_answers, check_required=True):
+    def parse(self, question, user_answers):
         question = self.parse_question(question, user_answers)
 
-        if question.value is None and not getattr(self, "readonly", False):
-            text_for_user_input_in_cli = self._format_text_for_user_input_in_cli(
-                question
-            )
-            try:
-                question.value = msignals.prompt(
-                    message=text_for_user_input_in_cli,
-                    is_password=self.hide_user_input_in_prompt,
-                    confirm=self.hide_user_input_in_prompt
+        while True:
+            # Display question if no value filled or if it's a readonly message
+            if msettings.get('interface') == 'cli':
+                text_for_user_input_in_cli = self._format_text_for_user_input_in_cli(
+                    question
                 )
-            except NotImplementedError:
-                question.value = None
+                if getattr(self, "readonly", False):
+                    msignals.display(text_for_user_input_in_cli)
 
-        if getattr(self, "readonly", False):
-            msignals.display(self._format_text_for_user_input_in_cli(question))
+                elif question.value is None:
+                    question.value = msignals.prompt(
+                        message=text_for_user_input_in_cli,
+                        is_password=self.hide_user_input_in_prompt,
+                        confirm=self.hide_user_input_in_prompt
+                    )
 
-        # we don't have an answer, check optional and default_value
-        if question.value is None or question.value == "":
-            if not question.optional and question.default is None and check_required:
-                raise YunohostValidationError(
-                    "app_argument_required", name=question.name
-                )
-            else:
+
+            # Apply default value
+            if question.value in [None, ""] and question.default is not None:
                 question.value = (
                     getattr(self, "default_value", None)
                     if question.default is None
                     else question.default
                 )
 
-        # we have an answer, do some post checks
-        if question.value is not None:
-            if question.choices and question.value not in question.choices:
-                self._raise_invalid_answer(question)
-
+            # Prevalidation
+            try:
+                self._prevalidate(question)
+            except YunoHostValidationError:
+                if msettings.get('interface') == 'api':
+                    raise
+                question.value = None
+                continue
+            break
         # this is done to enforce a certain formating like for boolean
         # by default it doesn't do anything
         question.value = self._post_parse_value(question)
 
         return (question.value, self.argument_type)
+
+    def _prevalidate(self, question):
+        if question.value in [None, ""] and not question.optional:
+            raise YunohostValidationError(
+                "app_argument_required", name=question.name
+            )
+
+        # we have an answer, do some post checks
+        if question.value is not None:
+            if question.choices and question.value not in question.choices:
+                self._raise_invalid_answer(question)
+            if question.pattern and re.match(question.pattern['regexp'], str(question.value)):
+                raise YunohostValidationError(
+                    question.pattern['error'],
+                    name=question.name,
+                    value=question.value,
+                )
 
     def _raise_invalid_answer(self, question):
         raise YunohostValidationError(
@@ -3111,7 +3129,7 @@ ARGUMENTS_TYPE_PARSERS = {
 }
 
 
-def _parse_args_in_yunohost_format(user_answers, argument_questions, check_required=True):
+def _parse_args_in_yunohost_format(user_answers, argument_questions):
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
 
@@ -3127,7 +3145,7 @@ def _parse_args_in_yunohost_format(user_answers, argument_questions, check_requi
     for question in argument_questions:
         parser = ARGUMENTS_TYPE_PARSERS[question.get("type", "string")]()
 
-        answer = parser.parse(question=question, user_answers=user_answers, check_required=check_required)
+        answer = parser.parse(question=question, user_answers=user_answers)
         if answer is not None:
             parsed_answers_dict[question["name"]] = answer
 
