@@ -1861,34 +1861,29 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
     operation_logger.start()
 
     # Prepare pre answered questions
-    if args:
-        args = dict(urllib.parse.parse_qsl(args, keep_blank_values=True)) if args else {}
-    elif value is not None:
+    args = dict(urllib.parse.parse_qsl(args, keep_blank_values=True)) if args else {}
+    if value is not None:
         args = {key: value}
-    else:
-        args = {}
-
-
-    upload_dir = None
-    for panel in config_panel.get("panel", []):
-        if msettings.get('interface') == 'cli' and len(filter_key.split('.')) < 3:
-            msignals.display(colorize("\n" + "=" * 40, 'purple'))
-            msignals.display(colorize(f">>>> {panel['name']}", 'purple'))
-            msignals.display(colorize("=" * 40, 'purple'))
-        for section in panel.get("sections", []):
-            if msettings.get('interface') == 'cli' and len(filter_key.split('.')) < 3:
-                msignals.display(colorize(f"\n# {section['name']}", 'purple'))
-
-            # Check and ask unanswered questions
-            args_dict = _parse_args_in_yunohost_format(
-                args, section['options']
-            )
-
-    # Call config script to extract current values
-    logger.info("Running config script...")
-    env = {key: value[0] for key, value in args_dict.items()}
 
     try:
+        for panel in config_panel.get("panel", []):
+            if msettings.get('interface') == 'cli' and len(filter_key.split('.')) < 3:
+                msignals.display(colorize("\n" + "=" * 40, 'purple'))
+                msignals.display(colorize(f">>>> {panel['name']}", 'purple'))
+                msignals.display(colorize("=" * 40, 'purple'))
+            for section in panel.get("sections", []):
+                if msettings.get('interface') == 'cli' and len(filter_key.split('.')) < 3:
+                    msignals.display(colorize(f"\n# {section['name']}", 'purple'))
+
+                # Check and ask unanswered questions
+                args_dict = _parse_args_in_yunohost_format(
+                    args, section['options']
+                )
+
+        # Call config script to extract current values
+        logger.info("Running config script...")
+        env = {key: value[0] for key, value in args_dict.items()}
+
         errors = _call_config_script(operation_logger, app, 'apply', env=env)
     # Here again, calling hook_exec could fail miserably, or get
     # manually interrupted (by mistake or because script was stuck)
@@ -1896,11 +1891,16 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
         raise YunohostError("unexpected_error")
     finally:
         # Delete files uploaded from API
-        if msettings.get('interface') == 'api':
-            if upload_dir is not None:
-                shutil.rmtree(upload_dir)
+        FileArgumentParser.clean_upload_dirs()
+
+    if errors:
+        return {
+            "app": app,
+            "errors": errors,
+        }
 
     # Reload services
+    logger.info("Reloading services...")
     services_to_reload = set([])
     for panel in config_panel.get("panel", []):
         services_to_reload |= set(panel.get('services', []))
@@ -1923,11 +1923,10 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
                 service=service, errors=errors
             )
 
-    if not errors:
-        logger.success("Config updated as expected")
+    logger.success("Config updated as expected")
     return {
         "app": app,
-        "errors": errors,
+        "errors": [],
         "logs": operation_logger.success(),
     }
 
@@ -3077,6 +3076,14 @@ class DisplayTextArgumentParser(YunoHostArgumentFormatParser):
 
 class FileArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "file"
+    upload_dirs = []
+
+    @classmethod
+    def clean_upload_dirs(cls):
+        # Delete files uploaded from API
+        if msettings.get('interface') == 'api':
+            for upload_dir in cls.upload_dirs:
+                shutil.rmtree(upload_dir)
 
     def parse_question(self, question, user_answers):
         question = super(FileArgumentParser, self).parse_question(
@@ -3097,7 +3104,9 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
             return question.value
 
         if msettings.get('interface') == 'api':
+
             upload_dir = tempfile.mkdtemp(prefix='tmp_configpanel_')
+            FileArgumentParser.upload_dirs += [upload_dir]
             filename = question.value['filename']
             logger.debug(f"Save uploaded file {question.value['filename']} from API into {upload_dir}")
 
