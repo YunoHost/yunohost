@@ -527,7 +527,7 @@
     "regenconf_dry_pending_applying": "Checking pending configuration which would have been applied for category '{category}'…",
     "regenconf_failed": "Could not regenerate the configuration for category(s): {categories}",
     "regenconf_pending_applying": "Applying pending configuration for category '{category}'...",
-    "regenconf_need_to_explicitly_specify_ssh": "The ssh configuration has been manually modified, but you need to explicitly specify category 'ssh' with --force to actually apply the changes.",
+    "regenconf_need_to_explicitly_specify_ssh": "The SSH configuration has been manually modified, but you need to explicitly specify category 'ssh' with --force to actually apply the changes.",
     "regex_incompatible_with_tile": "/!\\ Packagers! Permission '{permission}' has show_tile set to 'true' and you therefore cannot define a regex URL as the main URL",
     "regex_with_only_domain": "You can't use a regex for domain, only for path",
     "registrar_is_not_set": "The registrar for this domain has not been configured",
