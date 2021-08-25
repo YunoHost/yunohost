@@ -1912,6 +1912,8 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
     services_to_reload = list(services_to_reload)
     services_to_reload.sort(key = 'nginx'.__eq__)
     for service in services_to_reload:
+        if service == "__APP__":
+            service = app
         if not _run_service_command('reload_or_restart', service):
             services = _get_services()
             test_conf = services[service].get('test_conf')
