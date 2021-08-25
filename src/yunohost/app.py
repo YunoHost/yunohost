@@ -1769,7 +1769,7 @@ def app_config_show(operation_logger, app, panel='', full=False):
         return None
 
     # Call config script to extract current values
-    parsed_values = _call_config_script(app, 'show')
+    parsed_values = _call_config_script(operation_logger, app, 'show')
 
     # # Check and transform values if needed
     # options = [option for _, _, option in _get_options_iterator(config_panel)]
@@ -1820,7 +1820,7 @@ def app_config_get(operation_logger, app, key):
         raise YunohostError("app_config_no_panel")
 
     # Call config script to extract current values
-    parsed_values = _call_config_script(app, 'show')
+    parsed_values = _call_config_script(operation_logger, app, 'show')
 
     logger.debug("Searching value")
     short_key = key.split('.')[-1]
@@ -1891,7 +1891,7 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
     env = {key: value[0] for key, value in args_dict.items()}
 
     try:
-        errors = _call_config_script(app, 'apply', env=env)
+        errors = _call_config_script(operation_logger, app, 'apply', env=env)
     # Here again, calling hook_exec could fail miserably, or get
     # manually interrupted (by mistake or because script was stuck)
     except (KeyboardInterrupt, EOFError, Exception):
@@ -1917,7 +1917,7 @@ def _get_options_iterator(config_panel):
                 yield (panel, section, option)
 
 
-def _call_config_script(app, action, env={}):
+def _call_config_script(operation_logger, app, action, env={}):
     from yunohost.hook import hook_exec
 
     # Add default config script if needed
@@ -1933,7 +1933,7 @@ ynh_panel_run $1
         write_to_file(config_script, default_script)
 
     # Call config script to extract current values
-    logger.debug("Calling 'show' action from config script")
+    logger.debug(f"Calling '{action}' action from config script")
     app_id, app_instance_nb = _parse_app_instance_name(app)
     env.update({
         "app_id": app_id,
@@ -1941,9 +1941,11 @@ ynh_panel_run $1
         "app_instance_nb": str(app_instance_nb),
     })
 
-    _, parsed_values = hook_exec(
+    ret, parsed_values = hook_exec(
         config_script, args=[action], env=env
     )
+    if ret != 0:
+        operation_logger.error(parsed_values)
     return parsed_values
 
 
@@ -3047,7 +3049,7 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
             question.value = {
                 'content': user_answers[question.name],
                 'filename': user_answers.get(f"{question.name}[name]", question.name),
-             } if user_answers[question.name] else None
+             } if user_answers.get(question.name) else None
         return question
 
     def _post_parse_value(self, question):

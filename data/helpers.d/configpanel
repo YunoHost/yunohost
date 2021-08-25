@@ -189,12 +189,18 @@ _ynh_panel_show() {
 
 _ynh_panel_validate() {
     # Change detection
+    ynh_script_progression --message="Checking what changed in the new configuration..." --weight=1
     local is_error=true
     #for changed_status in "${!changed[@]}"
     for short_setting in "${!old[@]}"
     do
         changed[$short_setting]=false
-        [ -z ${!short_setting+x} ] && continue
+        if [ -z ${!short_setting+x} ]; then
+            # Assign the var with the old value in order to allows multiple
+            # args validation
+            declare "$short_setting"="${old[$short_setting]}"
+            continue
+        fi
         if [ ! -z "${file_hash[${short_setting}]}" ] ; then
             file_hash[old__$short_setting]=""
             file_hash[new__$short_setting]=""
@@ -217,30 +223,32 @@ _ynh_panel_validate() {
             fi
         fi
     done
-    
-    # Run validation if something is changed
-    if [[ "$is_error" == "false" ]]
-    then
-
-        for short_setting in "${!old[@]}"
-        do
-            [[ "${changed[$short_setting]}" == "false" ]] && continue
-            local result=""
-            if type -t validate__$short_setting | grep -q '^function$' 2>/dev/null; then
-                result="$(validate__$short_setting)"
-            fi
-            if [ -n "$result" ]
-            then
-                local key="YNH_ERROR_${$short_setting}"
-                ynh_return "$key: $result"
-                is_error=true
-            fi
-        done
-    fi
-
     if [[ "$is_error" == "true" ]]
     then
-        ynh_die ""
+        ynh_die "Nothing has changed"
+    fi 
+    
+    # Run validation if something is changed
+    ynh_script_progression --message="Validating the new configuration..." --weight=1
+
+    for short_setting in "${!old[@]}"
+    do
+        [[ "${changed[$short_setting]}" == "false" ]] && continue
+        local result=""
+        if type -t validate__$short_setting | grep -q '^function$' 2>/dev/null; then
+            result="$(validate__$short_setting)"
+        fi
+        if [ -n "$result" ]
+        then
+            local key="YNH_ERROR_${short_setting}"
+            ynh_return "$key: $result"
+            is_error=true
+        fi
+    done
+    
+    if [[ "$is_error" == "true" ]]
+    then
+        exit 0
     fi 
     
 }
@@ -266,11 +274,22 @@ ynh_panel_run() {
     declare -Ag changed=()
     declare -Ag file_hash=()
     declare -Ag sources=()
-    
-    ynh_panel_get
     case $1 in
-        show) ynh_panel_get && ynh_panel_show;;
-        apply) ynh_panel_get && ynh_panel_validate && ynh_panel_apply;;
+        show)
+            ynh_panel_get
+            ynh_panel_show
+            ;;
+        apply) 
+            max_progression=4
+            ynh_script_progression --message="Reading config panel description and current configuration..." --weight=1
+            ynh_panel_get
+            
+            ynh_panel_validate
+            
+            ynh_script_progression --message="Applying the new configuration..." --weight=1
+            ynh_panel_apply
+            ynh_script_progression --message="Configuration of $app completed" --last
+            ;;
     esac
 }
 
