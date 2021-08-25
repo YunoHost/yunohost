@@ -1866,6 +1866,7 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
         args = {key: value}
 
     try:
+        logger.debug("Asking unanswered question and prevalidating...")
         for panel in config_panel.get("panel", []):
             if msettings.get('interface') == 'cli' and len(filter_key.split('.')) < 3:
                 msignals.display(colorize("\n" + "=" * 40, 'purple'))
@@ -2172,6 +2173,7 @@ def _get_app_config_panel(app_id, filter_key=''):
             panel = {
                 "id": key,
                 "name": value.get("name", ""),
+                "services": value.get("services", []),
                 "sections": [],
             }
 
@@ -2190,6 +2192,7 @@ def _get_app_config_panel(app_id, filter_key=''):
                     "id": section_key,
                     "name": section_value.get("name", ""),
                     "optional": section_value.get("optional", True),
+                    "services": value.get("services", []),
                     "options": [],
                 }
 
