@@ -54,7 +54,7 @@ from moulinette.utils.filesystem import (
     mkdir,
 )
 
-from yunohost.service import service_status, _run_service_command
+from yunohost.service import service_status, _run_service_command, _get_services
 from yunohost.utils import packages
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.filesystem import free_space_in_directory
@@ -1870,9 +1870,7 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
 
 
     upload_dir = None
-
     for panel in config_panel.get("panel", []):
-
         if msettings.get('interface') == 'cli' and len(filter_key.split('.')) < 3:
             msignals.display(colorize("\n" + "=" * 40, 'purple'))
             msignals.display(colorize(f">>>> {panel['name']}", 'purple'))
@@ -1902,7 +1900,29 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
             if upload_dir is not None:
                 shutil.rmtree(upload_dir)
 
-    logger.success("Config updated as expected")
+    # Reload services
+    services_to_reload = set([])
+    for panel in config_panel.get("panel", []):
+        services_to_reload |= set(panel.get('services', []))
+        for section in panel.get("sections", []):
+            services_to_reload |= set(section.get('services', []))
+            for option in section.get("options", []):
+                services_to_reload |= set(section.get('options', []))
+
+    services_to_reload = list(services_to_reload)
+    services_to_reload.sort(key = 'nginx'.__eq__)
+    for service in services_to_reload:
+        if not _run_service_command('reload_or_restart', service):
+            services = _get_services()
+            test_conf = services[service].get('test_conf')
+            errors = check_output(f"{test_conf}; exit 0") if test_conf else ''
+            raise YunohostError(
+                "app_config_failed_service_reload",
+                service=service, errors=errors
+            )
+
+    if not errors:
+        logger.success("Config updated as expected")
     return {
         "app": app,
         "errors": errors,
@@ -2760,16 +2780,13 @@ class YunoHostArgumentFormatParser(object):
         parsed_question.name = question["name"]
         parsed_question.type = question.get("type", 'string')
         parsed_question.default = question.get("default", None)
-        parsed_question.choices = question.get("choices", [])
         parsed_question.optional = question.get("optional", False)
-        parsed_question.ask = question.get("ask")
-        parsed_question.help = question.get("help")
+        parsed_question.choices = question.get("choices", [])
         parsed_question.pattern = question.get("pattern")
+        parsed_question.ask = question.get("ask", {'en': f"Enter value for '{parsed_question.name}':"})
+        parsed_question.help = question.get("help")
         parsed_question.helpLink = question.get("helpLink")
         parsed_question.value = user_answers.get(parsed_question.name)
-
-        if parsed_question.ask is None:
-            parsed_question.ask = "Enter value for '%s':" % parsed_question.name
 
         # Empty value is parsed as empty string
         if parsed_question.default == "":
@@ -2857,7 +2874,7 @@ class YunoHostArgumentFormatParser(object):
             text_for_user_input_in_cli += ":\033[m"
         if question.help:
             text_for_user_input_in_cli += "\n - "
-            text_for_user_input_in_cli += question.help['en']
+            text_for_user_input_in_cli += _value_for_locale(question.help)
         if question.helpLink:
             if not isinstance(question.helpLink, dict):
                 question.helpLink = {'href': question.helpLink}
