@@ -162,14 +162,13 @@ def test_import_user(mocker):
 
 def test_export_user(mocker):
     result = user_export()
-    should_be = "username;firstname;lastname;password;"
-    should_be += "mailbox-quota;mail;mail-alias;mail-forward;groups"
-    should_be += "\r\nalice;Alice;White;;0;alice@" + maindomain + ";"
-    should_be += ','.join([alias + maindomain for alias in FIRST_ALIASES])
-    should_be += ";;dev"
-    should_be += "\r\nbob;Bob;Snow;;0;bob@" + maindomain + ";;;apps"
-    should_be += "\r\njack;Jack;Black;;0;jack@" + maindomain + ";;;"
-
+    aliases = ','.join([alias + maindomain for alias in FIRST_ALIASES])
+    should_be = (
+        "username;firstname;lastname;password;mailbox-quota;mail;mail-alias;mail-forward;groups\r\n"
+        f"alice;Alice;White;;0;alice@{maindomain};{aliases};;dev\r\n"
+        f"bob;Bob;Snow;;0;bob@{maindomain};;;apps\r\n"
+        f"jack;Jack;Black;;0;jack@{maindomain};;;"
+    )
     assert result == should_be
 
 
