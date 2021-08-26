@@ -70,6 +70,7 @@ APPS_CATALOG_CONF = "/etc/yunohost/apps_catalog.yml"
 APPS_CATALOG_API_VERSION = 2
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 
+APPS_CONFIG_PANEL_VERSION_SUPPORTED = 1.0
 re_app_instance_name = re.compile(
     r"^(?P<appid>[\w-]+?)(__(?P<appinstancenb>[1-9][0-9]*))?$"
 )
@@ -1863,7 +1864,7 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
     # Prepare pre answered questions
     args = dict(urllib.parse.parse_qsl(args, keep_blank_values=True)) if args else {}
     if value is not None:
-        args = {key: value}
+        args = {filter_key.split('.')[-1]: value}
 
     try:
         logger.debug("Asking unanswered question and prevalidating...")
@@ -1883,13 +1884,23 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
 
         # Call config script to extract current values
         logger.info("Running config script...")
-        env = {key: value[0] for key, value in args_dict.items()}
+        env = {key: str(value[0]) for key, value in args_dict.items()}
 
         errors = _call_config_script(operation_logger, app, 'apply', env=env)
-    # Here again, calling hook_exec could fail miserably, or get
-    # manually interrupted (by mistake or because script was stuck)
-    except (KeyboardInterrupt, EOFError, Exception):
-        raise YunohostError("unexpected_error")
+    # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
+    except (KeyboardInterrupt, EOFError):
+        error = m18n.n("operation_interrupted")
+        logger.error(m18n.n("app_config_failed", app=app, error=error))
+        failure_message_with_debug_instructions = operation_logger.error(error)
+        raise
+    # Something wrong happened in Yunohost's code (most probably hook_exec)
+    except Exception:
+        import traceback
+
+        error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+        logger.error(m18n.n("app_config_failed", app=app, error=error))
+        failure_message_with_debug_instructions = operation_logger.error(error)
+        raise
     finally:
         # Delete files uploaded from API
         FileArgumentParser.clean_upload_dirs()
@@ -2148,6 +2159,11 @@ def _get_app_config_panel(app_id, filter_key=''):
         toml_config_panel = toml.load(
             open(config_panel_toml_path, "r"), _dict=OrderedDict
         )
+        if float(toml_config_panel["version"]) < APPS_CONFIG_PANEL_VERSION_SUPPORTED:
+            raise YunohostError(
+                "app_config_too_old_version", app=app_id,
+                version=toml_config_panel["version"]
+            )
 
         # transform toml format into json format
         config_panel = {
@@ -2218,6 +2234,13 @@ def _get_app_config_panel(app_id, filter_key=''):
                 panel["sections"].append(section)
 
             config_panel["panel"].append(panel)
+
+        if (filter_panel and len(config_panel['panel']) == 0) or \
+           (filter_section and len(config_panel['panel'][0]['sections']) == 0) or \
+           (filter_option and len(config_panel['panel'][0]['sections'][0]['options']) == 0):
+            raise YunohostError(
+                "app_config_bad_filter_key", app=app_id, filter_key=filter_key
+            )
 
         return config_panel
 
@@ -2830,9 +2853,10 @@ class YunoHostArgumentFormatParser(object):
             # Prevalidation
             try:
                 self._prevalidate(question)
-            except YunoHostValidationError:
+            except YunohostValidationError as e:
                 if msettings.get('interface') == 'api':
                     raise
+                msignals.display(str(e), 'error')
                 question.value = None
                 continue
             break
@@ -3037,25 +3061,28 @@ class NumberArgumentParser(YunoHostArgumentFormatParser):
         )
         question_parsed.min = question.get('min', None)
         question_parsed.max = question.get('max', None)
-        if question.default is None:
+        if question_parsed.default is None:
             question_parsed.default = 0
 
         return question_parsed
 
     def _prevalidate(self, question):
         super()._prevalidate(question)
-        if question.min is not None and question.value < question.min:
-            raise YunohostValidationError(
-                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
-            )
-        if question.max is not None and question.value > question.max:
-            raise YunohostValidationError(
-                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
-            )
         if not isinstance(question.value, int) and not (isinstance(question.value, str) and question.value.isdigit()):
             raise YunohostValidationError(
                 "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
             )
+
+        if question.min is not None and int(question.value) < question.min:
+            raise YunohostValidationError(
+                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
+            )
+
+        if question.max is not None and int(question.value) > question.max:
+            raise YunohostValidationError(
+                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
+            )
+
     def _post_parse_value(self, question):
         if isinstance(question.value, int):
             return super()._post_parse_value(question)
