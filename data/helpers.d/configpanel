@@ -139,7 +139,7 @@ EOL
         # Specific case for files (all content of the file is the source)
         else
             
-            old[$short_setting]="$(ls $source 2> /dev/null || echo YNH_NULL)"
+            old[$short_setting]="$(ls $(echo $source | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/) 2> /dev/null || echo YNH_NULL)"
             file_hash[$short_setting]="true"
         fi
     done
