@@ -2937,7 +2937,7 @@ class PasswordArgumentParser(YunoHostArgumentFormatParser):
 
         return question
 
-    def _post_parse_value(self, question):
+    def _prevalidate(self, question):
         if any(char in question.value for char in self.forbidden_chars):
             raise YunohostValidationError(
                 "pattern_password_app", forbidden_chars=self.forbidden_chars
@@ -2948,8 +2948,6 @@ class PasswordArgumentParser(YunoHostArgumentFormatParser):
             from yunohost.utils.password import assert_password_is_strong_enough
 
             assert_password_is_strong_enough("user", question.value)
-
-        return super(PasswordArgumentParser, self)._post_parse_value(question)
 
 
 class PathArgumentParser(YunoHostArgumentFormatParser):
@@ -3129,18 +3127,40 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
         # Delete files uploaded from API
         if msettings.get('interface') == 'api':
             for upload_dir in cls.upload_dirs:
-                shutil.rmtree(upload_dir)
+                if os.path.exists(upload_dir):
+                    shutil.rmtree(upload_dir)
 
     def parse_question(self, question, user_answers):
-        question = super(FileArgumentParser, self).parse_question(
+        question_parsed = super().parse_question(
             question, user_answers
         )
+        if question.get('accept'):
+            question_parsed.accept = question.get('accept').replace(' ', '').split(',')
+        else:
+            question.accept = []
         if msettings.get('interface') == 'api':
-            question.value = {
-                'content': user_answers[question.name],
-                'filename': user_answers.get(f"{question.name}[name]", question.name),
-             } if user_answers.get(question.name) else None
-        return question
+            if user_answers.get(question_parsed.name):
+                question_parsed.value = {
+                    'content': question_parsed.value,
+                    'filename': user_answers.get(f"{question_parsed.name}[name]", question_parsed.name),
+                }
+        return question_parsed
+
+    def _prevalidate(self, question):
+        super()._prevalidate(question)
+        if isinstance(question.value, str) and not os.path.exists(question.value):
+            raise YunohostValidationError(
+                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number1")
+            )
+        if question.value is None or not question.accept:
+            return
+
+        filename = question.value if isinstance(question.value, str) else question.value['filename']
+        if '.' not in filename or '.' + filename.split('.')[-1] not in question.accept:
+            raise YunohostValidationError(
+                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number2")
+            )
+
 
     def _post_parse_value(self, question):
         from base64 import b64decode
