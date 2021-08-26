@@ -332,7 +332,7 @@
     "hook_exec_failed": "Ne povis funkcii skripto: {path}",
     "global_settings_cant_open_settings": "Ne eblis malfermi agordojn, tial: {reason}",
     "user_created": "Uzanto kreita",
-    "service_description_avahi-daemon": "Permesas al vi atingi vian servilon uzante 'yunohost.local' en via loka reto",
+    "service_description_mdns": "Permesas al vi atingi vian servilon uzante 'yunohost.local' en via loka reto",
     "certmanager_attempt_to_replace_valid_cert": "Vi provas anstataŭigi bonan kaj validan atestilon por domajno {domain}! (Uzu --forte pretervidi)",
     "regenconf_updated": "Agordo ĝisdatigita por '{category}'",
     "update_apt_cache_warning": "Io iris malbone dum la ĝisdatigo de la kaŝmemoro de APT (paka administranto de Debian). Jen rubujo de la sources.list-linioj, kiuj povus helpi identigi problemajn liniojn:\n{sourceslist}",

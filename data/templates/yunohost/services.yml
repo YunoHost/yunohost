@@ -1,4 +1,3 @@
-avahi-daemon: {}
 dnsmasq:
   test_conf: dnsmasq --test
 dovecot:
@@ -52,6 +51,8 @@ yunohost-firewall:
   need_lock: true
   test_status: iptables -S | grep "^-A INPUT" | grep " --dport" | grep -q ACCEPT
   category: security
+yunomdns:
+  category: mdns
 glances: null
 nsswitch: null
 ssl: null
@@ -68,3 +69,4 @@ rmilter: null
 php5-fpm: null
 php7.0-fpm: null
 nslcd: null
+avahi-daemon: null
