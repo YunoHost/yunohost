@@ -1,16 +1,10 @@
 #!/usr/bin/env python
 
 import os
-import re
 
-from yunohost.app import app_info, app_list
-from moulinette.utils.filesystem import read_file
+from yunohost.app import app_list
 
-from yunohost.settings import settings_get
 from yunohost.diagnosis import Diagnoser
-from yunohost.regenconf import _get_regenconf_infos, _calculate_hash
-from moulinette.utils.filesystem import read_file
-
 
 class AppDiagnoser(Diagnoser):
 
