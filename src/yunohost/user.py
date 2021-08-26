@@ -43,8 +43,7 @@ from yunohost.log import is_unit_operation
 
 logger = getActionLogger("yunohost.user")
 
-CSV_FIELDNAMES = [u'username', u'firstname', u'lastname', u'password', u'mailbox-quota', u'mail', u'mail-alias', u'mail-forward', u'groups']
-VALIDATORS = {
+FIELDS_FOR_IMPORT = {
     'username': r'^[a-z0-9_]+$',
     'firstname': r'^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$',
     'lastname': r'^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$',
@@ -619,10 +618,10 @@ def user_export():
     import csv  # CSV are needed only in this function
     from io import StringIO
     with StringIO() as csv_io:
-        writer = csv.DictWriter(csv_io, CSV_FIELDNAMES,
+        writer = csv.DictWriter(csv_io, list(FIELDS_FOR_IMPORT.keys()),
                                 delimiter=';', quotechar='"')
         writer.writeheader()
-        users = user_list(CSV_FIELDNAMES)['users']
+        users = user_list(list(FIELDS_FOR_IMPORT.keys()))['users']
         for username, user in users.items():
             user['mail-alias'] = ','.join(user['mail-alias'])
             user['mail-forward'] = ','.join(user['mail-forward'])
@@ -672,24 +671,24 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
 
     users_in_csv = []
     existing_users = user_list()['users']
-    past_lines = []
     reader = csv.DictReader(csvfile, delimiter=';', quotechar='"')
-    for user in reader:
-        # Validation
-        try:
-            format_errors = [key + ':' + str(user[key])
-                            for key, validator in VALIDATORS.items()
-                         if user[key] is None or not re.match(validator, user[key])]
-        except KeyError as e:
-            logger.error(m18n.n('user_import_missing_column',
-                                column=str(e)))
-            is_well_formatted = False
-            break
 
-        if 'username' in user:
-            if user['username'] in past_lines:
-                format_errors.append('username: %s (duplicated)' % user['username'])
-            past_lines.append(user['username'])
+    missing_columns = [key for key in FIELDS_FOR_IMPORT.keys() if key not in reader.fieldnames]
+    if missing_columns:
+        raise YunohostValidationError("user_import_missing_columns", columns=', '.join(missing_columns))
+
+    for user in reader:
+
+        # Validate column values against regexes
+        format_errors = [key + ':' + str(user[key])
+                         for key, validator in FIELDS_FOR_IMPORT.items()
+                         if user[key] is None or not re.match(validator, user[key])]
+
+        # Check for duplicated username lines
+        if user['username'] in users_in_csv:
+            format_errors.append(f'username: {user[username]} (duplicated)')
+        users_in_csv.append(user['username'])
+
         if format_errors:
             logger.error(m18n.n('user_import_bad_line',
                                 line=reader.line_num,
@@ -713,8 +712,6 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         # User update
         elif update:
             actions['updated'].append(user)
-
-        users_in_csv.add(user['username'])
 
     if delete:
         actions['deleted'] = [user for user in existing_users if user not in users_in_csv]
@@ -787,7 +784,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         for group in new_infos['groups']:
             user_group_update(group, add=new_infos['username'], sync_perm=False, from_import=True)
 
-    users = user_list(CSV_FIELDNAMES)['users']
+    users = user_list(list(FIELDS_FOR_IMPORT.keys()))['users']
     operation_logger.start()
     # We do delete and update before to avoid mail uniqueness issues
     for user in actions['deleted']:

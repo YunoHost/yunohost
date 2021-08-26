@@ -10,7 +10,7 @@ from yunohost.user import (
     user_update,
     user_import,
     user_export,
-    CSV_FIELDNAMES,
+    FIELDS_FOR_IMPORT,
     FIRST_ALIASES,
     user_group_list,
     user_group_create,
@@ -151,7 +151,7 @@ def test_import_user(mocker):
             user_import(csv_io, update=True, delete=True)
 
     group_res = user_group_list()['groups']
-    user_res = user_list(CSV_FIELDNAMES)['users']
+    user_res = user_list(list(FIELDS_FOR_IMPORT.keys()))['users']
     assert "albert" in user_res
     assert "alice" in user_res
     assert "bob" not in user_res

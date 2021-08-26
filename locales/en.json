@@ -634,7 +634,7 @@
     "user_updated": "User info changed",
     "user_import_bad_line": "Incorrect line {line}: {details}",
     "user_import_bad_file": "Your CSV file is not correctly formatted it will be ignored to avoid potential data loss",
-    "user_import_missing_column": "The column {column} is missing",
+    "user_import_missing_columns": "The following columns are missing: {columns}",
     "user_import_partial_failed": "The users import operation partially failed",
     "user_import_failed": "The users import operation completely failed",
     "user_import_nothing_to_do": "No user needs to be imported",
