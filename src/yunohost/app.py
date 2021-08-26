@@ -2876,7 +2876,7 @@ class YunoHostArgumentFormatParser(object):
         if question.value is not None:
             if question.choices and question.value not in question.choices:
                 self._raise_invalid_answer(question)
-            if question.pattern and re.match(question.pattern['regexp'], str(question.value)):
+            if question.pattern and not re.match(question.pattern['regexp'], str(question.value)):
                 raise YunohostValidationError(
                     question.pattern['error'],
                     name=question.name,
