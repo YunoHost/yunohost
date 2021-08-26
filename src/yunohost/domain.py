@@ -166,7 +166,9 @@ def domain_add(operation_logger, domain, dyndns=False):
             # because it's one of the major service, but in the long term we
             # should identify the root of this bug...
             _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
-            regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd"])
+            regen_conf(
+                names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd", "mdns"]
+            )
             app_ssowatconf()
 
     except Exception as e:
@@ -293,7 +295,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
             "/etc/nginx/conf.d/%s.conf" % domain, new_conf=None, save=True
         )
 
-    regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix"])
+    regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd", "mdns"])
     app_ssowatconf()
 
     hook_callback("post_domain_remove", args=[domain])

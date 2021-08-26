@@ -1,3 +1,24 @@
+yunohost (4.2.8.1) stable; urgency=low
+
+  - [fix] Safer location for slapd backup during hdb/mdb migration (3c646b3d)
+
+  Thanks to all contributors <3 ! (ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 27 Aug 2021 01:32:16 +0200
+
+yunohost (4.2.8) stable; urgency=low
+
+  - [fix] ynh_permission_has_user not behaving properly when checking if a group is allowed (f0590907)
+  - [enh] use yaml safeloader everywhere ([#1287](https://github.com/YunoHost/yunohost/pull/1287))
+  - [enh] Add --no-safety-backup option to "yunohost app upgrade" ([#1286](https://github.com/YunoHost/yunohost/pull/1286))
+  - [enh] Add --purge option to "yunohost app remove" ([#1285](https://github.com/YunoHost/yunohost/pull/1285))
+  - [enh] Multimedia helper: check that home folder exists ([#1255](https://github.com/YunoHost/yunohost/pull/1255))
+  - [i18n] Translations updated for French, Galician, German, Portuguese
+
+  Thanks to all contributors <3 ! (José M, Kay0u, Krakinou, ljf, Luca, mifegui, ppr, sagessylu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 19 Aug 2021 19:11:19 +0200
+
 yunohost (4.2.7) stable; urgency=low
 
   Notable changes:

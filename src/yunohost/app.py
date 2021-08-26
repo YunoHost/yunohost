@@ -502,7 +502,7 @@ def app_change_url(operation_logger, app, domain, path):
     hook_callback("post_app_change_url", env=env_dict)
 
 
-def app_upgrade(app=[], url=None, file=None, force=False):
+def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False):
     """
     Upgrade app
 
@@ -510,6 +510,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         file -- Folder or tarball for upgrade
         app -- App(s) to upgrade (default all)
         url -- Git url to fetch for upgrade
+        no_safety_backup -- Disable the safety backup during upgrade
 
     """
     from packaging import version
@@ -618,6 +619,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
+        env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
@@ -885,7 +887,7 @@ def app_install(
         raise YunohostValidationError("disk_space_not_sufficient_install")
 
     # Check ID
-    if "id" not in manifest or "__" in manifest["id"]:
+    if "id" not in manifest or "__" in manifest["id"] or "." in manifest["id"]:
         raise YunohostValidationError("app_id_invalid")
 
     app_id = manifest["id"]
@@ -1187,12 +1189,13 @@ def dump_app_log_extract_for_debugging(operation_logger):
 
 
 @is_unit_operation()
-def app_remove(operation_logger, app):
+def app_remove(operation_logger, app, purge=False):
     """
     Remove app
 
-    Keyword argument:
+    Keyword arguments:
         app -- App(s) to delete
+        purge -- Remove with all app data
 
     """
     from yunohost.hook import hook_exec, hook_remove, hook_callback
@@ -1230,6 +1233,7 @@ def app_remove(operation_logger, app):
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
     env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
+    env_dict["YNH_APP_PURGE"] = str(purge)
     operation_logger.extra.update({"env": env_dict})
     operation_logger.flush()
 
@@ -1518,7 +1522,7 @@ def app_setting(app, key, value=None, delete=False):
     # SET
     else:
         if key in ["redirected_urls", "redirected_regex"]:
-            value = yaml.load(value)
+            value = yaml.safe_load(value)
         app_settings[key] = value
 
     _set_app_settings(app, app_settings)
@@ -2175,7 +2179,7 @@ def _get_app_settings(app_id):
         )
     try:
         with open(os.path.join(APPS_SETTING_PATH, app_id, "settings.yml")) as f:
-            settings = yaml.load(f)
+            settings = yaml.safe_load(f)
         # If label contains unicode char, this may later trigger issues when building strings...
         # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
         settings = {k: v for k, v in settings.items()}

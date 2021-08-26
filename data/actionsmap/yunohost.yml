@@ -695,7 +695,11 @@ app:
             api: DELETE /apps/<app>
             arguments:
                 app:
-                    help: App to delete
+                    help: App to remove
+                -p:
+                    full: --purge
+                    help: Also remove all application data
+                    action: store_true
 
         ### app_upgrade()
         upgrade:
@@ -714,6 +718,10 @@ app:
                 -F:
                     full: --force
                     help: Force the update, even though the app is up to date
+                    action: store_true
+                -b:
+                    full: --no-safety-backup
+                    help: Disable the safety backup during upgrade
                     action: store_true
 
         ### app_change_url()

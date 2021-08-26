@@ -67,7 +67,7 @@
     "app_remove_after_failed_install": "Eliminando a app debido ao fallo na instalación...",
     "app_requirements_unmeet": "Non se cumpren os requerimentos de {app}, o paquete {pkgname} ({version}) debe ser {spec}",
     "app_requirements_checking": "Comprobando os paquetes requeridos por {app}...",
-    "app_removed": "{app} eliminada",
+    "app_removed": "{app} desinstalada",
     "app_not_properly_removed": "{app} non se eliminou de xeito correcto",
     "app_not_installed": "Non se puido atopar {app} na lista de apps instaladas: {all_apps}",
     "app_not_correctly_installed": "{app} semella que non está instalada correctamente",
@@ -345,5 +345,17 @@
     "global_settings_setting_smtp_relay_password": "Contrasinal no repetidor SMTP",
     "global_settings_setting_smtp_relay_user": "Conta de usuaria no repetidor SMTP",
     "global_settings_setting_smtp_relay_port": "Porto do repetidor SMTP",
-    "global_settings_setting_smtp_relay_host": "Servidor repetidor SMTP para enviar emails no lugar da túa instancia yunohost. É útil se estás nunha destas situacións: o teu porto 25 está bloqueado polo teu provedor ISP u VPN, se tes unha IP residencial nunha lista DUHL, se non podes configurar DNS inversa ou se este servidor non ten conexión directa a internet e queres utilizar outro para enviar os emails."
+    "global_settings_setting_smtp_relay_host": "Servidor repetidor SMTP para enviar emails no lugar da túa instancia yunohost. É útil se estás nunha destas situacións: o teu porto 25 está bloqueado polo teu provedor ISP u VPN, se tes unha IP residencial nunha lista DUHL, se non podes configurar DNS inversa ou se este servidor non ten conexión directa a internet e queres utilizar outro para enviar os emails.",
+    "group_updated": "Grupo '{group}' actualizado",
+    "group_unknown": "Grupo descoñecido '{group}'",
+    "group_deletion_failed": "Non se eliminou o grupo '{group}': {error}",
+    "group_deleted": "Grupo '{group}' eliminado",
+    "group_cannot_be_deleted": "O grupo {group} non se pode eliminar manualmente.",
+    "group_cannot_edit_primary_group": "O grupo '{group}' non se pode editar manualmente. É o grupo primario que contén só a unha usuaria concreta.",
+    "group_cannot_edit_visitors": "O grupo 'visitors' non se pode editar manualmente. É un grupo especial que representa a tódas visitantes anónimas",
+    "group_cannot_edit_all_users": "O grupo 'all_users' non se pode editar manualmente. É un grupo especial que contén tódalas usuarias rexistradas en YunoHost",
+    "global_settings_setting_security_webadmin_allowlist": "Enderezos IP con permiso para acceder á webadmin. Separados por vírgulas.",
+    "global_settings_setting_security_webadmin_allowlist_enabled": "Permitir que só algúns IPs accedan á webadmin.",
+    "disk_space_not_sufficient_update": "Non hai espazo suficiente no disco para actualizar esta aplicación",
+    "disk_space_not_sufficient_install": "Non queda espazo suficiente no disco para instalar esta aplicación"
 }

@@ -234,7 +234,7 @@
     "migrations_list_conflict_pending_done": "Vous ne pouvez pas utiliser --previous et --done simultanément.",
     "migrations_to_be_ran_manually": "La migration {id} doit être lancée manuellement. Veuillez aller dans Outils > Migrations dans l’interface admin, ou lancer `yunohost tools migrations run`.",
     "migrations_need_to_accept_disclaimer": "Pour lancer la migration {id}, vous devez accepter cet avertissement :\n---\n{disclaimer}\n---\nSi vous acceptez de lancer la migration, veuillez relancer la commande avec l’option --accept-disclaimer.",
-    "service_description_avahi-daemon": "Vous permet d’atteindre votre serveur en utilisant « yunohost.local » sur votre réseau local",
+    "service_description_yunomdns": "Vous permet d’atteindre votre serveur en utilisant « yunohost.local » sur votre réseau local",
     "service_description_dnsmasq": "Gère la résolution des noms de domaine (DNS)",
     "service_description_dovecot": "Permet aux clients de messagerie d’accéder/récupérer les courriels (via IMAP et POP3)",
     "service_description_fail2ban": "Protège contre les attaques brute-force et autres types d’attaques venant d’Internet",
@@ -633,5 +633,7 @@
     "diagnosis_sshd_config_inconsistent_details": "Veuillez exécuter <cmd>yunohost settings set security.ssh.port -v VOTRE_PORT_SSH</cmd> pour définir le port SSH, et vérifiez <cmd>yunohost tools regen-conf ssh --dry-run --with-diff</cmd> et <cmd>yunohost tools regen-conf ssh --force</cmd> pour réinitialiser votre configuration aux recommandations YunoHost.",
     "diagnosis_sshd_config_inconsistent": "Il semble que le port SSH a été modifié manuellement dans /etc/ssh/sshd_config. Depuis YunoHost 4.2, un nouveau paramètre global 'security.ssh.port' est disponible pour éviter de modifier manuellement la configuration.",
     "diagnosis_sshd_config_insecure": "La configuration SSH semble avoir été modifiée manuellement et n'est pas sécurisée car elle ne contient aucune directive 'AllowGroups' ou 'AllowUsers' pour limiter l'accès aux utilisateurs autorisés.",
-    "backup_create_size_estimation": "L'archive contiendra environ {size} de données."
+    "backup_create_size_estimation": "L'archive contiendra environ {size} de données.",
+    "global_settings_setting_security_webadmin_allowlist": "Adresses IP autorisées à accéder à la page web du portail d'administration (webadmin). Elles doivent être séparées par une virgule.",
+    "global_settings_setting_security_webadmin_allowlist_enabled": "Autorisez seulement certaines IP à accéder à la page web du portail d'administration (webadmin)."
 }

@@ -428,7 +428,6 @@
     "service_description_fail2ban": "Ti protegge dal brute-force e altri tipi di attacchi da Internet",
     "service_description_dovecot": "Consente ai client mail di accedere/recuperare le email (via IMAP e POP3)",
     "service_description_dnsmasq": "Gestisce la risoluzione dei domini (DNS)",
-    "service_description_avahi-daemon": "Consente di raggiungere il tuo server eseguendo 'yunohost.local' sulla tua LAN",
     "server_reboot_confirm": "Il server si riavvierà immediatamente, sei sicuro? [{answers}]",
     "server_reboot": "Il server si riavvierà",
     "server_shutdown_confirm": "Il server si spegnerà immediatamente, sei sicuro? [{answers}]",
