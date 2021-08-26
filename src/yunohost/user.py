@@ -670,6 +670,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
     def to_list(str_list):
         return str_list.split(',') if str_list else []
 
+    users_in_csv = []
     existing_users = user_list()['users']
     past_lines = []
     reader = csv.DictReader(csvfile, delimiter=';', quotechar='"')
@@ -701,20 +702,26 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         user['mail-alias'] = to_list(user['mail-alias'])
         user['mail-forward'] = to_list(user['mail-forward'])
         user['domain'] = user['mail'].split('@')[1]
+
+        # User creation
         if user['username'] not in existing_users:
             # Generate password if not exists
             # This could be used when reset password will be merged
             if not user['password']:
                 user['password'] = random_ascii(70)
             actions['created'].append(user)
-        else:
-            if update:
-                actions['updated'].append(user)
-            del existing_users[user['username']]
+        # User update
+        elif update:
+            actions['updated'].append(user)
+
+        users_in_csv.add(user['username'])
 
     if delete:
-        for user in existing_users:
-            actions['deleted'].append(user)
+        actions['deleted'] = [user for user in existing_users if user not in users_in_csv]
+
+    if delete and not users_in_csv:
+        logger.error("You used the delete option with an empty csv file ... You probably did not really mean to do that, did you !?")
+        is_well_formatted = False
 
     if not is_well_formatted:
         raise YunohostError('user_import_bad_file')
