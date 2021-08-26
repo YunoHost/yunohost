@@ -619,7 +619,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
-        env_dict["NO_BACKUP_UPGRADE"] = no_safety_backup
+        env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
@@ -1233,7 +1233,7 @@ def app_remove(operation_logger, app, purge=False):
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
     env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
-    env_dict["YNH_APP_PURGE"] = purge
+    env_dict["YNH_APP_PURGE"] = str(purge)
     operation_logger.extra.update({"env": env_dict})
     operation_logger.flush()
 
