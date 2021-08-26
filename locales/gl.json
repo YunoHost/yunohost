@@ -505,5 +505,22 @@
     "migrations_exclusive_options": "'--auto', '--skip', e '--force-rerun' son opcións que se exclúen unhas a outras.",
     "migrations_failed_to_load_migration": "Non se cargou a migración {id}: {error}",
     "migrations_dependencies_not_satisfied": "Executar estas migracións: '{dependencies_id}', antes da migración {id}.",
-    "migrations_cant_reach_migration_file": "Non se pode acceder aos ficheiros de migración na ruta '%s'"
+    "migrations_cant_reach_migration_file": "Non se pode acceder aos ficheiros de migración na ruta '%s'",
+    "regenconf_file_manually_removed": "O ficheiro de configuración '{conf}' foi eliminado manualmente e non será creado",
+    "regenconf_file_manually_modified": "O ficheiro de configuración '{conf}' foi modificado manualmente e non vai ser actualizado",
+    "regenconf_file_kept_back": "Era de agardar que o ficheiro de configuración '{conf}' fose eliminado por regen-conf (categoría {category}) mais foi mantido.",
+    "regenconf_file_copy_failed": "Non se puido copiar o novo ficheiro de configuración '{new}' a '{conf}'",
+    "regenconf_file_backed_up": "Ficheiro de configuración '{conf}' copiado a '{backup}'",
+    "postinstall_low_rootfsspace": "O sistema de ficheiros raiz ten un espazo total menor de 10GB, que é pouco! Probablemente vas quedar sen espazo moi pronto! É recomendable ter polo menos 16GB para o sistema raíz. Se queres instalar YunoHost obviando este aviso, volve a executar a postinstalación con --force-diskspace",
+    "port_already_opened": "O porto {port:d} xa está aberto para conexións {ip_version}",
+    "port_already_closed": "O porto {port:d} xa está pechado para conexións {ip_version}",
+    "permission_require_account": "O permiso {permission} só ten sentido para usuarias cunha conta, e por tanto non pode concederse a visitantes.",
+    "permission_protected": "O permiso {permission} está protexido. Non podes engadir ou eliminar o grupo visitantes a/de este permiso.",
+    "permission_updated": "Permiso '{permission}' actualizado",
+    "permission_update_failed": "Non se actualizou o permiso '{permission}': {error}",
+    "permission_not_found": "Non se atopa o permiso '{permission}'",
+    "permission_deletion_failed": "Non se puido eliminar o permiso '{permission}': {error}",
+    "permission_deleted": "O permiso '{permission}' foi eliminado",
+    "permission_cant_add_to_all_users": "O permiso {permission} non pode ser concecido a tódalas usuarias.",
+    "permission_currently_allowed_for_all_users": "Este permiso está concedido actualmente a tódalas usuarias ademáis de a outros grupos. Probablemente queiras ben eliminar o permiso 'all_users' ou ben eliminar os outros grupos que teñen permiso."
 }
