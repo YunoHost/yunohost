@@ -887,7 +887,7 @@ def app_install(
         raise YunohostValidationError("disk_space_not_sufficient_install")
 
     # Check ID
-    if "id" not in manifest or "__" in manifest["id"]:
+    if "id" not in manifest or "__" in manifest["id"] or "." in manifest["id"]:
         raise YunohostValidationError("app_id_invalid")
 
     app_id = manifest["id"]
