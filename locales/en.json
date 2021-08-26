@@ -32,7 +32,7 @@
     "app_location_unavailable": "This URL is either unavailable, or conflicts with the already installed app(s):\n{apps}",
     "app_manifest_invalid": "Something is wrong with the app manifest: {error}",
     "app_manifest_install_ask_domain": "Choose the domain where this app should be installed",
-    "app_manifest_install_ask_path": "Choose the web path after the domain where this app should be installed",
+    "app_manifest_install_ask_path": "Choose the url path (after the domain) where this app should be installed",
     "app_manifest_install_ask_password": "Choose an administration password for this app",
     "app_manifest_install_ask_admin": "Choose an administrator user for this app",
     "app_manifest_install_ask_is_public": "Should this app be exposed to anonymous visitors?",
