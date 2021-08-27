@@ -667,7 +667,9 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
     is_well_formatted = True
 
     def to_list(str_list):
-        return str_list.split(',') if str_list else []
+        L = str_list.split(',') if str_list else []
+        L = [l.strip() for l in L]
+        return L
 
     users_in_csv = []
     existing_users = user_list()['users']
