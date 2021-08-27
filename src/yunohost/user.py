@@ -693,14 +693,14 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
 
         # Check for duplicated username lines
         if user['username'] in users_in_csv:
-            format_errors.append(f"username '{user[username]}' duplicated")
+            format_errors.append(f"username '{user['username']}' duplicated")
         users_in_csv.append(user['username'])
 
         # Validate that groups exist
         user['groups'] = to_list(user['groups'])
         unknown_groups = [g for g in user['groups'] if g not in existing_groups]
         if unknown_groups:
-            format_errors.append(f"username '{user[username]}': unknown groups %s" % ', '.join(unknown_groups))
+            format_errors.append(f"username '{user['username']}': unknown groups %s" % ', '.join(unknown_groups))
 
         # Validate that domains exist
         user['mail-alias'] = to_list(user['mail-alias'])
@@ -714,7 +714,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         unknown_domains += [mail.split('@')[1:] for mail in user['mail-alias'] if mail.split('@')[1:] not in existing_domains]
 
         if unknown_domains:
-            format_errors.append(f"username '{user[username]}': unknown domains %s" % ', '.join(unknown_domains))
+            format_errors.append(f"username '{user['username']}': unknown domains %s" % ', '.join(unknown_domains))
 
         if format_errors:
             logger.error(m18n.n('user_import_bad_line',
