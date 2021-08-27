@@ -655,10 +655,11 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
 
     """
 
-    import csv # CSV are needed only in this function
+    import csv  # CSV are needed only in this function
     from moulinette.utils.text import random_ascii
     from yunohost.permission import permission_sync_to_user
     from yunohost.app import app_ssowatconf
+    from yunohost.domain import domain_list
 
     # Pre-validate data and prepare what should be done
     actions = {
@@ -711,7 +712,8 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         if user['domain'] not in existing_domains:
             unknown_domains.append(user['domain'])
 
-        unknown_domains += [mail.split('@')[1:] for mail in user['mail-alias'] if mail.split('@')[1:] not in existing_domains]
+        unknown_domains += [mail.split('@', 1)[1] for mail in user['mail-alias'] if mail.split('@', 1)[1] not in existing_domains]
+        unknown_domains = set(unknown_domains)
 
         if unknown_domains:
             format_errors.append(f"username '{user['username']}': unknown domains %s" % ', '.join(unknown_domains))
@@ -744,7 +746,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         is_well_formatted = False
 
     if not is_well_formatted:
-        raise YunohostError('user_import_bad_file')
+        raise YunohostValidationError('user_import_bad_file')
 
     total = len(actions['created'] + actions['updated'] + actions['deleted'])
 
@@ -793,7 +795,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
             remove_groups = list(set(old_infos["groups"]) - set(new_infos["groups"]))
             add_groups = list(set(new_infos["groups"]) - set(old_infos["groups"]))
 
-            for group, infos in existing_groups:
+            for group, infos in existing_groups.items():
                 # Loop only on groups in 'remove_groups'
                 # Ignore 'all_users' and primary group
                 if group in ["all_users", new_infos['username']] or group not in remove_groups:
@@ -813,6 +815,8 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
                     add_mailforward=new_infos['mail-forward'], from_import=True)
 
         for group in add_groups:
+            if group in ["all_users", new_infos['username']]:
+                continue
             user_group_update(group, add=new_infos['username'], sync_perm=False, from_import=True)
 
     users = user_list(list(FIELDS_FOR_IMPORT.keys()))['users']
@@ -824,7 +828,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
             result['deleted'] += 1
         except YunohostError as e:
             on_failure(user, e)
-        progress("Deletion")
+        progress(f"Deleting {user}")
 
     for user in actions['updated']:
         try:
@@ -832,7 +836,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
             result['updated'] += 1
         except YunohostError as e:
             on_failure(user['username'], e)
-        progress("Update")
+        progress(f"Updating {user['username']}")
 
     for user in actions['created']:
         try:
@@ -844,7 +848,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
             result['created'] += 1
         except YunohostError as e:
             on_failure(user['username'], e)
-        progress("Creation")
+        progress(f"Creating {user['username']}")
 
     permission_sync_to_user()
     app_ssowatconf()
