@@ -30,7 +30,7 @@
     "app_not_correctly_installed": "{app} sembra di non essere installata correttamente",
     "app_not_properly_removed": "{app} non è stata correttamente rimossa",
     "action_invalid": "L'azione '{action}' non è valida",
-    "app_removed": "{app} rimossa",
+    "app_removed": "{app} disinstallata",
     "app_sources_fetch_failed": "Impossibile riportare i file sorgenti, l'URL è corretto?",
     "app_upgrade_failed": "Impossibile aggiornare {app}: {error}",
     "app_upgraded": "{app} aggiornata",
@@ -172,7 +172,7 @@
     "backup_applying_method_custom": "Chiamando il metodo di backup personalizzato '{method}'...",
     "backup_applying_method_tar": "Creando l'archivio TAR del backup...",
     "backup_archive_system_part_not_available": "La parte di sistema '{part}' non è disponibile in questo backup",
-    "backup_archive_writing_error": "Impossibile aggiungere i file  '{source}'  (indicati nell'archivio '{dest}') al backup nell'archivio compresso '{archive}'",
+    "backup_archive_writing_error": "Impossibile aggiungere i file '{source}' (indicati nell'archivio '{dest}') al backup nell'archivio compresso '{archive}'",
     "backup_ask_for_copying_if_needed": "Vuoi effettuare il backup usando {size}MB temporaneamente? (È necessario usare questo sistema poiché alcuni file non possono essere preparati in un modo più efficiente)",
     "backup_cant_mount_uncompress_archive": "Impossibile montare in modalità sola lettura la cartella di archivio non compressa",
     "backup_copying_to_organize_the_archive": "Copiando {size}MB per organizzare l'archivio",
@@ -630,5 +630,9 @@
     "diagnosis_sshd_config_inconsistent": "Sembra che la porta SSH sia stata modificata manualmente in /etc/ssh/sshd_config: A partire da YunoHost 4.2, una nuova configurazione globale 'security.ssh.port' è disponibile per evitare di modificare manualmente la configurazione.",
     "diagnosis_sshd_config_insecure": "Sembra che la configurazione SSH sia stata modificata manualmente, ed non è sicuro dato che non contiene le direttive 'AllowGroups' o 'Allowusers' che limitano l'accesso agli utenti autorizzati.",
     "backup_create_size_estimation": "L'archivio conterrà circa {size} di dati.",
-    "app_restore_script_failed": "C'è stato un errore all'interno dello script di recupero"
+    "app_restore_script_failed": "C'è stato un errore all'interno dello script di recupero",
+    "global_settings_setting_security_webadmin_allowlist": "Indirizzi IP con il permesso di accedere al webadmin, separati da virgola.",
+    "global_settings_setting_security_webadmin_allowlist_enabled": "Permetti solo ad alcuni IP di accedere al webadmin.",
+    "disk_space_not_sufficient_update": "Non c'è abbastanza spazio libero per aggiornare questa applicazione",
+    "disk_space_not_sufficient_install": "Non c'è abbastanza spazio libero per installare questa applicazione"
 }

@@ -4,9 +4,9 @@
     "admin_password_change_failed": "Não foi possível alterar a senha",
     "admin_password_changed": "A senha da administração foi alterada",
     "app_already_installed": "{app} já está instalada",
-    "app_extraction_failed": "Não foi possível extrair os ficheiros para instalação",
-    "app_id_invalid": "A ID da aplicação é inválida",
-    "app_install_files_invalid": "Ficheiros para instalação corrompidos",
+    "app_extraction_failed": "Não foi possível extrair os arquivos para instalação",
+    "app_id_invalid": "App ID invaĺido",
+    "app_install_files_invalid": "Esses arquivos não podem ser instalados",
     "app_manifest_invalid": "Manifesto da aplicação inválido: {error}",
     "app_not_installed": "{app} não está instalada",
     "app_removed": "{app} removida com êxito",
@@ -136,5 +136,9 @@
     "app_action_broke_system": "Esta ação parece ter quebrado estes serviços importantes: {services}",
     "already_up_to_date": "Nada a ser feito. Tudo já está atualizado.",
     "additional_urls_already_removed": "A URL adicional '{url}'já está removida para a permissão '{permission}'",
-    "additional_urls_already_added": "A URL adicional '{url}' já está adicionada para a permissão '{permission}'"
+    "additional_urls_already_added": "A URL adicional '{url}' já está adicionada para a permissão '{permission}'",
+    "app_install_script_failed": "Ocorreu um erro dentro do script de instalação do aplicativo",
+    "app_install_failed": "Não foi possível instalar {app}: {error}",
+    "app_full_domain_unavailable": "Desculpe, esse app deve ser instalado num domínio próprio mas já há outros apps instalados no domínio '{domain}'. Você pode usar um subdomínio dedicado a esse aplicativo.",
+    "app_change_url_success": "A URL agora é {domain}{path}"
 }
