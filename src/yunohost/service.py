@@ -37,7 +37,13 @@ from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, append_to_file, write_to_file, read_yaml, write_to_yaml
+from moulinette.utils.filesystem import (
+    read_file,
+    append_to_file,
+    write_to_file,
+    read_yaml,
+    write_to_yaml,
+)
 
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 
@@ -680,9 +686,11 @@ def _get_services():
 
         services.update(read_yaml(SERVICES_CONF) or {})
 
-        services = {name: infos
-                    for name, infos in services.items()
-                    if name not in legacy_keys_to_delete}
+        services = {
+            name: infos
+            for name, infos in services.items()
+            if name not in legacy_keys_to_delete
+        }
     except Exception:
         return {}
 
