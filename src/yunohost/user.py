@@ -46,6 +46,12 @@ logger = getActionLogger("yunohost.user")
 
 def user_list(fields=None):
 
+    from moulinette.interfaces.api import Session
+
+    print("Currently logged with:")
+    print(Session.get_infos())
+    print(Session.get_infos()["ldap_admin"]["username"])
+
     from yunohost.utils.ldap import _get_ldap_interface
 
     user_attrs = {
