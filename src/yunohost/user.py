@@ -54,7 +54,9 @@ FIELDS_FOR_IMPORT = {
     'mailbox-quota': r'^(\d+[bkMGT])|0$',
     'groups': r'^|([a-z0-9_]+(,?[a-z0-9_]+)*)$'
 }
+
 FIRST_ALIASES = ['root@', 'admin@', 'webmaster@', 'postmaster@', 'abuse@']
+
 
 def user_list(fields=None):
 
@@ -779,18 +781,26 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
     def update(new_infos, old_infos=False):
         remove_alias = None
         remove_forward = None
-        if info:
+        remove_groups = []
+        add_groups = new_infos["groups"]
+        if old_infos:
             new_infos['mail'] = None if old_infos['mail'] == new_infos['mail'] else new_infos['mail']
             remove_alias = list(set(old_infos['mail-alias']) - set(new_infos['mail-alias']))
             remove_forward = list(set(old_infos['mail-forward']) - set(new_infos['mail-forward']))
             new_infos['mail-alias'] = list(set(new_infos['mail-alias']) - set(old_infos['mail-alias']))
             new_infos['mail-forward'] = list(set(new_infos['mail-forward']) - set(old_infos['mail-forward']))
-            for group, infos in user_group_list()["groups"].items():
-                if group == "all_users":
+
+            remove_groups = list(set(old_infos["groups"]) - set(new_infos["groups"]))
+            add_groups = list(set(new_infos["groups"]) - set(old_infos["groups"]))
+
+            for group, infos in existing_groups:
+                # Loop only on groups in 'remove_groups'
+                # Ignore 'all_users' and primary group
+                if group in ["all_users", new_infos['username']] or group not in remove_groups:
                     continue
                 # If the user is in this group (and it's not the primary group),
                 # remove the member from the group
-                if new_infos['username'] != group and new_infos['username'] in infos["members"]:
+                if new_infos['username'] in infos["members"]:
                     user_group_update(group, remove=new_infos['username'], sync_perm=False, from_import=True)
 
         user_update(new_infos['username'],
@@ -802,7 +812,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
                     remove_mailforward=remove_forward,
                     add_mailforward=new_infos['mail-forward'], from_import=True)
 
-        for group in new_infos['groups']:
+        for group in add_groups:
             user_group_update(group, add=new_infos['username'], sync_perm=False, from_import=True)
 
     users = user_list(list(FIELDS_FOR_IMPORT.keys()))['users']
