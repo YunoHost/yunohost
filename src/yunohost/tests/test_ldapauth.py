@@ -7,6 +7,7 @@ from yunohost.tools import tools_adminpw
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 
+
 def setup_function(function):
 
     if os.system("systemctl is-active slapd") != 0:

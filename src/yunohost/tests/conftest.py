@@ -81,7 +81,8 @@ def pytest_cmdline_main(config):
     import yunohost
 
     yunohost.init(debug=config.option.yunodebug)
-    class DummyInterface():
+
+    class DummyInterface:
 
         type = "test"
 

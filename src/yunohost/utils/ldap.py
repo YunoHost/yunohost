@@ -56,7 +56,7 @@ def _get_ldap_interface():
 def _ldap_path_extract(path, info):
     for element in path.split(","):
         if element.startswith(info + "="):
-            return element[len(info + "="):]
+            return element[len(info + "=") :]
 
 
 # Add this to properly close / delete the ldap interface / authenticator
@@ -72,8 +72,7 @@ def _destroy_ldap_interface():
 atexit.register(_destroy_ldap_interface)
 
 
-class LDAPInterface():
-
+class LDAPInterface:
     def __init__(self):
         logger.debug("initializing ldap interface")
 
