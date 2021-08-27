@@ -283,7 +283,6 @@
     "service_already_started": "El servei «{service}» ja està funcionant",
     "service_already_stopped": "Ja s'ha aturat el servei «{service}»",
     "service_cmd_exec_failed": "No s'ha pogut executar l'ordre «{command}»",
-    "service_description_mdns": "Permet accedir al servidor via «yunohost.local» en la xarxa local",
     "service_description_dnsmasq": "Gestiona la resolució del nom de domini (DNS)",
     "service_description_dovecot": "Permet als clients de correu accedir/recuperar correus (via IMAP i POP3)",
     "service_description_fail2ban": "Protegeix contra els atacs de força bruta i a altres atacs provinents d'Internet",

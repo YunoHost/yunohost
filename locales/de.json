@@ -597,7 +597,6 @@
     "service_description_fail2ban": "Schützt gegen Brute-Force-Angriffe und andere Angriffe aus dem Internet",
     "service_description_dovecot": "Ermöglicht es E-Mail-Clients auf Konten zuzugreifen (IMAP und POP3)",
     "service_description_dnsmasq": "Verarbeitet die Auflösung des Domainnamens (DNS)",
-    "service_description_mdns": "Erlaubt, den Server im lokalen Netz über 'yunohost.local' zu erreichen",
     "restore_backup_too_old": "Dieses Backup kann nicht wieder hergestellt werden, weil es von einer zu alten YunoHost Version stammt.",
     "service_description_slapd": "Speichert Benutzer, Domains und verbundene Informationen",
     "service_description_rspamd": "Spamfilter und andere E-Mail-Merkmale",
