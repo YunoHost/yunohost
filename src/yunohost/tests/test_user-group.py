@@ -164,10 +164,10 @@ def test_export_user(mocker):
     result = user_export()
     aliases = ','.join([alias + maindomain for alias in FIRST_ALIASES])
     should_be = (
-        "username;firstname;lastname;password;mailbox-quota;mail;mail-alias;mail-forward;groups\r\n"
-        f"alice;Alice;White;;0;alice@{maindomain};{aliases};;dev\r\n"
-        f"bob;Bob;Snow;;0;bob@{maindomain};;;apps\r\n"
-        f"jack;Jack;Black;;0;jack@{maindomain};;;"
+        "username;firstname;lastname;password;mail;mail-alias;mail-forward;mailbox-quota;groups\r\n"
+        f"alice;Alice;White;;alice@{maindomain};{aliases};;0;dev\r\n"
+        f"bob;Bob;Snow;;bob@{maindomain};;;0;apps\r\n"
+        f"jack;Jack;Black;;jack@{maindomain};;;0;"
     )
     assert result == should_be
 
