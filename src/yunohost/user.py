@@ -671,9 +671,12 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         L = [l.strip() for l in L]
         return L
 
-    users_in_csv = []
     existing_users = user_list()['users']
+    existing_groups = user_group_list()["groups"]
+    existing_domains = domain_list()["domains"]
+
     reader = csv.DictReader(csvfile, delimiter=';', quotechar='"')
+    users_in_csv = []
 
     missing_columns = [key for key in FIELDS_FOR_IMPORT.keys() if key not in reader.fieldnames]
     if missing_columns:
@@ -688,8 +691,28 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
 
         # Check for duplicated username lines
         if user['username'] in users_in_csv:
-            format_errors.append(f'username: {user[username]} (duplicated)')
+            format_errors.append(f"username '{user[username]}' duplicated")
         users_in_csv.append(user['username'])
+
+        # Validate that groups exist
+        user['groups'] = to_list(user['groups'])
+        unknown_groups = [g for g in user['groups'] if g not in existing_groups]
+        if unknown_groups:
+            format_errors.append(f"username '{user[username]}': unknown groups %s" % ', '.join(unknown_groups))
+
+        # Validate that domains exist
+        user['mail-alias'] = to_list(user['mail-alias'])
+        user['mail-forward'] = to_list(user['mail-forward'])
+        user['domain'] = user['mail'].split('@')[1]
+
+        unknown_domains = []
+        if user['domain'] not in existing_domains:
+            unknown_domains.append(user['domain'])
+
+        unknown_domains += [mail.split('@')[1:] for mail in user['mail-alias'] if mail.split('@')[1:] not in existing_domains]
+
+        if unknown_domains:
+            format_errors.append(f"username '{user[username]}': unknown domains %s" % ', '.join(unknown_domains))
 
         if format_errors:
             logger.error(m18n.n('user_import_bad_line',
@@ -699,10 +722,6 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
             continue
 
         # Choose what to do with this line and prepare data
-        user['groups'] = to_list(user['groups'])
-        user['mail-alias'] = to_list(user['mail-alias'])
-        user['mail-forward'] = to_list(user['mail-forward'])
-        user['domain'] = user['mail'].split('@')[1]
 
         # User creation
         if user['username'] not in existing_users:
