@@ -51,7 +51,7 @@ FIELDS_FOR_IMPORT = {
     'mail': r'^([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}))$',
     'mail-alias': r'^|([\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$',
     'mail-forward': r'^|([\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}),?)+$',
-    'mailbox-quota': r'^(\d+[bkMGT])|0$',
+    'mailbox-quota': r'^(\d+[bkMGT])|0|$',
     'groups': r'^|([a-z0-9_]+(,?[a-z0-9_]+)*)$'
 }
 
@@ -688,7 +688,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
     for user in reader:
 
         # Validate column values against regexes
-        format_errors = [key + ':' + str(user[key])
+        format_errors = [f"{key}: '{user[key]}' doesn't match the expected format"
                          for key, validator in FIELDS_FOR_IMPORT.items()
                          if user[key] is None or not re.match(validator, user[key])]
 
@@ -726,6 +726,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
             continue
 
         # Choose what to do with this line and prepare data
+        user['mailbox-quota'] = user['mailbox-quota'] or "0"
 
         # User creation
         if user['username'] not in existing_users:
