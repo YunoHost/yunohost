@@ -281,13 +281,14 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     except Exception as e:
         raise YunohostError("domain_deletion_failed", domain=domain, error=e)
 
-    os.system("rm -rf /etc/yunohost/certs/%s" % domain)
+    stuff_to_delete = [
+        f"/etc/yunohost/certs/{domain}",
+        f"/etc/yunohost/dyndns/K{domain}.+*",
+        f"{DOMAIN_SETTINGS_DIR}/{domain}.yml",
+    ]
 
-    # Delete dyndns keys for this domain (if any)
-    os.system("rm -rf /etc/yunohost/dyndns/K%s.+*" % domain)
-
-    # Delete settings file for this domain
-    os.system(f"rm -rf {DOMAIN_SETTINGS_DIR}/{domain}.yml")
+    for stuff in stuff_to_delete:
+        os.system("rm -rf {stuff}")
 
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...
@@ -860,7 +861,7 @@ def domain_setting(domain, key, value=None, delete=False):
 
             if value < 0:
                 raise YunohostError("pattern_positive_number", value_type=type(value))
-        
+
         # Set new value
         domain_settings[key] = value
         # Save settings
@@ -932,18 +933,18 @@ def domain_registrar_info(domain):
     if not registrar_info:
         # TODO add locales
         raise YunohostError("registrar_is_not_set", dns_zone=dns_zone)
-    
+
     logger.info("Registrar name: " + registrar_info['name'])
     for option_key, option_value in registrar_info['options'].items():
         logger.info("Option " + option_key + ": " + option_value)
 
 def _print_registrar_info(registrar_name, full, options):
     logger.info("Registrar : " + registrar_name)
-    if full : 
+    if full :
         logger.info("Options : ")
         for option in options:
             logger.info("\t- " + option)
-        
+
 def domain_registrar_catalog(registrar_name, full):
     registrars = yaml.load(open(REGISTRAR_LIST_PATH, "r+"))
 
