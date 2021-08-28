@@ -33,18 +33,10 @@
 #     Global parameters     #
 #############################
 _global:
-    configuration:
-        authenticate:
-            - api
-        authenticator:
-            default:
-                vendor: ldap
-                help: admin_password
-                parameters:
-                    uri: ldap://localhost:389
-                    base_dn: dc=yunohost,dc=org
-                    user_rdn: cn=admin,dc=yunohost,dc=org
-        argument_auth: false
+    name: yunohost.admin
+    authentication:
+        api: ldap_admin
+        cli: null
     arguments:
         -v:
             full: --version
@@ -740,7 +732,11 @@ app:
             api: DELETE /apps/<app>
             arguments:
                 app:
-                    help: App to delete
+                    help: App to remove
+                -p:
+                    full: --purge
+                    help: Also remove all application data
+                    action: store_true
 
         ### app_upgrade()
         upgrade:
@@ -759,6 +755,10 @@ app:
                 -F:
                     full: --force
                     help: Force the update, even though the app is up to date
+                    action: store_true
+                -b:
+                    full: --no-safety-backup
+                    help: Disable the safety backup during upgrade
                     action: store_true
 
         ### app_change_url()
@@ -1461,9 +1461,9 @@ tools:
         postinstall:
             action_help: YunoHost post-install
             api: POST /postinstall
-            configuration:
+            authentication:
                 # We need to be able to run the postinstall without being authenticated, otherwise we can't run the postinstall
-                authenticate: false
+                api: null
             arguments:
                 -d:
                     full: --domain

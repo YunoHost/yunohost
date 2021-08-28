@@ -1,6 +1,6 @@
 #!/bin/bash
 
-n_version=7.2.2
+n_version=7.3.0
 n_install_dir="/opt/node_n"
 node_version_path="$n_install_dir/n/versions/node"
 # N_PREFIX is the directory of n, it needs to be loaded as a environment variable.
@@ -17,7 +17,7 @@ ynh_install_n () {
     ynh_print_info --message="Installation of N - Node.js version management"
     # Build an app.src for n
     echo "SOURCE_URL=https://github.com/tj/n/archive/v${n_version}.tar.gz
-SOURCE_SUM=9654440b0e7169cf3be5897a563258116b21ec6e7e7e266acc56979d3ebec6a2" > "$YNH_APP_BASEDIR/conf/n.src"
+SOURCE_SUM=b908b0fc86922ede37e89d1030191285209d7d521507bf136e62895e5797847f" > "$YNH_APP_BASEDIR/conf/n.src"
     # Download and extract n
     ynh_setup_source --dest_dir="$n_install_dir/git" --source_id=n
     # Install n

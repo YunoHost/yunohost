@@ -32,7 +32,7 @@ import functools
 from lexicon.client import Client
 from lexicon.config import ConfigResolver
 
-from moulinette import m18n, msettings, msignals
+from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.log import getActionLogger
@@ -127,6 +127,9 @@ def domain_add(operation_logger, domain, dyndns=False):
     # See: https://forum.yunohost.org/t/invalid-domain-causes-diagnosis-web-to-fail-fr-on-demand/11765
     domain = domain.lower()
 
+    # Non-latin characters (e.g. café.com => xn--caf-dma.com)
+    domain = domain.encode("idna").decode("utf-8")
+
     # DynDNS domain
     if dyndns:
 
@@ -175,7 +178,9 @@ def domain_add(operation_logger, domain, dyndns=False):
             # because it's one of the major service, but in the long term we
             # should identify the root of this bug...
             _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
-            regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd"])
+            regen_conf(
+                names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd", "mdns"]
+            )
             app_ssowatconf()
 
     except Exception as e:
@@ -248,8 +253,8 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
 
     if apps_on_that_domain:
         if remove_apps:
-            if msettings.get("interface") == "cli" and not force:
-                answer = msignals.prompt(
+            if Moulinette.interface.type == "cli" and not force:
+                answer = Moulinette.prompt(
                     m18n.n(
                         "domain_remove_confirm_apps_removal",
                         apps="\n".join([x[1] for x in apps_on_that_domain]),
@@ -305,7 +310,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
             "/etc/nginx/conf.d/%s.conf" % domain, new_conf=None, save=True
         )
 
-    regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix"])
+    regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd", "mdns"])
     app_ssowatconf()
 
     hook_callback("post_domain_remove", args=[domain])
@@ -355,7 +360,7 @@ def domain_dns_conf(domain):
             for record in record_list:
                 result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
-    if msettings.get("interface") == "cli":
+    if Moulinette.interface.type == "cli":
         # FIXME Update this to point to our "dns push" doc
         logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 

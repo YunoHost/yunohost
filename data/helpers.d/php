@@ -225,7 +225,7 @@ syslog.ident = php-fpm-__APP__
 include = __FINALPHPCONF__
 " > $YNH_APP_BASEDIR/conf/php-fpm-$app.conf
 
-        ynh_add_config --template="../config/php-fpm-$app.conf" --destination="$globalphpconf"
+        ynh_add_config --template="$YNH_APP_BASEDIR/conf/php-fpm-$app.conf" --destination="$globalphpconf"
 
         # Create a config for a dedicated PHP-FPM service for the app
         echo "[Unit]
@@ -245,7 +245,7 @@ WantedBy=multi-user.target
         # Create this dedicated PHP-FPM service
         ynh_add_systemd_config --service=$fpm_service --template=$fpm_service
         # Integrate the service in YunoHost admin panel
-        yunohost service add $fpm_service --log /var/log/php/fpm-php.$app.log --log_type file --description "Php-fpm dedicated to $app"
+        yunohost service add $fpm_service --log /var/log/php/fpm-php.$app.log --description "Php-fpm dedicated to $app"
         # Configure log rotate
         ynh_use_logrotate --logfile=/var/log/php
         # Restart the service, as this service is either stopped or only for this app
@@ -581,7 +581,7 @@ ynh_composer_exec () {
     workdir="${workdir:-$final_path}"
     phpversion="${phpversion:-$YNH_PHP_VERSION}"
 
-    COMPOSER_HOME="$workdir/.composer" \
+    COMPOSER_HOME="$workdir/.composer" COMPOSER_MEMORY_LIMIT=-1 \
         php${phpversion} "$workdir/composer.phar" $commands \
         -d "$workdir" --quiet --no-interaction
 }

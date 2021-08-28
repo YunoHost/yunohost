@@ -38,7 +38,7 @@ from collections import OrderedDict
 from functools import reduce
 from packaging import version
 
-from moulinette import msignals, m18n, msettings
+from moulinette import Moulinette, m18n
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
@@ -71,6 +71,7 @@ from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger, is_unit_operation
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.packages import ynh_packages_version
+from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.settings import settings_get
 
 BACKUP_PATH = "/home/yunohost.backup"
@@ -1508,7 +1509,7 @@ class RestoreManager:
                     m18n.n("app_restore_failed", app=app_instance_name, error=error)
                 )
                 failure_message_with_debug_instructions = operation_logger.error(error)
-                if msettings.get("interface") != "api":
+                if Moulinette.interface.type != "api":
                     dump_app_log_extract_for_debugging(operation_logger)
         # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
@@ -1839,7 +1840,7 @@ class BackupMethod(object):
         # Ask confirmation for copying
         if size > MB_ALLOWED_TO_ORGANIZE:
             try:
-                i = msignals.prompt(
+                i = Moulinette.prompt(
                     m18n.n(
                         "backup_ask_for_copying_if_needed",
                         answers="y/N",
@@ -2343,7 +2344,7 @@ def backup_restore(name, system=[], apps=[], force=False):
         if not force:
             try:
                 # Ask confirmation for restoring
-                i = msignals.prompt(
+                i = Moulinette.prompt(
                     m18n.n("restore_confirm_yunohost_installed", answers="y/N")
                 )
             except NotImplemented:
@@ -2417,7 +2418,7 @@ def backup_list(with_info=False, human_readable=False):
 
 def backup_download(name):
 
-    if msettings.get("interface") != "api":
+    if Moulinette.interface.type != "api":
         logger.error(
             "This option is only meant for the API/webadmin and doesn't make sense for the command line."
         )
@@ -2670,11 +2671,6 @@ def _recursive_umount(directory):
             continue
 
     return everything_went_fine
-
-
-def free_space_in_directory(dirpath):
-    stat = os.statvfs(dirpath)
-    return stat.f_frsize * stat.f_bavail
 
 
 def disk_usage(path):
