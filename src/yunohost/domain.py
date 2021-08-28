@@ -28,8 +28,9 @@ import os
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import write_to_file, read_yaml, write_to_yaml
+from moulinette.utils.filesystem import mkdir, write_to_file, read_yaml, write_to_yaml
 
+from yunohost.settings import is_boolean
 from yunohost.app import (
     app_ssowatconf,
     _installed_apps,
@@ -58,6 +59,7 @@ def domain_list(exclude_subdomains=False):
         exclude_subdomains -- Filter out domains that are subdomains of other declared domains
 
     """
+    global domain_list_cache
     if not exclude_subdomains and domain_list_cache:
         return domain_list_cache
 
@@ -161,6 +163,7 @@ def domain_add(operation_logger, domain, dyndns=False):
         except Exception as e:
             raise YunohostError("domain_creation_failed", domain=domain, error=e)
         finally:
+            global domain_list_cache
             domain_list_cache = {}
 
         # Don't regen these conf if we're still in postinstall
@@ -279,6 +282,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     except Exception as e:
         raise YunohostError("domain_deletion_failed", domain=domain, error=e)
     finally:
+        global domain_list_cache
         domain_list_cache = {}
 
     stuff_to_delete = [
@@ -344,6 +348,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
     # Apply changes to ssl certs
     try:
         write_to_file("/etc/yunohost/current_host", new_main_domain)
+        global domain_list_cache
         domain_list_cache = {}
         _set_hostname(new_main_domain)
     except Exception as e:
@@ -378,10 +383,10 @@ def _get_maindomain():
     return maindomain
 
 
-def _default_domain_settings(domain, is_main_domain):
+def _default_domain_settings(domain):
     from yunohost.utils.dns import get_dns_zone_from_domain
     return {
-        "xmpp": is_main_domain,
+        "xmpp": domain == domain_list()["main"],
         "mail_in": True,
         "mail_out": True,
         "dns_zone": get_dns_zone_from_domain(domain),
@@ -408,7 +413,7 @@ def _get_domain_settings(domain):
         on_disk_settings = read_yaml(filepath) or {}
 
     # Inject defaults if needed (using the magic .update() ;))
-    settings = _default_domain_settings(domain, domain == maindomain)
+    settings = _default_domain_settings(domain)
     settings.update(on_disk_settings)
     return settings
 
@@ -446,7 +451,14 @@ def domain_setting(domain, key, value=None, delete=False):
         # maybe inspired from the global settings
 
         if key in ["mail_in", "mail_out", "xmpp"]:
-            value = True if value.lower() in ['true', '1', 't', 'y', 'yes', "iloveynh"] else False
+            _is_boolean, value = is_boolean(value)
+            if not _is_boolean:
+                raise YunohostValidationError(
+                    "global_settings_bad_type_for_setting",
+                    setting=key,
+                    received_type="not boolean",
+                    expected_type="boolean",
+                )
 
         if "ttl" == key:
             try:

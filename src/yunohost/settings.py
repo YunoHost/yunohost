@@ -18,6 +18,9 @@ SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 
 
 def is_boolean(value):
+    TRUE = ["true", "on", "yes", "y", "1"]
+    FALSE = ["false", "off", "no", "n", "0"]
+
     """
     Ensure a string value is intended as a boolean
 
@@ -30,9 +33,11 @@ def is_boolean(value):
     """
     if isinstance(value, bool):
         return True, value
+    if value in [0, 1]:
+        return True, bool(value)
     elif isinstance(value, str):
-        if str(value).lower() in ["true", "on", "yes", "false", "off", "no"]:
-            return True, str(value).lower() in ["true", "on", "yes"]
+        if str(value).lower() in TRUE + FALSE:
+            return True, str(value).lower() in TRUE
         else:
             return False, None
     else:

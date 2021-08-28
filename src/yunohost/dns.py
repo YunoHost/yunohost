@@ -31,7 +31,7 @@ from lexicon.config import ConfigResolver
 
 from moulinette import m18n, Moulinette
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_yaml, write_to_yaml
+from moulinette.utils.filesystem import mkdir, read_yaml, write_to_yaml
 
 from yunohost.domain import domain_list, _get_domain_settings
 from yunohost.app import _parse_args_in_yunohost_format
@@ -392,7 +392,7 @@ def _get_registrar_settings(dns_zone):
 
 def _set_registrar_settings(dns_zone, domain_registrar):
     if not os.path.exists(REGISTRAR_SETTINGS_DIR):
-        os.mkdir(REGISTRAR_SETTINGS_DIR)
+        mkdir(REGISTRAR_SETTINGS_DIR, mode=0o700)
     filepath = f"{REGISTRAR_SETTINGS_DIR}/{dns_zone}.yml"
     write_to_yaml(filepath, domain_registrar)
 
