@@ -95,6 +95,21 @@ def domain_dns_conf(domain):
     return result
 
 
+def _list_subdomains_of(parent_domain):
+
+    domain_list_ = domain_list()["domains"]
+
+    if parent_domain not in domain_list_:
+        raise YunohostError("domain_name_unknown", domain=domain)
+
+    out = []
+    for domain in domain_list_:
+        if domain.endswith(f".{parent_domain}"):
+            out.append(domain)
+
+    return out
+
+
 def _build_dns_conf(base_domain):
     """
     Internal function that will returns a data structure containing the needed
@@ -163,7 +178,7 @@ def _build_dns_conf(base_domain):
 
         # FIXME: shouldn't the basename just be based on the dns_zone setting of this domain ?
         basename = domain.replace(f"{base_dns_zone}", "").rstrip(".") or "@"
-        suffix = f".{basename}" if base_name != "@" else ""
+        suffix = f".{basename}" if basename != "@" else ""
 
         ttl = settings["ttl"]
 
@@ -423,7 +438,7 @@ def domain_registrar_set(domain, registrar, args):
 
     registrars = read_yaml(REGISTRAR_LIST_PATH)
     if registrar not in registrars.keys():
-        raise YunohostValidationError("domain_registrar_unknown"i, registrar=registrar)
+        raise YunohostValidationError("domain_registrar_unknown", registrar=registrar)
 
     parameters = registrars[registrar]
     ask_args = []

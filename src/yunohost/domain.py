@@ -476,21 +476,6 @@ def domain_setting(domain, key, value=None, delete=False):
         _set_domain_settings(domain, domain_settings)
 
 
-def _list_subdomains_of(parent_domain):
-
-    domain_list_ = domain_list()["domains"]
-
-    if parent_domain not in domain_list_:
-        raise YunohostError("domain_name_unknown", domain=domain)
-
-    out = []
-    for domain in domain_list_:
-        if domain.endswith(f".{parent_domain}"):
-            out.append(domain)
-
-    return out
-
-
 def _set_domain_settings(domain, domain_settings):
     """
     Set settings of a domain
