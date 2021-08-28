@@ -503,12 +503,15 @@ def _set_domain_settings(domain, domain_settings):
     if domain not in domain_list()["domains"]:
         raise YunohostError("domain_name_unknown", domain=domain)
 
+    defaults = _default_domain_settings(domain)
+    diff_with_defaults = {k: v for k, v in domain_settings.items() if defaults.get(k) != v}
+
     # First create the DOMAIN_SETTINGS_DIR if it doesn't exist
     if not os.path.exists(DOMAIN_SETTINGS_DIR):
-        os.mkdir(DOMAIN_SETTINGS_DIR)
+        mkdir(DOMAIN_SETTINGS_DIR, mode=0o700)
     # Save the settings to the .yaml file
     filepath = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
-    write_to_yaml(filepath, domain_settings)
+    write_to_yaml(filepath, diff_with_defaults)
 
 #
 #
