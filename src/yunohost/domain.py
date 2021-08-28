@@ -58,6 +58,10 @@ REGISTRAR_SETTINGS_DIR = "/etc/yunohost/registrars"
 REGISTRAR_LIST_PATH = "/usr/share/yunohost/other/registrar_list.yml"
 
 
+# Lazy dev caching to avoid re-query ldap every time we need the domain list
+domain_list_cache = {}
+
+
 def domain_list(exclude_subdomains=False):
     """
     List domains
@@ -66,6 +70,9 @@ def domain_list(exclude_subdomains=False):
         exclude_subdomains -- Filter out domains that are subdomains of other declared domains
 
     """
+    if not exclude_subdomains and domain_list_cache:
+        return domain_list_cache
+
     from yunohost.utils.ldap import _get_ldap_interface
 
     ldap = _get_ldap_interface()
@@ -95,7 +102,8 @@ def domain_list(exclude_subdomains=False):
 
     result_list = sorted(result_list, key=cmp_domain)
 
-    return {"domains": result_list, "main": _get_maindomain()}
+    domain_list_cache = {"domains": result_list, "main": _get_maindomain()}
+    return domain_list_cache
 
 
 @is_unit_operation()
@@ -164,6 +172,8 @@ def domain_add(operation_logger, domain, dyndns=False):
             ldap.add("virtualdomain=%s,ou=domains" % domain, attr_dict)
         except Exception as e:
             raise YunohostError("domain_creation_failed", domain=domain, error=e)
+        finally:
+            domain_list_cache = {}
 
         # Don't regen these conf if we're still in postinstall
         if os.path.exists("/etc/yunohost/installed"):
@@ -280,6 +290,8 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
         ldap.remove("virtualdomain=" + domain + ",ou=domains")
     except Exception as e:
         raise YunohostError("domain_deletion_failed", domain=domain, error=e)
+    finally:
+        domain_list_cache = {}
 
     stuff_to_delete = [
         f"/etc/yunohost/certs/{domain}",
@@ -393,7 +405,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
     # Apply changes to ssl certs
     try:
         write_to_file("/etc/yunohost/current_host", new_main_domain)
-
+        domain_list_cache = {}
         _set_hostname(new_main_domain)
     except Exception as e:
         logger.warning("%s" % e, exc_info=1)
@@ -755,9 +767,8 @@ def _get_domain_settings(domain):
     And set default values if needed
     """
     # Retrieve actual domain list
-    domain_list_ = domain_list()
-    known_domains = domain_list_["domains"]
-    maindomain = domain_list_["main"]
+    known_domains = domain_list()["domains"]
+    maindomain = domain_list()["main"]
 
     if domain not in known_domains:
         raise YunohostValidationError("domain_name_unknown", domain=domain)
