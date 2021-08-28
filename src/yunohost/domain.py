@@ -503,10 +503,13 @@ def _build_dns_conf(base_domain):
     ipv4 = get_public_ip()
     ipv6 = get_public_ip(6)
 
-    domains_settings = _get_domain_settings(base_domain, include_subdomains=True)
-    base_dns_zone = domain_settings[base_domain].get("dns_zone")
+    subdomains = _list_subdomains_of(base_domain)
+    domains_settings = {domain: _get_domain_settings(domain)
+                        for domain in [base_domain] + subdomains}
 
-    for domain, settings in domain_settings.items():
+    base_dns_zone = domains_settings[base_domain].get("dns_zone")
+
+    for domain, settings in domains_settings.items():
 
         #   Domain           #   Base DNS zone   # Basename  #  Suffix  #
         # ------------------ # ----------------- # --------- # -------- #
@@ -736,64 +739,39 @@ def _get_DKIM(domain):
         )
 
 
-def _load_domain_settings(domains=[]):
+def _default_domain_settings(domain, is_main_domain):
+    return {
+        "xmpp": is_main_domain,
+        "mail_in": True,
+        "mail_out": True,
+        "dns_zone": get_dns_zone_from_domain(domain),
+        "ttl": 3600,
+    }
+
+
+def _get_domain_settings(domain):
     """
     Retrieve entries in /etc/yunohost/domains/[domain].yml
-    And fill the holes if any
+    And set default values if needed
     """
     # Retrieve actual domain list
-    get_domain_list = domain_list()
-    all_known_domains = get_domain_list["domains"]
-    maindomain = get_domain_list["main"]
+    domain_list_ = domain_list()
+    known_domains = domain_list_["domains"]
+    maindomain = domain_list_["main"]
 
-    if domains:
-        # filter inexisting domains
-        unknown_domains = filter(lambda domain: domain not in all_known_domains, domains)
-        # get first unknown domain
-        unknown_domain = next(unknown_domains, None)
-        if unknown_domain is None:
-            raise YunohostValidationError("domain_name_unknown", domain=unknown_domain)
-    else:
-        domains = all_known_domains
+    if domain not in known_domains:
+        raise YunohostValidationError("domain_name_unknown", domain=domain)
 
-    # Create sanitized data
-    out = dict()
-
-    for domain in domains:
-        # Retrieve entries in the YAML
-        filepath = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
-        on_disk_settings = {}
-        if os.path.exists(filepath) and os.path.isfile(filepath):
-            on_disk_settings = read_yaml(filepath) or {}
-        # Generate defaults
-        is_maindomain = domain == maindomain
-        dns_zone = get_dns_zone_from_domain(domain)
-        default_settings = {
-            "xmpp": is_maindomain,
-            "mail_in": True,
-            "mail_out": True,
-            "dns_zone": dns_zone,
-            "ttl": 3600,
-        }
-        # Update each setting if not present
-        default_settings.update(on_disk_settings)
-        # Add the domain to the list
-        out[domain] = default_settings
-
-    return out
-
-
-def _load_registrar_setting(dns_zone):
-    """
-    Retrieve entries in registrars/[dns_zone].yml
-    """
-
+    # Retrieve entries in the YAML
+    filepath = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
     on_disk_settings = {}
-    filepath = f"{REGISTRAR_SETTINGS_DIR}/{dns_zone}.yml"
     if os.path.exists(filepath) and os.path.isfile(filepath):
         on_disk_settings = read_yaml(filepath) or {}
 
-    return on_disk_settings
+    # Inject defaults if needed (using the magic .update() ;))
+    settings = _default_domain_settings(domain, domain == maindomain)
+    settings.update(on_disk_settings)
+    return settings
 
 
 def domain_setting(domain, key, value=None, delete=False):
@@ -808,18 +786,11 @@ def domain_setting(domain, key, value=None, delete=False):
 
     """
 
-    boolean_keys = ["mail_in", "mail_out", "xmpp"]
-
-    domains = _load_domain_settings([ domain ])
-
-    if not domain in domains.keys():
-        raise YunohostError("domain_name_unknown", domain=domain)
-
-    domain_settings = domains[domain]
+    domain_settings = _get_domain_settings(domain)
 
     # GET
     if value is None and not delete:
-        if not key in domain_settings:
+        if key not in domain_settings:
             raise YunohostValidationError("domain_property_unknown", property=key)
 
         return domain_settings[key]
@@ -832,7 +803,10 @@ def domain_setting(domain, key, value=None, delete=False):
 
     # SET
     else:
-        if key in boolean_keys:
+        # FIXME : in the future, implement proper setting types (+ defaults),
+        # maybe inspired from the global settings
+
+        if key in ["mail_in", "mail_out", "xmpp"]:
             value = True if value.lower() in ['true', '1', 't', 'y', 'yes', "iloveynh"] else False
 
         if "ttl" == key:
@@ -851,31 +825,17 @@ def domain_setting(domain, key, value=None, delete=False):
         _set_domain_settings(domain, domain_settings)
 
 
-def _is_subdomain_of(subdomain, domain):
-    return True if re.search("(^|\\.)" + domain + "$", subdomain) else False
+def _list_subdomains_of(parent_domain):
 
+    domain_list_ = domain_list()["domains"]
 
-def _get_domain_settings(domain, include_subdomains=False):
-    """
-    Get settings of a domain
-
-    Keyword arguments:
-        domain -- The domain name
-        include_subdomains -- Do we include the subdomains? Default is False
-
-    """
-    domains = _load_domain_settings()
-    if domain not in domains.keys():
+    if parent_domain not in domain_list_:
         raise YunohostError("domain_name_unknown", domain=domain)
 
-    out = dict()
-    for entry in domains.keys():
-        if include_subdomains:
-            if _is_subdomain_of(entry, domain):
-                out[entry] = domains[entry]
-        else:
-            if domain == entry:
-                out[entry] = domains[entry]
+    out = []
+    for domain in domain_list_:
+        if domain.endswith(f".{parent_domain}"):
+            out.append(domain)
 
     return out
 
@@ -886,7 +846,7 @@ def _set_domain_settings(domain, domain_settings):
 
     Keyword arguments:
         domain -- The domain name
-        settings -- Dict with doamin settings
+        settings -- Dict with domain settings
 
     """
     if domain not in domain_list()["domains"]:
@@ -900,54 +860,49 @@ def _set_domain_settings(domain, domain_settings):
     write_to_yaml(filepath, domain_settings)
 
 
-def _load_zone_of_domain(domain):
-    domains = _load_domain_settings([domain])
-    if domain not in domains.keys():
-        raise YunohostError("domain_name_unknown", domain=domain)
+def _get_registrar_settings(dns_zone):
+    on_disk_settings = {}
+    filepath = f"{REGISTRAR_SETTINGS_DIR}/{dns_zone}.yml"
+    if os.path.exists(filepath) and os.path.isfile(filepath):
+        on_disk_settings = read_yaml(filepath) or {}
 
-    return domains[domain]["dns_zone"]
+    return on_disk_settings
+
+
+def _set_registrar_settings(dns_zone):
+    if not os.path.exists(REGISTRAR_SETTINGS_DIR):
+        os.mkdir(REGISTRAR_SETTINGS_DIR)
+    filepath = f"{REGISTRAR_SETTINGS_DIR}/{dns_zone}.yml"
+    write_to_yaml(filepath, domain_registrar)
 
 
 def domain_registrar_info(domain):
 
-    dns_zone = _load_zone_of_domain(domain)
-    registrar_info = _load_registrar_setting(dns_zone)
+    dns_zone = _get_domain_settings(domain)["dns_zone"]
+    registrar_info = _get_registrar_settings(dns_zone)
     if not registrar_info:
-        # TODO add locales
         raise YunohostError("registrar_is_not_set", dns_zone=dns_zone)
 
-    logger.info("Registrar name: " + registrar_info['name'])
-    for option_key, option_value in registrar_info['options'].items():
-        logger.info("Option " + option_key + ": " + option_value)
-
-
-def _print_registrar_info(registrar_name, full, options):
-    logger.info("Registrar : " + registrar_name)
-    if full :
-        logger.info("Options : ")
-        for option in options:
-            logger.info("\t- " + option)
+    return registrar_info
 
 
 def domain_registrar_catalog(registrar_name, full):
     registrars = read_yaml(REGISTRAR_LIST_PATH)
 
-    if registrar_name and registrar_name in registrars.keys() :
-        _print_registrar_info(registrar_name, True, registrars[registrar_name])
+    if registrar_name:
+        if registrar_name not in registrars.keys():
+            raise YunohostError("domain_registrar_unknown", registrar=registrar_name)
+        else:
+            return registrars[registrar_name]
     else:
-        for registrar in registrars:
-            _print_registrar_info(registrar, full, registrars[registrar])
+        return registrars
 
 
 def domain_registrar_set(domain, registrar, args):
 
-    dns_zone = _load_zone_of_domain(domain)
-    registrar_info = _load_registrar_setting(dns_zone)
-
-    registrars = yaml.load(open(REGISTRAR_LIST_PATH, "r+"))
-    if not registrar in registrars.keys():
-        # FIXME créer l'erreur
-        raise YunohostError("domain_registrar_unknown")
+    registrars = read_yaml(REGISTRAR_LIST_PATH)
+    if registrar not in registrars.keys():
+        raise YunohostError("domain_registrar_unknown"i, registrar=registrar)
 
     parameters = registrars[registrar]
     ask_args = []
@@ -969,12 +924,8 @@ def domain_registrar_set(domain, registrar, args):
     for arg_name, arg_value_and_type in parsed_answer_dict.items():
         domain_registrar["options"][arg_name] = arg_value_and_type[0]
 
-    # First create the REGISTRAR_SETTINGS_DIR if it doesn't exist
-    if not os.path.exists(REGISTRAR_SETTINGS_DIR):
-        os.mkdir(REGISTRAR_SETTINGS_DIR)
-    # Save the settings to the .yaml file
-    filepath = f"{REGISTRAR_SETTINGS_DIR}/{dns_zone}.yml"
-    write_to_yaml(filepath, domain_registrar)
+    dns_zone = _get_domain_settings(domain)["dns_zone"]
+    _set_registrar_settings(dns_zone, domain_registrar)
 
 
 def domain_push_config(domain):
@@ -987,9 +938,8 @@ def domain_push_config(domain):
 
     dns_conf = _build_dns_conf(domain)
 
-    domain_settings = _load_domain_settings([ domain ])
-    dns_zone = domain_settings[domain]["dns_zone"]
-    registrar_setting = _load_registrar_setting(dns_zone)
+    dns_zone = _get_domain_settings(domain)["dns_zone"]
+    registrar_setting = _get_registrar_settings(dns_zone)
 
     if not registrar_setting:
         # FIXME add locales
