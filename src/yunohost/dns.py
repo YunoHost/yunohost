@@ -464,7 +464,8 @@ def domain_registrar_set(domain, registrar, args):
     _set_registrar_settings(dns_zone, domain_registrar)
 
 
-def domain_registrar_push(domain):
+@is_unit_operation()
+def domain_registrar_push(operation_logger, domain):
     """
     Send DNS records to the previously-configured registrar of the domain.
     """
@@ -507,6 +508,8 @@ def domain_registrar_push(domain):
 
     for record in flatten_dns_conf:
         types.add(record["type"])
+
+    operation_logger.start()
 
     # Fetch all types present in the generated records
     distant_records = {}
