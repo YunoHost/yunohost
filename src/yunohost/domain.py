@@ -496,7 +496,7 @@ def _build_dns_conf(domain):
     }
     """
 
-    domains = _get_domain_settings(domain, True)
+    domains = _get_domain_settings(domain, include_subdomains=True)
 
     basic = []
     mail = []
@@ -872,29 +872,29 @@ def _is_subdomain_of(subdomain, domain):
     return True if re.search("(^|\\.)" + domain + "$", subdomain) else False
 
 
-def _get_domain_settings(domain, subdomains):
+def _get_domain_settings(domain, include_subdomains=False):
     """
     Get settings of a domain
 
     Keyword arguments:
         domain -- The domain name
-        subdomains -- Do we include the subdomains? Default is False
+        include_subdomains -- Do we include the subdomains? Default is False
 
     """
     domains = _load_domain_settings()
-    if not domain in domains.keys():
+    if domain not in domains.keys():
         raise YunohostError("domain_name_unknown", domain=domain)
 
-    only_wanted_domains = dict()
+    out = dict()
     for entry in domains.keys():
-        if subdomains:
+        if include_subdomains:
             if _is_subdomain_of(entry, domain):
-                only_wanted_domains[entry] = domains[entry]
+                out[entry] = domains[entry]
         else:
             if domain == entry:
-                only_wanted_domains[entry] = domains[entry]
+                out[entry] = domains[entry]
 
-    return only_wanted_domains
+    return out
 
 
 def _set_domain_settings(domain, domain_settings):
