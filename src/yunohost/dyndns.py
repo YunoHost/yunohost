@@ -37,7 +37,7 @@ from moulinette.utils.filesystem import write_to_file, read_file
 from moulinette.utils.network import download_json
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.domain import _get_maindomain, _build_dns_conf
+from yunohost.domain import _get_maindomain
 from yunohost.utils.network import get_public_ip
 from yunohost.utils.dns import dig
 from yunohost.log import is_unit_operation
@@ -225,6 +225,9 @@ def dyndns_update(
         ipv6 -- IPv6 address to send
 
     """
+
+    from yunohost.dns import _build_dns_conf
+
     # Get old ipv4/v6
 
     old_ipv4, old_ipv6 = (None, None)  # (default values)

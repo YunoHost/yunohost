@@ -10,7 +10,8 @@ from moulinette.utils.process import check_output
 
 from yunohost.utils.dns import dig, YNH_DYNDNS_DOMAINS
 from yunohost.diagnosis import Diagnoser
-from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
+from yunohost.domain import domain_list, _get_maindomain
+from yunohost.dns import _build_dns_conf
 
 SPECIAL_USE_TLDS = ["local", "localhost", "onion", "test"]
 
