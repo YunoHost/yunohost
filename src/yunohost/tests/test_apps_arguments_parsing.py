@@ -180,7 +180,9 @@ def test_parse_args_in_yunohost_format_string_input_test_ask():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value") as prompt:
+    with patch.object(
+        Moulinette.interface, "prompt", return_value="some_value"
+    ) as prompt:
         _parse_args_in_yunohost_format(answers, questions)
         prompt.assert_called_with(ask_text, False)
 
@@ -197,7 +199,9 @@ def test_parse_args_in_yunohost_format_string_input_test_ask_with_default():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value") as prompt:
+    with patch.object(
+        Moulinette.interface, "prompt", return_value="some_value"
+    ) as prompt:
         _parse_args_in_yunohost_format(answers, questions)
         prompt.assert_called_with("%s (default: %s)" % (ask_text, default_text), False)
 
@@ -215,7 +219,9 @@ def test_parse_args_in_yunohost_format_string_input_test_ask_with_example():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value") as prompt:
+    with patch.object(
+        Moulinette.interface, "prompt", return_value="some_value"
+    ) as prompt:
         _parse_args_in_yunohost_format(answers, questions)
         assert ask_text in prompt.call_args[0][0]
         assert example_text in prompt.call_args[0][0]
@@ -234,7 +240,9 @@ def test_parse_args_in_yunohost_format_string_input_test_ask_with_help():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value") as prompt:
+    with patch.object(
+        Moulinette.interface, "prompt", return_value="some_value"
+    ) as prompt:
         _parse_args_in_yunohost_format(answers, questions)
         assert ask_text in prompt.call_args[0][0]
         assert help_text in prompt.call_args[0][0]
@@ -462,7 +470,9 @@ def test_parse_args_in_yunohost_format_password_input_test_ask():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value") as prompt:
+    with patch.object(
+        Moulinette.interface, "prompt", return_value="some_value"
+    ) as prompt:
         _parse_args_in_yunohost_format(answers, questions)
         prompt.assert_called_with(ask_text, True)
 
@@ -481,7 +491,9 @@ def test_parse_args_in_yunohost_format_password_input_test_ask_with_example():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value") as prompt:
+    with patch.object(
+        Moulinette.interface, "prompt", return_value="some_value"
+    ) as prompt:
         _parse_args_in_yunohost_format(answers, questions)
         assert ask_text in prompt.call_args[0][0]
         assert example_text in prompt.call_args[0][0]
@@ -501,7 +513,9 @@ def test_parse_args_in_yunohost_format_password_input_test_ask_with_help():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value") as prompt:
+    with patch.object(
+        Moulinette.interface, "prompt", return_value="some_value"
+    ) as prompt:
         _parse_args_in_yunohost_format(answers, questions)
         assert ask_text in prompt.call_args[0][0]
         assert help_text in prompt.call_args[0][0]
@@ -697,7 +711,9 @@ def test_parse_args_in_yunohost_format_path_input_test_ask():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value") as prompt:
+    with patch.object(
+        Moulinette.interface, "prompt", return_value="some_value"
+    ) as prompt:
         _parse_args_in_yunohost_format(answers, questions)
         prompt.assert_called_with(ask_text, False)
 
@@ -715,7 +731,9 @@ def test_parse_args_in_yunohost_format_path_input_test_ask_with_default():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value") as prompt:
+    with patch.object(
+        Moulinette.interface, "prompt", return_value="some_value"
+    ) as prompt:
         _parse_args_in_yunohost_format(answers, questions)
         prompt.assert_called_with("%s (default: %s)" % (ask_text, default_text), False)
 
@@ -734,7 +752,9 @@ def test_parse_args_in_yunohost_format_path_input_test_ask_with_example():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value") as prompt:
+    with patch.object(
+        Moulinette.interface, "prompt", return_value="some_value"
+    ) as prompt:
         _parse_args_in_yunohost_format(answers, questions)
         assert ask_text in prompt.call_args[0][0]
         assert example_text in prompt.call_args[0][0]
@@ -754,7 +774,9 @@ def test_parse_args_in_yunohost_format_path_input_test_ask_with_help():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value") as prompt:
+    with patch.object(
+        Moulinette.interface, "prompt", return_value="some_value"
+    ) as prompt:
         _parse_args_in_yunohost_format(answers, questions)
         assert ask_text in prompt.call_args[0][0]
         assert help_text in prompt.call_args[0][0]
