@@ -34,9 +34,8 @@ from lexicon.config import ConfigResolver
 
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
-from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import write_to_file
+from moulinette.utils.filesystem import write_to_file, read_yaml, write_to_yaml
 
 from yunohost.app import (
     app_ssowatconf,
@@ -46,6 +45,7 @@ from yunohost.app import (
     _parse_args_in_yunohost_format,
 )
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.network import get_public_ip
 from yunohost.utils.dns import get_dns_zone_from_domain
 from yunohost.log import is_unit_operation
@@ -775,10 +775,7 @@ def _load_domain_settings(domains=[]):
         filepath = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
         on_disk_settings = {}
         if os.path.exists(filepath) and os.path.isfile(filepath):
-            on_disk_settings = yaml.load(open(filepath, "r+"))
-            # If the file is empty or "corrupted"
-            if not type(on_disk_settings) is dict:
-                on_disk_settings = {}
+            on_disk_settings = read_yaml(filepath) or {}
         # Generate defaults
         is_maindomain = domain == maindomain
         dns_zone = get_dns_zone_from_domain(domain)
@@ -805,10 +802,7 @@ def _load_registrar_setting(dns_zone):
     on_disk_settings = {}
     filepath = f"{REGISTRAR_SETTINGS_DIR}/{dns_zone}.yml"
     if os.path.exists(filepath) and os.path.isfile(filepath):
-        on_disk_settings = yaml.load(open(filepath, "r+"))
-        # If the file is empty or "corrupted"
-        if not type(on_disk_settings) is dict:
-            on_disk_settings = {}
+        on_disk_settings = read_yaml(filepath) or {}
 
     return on_disk_settings
 
@@ -914,8 +908,7 @@ def _set_domain_settings(domain, domain_settings):
         os.mkdir(DOMAIN_SETTINGS_DIR)
     # Save the settings to the .yaml file
     filepath = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
-    with open(filepath, "w") as file:
-        yaml.dump(domain_settings, file, default_flow_style=False)
+    write_to_yaml(filepath, domain_settings)
 
 
 def _load_zone_of_domain(domain):
@@ -938,6 +931,7 @@ def domain_registrar_info(domain):
     for option_key, option_value in registrar_info['options'].items():
         logger.info("Option " + option_key + ": " + option_value)
 
+
 def _print_registrar_info(registrar_name, full, options):
     logger.info("Registrar : " + registrar_name)
     if full :
@@ -945,8 +939,9 @@ def _print_registrar_info(registrar_name, full, options):
         for option in options:
             logger.info("\t- " + option)
 
+
 def domain_registrar_catalog(registrar_name, full):
-    registrars = yaml.load(open(REGISTRAR_LIST_PATH, "r+"))
+    registrars = read_yaml(REGISTRAR_LIST_PATH)
 
     if registrar_name and registrar_name in registrars.keys() :
         _print_registrar_info(registrar_name, True, registrars[registrar_name])
@@ -990,8 +985,7 @@ def domain_registrar_set(domain, registrar, args):
         os.mkdir(REGISTRAR_SETTINGS_DIR)
     # Save the settings to the .yaml file
     filepath = f"{REGISTRAR_SETTINGS_DIR}/{dns_zone}.yml"
-    with open(filepath, "w") as file:
-        yaml.dump(domain_registrar, file, default_flow_style=False)
+    write_to_yaml(filepath, domain_registrar)
 
 
 def domain_push_config(domain):
