@@ -38,7 +38,8 @@ from moulinette.utils.network import download_json
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.domain import _get_maindomain, _build_dns_conf
-from yunohost.utils.network import get_public_ip, dig
+from yunohost.utils.network import get_public_ip
+from yunohost.utils.dns import dig
 from yunohost.log import is_unit_operation
 from yunohost.regenconf import regen_conf
 

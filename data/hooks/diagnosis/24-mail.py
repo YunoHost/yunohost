@@ -12,7 +12,7 @@ from moulinette.utils.filesystem import read_yaml
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import _get_maindomain, domain_list
 from yunohost.settings import settings_get
-from yunohost.utils.network import dig
+from yunohost.utils.dns import dig
 
 DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/other/dnsbl_list.yml"
 
