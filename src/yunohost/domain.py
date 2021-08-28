@@ -750,25 +750,21 @@ def _load_domain_settings(domains=[]):
     """
     # Retrieve actual domain list
     get_domain_list = domain_list()
+    all_known_domains = get_domain_list["domains"]
+    maindomain = get_domain_list["main"]
 
     if domains:
-        # check existence of requested domains
-        all_known_domains = get_domain_list["domains"]
         # filter inexisting domains
-        unknown_domains = filter(lambda domain : not domain in all_known_domains, domains)
+        unknown_domains = filter(lambda domain: domain not in all_known_domains, domains)
         # get first unknown domain
         unknown_domain = next(unknown_domains, None)
-        if unknown_domain != None:
+        if unknown_domain is None:
             raise YunohostValidationError("domain_name_unknown", domain=unknown_domain)
     else:
-        domains = get_domain_list["domains"]
-
+        domains = all_known_domains
 
     # Create sanitized data
-    new_domains = dict()
-
-    # Load main domain
-    maindomain = get_domain_list["main"]
+    out = dict()
 
     for domain in domains:
         # Retrieve entries in the YAML
@@ -789,9 +785,9 @@ def _load_domain_settings(domains=[]):
         # Update each setting if not present
         default_settings.update(on_disk_settings)
         # Add the domain to the list
-        new_domains[domain] = default_settings
+        out[domain] = default_settings
 
-    return new_domains
+    return out
 
 
 def _load_registrar_setting(dns_zone):
