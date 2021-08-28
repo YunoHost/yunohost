@@ -453,7 +453,7 @@ def _get_maindomain():
     return maindomain
 
 
-def _build_dns_conf(domain):
+def _build_dns_conf(base_domain):
     """
     Internal function that will returns a data structure containing the needed
     information to generate/adapt the dns configuration
@@ -496,43 +496,40 @@ def _build_dns_conf(domain):
     }
     """
 
-    domains = _get_domain_settings(domain, include_subdomains=True)
-
     basic = []
     mail = []
     xmpp = []
     extra = []
     ipv4 = get_public_ip()
     ipv6 = get_public_ip(6)
-    owned_dns_zone = (
-        # TODO test this
-        "dns_zone" in domains[domain] and domains[domain]["dns_zone"] == domain
-    )
 
-    root_prefix = domain.partition(".")[0]
-    child_domain_suffix = ""
+    domains_settings = _get_domain_settings(base_domain, include_subdomains=True)
+    base_dns_zone = domain_settings[base_domain].get("dns_zone")
 
-    for domain_name, domain in domains.items():
-        ttl = domain["ttl"]
+    for domain, settings in domain_settings.items():
 
-        if domain_name == domain:
-            name = "@" if owned_dns_zone else root_prefix
-        else:
-            name = domain_name
-            if not owned_dns_zone:
-                name += "." + root_prefix
+        #   Domain           #   Base DNS zone   # Basename  #  Suffix  #
+        # ------------------ # ----------------- # --------- # -------- #
+        #         domain.tld #       domain.tld  #        @  #          #
+        #     sub.domain.tld #       domain.tld  #      sub  # .sub     #
+        # foo.sub.domain.tld #       domain.tld  #  foo.sub  # .foo.sub #
+        #     sub.domain.tld #   sub.domain.tld  #        @  #          #
+        # foo.sub.domain.tld #   sub.domain.tld  #      foo  # .foo     #
 
-        if name != "@":
-            child_domain_suffix = "." + name
+        # FIXME: shouldn't the basename just be based on the dns_zone setting of this domain ?
+        basename = domain.replace(f"{base_dns_zone}", "").rstrip(".") or "@"
+        suffix = f".{basename}" if base_name != "@" else ""
+
+        ttl = settings["ttl"]
 
         ###########################
         # Basic ipv4/ipv6 records #
         ###########################
         if ipv4:
-            basic.append([name, ttl, "A", ipv4])
+            basic.append([basename, ttl, "A", ipv4])
 
         if ipv6:
-            basic.append([name, ttl, "AAAA", ipv6])
+            basic.append([basename, ttl, "AAAA", ipv6])
         # TODO
         # elif include_empty_AAAA_if_no_ipv6:
         #     basic.append(["@", ttl, "AAAA", None])
@@ -540,46 +537,42 @@ def _build_dns_conf(domain):
         #########
         # Email #
         #########
-        if domain["mail_in"]:
-            mail += [
-                [name, ttl, "MX", "10 %s." % domain_name]
-            ]
+        if settings["mail_in"]:
+            mail.append([basename, ttl, "MX", f"10 {domain}."])
 
-        if domain["mail_out"]:
-            mail += [
-                [name, ttl, "TXT", '"v=spf1 a mx -all"']
-            ]
+        if settings["mail_out"]:
+            mail.append([basename, ttl, "TXT", '"v=spf1 a mx -all"'])
 
             # DKIM/DMARC record
-            dkim_host, dkim_publickey = _get_DKIM(domain_name)
+            dkim_host, dkim_publickey = _get_DKIM(domain)
 
             if dkim_host:
                 mail += [
-                    [dkim_host, ttl, "TXT", dkim_publickey],
-                    [f"_dmarc{child_domain_suffix}", ttl, "TXT", '"v=DMARC1; p=none"'],
+                    [f"{dkim_host}{suffix}", ttl, "TXT", dkim_publickey],
+                    [f"_dmarc{suffix}", ttl, "TXT", '"v=DMARC1; p=none"'],
                 ]
 
         ########
         # XMPP #
         ########
-        if domain["xmpp"]:
+        if settings["xmpp"]:
             xmpp += [
                 [
-                    f"_xmpp-client._tcp{child_domain_suffix}",
+                    f"_xmpp-client._tcp{suffix}",
                     ttl,
                     "SRV",
-                    f"0 5 5222 {domain_name}.",
+                    f"0 5 5222 {domain}.",
                 ],
                 [
-                    f"_xmpp-server._tcp{child_domain_suffix}",
+                    f"_xmpp-server._tcp{suffix}",
                     ttl,
                     "SRV",
-                    f"0 5 5269 {domain_name}.",
+                    f"0 5 5269 {domain}.",
                 ],
-                ["muc" + child_domain_suffix, ttl, "CNAME", name],
-                ["pubsub" + child_domain_suffix, ttl, "CNAME", name],
-                ["vjud" + child_domain_suffix, ttl, "CNAME", name],
-                ["xmpp-upload" + child_domain_suffix, ttl, "CNAME", name],
+                [f"muc{suffix}", ttl, "CNAME", basename],
+                [f"pubsub{suffix}", ttl, "CNAME", basename],
+                [f"vjud{suffix}", ttl, "CNAME", basename],
+                [f"xmpp-upload{suffix}", ttl, "CNAME", basename],
             ]
 
         #########
@@ -587,15 +580,15 @@ def _build_dns_conf(domain):
         #########
 
         if ipv4:
-            extra.append([f"*{child_domain_suffix}", ttl, "A", ipv4])
+            extra.append([f"*{suffix}", ttl, "A", ipv4])
 
         if ipv6:
-            extra.append([f"*{child_domain_suffix}", ttl, "AAAA", ipv6])
+            extra.append([f"*{suffix}", ttl, "AAAA", ipv6])
         # TODO
         # elif include_empty_AAAA_if_no_ipv6:
         #     extra.append(["*", ttl, "AAAA", None])
 
-        extra.append([name, ttl, "CAA", '128 issue "letsencrypt.org"'])
+        extra.append([basename, ttl, "CAA", '128 issue "letsencrypt.org"'])
 
         ####################
         # Standard records #
@@ -626,7 +619,7 @@ def _build_dns_conf(domain):
 
     # Defined by custom hooks ships in apps for example ...
 
-    hook_results = hook_callback("custom_dns_rules", args=[domain])
+    hook_results = hook_callback("custom_dns_rules", args=[base_domain])
     for hook_name, results in hook_results.items():
         #
         # There can be multiple results per hook name, so results look like
