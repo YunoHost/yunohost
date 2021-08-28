@@ -24,7 +24,7 @@ def test_authenticate_with_wrong_password():
     with pytest.raises(MoulinetteError) as exception:
         LDAPAuth().authenticate_credentials(credentials="bad_password_lul")
 
-    translation = m18n.g("invalid_password")
+    translation = m18n.n("invalid_password")
     expected_msg = translation.format()
     assert expected_msg in str(exception)
 
@@ -52,7 +52,7 @@ def test_authenticate_change_password():
     with pytest.raises(MoulinetteError) as exception:
         LDAPAuth().authenticate_credentials(credentials="yunohost")
 
-    translation = m18n.g("invalid_password")
+    translation = m18n.n("invalid_password")
     expected_msg = translation.format()
     assert expected_msg in str(exception)
 
