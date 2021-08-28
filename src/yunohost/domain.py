@@ -551,6 +551,6 @@ def domain_registrar_set(domain, registrar, args):
     return yunohost.dns.domain_registrar_set(domain, registrar, args)
 
 
-def domain_push_config(domain):
+def domain_registrar_push(domain):
     import yunohost.dns
-    return yunohost.dns.domain_push_config(domain)
+    return yunohost.dns.domain_registrar_push(domain)

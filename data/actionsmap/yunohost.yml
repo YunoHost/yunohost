@@ -439,16 +439,6 @@ domain:
                     help: Subscribe to the DynDNS service
                     action: store_true
 
-        ### domain_push_config()
-        push-config:
-            action_help: Push DNS records to registrar
-            api: GET /domains/<domain>/push
-            arguments:
-                domain:
-                    help: Domain name to add
-                    extra:
-                        pattern: *pattern_domain
-
         ### domain_remove()
         remove:
             action_help: Delete domains
@@ -558,6 +548,7 @@ domain:
                         pattern: *pattern_domain
                 path:
                     help: The path to check (e.g. /coffee)
+
         ### domain_setting()
         setting:
             action_help: Set or get a domain setting value
@@ -576,12 +567,13 @@ domain:
                     full: --delete
                     help: Delete the key
                     action: store_true
+
     subcategories:
         registrar:
             subcategory_help: Manage domains registrars
-            actions: 
+            actions:
                 ### domain_registrar_set()
-                set: 
+                set:
                     action_help: Set domain registrar
                     api: POST /domains/<domain>/registrar
                     arguments:
@@ -594,6 +586,7 @@ domain:
                         -a:
                             full: --args
                             help: Serialized arguments for registrar API (i.e. "auth_token=TOKEN&auth_username=USER").
+
                 ### domain_registrar_info()
                 info:
                     action_help: Display info about registrar settings used for a domain
@@ -603,10 +596,12 @@ domain:
                             help: Domain name
                             extra:
                                 pattern: *pattern_domain
+
                 ### domain_registrar_list()
                 list:
                     action_help: List registrars configured by DNS zone
                     api: GET /domains/registrars
+
                 ### domain_registrar_catalog()
                 catalog:
                     action_help: List supported registrars API
@@ -619,6 +614,17 @@ domain:
                             full: --full
                             help: Display all details, including info to create forms
                             action: store_true
+
+                ### domain_registrar_push()
+                push:
+                    action_help: Push DNS records to registrar
+                    api: PUT /domains/<domain>/registrar/push
+                    arguments:
+                        domain:
+                            help: Domain name to push DNS conf for
+                            extra:
+                                pattern: *pattern_domain
+
 
 #############################
 #            App            #

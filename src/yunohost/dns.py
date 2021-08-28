@@ -464,7 +464,7 @@ def domain_registrar_set(domain, registrar, args):
     _set_registrar_settings(dns_zone, domain_registrar)
 
 
-def domain_push_config(domain):
+def domain_registrar_push(domain):
     """
     Send DNS records to the previously-configured registrar of the domain.
     """
