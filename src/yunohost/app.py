@@ -1867,12 +1867,12 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
         logger.debug("Asking unanswered question and prevalidating...")
         args_dict = {}
         for panel in config_panel.get("panel", []):
-            if Moulinette.interface == 'cli' and len(filter_key.split('.')) < 3:
+            if Moulinette.interface.type== 'cli' and len(filter_key.split('.')) < 3:
                 Moulinette.display(colorize("\n" + "=" * 40, 'purple'))
                 Moulinette.display(colorize(f">>>> {panel['name']}", 'purple'))
                 Moulinette.display(colorize("=" * 40, 'purple'))
             for section in panel.get("sections", []):
-                if Moulinette.interface == 'cli' and len(filter_key.split('.')) < 3:
+                if Moulinette.interface.type== 'cli' and len(filter_key.split('.')) < 3:
                     Moulinette.display(colorize(f"\n# {section['name']}", 'purple'))
 
                 # Check and ask unanswered questions
@@ -2855,10 +2855,9 @@ class YunoHostArgumentFormatParser(object):
     def parse(self, question, user_answers):
         question = self.parse_question(question, user_answers)
 
-<<<<<<< HEAD
         while True:
             # Display question if no value filled or if it's a readonly message
-            if Moulinette.interface == 'cli':
+            if Moulinette.interface.type== 'cli':
                 text_for_user_input_in_cli = self._format_text_for_user_input_in_cli(
                     question
                 )
@@ -2894,7 +2893,7 @@ class YunoHostArgumentFormatParser(object):
             try:
                 self._prevalidate(question)
             except YunohostValidationError as e:
-                if Moulinette.interface == 'api':
+                if Moulinette.interface.type== 'api':
                     raise
                 Moulinette.display(str(e), 'error')
                 question.value = None
@@ -3180,7 +3179,7 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
     @classmethod
     def clean_upload_dirs(cls):
         # Delete files uploaded from API
-        if Moulinette.interface == 'api':
+        if Moulinette.interface.type== 'api':
             for upload_dir in cls.upload_dirs:
                 if os.path.exists(upload_dir):
                     shutil.rmtree(upload_dir)
@@ -3193,7 +3192,7 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
             question_parsed.accept = question.get('accept').replace(' ', '').split(',')
         else:
             question_parsed.accept = []
-        if Moulinette.interface == 'api':
+        if Moulinette.interface.type== 'api':
             if user_answers.get(question_parsed.name):
                 question_parsed.value = {
                     'content': question_parsed.value,
@@ -3224,7 +3223,7 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
         if not question.value:
             return question.value
 
-        if Moulinette.interface == 'api':
+        if Moulinette.interface.type== 'api':
 
             upload_dir = tempfile.mkdtemp(prefix='tmp_configpanel_')
             FileArgumentParser.upload_dirs += [upload_dir]
