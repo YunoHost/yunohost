@@ -38,8 +38,8 @@ import tempfile
 import readline
 from collections import OrderedDict
 
-from moulinette import msignals, m18n, msettings
 from moulinette.interfaces.cli import colorize
+from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
@@ -195,7 +195,8 @@ def app_info(app, full=False):
 
     _assert_is_installed(app)
 
-    local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+    setting_path = os.path.join(APPS_SETTING_PATH, app)
+    local_manifest = _get_manifest_of_app(setting_path)
     permissions = user_permission_list(full=True, absolute_urls=True, apps=[app])[
         "permissions"
     ]
@@ -214,6 +215,7 @@ def app_info(app, full=False):
     if not full:
         return ret
 
+    ret["setting_path"] = setting_path
     ret["manifest"] = local_manifest
     ret["manifest"]["arguments"] = _set_default_ask_questions(
         ret["manifest"].get("arguments", {})
@@ -224,11 +226,11 @@ def app_info(app, full=False):
     ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
     ret["upgradable"] = _app_upgradable(ret)
     ret["supports_change_url"] = os.path.exists(
-        os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")
+        os.path.join(setting_path, "scripts", "change_url")
     )
     ret["supports_backup_restore"] = os.path.exists(
-        os.path.join(APPS_SETTING_PATH, app, "scripts", "backup")
-    ) and os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "restore"))
+        os.path.join(setting_path, "scripts", "backup")
+    ) and os.path.exists(os.path.join(setting_path, "scripts", "restore"))
     ret["supports_multi_instance"] = is_true(
         local_manifest.get("multi_instance", False)
     )
@@ -503,7 +505,7 @@ def app_change_url(operation_logger, app, domain, path):
     hook_callback("post_app_change_url", env=env_dict)
 
 
-def app_upgrade(app=[], url=None, file=None, force=False):
+def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False):
     """
     Upgrade app
 
@@ -511,6 +513,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         file -- Folder or tarball for upgrade
         app -- App(s) to upgrade (default all)
         url -- Git url to fetch for upgrade
+        no_safety_backup -- Disable the safety backup during upgrade
 
     """
     from packaging import version
@@ -617,6 +620,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
+        env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
@@ -646,7 +650,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
                     m18n.n("app_upgrade_failed", app=app_instance_name, error=error)
                 )
                 failure_message_with_debug_instructions = operation_logger.error(error)
-                if msettings.get("interface") != "api":
+                if Moulinette.interface.type != "api":
                     dump_app_log_extract_for_debugging(operation_logger)
         # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
@@ -823,11 +827,11 @@ def app_install(
     def confirm_install(confirm):
         # Ignore if there's nothing for confirm (good quality app), if --force is used
         # or if request on the API (confirm already implemented on the API side)
-        if confirm is None or force or msettings.get("interface") == "api":
+        if confirm is None or force or Moulinette.interface.type == "api":
             return
 
         if confirm in ["danger", "thirdparty"]:
-            answer = msignals.prompt(
+            answer = Moulinette.prompt(
                 m18n.n("confirm_app_install_" + confirm, answers="Yes, I understand"),
                 color="red",
             )
@@ -835,7 +839,7 @@ def app_install(
                 raise YunohostError("aborting")
 
         else:
-            answer = msignals.prompt(
+            answer = Moulinette.prompt(
                 m18n.n("confirm_app_install_" + confirm, answers="Y/N"), color="yellow"
             )
             if answer.upper() != "Y":
@@ -883,7 +887,7 @@ def app_install(
         raise YunohostValidationError("disk_space_not_sufficient_install")
 
     # Check ID
-    if "id" not in manifest or "__" in manifest["id"]:
+    if "id" not in manifest or "__" in manifest["id"] or "." in manifest["id"]:
         raise YunohostValidationError("app_id_invalid")
 
     app_id = manifest["id"]
@@ -1010,7 +1014,7 @@ def app_install(
             error = m18n.n("app_install_script_failed")
             logger.error(m18n.n("app_install_failed", app=app_id, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
-            if msettings.get("interface") != "api":
+            if Moulinette.interface.type != "api":
                 dump_app_log_extract_for_debugging(operation_logger)
     # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
@@ -1184,12 +1188,13 @@ def dump_app_log_extract_for_debugging(operation_logger):
 
 
 @is_unit_operation()
-def app_remove(operation_logger, app):
+def app_remove(operation_logger, app, purge=False):
     """
     Remove app
 
-    Keyword argument:
+    Keyword arguments:
         app -- App(s) to delete
+        purge -- Remove with all app data
 
     """
     from yunohost.hook import hook_exec, hook_remove, hook_callback
@@ -1227,6 +1232,7 @@ def app_remove(operation_logger, app):
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
     env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
+    env_dict["YNH_APP_PURGE"] = str(purge)
     operation_logger.extra.update({"env": env_dict})
     operation_logger.flush()
 
@@ -1515,7 +1521,7 @@ def app_setting(app, key, value=None, delete=False):
     # SET
     else:
         if key in ["redirected_urls", "redirected_regex"]:
-            value = yaml.load(value)
+            value = yaml.safe_load(value)
         app_settings[key] = value
 
     _set_app_settings(app, app_settings)
@@ -1861,13 +1867,13 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
         logger.debug("Asking unanswered question and prevalidating...")
         args_dict = {}
         for panel in config_panel.get("panel", []):
-            if msettings.get('interface') == 'cli' and len(filter_key.split('.')) < 3:
-                msignals.display(colorize("\n" + "=" * 40, 'purple'))
-                msignals.display(colorize(f">>>> {panel['name']}", 'purple'))
-                msignals.display(colorize("=" * 40, 'purple'))
+            if Moulinette.get('interface') == 'cli' and len(filter_key.split('.')) < 3:
+                Moulinette.display(colorize("\n" + "=" * 40, 'purple'))
+                Moulinette.display(colorize(f">>>> {panel['name']}", 'purple'))
+                Moulinette.display(colorize("=" * 40, 'purple'))
             for section in panel.get("sections", []):
-                if msettings.get('interface') == 'cli' and len(filter_key.split('.')) < 3:
-                    msignals.display(colorize(f"\n# {section['name']}", 'purple'))
+                if Moulinette.get('interface') == 'cli' and len(filter_key.split('.')) < 3:
+                    Moulinette.display(colorize(f"\n# {section['name']}", 'purple'))
 
                 # Check and ask unanswered questions
                 args_dict.update(_parse_args_in_yunohost_format(
@@ -2284,7 +2290,7 @@ def _get_app_settings(app_id):
         )
     try:
         with open(os.path.join(APPS_SETTING_PATH, app_id, "settings.yml")) as f:
-            settings = yaml.load(f)
+            settings = yaml.safe_load(f)
         # If label contains unicode char, this may later trigger issues when building strings...
         # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
         settings = {k: v for k, v in settings.items()}
@@ -2851,12 +2857,12 @@ class YunoHostArgumentFormatParser(object):
 
         while True:
             # Display question if no value filled or if it's a readonly message
-            if msettings.get('interface') == 'cli':
+            if Moulinette.get('interface') == 'cli':
                 text_for_user_input_in_cli = self._format_text_for_user_input_in_cli(
                     question
                 )
                 if getattr(self, "readonly", False):
-                    msignals.display(text_for_user_input_in_cli)
+                    Moulinette.display(text_for_user_input_in_cli)
 
                 elif question.value is None:
                     prefill = None
@@ -2866,7 +2872,7 @@ class YunoHostArgumentFormatParser(object):
                         prefill = question.default
                     readline.set_startup_hook(lambda: readline.insert_text(prefill))
                     try:
-                        question.value = msignals.prompt(
+                        question.value = Moulinette.prompt(
                             message=text_for_user_input_in_cli,
                             is_password=self.hide_user_input_in_prompt,
                             confirm=self.hide_user_input_in_prompt
@@ -2887,9 +2893,9 @@ class YunoHostArgumentFormatParser(object):
             try:
                 self._prevalidate(question)
             except YunohostValidationError as e:
-                if msettings.get('interface') == 'api':
+                if Moulinette.get('interface') == 'api':
                     raise
-                msignals.display(str(e), 'error')
+                Moulinette.display(str(e), 'error')
                 question.value = None
                 continue
             break
@@ -3173,7 +3179,7 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
     @classmethod
     def clean_upload_dirs(cls):
         # Delete files uploaded from API
-        if msettings.get('interface') == 'api':
+        if Moulinette.get('interface') == 'api':
             for upload_dir in cls.upload_dirs:
                 if os.path.exists(upload_dir):
                     shutil.rmtree(upload_dir)
@@ -3186,7 +3192,7 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
             question_parsed.accept = question.get('accept').replace(' ', '').split(',')
         else:
             question_parsed.accept = []
-        if msettings.get('interface') == 'api':
+        if Moulinette.get('interface') == 'api':
             if user_answers.get(question_parsed.name):
                 question_parsed.value = {
                     'content': question_parsed.value,
@@ -3217,7 +3223,7 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
         if not question.value:
             return question.value
 
-        if msettings.get('interface') == 'api':
+        if Moulinette.get('interface') == 'api':
 
             upload_dir = tempfile.mkdtemp(prefix='tmp_configpanel_')
             FileArgumentParser.upload_dirs += [upload_dir]
