@@ -35,6 +35,7 @@ import glob
 import urllib.parse
 import base64
 import tempfile
+import readline
 from collections import OrderedDict
 
 from moulinette import msignals, m18n, msettings
@@ -1754,35 +1755,20 @@ def app_action_run(operation_logger, app, action, args=None):
 # * docstrings
 # * merge translations on the json once the workflow is in place
 @is_unit_operation()
-def app_config_show(operation_logger, app, panel='', full=False):
+def app_config_show(operation_logger, app, key='', full=False):
     # logger.warning(m18n.n("experimental_feature"))
 
     # Check app is installed
     _assert_is_installed(app)
 
-    panel = panel if panel else ''
-    operation_logger.start()
+    key = key if key else ''
 
     # Read config panel toml
-    config_panel = _get_app_config_panel(app, filter_key=panel)
+    config_panel = _get_app_hydrated_config_panel(operation_logger,
+                                                  app, filter_key=key)
 
     if not config_panel:
         return None
-
-    # Call config script to extract current values
-    parsed_values = _call_config_script(operation_logger, app, 'show')
-
-    # # Check and transform values if needed
-    # options = [option for _, _, option in _get_options_iterator(config_panel)]
-    # args_dict = _parse_args_in_yunohost_format(
-    #     parsed_values, options, False
-    # )
-
-    # Hydrate
-    logger.debug("Hydrating config with current value")
-    for _, _, option in _get_options_iterator(config_panel):
-        if option['name'] in parsed_values:
-            option["value"] = parsed_values[option['name']] #args_dict[option["name"]][0]
 
     # Format result in full or reduce mode
     if full:
@@ -1800,8 +1786,8 @@ def app_config_show(operation_logger, app, panel='', full=False):
         }
         if not option.get('optional', False):
             r_option['ask'] += ' *'
-        if option.get('value', None) is not None:
-            r_option['value'] = option['value']
+        if option.get('current_value', None) is not None:
+            r_option['value'] = option['current_value']
 
     operation_logger.success()
     return result
@@ -1812,13 +1798,14 @@ def app_config_get(operation_logger, app, key):
     # Check app is installed
     _assert_is_installed(app)
 
-    operation_logger.start()
 
     # Read config panel toml
     config_panel = _get_app_config_panel(app, filter_key=key)
 
     if not config_panel:
         raise YunohostError("app_config_no_panel")
+
+    operation_logger.start()
 
     # Call config script to extract current values
     parsed_values = _call_config_script(operation_logger, app, 'show')
@@ -1851,7 +1838,8 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
     filter_key = key if key else ''
 
     # Read config panel toml
-    config_panel = _get_app_config_panel(app, filter_key=filter_key)
+    config_panel = _get_app_hydrated_config_panel(operation_logger,
+                                                  app, filter_key=filter_key)
 
     if not config_panel:
         raise YunohostError("app_config_no_panel")
@@ -1862,12 +1850,16 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
     operation_logger.start()
 
     # Prepare pre answered questions
-    args = dict(urllib.parse.parse_qsl(args, keep_blank_values=True)) if args else {}
+    if args:
+        args = { key: ','.join(value) for key, value in urllib.parse.parse_qs(args, keep_blank_values=True).items() }
+    else:
+        args = {}
     if value is not None:
         args = {filter_key.split('.')[-1]: value}
 
     try:
         logger.debug("Asking unanswered question and prevalidating...")
+        args_dict = {}
         for panel in config_panel.get("panel", []):
             if msettings.get('interface') == 'cli' and len(filter_key.split('.')) < 3:
                 msignals.display(colorize("\n" + "=" * 40, 'purple'))
@@ -1878,13 +1870,13 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
                     msignals.display(colorize(f"\n# {section['name']}", 'purple'))
 
                 # Check and ask unanswered questions
-                args_dict = _parse_args_in_yunohost_format(
+                args_dict.update(_parse_args_in_yunohost_format(
                     args, section['options']
-                )
+                ))
 
         # Call config script to extract current values
         logger.info("Running config script...")
-        env = {key: str(value[0]) for key, value in args_dict.items()}
+        env = {key: str(value[0]) for key, value in args_dict.items() if not value[0] is None}
 
         errors = _call_config_script(operation_logger, app, 'apply', env=env)
     # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
@@ -2245,6 +2237,37 @@ def _get_app_config_panel(app_id, filter_key=''):
         return config_panel
 
     return None
+
+def _get_app_hydrated_config_panel(operation_logger, app, filter_key=''):
+
+    # Read config panel toml
+    config_panel = _get_app_config_panel(app, filter_key=filter_key)
+
+    if not config_panel:
+        return None
+
+    operation_logger.start()
+
+    # Call config script to extract current values
+    parsed_values = _call_config_script(operation_logger, app, 'show')
+
+    # # Check and transform values if needed
+    # options = [option for _, _, option in _get_options_iterator(config_panel)]
+    # args_dict = _parse_args_in_yunohost_format(
+    #     parsed_values, options, False
+    # )
+
+    # Hydrate
+    logger.debug("Hydrating config with current value")
+    for _, _, option in _get_options_iterator(config_panel):
+        if option['name'] in parsed_values:
+            value = parsed_values[option['name']]
+            if isinstance(value, dict):
+                option.update(value)
+            else:
+                option["current_value"] = value #args_dict[option["name"]][0]
+
+    return config_panel
 
 
 def _get_app_settings(app_id):
@@ -2808,6 +2831,7 @@ class YunoHostArgumentFormatParser(object):
         parsed_question.name = question["name"]
         parsed_question.type = question.get("type", 'string')
         parsed_question.default = question.get("default", None)
+        parsed_question.current_value = question.get("current_value")
         parsed_question.optional = question.get("optional", False)
         parsed_question.choices = question.get("choices", [])
         parsed_question.pattern = question.get("pattern")
@@ -2835,11 +2859,20 @@ class YunoHostArgumentFormatParser(object):
                     msignals.display(text_for_user_input_in_cli)
 
                 elif question.value is None:
-                    question.value = msignals.prompt(
-                        message=text_for_user_input_in_cli,
-                        is_password=self.hide_user_input_in_prompt,
-                        confirm=self.hide_user_input_in_prompt
-                    )
+                    prefill = None
+                    if question.current_value is not None:
+                        prefill = question.current_value
+                    elif question.default is not None:
+                        prefill = question.default
+                    readline.set_startup_hook(lambda: readline.insert_text(prefill))
+                    try:
+                        question.value = msignals.prompt(
+                            message=text_for_user_input_in_cli,
+                            is_password=self.hide_user_input_in_prompt,
+                            confirm=self.hide_user_input_in_prompt
+                        )
+                    finally:
+                        readline.set_startup_hook()
 
 
             # Apply default value
@@ -2897,8 +2930,6 @@ class YunoHostArgumentFormatParser(object):
         if question.choices:
             text_for_user_input_in_cli += " [{0}]".format(" | ".join(question.choices))
 
-        if question.default is not None:
-            text_for_user_input_in_cli += " (default: {0})".format(question.default)
         if question.help or question.helpLink:
             text_for_user_input_in_cli += ":\033[m"
         if question.help:
@@ -2917,6 +2948,18 @@ class YunoHostArgumentFormatParser(object):
 class StringArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "string"
     default_value = ""
+
+
+class TagsArgumentParser(YunoHostArgumentFormatParser):
+    argument_type = "tags"
+
+    def _prevalidate(self, question):
+        values = question.value
+        for value in values.split(','):
+            question.value = value
+            super()._prevalidate(question)
+        question.value = values
+
 
 
 class PasswordArgumentParser(YunoHostArgumentFormatParser):
@@ -2938,13 +2981,15 @@ class PasswordArgumentParser(YunoHostArgumentFormatParser):
         return question
 
     def _prevalidate(self, question):
-        if any(char in question.value for char in self.forbidden_chars):
-            raise YunohostValidationError(
-                "pattern_password_app", forbidden_chars=self.forbidden_chars
-            )
+        super()._prevalidate(question)
 
-        # If it's an optional argument the value should be empty or strong enough
-        if not question.optional or question.value:
+        if question.value is not None:
+            if any(char in question.value for char in self.forbidden_chars):
+                raise YunohostValidationError(
+                    "pattern_password_app", forbidden_chars=self.forbidden_chars
+                )
+
+            # If it's an optional argument the value should be empty or strong enough
             from yunohost.utils.password import assert_password_is_strong_enough
 
             assert_password_is_strong_enough("user", question.value)
@@ -3098,23 +3143,26 @@ class DisplayTextArgumentParser(YunoHostArgumentFormatParser):
     readonly = True
 
     def parse_question(self, question, user_answers):
-        question = super(DisplayTextArgumentParser, self).parse_question(
+        question_parsed = super().parse_question(
             question, user_answers
         )
 
-        question.optional = True
+        question_parsed.optional = True
+        question_parsed.style = question.get('style', 'info')
 
-        return question
+        return question_parsed
 
     def _format_text_for_user_input_in_cli(self, question):
         text = question.ask['en']
-        if question.type in ['info', 'warning', 'danger']:
+
+        if question.style in ['success', 'info', 'warning', 'danger']:
             color = {
+                'success': 'green',
                 'info': 'cyan',
                 'warning': 'yellow',
                 'danger': 'red'
             }
-            return colorize(m18n.g(question.type), color[question.type]) + f" {text}"
+            return colorize(m18n.g(question.style), color[question.style]) + f" {text}"
         else:
             return text
 
@@ -3137,7 +3185,7 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
         if question.get('accept'):
             question_parsed.accept = question.get('accept').replace(' ', '').split(',')
         else:
-            question.accept = []
+            question_parsed.accept = []
         if msettings.get('interface') == 'api':
             if user_answers.get(question_parsed.name):
                 question_parsed.value = {
@@ -3200,7 +3248,7 @@ ARGUMENTS_TYPE_PARSERS = {
     "string": StringArgumentParser,
     "text": StringArgumentParser,
     "select": StringArgumentParser,
-    "tags": StringArgumentParser,
+    "tags": TagsArgumentParser,
     "email": StringArgumentParser,
     "url": StringArgumentParser,
     "date": StringArgumentParser,
@@ -3214,10 +3262,7 @@ ARGUMENTS_TYPE_PARSERS = {
     "number": NumberArgumentParser,
     "range": NumberArgumentParser,
     "display_text": DisplayTextArgumentParser,
-    "success": DisplayTextArgumentParser,
-    "danger": DisplayTextArgumentParser,
-    "warning": DisplayTextArgumentParser,
-    "info": DisplayTextArgumentParser,
+    "alert": DisplayTextArgumentParser,
     "markdown": DisplayTextArgumentParser,
     "file": FileArgumentParser,
 }

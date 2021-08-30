@@ -96,51 +96,72 @@ ynh_value_set() {
 
 _ynh_panel_get() {
     # From settings
-    local params_sources
-    params_sources=`python3 << EOL
+    local lines
+    lines=`python3 << EOL
 import toml
 from collections import OrderedDict
 with open("../config_panel.toml", "r") as f:
     file_content = f.read()
 loaded_toml = toml.loads(file_content, _dict=OrderedDict)
 
-for panel_name,panel in loaded_toml.items():
-    if isinstance(panel, dict):
-        for section_name, section in panel.items():
-            if isinstance(section, dict):
-                for name, param in section.items():
-                    if isinstance(param, dict) and param.get('type', 'string') not in ['success', 'info', 'warning', 'danger', 'display_text', 'markdown']:
-                        print("%s=%s" % (name, param.get('source', 'settings')))
+for panel_name, panel in loaded_toml.items():
+    if not isinstance(panel, dict): continue
+    for section_name, section in panel.items():
+        if not isinstance(section, dict): continue
+        for name, param in section.items():
+            if not isinstance(param, dict):
+                continue
+            print(';'.join([
+                name, 
+                param.get('type', 'string'),
+                param.get('source', 'settings' if param.get('type', 'string') != 'file' else '')
+                ]))
 EOL
 `
-    for param_source in $params_sources
+    for line in $lines
     do
-        local short_setting="$(echo $param_source | cut -d= -f1)"
+        IFS=';' read short_setting type source <<< "$line"
         local getter="get__${short_setting}"
-        local source="$(echo $param_source | cut -d= -f2)"
         sources[${short_setting}]="$source"
+        types[${short_setting}]="$type"
         file_hash[${short_setting}]=""
-
+        formats[${short_setting}]=""
         # Get value from getter if exists
         if type -t $getter 2>/dev/null | grep -q '^function$' 2>/dev/null; then
             old[$short_setting]="$($getter)"
+            formats[${short_setting}]="yaml"
         
+        elif [[ "$source" == "" ]] ; then
+            old[$short_setting]="YNH_NULL"
+
         # Get value from app settings or from another file
-        elif [[ "$source" == "settings" ]] || [[ "$source" == *":"* ]] ; then
+        elif [[ "$type" == "file" ]] ; then
+            if [[ "$source" == "settings" ]] ; then
+                ynh_die "File '${short_setting}' can't be stored in settings"
+            fi
+            old[$short_setting]="$(ls $(echo $source | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/) 2> /dev/null || echo YNH_NULL)"
+            file_hash[$short_setting]="true"
+        
+        # Get multiline text from settings or from a full file
+        elif [[ "$type" == "text" ]] ; then
+            if [[ "$source" == "settings" ]] ; then
+                old[$short_setting]="$(ynh_app_setting_get $app $short_setting)"
+            elif [[ "$source" == *":"* ]] ; then
+                ynh_die "For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
+            else
+                old[$short_setting]="$(cat $(echo $source | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/) 2> /dev/null || echo YNH_NULL)"
+            fi
+
+        # Get value from a kind of key/value file 
+        else
             if [[ "$source" == "settings" ]] ; then
                 source=":/etc/yunohost/apps/$app/settings.yml"
             fi
-        
             local source_key="$(echo "$source" | cut -d: -f1)"
             source_key=${source_key:-$short_setting}
             local source_file="$(echo "$source" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
             old[$short_setting]="$(ynh_value_get --file="${source_file}" --key="${source_key}")"
         
-        # Specific case for files (all content of the file is the source)
-        else
-            
-            old[$short_setting]="$(ls $(echo $source | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/) 2> /dev/null || echo YNH_NULL)"
-            file_hash[$short_setting]="true"
         fi
     done
     
@@ -152,27 +173,42 @@ _ynh_panel_apply() {
     do
         local setter="set__${short_setting}"
         local source="${sources[$short_setting]}"
+        local type="${types[$short_setting]}"
         if [ "${changed[$short_setting]}" == "true" ] ; then 
             # Apply setter if exists
             if type -t $setter 2>/dev/null | grep -q '^function$' 2>/dev/null; then
                 $setter
 
-            # Copy file in right place 
+            elif [[ "$source" == "" ]] ; then
+                continue
+
+            # Save in a file
+            elif [[ "$type" == "file" ]] ; then
+                if [[ "$source" == "settings" ]] ; then
+                    ynh_die "File '${short_setting}' can't be stored in settings"
+                fi
+                local source_file="$(echo "$source" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
+                cp "${!short_setting}" "$source_file"
+            
+            # Save value in app settings 
             elif [[ "$source" == "settings" ]] ; then
                 ynh_app_setting_set $app $short_setting "${!short_setting}"
             
-            # Get value from a kind of key/value file
-            elif [[ "$source" == *":"* ]]
-            then
+            # Save multiline text in a file
+            elif [[ "$type" == "text" ]] ; then
+                if [[ "$source" == *":"* ]] ; then
+                    ynh_die "For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
+                fi
+                local source_file="$(echo "$source" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
+                echo "${!short_setting}" > "$source_file"
+
+            # Set value into a kind of key/value file
+            else
                 local source_key="$(echo "$source" | cut -d: -f1)"
                 source_key=${source_key:-$short_setting}
                 local source_file="$(echo "$source" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
                 ynh_value_set --file="${source_file}" --key="${source_key}" --value="${!short_setting}"
 
-            # Specific case for files (all content of the file is the source)
-            else
-                local source_file="$(echo "$source" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
-                cp "${!short_setting}" "$source_file"
             fi
         fi
     done
@@ -182,7 +218,13 @@ _ynh_panel_show() {
     for short_setting in "${!old[@]}"
     do
         if [[ "${old[$short_setting]}" != YNH_NULL ]] ; then
-	        ynh_return "${short_setting}: \"${old[$short_setting]}\""
+            if [[ "${formats[$short_setting]}" == "yaml" ]] ; then
+                ynh_return "${short_setting}:"
+                ynh_return "$(echo "${old[$short_setting]}" | sed 's/^/  /g')"
+            else
+                ynh_return "${short_setting}: \"$(echo "${old[$short_setting]}" | sed ':a;N;$!ba;s/\n/\n\n/g')\""
+
+            fi
         fi
     done
 }
@@ -225,7 +267,8 @@ _ynh_panel_validate() {
     done
     if [[ "$is_error" == "true" ]]
     then
-        ynh_die "Nothing has changed"
+        ynh_print_info "Nothing has changed"
+        exit 0
     fi 
     
     # Run validation if something is changed
@@ -241,7 +284,7 @@ _ynh_panel_validate() {
         if [ -n "$result" ]
         then
             local key="YNH_ERROR_${short_setting}"
-            ynh_return "$key: $result"
+            ynh_return "$key: \"$result\""
             is_error=true
         fi
     done
@@ -274,6 +317,9 @@ ynh_panel_run() {
     declare -Ag changed=()
     declare -Ag file_hash=()
     declare -Ag sources=()
+    declare -Ag types=()
+    declare -Ag formats=()
+    
     case $1 in
         show)
             ynh_panel_get
@@ -281,12 +327,12 @@ ynh_panel_run() {
             ;;
         apply) 
             max_progression=4
-            ynh_script_progression --message="Reading config panel description and current configuration..." --weight=1
+            ynh_script_progression --message="Reading config panel description and current configuration..."
             ynh_panel_get
             
             ynh_panel_validate
             
-            ynh_script_progression --message="Applying the new configuration..." --weight=1
+            ynh_script_progression --message="Applying the new configuration..."
             ynh_panel_apply
             ynh_script_progression --message="Configuration of $app completed" --last
             ;;

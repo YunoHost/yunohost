@@ -838,8 +838,8 @@ app:
                   arguments:
                     app:
                         help: App name
-                    panel:
-                        help: Select a specific panel
+                    key:
+                        help: Select a specific panel, section or a question
                         nargs: '?'
                     -f:
                         full: --full
