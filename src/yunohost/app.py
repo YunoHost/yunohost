@@ -35,7 +35,6 @@ import glob
 import urllib.parse
 import base64
 import tempfile
-import readline
 from collections import OrderedDict
 
 from moulinette.interfaces.cli import colorize
@@ -2865,20 +2864,18 @@ class YunoHostArgumentFormatParser(object):
                     Moulinette.display(text_for_user_input_in_cli)
 
                 elif question.value is None:
-                    prefill = None
+                    prefill = ""
                     if question.current_value is not None:
                         prefill = question.current_value
                     elif question.default is not None:
                         prefill = question.default
-                    readline.set_startup_hook(lambda: readline.insert_text(prefill))
-                    try:
-                        question.value = Moulinette.prompt(
-                            message=text_for_user_input_in_cli,
-                            is_password=self.hide_user_input_in_prompt,
-                            confirm=self.hide_user_input_in_prompt
-                        )
-                    finally:
-                        readline.set_startup_hook()
+                    question.value = Moulinette.prompt(
+                        message=text_for_user_input_in_cli,
+                        is_password=self.hide_user_input_in_prompt,
+                        confirm=self.hide_user_input_in_prompt,
+                        prefill=prefill,
+                        is_multiline=(question.type == "text")
+                    )
 
 
             # Apply default value
