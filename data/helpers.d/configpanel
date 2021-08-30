@@ -75,22 +75,21 @@ ynh_value_set() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    local var_part='^[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*'
+    local var_part='[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*'
     
-    local crazy_value="$(grep -i -o -P "${var_part}\K.*(?=[ \t,\n;]*\$)" ${file} | head -n1)"
-    local var_part="^[ \t]*(\$?\w*\[)?[ \t]*[\"']?${key}[\"']?[ \t]*\]?[ \t]*[:=]>?[ \t]*"
+    local crazy_value="$(grep -i -o -P "^${var_part}\K.*(?=[ \t,\n;]*\$)" ${file} | head -n1)"
     local first_char="${crazy_value:0:1}"
     if [[ "$first_char" == '"' ]] ; then
-        value="$(echo "$value" | sed 's/"/\\"/g')"
-        sed -ri "s%(${var_part}\")[^\"]*(\"[ \t\n,;]*)\$%\1${value}\2%i" ${file}
+        value="$(echo "$value" | sed 's/"/\"/g')"
+        sed -ri 's%^('"${var_part}"'")[^"]*("[ \t;,]*)$%\1'"${value}"'\3%i' ${file}
     elif [[ "$first_char" == "'" ]] ; then
-        value="$(echo "$value" | sed "s/'/\\\\'/g")"
-        sed -ri "s%(${var_part}')[^']*('[ \t\n,;]*)\$%\1${value}\2%i" ${file}
+        value="$(echo "$value" | sed "s/'/"'\'"'/g")"
+        sed -ri "s%^(${var_part}')[^']*('"'[ \t,;]*)$%\1'"${value}"'\3%i' ${file}
     else
         if [[ "$value" == *"'"* ]] || [[ "$value" == *'"'* ]] ; then
-            value="\"$(echo "$value" | sed 's/"/\\"/g')\""
+            value='\"'"$(echo "$value" | sed 's/"/\"/g')"'\"'
         fi
-        sed -ri "s%(${var_part}')[^']*('[ \t\n,;]*)\$%\1${value}\2%i" ${file}
+        sed -ri "s%^(${var_part}).*"'$%\1'"${value}"'%i' ${file}
     fi
 }
 
@@ -222,7 +221,7 @@ _ynh_panel_show() {
                 ynh_return "${short_setting}:"
                 ynh_return "$(echo "${old[$short_setting]}" | sed 's/^/  /g')"
             else
-                ynh_return "${short_setting}: \"$(echo "${old[$short_setting]}" | sed ':a;N;$!ba;s/\n/\n\n/g')\""
+                ynh_return "${short_setting}: "'"'"$(echo "${old[$short_setting]}" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\n\n/g')"'"'
 
             fi
         fi
