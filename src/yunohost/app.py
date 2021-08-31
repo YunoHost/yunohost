@@ -2206,9 +2206,11 @@ def _get_app_config_panel(app_id, filter_key=''):
                     "id": section_key,
                     "name": section_value.get("name", ""),
                     "optional": section_value.get("optional", True),
-                    "services": value.get("services", []),
+                    "services": section_value.get("services", []),
                     "options": [],
                 }
+                if section_value.get('visibleIf'):
+                    section['visibleIf'] = section_value.get('visibleIf')
 
                 options = [
                     k_v
@@ -2952,6 +2954,11 @@ class StringArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "string"
     default_value = ""
 
+    def _prevalidate(self, question):
+        super()._prevalidate(question)
+        raise YunohostValidationError(
+            "app_argument_invalid", field=question.name, error=m18n.n("invalid_number2")
+        )
 
 class TagsArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "tags"
@@ -3065,7 +3072,7 @@ class DomainArgumentParser(YunoHostArgumentFormatParser):
 
     def _raise_invalid_answer(self, question):
         raise YunohostValidationError(
-            "app_argument_invalid", name=question.name, error=m18n.n("domain_unknown")
+            "app_argument_invalid", field=question.name, error=m18n.n("domain_unknown")
         )
 
 
@@ -3092,7 +3099,7 @@ class UserArgumentParser(YunoHostArgumentFormatParser):
     def _raise_invalid_answer(self, question):
         raise YunohostValidationError(
             "app_argument_invalid",
-            name=question.name,
+            field=question.name,
             error=m18n.n("user_unknown", user=question.value),
         )
 
@@ -3116,17 +3123,17 @@ class NumberArgumentParser(YunoHostArgumentFormatParser):
         super()._prevalidate(question)
         if not isinstance(question.value, int) and not (isinstance(question.value, str) and question.value.isdigit()):
             raise YunohostValidationError(
-                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
+                "app_argument_invalid", field=question.name, error=m18n.n("invalid_number")
             )
 
         if question.min is not None and int(question.value) < question.min:
             raise YunohostValidationError(
-                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
+                "app_argument_invalid", field=question.name, error=m18n.n("invalid_number")
             )
 
         if question.max is not None and int(question.value) > question.max:
             raise YunohostValidationError(
-                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
+                "app_argument_invalid", field=question.name, error=m18n.n("invalid_number")
             )
 
     def _post_parse_value(self, question):
@@ -3137,7 +3144,7 @@ class NumberArgumentParser(YunoHostArgumentFormatParser):
             return int(question.value)
 
         raise YunohostValidationError(
-            "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
+            "app_argument_invalid", field=question.name, error=m18n.n("invalid_number")
         )
 
 
@@ -3205,7 +3212,7 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
         super()._prevalidate(question)
         if isinstance(question.value, str) and question.value and not os.path.exists(question.value):
             raise YunohostValidationError(
-                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number1")
+                "app_argument_invalid", field=question.name, error=m18n.n("invalid_number1")
             )
         if question.value in [None, ''] or not question.accept:
             return
@@ -3213,7 +3220,7 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
         filename = question.value if isinstance(question.value, str) else question.value['filename']
         if '.' not in filename or '.' + filename.split('.')[-1] not in question.accept:
             raise YunohostValidationError(
-                "app_argument_invalid", name=question.name, error=m18n.n("invalid_number2")
+                "app_argument_invalid", field=question.name, error=m18n.n("invalid_number2")
             )
 
 
