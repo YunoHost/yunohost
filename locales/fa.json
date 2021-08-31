@@ -1,4 +1,21 @@
 {
     "action_invalid": "اقدام نامعتبر '{action}'",
-    "aborting": "رها کردن."
+    "aborting": "رها کردن.",
+    "app_change_url_failed_nginx_reload": "NGINX بارگیری نشد. در اینجا خروجی 'nginx -t' است:\n{nginx_errors}",
+    "app_argument_required": "استدلال '{name}' الزامی است",
+    "app_argument_password_no_default": "خطا هنگام تجزیه گذرواژه '{name}': به دلایل امنیتی استدلال رمز عبور نمی تواند مقدار پیش فرض داشته باشد",
+    "app_argument_invalid": "یک مقدار معتبر انتخاب کنید برای استدلال '{name}':{error}",
+    "app_argument_choice_invalid": "برای آرگومان '{name}' از یکی از این گزینه ها '{choices}' استفاده کنید",
+    "app_already_up_to_date": "{app} در حال حاضر به روز است",
+    "app_already_installed_cant_change_url": "این برنامه قبلاً نصب شده است. URL فقط با این عملکرد قابل تغییر نیست. در صورت موجود بودن برنامه `app changeurl` را بررسی کنید.",
+    "app_already_installed": "{app} قبلاً نصب شده است",
+    "app_action_broke_system": "این اقدام به نظر می رسد سرویس های مهمی را خراب کرده است: {services}",
+    "app_action_cannot_be_ran_because_required_services_down": "برای اجرای این عملیات سرویس هایی که مورد نیازاند و باید اجرا شوند: {services}. سعی کنید آنها را مجدداً راه اندازی کنید (و علت خرابی احتمالی آنها را بررسی کنید).",
+    "already_up_to_date": "کاری برای انجام دادن نیست. همه چیز در حال حاضر به روز است.",
+    "admin_password_too_long": "لطفاً گذرواژه ای کوتاهتر از 127 کاراکتر انتخاب کنید",
+    "admin_password_changed": "رمز مدیریت تغییر کرد",
+    "admin_password_change_failed": "تغییر رمز امکان پذیر نیست",
+    "admin_password": "رمز عبور مدیریت",
+    "additional_urls_already_removed": "نشانی اینترنتی اضافی '{url}' قبلاً در نشانی اینترنتی اضافی برای اجازه '{permission}'حذف شده است",
+    "additional_urls_already_added": "نشانی اینترنتی اضافی '{url}' قبلاً در نشانی اینترنتی اضافی برای اجازه '{permission}' اضافه شده است"
 }
