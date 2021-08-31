@@ -12,6 +12,7 @@ from yunohost.utils.error import YunohostError
 
 logger = logging.getLogger("yunohost.authenticators.ldap_admin")
 
+
 class Authenticator(BaseAuthenticator):
 
     name = "ldap_admin"
@@ -57,7 +58,10 @@ class Authenticator(BaseAuthenticator):
             raise
         else:
             if who != self.admindn:
-                raise YunohostError(f"Not logged with the appropriate identity ? Found {who}, expected {self.admindn} !?", raw_msg=True)
+                raise YunohostError(
+                    f"Not logged with the appropriate identity ? Found {who}, expected {self.admindn} !?",
+                    raw_msg=True,
+                )
         finally:
             # Free the connection, we don't really need it to keep it open as the point is only to check authentication...
             if con:

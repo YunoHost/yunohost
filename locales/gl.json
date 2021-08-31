@@ -449,7 +449,7 @@
     "migration_0019_slapd_config_will_be_overwritten": "Semella que editaches manualmente a configuración slapd. Para esta migración crítica YunoHost precisa forzar a actualización da configuración slapd. Os ficheiros orixinais van ser copiados en {conf_backup_folder}.",
     "migration_0019_add_new_attributes_in_ldap": "Engadir novos atributos para os permisos na base de datos LDAP",
     "migration_0018_failed_to_reset_legacy_rules": "Fallou o restablecemento das regras antigas de iptables: {error}",
-    "migration_0018_failed_to_migrate_iptables_rules": "Fallou a migración das regras antigas de iptables a nftables: {erro}",
+    "migration_0018_failed_to_migrate_iptables_rules": "Fallou a migración das regras antigas de iptables a nftables: {error}",
     "migration_0017_not_enough_space": "Crea espazo suficiente en {path} para executar a migración.",
     "migration_0017_postgresql_11_not_installed": "PostgreSQL 9.6 está instado, pero non postgresql 11? Algo raro debeu acontecer no teu sistema :(...",
     "migration_0017_postgresql_96_not_installed": "PostgreSQL non está instalado no teu sistema. Nada que facer.",
