@@ -3190,20 +3190,24 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
         else:
             question_parsed.accept = []
         if Moulinette.interface.type== 'api':
-            if user_answers.get(question_parsed.name):
+            if user_answers.get(f"{question_parsed.name}[name]"):
                 question_parsed.value = {
                     'content': question_parsed.value,
                     'filename': user_answers.get(f"{question_parsed.name}[name]", question_parsed.name),
                 }
+        # If path file are the same
+        if question_parsed.value and str(question_parsed.value) == question_parsed.current_value:
+            question_parsed.value = None
+
         return question_parsed
 
     def _prevalidate(self, question):
         super()._prevalidate(question)
-        if isinstance(question.value, str) and not os.path.exists(question.value):
+        if isinstance(question.value, str) and question.value and not os.path.exists(question.value):
             raise YunohostValidationError(
                 "app_argument_invalid", name=question.name, error=m18n.n("invalid_number1")
             )
-        if question.value is None or not question.accept:
+        if question.value in [None, ''] or not question.accept:
             return
 
         filename = question.value if isinstance(question.value, str) else question.value['filename']
