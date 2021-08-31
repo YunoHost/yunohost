@@ -1,1 +1,4 @@
-{}
+{
+    "action_invalid": "اقدام نامعتبر '{action}'",
+    "aborting": "رها کردن."
+}
