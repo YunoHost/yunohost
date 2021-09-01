@@ -263,5 +263,9 @@
     "diagnosis_ram_ok": "این سیستم هنوز {available} ({available_percent}٪) حافظه در دسترس دارد از مجموع {total}.",
     "diagnosis_ram_low": "این سیستم فقط {available} ({available_percent}٪) حافظه در دسترس دارد! (از {total}). مراقب باشید.",
     "diagnosis_ram_verylow": "این سیستم فقط {available} ({available_percent}٪) حافظه در دسترس دارد! (از {total})",
-    "diagnosis_diskusage_ok": "‏ذخیره سازی <code>{mountpoint}</code> (روی دستگاه <code>{device}</code>) هنوز {free} فضا در دسترس دارد ({free_percent}%) فضای باقی مانده (از {total})!"
+    "diagnosis_diskusage_ok": "‏ذخیره سازی <code>{mountpoint}</code> (روی دستگاه <code>{device}</code>) هنوز {free} فضا در دسترس دارد ({free_percent}%) فضای باقی مانده (از {total})!",
+    "diagnosis_http_nginx_conf_not_up_to_date": "به نظر می رسد که پیکربندی nginx این دامنه به صورت دستی تغییر کرده است و از تشخیص YunoHost در صورت دسترسی به HTTP جلوگیری می کند.",
+    "diagnosis_http_partially_unreachable": "به نظر می رسد که دامنه {domain} از طریق HTTP از خارج از شبکه محلی در IPv{failed} غیرقابل دسترسی است، اگرچه در IPv{passed} کار می کند.",
+    "diagnosis_http_unreachable": "به نظر می رسد دامنه {domain} از خارج از شبکه محلی از طریق HTTP قابل دسترسی نیست.",
+    "diagnosis_http_bad_status_code": "به نظر می رسد دستگاه دیگری (شاید روتر اینترنتی شما) به جای سرور شما پاسخ داده است.<br>1. شایع ترین علت برای این مشکل ، پورت 80 است (و 443) <a href='https://yunohost.org/isp_box_config'>به درستی به سرور شما ارسال نمی شوند</a>.<br>2. در تنظیمات پیچیده تر: مطمئن شوید که هیچ فایروال یا پروکسی معکوسی تداخل نداشته باشد."
 }
