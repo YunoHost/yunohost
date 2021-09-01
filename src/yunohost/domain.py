@@ -550,6 +550,6 @@ def domain_registrar_info(domain):
     return yunohost.dns.domain_registrar_info(domain)
 
 
-def domain_registrar_push(domain):
+def domain_registrar_push(domain, dry_run):
     import yunohost.dns
-    return yunohost.dns.domain_registrar_push(domain)
+    return yunohost.dns.domain_registrar_push(domain, dry_run)

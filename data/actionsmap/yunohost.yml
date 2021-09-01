@@ -612,6 +612,10 @@ domain:
                             help: Domain name to push DNS conf for
                             extra:
                                 pattern: *pattern_domain
+                        -d:
+                            full: --dry-run
+                            help: Only display what's to be pushed
+                            action: store_true
 
 
 #############################

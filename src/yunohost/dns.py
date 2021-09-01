@@ -421,6 +421,8 @@ def domain_registrar_catalog():
 
 def domain_registrar_set(domain, registrar, args):
 
+    _assert_domain_exists(domain)
+
     registrars = read_yaml(REGISTRAR_LIST_PATH)
     if registrar not in registrars.keys():
         raise YunohostValidationError("domain_registrar_unknown", registrar=registrar)
@@ -450,7 +452,7 @@ def domain_registrar_set(domain, registrar, args):
 
 
 @is_unit_operation()
-def domain_registrar_push(operation_logger, domain):
+def domain_registrar_push(operation_logger, domain, dry_run=False):
     """
     Send DNS records to the previously-configured registrar of the domain.
     """
@@ -461,7 +463,7 @@ def domain_registrar_push(operation_logger, domain):
     _assert_domain_exists(domain)
 
     dns_zone = _get_domain_settings(domain)["dns_zone"]
-    registrar_settings = _get_registrar_settingss(dns_zone)
+    registrar_settings = _get_registrar_settings(dns_zone)
 
     if not registrar_settings:
         raise YunohostValidationError("registrar_is_not_set", domain=domain)
@@ -470,7 +472,7 @@ def domain_registrar_push(operation_logger, domain):
     dns_conf = _build_dns_conf(domain)
 
     # Flatten the DNS conf
-    dns_conf = [record for record in records_for_category for records_for_category in dns_conf.values()]
+    dns_conf = [record for records_for_category in dns_conf.values() for record in records_for_category]
 
     # FIXME Lexicon does not support CAA records
     # See https://github.com/AnalogJ/lexicon/issues/282 and https://github.com/AnalogJ/lexicon/pull/371
@@ -479,8 +481,16 @@ def domain_registrar_push(operation_logger, domain):
     dns_conf = [record for record in dns_conf if record["type"] != "CAA"]
 
     # We need absolute names?  FIXME: should we add a trailing dot needed here ?
+    # Seems related to the fact that when fetching current records, they'll contain '.domain.tld' instead of @
+    # and we want to check if it already exists or not (c.f. create/update)
     for record in dns_conf:
-        record["name"] = f"{record['name']}.{domain}"
+        if record["name"] == "@":
+            record["name"] = f".{domain}"
+        else:
+            record["name"] = f"{record['name']}.{domain}"
+
+        if record["type"] == "CNAME" and record["value"] == "@":
+            record["value"] = domain + "."
 
     # Construct the base data structure to use lexicon's API.
     base_config = {
@@ -492,12 +502,13 @@ def domain_registrar_push(operation_logger, domain):
     operation_logger.start()
 
     # Fetch all types present in the generated records
-    current_remote_records = {}
+    current_remote_records = []
 
     # Get unique types present in the generated records
     types = {record["type"] for record in dns_conf}
 
     for key in types:
+        print("fetcing type: " + key)
         fetch_records_for_type = {
             "action": "list",
             "type": key,
@@ -507,13 +518,12 @@ def domain_registrar_push(operation_logger, domain):
             .with_dict(dict_object=base_config)
             .with_dict(dict_object=fetch_records_for_type)
         )
-        current_remote_records[key] = LexiconClient(query).execute()
+        current_remote_records.extend(LexiconClient(query).execute())
 
-    for key in types:
-        for current_remote_record in current_remote_records[key]:
-            logger.debug(f"current_remote_record: {current_remote_record}")
-    for local_record in dns_conf:
-        print("local_record:", local_record)
+    changes = {}
+
+    if dry_run:
+        return {"current_records": current_remote_records, "dns_conf": dns_conf, "changes": changes}
 
     # Push the records
     for record in dns_conf:
@@ -522,7 +532,7 @@ def domain_registrar_push(operation_logger, domain):
         # TODO do not push if local and distant records are exactly the same ?
         type_and_name = (record["type"], record["name"])
         already_exists = any((r["type"], r["name"]) == type_and_name
-                             for r in current_remote_records[record["type"]])
+                             for r in current_remote_records)
 
         # Finally, push the new record or update the existing one
         record_to_push = {
@@ -530,22 +540,35 @@ def domain_registrar_push(operation_logger, domain):
             "type": record["type"],
             "name": record["name"],
             "content": record["value"],
-            # FIXME Removed TTL, because it doesn't work with Gandi.
-            # See https://github.com/AnalogJ/lexicon/issues/726 (similar issue)
-            # But I think there is another issue with Gandi. Or I'm misusing the API...
-            # "ttl": record["ttl"],
+            "ttl": record["ttl"],
         }
 
-        print("pushed_record:", record_to_push, "→", end=" ")
+        # FIXME Removed TTL, because it doesn't work with Gandi.
+        # See https://github.com/AnalogJ/lexicon/issues/726 (similar issue)
+        # But I think there is another issue with Gandi. Or I'm misusing the API...
+        if base_config["provider_name"] == "gandi":
+            del record_to_push["ttle"]
 
+        print("pushed_record:", record_to_push)
+
+
+        # FIXME FIXME FIXME: if a matching record already exists multiple time,
+        # the current code crashes (at least on OVH) ... we need to provide a specific identifier to update
         query = (
-            ConfigResolver()
+            LexiconConfigResolver()
             .with_dict(dict_object=base_config)
             .with_dict(dict_object=record_to_push)
         )
+
+        print(query)
+        print(query.__dict__)
         results = LexiconClient(query).execute()
         print("results:", results)
         # print("Failed" if results == False else "Ok")
+
+        # FIXME FIXME FIXME : if one create / update crash, it shouldn't block everything
+
+        # FIXME : is it possible to push multiple create/update request at once ?
 
 
 # def domain_config_fetch(domain, key, value):
