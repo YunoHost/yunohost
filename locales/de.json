@@ -378,7 +378,7 @@
     "diagnosis_mail_ehlo_wrong_details": "Die vom Remote-Diagnose-Server per IPv{ipversion} empfangene EHLO weicht von der Domäne Ihres Servers ab. <br>Empfangene EHLO: <code>{wrong_ehlo}</code><br>Erwartet: <code>{right_ehlo}</code> <br> Die geläufigste Ursache für dieses Problem ist, dass der Port 25 <a href='https://yunohost.org/isp_box_config'> nicht korrekt auf Ihren Server weitergeleitet wird</a>. Sie können sich zusätzlich auch versichern, dass keine Firewall oder Reverse-Proxy interferiert.",
     "diagnosis_mail_ehlo_bad_answer_details": "Das könnte daran liegen, dass anstelle Ihres Servers eine andere Maschine antwortet.",
     "ask_user_domain": "Domäne, welche für die E-Mail-Adresse und den XMPP-Account des Benutzers verwendet werden soll",
-    "app_manifest_install_ask_is_public": "Soll diese Applikation für anonyme Benutzer sichtbar sein?",
+    "app_manifest_install_ask_is_public": "Soll diese Applikation für anonyme Benutzer:innen sichtbar sein?",
     "app_manifest_install_ask_admin": "Wählen Sie einen Administrator für diese Applikation",
     "app_manifest_install_ask_path": "Wählen Sie den Pfad, in welchem die Applikation installiert werden soll",
     "diagnosis_mail_blacklist_listed_by": "Ihre IP-Adresse oder Domäne <code>{item}</code> ist auf der Blacklist auf {blacklist_name}",
