@@ -226,7 +226,6 @@
     "service_description_fail2ban": "防止来自互联网的暴力攻击和其他类型的攻击",
     "service_description_dovecot": "允许电子邮件客户端访问/获取电子邮件（通过IMAP和POP3）",
     "service_description_dnsmasq": "处理域名解析（DNS）",
-    "service_description_avahi-daemon": "允许您使用本地网络中的“ yunohost.local”访问服务器",
     "service_started": "服务 '{service}' 已启动",
     "service_start_failed": "无法启动服务 '{service}'\n\n最近的服务日志:{logs}",
     "service_reloaded_or_restarted": "服务'{service}'已重新加载或重新启动",

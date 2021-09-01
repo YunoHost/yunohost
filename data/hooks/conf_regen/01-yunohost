@@ -2,8 +2,6 @@
 
 set -e
 
-services_path="/etc/yunohost/services.yml"
-
 do_init_regen() {
   if [[ $EUID -ne 0 ]]; then
     echo "You must be root to run this script" 1>&2
@@ -19,8 +17,6 @@ do_init_regen() {
     || echo "yunohost.org" > /etc/yunohost/current_host
 
   # copy default services and firewall
-  [[ -f $services_path ]] \
-    || cp services.yml "$services_path"
   [[ -f /etc/yunohost/firewall.yml ]] \
     || cp firewall.yml /etc/yunohost/firewall.yml
 
@@ -49,6 +45,9 @@ do_init_regen() {
   chmod 644 /etc/ssowat/conf.json.persistent
   chown root:root /etc/ssowat/conf.json.persistent
 
+  # Empty service conf
+  touch /etc/yunohost/services.yml
+
   mkdir -p /var/cache/yunohost/repo
   chown root:root /var/cache/yunohost
   chmod 700 /var/cache/yunohost
@@ -59,25 +58,9 @@ do_pre_regen() {
 
   cd /usr/share/yunohost/templates/yunohost
 
-  # update services.yml
-  if [[ -f $services_path ]]; then
-      tmp_services_path="${services_path}-tmp"
-      new_services_path="${services_path}-new"
-      cp "$services_path" "$tmp_services_path"
-      _update_services "$new_services_path" || {
-        mv "$tmp_services_path" "$services_path"
-        exit 1
-      }
-      if [[ -f $new_services_path ]]; then
-          # replace services.yml with new one
-          mv "$new_services_path" "$services_path"
-          mv "$tmp_services_path" "${services_path}-old"
-      else
-          rm -f "$tmp_services_path"
-      fi
-  else
-      cp services.yml /etc/yunohost/services.yml
-  fi
+  # Legacy code that can be removed once on bullseye
+  touch /etc/yunohost/services.yml
+  yunohost tools shell -c "from yunohost.service import _get_services, _save_services; _save_services(_get_services())"
 
   mkdir -p $pending_dir/etc/cron.d/
   mkdir -p $pending_dir/etc/cron.daily/
@@ -139,6 +122,14 @@ HandleLidSwitch=ignore
 HandleLidSwitchDocked=ignore
 HandleLidSwitchExternalPower=ignore
 EOF
+  
+  mkdir -p ${pending_dir}/etc/systemd/
+  if [[ "$(yunohost settings get 'security.experimental.enabled')" == "True" ]]
+  then
+      cp proc-hidepid.service ${pending_dir}/etc/systemd/system/proc-hidepid.service
+  else
+      touch ${pending_dir}/etc/systemd/system/proc-hidepid.service
+  fi
 
 }
 
@@ -199,58 +190,13 @@ do_post_regen() {
   # Propagates changes in systemd service config overrides
   [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || { systemctl daemon-reload; systemctl restart ntp; }
   [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || systemctl daemon-reload
-}
-
-_update_services() {
-  python3 - << EOF
-import yaml
-
-
-with open('services.yml') as f:
-    new_services = yaml.safe_load(f)
-
-with open('/etc/yunohost/services.yml') as f:
-    services = yaml.safe_load(f) or {}
-
-updated = False
-
-
-for service, conf in new_services.items():
-    # remove service with empty conf
-    if conf is None:
-        if service in services:
-            print("removing '{0}' from services".format(service))
-            del services[service]
-            updated = True
-
-    # add new service
-    elif not services.get(service, None):
-        print("adding '{0}' to services".format(service))
-        services[service] = conf
-        updated = True
-
-    # update service conf
-    else:
-        conffiles = services[service].pop('conffiles', {})
-
-        # status need to be removed
-        if "status" not in conf and "status" in services[service]:
-            print("update '{0}' service status access".format(service))
-            del services[service]["status"]
-            updated = True
-
-        if services[service] != conf:
-            print("update '{0}' service".format(service))
-            services[service].update(conf)
-            updated = True
-
-        if conffiles:
-            services[service]['conffiles'] = conffiles
-
-if updated:
-    with open('/etc/yunohost/services.yml-new', 'w') as f:
-        yaml.safe_dump(services, f, default_flow_style=False)
-EOF
+  [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] || systemctl daemon-reload
+  if [[ "$regen_conf_files" =~ "proc-hidepid.service" ]]
+  then
+    systemctl daemon-reload
+    action=$([[ -e /etc/systemd/system/proc-hidepid.service ]] && echo 'enable' || echo 'disable')
+    systemctl $action proc-hidepid --quiet --now
+  fi
 }
 
 FORCE=${2:-0}

@@ -33,7 +33,7 @@ import string
 import subprocess
 import copy
 
-from moulinette import msignals, msettings, m18n
+from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
 
@@ -110,18 +110,18 @@ def user_create(
 
     # Validate domain used for email address/xmpp account
     if domain is None:
-        if msettings.get("interface") == "api":
+        if Moulinette.interface.type == "api":
             raise YunohostValidationError(
                 "Invalid usage, you should specify a domain argument"
             )
         else:
             # On affiche les differents domaines possibles
-            msignals.display(m18n.n("domains_available"))
+            Moulinette.display(m18n.n("domains_available"))
             for domain in domain_list()["domains"]:
-                msignals.display("- {}".format(domain))
+                Moulinette.display("- {}".format(domain))
 
             maindomain = _get_maindomain()
-            domain = msignals.prompt(
+            domain = Moulinette.prompt(
                 m18n.n("ask_user_domain") + " (default: %s)" % maindomain
             )
             if not domain:
@@ -372,8 +372,8 @@ def user_update(
         # when in the cli interface if the option to change the password is called
         # without a specified value, change_password will be set to the const 0.
         # In this case we prompt for the new password.
-        if msettings.get("interface") == "cli" and not change_password:
-            change_password = msignals.prompt(m18n.n("ask_password"), True, True)
+        if Moulinette.interface.type == "cli" and not change_password:
+            change_password = Moulinette.prompt(m18n.n("ask_password"), True, True)
         # Ensure sufficiently complex password
         assert_password_is_strong_enough("user", change_password)
 

@@ -30,7 +30,7 @@ import time
 from importlib import import_module
 from packaging import version
 
-from moulinette import msignals, m18n
+from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml
@@ -665,7 +665,7 @@ def tools_shutdown(operation_logger, force=False):
     if not shutdown:
         try:
             # Ask confirmation for server shutdown
-            i = msignals.prompt(m18n.n("server_shutdown_confirm", answers="y/N"))
+            i = Moulinette.prompt(m18n.n("server_shutdown_confirm", answers="y/N"))
         except NotImplemented:
             pass
         else:
@@ -684,7 +684,7 @@ def tools_reboot(operation_logger, force=False):
     if not reboot:
         try:
             # Ask confirmation for restoring
-            i = msignals.prompt(m18n.n("server_reboot_confirm", answers="y/N"))
+            i = Moulinette.prompt(m18n.n("server_reboot_confirm", answers="y/N"))
         except NotImplemented:
             pass
         else:
