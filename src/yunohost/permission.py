@@ -860,10 +860,8 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
         re:^/api/.*|/scripts/api.js$
     """
 
-    from yunohost.domain import domain_list
+    from yunohost.domain import _assert_domain_exists
     from yunohost.app import _assert_no_conflicting_apps
-
-    domains = domain_list()["domains"]
 
     #
     # Regexes
@@ -896,8 +894,8 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
         domain, path = url[3:].split("/", 1)
         path = "/" + path
 
-        if domain.replace("%", "").replace("\\", "") not in domains:
-            raise YunohostValidationError("domain_name_unknown", domain=domain)
+        domain_with_no_regex = domain.replace("%", "").replace("\\", "")
+        _assert_domain_exists(domain_with_no_regex)
 
         validate_regex(path)
 
@@ -931,8 +929,7 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
         domain, path = split_domain_path(url)
         sanitized_url = domain + path
 
-        if domain not in domains:
-            raise YunohostValidationError("domain_name_unknown", domain=domain)
+        _assert_domain_exists(domain)
 
     _assert_no_conflicting_apps(domain, path, ignore_app=app)
 

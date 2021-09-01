@@ -1340,7 +1340,7 @@ def app_makedefault(operation_logger, app, domain=None):
         domain
 
     """
-    from yunohost.domain import domain_list
+    from yunohost.domain import _assert_domain_exists
 
     app_settings = _get_app_settings(app)
     app_domain = app_settings["domain"]
@@ -1348,9 +1348,10 @@ def app_makedefault(operation_logger, app, domain=None):
 
     if domain is None:
         domain = app_domain
-        operation_logger.related_to.append(("domain", domain))
-    elif domain not in domain_list()["domains"]:
-        raise YunohostValidationError("domain_name_unknown", domain=domain)
+
+    _assert_domain_exists(domain)
+
+    operation_logger.related_to.append(("domain", domain))
 
     if "/" in app_map(raw=True)[domain]:
         raise YunohostValidationError(
@@ -3078,13 +3079,12 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
         ignore_app -- An optional app id to ignore (c.f. the change_url usecase)
     """
 
-    from yunohost.domain import domain_list
+    from yunohost.domain import _assert_domain_exists
 
     domain, path = _normalize_domain_path(domain, path)
 
     # Abort if domain is unknown
-    if domain not in domain_list()["domains"]:
-        raise YunohostValidationError("domain_name_unknown", domain=domain)
+    _assert_domain_exists(domain)
 
     # Fetch apps map
     apps_map = app_map(raw=True)

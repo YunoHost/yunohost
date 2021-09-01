@@ -30,7 +30,7 @@ from moulinette import m18n, Moulinette
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import mkdir, read_yaml, write_to_yaml
 
-from yunohost.domain import domain_list, _get_domain_settings
+from yunohost.domain import domain_list, _get_domain_settings, _assert_domain_exists
 from yunohost.app import _parse_args_in_yunohost_format
 from yunohost.utils.error import YunohostValidationError
 from yunohost.utils.network import get_public_ip
@@ -52,8 +52,7 @@ def domain_dns_conf(domain):
 
     """
 
-    if domain not in domain_list()["domains"]:
-        raise YunohostValidationError("domain_name_unknown", domain=domain)
+    _assert_domain_exists(domain)
 
     dns_conf = _build_dns_conf(domain)
 
@@ -94,13 +93,10 @@ def domain_dns_conf(domain):
 
 def _list_subdomains_of(parent_domain):
 
-    domain_list_ = domain_list()["domains"]
-
-    if parent_domain not in domain_list_:
-        raise YunohostError("domain_name_unknown", domain=domain)
+    _assert_domain_exists(parent_domain)
 
     out = []
-    for domain in domain_list_:
+    for domain in domain_list()["domains"]:
         if domain.endswith(f".{parent_domain}"):
             out.append(domain)
 
@@ -462,8 +458,7 @@ def domain_registrar_push(operation_logger, domain):
     from lexicon.client import Client as LexiconClient
     from lexicon.config import ConfigResolver as LexiconConfigResolver
 
-    if domain not in domain_list()["domains"]:
-        raise YunohostValidationError("domain_name_unknown", domain=domain)
+    _assert_domain_exists(domain)
 
     dns_zone = _get_domain_settings(domain)["dns_zone"]
     registrar_settings = _get_registrar_settingss(dns_zone)

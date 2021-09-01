@@ -96,6 +96,11 @@ def domain_list(exclude_subdomains=False):
     return domain_list_cache
 
 
+def _assert_domain_exists(domain):
+    if domain not in domain_list()["domains"]:
+        raise YunohostValidationError("domain_name_unknown", domain=domain)
+
+
 @is_unit_operation()
 def domain_add(operation_logger, domain, dyndns=False):
     """
@@ -216,8 +221,8 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     # the 'force' here is related to the exception happening in domain_add ...
     # we don't want to check the domain exists because the ldap add may have
     # failed
-    if not force and domain not in domain_list()["domains"]:
-        raise YunohostValidationError("domain_name_unknown", domain=domain)
+    if not force:
+        _assert_domain_exists(domain)
 
     # Check domain is not the main domain
     if domain == _get_maindomain():
@@ -339,8 +344,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
         return {"current_main_domain": _get_maindomain()}
 
     # Check domain exists
-    if new_main_domain not in domain_list()["domains"]:
-        raise YunohostValidationError("domain_name_unknown", domain=new_main_domain)
+    _assert_domain_exists(new_main_domain)
 
     operation_logger.related_to.append(("domain", new_main_domain))
     operation_logger.start()
@@ -399,12 +403,7 @@ def _get_domain_settings(domain):
     Retrieve entries in /etc/yunohost/domains/[domain].yml
     And set default values if needed
     """
-    # Retrieve actual domain list
-    known_domains = domain_list()["domains"]
-    maindomain = domain_list()["main"]
-
-    if domain not in known_domains:
-        raise YunohostValidationError("domain_name_unknown", domain=domain)
+    _assert_domain_exists(domain)
 
     # Retrieve entries in the YAML
     filepath = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
@@ -485,8 +484,8 @@ def _set_domain_settings(domain, domain_settings):
         settings -- Dict with domain settings
 
     """
-    if domain not in domain_list()["domains"]:
-        raise YunohostError("domain_name_unknown", domain=domain)
+
+    _assert_domain_exists(domain)
 
     defaults = _default_domain_settings(domain)
     diff_with_defaults = {k: v for k, v in domain_settings.items() if defaults.get(k) != v}
