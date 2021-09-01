@@ -419,16 +419,8 @@ def domain_registrar_info(domain):
     return registrar_info
 
 
-def domain_registrar_catalog(registrar_name, full):
-    registrars = read_yaml(REGISTRAR_LIST_PATH)
-
-    if registrar_name:
-        if registrar_name not in registrars.keys():
-            raise YunohostValidationError("domain_registrar_unknown", registrar=registrar_name)
-        else:
-            return registrars[registrar_name]
-    else:
-        return registrars
+def domain_registrar_catalog():
+    return read_yaml(REGISTRAR_LIST_PATH)
 
 
 def domain_registrar_set(domain, registrar, args):
@@ -539,8 +531,8 @@ def domain_registrar_push(operation_logger, domain):
 
         # Finally, push the new record or update the existing one
         record_to_push = {
-            "action": "update" if already_exists else "create"
-            "type": record["type"]
+            "action": "update" if already_exists else "create",
+            "type": record["type"],
             "name": record["name"],
             "content": record["value"],
             # FIXME Removed TTL, because it doesn't work with Gandi.

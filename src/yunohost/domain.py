@@ -536,19 +536,19 @@ def domain_dns_conf(domain):
     return yunohost.dns.domain_dns_conf(domain)
 
 
-def domain_registrar_info(domain):
+def domain_registrar_catalog():
     import yunohost.dns
-    return yunohost.dns.domain_registrar_info(domain)
-
-
-def domain_registrar_catalog(registrar_name, full):
-    import yunohost.dns
-    return yunohost.dns.domain_registrar_catalog(registrar_name, full)
+    return yunohost.dns.domain_registrar_catalog()
 
 
 def domain_registrar_set(domain, registrar, args):
     import yunohost.dns
     return yunohost.dns.domain_registrar_set(domain, registrar, args)
+
+
+def domain_registrar_info(domain):
+    import yunohost.dns
+    return yunohost.dns.domain_registrar_info(domain)
 
 
 def domain_registrar_push(domain):

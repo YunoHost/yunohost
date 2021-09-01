@@ -572,6 +572,12 @@ domain:
         registrar:
             subcategory_help: Manage domains registrars
             actions:
+                ### domain_registrar_catalog()
+                catalog:
+                    action_help: List supported registrars API
+                    api: GET /domains/registrars/catalog
+
+
                 ### domain_registrar_set()
                 set:
                     action_help: Set domain registrar
@@ -596,24 +602,6 @@ domain:
                             help: Domain name
                             extra:
                                 pattern: *pattern_domain
-
-                ### domain_registrar_list()
-                list:
-                    action_help: List registrars configured by DNS zone
-                    api: GET /domains/registrars
-
-                ### domain_registrar_catalog()
-                catalog:
-                    action_help: List supported registrars API
-                    api: GET /domains/registrars/catalog
-                    arguments:
-                        -r:
-                            full: --registrar-name
-                            help: Display given registrar info to create form
-                        -f:
-                            full: --full
-                            help: Display all details, including info to create forms
-                            action: store_true
 
                 ### domain_registrar_push()
                 push:
