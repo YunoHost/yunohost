@@ -267,5 +267,14 @@
     "diagnosis_http_nginx_conf_not_up_to_date": "به نظر می رسد که پیکربندی nginx این دامنه به صورت دستی تغییر کرده است و از تشخیص YunoHost در صورت دسترسی به HTTP جلوگیری می کند.",
     "diagnosis_http_partially_unreachable": "به نظر می رسد که دامنه {domain} از طریق HTTP از خارج از شبکه محلی در IPv{failed} غیرقابل دسترسی است، اگرچه در IPv{passed} کار می کند.",
     "diagnosis_http_unreachable": "به نظر می رسد دامنه {domain} از خارج از شبکه محلی از طریق HTTP قابل دسترسی نیست.",
-    "diagnosis_http_bad_status_code": "به نظر می رسد دستگاه دیگری (شاید روتر اینترنتی شما) به جای سرور شما پاسخ داده است.<br>1. شایع ترین علت برای این مشکل ، پورت 80 است (و 443) <a href='https://yunohost.org/isp_box_config'>به درستی به سرور شما ارسال نمی شوند</a>.<br>2. در تنظیمات پیچیده تر: مطمئن شوید که هیچ فایروال یا پروکسی معکوسی تداخل نداشته باشد."
+    "diagnosis_http_bad_status_code": "به نظر می رسد دستگاه دیگری (شاید روتر اینترنتی شما) به جای سرور شما پاسخ داده است.<br>1. شایع ترین علت برای این مشکل ، پورت 80 است (و 443) <a href='https://yunohost.org/isp_box_config'>به درستی به سرور شما ارسال نمی شوند</a>.<br>2. در تنظیمات پیچیده تر: مطمئن شوید که هیچ فایروال یا پروکسی معکوسی تداخل نداشته باشد.",
+    "disk_space_not_sufficient_update": "برای به روزرسانی این برنامه فضای دیسک کافی باقی نمانده است",
+    "disk_space_not_sufficient_install": "فضای کافی برای نصب این برنامه در دیسک باقی نمانده است",
+    "diagnosis_sshd_config_inconsistent_details": "لطفاً اجراکنید <cmd>yunohost settings set security.ssh.port -v YOUR_SSH_PORT</cmd> برای تعریف پورت SSH و بررسی کنید <cmd>yunohost tools regen-conf ssh --dry-run --with-diff</cmd> و <cmd>yunohost tools regen-conf ssh --force</cmd> برای تنظیم مجدد تنظیمات خود به توصیه YunoHost.",
+    "diagnosis_sshd_config_inconsistent": "به نظر می رسد که پورت SSH به صورت دستی در/etc/ssh/sshd_config تغییر یافته است. از زمان YunoHost 4.2 ، یک تنظیم جهانی جدید 'security.ssh.port' برای جلوگیری از ویرایش دستی پیکربندی در دسترس است.",
+    "diagnosis_sshd_config_insecure": "به نظر می رسد که پیکربندی SSH به صورت دستی تغییر یافته است و مطمئن نیست زیرا هیچ دستورالعمل 'AllowGroups' یا 'AllowUsers' برای محدود کردن دسترسی به کاربران مجاز ندارد.",
+    "diagnosis_processes_killed_by_oom_reaper": "برخی از فرآیندها اخیراً توسط سیستم از بین رفته اند زیرا حافظه آن تمام شده است. این به طور معمول نشانه کمبود حافظه در سیستم یا فرآیندی است که حافظه زیادی را از بین می برد. خلاصه فرآیندهای کشته شده:\n{kills_summary}",
+    "diagnosis_never_ran_yet": "به نظر می رسد این سرور به تازگی راه اندازی شده است و هنوز هیچ گزارش تشخیصی برای نمایش وجود ندارد. شما باید با اجرای یک عیب یابی و تشخیص کامل، از طریق رابط مدیریت تحت وب webadmin یا با استفاده از 'yunohost diagnosis run' از خط فرمان معاینه و تشخیص عیب یابی را شروع کنید.",
+    "diagnosis_unknown_categories": "دسته های زیر ناشناخته است: {categories}",
+    "diagnosis_http_nginx_conf_not_up_to_date_details": "برای برطرف کردن وضعیّت ، تفاوت را با استفاده از خط فرمان بررسی کنید<cmd>yunohost tools regen-conf nginx --dry-run --with-diff</cmd> و اگر خوب است ، تغییرات را اعمال کنید با استفاده از فرمان <cmd>yunohost tools regen-conf nginx --force</cmd>."
 }
