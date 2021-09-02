@@ -641,5 +641,13 @@
     "service_removed": "Eliminado o servizo '{service}'",
     "service_remove_failed": "Non se eliminou o servizo '{service}'",
     "service_regen_conf_is_deprecated": "'yunohost service regen-conf' xa non se utiliza! Executa 'yunohost tools regen-conf' no seu lugar.",
-    "service_enabled": "O servizo '{service}' vai ser iniciado automáticamente no inicio do sistema."
+    "service_enabled": "O servizo '{service}' vai ser iniciado automáticamente no inicio do sistema.",
+    "diagnosis_description_apps": "",
+    "diagnosis_apps_allgood": "",
+    "diagnosis_apps_issue": "",
+    "diagnosis_apps_not_in_app_catalog": "",
+    "diagnosis_apps_broken": "",
+    "diagnosis_apps_bad_quality": "",
+    "diagnosis_apps_outdated_ynh_requirement": "",
+    "diagnosis_apps_deprecated_practices": ""
 }
