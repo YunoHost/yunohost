@@ -373,7 +373,7 @@ def is_unit_operation(
                     context.pop(field, None)
 
             # Context is made from args given to main function by argparse
-            # This context will be added in extra parameters in yml file, so this context should 
+            # This context will be added in extra parameters in yml file, so this context should
             # be serializable and short enough (it will be displayed in webadmin)
             # Argparse can provide some File or Stream, so here we display the filename or
             # the IOBase, if we have no name.
@@ -382,7 +382,7 @@ def is_unit_operation(
                     try:
                         context[field] = value.name
                     except:
-                        context[field] = 'IOBase'
+                        context[field] = "IOBase"
             operation_logger = OperationLogger(op_key, related_to, args=context)
 
             try:
