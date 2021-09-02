@@ -117,53 +117,65 @@ def test_del_user(mocker):
 def test_import_user(mocker):
     import csv
     from io import StringIO
-    fieldnames = [u'username', u'firstname', u'lastname', u'password',
-                  u'mailbox-quota', u'mail', u'mail-alias', u'mail-forward',
-                  u'groups']
+
+    fieldnames = [
+        "username",
+        "firstname",
+        "lastname",
+        "password",
+        "mailbox-quota",
+        "mail",
+        "mail-alias",
+        "mail-forward",
+        "groups",
+    ]
     with StringIO() as csv_io:
-        writer = csv.DictWriter(csv_io, fieldnames, delimiter=';',
-                                quotechar='"')
+        writer = csv.DictWriter(csv_io, fieldnames, delimiter=";", quotechar='"')
         writer.writeheader()
-        writer.writerow({
-            'username': "albert",
-            'firstname': "Albert",
-            'lastname': "Good",
-            'password': "",
-            'mailbox-quota': "1G",
-            'mail': "albert@" + maindomain,
-            'mail-alias': "albert2@" + maindomain,
-            'mail-forward': "albert@example.com",
-            'groups': "dev",
-        })
-        writer.writerow({
-            'username': "alice",
-            'firstname': "Alice",
-            'lastname': "White",
-            'password': "",
-            'mailbox-quota': "1G",
-            'mail': "alice@" + maindomain,
-            'mail-alias': "alice1@" + maindomain + ",alice2@" + maindomain,
-            'mail-forward': "",
-            'groups': "apps",
-        })
+        writer.writerow(
+            {
+                "username": "albert",
+                "firstname": "Albert",
+                "lastname": "Good",
+                "password": "",
+                "mailbox-quota": "1G",
+                "mail": "albert@" + maindomain,
+                "mail-alias": "albert2@" + maindomain,
+                "mail-forward": "albert@example.com",
+                "groups": "dev",
+            }
+        )
+        writer.writerow(
+            {
+                "username": "alice",
+                "firstname": "Alice",
+                "lastname": "White",
+                "password": "",
+                "mailbox-quota": "1G",
+                "mail": "alice@" + maindomain,
+                "mail-alias": "alice1@" + maindomain + ",alice2@" + maindomain,
+                "mail-forward": "",
+                "groups": "apps",
+            }
+        )
         csv_io.seek(0)
         with message(mocker, "user_import_success"):
             user_import(csv_io, update=True, delete=True)
 
-    group_res = user_group_list()['groups']
-    user_res = user_list(list(FIELDS_FOR_IMPORT.keys()))['users']
+    group_res = user_group_list()["groups"]
+    user_res = user_list(list(FIELDS_FOR_IMPORT.keys()))["users"]
     assert "albert" in user_res
     assert "alice" in user_res
     assert "bob" not in user_res
-    assert len(user_res['alice']['mail-alias']) == 2
-    assert "albert" in group_res['dev']['members']
-    assert "alice" in group_res['apps']['members']
-    assert "alice" not in group_res['dev']['members']
+    assert len(user_res["alice"]["mail-alias"]) == 2
+    assert "albert" in group_res["dev"]["members"]
+    assert "alice" in group_res["apps"]["members"]
+    assert "alice" not in group_res["dev"]["members"]
 
 
 def test_export_user(mocker):
     result = user_export()
-    aliases = ','.join([alias + maindomain for alias in FIRST_ALIASES])
+    aliases = ",".join([alias + maindomain for alias in FIRST_ALIASES])
     should_be = (
         "username;firstname;lastname;password;mail;mail-alias;mail-forward;mailbox-quota;groups\r\n"
         f"alice;Alice;White;;alice@{maindomain};{aliases};;0;dev\r\n"
