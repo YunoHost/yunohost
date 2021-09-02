@@ -1,0 +1,151 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="ChangeListManager">
+    <list default="true" id="9a6f5bc3-de3d-468a-89e8-a47aee4e15df" name="Default Changelist" comment="">
+      <change beforePath="$PROJECT_DIR$/data/bash-completion.d/yunohost" beforeDir="false" afterPath="$PROJECT_DIR$/data/bash-completion.d/yunohost" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/helpers.d/nodejs" beforeDir="false" afterPath="$PROJECT_DIR$/data/helpers.d/nodejs" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/helpers.d/php" beforeDir="false" afterPath="$PROJECT_DIR$/data/helpers.d/php" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/hooks/conf_regen/01-yunohost" beforeDir="false" afterPath="$PROJECT_DIR$/data/hooks/conf_regen/01-yunohost" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/hooks/conf_regen/15-nginx" beforeDir="false" afterPath="$PROJECT_DIR$/data/hooks/conf_regen/15-nginx" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/other/password/100000-most-used.txt.gz" beforeDir="false" afterPath="$PROJECT_DIR$/data/other/password/100000-most-used.txt.gz" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/templates/nginx/plain/yunohost_admin.conf.inc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/templates/nginx/plain/yunohost_api.conf.inc" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/data/templates/nginx/plain/yunohost_panel.conf.inc" beforeDir="false" afterPath="$PROJECT_DIR$/data/templates/nginx/plain/yunohost_panel.conf.inc" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/ar.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/ar.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/ca.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/ca.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/cs.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/cs.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/de.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/de.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/en.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/en.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/eo.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/eo.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/es.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/es.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/fr.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/fr.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/gl.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/gl.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/hi.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/hi.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/hu.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/hu.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/it.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/it.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/nb_NO.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/nb_NO.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/nl.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/nl.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/oc.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/oc.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/pl.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/pl.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/pt.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/pt.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/ru.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/ru.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/sv.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/sv.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/locales/zh_Hans.json" beforeDir="false" afterPath="$PROJECT_DIR$/locales/zh_Hans.json" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/yunohost/app.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/yunohost/app.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/yunohost/backup.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/yunohost/backup.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/yunohost/domain.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/yunohost/domain.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/yunohost/firewall.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/yunohost/firewall.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/yunohost/hook.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/yunohost/hook.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/yunohost/settings.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/yunohost/settings.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/yunohost/ssh.py" beforeDir="false" afterPath="$PROJECT_DIR$/src/yunohost/ssh.py" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="HighlightingSettingsPerFile">
+    <setting file="file://$PROJECT_DIR$/src/yunohost/__init__.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/bin/yunohost" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/src/yunohost/service.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/src/yunohost/permission.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/bin/yunohost-api" root0="FORCE_HIGHLIGHTING" />
+    <setting file="file://$PROJECT_DIR$/src/yunohost/log.py" root0="SKIP_INSPECTION" />
+    <setting file="file://$PROJECT_DIR$/src/yunohost/app.py" root0="SKIP_INSPECTION" />
+  </component>
+  <component name="ProjectId" id="1u5B2HkFka9KBySw0J0tGpljkaC" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">
+    <property name="RunOnceActivity.OpenProjectViewOnStart" value="true" />
+    <property name="RunOnceActivity.ShowReadmeOnStart" value="true" />
+    <property name="WebServerToolWindowFactoryState" value="true" />
+    <property name="WebServerToolWindowPanel.toolwindow.highlight.mappings" value="true" />
+    <property name="WebServerToolWindowPanel.toolwindow.highlight.symlinks" value="true" />
+    <property name="WebServerToolWindowPanel.toolwindow.show.date" value="false" />
+    <property name="WebServerToolWindowPanel.toolwindow.show.permissions" value="false" />
+    <property name="WebServerToolWindowPanel.toolwindow.show.size" value="false" />
+    <property name="credentialsType com.jetbrains.python.remote.PyCreateRemoteInterpreterDialog$PyCreateRemoteSdkForm" value="Web Deployment" />
+    <property name="last_opened_file_path" value="$PROJECT_DIR$" />
+    <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
+  </component>
+  <component name="RunManager">
+    <configuration name="yunohost-api" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <module name="yunohost" />
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/bin" />
+      <option name="IS_MODULE_SDK" value="true" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <EXTENSION ID="PythonCoverageRunConfigurationExtension" runner="coverage.py" />
+      <PathMappingSettings>
+        <option name="pathMappings">
+          <list>
+            <mapping local-root="$PROJECT_DIR$/src/yunohost" remote-root="/usr/lib/moulinette/yunohost" />
+            <mapping local-root="/usr/lib/python3.9" remote-root="/usr/lib/python3.7" />
+          </list>
+        </option>
+      </PathMappingSettings>
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/bin/yunohost-api" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Python.yunohost-api" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="9a6f5bc3-de3d-468a-89e8-a47aee4e15df" name="Default Changelist" comment="" />
+      <created>1623945360546</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1623945360546</updated>
+      <workItem from="1623945361765" duration="3841000" />
+      <workItem from="1627637727050" duration="7000" />
+      <workItem from="1629370236424" duration="7000" />
+    </task>
+    <servers />
+  </component>
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/yunohost/app.py</url>
+          <line>814</line>
+          <option name="timeStamp" value="5" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" suspend="THREAD" type="python-line">
+          <url>file://$PROJECT_DIR$/src/yunohost/app.py</url>
+          <line>1197</line>
+          <option name="timeStamp" value="8" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+  <component name="com.intellij.coverage.CoverageDataManagerImpl">
+    <SUITE FILE_PATH="coverage/yunohost$yunohost_api__1_.coverage" NAME="yunohost-api (1) Coverage Results" MODIFIED="1623947736434" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/bin" />
+    <SUITE FILE_PATH="coverage/yunohost$yunohost_api.coverage" NAME="yunohost-api Coverage Results" MODIFIED="1623948915354" SOURCE_PROVIDER="com.intellij.coverage.DefaultCoverageFileProvider" RUNNER="coverage.py" COVERAGE_BY_TEST_ENABLED="true" COVERAGE_TRACING_ENABLED="false" WORKING_DIRECTORY="$PROJECT_DIR$/bin" />
+  </component>
+</project>
