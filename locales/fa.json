@@ -641,5 +641,13 @@
     "permission_deletion_failed": "اجازه '{permission}' حذف نشد: {error}",
     "permission_deleted": "مجوز '{permission}' حذف شد",
     "permission_cant_add_to_all_users": "مجوز {permission} را نمی توان به همه کاربران اضافه کرد.",
-    "permission_currently_allowed_for_all_users": "این مجوز در حال حاضر به همه کاربران علاوه بر آن گروه های دیگر نیز اعطا شده. احتمالاً بخواهید مجوز 'all_users' را حذف کنید یا سایر گروه هایی را که در حال حاضر مجوز به آنها اعطا شده است را هم حذف کنید."
+    "permission_currently_allowed_for_all_users": "این مجوز در حال حاضر به همه کاربران علاوه بر آن گروه های دیگر نیز اعطا شده. احتمالاً بخواهید مجوز 'all_users' را حذف کنید یا سایر گروه هایی را که در حال حاضر مجوز به آنها اعطا شده است را هم حذف کنید.",
+    "diagnosis_description_apps": "",
+    "diagnosis_apps_allgood": "",
+    "diagnosis_apps_issue": "",
+    "diagnosis_apps_not_in_app_catalog": "",
+    "diagnosis_apps_broken": "",
+    "diagnosis_apps_bad_quality": "",
+    "diagnosis_apps_outdated_ynh_requirement": "",
+    "diagnosis_apps_deprecated_practices": ""
 }
