@@ -602,7 +602,7 @@
     "restore_removing_tmp_dir_failed": "پوشه موقت قدیمی حذف نشد",
     "restore_nothings_done": "هیچ چیز ترمیم و بازسازی نشد",
     "restore_not_enough_disk_space": "فضای کافی موجود نیست (فضا: {free_space:d} B ، فضای مورد نیاز: {needed_space:d} B ، حاشیه امنیتی: {margin:d} B)",
-    "restore_may_be_not_enough_disk_space": "به نظر می رسد سیستم شما فضای کافی ندارد (فضای آزاد: {free_space:d} B ، فضای مورد نیاز: {space_space:d} B ، حاشیه امنیتی: {margin:d} B)",
+    "restore_may_be_not_enough_disk_space": "به نظر می رسد سیستم شما فضای کافی ندارد (فضای آزاد: {free_space:d} B ، فضای مورد نیاز: {needed_space:d} B ، حاشیه امنیتی: {margin:d} B)",
     "restore_hook_unavailable": "اسکریپت ترمیم و بازسازی برای '{part}' در سیستم شما در دسترس نیست و همچنین در بایگانی نیز وجود ندارد",
     "restore_failed": "سیستم بازیابی نشد",
     "restore_extracting": "استخراج فایل های مورد نیاز از بایگانی…",
