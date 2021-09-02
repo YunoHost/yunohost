@@ -1,105 +1,7 @@
 #!/bin/bash
 
 
-# Get a value from heterogeneous file (yaml, json, php, python...)
-#
-# usage: ynh_value_get --file=PATH --key=KEY
-# | arg: -f, --file=     - the path to the file
-# | arg: -k, --key=     - the key to get
-#
-# This helpers match several var affectation use case in several languages
-# We don't use jq or equivalent to keep comments and blank space in files
-# This helpers work line by line, it is not able to work correctly 
-# if you have several identical keys in your files
-# 
-# Example of line this helpers can managed correctly
-# .yml
-#     title: YunoHost documentation
-#     email: 'yunohost@yunohost.org'
-# .json
-#     "theme": "colib'ris",
-#     "port": 8102
-#     "some_boolean":     false,
-#     "user": null
-# .ini
-#     some_boolean = On
-#     action = "Clear"
-#     port = 20
-# .php
-#     $user=
-#     user => 20
-# .py
-#     USER = 8102
-#     user = 'https://donate.local'
-#     CUSTOM['user'] = 'YunoHost'
-# Requires YunoHost version 4.3 or higher.
-ynh_value_get() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=fk
-    local -A args_array=( [f]=file= [k]=key= )
-    local file
-    local key
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-
-    local var_part='^[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*'
-    
-    local crazy_value="$((grep -i -o -P '^[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*\K.*(?=[ \t,\n;]*$)' ${file} || echo YNH_NULL)  | head -n1)"
-    #"
-    
-    local first_char="${crazy_value:0:1}"
-    if [[ "$first_char" == '"' ]] ; then
-        echo "$crazy_value" | grep -m1 -o -P '"\K([^"](\\")?)*[^\\](?=")' | head -n1  | sed 's/\\"/"/g'
-    elif [[ "$first_char" == "'" ]] ; then
-        echo "$crazy_value" | grep -m1 -o -P "'\K([^'](\\\\')?)*[^\\\\](?=')" | head -n1  | sed "s/\\\\'/'/g"
-    else
-        echo "$crazy_value"
-    fi
-}
-
-# Set a value into heterogeneous file (yaml, json, php, python...)
-#
-# usage: ynh_value_set --file=PATH --key=KEY --value=VALUE
-# | arg: -f, --file=     - the path to the file
-# | arg: -k, --key=     - the key to set
-# | arg: -v, --value=     - the value to set
-#
-# Requires YunoHost version 4.3 or higher.
-ynh_value_set() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=fkv
-    local -A args_array=( [f]=file= [k]=key= [v]=value=)
-    local file
-    local key
-    local value
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-    local var_part='[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*'
-    
-    local crazy_value="$(grep -i -o -P '^[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*\K.*(?=[ \t,\n;]*$)' ${file} | head -n1)"
-    # local crazy_value="$(grep -i -o -P "^${var_part}\K.*(?=[ \t,\n;]*\$)" ${file} | head -n1)"
-    local first_char="${crazy_value:0:1}"
-    if [[ "$first_char" == '"' ]] ; then
-        # \ and sed is quite complex you need 2 \\ to get one in a sed
-        # So we need \\\\ to go through 2 sed
-        value="$(echo "$value" | sed 's/"/\\\\"/g')"
-        sed -ri 'sø^('"${var_part}"'")([^"]|\\")*("[ \t;,]*)$ø\1'"${value}"'\4øi' ${file}
-    elif [[ "$first_char" == "'" ]] ; then
-        # \ and sed is quite complex you need 2 \\ to get one in a sed
-        # However double quotes implies to double \\ to
-        # So we need \\\\\\\\ to go through 2 sed and 1 double quotes str
-        value="$(echo "$value" | sed "s/'/\\\\\\\\'/g")"
-        sed -ri "sø^(${var_part}')([^']|\\')*('"'[ \t,;]*)$ø\1'"${value}"'\4øi' ${file}
-    else
-        if [[ "$value" == *"'"* ]] || [[ "$value" == *'"'* ]] ; then
-            value='\"'"$(echo "$value" | sed 's/"/\\\\"/g')"'\"'
-        fi
-        sed -ri "sø^(${var_part}).*"'$ø\1'"${value}"'øi' ${file}
-    fi
-    ynh_print_info "Configuration key '$key' edited into $file"
-}
-
-_ynh_panel_get() {
+_ynh_app_config_get() {
     # From settings
     local lines
     lines=`python3 << EOL
@@ -165,7 +67,7 @@ EOL
             local source_key="$(echo "$source" | cut -d: -f1)"
             source_key=${source_key:-$short_setting}
             local source_file="$(echo "$source" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
-            old[$short_setting]="$(ynh_value_get --file="${source_file}" --key="${source_key}")"
+            old[$short_setting]="$(ynh_get_var --file="${source_file}" --key="${source_key}")"
         
         fi
     done
@@ -173,7 +75,7 @@ EOL
     
 }
 
-_ynh_panel_apply() {
+_ynh_app_config_apply() {
     for short_setting in "${!old[@]}"
     do
         local setter="set__${short_setting}"
@@ -222,18 +124,19 @@ _ynh_panel_apply() {
                 local source_file="$(echo "$source" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
                 
                 ynh_backup_if_checksum_is_different --file="$source_file"
-                ynh_value_set --file="${source_file}" --key="${source_key}" --value="${!short_setting}"
+                ynh_set_var --file="${source_file}" --key="${source_key}" --value="${!short_setting}"
                 ynh_store_file_checksum --file="$source_file"
                 
                 # We stored the info in settings in order to be able to upgrade the app
                 ynh_app_setting_set $app $short_setting "${!short_setting}"
+                ynh_print_info "Configuration key '$source_key' edited into $source_file"
 
             fi
         fi
     done
 }
 
-_ynh_panel_show() {
+_ynh_app_config_show() {
     for short_setting in "${!old[@]}"
     do
         if [[ "${old[$short_setting]}" != YNH_NULL ]] ; then
@@ -248,7 +151,7 @@ _ynh_panel_show() {
     done
 }
 
-_ynh_panel_validate() {
+_ynh_app_config_validate() {
     # Change detection
     ynh_script_progression --message="Checking what changed in the new configuration..." --weight=1
     local is_error=true
@@ -319,23 +222,23 @@ _ynh_panel_validate() {
     
 }
 
-ynh_panel_get() {
-    _ynh_panel_get
+ynh_app_config_get() {
+    _ynh_app_config_get
 }
 
-ynh_panel_show() {
-    _ynh_panel_show
+ynh_app_config_show() {
+    _ynh_app_config_show
 }
 
-ynh_panel_validate() {
-    _ynh_panel_validate
+ynh_app_config_validate() {
+    _ynh_app_config_validate
 }
 
-ynh_panel_apply() {
-    _ynh_panel_apply
+ynh_app_config_apply() {
+    _ynh_app_config_apply
 }
 
-ynh_panel_run() {
+ynh_app_config_run() {
     declare -Ag old=()
     declare -Ag changed=()
     declare -Ag file_hash=()
@@ -345,18 +248,18 @@ ynh_panel_run() {
     
     case $1 in
         show)
-            ynh_panel_get
-            ynh_panel_show
+            ynh_app_config_get
+            ynh_app_config_show
             ;;
         apply) 
             max_progression=4
             ynh_script_progression --message="Reading config panel description and current configuration..."
-            ynh_panel_get
+            ynh_app_config_get
             
-            ynh_panel_validate
+            ynh_app_config_validate
             
             ynh_script_progression --message="Applying the new configuration..."
-            ynh_panel_apply
+            ynh_app_config_apply
             ynh_script_progression --message="Configuration of $app completed" --last
             ;;
     esac
