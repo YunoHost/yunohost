@@ -1908,7 +1908,7 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None, args_
         logger.debug(f"Reloading {service}")
         if not _run_service_command('reload-or-restart', service):
             services = _get_services()
-            test_conf = services[service].get('test_conf')
+            test_conf = services[service].get('test_conf', 'true')
             errors = check_output(f"{test_conf}; exit 0") if test_conf else ''
             raise YunohostError(
                 "app_config_failed_service_reload",
