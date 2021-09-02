@@ -634,5 +634,20 @@
     "global_settings_setting_security_webadmin_allowlist": "IP-Adressen, die auf die Verwaltungsseite zugreifen dürfen. Kommasepariert.",
     "global_settings_setting_security_webadmin_allowlist_enabled": "Erlaube nur bestimmten IP-Adressen den Zugriff auf die Verwaltungsseite.",
     "disk_space_not_sufficient_update": "Es ist nicht genügend Speicherplatz frei, um diese Applikation zu aktuallisieren",
-    "disk_space_not_sufficient_install": "Es ist nicht genügend Speicherplatz frei, um diese Applikation zu installieren"
+    "disk_space_not_sufficient_install": "Es ist nicht genügend Speicherplatz frei, um diese Applikation zu installieren",
+    "invalid_password": "",
+    "service_description_yunomdns": "",
+    "global_settings_setting_security_experimental_enabled": "",
+    "diagnosis_dns_specialusedomain": "",
+    "diagnosis_apps_issue": "",
+    "diagnosis_description_apps": "",
+    "diagnosis_apps_allgood": "",
+    "diagnosis_apps_not_in_app_catalog": "",
+    "diagnosis_apps_broken": "",
+    "diagnosis_apps_bad_quality": "",
+    "diagnosis_apps_outdated_ynh_requirement": "",
+    "diagnosis_apps_deprecated_practices": "",
+    "diagnosis_http_localdomain": "",
+    "ldap_server_down": "",
+    "ldap_server_is_down_restart_it": ""
 }
