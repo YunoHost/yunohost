@@ -631,7 +631,7 @@ def user_export():
             writer.writerow(user)
 
         body = csv_io.getvalue().rstrip()
-    if msettings.get('interface') == 'api':
+    if Moulinette.interface.type == 'api':
         # We return a raw bottle HTTPresponse (instead of serializable data like
         # list/dict, ...), which is gonna be picked and used directly by moulinette
         from bottle import HTTPResponse
