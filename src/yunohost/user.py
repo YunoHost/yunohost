@@ -64,7 +64,7 @@ def user_list(fields=None):
 
     ldap_attrs = {
         'username': 'uid',
-        'password': 'uid',
+        'password': '',  # We can't request password in ldap
         'fullname': 'cn',
         'firstname': 'givenName',
         'lastname': 'sn',
