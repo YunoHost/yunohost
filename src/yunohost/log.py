@@ -373,7 +373,11 @@ def is_unit_operation(
                 if field in context:
                     context.pop(field, None)
 
-            # Manage file or stream
+            # Context is made from args given to main function by argparse
+            # This context will be added in extra parameters in yml file, so this context should 
+            # be serializable and short enough (it will be displayed in webadmin)
+            # Argparse can provide some File or Stream, so here we display the filename or
+            # the IOBase, if we have no name.
             for field, value in context.items():
                 if isinstance(value, IOBase):
                     try:
