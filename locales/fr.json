@@ -291,7 +291,7 @@
     "password_too_simple_3": "Le mot de passe doit comporter au moins 8 caractères et contenir des chiffres, des majuscules, des minuscules et des caractères spéciaux",
     "password_too_simple_4": "Le mot de passe doit comporter au moins 12 caractères et contenir des chiffres, des majuscules, des minuscules et des caractères spéciaux",
     "root_password_desynchronized": "Le mot de passe administrateur a été changé, mais YunoHost n’a pas pu le propager au mot de passe root !",
-    "aborting": "Annulation en cours.",
+    "aborting": "Annulation en cours (do not merge).",
     "app_not_upgraded": "L’application {failed_app} n’a pas été mise à jour et par conséquence les applications suivantes n’ont pas été mises à jour : {apps}",
     "app_start_install": "Installation de {app}...",
     "app_start_remove": "Suppression de {app}...",
