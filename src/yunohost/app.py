@@ -1945,7 +1945,7 @@ def _call_config_script(operation_logger, app, action, env={}, config_panel=None
 source /usr/share/yunohost/helpers
 ynh_abort_if_errors
 final_path=$(ynh_app_setting_get $app final_path)
-ynh_panel_run $1
+ynh_app_config_run $1
 """
         write_to_file(config_script, default_script)
 
