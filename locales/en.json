@@ -268,7 +268,7 @@
     "diagnosis_http_hairpinning_issue_details": "This is probably because of your ISP box / router. As a result, people from outside your local network will be able to access your server as expected, but not people from inside the local network (like you, probably?) when using the domain name or global IP. You may be able to improve the situation by having a look at <a href='https://yunohost.org/dns_local_network'>https://yunohost.org/dns_local_network</a>",
     "diagnosis_http_could_not_diagnose": "Could not diagnose if domains are reachable from outside in IPv{ipversion}.",
     "diagnosis_http_could_not_diagnose_details": "Error: {error}",
-    "diagnosis_http_localdomain": "Domain {domain}, with a .local TLD, is not expected to be reached from outside the local network.",
+    "diagnosis_http_localdomain": "Domain {domain}, with a .local TLD, is not expected to be exposed outside the local network.",
     "diagnosis_http_ok": "Domain {domain} is reachable through HTTP from outside the local network.",
     "diagnosis_http_timeout": "Timed-out while trying to contact your server from outside. It appears to be unreachable.<br>1. The most common cause for this issue is that port 80 (and 443) <a href='https://yunohost.org/isp_box_config'>are not correctly forwarded to your server</a>.<br>2. You should also make sure that the service nginx is running<br>3. On more complex setups: make sure that no firewall or reverse-proxy is interfering.",
     "diagnosis_http_connection_error": "Connection error: could not connect to the requested domain, it's very likely unreachable.",
