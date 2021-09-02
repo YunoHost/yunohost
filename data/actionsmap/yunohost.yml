@@ -831,34 +831,28 @@ app:
           subcategory_help: Applications configuration panel
           actions:
 
-              ### app_config_show()
-              show:
-                  action_help: show config panel for the application
+              ### app_config_get()
+              get:
+                  action_help: Display an app configuration
                   api: GET /apps/<app>/config-panel
                   arguments:
                     app:
                         help: App name
                     key:
-                        help: Select a specific panel, section or a question
+                        help: A specific panel, section or a question identifier
                         nargs: '?'
-                    -f:
-                        full: --full
-                        help: Display all info known about the config-panel.
-                        action: store_true
-
-              ### app_config_get()
-              get:
-                  action_help: show config panel for the application
-                  api: GET /apps/<app>/config-panel/<key>
-                  arguments:
-                    app:
-                        help: App name
-                    key:
-                        help: The question identifier 
+                    -m:
+                        full: --mode
+                        help: Display mode to use
+                        choices:
+                            - classic
+                            - full
+                            - export
+                        default: classic
 
               ### app_config_set()
               set:
-                  action_help: apply the new configuration
+                  action_help: Apply a new configuration
                   api: PUT /apps/<app>/config
                   arguments:
                     app:
@@ -872,6 +866,10 @@ app:
                     -a:
                         full: --args
                         help: Serialized arguments for new configuration (i.e. "domain=domain.tld&path=/path")
+                    -f:
+                        full: --args-file
+                        help: YAML or JSON file with key/value couples
+                        type: open
 
 #############################
 #          Backup           #

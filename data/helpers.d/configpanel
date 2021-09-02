@@ -74,23 +74,29 @@ ynh_value_set() {
     local value
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-
     local var_part='[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*'
     
-    local crazy_value="$(grep -i -o -P "^${var_part}\K.*(?=[ \t,\n;]*\$)" ${file} | head -n1)"
+    local crazy_value="$(grep -i -o -P '^[ \t]*\$?(\w*\[)?[ \t]*["'"']?${key}['"'"]?[ \t]*\]?[ \t]*[:=]>?[ \t]*\K.*(?=[ \t,\n;]*$)' ${file} | head -n1)"
+    # local crazy_value="$(grep -i -o -P "^${var_part}\K.*(?=[ \t,\n;]*\$)" ${file} | head -n1)"
     local first_char="${crazy_value:0:1}"
     if [[ "$first_char" == '"' ]] ; then
-        value="$(echo "$value" | sed 's/"/\"/g')"
-        sed -ri 's%^('"${var_part}"'")[^"]*("[ \t;,]*)$%\1'"${value}"'\3%i' ${file}
+        # \ and sed is quite complex you need 2 \\ to get one in a sed
+        # So we need \\\\ to go through 2 sed
+        value="$(echo "$value" | sed 's/"/\\\\"/g')"
+        sed -ri 'sø^('"${var_part}"'")([^"]|\\")*("[ \t;,]*)$ø\1'"${value}"'\4øi' ${file}
     elif [[ "$first_char" == "'" ]] ; then
-        value="$(echo "$value" | sed "s/'/"'\'"'/g")"
-        sed -ri "s%^(${var_part}')[^']*('"'[ \t,;]*)$%\1'"${value}"'\3%i' ${file}
+        # \ and sed is quite complex you need 2 \\ to get one in a sed
+        # However double quotes implies to double \\ to
+        # So we need \\\\\\\\ to go through 2 sed and 1 double quotes str
+        value="$(echo "$value" | sed "s/'/\\\\\\\\'/g")"
+        sed -ri "sø^(${var_part}')([^']|\\')*('"'[ \t,;]*)$ø\1'"${value}"'\4øi' ${file}
     else
         if [[ "$value" == *"'"* ]] || [[ "$value" == *'"'* ]] ; then
-            value='\"'"$(echo "$value" | sed 's/"/\"/g')"'\"'
+            value='\"'"$(echo "$value" | sed 's/"/\\\\"/g')"'\"'
         fi
-        sed -ri "s%^(${var_part}).*"'$%\1'"${value}"'%i' ${file}
+        sed -ri "sø^(${var_part}).*"'$ø\1'"${value}"'øi' ${file}
     fi
+    ynh_print_info "Configuration key '$key' edited into $file"
 }
 
 _ynh_panel_get() {
@@ -189,13 +195,16 @@ _ynh_panel_apply() {
                 local source_file="$(echo "$source" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
                 if [[ "${!short_setting}" == "" ]] ; then
                     rm -f "$source_file"
+                    ynh_print_info "File '$source_file' removed"
                 else
                     cp "${!short_setting}" "$source_file"
+                    ynh_print_info "File '$source_file' overwrited with ${!short_setting}"
                 fi
             
             # Save value in app settings 
             elif [[ "$source" == "settings" ]] ; then
                 ynh_app_setting_set $app $short_setting "${!short_setting}"
+                ynh_print_info "Configuration key '$short_setting' edited in app settings"
             
             # Save multiline text in a file
             elif [[ "$type" == "text" ]] ; then
@@ -204,13 +213,20 @@ _ynh_panel_apply() {
                 fi
                 local source_file="$(echo "$source" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
                 echo "${!short_setting}" > "$source_file"
+                ynh_print_info "File '$source_file' overwrited with the content you provieded in '${short_setting}' question"
 
             # Set value into a kind of key/value file
             else
                 local source_key="$(echo "$source" | cut -d: -f1)"
                 source_key=${source_key:-$short_setting}
                 local source_file="$(echo "$source" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
+                
+                ynh_backup_if_checksum_is_different --file="$source_file"
                 ynh_value_set --file="${source_file}" --key="${source_key}" --value="${!short_setting}"
+                ynh_store_file_checksum --file="$source_file"
+                
+                # We stored the info in settings in order to be able to upgrade the app
+                ynh_app_setting_set $app $short_setting "${!short_setting}"
 
             fi
         fi

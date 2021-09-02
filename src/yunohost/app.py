@@ -1756,135 +1756,122 @@ def app_action_run(operation_logger, app, action, args=None):
     return logger.success("Action successed!")
 
 
-# Config panel todo list:
-# * docstrings
-# * merge translations on the json once the workflow is in place
 @is_unit_operation()
-def app_config_show(operation_logger, app, key='', full=False):
-    # logger.warning(m18n.n("experimental_feature"))
+def app_config_get(operation_logger, app, key='', mode='classic'):
+    """
+    Display an app configuration in classic, full or export mode
+    """
 
     # Check app is installed
     _assert_is_installed(app)
 
-    key = key if key else ''
+    filter_key = key or ''
 
     # Read config panel toml
-    config_panel = _get_app_hydrated_config_panel(operation_logger,
-                                                  app, filter_key=key)
+    config_panel = _get_app_config_panel(app, filter_key=filter_key)
 
     if not config_panel:
-        return None
+        raise YunohostError("app_config_no_panel")
 
-    # Format result in full or reduce mode
-    if full:
+    # Call config script in order to hydrate config panel with current values
+    values = _call_config_script(operation_logger, app, 'show', config_panel=config_panel)
+
+    # Format result in full mode
+    if mode == 'full':
         operation_logger.success()
         return config_panel
 
-    result = OrderedDict()
-    for panel, section, option in _get_options_iterator(config_panel):
-        if panel['id'] not in result:
-            r_panel = result[panel['id']] = OrderedDict()
-        if section['id'] not in r_panel:
-            r_section = r_panel[section['id']] = OrderedDict()
-        r_option = r_section[option['name']] = {
-            "ask": option['ask']['en']
-        }
-        if not option.get('optional', False):
-            r_option['ask'] += ' *'
-        if option.get('current_value', None) is not None:
-            r_option['value'] = option['current_value']
+    # In 'classic' mode, we display the current value if key refer to an option
+    if filter_key.count('.') == 2 and mode == 'classic':
+        option = filter_key.split('.')[-1]
+        operation_logger.success()
+        return values.get(option, None)
+
+    # Format result in 'classic' or 'export' mode
+    logger.debug(f"Formating result in '{mode}' mode")
+    result = {}
+    for panel, section, option in _get_config_iterator(config_panel):
+        key = f"{panel['id']}.{section['id']}.{option['id']}"
+        if mode == 'export':
+            result[option['id']] = option.get('current_value')
+        else:
+            result[key] = { 'ask': _value_for_locale(option['ask']) }
+            if 'current_value' in option:
+                result[key]['value'] = option['current_value']
 
     operation_logger.success()
     return result
 
 
 @is_unit_operation()
-def app_config_get(operation_logger, app, key):
+def app_config_set(operation_logger, app, key=None, value=None, args=None, args_file=None):
+    """
+    Apply a new app configuration
+    """
+
     # Check app is installed
     _assert_is_installed(app)
 
+    filter_key = key or ''
 
     # Read config panel toml
-    config_panel = _get_app_config_panel(app, filter_key=key)
+    config_panel = _get_app_config_panel(app, filter_key=filter_key)
 
     if not config_panel:
         raise YunohostError("app_config_no_panel")
 
-    operation_logger.start()
-
-    # Call config script to extract current values
-    parsed_values = _call_config_script(operation_logger, app, 'show')
-
-    logger.debug("Searching value")
-    short_key = key.split('.')[-1]
-    if short_key not in parsed_values:
-        return None
-
-    return parsed_values[short_key]
-
-    # for panel, section, option in _get_options_iterator(config_panel):
-    #     if option['name'] == short_key:
-    #         # Check and transform values if needed
-    #         args_dict = _parse_args_in_yunohost_format(
-    #             parsed_values, [option], False
-    #         )
-    #         operation_logger.success()
-
-    #         return args_dict[short_key][0]
-
-    # return None
-
-
-@is_unit_operation()
-def app_config_set(operation_logger, app, key=None, value=None, args=None):
-    # Check app is installed
-    _assert_is_installed(app)
-
-    filter_key = key if key else ''
-
-    # Read config panel toml
-    config_panel = _get_app_hydrated_config_panel(operation_logger,
-                                                  app, filter_key=filter_key)
-
-    if not config_panel:
-        raise YunohostError("app_config_no_panel")
-
-    if args is not None and value is not None:
+    if (args is not None or args_file is not None) and value is not None:
         raise YunohostError("app_config_args_value")
 
-    operation_logger.start()
+    if filter_key.count('.') != 2 and not value is None:
+        raise YunohostError("app_config_set_value_on_section")
 
-    # Prepare pre answered questions
-    if args:
-        args = { key: ','.join(value) for key, value in urllib.parse.parse_qs(args, keep_blank_values=True).items() }
-    else:
-        args = {}
+    # Import and parse pre-answered options
+    logger.debug("Import and parse pre-answered options")
+    args = urllib.parse.parse_qs(args or '', keep_blank_values=True)
+    args = { key: ','.join(value_) for key, value_ in args.items() }
+
+    if args_file:
+        # Import YAML / JSON file but keep --args values
+        args = { **read_yaml(args_file), **args }
+
     if value is not None:
         args = {filter_key.split('.')[-1]: value}
 
+    # Call config script in order to hydrate config panel with current values
+    _call_config_script(operation_logger, app, 'show', config_panel=config_panel)
+
+    # Ask unanswered question and prevalidate
+    logger.debug("Ask unanswered question and prevalidate data")
+    def display_header(message):
+        """ CLI panel/section header display
+        """
+        if Moulinette.interface.type == 'cli' and filter_key.count('.') < 2:
+            Moulinette.display(colorize(message, 'purple'))
+
     try:
-        logger.debug("Asking unanswered question and prevalidating...")
-        args_dict = {}
-        for panel in config_panel.get("panel", []):
-            if Moulinette.interface.type== 'cli' and len(filter_key.split('.')) < 3:
-                Moulinette.display(colorize("\n" + "=" * 40, 'purple'))
-                Moulinette.display(colorize(f">>>> {panel['name']}", 'purple'))
-                Moulinette.display(colorize("=" * 40, 'purple'))
-            for section in panel.get("sections", []):
-                if Moulinette.interface.type== 'cli' and len(filter_key.split('.')) < 3:
-                    Moulinette.display(colorize(f"\n# {section['name']}", 'purple'))
+        env = {}
+        for panel, section, obj in _get_config_iterator(config_panel,
+                                                    ['panel', 'section']):
+            if panel == obj:
+                name = _value_for_locale(panel['name'])
+                display_header(f"\n{'='*40}\n>>>> {name}\n{'='*40}")
+                continue
+            name = _value_for_locale(section['name'])
+            display_header(f"\n# {name}")
 
-                # Check and ask unanswered questions
-                args_dict.update(_parse_args_in_yunohost_format(
-                    args, section['options']
-                ))
+            # Check and ask unanswered questions
+            env.update(_parse_args_in_yunohost_format(
+                args, section['options']
+            ))
 
-        # Call config script to extract current values
+        # Call config script in 'apply' mode
         logger.info("Running config script...")
-        env = {key: str(value[0]) for key, value in args_dict.items() if not value[0] is None}
+        env = {key: str(value[0]) for key, value in env.items() if not value[0] is None}
 
         errors = _call_config_script(operation_logger, app, 'apply', env=env)
-    # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
+    # Script got manually interrupted ...
+    # N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
         error = m18n.n("operation_interrupted")
         logger.error(m18n.n("app_config_failed", app=app, error=error))
@@ -1904,25 +1891,20 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
 
     if errors:
         return {
-            "app": app,
             "errors": errors,
         }
 
     # Reload services
     logger.info("Reloading services...")
-    services_to_reload = set([])
-    for panel in config_panel.get("panel", []):
-        services_to_reload |= set(panel.get('services', []))
-        for section in panel.get("sections", []):
-            services_to_reload |= set(section.get('services', []))
-            for option in section.get("options", []):
-                services_to_reload |= set(option.get('services', []))
+    services_to_reload = set()
+    for panel, section, obj in _get_config_iterator(config_panel,
+                                                    ['panel', 'section', 'option']):
+        services_to_reload |= set(obj.get('services', []))
 
     services_to_reload = list(services_to_reload)
     services_to_reload.sort(key = 'nginx'.__eq__)
     for service in services_to_reload:
-        if service == "__APP__":
-            service = app
+        service = service.replace('__APP__', app)
         logger.debug(f"Reloading {service}")
         if not _run_service_command('reload-or-restart', service):
             services = _get_services()
@@ -1934,22 +1916,26 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None):
             )
 
     logger.success("Config updated as expected")
-    return {
-        "app": app,
-        "errors": [],
-        "logs": operation_logger.success(),
-    }
+    return {}
 
 
-def _get_options_iterator(config_panel):
-    for panel in config_panel.get("panel", []):
+def _get_config_iterator(config_panel, trigger=['option']):
+    for panel in config_panel.get("panels", []):
+        if 'panel' in trigger:
+            yield (panel, None, panel)
         for section in panel.get("sections", []):
-            for option in section.get("options", []):
-                yield (panel, section, option)
+            if 'section' in trigger:
+                yield (panel, section, section)
+            if 'option' in trigger:
+                for option in section.get("options", []):
+                    yield (panel, section, option)
 
 
-def _call_config_script(operation_logger, app, action, env={}):
+def _call_config_script(operation_logger, app, action, env={}, config_panel=None):
     from yunohost.hook import hook_exec
+
+    YunoHostArgumentFormatParser.operation_logger = operation_logger
+    operation_logger.start()
 
     # Add default config script if needed
     config_script = os.path.join(APPS_SETTING_PATH, app, "scripts", "config")
@@ -1976,7 +1962,27 @@ ynh_panel_run $1
         config_script, args=[action], env=env
     )
     if ret != 0:
-        operation_logger.error(parsed_values)
+        if action == 'show':
+            raise YunohostError("app_config_unable_to_read_values")
+        else:
+            raise YunohostError("app_config_unable_to_apply_values_correctly")
+
+        return parsed_values
+
+    if not config_panel:
+        return parsed_values
+
+    # Hydrating config panel with current value
+    logger.debug("Hydrating config with current values")
+    for _, _, option in _get_config_iterator(config_panel):
+        if option['name'] not in parsed_values:
+            continue
+        value = parsed_values[option['name']]
+        # In general, the value is just a simple value.
+        # Sometimes it could be a dict used to overwrite the option itself
+        value = value if isinstance(value, dict) else {'current_value': value }
+        option.update(value)
+
     return parsed_values
 
 
@@ -2083,6 +2089,13 @@ def _get_app_actions(app_id):
 
 def _get_app_config_panel(app_id, filter_key=''):
     "Get app config panel stored in json or in toml"
+
+    # Split filter_key
+    filter_key = dict(enumerate(filter_key.split('.')))
+    if len(filter_key) > 3:
+        raise YunohostError("app_config_too_much_sub_keys")
+
+    # Open TOML
     config_panel_toml_path = os.path.join(
         APPS_SETTING_PATH, app_id, "config_panel.toml"
     )
@@ -2103,7 +2116,7 @@ def _get_app_config_panel(app_id, filter_key=''):
     #         name = "Choose the sources of packages to automatically upgrade."
     #         default = "Security only"
     #         type = "text"
-    #         help = "We can't use a choices field for now. In the meantime please choose between one of this values:<br>Security only, Security and updates."
+    #         help = "We can't use a choices field for now. In the meantime[...]"
     #         # choices = ["Security only", "Security and updates"]
 
     #         [main.unattended_configuration.ynh_update]
@@ -2143,7 +2156,7 @@ def _get_app_config_panel(app_id, filter_key=''):
     #      u'name': u'50unattended-upgrades configuration file',
     #      u'options': [{u'//': u'"choices" : ["Security only", "Security and updates"]',
     #        u'default': u'Security only',
-    #        u'help': u"We can't use a choices field for now. In the meantime please choose between one of this values:<br>Security only, Security and updates.",
+    #        u'help': u"We can't use a choices field for now. In the meantime[...]",
     #        u'id': u'upgrade_level',
     #        u'name': u'Choose the sources of packages to automatically upgrade.',
     #        u'type': u'text'},
@@ -2152,127 +2165,81 @@ def _get_app_config_panel(app_id, filter_key=''):
     #        u'name': u'Would you like to update YunoHost packages automatically ?',
     #        u'type': u'bool'},
 
-    if os.path.exists(config_panel_toml_path):
-        toml_config_panel = toml.load(
-            open(config_panel_toml_path, "r"), _dict=OrderedDict
-        )
-        if float(toml_config_panel["version"]) < APPS_CONFIG_PANEL_VERSION_SUPPORTED:
-            raise YunohostError(
-                "app_config_too_old_version", app=app_id,
-                version=toml_config_panel["version"]
-            )
-
-        # transform toml format into json format
-        config_panel = {
-            "name": toml_config_panel["name"],
-            "version": toml_config_panel["version"],
-            "panel": [],
-        }
-        filter_key = filter_key.split('.')
-        filter_panel = filter_key.pop(0)
-        filter_section = filter_key.pop(0) if len(filter_key) > 0 else False
-        filter_option = filter_key.pop(0) if len(filter_key) > 0 else False
-
-        panels = [
-            key_value
-            for key_value in toml_config_panel.items()
-            if key_value[0] not in ("name", "version")
-            and isinstance(key_value[1], OrderedDict)
-        ]
-
-        for key, value in panels:
-            if filter_panel and key != filter_panel:
-                continue
-
-            panel = {
-                "id": key,
-                "name": value.get("name", ""),
-                "services": value.get("services", []),
-                "sections": [],
-            }
-
-            sections = [
-                k_v1
-                for k_v1 in value.items()
-                if k_v1[0] not in ("name",) and isinstance(k_v1[1], OrderedDict)
-            ]
-
-            for section_key, section_value in sections:
-
-                if filter_section and section_key != filter_section:
-                    continue
-
-                section = {
-                    "id": section_key,
-                    "name": section_value.get("name", ""),
-                    "optional": section_value.get("optional", True),
-                    "services": section_value.get("services", []),
-                    "options": [],
-                }
-                if section_value.get('visibleIf'):
-                    section['visibleIf'] = section_value.get('visibleIf')
-
-                options = [
-                    k_v
-                    for k_v in section_value.items()
-                    if k_v[0] not in ("name",) and isinstance(k_v[1], OrderedDict)
-                ]
-
-                for option_key, option_value in options:
-                    if filter_option and option_key != filter_option:
-                        continue
-
-                    option = dict(option_value)
-                    option["optional"] = option_value.get("optional", section['optional'])
-                    option["name"] = option_key
-                    option["ask"] = {"en": option["ask"]}
-                    if "help" in option:
-                        option["help"] = {"en": option["help"]}
-                    section["options"].append(option)
-
-                panel["sections"].append(section)
-
-            config_panel["panel"].append(panel)
-
-        if (filter_panel and len(config_panel['panel']) == 0) or \
-           (filter_section and len(config_panel['panel'][0]['sections']) == 0) or \
-           (filter_option and len(config_panel['panel'][0]['sections'][0]['options']) == 0):
-            raise YunohostError(
-                "app_config_bad_filter_key", app=app_id, filter_key=filter_key
-            )
-
-        return config_panel
-
-    return None
-
-def _get_app_hydrated_config_panel(operation_logger, app, filter_key=''):
-
-    # Read config panel toml
-    config_panel = _get_app_config_panel(app, filter_key=filter_key)
-
-    if not config_panel:
+    if not os.path.exists(config_panel_toml_path):
         return None
+    toml_config_panel = read_toml(config_panel_toml_path)
 
-    operation_logger.start()
+    # Check TOML config panel is in a supported version
+    if float(toml_config_panel["version"]) < APPS_CONFIG_PANEL_VERSION_SUPPORTED:
+        raise YunohostError(
+            "app_config_too_old_version", app=app_id,
+            version=toml_config_panel["version"]
+        )
 
-    # Call config script to extract current values
-    parsed_values = _call_config_script(operation_logger, app, 'show')
+    # Transform toml format into internal format
+    defaults = {
+        'toml': {
+            'version': 1.0
+        },
+        'panels': {
+            'name': '',
+            'services': [],
+            'actions': {'apply': {'en': 'Apply'}}
+        }, # help
+        'sections': {
+            'name': '',
+            'services': [],
+            'optional': True
+        }, # visibleIf help
+        'options': {}
+        # ask type source help helpLink example style icon placeholder visibleIf
+        # optional choices pattern limit min max step accept redact
+    }
 
-    # # Check and transform values if needed
-    # options = [option for _, _, option in _get_options_iterator(config_panel)]
-    # args_dict = _parse_args_in_yunohost_format(
-    #     parsed_values, options, False
-    # )
+    def convert(toml_node, node_type):
+        """Convert TOML in internal format ('full' mode used by webadmin)
 
-    # Hydrate
-    logger.debug("Hydrating config with current value")
-    for _, _, option in _get_options_iterator(config_panel):
-        if option['name'] in parsed_values:
-            value = parsed_values[option['name']]
-            if isinstance(value, dict):
-                option.update(value)
+        Here are some properties of 1.0 config panel in toml:
+          - node properties and node children are mixed,
+          - text are in english only
+          - some properties have default values
+        This function detects all children nodes and put them in a list
+        """
+        # Prefill the node default keys if needed
+        default = defaults[node_type]
+        node = {key: toml_node.get(key, value) for key, value in default.items()}
+
+        # Define the filter_key part to use and the children type
+        i = list(defaults).index(node_type)
+        search_key = filter_key.get(i)
+        subnode_type = list(defaults)[i+1] if node_type != 'options' else None
+
+        for key, value in toml_node.items():
+            # Key/value are a child node
+            if isinstance(value, OrderedDict) and key not in default and subnode_type:
+                # We exclude all nodes not referenced by the filter_key
+                if search_key and key != search_key:
+                    continue
+                subnode = convert(value, subnode_type)
+                subnode['id'] = key
+                if node_type == 'sections':
+                    subnode['name'] = key # legacy
+                    subnode.setdefault('optional', toml_node.get('optional', True))
+                node.setdefault(subnode_type, []).append(subnode)
+            # Key/value are a property
             else:
-                option["current_value"] = value #args_dict[option["name"]][0]
+                # Todo search all i18n keys
+                node[key] = value if key not in ['ask', 'help', 'name'] else { 'en': value }
+        return node
+
+    config_panel = convert(toml_config_panel, 'toml')
+
+    try:
+        config_panel['panels'][0]['sections'][0]['options'][0]
+    except (KeyError, IndexError):
+        raise YunohostError(
+            "app_config_empty_or_bad_filter_key", app=app_id, filter_key=filter_key
+        )
 
     return config_panel
 
@@ -2831,6 +2798,7 @@ class Question:
 
 class YunoHostArgumentFormatParser(object):
     hide_user_input_in_prompt = False
+    operation_logger = None
 
     def parse_question(self, question, user_answers):
         parsed_question = Question()
@@ -2842,10 +2810,11 @@ class YunoHostArgumentFormatParser(object):
         parsed_question.optional = question.get("optional", False)
         parsed_question.choices = question.get("choices", [])
         parsed_question.pattern = question.get("pattern")
-        parsed_question.ask = question.get("ask", {'en': f"Enter value for '{parsed_question.name}':"})
+        parsed_question.ask = question.get("ask", {'en': f"{parsed_question.name}"})
         parsed_question.help = question.get("help")
         parsed_question.helpLink = question.get("helpLink")
         parsed_question.value = user_answers.get(parsed_question.name)
+        parsed_question.redact = question.get('redact', False)
 
         # Empty value is parsed as empty string
         if parsed_question.default == "":
@@ -2947,18 +2916,33 @@ class YunoHostArgumentFormatParser(object):
         return text_for_user_input_in_cli
 
     def _post_parse_value(self, question):
+        if not question.redact:
+            return question.value
+
+        # Tell the operation_logger to redact all password-type / secret args
+        # Also redact the % escaped version of the password that might appear in
+        # the 'args' section of metadata (relevant for password with non-alphanumeric char)
+        data_to_redact = []
+        if question.value and isinstance(question.value, str):
+            data_to_redact.append(question.value)
+        if question.current_value and isinstance(question.current_value, str):
+            data_to_redact.append(question.current_value)
+        data_to_redact += [
+            urllib.parse.quote(data)
+            for data in data_to_redact
+            if urllib.parse.quote(data) != data
+        ]
+        if self.operation_logger:
+            self.operation_logger.data_to_redact.extend(data_to_redact)
+        elif data_to_redact:
+            raise YunohostError("app_argument_cant_redact", arg=question.name)
+
         return question.value
 
 
 class StringArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "string"
     default_value = ""
-
-    def _prevalidate(self, question):
-        super()._prevalidate(question)
-        raise YunohostValidationError(
-            "app_argument_invalid", field=question.name, error=m18n.n("invalid_number2")
-        )
 
 class TagsArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "tags"
@@ -2982,7 +2966,7 @@ class PasswordArgumentParser(YunoHostArgumentFormatParser):
         question = super(PasswordArgumentParser, self).parse_question(
             question, user_answers
         )
-
+        question.redact = True
         if question.default is not None:
             raise YunohostValidationError(
                 "app_argument_password_no_default", name=question.name
@@ -3242,6 +3226,8 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
             # os.path.join to avoid the user to be able to rewrite a file in filesystem
             # i.e. os.path.join("/foo", "/etc/passwd") == "/etc/passwd"
             file_path = os.path.normpath(upload_dir + "/" + filename)
+            if not file_path.startswith(upload_dir + "/"):
+                raise YunohostError("relative_parent_path_in_filename_forbidden")
             i = 2
             while os.path.exists(file_path):
                 file_path = os.path.normpath(upload_dir + "/" + filename + (".%d" % i))
