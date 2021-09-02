@@ -96,10 +96,14 @@ _ynh_app_config_apply() {
                 fi
                 local source_file="$(echo "$source" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
                 if [[ "${!short_setting}" == "" ]] ; then
+                    ynh_backup_if_checksum_is_different --file="$source_file"
                     rm -f "$source_file"
+                    ynh_delete_file_checksum --file="$source_file" --update_only
                     ynh_print_info "File '$source_file' removed"
                 else
+                    ynh_backup_if_checksum_is_different --file="$source_file"
                     cp "${!short_setting}" "$source_file"
+                    ynh_store_file_checksum --file="$source_file" --update_only
                     ynh_print_info "File '$source_file' overwrited with ${!short_setting}"
                 fi
             
@@ -114,7 +118,9 @@ _ynh_app_config_apply() {
                     ynh_die "For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
                 fi
                 local source_file="$(echo "$source" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
+                ynh_backup_if_checksum_is_different --file="$source_file"
                 echo "${!short_setting}" > "$source_file"
+                ynh_store_file_checksum --file="$source_file" --update_only
                 ynh_print_info "File '$source_file' overwrited with the content you provieded in '${short_setting}' question"
 
             # Set value into a kind of key/value file
@@ -122,10 +128,10 @@ _ynh_app_config_apply() {
                 local source_key="$(echo "$source" | cut -d: -f1)"
                 source_key=${source_key:-$short_setting}
                 local source_file="$(echo "$source" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
-                
+
                 ynh_backup_if_checksum_is_different --file="$source_file"
                 ynh_set_var --file="${source_file}" --key="${source_key}" --value="${!short_setting}"
-                ynh_store_file_checksum --file="$source_file"
+                ynh_store_file_checksum --file="$source_file" --update_only
                 
                 # We stored the info in settings in order to be able to upgrade the app
                 ynh_app_setting_set $app $short_setting "${!short_setting}"
