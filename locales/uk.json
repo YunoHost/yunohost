@@ -637,5 +637,17 @@
     "app_not_upgraded": "Додаток '{failed_app}' не вдалося оновити, і, як наслідок, оновлення таких програмах було скасовано: {apps}",
     "app_manifest_install_ask_is_public": "Чи повинно це додаток бути відкрито для анонімних відвідувачів?",
     "app_manifest_install_ask_admin": "Виберіть користувача-адміністратора для цього додатка",
-    "app_manifest_install_ask_password": "Виберіть пароль адміністратора для цього додатка"
+    "app_manifest_install_ask_password": "Виберіть пароль адміністратора для цього додатка",
+    "diagnosis_description_apps": "",
+    "invalid_password": "",
+    "diagnosis_apps_allgood": "",
+    "diagnosis_apps_issue": "",
+    "diagnosis_apps_not_in_app_catalog": "",
+    "diagnosis_apps_broken": "",
+    "diagnosis_apps_bad_quality": "",
+    "diagnosis_apps_outdated_ynh_requirement": "",
+    "diagnosis_apps_deprecated_practices": "",
+    "ldap_server_is_down_restart_it": "",
+    "ldap_server_down": "",
+    "global_settings_setting_security_experimental_enabled": ""
 }
