@@ -468,29 +468,32 @@ def domain_registrar_push(operation_logger, domain, dry_run=False):
     if not registrar_settings:
         raise YunohostValidationError("registrar_is_not_set", domain=domain)
 
-    # Generate the records
-    dns_conf = _build_dns_conf(domain)
+    # Convert the generated conf into a format that matches what we'll fetch using the API
+    # Makes it easier to compare "wanted records" with "current records on remote"
+    dns_conf = []
+    for records in _build_dns_conf(domain).values():
+        for record in records:
 
-    # Flatten the DNS conf
-    dns_conf = [record for records_for_category in dns_conf.values() for record in records_for_category]
+            # Make sure we got "absolute" values instead of @
+            name = f"{record['name']}.{domain}" if record["name"] != "@" else f".{domain}"
+            type_ = record["type"]
+            content = record["value"]
+
+            if content == "@" and record["type"] == "CNAME":
+                content = domain + "."
+
+            dns_conf.append({
+                "name": name,
+                "type": type_,
+                "ttl": record["ttl"],
+                "content": content
+            })
 
     # FIXME Lexicon does not support CAA records
     # See https://github.com/AnalogJ/lexicon/issues/282 and https://github.com/AnalogJ/lexicon/pull/371
     # They say it's trivial to implement it!
     # And yet, it is still not done/merged
     dns_conf = [record for record in dns_conf if record["type"] != "CAA"]
-
-    # We need absolute names?  FIXME: should we add a trailing dot needed here ?
-    # Seems related to the fact that when fetching current records, they'll contain '.domain.tld' instead of @
-    # and we want to check if it already exists or not (c.f. create/update)
-    for record in dns_conf:
-        if record["name"] == "@":
-            record["name"] = f".{domain}"
-        else:
-            record["name"] = f"{record['name']}.{domain}"
-
-        if record["type"] == "CNAME" and record["value"] == "@":
-            record["value"] = domain + "."
 
     # Construct the base data structure to use lexicon's API.
     base_config = {
@@ -499,13 +502,11 @@ def domain_registrar_push(operation_logger, domain, dry_run=False):
         registrar_settings["name"]: registrar_settings["options"]
     }
 
-    operation_logger.start()
-
     # Fetch all types present in the generated records
     current_remote_records = []
 
     # Get unique types present in the generated records
-    types = {record["type"] for record in dns_conf}
+    types = ["A", "AAAA", "MX", "TXT", "CNAME", "SRV"]
 
     for key in types:
         print("fetcing type: " + key)
@@ -524,6 +525,8 @@ def domain_registrar_push(operation_logger, domain, dry_run=False):
 
     if dry_run:
         return {"current_records": current_remote_records, "dns_conf": dns_conf, "changes": changes}
+
+    operation_logger.start()
 
     # Push the records
     for record in dns_conf:
@@ -547,7 +550,7 @@ def domain_registrar_push(operation_logger, domain, dry_run=False):
         # See https://github.com/AnalogJ/lexicon/issues/726 (similar issue)
         # But I think there is another issue with Gandi. Or I'm misusing the API...
         if base_config["provider_name"] == "gandi":
-            del record_to_push["ttle"]
+            del record_to_push["ttl"]
 
         print("pushed_record:", record_to_push)
 
