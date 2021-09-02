@@ -634,5 +634,20 @@
     "global_settings_setting_security_webadmin_allowlist": "Indirizzi IP con il permesso di accedere al webadmin, separati da virgola.",
     "global_settings_setting_security_webadmin_allowlist_enabled": "Permetti solo ad alcuni IP di accedere al webadmin.",
     "disk_space_not_sufficient_update": "Non c'è abbastanza spazio libero per aggiornare questa applicazione",
-    "disk_space_not_sufficient_install": "Non c'è abbastanza spazio libero per installare questa applicazione"
+    "disk_space_not_sufficient_install": "Non c'è abbastanza spazio libero per installare questa applicazione",
+    "service_description_yunomdns": "",
+    "ldap_server_down": "",
+    "ldap_server_is_down_restart_it": "",
+    "diagnosis_dns_specialusedomain": "",
+    "diagnosis_description_apps": "",
+    "diagnosis_apps_allgood": "",
+    "diagnosis_apps_issue": "",
+    "diagnosis_apps_not_in_app_catalog": "",
+    "diagnosis_apps_broken": "",
+    "diagnosis_apps_bad_quality": "",
+    "diagnosis_apps_outdated_ynh_requirement": "",
+    "diagnosis_apps_deprecated_practices": "",
+    "diagnosis_http_localdomain": "",
+    "global_settings_setting_security_experimental_enabled": "",
+    "invalid_password": ""
 }
