@@ -158,6 +158,7 @@ def test_import_user(mocker):
     assert len(user_res['alice']['mail-alias']) == 2
     assert "albert" in group_res['dev']['members']
     assert "alice" in group_res['apps']['members']
+    assert "alice" not in group_res['dev']['members']
 
 
 def test_export_user(mocker):
