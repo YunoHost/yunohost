@@ -33,6 +33,7 @@ olcAuthzPolicy: none
 olcConcurrency: 0
 olcConnMaxPending: 100
 olcConnMaxPendingAuth: 1000
+olcSizeLimit: 50000
 olcIdleTimeout: 0
 olcIndexSubstrIfMaxLen: 4
 olcIndexSubstrIfMinLen: 2
@@ -188,7 +189,7 @@ olcDbIndex: memberUid eq
 olcDbIndex: uniqueMember eq
 olcDbIndex: virtualdomain eq
 olcDbIndex: permission eq
-olcDbMaxSize: 10485760
+olcDbMaxSize: 104857600
 structuralObjectClass: olcMdbConfig
 
 #
