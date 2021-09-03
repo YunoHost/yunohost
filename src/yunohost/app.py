@@ -36,6 +36,7 @@ import urllib.parse
 import tempfile
 from collections import OrderedDict
 
+from moulinette.interfaces.cli import colorize
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -53,7 +54,9 @@ from moulinette.utils.filesystem import (
 )
 
 from yunohost.service import service_status, _run_service_command
-from yunohost.utils import packages
+from yunohost.utils import packages, config
+from yunohost.utils.config import ConfigPanel, parse_args_in_yunohost_format, YunoHostArgumentFormatParser
+from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.log import is_unit_operation, OperationLogger
@@ -189,10 +192,7 @@ def app_info(app, full=False):
     """
     from yunohost.permission import user_permission_list
 
-    if not _is_installed(app):
-        raise YunohostValidationError(
-            "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
-        )
+    _assert_is_installed(app)
 
     setting_path = os.path.join(APPS_SETTING_PATH, app)
     local_manifest = _get_manifest_of_app(setting_path)
@@ -536,10 +536,8 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
     apps = [app_ for i, app_ in enumerate(apps) if app_ not in apps[:i]]
 
     # Abort if any of those app is in fact not installed..
-    for app in [app_ for app_ in apps if not _is_installed(app_)]:
-        raise YunohostValidationError(
-            "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
-        )
+    for app_ in apps:
+        _assert_is_installed(app_)
 
     if len(apps) == 0:
         raise YunohostValidationError("apps_already_up_to_date")
@@ -753,7 +751,6 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             for file_to_copy in [
                 "actions.json",
                 "actions.toml",
-                "config_panel.json",
                 "config_panel.toml",
                 "conf",
             ]:
@@ -973,7 +970,6 @@ def app_install(
     for file_to_copy in [
         "actions.json",
         "actions.toml",
-        "config_panel.json",
         "config_panel.toml",
         "conf",
     ]:
@@ -1761,172 +1757,79 @@ def app_action_run(operation_logger, app, action, args=None):
     return logger.success("Action successed!")
 
 
-# Config panel todo list:
-# * docstrings
-# * merge translations on the json once the workflow is in place
+def app_config_get(app, key='', mode='classic'):
+    """
+    Display an app configuration in classic, full or export mode
+    """
+    config = AppConfigPanel(app)
+    return config.get(key, mode)
+
+
 @is_unit_operation()
-def app_config_show_panel(operation_logger, app):
-    logger.warning(m18n.n("experimental_feature"))
+def app_config_set(operation_logger, app, key=None, value=None, args=None, args_file=None):
+    """
+    Apply a new app configuration
+    """
 
-    from yunohost.hook import hook_exec
+    config = AppConfigPanel(app)
 
-    # this will take care of checking if the app is installed
-    app_info_dict = app_info(app)
-
+    YunoHostArgumentFormatParser.operation_logger = operation_logger
     operation_logger.start()
-    config_panel = _get_app_config_panel(app)
-    config_script = os.path.join(APPS_SETTING_PATH, app, "scripts", "config")
 
-    app_id, app_instance_nb = _parse_app_instance_name(app)
+    result = config.set(key, value, args, args_file)
+    if "errors" not in result:
+        operation_logger.success()
+    return result
 
-    if not config_panel or not os.path.exists(config_script):
-        return {
+class AppConfigPanel(ConfigPanel):
+    def __init__(self, app):
+
+        # Check app is installed
+        _assert_is_installed(app)
+
+        self.app = app
+        config_path = os.path.join(APPS_SETTING_PATH, app, "config_panel.toml")
+        super().__init__(config_path=config_path)
+
+    def _load_current_values(self):
+        self.values = self._call_config_script('show')
+
+    def _apply(self):
+        self.errors = self._call_config_script('apply', self.new_values)
+
+    def _call_config_script(self, action, env={}):
+        from yunohost.hook import hook_exec
+
+        # Add default config script if needed
+        config_script = os.path.join(APPS_SETTING_PATH, self.app, "scripts", "config")
+        if not os.path.exists(config_script):
+            logger.debug("Adding a default config script")
+            default_script = """#!/bin/bash
+source /usr/share/yunohost/helpers
+ynh_abort_if_errors
+final_path=$(ynh_app_setting_get $app final_path)
+ynh_app_config_run $1
+"""
+            write_to_file(config_script, default_script)
+
+        # Call config script to extract current values
+        logger.debug(f"Calling '{action}' action from config script")
+        app_id, app_instance_nb = _parse_app_instance_name(self.app)
+        env.update({
             "app_id": app_id,
-            "app": app,
-            "app_name": app_info_dict["name"],
-            "config_panel": [],
-        }
+            "app": self.app,
+            "app_instance_nb": str(app_instance_nb),
+        })
 
-    env = {
-        "YNH_APP_ID": app_id,
-        "YNH_APP_INSTANCE_NAME": app,
-        "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
-    }
-
-    # FIXME: this should probably be ran in a tmp workdir...
-    return_code, parsed_values = hook_exec(
-        config_script, args=["show"], env=env, return_format="plain_dict"
-    )
-
-    if return_code != 0:
-        raise Exception(
-            "script/config show return value code: %s (considered as an error)",
-            return_code,
+        ret, values = hook_exec(
+            config_script, args=[action], env=env
         )
-
-    logger.debug("Generating global variables:")
-    for tab in config_panel.get("panel", []):
-        tab_id = tab["id"]  # this makes things easier to debug on crash
-        for section in tab.get("sections", []):
-            section_id = section["id"]
-            for option in section.get("options", []):
-                option_name = option["name"]
-                generated_name = (
-                    "YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_name)
-                ).upper()
-                option["name"] = generated_name
-                logger.debug(
-                    " * '%s'.'%s'.'%s' -> %s",
-                    tab.get("name"),
-                    section.get("name"),
-                    option.get("name"),
-                    generated_name,
-                )
-
-                if generated_name in parsed_values:
-                    # code is not adapted for that so we have to mock expected format :/
-                    if option.get("type") == "boolean":
-                        if parsed_values[generated_name].lower() in ("true", "1", "y"):
-                            option["default"] = parsed_values[generated_name]
-                        else:
-                            del option["default"]
-                    else:
-                        option["default"] = parsed_values[generated_name]
-
-                    args_dict = _parse_args_in_yunohost_format(
-                        {option["name"]: parsed_values[generated_name]}, [option]
-                    )
-                    option["default"] = args_dict[option["name"]][0]
-                else:
-                    logger.debug(
-                        "Variable '%s' is not declared by config script, using default",
-                        generated_name,
-                    )
-                    # do nothing, we'll use the default if present
-
-    return {
-        "app_id": app_id,
-        "app": app,
-        "app_name": app_info_dict["name"],
-        "config_panel": config_panel,
-        "logs": operation_logger.success(),
-    }
-
-
-@is_unit_operation()
-def app_config_apply(operation_logger, app, args):
-    logger.warning(m18n.n("experimental_feature"))
-
-    from yunohost.hook import hook_exec
-
-    installed = _is_installed(app)
-    if not installed:
-        raise YunohostValidationError(
-            "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
-        )
-
-    config_panel = _get_app_config_panel(app)
-    config_script = os.path.join(APPS_SETTING_PATH, app, "scripts", "config")
-
-    if not config_panel or not os.path.exists(config_script):
-        # XXX real exception
-        raise Exception("Not config-panel.json nor scripts/config")
-
-    operation_logger.start()
-    app_id, app_instance_nb = _parse_app_instance_name(app)
-    env = {
-        "YNH_APP_ID": app_id,
-        "YNH_APP_INSTANCE_NAME": app,
-        "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
-    }
-    args = dict(urllib.parse.parse_qsl(args, keep_blank_values=True)) if args else {}
-
-    for tab in config_panel.get("panel", []):
-        tab_id = tab["id"]  # this makes things easier to debug on crash
-        for section in tab.get("sections", []):
-            section_id = section["id"]
-            for option in section.get("options", []):
-                option_name = option["name"]
-                generated_name = (
-                    "YNH_CONFIG_%s_%s_%s" % (tab_id, section_id, option_name)
-                ).upper()
-
-                if generated_name in args:
-                    logger.debug(
-                        "include into env %s=%s", generated_name, args[generated_name]
-                    )
-                    env[generated_name] = args[generated_name]
-                else:
-                    logger.debug("no value for key id %s", generated_name)
-
-    # for debug purpose
-    for key in args:
-        if key not in env:
-            logger.warning(
-                "Ignore key '%s' from arguments because it is not in the config", key
-            )
-
-    # FIXME: this should probably be ran in a tmp workdir...
-    return_code = hook_exec(
-        config_script,
-        args=["apply"],
-        env=env,
-    )[0]
-
-    if return_code != 0:
-        msg = (
-            "'script/config apply' return value code: %s (considered as an error)"
-            % return_code
-        )
-        operation_logger.error(msg)
-        raise Exception(msg)
-
-    logger.success("Config updated as expected")
-    return {
-        "app": app,
-        "logs": operation_logger.success(),
-    }
-
+        if ret != 0:
+            if action == 'show':
+                raise YunohostError("app_config_unable_to_read_values")
+            else:
+                raise YunohostError("app_config_unable_to_apply_values_correctly")
+        return values
 
 def _get_all_installed_apps_id():
     """
@@ -2025,145 +1928,6 @@ def _get_app_actions(app_id):
 
     elif os.path.exists(actions_json_path):
         return json.load(open(actions_json_path))
-
-    return None
-
-
-def _get_app_config_panel(app_id):
-    "Get app config panel stored in json or in toml"
-    config_panel_toml_path = os.path.join(
-        APPS_SETTING_PATH, app_id, "config_panel.toml"
-    )
-    config_panel_json_path = os.path.join(
-        APPS_SETTING_PATH, app_id, "config_panel.json"
-    )
-
-    # sample data to get an idea of what is going on
-    # this toml extract:
-    #
-    # version = "0.1"
-    # name = "Unattended-upgrades configuration panel"
-    #
-    # [main]
-    # name = "Unattended-upgrades configuration"
-    #
-    #     [main.unattended_configuration]
-    #     name = "50unattended-upgrades configuration file"
-    #
-    #         [main.unattended_configuration.upgrade_level]
-    #         name = "Choose the sources of packages to automatically upgrade."
-    #         default = "Security only"
-    #         type = "text"
-    #         help = "We can't use a choices field for now. In the meantime please choose between one of this values:<br>Security only, Security and updates."
-    #         # choices = ["Security only", "Security and updates"]
-
-    #         [main.unattended_configuration.ynh_update]
-    #         name = "Would you like to update YunoHost packages automatically ?"
-    #         type = "bool"
-    #         default = true
-    #
-    # will be parsed into this:
-    #
-    # OrderedDict([(u'version', u'0.1'),
-    #              (u'name', u'Unattended-upgrades configuration panel'),
-    #              (u'main',
-    #               OrderedDict([(u'name', u'Unattended-upgrades configuration'),
-    #                            (u'unattended_configuration',
-    #                             OrderedDict([(u'name',
-    #                                           u'50unattended-upgrades configuration file'),
-    #                                          (u'upgrade_level',
-    #                                           OrderedDict([(u'name',
-    #                                                         u'Choose the sources of packages to automatically upgrade.'),
-    #                                                        (u'default',
-    #                                                         u'Security only'),
-    #                                                        (u'type', u'text'),
-    #                                                        (u'help',
-    #                                                         u"We can't use a choices field for now. In the meantime please choose between one of this values:<br>Security only, Security and updates.")])),
-    #                                          (u'ynh_update',
-    #                                           OrderedDict([(u'name',
-    #                                                         u'Would you like to update YunoHost packages automatically ?'),
-    #                                                        (u'type', u'bool'),
-    #                                                        (u'default', True)])),
-    #
-    # and needs to be converted into this:
-    #
-    # {u'name': u'Unattended-upgrades configuration panel',
-    #  u'panel': [{u'id': u'main',
-    #    u'name': u'Unattended-upgrades configuration',
-    #    u'sections': [{u'id': u'unattended_configuration',
-    #      u'name': u'50unattended-upgrades configuration file',
-    #      u'options': [{u'//': u'"choices" : ["Security only", "Security and updates"]',
-    #        u'default': u'Security only',
-    #        u'help': u"We can't use a choices field for now. In the meantime please choose between one of this values:<br>Security only, Security and updates.",
-    #        u'id': u'upgrade_level',
-    #        u'name': u'Choose the sources of packages to automatically upgrade.',
-    #        u'type': u'text'},
-    #       {u'default': True,
-    #        u'id': u'ynh_update',
-    #        u'name': u'Would you like to update YunoHost packages automatically ?',
-    #        u'type': u'bool'},
-
-    if os.path.exists(config_panel_toml_path):
-        toml_config_panel = toml.load(
-            open(config_panel_toml_path, "r"), _dict=OrderedDict
-        )
-
-        # transform toml format into json format
-        config_panel = {
-            "name": toml_config_panel["name"],
-            "version": toml_config_panel["version"],
-            "panel": [],
-        }
-
-        panels = [
-            key_value
-            for key_value in toml_config_panel.items()
-            if key_value[0] not in ("name", "version")
-            and isinstance(key_value[1], OrderedDict)
-        ]
-
-        for key, value in panels:
-            panel = {
-                "id": key,
-                "name": value["name"],
-                "sections": [],
-            }
-
-            sections = [
-                k_v1
-                for k_v1 in value.items()
-                if k_v1[0] not in ("name",) and isinstance(k_v1[1], OrderedDict)
-            ]
-
-            for section_key, section_value in sections:
-                section = {
-                    "id": section_key,
-                    "name": section_value["name"],
-                    "options": [],
-                }
-
-                options = [
-                    k_v
-                    for k_v in section_value.items()
-                    if k_v[0] not in ("name",) and isinstance(k_v[1], OrderedDict)
-                ]
-
-                for option_key, option_value in options:
-                    option = dict(option_value)
-                    option["name"] = option_key
-                    option["ask"] = {"en": option["ask"]}
-                    if "help" in option:
-                        option["help"] = {"en": option["help"]}
-                    section["options"].append(option)
-
-                panel["sections"].append(section)
-
-            config_panel["panel"].append(panel)
-
-        return config_panel
-
-    elif os.path.exists(config_panel_json_path):
-        return json.load(open(config_panel_json_path))
 
     return None
 
@@ -2608,32 +2372,15 @@ def _is_installed(app):
     return os.path.isdir(APPS_SETTING_PATH + app)
 
 
+def _assert_is_installed(app):
+    if not _is_installed(app):
+        raise YunohostValidationError(
+            "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
+        )
+
+
 def _installed_apps():
     return os.listdir(APPS_SETTING_PATH)
-
-
-def _value_for_locale(values):
-    """
-    Return proper value for current locale
-
-    Keyword arguments:
-        values -- A dict of values associated to their locale
-
-    Returns:
-        An utf-8 encoded string
-
-    """
-    if not isinstance(values, dict):
-        return values
-
-    for lang in [m18n.locale, m18n.default_locale]:
-        try:
-            return values[lang]
-        except KeyError:
-            continue
-
-    # Fallback to first value
-    return list(values.values())[0]
 
 
 def _check_manifest_requirements(manifest, app_instance_name):
@@ -2682,7 +2429,7 @@ def _parse_args_from_manifest(manifest, action, args={}):
         return OrderedDict()
 
     action_args = manifest["arguments"][action]
-    return _parse_args_in_yunohost_format(args, action_args)
+    return parse_args_in_yunohost_format(args, action_args)
 
 
 def _parse_args_for_action(action, args={}):
@@ -2706,299 +2453,7 @@ def _parse_args_for_action(action, args={}):
 
     action_args = action["arguments"]
 
-    return _parse_args_in_yunohost_format(args, action_args)
-
-
-class Question:
-    "empty class to store questions information"
-
-
-class YunoHostArgumentFormatParser(object):
-    hide_user_input_in_prompt = False
-
-    def parse_question(self, question, user_answers):
-        parsed_question = Question()
-
-        parsed_question.name = question["name"]
-        parsed_question.default = question.get("default", None)
-        parsed_question.choices = question.get("choices", [])
-        parsed_question.optional = question.get("optional", False)
-        parsed_question.ask = question.get("ask")
-        parsed_question.value = user_answers.get(parsed_question.name)
-
-        if parsed_question.ask is None:
-            parsed_question.ask = "Enter value for '%s':" % parsed_question.name
-
-        # Empty value is parsed as empty string
-        if parsed_question.default == "":
-            parsed_question.default = None
-
-        return parsed_question
-
-    def parse(self, question, user_answers):
-        question = self.parse_question(question, user_answers)
-
-        if question.value is None:
-            text_for_user_input_in_cli = self._format_text_for_user_input_in_cli(
-                question
-            )
-
-            try:
-                question.value = Moulinette.prompt(
-                    text_for_user_input_in_cli, self.hide_user_input_in_prompt
-                )
-            except NotImplementedError:
-                question.value = None
-
-        # we don't have an answer, check optional and default_value
-        if question.value is None or question.value == "":
-            if not question.optional and question.default is None:
-                raise YunohostValidationError(
-                    "app_argument_required", name=question.name
-                )
-            else:
-                question.value = (
-                    getattr(self, "default_value", None)
-                    if question.default is None
-                    else question.default
-                )
-
-        # we have an answer, do some post checks
-        if question.value is not None:
-            if question.choices and question.value not in question.choices:
-                self._raise_invalid_answer(question)
-
-        # this is done to enforce a certain formating like for boolean
-        # by default it doesn't do anything
-        question.value = self._post_parse_value(question)
-
-        return (question.value, self.argument_type)
-
-    def _raise_invalid_answer(self, question):
-        raise YunohostValidationError(
-            "app_argument_choice_invalid",
-            name=question.name,
-            choices=", ".join(question.choices),
-        )
-
-    def _format_text_for_user_input_in_cli(self, question):
-        text_for_user_input_in_cli = _value_for_locale(question.ask)
-
-        if question.choices:
-            text_for_user_input_in_cli += " [{0}]".format(" | ".join(question.choices))
-
-        if question.default is not None:
-            text_for_user_input_in_cli += " (default: {0})".format(question.default)
-
-        return text_for_user_input_in_cli
-
-    def _post_parse_value(self, question):
-        return question.value
-
-
-class StringArgumentParser(YunoHostArgumentFormatParser):
-    argument_type = "string"
-    default_value = ""
-
-
-class PasswordArgumentParser(YunoHostArgumentFormatParser):
-    hide_user_input_in_prompt = True
-    argument_type = "password"
-    default_value = ""
-    forbidden_chars = "{}"
-
-    def parse_question(self, question, user_answers):
-        question = super(PasswordArgumentParser, self).parse_question(
-            question, user_answers
-        )
-
-        if question.default is not None:
-            raise YunohostValidationError(
-                "app_argument_password_no_default", name=question.name
-            )
-
-        return question
-
-    def _post_parse_value(self, question):
-        if any(char in question.value for char in self.forbidden_chars):
-            raise YunohostValidationError(
-                "pattern_password_app", forbidden_chars=self.forbidden_chars
-            )
-
-        # If it's an optional argument the value should be empty or strong enough
-        if not question.optional or question.value:
-            from yunohost.utils.password import assert_password_is_strong_enough
-
-            assert_password_is_strong_enough("user", question.value)
-
-        return super(PasswordArgumentParser, self)._post_parse_value(question)
-
-
-class PathArgumentParser(YunoHostArgumentFormatParser):
-    argument_type = "path"
-    default_value = ""
-
-
-class BooleanArgumentParser(YunoHostArgumentFormatParser):
-    argument_type = "boolean"
-    default_value = False
-
-    def parse_question(self, question, user_answers):
-        question = super(BooleanArgumentParser, self).parse_question(
-            question, user_answers
-        )
-
-        if question.default is None:
-            question.default = False
-
-        return question
-
-    def _format_text_for_user_input_in_cli(self, question):
-        text_for_user_input_in_cli = _value_for_locale(question.ask)
-
-        text_for_user_input_in_cli += " [yes | no]"
-
-        if question.default is not None:
-            formatted_default = "yes" if question.default else "no"
-            text_for_user_input_in_cli += " (default: {0})".format(formatted_default)
-
-        return text_for_user_input_in_cli
-
-    def _post_parse_value(self, question):
-        if isinstance(question.value, bool):
-            return 1 if question.value else 0
-
-        if str(question.value).lower() in ["1", "yes", "y", "true"]:
-            return 1
-
-        if str(question.value).lower() in ["0", "no", "n", "false"]:
-            return 0
-
-        raise YunohostValidationError(
-            "app_argument_choice_invalid",
-            name=question.name,
-            choices="yes, no, y, n, 1, 0",
-        )
-
-
-class DomainArgumentParser(YunoHostArgumentFormatParser):
-    argument_type = "domain"
-
-    def parse_question(self, question, user_answers):
-        from yunohost.domain import domain_list, _get_maindomain
-
-        question = super(DomainArgumentParser, self).parse_question(
-            question, user_answers
-        )
-
-        if question.default is None:
-            question.default = _get_maindomain()
-
-        question.choices = domain_list()["domains"]
-
-        return question
-
-    def _raise_invalid_answer(self, question):
-        raise YunohostValidationError(
-            "app_argument_invalid", name=question.name, error=m18n.n("domain_unknown")
-        )
-
-
-class UserArgumentParser(YunoHostArgumentFormatParser):
-    argument_type = "user"
-
-    def parse_question(self, question, user_answers):
-        from yunohost.user import user_list, user_info
-        from yunohost.domain import _get_maindomain
-
-        question = super(UserArgumentParser, self).parse_question(
-            question, user_answers
-        )
-        question.choices = user_list()["users"]
-        if question.default is None:
-            root_mail = "root@%s" % _get_maindomain()
-            for user in question.choices.keys():
-                if root_mail in user_info(user).get("mail-aliases", []):
-                    question.default = user
-                    break
-
-        return question
-
-    def _raise_invalid_answer(self, question):
-        raise YunohostValidationError(
-            "app_argument_invalid",
-            name=question.name,
-            error=m18n.n("user_unknown", user=question.value),
-        )
-
-
-class NumberArgumentParser(YunoHostArgumentFormatParser):
-    argument_type = "number"
-    default_value = ""
-
-    def parse_question(self, question, user_answers):
-        question = super(NumberArgumentParser, self).parse_question(
-            question, user_answers
-        )
-
-        if question.default is None:
-            question.default = 0
-
-        return question
-
-    def _post_parse_value(self, question):
-        if isinstance(question.value, int):
-            return super(NumberArgumentParser, self)._post_parse_value(question)
-
-        if isinstance(question.value, str) and question.value.isdigit():
-            return int(question.value)
-
-        raise YunohostValidationError(
-            "app_argument_invalid", name=question.name, error=m18n.n("invalid_number")
-        )
-
-
-class DisplayTextArgumentParser(YunoHostArgumentFormatParser):
-    argument_type = "display_text"
-
-    def parse(self, question, user_answers):
-        print(question["ask"])
-
-
-ARGUMENTS_TYPE_PARSERS = {
-    "string": StringArgumentParser,
-    "password": PasswordArgumentParser,
-    "path": PathArgumentParser,
-    "boolean": BooleanArgumentParser,
-    "domain": DomainArgumentParser,
-    "user": UserArgumentParser,
-    "number": NumberArgumentParser,
-    "display_text": DisplayTextArgumentParser,
-}
-
-
-
-def _parse_args_in_yunohost_format(user_answers, argument_questions):
-    """Parse arguments store in either manifest.json or actions.json or from a
-    config panel against the user answers when they are present.
-
-    Keyword arguments:
-        user_answers -- a dictionnary of arguments from the user (generally
-                        empty in CLI, filed from the admin interface)
-        argument_questions -- the arguments description store in yunohost
-                              format from actions.json/toml, manifest.json/toml
-                              or config_panel.json/toml
-    """
-    parsed_answers_dict = OrderedDict()
-
-    for question in argument_questions:
-        parser = ARGUMENTS_TYPE_PARSERS[question.get("type", "string")]()
-
-        answer = parser.parse(question=question, user_answers=user_answers)
-        if answer is not None:
-            parsed_answers_dict[question["name"]] = answer
-
-    return parsed_answers_dict
+    return parse_args_in_yunohost_format(args, action_args)
 
 
 def _validate_and_normalize_webpath(args_dict, app_folder):
