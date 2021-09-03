@@ -387,115 +387,58 @@ def _get_maindomain():
     return maindomain
 
 
-def _default_domain_settings(domain):
-    from yunohost.utils.dns import get_dns_zone_from_domain
-    return {
-        "xmpp": domain == domain_list()["main"],
-        "mail_in": True,
-        "mail_out": True,
-        "dns_zone": get_dns_zone_from_domain(domain),
-        "ttl": 3600,
-    }
-
-
 def _get_domain_settings(domain):
     """
     Retrieve entries in /etc/yunohost/domains/[domain].yml
     And set default values if needed
     """
-    _assert_domain_exists(domain)
-
-    # Retrieve entries in the YAML
-    filepath = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
-    on_disk_settings = {}
-    if os.path.exists(filepath) and os.path.isfile(filepath):
-        on_disk_settings = read_yaml(filepath) or {}
-
-    # Inject defaults if needed (using the magic .update() ;))
-    settings = _default_domain_settings(domain)
-    settings.update(on_disk_settings)
-    return settings
+    config = DomainConfigPanel(domain)
+    return config.get(mode='export')
 
 
-def domain_setting(domain, key, value=None, delete=False):
+def domain_config_get(domain, key='', mode='classic'):
     """
-    Set or get an app setting value
-
-    Keyword argument:
-        domain -- Domain Name
-        key -- Key to get/set
-        value -- Value to set
-        delete -- Delete the key
-
+    Display a domain configuration
     """
 
-    domain_settings = _get_domain_settings(domain)
+    config = DomainConfigPanel(domain)
+    return config.get(key, mode)
 
-    # GET
-    if value is None and not delete:
-        if key not in domain_settings:
-            raise YunohostValidationError("domain_property_unknown", property=key)
-
-        return domain_settings[key]
-
-    # DELETE
-    if delete:
-        if key in domain_settings:
-            del domain_settings[key]
-            _set_domain_settings(domain, domain_settings)
-
-    # SET
-    else:
-        # FIXME : in the future, implement proper setting types (+ defaults),
-        # maybe inspired from the global settings
-
-        if key in ["mail_in", "mail_out", "xmpp"]:
-            _is_boolean, value = is_boolean(value)
-            if not _is_boolean:
-                raise YunohostValidationError(
-                    "global_settings_bad_type_for_setting",
-                    setting=key,
-                    received_type="not boolean",
-                    expected_type="boolean",
-                )
-
-        if "ttl" == key:
-            try:
-                value = int(value)
-            except ValueError:
-                # TODO add locales
-                raise YunohostValidationError("invalid_number", value_type=type(value))
-
-            if value < 0:
-                raise YunohostValidationError("pattern_positive_number", value_type=type(value))
-
-        # Set new value
-        domain_settings[key] = value
-        # Save settings
-        _set_domain_settings(domain, domain_settings)
-
-
-def _set_domain_settings(domain, domain_settings):
+@is_unit_operation()
+def domain_config_set(operation_logger, app, key=None, value=None, args=None, args_file=None):
     """
-    Set settings of a domain
-
-    Keyword arguments:
-        domain -- The domain name
-        settings -- Dict with domain settings
-
+    Apply a new domain configuration
     """
 
-    _assert_domain_exists(domain)
+    config = DomainConfigPanel(domain)
+    return config.set(key, value, args, args_file)
 
-    defaults = _default_domain_settings(domain)
-    diff_with_defaults = {k: v for k, v in domain_settings.items() if defaults.get(k) != v}
+class DomainConfigPanel(ConfigPanel):
+    def __init__(domain):
+        _assert_domain_exist(domain)
+        self.domain = domain
+        super().__init(
+            config_path=DOMAIN_CONFIG_PATH.format(domain=domain),
+            save_path=DOMAIN_SETTINGS_PATH.format(domain=domain)
+        )
 
-    # First create the DOMAIN_SETTINGS_DIR if it doesn't exist
-    if not os.path.exists(DOMAIN_SETTINGS_DIR):
-        mkdir(DOMAIN_SETTINGS_DIR, mode=0o700)
-    # Save the settings to the .yaml file
-    filepath = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
-    write_to_yaml(filepath, diff_with_defaults)
+    def _get_toml(self):
+        from yunohost.utils.dns import get_dns_zone_from_domain
+        toml = super()._get_toml()
+        self.dns_zone = get_dns_zone_from_domain(self.domain)
+
+        try:
+            registrar = _relevant_provider_for_domain(self.dns_zone)
+        except ValueError:
+            return toml
+
+        registrar_list = read_toml("/usr/share/yunohost/other/registrar_list.toml")
+        toml['dns']['registrar'] = registrar_list[registrar]
+        return toml
+
+    def _load_current_values():
+        # TODO add mechanism to share some settings with other domains on the same zone
+        super()._load_current_values()
 
 #
 #

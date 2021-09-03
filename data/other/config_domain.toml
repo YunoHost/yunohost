@@ -1,0 +1,38 @@
+version = "1.0"
+i18n = "domain_config"
+
+[feature]
+    [feature.mail]
+        [feature.mail.mail_out]
+        type = "boolean"
+        default = true
+        
+        [feature.mail.mail_in]
+        type = "boolean"
+        default = true
+        
+        [feature.mail.backup_mx]
+        type = "tags"
+        pattern.regexp = "^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$"
+        pattern.error = "pattern_error"
+        default = []
+    
+    [feature.xmpp]
+        [feature.mail.xmpp]
+        type = "boolean"
+        default = false
+
+[dns]
+    [dns.registrar]
+        [dns.registrar.unsupported]
+        ask = "DNS zone of this domain can't be auto-configured, you should do it manually."
+        type = "alert"
+        style = "info"
+        helpLink.href = "https://yunohost.org/dns_config"
+        helpLink.text = "How to configure manually my DNS zone"
+
+    [dns.advanced]
+        [dns.advanced.ttl]
+        type = "number"
+        min = 0
+        default = 3600

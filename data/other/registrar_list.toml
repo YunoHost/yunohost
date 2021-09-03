@@ -1,0 +1,636 @@
+[aliyun]
+    [aliyun.auth_key_id]
+    type = "string"
+    redact = True
+
+    [aliyun.auth_secret]
+    type = "password"
+
+[aurora]
+    [aurora.auth_api_key]
+    type = "string"
+    redact = True
+
+    [aurora.auth_secret_key]
+    type = "password"
+
+[azure]
+    [azure.auth_client_id]
+    type = "string"
+    redact = True
+    
+    [azure.auth_client_secret]
+    type = "password"
+    
+    [azure.auth_tenant_id]
+    type = "string"
+    redact = True
+    
+    [azure.auth_subscription_id]
+    type = "string"
+    redact = True
+    
+    [azure.resource_group]
+    type = "string"
+    redact = True
+    
+[cloudflare]
+    [cloudflare.auth_username]
+    type = "string"
+    redact = True
+    
+    [cloudflare.auth_token]
+    type = "string"
+    redact = True
+    
+    [cloudflare.zone_id]
+    type = "string"
+    redact = True
+    
+[cloudns]
+    [cloudns.auth_id]
+    type = "string"
+    redact = True
+    
+    [cloudns.auth_subid]
+    type = "string"
+    redact = True
+    
+    [cloudns.auth_subuser]
+    type = "string"
+    redact = True
+    
+    [cloudns.auth_password]
+    type = "password"
+    
+    [cloudns.weight]
+    type = "number"
+    
+    [cloudns.port]
+    type = "number"
+[cloudxns]
+    [cloudxns.auth_username]
+    type = "string"
+    redact = True
+    
+    [cloudxns.auth_token]
+    type = "string"
+    redact = True
+    
+[conoha]
+    [conoha.auth_region]
+    type = "string"
+    redact = True
+    
+    [conoha.auth_token]
+    type = "string"
+    redact = True
+    
+    [conoha.auth_username]
+    type = "string"
+    redact = True
+    
+    [conoha.auth_password]
+    type = "password"
+    
+    [conoha.auth_tenant_id]
+    type = "string"
+    redact = True
+    
+[constellix]
+    [constellix.auth_username]
+    type = "string"
+    redact = True
+    
+    [constellix.auth_token]
+    type = "string"
+    redact = True
+    
+[digitalocean]
+    [digitalocean.auth_token]
+    type = "string"
+    redact = True
+    
+[dinahosting]
+    [dinahosting.auth_username]
+    type = "string"
+    redact = True
+    
+    [dinahosting.auth_password]
+    type = "password"
+    
+[directadmin]
+    [directadmin.auth_password]
+    type = "password"
+    
+    [directadmin.auth_username]
+    type = "string"
+    redact = True
+    
+    [directadmin.endpoint]
+    type = "string"
+    redact = True
+    
+[dnsimple]
+    [dnsimple.auth_token]
+    type = "string"
+    redact = True
+    
+    [dnsimple.auth_username]
+    type = "string"
+    redact = True
+    
+    [dnsimple.auth_password]
+    type = "password"
+    
+    [dnsimple.auth_2fa]
+    type = "string"
+    redact = True
+    
+[dnsmadeeasy]
+    [dnsmadeeasy.auth_username]
+    type = "string"
+    redact = True
+    
+    [dnsmadeeasy.auth_token]
+    type = "string"
+    redact = True
+    
+[dnspark]
+    [dnspark.auth_username]
+    type = "string"
+    redact = True
+    
+    [dnspark.auth_token]
+    type = "string"
+    redact = True
+    
+[dnspod]
+    [dnspod.auth_username]
+    type = "string"
+    redact = True
+    
+    [dnspod.auth_token]
+    type = "string"
+    redact = True
+    
+[dreamhost]
+    [dreamhost.auth_token]
+    type = "string"
+    redact = True
+    
+[dynu]
+    [dynu.auth_token]
+    type = "string"
+    redact = True
+    
+[easydns]
+    [easydns.auth_username]
+    type = "string"
+    redact = True
+    
+    [easydns.auth_token]
+    type = "string"
+    redact = True
+    
+[easyname]
+    [easyname.auth_username]
+    type = "string"
+    redact = True
+    
+    [easyname.auth_password]
+    type = "password"
+    
+[euserv]
+    [euserv.auth_username]
+    type = "string"
+    redact = True
+    
+    [euserv.auth_password]
+    type = "password"
+    
+[exoscale]
+    [exoscale.auth_key]
+    type = "string"
+    redact = True
+    
+    [exoscale.auth_secret]
+    type = "password"
+    
+[gandi]
+    [gandi.auth_token]
+    type = "string"
+    redact = True
+    
+    [gandi.api_protocol]
+    type = "string"
+    choices.rpc = "RPC"
+    choices.rest = "REST"
+    
+[gehirn]
+    [gehirn.auth_token]
+    type = "string"
+    redact = True
+    
+    [gehirn.auth_secret]
+    type = "password"
+    
+[glesys]
+    [glesys.auth_username]
+    type = "string"
+    redact = True
+    
+    [glesys.auth_token]
+    type = "string"
+    redact = True
+    
+[godaddy]
+    [godaddy.auth_key]
+    type = "string"
+    redact = True
+    
+    [godaddy.auth_secret]
+    type = "password"
+    
+[googleclouddns]
+    [goggleclouddns.auth_service_account_info]
+    type = "string"
+    redact = True
+    
+[gransy]
+    [gransy.auth_username]
+    type = "string"
+    redact = True
+    
+    [gransy.auth_password]
+    type = "password"
+    
+[gratisdns]
+    [gratisdns.auth_username]
+    type = "string"
+    redact = True
+    
+    [gratisdns.auth_password]
+    type = "password"
+    
+[henet]
+    [henet.auth_username]
+    type = "string"
+    redact = True
+    
+    [henet.auth_password]
+    type = "password"
+    
+[hetzner]
+    [hetzner.auth_token]
+    type = "string"
+    redact = True
+    
+[hostingde]
+    [hostingde.auth_token]
+    type = "string"
+    redact = True
+    
+[hover]
+    [hover.auth_username]
+    type = "string"
+    redact = True
+    
+    [hover.auth_password]
+    type = "password"
+    
+[infoblox]
+    [infoblox.auth_user]
+    type = "string"
+    redact = True
+    
+    [infoblox.auth_psw]
+    type = "password"
+    
+    [infoblox.ib_view]
+    type = "string"
+    redact = True
+    
+    [infoblox.ib_host]
+    type = "string"
+    redact = True
+    
+[infomaniak]
+    [infomaniak.auth_token]
+    type = "string"
+    redact = True
+    
+[internetbs]
+    [internetbs.auth_key]
+    type = "string"
+    redact = True
+    
+    [internetbs.auth_password]
+    type = "string"
+    redact = True
+    
+[inwx]
+    [inwx.auth_username]
+    type = "string"
+    redact = True
+    
+    [inwx.auth_password]
+    type = "password"
+    
+[joker]
+    [joker.auth_token]
+    type = "string"
+    redact = True
+    
+[linode]
+    [linode.auth_token]
+    type = "string"
+    redact = True
+    
+[linode4]
+    [linode4.auth_token]
+    type = "string"
+    redact = True
+    
+[localzone]
+    [localzone.filename]
+    type = "string"
+    redact = True
+    
+[luadns]
+    [luadns.auth_username]
+    type = "string"
+    redact = True
+    
+    [luadns.auth_token]
+    type = "string"
+    redact = True
+    
+[memset]
+    [memset.auth_token]
+    type = "string"
+    redact = True
+    
+[mythicbeasts]
+    [mythicbeasts.auth_username]
+    type = "string"
+    redact = True
+    
+    [mythicbeasts.auth_password]
+    type = "password"
+    
+    [mythicbeasts.auth_token]
+    type = "string"
+    redact = True
+    
+[namecheap]
+    [namecheap.auth_token]
+    type = "string"
+    redact = True
+    
+    [namecheap.auth_username]
+    type = "string"
+    redact = True
+    
+    [namecheap.auth_client_ip]
+    type = "string"
+    redact = True
+    
+    [namecheap.auth_sandbox]
+    type = "string"
+    redact = True
+    
+[namesilo]
+    [namesilo.auth_token]
+    type = "string"
+    redact = True
+    
+[netcup]
+    [netcup.auth_customer_id]
+    type = "string"
+    redact = True
+    
+    [netcup.auth_api_key]
+    type = "string"
+    redact = True
+    
+    [netcup.auth_api_password]
+    type = "password"
+    
+[nfsn]
+    [nfsn.auth_username]
+    type = "string"
+    redact = True
+    
+    [nfsn.auth_token]
+    type = "string"
+    redact = True
+    
+[njalla]
+    [njalla.auth_token]
+    type = "string"
+    redact = True
+    
+[nsone]
+    [nsone.auth_token]
+    type = "string"
+    redact = True
+    
+[onapp]
+    [onapp.auth_username]
+    type = "string"
+    redact = True
+    
+    [onapp.auth_token]
+    type = "string"
+    redact = True
+    
+    [onapp.auth_server]
+    type = "string"
+    redact = True
+    
+[online]
+    [online.auth_token]
+    type = "string"
+    redact = True
+    
+[ovh]
+    [ovh.auth_entrypoint]
+    type = "string"
+    redact = True
+    
+    [ovh.auth_application_key]
+    type = "string"
+    redact = True
+    
+    [ovh.auth_application_secret]
+    type = "password"
+    
+    [ovh.auth_consumer_key]
+    type = "string"
+    redact = True
+    
+[plesk]
+    [plesk.auth_username]
+    type = "string"
+    redact = True
+    
+    [plesk.auth_password]
+    type = "password"
+    
+    [plesk.plesk_server]
+    type = "string"
+    redact = True
+    
+[pointhq]
+    [pointhq.auth_username]
+    type = "string"
+    redact = True
+    
+    [pointhq.auth_token]
+    type = "string"
+    redact = True
+    
+[powerdns]
+    [powerdns.auth_token]
+    type = "string"
+    redact = True
+    
+    [powerdns.pdns_server]
+    type = "string"
+    redact = True
+    
+    [powerdns.pdns_server_id]
+    type = "string"
+    redact = True
+    
+    [powerdns.pdns_disable_notify]
+    type = "boolean"
+    
+[rackspace]
+    [rackspace.auth_account]
+    type = "string"
+    redact = True
+    
+    [rackspace.auth_username]
+    type = "string"
+    redact = True
+    
+    [rackspace.auth_api_key]
+    type = "string"
+    redact = True
+    
+    [rackspace.auth_token]
+    type = "string"
+    redact = True
+    
+    [rackspace.sleep_time]
+    type = "string"
+    redact = True
+    
+[rage4]
+    [rage4.auth_username]
+    type = "string"
+    redact = True
+    
+    [rage4.auth_token]
+    type = "string"
+    redact = True
+    
+[rcodezero]
+    [rcodezero.auth_token]
+    type = "string"
+    redact = True
+    
+[route53]
+    [route53.auth_access_key]
+    type = "string"
+    redact = True
+    
+    [route53.auth_access_secret]
+    type = "password"
+    
+    [route53.private_zone]
+    type = "string"
+    redact = True
+    
+    [route53.auth_username]
+    type = "string"
+    redact = True
+    
+    [route53.auth_token]
+    type = "string"
+    redact = True
+    
+[safedns]
+    [safedns.auth_token]
+    type = "string"
+    redact = True
+    
+[sakuracloud]
+    [sakuracloud.auth_token]
+    type = "string"
+    redact = True
+    
+    [sakuracloud.auth_secret]
+    type = "password"
+    
+[softlayer]
+    [softlayer.auth_username]
+    type = "string"
+    redact = True
+    
+    [softlayer.auth_api_key]
+    type = "string"
+    redact = True
+    
+[transip]
+    [transip.auth_username]
+    type = "string"
+    redact = True
+    
+    [transip.auth_api_key]
+    type = "string"
+    redact = True
+    
+[ultradns]
+    [ultradns.auth_token]
+    type = "string"
+    redact = True
+    
+    [ultradns.auth_username]
+    type = "string"
+    redact = True
+    
+    [ultradns.auth_password]
+    type = "password"
+    
+[vultr]
+    [vultr.auth_token]
+    type = "string"
+    redact = True
+    
+[yandex]
+    [yandex.auth_token]
+    type = "string"
+    redact = True
+    
+[zeit]
+    [zeit.auth_token]
+    type = "string"
+    redact = True
+    
+[zilore]
+    [zilore.auth_key]
+    type = "string"
+    redact = True
+    
+[zonomi]
+    [zonomy.auth_token]
+    type = "string"
+    redact = True
+    
+    [zonomy.auth_entrypoint]
+    type = "string"
+    redact = True
+    

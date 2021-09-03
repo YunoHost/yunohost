@@ -467,6 +467,17 @@ domain:
                     help: Target domain
                     extra:
                         pattern: *pattern_domain
+        
+        ### domain_push_config()
+        push-config:
+            action_help: Push DNS records to registrar
+            api: GET /domains/<domain>/push
+            arguments:
+                domain:
+                    help: Domain name to add
+                    extra:
+                        pattern: *pattern_domain
+
 
         ### domain_maindomain()
         main-domain:
@@ -549,26 +560,40 @@ domain:
                 path:
                     help: The path to check (e.g. /coffee)
 
-        ### domain_setting()
-        setting:
-            action_help: Set or get a domain setting value
-            api: GET /domains/<domain>/settings
-            arguments:
-                domain:
-                    help: Domain name
-                    extra:
-                        pattern: *pattern_domain
-                key:
-                    help: Key to get/set
-                -v:
-                    full: --value
-                    help: Value to set
-                -d:
-                    full: --delete
-                    help: Delete the key
-                    action: store_true
-
     subcategories:
+
+      config:
+          subcategory_help: Domain settings
+          actions:
+
+              ### domain_config_get()
+              get:
+                  action_help: Display a domain configuration
+                  api: GET /domains/<domain>/config
+                  arguments:
+                    domain:
+                        help: Domain name
+                    key:
+                        help: A question or form key
+                        nargs: '?'
+
+              ### domain_config_set()
+              set:
+                  action_help: Apply a new configuration
+                  api: PUT /domains/<domain>/config
+                  arguments:
+                    app:
+                        help: Domain name
+                    key:
+                        help: The question or form key 
+                        nargs: '?'
+                    -v:
+                        full: --value
+                        help: new value
+                    -a:
+                        full: --args
+                        help: Serialized arguments for new configuration (i.e. "mail_in=0&mail_out=0")
+
         registrar:
             subcategory_help: Manage domains registrars
             actions:

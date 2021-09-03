@@ -46,6 +46,7 @@ logger = getActionLogger("yunohost.config")
 CONFIG_PANEL_VERSION_SUPPORTED = 1.0
 
 class ConfigPanel:
+    save_mode = "diff"
 
     def __init__(self, config_path, save_path=None):
         self.config_path = config_path
@@ -56,6 +57,7 @@ class ConfigPanel:
 
     def get(self, key='', mode='classic'):
         self.filter_key = key or ''
+        self.mode = mode
 
         # Read config panel toml
         self._get_config_panel()
@@ -273,13 +275,39 @@ class ConfigPanel:
             ))
         self.new_values = {key: str(value[0]) for key, value in self.new_values.items() if not value[0] is None}
 
+    def _get_default_values(self):
+        return { key: option['default']
+                for _, _, option in self._iterate() if 'default' in option }
+
+    def _load_current_values(self):
+        """
+        Retrieve entries in YAML file
+        And set default values if needed
+        """
+
+        # Retrieve entries in the YAML
+        on_disk_settings = {}
+        if os.path.exists(self.save_path) and os.path.isfile(self.save_path):
+            on_disk_settings = read_yaml(self.save_path) or {}
+
+        # Inject defaults if needed (using the magic .update() ;))
+        self.values = self._get_default_values(self)
+        self.values.update(on_disk_settings)
+
     def _apply(self):
         logger.info("Running config script...")
         dir_path = os.path.dirname(os.path.realpath(self.save_path))
         if not os.path.exists(dir_path):
             mkdir(dir_path, mode=0o700)
+
+        if self.save_mode == 'diff':
+            defaults = self._get_default_values()
+            values_to_save = {k: v for k, v in values.items() if defaults.get(k) != v}
+        else:
+            values_to_save = {**self.values, **self.new_values}
+
         # Save the settings to the .yaml file
-        write_to_yaml(self.save_path, self.new_values)
+        write_to_yaml(self.save_path, values_to_save)
 
 
     def _reload_services(self):
