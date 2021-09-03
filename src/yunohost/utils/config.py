@@ -85,8 +85,10 @@ class ConfigPanel:
             key = f"{panel['id']}.{section['id']}.{option['id']}"
             if mode == 'export':
                 result[option['id']] = option.get('current_value')
-            else:
+            elif 'ask' in option:
                 result[key] = { 'ask': _value_for_locale(option['ask']) }
+            elif 'i18n' in self.config:
+                result[key] = { 'ask': m18n.n(self.config['i18n'] + '_' + option['id']) }
                 if 'current_value' in option:
                     result[key]['value'] = option['current_value']
 
@@ -276,7 +278,7 @@ class ConfigPanel:
         self.new_values = {key: str(value[0]) for key, value in self.new_values.items() if not value[0] is None}
 
     def _get_default_values(self):
-        return { key: option['default']
+        return { option['id']: option['default']
                 for _, _, option in self._iterate() if 'default' in option }
 
     def _load_current_values(self):
@@ -291,7 +293,7 @@ class ConfigPanel:
             on_disk_settings = read_yaml(self.save_path) or {}
 
         # Inject defaults if needed (using the magic .update() ;))
-        self.values = self._get_default_values(self)
+        self.values = self._get_default_values()
         self.values.update(on_disk_settings)
 
     def _apply(self):

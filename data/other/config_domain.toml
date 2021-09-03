@@ -13,12 +13,13 @@ i18n = "domain_config"
         
         [feature.mail.backup_mx]
         type = "tags"
-        pattern.regexp = "^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$"
-        pattern.error = "pattern_error"
         default = []
+        pattern.regexp = '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
+        pattern.error = "pattern_error"
     
     [feature.xmpp]
-        [feature.mail.xmpp]
+
+        [feature.xmpp.xmpp]
         type = "boolean"
         default = false
 

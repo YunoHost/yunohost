@@ -38,14 +38,16 @@ from yunohost.app import (
     _get_conflicting_apps,
 )
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
+from yunohost.utils.config import ConfigPanel
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
 
 logger = getActionLogger("yunohost.domain")
 
+DOMAIN_CONFIG_PATH = "/usr/share/yunohost/other/config_domain.toml"
 DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
-
+DOMAIN_REGISTRAR_LIST_PATH = "/usr/share/yunohost/other/registrar_list.toml"
 
 # Lazy dev caching to avoid re-query ldap every time we need the domain list
 domain_list_cache = {}
@@ -413,16 +415,18 @@ def domain_config_set(operation_logger, app, key=None, value=None, args=None, ar
     config = DomainConfigPanel(domain)
     return config.set(key, value, args, args_file)
 
+
 class DomainConfigPanel(ConfigPanel):
-    def __init__(domain):
-        _assert_domain_exist(domain)
+    def __init__(self, domain):
+        _assert_domain_exists(domain)
         self.domain = domain
-        super().__init(
-            config_path=DOMAIN_CONFIG_PATH.format(domain=domain),
-            save_path=DOMAIN_SETTINGS_PATH.format(domain=domain)
+        super().__init__(
+            config_path=DOMAIN_CONFIG_PATH,
+            save_path=f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
         )
 
     def _get_toml(self):
+        from lexicon.providers.auto import _relevant_provider_for_domain
         from yunohost.utils.dns import get_dns_zone_from_domain
         toml = super()._get_toml()
         self.dns_zone = get_dns_zone_from_domain(self.domain)
@@ -432,11 +436,11 @@ class DomainConfigPanel(ConfigPanel):
         except ValueError:
             return toml
 
-        registrar_list = read_toml("/usr/share/yunohost/other/registrar_list.toml")
+        registrar_list = read_toml(DOMAIN_REGISTRAR_LIST_PATH)
         toml['dns']['registrar'] = registrar_list[registrar]
         return toml
 
-    def _load_current_values():
+    def _load_current_values(self):
         # TODO add mechanism to share some settings with other domains on the same zone
         super()._load_current_values()
 
@@ -478,21 +482,6 @@ def domain_dns_conf(domain):
     return yunohost.dns.domain_dns_conf(domain)
 
 
-def domain_registrar_catalog():
-    import yunohost.dns
-    return yunohost.dns.domain_registrar_catalog()
-
-
-def domain_registrar_set(domain, registrar, args):
-    import yunohost.dns
-    return yunohost.dns.domain_registrar_set(domain, registrar, args)
-
-
-def domain_registrar_info(domain):
-    import yunohost.dns
-    return yunohost.dns.domain_registrar_info(domain)
-
-
-def domain_registrar_push(domain, dry_run):
+def domain_dns_push(domain, dry_run):
     import yunohost.dns
     return yunohost.dns.domain_registrar_push(domain, dry_run)

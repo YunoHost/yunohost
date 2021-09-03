@@ -39,9 +39,6 @@ from yunohost.hook import hook_callback
 
 logger = getActionLogger("yunohost.domain")
 
-REGISTRAR_SETTINGS_DIR = "/etc/yunohost/registrars"
-REGISTRAR_LIST_PATH = "/usr/share/yunohost/other/registrar_list.yml"
-
 
 def domain_dns_conf(domain):
     """
@@ -387,68 +384,6 @@ def _get_DKIM(domain):
                 p=dkim.group("p"),
             ),
         )
-
-
-def _get_registrar_settings(dns_zone):
-    on_disk_settings = {}
-    filepath = f"{REGISTRAR_SETTINGS_DIR}/{dns_zone}.yml"
-    if os.path.exists(filepath) and os.path.isfile(filepath):
-        on_disk_settings = read_yaml(filepath) or {}
-
-    return on_disk_settings
-
-
-def _set_registrar_settings(dns_zone, domain_registrar):
-    if not os.path.exists(REGISTRAR_SETTINGS_DIR):
-        mkdir(REGISTRAR_SETTINGS_DIR, mode=0o700)
-    filepath = f"{REGISTRAR_SETTINGS_DIR}/{dns_zone}.yml"
-    write_to_yaml(filepath, domain_registrar)
-
-
-def domain_registrar_info(domain):
-
-    dns_zone = _get_domain_settings(domain)["dns_zone"]
-    registrar_info = _get_registrar_settings(dns_zone)
-    if not registrar_info:
-        raise YunohostValidationError("registrar_is_not_set", dns_zone=dns_zone)
-
-    return registrar_info
-
-
-def domain_registrar_catalog():
-    return read_yaml(REGISTRAR_LIST_PATH)
-
-
-def domain_registrar_set(domain, registrar, args):
-
-    _assert_domain_exists(domain)
-
-    registrars = read_yaml(REGISTRAR_LIST_PATH)
-    if registrar not in registrars.keys():
-        raise YunohostValidationError("domain_registrar_unknown", registrar=registrar)
-
-    parameters = registrars[registrar]
-    ask_args = []
-    for parameter in parameters:
-        ask_args.append(
-            {
-                "name": parameter,
-                "type": "string",
-                "example": "",
-                "default": "",
-            }
-        )
-    args_dict = (
-        {} if not args else dict(urllib.parse.parse_qsl(args, keep_blank_values=True))
-    )
-    parsed_answer_dict = _parse_args_in_yunohost_format(args_dict, ask_args)
-
-    domain_registrar = {"name": registrar, "options": {}}
-    for arg_name, arg_value_and_type in parsed_answer_dict.items():
-        domain_registrar["options"][arg_name] = arg_value_and_type[0]
-
-    dns_zone = _get_domain_settings(domain)["dns_zone"]
-    _set_registrar_settings(dns_zone, domain_registrar)
 
 
 @is_unit_operation()
