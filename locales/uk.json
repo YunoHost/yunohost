@@ -405,7 +405,7 @@
     "diagnosis_mail_fcrdns_ok": "Ваш зворотний DNS налаштований правильно!",
     "diagnosis_mail_ehlo_could_not_diagnose_details": "Помилка: {error}",
     "diagnosis_mail_ehlo_could_not_diagnose": "Не вдалося діагностувати наявність певної поштовий сервер postfix ззовні в IPv{ipversion}.",
-    "diagnosis_mail_ehlo_wrong_details": "EHLO, отриманий віддаленим діагностичним центром в IPv{ipversion}, відрізняється від домену вашого сервера. <br> Отриманий EHLO: <code>{wrong_ehlo}</code> <br> Очікуваний: <code>{right_ehlo}</code> < br> найпоширенішою причиною цієї проблеми є те, що порт 25 <a href='https://yunohost.org/isp_box_config'>неправильно перенаправлений на ваш сервер </a>. Крім того, переконайтеся, що в роботу сервера не втручається брандмауер або зворотний проксі-сервер.",
+    "diagnosis_mail_ehlo_wrong_details": "EHLO, отриманий віддаленим діагностичним центром в IPv{ipversion}, відрізняється від домену вашого сервера.<br>Отриманий EHLO: <code>{wrong_ehlo}</code><br>Очікуваний: <code>{right_ehlo}</code>< br>Найпоширенішою причиною цієї проблеми є те, що порт 25 <a href='https://yunohost.org/isp_box_config'>неправильно перенаправлений на ваш сервер</a>. Крім того, переконайтеся, що в роботу сервера не втручається фаєрвол або зворотний проксі-сервер.",
     "diagnosis_mail_ehlo_wrong": "Інший поштовий SMTP-сервер відповідає на IPv{ipversion}. Ваш сервер, ймовірно, не зможе отримувати електронні листи.",
     "diagnosis_mail_ehlo_bad_answer_details": "Це може бути викликано тим, що замість вашого сервера відповідає інша машина.",
     "diagnosis_mail_ehlo_bad_answer": "Не-SMTP служба відповіла на порту 25 на IPv{ipversion}.",
