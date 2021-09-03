@@ -25,14 +25,12 @@
 """
 import re
 import os
-import yaml
 import subprocess
-import pwd
 import time
 from importlib import import_module
 from packaging import version
 
-from moulinette import msignals, m18n
+from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml
@@ -67,79 +65,6 @@ def tools_versions():
     return ynh_packages_version()
 
 
-def tools_ldapinit():
-    """
-    YunoHost LDAP initialization
-    """
-
-    with open("/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml") as f:
-        ldap_map = yaml.load(f)
-
-    from yunohost.utils.ldap import _get_ldap_interface
-
-    ldap = _get_ldap_interface()
-
-    for rdn, attr_dict in ldap_map["parents"].items():
-        try:
-            ldap.add(rdn, attr_dict)
-        except Exception as e:
-            logger.warn(
-                "Error when trying to inject '%s' -> '%s' into ldap: %s"
-                % (rdn, attr_dict, e)
-            )
-
-    for rdn, attr_dict in ldap_map["children"].items():
-        try:
-            ldap.add(rdn, attr_dict)
-        except Exception as e:
-            logger.warn(
-                "Error when trying to inject '%s' -> '%s' into ldap: %s"
-                % (rdn, attr_dict, e)
-            )
-
-    for rdn, attr_dict in ldap_map["depends_children"].items():
-        try:
-            ldap.add(rdn, attr_dict)
-        except Exception as e:
-            logger.warn(
-                "Error when trying to inject '%s' -> '%s' into ldap: %s"
-                % (rdn, attr_dict, e)
-            )
-
-    admin_dict = {
-        "cn": ["admin"],
-        "uid": ["admin"],
-        "description": ["LDAP Administrator"],
-        "gidNumber": ["1007"],
-        "uidNumber": ["1007"],
-        "homeDirectory": ["/home/admin"],
-        "loginShell": ["/bin/bash"],
-        "objectClass": ["organizationalRole", "posixAccount", "simpleSecurityObject"],
-        "userPassword": ["yunohost"],
-    }
-
-    ldap.update("cn=admin", admin_dict)
-
-    # Force nscd to refresh cache to take admin creation into account
-    subprocess.call(["nscd", "-i", "passwd"])
-
-    # Check admin actually exists now
-    try:
-        pwd.getpwnam("admin")
-    except KeyError:
-        logger.error(m18n.n("ldap_init_failed_to_create_admin"))
-        raise YunohostError("installation_failed")
-
-    try:
-        # Attempt to create user home folder
-        subprocess.check_call(["mkhomedir_helper", "admin"])
-    except subprocess.CalledProcessError:
-        if not os.path.isdir("/home/{0}".format("admin")):
-            logger.warning(m18n.n("user_home_creation_failed"), exc_info=1)
-
-    logger.success(m18n.n("ldap_initialized"))
-
-
 def tools_adminpw(new_password, check_strength=True):
     """
     Change admin password
@@ -169,12 +94,10 @@ def tools_adminpw(new_password, check_strength=True):
     try:
         ldap.update(
             "cn=admin",
-            {
-                "userPassword": [new_hash],
-            },
+            {"userPassword": [new_hash]},
         )
-    except Exception:
-        logger.error("unable to change admin password")
+    except Exception as e:
+        logger.error("unable to change admin password : %s" % e)
         raise YunohostError("admin_password_change_failed")
     else:
         # Write as root password
@@ -352,7 +275,7 @@ def tools_postinstall(
     domain_add(domain, dyndns)
     domain_main_domain(domain)
 
-    # Change LDAP admin password
+    # Update LDAP admin and create home dir
     tools_adminpw(password, check_strength=not force_password)
 
     # Enable UPnP silently and reload firewall
@@ -588,7 +511,7 @@ def tools_upgrade(
         # Actually start the upgrades
 
         try:
-            app_upgrade(app=apps)
+            app_upgrade(app=upgradable_apps)
         except Exception as e:
             logger.warning("unable to upgrade apps: %s" % str(e))
             logger.error(m18n.n("app_upgrade_some_app_failed"))
@@ -769,7 +692,7 @@ def tools_shutdown(operation_logger, force=False):
     if not shutdown:
         try:
             # Ask confirmation for server shutdown
-            i = msignals.prompt(m18n.n("server_shutdown_confirm", answers="y/N"))
+            i = Moulinette.prompt(m18n.n("server_shutdown_confirm", answers="y/N"))
         except NotImplemented:
             pass
         else:
@@ -788,7 +711,7 @@ def tools_reboot(operation_logger, force=False):
     if not reboot:
         try:
             # Ask confirmation for restoring
-            i = msignals.prompt(m18n.n("server_reboot_confirm", answers="y/N"))
+            i = Moulinette.prompt(m18n.n("server_reboot_confirm", answers="y/N"))
         except NotImplemented:
             pass
         else:

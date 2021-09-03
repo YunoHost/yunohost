@@ -179,7 +179,7 @@ def firewall_list(raw=False, by_ip_version=False, list_forwarded=False):
 
     """
     with open(FIREWALL_FILE) as f:
-        firewall = yaml.load(f)
+        firewall = yaml.safe_load(f)
     if raw:
         return firewall
 
@@ -399,6 +399,12 @@ def firewall_upnp(action="status", no_refresh=False):
                 for protocol in ["TCP", "UDP"]:
                     if protocol + "_TO_CLOSE" in firewall["uPnP"]:
                         for port in firewall["uPnP"][protocol + "_TO_CLOSE"]:
+
+                            if not isinstance(port, int):
+                                # FIXME : how should we handle port ranges ?
+                                logger.warning("Can't use UPnP to close '%s'" % port)
+                                continue
+
                             # Clean the mapping of this port
                             if upnpc.getspecificportmapping(port, protocol):
                                 try:
@@ -408,6 +414,12 @@ def firewall_upnp(action="status", no_refresh=False):
                         firewall["uPnP"][protocol + "_TO_CLOSE"] = []
 
                     for port in firewall["uPnP"][protocol]:
+
+                        if not isinstance(port, int):
+                            # FIXME : how should we handle port ranges ?
+                            logger.warning("Can't use UPnP to open '%s'" % port)
+                            continue
+
                         # Clean the mapping of this port
                         if upnpc.getspecificportmapping(port, protocol):
                             try:

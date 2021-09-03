@@ -26,7 +26,7 @@ ACTIONSMAP_FILE = os.path.join(THIS_SCRIPT_DIR, "../data/actionsmap/yunohost.yml
 
 
 def ordered_yaml_load(stream):
-    class OrderedLoader(yaml.Loader):
+    class OrderedLoader(yaml.SafeLoader):
         pass
 
     OrderedLoader.add_constructor(

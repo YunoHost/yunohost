@@ -36,7 +36,7 @@ import urllib.parse
 import tempfile
 from collections import OrderedDict
 
-from moulinette import msignals, m18n, msettings
+from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
@@ -55,6 +55,7 @@ from moulinette.utils.filesystem import (
 from yunohost.service import service_status, _run_service_command
 from yunohost.utils import packages
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.log import is_unit_operation, OperationLogger
 
 logger = getActionLogger("yunohost.app")
@@ -127,14 +128,14 @@ def app_search(string):
     catalog_of_apps = app_catalog()
 
     # Selecting apps according to a match in app name or description
+    matching_apps = {"apps": {}}
     for app in catalog_of_apps["apps"].items():
-        if not (
-            re.search(string, app[0], flags=re.IGNORECASE)
-            or re.search(string, app[1]["description"], flags=re.IGNORECASE)
+        if re.search(string, app[0], flags=re.IGNORECASE) or re.search(
+            string, app[1]["description"], flags=re.IGNORECASE
         ):
-            del catalog_of_apps["apps"][app[0]]
+            matching_apps["apps"][app[0]] = app[1]
 
-    return catalog_of_apps
+    return matching_apps
 
 
 # Old legacy function...
@@ -193,7 +194,8 @@ def app_info(app, full=False):
             "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
         )
 
-    local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+    setting_path = os.path.join(APPS_SETTING_PATH, app)
+    local_manifest = _get_manifest_of_app(setting_path)
     permissions = user_permission_list(full=True, absolute_urls=True, apps=[app])[
         "permissions"
     ]
@@ -212,6 +214,7 @@ def app_info(app, full=False):
     if not full:
         return ret
 
+    ret["setting_path"] = setting_path
     ret["manifest"] = local_manifest
     ret["manifest"]["arguments"] = _set_default_ask_questions(
         ret["manifest"].get("arguments", {})
@@ -222,11 +225,11 @@ def app_info(app, full=False):
     ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
     ret["upgradable"] = _app_upgradable(ret)
     ret["supports_change_url"] = os.path.exists(
-        os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")
+        os.path.join(setting_path, "scripts", "change_url")
     )
     ret["supports_backup_restore"] = os.path.exists(
-        os.path.join(APPS_SETTING_PATH, app, "scripts", "backup")
-    ) and os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "restore"))
+        os.path.join(setting_path, "scripts", "backup")
+    ) and os.path.exists(os.path.join(setting_path, "scripts", "restore"))
     ret["supports_multi_instance"] = is_true(
         local_manifest.get("multi_instance", False)
     )
@@ -501,7 +504,7 @@ def app_change_url(operation_logger, app, domain, path):
     hook_callback("post_app_change_url", env=env_dict)
 
 
-def app_upgrade(app=[], url=None, file=None, force=False):
+def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False):
     """
     Upgrade app
 
@@ -509,6 +512,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         file -- Folder or tarball for upgrade
         app -- App(s) to upgrade (default all)
         url -- Git url to fetch for upgrade
+        no_safety_backup -- Disable the safety backup during upgrade
 
     """
     from packaging import version
@@ -517,6 +521,9 @@ def app_upgrade(app=[], url=None, file=None, force=False):
     from yunohost.regenconf import manually_modified_files
 
     apps = app
+    # Check if disk space available
+    if free_space_in_directory("/") <= 512 * 1000 * 1000:
+        raise YunohostValidationError("disk_space_not_sufficient_update")
     # If no app is specified, upgrade all apps
     if not apps:
         # FIXME : not sure what's supposed to happen if there is a url and a file but no apps...
@@ -614,6 +621,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
+        env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
@@ -643,7 +651,7 @@ def app_upgrade(app=[], url=None, file=None, force=False):
                     m18n.n("app_upgrade_failed", app=app_instance_name, error=error)
                 )
                 failure_message_with_debug_instructions = operation_logger.error(error)
-                if msettings.get("interface") != "api":
+                if Moulinette.interface.type != "api":
                     dump_app_log_extract_for_debugging(operation_logger)
         # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
@@ -821,11 +829,11 @@ def app_install(
     def confirm_install(confirm):
         # Ignore if there's nothing for confirm (good quality app), if --force is used
         # or if request on the API (confirm already implemented on the API side)
-        if confirm is None or force or msettings.get("interface") == "api":
+        if confirm is None or force or Moulinette.interface.type == "api":
             return
 
         if confirm in ["danger", "thirdparty"]:
-            answer = msignals.prompt(
+            answer = Moulinette.prompt(
                 m18n.n("confirm_app_install_" + confirm, answers="Yes, I understand"),
                 color="red",
             )
@@ -833,7 +841,7 @@ def app_install(
                 raise YunohostError("aborting")
 
         else:
-            answer = msignals.prompt(
+            answer = Moulinette.prompt(
                 m18n.n("confirm_app_install_" + confirm, answers="Y/N"), color="yellow"
             )
             if answer.upper() != "Y":
@@ -876,8 +884,12 @@ def app_install(
     else:
         raise YunohostValidationError("app_unknown")
 
+    # Check if disk space available
+    if free_space_in_directory("/") <= 512 * 1000 * 1000:
+        raise YunohostValidationError("disk_space_not_sufficient_install")
+
     # Check ID
-    if "id" not in manifest or "__" in manifest["id"]:
+    if "id" not in manifest or "__" in manifest["id"] or "." in manifest["id"]:
         raise YunohostValidationError("app_id_invalid")
 
     app_id = manifest["id"]
@@ -1005,7 +1017,7 @@ def app_install(
             error = m18n.n("app_install_script_failed")
             logger.error(m18n.n("app_install_failed", app=app_id, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
-            if msettings.get("interface") != "api":
+            if Moulinette.interface.type != "api":
                 dump_app_log_extract_for_debugging(operation_logger)
     # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
@@ -1179,12 +1191,13 @@ def dump_app_log_extract_for_debugging(operation_logger):
 
 
 @is_unit_operation()
-def app_remove(operation_logger, app):
+def app_remove(operation_logger, app, purge=False):
     """
     Remove app
 
-    Keyword argument:
+    Keyword arguments:
         app -- App(s) to delete
+        purge -- Remove with all app data
 
     """
     from yunohost.hook import hook_exec, hook_remove, hook_callback
@@ -1222,6 +1235,7 @@ def app_remove(operation_logger, app):
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
     env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
+    env_dict["YNH_APP_PURGE"] = str(purge)
     operation_logger.extra.update({"env": env_dict})
     operation_logger.flush()
 
@@ -1269,10 +1283,6 @@ def app_addaccess(apps, users=[]):
     """
     from yunohost.permission import user_permission_update
 
-    logger.warning(
-        "/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,url,update,delete} and the 'visitors' group to manage permissions."
-    )
-
     output = {}
     for app in apps:
         permission = user_permission_update(
@@ -1294,10 +1304,6 @@ def app_removeaccess(apps, users=[]):
     """
     from yunohost.permission import user_permission_update
 
-    logger.warning(
-        "/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,url,update,delete} and the 'visitors' group to manage permissions."
-    )
-
     output = {}
     for app in apps:
         permission = user_permission_update(app + ".main", remove=users)
@@ -1315,10 +1321,6 @@ def app_clearaccess(apps):
 
     """
     from yunohost.permission import user_permission_reset
-
-    logger.warning(
-        "/!\\ Packagers ! This app is using the legacy permission system. Please use the new helpers ynh_permission_{create,url,update,delete} and the 'visitors' group to manage permissions."
-    )
 
     output = {}
     for app in apps:
@@ -1447,9 +1449,6 @@ def app_setting(app, key, value=None, delete=False):
 
         # SET
         else:
-            logger.warning(
-                "/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism."
-            )
 
             urls = value
             # If the request is about the root of the app (/), ( = the vast majority of cases)
@@ -1525,7 +1524,7 @@ def app_setting(app, key, value=None, delete=False):
     # SET
     else:
         if key in ["redirected_urls", "redirected_regex"]:
-            value = yaml.load(value)
+            value = yaml.safe_load(value)
         app_settings[key] = value
 
     _set_app_settings(app, app_settings)
@@ -2182,7 +2181,7 @@ def _get_app_settings(app_id):
         )
     try:
         with open(os.path.join(APPS_SETTING_PATH, app_id, "settings.yml")) as f:
-            settings = yaml.load(f)
+            settings = yaml.safe_load(f)
         # If label contains unicode char, this may later trigger issues when building strings...
         # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
         settings = {k: v for k, v in settings.items()}
@@ -2744,7 +2743,7 @@ class YunoHostArgumentFormatParser(object):
             )
 
             try:
-                question.value = msignals.prompt(
+                question.value = Moulinette.prompt(
                     text_for_user_input_in_cli, self.hide_user_input_in_prompt
                 )
             except NotImplementedError:

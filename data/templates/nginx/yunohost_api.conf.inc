@@ -6,6 +6,13 @@ location /yunohost/api/ {
     proxy_set_header Connection "upgrade";
     proxy_set_header Host $http_host;
 
+    {% if webadmin_allowlist_enabled == "True" %}
+    {% for ip in webadmin_allowlist.split(',') %}
+    allow {{ ip }};
+    {% endfor %}
+    deny all;
+    {% endif %}
+
     # Custom 502 error page
     error_page 502 /yunohost/api/error/502;
 }

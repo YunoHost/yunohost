@@ -100,6 +100,9 @@ DEFAULTS = OrderedDict(
         ("smtp.relay.password", {"type": "string", "default": ""}),
         ("backup.compress_tar_archives", {"type": "bool", "default": False}),
         ("ssowat.panel_overlay.enabled", {"type": "bool", "default": True}),
+        ("security.webadmin.allowlist.enabled", {"type": "bool", "default": False}),
+        ("security.webadmin.allowlist", {"type": "string", "default": ""}),
+        ("security.experimental.enabled", {"type": "bool", "default": False}),
     ]
 )
 
@@ -265,19 +268,18 @@ def settings_reset_all():
     }
 
 
+def _get_setting_description(key):
+    return m18n.n("global_settings_setting_%s" % key.replace(".", "_"))
+
+
 def _get_settings():
-    def get_setting_description(key):
-        if key.startswith("example"):
-            # (This is for dummy stuff used during unit tests)
-            return "Dummy %s setting" % key.split(".")[-1]
-        return m18n.n("global_settings_setting_%s" % key.replace(".", "_"))
 
     settings = {}
 
     for key, value in DEFAULTS.copy().items():
         settings[key] = value
         settings[key]["value"] = value["default"]
-        settings[key]["description"] = get_setting_description(key)
+        settings[key]["description"] = _get_setting_description(key)
 
     if not os.path.exists(SETTINGS_PATH):
         return settings
@@ -306,7 +308,7 @@ def _get_settings():
             for key, value in local_settings.items():
                 if key in settings:
                     settings[key] = value
-                    settings[key]["description"] = get_setting_description(key)
+                    settings[key]["description"] = _get_setting_description(key)
                 else:
                     logger.warning(
                         m18n.n(
@@ -391,9 +393,17 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 
 @post_change_hook("ssowat.panel_overlay.enabled")
 @post_change_hook("security.nginx.compatibility")
+@post_change_hook("security.webadmin.allowlist.enabled")
+@post_change_hook("security.webadmin.allowlist")
 def reconfigure_nginx(setting_name, old_value, new_value):
     if old_value != new_value:
         regen_conf(names=["nginx"])
+
+
+@post_change_hook("security.experimental.enabled")
+def reconfigure_nginx_and_yunohost(setting_name, old_value, new_value):
+    if old_value != new_value:
+        regen_conf(names=["nginx", "yunohost"])
 
 
 @post_change_hook("security.ssh.compatibility")

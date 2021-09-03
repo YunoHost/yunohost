@@ -35,6 +35,7 @@ def find_expected_string_keys():
     python_files = glob.glob("src/yunohost/*.py")
     python_files.extend(glob.glob("src/yunohost/utils/*.py"))
     python_files.extend(glob.glob("src/yunohost/data_migrations/*.py"))
+    python_files.extend(glob.glob("src/yunohost/authenticators/*.py"))
     python_files.extend(glob.glob("data/hooks/diagnosis/*.py"))
     python_files.append("bin/yunohost")
 
@@ -108,7 +109,7 @@ def find_expected_string_keys():
         yield m
 
     # Keys for the actionmap ...
-    for category in yaml.load(open("data/actionsmap/yunohost.yml")).values():
+    for category in yaml.safe_load(open("data/actionsmap/yunohost.yml")).values():
         if "actions" not in category.keys():
             continue
         for action in category["actions"].values():

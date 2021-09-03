@@ -32,7 +32,7 @@ def get_dict_actions(OPTION_SUBTREE, category):
 with open(ACTIONSMAP_FILE, "r") as stream:
 
     # Getting the dictionary containning what actions are possible per category
-    OPTION_TREE = yaml.load(stream)
+    OPTION_TREE = yaml.safe_load(stream)
 
     CATEGORY = [
         category for category in OPTION_TREE.keys() if not category.startswith("_")

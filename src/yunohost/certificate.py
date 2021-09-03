@@ -949,11 +949,6 @@ def _name_self_CA():
 
 
 def _tail(n, file_path):
-    stdin, stdout = os.popen2("tail -n %s '%s'" % (n, file_path))
+    from moulinette.utils.process import check_output
 
-    stdin.close()
-
-    lines = stdout.readlines()
-    stdout.close()
-
-    return "".join(lines)
+    return check_output(f"tail -n {n} '{file_path}'")
