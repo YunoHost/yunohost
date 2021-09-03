@@ -17,10 +17,11 @@ autofix-translated-strings:
     - git checkout -b "ci-autofix-translated-strings-${CI_COMMIT_REF_NAME}" --no-track
     - python3 remove_stale_translated_strings.py
     - python3 autofix_locale_format.py
+    - python3 reformat_locales.py
     - '[ $(git diff -w | wc -l) != 0 ] || exit 0'  # stop if there is nothing to commit
-    - git commit -am "[CI] Autofix translated strings" || true
-    - git push -f origin "ci-autofix-translated-strings-${CI_COMMIT_REF_NAME}":"ci-autofix-translated-strings-${CI_COMMIT_REF_NAME}"
-    - hub pull-request -m "[CI] Autofix translated strings" -b Yunohost:dev -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
+    - git commit -am "[CI] Reformat / remove stale translated strings" || true
+    - git push -f origin "ci-remove-stale-translated-strings-${CI_COMMIT_REF_NAME}":"ci-remove-stale-translated-strings-${CI_COMMIT_REF_NAME}"
+    - hub pull-request -m "[CI] Reformat / remove stale translated strings" -b Yunohost:dev -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
   only:
     variables:
       - $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
