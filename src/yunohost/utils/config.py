@@ -29,7 +29,6 @@ from collections import OrderedDict
 from moulinette.interfaces.cli import colorize
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import (
     write_to_file,
     read_toml,
@@ -80,16 +79,22 @@ class ConfigPanel:
         result = {}
         for panel, section, option in self._iterate():
             key = f"{panel['id']}.{section['id']}.{option['id']}"
-            if mode == 'export':
-                result[option['id']] = option.get('current_value')
+            if mode == "export":
+                result[option["id"]] = option.get("current_value")
             else:
-                if 'ask' in option:
-                    result[key] = {'ask': _value_for_locale(option['ask'])}
-                elif 'i18n' in self.config:
-                    result[key] = {'ask': m18n.n(self.config['i18n'] + '_' + option['id'])}
-                if 'current_value' in option:
-                    question_class = ARGUMENTS_TYPE_PARSERS[option.get("type", "string")]
-                    result[key]['value'] = question_class.humanize(option['current_value'], option)
+                if "ask" in option:
+                    result[key] = {"ask": _value_for_locale(option["ask"])}
+                elif "i18n" in self.config:
+                    result[key] = {
+                        "ask": m18n.n(self.config["i18n"] + "_" + option["id"])
+                    }
+                if "current_value" in option:
+                    question_class = ARGUMENTS_TYPE_PARSERS[
+                        option.get("type", "string")
+                    ]
+                    result[key]["value"] = question_class.humanize(
+                        option["current_value"], option
+                    )
 
         return result
 
@@ -294,8 +299,11 @@ class ConfigPanel:
         self.errors = None
 
     def _get_default_values(self):
-        return { option['id']: option['default']
-                for _, _, option in self._iterate() if 'default' in option }
+        return {
+            option["id"]: option["default"]
+            for _, _, option in self._iterate()
+            if "default" in option
+        }
 
     def _load_current_values(self):
         """
@@ -319,9 +327,11 @@ class ConfigPanel:
             mkdir(dir_path, mode=0o700)
 
         values_to_save = {**self.values, **self.new_values}
-        if self.save_mode == 'diff':
+        if self.save_mode == "diff":
             defaults = self._get_default_values()
-            values_to_save = {k: v for k, v in values_to_save.items() if defaults.get(k) != v}
+            values_to_save = {
+                k: v for k, v in values_to_save.items() if defaults.get(k) != v
+            }
 
         # Save the settings to the .yaml file
         write_to_yaml(self.save_path, self.new_values)
@@ -360,17 +370,17 @@ class Question(object):
 
     def __init__(self, question, user_answers):
         self.name = question["name"]
-        self.type = question.get("type", 'string')
+        self.type = question.get("type", "string")
         self.default = question.get("default", None)
         self.current_value = question.get("current_value")
         self.optional = question.get("optional", False)
         self.choices = question.get("choices", [])
         self.pattern = question.get("pattern")
-        self.ask = question.get("ask", {'en': self.name})
+        self.ask = question.get("ask", {"en": self.name})
         self.help = question.get("help")
         self.helpLink = question.get("helpLink")
         self.value = user_answers.get(self.name)
-        self.redact = question.get('redact', False)
+        self.redact = question.get("redact", False)
 
         # Empty value is parsed as empty string
         if self.default == "":
@@ -384,11 +394,10 @@ class Question(object):
     def normalize(value, option={}):
         return value
 
-
     def ask_if_needed(self):
         while True:
             # Display question if no value filled or if it's a readonly message
-            if Moulinette.interface.type== 'cli':
+            if Moulinette.interface.type == "cli":
                 text_for_user_input_in_cli = self._format_text_for_user_input_in_cli()
                 if getattr(self, "readonly", False):
                     Moulinette.display(text_for_user_input_in_cli)
@@ -433,7 +442,6 @@ class Question(object):
 
         return (self.value, self.argument_type)
 
-
     def _prevalidate(self):
         if self.value in [None, ""] and not self.optional:
             raise YunohostValidationError("app_argument_required", name=self.name)
@@ -442,9 +450,9 @@ class Question(object):
         if self.value is not None:
             if self.choices and self.value not in self.choices:
                 self._raise_invalid_answer()
-            if self.pattern and not re.match(self.pattern['regexp'], str(self.value)):
+            if self.pattern and not re.match(self.pattern["regexp"], str(self.value)):
                 raise YunohostValidationError(
-                    self.pattern['error'],
+                    self.pattern["error"],
                     name=self.name,
                     value=self.value,
                 )
@@ -494,7 +502,10 @@ class Question(object):
         if self.operation_logger:
             self.operation_logger.data_to_redact.extend(data_to_redact)
         elif data_to_redact:
-            raise YunohostError(f"Can't redact {question.name} because no operation logger available in the context", raw_msg=True)
+            raise YunohostError(
+                f"Can't redact {self.name} because no operation logger available in the context",
+                raw_msg=True,
+            )
 
         return self.value
 
@@ -510,7 +521,7 @@ class TagsQuestion(Question):
     @staticmethod
     def humanize(value, option={}):
         if isinstance(value, list):
-            return ','.join(value)
+            return ",".join(value)
         return value
 
     def _prevalidate(self):
@@ -540,7 +551,7 @@ class PasswordQuestion(Question):
     @staticmethod
     def humanize(value, option={}):
         if value:
-            return '***' # Avoid to display the password on screen
+            return "********"  # Avoid to display the password on screen
         return ""
 
     def _prevalidate(self):
@@ -571,32 +582,32 @@ class BooleanQuestion(Question):
 
     @staticmethod
     def humanize(value, option={}):
-        yes = option.get('yes', 1)
-        no = option.get('no', 0)
+        yes = option.get("yes", 1)
+        no = option.get("no", 0)
         value = str(value).lower()
         if value == str(yes).lower():
-            return 'yes'
+            return "yes"
         if value == str(no).lower():
-            return 'no'
+            return "no"
         if value in BooleanQuestion.yes_answers:
-            return 'yes'
+            return "yes"
         if value in BooleanQuestion.no_answers:
-            return 'no'
+            return "no"
 
-        if value in ['none', ""]:
-            return ''
+        if value in ["none", ""]:
+            return ""
 
         raise YunohostValidationError(
             "app_argument_choice_invalid",
-            name=self.name,
-            value=self.value,
+            name=self.name,  # FIXME ...
+            value=value,
             choices="yes, no, y, n, 1, 0",
         )
 
     @staticmethod
     def normalize(value, option={}):
-        yes = option.get('yes', 1)
-        no = option.get('no', 0)
+        yes = option.get("yes", 1)
+        no = option.get("no", 0)
 
         if str(value).lower() in BooleanQuestion.yes_answers:
             return yes
@@ -608,18 +619,17 @@ class BooleanQuestion(Question):
             return None
         raise YunohostValidationError(
             "app_argument_choice_invalid",
-            name=self.name,
-            value=self.value,
+            name=self.name,  # FIXME....
+            value=value,
             choices="yes, no, y, n, 1, 0",
         )
 
     def __init__(self, question, user_answers):
         super().__init__(question, user_answers)
-        self.yes = question.get('yes', 1)
-        self.no = question.get('no', 0)
+        self.yes = question.get("yes", 1)
+        self.no = question.get("no", 0)
         if self.default is None:
             self.default = False
-
 
     def _format_text_for_user_input_in_cli(self):
         text_for_user_input_in_cli = _value_for_locale(self.ask)
@@ -652,7 +662,6 @@ class DomainQuestion(Question):
 
         self.choices = domain_list()["domains"]
 
-
     def _raise_invalid_answer(self):
         raise YunohostValidationError(
             "app_argument_invalid", field=self.name, error=m18n.n("domain_unknown")
@@ -675,7 +684,6 @@ class UserQuestion(Question):
                     self.default = user
                     break
 
-
     def _raise_invalid_answer(self):
         raise YunohostValidationError(
             "app_argument_invalid",
@@ -697,7 +705,6 @@ class NumberQuestion(Question):
         self.min = question.get("min", None)
         self.max = question.get("max", None)
         self.step = question.get("step", None)
-
 
     def _prevalidate(self):
         super()._prevalidate()
@@ -744,8 +751,7 @@ class DisplayTextQuestion(Question):
         super().__init__(question, user_answers)
 
         self.optional = True
-        self.style =  question.get("style", "info")
-
+        self.style = question.get("style", "info")
 
     def _format_text_for_user_input_in_cli(self):
         text = self.ask["en"]
@@ -780,7 +786,7 @@ class FileQuestion(Question):
             self.accept = question.get("accept").replace(" ", "").split(",")
         else:
             self.accept = []
-        if Moulinette.interface.type== "api":
+        if Moulinette.interface.type == "api":
             if user_answers.get(f"{self.name}[name]"):
                 self.value = {
                     "content": self.value,
@@ -790,10 +796,13 @@ class FileQuestion(Question):
         if self.value and str(self.value) == self.current_value:
             self.value = None
 
-
     def _prevalidate(self):
         super()._prevalidate()
-        if isinstance(self.value, str) and self.value and not os.path.exists(self.value):
+        if (
+            isinstance(self.value, str)
+            and self.value
+            and not os.path.exists(self.value)
+        ):
             raise YunohostValidationError(
                 "app_argument_invalid",
                 field=self.name,
@@ -807,9 +816,10 @@ class FileQuestion(Question):
             raise YunohostValidationError(
                 "app_argument_invalid",
                 field=self.name,
-                error=m18n.n("file_extension_not_accepted", file=filename, accept=self.accept),
+                error=m18n.n(
+                    "file_extension_not_accepted", file=filename, accept=self.accept
+                ),
             )
-
 
     def _post_parse_value(self):
         from base64 import b64decode
@@ -833,7 +843,10 @@ class FileQuestion(Question):
             # i.e. os.path.join("/foo", "/etc/passwd") == "/etc/passwd"
             file_path = os.path.normpath(upload_dir + "/" + filename)
             if not file_path.startswith(upload_dir + "/"):
-                raise YunohostError(f"Filename '{filename}' received from the API got a relative parent path, which is forbidden", raw_msg=True)
+                raise YunohostError(
+                    f"Filename '{filename}' received from the API got a relative parent path, which is forbidden",
+                    raw_msg=True,
+                )
             i = 2
             while os.path.exists(file_path):
                 file_path = os.path.normpath(upload_dir + "/" + filename + (".%d" % i))
