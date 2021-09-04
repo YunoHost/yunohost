@@ -28,7 +28,9 @@ import os
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import mkdir, write_to_file, read_yaml, write_to_yaml
+from moulinette.utils.filesystem import (
+    mkdir, write_to_file, read_yaml, write_to_yaml, read_toml
+)
 
 from yunohost.settings import is_boolean
 from yunohost.app import (
@@ -37,8 +39,10 @@ from yunohost.app import (
     _get_app_settings,
     _get_conflicting_apps,
 )
-from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
-from yunohost.utils.config import ConfigPanel
+from yunohost.regenconf import (
+    regen_conf, _force_clear_hashes, _process_regen_conf
+)
+from yunohost.utils.config import ConfigPanel, Question
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
@@ -407,11 +411,11 @@ def domain_config_get(domain, key='', mode='classic'):
     return config.get(key, mode)
 
 @is_unit_operation()
-def domain_config_set(operation_logger, app, key=None, value=None, args=None, args_file=None):
+def domain_config_set(operation_logger, domain, key=None, value=None, args=None, args_file=None):
     """
     Apply a new domain configuration
     """
-
+    Question.operation_logger = operation_logger
     config = DomainConfigPanel(domain)
     return config.set(key, value, args, args_file)
 
@@ -432,7 +436,7 @@ class DomainConfigPanel(ConfigPanel):
         self.dns_zone = get_dns_zone_from_domain(self.domain)
 
         try:
-            registrar = _relevant_provider_for_domain(self.dns_zone)
+            registrar = _relevant_provider_for_domain(self.dns_zone)[0]
         except ValueError:
             return toml
 

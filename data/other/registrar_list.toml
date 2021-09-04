@@ -1,7 +1,7 @@
 [aliyun]
     [aliyun.auth_key_id]
     type = "string"
-    redact = True
+    redact = true
 
     [aliyun.auth_secret]
     type = "password"
@@ -9,7 +9,7 @@
 [aurora]
     [aurora.auth_api_key]
     type = "string"
-    redact = True
+    redact = true
 
     [aurora.auth_secret_key]
     type = "password"
@@ -17,48 +17,48 @@
 [azure]
     [azure.auth_client_id]
     type = "string"
-    redact = True
+    redact = true
     
     [azure.auth_client_secret]
     type = "password"
     
     [azure.auth_tenant_id]
     type = "string"
-    redact = True
+    redact = true
     
     [azure.auth_subscription_id]
     type = "string"
-    redact = True
+    redact = true
     
     [azure.resource_group]
     type = "string"
-    redact = True
+    redact = true
     
 [cloudflare]
     [cloudflare.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [cloudflare.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
     [cloudflare.zone_id]
     type = "string"
-    redact = True
+    redact = true
     
 [cloudns]
     [cloudns.auth_id]
     type = "string"
-    redact = True
+    redact = true
     
     [cloudns.auth_subid]
     type = "string"
-    redact = True
+    redact = true
     
     [cloudns.auth_subuser]
     type = "string"
-    redact = True
+    redact = true
     
     [cloudns.auth_password]
     type = "password"
@@ -71,50 +71,50 @@
 [cloudxns]
     [cloudxns.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [cloudxns.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [conoha]
     [conoha.auth_region]
     type = "string"
-    redact = True
+    redact = true
     
     [conoha.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
     [conoha.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [conoha.auth_password]
     type = "password"
     
     [conoha.auth_tenant_id]
     type = "string"
-    redact = True
+    redact = true
     
 [constellix]
     [constellix.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [constellix.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [digitalocean]
     [digitalocean.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [dinahosting]
     [dinahosting.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [dinahosting.auth_password]
     type = "password"
@@ -125,78 +125,78 @@
     
     [directadmin.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [directadmin.endpoint]
     type = "string"
-    redact = True
+    redact = true
     
 [dnsimple]
     [dnsimple.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
     [dnsimple.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [dnsimple.auth_password]
     type = "password"
     
     [dnsimple.auth_2fa]
     type = "string"
-    redact = True
+    redact = true
     
 [dnsmadeeasy]
     [dnsmadeeasy.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [dnsmadeeasy.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [dnspark]
     [dnspark.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [dnspark.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [dnspod]
     [dnspod.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [dnspod.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [dreamhost]
     [dreamhost.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [dynu]
     [dynu.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [easydns]
     [easydns.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [easydns.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [easyname]
     [easyname.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [easyname.auth_password]
     type = "password"
@@ -204,7 +204,7 @@
 [euserv]
     [euserv.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [euserv.auth_password]
     type = "password"
@@ -212,7 +212,7 @@
 [exoscale]
     [exoscale.auth_key]
     type = "string"
-    redact = True
+    redact = true
     
     [exoscale.auth_secret]
     type = "password"
@@ -220,7 +220,7 @@
 [gandi]
     [gandi.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
     [gandi.api_protocol]
     type = "string"
@@ -230,7 +230,7 @@
 [gehirn]
     [gehirn.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
     [gehirn.auth_secret]
     type = "password"
@@ -238,16 +238,16 @@
 [glesys]
     [glesys.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [glesys.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [godaddy]
     [godaddy.auth_key]
     type = "string"
-    redact = True
+    redact = true
     
     [godaddy.auth_secret]
     type = "password"
@@ -255,12 +255,12 @@
 [googleclouddns]
     [goggleclouddns.auth_service_account_info]
     type = "string"
-    redact = True
+    redact = true
     
 [gransy]
     [gransy.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [gransy.auth_password]
     type = "password"
@@ -268,7 +268,7 @@
 [gratisdns]
     [gratisdns.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [gratisdns.auth_password]
     type = "password"
@@ -276,7 +276,7 @@
 [henet]
     [henet.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [henet.auth_password]
     type = "password"
@@ -284,17 +284,17 @@
 [hetzner]
     [hetzner.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [hostingde]
     [hostingde.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [hover]
     [hover.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [hover.auth_password]
     type = "password"
@@ -302,37 +302,37 @@
 [infoblox]
     [infoblox.auth_user]
     type = "string"
-    redact = True
+    redact = true
     
     [infoblox.auth_psw]
     type = "password"
     
     [infoblox.ib_view]
     type = "string"
-    redact = True
+    redact = true
     
     [infoblox.ib_host]
     type = "string"
-    redact = True
+    redact = true
     
 [infomaniak]
     [infomaniak.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [internetbs]
     [internetbs.auth_key]
     type = "string"
-    redact = True
+    redact = true
     
     [internetbs.auth_password]
     type = "string"
-    redact = True
+    redact = true
     
 [inwx]
     [inwx.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [inwx.auth_password]
     type = "password"
@@ -340,79 +340,79 @@
 [joker]
     [joker.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [linode]
     [linode.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [linode4]
     [linode4.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [localzone]
     [localzone.filename]
     type = "string"
-    redact = True
+    redact = true
     
 [luadns]
     [luadns.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [luadns.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [memset]
     [memset.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [mythicbeasts]
     [mythicbeasts.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [mythicbeasts.auth_password]
     type = "password"
     
     [mythicbeasts.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [namecheap]
     [namecheap.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
     [namecheap.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [namecheap.auth_client_ip]
     type = "string"
-    redact = True
+    redact = true
     
     [namecheap.auth_sandbox]
     type = "string"
-    redact = True
+    redact = true
     
 [namesilo]
     [namesilo.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [netcup]
     [netcup.auth_customer_id]
     type = "string"
-    redact = True
+    redact = true
     
     [netcup.auth_api_key]
     type = "string"
-    redact = True
+    redact = true
     
     [netcup.auth_api_password]
     type = "password"
@@ -420,89 +420,89 @@
 [nfsn]
     [nfsn.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [nfsn.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [njalla]
     [njalla.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [nsone]
     [nsone.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [onapp]
     [onapp.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [onapp.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
     [onapp.auth_server]
     type = "string"
-    redact = True
+    redact = true
     
 [online]
     [online.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [ovh]
     [ovh.auth_entrypoint]
     type = "string"
-    redact = True
+    redact = true
     
     [ovh.auth_application_key]
     type = "string"
-    redact = True
+    redact = true
     
     [ovh.auth_application_secret]
     type = "password"
     
     [ovh.auth_consumer_key]
     type = "string"
-    redact = True
+    redact = true
     
 [plesk]
     [plesk.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [plesk.auth_password]
     type = "password"
     
     [plesk.plesk_server]
     type = "string"
-    redact = True
+    redact = true
     
 [pointhq]
     [pointhq.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [pointhq.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [powerdns]
     [powerdns.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
     [powerdns.pdns_server]
     type = "string"
-    redact = True
+    redact = true
     
     [powerdns.pdns_server_id]
     type = "string"
-    redact = True
+    redact = true
     
     [powerdns.pdns_disable_notify]
     type = "boolean"
@@ -510,67 +510,67 @@
 [rackspace]
     [rackspace.auth_account]
     type = "string"
-    redact = True
+    redact = true
     
     [rackspace.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [rackspace.auth_api_key]
     type = "string"
-    redact = True
+    redact = true
     
     [rackspace.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
     [rackspace.sleep_time]
     type = "string"
-    redact = True
+    redact = true
     
 [rage4]
     [rage4.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [rage4.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [rcodezero]
     [rcodezero.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [route53]
     [route53.auth_access_key]
     type = "string"
-    redact = True
+    redact = true
     
     [route53.auth_access_secret]
     type = "password"
     
     [route53.private_zone]
     type = "string"
-    redact = True
+    redact = true
     
     [route53.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [route53.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [safedns]
     [safedns.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [sakuracloud]
     [sakuracloud.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
     [sakuracloud.auth_secret]
     type = "password"
@@ -578,29 +578,29 @@
 [softlayer]
     [softlayer.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [softlayer.auth_api_key]
     type = "string"
-    redact = True
+    redact = true
     
 [transip]
     [transip.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [transip.auth_api_key]
     type = "string"
-    redact = True
+    redact = true
     
 [ultradns]
     [ultradns.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
     [ultradns.auth_username]
     type = "string"
-    redact = True
+    redact = true
     
     [ultradns.auth_password]
     type = "password"
@@ -608,29 +608,29 @@
 [vultr]
     [vultr.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [yandex]
     [yandex.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [zeit]
     [zeit.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
 [zilore]
     [zilore.auth_key]
     type = "string"
-    redact = True
+    redact = true
     
 [zonomi]
     [zonomy.auth_token]
     type = "string"
-    redact = True
+    redact = true
     
     [zonomy.auth_entrypoint]
     type = "string"
-    redact = True
+    redact = true
     

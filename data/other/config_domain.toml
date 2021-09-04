@@ -3,13 +3,14 @@ i18n = "domain_config"
 
 [feature]
     [feature.mail]
+        services = ['postfix', 'dovecot']
         [feature.mail.mail_out]
         type = "boolean"
-        default = true
+        default = 1
         
         [feature.mail.mail_in]
         type = "boolean"
-        default = true
+        default = 1
         
         [feature.mail.backup_mx]
         type = "tags"
@@ -21,10 +22,11 @@ i18n = "domain_config"
 
         [feature.xmpp.xmpp]
         type = "boolean"
-        default = false
+        default = 0
 
 [dns]
     [dns.registrar]
+        optional = true
         [dns.registrar.unsupported]
         ask = "DNS zone of this domain can't be auto-configured, you should do it manually."
         type = "alert"

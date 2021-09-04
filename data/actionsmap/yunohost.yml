@@ -575,7 +575,7 @@ domain:
                     action_help: Apply a new configuration
                     api: PUT /domains/<domain>/config
                     arguments:
-                      app:
+                      domain:
                           help: Domain name
                       key:
                           help: The question or form key 
