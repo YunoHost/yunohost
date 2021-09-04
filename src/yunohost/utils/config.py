@@ -289,7 +289,7 @@ class ConfigPanel:
 
     def _reload_services(self):
 
-        from yunohost.service import _run_service_command, _get_services
+        from yunohost.service import service_reload_or_restart
 
         logger.info("Reloading services...")
         services_to_reload = set()
@@ -299,16 +299,8 @@ class ConfigPanel:
         services_to_reload = list(services_to_reload)
         services_to_reload.sort(key="nginx".__eq__)
         for service in services_to_reload:
-            if "__APP__":
-                service = service.replace("__APP__", self.app)
-            logger.debug(f"Reloading {service}")
-            if not _run_service_command("reload-or-restart", service):
-                services = _get_services()
-                test_conf = services[service].get("test_conf", "true")
-                errors = check_output(f"{test_conf}; exit 0") if test_conf else ""
-                raise YunohostError(
-                    "config_failed_service_reload", service=service, errors=errors
-                )
+            service = service.replace("__APP__", self.app)
+            service_reload_or_restart(service)
 
     def _iterate(self, trigger=["option"]):
         for panel in self.config.get("panels", []):

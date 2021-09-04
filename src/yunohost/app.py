@@ -52,7 +52,6 @@ from moulinette.utils.filesystem import (
     mkdir,
 )
 
-from yunohost.service import service_status, _run_service_command
 from yunohost.utils import packages
 from yunohost.utils.config import (
     ConfigPanel,
@@ -424,6 +423,7 @@ def app_change_url(operation_logger, app, domain, path):
 
     """
     from yunohost.hook import hook_exec, hook_callback
+    from yunohost.service import service_reload_or_restart
 
     installed = _is_installed(app)
     if not installed:
@@ -492,15 +492,7 @@ def app_change_url(operation_logger, app, domain, path):
 
     app_ssowatconf()
 
-    # avoid common mistakes
-    if _run_service_command("reload", "nginx") is False:
-        # grab nginx errors
-        # the "exit 0" is here to avoid check_output to fail because 'nginx -t'
-        # will return != 0 since we are in a failed state
-        nginx_errors = check_output("nginx -t; exit 0")
-        raise YunohostError(
-            "app_change_url_failed_nginx_reload", nginx_errors=nginx_errors
-        )
+    service_reload_or_restart("nginx")
 
     logger.success(m18n.n("app_change_url_success", app=app, domain=domain, path=path))
 
@@ -2882,6 +2874,8 @@ def unstable_apps():
 
 
 def _assert_system_is_sane_for_app(manifest, when):
+
+    from yunohost.service import service_status
 
     logger.debug("Checking that required services are up and running...")
 
