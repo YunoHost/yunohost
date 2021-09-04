@@ -27,11 +27,17 @@ def fix_locale(locale_file):
         # should also be in the translated string, otherwise the .format
         # will trigger an exception!
         subkeys_in_ref = [k[0] for k in re.findall(r"{(\w+)(:\w)?}", string)]
-        subkeys_in_this_locale = [k[0] for k in re.findall(r"{(\w+)(:\w)?}", this_locale[key])]
+        subkeys_in_this_locale = [
+            k[0] for k in re.findall(r"{(\w+)(:\w)?}", this_locale[key])
+        ]
 
-        if set(subkeys_in_ref) != set(subkeys_in_this_locale) and (len(subkeys_in_ref) == len(subkeys_in_this_locale)):
+        if set(subkeys_in_ref) != set(subkeys_in_this_locale) and (
+            len(subkeys_in_ref) == len(subkeys_in_this_locale)
+        ):
             for i, subkey in enumerate(subkeys_in_ref):
-                this_locale[key] = this_locale[key].replace('{%s}' % subkeys_in_this_locale[i], '{%s}' % subkey)
+                this_locale[key] = this_locale[key].replace(
+                    "{%s}" % subkeys_in_this_locale[i], "{%s}" % subkey
+                )
                 fixed_stuff = True
 
     if fixed_stuff:
