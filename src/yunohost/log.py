@@ -32,8 +32,9 @@ import psutil
 
 from datetime import datetime, timedelta
 from logging import FileHandler, getLogger, Formatter
+from io import IOBase
 
-from moulinette import m18n, msettings
+from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.packages import get_ynh_package_version
@@ -44,7 +45,6 @@ CATEGORIES_PATH = "/var/log/yunohost/categories/"
 OPERATIONS_PATH = "/var/log/yunohost/categories/operation/"
 METADATA_FILE_EXT = ".yml"
 LOG_FILE_EXT = ".log"
-RELATED_CATEGORIES = ["app", "domain", "group", "service", "user"]
 
 logger = getActionLogger("yunohost.log")
 
@@ -125,7 +125,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
     operations = list(reversed(sorted(operations, key=lambda o: o["name"])))
     # Reverse the order of log when in cli, more comfortable to read (avoid
     # unecessary scrolling)
-    is_api = msettings.get("interface") == "api"
+    is_api = Moulinette.interface.type == "api"
     if not is_api:
         operations = list(reversed(operations))
 
@@ -214,7 +214,7 @@ def log_show(
         url = yunopaste(content)
 
         logger.info(m18n.n("log_available_on_yunopaste", url=url))
-        if msettings.get("interface") == "api":
+        if Moulinette.interface.type == "api":
             return {"url": url}
         else:
             return
@@ -371,6 +371,18 @@ def is_unit_operation(
             for field in exclude:
                 if field in context:
                     context.pop(field, None)
+
+            # Context is made from args given to main function by argparse
+            # This context will be added in extra parameters in yml file, so this context should
+            # be serializable and short enough (it will be displayed in webadmin)
+            # Argparse can provide some File or Stream, so here we display the filename or
+            # the IOBase, if we have no name.
+            for field, value in context.items():
+                if isinstance(value, IOBase):
+                    try:
+                        context[field] = value.name
+                    except:
+                        context[field] = "IOBase"
             operation_logger = OperationLogger(op_key, related_to, args=context)
 
             try:
@@ -609,7 +621,7 @@ class OperationLogger(object):
             "operation": self.operation,
             "parent": self.parent,
             "yunohost_version": get_ynh_package_version("yunohost")["version"],
-            "interface": msettings.get("interface"),
+            "interface": Moulinette.interface.type,
         }
         if self.related_to is not None:
             data["related_to"] = self.related_to
@@ -663,7 +675,7 @@ class OperationLogger(object):
             self.logger.removeHandler(self.file_handler)
             self.file_handler.close()
 
-        is_api = msettings.get("interface") == "api"
+        is_api = Moulinette.interface.type == "api"
         desc = _get_description_from_name(self.name)
         if error is None:
             if is_api:

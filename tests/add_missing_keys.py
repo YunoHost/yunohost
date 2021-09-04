@@ -7,14 +7,6 @@ import json
 import yaml
 import subprocess
 
-ignore = [
-    "password_too_simple_",
-    "password_listed",
-    "backup_method_",
-    "backup_applying_method_",
-    "confirm_app_install_",
-]
-
 ###############################################################################
 #   Find used keys in python code                                             #
 ###############################################################################
@@ -184,23 +176,18 @@ expected_string_keys = set(find_expected_string_keys())
 keys_defined = set(keys_defined_for_en())
 
 
-def test_undefined_i18n_keys():
-    undefined_keys = expected_string_keys.difference(keys_defined)
-    undefined_keys = sorted(undefined_keys)
-
-    if undefined_keys:
-        raise Exception(
-            "Those i18n keys should be defined in en.json:\n"
-            "    - " + "\n    - ".join(undefined_keys)
-        )
+undefined_keys = expected_string_keys.difference(keys_defined)
+undefined_keys = sorted(undefined_keys)
 
 
-def test_unused_i18n_keys():
+j = json.loads(open("locales/en.json").read())
+for key in undefined_keys:
+    j[key] = "FIXME"
 
-    unused_keys = keys_defined.difference(expected_string_keys)
-    unused_keys = sorted(unused_keys)
-
-    if unused_keys:
-        raise Exception(
-            "Those i18n keys appears unused:\n" "    - " + "\n    - ".join(unused_keys)
-        )
+json.dump(
+    j,
+    open("locales/en.json", "w"),
+    indent=4,
+    ensure_ascii=False,
+    sort_keys=True,
+)

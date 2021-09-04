@@ -30,9 +30,14 @@ class DNSRecordsDiagnoser(Diagnoser):
         for domain in all_domains:
             self.logger_debug("Diagnosing DNS conf for %s" % domain)
             is_subdomain = domain.split(".", 1)[1] in all_domains
-            is_specialusedomain = any(domain.endswith("." + tld) for tld in SPECIAL_USE_TLDS)
+            is_specialusedomain = any(
+                domain.endswith("." + tld) for tld in SPECIAL_USE_TLDS
+            )
             for report in self.check_domain(
-                domain, domain == main_domain, is_subdomain=is_subdomain, is_specialusedomain=is_specialusedomain
+                domain,
+                domain == main_domain,
+                is_subdomain=is_subdomain,
+                is_specialusedomain=is_specialusedomain,
             ):
                 yield report
 
@@ -69,7 +74,6 @@ class DNSRecordsDiagnoser(Diagnoser):
                 status="INFO",
                 summary="diagnosis_dns_specialusedomain",
             )
-
 
         for category in categories:
 

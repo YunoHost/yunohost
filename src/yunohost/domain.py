@@ -26,7 +26,7 @@
 import os
 import re
 
-from moulinette import m18n, msettings, msignals
+from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.log import getActionLogger
@@ -166,7 +166,9 @@ def domain_add(operation_logger, domain, dyndns=False):
             # because it's one of the major service, but in the long term we
             # should identify the root of this bug...
             _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
-            regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd", "mdns"])
+            regen_conf(
+                names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd", "mdns"]
+            )
             app_ssowatconf()
 
     except Exception as e:
@@ -239,8 +241,8 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
 
     if apps_on_that_domain:
         if remove_apps:
-            if msettings.get("interface") == "cli" and not force:
-                answer = msignals.prompt(
+            if Moulinette.interface.type == "cli" and not force:
+                answer = Moulinette.prompt(
                     m18n.n(
                         "domain_remove_confirm_apps_removal",
                         apps="\n".join([x[1] for x in apps_on_that_domain]),
@@ -346,7 +348,7 @@ def domain_dns_conf(domain, ttl=None):
             for record in record_list:
                 result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
-    if msettings.get("interface") == "cli":
+    if Moulinette.interface.type == "cli":
         logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 
     return result

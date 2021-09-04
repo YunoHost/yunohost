@@ -1,3 +1,11 @@
+yunohost (4.2.8.1) stable; urgency=low
+
+  - [fix] Safer location for slapd backup during hdb/mdb migration (3c646b3d)
+
+  Thanks to all contributors <3 ! (ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 27 Aug 2021 01:32:16 +0200
+
 yunohost (4.2.8) stable; urgency=low
 
   - [fix] ynh_permission_has_user not behaving properly when checking if a group is allowed (f0590907)

@@ -33,18 +33,10 @@
 #     Global parameters     #
 #############################
 _global:
-    configuration:
-        authenticate:
-            - api
-        authenticator:
-            default:
-                vendor: ldap
-                help: admin_password
-                parameters:
-                    uri: ldap://localhost:389
-                    base_dn: dc=yunohost,dc=org
-                    user_rdn: cn=admin,dc=yunohost,dc=org
-        argument_auth: false
+    name: yunohost.admin
+    authentication:
+        api: ldap_admin
+        cli: null
     arguments:
         -v:
             full: --version
@@ -67,7 +59,7 @@ user:
             api: GET /users
             arguments:
                --fields:
-                    help: fields to fetch
+                    help: fields to fetch (username, fullname, mail, mail-alias, mail-forward, mailbox-quota, groups, shell, home-path)
                     nargs: "+"
 
         ### user_create()
@@ -206,6 +198,28 @@ user:
             arguments:
                 username:
                     help: Username or email to get information
+        
+        ### user_export()
+        export:
+            action_help: Export users into CSV
+            api: GET /users/export
+        
+        ### user_import()
+        import:
+            action_help: Import several users from CSV
+            api: POST /users/import
+            arguments:
+                csvfile:
+                    help: "CSV file with columns username, firstname, lastname, password, mail, mailbox-quota, mail-alias, mail-forward, groups (separated by coma)"
+                    type: open
+                -u:
+                    full: --update
+                    help: Update all existing users contained in the CSV file (by default existing users are ignored)
+                    action: store_true
+                -d:
+                    full: --delete
+                    help: Delete all existing users that are not contained in the CSV file (by default existing users are kept)
+                    action: store_true
 
     subcategories:
         group:
@@ -1402,9 +1416,9 @@ tools:
         postinstall:
             action_help: YunoHost post-install
             api: POST /postinstall
-            configuration:
+            authentication:
                 # We need to be able to run the postinstall without being authenticated, otherwise we can't run the postinstall
-                authenticate: false
+                api: null
             arguments:
                 -d:
                     full: --domain

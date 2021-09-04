@@ -37,9 +37,18 @@ from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, append_to_file, write_to_file
+from moulinette.utils.filesystem import (
+    read_file,
+    append_to_file,
+    write_to_file,
+    read_yaml,
+    write_to_yaml,
+)
 
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
+
+SERVICES_CONF = "/etc/yunohost/services.yml"
+SERVICES_CONF_BASE = "/usr/share/yunohost/templates/yunohost/services.yml"
 
 logger = getActionLogger("yunohost.service")
 
@@ -127,7 +136,8 @@ def service_add(
 
     try:
         _save_services(services)
-    except Exception:
+    except Exception as e:
+        logger.warning(e)
         # we'll get a logger.warning with more details in _save_services
         raise YunohostError("service_add_failed", service=name)
 
@@ -669,16 +679,20 @@ def _get_services():
 
     """
     try:
-        with open("/etc/yunohost/services.yml", "r") as f:
-            services = yaml.safe_load(f) or {}
+        services = read_yaml(SERVICES_CONF_BASE) or {}
+
+        # These are keys flagged 'null' in the base conf
+        legacy_keys_to_delete = [k for k, v in services.items() if v is None]
+
+        services.update(read_yaml(SERVICES_CONF) or {})
+
+        services = {
+            name: infos
+            for name, infos in services.items()
+            if name not in legacy_keys_to_delete
+        }
     except Exception:
         return {}
-
-    # some services are marked as None to remove them from YunoHost
-    # filter this
-    for key, value in list(services.items()):
-        if value is None:
-            del services[key]
 
     # Dirty hack to automatically find custom SSH port ...
     ssh_port_line = re.findall(
@@ -703,6 +717,13 @@ def _get_services():
             del services["postgresql"]["description"]
         services["postgresql"]["actual_systemd_service"] = "postgresql@11-main"
 
+    # Remove legacy /var/log/daemon.log and /var/log/syslog from log entries
+    # because they are too general. Instead, now the journalctl log is
+    # returned by default which is more relevant.
+    for infos in services.values():
+        if infos.get("log") in ["/var/log/syslog", "/var/log/daemon.log"]:
+            del infos["log"]
+
     return services
 
 
@@ -714,12 +735,26 @@ def _save_services(services):
         services -- A dict of managed services with their parameters
 
     """
-    try:
-        with open("/etc/yunohost/services.yml", "w") as f:
-            yaml.safe_dump(services, f, default_flow_style=False)
-    except Exception as e:
-        logger.warning("Error while saving services, exception: %s", e, exc_info=1)
-        raise
+
+    # Compute the diff with the base file
+    # such that /etc/yunohost/services.yml contains the minimal
+    # changes with respect to the base conf
+
+    conf_base = yaml.safe_load(open(SERVICES_CONF_BASE)) or {}
+
+    diff = {}
+
+    for service_name, service_infos in services.items():
+        service_conf_base = conf_base.get(service_name, {})
+        diff[service_name] = {}
+
+        for key, value in service_infos.items():
+            if service_conf_base.get(key) != value:
+                diff[service_name][key] = value
+
+    diff = {name: infos for name, infos in diff.items() if infos}
+
+    write_to_yaml(SERVICES_CONF, diff)
 
 
 def _tail(file, n):

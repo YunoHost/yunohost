@@ -36,7 +36,7 @@ import urllib.parse
 import tempfile
 from collections import OrderedDict
 
-from moulinette import msignals, m18n, msettings
+from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
@@ -194,7 +194,8 @@ def app_info(app, full=False):
             "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
         )
 
-    local_manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
+    setting_path = os.path.join(APPS_SETTING_PATH, app)
+    local_manifest = _get_manifest_of_app(setting_path)
     permissions = user_permission_list(full=True, absolute_urls=True, apps=[app])[
         "permissions"
     ]
@@ -213,6 +214,7 @@ def app_info(app, full=False):
     if not full:
         return ret
 
+    ret["setting_path"] = setting_path
     ret["manifest"] = local_manifest
     ret["manifest"]["arguments"] = _set_default_ask_questions(
         ret["manifest"].get("arguments", {})
@@ -223,11 +225,11 @@ def app_info(app, full=False):
     ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
     ret["upgradable"] = _app_upgradable(ret)
     ret["supports_change_url"] = os.path.exists(
-        os.path.join(APPS_SETTING_PATH, app, "scripts", "change_url")
+        os.path.join(setting_path, "scripts", "change_url")
     )
     ret["supports_backup_restore"] = os.path.exists(
-        os.path.join(APPS_SETTING_PATH, app, "scripts", "backup")
-    ) and os.path.exists(os.path.join(APPS_SETTING_PATH, app, "scripts", "restore"))
+        os.path.join(setting_path, "scripts", "backup")
+    ) and os.path.exists(os.path.join(setting_path, "scripts", "restore"))
     ret["supports_multi_instance"] = is_true(
         local_manifest.get("multi_instance", False)
     )
@@ -649,7 +651,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     m18n.n("app_upgrade_failed", app=app_instance_name, error=error)
                 )
                 failure_message_with_debug_instructions = operation_logger.error(error)
-                if msettings.get("interface") != "api":
+                if Moulinette.interface.type != "api":
                     dump_app_log_extract_for_debugging(operation_logger)
         # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
@@ -827,11 +829,11 @@ def app_install(
     def confirm_install(confirm):
         # Ignore if there's nothing for confirm (good quality app), if --force is used
         # or if request on the API (confirm already implemented on the API side)
-        if confirm is None or force or msettings.get("interface") == "api":
+        if confirm is None or force or Moulinette.interface.type == "api":
             return
 
         if confirm in ["danger", "thirdparty"]:
-            answer = msignals.prompt(
+            answer = Moulinette.prompt(
                 m18n.n("confirm_app_install_" + confirm, answers="Yes, I understand"),
                 color="red",
             )
@@ -839,7 +841,7 @@ def app_install(
                 raise YunohostError("aborting")
 
         else:
-            answer = msignals.prompt(
+            answer = Moulinette.prompt(
                 m18n.n("confirm_app_install_" + confirm, answers="Y/N"), color="yellow"
             )
             if answer.upper() != "Y":
@@ -887,7 +889,7 @@ def app_install(
         raise YunohostValidationError("disk_space_not_sufficient_install")
 
     # Check ID
-    if "id" not in manifest or "__" in manifest["id"]:
+    if "id" not in manifest or "__" in manifest["id"] or "." in manifest["id"]:
         raise YunohostValidationError("app_id_invalid")
 
     app_id = manifest["id"]
@@ -1015,7 +1017,7 @@ def app_install(
             error = m18n.n("app_install_script_failed")
             logger.error(m18n.n("app_install_failed", app=app_id, error=error))
             failure_message_with_debug_instructions = operation_logger.error(error)
-            if msettings.get("interface") != "api":
+            if Moulinette.interface.type != "api":
                 dump_app_log_extract_for_debugging(operation_logger)
     # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
     except (KeyboardInterrupt, EOFError):
@@ -2741,7 +2743,7 @@ class YunoHostArgumentFormatParser(object):
             )
 
             try:
-                question.value = msignals.prompt(
+                question.value = Moulinette.prompt(
                     text_for_user_input_in_cli, self.hide_user_input_in_prompt
                 )
             except NotImplementedError:
