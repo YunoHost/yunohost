@@ -21,9 +21,9 @@
 
 import os
 import re
-import toml
 import urllib.parse
 import tempfile
+import shutil
 from collections import OrderedDict
 
 from moulinette.interfaces.cli import colorize
@@ -37,16 +37,14 @@ from moulinette.utils.filesystem import (
     mkdir,
 )
 
-from yunohost.service import _get_services
-from yunohost.service import _run_service_command, _get_services
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
 logger = getActionLogger("yunohost.config")
 CONFIG_PANEL_VERSION_SUPPORTED = 1.0
 
-class ConfigPanel:
 
+class ConfigPanel:
     def __init__(self, config_path, save_path=None):
         self.config_path = config_path
         self.save_path = save_path
@@ -54,8 +52,8 @@ class ConfigPanel:
         self.values = {}
         self.new_values = {}
 
-    def get(self, key='', mode='classic'):
-        self.filter_key = key or ''
+    def get(self, key="", mode="classic"):
+        self.filter_key = key or ""
 
         # Read config panel toml
         self._get_config_panel()
@@ -68,12 +66,12 @@ class ConfigPanel:
         self._hydrate()
 
         # Format result in full mode
-        if mode == 'full':
+        if mode == "full":
             return self.config
 
         # In 'classic' mode, we display the current value if key refer to an option
-        if self.filter_key.count('.') == 2 and mode == 'classic':
-            option = self.filter_key.split('.')[-1]
+        if self.filter_key.count(".") == 2 and mode == "classic":
+            option = self.filter_key.split(".")[-1]
             return self.values.get(option, None)
 
         # Format result in 'classic' or 'export' mode
@@ -81,17 +79,17 @@ class ConfigPanel:
         result = {}
         for panel, section, option in self._iterate():
             key = f"{panel['id']}.{section['id']}.{option['id']}"
-            if mode == 'export':
-                result[option['id']] = option.get('current_value')
+            if mode == "export":
+                result[option["id"]] = option.get("current_value")
             else:
-                result[key] = { 'ask': _value_for_locale(option['ask']) }
-                if 'current_value' in option:
-                    result[key]['value'] = option['current_value']
+                result[key] = {"ask": _value_for_locale(option["ask"])}
+                if "current_value" in option:
+                    result[key]["value"] = option["current_value"]
 
         return result
 
     def set(self, key=None, value=None, args=None, args_file=None):
-        self.filter_key = key or ''
+        self.filter_key = key or ""
 
         # Read config panel toml
         self._get_config_panel()
@@ -102,20 +100,20 @@ class ConfigPanel:
         if (args is not None or args_file is not None) and value is not None:
             raise YunohostError("config_args_value")
 
-        if self.filter_key.count('.') != 2 and not value is None:
+        if self.filter_key.count(".") != 2 and not value is None:
             raise YunohostError("config_set_value_on_section")
 
         # Import and parse pre-answered options
         logger.debug("Import and parse pre-answered options")
-        args = urllib.parse.parse_qs(args or '', keep_blank_values=True)
-        self.args = { key: ','.join(value_) for key, value_ in args.items() }
+        args = urllib.parse.parse_qs(args or "", keep_blank_values=True)
+        self.args = {key: ",".join(value_) for key, value_ in args.items()}
 
         if args_file:
             # Import YAML / JSON file but keep --args values
-            self.args = { **read_yaml(args_file), **self.args }
+            self.args = {**read_yaml(args_file), **self.args}
 
         if value is not None:
-            self.args = {self.filter_key.split('.')[-1]: value}
+            self.args = {self.filter_key.split(".")[-1]: value}
 
         # Read or get values and hydrate the config
         self._load_current_values()
@@ -144,7 +142,7 @@ class ConfigPanel:
 
         if self.errors:
             return {
-                "errors": errors,
+                "errors": self.errors,
             }
 
         self._reload_services()
@@ -155,10 +153,9 @@ class ConfigPanel:
     def _get_toml(self):
         return read_toml(self.config_path)
 
-
     def _get_config_panel(self):
         # Split filter_key
-        filter_key = dict(enumerate(self.filter_key.split('.')))
+        filter_key = dict(enumerate(self.filter_key.split(".")))
         if len(filter_key) > 3:
             raise YunohostError("config_too_much_sub_keys")
 
@@ -174,20 +171,18 @@ class ConfigPanel:
 
         # Transform toml format into internal format
         defaults = {
-            'toml': {
-                'version': 1.0
-            },
-            'panels': {
-                'name': '',
-                'services': [],
-                'actions': {'apply': {'en': 'Apply'}}
-            }, # help
-            'sections': {
-                'name': '',
-                'services': [],
-                'optional': True
-            }, # visibleIf help
-            'options': {}
+            "toml": {"version": 1.0},
+            "panels": {
+                "name": "",
+                "services": [],
+                "actions": {"apply": {"en": "Apply"}},
+            },  # help
+            "sections": {
+                "name": "",
+                "services": [],
+                "optional": True,
+            },  # visibleIf help
+            "options": {}
             # ask type source help helpLink example style icon placeholder visibleIf
             # optional choices pattern limit min max step accept redact
         }
@@ -207,30 +202,36 @@ class ConfigPanel:
             # Define the filter_key part to use and the children type
             i = list(defaults).index(node_type)
             search_key = filter_key.get(i)
-            subnode_type = list(defaults)[i+1] if node_type != 'options' else None
+            subnode_type = list(defaults)[i + 1] if node_type != "options" else None
 
             for key, value in toml_node.items():
                 # Key/value are a child node
-                if isinstance(value, OrderedDict) and key not in default and subnode_type:
+                if (
+                    isinstance(value, OrderedDict)
+                    and key not in default
+                    and subnode_type
+                ):
                     # We exclude all nodes not referenced by the filter_key
                     if search_key and key != search_key:
                         continue
                     subnode = convert(value, subnode_type)
-                    subnode['id'] = key
-                    if node_type == 'sections':
-                        subnode['name'] = key # legacy
-                        subnode.setdefault('optional', toml_node.get('optional', True))
+                    subnode["id"] = key
+                    if node_type == "sections":
+                        subnode["name"] = key  # legacy
+                        subnode.setdefault("optional", toml_node.get("optional", True))
                     node.setdefault(subnode_type, []).append(subnode)
                 # Key/value are a property
                 else:
                     # Todo search all i18n keys
-                    node[key] = value if key not in ['ask', 'help', 'name'] else { 'en': value }
+                    node[key] = (
+                        value if key not in ["ask", "help", "name"] else {"en": value}
+                    )
             return node
 
-        self.config = convert(toml_config_panel, 'toml')
+        self.config = convert(toml_config_panel, "toml")
 
         try:
-            self.config['panels'][0]['sections'][0]['options'][0]
+            self.config["panels"][0]["sections"][0]["options"][0]
         except (KeyError, IndexError):
             raise YunohostError(
                 "config_empty_or_bad_filter_key", filter_key=self.filter_key
@@ -242,36 +243,41 @@ class ConfigPanel:
         # Hydrating config panel with current value
         logger.debug("Hydrating config with current values")
         for _, _, option in self._iterate():
-            if option['name'] not in self.values:
+            if option["name"] not in self.values:
                 continue
-            value = self.values[option['name']]
+            value = self.values[option["name"]]
             # In general, the value is just a simple value.
             # Sometimes it could be a dict used to overwrite the option itself
-            value = value if isinstance(value, dict) else {'current_value': value }
+            value = value if isinstance(value, dict) else {"current_value": value}
             option.update(value)
 
         return self.values
 
     def _ask(self):
         logger.debug("Ask unanswered question and prevalidate data")
+
         def display_header(message):
-            """ CLI panel/section header display
-            """
-            if Moulinette.interface.type == 'cli' and self.filter_key.count('.') < 2:
-                Moulinette.display(colorize(message, 'purple'))
-        for panel, section, obj in self._iterate(['panel', 'section']):
+            """CLI panel/section header display"""
+            if Moulinette.interface.type == "cli" and self.filter_key.count(".") < 2:
+                Moulinette.display(colorize(message, "purple"))
+
+        for panel, section, obj in self._iterate(["panel", "section"]):
             if panel == obj:
-                name = _value_for_locale(panel['name'])
+                name = _value_for_locale(panel["name"])
                 display_header(f"\n{'='*40}\n>>>> {name}\n{'='*40}")
                 continue
-            name = _value_for_locale(section['name'])
+            name = _value_for_locale(section["name"])
             display_header(f"\n# {name}")
 
             # Check and ask unanswered questions
-            self.new_values.update(parse_args_in_yunohost_format(
-                self.args, section['options']
-            ))
-        self.new_values = {key: str(value[0]) for key, value in self.new_values.items() if not value[0] is None}
+            self.new_values.update(
+                parse_args_in_yunohost_format(self.args, section["options"])
+            )
+        self.new_values = {
+            key: str(value[0])
+            for key, value in self.new_values.items()
+            if not value[0] is None
+        }
 
     def _apply(self):
         logger.info("Running config script...")
@@ -281,36 +287,37 @@ class ConfigPanel:
         # Save the settings to the .yaml file
         write_to_yaml(self.save_path, self.new_values)
 
-
     def _reload_services(self):
+
+        from yunohost.service import _run_service_command, _get_services
+
         logger.info("Reloading services...")
         services_to_reload = set()
-        for panel, section, obj in self._iterate(['panel', 'section', 'option']):
-            services_to_reload |= set(obj.get('services', []))
+        for panel, section, obj in self._iterate(["panel", "section", "option"]):
+            services_to_reload |= set(obj.get("services", []))
 
         services_to_reload = list(services_to_reload)
-        services_to_reload.sort(key = 'nginx'.__eq__)
+        services_to_reload.sort(key="nginx".__eq__)
         for service in services_to_reload:
-            if '__APP__':
-                service = service.replace('__APP__', self.app)
+            if "__APP__":
+                service = service.replace("__APP__", self.app)
             logger.debug(f"Reloading {service}")
-            if not _run_service_command('reload-or-restart', service):
+            if not _run_service_command("reload-or-restart", service):
                 services = _get_services()
-                test_conf = services[service].get('test_conf', 'true')
-                errors = check_output(f"{test_conf}; exit 0") if test_conf else ''
+                test_conf = services[service].get("test_conf", "true")
+                errors = check_output(f"{test_conf}; exit 0") if test_conf else ""
                 raise YunohostError(
-                    "config_failed_service_reload",
-                    service=service, errors=errors
+                    "config_failed_service_reload", service=service, errors=errors
                 )
 
-    def _iterate(self, trigger=['option']):
+    def _iterate(self, trigger=["option"]):
         for panel in self.config.get("panels", []):
-            if 'panel' in trigger:
+            if "panel" in trigger:
                 yield (panel, None, panel)
             for section in panel.get("sections", []):
-                if 'section' in trigger:
+                if "section" in trigger:
                     yield (panel, section, section)
-                if 'option' in trigger:
+                if "option" in trigger:
                     for option in section.get("options", []):
                         yield (panel, section, option)
 
@@ -327,17 +334,17 @@ class YunoHostArgumentFormatParser(object):
         parsed_question = Question()
 
         parsed_question.name = question["name"]
-        parsed_question.type = question.get("type", 'string')
+        parsed_question.type = question.get("type", "string")
         parsed_question.default = question.get("default", None)
         parsed_question.current_value = question.get("current_value")
         parsed_question.optional = question.get("optional", False)
         parsed_question.choices = question.get("choices", [])
         parsed_question.pattern = question.get("pattern")
-        parsed_question.ask = question.get("ask", {'en': f"{parsed_question.name}"})
+        parsed_question.ask = question.get("ask", {"en": f"{parsed_question.name}"})
         parsed_question.help = question.get("help")
         parsed_question.helpLink = question.get("helpLink")
         parsed_question.value = user_answers.get(parsed_question.name)
-        parsed_question.redact = question.get('redact', False)
+        parsed_question.redact = question.get("redact", False)
 
         # Empty value is parsed as empty string
         if parsed_question.default == "":
@@ -350,7 +357,7 @@ class YunoHostArgumentFormatParser(object):
 
         while True:
             # Display question if no value filled or if it's a readonly message
-            if Moulinette.interface.type== 'cli':
+            if Moulinette.interface.type == "cli":
                 text_for_user_input_in_cli = self._format_text_for_user_input_in_cli(
                     question
                 )
@@ -368,9 +375,8 @@ class YunoHostArgumentFormatParser(object):
                         is_password=self.hide_user_input_in_prompt,
                         confirm=self.hide_user_input_in_prompt,
                         prefill=prefill,
-                        is_multiline=(question.type == "text")
+                        is_multiline=(question.type == "text"),
                     )
-
 
             # Apply default value
             if question.value in [None, ""] and question.default is not None:
@@ -384,9 +390,9 @@ class YunoHostArgumentFormatParser(object):
             try:
                 self._prevalidate(question)
             except YunohostValidationError as e:
-                if Moulinette.interface.type== 'api':
+                if Moulinette.interface.type == "api":
                     raise
-                Moulinette.display(str(e), 'error')
+                Moulinette.display(str(e), "error")
                 question.value = None
                 continue
             break
@@ -398,17 +404,17 @@ class YunoHostArgumentFormatParser(object):
 
     def _prevalidate(self, question):
         if question.value in [None, ""] and not question.optional:
-            raise YunohostValidationError(
-                "app_argument_required", name=question.name
-            )
+            raise YunohostValidationError("app_argument_required", name=question.name)
 
         # we have an answer, do some post checks
         if question.value is not None:
             if question.choices and question.value not in question.choices:
                 self._raise_invalid_answer(question)
-            if question.pattern and not re.match(question.pattern['regexp'], str(question.value)):
+            if question.pattern and not re.match(
+                question.pattern["regexp"], str(question.value)
+            ):
                 raise YunohostValidationError(
-                    question.pattern['error'],
+                    question.pattern["error"],
                     name=question.name,
                     value=question.value,
                 )
@@ -434,7 +440,7 @@ class YunoHostArgumentFormatParser(object):
             text_for_user_input_in_cli += _value_for_locale(question.help)
         if question.helpLink:
             if not isinstance(question.helpLink, dict):
-                question.helpLink = {'href': question.helpLink}
+                question.helpLink = {"href": question.helpLink}
             text_for_user_input_in_cli += f"\n - See {question.helpLink['href']}"
         return text_for_user_input_in_cli
 
@@ -467,16 +473,16 @@ class StringArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "string"
     default_value = ""
 
+
 class TagsArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "tags"
 
     def _prevalidate(self, question):
         values = question.value
-        for value in values.split(','):
+        for value in values.split(","):
             question.value = value
             super()._prevalidate(question)
         question.value = values
-
 
 
 class PasswordArgumentParser(YunoHostArgumentFormatParser):
@@ -522,9 +528,7 @@ class BooleanArgumentParser(YunoHostArgumentFormatParser):
     default_value = False
 
     def parse_question(self, question, user_answers):
-        question = super().parse_question(
-            question, user_answers
-        )
+        question = super().parse_question(question, user_answers)
 
         if question.default is None:
             question.default = False
@@ -616,11 +620,9 @@ class NumberArgumentParser(YunoHostArgumentFormatParser):
     default_value = ""
 
     def parse_question(self, question, user_answers):
-        question_parsed = super().parse_question(
-            question, user_answers
-        )
-        question_parsed.min = question.get('min', None)
-        question_parsed.max = question.get('max', None)
+        question_parsed = super().parse_question(question, user_answers)
+        question_parsed.min = question.get("min", None)
+        question_parsed.max = question.get("max", None)
         if question_parsed.default is None:
             question_parsed.default = 0
 
@@ -628,19 +630,27 @@ class NumberArgumentParser(YunoHostArgumentFormatParser):
 
     def _prevalidate(self, question):
         super()._prevalidate(question)
-        if not isinstance(question.value, int) and not (isinstance(question.value, str) and question.value.isdigit()):
+        if not isinstance(question.value, int) and not (
+            isinstance(question.value, str) and question.value.isdigit()
+        ):
             raise YunohostValidationError(
-                "app_argument_invalid", field=question.name, error=m18n.n("invalid_number")
+                "app_argument_invalid",
+                field=question.name,
+                error=m18n.n("invalid_number"),
             )
 
         if question.min is not None and int(question.value) < question.min:
             raise YunohostValidationError(
-                "app_argument_invalid", field=question.name, error=m18n.n("invalid_number")
+                "app_argument_invalid",
+                field=question.name,
+                error=m18n.n("invalid_number"),
             )
 
         if question.max is not None and int(question.value) > question.max:
             raise YunohostValidationError(
-                "app_argument_invalid", field=question.name, error=m18n.n("invalid_number")
+                "app_argument_invalid",
+                field=question.name,
+                error=m18n.n("invalid_number"),
             )
 
     def _post_parse_value(self, question):
@@ -660,28 +670,27 @@ class DisplayTextArgumentParser(YunoHostArgumentFormatParser):
     readonly = True
 
     def parse_question(self, question, user_answers):
-        question_parsed = super().parse_question(
-            question, user_answers
-        )
+        question_parsed = super().parse_question(question, user_answers)
 
         question_parsed.optional = True
-        question_parsed.style = question.get('style', 'info')
+        question_parsed.style = question.get("style", "info")
 
         return question_parsed
 
     def _format_text_for_user_input_in_cli(self, question):
-        text = question.ask['en']
+        text = question.ask["en"]
 
-        if question.style in ['success', 'info', 'warning', 'danger']:
+        if question.style in ["success", "info", "warning", "danger"]:
             color = {
-                'success': 'green',
-                'info': 'cyan',
-                'warning': 'yellow',
-                'danger': 'red'
+                "success": "green",
+                "info": "cyan",
+                "warning": "yellow",
+                "danger": "red",
             }
             return colorize(m18n.g(question.style), color[question.style]) + f" {text}"
         else:
             return text
+
 
 class FileArgumentParser(YunoHostArgumentFormatParser):
     argument_type = "file"
@@ -690,60 +699,77 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
     @classmethod
     def clean_upload_dirs(cls):
         # Delete files uploaded from API
-        if Moulinette.interface.type== 'api':
+        if Moulinette.interface.type == "api":
             for upload_dir in cls.upload_dirs:
                 if os.path.exists(upload_dir):
                     shutil.rmtree(upload_dir)
 
     def parse_question(self, question, user_answers):
-        question_parsed = super().parse_question(
-            question, user_answers
-        )
-        if question.get('accept'):
-            question_parsed.accept = question.get('accept').replace(' ', '').split(',')
+        question_parsed = super().parse_question(question, user_answers)
+        if question.get("accept"):
+            question_parsed.accept = question.get("accept").replace(" ", "").split(",")
         else:
             question_parsed.accept = []
-        if Moulinette.interface.type== 'api':
+        if Moulinette.interface.type == "api":
             if user_answers.get(f"{question_parsed.name}[name]"):
                 question_parsed.value = {
-                    'content': question_parsed.value,
-                    'filename': user_answers.get(f"{question_parsed.name}[name]", question_parsed.name),
+                    "content": question_parsed.value,
+                    "filename": user_answers.get(
+                        f"{question_parsed.name}[name]", question_parsed.name
+                    ),
                 }
         # If path file are the same
-        if question_parsed.value and str(question_parsed.value) == question_parsed.current_value:
+        if (
+            question_parsed.value
+            and str(question_parsed.value) == question_parsed.current_value
+        ):
             question_parsed.value = None
 
         return question_parsed
 
     def _prevalidate(self, question):
         super()._prevalidate(question)
-        if isinstance(question.value, str) and question.value and not os.path.exists(question.value):
+        if (
+            isinstance(question.value, str)
+            and question.value
+            and not os.path.exists(question.value)
+        ):
             raise YunohostValidationError(
-                "app_argument_invalid", field=question.name, error=m18n.n("invalid_number1")
+                "app_argument_invalid",
+                field=question.name,
+                error=m18n.n("invalid_number1"),
             )
-        if question.value in [None, ''] or not question.accept:
+        if question.value in [None, ""] or not question.accept:
             return
 
-        filename = question.value if isinstance(question.value, str) else question.value['filename']
-        if '.' not in filename or '.' + filename.split('.')[-1] not in question.accept:
+        filename = (
+            question.value
+            if isinstance(question.value, str)
+            else question.value["filename"]
+        )
+        if "." not in filename or "." + filename.split(".")[-1] not in question.accept:
             raise YunohostValidationError(
-                "app_argument_invalid", field=question.name, error=m18n.n("invalid_number2")
+                "app_argument_invalid",
+                field=question.name,
+                error=m18n.n("invalid_number2"),
             )
-
 
     def _post_parse_value(self, question):
         from base64 import b64decode
+
         # Upload files from API
         # A file arg contains a string with "FILENAME:BASE64_CONTENT"
         if not question.value:
             return question.value
 
-        if Moulinette.interface.type== 'api':
+        if Moulinette.interface.type == "api":
 
-            upload_dir = tempfile.mkdtemp(prefix='tmp_configpanel_')
+            upload_dir = tempfile.mkdtemp(prefix="tmp_configpanel_")
             FileArgumentParser.upload_dirs += [upload_dir]
-            filename = question.value['filename']
-            logger.debug(f"Save uploaded file {question.value['filename']} from API into {upload_dir}")
+            filename = question.value["filename"]
+            logger.debug(
+                f"Save uploaded file {question.value['filename']} from API into {upload_dir}"
+            )
 
             # Filename is given by user of the API. For security reason, we have replaced
             # os.path.join to avoid the user to be able to rewrite a file in filesystem
@@ -755,9 +781,9 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
             while os.path.exists(file_path):
                 file_path = os.path.normpath(upload_dir + "/" + filename + (".%d" % i))
                 i += 1
-            content = question.value['content']
+            content = question.value["content"]
             try:
-                with open(file_path, 'wb') as f:
+                with open(file_path, "wb") as f:
                     f.write(b64decode(content))
             except IOError as e:
                 raise YunohostError("cannot_write_file", file=file_path, error=str(e))
@@ -790,6 +816,7 @@ ARGUMENTS_TYPE_PARSERS = {
     "file": FileArgumentParser,
 }
 
+
 def parse_args_in_yunohost_format(user_answers, argument_questions):
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
@@ -811,4 +838,3 @@ def parse_args_in_yunohost_format(user_answers, argument_questions):
             parsed_answers_dict[question["name"]] = answer
 
     return parsed_answers_dict
-

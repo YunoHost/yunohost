@@ -36,7 +36,6 @@ import urllib.parse
 import tempfile
 from collections import OrderedDict
 
-from moulinette.interfaces.cli import colorize
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -55,7 +54,11 @@ from moulinette.utils.filesystem import (
 
 from yunohost.service import service_status, _run_service_command
 from yunohost.utils import packages, config
-from yunohost.utils.config import ConfigPanel, parse_args_in_yunohost_format, Question
+from yunohost.utils.config import (
+    ConfigPanel,
+    parse_args_in_yunohost_format,
+    Question,
+)
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.filesystem import free_space_in_directory
@@ -1756,29 +1759,32 @@ def app_action_run(operation_logger, app, action, args=None):
     return logger.success("Action successed!")
 
 
-def app_config_get(app, key='', mode='classic'):
+def app_config_get(app, key="", mode="classic"):
     """
     Display an app configuration in classic, full or export mode
     """
-    config = AppConfigPanel(app)
-    return config.get(key, mode)
+    config_ = AppConfigPanel(app)
+    return config_.get(key, mode)
 
 
 @is_unit_operation()
-def app_config_set(operation_logger, app, key=None, value=None, args=None, args_file=None):
+def app_config_set(
+    operation_logger, app, key=None, value=None, args=None, args_file=None
+):
     """
     Apply a new app configuration
     """
 
-    config = AppConfigPanel(app)
+    config_ = AppConfigPanel(app)
 
     Question.operation_logger = operation_logger
     operation_logger.start()
 
-    result = config.set(key, value, args, args_file)
+    result = config_.set(key, value, args, args_file)
     if "errors" not in result:
         operation_logger.success()
     return result
+
 
 class AppConfigPanel(ConfigPanel):
     def __init__(self, app):
@@ -1791,10 +1797,10 @@ class AppConfigPanel(ConfigPanel):
         super().__init__(config_path=config_path)
 
     def _load_current_values(self):
-        self.values = self._call_config_script('show')
+        self.values = self._call_config_script("show")
 
     def _apply(self):
-        self.errors = self._call_config_script('apply', self.new_values)
+        self.errors = self._call_config_script("apply", self.new_values)
 
     def _call_config_script(self, action, env={}):
         from yunohost.hook import hook_exec
@@ -1814,21 +1820,22 @@ ynh_app_config_run $1
         # Call config script to extract current values
         logger.debug(f"Calling '{action}' action from config script")
         app_id, app_instance_nb = _parse_app_instance_name(self.app)
-        env.update({
-            "app_id": app_id,
-            "app": self.app,
-            "app_instance_nb": str(app_instance_nb),
-        })
-
-        ret, values = hook_exec(
-            config_script, args=[action], env=env
+        env.update(
+            {
+                "app_id": app_id,
+                "app": self.app,
+                "app_instance_nb": str(app_instance_nb),
+            }
         )
+
+        ret, values = hook_exec(config_script, args=[action], env=env)
         if ret != 0:
-            if action == 'show':
+            if action == "show":
                 raise YunohostError("app_config_unable_to_read_values")
             else:
                 raise YunohostError("app_config_unable_to_apply_values_correctly")
         return values
+
 
 def _get_all_installed_apps_id():
     """
@@ -2453,9 +2460,6 @@ def _parse_args_for_action(action, args={}):
     action_args = action["arguments"]
 
     return parse_args_in_yunohost_format(args, action_args)
-
-
-
 
 
 def _validate_and_normalize_webpath(args_dict, app_folder):

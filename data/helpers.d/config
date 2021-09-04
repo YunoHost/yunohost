@@ -67,7 +67,7 @@ EOL
             local source_key="$(echo "$source" | cut -d: -f1)"
             source_key=${source_key:-$short_setting}
             local source_file="$(echo "$source" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
-            old[$short_setting]="$(ynh_get_var --file="${source_file}" --key="${source_key}")"
+            old[$short_setting]="$(ynh_read_var_in_file --file="${source_file}" --key="${source_key}")"
         
         fi
     done
@@ -130,7 +130,7 @@ _ynh_app_config_apply() {
                 local source_file="$(echo "$source" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
 
                 ynh_backup_if_checksum_is_different --file="$source_file"
-                ynh_set_var --file="${source_file}" --key="${source_key}" --value="${!short_setting}"
+                ynh_write_var_in_file --file="${source_file}" --key="${source_key}" --value="${!short_setting}"
                 ynh_store_file_checksum --file="$source_file" --update_only
                 
                 # We stored the info in settings in order to be able to upgrade the app
