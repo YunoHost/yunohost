@@ -35,7 +35,7 @@ Webadmin ([Yunohost-Admin](https://github.com/YunoHost/yunohost-admin)) | Single
 - You can help translate YunoHost on our [translation platform](https://translate.yunohost.org/engage/yunohost/?utm_source=widget)
 
 <p align="center">
-<img src="https://translate.yunohost.org/widgets/yunohost/-/multi-auto.svg" alt="Translation status" />
+<img src="https://translate.yunohost.org/widgets/yunohost/-/core/horizontal-auto.svg" alt="Translation status" />
 </p>
 
 ## License

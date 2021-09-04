@@ -53,15 +53,17 @@ full-tests:
 test-i18n-keys:
   extends: .test-stage
   script:
-    - python3 -m pytest tests tests/test_i18n_keys.py
+    - python3 -m pytest tests/test_i18n_keys.py
   only:
     changes:
-      - locales/*
+      - locales/en.json
+      - src/yunohost/*.py
+      - data/hooks/diagnosis/*.py
 
 test-translation-format-consistency:
   extends: .test-stage
   script:
-    - python3 -m pytest tests tests/test_translation_format_consistency.py
+    - python3 -m pytest tests/test_translation_format_consistency.py
   only:
     changes:
       - locales/*
