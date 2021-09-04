@@ -81,10 +81,11 @@ class ConfigPanel:
             key = f"{panel['id']}.{section['id']}.{option['id']}"
             if mode == 'export':
                 result[option['id']] = option.get('current_value')
-            elif 'ask' in option:
-                result[key] = {'ask': _value_for_locale(option['ask'])}
-            elif 'i18n' in self.config:
-                result[key] = {'ask': m18n.n(self.config['i18n'] + '_' + option['id'])}
+            else:
+                if 'ask' in option:
+                    result[key] = {'ask': _value_for_locale(option['ask'])}
+                elif 'i18n' in self.config:
+                    result[key] = {'ask': m18n.n(self.config['i18n'] + '_' + option['id'])}
                 if 'current_value' in option:
                     question_class = ARGUMENTS_TYPE_PARSERS[option.get("type", "string")]
                     result[key]['value'] = question_class.humanize(option['current_value'], option)
@@ -774,7 +775,7 @@ class FileQuestion(Question):
 
     def __init__(self, question, user_answers):
         super().__init__(question, user_answers)
-        if self.get("accept"):
+        if question.get("accept"):
             self.accept = question.get("accept").replace(" ", "").split(",")
         else:
             self.accept = []

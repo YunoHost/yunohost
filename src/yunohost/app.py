@@ -1800,7 +1800,8 @@ class AppConfigPanel(ConfigPanel):
         self.values = self._call_config_script("show")
 
     def _apply(self):
-        self.errors = self._call_config_script("apply", self.new_values)
+        env = {key: str(value) for key, value in self.new_values.items()}
+        self.errors = self._call_config_script("apply", env=env)
 
     def _call_config_script(self, action, env={}):
         from yunohost.hook import hook_exec
