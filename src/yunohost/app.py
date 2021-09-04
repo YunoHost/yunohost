@@ -56,7 +56,7 @@ from yunohost.utils import packages
 from yunohost.utils.config import (
     ConfigPanel,
     parse_args_in_yunohost_format,
-    YunoHostArgumentFormatParser,
+    Question,
 )
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -1769,7 +1769,7 @@ def app_config_set(
 
     config_ = AppConfigPanel(app)
 
-    YunoHostArgumentFormatParser.operation_logger = operation_logger
+    Question.operation_logger = operation_logger
     operation_logger.start()
 
     result = config_.set(key, value, args, args_file)
@@ -1792,7 +1792,8 @@ class AppConfigPanel(ConfigPanel):
         self.values = self._call_config_script("show")
 
     def _apply(self):
-        self.errors = self._call_config_script("apply", self.new_values)
+        env = {key: str(value) for key, value in self.new_values.items()}
+        self.errors = self._call_config_script("apply", env=env)
 
     def _call_config_script(self, action, env={}):
         from yunohost.hook import hook_exec
