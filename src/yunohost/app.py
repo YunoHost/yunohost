@@ -1823,9 +1823,9 @@ ynh_app_config_run $1
         ret, values = hook_exec(config_script, args=[action], env=env)
         if ret != 0:
             if action == "show":
-                raise YunohostError("app_config_unable_to_read_values")
+                raise YunohostError("app_config_unable_to_read")
             else:
-                raise YunohostError("app_config_unable_to_apply_values_correctly")
+                raise YunohostError("app_config_unable_to_apply")
         return values
 
 

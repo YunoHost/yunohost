@@ -31,6 +31,7 @@ from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import (
+    write_to_file,
     read_toml,
     read_yaml,
     write_to_yaml,
@@ -127,14 +128,14 @@ class ConfigPanel:
         # N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
             error = m18n.n("operation_interrupted")
-            logger.error(m18n.n("config_failed", error=error))
+            logger.error(m18n.n("config_apply_failed", error=error))
             raise
         # Something wrong happened in Yunohost's code (most probably hook_exec)
         except Exception:
             import traceback
 
             error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-            logger.error(m18n.n("config_failed", error=error))
+            logger.error(m18n.n("config_apply_failed", error=error))
             raise
         finally:
             # Delete files uploaded from API
@@ -154,10 +155,11 @@ class ConfigPanel:
         return read_toml(self.config_path)
 
     def _get_config_panel(self):
+
         # Split filter_key
-        filter_key = dict(enumerate(self.filter_key.split(".")))
+        filter_key = self.filter_key.split(".")
         if len(filter_key) > 3:
-            raise YunohostError("config_too_much_sub_keys")
+            raise YunohostError("config_too_many_sub_keys", key=self.filter_key)
 
         if not os.path.exists(self.config_path):
             return None
@@ -166,7 +168,7 @@ class ConfigPanel:
         # Check TOML config panel is in a supported version
         if float(toml_config_panel["version"]) < CONFIG_PANEL_VERSION_SUPPORTED:
             raise YunohostError(
-                "config_too_old_version", version=toml_config_panel["version"]
+                "config_version_not_supported", version=toml_config_panel["version"]
             )
 
         # Transform toml format into internal format
@@ -187,6 +189,13 @@ class ConfigPanel:
             # optional choices pattern limit min max step accept redact
         }
 
+        #
+        # FIXME : this is hella confusing ...
+        # from what I understand, the purpose is to have some sort of "deep_update"
+        # to apply the defaults onto the loaded toml ...
+        # in that case we probably want to get inspiration from
+        # https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
+        #
         def convert(toml_node, node_type):
             """Convert TOML in internal format ('full' mode used by webadmin)
             Here are some properties of 1.0 config panel in toml:
@@ -456,7 +465,7 @@ class YunoHostArgumentFormatParser(object):
         if self.operation_logger:
             self.operation_logger.data_to_redact.extend(data_to_redact)
         elif data_to_redact:
-            raise YunohostError("app_argument_cant_redact", arg=question.name)
+            raise YunohostError(f"Can't redact {question.name} because no operation logger available in the context", raw_msg=True)
 
         return question.value
 
@@ -729,7 +738,7 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
             raise YunohostValidationError(
                 "app_argument_invalid",
                 field=question.name,
-                error=m18n.n("invalid_number1"),
+                error=m18n.n("file_does_not_exists"),
             )
         if question.value in [None, ""] or not question.accept:
             return
@@ -743,7 +752,7 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
             raise YunohostValidationError(
                 "app_argument_invalid",
                 field=question.name,
-                error=m18n.n("invalid_number2"),
+                error=m18n.n("file_extension_not_accepted"),
             )
 
     def _post_parse_value(self, question):
@@ -768,19 +777,15 @@ class FileArgumentParser(YunoHostArgumentFormatParser):
             # i.e. os.path.join("/foo", "/etc/passwd") == "/etc/passwd"
             file_path = os.path.normpath(upload_dir + "/" + filename)
             if not file_path.startswith(upload_dir + "/"):
-                raise YunohostError("relative_parent_path_in_filename_forbidden")
+                raise YunohostError("file_relative_parent_path_in_filename_forbidden")
             i = 2
             while os.path.exists(file_path):
                 file_path = os.path.normpath(upload_dir + "/" + filename + (".%d" % i))
                 i += 1
             content = question.value["content"]
-            try:
-                with open(file_path, "wb") as f:
-                    f.write(b64decode(content))
-            except IOError as e:
-                raise YunohostError("cannot_write_file", file=file_path, error=str(e))
-            except Exception as e:
-                raise YunohostError("error_writing_file", file=file_path, error=str(e))
+
+            write_to_file(file_path, b64decode(content), file_mode="wb")
+
             question.value = file_path
         return question.value
 
