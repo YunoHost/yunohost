@@ -797,7 +797,7 @@ class FileQuestion(Question):
             raise YunohostValidationError(
                 "app_argument_invalid",
                 field=self.name,
-                error=m18n.n("file_does_not_exists"),
+                error=m18n.n("file_does_not_exist", path=self.value),
             )
         if self.value in [None, ""] or not self.accept:
             return
@@ -807,7 +807,7 @@ class FileQuestion(Question):
             raise YunohostValidationError(
                 "app_argument_invalid",
                 field=self.name,
-                error=m18n.n("file_extension_not_accepted"),
+                error=m18n.n("file_extension_not_accepted", file=filename, accept=self.accept),
             )
 
 
@@ -833,7 +833,7 @@ class FileQuestion(Question):
             # i.e. os.path.join("/foo", "/etc/passwd") == "/etc/passwd"
             file_path = os.path.normpath(upload_dir + "/" + filename)
             if not file_path.startswith(upload_dir + "/"):
-                raise YunohostError("file_relative_parent_path_in_filename_forbidden")
+                raise YunohostError(f"Filename '{filename}' received from the API got a relative parent path, which is forbidden", raw_msg=True)
             i = 2
             while os.path.exists(file_path):
                 file_path = os.path.normpath(upload_dir + "/" + filename + (".%d" % i))
