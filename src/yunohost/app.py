@@ -55,7 +55,7 @@ from moulinette.utils.filesystem import (
 
 from yunohost.service import service_status, _run_service_command
 from yunohost.utils import packages, config
-from yunohost.utils.config import ConfigPanel, parse_args_in_yunohost_format, YunoHostArgumentFormatParser
+from yunohost.utils.config import ConfigPanel, parse_args_in_yunohost_format, Question
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.filesystem import free_space_in_directory
@@ -1772,7 +1772,7 @@ def app_config_set(operation_logger, app, key=None, value=None, args=None, args_
 
     config = AppConfigPanel(app)
 
-    YunoHostArgumentFormatParser.operation_logger = operation_logger
+    Question.operation_logger = operation_logger
     operation_logger.start()
 
     result = config.set(key, value, args, args_file)
