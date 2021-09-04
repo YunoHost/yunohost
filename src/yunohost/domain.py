@@ -28,9 +28,8 @@ import os
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import mkdir, write_to_file, read_yaml, write_to_yaml
+from moulinette.utils.filesystem import write_to_file
 
-from yunohost.settings import is_boolean
 from yunohost.app import (
     app_ssowatconf,
     _installed_apps,
@@ -41,7 +40,6 @@ from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_c
 from yunohost.utils.config import ConfigPanel
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation
-from yunohost.hook import hook_callback
 
 logger = getActionLogger("yunohost.domain")
 
