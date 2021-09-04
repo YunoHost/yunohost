@@ -20,6 +20,7 @@
 """
 from moulinette import Moulinette, m18n
 
+
 def _value_for_locale(values):
     """
     Return proper value for current locale
@@ -42,5 +43,3 @@ def _value_for_locale(values):
 
     # Fallback to first value
     return list(values.values())[0]
-
-
