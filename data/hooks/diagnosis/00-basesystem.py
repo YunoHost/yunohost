@@ -172,7 +172,10 @@ class BaseSystemDiagnoser(Diagnoser):
         try:
             return int(n_failures)
         except Exception:
-            self.logger_warning("Failed to parse number of recent auth failures, expected an int, got '%s'" % n_failures)
+            self.logger_warning(
+                "Failed to parse number of recent auth failures, expected an int, got '%s'"
+                % n_failures
+            )
             return -1
 
     def is_vulnerable_to_meltdown(self):
