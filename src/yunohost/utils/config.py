@@ -21,9 +21,9 @@
 
 import os
 import re
-import toml
 import urllib.parse
 import tempfile
+import shutil
 from collections import OrderedDict
 
 from moulinette.interfaces.cli import colorize
@@ -37,8 +37,6 @@ from moulinette.utils.filesystem import (
     mkdir,
 )
 
-from yunohost.service import _get_services
-from yunohost.service import _run_service_command, _get_services
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
@@ -144,7 +142,7 @@ class ConfigPanel:
 
         if self.errors:
             return {
-                "errors": errors,
+                "errors": self.errors,
             }
 
         self._reload_services()
@@ -290,6 +288,9 @@ class ConfigPanel:
         write_to_yaml(self.save_path, self.new_values)
 
     def _reload_services(self):
+
+        from yunohost.service import _run_service_command, _get_services
+
         logger.info("Reloading services...")
         services_to_reload = set()
         for panel, section, obj in self._iterate(["panel", "section", "option"]):

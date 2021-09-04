@@ -36,7 +36,6 @@ import urllib.parse
 import tempfile
 from collections import OrderedDict
 
-from moulinette.interfaces.cli import colorize
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -54,7 +53,7 @@ from moulinette.utils.filesystem import (
 )
 
 from yunohost.service import service_status, _run_service_command
-from yunohost.utils import packages, config
+from yunohost.utils import packages
 from yunohost.utils.config import (
     ConfigPanel,
     parse_args_in_yunohost_format,
@@ -1764,8 +1763,8 @@ def app_config_get(app, key="", mode="classic"):
     """
     Display an app configuration in classic, full or export mode
     """
-    config = AppConfigPanel(app)
-    return config.get(key, mode)
+    config_ = AppConfigPanel(app)
+    return config_.get(key, mode)
 
 
 @is_unit_operation()
@@ -1776,12 +1775,12 @@ def app_config_set(
     Apply a new app configuration
     """
 
-    config = AppConfigPanel(app)
+    config_ = AppConfigPanel(app)
 
     YunoHostArgumentFormatParser.operation_logger = operation_logger
     operation_logger.start()
 
-    result = config.set(key, value, args, args_file)
+    result = config_.set(key, value, args, args_file)
     if "errors" not in result:
         operation_logger.success()
     return result
