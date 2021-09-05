@@ -20,7 +20,7 @@
     "ask_new_admin_password": "Nova senha de administração",
     "ask_password": "Senha",
     "backup_created": "Backup completo",
-    "backup_output_directory_not_empty": "A pasta de destino não se encontra vazia",
+    "backup_output_directory_not_empty": "Você deve escolher um diretório de saída que esteja vazio",
     "custom_app_url_required": "Deve fornecer um link para atualizar a sua aplicação personalizada {app}",
     "domain_cert_gen_failed": "Não foi possível gerar o certificado",
     "domain_created": "Domínio criado com êxito",
@@ -107,7 +107,7 @@
     "backup_deleted": "Backup removido",
     "backup_hook_unknown": "O gancho de backup '{hook}' é desconhecido",
     "backup_nothings_done": "Nada há se salvar",
-    "backup_output_directory_forbidden": "Diretório de saída proibido. Os backups não podem ser criados em /boot, /dev, /etc, /lib, /root, /run, /sbin, /sys, /usr, /var ou /home/yunohost.backup/archives subpastas",
+    "backup_output_directory_forbidden": "Escolha um diretório de saída diferente. Backups não podem ser criados nos subdiretórios /bin, /boot, /dev, /etc, /lib, /root, /run, /sbin, /sys, /usr, /var ou /home/yunohost.backup/archives",
     "app_already_installed_cant_change_url": "Este aplicativo já está instalado. A URL não pode ser alterada apenas por esta função. Confira em `app changeurl` se está disponível.",
     "app_already_up_to_date": "{app} já está atualizado",
     "app_argument_choice_invalid": "Use uma das opções '{choices}' para o argumento '{name}'",
@@ -184,5 +184,14 @@
     "backup_csv_creation_failed": "Não foi possível criar o arquivo CSV necessário para a restauração",
     "backup_csv_addition_failed": "Não foi possível adicionar os arquivos que estarão no backup ao arquivo CSV",
     "backup_create_size_estimation": "O arquivo irá conter cerca de {size} de dados.",
-    "backup_couldnt_bind": "Não foi possível vincular {src} ao {dest}"
+    "backup_couldnt_bind": "Não foi possível vincular {src} ao {dest}",
+    "certmanager_attempt_to_replace_valid_cert": "Você está tentando sobrescrever um certificado bom e válido para o domínio {domain}! (Use --force para prosseguir mesmo assim)",
+    "backup_with_no_restore_script_for_app": "A aplicação {app} não tem um script de restauração, você não será capaz de automaticamente restaurar o backup dessa aplicação.",
+    "backup_with_no_backup_script_for_app": "A aplicação '{app}' não tem um script de backup. Ignorando.",
+    "backup_unable_to_organize_files": "Não foi possível usar o método rápido de organizar os arquivos no arquivo de backup",
+    "backup_system_part_failed": "Não foi possível fazer o backup da parte do sistema '{part}'",
+    "backup_running_hooks": "Executando os hooks de backup...",
+    "backup_permission": "Permissão de backup para {app}",
+    "backup_output_symlink_dir_broken": "O diretório de seu arquivo '{path}' é um link simbólico quebrado. Talvez você tenha esquecido de re/montar ou conectar o dispositivo de armazenamento para onde o link aponta.",
+    "backup_output_directory_required": "Você deve especificar um diretório de saída para o backup"
 }
