@@ -15,7 +15,7 @@ from yunohost.app import (
     app_ssowatconf,
 )
 
-from yunohost.utils.errors import YunohostValidationError
+from yunohost.utils.error import YunohostValidationError
 
 
 def setup_function(function):
