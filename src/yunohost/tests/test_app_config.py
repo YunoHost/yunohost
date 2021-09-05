@@ -58,7 +58,7 @@ def clean():
     os.system("systemctl start nginx")
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def legacy_app(request):
 
     main_domain = _get_maindomain()
@@ -78,7 +78,7 @@ def legacy_app(request):
 
 
 
-@pytest.fixture(scope="module")
+@pytest.fixture()
 def config_app(request):
 
     app_install(
