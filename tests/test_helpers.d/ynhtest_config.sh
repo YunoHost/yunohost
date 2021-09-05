@@ -27,11 +27,13 @@ ENABLED = False
 # TITLE = "Old title"
 TITLE = "Lorem Ipsum"
 THEME = "colib'ris"
-EMAIL = "root@example.com"
-PORT   = 1234
+EMAIL = "root@example.com" # This is a comment without quotes
+PORT   = 1234 # This is a comment without quotes
 URL = 'https://yunohost.org'
 DICT = {}
 DICT['ldap_base'] = "ou=users,dc=yunohost,dc=org"
+DICT['ldap_conf'] = {}
+DICT['ldap_conf']['user'] = "camille"
 EOF
 
     test "$(_read_py                   "$file" "FOO")" == "None"
@@ -56,6 +58,8 @@ EOF
     test "$(ynh_read_var_in_file       "$file" "URL")" == "https://yunohost.org"
 
     test "$(ynh_read_var_in_file       "$file" "ldap_base")" == "ou=users,dc=yunohost,dc=org"
+    
+    test "$(ynh_read_var_in_file   "$file" "user")" == "camille"
 
     ! _read_py                         "$file" "NONEXISTENT"
     test "$(ynh_read_var_in_file       "$file" "NONEXISTENT")" == "YNH_NULL"
@@ -64,7 +68,7 @@ EOF
     test "$(ynh_read_var_in_file       "$file" "ENABLE")" == "YNH_NULL"
 }
 
-ynhtest_config_write_py() {
+nhtest_config_write_py() {
     local dummy_dir="$(mktemp -d -p $VAR_WWW)"
     file="$dummy_dir/dummy.py"
 
@@ -75,8 +79,8 @@ ENABLED = False
 # TITLE = "Old title"
 TITLE = "Lorem Ipsum"
 THEME = "colib'ris"
-EMAIL = "root@example.com"
-PORT   = 1234
+EMAIL = "root@example.com" // This is a comment without quotes
+PORT   = 1234 // This is a comment without quotes
 URL = 'https://yunohost.org'
 DICT = {}
 DICT['ldap_base'] = "ou=users,dc=yunohost,dc=org"
@@ -141,7 +145,7 @@ _read_ini() {
 
 ynhtest_config_read_ini() {
     local dummy_dir="$(mktemp -d -p $VAR_WWW)"
-    file="$dummy_dir/dummy.yml"
+    file="$dummy_dir/dummy.ini"
 
     cat << EOF > $file
 # Some comment
@@ -152,8 +156,8 @@ enabled =    False
 # title = Old title
 title =    Lorem Ipsum
 theme = colib'ris
-email = root@example.com
-port =     1234
+email = root@example.com # This is a comment without quotes
+port =     1234 # This is a comment without quotes
 url = https://yunohost.org
 [dict]
     ldap_base = ou=users,dc=yunohost,dc=org
@@ -190,7 +194,7 @@ EOF
 
 }
 
-ynhtest_config_write_ini() {
+nhtest_config_write_ini() {
     local dummy_dir="$(mktemp -d -p $VAR_WWW)"
     file="$dummy_dir/dummy.ini"
 
@@ -203,8 +207,8 @@ enabled =    False
 # title = Old title
 title =    Lorem Ipsum
 theme = colib'ris
-email = root@example.com
-port =     1234
+email = root@example.com # This is a comment without quotes
+port =     1234 # This is a comment without quotes
 url = https://yunohost.org
 [dict]
     ldap_base = ou=users,dc=yunohost,dc=org
@@ -280,8 +284,8 @@ enabled: false
 # title: old title
 title: Lorem Ipsum
 theme: colib'ris
-email: root@example.com
-port: 1234
+email: root@example.com # This is a comment without quotes
+port: 1234 # This is a comment without quotes
 url: https://yunohost.org
 dict:
    ldap_base: ou=users,dc=yunohost,dc=org
@@ -318,7 +322,7 @@ EOF
 }
 
 
-ynhtest_config_write_yaml() {
+nhtest_config_write_yaml() {
     local dummy_dir="$(mktemp -d -p $VAR_WWW)"
     file="$dummy_dir/dummy.yml"
 
@@ -329,8 +333,8 @@ enabled: false
 # title: old title
 title: Lorem Ipsum
 theme: colib'ris
-email: root@example.com
-port: 1234
+email: root@example.com # This is a comment without quotes
+port: 1234 # This is a comment without quotes
 url: https://yunohost.org
 dict:
    ldap_base: ou=users,dc=yunohost,dc=org
@@ -415,10 +419,10 @@ EOF
 
 
     test "$(_read_json                 "$file" "foo")" == "None"
-    test "$(ynh_read_var_in_file       "$file" "foo")" == "null," # FIXME FIXME FIXME trailing ,
+    test "$(ynh_read_var_in_file       "$file" "foo")" == "null"
 
     test "$(_read_json                 "$file" "enabled")" == "False"
-    test "$(ynh_read_var_in_file       "$file" "enabled")" == "false," # FIXME FIXME FIXME trailing ,
+    test "$(ynh_read_var_in_file       "$file" "enabled")" == "false"
 
     test "$(_read_json                 "$file" "title")" == "Lorem Ipsum"
     test "$(ynh_read_var_in_file       "$file" "title")" == "Lorem Ipsum"
@@ -430,7 +434,7 @@ EOF
     test "$(ynh_read_var_in_file       "$file" "email")" == "root@example.com"
 
     test "$(_read_json                 "$file" "port")" == "1234"
-    test "$(ynh_read_var_in_file       "$file" "port")" == "1234," # FIXME FIXME FIXME trailing ,
+    test "$(ynh_read_var_in_file       "$file" "port")" == "1234"
 
     test "$(_read_json                 "$file" "url")" == "https://yunohost.org"
     test "$(ynh_read_var_in_file       "$file" "url")" == "https://yunohost.org"
@@ -445,7 +449,7 @@ EOF
 }
 
 
-ynhtest_config_write_json() {
+nhtest_config_write_json() {
     local dummy_dir="$(mktemp -d -p $VAR_WWW)"
     file="$dummy_dir/dummy.json"
 
@@ -538,20 +542,23 @@ ynhtest_config_read_php() {
   // \$title = "old title";
   \$title = "Lorem Ipsum";
    \$theme = "colib'ris";
-  \$email = "root@example.com";
-  \$port = 1234;
+  \$email = "root@example.com"; // This is a comment without quotes
+  \$port = 1234; // This is a second comment without quotes
   \$url = "https://yunohost.org";
   \$dict = [
      'ldap_base' => "ou=users,dc=yunohost,dc=org",
+     'ldap_conf' => []
   ];
+  \$dict['ldap_conf']['user'] = 'camille';
+  const DB_HOST       = 'localhost';
 ?>
 EOF
 
     test "$(_read_php              "$file" "foo")" == "NULL"
-    test "$(ynh_read_var_in_file   "$file" "foo")" == "NULL;" # FIXME FIXME FIXME trailing ;
+    test "$(ynh_read_var_in_file   "$file" "foo")" == "NULL" 
 
     test "$(_read_php              "$file" "enabled")" == "false"
-    test "$(ynh_read_var_in_file   "$file" "enabled")" == "false;" # FIXME FIXME FIXME trailing ;
+    test "$(ynh_read_var_in_file   "$file" "enabled")" == "false" 
 
     test "$(_read_php              "$file" "title")" == "Lorem Ipsum"
     test "$(ynh_read_var_in_file   "$file" "title")" == "Lorem Ipsum"
@@ -563,12 +570,16 @@ EOF
     test "$(ynh_read_var_in_file   "$file" "email")" == "root@example.com"
 
     test "$(_read_php              "$file" "port")" == "1234"
-    test "$(ynh_read_var_in_file   "$file" "port")" == "1234;"   # FIXME FIXME FIXME trailing ;
+    test "$(ynh_read_var_in_file   "$file" "port")" == "1234"
 
     test "$(_read_php              "$file" "url")" == "https://yunohost.org"
     test "$(ynh_read_var_in_file   "$file" "url")" == "https://yunohost.org"
 
     test "$(ynh_read_var_in_file   "$file" "ldap_base")" == "ou=users,dc=yunohost,dc=org"
+    
+    test "$(ynh_read_var_in_file   "$file" "user")" == "camille"
+    
+    test "$(ynh_read_var_in_file   "$file" "DB_HOST")" == "localhost"
 
     ! _read_php                    "$file" "nonexistent"
     test "$(ynh_read_var_in_file   "$file" "nonexistent")" == "YNH_NULL"
@@ -578,7 +589,7 @@ EOF
 }
 
 
-ynhtest_config_write_php() {
+nhtest_config_write_php() {
     local dummy_dir="$(mktemp -d -p $VAR_WWW)"
     file="$dummy_dir/dummy.php"
 
@@ -590,8 +601,8 @@ ynhtest_config_write_php() {
   // \$title = "old title";
   \$title = "Lorem Ipsum";
    \$theme = "colib'ris";
-  \$email = "root@example.com";
-  \$port = 1234;
+  \$email = "root@example.com"; // This is a comment without quotes
+  \$port = 1234; // This is a comment without quotes
   \$url = "https://yunohost.org";
   \$dict = [
      'ldap_base' => "ou=users,dc=yunohost,dc=org",
