@@ -27,6 +27,7 @@ i18n = "domain_config"
 [dns]
     [dns.registrar]
         optional = true
+        # This part is replace dynamically by DomainConfigPanel
         [dns.registrar.unsupported]
         ask = "DNS zone of this domain can't be auto-configured, you should do it manually."
         type = "alert"
