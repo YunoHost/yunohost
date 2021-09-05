@@ -105,13 +105,13 @@ class ConfigPanel:
         self._get_config_panel()
 
         if not self.config:
-            raise YunohostError("config_no_panel")
+            raise YunohostValidationError("config_no_panel")
 
         if (args is not None or args_file is not None) and value is not None:
-            raise YunohostError("config_args_value")
+            raise YunohostValidationError("You should either provide a value, or a serie of args/args_file, but not both at the same time", raw_msg=True)
 
         if self.filter_key.count(".") != 2 and value is not None:
-            raise YunohostError("config_set_value_on_section")
+            raise YunohostValidationError("config_cant_set_value_on_section")
 
         # Import and parse pre-answered options
         logger.debug("Import and parse pre-answered options")
@@ -171,7 +171,7 @@ class ConfigPanel:
         # Split filter_key
         filter_key = self.filter_key.split(".") if self.filter_key != "" else []
         if len(filter_key) > 3:
-            raise YunohostError("config_too_many_sub_keys", key=self.filter_key)
+            raise YunohostError(f"The filter key {filter_key} has too many sub-levels, the max is 3.", raw_msg=True)
 
         if not os.path.exists(self.config_path):
             return None
@@ -265,7 +265,7 @@ class ConfigPanel:
             self.config["panels"][0]["sections"][0]["options"][0]
         except (KeyError, IndexError):
             raise YunohostError(
-                "config_empty_or_bad_filter_key", filter_key=self.filter_key
+                "config_unknown_filter_key", filter_key=self.filter_key
             )
 
         return self.config
