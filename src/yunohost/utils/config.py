@@ -206,7 +206,7 @@ class ConfigPanel:
                 }
             },
             "options": {
-                "properties": ["ask", "type", "source", "help", "example",
+                "properties": ["ask", "type", "bind", "help", "example",
                                "style", "icon", "placeholder", "visible",
                                "optional", "choices", "yes", "no", "pattern",
                                "limit", "min", "max", "step", "accept", "redact"],
