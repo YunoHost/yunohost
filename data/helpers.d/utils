@@ -515,7 +515,7 @@ ynh_read_var_in_file() {
     local key
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    set +o xtrace
+    #set +o xtrace
     local filename="$(basename -- "$file")"
 
     [[ -f $file ]] || ynh_die "File $file does not exists"
@@ -525,8 +525,11 @@ ynh_read_var_in_file() {
     local assign="=>|:|="
     local comments="#"
     local string="\"'"
-    if [[ "yaml yml toml ini env" =~ *"$ext"* ]]; then
+    if [[ "$ext" =~ ^ini|env|toml|yml|yaml$ ]]; then
         endline='#'
+    fi
+    if [[ "$ext" =~ ^ini|env$ ]]; then
+        comments="[;#]"
     fi
     if [[ "php"  == "$ext" ]] || [[ "$ext" == "js" ]]; then
         comments="//"
@@ -535,7 +538,7 @@ ynh_read_var_in_file() {
     local var_part='^\s*(?:(const|var|let)\s+)?\$?(\w+('$list')*(->|\.|\[))*\s*'
     var_part+="[$string]?${key}[$string]?"
     var_part+='\s*\]?\s*'
-    var_part+="(?:$assign)"
+    var_part+="($assign)"
     var_part+='\s*'
 
     # Extract the part after assignation sign
@@ -546,7 +549,7 @@ ynh_read_var_in_file() {
     fi
 
     # Remove comments if needed
-    local expression="$(echo "$expression_with_comment" | sed "s@$comments[^$string]*\$@@" | sed "s@\s*[$endline]*\s*]*\$@@")"
+    local expression="$(echo "$expression_with_comment" | sed "s@$comments[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
 
     local first_char="${expression:0:1}"
     if [[ "$first_char" == '"' ]] ; then
