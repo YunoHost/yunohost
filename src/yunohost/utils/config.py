@@ -664,7 +664,7 @@ class DomainQuestion(Question):
 
     def _raise_invalid_answer(self):
         raise YunohostValidationError(
-            "app_argument_invalid", field=self.name, error=m18n.n("domain_unknown")
+            "app_argument_invalid", name=self.name, error=m18n.n("domain_unknown")
         )
 
 
@@ -687,7 +687,7 @@ class UserQuestion(Question):
     def _raise_invalid_answer(self):
         raise YunohostValidationError(
             "app_argument_invalid",
-            field=self.name,
+            name=self.name,
             error=m18n.n("user_unknown", user=self.value),
         )
 
@@ -713,21 +713,21 @@ class NumberQuestion(Question):
         ):
             raise YunohostValidationError(
                 "app_argument_invalid",
-                field=self.name,
+                name=self.name,
                 error=m18n.n("invalid_number"),
             )
 
         if self.min is not None and int(self.value) < self.min:
             raise YunohostValidationError(
                 "app_argument_invalid",
-                field=self.name,
+                name=self.name,
                 error=m18n.n("invalid_number"),
             )
 
         if self.max is not None and int(self.value) > self.max:
             raise YunohostValidationError(
                 "app_argument_invalid",
-                field=self.name,
+                name=self.name,
                 error=m18n.n("invalid_number"),
             )
 
@@ -739,7 +739,7 @@ class NumberQuestion(Question):
             return int(self.value)
 
         raise YunohostValidationError(
-            "app_argument_invalid", field=self.name, error=m18n.n("invalid_number")
+            "app_argument_invalid", name=self.name, error=m18n.n("invalid_number")
         )
 
 
@@ -805,7 +805,7 @@ class FileQuestion(Question):
         ):
             raise YunohostValidationError(
                 "app_argument_invalid",
-                field=self.name,
+                name=self.name,
                 error=m18n.n("file_does_not_exist", path=self.value),
             )
         if self.value in [None, ""] or not self.accept:
@@ -815,7 +815,7 @@ class FileQuestion(Question):
         if "." not in filename or "." + filename.split(".")[-1] not in self.accept:
             raise YunohostValidationError(
                 "app_argument_invalid",
-                field=self.name,
+                name=self.name,
                 error=m18n.n(
                     "file_extension_not_accepted", file=filename, accept=self.accept
                 ),
