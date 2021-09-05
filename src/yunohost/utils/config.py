@@ -59,7 +59,7 @@ class ConfigPanel:
         self._get_config_panel()
 
         if not self.config:
-            raise YunohostError("config_no_panel")
+            raise YunohostValidationError("config_no_panel")
 
         # Read or get values and hydrate the config
         self._load_current_values()
@@ -264,7 +264,7 @@ class ConfigPanel:
         try:
             self.config["panels"][0]["sections"][0]["options"][0]
         except (KeyError, IndexError):
-            raise YunohostError(
+            raise YunohostValidationError(
                 "config_unknown_filter_key", filter_key=self.filter_key
             )
 
