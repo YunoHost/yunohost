@@ -98,7 +98,7 @@ class ConfigPanel:
 
         return result
 
-    def set(self, key=None, value=None, args=None, args_file=None):
+    def set(self, key=None, value=None, args=None, args_file=None, operation_logger=None):
         self.filter_key = key or ""
 
         # Read config panel toml
@@ -128,11 +128,13 @@ class ConfigPanel:
         # Read or get values and hydrate the config
         self._load_current_values()
         self._hydrate()
+        self._ask()
+
+        if operation_logger:
+            operation_logger.start()
 
         try:
-            self._ask()
             self._apply()
-
         # Script got manually interrupted ...
         # N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
@@ -158,6 +160,7 @@ class ConfigPanel:
         self._reload_services()
 
         logger.success("Config updated as expected")
+        operation_logger.success()
         return {}
 
     def _get_toml(self):
@@ -211,13 +214,6 @@ class ConfigPanel:
             }
         }
 
-        #
-        # FIXME : this is hella confusing ...
-        # from what I understand, the purpose is to have some sort of "deep_update"
-        # to apply the defaults onto the loaded toml ...
-        # in that case we probably want to get inspiration from
-        # https://stackoverflow.com/questions/3232943/update-value-of-a-nested-dictionary-of-varying-depth
-        #
         def convert(toml_node, node_type):
             """Convert TOML in internal format ('full' mode used by webadmin)
             Here are some properties of 1.0 config panel in toml:

@@ -1780,11 +1780,9 @@ def app_config_set(
     config_ = AppConfigPanel(app)
 
     Question.operation_logger = operation_logger
-    operation_logger.start()
 
-    result = config_.set(key, value, args, args_file)
-    if "errors" not in result:
-        operation_logger.success()
+    result = config_.set(key, value, args, args_file, operation_logger=operation_logger)
+
     return result
 
 
