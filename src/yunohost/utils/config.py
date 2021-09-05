@@ -110,7 +110,7 @@ class ConfigPanel:
         if (args is not None or args_file is not None) and value is not None:
             raise YunohostError("config_args_value")
 
-        if self.filter_key.count(".") != 2 and not value is None:
+        if self.filter_key.count(".") != 2 and value is not None:
             raise YunohostError("config_set_value_on_section")
 
         # Import and parse pre-answered options
