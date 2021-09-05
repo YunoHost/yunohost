@@ -160,7 +160,8 @@ _ynh_app_config_show() {
 _ynh_app_config_validate() {
     # Change detection
     ynh_script_progression --message="Checking what changed in the new configuration..." --weight=1
-    local is_error=true
+    local nothing_changed=true
+    local changes_validated=true
     #for changed_status in "${!changed[@]}"
     for short_setting in "${!old[@]}"
     do
@@ -178,7 +179,7 @@ _ynh_app_config_validate() {
                 file_hash[old__$short_setting]=$(sha256sum "${old[$short_setting]}" | cut -d' ' -f1)
                 if [ -z "${!short_setting}" ] ; then
                     changed[$short_setting]=true
-                    is_error=false
+                    nothing_changed=false
                 fi
             fi
             if [ -f "${!short_setting}" ] ; then
@@ -186,18 +187,18 @@ _ynh_app_config_validate() {
                 if [[ "${file_hash[old__$short_setting]}" != "${file_hash[new__$short_setting]}" ]]
                 then
                     changed[$short_setting]=true
-                    is_error=false
+                    nothing_changed=false
                 fi
             fi
         else
             if [[ "${!short_setting}" != "${old[$short_setting]}" ]]
             then
                 changed[$short_setting]=true
-                is_error=false
+                nothing_changed=false
             fi
         fi
     done
-    if [[ "$is_error" == "true" ]]
+    if [[ "$nothing_changed" == "true" ]]
     then
         ynh_print_info "Nothing has changed"
         exit 0
@@ -217,11 +218,13 @@ _ynh_app_config_validate() {
         then
             local key="YNH_ERROR_${short_setting}"
             ynh_return "$key: \"$result\""
-            is_error=true
+            changes_validated=false
         fi
     done
-    
-    if [[ "$is_error" == "true" ]]
+
+    # If validation failed, exit the script right now (instead of going into apply)
+    # Yunohost core will pick up the errors returned via ynh_return previously
+    if [[ "$changes_validated" == "false" ]]
     then
         exit 0
     fi 
