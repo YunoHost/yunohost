@@ -39,7 +39,7 @@ EOL
             old[$short_setting]="$($getter)"
             formats[${short_setting}]="yaml"
         
-        elif [[ "$bind" == "" ]] ; then
+        elif [[ "$bind" == "null" ]] ; then
             old[$short_setting]="YNH_NULL"
 
         # Get value from app settings or from another file
@@ -87,7 +87,7 @@ _ynh_app_config_apply() {
             if type -t $setter 2>/dev/null | grep -q '^function$' 2>/dev/null; then
                 $setter
 
-            elif [[ "$bind" == "" ]] ; then
+            elif [[ "$bind" == "null" ]] ; then
                 continue
 
             # Save in a file
