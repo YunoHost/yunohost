@@ -71,7 +71,7 @@ test-translation-format-consistency:
 test-actionmap:
   extends: .test-stage
   script:
-    - python3 -m pytest tests tests/test_actionmap.py
+    - python3 -m pytest tests/test_actionmap.py
   only:
     changes:
       - data/actionsmap/*.yml
