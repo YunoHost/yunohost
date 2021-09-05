@@ -1751,10 +1751,20 @@ def app_action_run(operation_logger, app, action, args=None):
     return logger.success("Action successed!")
 
 
-def app_config_get(app, key="", mode="classic"):
+def app_config_get(app, key="", full=False, export=False):
     """
     Display an app configuration in classic, full or export mode
     """
+    if full and export:
+        raise YunohostValidationError("You can't use --full and --export together.", raw_msg=True)
+
+    if full:
+        mode = "full"
+    elif export:
+        mode = "export"
+    else:
+        mode = "classic"
+
     config_ = AppConfigPanel(app)
     return config_.get(key, mode)
 

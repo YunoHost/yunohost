@@ -863,14 +863,14 @@ app:
                     key:
                         help: A specific panel, section or a question identifier
                         nargs: '?'
-                    -m:
-                        full: --mode
-                        help: Display mode to use
-                        choices:
-                            - classic
-                            - full
-                            - export
-                        default: classic
+                    -f:
+                        full: --full
+                        help: Display all details (meant to be used by the API)
+                        action: store_true
+                    -e:
+                        full: --export
+                        help: Only export key/values, meant to be reimported using "config set --args-file"
+                        action: store_true
 
               ### app_config_set()
               set:
