@@ -132,7 +132,7 @@ def test_service_conf_broken():
     status = service_status("nginx")
     assert status["status"] == "running"
     assert status["configuration"] == "broken"
-    assert "broken.conf" in status["configuration-details"]
+    assert "broken.conf" in status["configuration-details"][0]
 
     # Service reload-or-restart should check that the conf ain't valid
     # before reload-or-restart, hence the service should still be running
