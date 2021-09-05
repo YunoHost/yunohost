@@ -60,6 +60,7 @@ do_pre_regen() {
   main_domain=$(cat /etc/yunohost/current_host)
 
   # Support different strategy for security configurations
+  export redirect_to_https="$(yunohost settings get 'security.nginx.redirect_to_https')"
   export compatibility="$(yunohost settings get 'security.nginx.compatibility')"
   export experimental="$(yunohost settings get 'security.experimental.enabled')"
   ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"

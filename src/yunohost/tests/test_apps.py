@@ -132,7 +132,7 @@ def app_is_exposed_on_http(domain, path, message_in_page):
 
     try:
         r = requests.get(
-            "http://127.0.0.1" + path + "/",
+            "https://127.0.0.1" + path + "/",
             headers={"Host": domain},
             timeout=10,
             verify=False,
