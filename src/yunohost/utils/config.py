@@ -599,7 +599,7 @@ class BooleanQuestion(Question):
 
         raise YunohostValidationError(
             "app_argument_choice_invalid",
-            name=self.name,  # FIXME ...
+            name=option.get("name", ""),
             value=value,
             choices="yes, no, y, n, 1, 0",
         )
@@ -619,7 +619,7 @@ class BooleanQuestion(Question):
             return None
         raise YunohostValidationError(
             "app_argument_choice_invalid",
-            name=self.name,  # FIXME....
+            name=option.get("name", ""),
             value=value,
             choices="yes, no, y, n, 1, 0",
         )
