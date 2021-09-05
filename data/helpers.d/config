@@ -19,7 +19,7 @@ for panel_name, panel in loaded_toml.items():
             if not isinstance(param, dict):
                 continue
             print(';'.join([
-                name, 
+                name,
                 param.get('type', 'string'),
                 param.get('bind', 'settings' if param.get('type', 'string') != 'file' else '')
                 ]))
@@ -35,45 +35,53 @@ EOL
         file_hash[${short_setting}]=""
         formats[${short_setting}]=""
         # Get value from getter if exists
-        if type -t $getter 2>/dev/null | grep -q '^function$' 2>/dev/null; then
+        if type -t $getter 2>/dev/null | grep -q '^function$' 2>/dev/null;
+        then
             old[$short_setting]="$($getter)"
             formats[${short_setting}]="yaml"
-        
-        elif [[ "$bind" == "null" ]] ; then
+
+        elif [[ "$bind" == "null" ]];
+        then
             old[$short_setting]="YNH_NULL"
 
         # Get value from app settings or from another file
-        elif [[ "$type" == "file" ]] ; then
-            if [[ "$bind" == "settings" ]] ; then
+        elif [[ "$type" == "file" ]];
+        then
+            if [[ "$bind" == "settings" ]];
+            then
                 ynh_die "File '${short_setting}' can't be stored in settings"
             fi
             old[$short_setting]="$(ls $(echo $bind | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/) 2> /dev/null || echo YNH_NULL)"
             file_hash[$short_setting]="true"
-        
+
         # Get multiline text from settings or from a full file
-        elif [[ "$type" == "text" ]] ; then
-            if [[ "$bind" == "settings" ]] ; then
+        elif [[ "$type" == "text" ]];
+        then
+            if [[ "$bind" == "settings" ]];
+            then
                 old[$short_setting]="$(ynh_app_setting_get $app $short_setting)"
-            elif [[ "$bind" == *":"* ]] ; then
+            elif [[ "$bind" == *":"* ]];
+            then
                 ynh_die "For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
             else
                 old[$short_setting]="$(cat $(echo $bind | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/) 2> /dev/null || echo YNH_NULL)"
             fi
 
-        # Get value from a kind of key/value file 
+        # Get value from a kind of key/value file
         else
-            if [[ "$bind" == "settings" ]] ; then
+            if [[ "$bind" == "settings" ]];
+            then
                 bind=":/etc/yunohost/apps/$app/settings.yml"
             fi
             local bind_key="$(echo "$bind" | cut -d: -f1)"
             bind_key=${bind_key:-$short_setting}
             local bind_file="$(echo "$bind" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
             old[$short_setting]="$(ynh_read_var_in_file --file="${bind_file}" --key="${bind_key}")"
-        
+
         fi
     done
-    
-    
+
+
 }
 
 _ynh_app_config_apply() {
@@ -82,21 +90,27 @@ _ynh_app_config_apply() {
         local setter="set__${short_setting}"
         local bind="${binds[$short_setting]}"
         local type="${types[$short_setting]}"
-        if [ "${changed[$short_setting]}" == "true" ] ; then 
+        if [ "${changed[$short_setting]}" == "true" ];
+        then
             # Apply setter if exists
-            if type -t $setter 2>/dev/null | grep -q '^function$' 2>/dev/null; then
+            if type -t $setter 2>/dev/null | grep -q '^function$' 2>/dev/null;
+            then
                 $setter
 
-            elif [[ "$bind" == "null" ]] ; then
+            elif [[ "$bind" == "null" ]];
+            then
                 continue
 
             # Save in a file
-            elif [[ "$type" == "file" ]] ; then
-                if [[ "$bind" == "settings" ]] ; then
+            elif [[ "$type" == "file" ]];
+            then
+                if [[ "$bind" == "settings" ]];
+                then
                     ynh_die "File '${short_setting}' can't be stored in settings"
                 fi
                 local bind_file="$(echo "$bind" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
-                if [[ "${!short_setting}" == "" ]] ; then
+                if [[ "${!short_setting}" == "" ]];
+                then
                     ynh_backup_if_checksum_is_different --file="$bind_file"
                     rm -f "$bind_file"
                     ynh_delete_file_checksum --file="$bind_file" --update_only
@@ -107,15 +121,18 @@ _ynh_app_config_apply() {
                     ynh_store_file_checksum --file="$bind_file" --update_only
                     ynh_print_info "File '$bind_file' overwrited with ${!short_setting}"
                 fi
-            
-            # Save value in app settings 
-            elif [[ "$bind" == "settings" ]] ; then
+
+            # Save value in app settings
+            elif [[ "$bind" == "settings" ]];
+        i   then
                 ynh_app_setting_set $app $short_setting "${!short_setting}"
                 ynh_print_info "Configuration key '$short_setting' edited in app settings"
-            
+
             # Save multiline text in a file
-            elif [[ "$type" == "text" ]] ; then
-                if [[ "$bind" == *":"* ]] ; then
+            elif [[ "$type" == "text" ]];
+            then
+                if [[ "$bind" == *":"* ]];
+                then
                     ynh_die "For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
                 fi
                 local bind_file="$(echo "$bind" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
@@ -133,7 +150,7 @@ _ynh_app_config_apply() {
                 ynh_backup_if_checksum_is_different --file="$bind_file"
                 ynh_write_var_in_file --file="${bind_file}" --key="${bind_key}" --value="${!short_setting}"
                 ynh_store_file_checksum --file="$bind_file" --update_only
-                
+
                 # We stored the info in settings in order to be able to upgrade the app
                 ynh_app_setting_set $app $short_setting "${!short_setting}"
                 ynh_print_info "Configuration key '$bind_key' edited into $bind_file"
@@ -146,8 +163,10 @@ _ynh_app_config_apply() {
 _ynh_app_config_show() {
     for short_setting in "${!old[@]}"
     do
-        if [[ "${old[$short_setting]}" != YNH_NULL ]] ; then
-            if [[ "${formats[$short_setting]}" == "yaml" ]] ; then
+        if [[ "${old[$short_setting]}" != YNH_NULL ]];
+        then
+            if [[ "${formats[$short_setting]}" == "yaml" ]];
+            then
                 ynh_return "${short_setting}:"
                 ynh_return "$(echo "${old[$short_setting]}" | sed 's/^/  /g')"
             else
@@ -167,23 +186,28 @@ _ynh_app_config_validate() {
     for short_setting in "${!old[@]}"
     do
         changed[$short_setting]=false
-        if [ -z ${!short_setting+x} ]; then
+        if [ -z ${!short_setting+x} ];
+        then
             # Assign the var with the old value in order to allows multiple
             # args validation
             declare "$short_setting"="${old[$short_setting]}"
             continue
         fi
-        if [ ! -z "${file_hash[${short_setting}]}" ] ; then
+        if [ ! -z "${file_hash[${short_setting}]}" ];
+        then
             file_hash[old__$short_setting]=""
             file_hash[new__$short_setting]=""
-            if [ -f "${old[$short_setting]}" ] ; then
+            if [ -f "${old[$short_setting]}" ];
+            then
                 file_hash[old__$short_setting]=$(sha256sum "${old[$short_setting]}" | cut -d' ' -f1)
-                if [ -z "${!short_setting}" ] ; then
+                if [ -z "${!short_setting}" ];
+                then
                     changed[$short_setting]=true
                     nothing_changed=false
                 fi
             fi
-            if [ -f "${!short_setting}" ] ; then
+            if [ -f "${!short_setting}" ];
+            then
                 file_hash[new__$short_setting]=$(sha256sum "${!short_setting}" | cut -d' ' -f1)
                 if [[ "${file_hash[old__$short_setting]}" != "${file_hash[new__$short_setting]}" ]]
                 then
@@ -203,8 +227,8 @@ _ynh_app_config_validate() {
     then
         ynh_print_info "Nothing has changed"
         exit 0
-    fi 
-    
+    fi
+
     # Run validation if something is changed
     ynh_script_progression --message="Validating the new configuration..." --weight=1
 
@@ -212,7 +236,8 @@ _ynh_app_config_validate() {
     do
         [[ "${changed[$short_setting]}" == "false" ]] && continue
         local result=""
-        if type -t validate__$short_setting | grep -q '^function$' 2>/dev/null; then
+        if type -t validate__$short_setting | grep -q '^function$' 2>/dev/null;
+        then
             result="$(validate__$short_setting)"
         fi
         if [ -n "$result" ]
@@ -228,8 +253,8 @@ _ynh_app_config_validate() {
     if [[ "$changes_validated" == "false" ]]
     then
         exit 0
-    fi 
-    
+    fi
+
 }
 
 ynh_app_config_get() {
@@ -255,19 +280,19 @@ ynh_app_config_run() {
     declare -Ag binds=()
     declare -Ag types=()
     declare -Ag formats=()
-    
+
     case $1 in
         show)
             ynh_app_config_get
             ynh_app_config_show
             ;;
-        apply) 
+        apply)
             max_progression=4
             ynh_script_progression --message="Reading config panel description and current configuration..."
             ynh_app_config_get
-            
+
             ynh_app_config_validate
-            
+
             ynh_script_progression --message="Applying the new configuration..."
             ynh_app_config_apply
             ynh_script_progression --message="Configuration of $app completed" --last

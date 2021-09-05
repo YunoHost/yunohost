@@ -481,9 +481,9 @@ ynh_replace_vars () {
 #
 # This helpers match several var affectation use case in several languages
 # We don't use jq or equivalent to keep comments and blank space in files
-# This helpers work line by line, it is not able to work correctly 
+# This helpers work line by line, it is not able to work correctly
 # if you have several identical keys in your files
-# 
+#
 # Example of line this helpers can managed correctly
 # .yml
 #     title: YunoHost documentation
@@ -517,6 +517,9 @@ ynh_read_var_in_file() {
     ynh_handle_getopts_args "$@"
     set +o xtrace
     local filename="$(basename -- "$file")"
+
+    [[ -f $file ]] || ynh_die "File $file does not exists"
+
     local ext="${filename##*.}"
     local endline=',;'
     local assign="=>|:|="
@@ -575,6 +578,8 @@ ynh_write_var_in_file() {
     ynh_handle_getopts_args "$@"
     set +o xtrace
     local var_part='\s*\$?([\w.]*\[)?\s*["'"']?${key}['"'"]?\s*\]?\s*[:=]>?\s*'
+
+    [[ -f $file ]] || ynh_die "File $file does not exists"
 
     local crazy_value="$(grep -i -o -P '^\s*\$?([\w.]*\[)?\s*["'"']?${key}['"'"]?\s*\]?\s*[:=]>?\s*\K.*(?=[\s,;]*$)' ${file} | head -n1)"
     # local crazy_value="$(grep -i -o -P "^${var_part}\K.*(?=[ \t,\n;]*\$)" ${file} | head -n1)"
