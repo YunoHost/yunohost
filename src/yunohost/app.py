@@ -511,7 +511,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
     """
     from packaging import version
-    from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
+    from yunohost.hook import hook_add, hook_remove, hook_callback, hook_exec_with_script_debug_if_failure
     from yunohost.permission import permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
 
@@ -633,36 +633,13 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         # Execute the app upgrade script
         upgrade_failed = True
         try:
-            upgrade_retcode = hook_exec(
-                extracted_app_folder + "/scripts/upgrade", env=env_dict
-            )[0]
-
-            upgrade_failed = True if upgrade_retcode != 0 else False
-            if upgrade_failed:
-                error = m18n.n("app_upgrade_script_failed")
-                logger.error(
-                    m18n.n("app_upgrade_failed", app=app_instance_name, error=error)
-                )
-                failure_message_with_debug_instructions = operation_logger.error(error)
-                if Moulinette.interface.type != "api":
-                    dump_app_log_extract_for_debugging(operation_logger)
-        # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
-        except (KeyboardInterrupt, EOFError):
-            upgrade_retcode = -1
-            error = m18n.n("operation_interrupted")
-            logger.error(
-                m18n.n("app_upgrade_failed", app=app_instance_name, error=error)
+            upgrade_failed, failure_message_with_debug_instructions = hook_exec_with_script_debug_if_failure(
+                extracted_app_folder + "/scripts/upgrade",
+                env=env_dict,
+                operation_logger=operation_logger,
+                error_message_if_script_failed=m18n.n("app_upgrade_script_failed"),
+                error_message_if_failed=lambda e: m18n.n("app_upgrade_failed", app=app_instance_name, error=e)
             )
-            failure_message_with_debug_instructions = operation_logger.error(error)
-        # Something wrong happened in Yunohost's code (most probably hook_exec)
-        except Exception:
-            import traceback
-
-            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-            logger.error(
-                m18n.n("app_install_failed", app=app_instance_name, error=error)
-            )
-            failure_message_with_debug_instructions = operation_logger.error(error)
         finally:
             # Whatever happened (install success or failure) we check if it broke the system
             # and warn the user about it
@@ -692,7 +669,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             if upgrade_failed or broke_the_system:
 
                 # display this if there are remaining apps
-                if apps[number + 1 :]:
+                if apps[number + 1:]:
                     not_upgraded_apps = apps[number:]
                     logger.error(
                         m18n.n(
@@ -808,7 +785,7 @@ def app_install(
         force -- Do not ask for confirmation when installing experimental / low-quality apps
     """
 
-    from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
+    from yunohost.hook import hook_add, hook_remove, hook_callback, hook_exec, hook_exec_with_script_debug_if_failure
     from yunohost.log import OperationLogger
     from yunohost.permission import (
         user_permission_list,
@@ -999,29 +976,13 @@ def app_install(
     # Execute the app install script
     install_failed = True
     try:
-        install_retcode = hook_exec(
-            os.path.join(extracted_app_folder, "scripts/install"), env=env_dict
-        )[0]
-        # "Common" app install failure : the script failed and returned exit code != 0
-        install_failed = True if install_retcode != 0 else False
-        if install_failed:
-            error = m18n.n("app_install_script_failed")
-            logger.error(m18n.n("app_install_failed", app=app_id, error=error))
-            failure_message_with_debug_instructions = operation_logger.error(error)
-            if Moulinette.interface.type != "api":
-                dump_app_log_extract_for_debugging(operation_logger)
-    # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
-    except (KeyboardInterrupt, EOFError):
-        error = m18n.n("operation_interrupted")
-        logger.error(m18n.n("app_install_failed", app=app_id, error=error))
-        failure_message_with_debug_instructions = operation_logger.error(error)
-    # Something wrong happened in Yunohost's code (most probably hook_exec)
-    except Exception:
-        import traceback
-
-        error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-        logger.error(m18n.n("app_install_failed", app=app_id, error=error))
-        failure_message_with_debug_instructions = operation_logger.error(error)
+        install_failed, failure_message_with_debug_instructions = hook_exec_with_script_debug_if_failure(
+            os.path.join(extracted_app_folder, "scripts/install"),
+            env=env_dict,
+            operation_logger=operation_logger,
+            error_message_if_script_failed=m18n.n("app_install_script_failed"),
+            error_message_if_failed=lambda e: m18n.n("app_install_failed", app=app_id, error=e)
+        )
     finally:
         # If success so far, validate that app didn't break important stuff
         if not install_failed:
@@ -1132,53 +1093,6 @@ def app_install(
     logger.success(m18n.n("installation_complete"))
 
     hook_callback("post_app_install", env=env_dict)
-
-
-def dump_app_log_extract_for_debugging(operation_logger):
-
-    with open(operation_logger.log_path, "r") as f:
-        lines = f.readlines()
-
-    filters = [
-        r"set [+-]x$",
-        r"set [+-]o xtrace$",
-        r"local \w+$",
-        r"local legacy_args=.*$",
-        r".*Helper used in legacy mode.*",
-        r"args_array=.*$",
-        r"local -A args_array$",
-        r"ynh_handle_getopts_args",
-        r"ynh_script_progression",
-    ]
-
-    filters = [re.compile(f_) for f_ in filters]
-
-    lines_to_display = []
-    for line in lines:
-
-        if ": " not in line.strip():
-            continue
-
-        # A line typically looks like
-        # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
-        # And we just want the part starting by "DEBUG - "
-        line = line.strip().split(": ", 1)[1]
-
-        if any(filter_.search(line) for filter_ in filters):
-            continue
-
-        lines_to_display.append(line)
-
-        if line.endswith("+ ynh_exit_properly") or " + ynh_die " in line:
-            break
-        elif len(lines_to_display) > 20:
-            lines_to_display.pop(0)
-
-    logger.warning(
-        "Here's an extract of the logs before the crash. It might help debugging the error:"
-    )
-    for line in lines_to_display:
-        logger.info(line)
 
 
 @is_unit_operation()
