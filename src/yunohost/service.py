@@ -256,7 +256,7 @@ def service_restart(names):
                 )
 
 
-def service_reload_or_restart(names):
+def service_reload_or_restart(names, test_conf=True):
     """
     Reload one or more services if they support it. If not, restart them instead. If the services are not running yet, they will be started.
 
@@ -266,7 +266,32 @@ def service_reload_or_restart(names):
     """
     if isinstance(names, str):
         names = [names]
+
+    services = _get_services()
+
     for name in names:
+
+        logger.debug(f"Reloading service {name}")
+
+        test_conf_cmd = services.get(name, {}).get("test_conf")
+        if test_conf and test_conf_cmd:
+
+            p = subprocess.Popen(
+                test_conf_cmd,
+                shell=True,
+                executable="/bin/bash",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+
+            out, _ = p.communicate()
+            if p.returncode != 0:
+                errors = out.strip().split("\n")
+                logger.error(
+                    m18n.n("service_not_reloading_because_conf_broken", errors=errors)
+                )
+                continue
+
         if _run_service_command("reload-or-restart", name):
             logger.success(m18n.n("service_reloaded_or_restarted", service=name))
         else:

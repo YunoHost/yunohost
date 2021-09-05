@@ -32,6 +32,7 @@ import psutil
 
 from datetime import datetime, timedelta
 from logging import FileHandler, getLogger, Formatter
+from io import IOBase
 
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
@@ -370,6 +371,18 @@ def is_unit_operation(
             for field in exclude:
                 if field in context:
                     context.pop(field, None)
+
+            # Context is made from args given to main function by argparse
+            # This context will be added in extra parameters in yml file, so this context should
+            # be serializable and short enough (it will be displayed in webadmin)
+            # Argparse can provide some File or Stream, so here we display the filename or
+            # the IOBase, if we have no name.
+            for field, value in context.items():
+                if isinstance(value, IOBase):
+                    try:
+                        context[field] = value.name
+                    except:
+                        context[field] = "IOBase"
             operation_logger = OperationLogger(op_key, related_to, args=context)
 
             try:
