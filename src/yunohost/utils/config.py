@@ -166,7 +166,7 @@ class ConfigPanel:
     def _get_config_panel(self):
 
         # Split filter_key
-        filter_key = self.filter_key.split(".")
+        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
         if len(filter_key) > 3:
             raise YunohostError("config_too_many_sub_keys", key=self.filter_key)
 
@@ -181,21 +181,34 @@ class ConfigPanel:
             )
 
         # Transform toml format into internal format
-        defaults = {
-            "toml": {"version": 1.0},
+        format_description = {
+            "toml": {
+                "properties": ["version", "i18n"],
+                "default": {"version": 1.0},
+            },
             "panels": {
-                "name": "",
-                "services": [],
-                "actions": {"apply": {"en": "Apply"}},
-            },  # help
+                "properties": ["name", "services", "actions", "help"],
+                "default": {
+                    "name": "",
+                    "services": [],
+                    "actions": {"apply": {"en": "Apply"}}
+                },
+            },
             "sections": {
-                "name": "",
-                "services": [],
-                "optional": True,
-            },  # visibleIf help
-            "options": {}
-            # ask type source help helpLink example style icon placeholder visibleIf
-            # optional choices pattern limit min max step accept redact
+                "properties": ["name", "services", "optional", "help", "visible"],
+                "default": {
+                    "name": "",
+                    "services": [],
+                    "optional": True,
+                }
+            },
+            "options": {
+                "properties": ["ask", "type", "source", "help", "example",
+                               "style", "icon", "placeholder", "visible",
+                               "optional", "choices", "yes", "no", "pattern",
+                               "limit", "min", "max", "step", "accept", "redact"],
+                "default": {}
+            }
         }
 
         #
@@ -214,19 +227,21 @@ class ConfigPanel:
             This function detects all children nodes and put them in a list
             """
             # Prefill the node default keys if needed
-            default = defaults[node_type]
+            default = format_description[node_type]['default']
             node = {key: toml_node.get(key, value) for key, value in default.items()}
 
+            properties = format_description[node_type]['properties']
+
             # Define the filter_key part to use and the children type
-            i = list(defaults).index(node_type)
-            search_key = filter_key.get(i)
-            subnode_type = list(defaults)[i + 1] if node_type != "options" else None
+            i = list(format_description).index(node_type)
+            subnode_type = list(format_description)[i + 1] if node_type != "options" else None
+            search_key = filter_key[i] if len(filter_key) > i else False
 
             for key, value in toml_node.items():
                 # Key/value are a child node
                 if (
                     isinstance(value, OrderedDict)
-                    and key not in default
+                    and key not in properties
                     and subnode_type
                 ):
                     # We exclude all nodes not referenced by the filter_key
@@ -240,6 +255,8 @@ class ConfigPanel:
                     node.setdefault(subnode_type, []).append(subnode)
                 # Key/value are a property
                 else:
+                    if key not in properties:
+                        logger.warning(f"Unknown key '{key}' found in config toml")
                     # Todo search all i18n keys
                     node[key] = (
                         value if key not in ["ask", "help", "name"] else {"en": value}
@@ -378,7 +395,6 @@ class Question(object):
         self.pattern = question.get("pattern")
         self.ask = question.get("ask", {"en": self.name})
         self.help = question.get("help")
-        self.helpLink = question.get("helpLink")
         self.value = user_answers.get(self.name)
         self.redact = question.get("redact", False)
 
@@ -471,15 +487,11 @@ class Question(object):
         if self.choices:
             text_for_user_input_in_cli += " [{0}]".format(" | ".join(self.choices))
 
-        if self.help or self.helpLink:
+        if self.help:
             text_for_user_input_in_cli += ":\033[m"
         if self.help:
             text_for_user_input_in_cli += "\n - "
             text_for_user_input_in_cli += _value_for_locale(self.help)
-        if self.helpLink:
-            if not isinstance(self.helpLink, dict):
-                self.helpLink = {"href": self.helpLink}
-            text_for_user_input_in_cli += f"\n - See {self.helpLink['href']}"
         return text_for_user_input_in_cli
 
     def _post_parse_value(self):
