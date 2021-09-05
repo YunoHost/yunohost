@@ -35,11 +35,11 @@ User answers:
 """
 
 
-def test_parse_args_in_yunohost_format_empty():
+def test_question_empty():
     assert parse_args_in_yunohost_format({}, []) == {}
 
 
-def test_parse_args_in_yunohost_format_string():
+def test_question_string():
     questions = [
         {
             "name": "some_string",
@@ -51,7 +51,7 @@ def test_parse_args_in_yunohost_format_string():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_string_default_type():
+def test_question_string_default_type():
     questions = [
         {
             "name": "some_string",
@@ -62,7 +62,7 @@ def test_parse_args_in_yunohost_format_string_default_type():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_string_no_input():
+def test_question_string_no_input():
     questions = [
         {
             "name": "some_string",
@@ -74,7 +74,7 @@ def test_parse_args_in_yunohost_format_string_no_input():
         parse_args_in_yunohost_format(answers, questions)
 
 
-def test_parse_args_in_yunohost_format_string_input():
+def test_question_string_input():
     questions = [
         {
             "name": "some_string",
@@ -88,7 +88,7 @@ def test_parse_args_in_yunohost_format_string_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_string_input_no_ask():
+def test_question_string_input_no_ask():
     questions = [
         {
             "name": "some_string",
@@ -101,7 +101,7 @@ def test_parse_args_in_yunohost_format_string_input_no_ask():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_string_no_input_optional():
+def test_question_string_no_input_optional():
     questions = [
         {
             "name": "some_string",
@@ -113,7 +113,7 @@ def test_parse_args_in_yunohost_format_string_no_input_optional():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_string_optional_with_input():
+def test_question_string_optional_with_input():
     questions = [
         {
             "name": "some_string",
@@ -128,7 +128,7 @@ def test_parse_args_in_yunohost_format_string_optional_with_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_string_optional_with_empty_input():
+def test_question_string_optional_with_empty_input():
     questions = [
         {
             "name": "some_string",
@@ -143,7 +143,7 @@ def test_parse_args_in_yunohost_format_string_optional_with_empty_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_string_optional_with_input_without_ask():
+def test_question_string_optional_with_input_without_ask():
     questions = [
         {
             "name": "some_string",
@@ -157,7 +157,7 @@ def test_parse_args_in_yunohost_format_string_optional_with_input_without_ask():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_string_no_input_default():
+def test_question_string_no_input_default():
     questions = [
         {
             "name": "some_string",
@@ -170,7 +170,7 @@ def test_parse_args_in_yunohost_format_string_no_input_default():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_string_input_test_ask():
+def test_question_string_input_test_ask():
     ask_text = "some question"
     questions = [
         {
@@ -187,7 +187,7 @@ def test_parse_args_in_yunohost_format_string_input_test_ask():
         prompt.assert_called_with(ask_text, False)
 
 
-def test_parse_args_in_yunohost_format_string_input_test_ask_with_default():
+def test_question_string_input_test_ask_with_default():
     ask_text = "some question"
     default_text = "some example"
     questions = [
@@ -207,7 +207,7 @@ def test_parse_args_in_yunohost_format_string_input_test_ask_with_default():
 
 
 @pytest.mark.skip  # we should do something with this example
-def test_parse_args_in_yunohost_format_string_input_test_ask_with_example():
+def test_question_string_input_test_ask_with_example():
     ask_text = "some question"
     example_text = "some example"
     questions = [
@@ -228,7 +228,7 @@ def test_parse_args_in_yunohost_format_string_input_test_ask_with_example():
 
 
 @pytest.mark.skip  # we should do something with this help
-def test_parse_args_in_yunohost_format_string_input_test_ask_with_help():
+def test_question_string_input_test_ask_with_help():
     ask_text = "some question"
     help_text = "some_help"
     questions = [
@@ -248,14 +248,14 @@ def test_parse_args_in_yunohost_format_string_input_test_ask_with_help():
         assert help_text in prompt.call_args[0][0]
 
 
-def test_parse_args_in_yunohost_format_string_with_choice():
+def test_question_string_with_choice():
     questions = [{"name": "some_string", "type": "string", "choices": ["fr", "en"]}]
     answers = {"some_string": "fr"}
     expected_result = OrderedDict({"some_string": ("fr", "string")})
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_string_with_choice_prompt():
+def test_question_string_with_choice_prompt():
     questions = [{"name": "some_string", "type": "string", "choices": ["fr", "en"]}]
     answers = {"some_string": "fr"}
     expected_result = OrderedDict({"some_string": ("fr", "string")})
@@ -263,7 +263,7 @@ def test_parse_args_in_yunohost_format_string_with_choice_prompt():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_string_with_choice_bad():
+def test_question_string_with_choice_bad():
     questions = [{"name": "some_string", "type": "string", "choices": ["fr", "en"]}]
     answers = {"some_string": "bad"}
 
@@ -271,7 +271,7 @@ def test_parse_args_in_yunohost_format_string_with_choice_bad():
         assert parse_args_in_yunohost_format(answers, questions)
 
 
-def test_parse_args_in_yunohost_format_string_with_choice_ask():
+def test_question_string_with_choice_ask():
     ask_text = "some question"
     choices = ["fr", "en", "es", "it", "ru"]
     questions = [
@@ -291,7 +291,7 @@ def test_parse_args_in_yunohost_format_string_with_choice_ask():
             assert choice in prompt.call_args[0][0]
 
 
-def test_parse_args_in_yunohost_format_string_with_choice_default():
+def test_question_string_with_choice_default():
     questions = [
         {
             "name": "some_string",
@@ -305,7 +305,7 @@ def test_parse_args_in_yunohost_format_string_with_choice_default():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_password():
+def test_question_password():
     questions = [
         {
             "name": "some_password",
@@ -317,7 +317,7 @@ def test_parse_args_in_yunohost_format_password():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_password_no_input():
+def test_question_password_no_input():
     questions = [
         {
             "name": "some_password",
@@ -330,7 +330,7 @@ def test_parse_args_in_yunohost_format_password_no_input():
         parse_args_in_yunohost_format(answers, questions)
 
 
-def test_parse_args_in_yunohost_format_password_input():
+def test_question_password_input():
     questions = [
         {
             "name": "some_password",
@@ -345,7 +345,7 @@ def test_parse_args_in_yunohost_format_password_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_password_input_no_ask():
+def test_question_password_input_no_ask():
     questions = [
         {
             "name": "some_password",
@@ -359,7 +359,7 @@ def test_parse_args_in_yunohost_format_password_input_no_ask():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_password_no_input_optional():
+def test_question_password_no_input_optional():
     questions = [
         {
             "name": "some_password",
@@ -379,7 +379,7 @@ def test_parse_args_in_yunohost_format_password_no_input_optional():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_password_optional_with_input():
+def test_question_password_optional_with_input():
     questions = [
         {
             "name": "some_password",
@@ -395,7 +395,7 @@ def test_parse_args_in_yunohost_format_password_optional_with_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_password_optional_with_empty_input():
+def test_question_password_optional_with_empty_input():
     questions = [
         {
             "name": "some_password",
@@ -411,7 +411,7 @@ def test_parse_args_in_yunohost_format_password_optional_with_empty_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_password_optional_with_input_without_ask():
+def test_question_password_optional_with_input_without_ask():
     questions = [
         {
             "name": "some_password",
@@ -426,7 +426,7 @@ def test_parse_args_in_yunohost_format_password_optional_with_input_without_ask(
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_password_no_input_default():
+def test_question_password_no_input_default():
     questions = [
         {
             "name": "some_password",
@@ -443,7 +443,7 @@ def test_parse_args_in_yunohost_format_password_no_input_default():
 
 
 @pytest.mark.skip  # this should raises
-def test_parse_args_in_yunohost_format_password_no_input_example():
+def test_question_password_no_input_example():
     questions = [
         {
             "name": "some_password",
@@ -459,7 +459,7 @@ def test_parse_args_in_yunohost_format_password_no_input_example():
         parse_args_in_yunohost_format(answers, questions)
 
 
-def test_parse_args_in_yunohost_format_password_input_test_ask():
+def test_question_password_input_test_ask():
     ask_text = "some question"
     questions = [
         {
@@ -478,7 +478,7 @@ def test_parse_args_in_yunohost_format_password_input_test_ask():
 
 
 @pytest.mark.skip  # we should do something with this example
-def test_parse_args_in_yunohost_format_password_input_test_ask_with_example():
+def test_question_password_input_test_ask_with_example():
     ask_text = "some question"
     example_text = "some example"
     questions = [
@@ -500,7 +500,7 @@ def test_parse_args_in_yunohost_format_password_input_test_ask_with_example():
 
 
 @pytest.mark.skip  # we should do something with this help
-def test_parse_args_in_yunohost_format_password_input_test_ask_with_help():
+def test_question_password_input_test_ask_with_help():
     ask_text = "some question"
     help_text = "some_help"
     questions = [
@@ -521,7 +521,7 @@ def test_parse_args_in_yunohost_format_password_input_test_ask_with_help():
         assert help_text in prompt.call_args[0][0]
 
 
-def test_parse_args_in_yunohost_format_password_bad_chars():
+def test_question_password_bad_chars():
     questions = [
         {
             "name": "some_password",
@@ -536,7 +536,7 @@ def test_parse_args_in_yunohost_format_password_bad_chars():
             parse_args_in_yunohost_format({"some_password": i * 8}, questions)
 
 
-def test_parse_args_in_yunohost_format_password_strong_enough():
+def test_question_password_strong_enough():
     questions = [
         {
             "name": "some_password",
@@ -554,7 +554,7 @@ def test_parse_args_in_yunohost_format_password_strong_enough():
         parse_args_in_yunohost_format({"some_password": "password"}, questions)
 
 
-def test_parse_args_in_yunohost_format_password_optional_strong_enough():
+def test_question_password_optional_strong_enough():
     questions = [
         {
             "name": "some_password",
@@ -572,7 +572,7 @@ def test_parse_args_in_yunohost_format_password_optional_strong_enough():
         parse_args_in_yunohost_format({"some_password": "password"}, questions)
 
 
-def test_parse_args_in_yunohost_format_path():
+def test_question_path():
     questions = [
         {
             "name": "some_path",
@@ -584,7 +584,7 @@ def test_parse_args_in_yunohost_format_path():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_path_no_input():
+def test_question_path_no_input():
     questions = [
         {
             "name": "some_path",
@@ -597,7 +597,7 @@ def test_parse_args_in_yunohost_format_path_no_input():
         parse_args_in_yunohost_format(answers, questions)
 
 
-def test_parse_args_in_yunohost_format_path_input():
+def test_question_path_input():
     questions = [
         {
             "name": "some_path",
@@ -612,7 +612,7 @@ def test_parse_args_in_yunohost_format_path_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_path_input_no_ask():
+def test_question_path_input_no_ask():
     questions = [
         {
             "name": "some_path",
@@ -626,7 +626,7 @@ def test_parse_args_in_yunohost_format_path_input_no_ask():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_path_no_input_optional():
+def test_question_path_no_input_optional():
     questions = [
         {
             "name": "some_path",
@@ -639,7 +639,7 @@ def test_parse_args_in_yunohost_format_path_no_input_optional():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_path_optional_with_input():
+def test_question_path_optional_with_input():
     questions = [
         {
             "name": "some_path",
@@ -655,7 +655,7 @@ def test_parse_args_in_yunohost_format_path_optional_with_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_path_optional_with_empty_input():
+def test_question_path_optional_with_empty_input():
     questions = [
         {
             "name": "some_path",
@@ -671,7 +671,7 @@ def test_parse_args_in_yunohost_format_path_optional_with_empty_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_path_optional_with_input_without_ask():
+def test_question_path_optional_with_input_without_ask():
     questions = [
         {
             "name": "some_path",
@@ -686,7 +686,7 @@ def test_parse_args_in_yunohost_format_path_optional_with_input_without_ask():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_path_no_input_default():
+def test_question_path_no_input_default():
     questions = [
         {
             "name": "some_path",
@@ -700,7 +700,7 @@ def test_parse_args_in_yunohost_format_path_no_input_default():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_path_input_test_ask():
+def test_question_path_input_test_ask():
     ask_text = "some question"
     questions = [
         {
@@ -718,7 +718,7 @@ def test_parse_args_in_yunohost_format_path_input_test_ask():
         prompt.assert_called_with(ask_text, False)
 
 
-def test_parse_args_in_yunohost_format_path_input_test_ask_with_default():
+def test_question_path_input_test_ask_with_default():
     ask_text = "some question"
     default_text = "some example"
     questions = [
@@ -739,7 +739,7 @@ def test_parse_args_in_yunohost_format_path_input_test_ask_with_default():
 
 
 @pytest.mark.skip  # we should do something with this example
-def test_parse_args_in_yunohost_format_path_input_test_ask_with_example():
+def test_question_path_input_test_ask_with_example():
     ask_text = "some question"
     example_text = "some example"
     questions = [
@@ -761,7 +761,7 @@ def test_parse_args_in_yunohost_format_path_input_test_ask_with_example():
 
 
 @pytest.mark.skip  # we should do something with this help
-def test_parse_args_in_yunohost_format_path_input_test_ask_with_help():
+def test_question_path_input_test_ask_with_help():
     ask_text = "some question"
     help_text = "some_help"
     questions = [
@@ -782,7 +782,7 @@ def test_parse_args_in_yunohost_format_path_input_test_ask_with_help():
         assert help_text in prompt.call_args[0][0]
 
 
-def test_parse_args_in_yunohost_format_boolean():
+def test_question_boolean():
     questions = [
         {
             "name": "some_boolean",
@@ -794,7 +794,7 @@ def test_parse_args_in_yunohost_format_boolean():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_boolean_all_yes():
+def test_question_boolean_all_yes():
     questions = [
         {
             "name": "some_boolean",
@@ -848,7 +848,7 @@ def test_parse_args_in_yunohost_format_boolean_all_yes():
     )
 
 
-def test_parse_args_in_yunohost_format_boolean_all_no():
+def test_question_boolean_all_no():
     questions = [
         {
             "name": "some_boolean",
@@ -903,7 +903,7 @@ def test_parse_args_in_yunohost_format_boolean_all_no():
 
 
 # XXX apparently boolean are always False (0) by default, I'm not sure what to think about that
-def test_parse_args_in_yunohost_format_boolean_no_input():
+def test_question_boolean_no_input():
     questions = [
         {
             "name": "some_boolean",
@@ -916,7 +916,7 @@ def test_parse_args_in_yunohost_format_boolean_no_input():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_boolean_bad_input():
+def test_question_boolean_bad_input():
     questions = [
         {
             "name": "some_boolean",
@@ -929,7 +929,7 @@ def test_parse_args_in_yunohost_format_boolean_bad_input():
         parse_args_in_yunohost_format(answers, questions)
 
 
-def test_parse_args_in_yunohost_format_boolean_input():
+def test_question_boolean_input():
     questions = [
         {
             "name": "some_boolean",
@@ -948,7 +948,7 @@ def test_parse_args_in_yunohost_format_boolean_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_boolean_input_no_ask():
+def test_question_boolean_input_no_ask():
     questions = [
         {
             "name": "some_boolean",
@@ -962,7 +962,7 @@ def test_parse_args_in_yunohost_format_boolean_input_no_ask():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_boolean_no_input_optional():
+def test_question_boolean_no_input_optional():
     questions = [
         {
             "name": "some_boolean",
@@ -975,7 +975,7 @@ def test_parse_args_in_yunohost_format_boolean_no_input_optional():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_boolean_optional_with_input():
+def test_question_boolean_optional_with_input():
     questions = [
         {
             "name": "some_boolean",
@@ -991,7 +991,7 @@ def test_parse_args_in_yunohost_format_boolean_optional_with_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_boolean_optional_with_empty_input():
+def test_question_boolean_optional_with_empty_input():
     questions = [
         {
             "name": "some_boolean",
@@ -1007,7 +1007,7 @@ def test_parse_args_in_yunohost_format_boolean_optional_with_empty_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_boolean_optional_with_input_without_ask():
+def test_question_boolean_optional_with_input_without_ask():
     questions = [
         {
             "name": "some_boolean",
@@ -1022,7 +1022,7 @@ def test_parse_args_in_yunohost_format_boolean_optional_with_input_without_ask()
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_boolean_no_input_default():
+def test_question_boolean_no_input_default():
     questions = [
         {
             "name": "some_boolean",
@@ -1036,7 +1036,7 @@ def test_parse_args_in_yunohost_format_boolean_no_input_default():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_boolean_bad_default():
+def test_question_boolean_bad_default():
     questions = [
         {
             "name": "some_boolean",
@@ -1050,7 +1050,7 @@ def test_parse_args_in_yunohost_format_boolean_bad_default():
         parse_args_in_yunohost_format(answers, questions)
 
 
-def test_parse_args_in_yunohost_format_boolean_input_test_ask():
+def test_question_boolean_input_test_ask():
     ask_text = "some question"
     questions = [
         {
@@ -1066,7 +1066,7 @@ def test_parse_args_in_yunohost_format_boolean_input_test_ask():
         prompt.assert_called_with(ask_text + " [yes | no] (default: no)", False)
 
 
-def test_parse_args_in_yunohost_format_boolean_input_test_ask_with_default():
+def test_question_boolean_input_test_ask_with_default():
     ask_text = "some question"
     default_text = 1
     questions = [
@@ -1084,7 +1084,7 @@ def test_parse_args_in_yunohost_format_boolean_input_test_ask_with_default():
         prompt.assert_called_with("%s [yes | no] (default: yes)" % ask_text, False)
 
 
-def test_parse_args_in_yunohost_format_domain_empty():
+def test_question_domain_empty():
     questions = [
         {
             "name": "some_domain",
@@ -1101,7 +1101,7 @@ def test_parse_args_in_yunohost_format_domain_empty():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_domain():
+def test_question_domain():
     main_domain = "my_main_domain.com"
     domains = [main_domain]
     questions = [
@@ -1120,7 +1120,7 @@ def test_parse_args_in_yunohost_format_domain():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_domain_two_domains():
+def test_question_domain_two_domains():
     main_domain = "my_main_domain.com"
     other_domain = "some_other_domain.tld"
     domains = [main_domain, other_domain]
@@ -1148,7 +1148,7 @@ def test_parse_args_in_yunohost_format_domain_two_domains():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_domain_two_domains_wrong_answer():
+def test_question_domain_two_domains_wrong_answer():
     main_domain = "my_main_domain.com"
     other_domain = "some_other_domain.tld"
     domains = [main_domain, other_domain]
@@ -1168,7 +1168,7 @@ def test_parse_args_in_yunohost_format_domain_two_domains_wrong_answer():
             parse_args_in_yunohost_format(answers, questions)
 
 
-def test_parse_args_in_yunohost_format_domain_two_domains_default_no_ask():
+def test_question_domain_two_domains_default_no_ask():
     main_domain = "my_main_domain.com"
     other_domain = "some_other_domain.tld"
     domains = [main_domain, other_domain]
@@ -1188,7 +1188,7 @@ def test_parse_args_in_yunohost_format_domain_two_domains_default_no_ask():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_domain_two_domains_default():
+def test_question_domain_two_domains_default():
     main_domain = "my_main_domain.com"
     other_domain = "some_other_domain.tld"
     domains = [main_domain, other_domain]
@@ -1203,7 +1203,7 @@ def test_parse_args_in_yunohost_format_domain_two_domains_default():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_domain_two_domains_default_input():
+def test_question_domain_two_domains_default_input():
     main_domain = "my_main_domain.com"
     other_domain = "some_other_domain.tld"
     domains = [main_domain, other_domain]
@@ -1223,7 +1223,7 @@ def test_parse_args_in_yunohost_format_domain_two_domains_default_input():
             assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_user_empty():
+def test_question_user_empty():
     users = {
         "some_user": {
             "ssh_allowed": False,
@@ -1247,7 +1247,7 @@ def test_parse_args_in_yunohost_format_user_empty():
             parse_args_in_yunohost_format(answers, questions)
 
 
-def test_parse_args_in_yunohost_format_user():
+def test_question_user():
     username = "some_user"
     users = {
         username: {
@@ -1274,7 +1274,7 @@ def test_parse_args_in_yunohost_format_user():
             assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_user_two_users():
+def test_question_user_two_users():
     username = "some_user"
     other_user = "some_other_user"
     users = {
@@ -1315,7 +1315,7 @@ def test_parse_args_in_yunohost_format_user_two_users():
             assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_user_two_users_wrong_answer():
+def test_question_user_two_users_wrong_answer():
     username = "my_username.com"
     other_user = "some_other_user"
     users = {
@@ -1348,7 +1348,7 @@ def test_parse_args_in_yunohost_format_user_two_users_wrong_answer():
             parse_args_in_yunohost_format(answers, questions)
 
 
-def test_parse_args_in_yunohost_format_user_two_users_no_default():
+def test_question_user_two_users_no_default():
     username = "my_username.com"
     other_user = "some_other_user.tld"
     users = {
@@ -1376,7 +1376,7 @@ def test_parse_args_in_yunohost_format_user_two_users_no_default():
             parse_args_in_yunohost_format(answers, questions)
 
 
-def test_parse_args_in_yunohost_format_user_two_users_default_input():
+def test_question_user_two_users_default_input():
     username = "my_username.com"
     other_user = "some_other_user.tld"
     users = {
@@ -1416,7 +1416,7 @@ def test_parse_args_in_yunohost_format_user_two_users_default_input():
                 )
 
 
-def test_parse_args_in_yunohost_format_number():
+def test_question_number():
     questions = [
         {
             "name": "some_number",
@@ -1428,7 +1428,7 @@ def test_parse_args_in_yunohost_format_number():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_number_no_input():
+def test_question_number_no_input():
     questions = [
         {
             "name": "some_number",
@@ -1441,7 +1441,7 @@ def test_parse_args_in_yunohost_format_number_no_input():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_number_bad_input():
+def test_question_number_bad_input():
     questions = [
         {
             "name": "some_number",
@@ -1458,7 +1458,7 @@ def test_parse_args_in_yunohost_format_number_bad_input():
         parse_args_in_yunohost_format(answers, questions)
 
 
-def test_parse_args_in_yunohost_format_number_input():
+def test_question_number_input():
     questions = [
         {
             "name": "some_number",
@@ -1480,7 +1480,7 @@ def test_parse_args_in_yunohost_format_number_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_number_input_no_ask():
+def test_question_number_input_no_ask():
     questions = [
         {
             "name": "some_number",
@@ -1494,7 +1494,7 @@ def test_parse_args_in_yunohost_format_number_input_no_ask():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_number_no_input_optional():
+def test_question_number_no_input_optional():
     questions = [
         {
             "name": "some_number",
@@ -1507,7 +1507,7 @@ def test_parse_args_in_yunohost_format_number_no_input_optional():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_number_optional_with_input():
+def test_question_number_optional_with_input():
     questions = [
         {
             "name": "some_number",
@@ -1523,7 +1523,7 @@ def test_parse_args_in_yunohost_format_number_optional_with_input():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_number_optional_with_input_without_ask():
+def test_question_number_optional_with_input_without_ask():
     questions = [
         {
             "name": "some_number",
@@ -1538,7 +1538,7 @@ def test_parse_args_in_yunohost_format_number_optional_with_input_without_ask():
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_number_no_input_default():
+def test_question_number_no_input_default():
     questions = [
         {
             "name": "some_number",
@@ -1552,7 +1552,7 @@ def test_parse_args_in_yunohost_format_number_no_input_default():
     assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
-def test_parse_args_in_yunohost_format_number_bad_default():
+def test_question_number_bad_default():
     questions = [
         {
             "name": "some_number",
@@ -1566,7 +1566,7 @@ def test_parse_args_in_yunohost_format_number_bad_default():
         parse_args_in_yunohost_format(answers, questions)
 
 
-def test_parse_args_in_yunohost_format_number_input_test_ask():
+def test_question_number_input_test_ask():
     ask_text = "some question"
     questions = [
         {
@@ -1582,7 +1582,7 @@ def test_parse_args_in_yunohost_format_number_input_test_ask():
         prompt.assert_called_with("%s (default: 0)" % (ask_text), False)
 
 
-def test_parse_args_in_yunohost_format_number_input_test_ask_with_default():
+def test_question_number_input_test_ask_with_default():
     ask_text = "some question"
     default_value = 1337
     questions = [
@@ -1601,7 +1601,7 @@ def test_parse_args_in_yunohost_format_number_input_test_ask_with_default():
 
 
 @pytest.mark.skip  # we should do something with this example
-def test_parse_args_in_yunohost_format_number_input_test_ask_with_example():
+def test_question_number_input_test_ask_with_example():
     ask_text = "some question"
     example_value = 1337
     questions = [
@@ -1621,7 +1621,7 @@ def test_parse_args_in_yunohost_format_number_input_test_ask_with_example():
 
 
 @pytest.mark.skip  # we should do something with this help
-def test_parse_args_in_yunohost_format_number_input_test_ask_with_help():
+def test_question_number_input_test_ask_with_help():
     ask_text = "some question"
     help_value = 1337
     questions = [
@@ -1640,7 +1640,7 @@ def test_parse_args_in_yunohost_format_number_input_test_ask_with_help():
         assert help_value in prompt.call_args[0][0]
 
 
-def test_parse_args_in_yunohost_format_display_text():
+def test_question_display_text():
     questions = [{"name": "some_app", "type": "display_text", "ask": "foobar"}]
     answers = {}
 
