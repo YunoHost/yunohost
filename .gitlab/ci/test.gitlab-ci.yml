@@ -121,6 +121,16 @@ test-questions:
     changes:
       - src/yunohost/utils/config.py
 
+test-app-config:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - python3 -m pytest tests/test_app_config.py
+  only:
+    changes:
+      - src/yunohost/app.py
+      - src/yunohost/utils/config.py
+
 test-changeurl:
   extends: .test-stage
   script:
