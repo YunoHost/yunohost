@@ -667,7 +667,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
             error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
             logger.error(
-                m18n.n("app_install_failed", app=app_instance_name, error=error)
+                m18n.n("app_upgrade_failed", app=app_instance_name, error=error)
             )
             failure_message_with_debug_instructions = operation_logger.error(error)
         finally:
