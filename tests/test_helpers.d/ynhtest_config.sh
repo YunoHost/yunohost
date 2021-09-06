@@ -34,6 +34,8 @@ DICT = {}
 DICT['ldap_base'] = "ou=users,dc=yunohost,dc=org"
 DICT['ldap_conf'] = {}
 DICT['ldap_conf']['user'] = "camille"
+# YNH_ICI
+DICT['TITLE'] = "Hello world"
 EOF
 
     test "$(_read_py                   "$file" "FOO")" == "None"
@@ -60,6 +62,8 @@ EOF
     test "$(ynh_read_var_in_file       "$file" "ldap_base")" == "ou=users,dc=yunohost,dc=org"
     
     test "$(ynh_read_var_in_file   "$file" "user")" == "camille"
+    
+    test "$(ynh_read_var_in_file       "$file" "TITLE" "YNH_ICI")" == "Hello world"
 
     ! _read_py                         "$file" "NONEXISTENT"
     test "$(ynh_read_var_in_file       "$file" "NONEXISTENT")" == "YNH_NULL"
@@ -68,7 +72,7 @@ EOF
     test "$(ynh_read_var_in_file       "$file" "ENABLE")" == "YNH_NULL"
 }
 
-nhtest_config_write_py() {
+ynhtest_config_write_py() {
     local dummy_dir="$(mktemp -d -p $VAR_WWW)"
     file="$dummy_dir/dummy.py"
 
@@ -84,11 +88,13 @@ PORT   = 1234 # This is a comment without quotes
 URL = 'https://yunohost.org'
 DICT = {}
 DICT['ldap_base'] = "ou=users,dc=yunohost,dc=org"
+# YNH_ICI
+DICT['TITLE'] = "Hello world"
 EOF
 
-    #ynh_write_var_in_file              "$file" "FOO"      "bar"
-    #test "$(_read_py                   "$file" "FOO")" == "bar"    # FIXME FIXME FIXME
-    #test "$(ynh_read_var_in_file       "$file" "FOO")" == "bar"
+    ynh_write_var_in_file              "$file" "FOO"      "bar"
+    test "$(_read_py                   "$file" "FOO")" == "bar"
+    test "$(ynh_read_var_in_file       "$file" "FOO")" == "bar"
 
     ynh_write_var_in_file              "$file" "ENABLED"      "True"
     test "$(_read_py                   "$file" "ENABLED")" == "True"
@@ -116,12 +122,15 @@ EOF
 
     ynh_write_var_in_file              "$file" "ldap_base"      "ou=users,dc=yunohost,dc=org"
     test "$(ynh_read_var_in_file       "$file" "ldap_base")" == "ou=users,dc=yunohost,dc=org"
+    
+    ynh_write_var_in_file              "$file" "TITLE"          "YOLO" "YNH_ICI"
+    test "$(ynh_read_var_in_file       "$file" "TITLE" "YNH_ICI")" == "YOLO"
 
-    ynh_write_var_in_file              "$file" "NONEXISTENT" "foobar"
+    ! ynh_write_var_in_file              "$file" "NONEXISTENT" "foobar"
     ! _read_py                         "$file" "NONEXISTENT"
     test "$(ynh_read_var_in_file       "$file" "NONEXISTENT")" == "YNH_NULL"
 
-    ynh_write_var_in_file              "$file" "ENABLE" "foobar"
+    ! ynh_write_var_in_file              "$file" "ENABLE" "foobar"
     ! _read_py                         "$file" "ENABLE"
     test "$(ynh_read_var_in_file       "$file" "ENABLE")" == "YNH_NULL"
 
@@ -194,7 +203,7 @@ EOF
 
 }
 
-nhtest_config_write_ini() {
+ynhtest_config_write_ini() {
     local dummy_dir="$(mktemp -d -p $VAR_WWW)"
     file="$dummy_dir/dummy.ini"
 
@@ -231,11 +240,11 @@ EOF
     test "$(ynh_read_var_in_file       "$file" "theme")" == "super-awesome-theme"
 
     ynh_write_var_in_file              "$file" "email"      "sam@domain.tld"
-    test "$(_read_ini                  "$file" "email")" == "sam@domain.tld"
+    test "$(_read_ini                  "$file" "email")" == "sam@domain.tld # This is a comment without quotes"
     test "$(ynh_read_var_in_file       "$file" "email")" == "sam@domain.tld"
 
     ynh_write_var_in_file              "$file" "port"      "5678"
-    test "$(_read_ini                  "$file" "port")" == "5678"
+    test "$(_read_ini                  "$file" "port")" == "5678 # This is a comment without quotes"
     test "$(ynh_read_var_in_file       "$file" "port")" == "5678"
 
     ynh_write_var_in_file              "$file" "url"      "https://domain.tld/foobar"
@@ -245,11 +254,11 @@ EOF
     ynh_write_var_in_file              "$file" "ldap_base"      "ou=users,dc=yunohost,dc=org"
     test "$(ynh_read_var_in_file       "$file" "ldap_base")" == "ou=users,dc=yunohost,dc=org"
 
-    ynh_write_var_in_file              "$file" "nonexistent" "foobar"
+    ! ynh_write_var_in_file              "$file" "nonexistent" "foobar"
     ! _read_ini                        "$file" "nonexistent"
     test "$(ynh_read_var_in_file       "$file" "nonexistent")" == "YNH_NULL"
 
-    ynh_write_var_in_file              "$file" "enable" "foobar"
+    ! ynh_write_var_in_file              "$file" "enable" "foobar"
     ! _read_ini                        "$file" "enable"
     test "$(ynh_read_var_in_file       "$file" "enable")" == "YNH_NULL"
 
@@ -322,7 +331,7 @@ EOF
 }
 
 
-nhtest_config_write_yaml() {
+ynhtest_config_write_yaml() {
     local dummy_dir="$(mktemp -d -p $VAR_WWW)"
     file="$dummy_dir/dummy.yml"
 
@@ -340,10 +349,10 @@ dict:
    ldap_base: ou=users,dc=yunohost,dc=org
 EOF
 
-    #ynh_write_var_in_file              "$file" "foo"      "bar"
+    ynh_write_var_in_file              "$file" "foo"      "bar"
     # cat $dummy_dir/dummy.yml   # to debug
-    #! test "$(_read_yaml                 "$file" "foo")" == "bar" # FIXME FIXME FIXME : writing broke the yaml syntax... "foo:bar" (no space aftr :)
-    #test "$(ynh_read_var_in_file       "$file" "foo")" == "bar"
+    ! test "$(_read_yaml                 "$file" "foo")" == "bar" # writing broke the yaml syntax... "foo:bar" (no space aftr :)
+    test "$(ynh_read_var_in_file       "$file" "foo")" == "bar"
 
     ynh_write_var_in_file              "$file" "enabled"      "true"
     test "$(_read_yaml                 "$file" "enabled")" == "True"
@@ -372,10 +381,10 @@ EOF
     ynh_write_var_in_file              "$file" "ldap_base"      "ou=foobar,dc=domain,dc=tld"
     test "$(ynh_read_var_in_file       "$file" "ldap_base")" == "ou=foobar,dc=domain,dc=tld"
 
-    ynh_write_var_in_file              "$file" "nonexistent"      "foobar"
+    ! ynh_write_var_in_file              "$file" "nonexistent"      "foobar"
     test "$(ynh_read_var_in_file       "$file" "nonexistent")" == "YNH_NULL"
 
-    ynh_write_var_in_file              "$file" "enable"       "foobar"
+    ! ynh_write_var_in_file              "$file" "enable"       "foobar"
     test "$(ynh_read_var_in_file       "$file" "enable")"  == "YNH_NULL"
     test "$(ynh_read_var_in_file       "$file" "enabled")" == "true"
 }
@@ -449,7 +458,7 @@ EOF
 }
 
 
-nhtest_config_write_json() {
+ynhtest_config_write_json() {
     local dummy_dir="$(mktemp -d -p $VAR_WWW)"
     file="$dummy_dir/dummy.json"
 
@@ -468,14 +477,15 @@ nhtest_config_write_json() {
 }
 EOF
 
-    #ynh_write_var_in_file              "$file" "foo"      "bar"
-    #cat $file
-    #test "$(_read_json                 "$file" "foo")" == "bar"    # FIXME FIXME FIXME
-    #test "$(ynh_read_var_in_file       "$file" "foo")" == "bar"
+    ynh_write_var_in_file              "$file" "foo"      "bar"
+    cat $file
+    test "$(_read_json                 "$file" "foo")" == "bar"
+    test "$(ynh_read_var_in_file       "$file" "foo")" == "bar"
 
-    #ynh_write_var_in_file              "$file" "enabled"      "true"
-    #test "$(_read_json                 "$file" "enabled")" == "True"     # FIXME FIXME FIXME
-    #test "$(ynh_read_var_in_file       "$file" "enabled")" == "true"
+    ynh_write_var_in_file              "$file" "enabled"      "true"
+    cat $file
+    test "$(_read_json                 "$file" "enabled")" == "true"
+    test "$(ynh_read_var_in_file       "$file" "enabled")" == "true"
 
     ynh_write_var_in_file              "$file" "title"      "Foo Bar"
     cat $file
@@ -492,10 +502,9 @@ EOF
     test "$(_read_json                 "$file" "email")" == "sam@domain.tld"
     test "$(ynh_read_var_in_file       "$file" "email")" == "sam@domain.tld"
 
-    #ynh_write_var_in_file              "$file" "port"      "5678"
-    #cat $file
-    #test "$(_read_json                 "$file" "port")" == "5678"    # FIXME FIXME FIXME
-    #test "$(ynh_read_var_in_file       "$file" "port")" == "5678"
+    ynh_write_var_in_file              "$file" "port"      "5678"
+    test "$(_read_json                 "$file" "port")" == "5678"
+    test "$(ynh_read_var_in_file       "$file" "port")" == "5678"
 
     ynh_write_var_in_file              "$file" "url"      "https://domain.tld/foobar"
     test "$(_read_json                 "$file" "url")" == "https://domain.tld/foobar"
@@ -504,12 +513,12 @@ EOF
     ynh_write_var_in_file              "$file" "ldap_base"      "ou=foobar,dc=domain,dc=tld"
     test "$(ynh_read_var_in_file       "$file" "ldap_base")" == "ou=foobar,dc=domain,dc=tld"
 
-    ynh_write_var_in_file              "$file" "nonexistent"      "foobar"
+    ! ynh_write_var_in_file              "$file" "nonexistent"      "foobar"
     test "$(ynh_read_var_in_file       "$file" "nonexistent")" == "YNH_NULL"
 
-    ynh_write_var_in_file              "$file" "enable"       "foobar"
+    ! ynh_write_var_in_file              "$file" "enable"       "foobar"
     test "$(ynh_read_var_in_file       "$file" "enable")"  == "YNH_NULL"
-    #test "$(ynh_read_var_in_file       "$file" "enabled")" == "true"   # FIXME
+    test "$(ynh_read_var_in_file       "$file" "enabled")" == "true"
 }
 
 #######################
@@ -589,7 +598,7 @@ EOF
 }
 
 
-nhtest_config_write_php() {
+ynhtest_config_write_php() {
     local dummy_dir="$(mktemp -d -p $VAR_WWW)"
     file="$dummy_dir/dummy.php"
 
@@ -610,15 +619,13 @@ nhtest_config_write_php() {
 ?>
 EOF
 
-    #ynh_write_var_in_file          "$file" "foo"      "bar"
-    #cat $file
-    #test "$(_read_php              "$file" "foo")" == "bar"
-    #test "$(ynh_read_var_in_file   "$file" "foo")" == "bar" # FIXME FIXME FIXME
+    ynh_write_var_in_file          "$file" "foo"      "bar"
+    test "$(_read_php              "$file" "foo")" == "bar"
+    test "$(ynh_read_var_in_file   "$file" "foo")" == "bar"
 
-    #ynh_write_var_in_file          "$file" "enabled"      "true"
-    #cat $file
-    #test "$(_read_php              "$file" "enabled")" == "true"
-    #test "$(ynh_read_var_in_file   "$file" "enabled")" == "true" # FIXME FIXME FIXME
+    ynh_write_var_in_file          "$file" "enabled"      "true"
+    test "$(_read_php              "$file" "enabled")" == "true"
+    test "$(ynh_read_var_in_file   "$file" "enabled")" == "true"
 
     ynh_write_var_in_file          "$file" "title"      "Foo Bar"
     cat $file
@@ -635,10 +642,9 @@ EOF
     test "$(_read_php              "$file" "email")" == "sam@domain.tld"
     test "$(ynh_read_var_in_file   "$file" "email")" == "sam@domain.tld"
 
-    #ynh_write_var_in_file          "$file" "port"      "5678"
-    #cat $file
-    #test "$(_read_php              "$file" "port")" == "5678"    # FIXME FIXME FIXME
-    #test "$(ynh_read_var_in_file   "$file" "port")" == "5678"
+    ynh_write_var_in_file          "$file" "port"      "5678"
+    test "$(_read_php              "$file" "port")" == "5678"
+    test "$(ynh_read_var_in_file   "$file" "port")" == "5678"
 
     ynh_write_var_in_file          "$file" "url"      "https://domain.tld/foobar"
     test "$(_read_php              "$file" "url")" == "https://domain.tld/foobar"
@@ -647,10 +653,10 @@ EOF
     ynh_write_var_in_file          "$file" "ldap_base"      "ou=foobar,dc=domain,dc=tld"
     test "$(ynh_read_var_in_file   "$file" "ldap_base")" == "ou=foobar,dc=domain,dc=tld"
 
-    ynh_write_var_in_file          "$file" "nonexistent"      "foobar"
+    ! ynh_write_var_in_file          "$file" "nonexistent"      "foobar"
     test "$(ynh_read_var_in_file   "$file" "nonexistent")" == "YNH_NULL"
 
-    ynh_write_var_in_file          "$file" "enable"       "foobar"
+    ! ynh_write_var_in_file          "$file" "enable"       "foobar"
     test "$(ynh_read_var_in_file   "$file" "enable")"  == "YNH_NULL"
-    #test "$(ynh_read_var_in_file   "$file" "enabled")" == "true"   # FIXME
+    test "$(ynh_read_var_in_file   "$file" "enabled")" == "true"
 }

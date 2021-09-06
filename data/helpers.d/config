@@ -124,7 +124,7 @@ _ynh_app_config_apply() {
 
             # Save value in app settings
             elif [[ "$bind" == "settings" ]];
-        i   then
+            then
                 ynh_app_setting_set $app $short_setting "${!short_setting}"
                 ynh_print_info "Configuration key '$short_setting' edited in app settings"
 
@@ -143,8 +143,14 @@ _ynh_app_config_apply() {
 
             # Set value into a kind of key/value file
             else
+                local bind_after=""
                 local bind_key="$(echo "$bind" | cut -d: -f1)"
                 bind_key=${bind_key:-$short_setting}
+                if [[ "$bind_key" == *">"* ]];
+                then
+                    bind_after="$(echo "${bind_key}" | cut -d'>' -f1)"
+                    bind_key="$(echo "${bind_key}" | cut -d'>' -f2)"
+                fi
                 local bind_file="$(echo "$bind" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
 
                 ynh_backup_if_checksum_is_different --file="$bind_file"

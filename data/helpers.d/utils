@@ -507,19 +507,30 @@ ynh_replace_vars () {
 #
 # Requires YunoHost version 4.3 or higher.
 ynh_read_var_in_file() {
-    set +o xtrace
     # Declare an array to define the options of this helper.
-    local legacy_args=fk
-    local -A args_array=( [f]=file= [k]=key= )
+    local legacy_args=fka
+    local -A args_array=( [f]=file= [k]=key= [a]=after=)
     local file
     local key
+    local after
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    #set +o xtrace
-    local filename="$(basename -- "$file")"
+    after="${after:-}"
 
     [[ -f $file ]] || ynh_die "File $file does not exists"
 
+    # Get the line number after which we search for the variable
+    local line_number=1
+    if [[ -n "$after" ]];
+    then
+        line_number=$(grep -n $after $file | cut -d: -f1)
+        if [[ -z "$line_number" ]];
+        then
+            return 1
+        fi
+    fi
+
+    local filename="$(basename -- "$file")"
     local ext="${filename##*.}"
     local endline=',;'
     local assign="=>|:|="
@@ -535,14 +546,14 @@ ynh_read_var_in_file() {
         comments="//"
     fi
     local list='\[\s*['$string']?\w+['$string']?\]'
-    local var_part='^\s*(?:(const|var|let)\s+)?\$?(\w+('$list')*(->|\.|\[))*\s*'
+    local var_part='^\s*((const|var|let)\s+)?\$?(\w+('$list')*(->|\.|\[))*\s*'
     var_part+="[$string]?${key}[$string]?"
     var_part+='\s*\]?\s*'
     var_part+="($assign)"
     var_part+='\s*'
 
     # Extract the part after assignation sign
-    local expression_with_comment="$(grep -i -o -P $var_part'\K.*$' ${file} || echo YNH_NULL | head -n1)"
+    local expression_with_comment="$(tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL | head -n1)"
     if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
         echo YNH_NULL
         return 0
@@ -570,40 +581,85 @@ ynh_read_var_in_file() {
 #
 # Requires YunoHost version 4.3 or higher.
 ynh_write_var_in_file() {
-    set +o xtrace
     # Declare an array to define the options of this helper.
-    local legacy_args=fkv
-    local -A args_array=( [f]=file= [k]=key= [v]=value=)
+    local legacy_args=fkva
+    local -A args_array=( [f]=file= [k]=key= [v]=value= [a]=after=)
     local file
     local key
     local value
+    local after
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    set +o xtrace
-    local var_part='\s*\$?([\w.]*\[)?\s*["'"']?${key}['"'"]?\s*\]?\s*[:=]>?\s*'
+    after="${after:-}"
 
     [[ -f $file ]] || ynh_die "File $file does not exists"
 
-    local crazy_value="$(grep -i -o -P '^\s*\$?([\w.]*\[)?\s*["'"']?${key}['"'"]?\s*\]?\s*[:=]>?\s*\K.*(?=[\s,;]*$)' ${file} | head -n1)"
-    # local crazy_value="$(grep -i -o -P "^${var_part}\K.*(?=[ \t,\n;]*\$)" ${file} | head -n1)"
-    local first_char="${crazy_value:0:1}"
+    # Get the line number after which we search for the variable
+    local line_number=1
+    if [[ -n "$after" ]];
+    then
+        line_number=$(grep -n $after $file | cut -d: -f1)
+        if [[ -z "$line_number" ]];
+        then
+            return 1
+        fi
+    fi
+    local range="${line_number},\$ "
+
+    local filename="$(basename -- "$file")"
+    local ext="${filename##*.}"
+    local endline=',;'
+    local assign="=>|:|="
+    local comments="#"
+    local string="\"'"
+    if [[ "$ext" =~ ^ini|env|toml|yml|yaml$ ]]; then
+        endline='#'
+    fi
+    if [[ "$ext" =~ ^ini|env$ ]]; then
+        comments="[;#]"
+    fi
+    if [[ "php"  == "$ext" ]] || [[ "$ext" == "js" ]]; then
+        comments="//"
+    fi
+    local list='\[\s*['$string']?\w+['$string']?\]'
+    local var_part='^\s*((const|var|let)\s+)?\$?(\w+('$list')*(->|\.|\[))*\s*'
+    var_part+="[$string]?${key}[$string]?"
+    var_part+='\s*\]?\s*'
+    var_part+="($assign)"
+    var_part+='\s*'
+
+    # Extract the part after assignation sign
+    local expression_with_comment="$(tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL | head -n1)"
+    if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
+        return 1
+    fi
+    
+    # Remove comments if needed
+    local expression="$(echo "$expression_with_comment" | sed "s@$comments[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
+    endline=${expression_with_comment#"$expression"}
+    endline="$(echo "$endline" | sed 's/\\/\\\\/g')"
+    value="$(echo "$value" | sed 's/\\/\\\\/g')"
+    local first_char="${expression:0:1}"
     delimiter=$'\001'
     if [[ "$first_char" == '"' ]] ; then
         # \ and sed is quite complex you need 2 \\ to get one in a sed
         # So we need \\\\ to go through 2 sed
         value="$(echo "$value" | sed 's/"/\\\\"/g')"
-        sed -ri s$delimiter'^('"${var_part}"'")([^"]|\\")*("[\s;,]*)$'$delimiter'\1'"${value}"'\4'$delimiter'i' ${file}
+        sed -ri "${range}s$delimiter"'(^'"${var_part}"'")([^"]|\\")*("[\s;,]*)(\s*'$comments'.*)?$'$delimiter'\1'"${value}"'"'"${endline}${delimiter}i" ${file}
     elif [[ "$first_char" == "'" ]] ; then
         # \ and sed is quite complex you need 2 \\ to get one in a sed
         # However double quotes implies to double \\ to
         # So we need \\\\\\\\ to go through 2 sed and 1 double quotes str
         value="$(echo "$value" | sed "s/'/\\\\\\\\'/g")"
-        sed -ri "s$delimiter^(${var_part}')([^']|\\')*('"'[\s,;]*)$'$delimiter'\1'"${value}"'\4'$delimiter'i' ${file}
+        sed -ri "${range}s$delimiter(^${var_part}')([^']|\\')*('"'[\s,;]*)(\s*'$comments'.*)?$'$delimiter'\1'"${value}'${endline}${delimiter}i" ${file}
     else
-        if [[ "$value" == *"'"* ]] || [[ "$value" == *'"'* ]] ; then
+        if [[ "$value" == *"'"* ]] || [[ "$value" == *'"'* ]] || [[ "$ext" =~ ^php|py|json|js$ ]] ; then
             value='\"'"$(echo "$value" | sed 's/"/\\\\"/g')"'\"'
         fi
-        sed -ri "s$delimiter^(${var_part}).*"'$'$delimiter'\1'"${value}"$delimiter'i' ${file}
+        if [[ "$ext" =~ ^yaml|yml$ ]] ; then
+            value=" $value"
+        fi
+        sed -ri "${range}s$delimiter(^${var_part}).*\$$delimiter\1${value}${endline}${delimiter}i" ${file}
     fi
 }
 
