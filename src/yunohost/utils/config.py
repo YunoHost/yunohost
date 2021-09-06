@@ -135,6 +135,8 @@ class ConfigPanel:
 
         try:
             self._apply()
+        except YunohostError:
+            raise
         # Script got manually interrupted ...
         # N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
@@ -152,16 +154,10 @@ class ConfigPanel:
             # Delete files uploaded from API
             FileQuestion.clean_upload_dirs()
 
-        if self.errors:
-            return {
-                "errors": self.errors,
-            }
-
         self._reload_services()
 
         logger.success("Config updated as expected")
         operation_logger.success()
-        return {}
 
     def _get_toml(self):
         return read_toml(self.config_path)
