@@ -5,8 +5,11 @@ import pytest
 
 from .conftest import get_test_apps_dir
 
+from moulinette.utils.filesystem import read_file
+
 from yunohost.domain import _get_maindomain
 from yunohost.app import (
+    app_setting,
     app_install,
     app_remove,
     _is_installed,
@@ -15,7 +18,7 @@ from yunohost.app import (
     app_ssowatconf,
 )
 
-from yunohost.utils.error import YunohostValidationError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 
 def setup_function(function):
@@ -128,17 +131,68 @@ def test_app_config_get_nonexistentstuff(config_app):
         app_config_get(config_app, "main.components.nonexistent")
 
 
-def test_app_config_set_boolean(config_app):
+def test_app_config_regular_setting(config_app):
 
     assert app_config_get(config_app, "main.components.boolean") is None
 
     app_config_set(config_app, "main.components.boolean", "no")
 
     assert app_config_get(config_app, "main.components.boolean") == "0"
+    assert app_setting(config_app, "boolean") == "0"
 
     app_config_set(config_app, "main.components.boolean", "yes")
 
     assert app_config_get(config_app, "main.components.boolean") == "1"
+    assert app_setting(config_app, "boolean") == "1"
 
     with pytest.raises(YunohostValidationError):
         app_config_set(config_app, "main.components.boolean", "pwet")
+
+
+def test_app_config_bind_on_file(config_app):
+
+    # c.f. conf/test.php in the config app
+    assert '$arg5= "Arg5 value";' in read_file("/var/www/config_app/test.php")
+    assert app_config_get(config_app, "bind.variable.arg5") == "Arg5 value"
+    assert app_setting(config_app, "arg5") is None
+
+    app_config_set(config_app, "bind.variable.arg5", "Foo Bar")
+
+    assert '$arg5= "Foo Bar";' in read_file("/var/www/config_app/test.php")
+    assert app_config_get(config_app, "bind.variable.arg5") == "Foo Bar"
+    assert app_setting(config_app, "arg5") == "Foo Bar"
+
+
+def test_app_config_custom_get(config_app):
+
+    assert app_setting(config_app, "arg9") is None
+    assert "Files in /var/www" in app_config_get(config_app, "bind.function.arg9")["ask"]["en"]
+    assert app_setting(config_app, "arg9") is None
+
+
+def test_app_config_custom_validator(config_app):
+
+    # c.f. the config script
+    # arg8 is a password that must be at least 8 chars
+    assert not os.path.exists("/var/www/config_app/password")
+    assert app_setting(config_app, "arg8") is None
+
+    with pytest.raises(YunohostValidationError):
+        app_config_set(config_app, "bind.function.arg8", "pZo6i7u91h")
+
+    assert not os.path.exists("/var/www/config_app/password")
+    assert app_setting(config_app, "arg8") is None
+
+
+def test_app_config_custom_set(config_app):
+
+    assert not os.path.exists("/var/www/config_app/password")
+    assert app_setting(config_app, "arg8") is None
+
+    app_config_set(config_app, "bind.function.arg8", "OneSuperStrongPassword")
+
+    assert os.path.exists("/var/www/config_app/password")
+    content = read_file("/var/www/config_app/password")
+    assert "OneSuperStrongPassword" not in content
+    assert content.startswith("$6$saltsalt$")
+    assert app_setting(config_app, "arg8") is None
