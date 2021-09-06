@@ -242,8 +242,20 @@ _ynh_app_config_validate() {
         fi
         if [ -n "$result" ]
         then
-            local key="YNH_ERROR_${short_setting}"
-            ynh_return "$key: \"$result\""
+            #
+            # Return a yaml such as:
+            #
+            # validation_errors:
+            #   some_key: "An error message"
+            #   some_other_key: "Another error message"
+            #
+            # We use changes_validated to know if this is
+            # the first validation error
+            if [[ "$changes_validated" == true ]]
+            then
+                ynh_return "validation_errors:"
+            fi
+            ynh_return "  ${short_setting}: \"$result\""
             changes_validated=false
         fi
     done

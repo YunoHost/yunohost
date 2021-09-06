@@ -1695,9 +1695,7 @@ def app_config_set(
 
     Question.operation_logger = operation_logger
 
-    result = config_.set(key, value, args, args_file, operation_logger=operation_logger)
-
-    return result
+    return config_.set(key, value, args, args_file, operation_logger=operation_logger)
 
 
 class AppConfigPanel(ConfigPanel):
@@ -1715,7 +1713,18 @@ class AppConfigPanel(ConfigPanel):
 
     def _apply(self):
         env = {key: str(value) for key, value in self.new_values.items()}
-        self.errors = self._call_config_script("apply", env=env)
+        return_content = self._call_config_script("apply", env=env)
+
+        # If the script returned validation error
+        # raise a ValidationError exception using
+        # the first key
+        if return_content:
+            for key, message in return_content.get("validation_errors").items():
+                raise YunohostValidationError(
+                    "app_argument_invalid",
+                    name=key,
+                    error=message,
+                )
 
     def _call_config_script(self, action, env={}):
         from yunohost.hook import hook_exec
