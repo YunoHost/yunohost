@@ -344,7 +344,7 @@ def test_backup_script_failure_handling(monkeypatch, mocker):
     # Create a backup of this app and simulate a crash (patching the backup
     # call with monkeypatch). We also patch m18n to check later it's been called
     # with the expected error message key
-    monkeypatch.setattr("yunohost.backup.hook_exec", custom_hook_exec)
+    monkeypatch.setattr("yunohost.hook.hook_exec", custom_hook_exec)
 
     with message(mocker, "backup_app_failed", app="backup_recommended_app"):
         with raiseYunohostError(mocker, "backup_nothings_done"):
