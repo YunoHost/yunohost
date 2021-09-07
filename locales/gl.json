@@ -45,7 +45,7 @@
     "apps_catalog_update_success": "O catálogo de aplicacións foi actualizado!",
     "apps_catalog_obsolete_cache": "A caché do catálogo de apps está baleiro ou obsoleto.",
     "apps_catalog_failed_to_download": "Non se puido descargar o catálogo de apps {apps_catalog}: {error}",
-    "apps_catalog_updating": "Actualizando o catálogo de aplicacións…",
+    "apps_catalog_updating": "Actualizando o catálogo de aplicacións...",
     "apps_catalog_init_success": "Sistema do catálogo de apps iniciado!",
     "apps_already_up_to_date": "Xa tes tódalas apps ao día",
     "app_packaging_format_not_supported": "Esta app non se pode instalar porque o formato de empaquetado non está soportado pola túa versión de YunoHost. Deberías considerar actualizar o teu sistema.",
@@ -641,5 +641,7 @@
     "service_removed": "Eliminado o servizo '{service}'",
     "service_remove_failed": "Non se eliminou o servizo '{service}'",
     "service_regen_conf_is_deprecated": "'yunohost service regen-conf' xa non se utiliza! Executa 'yunohost tools regen-conf' no seu lugar.",
-    "service_enabled": "O servizo '{service}' vai ser iniciado automáticamente no inicio do sistema."
+    "service_enabled": "O servizo '{service}' vai ser iniciado automáticamente no inicio do sistema.",
+    "diagnosis_apps_allgood": "Tódalas apps instaladas respectan as prácticas básicas de empaquetado",
+    "diagnosis_apps_bad_quality": "Esta aplicación está actualmente marcada como estragada no catálogo de aplicacións de YunoHost. Podería ser un problema temporal mentras as mantedoras intentan arranxar o problema. Ata ese momento a actualización desta app está desactivada."
 }
