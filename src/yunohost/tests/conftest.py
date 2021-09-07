@@ -84,9 +84,12 @@ def pytest_cmdline_main(config):
 
     class DummyInterface:
 
-        type = "test"
+        type = "cli"
 
-        def prompt(*args, **kwargs):
+        def prompt(self, *args, **kwargs):
             raise NotImplementedError
+
+        def display(self, message, *args, **kwargs):
+            print(message)
 
     Moulinette._interface = DummyInterface()

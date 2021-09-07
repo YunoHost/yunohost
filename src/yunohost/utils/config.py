@@ -403,9 +403,9 @@ class Question(object):
         return value
 
     def ask_if_needed(self):
-        while True:
+        for i in range(5):
             # Display question if no value filled or if it's a readonly message
-            if Moulinette.interface.type == "cli":
+            if Moulinette.interface.type == "cli" and os.isatty(1):
                 text_for_user_input_in_cli = self._format_text_for_user_input_in_cli()
                 if getattr(self, "readonly", False):
                     Moulinette.display(text_for_user_input_in_cli)
@@ -415,7 +415,7 @@ class Question(object):
                     if self.current_value is not None:
                         prefill = self.humanize(self.current_value, self)
                     elif self.default is not None:
-                        prefill = self.default
+                        prefill = self.humanize(self.default, self)
                     self.value = Moulinette.prompt(
                         message=text_for_user_input_in_cli,
                         is_password=self.hide_user_input_in_prompt,
@@ -424,27 +424,33 @@ class Question(object):
                         is_multiline=(self.type == "text"),
                     )
 
-            # Normalization
-            # This is done to enforce a certain formating like for boolean
-            self.value = self.normalize(self.value, self)
-
             # Apply default value
-            if self.value in [None, ""] and self.default is not None:
+            class_default= getattr(self, "default_value", None)
+            if self.value in [None, ""] and \
+               (self.default is not None or class_default is not None):
                 self.value = (
-                    getattr(self, "default_value", None)
+                    class_default
                     if self.default is None
                     else self.default
                 )
+
+            # Normalization
+            # This is done to enforce a certain formating like for boolean
+            self.value = self.normalize(self.value, self)
 
             # Prevalidation
             try:
                 self._prevalidate()
             except YunohostValidationError as e:
-                if Moulinette.interface.type == "api":
-                    raise
-                Moulinette.display(str(e), "error")
-                self.value = None
-                continue
+                # If in interactive cli, re-ask the current question
+                if i < 4 and Moulinette.interface.type == "cli" and os.isatty(1):
+                    logger.error(str(e))
+                    self.value = None
+                    continue
+
+                # Otherwise raise the ValidationError
+                raise
+
             break
         self.value = self._post_parse_value()
 
@@ -561,7 +567,7 @@ class PasswordQuestion(Question):
     def _prevalidate(self):
         super()._prevalidate()
 
-        if self.value is not None:
+        if self.value not in [None, ""]:
             if any(char in self.value for char in self.forbidden_chars):
                 raise YunohostValidationError(
                     "pattern_password_app", forbidden_chars=self.forbidden_chars
@@ -580,7 +586,7 @@ class PathQuestion(Question):
 
 class BooleanQuestion(Question):
     argument_type = "boolean"
-    default_value = False
+    default_value = 0
     yes_answers = ["1", "yes", "y", "true", "t", "on"]
     no_answers = ["0", "no", "n", "false", "f", "off"]
 
@@ -633,16 +639,12 @@ class BooleanQuestion(Question):
         self.yes = question.get("yes", 1)
         self.no = question.get("no", 0)
         if self.default is None:
-            self.default = False
+            self.default = self.no
 
     def _format_text_for_user_input_in_cli(self):
-        text_for_user_input_in_cli = _value_for_locale(self.ask)
+        text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli()
 
         text_for_user_input_in_cli += " [yes | no]"
-
-        if self.default is not None:
-            formatted_default = self.humanize(self.default)
-            text_for_user_input_in_cli += " (default: {0})".format(formatted_default)
 
         return text_for_user_input_in_cli
 
@@ -698,11 +700,7 @@ class UserQuestion(Question):
 
 class NumberQuestion(Question):
     argument_type = "number"
-    default_value = ""
-
-    @staticmethod
-    def humanize(value, option={}):
-        return str(value)
+    default_value = None
 
     def __init__(self, question, user_answers):
         super().__init__(question, user_answers)
@@ -710,16 +708,25 @@ class NumberQuestion(Question):
         self.max = question.get("max", None)
         self.step = question.get("step", None)
 
+    @staticmethod
+    def normalize(value, option={}):
+        if isinstance(value, int):
+            return value
+
+        if isinstance(value, str) and value.isdigit():
+            return int(value)
+
+        if value in [None, ""]:
+            return value
+
+        raise YunohostValidationError(
+            "app_argument_invalid", name=option.name, error=m18n.n("invalid_number")
+        )
+
     def _prevalidate(self):
         super()._prevalidate()
-        if not isinstance(self.value, int) and not (
-            isinstance(self.value, str) and self.value.isdigit()
-        ):
-            raise YunohostValidationError(
-                "app_argument_invalid",
-                name=self.name,
-                error=m18n.n("invalid_number"),
-            )
+        if self.value in [None, ""]:
+            return
 
         if self.min is not None and int(self.value) < self.min:
             raise YunohostValidationError(
@@ -735,16 +742,6 @@ class NumberQuestion(Question):
                 error=m18n.n("invalid_number"),
             )
 
-    def _post_parse_value(self):
-        if isinstance(self.value, int):
-            return super()._post_parse_value()
-
-        if isinstance(self.value, str) and self.value.isdigit():
-            return int(self.value)
-
-        raise YunohostValidationError(
-            "app_argument_invalid", name=self.name, error=m18n.n("invalid_number")
-        )
 
 
 class DisplayTextQuestion(Question):
@@ -755,10 +752,10 @@ class DisplayTextQuestion(Question):
         super().__init__(question, user_answers)
 
         self.optional = True
-        self.style = question.get("style", "info")
+        self.style = question.get("style", "info" if question['type'] == 'alert' else '')
 
     def _format_text_for_user_input_in_cli(self):
-        text = self.ask["en"]
+        text = _value_for_locale(self.ask)
 
         if self.style in ["success", "info", "warning", "danger"]:
             color = {

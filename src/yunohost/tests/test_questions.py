@@ -1,14 +1,19 @@
 import sys
 import pytest
+import os
 
-from mock import patch
+from mock import patch, MagicMock
 from io import StringIO
 from collections import OrderedDict
 
 from moulinette import Moulinette
 
 from yunohost import domain, user
-from yunohost.utils.config import parse_args_in_yunohost_format, PasswordQuestion
+from yunohost.utils.config import (
+    parse_args_in_yunohost_format,
+    PasswordQuestion,
+    Question
+)
 from yunohost.utils.error import YunohostError
 
 
@@ -70,7 +75,8 @@ def test_question_string_no_input():
     ]
     answers = {}
 
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         parse_args_in_yunohost_format(answers, questions)
 
 
@@ -84,7 +90,8 @@ def test_question_string_input():
     answers = {}
     expected_result = OrderedDict({"some_string": ("some_value", "string")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value"):
+    with patch.object(Moulinette, "prompt", return_value="some_value"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -97,7 +104,8 @@ def test_question_string_input_no_ask():
     answers = {}
     expected_result = OrderedDict({"some_string": ("some_value", "string")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value"):
+    with patch.object(Moulinette, "prompt", return_value="some_value"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -110,7 +118,8 @@ def test_question_string_no_input_optional():
     ]
     answers = {}
     expected_result = OrderedDict({"some_string": ("", "string")})
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    with patch.object(os, "isatty", return_value=False):
+        assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_string_optional_with_input():
@@ -124,7 +133,8 @@ def test_question_string_optional_with_input():
     answers = {}
     expected_result = OrderedDict({"some_string": ("some_value", "string")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value"):
+    with patch.object(Moulinette, "prompt", return_value="some_value"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -139,7 +149,8 @@ def test_question_string_optional_with_empty_input():
     answers = {}
     expected_result = OrderedDict({"some_string": ("", "string")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value=""):
+    with patch.object(Moulinette, "prompt", return_value=""), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -153,7 +164,8 @@ def test_question_string_optional_with_input_without_ask():
     answers = {}
     expected_result = OrderedDict({"some_string": ("some_value", "string")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value"):
+    with patch.object(Moulinette, "prompt", return_value="some_value"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -167,7 +179,8 @@ def test_question_string_no_input_default():
     ]
     answers = {}
     expected_result = OrderedDict({"some_string": ("some_value", "string")})
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    with patch.object(os, "isatty", return_value=False):
+        assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_string_input_test_ask():
@@ -181,10 +194,13 @@ def test_question_string_input_test_ask():
     answers = {}
 
     with patch.object(
-        Moulinette.interface, "prompt", return_value="some_value"
-    ) as prompt:
+        Moulinette, "prompt", return_value="some_value"
+    ) as prompt, patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        prompt.assert_called_with(ask_text, False)
+        prompt.assert_called_with(
+            message=ask_text, is_password=False, confirm=False,
+            prefill='', is_multiline=False
+        )
 
 
 def test_question_string_input_test_ask_with_default():
@@ -200,10 +216,14 @@ def test_question_string_input_test_ask_with_default():
     answers = {}
 
     with patch.object(
-        Moulinette.interface, "prompt", return_value="some_value"
-    ) as prompt:
+        Moulinette, "prompt", return_value="some_value"
+    ) as prompt, patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        prompt.assert_called_with("%s (default: %s)" % (ask_text, default_text), False)
+        prompt.assert_called_with(
+            message=ask_text,
+            is_password=False, confirm=False,
+            prefill=default_text, is_multiline=False
+        )
 
 
 @pytest.mark.skip  # we should do something with this example
@@ -220,11 +240,11 @@ def test_question_string_input_test_ask_with_example():
     answers = {}
 
     with patch.object(
-        Moulinette.interface, "prompt", return_value="some_value"
-    ) as prompt:
+        Moulinette, "prompt", return_value="some_value"
+    ) as prompt, patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        assert ask_text in prompt.call_args[0][0]
-        assert example_text in prompt.call_args[0][0]
+        assert ask_text in prompt.call_args[1]['message']
+        assert example_text in prompt.call_args[1]['message']
 
 
 @pytest.mark.skip  # we should do something with this help
@@ -241,11 +261,11 @@ def test_question_string_input_test_ask_with_help():
     answers = {}
 
     with patch.object(
-        Moulinette.interface, "prompt", return_value="some_value"
-    ) as prompt:
+        Moulinette, "prompt", return_value="some_value"
+    ) as prompt, patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        assert ask_text in prompt.call_args[0][0]
-        assert help_text in prompt.call_args[0][0]
+        assert ask_text in prompt.call_args[1]['message']
+        assert help_text in prompt.call_args[1]['message']
 
 
 def test_question_string_with_choice():
@@ -259,7 +279,8 @@ def test_question_string_with_choice_prompt():
     questions = [{"name": "some_string", "type": "string", "choices": ["fr", "en"]}]
     answers = {"some_string": "fr"}
     expected_result = OrderedDict({"some_string": ("fr", "string")})
-    with patch.object(Moulinette.interface, "prompt", return_value="fr"):
+    with patch.object(Moulinette, "prompt", return_value="fr"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -267,7 +288,8 @@ def test_question_string_with_choice_bad():
     questions = [{"name": "some_string", "type": "string", "choices": ["fr", "en"]}]
     answers = {"some_string": "bad"}
 
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         assert parse_args_in_yunohost_format(answers, questions)
 
 
@@ -283,12 +305,13 @@ def test_question_string_with_choice_ask():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="ru") as prompt:
+    with patch.object(Moulinette, "prompt", return_value="ru") as prompt, \
+         patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        assert ask_text in prompt.call_args[0][0]
+        assert ask_text in prompt.call_args[1]['message']
 
         for choice in choices:
-            assert choice in prompt.call_args[0][0]
+            assert choice in prompt.call_args[1]['message']
 
 
 def test_question_string_with_choice_default():
@@ -302,7 +325,8 @@ def test_question_string_with_choice_default():
     ]
     answers = {}
     expected_result = OrderedDict({"some_string": ("en", "string")})
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    with patch.object(os, "isatty", return_value=False):
+        assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_password():
@@ -314,7 +338,9 @@ def test_question_password():
     ]
     answers = {"some_password": "some_value"}
     expected_result = OrderedDict({"some_password": ("some_value", "password")})
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    Question.operation_logger = MagicMock()
+    with patch.object(Question.operation_logger, "data_to_redact", create=True):
+        assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_password_no_input():
@@ -326,7 +352,8 @@ def test_question_password_no_input():
     ]
     answers = {}
 
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         parse_args_in_yunohost_format(answers, questions)
 
 
@@ -339,10 +366,14 @@ def test_question_password_input():
         }
     ]
     answers = {}
+    Question.operation_logger = { 'data_to_redact': [] }
     expected_result = OrderedDict({"some_password": ("some_value", "password")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value"):
-        assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    Question.operation_logger = MagicMock()
+    with patch.object(Question.operation_logger, "data_to_redact", create=True), \
+         patch.object(Moulinette, "prompt", return_value="some_value"), \
+         patch.object(os, "isatty", return_value=True):
+            assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_password_input_no_ask():
@@ -355,7 +386,10 @@ def test_question_password_input_no_ask():
     answers = {}
     expected_result = OrderedDict({"some_password": ("some_value", "password")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value"):
+    Question.operation_logger = MagicMock()
+    with patch.object(Question.operation_logger, "data_to_redact", create=True), \
+         patch.object(Moulinette, "prompt", return_value="some_value"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -370,13 +404,19 @@ def test_question_password_no_input_optional():
     answers = {}
     expected_result = OrderedDict({"some_password": ("", "password")})
 
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    Question.operation_logger = MagicMock()
+    with patch.object(Question.operation_logger, "data_to_redact", create=True), \
+         patch.object(os, "isatty", return_value=False):
+        assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
     questions = [
         {"name": "some_password", "type": "password", "optional": True, "default": ""}
     ]
 
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    Question.operation_logger = MagicMock()
+    with patch.object(Question.operation_logger, "data_to_redact", create=True), \
+         patch.object(os, "isatty", return_value=False):
+        assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_password_optional_with_input():
@@ -391,7 +431,10 @@ def test_question_password_optional_with_input():
     answers = {}
     expected_result = OrderedDict({"some_password": ("some_value", "password")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value"):
+    Question.operation_logger = MagicMock()
+    with patch.object(Question.operation_logger, "data_to_redact", create=True), \
+         patch.object(Moulinette, "prompt", return_value="some_value"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -407,7 +450,10 @@ def test_question_password_optional_with_empty_input():
     answers = {}
     expected_result = OrderedDict({"some_password": ("", "password")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value=""):
+    Question.operation_logger = MagicMock()
+    with patch.object(Question.operation_logger, "data_to_redact", create=True), \
+         patch.object(Moulinette, "prompt", return_value=""), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -422,7 +468,10 @@ def test_question_password_optional_with_input_without_ask():
     answers = {}
     expected_result = OrderedDict({"some_password": ("some_value", "password")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value"):
+    Question.operation_logger = MagicMock()
+    with patch.object(Question.operation_logger, "data_to_redact", create=True), \
+         patch.object(Moulinette, "prompt", return_value="some_value"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -438,7 +487,8 @@ def test_question_password_no_input_default():
     answers = {}
 
     # no default for password!
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         parse_args_in_yunohost_format(answers, questions)
 
 
@@ -455,7 +505,8 @@ def test_question_password_no_input_example():
     answers = {"some_password": "some_value"}
 
     # no example for password!
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         parse_args_in_yunohost_format(answers, questions)
 
 
@@ -470,11 +521,16 @@ def test_question_password_input_test_ask():
     ]
     answers = {}
 
-    with patch.object(
-        Moulinette.interface, "prompt", return_value="some_value"
-    ) as prompt:
+    Question.operation_logger = MagicMock()
+    with patch.object(Question.operation_logger, "data_to_redact", create=True), \
+         patch.object(Moulinette, "prompt", return_value="some_value") as prompt, \
+         patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        prompt.assert_called_with(ask_text, True)
+        prompt.assert_called_with(
+            message=ask_text,
+            is_password=True, confirm=True,
+            prefill='', is_multiline=False
+        )
 
 
 @pytest.mark.skip  # we should do something with this example
@@ -491,12 +547,13 @@ def test_question_password_input_test_ask_with_example():
     ]
     answers = {}
 
-    with patch.object(
-        Moulinette.interface, "prompt", return_value="some_value"
-    ) as prompt:
+    Question.operation_logger = MagicMock()
+    with patch.object(Question.operation_logger, "data_to_redact", create=True), \
+         patch.object(Moulinette, "prompt", return_value="some_value") as prompt, \
+         patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        assert ask_text in prompt.call_args[0][0]
-        assert example_text in prompt.call_args[0][0]
+        assert ask_text in prompt.call_args[1]['message']
+        assert example_text in prompt.call_args[1]['message']
 
 
 @pytest.mark.skip  # we should do something with this help
@@ -513,12 +570,13 @@ def test_question_password_input_test_ask_with_help():
     ]
     answers = {}
 
-    with patch.object(
-        Moulinette.interface, "prompt", return_value="some_value"
-    ) as prompt:
+    Question.operation_logger = MagicMock()
+    with patch.object(Question.operation_logger, "data_to_redact", create=True), \
+         patch.object(Moulinette, "prompt", return_value="some_value") as prompt, \
+         patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        assert ask_text in prompt.call_args[0][0]
-        assert help_text in prompt.call_args[0][0]
+        assert ask_text in prompt.call_args[1]['message']
+        assert help_text in prompt.call_args[1]['message']
 
 
 def test_question_password_bad_chars():
@@ -532,7 +590,8 @@ def test_question_password_bad_chars():
     ]
 
     for i in PasswordQuestion.forbidden_chars:
-        with pytest.raises(YunohostError):
+        with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
             parse_args_in_yunohost_format({"some_password": i * 8}, questions)
 
 
@@ -546,11 +605,13 @@ def test_question_password_strong_enough():
         }
     ]
 
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         # too short
         parse_args_in_yunohost_format({"some_password": "a"}, questions)
 
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         parse_args_in_yunohost_format({"some_password": "password"}, questions)
 
 
@@ -564,11 +625,13 @@ def test_question_password_optional_strong_enough():
         }
     ]
 
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         # too short
         parse_args_in_yunohost_format({"some_password": "a"}, questions)
 
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         parse_args_in_yunohost_format({"some_password": "password"}, questions)
 
 
@@ -593,7 +656,8 @@ def test_question_path_no_input():
     ]
     answers = {}
 
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         parse_args_in_yunohost_format(answers, questions)
 
 
@@ -608,7 +672,8 @@ def test_question_path_input():
     answers = {}
     expected_result = OrderedDict({"some_path": ("some_value", "path")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value"):
+    with patch.object(Moulinette, "prompt", return_value="some_value"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -622,7 +687,8 @@ def test_question_path_input_no_ask():
     answers = {}
     expected_result = OrderedDict({"some_path": ("some_value", "path")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value"):
+    with patch.object(Moulinette, "prompt", return_value="some_value"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -636,7 +702,8 @@ def test_question_path_no_input_optional():
     ]
     answers = {}
     expected_result = OrderedDict({"some_path": ("", "path")})
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    with patch.object(os, "isatty", return_value=False):
+        assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_path_optional_with_input():
@@ -651,7 +718,8 @@ def test_question_path_optional_with_input():
     answers = {}
     expected_result = OrderedDict({"some_path": ("some_value", "path")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value"):
+    with patch.object(Moulinette, "prompt", return_value="some_value"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -667,7 +735,8 @@ def test_question_path_optional_with_empty_input():
     answers = {}
     expected_result = OrderedDict({"some_path": ("", "path")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value=""):
+    with patch.object(Moulinette, "prompt", return_value=""), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -682,7 +751,8 @@ def test_question_path_optional_with_input_without_ask():
     answers = {}
     expected_result = OrderedDict({"some_path": ("some_value", "path")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="some_value"):
+    with patch.object(Moulinette, "prompt", return_value="some_value"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -697,7 +767,8 @@ def test_question_path_no_input_default():
     ]
     answers = {}
     expected_result = OrderedDict({"some_path": ("some_value", "path")})
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    with patch.object(os, "isatty", return_value=False):
+        assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_path_input_test_ask():
@@ -712,10 +783,14 @@ def test_question_path_input_test_ask():
     answers = {}
 
     with patch.object(
-        Moulinette.interface, "prompt", return_value="some_value"
-    ) as prompt:
+        Moulinette, "prompt", return_value="some_value"
+    ) as prompt, patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        prompt.assert_called_with(ask_text, False)
+        prompt.assert_called_with(
+            message=ask_text,
+            is_password=False, confirm=False,
+            prefill='', is_multiline=False
+        )
 
 
 def test_question_path_input_test_ask_with_default():
@@ -732,10 +807,14 @@ def test_question_path_input_test_ask_with_default():
     answers = {}
 
     with patch.object(
-        Moulinette.interface, "prompt", return_value="some_value"
-    ) as prompt:
+        Moulinette, "prompt", return_value="some_value"
+    ) as prompt, patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        prompt.assert_called_with("%s (default: %s)" % (ask_text, default_text), False)
+        prompt.assert_called_with(
+            message=ask_text,
+            is_password=False, confirm=False,
+            prefill=default_text, is_multiline=False
+        )
 
 
 @pytest.mark.skip  # we should do something with this example
@@ -753,11 +832,11 @@ def test_question_path_input_test_ask_with_example():
     answers = {}
 
     with patch.object(
-        Moulinette.interface, "prompt", return_value="some_value"
-    ) as prompt:
+        Moulinette, "prompt", return_value="some_value"
+    ) as prompt, patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        assert ask_text in prompt.call_args[0][0]
-        assert example_text in prompt.call_args[0][0]
+        assert ask_text in prompt.call_args[1]['message']
+        assert example_text in prompt.call_args[1]['message']
 
 
 @pytest.mark.skip  # we should do something with this help
@@ -775,11 +854,11 @@ def test_question_path_input_test_ask_with_help():
     answers = {}
 
     with patch.object(
-        Moulinette.interface, "prompt", return_value="some_value"
-    ) as prompt:
+        Moulinette, "prompt", return_value="some_value"
+    ) as prompt, patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        assert ask_text in prompt.call_args[0][0]
-        assert help_text in prompt.call_args[0][0]
+        assert ask_text in prompt.call_args[1]['message']
+        assert help_text in prompt.call_args[1]['message']
 
 
 def test_question_boolean():
@@ -913,7 +992,8 @@ def test_question_boolean_no_input():
     answers = {}
 
     expected_result = OrderedDict({"some_boolean": (0, "boolean")})
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    with patch.object(os, "isatty", return_value=False):
+        assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_boolean_bad_input():
@@ -925,7 +1005,8 @@ def test_question_boolean_bad_input():
     ]
     answers = {"some_boolean": "stuff"}
 
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         parse_args_in_yunohost_format(answers, questions)
 
 
@@ -940,11 +1021,13 @@ def test_question_boolean_input():
     answers = {}
 
     expected_result = OrderedDict({"some_boolean": (1, "boolean")})
-    with patch.object(Moulinette.interface, "prompt", return_value="y"):
+    with patch.object(Moulinette, "prompt", return_value="y"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
     expected_result = OrderedDict({"some_boolean": (0, "boolean")})
-    with patch.object(Moulinette.interface, "prompt", return_value="n"):
+    with patch.object(Moulinette, "prompt", return_value="n"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -958,7 +1041,8 @@ def test_question_boolean_input_no_ask():
     answers = {}
     expected_result = OrderedDict({"some_boolean": (1, "boolean")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="y"):
+    with patch.object(Moulinette, "prompt", return_value="y"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -972,7 +1056,8 @@ def test_question_boolean_no_input_optional():
     ]
     answers = {}
     expected_result = OrderedDict({"some_boolean": (0, "boolean")})  # default to false
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    with patch.object(os, "isatty", return_value=False):
+        assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_boolean_optional_with_input():
@@ -987,7 +1072,8 @@ def test_question_boolean_optional_with_input():
     answers = {}
     expected_result = OrderedDict({"some_boolean": (1, "boolean")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="y"):
+    with patch.object(Moulinette, "prompt", return_value="y"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -1003,7 +1089,8 @@ def test_question_boolean_optional_with_empty_input():
     answers = {}
     expected_result = OrderedDict({"some_boolean": (0, "boolean")})  # default to false
 
-    with patch.object(Moulinette.interface, "prompt", return_value=""):
+    with patch.object(Moulinette, "prompt", return_value=""), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -1018,7 +1105,8 @@ def test_question_boolean_optional_with_input_without_ask():
     answers = {}
     expected_result = OrderedDict({"some_boolean": (0, "boolean")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="n"):
+    with patch.object(Moulinette, "prompt", return_value="n"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -1033,7 +1121,8 @@ def test_question_boolean_no_input_default():
     ]
     answers = {}
     expected_result = OrderedDict({"some_boolean": (0, "boolean")})
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    with patch.object(os, "isatty", return_value=False):
+        assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_boolean_bad_default():
@@ -1061,9 +1150,14 @@ def test_question_boolean_input_test_ask():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value=0) as prompt:
+    with patch.object(Moulinette, "prompt", return_value=0) as prompt, \
+         patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        prompt.assert_called_with(ask_text + " [yes | no] (default: no)", False)
+        prompt.assert_called_with(
+            message=ask_text + " [yes | no]",
+            is_password=False, confirm=False,
+            prefill='no', is_multiline=False
+        )
 
 
 def test_question_boolean_input_test_ask_with_default():
@@ -1079,9 +1173,14 @@ def test_question_boolean_input_test_ask_with_default():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value=1) as prompt:
+    with patch.object(Moulinette, "prompt", return_value=1) as prompt, \
+         patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        prompt.assert_called_with("%s [yes | no] (default: yes)" % ask_text, False)
+        prompt.assert_called_with(
+            message=ask_text + " [yes | no]",
+            is_password=False, confirm=False,
+            prefill='yes', is_multiline=False
+        )
 
 
 def test_question_domain_empty():
@@ -1095,9 +1194,9 @@ def test_question_domain_empty():
     expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
     answers = {}
 
-    with patch.object(
-        domain, "_get_maindomain", return_value="my_main_domain.com"
-    ), patch.object(domain, "domain_list", return_value={"domains": [main_domain]}):
+    with patch.object(domain, "_get_maindomain", return_value="my_main_domain.com"),\
+         patch.object(domain, "domain_list", return_value={"domains": [main_domain]}), \
+         patch.object(os, "isatty", return_value=False):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -1115,7 +1214,7 @@ def test_question_domain():
     expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
 
     with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
+            domain, "_get_maindomain", return_value=main_domain
     ), patch.object(domain, "domain_list", return_value={"domains": domains}):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
@@ -1135,7 +1234,7 @@ def test_question_domain_two_domains():
     expected_result = OrderedDict({"some_domain": (other_domain, "domain")})
 
     with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
+            domain, "_get_maindomain", return_value=main_domain
     ), patch.object(domain, "domain_list", return_value={"domains": domains}):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
@@ -1143,7 +1242,7 @@ def test_question_domain_two_domains():
     expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
 
     with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
+             domain, "_get_maindomain", return_value=main_domain
     ), patch.object(domain, "domain_list", return_value={"domains": domains}):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
@@ -1162,9 +1261,10 @@ def test_question_domain_two_domains_wrong_answer():
     answers = {"some_domain": "doesnt_exist.pouet"}
 
     with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
+            domain, "_get_maindomain", return_value=main_domain
     ), patch.object(domain, "domain_list", return_value={"domains": domains}):
-        with pytest.raises(YunohostError):
+        with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
             parse_args_in_yunohost_format(answers, questions)
 
 
@@ -1183,8 +1283,9 @@ def test_question_domain_two_domains_default_no_ask():
     expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
 
     with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
+            domain, "_get_maindomain", return_value=main_domain
+    ), patch.object(domain, "domain_list", return_value={"domains": domains}), \
+         patch.object(os, "isatty", return_value=False):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -1198,8 +1299,9 @@ def test_question_domain_two_domains_default():
     expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
 
     with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
+            domain, "_get_maindomain", return_value=main_domain
+        ), patch.object(domain, "domain_list", return_value={"domains": domains}), \
+         patch.object(os, "isatty", return_value=False):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -1212,14 +1314,15 @@ def test_question_domain_two_domains_default_input():
     answers = {}
 
     with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
+            domain, "_get_maindomain", return_value=main_domain
+        ), patch.object(domain, "domain_list", return_value={"domains": domains}), \
+        patch.object(os, "isatty", return_value=True):
         expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
-        with patch.object(Moulinette.interface, "prompt", return_value=main_domain):
+        with patch.object(Moulinette, "prompt", return_value=main_domain):
             assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
         expected_result = OrderedDict({"some_domain": (other_domain, "domain")})
-        with patch.object(Moulinette.interface, "prompt", return_value=other_domain):
+        with patch.object(Moulinette, "prompt", return_value=other_domain):
             assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -1243,7 +1346,8 @@ def test_question_user_empty():
     answers = {}
 
     with patch.object(user, "user_list", return_value={"users": users}):
-        with pytest.raises(YunohostError):
+        with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
             parse_args_in_yunohost_format(answers, questions)
 
 
@@ -1269,8 +1373,8 @@ def test_question_user():
 
     expected_result = OrderedDict({"some_user": (username, "user")})
 
-    with patch.object(user, "user_list", return_value={"users": users}):
-        with patch.object(user, "user_info", return_value={}):
+    with patch.object(user, "user_list", return_value={"users": users}), \
+         patch.object(user, "user_info", return_value={}):
             assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -1303,15 +1407,15 @@ def test_question_user_two_users():
     answers = {"some_user": other_user}
     expected_result = OrderedDict({"some_user": (other_user, "user")})
 
-    with patch.object(user, "user_list", return_value={"users": users}):
-        with patch.object(user, "user_info", return_value={}):
+    with patch.object(user, "user_list", return_value={"users": users}), \
+        patch.object(user, "user_info", return_value={}):
             assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
     answers = {"some_user": username}
     expected_result = OrderedDict({"some_user": (username, "user")})
 
-    with patch.object(user, "user_list", return_value={"users": users}):
-        with patch.object(user, "user_info", return_value={}):
+    with patch.object(user, "user_list", return_value={"users": users}), \
+         patch.object(user, "user_info", return_value={}):
             assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -1344,7 +1448,8 @@ def test_question_user_two_users_wrong_answer():
     answers = {"some_user": "doesnt_exist.pouet"}
 
     with patch.object(user, "user_list", return_value={"users": users}):
-        with pytest.raises(YunohostError):
+        with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
             parse_args_in_yunohost_format(answers, questions)
 
 
@@ -1372,7 +1477,8 @@ def test_question_user_two_users_no_default():
     answers = {}
 
     with patch.object(user, "user_list", return_value={"users": users}):
-        with pytest.raises(YunohostError):
+        with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
             parse_args_in_yunohost_format(answers, questions)
 
 
@@ -1399,17 +1505,18 @@ def test_question_user_two_users_default_input():
     questions = [{"name": "some_user", "type": "user", "ask": "choose a user"}]
     answers = {}
 
-    with patch.object(user, "user_list", return_value={"users": users}):
+    with patch.object(user, "user_list", return_value={"users": users}), \
+         patch.object(os, "isatty", return_value=True):
         with patch.object(user, "user_info", return_value={}):
             expected_result = OrderedDict({"some_user": (username, "user")})
-            with patch.object(Moulinette.interface, "prompt", return_value=username):
+            with patch.object(Moulinette, "prompt", return_value=username):
                 assert (
                     parse_args_in_yunohost_format(answers, questions)
                     == expected_result
                 )
 
             expected_result = OrderedDict({"some_user": (other_user, "user")})
-            with patch.object(Moulinette.interface, "prompt", return_value=other_user):
+            with patch.object(Moulinette, "prompt", return_value=other_user):
                 assert (
                     parse_args_in_yunohost_format(answers, questions)
                     == expected_result
@@ -1437,8 +1544,9 @@ def test_question_number_no_input():
     ]
     answers = {}
 
-    expected_result = OrderedDict({"some_number": (0, "number")})
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
+        parse_args_in_yunohost_format(answers, questions)
 
 
 def test_question_number_bad_input():
@@ -1450,11 +1558,13 @@ def test_question_number_bad_input():
     ]
     answers = {"some_number": "stuff"}
 
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         parse_args_in_yunohost_format(answers, questions)
 
     answers = {"some_number": 1.5}
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         parse_args_in_yunohost_format(answers, questions)
 
 
@@ -1469,14 +1579,17 @@ def test_question_number_input():
     answers = {}
 
     expected_result = OrderedDict({"some_number": (1337, "number")})
-    with patch.object(Moulinette.interface, "prompt", return_value="1337"):
+    with patch.object(Moulinette, "prompt", return_value="1337"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
-    with patch.object(Moulinette.interface, "prompt", return_value=1337):
+    with patch.object(Moulinette, "prompt", return_value=1337), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
     expected_result = OrderedDict({"some_number": (0, "number")})
-    with patch.object(Moulinette.interface, "prompt", return_value=""):
+    with patch.object(Moulinette, "prompt", return_value="0"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -1490,7 +1603,8 @@ def test_question_number_input_no_ask():
     answers = {}
     expected_result = OrderedDict({"some_number": (1337, "number")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="1337"):
+    with patch.object(Moulinette, "prompt", return_value="1337"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -1503,8 +1617,9 @@ def test_question_number_no_input_optional():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_number": (0, "number")})  # default to 0
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    expected_result = OrderedDict({"some_number": (None, "number")})  # default to 0
+    with patch.object(os, "isatty", return_value=False):
+        assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_number_optional_with_input():
@@ -1519,7 +1634,8 @@ def test_question_number_optional_with_input():
     answers = {}
     expected_result = OrderedDict({"some_number": (1337, "number")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="1337"):
+    with patch.object(Moulinette, "prompt", return_value="1337"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -1534,7 +1650,8 @@ def test_question_number_optional_with_input_without_ask():
     answers = {}
     expected_result = OrderedDict({"some_number": (0, "number")})
 
-    with patch.object(Moulinette.interface, "prompt", return_value="0"):
+    with patch.object(Moulinette, "prompt", return_value="0"), \
+         patch.object(os, "isatty", return_value=True):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -1549,7 +1666,8 @@ def test_question_number_no_input_default():
     ]
     answers = {}
     expected_result = OrderedDict({"some_number": (1337, "number")})
-    assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    with patch.object(os, "isatty", return_value=False):
+        assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_number_bad_default():
@@ -1562,7 +1680,8 @@ def test_question_number_bad_default():
         }
     ]
     answers = {}
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostError), \
+         patch.object(os, "isatty", return_value=False):
         parse_args_in_yunohost_format(answers, questions)
 
 
@@ -1577,9 +1696,14 @@ def test_question_number_input_test_ask():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="1111") as prompt:
+    with patch.object(Moulinette, "prompt", return_value="1111") as prompt, \
+         patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        prompt.assert_called_with("%s (default: 0)" % (ask_text), False)
+        prompt.assert_called_with(
+            message=ask_text,
+            is_password=False, confirm=False,
+            prefill='', is_multiline=False
+        )
 
 
 def test_question_number_input_test_ask_with_default():
@@ -1595,9 +1719,14 @@ def test_question_number_input_test_ask_with_default():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="1111") as prompt:
+    with patch.object(Moulinette, "prompt", return_value="1111") as prompt, \
+         patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        prompt.assert_called_with("%s (default: %s)" % (ask_text, default_value), False)
+        prompt.assert_called_with(
+            message=ask_text,
+            is_password=False, confirm=False,
+            prefill=str(default_value), is_multiline=False
+        )
 
 
 @pytest.mark.skip  # we should do something with this example
@@ -1614,10 +1743,11 @@ def test_question_number_input_test_ask_with_example():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="1111") as prompt:
+    with patch.object(Moulinette, "prompt", return_value="1111") as prompt, \
+         patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        assert ask_text in prompt.call_args[0][0]
-        assert example_value in prompt.call_args[0][0]
+        assert ask_text in prompt.call_args[1]['message']
+        assert example_value in prompt.call_args[1]['message']
 
 
 @pytest.mark.skip  # we should do something with this help
@@ -1634,16 +1764,18 @@ def test_question_number_input_test_ask_with_help():
     ]
     answers = {}
 
-    with patch.object(Moulinette.interface, "prompt", return_value="1111") as prompt:
+    with patch.object(Moulinette, "prompt", return_value="1111") as prompt, \
+         patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
-        assert ask_text in prompt.call_args[0][0]
-        assert help_value in prompt.call_args[0][0]
+        assert ask_text in prompt.call_args[1]['message']
+        assert help_value in prompt.call_args[1]['message']
 
 
 def test_question_display_text():
     questions = [{"name": "some_app", "type": "display_text", "ask": "foobar"}]
     answers = {}
 
-    with patch.object(sys, "stdout", new_callable=StringIO) as stdout:
+    with patch.object(sys, "stdout", new_callable=StringIO) as stdout, \
+         patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
         assert "foobar" in stdout.getvalue()
