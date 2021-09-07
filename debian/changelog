@@ -1,3 +1,11 @@
+yunohost (4.2.8.2) stable; urgency=low
+
+  - [fix] mysql: Bump sort_buffer_size to 256K to fix Nextcloud 22 installation (d8c49619)
+
+  Thanks to all contributors <3 ! (ericg)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 07 Sep 2021 23:23:18 +0200
+
 yunohost (4.2.8.1) stable; urgency=low
 
   - [fix] Safer location for slapd backup during hdb/mdb migration (3c646b3d)
