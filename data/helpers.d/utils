@@ -592,7 +592,7 @@ ynh_write_var_in_file() {
     ynh_handle_getopts_args "$@"
     after="${after:-}"
 
-    [[ -f $file ]] || ynh_die "File $file does not exists"
+    [[ -f $file ]] || ynh_die --message="File $file does not exists"
 
     # Get the line number after which we search for the variable
     local line_number=1
