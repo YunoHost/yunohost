@@ -62,7 +62,7 @@ EOL
                 old[$short_setting]="$(ynh_app_setting_get $app $short_setting)"
             elif [[ "$bind" == *":"* ]]
             then
-                ynh_die "For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
+                ynh_die --message="For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
             else
                 old[$short_setting]="$(cat $(echo $bind | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/) 2> /dev/null || echo YNH_NULL)"
             fi
