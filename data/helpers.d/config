@@ -145,7 +145,7 @@ _ynh_app_config_apply() {
                 ynh_backup_if_checksum_is_different --file="$bind_file"
                 echo "${!short_setting}" > "$bind_file"
                 ynh_store_file_checksum --file="$bind_file" --update_only
-                ynh_print_info "File '$bind_file' overwrited with the content you provieded in '${short_setting}' question"
+                ynh_print_info --message="File '$bind_file' overwrited with the content you provieded in '${short_setting}' question"
 
             # Set value into a kind of key/value file
             else
@@ -164,8 +164,8 @@ _ynh_app_config_apply() {
                 ynh_store_file_checksum --file="$bind_file" --update_only
 
                 # We stored the info in settings in order to be able to upgrade the app
-                ynh_app_setting_set $app $short_setting "${!short_setting}"
-                ynh_print_info "Configuration key '$bind_key' edited into $bind_file"
+                ynh_app_setting_set --app=$app --key=$short_setting --value="${!short_setting}"
+                ynh_print_info --message="Configuration key '$bind_key' edited into $bind_file"
 
             fi
         fi
@@ -194,7 +194,6 @@ _ynh_app_config_validate() {
     ynh_script_progression --message="Checking what changed in the new configuration..." --weight=1
     local nothing_changed=true
     local changes_validated=true
-    #for changed_status in "${!changed[@]}"
     for short_setting in "${!old[@]}"
     do
         changed[$short_setting]=false
@@ -237,7 +236,7 @@ _ynh_app_config_validate() {
     done
     if [[ "$nothing_changed" == "true" ]]
     then
-        ynh_print_info "Nothing has changed"
+        ynh_print_info --message="Nothing has changed"
         exit 0
     fi
 
