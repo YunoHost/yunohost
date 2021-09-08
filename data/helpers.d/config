@@ -132,7 +132,7 @@ _ynh_app_config_apply() {
             elif [[ "$bind" == "settings" ]]
             then
                 ynh_app_setting_set --app=$app --key=$short_setting --value="${!short_setting}"
-                ynh_print_info "Configuration key '$short_setting' edited in app settings"
+                ynh_print_info --message="Configuration key '$short_setting' edited in app settings"
 
             # Save multiline text in a file
             elif [[ "$type" == "text" ]]
