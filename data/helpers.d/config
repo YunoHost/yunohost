@@ -125,7 +125,7 @@ _ynh_app_config_apply() {
                     ynh_backup_if_checksum_is_different --file="$bind_file"
                     cp "${!short_setting}" "$bind_file"
                     ynh_store_file_checksum --file="$bind_file" --update_only
-                    ynh_print_info "File '$bind_file' overwrited with ${!short_setting}"
+                    ynh_print_info --message="File '$bind_file' overwrited with ${!short_setting}"
                 fi
 
             # Save value in app settings
