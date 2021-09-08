@@ -49,7 +49,7 @@ EOL
         then
             if [[ "$bind" == "settings" ]]
             then
-                ynh_die "File '${short_setting}' can't be stored in settings"
+                ynh_die --message="File '${short_setting}' can't be stored in settings"
             fi
             old[$short_setting]="$(ls "$(echo $bind | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)" 2> /dev/null || echo YNH_NULL)"
             file_hash[$short_setting]="true"
