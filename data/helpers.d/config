@@ -118,7 +118,7 @@ _ynh_app_config_apply() {
                 if [[ "${!short_setting}" == "" ]]
                 then
                     ynh_backup_if_checksum_is_different --file="$bind_file"
-                    rm -f "$bind_file"
+                    ynh_secure_remove --file="$bind_file"
                     ynh_delete_file_checksum --file="$bind_file" --update_only
                     ynh_print_info "File '$bind_file' removed"
                 else
