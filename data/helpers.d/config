@@ -112,7 +112,7 @@ _ynh_app_config_apply() {
             then
                 if [[ "$bind" == "settings" ]]
                 then
-                    ynh_die "File '${short_setting}' can't be stored in settings"
+                    ynh_die --message="File '${short_setting}' can't be stored in settings"
                 fi
                 local bind_file="$(echo "$bind" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
                 if [[ "${!short_setting}" == "" ]]
