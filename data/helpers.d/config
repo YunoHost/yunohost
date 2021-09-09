@@ -139,7 +139,7 @@ _ynh_app_config_apply() {
             then
                 if [[ "$bind" == *":"* ]]
                 then
-                    ynh_die "For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
+                    ynh_die --message="For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
                 fi
                 local bind_file="$(echo "$bind" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
                 ynh_backup_if_checksum_is_different --file="$bind_file"
