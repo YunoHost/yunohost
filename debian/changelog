@@ -1,3 +1,11 @@
+yunohost (4.2.8.3) stable; urgency=low
+
+  - [fix] mysql: Another bump for sort_buffer_size to make Nextcloud 22 work (34e9246b)
+
+  Thanks to all contributors <3 ! (ljf (zamentur))
+
+ -- Kay0u <pierre@kayou.io>  Fri, 10 Sep 2021 10:40:38 +0200
+
 yunohost (4.2.8.2) stable; urgency=low
 
   - [fix] mysql: Bump sort_buffer_size to 256K to fix Nextcloud 22 installation (d8c49619)
