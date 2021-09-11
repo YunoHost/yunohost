@@ -538,7 +538,7 @@ class TagsQuestion(Question):
         values = self.value
         if isinstance(values, str):
             values = values.split(",")
-        elif value is None:
+        elif values is None:
             values = []
         for value in values:
             self.value = value
