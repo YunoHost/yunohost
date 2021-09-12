@@ -105,9 +105,7 @@ def test_app_config_get(config_app):
     assert isinstance(app_config_get(config_app, export=True), dict)
     assert isinstance(app_config_get(config_app, "main"), dict)
     assert isinstance(app_config_get(config_app, "main.components"), dict)
-    # Is it expected that we return None if no value defined yet ?
-    # c.f. the whole discussion about "should we have defaults" etc.
-    assert app_config_get(config_app, "main.components.boolean") is None
+    assert app_config_get(config_app, "main.components.boolean") == "0"
 
 
 def test_app_config_nopanel(legacy_app):
@@ -130,10 +128,14 @@ def test_app_config_get_nonexistentstuff(config_app):
     with pytest.raises(YunohostValidationError):
         app_config_get(config_app, "main.components.nonexistent")
 
+    app_setting(config_app, "boolean", delete=True)
+    with pytest.raises(YunohostValidationError):
+        app_config_get(config_app, "main.components.boolean")
+
 
 def test_app_config_regular_setting(config_app):
 
-    assert app_config_get(config_app, "main.components.boolean") is None
+    assert app_config_get(config_app, "main.components.boolean") == "0"
 
     app_config_set(config_app, "main.components.boolean", "no")
 
