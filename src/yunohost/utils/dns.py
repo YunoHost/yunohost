@@ -21,6 +21,8 @@
 import dns.resolver
 from moulinette.utils.filesystem import read_file
 
+YNH_DYNDNS_DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
+
 # Lazy dev caching to avoid re-reading the file multiple time when calling
 # dig() often during same yunohost operation
 external_resolvers_ = []
@@ -90,33 +92,3 @@ def dig(
 
     return ("ok", answers)
 
-
-def get_dns_zone_from_domain(domain):
-    # TODO Check if this function is YNH_DYNDNS_DOMAINS compatible
-    """
-    Get the DNS zone of a domain
-
-    Keyword arguments:
-        domain -- The domain name
-
-    """
-
-    # For foo.bar.baz.gni we want to scan all the parent domains
-    # (including the domain itself)
-    # foo.bar.baz.gni
-    #     bar.baz.gni
-    #         baz.gni
-    #             gni
-    parent_list = [domain.split(".", i)[-1]
-                   for i, _ in enumerate(domain.split("."))]
-
-    for parent in parent_list:
-
-        # Check if there's a NS record for that domain
-        answer = dig(parent, rdtype="NS", full_answers=True, resolvers="force_external")
-        if answer[0] == "ok":
-            # Domain is dns_zone
-            return parent
-
-    # FIXME: returning None will probably trigger bugs when this happens, code expects a domain string
-    return None

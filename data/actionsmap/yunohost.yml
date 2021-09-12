@@ -589,8 +589,16 @@ domain:
                       domain:
                           help: Domain name
                       key:
-                          help: A question or form key
+                          help: A specific panel, section or a question identifier
                           nargs: '?'
+                      -f:
+                          full: --full
+                          help: Display all details (meant to be used by the API)
+                          action: store_true
+                      -e:
+                          full: --export
+                          help: Only export key/values, meant to be reimported using "config set --args-file"
+                          action: store_true
 
                 ### domain_config_set()
                 set:

@@ -170,7 +170,9 @@ class ConfigPanel:
             raise YunohostError(f"The filter key {filter_key} has too many sub-levels, the max is 3.", raw_msg=True)
 
         if not os.path.exists(self.config_path):
+            logger.debug(f"Config panel {self.config_path} doesn't exists")
             return None
+
         toml_config_panel = self._get_toml()
 
         # Check TOML config panel is in a supported version

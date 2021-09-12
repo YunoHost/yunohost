@@ -8,12 +8,11 @@ from publicsuffix import PublicSuffixList
 
 from moulinette.utils.process import check_output
 
-from yunohost.utils.dns import dig
+from yunohost.utils.dns import dig, YNH_DYNDNS_DOMAINS
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _get_maindomain
 from yunohost.dns import _build_dns_conf
 
-YNH_DYNDNS_DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
 SPECIAL_USE_TLDS = ["local", "localhost", "onion", "test"]
 
 

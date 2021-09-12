@@ -25,11 +25,15 @@
 """
 import os
 import re
+import time
+from collections import OrderedDict
 
 from moulinette import m18n, Moulinette
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_file, write_to_file, read_toml
 
-from yunohost.domain import domain_list, _get_domain_settings, _assert_domain_exists
+from yunohost.domain import domain_list, _assert_domain_exists, domain_config_get
+from yunohost.utils.dns import dig, YNH_DYNDNS_DOMAINS
 from yunohost.utils.error import YunohostValidationError
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
@@ -37,8 +41,10 @@ from yunohost.hook import hook_callback
 
 logger = getActionLogger("yunohost.domain")
 
+DOMAIN_REGISTRAR_LIST_PATH = "/usr/share/yunohost/other/registrar_list.toml"
 
-def domain_dns_conf(domain):
+
+def domain_dns_suggest(domain):
     """
     Generate DNS configuration for a domain
 
@@ -149,10 +155,10 @@ def _build_dns_conf(base_domain):
     ipv6 = get_public_ip(6)
 
     subdomains = _list_subdomains_of(base_domain)
-    domains_settings = {domain: _get_domain_settings(domain)
+    domains_settings = {domain: domain_config_get(domain)
                         for domain in [base_domain] + subdomains}
 
-    base_dns_zone = domains_settings[base_domain].get("dns_zone")
+    base_dns_zone = _get_dns_zone_for_domain(base_domain)
 
     for domain, settings in domains_settings.items():
 
@@ -384,6 +390,126 @@ def _get_DKIM(domain):
         )
 
 
+def _get_dns_zone_for_domain(domain):
+    """
+    Get the DNS zone of a domain
+
+    Keyword arguments:
+        domain -- The domain name
+
+    """
+
+    # First, check if domain is a nohost.me / noho.st / ynh.fr
+    # This is mainly meant to speed up things for "dyndns update"
+    # ... otherwise we end up constantly doing a bunch of dig requests
+    for ynh_dyndns_domain in YNH_DYNDNS_DOMAINS:
+        if domain.endswith('.' + ynh_dyndns_domain):
+            return ynh_dyndns_domain
+
+    # Check cache
+    cache_folder = "/var/cache/yunohost/dns_zones"
+    cache_file = f"{cache_folder}/{domain}"
+    cache_duration = 3600  # one hour
+    if (
+        os.path.exists(cache_file)
+        and abs(os.path.getctime(cache_file) - time.time()) < cache_duration
+    ):
+        dns_zone = read_file(cache_file).strip()
+        if dns_zone:
+            return dns_zone
+
+    # Check cache for parent domain
+    # This is another strick to try to prevent this function from being
+    # a bottleneck on system with 1 main domain + 10ish subdomains
+    # when building the dns conf for the main domain (which will call domain_config_get, etc...)
+    parent_domain = domain.split(".", 1)[1]
+    if parent_domain in domain_list()["domains"]:
+        parent_cache_file = f"{cache_folder}/{parent_domain}"
+        if (
+            os.path.exists(parent_cache_file)
+            and abs(os.path.getctime(parent_cache_file) - time.time()) < cache_duration
+        ):
+            dns_zone = read_file(parent_cache_file).strip()
+            if dns_zone:
+                return dns_zone
+
+    # For foo.bar.baz.gni we want to scan all the parent domains
+    # (including the domain itself)
+    # foo.bar.baz.gni
+    #     bar.baz.gni
+    #         baz.gni
+    #             gni
+    # Until we find the first one that has a NS record
+    parent_list = [domain.split(".", i)[-1]
+                   for i, _ in enumerate(domain.split("."))]
+
+    for parent in parent_list:
+
+        # Check if there's a NS record for that domain
+        answer = dig(parent, rdtype="NS", full_answers=True, resolvers="force_external")
+        if answer[0] == "ok":
+            os.system(f"mkdir -p {cache_folder}")
+            write_to_file(cache_file, parent)
+            return parent
+
+    logger.warning(f"Could not identify the dns_zone for domain {domain}, returning {parent_list[-1]}")
+    return parent_list[-1]
+
+
+def _get_registrar_config_section(domain):
+
+    from lexicon.providers.auto import _relevant_provider_for_domain
+
+    registrar_infos = {}
+
+    dns_zone = _get_dns_zone_for_domain(domain)
+
+    # If parent domain exists in yunohost
+    parent_domain = domain.split(".", 1)[1]
+    if parent_domain in domain_list()["domains"]:
+        registrar_infos["explanation"] = OrderedDict({
+            "type": "alert",
+            "style": "info",
+            "ask": f"This domain is a subdomain of {parent_domain}. DNS registrar configuration should be managed in {parent_domain}'s configuration panel.",  # FIXME: i18n
+            "value": None
+        })
+        return OrderedDict(registrar_infos)
+
+    # TODO big project, integrate yunohost's dynette as a registrar-like provider
+    # TODO big project, integrate other dyndns providers such as netlib.re, or cf the list of dyndns providers supported by cloudron...
+    if dns_zone in YNH_DYNDNS_DOMAINS:
+        registrar_infos["explanation"] = OrderedDict({
+            "type": "alert",
+            "style": "success",
+            "ask": "This domain is a nohost.me / nohost.st / ynh.fr and its DNS configuration is therefore automatically handled by Yunohost.",  # FIXME: i18n
+            "value": "yunohost"
+        })
+        return OrderedDict(registrar_infos)
+
+    try:
+        registrar = _relevant_provider_for_domain(dns_zone)[0]
+    except ValueError:
+        registrar_infos["explanation"] = OrderedDict({
+            "type": "alert",
+            "style": "warning",
+            "ask": "YunoHost could not automatically detect the registrar handling this domain. You should manually configure your DNS records following the documentation at https://yunohost.org/dns.",  # FIXME : i18n
+            "value": None
+        })
+    else:
+
+        registrar_infos["explanation"] = OrderedDict({
+            "type": "alert",
+            "style": "info",
+            "ask": f"YunoHost automatically detected that this domain is handled by the registrar **{registrar}**. If you want, YunoHost will automatically configure this DNS zone, if you provide it with the following informations. You can also manually configure your DNS records following the documentation as https://yunohost.org/dns.",  # FIXME: i18n
+            "value": registrar
+        })
+        # TODO : add a help tip with the link to the registar's API doc (c.f. Lexicon's README)
+        registrar_list = read_toml(DOMAIN_REGISTRAR_LIST_PATH)
+        registrar_infos.update(registrar_list[registrar])
+
+    return OrderedDict(registrar_infos)
+
+
 @is_unit_operation()
 def domain_registrar_push(operation_logger, domain, dry_run=False):
     """
@@ -395,8 +521,7 @@ def domain_registrar_push(operation_logger, domain, dry_run=False):
 
     _assert_domain_exists(domain)
 
-    dns_zone = _get_domain_settings(domain)["dns_zone"]
-    registrar_settings = _get_registrar_settings(dns_zone)
+    registrar_settings = domain_config_get(domain, key='', full=True)
 
     if not registrar_settings:
         raise YunohostValidationError("registrar_is_not_set", domain=domain)

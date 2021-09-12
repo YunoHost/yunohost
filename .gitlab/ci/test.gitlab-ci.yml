@@ -85,6 +85,25 @@ test-helpers:
     changes:
       - data/helpers.d/*
 
+test-domains:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - python3 -m pytest tests/test_domains.py
+  only:
+    changes:
+      - src/yunohost/domain.py
+
+test-dns:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - python3 -m pytest tests/test_dns.py
+  only:
+    changes:
+      - src/yunohost/dns.py
+      - src/yunohost/utils/dns.py
+
 test-apps:
   extends: .test-stage
   script:

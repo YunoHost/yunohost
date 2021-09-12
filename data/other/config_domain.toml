@@ -2,8 +2,10 @@ version = "1.0"
 i18n = "domain_config"
 
 [feature]
+    
     [feature.mail]
-        services = ['postfix', 'dovecot']
+    services = ['postfix', 'dovecot']
+
         [feature.mail.mail_out]
         type = "boolean"
         default = 1
@@ -25,17 +27,14 @@ i18n = "domain_config"
         default = 0
 
 [dns]
+    
     [dns.registrar]
-        optional = true
-        # This part is replace dynamically by DomainConfigPanel
-        [dns.registrar.unsupported]
-        ask = "DNS zone of this domain can't be auto-configured, you should do it manually."
-        type = "alert"
-        style = "info"
-        helpLink.href = "https://yunohost.org/dns_config"
-        helpLink.text = "How to configure manually my DNS zone"
+    optional = true
+
+        # This part is automatically generated in DomainConfigPanel
 
     [dns.advanced]
+
         [dns.advanced.ttl]
         type = "number"
         min = 0

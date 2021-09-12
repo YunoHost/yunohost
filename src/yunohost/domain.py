@@ -29,7 +29,7 @@ from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
-    mkdir, write_to_file, read_yaml, write_to_yaml, read_toml
+    mkdir, write_to_file, read_yaml, write_to_yaml
 )
 
 from yunohost.app import (
@@ -49,7 +49,6 @@ logger = getActionLogger("yunohost.domain")
 
 DOMAIN_CONFIG_PATH = "/usr/share/yunohost/other/config_domain.toml"
 DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
-DOMAIN_REGISTRAR_LIST_PATH = "/usr/share/yunohost/other/registrar_list.toml"
 
 # Lazy dev caching to avoid re-query ldap every time we need the domain list
 domain_list_cache = {}
@@ -391,22 +390,24 @@ def _get_maindomain():
     return maindomain
 
 
-def _get_domain_settings(domain):
-    """
-    Retrieve entries in /etc/yunohost/domains/[domain].yml
-    And set default values if needed
-    """
-    config = DomainConfigPanel(domain)
-    return config.get(mode='export')
-
-
-def domain_config_get(domain, key='', mode='classic'):
+def domain_config_get(domain, key='', full=False, export=False):
     """
     Display a domain configuration
     """
 
+    if full and export:
+        raise YunohostValidationError("You can't use --full and --export together.", raw_msg=True)
+
+    if full:
+        mode = "full"
+    elif export:
+        mode = "export"
+    else:
+        mode = "classic"
+
     config = DomainConfigPanel(domain)
     return config.get(key, mode)
+
 
 @is_unit_operation()
 def domain_config_set(operation_logger, domain, key=None, value=None, args=None, args_file=None):
@@ -415,31 +416,28 @@ def domain_config_set(operation_logger, domain, key=None, value=None, args=None,
     """
     Question.operation_logger = operation_logger
     config = DomainConfigPanel(domain)
-    return config.set(key, value, args, args_file)
+    return config.set(key, value, args, args_file, operation_logger=operation_logger)
 
 
 class DomainConfigPanel(ConfigPanel):
+
     def __init__(self, domain):
         _assert_domain_exists(domain)
         self.domain = domain
+        self.save_mode = "diff"
         super().__init__(
             config_path=DOMAIN_CONFIG_PATH,
             save_path=f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
         )
 
     def _get_toml(self):
-        from lexicon.providers.auto import _relevant_provider_for_domain
-        from yunohost.utils.dns import get_dns_zone_from_domain
+        from yunohost.dns import _get_registrar_config_section
+
         toml = super()._get_toml()
-        self.dns_zone = get_dns_zone_from_domain(self.domain)
 
-        try:
-            registrar = _relevant_provider_for_domain(self.dns_zone)[0]
-        except ValueError:
-            return toml
+        toml['feature']['xmpp']['xmpp']['default'] = 1 if self.domain == _get_maindomain() else 0
+        toml['dns']['registrar'] = _get_registrar_config_section(self.domain)
 
-        registrar_list = read_toml(DOMAIN_REGISTRAR_LIST_PATH)
-        toml['dns']['registrar'] = registrar_list[registrar]
         return toml
 
     def _load_current_values(self):
@@ -480,8 +478,12 @@ def domain_cert_renew(
 
 
 def domain_dns_conf(domain):
+    return domain_dns_suggest(domain)
+
+
+def domain_dns_suggest(domain):
     import yunohost.dns
-    return yunohost.dns.domain_dns_conf(domain)
+    return yunohost.dns.domain_dns_suggest(domain)
 
 
 def domain_dns_push(domain, dry_run):

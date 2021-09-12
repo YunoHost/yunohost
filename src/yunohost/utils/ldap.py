@@ -101,7 +101,8 @@ class LDAPInterface:
             except ldap.SERVER_DOWN:
                 raise YunohostError(
                     "Service slapd is not running but is required to perform this action ... "
-                    "You can try to investigate what's happening with 'systemctl status slapd'"
+                    "You can try to investigate what's happening with 'systemctl status slapd'",
+                    raw_msg=True
                 )
 
         # Check that we are indeed logged in with the right identity
@@ -289,7 +290,7 @@ class LDAPInterface:
                 attr_found[0],
                 attr_found[1],
             )
-            raise MoulinetteError(
+            raise YunohostError(
                 "ldap_attribute_already_exists",
                 attribute=attr_found[0],
                 value=attr_found[1],
