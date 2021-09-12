@@ -282,7 +282,7 @@ class ConfigPanel:
         for _, _, option in self._iterate():
             if option["id"] not in self.values:
                 allowed_empty_types = ["alert", "display_text", "markdown", "file"]
-                if option["type"] in allowed_empty_types or option["bind"] == "null":
+                if option["type"] in allowed_empty_types or option.get("bind") == "null":
                     continue
                 else:
                     raise YunohostError(f"Config panel question '{option['id']}' should be initialized with a value during install or upgrade.")
