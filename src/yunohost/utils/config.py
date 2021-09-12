@@ -672,7 +672,7 @@ class DomainQuestion(Question):
 
     def _raise_invalid_answer(self):
         raise YunohostValidationError(
-            "app_argument_invalid", name=self.name, error=m18n.n("domain_unknown")
+            "app_argument_invalid", name=self.name, error=m18n.n("domain_name_unknown", domain=self.value)
         )
 
 
