@@ -707,6 +707,52 @@ class OperationLogger(object):
         else:
             self.error(m18n.n("log_operation_unit_unclosed_properly"))
 
+    def dump_script_log_extract_for_debugging(self):
+
+        with open(self.log_path, "r") as f:
+            lines = f.readlines()
+
+        filters = [
+            r"set [+-]x$",
+            r"set [+-]o xtrace$",
+            r"local \w+$",
+            r"local legacy_args=.*$",
+            r".*Helper used in legacy mode.*",
+            r"args_array=.*$",
+            r"local -A args_array$",
+            r"ynh_handle_getopts_args",
+            r"ynh_script_progression",
+        ]
+
+        filters = [re.compile(f_) for f_ in filters]
+
+        lines_to_display = []
+        for line in lines:
+
+            if ": " not in line.strip():
+                continue
+
+            # A line typically looks like
+            # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
+            # And we just want the part starting by "DEBUG - "
+            line = line.strip().split(": ", 1)[1]
+
+            if any(filter_.search(line) for filter_ in filters):
+                continue
+
+            lines_to_display.append(line)
+
+            if line.endswith("+ ynh_exit_properly") or " + ynh_die " in line:
+                break
+            elif len(lines_to_display) > 20:
+                lines_to_display.pop(0)
+
+        logger.warning(
+            "Here's an extract of the logs before the crash. It might help debugging the error:"
+        )
+        for line in lines_to_display:
+            logger.info(line)
+
 
 def _get_datetime_from_name(name):
 

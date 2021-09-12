@@ -34,7 +34,7 @@ from importlib import import_module
 from moulinette import m18n, Moulinette
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils import log
-from moulinette.utils.filesystem import read_json
+from moulinette.utils.filesystem import read_yaml
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"
@@ -326,7 +326,7 @@ def hook_exec(
     chdir=None,
     env=None,
     user="root",
-    return_format="json",
+    return_format="yaml",
 ):
     """
     Execute hook from a file with arguments
@@ -447,10 +447,10 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
             raw_content = f.read()
         returncontent = {}
 
-        if return_format == "json":
+        if return_format == "yaml":
             if raw_content != "":
                 try:
-                    returncontent = read_json(stdreturn)
+                    returncontent = read_yaml(stdreturn)
                 except Exception as e:
                     raise YunohostError(
                         "hook_json_return_error",
@@ -496,6 +496,40 @@ def _hook_exec_python(path, args, env, loggers):
         and isinstance(ret[1], dict)
     ), ("Module %s did not return a (int, dict) tuple !" % module)
     return ret
+
+
+def hook_exec_with_script_debug_if_failure(*args, **kwargs):
+
+    operation_logger = kwargs.pop("operation_logger")
+    error_message_if_failed = kwargs.pop("error_message_if_failed")
+    error_message_if_script_failed = kwargs.pop("error_message_if_script_failed")
+
+    failed = True
+    failure_message_with_debug_instructions = None
+    try:
+        retcode, retpayload = hook_exec(*args, **kwargs)
+        failed = True if retcode != 0 else False
+        if failed:
+            error = error_message_if_script_failed
+            logger.error(error_message_if_failed(error))
+            failure_message_with_debug_instructions = operation_logger.error(error)
+            if Moulinette.interface.type != "api":
+                operation_logger.dump_script_log_extract_for_debugging()
+    # Script got manually interrupted ...
+    # N.B. : KeyboardInterrupt does not inherit from Exception
+    except (KeyboardInterrupt, EOFError):
+        error = m18n.n("operation_interrupted")
+        logger.error(error_message_if_failed(error))
+        failure_message_with_debug_instructions = operation_logger.error(error)
+    # Something wrong happened in Yunohost's code (most probably hook_exec)
+    except Exception:
+        import traceback
+
+        error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+        logger.error(error_message_if_failed(error))
+        failure_message_with_debug_instructions = operation_logger.error(error)
+
+    return failed, failure_message_with_debug_instructions
 
 
 def _extract_filename_parts(filename):

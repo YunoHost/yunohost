@@ -853,24 +853,45 @@ app:
           subcategory_help: Applications configuration panel
           actions:
 
-              ### app_config_show_panel()
-              show-panel:
-                  action_help: show config panel for the application
+              ### app_config_get()
+              get:
+                  action_help: Display an app configuration
                   api: GET /apps/<app>/config-panel
                   arguments:
-                      app:
-                          help: App name
+                    app:
+                        help: App name
+                    key:
+                        help: A specific panel, section or a question identifier
+                        nargs: '?'
+                    -f:
+                        full: --full
+                        help: Display all details (meant to be used by the API)
+                        action: store_true
+                    -e:
+                        full: --export
+                        help: Only export key/values, meant to be reimported using "config set --args-file"
+                        action: store_true
 
-              ### app_config_apply()
-              apply:
-                  action_help: apply the new configuration
+              ### app_config_set()
+              set:
+                  action_help: Apply a new configuration
                   api: PUT /apps/<app>/config
                   arguments:
-                      app:
-                          help: App name
-                      -a:
-                          full: --args
-                          help: Serialized arguments for new configuration (i.e. "domain=domain.tld&path=/path")
+                    app:
+                        help: App name
+                    key:
+                        help: The question or panel key 
+                        nargs: '?'
+                    -v:
+                        full: --value
+                        help: new value
+                    -a:
+                        full: --args
+                        help: Serialized arguments for new configuration (i.e. "domain=domain.tld&path=/path")
+                    -f:
+                        full: --args-file
+                        help: YAML or JSON file with key/value couples
+                        type: open
 
 #############################
 #          Backup           #
