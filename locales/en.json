@@ -394,6 +394,8 @@
     "hook_name_unknown": "Unknown hook name '{name}'",
     "installation_complete": "Installation completed",
     "invalid_number": "Must be a number",
+    "invalid_number_min": "Must be greater than {min}",
+    "invalid_number_max": "Must be lesser than {max}",
     "invalid_password": "Invalid password",
     "invalid_regex": "Invalid regex:'{regex}'",
     "ip6tables_unavailable": "You cannot play with ip6tables here. You are either in a container or your kernel does not support it",

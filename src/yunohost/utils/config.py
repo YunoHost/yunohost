@@ -202,7 +202,7 @@ class ConfigPanel:
                 }
             },
             "options": {
-                "properties": ["ask", "type", "bind", "help", "example",
+                "properties": ["ask", "type", "bind", "help", "example", "default",
                                "style", "icon", "placeholder", "visible",
                                "optional", "choices", "yes", "no", "pattern",
                                "limit", "min", "max", "step", "accept", "redact"],
@@ -787,14 +787,14 @@ class NumberQuestion(Question):
             raise YunohostValidationError(
                 "app_argument_invalid",
                 name=self.name,
-                error=m18n.n("invalid_number"),
+                error=m18n.n("invalid_number_min", min=self.min),
             )
 
         if self.max is not None and int(self.value) > self.max:
             raise YunohostValidationError(
                 "app_argument_invalid",
                 name=self.name,
-                error=m18n.n("invalid_number"),
+                error=m18n.n("invalid_number_max", max=self.max),
             )
 
 
