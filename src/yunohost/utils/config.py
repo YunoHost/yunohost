@@ -388,6 +388,7 @@ class ConfigPanel:
 class Question(object):
     hide_user_input_in_prompt = False
     operation_logger = None
+    pattern = None
 
     def __init__(self, question, user_answers):
         self.name = question["name"]
@@ -396,7 +397,7 @@ class Question(object):
         self.current_value = question.get("current_value")
         self.optional = question.get("optional", False)
         self.choices = question.get("choices", [])
-        self.pattern = question.get("pattern")
+        self.pattern = question.get("pattern", self.pattern)
         self.ask = question.get("ask", {"en": self.name})
         self.help = question.get("help")
         self.value = user_answers.get(self.name)
@@ -535,6 +536,46 @@ class Question(object):
 class StringQuestion(Question):
     argument_type = "string"
     default_value = ""
+
+class EmailQuestion(StringQuestion):
+    pattern = {
+        "regexp": "^.+@.+",
+        "error": "config_validate_email"
+    }
+
+class URLQuestion(StringQuestion):
+    pattern = {
+        "regexp": "^https?://.*$",
+        "error": "config_validate_url"
+    }
+
+class DateQuestion(StringQuestion):
+    pattern = {
+        "regexp": "^\d{4}-\d\d-\d\d$",
+        "error": "config_validate_date"
+    }
+
+    def _prevalidate(self):
+        from datetime import datetime
+        super()._prevalidate()
+
+        if self.value not in [None, ""]:
+            try:
+                datetime.strptime(self.value, '%Y-%m-%d')
+            except ValueError:
+                raise YunohostValidationError("config_validate_date")
+
+class TimeQuestion(StringQuestion):
+    pattern = {
+        "regexp": "^(1[12]|0?\d):[0-5]\d$",
+        "error": "config_validate_time"
+    }
+
+class ColorQuestion(StringQuestion):
+    pattern = {
+        "regexp": "^#[ABCDEFabcdef\d]{3,6}$",
+        "error": "config_validate_color"
+    }
 
 
 class TagsQuestion(Question):
@@ -880,11 +921,11 @@ ARGUMENTS_TYPE_PARSERS = {
     "text": StringQuestion,
     "select": StringQuestion,
     "tags": TagsQuestion,
-    "email": StringQuestion,
-    "url": StringQuestion,
-    "date": StringQuestion,
-    "time": StringQuestion,
-    "color": StringQuestion,
+    "email": EmailQuestion,
+    "url": URLQuestion,
+    "date": DateQuestion,
+    "time": TimeQuestion,
+    "color": ColorQuestion,
     "password": PasswordQuestion,
     "path": PathQuestion,
     "boolean": BooleanQuestion,
