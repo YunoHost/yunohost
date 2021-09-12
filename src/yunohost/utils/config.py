@@ -279,8 +279,11 @@ class ConfigPanel:
         # Hydrating config panel with current value
         logger.debug("Hydrating config with current values")
         for _, _, option in self._iterate():
-            if option["name"] not in self.values:
-                continue
+            if option["id"] not in self.values:
+                if option["type"] in ["alert", "display_text", "markdown", "file"]:
+                    continue
+                else:
+                    raise YunohostError("config_missing_init_value", question=option["id"])
             value = self.values[option["name"]]
             # In general, the value is just a simple value.
             # Sometimes it could be a dict used to overwrite the option itself
