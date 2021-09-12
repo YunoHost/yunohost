@@ -36,7 +36,6 @@ import urllib.parse
 import tempfile
 from collections import OrderedDict
 
-from moulinette.interfaces.cli import colorize
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
@@ -53,9 +52,12 @@ from moulinette.utils.filesystem import (
     mkdir,
 )
 
-from yunohost.service import service_status, _run_service_command
-from yunohost.utils import packages, config
-from yunohost.utils.config import ConfigPanel, parse_args_in_yunohost_format, Question
+from yunohost.utils import packages
+from yunohost.utils.config import (
+    ConfigPanel,
+    parse_args_in_yunohost_format,
+    Question,
+)
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.filesystem import free_space_in_directory
@@ -421,6 +423,7 @@ def app_change_url(operation_logger, app, domain, path):
 
     """
     from yunohost.hook import hook_exec, hook_callback
+    from yunohost.service import service_reload_or_restart
 
     installed = _is_installed(app)
     if not installed:
@@ -489,15 +492,7 @@ def app_change_url(operation_logger, app, domain, path):
 
     app_ssowatconf()
 
-    # avoid common mistakes
-    if _run_service_command("reload", "nginx") is False:
-        # grab nginx errors
-        # the "exit 0" is here to avoid check_output to fail because 'nginx -t'
-        # will return != 0 since we are in a failed state
-        nginx_errors = check_output("nginx -t; exit 0")
-        raise YunohostError(
-            "app_change_url_failed_nginx_reload", nginx_errors=nginx_errors
-        )
+    service_reload_or_restart("nginx")
 
     logger.success(m18n.n("app_change_url_success", app=app, domain=domain, path=path))
 
@@ -516,7 +511,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
     """
     from packaging import version
-    from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
+    from yunohost.hook import hook_add, hook_remove, hook_callback, hook_exec_with_script_debug_if_failure
     from yunohost.permission import permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
 
@@ -638,36 +633,13 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         # Execute the app upgrade script
         upgrade_failed = True
         try:
-            upgrade_retcode = hook_exec(
-                extracted_app_folder + "/scripts/upgrade", env=env_dict
-            )[0]
-
-            upgrade_failed = True if upgrade_retcode != 0 else False
-            if upgrade_failed:
-                error = m18n.n("app_upgrade_script_failed")
-                logger.error(
-                    m18n.n("app_upgrade_failed", app=app_instance_name, error=error)
-                )
-                failure_message_with_debug_instructions = operation_logger.error(error)
-                if Moulinette.interface.type != "api":
-                    dump_app_log_extract_for_debugging(operation_logger)
-        # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
-        except (KeyboardInterrupt, EOFError):
-            upgrade_retcode = -1
-            error = m18n.n("operation_interrupted")
-            logger.error(
-                m18n.n("app_upgrade_failed", app=app_instance_name, error=error)
+            upgrade_failed, failure_message_with_debug_instructions = hook_exec_with_script_debug_if_failure(
+                extracted_app_folder + "/scripts/upgrade",
+                env=env_dict,
+                operation_logger=operation_logger,
+                error_message_if_script_failed=m18n.n("app_upgrade_script_failed"),
+                error_message_if_failed=lambda e: m18n.n("app_upgrade_failed", app=app_instance_name, error=e)
             )
-            failure_message_with_debug_instructions = operation_logger.error(error)
-        # Something wrong happened in Yunohost's code (most probably hook_exec)
-        except Exception:
-            import traceback
-
-            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-            logger.error(
-                m18n.n("app_install_failed", app=app_instance_name, error=error)
-            )
-            failure_message_with_debug_instructions = operation_logger.error(error)
         finally:
             # Whatever happened (install success or failure) we check if it broke the system
             # and warn the user about it
@@ -697,7 +669,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             if upgrade_failed or broke_the_system:
 
                 # display this if there are remaining apps
-                if apps[number + 1 :]:
+                if apps[number + 1:]:
                     not_upgraded_apps = apps[number:]
                     logger.error(
                         m18n.n(
@@ -813,7 +785,7 @@ def app_install(
         force -- Do not ask for confirmation when installing experimental / low-quality apps
     """
 
-    from yunohost.hook import hook_add, hook_remove, hook_exec, hook_callback
+    from yunohost.hook import hook_add, hook_remove, hook_callback, hook_exec, hook_exec_with_script_debug_if_failure
     from yunohost.log import OperationLogger
     from yunohost.permission import (
         user_permission_list,
@@ -1004,29 +976,13 @@ def app_install(
     # Execute the app install script
     install_failed = True
     try:
-        install_retcode = hook_exec(
-            os.path.join(extracted_app_folder, "scripts/install"), env=env_dict
-        )[0]
-        # "Common" app install failure : the script failed and returned exit code != 0
-        install_failed = True if install_retcode != 0 else False
-        if install_failed:
-            error = m18n.n("app_install_script_failed")
-            logger.error(m18n.n("app_install_failed", app=app_id, error=error))
-            failure_message_with_debug_instructions = operation_logger.error(error)
-            if Moulinette.interface.type != "api":
-                dump_app_log_extract_for_debugging(operation_logger)
-    # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
-    except (KeyboardInterrupt, EOFError):
-        error = m18n.n("operation_interrupted")
-        logger.error(m18n.n("app_install_failed", app=app_id, error=error))
-        failure_message_with_debug_instructions = operation_logger.error(error)
-    # Something wrong happened in Yunohost's code (most probably hook_exec)
-    except Exception:
-        import traceback
-
-        error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-        logger.error(m18n.n("app_install_failed", app=app_id, error=error))
-        failure_message_with_debug_instructions = operation_logger.error(error)
+        install_failed, failure_message_with_debug_instructions = hook_exec_with_script_debug_if_failure(
+            os.path.join(extracted_app_folder, "scripts/install"),
+            env=env_dict,
+            operation_logger=operation_logger,
+            error_message_if_script_failed=m18n.n("app_install_script_failed"),
+            error_message_if_failed=lambda e: m18n.n("app_install_failed", app=app_id, error=e)
+        )
     finally:
         # If success so far, validate that app didn't break important stuff
         if not install_failed:
@@ -1137,53 +1093,6 @@ def app_install(
     logger.success(m18n.n("installation_complete"))
 
     hook_callback("post_app_install", env=env_dict)
-
-
-def dump_app_log_extract_for_debugging(operation_logger):
-
-    with open(operation_logger.log_path, "r") as f:
-        lines = f.readlines()
-
-    filters = [
-        r"set [+-]x$",
-        r"set [+-]o xtrace$",
-        r"local \w+$",
-        r"local legacy_args=.*$",
-        r".*Helper used in legacy mode.*",
-        r"args_array=.*$",
-        r"local -A args_array$",
-        r"ynh_handle_getopts_args",
-        r"ynh_script_progression",
-    ]
-
-    filters = [re.compile(f_) for f_ in filters]
-
-    lines_to_display = []
-    for line in lines:
-
-        if ": " not in line.strip():
-            continue
-
-        # A line typically looks like
-        # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
-        # And we just want the part starting by "DEBUG - "
-        line = line.strip().split(": ", 1)[1]
-
-        if any(filter_.search(line) for filter_ in filters):
-            continue
-
-        lines_to_display.append(line)
-
-        if line.endswith("+ ynh_exit_properly") or " + ynh_die " in line:
-            break
-        elif len(lines_to_display) > 20:
-            lines_to_display.pop(0)
-
-    logger.warning(
-        "Here's an extract of the logs before the crash. It might help debugging the error:"
-    )
-    for line in lines_to_display:
-        logger.info(line)
 
 
 @is_unit_operation()
@@ -1757,29 +1666,38 @@ def app_action_run(operation_logger, app, action, args=None):
     return logger.success("Action successed!")
 
 
-def app_config_get(app, key='', mode='classic'):
+def app_config_get(app, key="", full=False, export=False):
     """
     Display an app configuration in classic, full or export mode
     """
-    config = AppConfigPanel(app)
-    return config.get(key, mode)
+    if full and export:
+        raise YunohostValidationError("You can't use --full and --export together.", raw_msg=True)
+
+    if full:
+        mode = "full"
+    elif export:
+        mode = "export"
+    else:
+        mode = "classic"
+
+    config_ = AppConfigPanel(app)
+    return config_.get(key, mode)
 
 
 @is_unit_operation()
-def app_config_set(operation_logger, app, key=None, value=None, args=None, args_file=None):
+def app_config_set(
+    operation_logger, app, key=None, value=None, args=None, args_file=None
+):
     """
     Apply a new app configuration
     """
 
-    config = AppConfigPanel(app)
+    config_ = AppConfigPanel(app)
 
     Question.operation_logger = operation_logger
-    operation_logger.start()
 
-    result = config.set(key, value, args, args_file)
-    if "errors" not in result:
-        operation_logger.success()
-    return result
+    return config_.set(key, value, args, args_file, operation_logger=operation_logger)
+
 
 class AppConfigPanel(ConfigPanel):
     def __init__(self, app):
@@ -1792,10 +1710,22 @@ class AppConfigPanel(ConfigPanel):
         super().__init__(config_path=config_path)
 
     def _load_current_values(self):
-        self.values = self._call_config_script('show')
+        self.values = self._call_config_script("show")
 
     def _apply(self):
-        self.errors = self._call_config_script('apply', self.new_values)
+        env = {key: str(value) for key, value in self.new_values.items()}
+        return_content = self._call_config_script("apply", env=env)
+
+        # If the script returned validation error
+        # raise a ValidationError exception using
+        # the first key
+        if return_content:
+            for key, message in return_content.get("validation_errors").items():
+                raise YunohostValidationError(
+                    "app_argument_invalid",
+                    name=key,
+                    error=message,
+                )
 
     def _call_config_script(self, action, env={}):
         from yunohost.hook import hook_exec
@@ -1815,21 +1745,22 @@ ynh_app_config_run $1
         # Call config script to extract current values
         logger.debug(f"Calling '{action}' action from config script")
         app_id, app_instance_nb = _parse_app_instance_name(self.app)
-        env.update({
-            "app_id": app_id,
-            "app": self.app,
-            "app_instance_nb": str(app_instance_nb),
-        })
-
-        ret, values = hook_exec(
-            config_script, args=[action], env=env
+        env.update(
+            {
+                "app_id": app_id,
+                "app": self.app,
+                "app_instance_nb": str(app_instance_nb),
+            }
         )
+
+        ret, values = hook_exec(config_script, args=[action], env=env)
         if ret != 0:
-            if action == 'show':
-                raise YunohostError("app_config_unable_to_read_values")
+            if action == "show":
+                raise YunohostError("app_config_unable_to_read")
             else:
-                raise YunohostError("app_config_unable_to_apply_values_correctly")
+                raise YunohostError("app_config_unable_to_apply")
         return values
+
 
 def _get_all_installed_apps_id():
     """
@@ -2875,6 +2806,8 @@ def unstable_apps():
 
 
 def _assert_system_is_sane_for_app(manifest, when):
+
+    from yunohost.service import service_status
 
     logger.debug("Checking that required services are up and running...")
 

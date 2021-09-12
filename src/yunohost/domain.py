@@ -32,7 +32,6 @@ from moulinette.utils.filesystem import (
     mkdir, write_to_file, read_yaml, write_to_yaml, read_toml
 )
 
-from yunohost.settings import is_boolean
 from yunohost.app import (
     app_ssowatconf,
     _installed_apps,
@@ -45,7 +44,6 @@ from yunohost.regenconf import (
 from yunohost.utils.config import ConfigPanel, Question
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation
-from yunohost.hook import hook_callback
 
 logger = getActionLogger("yunohost.domain")
 

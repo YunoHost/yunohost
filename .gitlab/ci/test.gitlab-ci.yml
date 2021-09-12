@@ -53,15 +53,17 @@ full-tests:
 test-i18n-keys:
   extends: .test-stage
   script:
-    - python3 -m pytest tests tests/test_i18n_keys.py
+    - python3 -m pytest tests/test_i18n_keys.py
   only:
     changes:
-      - locales/*
+      - locales/en.json
+      - src/yunohost/*.py
+      - data/hooks/diagnosis/*.py
 
 test-translation-format-consistency:
   extends: .test-stage
   script:
-    - python3 -m pytest tests tests/test_translation_format_consistency.py
+    - python3 -m pytest tests/test_translation_format_consistency.py
   only:
     changes:
       - locales/*
@@ -69,7 +71,7 @@ test-translation-format-consistency:
 test-actionmap:
   extends: .test-stage
   script:
-    - python3 -m pytest tests tests/test_actionmap.py
+    - python3 -m pytest tests/test_actionmap.py
   only:
     changes:
       - data/actionsmap/*.yml
@@ -110,14 +112,24 @@ test-appurl:
     changes:
       - src/yunohost/app.py
 
-test-apps-arguments-parsing:
+test-questions:
   extends: .test-stage
   script:
     - cd src/yunohost
-    - python3 -m pytest tests/test_apps_arguments_parsing.py
+    - python3 -m pytest tests/test_questions.py
+  only:
+    changes:
+      - src/yunohost/utils/config.py
+
+test-app-config:
+  extends: .test-stage
+  script:
+    - cd src/yunohost
+    - python3 -m pytest tests/test_app_config.py
   only:
     changes:
       - src/yunohost/app.py
+      - src/yunohost/utils/config.py
 
 test-changeurl:
   extends: .test-stage

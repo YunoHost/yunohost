@@ -4,15 +4,16 @@ import os
 import re
 
 from datetime import datetime, timedelta
-from publicsuffixlist import PublicSuffixList
+from publicsuffix import PublicSuffixList
 
 from moulinette.utils.process import check_output
 
-from yunohost.utils.dns import dig, YNH_DYNDNS_DOMAINS
+from yunohost.utils.dns import dig
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _get_maindomain
 from yunohost.dns import _build_dns_conf
 
+YNH_DYNDNS_DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
 SPECIAL_USE_TLDS = ["local", "localhost", "onion", "test"]
 
 
@@ -44,7 +45,7 @@ class DNSRecordsDiagnoser(Diagnoser):
         # Check if a domain buy by the user will expire soon
         psl = PublicSuffixList()
         domains_from_registrar = [
-            psl.publicsuffix(domain) for domain in all_domains
+            psl.get_public_suffix(domain) for domain in all_domains
         ]
         domains_from_registrar = [
             domain for domain in domains_from_registrar if "." in domain

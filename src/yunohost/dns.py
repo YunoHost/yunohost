@@ -28,10 +28,8 @@ import re
 
 from moulinette import m18n, Moulinette
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import mkdir, read_yaml, write_to_yaml
 
 from yunohost.domain import domain_list, _get_domain_settings, _assert_domain_exists
-from yunohost.app import _parse_args_in_yunohost_format
 from yunohost.utils.error import YunohostValidationError
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation

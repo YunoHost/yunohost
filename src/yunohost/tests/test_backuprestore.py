@@ -469,7 +469,7 @@ def test_restore_app_script_failure_handling(monkeypatch, mocker):
             monkeypatch.undo()
             return (1, None)
 
-    monkeypatch.setattr("yunohost.backup.hook_exec", custom_hook_exec)
+    monkeypatch.setattr("yunohost.hook.hook_exec", custom_hook_exec)
 
     assert not _is_installed("wordpress")
 
