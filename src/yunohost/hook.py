@@ -498,6 +498,40 @@ def _hook_exec_python(path, args, env, loggers):
     return ret
 
 
+def hook_exec_with_script_debug_if_failure(*args, **kwargs):
+
+    operation_logger = kwargs.pop("operation_logger")
+    error_message_if_failed = kwargs.pop("error_message_if_failed")
+    error_message_if_script_failed = kwargs.pop("error_message_if_script_failed")
+
+    failed = True
+    failure_message_with_debug_instructions = None
+    try:
+        retcode, retpayload = hook_exec(*args, **kwargs)
+        failed = True if retcode != 0 else False
+        if failed:
+            error = error_message_if_script_failed
+            logger.error(error_message_if_failed(error))
+            failure_message_with_debug_instructions = operation_logger.error(error)
+            if Moulinette.interface.type != "api":
+                operation_logger.dump_script_log_extract_for_debugging()
+    # Script got manually interrupted ...
+    # N.B. : KeyboardInterrupt does not inherit from Exception
+    except (KeyboardInterrupt, EOFError):
+        error = m18n.n("operation_interrupted")
+        logger.error(error_message_if_failed(error))
+        failure_message_with_debug_instructions = operation_logger.error(error)
+    # Something wrong happened in Yunohost's code (most probably hook_exec)
+    except Exception:
+        import traceback
+
+        error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+        logger.error(error_message_if_failed(error))
+        failure_message_with_debug_instructions = operation_logger.error(error)
+
+    return failed, failure_message_with_debug_instructions
+
+
 def _extract_filename_parts(filename):
     """Extract hook parts from filename"""
     if "-" in filename:

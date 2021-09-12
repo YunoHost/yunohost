@@ -48,7 +48,6 @@ from yunohost.app import (
     app_info,
     _is_installed,
     _make_environment_for_app_script,
-    dump_app_log_extract_for_debugging,
     _patch_legacy_helpers,
     _patch_legacy_php_versions,
     _patch_legacy_php_versions_in_settings,
@@ -60,6 +59,7 @@ from yunohost.hook import (
     hook_info,
     hook_callback,
     hook_exec,
+    hook_exec_with_script_debug_if_failure,
     CUSTOM_HOOK_FOLDER,
 )
 from yunohost.tools import (
@@ -1496,37 +1496,14 @@ class RestoreManager:
         # Execute the app install script
         restore_failed = True
         try:
-            restore_retcode = hook_exec(
+            restore_failed, failure_message_with_debug_instructions = hook_exec_with_script_debug_if_failure(
                 restore_script,
                 chdir=app_backup_in_archive,
                 env=env_dict,
-            )[0]
-            # "Common" app restore failure : the script failed and returned exit code != 0
-            restore_failed = True if restore_retcode != 0 else False
-            if restore_failed:
-                error = m18n.n("app_restore_script_failed")
-                logger.error(
-                    m18n.n("app_restore_failed", app=app_instance_name, error=error)
-                )
-                failure_message_with_debug_instructions = operation_logger.error(error)
-                if Moulinette.interface.type != "api":
-                    dump_app_log_extract_for_debugging(operation_logger)
-        # Script got manually interrupted ... N.B. : KeyboardInterrupt does not inherit from Exception
-        except (KeyboardInterrupt, EOFError):
-            error = m18n.n("operation_interrupted")
-            logger.error(
-                m18n.n("app_restore_failed", app=app_instance_name, error=error)
+                operation_logger=operation_logger,
+                error_message_if_script_failed=m18n.n("app_restore_script_failed"),
+                error_message_if_failed=lambda e: m18n.n("app_restore_failed", app=app_instance_name, error=e)
             )
-            failure_message_with_debug_instructions = operation_logger.error(error)
-        # Something wrong happened in Yunohost's code (most probably hook_exec)
-        except Exception:
-            import traceback
-
-            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-            logger.error(
-                m18n.n("app_restore_failed", app=app_instance_name, error=error)
-            )
-            failure_message_with_debug_instructions = operation_logger.error(error)
         finally:
             # Cleaning temporary scripts directory
             shutil.rmtree(tmp_workdir_for_app, ignore_errors=True)

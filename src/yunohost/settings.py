@@ -82,6 +82,13 @@ DEFAULTS = OrderedDict(
             {"type": "int", "default": 22},
         ),
         (
+            "security.nginx.redirect_to_https",
+            {
+                "type": "bool",
+                "default": True,
+            },
+        ),
+        (
             "security.nginx.compatibility",
             {
                 "type": "enum",
@@ -397,6 +404,7 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 
 
 @post_change_hook("ssowat.panel_overlay.enabled")
+@post_change_hook("security.nginx.redirect_to_https")
 @post_change_hook("security.nginx.compatibility")
 @post_change_hook("security.webadmin.allowlist.enabled")
 @post_change_hook("security.webadmin.allowlist")

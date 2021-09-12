@@ -18,7 +18,8 @@
     along with this program; if not, see http://www.gnu.org/licenses
 
 """
-from moulinette import Moulinette, m18n
+from moulinette import m18n
+
 
 def _value_for_locale(values):
     """
@@ -42,5 +43,3 @@ def _value_for_locale(values):
 
     # Fallback to first value
     return list(values.values())[0]
-
-
