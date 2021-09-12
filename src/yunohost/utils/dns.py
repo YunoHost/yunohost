@@ -19,10 +19,7 @@
 
 """
 import dns.resolver
-from publicsuffixlist import PublicSuffixList
 from moulinette.utils.filesystem import read_file
-
-YNH_DYNDNS_DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
 
 # Lazy dev caching to avoid re-reading the file multiple time when calling
 # dig() often during same yunohost operation
@@ -94,24 +91,6 @@ def dig(
     return ("ok", answers)
 
 
-def get_public_suffix(domain):
-    """get_public_suffix("www.example.com") -> "example.com"
-
-    Return the public suffix of a domain name based
-    """
-    # Load domain public suffixes
-    psl = PublicSuffixList()
-
-    public_suffix = psl.publicsuffix(domain)
-
-    # FIXME: wtf is this supposed to do ? :|
-    if public_suffix in YNH_DYNDNS_DOMAINS:
-        domain_prefix = domain[0:-(1 + len(public_suffix))]
-        public_suffix = domain_prefix.split(".")[-1] + "." + public_suffix
-
-    return public_suffix
-
-
 def get_dns_zone_from_domain(domain):
     # TODO Check if this function is YNH_DYNDNS_DOMAINS compatible
     """
@@ -137,11 +116,6 @@ def get_dns_zone_from_domain(domain):
         answer = dig(parent, rdtype="NS", full_answers=True, resolvers="force_external")
         if answer[0] == "ok":
             # Domain is dns_zone
-            return parent
-        # Otherwise, check if the parent of this parent is in the public suffix list
-        if parent.split(".", 1)[-1] == get_public_suffix(parent):
-            # Couldn't check if domain is dns zone,    # FIXME : why "couldn't" ...?
-            # returning private suffix
             return parent
 
     # FIXME: returning None will probably trigger bugs when this happens, code expects a domain string
