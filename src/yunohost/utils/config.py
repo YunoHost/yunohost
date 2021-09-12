@@ -209,7 +209,6 @@ class ConfigPanel:
                 "default": {}
             }
         }
-
         def convert(toml_node, node_type):
             """Convert TOML in internal format ('full' mode used by webadmin)
             Here are some properties of 1.0 config panel in toml:
@@ -264,6 +263,16 @@ class ConfigPanel:
                 "config_unknown_filter_key", filter_key=self.filter_key
             )
 
+        # List forbidden keywords from helpers and sections toml (to avoid conflict)
+        forbidden_keywords = ["old", "app", "changed", "file_hash", "binds", "types",
+                              "formats", "getter", "setter", "short_setting", "type",
+                              "bind", "nothing_changed", "changes_validated", "result",
+                              "max_progression"]
+        forbidden_keywords += format_description["sections"]
+
+        for _, _, option in self._iterate():
+            if option["id"] in forbidden_keywords:
+                raise YunohostError("config_forbidden_keyword", keyword=option["id"])
         return self.config
 
     def _hydrate(self):
@@ -787,9 +796,9 @@ class FileQuestion(Question):
     def __init__(self, question, user_answers):
         super().__init__(question, user_answers)
         if question.get("accept"):
-            self.accept = question.get("accept").replace(" ", "").split(",")
+            self.accept = question.get("accept")
         else:
-            self.accept = []
+            self.accept = ""
         if Moulinette.interface.type == "api":
             if user_answers.get(f"{self.name}[name]"):
                 self.value = {
@@ -816,7 +825,7 @@ class FileQuestion(Question):
             return
 
         filename = self.value if isinstance(self.value, str) else self.value["filename"]
-        if "." not in filename or "." + filename.split(".")[-1] not in self.accept:
+        if "." not in filename or "." + filename.split(".")[-1] not in self.accept.replace(" ", "").split(","):
             raise YunohostValidationError(
                 "app_argument_invalid",
                 name=self.name,
