@@ -209,6 +209,7 @@ class ConfigPanel:
                 "default": {}
             }
         }
+
         def convert(toml_node, node_type):
             """Convert TOML in internal format ('full' mode used by webadmin)
             Here are some properties of 1.0 config panel in toml:
@@ -284,7 +285,7 @@ class ConfigPanel:
                 if option["type"] in allowed_empty_type or option["bind"] == "null":
                     continue
                 else:
-                    raise YunohostError("config_missing_init_value", question=option["id"])
+                    raise YunohostError(f"Config panel question '{option['id']}' should be initialized with a value during install or upgrade.")
             value = self.values[option["name"]]
             # In general, the value is just a simple value.
             # Sometimes it could be a dict used to overwrite the option itself
@@ -538,22 +539,25 @@ class StringQuestion(Question):
     argument_type = "string"
     default_value = ""
 
+
 class EmailQuestion(StringQuestion):
     pattern = {
-        "regexp": "^.+@.+",
-        "error": "config_validate_email"
+        "regexp": r"^.+@.+",
+        "error": "config_validate_email"  # i18n: config_validate_email
     }
+
 
 class URLQuestion(StringQuestion):
     pattern = {
-        "regexp": "^https?://.*$",
-        "error": "config_validate_url"
+        "regexp": r"^https?://.*$",
+        "error": "config_validate_url"  # i18n: config_validate_url
     }
+
 
 class DateQuestion(StringQuestion):
     pattern = {
-        "regexp": "^\d{4}-\d\d-\d\d$",
-        "error": "config_validate_date"
+        "regexp": r"^\d{4}-\d\d-\d\d$",
+        "error": "config_validate_date"  # i18n: config_validate_date
     }
 
     def _prevalidate(self):
@@ -566,16 +570,18 @@ class DateQuestion(StringQuestion):
             except ValueError:
                 raise YunohostValidationError("config_validate_date")
 
+
 class TimeQuestion(StringQuestion):
     pattern = {
-        "regexp": "^(1[12]|0?\d):[0-5]\d$",
-        "error": "config_validate_time"
+        "regexp": r"^(1[12]|0?\d):[0-5]\d$",
+        "error": "config_validate_time"  # i18n: config_validate_time
     }
+
 
 class ColorQuestion(StringQuestion):
     pattern = {
-        "regexp": "^#[ABCDEFabcdef\d]{3,6}$",
-        "error": "config_validate_color"
+        "regexp": r"^#[ABCDEFabcdef\d]{3,6}$",
+        "error": "config_validate_color"  # i18n: config_validate_color
     }
 
 
@@ -797,7 +803,6 @@ class NumberQuestion(Question):
                 name=self.name,
                 error=m18n.n("invalid_number_max", max=self.max),
             )
-
 
 
 class DisplayTextQuestion(Question):

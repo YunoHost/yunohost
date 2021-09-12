@@ -143,7 +143,6 @@
     "config_apply_failed": "Applying the new configuration failed: {error}",
     "config_cant_set_value_on_section": "You can't set a single value on an entire config section.",
     "config_forbidden_keyword": "The keyword '{keyword}' is reserved, you can't create or use a config panel with a question with this id.",
-    "config_missing_init_value": "Config panel question '{question}' should be initialize with a value during install or upgrade.",
     "config_no_panel": "No config panel found.",
     "config_unknown_filter_key": "The filter key '{filter_key}' is incorrect.",
     "config_validate_color": "Should be a valid RGB hexadecimal color",
