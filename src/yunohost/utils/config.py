@@ -280,7 +280,8 @@ class ConfigPanel:
         logger.debug("Hydrating config with current values")
         for _, _, option in self._iterate():
             if option["id"] not in self.values:
-                if option["type"] in ["alert", "display_text", "markdown", "file"]:
+                allowed_empty_types = ["alert", "display_text", "markdown", "file"]
+                if option["type"] in allowed_empty_type or option["bind"] == "null":
                     continue
                 else:
                     raise YunohostError("config_missing_init_value", question=option["id"])
