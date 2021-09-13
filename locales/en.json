@@ -609,7 +609,7 @@
     "service_disabled": "The service '{service}' will not be started anymore when system boots.",
     "service_enable_failed": "Could not make the service '{service}' automatically start at boot.\n\nRecent service logs:{logs}",
     "service_enabled": "The service '{service}' will now be automatically started during system boots.",
-    "service_not_reloading_because_conf_broken": "Not reloading/restarting service '{name}' because it configuration is broken: {errors}",
+    "service_not_reloading_because_conf_broken": "Not reloading/restarting service '{name}' because its configuration is broken: {errors}",
     "service_regen_conf_is_deprecated": "'yunohost service regen-conf' is deprecated! Please use 'yunohost tools regen-conf' instead.",
     "service_reload_failed": "Could not reload the service '{service}'\n\nRecent service logs:{logs}",
     "service_reload_or_restart_failed": "Could not reload or restart the service '{service}'\n\nRecent service logs:{logs}",
