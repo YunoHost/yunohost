@@ -332,7 +332,8 @@ class ConfigPanel:
                     continue
                 else:
                     raise YunohostError(
-                        f"Config panel question '{option['id']}' should be initialized with a value during install or upgrade.", raw_msg=True
+                        f"Config panel question '{option['id']}' should be initialized with a value during install or upgrade.",
+                        raw_msg=True,
                     )
             value = self.values[option["name"]]
             # In general, the value is just a simple value.
