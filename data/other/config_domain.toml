@@ -1,6 +1,15 @@
 version = "1.0"
 i18n = "domain_config"
 
+#
+# Other things we may want to implement in the future:
+#
+# - maindomain handling
+# - default app
+# - autoredirect www in nginx conf
+# - ?
+#
+
 [feature]
     
     [feature.mail]
