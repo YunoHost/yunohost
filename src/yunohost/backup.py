@@ -1496,13 +1496,18 @@ class RestoreManager:
         # Execute the app install script
         restore_failed = True
         try:
-            restore_failed, failure_message_with_debug_instructions = hook_exec_with_script_debug_if_failure(
+            (
+                restore_failed,
+                failure_message_with_debug_instructions,
+            ) = hook_exec_with_script_debug_if_failure(
                 restore_script,
                 chdir=app_backup_in_archive,
                 env=env_dict,
                 operation_logger=operation_logger,
                 error_message_if_script_failed=m18n.n("app_restore_script_failed"),
-                error_message_if_failed=lambda e: m18n.n("app_restore_failed", app=app_instance_name, error=e)
+                error_message_if_failed=lambda e: m18n.n(
+                    "app_restore_failed", app=app_instance_name, error=e
+                ),
             )
         finally:
             # Cleaning temporary scripts directory
