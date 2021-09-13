@@ -436,11 +436,18 @@ class DomainConfigPanel(ConfigPanel):
         toml['feature']['xmpp']['xmpp']['default'] = 1 if self.domain == _get_maindomain() else 0
         toml['dns']['registrar'] = _get_registrar_config_section(self.domain)
 
+        # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
+        self.registar_id = toml['dns']['registrar']['registrar']['value']
+
         return toml
 
     def _load_current_values(self):
+
         # TODO add mechanism to share some settings with other domains on the same zone
         super()._load_current_values()
+
+        # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
+        self.values["registrar"] = self.registar_id
 
 #
 #

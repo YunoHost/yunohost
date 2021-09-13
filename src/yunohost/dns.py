@@ -155,7 +155,7 @@ def _build_dns_conf(base_domain):
     ipv6 = get_public_ip(6)
 
     subdomains = _list_subdomains_of(base_domain)
-    domains_settings = {domain: domain_config_get(domain)
+    domains_settings = {domain: domain_config_get(domain, export=True)
                         for domain in [base_domain] + subdomains}
 
     base_dns_zone = _get_dns_zone_for_domain(base_domain)
@@ -467,7 +467,7 @@ def _get_registrar_config_section(domain):
     # If parent domain exists in yunohost
     parent_domain = domain.split(".", 1)[1]
     if parent_domain in domain_list()["domains"]:
-        registrar_infos["explanation"] = OrderedDict({
+        registrar_infos["registrar"] = OrderedDict({
             "type": "alert",
             "style": "info",
             "ask": f"This domain is a subdomain of {parent_domain}. DNS registrar configuration should be managed in {parent_domain}'s configuration panel.",  # FIXME: i18n
@@ -478,7 +478,7 @@ def _get_registrar_config_section(domain):
     # TODO big project, integrate yunohost's dynette as a registrar-like provider
     # TODO big project, integrate other dyndns providers such as netlib.re, or cf the list of dyndns providers supported by cloudron...
     if dns_zone in YNH_DYNDNS_DOMAINS:
-        registrar_infos["explanation"] = OrderedDict({
+        registrar_infos["registrar"] = OrderedDict({
             "type": "alert",
             "style": "success",
             "ask": "This domain is a nohost.me / nohost.st / ynh.fr and its DNS configuration is therefore automatically handled by Yunohost.",  # FIXME: i18n
@@ -489,7 +489,7 @@ def _get_registrar_config_section(domain):
     try:
         registrar = _relevant_provider_for_domain(dns_zone)[0]
     except ValueError:
-        registrar_infos["explanation"] = OrderedDict({
+        registrar_infos["registrar"] = OrderedDict({
             "type": "alert",
             "style": "warning",
             "ask": "YunoHost could not automatically detect the registrar handling this domain. You should manually configure your DNS records following the documentation at https://yunohost.org/dns.",  # FIXME : i18n
@@ -497,15 +497,19 @@ def _get_registrar_config_section(domain):
         })
     else:
 
-        registrar_infos["explanation"] = OrderedDict({
+        registrar_infos["registrar"] = OrderedDict({
             "type": "alert",
             "style": "info",
-            "ask": f"YunoHost automatically detected that this domain is handled by the registrar **{registrar}**. If you want, YunoHost will automatically configure this DNS zone, if you provide it with the following informations. You can also manually configure your DNS records following the documentation as https://yunohost.org/dns.",  # FIXME: i18n
+            "ask": f"YunoHost automatically detected that this domain is handled by the registrar **{registrar}**. If you want, YunoHost will automatically configure this DNS zone, if you provide it with the appropriate API credentials. You can also manually configure your DNS records following the documentation as https://yunohost.org/dns.",  # FIXME: i18n
             "value": registrar
         })
         # TODO : add a help tip with the link to the registar's API doc (c.f. Lexicon's README)
         registrar_list = read_toml(DOMAIN_REGISTRAR_LIST_PATH)
-        registrar_infos.update(registrar_list[registrar])
+        registrar_credentials = registrar_list[registrar]
+        for credential, infos in registrar_credentials.items():
+            infos["default"] = infos.get("default", "")
+            infos["optional"] = infos.get("optional", "False")
+        registrar_infos.update(registrar_credentials)
 
     return OrderedDict(registrar_infos)
 
@@ -521,14 +525,25 @@ def domain_registrar_push(operation_logger, domain, dry_run=False):
 
     _assert_domain_exists(domain)
 
-    registrar_settings = domain_config_get(domain, key='', full=True)
+    settings = domain_config_get(domain, key='dns.registrar')
 
-    if not registrar_settings:
-        raise YunohostValidationError("registrar_is_not_set", domain=domain)
+    registrar_id = settings["dns.registrar.registrar"].get("value")
+
+    if not registrar_id or registrar_id == "yunohost":
+        raise YunohostValidationError("registrar_push_not_applicable", domain=domain)
+
+    registrar_credentials = {
+            k.split('.')[-1]: v["value"]
+            for k, v in settings.items()
+            if k != "dns.registrar.registar"
+    }
+
+    if not all(registrar_credentials.values()):
+        raise YunohostValidationError("registrar_is_not_configured", domain=domain)
 
     # Convert the generated conf into a format that matches what we'll fetch using the API
     # Makes it easier to compare "wanted records" with "current records on remote"
-    dns_conf = []
+    wanted_records = []
     for records in _build_dns_conf(domain).values():
         for record in records:
 
@@ -540,7 +555,7 @@ def domain_registrar_push(operation_logger, domain, dry_run=False):
             if content == "@" and record["type"] == "CNAME":
                 content = domain + "."
 
-            dns_conf.append({
+            wanted_records.append({
                 "name": name,
                 "type": type_,
                 "ttl": record["ttl"],
@@ -551,23 +566,24 @@ def domain_registrar_push(operation_logger, domain, dry_run=False):
     # See https://github.com/AnalogJ/lexicon/issues/282 and https://github.com/AnalogJ/lexicon/pull/371
     # They say it's trivial to implement it!
     # And yet, it is still not done/merged
-    dns_conf = [record for record in dns_conf if record["type"] != "CAA"]
+    wanted_records = [record for record in wanted_records if record["type"] != "CAA"]
 
     # Construct the base data structure to use lexicon's API.
+
     base_config = {
-        "provider_name": registrar_settings["name"],
+        "provider_name": registrar_id,
         "domain": domain,
-        registrar_settings["name"]: registrar_settings["options"]
+        registrar_id: registrar_credentials
     }
 
     # Fetch all types present in the generated records
-    current_remote_records = []
+    current_records = []
 
     # Get unique types present in the generated records
     types = ["A", "AAAA", "MX", "TXT", "CNAME", "SRV"]
 
     for key in types:
-        print("fetcing type: " + key)
+        print("fetching type: " + key)
         fetch_records_for_type = {
             "action": "list",
             "type": key,
@@ -577,12 +593,87 @@ def domain_registrar_push(operation_logger, domain, dry_run=False):
             .with_dict(dict_object=base_config)
             .with_dict(dict_object=fetch_records_for_type)
         )
-        current_remote_records.extend(LexiconClient(query).execute())
+        current_records.extend(LexiconClient(query).execute())
 
-    changes = {}
+    # Ignore records which are for a higher-level domain
+    # i.e. we don't care about the records for domain.tld when pushing yuno.domain.tld
+    current_records = [r for r in current_records if r['name'].endswith(f'.{domain}')]
+
+    # Step 0 : Get the list of unique (type, name)
+    # And compare the current and wanted records
+    #
+    # i.e. we want this kind of stuff:
+    #                         wanted             current
+    # (A, .domain.tld)        1.2.3.4           1.2.3.4
+    # (A, www.domain.tld)     1.2.3.4           5.6.7.8
+    # (A, foobar.domain.tld)  1.2.3.4
+    # (AAAA, .domain.tld)                      2001::abcd
+    # (MX, .domain.tld)      10 domain.tld     [10 mx1.ovh.net, 20 mx2.ovh.net]
+    # (TXT, .domain.tld)     "v=spf1 ..."      ["v=spf1", "foobar"]
+    # (SRV, .domain.tld)                       0 5 5269 domain.tld
+    changes = {"delete": [], "update": [], "create": []}
+    type_and_names = set([(r["type"], r["name"]) for r in current_records + wanted_records])
+    comparison = {type_and_name: {"current": [], "wanted": []} for type_and_name in type_and_names}
+
+    for record in current_records:
+        comparison[(record["type"], record["name"])]["current"].append(record)
+
+    for record in wanted_records:
+        comparison[(record["type"], record["name"])]["wanted"].append(record)
+
+    for type_and_name, records in comparison.items():
+        #
+        # Step 1 : compute a first "diff" where we remove records which are the same on both sides
+        # NB / FIXME? : in all this we ignore the TTL value for now...
+        #
+        diff = {"current": [], "wanted": []}
+        current_contents = [r["content"] for r in records["current"]]
+        wanted_contents = [r["content"] for r in records["wanted"]]
+
+        print("--------")
+        print(type_and_name)
+        print(current_contents)
+        print(wanted_contents)
+
+        for record in records["current"]:
+            if record["content"] not in wanted_contents:
+                diff["current"].append(record)
+        for record in records["wanted"]:
+            if record["content"] not in current_contents:
+                diff["wanted"].append(record)
+
+        #
+        # Step 2 : simple case: 0 or 1 record on one side, 0 or 1 on the other
+        #           -> either nothing do (0/0) or a creation (0/1) or a deletion (1/0), or an update (1/1)
+        #
+        if len(diff["current"]) == 0 and len(diff["wanted"]) == 0:
+            # No diff, nothing to do
+            continue
+
+        if len(diff["current"]) == 1 and len(diff["wanted"]) == 0:
+            changes["delete"].append(diff["current"][0])
+            continue
+
+        if len(diff["current"]) == 0 and len(diff["wanted"]) == 1:
+            changes["create"].append(diff["wanted"][0])
+            continue
+        #
+        if len(diff["current"]) == 1 and len(diff["wanted"]) == 1:
+            diff["current"][0]["content"] = diff["wanted"][0]["content"]
+            changes["update"].append(diff["current"][0])
+            continue
+
+        #
+        # Step 3 : N record on one side, M on the other, watdo # FIXME
+        #
+        for record in diff["wanted"]:
+            print(f"Dunno watdo with {type_and_name} : {record['content']}")
+        for record in diff["current"]:
+            print(f"Dunno watdo with {type_and_name} : {record['content']}")
+
 
     if dry_run:
-        return {"current_records": current_remote_records, "dns_conf": dns_conf, "changes": changes}
+        return {"changes": changes}
 
     operation_logger.start()
 

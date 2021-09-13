@@ -106,6 +106,13 @@ def test_domain_config_get_default():
     assert domain_config_get(TEST_DOMAINS[1], "dns.advanced.ttl") == 3600
 
 
+def test_domain_config_get_export():
+
+    assert domain_config_get(TEST_DOMAINS[0], export=True)["xmpp"] == 1
+    assert domain_config_get(TEST_DOMAINS[1], export=True)["xmpp"] == 0
+    assert domain_config_get(TEST_DOMAINS[1], export=True)["ttl"] == 3600
+
+
 def test_domain_config_set():
     assert domain_config_get(TEST_DOMAINS[1], "feature.xmpp.xmpp") == 0
     domain_config_set(TEST_DOMAINS[1], "feature.xmpp.xmpp", "yes")

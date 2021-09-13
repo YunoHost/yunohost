@@ -1,15 +1,13 @@
 import pytest
 
-import yaml
-import os
-
 from moulinette.utils.filesystem import read_toml
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.domain import domain_add, domain_remove
 from yunohost.dns import (
     DOMAIN_REGISTRAR_LIST_PATH,
     _get_dns_zone_for_domain,
-    _get_registrar_config_section
+    _get_registrar_config_section,
+    _build_dns_conf,
 )
 
 
@@ -46,21 +44,28 @@ def test_registrar_list_integrity():
 
 
 def test_magic_guess_registrar_weird_domain():
-    assert _get_registrar_config_section("yolo.test")["explanation"]["value"] is None
+    assert _get_registrar_config_section("yolo.test")["registrar"]["value"] is None
 
 
 def test_magic_guess_registrar_ovh():
-    assert _get_registrar_config_section("yolo.yunohost.org")["explanation"]["value"] == "ovh"
+    assert _get_registrar_config_section("yolo.yunohost.org")["registrar"]["value"] == "ovh"
 
 
 def test_magic_guess_registrar_yunodyndns():
-    assert _get_registrar_config_section("yolo.nohost.me")["explanation"]["value"] == "yunohost"
+    assert _get_registrar_config_section("yolo.nohost.me")["registrar"]["value"] == "yunohost"
 
 
-#def domain_dns_suggest(domain):
-#    return yunohost.dns.domain_dns_conf(domain)
-#
-#
+@pytest.fixture
+def example_domain():
+    domain_add("example.tld")
+    yield "example_tld"
+    domain_remove("example.tld")
+
+
+def test_domain_dns_suggest(example_domain):
+
+    assert _build_dns_conf(example_domain)
+
 #def domain_dns_push(domain, dry_run):
 #    import yunohost.dns
 #    return yunohost.dns.domain_registrar_push(domain, dry_run)

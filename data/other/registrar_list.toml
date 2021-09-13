@@ -456,15 +456,17 @@
     
 [ovh]
     [ovh.auth_entrypoint]
-    type = "string"
-    redact = true
-    
+    type = "select"
+    choices = ["ovh-eu", "ovh-ca", "soyoustart-eu", "soyoustart-ca", "kimsufi-eu", "kimsufi-ca"]
+    default = "ovh-eu"
+
     [ovh.auth_application_key]
     type = "string"
     redact = true
     
     [ovh.auth_application_secret]
-    type = "password"
+    type = "string"
+    redact = true
     
     [ovh.auth_consumer_key]
     type = "string"
