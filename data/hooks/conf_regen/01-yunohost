@@ -82,7 +82,7 @@ EOF
   # Cron job that renew lets encrypt certificates if there's any that needs renewal
   cat > $pending_dir/etc/cron.daily/yunohost-certificate-renew << EOF
 #!/bin/bash
-yunohost domain cert-renew --email
+yunohost domain cert renew --email
 EOF
 
   # If we subscribed to a dyndns domain, add the corresponding cron

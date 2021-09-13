@@ -647,7 +647,7 @@ domain:
                             action: store_true
 
         cert:
-            subcategory_help: Manage domains DNS
+            subcategory_help: Manage domain certificates
             actions:
                 ### certificate_status()
                 status:
