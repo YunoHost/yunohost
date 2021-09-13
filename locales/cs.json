@@ -55,7 +55,7 @@
     "global_settings_setting_smtp_relay_password": "SMTP relay heslo uživatele/hostitele",
     "global_settings_setting_smtp_relay_user": "SMTP relay uživatelské jméno/účet",
     "global_settings_setting_smtp_relay_port": "SMTP relay port",
-    "global_settings_setting_smtp_relay_host": "Použít SMTP relay hostitele pro odesílání emailů místo této Yunohost instance. Užitečné v různých situacích: port 25 je blokován vaším ISP nebo VPS poskytovatelem, IP adresa je na blacklistu (např. DUHL), nemůžete nastavit reverzní DNS záznam nebo tento server není přímo připojen do internetu a vy chcete použít jiný server k odesílání emailů.",
+    "global_settings_setting_smtp_relay_host": "Použít SMTP relay hostitele pro odesílání emailů místo této YunoHost instance. Užitečné v různých situacích: port 25 je blokován vaším ISP nebo VPS poskytovatelem, IP adresa je na blacklistu (např. DUHL), nemůžete nastavit reverzní DNS záznam nebo tento server není přímo připojen do internetu a vy chcete použít jiný server k odesílání emailů.",
     "global_settings_setting_smtp_allow_ipv6": "Povolit použití IPv6 pro příjem a odesílání emailů",
     "global_settings_setting_ssowat_panel_overlay_enabled": "Povolit SSOwat překryvný panel",
     "global_settings_setting_service_ssh_allow_deprecated_dsa_hostkey": "Povolit použití (zastaralého) DSA klíče hostitele pro konfiguraci SSH služby",

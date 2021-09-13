@@ -657,5 +657,7 @@
     "user_import_missing_columns": "Les colonnes suivantes sont manquantes : {columns}",
     "user_import_bad_file": "Votre fichier CSV n'est pas correctement formaté, il sera ignoré afin d'éviter une potentielle perte de données",
     "user_import_bad_line": "Ligne incorrecte {line} : {details}",
-    "log_user_import": "Importer des utilisateurs"
+    "log_user_import": "Importer des utilisateurs",
+    "diagnosis_high_number_auth_failures": "Il y a eu récemment un grand nombre d'échecs d'authentification. Assurez-vous que Fail2Ban est en cours d'exécution et est correctement configuré, ou utilisez un port personnalisé pour SSH comme expliqué dans https://yunohost.org/security.",
+    "global_settings_setting_security_nginx_redirect_to_https": "Rediriger les requêtes HTTP vers HTTPS par défaut (NE PAS DÉSACTIVER à moins de savoir vraiment ce que vous faites !)"
 }

@@ -4,7 +4,7 @@
 _ynh_app_config_get() {
     # From settings
     local lines
-    lines=`python3 << EOL
+    lines=$(python3 << EOL
 import toml
 from collections import OrderedDict
 with open("../config_panel.toml", "r") as f:
@@ -24,7 +24,7 @@ for panel_name, panel in loaded_toml.items():
                 param.get('bind', 'settings' if param.get('type', 'string') != 'file' else 'null')
                 ]))
 EOL
-`
+)
     for line in $lines
     do
         # Split line into short_setting, type and bind
