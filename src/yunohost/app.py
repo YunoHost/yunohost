@@ -511,7 +511,12 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
     """
     from packaging import version
-    from yunohost.hook import hook_add, hook_remove, hook_callback, hook_exec_with_script_debug_if_failure
+    from yunohost.hook import (
+        hook_add,
+        hook_remove,
+        hook_callback,
+        hook_exec_with_script_debug_if_failure,
+    )
     from yunohost.permission import permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
 
@@ -633,12 +638,17 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         # Execute the app upgrade script
         upgrade_failed = True
         try:
-            upgrade_failed, failure_message_with_debug_instructions = hook_exec_with_script_debug_if_failure(
+            (
+                upgrade_failed,
+                failure_message_with_debug_instructions,
+            ) = hook_exec_with_script_debug_if_failure(
                 extracted_app_folder + "/scripts/upgrade",
                 env=env_dict,
                 operation_logger=operation_logger,
                 error_message_if_script_failed=m18n.n("app_upgrade_script_failed"),
-                error_message_if_failed=lambda e: m18n.n("app_upgrade_failed", app=app_instance_name, error=e)
+                error_message_if_failed=lambda e: m18n.n(
+                    "app_upgrade_failed", app=app_instance_name, error=e
+                ),
             )
         finally:
             # Whatever happened (install success or failure) we check if it broke the system
@@ -669,7 +679,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             if upgrade_failed or broke_the_system:
 
                 # display this if there are remaining apps
-                if apps[number + 1:]:
+                if apps[number + 1 :]:
                     not_upgraded_apps = apps[number:]
                     logger.error(
                         m18n.n(
@@ -785,7 +795,13 @@ def app_install(
         force -- Do not ask for confirmation when installing experimental / low-quality apps
     """
 
-    from yunohost.hook import hook_add, hook_remove, hook_callback, hook_exec, hook_exec_with_script_debug_if_failure
+    from yunohost.hook import (
+        hook_add,
+        hook_remove,
+        hook_callback,
+        hook_exec,
+        hook_exec_with_script_debug_if_failure,
+    )
     from yunohost.log import OperationLogger
     from yunohost.permission import (
         user_permission_list,
@@ -976,12 +992,17 @@ def app_install(
     # Execute the app install script
     install_failed = True
     try:
-        install_failed, failure_message_with_debug_instructions = hook_exec_with_script_debug_if_failure(
+        (
+            install_failed,
+            failure_message_with_debug_instructions,
+        ) = hook_exec_with_script_debug_if_failure(
             os.path.join(extracted_app_folder, "scripts/install"),
             env=env_dict,
             operation_logger=operation_logger,
             error_message_if_script_failed=m18n.n("app_install_script_failed"),
-            error_message_if_failed=lambda e: m18n.n("app_install_failed", app=app_id, error=e)
+            error_message_if_failed=lambda e: m18n.n(
+                "app_install_failed", app=app_id, error=e
+            ),
         )
     finally:
         # If success so far, validate that app didn't break important stuff
@@ -1670,7 +1691,9 @@ def app_config_get(app, key="", full=False, export=False):
     Display an app configuration in classic, full or export mode
     """
     if full and export:
-        raise YunohostValidationError("You can't use --full and --export together.", raw_msg=True)
+        raise YunohostValidationError(
+            "You can't use --full and --export together.", raw_msg=True
+        )
 
     if full:
         mode = "full"

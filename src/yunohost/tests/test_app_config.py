@@ -80,7 +80,6 @@ def legacy_app(request):
     return "legacy_app"
 
 
-
 @pytest.fixture()
 def config_app(request):
 
@@ -168,7 +167,10 @@ def test_app_config_bind_on_file(config_app):
 def test_app_config_custom_get(config_app):
 
     assert app_setting(config_app, "arg9") is None
-    assert "Files in /var/www" in app_config_get(config_app, "bind.function.arg9")["ask"]["en"]
+    assert (
+        "Files in /var/www"
+        in app_config_get(config_app, "bind.function.arg9")["ask"]["en"]
+    )
     assert app_setting(config_app, "arg9") is None
 
 

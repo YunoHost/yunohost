@@ -288,7 +288,11 @@ def service_reload_or_restart(names, test_conf=True):
             if p.returncode != 0:
                 errors = out.decode().strip().split("\n")
                 logger.error(
-                    m18n.n("service_not_reloading_because_conf_broken", name=name, errors=errors)
+                    m18n.n(
+                        "service_not_reloading_because_conf_broken",
+                        name=name,
+                        errors=errors,
+                    )
                 )
                 continue
 

@@ -98,7 +98,9 @@ class ConfigPanel:
 
         return result
 
-    def set(self, key=None, value=None, args=None, args_file=None, operation_logger=None):
+    def set(
+        self, key=None, value=None, args=None, args_file=None, operation_logger=None
+    ):
         self.filter_key = key or ""
 
         # Read config panel toml
@@ -108,7 +110,10 @@ class ConfigPanel:
             raise YunohostValidationError("config_no_panel")
 
         if (args is not None or args_file is not None) and value is not None:
-            raise YunohostValidationError("You should either provide a value, or a serie of args/args_file, but not both at the same time", raw_msg=True)
+            raise YunohostValidationError(
+                "You should either provide a value, or a serie of args/args_file, but not both at the same time",
+                raw_msg=True,
+            )
 
         if self.filter_key.count(".") != 2 and value is not None:
             raise YunohostValidationError("config_cant_set_value_on_section")
@@ -167,7 +172,10 @@ class ConfigPanel:
         # Split filter_key
         filter_key = self.filter_key.split(".") if self.filter_key != "" else []
         if len(filter_key) > 3:
-            raise YunohostError(f"The filter key {filter_key} has too many sub-levels, the max is 3.", raw_msg=True)
+            raise YunohostError(
+                f"The filter key {filter_key} has too many sub-levels, the max is 3.",
+                raw_msg=True,
+            )
 
         if not os.path.exists(self.config_path):
             return None
@@ -190,7 +198,7 @@ class ConfigPanel:
                 "default": {
                     "name": "",
                     "services": [],
-                    "actions": {"apply": {"en": "Apply"}}
+                    "actions": {"apply": {"en": "Apply"}},
                 },
             },
             "sections": {
@@ -199,15 +207,34 @@ class ConfigPanel:
                     "name": "",
                     "services": [],
                     "optional": True,
-                }
+                },
             },
             "options": {
-                "properties": ["ask", "type", "bind", "help", "example", "default",
-                               "style", "icon", "placeholder", "visible",
-                               "optional", "choices", "yes", "no", "pattern",
-                               "limit", "min", "max", "step", "accept", "redact"],
-                "default": {}
-            }
+                "properties": [
+                    "ask",
+                    "type",
+                    "bind",
+                    "help",
+                    "example",
+                    "default",
+                    "style",
+                    "icon",
+                    "placeholder",
+                    "visible",
+                    "optional",
+                    "choices",
+                    "yes",
+                    "no",
+                    "pattern",
+                    "limit",
+                    "min",
+                    "max",
+                    "step",
+                    "accept",
+                    "redact",
+                ],
+                "default": {},
+            },
         }
 
         def convert(toml_node, node_type):
@@ -219,14 +246,16 @@ class ConfigPanel:
             This function detects all children nodes and put them in a list
             """
             # Prefill the node default keys if needed
-            default = format_description[node_type]['default']
+            default = format_description[node_type]["default"]
             node = {key: toml_node.get(key, value) for key, value in default.items()}
 
-            properties = format_description[node_type]['properties']
+            properties = format_description[node_type]["properties"]
 
             # Define the filter_key part to use and the children type
             i = list(format_description).index(node_type)
-            subnode_type = list(format_description)[i + 1] if node_type != "options" else None
+            subnode_type = (
+                list(format_description)[i + 1] if node_type != "options" else None
+            )
             search_key = filter_key[i] if len(filter_key) > i else False
 
             for key, value in toml_node.items():
@@ -265,10 +294,24 @@ class ConfigPanel:
             )
 
         # List forbidden keywords from helpers and sections toml (to avoid conflict)
-        forbidden_keywords = ["old", "app", "changed", "file_hash", "binds", "types",
-                              "formats", "getter", "setter", "short_setting", "type",
-                              "bind", "nothing_changed", "changes_validated", "result",
-                              "max_progression"]
+        forbidden_keywords = [
+            "old",
+            "app",
+            "changed",
+            "file_hash",
+            "binds",
+            "types",
+            "formats",
+            "getter",
+            "setter",
+            "short_setting",
+            "type",
+            "bind",
+            "nothing_changed",
+            "changes_validated",
+            "result",
+            "max_progression",
+        ]
         forbidden_keywords += format_description["sections"]
 
         for _, _, option in self._iterate():
@@ -282,10 +325,15 @@ class ConfigPanel:
         for _, _, option in self._iterate():
             if option["id"] not in self.values:
                 allowed_empty_types = ["alert", "display_text", "markdown", "file"]
-                if option["type"] in allowed_empty_types or option.get("bind") == "null":
+                if (
+                    option["type"] in allowed_empty_types
+                    or option.get("bind") == "null"
+                ):
                     continue
                 else:
-                    raise YunohostError(f"Config panel question '{option['id']}' should be initialized with a value during install or upgrade.")
+                    raise YunohostError(
+                        f"Config panel question '{option['id']}' should be initialized with a value during install or upgrade."
+                    )
             value = self.values[option["name"]]
             # In general, the value is just a simple value.
             # Sometimes it could be a dict used to overwrite the option itself
@@ -440,14 +488,11 @@ class Question(object):
                     )
 
             # Apply default value
-            class_default= getattr(self, "default_value", None)
-            if self.value in [None, ""] and \
-               (self.default is not None or class_default is not None):
-                self.value = (
-                    class_default
-                    if self.default is None
-                    else self.default
-                )
+            class_default = getattr(self, "default_value", None)
+            if self.value in [None, ""] and (
+                self.default is not None or class_default is not None
+            ):
+                self.value = class_default if self.default is None else self.default
 
             # Normalization
             # This is done to enforce a certain formating like for boolean
@@ -543,30 +588,31 @@ class StringQuestion(Question):
 class EmailQuestion(StringQuestion):
     pattern = {
         "regexp": r"^.+@.+",
-        "error": "config_validate_email"  # i18n: config_validate_email
+        "error": "config_validate_email",  # i18n: config_validate_email
     }
 
 
 class URLQuestion(StringQuestion):
     pattern = {
         "regexp": r"^https?://.*$",
-        "error": "config_validate_url"  # i18n: config_validate_url
+        "error": "config_validate_url",  # i18n: config_validate_url
     }
 
 
 class DateQuestion(StringQuestion):
     pattern = {
         "regexp": r"^\d{4}-\d\d-\d\d$",
-        "error": "config_validate_date"  # i18n: config_validate_date
+        "error": "config_validate_date",  # i18n: config_validate_date
     }
 
     def _prevalidate(self):
         from datetime import datetime
+
         super()._prevalidate()
 
         if self.value not in [None, ""]:
             try:
-                datetime.strptime(self.value, '%Y-%m-%d')
+                datetime.strptime(self.value, "%Y-%m-%d")
             except ValueError:
                 raise YunohostValidationError("config_validate_date")
 
@@ -574,14 +620,14 @@ class DateQuestion(StringQuestion):
 class TimeQuestion(StringQuestion):
     pattern = {
         "regexp": r"^(1[12]|0?\d):[0-5]\d$",
-        "error": "config_validate_time"  # i18n: config_validate_time
+        "error": "config_validate_time",  # i18n: config_validate_time
     }
 
 
 class ColorQuestion(StringQuestion):
     pattern = {
         "regexp": r"^#[ABCDEFabcdef\d]{3,6}$",
-        "error": "config_validate_color"  # i18n: config_validate_color
+        "error": "config_validate_color",  # i18n: config_validate_color
     }
 
 
@@ -732,7 +778,9 @@ class DomainQuestion(Question):
 
     def _raise_invalid_answer(self):
         raise YunohostValidationError(
-            "app_argument_invalid", name=self.name, error=m18n.n("domain_name_unknown", domain=self.value)
+            "app_argument_invalid",
+            name=self.name,
+            error=m18n.n("domain_name_unknown", domain=self.value),
         )
 
 
@@ -813,7 +861,9 @@ class DisplayTextQuestion(Question):
         super().__init__(question, user_answers)
 
         self.optional = True
-        self.style = question.get("style", "info" if question['type'] == 'alert' else '')
+        self.style = question.get(
+            "style", "info" if question["type"] == "alert" else ""
+        )
 
     def _format_text_for_user_input_in_cli(self):
         text = _value_for_locale(self.ask)
@@ -875,7 +925,9 @@ class FileQuestion(Question):
             return
 
         filename = self.value if isinstance(self.value, str) else self.value["filename"]
-        if "." not in filename or "." + filename.split(".")[-1] not in self.accept.replace(" ", "").split(","):
+        if "." not in filename or "." + filename.split(".")[
+            -1
+        ] not in self.accept.replace(" ", "").split(","):
             raise YunohostValidationError(
                 "app_argument_invalid",
                 name=self.name,
