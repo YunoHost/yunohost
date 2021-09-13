@@ -28,9 +28,7 @@ import os
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import (
-    mkdir, write_to_file, read_yaml, write_to_yaml
-)
+from moulinette.utils.filesystem import write_to_file
 
 from yunohost.app import (
     app_ssowatconf,
