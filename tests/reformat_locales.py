@@ -3,11 +3,11 @@ import re
 
 def reformat(lang, transformations):
 
-    locale = open(f"locales/{lang}.json").read()
+    locale = open(f"../locales/{lang}.json").read()
     for pattern, replace in transformations.items():
         locale = re.compile(pattern).sub(replace, locale)
 
-    open(f"locales/{lang}.json", "w").write(locale)
+    open(f"../locales/{lang}.json", "w").write(locale)
 
 
 ######################################################
