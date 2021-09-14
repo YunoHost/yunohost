@@ -196,7 +196,6 @@ class ConfigPanel:
             "panels": {
                 "properties": ["name", "services", "actions", "help"],
                 "default": {
-                    "name": "",
                     "services": [],
                     "actions": {"apply": {"en": "Apply"}},
                 },
@@ -270,7 +269,9 @@ class ConfigPanel:
                         continue
                     subnode = convert(value, subnode_type)
                     subnode["id"] = key
-                    if node_type == "sections":
+                    if node_type == "toml":
+                        subnode.setdefault("name", {"en": key.capitalize()})
+                    elif node_type == "sections":
                         subnode["name"] = key  # legacy
                         subnode.setdefault("optional", toml_node.get("optional", True))
                     node.setdefault(subnode_type, []).append(subnode)
@@ -357,7 +358,8 @@ class ConfigPanel:
                 display_header(f"\n{'='*40}\n>>>> {name}\n{'='*40}")
                 continue
             name = _value_for_locale(section["name"])
-            display_header(f"\n# {name}")
+            if name:
+                display_header(f"\n# {name}")
 
             # Check and ask unanswered questions
             self.new_values.update(
