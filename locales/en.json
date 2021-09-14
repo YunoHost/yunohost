@@ -420,7 +420,7 @@
     "log_dyndns_subscribe": "Subscribe to a YunoHost subdomain '{}'",
     "log_dyndns_update": "Update the IP associated with your YunoHost subdomain '{}'",
     "log_help_to_get_failed_log": "The operation '{desc}' could not be completed. Please share the full log of this operation using the command 'yunohost log share {name}' to get help",
-    "log_help_to_get_log": "To view the log of the operation '{desc}', use the command 'yunohost log show {name}{name}'",
+    "log_help_to_get_log": "To view the log of the operation '{desc}', use the command 'yunohost log show {name}'",
     "log_letsencrypt_cert_install": "Install a Let's Encrypt certificate on '{}' domain",
     "log_letsencrypt_cert_renew": "Renew '{}' Let's Encrypt certificate",
     "log_link_to_failed_log": "Could not complete the operation '{desc}'. Please provide the full log of this operation by <a href=\"#/tools/logs/{name}\">clicking here</a> to get help",
