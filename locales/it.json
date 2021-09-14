@@ -42,7 +42,7 @@
     "ask_new_admin_password": "Nuova password dell'amministrazione",
     "backup_app_failed": "Non è possibile fare il backup {app}",
     "backup_archive_app_not_found": "{app} non è stata trovata nel archivio di backup",
-    "app_argument_choice_invalid": "Usa una delle seguenti scelte '{choices}' per il parametro '{name}'",
+    "app_argument_choice_invalid": "Usa una delle seguenti scelte '{choices}' per il parametro '{name}' invece di '{value}'",
     "app_argument_invalid": "Scegli un valore valido per il parametro '{name}': {error}",
     "app_argument_required": "L'argomento '{name}' è requisito",
     "app_id_invalid": "Identificativo dell'applicazione non valido",
