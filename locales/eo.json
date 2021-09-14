@@ -28,7 +28,7 @@
     "admin_password": "Pasvorto de la estro",
     "admin_password_too_long": "Bonvolu elekti pasvorton pli mallonga ol 127 signoj",
     "already_up_to_date": "Nenio por fari. Ĉio estas jam ĝisdatigita.",
-    "app_argument_choice_invalid": "Uzu unu el ĉi tiuj elektoj '{choices}' por la argumento '{name}'",
+    "app_argument_choice_invalid": "Uzu unu el ĉi tiuj elektoj '{choices}' por la argumento '{name}' anstataŭ '{value}'",
     "app_argument_invalid": "Elektu validan valoron por la argumento '{name}': {error}",
     "app_change_url_failed_nginx_reload": "Ne eblis reŝarĝi NGINX. Jen la eligo de 'nginx -t':\n{nginx_errors}",
     "ask_new_admin_password": "Nova administrada pasvorto",
