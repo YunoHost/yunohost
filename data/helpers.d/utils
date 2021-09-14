@@ -1,6 +1,6 @@
 #!/bin/bash
 
-YNH_APP_BASEDIR=$(realpath $([[ "$(basename $0)" =~ ^backup|restore$ ]] && echo '../settings' || echo '..'))
+YNH_APP_BASEDIR=$(realpath $([[ "$(basename $0)" =~ ^backup|restore$ ]] && echo '../settings' || [[ -n "$YNH_ACTION" ]] && echo '.' || echo '..' ))
 
 # Handle script crashes / failures
 #
