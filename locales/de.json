@@ -244,7 +244,7 @@
     "dpkg_is_broken": "Du kannst das gerade nicht tun, weil dpkg/APT (der Systempaketmanager) in einem defekten Zustand zu sein scheint.... Du kannst versuchen, dieses Problem zu lösen, indem du dich über SSH verbindest und `sudo apt install --fix-broken` sowie/oder `sudo dpkg --configure -a` ausführst.",
     "global_settings_unknown_setting_from_settings_file": "Unbekannter Schlüssel in den Einstellungen: '{setting_key}', verwerfen und speichern in /etc/yunohost/settings-unknown.json",
     "log_link_to_log": "Vollständiges Log dieser Operation: '<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>'",
-    "log_help_to_get_log": "Um das Protokoll der Operation '{desc}' anzuzeigen, verwenden Sie den Befehl 'yunohost log show {name}{name}'",
+    "log_help_to_get_log": "Um das Protokoll der Operation '{desc}' anzuzeigen, verwenden Sie den Befehl 'yunohost log show {name}'",
     "global_settings_setting_security_nginx_compatibility": "Kompatibilitäts- vs. Sicherheits-Kompromiss für den Webserver NGINX. Betrifft die Ciphers (und andere sicherheitsrelevante Aspekte)",
     "global_settings_setting_service_ssh_allow_deprecated_dsa_hostkey": "Erlaubt die Verwendung eines (veralteten) DSA-Hostkeys für die SSH-Daemon-Konfiguration",
     "log_app_remove": "Entferne die Applikation '{}'",

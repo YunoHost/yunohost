@@ -511,7 +511,7 @@
     "log_does_exists": "没有名称为'{log}'的操作日志，请使用 'yunohost log list' 查看所有可用的操作日志",
     "log_help_to_get_failed_log": "操作'{desc}'无法完成。请使用命令'yunohost log share {name}' 共享此操作的完整日志以获取帮助",
     "log_link_to_failed_log": "无法完成操作 '{desc}'。请通过<a href=\"#/tools/logs/{name}\">单击此处</a>提供此操作的完整日志以获取帮助",
-    "log_help_to_get_log": "要查看操作'{desc}'的日志，请使用命令'yunohost log show {name}{name}'",
+    "log_help_to_get_log": "要查看操作'{desc}'的日志，请使用命令'yunohost log show {name}'",
     "log_link_to_log": "此操作的完整日志: '<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>'",
     "log_corrupted_md_file": "与日志关联的YAML元数据文件已损坏: '{md_file}\n错误: {error}'",
     "iptables_unavailable": "你不能在这里使用iptables。你要么在一个容器中，要么你的内核不支持它",

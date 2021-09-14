@@ -358,7 +358,7 @@
     "global_settings_setting_security_webadmin_allowlist_enabled": "Permitir que só algúns IPs accedan á webadmin.",
     "disk_space_not_sufficient_update": "Non hai espazo suficiente no disco para actualizar esta aplicación",
     "disk_space_not_sufficient_install": "Non queda espazo suficiente no disco para instalar esta aplicación",
-    "log_help_to_get_log": "Para ver o rexistro completo da operación '{desc}', usa o comando 'yunohost log show {name}{name}'",
+    "log_help_to_get_log": "Para ver o rexistro completo da operación '{desc}', usa o comando 'yunohost log show {name}'",
     "log_link_to_log": "Rexistro completo desta operación: '<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>'",
     "log_corrupted_md_file": "O ficheiro YAML con metadatos asociado aos rexistros está danado: '{md_file}\nErro: {error}'",
     "iptables_unavailable": "Non podes andar remexendo en iptables aquí. Ou ben estás nun contedor ou o teu kernel non ten soporte para isto",

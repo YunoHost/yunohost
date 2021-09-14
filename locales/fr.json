@@ -251,7 +251,7 @@
     "experimental_feature": "Attention : cette fonctionnalité est expérimentale et ne doit pas être considérée comme stable, vous ne devriez pas l'utiliser à moins que vous ne sachiez ce que vous faites.",
     "log_corrupted_md_file": "Le fichier YAML de métadonnées associé aux logs est corrompu : '{md_file}'\nErreur : {error}",
     "log_link_to_log": "Journal complet de cette opération : '<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\"> {desc} </a>'",
-    "log_help_to_get_log": "Pour voir le journal de cette opération '{desc}', utilisez la commande 'yunohost log show {name}{name}'",
+    "log_help_to_get_log": "Pour voir le journal de cette opération '{desc}', utilisez la commande 'yunohost log show {name}'",
     "log_link_to_failed_log": "L'opération '{desc}' a échoué ! Pour obtenir de l'aide, merci de partager le journal de l'opération en <a href=\"#/tools/logs/{name}\">cliquant ici</a>",
     "log_help_to_get_failed_log": "L'opération '{desc}' a échoué ! Pour obtenir de l'aide, merci de partager le journal de l'opération en utilisant la commande 'yunohost log share {name}'",
     "log_does_exists": "Il n'y a pas de journal des opérations avec le nom '{log}', utilisez 'yunohost log list' pour voir tous les journaux d'opérations disponibles",
