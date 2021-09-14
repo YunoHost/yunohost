@@ -1651,25 +1651,35 @@ def app_action_run(operation_logger, app, action, args=None):
     )
     env_dict["YNH_ACTION"] = action
 
-    _, path = tempfile.mkstemp()
+    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
+    _, action_script = tempfile.mkstemp(dir=tmp_workdir_for_app)
 
-    with open(path, "w") as script:
+    with open(action_script, "w") as script:
         script.write(action_declaration["command"])
-
-    os.chmod(path, 700)
 
     if action_declaration.get("cwd"):
         cwd = action_declaration["cwd"].replace("$app", app)
     else:
-        cwd = os.path.join(APPS_SETTING_PATH, app)
+        cwd = tmp_workdir_for_app
 
-    # FIXME: this should probably be ran in a tmp workdir...
-    retcode = hook_exec(
-        path,
-        env=env_dict,
-        chdir=cwd,
-        user=action_declaration.get("user", "root"),
-    )[0]
+    try:
+        retcode = hook_exec(
+            action_script,
+            env=env_dict,
+            chdir=cwd,
+            user=action_declaration.get("user", "root"),
+        )[0]
+    # Here again, calling hook_exec could fail miserably, or get
+    # manually interrupted (by mistake or because script was stuck)
+    # In that case we still want to proceed with the rest of the
+    # removal (permissions, /etc/yunohost/apps/{app} ...)
+    except (KeyboardInterrupt, EOFError, Exception):
+        retcode = -1
+        import traceback
+
+        logger.error(m18n.n("unexpected_error", error="\n" + traceback.format_exc()))
+    finally:
+        shutil.rmtree(tmp_workdir_for_app)
 
     if retcode not in action_declaration.get("accepted_return_codes", [0]):
         msg = "Error while executing action '%s' of app '%s': return code %s" % (
@@ -1679,8 +1689,6 @@ def app_action_run(operation_logger, app, action, args=None):
         )
         operation_logger.error(msg)
         raise YunohostError(msg, raw_msg=True)
-
-    os.remove(path)
 
     operation_logger.success()
     return logger.success("Action successed!")
