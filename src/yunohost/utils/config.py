@@ -468,6 +468,20 @@ class Question(object):
     def normalize(value, option={}):
         return value
 
+    def _prompt(self, text):
+        prefill = ""
+        if self.current_value is not None:
+            prefill = self.humanize(self.current_value, self)
+        elif self.default is not None:
+            prefill = self.humanize(self.default, self)
+        self.value = Moulinette.prompt(
+            message=text,
+            is_password=self.hide_user_input_in_prompt,
+            confirm=False, # We doesn't want to confirm this kind of password like in webadmin
+            prefill=prefill,
+            is_multiline=(self.type == "text"),
+        )
+
     def ask_if_needed(self):
         for i in range(5):
             # Display question if no value filled or if it's a readonly message
@@ -475,20 +489,8 @@ class Question(object):
                 text_for_user_input_in_cli = self._format_text_for_user_input_in_cli()
                 if getattr(self, "readonly", False):
                     Moulinette.display(text_for_user_input_in_cli)
-
                 elif self.value is None:
-                    prefill = ""
-                    if self.current_value is not None:
-                        prefill = self.humanize(self.current_value, self)
-                    elif self.default is not None:
-                        prefill = self.humanize(self.default, self)
-                    self.value = Moulinette.prompt(
-                        message=text_for_user_input_in_cli,
-                        is_password=self.hide_user_input_in_prompt,
-                        confirm=self.hide_user_input_in_prompt,
-                        prefill=prefill,
-                        is_multiline=(self.type == "text"),
-                    )
+                    self._prompt(text_for_user_input_in_cli)
 
             # Apply default value
             class_default = getattr(self, "default_value", None)
@@ -542,13 +544,13 @@ class Question(object):
             choices=", ".join(self.choices),
         )
 
-    def _format_text_for_user_input_in_cli(self):
+    def _format_text_for_user_input_in_cli(self, column=False):
         text_for_user_input_in_cli = _value_for_locale(self.ask)
 
         if self.choices:
             text_for_user_input_in_cli += " [{0}]".format(" | ".join(self.choices))
 
-        if self.help:
+        if self.help or column:
             text_for_user_input_in_cli += ":\033[m"
         if self.help:
             text_for_user_input_in_cli += "\n - "
@@ -688,6 +690,23 @@ class PasswordQuestion(Question):
             from yunohost.utils.password import assert_password_is_strong_enough
 
             assert_password_is_strong_enough("user", self.value)
+
+    def _format_text_for_user_input_in_cli(self):
+        need_column = self.current_value or self.optional
+        text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli(need_column)
+        if self.current_value:
+            text_for_user_input_in_cli += "\n - " + m18n.n("app_argument_password_help")
+        if self.optional:
+            text_for_user_input_in_cli += "\n - " + m18n.n("app_argument_password_help_optional")
+
+        return text_for_user_input_in_cli
+
+    def _prompt(self, text):
+        super()._prompt(text)
+        if self.current_value and self.value == "":
+            self.value = self.current_value
+        elif self.value == " ":
+            self.value = ""
 
 
 class PathQuestion(Question):
