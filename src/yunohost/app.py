@@ -1669,10 +1669,9 @@ def app_action_run(operation_logger, app, action, args=None):
             chdir=cwd,
             user=action_declaration.get("user", "root"),
         )[0]
-    # Here again, calling hook_exec could fail miserably, or get
+    # Calling hook_exec could fail miserably, or get
     # manually interrupted (by mistake or because script was stuck)
-    # In that case we still want to proceed with the rest of the
-    # removal (permissions, /etc/yunohost/apps/{app} ...)
+    # In that case we still want to delete the tmp work dir
     except (KeyboardInterrupt, EOFError, Exception):
         retcode = -1
         import traceback
