@@ -645,6 +645,12 @@ domain:
                             full: --dry-run
                             help: Only display what's to be pushed
                             action: store_true
+                        --autoremove:
+                            help: Also autoremove records which are stale or not part of the recommended configuration
+                            action: store_true
+                        --purge:
+                            help: Delete all records
+                            action: store_true
 
         cert:
             subcategory_help: Manage domain certificates

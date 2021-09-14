@@ -4,7 +4,8 @@
     redact = true
 
     [aliyun.auth_secret]
-    type = "password"
+    type = "string"
+    redact = true
 
 [aurora]
     [aurora.auth_api_key]
@@ -12,7 +13,8 @@
     redact = true
 
     [aurora.auth_secret_key]
-    type = "password"
+    type = "string"
+    redact = true
 
 [azure]
     [azure.auth_client_id]
@@ -20,7 +22,8 @@
     redact = true
     
     [azure.auth_client_secret]
-    type = "password"
+    type = "string"
+    redact = true
     
     [azure.auth_tenant_id]
     type = "string"
@@ -215,7 +218,8 @@
     redact = true
     
     [exoscale.auth_secret]
-    type = "password"
+    type = "string"
+    redact = true
     
 [gandi]
     [gandi.auth_token]
@@ -233,7 +237,8 @@
     redact = true
     
     [gehirn.auth_secret]
-    type = "password"
+    type = "string"
+    redact = true
     
 [glesys]
     [glesys.auth_username]
@@ -250,7 +255,8 @@
     redact = true
     
     [godaddy.auth_secret]
-    type = "password"
+    type = "string"
+    redact = true
     
 [googleclouddns]
     [goggleclouddns.auth_service_account_info]
@@ -415,7 +421,8 @@
     redact = true
     
     [netcup.auth_api_password]
-    type = "password"
+    type = "string"
+    redact = true
     
 [nfsn]
     [nfsn.auth_username]
@@ -550,7 +557,8 @@
     redact = true
     
     [route53.auth_access_secret]
-    type = "password"
+    type = "string"
+    redact = true
     
     [route53.private_zone]
     type = "string"
@@ -575,7 +583,8 @@
     redact = true
     
     [sakuracloud.auth_secret]
-    type = "password"
+    type = "string"
+    redact = true
     
 [softlayer]
     [softlayer.auth_username]

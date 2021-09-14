@@ -491,6 +491,6 @@ def domain_dns_suggest(domain):
     return yunohost.dns.domain_dns_suggest(domain)
 
 
-def domain_dns_push(domain, dry_run):
+def domain_dns_push(domain, dry_run, autoremove, purge):
     import yunohost.dns
-    return yunohost.dns.domain_registrar_push(domain, dry_run)
+    return yunohost.dns.domain_registrar_push(domain, dry_run, autoremove, purge)

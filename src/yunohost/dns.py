@@ -26,6 +26,7 @@
 import os
 import re
 import time
+from difflib import SequenceMatcher
 from collections import OrderedDict
 
 from moulinette import m18n, Moulinette
@@ -515,7 +516,7 @@ def _get_registrar_config_section(domain):
 
 
 @is_unit_operation()
-def domain_registrar_push(operation_logger, domain, dry_run=False):
+def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=False, purge=False):
     """
     Send DNS records to the previously-configured registrar of the domain.
     """
@@ -527,15 +528,15 @@ def domain_registrar_push(operation_logger, domain, dry_run=False):
 
     settings = domain_config_get(domain, key='dns.registrar')
 
-    registrar_id = settings["dns.registrar.registrar"].get("value")
+    registrar = settings["dns.registrar.registrar"].get("value")
 
-    if not registrar_id or registrar_id == "yunohost":
+    if not registrar or registrar in ["None", "yunohost"]:
         raise YunohostValidationError("registrar_push_not_applicable", domain=domain)
 
     registrar_credentials = {
-            k.split('.')[-1]: v["value"]
-            for k, v in settings.items()
-            if k != "dns.registrar.registar"
+        k.split('.')[-1]: v["value"]
+        for k, v in settings.items()
+        if k != "dns.registrar.registar"
     }
 
     if not all(registrar_credentials.values()):
@@ -547,11 +548,12 @@ def domain_registrar_push(operation_logger, domain, dry_run=False):
     for records in _build_dns_conf(domain).values():
         for record in records:
 
-            # Make sure we got "absolute" values instead of @
-            name = f"{record['name']}.{domain}" if record["name"] != "@" else f".{domain}"
+            # Make sure the name is a FQDN
+            name = f"{record['name']}.{domain}" if record["name"] != "@" else f"{domain}"
             type_ = record["type"]
             content = record["value"]
 
+            # Make sure the content is also a FQDN (with trailing . ?)
             if content == "@" and record["type"] == "CNAME":
                 content = domain + "."
 
@@ -568,36 +570,47 @@ def domain_registrar_push(operation_logger, domain, dry_run=False):
     # And yet, it is still not done/merged
     wanted_records = [record for record in wanted_records if record["type"] != "CAA"]
 
+    if purge:
+        wanted_records = []
+        autoremove = True
+
     # Construct the base data structure to use lexicon's API.
 
     base_config = {
-        "provider_name": registrar_id,
+        "provider_name": registrar,
         "domain": domain,
-        registrar_id: registrar_credentials
+        registrar: registrar_credentials
     }
 
-    # Fetch all types present in the generated records
-    current_records = []
-
-    # Get unique types present in the generated records
-    types = ["A", "AAAA", "MX", "TXT", "CNAME", "SRV"]
-
-    for key in types:
-        print("fetching type: " + key)
-        fetch_records_for_type = {
-            "action": "list",
-            "type": key,
-        }
-        query = (
+    # Ugly hack to be able to fetch all record types at once:
+    # we initialize a LexiconClient with type: dummytype,
+    # then trigger ourselves the authentication + list_records
+    # instead of calling .execute()
+    query = (
             LexiconConfigResolver()
             .with_dict(dict_object=base_config)
-            .with_dict(dict_object=fetch_records_for_type)
-        )
-        current_records.extend(LexiconClient(query).execute())
+            .with_dict(dict_object={"action": "list", "type": "dummytype"})
+    )
+    #    current_records.extend(
+    client = LexiconClient(query)
+    client.provider.authenticate()
+    current_records = client.provider.list_records()
+
+    # Keep only records for relevant types: A, AAAA, MX, TXT, CNAME, SRV
+    relevant_types = ["A", "AAAA", "MX", "TXT", "CNAME", "SRV"]
+    current_records = [r for r in current_records if r["type"] in relevant_types]
 
     # Ignore records which are for a higher-level domain
     # i.e. we don't care about the records for domain.tld when pushing yuno.domain.tld
     current_records = [r for r in current_records if r['name'].endswith(f'.{domain}')]
+
+    for record in current_records:
+
+        # Try to get rid of weird stuff like ".domain.tld" or "@.domain.tld"
+        record["name"] = record["name"].strip("@").strip(".")
+
+        # Some API return '@' in content and we shall convert it to absolute/fqdn
+        record["content"] = record["content"].replace('@.', domain + ".").replace('@', domain + ".")
 
     # Step 0 : Get the list of unique (type, name)
     # And compare the current and wanted records
@@ -622,105 +635,145 @@ def domain_registrar_push(operation_logger, domain, dry_run=False):
         comparison[(record["type"], record["name"])]["wanted"].append(record)
 
     for type_and_name, records in comparison.items():
+
         #
         # Step 1 : compute a first "diff" where we remove records which are the same on both sides
         # NB / FIXME? : in all this we ignore the TTL value for now...
         #
-        diff = {"current": [], "wanted": []}
-        current_contents = [r["content"] for r in records["current"]]
         wanted_contents = [r["content"] for r in records["wanted"]]
+        current_contents = [r["content"] for r in records["current"]]
 
-        print("--------")
-        print(type_and_name)
-        print(current_contents)
-        print(wanted_contents)
-
-        for record in records["current"]:
-            if record["content"] not in wanted_contents:
-                diff["current"].append(record)
-        for record in records["wanted"]:
-            if record["content"] not in current_contents:
-                diff["wanted"].append(record)
+        current = [r for r in records["current"] if r["content"] not in wanted_contents]
+        wanted = [r for r in records["wanted"] if r["content"] not in current_contents]
 
         #
         # Step 2 : simple case: 0 or 1 record on one side, 0 or 1 on the other
         #           -> either nothing do (0/0) or a creation (0/1) or a deletion (1/0), or an update (1/1)
         #
-        if len(diff["current"]) == 0 and len(diff["wanted"]) == 0:
+        if len(current) == 0 and len(wanted) == 0:
             # No diff, nothing to do
             continue
 
-        if len(diff["current"]) == 1 and len(diff["wanted"]) == 0:
-            changes["delete"].append(diff["current"][0])
+        if len(current) == 1 and len(wanted) == 0:
+            changes["delete"].append(current[0])
             continue
 
-        if len(diff["current"]) == 0 and len(diff["wanted"]) == 1:
-            changes["create"].append(diff["wanted"][0])
+        if len(current) == 0 and len(wanted) == 1:
+            changes["create"].append(wanted[0])
             continue
-        #
-        if len(diff["current"]) == 1 and len(diff["wanted"]) == 1:
-            diff["current"][0]["content"] = diff["wanted"][0]["content"]
-            changes["update"].append(diff["current"][0])
+
+        if len(current) == 1 and len(wanted) == 1:
+            current[0]["old_content"] = current[0]["content"]
+            current[0]["content"] = wanted[0]["content"]
+            changes["update"].append(current[0])
             continue
 
         #
-        # Step 3 : N record on one side, M on the other, watdo # FIXME
+        # Step 3 : N record on one side, M on the other
         #
-        for record in diff["wanted"]:
-            print(f"Dunno watdo with {type_and_name} : {record['content']}")
-        for record in diff["current"]:
-            print(f"Dunno watdo with {type_and_name} : {record['content']}")
+        # Fuzzy matching strategy:
+        # For each wanted record, try to find a current record which looks like the wanted one
+        #   -> if found, trigger an update
+        #   -> if no match found, trigger a create
+        #
+        for record in wanted:
 
+            def likeliness(r):
+                # We compute this only on the first 100 chars, to have a high value even for completely different DKIM keys
+                return SequenceMatcher(None, r["content"][:100], record["content"][:100]).ratio()
+
+            matches = sorted(current, key=lambda r: likeliness(r), reverse=True)
+            if matches and likeliness(matches[0]) > 0.50:
+                match = matches[0]
+                # Remove the match from 'current' so that it's not added to the removed stuff later
+                current.remove(match)
+                match["old_content"] = match["content"]
+                match["content"] = record["content"]
+                changes["update"].append(match)
+            else:
+                changes["create"].append(record)
+
+        #
+        # For all other remaining current records:
+        #        -> trigger deletions
+        #
+        for record in current:
+            changes["delete"].append(record)
+
+    def human_readable_record(action, record):
+        name = record["name"]
+        name = name.strip(".")
+        name = name.replace('.' + domain, "")
+        name = name.replace(domain, "@")
+        name = name[:20]
+        t = record["type"]
+        if action in ["create", "update"]:
+            old_content = record.get("old_content", "(None)")[:30]
+            new_content = record.get("content", "(None)")[:30]
+        else:
+            new_content = record.get("old_content", "(None)")[:30]
+            old_content = record.get("content", "(None)")[:30]
+
+        return f'{name:>20} [{t:^5}] {old_content:^30} -> {new_content:^30}'
 
     if dry_run:
-        return {"changes": changes}
+        out = []
+        for action in ["delete", "create", "update"]:
+            out.append("\n" + action + ":\n")
+            for record in changes[action]:
+                out.append(human_readable_record(action, record))
+
+        return '\n'.join(out)
 
     operation_logger.start()
 
     # Push the records
-    for record in dns_conf:
+    for action in ["delete", "create", "update"]:
+        if action == "delete" and not autoremove:
+            continue
 
-        # For each record, first check if one record exists for the same (type, name) couple
-        # TODO do not push if local and distant records are exactly the same ?
-        type_and_name = (record["type"], record["name"])
-        already_exists = any((r["type"], r["name"]) == type_and_name
-                             for r in current_remote_records)
+        for record in changes[action]:
 
-        # Finally, push the new record or update the existing one
-        record_to_push = {
-            "action": "update" if already_exists else "create",
-            "type": record["type"],
-            "name": record["name"],
-            "content": record["value"],
-            "ttl": record["ttl"],
-        }
+            record["action"] = action
 
-        # FIXME Removed TTL, because it doesn't work with Gandi.
-        # See https://github.com/AnalogJ/lexicon/issues/726 (similar issue)
-        # But I think there is another issue with Gandi. Or I'm misusing the API...
-        if base_config["provider_name"] == "gandi":
-            del record_to_push["ttl"]
+            # Apparently Lexicon yields us some 'id' during fetch
+            # But wants 'identifier' during push ...
+            if "id" in record:
+                record["identifier"] = record["id"]
+                del record["id"]
 
-        print("pushed_record:", record_to_push)
+            if "old_content" in record:
+                del record["old_content"]
 
+            if registrar == "godaddy":
+                if record["name"] == domain:
+                    record["name"] = "@." + record["name"]
+                if record["type"] in ["MX", "SRV"]:
+                    logger.warning(f"Pushing {record['type']} records is not properly supported by Lexicon/Godaddy.")
+                    continue
 
-        # FIXME FIXME FIXME: if a matching record already exists multiple time,
-        # the current code crashes (at least on OVH) ... we need to provide a specific identifier to update
-        query = (
-            LexiconConfigResolver()
-            .with_dict(dict_object=base_config)
-            .with_dict(dict_object=record_to_push)
-        )
+            # FIXME Removed TTL, because it doesn't work with Gandi.
+            # See https://github.com/AnalogJ/lexicon/issues/726 (similar issue)
+            # But I think there is another issue with Gandi. Or I'm misusing the API...
+            if registrar == "gandi":
+                del record["ttl"]
 
-        print(query)
-        print(query.__dict__)
-        results = LexiconClient(query).execute()
-        print("results:", results)
-        # print("Failed" if results == False else "Ok")
+            logger.info(action + " : " + human_readable_record(action, record))
 
-        # FIXME FIXME FIXME : if one create / update crash, it shouldn't block everything
+            query = (
+                LexiconConfigResolver()
+                .with_dict(dict_object=base_config)
+                .with_dict(dict_object=record)
+            )
 
-        # FIXME : is it possible to push multiple create/update request at once ?
+            try:
+                result = LexiconClient(query).execute()
+            except Exception as e:
+                logger.error(f"Failed to {action} record {record['type']}/{record['name']} : {e}")
+            else:
+                if result:
+                    logger.success("Done!")
+                else:
+                    logger.error("Uhoh!?")
 
-
-# def domain_config_fetch(domain, key, value):
+            # FIXME : implement a system to properly report what worked and what did not at the end of the command..
