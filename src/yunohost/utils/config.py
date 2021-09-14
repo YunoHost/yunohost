@@ -695,7 +695,7 @@ class PasswordQuestion(Question):
         need_column = self.current_value or self.optional
         text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli(need_column)
         if self.current_value:
-            text_for_user_input_in_cli += "\n - " + m18n.n("app_argument_password_help")
+            text_for_user_input_in_cli += "\n - " + m18n.n("app_argument_password_help_keep")
         if self.optional:
             text_for_user_input_in_cli += "\n - " + m18n.n("app_argument_password_help_optional")
 
