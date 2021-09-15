@@ -678,5 +678,7 @@
     "invalid_number_min": "Має бути більшим за {min}",
     "invalid_number_max": "Має бути меншим за {max}",
     "log_app_config_set": "Застосувати конфігурацію до застосунку '{}'",
-    "service_not_reloading_because_conf_broken": "Неможливо перезавантажити/перезапустити службу '{name}', тому що її конфігурацію порушено: {errors}"
+    "service_not_reloading_because_conf_broken": "Неможливо перезавантажити/перезапустити службу '{name}', тому що її конфігурацію порушено: {errors}",
+    "app_argument_password_help_optional": "Введіть один пробіл, щоб очистити пароль",
+    "app_argument_password_help_keep": "Натисніть Enter, щоб зберегти поточне значення"
 }
