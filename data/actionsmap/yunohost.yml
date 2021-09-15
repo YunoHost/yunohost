@@ -484,7 +484,6 @@ domain:
         dns-conf:
             deprecated: true
             action_help: Generate sample DNS configuration for a domain
-            api: GET /domains/<domain>/dns
             arguments:
                 domain:
                     help: Target domain
@@ -510,7 +509,6 @@ domain:
         cert-status:
             deprecated: true
             action_help: List status of current certificates (all by default).
-            api: GET /domains/<domain_list>/cert
             arguments:
                 domain_list:
                     help: Domains to check
@@ -523,7 +521,6 @@ domain:
         cert-install:
             deprecated: true
             action_help: Install Let's Encrypt certificates for given domains (all by default).
-            api: PUT /domains/<domain_list>/cert
             arguments:
                 domain_list:
                     help: Domains for which to install the certificates
@@ -545,7 +542,6 @@ domain:
         cert-renew:
             deprecated: true
             action_help: Renew the Let's Encrypt certificates for given domains (all by default).
-            api: PUT /domains/<domain_list>/cert/renew
             arguments:
                 domain_list:
                     help: Domains for which to renew the certificates
