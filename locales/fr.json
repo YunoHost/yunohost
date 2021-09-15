@@ -678,5 +678,7 @@
     "invalid_number_min": "Doit être supérieur à {min}",
     "invalid_number_max": "Doit être inférieur à {max}",
     "log_app_config_set": "Appliquer la configuration à l'application '{}'",
-    "service_not_reloading_because_conf_broken": "Le service '{name}' n'est pas rechargé/redémarré car sa configuration est cassée : {errors}"
+    "service_not_reloading_because_conf_broken": "Le service '{name}' n'est pas rechargé/redémarré car sa configuration est cassée : {errors}",
+    "app_argument_password_help_keep": "Tapez sur Entrée pour conserver la valeur actuelle",
+    "app_argument_password_help_optional": "Tapez un espace pour vider le mot de passe"
 }
