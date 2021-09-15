@@ -1766,7 +1766,6 @@ class AppConfigPanel(ConfigPanel):
             default_script = """#!/bin/bash
 source /usr/share/yunohost/helpers
 ynh_abort_if_errors
-final_path=$(ynh_app_setting_get $app final_path)
 ynh_app_config_run $1
 """
             write_to_file(config_script, default_script)
@@ -1774,11 +1773,13 @@ ynh_app_config_run $1
         # Call config script to extract current values
         logger.debug(f"Calling '{action}' action from config script")
         app_id, app_instance_nb = _parse_app_instance_name(self.app)
+        settings = _get_app_settings(app_id)
         env.update(
             {
                 "app_id": app_id,
                 "app": self.app,
                 "app_instance_nb": str(app_instance_nb),
+                "final_path": settings.get("final_path", "")
             }
         )
 
