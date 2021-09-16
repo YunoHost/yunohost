@@ -438,6 +438,7 @@ class DomainConfigPanel(ConfigPanel):
 
         # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
         self.registar_id = toml['dns']['registrar']['registrar']['value']
+        del toml['dns']['registrar']['registrar']['value']
 
         return toml
 
