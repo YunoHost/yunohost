@@ -726,12 +726,15 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, force=False, 
         return f'{name:>20} [{t:^5}] {old_content:^30} -> {new_content:^30}  {ignored}'
 
     if dry_run:
-        out = {"delete": [], "create": [], "update": []}
-        for action in ["delete", "create", "update"]:
-            for record in changes[action]:
-                out[action].append(human_readable_record(action, record))
+        if Moulinette.interface.type == "api":
+            return changes
+        else:
+            out = {"delete": [], "create": [], "update": []}
+            for action in ["delete", "create", "update"]:
+                for record in changes[action]:
+                    out[action].append(human_readable_record(action, record))
 
-        return out
+            return out
 
     operation_logger.start()
 
