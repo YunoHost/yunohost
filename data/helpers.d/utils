@@ -642,7 +642,7 @@ ynh_write_var_in_file() {
         set -o xtrace # set -x
         return 1
     fi
-    
+
     # Remove comments if needed
     local expression="$(echo "$expression_with_comment" | sed "s@$comments[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
     endline=${expression_with_comment#"$expression"}
@@ -737,6 +737,7 @@ ynh_secure_remove () {
     local file
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    set +o xtrace # set +x
 
     local forbidden_path=" \
     /var/www \
@@ -764,6 +765,8 @@ ynh_secure_remove () {
     else
         ynh_print_info --message="'$file' wasn't deleted because it doesn't exist."
     fi
+
+    set -o xtrace # set -x
 }
 
 # Extract a key from a plain command output

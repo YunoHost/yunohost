@@ -151,26 +151,37 @@ def log_show(
         filter_irrelevant = True
 
     if filter_irrelevant:
-        filters = [
-            r"set [+-]x$",
-            r"set [+-]o xtrace$",
-            r"local \w+$",
-            r"local legacy_args=.*$",
-            r".*Helper used in legacy mode.*",
-            r"args_array=.*$",
-            r"local -A args_array$",
-            r"ynh_handle_getopts_args",
-            r"ynh_script_progression",
-        ]
+
+        def _filter(lines):
+            filters = [
+                r"set [+-]x$",
+                r"set [+-]o xtrace$",
+                r"set [+-]o errexit$",
+                r"set [+-]o nounset$",
+                r"trap '' EXIT",
+                r"local \w+$",
+                r"local exit_code=(1|0)$",
+                r"local legacy_args=.*$",
+                r"local -A args_array$",
+                r"args_array=.*$",
+                r"ret_code=1",
+                r".*Helper used in legacy mode.*",
+                r"ynh_handle_getopts_args",
+                r"ynh_script_progression",
+                r"sleep 0.5",
+                r"'\[' (1|0) -eq (1|0) '\]'$",
+                r"\[?\['? -n '' '?\]\]?$",
+                r"rm -rf /var/cache/yunohost/download/$",
+                r"type -t ynh_clean_setup$",
+                r"DEBUG - \+ echo '",
+                r"DEBUG - \+ exit (1|0)$",
+            ]
+            filters = [re.compile(f) for f in filters]
+            return [line for line in lines if not any(f.search(line.strip()) for f in filters)]
     else:
-        filters = []
+        def _filter(lines):
+            return lines
 
-    def _filter_lines(lines, filters=[]):
-
-        filters = [re.compile(f) for f in filters]
-        return [
-            line for line in lines if not any(f.search(line.strip()) for f in filters)
-        ]
 
     # Normalize log/metadata paths and filenames
     abs_path = path
@@ -209,7 +220,7 @@ def log_show(
             content += "\n============\n\n"
         if os.path.exists(log_path):
             actual_log = read_file(log_path)
-            content += "\n".join(_filter_lines(actual_log.split("\n"), filters))
+            content += "\n".join(_filter(actual_log.split("\n")))
 
         url = yunopaste(content)
 
@@ -282,13 +293,13 @@ def log_show(
     if os.path.exists(log_path):
         from yunohost.service import _tail
 
-        if number and filters:
+        if number and filter_irrelevant:
             logs = _tail(log_path, int(number * 4))
         elif number:
             logs = _tail(log_path, int(number))
         else:
             logs = read_file(log_path)
-        logs = _filter_lines(logs, filters)
+        logs = list(_filter(logs))
         if number:
             logs = logs[-number:]
         infos["log_path"] = log_path
