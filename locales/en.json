@@ -15,7 +15,7 @@
     "app_already_up_to_date": "{app} is already up-to-date",
     "app_argument_choice_invalid": "Use one of these choices '{choices}' for the argument '{name}' instead of '{value}'",
     "app_argument_invalid": "Pick a valid value for the argument '{name}': {error}",
-    "app_argument_password_help": "Type the key Enter to keep the old value",
+    "app_argument_password_help_keep": "Press Enter to keep the current value",
     "app_argument_password_help_optional": "Type one space to empty the password",
     "app_argument_password_no_default": "Error while parsing password argument '{name}': password argument can't have a default value for security reason",
     "app_argument_required": "Argument '{name}' is required",
