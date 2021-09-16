@@ -717,13 +717,12 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
         return f'{name:>20} [{t:^5}] {old_content:^30} -> {new_content:^30}'
 
     if dry_run:
-        out = []
+        out = {"delete": [], "create": [], "update": [], "ignored": []}
         for action in ["delete", "create", "update"]:
-            out.append("\n" + action + ":\n")
             for record in changes[action]:
-                out.append(human_readable_record(action, record))
+                out[action].append(human_readable_record(action, record))
 
-        return '\n'.join(out)
+        return out
 
     operation_logger.start()
 
