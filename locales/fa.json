@@ -500,7 +500,7 @@
     "log_does_exists": "هیچ گزارش عملیاتی با نام '{log}' وجود ندارد ، برای مشاهده همه گزارش عملیّات های موجود در خط فرمان از دستور 'yunohost log list' استفاده کنید",
     "log_help_to_get_failed_log": "عملیات '{desc}' کامل نشد. لطفاً برای دریافت راهنمایی و کمک ، گزارش کامل این عملیات را با استفاده از دستور 'yunohost log share {name}' به اشتراک بگذارید",
     "log_link_to_failed_log": "عملیّات '{desc}' کامل نشد. لطفاً گزارش کامل این عملیات را ارائه دهید بواسطه <a href=\"#/tools/logs/{name}\">اینجا را کلیک کنید</a> برای دریافت کمک",
-    "log_help_to_get_log": "برای مشاهده گزارش عملیات '{desc}'، از دستور 'yunohost log show {name}{name}' استفاده کنید",
+    "log_help_to_get_log": "برای مشاهده گزارش عملیات '{desc}'، از دستور 'yunohost log show {name}' استفاده کنید",
     "log_link_to_log": "گزارش کامل این عملیات: <a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>'",
     "log_corrupted_md_file": "فایل فوق داده YAML مربوط به گزارش ها آسیب دیده است: '{md_file}\nخطا: {error} '",
     "ldap_server_is_down_restart_it": "سرویس LDAP خاموش است ، سعی کنید آن را دوباره راه اندازی کنید...",

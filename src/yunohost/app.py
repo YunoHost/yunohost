@@ -1652,25 +1652,34 @@ def app_action_run(operation_logger, app, action, args=None):
     )
     env_dict["YNH_ACTION"] = action
 
-    _, path = tempfile.mkstemp()
+    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
+    _, action_script = tempfile.mkstemp(dir=tmp_workdir_for_app)
 
-    with open(path, "w") as script:
+    with open(action_script, "w") as script:
         script.write(action_declaration["command"])
-
-    os.chmod(path, 700)
 
     if action_declaration.get("cwd"):
         cwd = action_declaration["cwd"].replace("$app", app)
     else:
-        cwd = os.path.join(APPS_SETTING_PATH, app)
+        cwd = tmp_workdir_for_app
 
-    # FIXME: this should probably be ran in a tmp workdir...
-    retcode = hook_exec(
-        path,
-        env=env_dict,
-        chdir=cwd,
-        user=action_declaration.get("user", "root"),
-    )[0]
+    try:
+        retcode = hook_exec(
+            action_script,
+            env=env_dict,
+            chdir=cwd,
+            user=action_declaration.get("user", "root"),
+        )[0]
+    # Calling hook_exec could fail miserably, or get
+    # manually interrupted (by mistake or because script was stuck)
+    # In that case we still want to delete the tmp work dir
+    except (KeyboardInterrupt, EOFError, Exception):
+        retcode = -1
+        import traceback
+
+        logger.error(m18n.n("unexpected_error", error="\n" + traceback.format_exc()))
+    finally:
+        shutil.rmtree(tmp_workdir_for_app)
 
     if retcode not in action_declaration.get("accepted_return_codes", [0]):
         msg = "Error while executing action '%s' of app '%s': return code %s" % (
@@ -1680,8 +1689,6 @@ def app_action_run(operation_logger, app, action, args=None):
         )
         operation_logger.error(msg)
         raise YunohostError(msg, raw_msg=True)
-
-    os.remove(path)
 
     operation_logger.success()
     return logger.success("Action successed!")
@@ -1760,7 +1767,6 @@ class AppConfigPanel(ConfigPanel):
             default_script = """#!/bin/bash
 source /usr/share/yunohost/helpers
 ynh_abort_if_errors
-final_path=$(ynh_app_setting_get $app final_path)
 ynh_app_config_run $1
 """
             write_to_file(config_script, default_script)
@@ -1768,11 +1774,13 @@ ynh_app_config_run $1
         # Call config script to extract current values
         logger.debug(f"Calling '{action}' action from config script")
         app_id, app_instance_nb = _parse_app_instance_name(self.app)
+        settings = _get_app_settings(app_id)
         env.update(
             {
                 "app_id": app_id,
                 "app": self.app,
                 "app_instance_nb": str(app_instance_nb),
+                "final_path": settings.get("final_path", "")
             }
         )
 
@@ -2172,6 +2180,13 @@ def _set_default_ask_questions(arguments):
                 # The key is for example "app_manifest_install_ask_domain"
                 key = "app_manifest_%s_ask_%s" % (script_name, arg["name"])
                 arg["ask"] = m18n.n(key)
+
+            # Also it in fact doesn't make sense for any of those questions to have an example value nor a default value...
+            if arg.get("type") in ["domain", "user", "password"]:
+                if "example" in arg:
+                    del arg["example"]
+                if "default" in arg:
+                    del arg["domain"]
 
     return arguments
 

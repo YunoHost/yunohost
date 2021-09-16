@@ -248,7 +248,7 @@
     "experimental_feature": "Atencion : aquesta foncionalitat es experimentala e deu pas èsser considerada coma establa, deuriatz pas l’utilizar levat que sapiatz çò que fasètz.",
     "log_corrupted_md_file": "Lo fichièr YAML de metadonadas ligat als jornals d’audit es damatjat : « {md_file} »\nError : {error}",
     "log_link_to_log": "Jornal complèt d’aquesta operacion : <a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>",
-    "log_help_to_get_log": "Per veire lo jornal d’aquesta operacion « {desc} », utilizatz la comanda « yunohost log show {name}{name} »",
+    "log_help_to_get_log": "Per veire lo jornal d’aquesta operacion « {desc} », utilizatz la comanda « yunohost log show {name} »",
     "log_link_to_failed_log": "L’operacion « {desc} » a pas capitat ! Per obténer d’ajuda, mercés <a href=\"#/tools/logs/{name}\"> de fornir lo jornal complèt de l’operacion</a>",
     "log_help_to_get_failed_log": "L’operacion « {desc} » a pas reüssit ! Per obténer d’ajuda, mercés de partejar lo jornal d’audit complèt d’aquesta operacion en utilizant la comanda « yunohost log share {name} »",
     "log_does_exists": "I a pas cap de jornal d’audit per l’operacion amb lo nom « {log} », utilizatz « yunohost log list » per veire totes los jornals d’operacion disponibles",

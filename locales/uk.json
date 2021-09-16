@@ -248,7 +248,7 @@
     "log_does_exists": "Немає журналу операцій з назвою '{log}', використовуйте 'yunohost log list', щоб подивитися всі доступні журнали операцій",
     "log_help_to_get_failed_log": "Операція '{desc}' не може бути завершена. Будь ласка, поділіться повним журналом цієї операції, використовуючи команду 'yunohost log share {name}', щоб отримати допомогу",
     "log_link_to_failed_log": "Не вдалося завершити операцію '{desc}'. Будь ласка, надайте повний журнал цієї операції, <a href=\"#/tools/logs/{name}\">натиснувши тут</a>, щоб отримати допомогу",
-    "log_help_to_get_log": "Щоб переглянути журнал операції '{desc}', використовуйте команду 'yunohost log show {name}{name}'",
+    "log_help_to_get_log": "Щоб переглянути журнал операції '{desc}', використовуйте команду 'yunohost log show {name}'",
     "log_link_to_log": "Повний журнал цієї операції: '<a href=\"#/tools/logs/{name}\" style=\"text-decoration:underline\">{desc}</a>'",
     "log_corrupted_md_file": "Файл метаданих YAML, пов'язаний з журналами, пошкоджено: '{md_file}\nПомилка: {error}'",
     "iptables_unavailable": "Ви не можете грати з iptables тут. Ви перебуваєте або в контейнері, або ваше ядро не підтримує його",

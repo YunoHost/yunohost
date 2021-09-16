@@ -203,7 +203,6 @@ class ConfigPanel:
             "panels": {
                 "properties": ["name", "services", "actions", "help"],
                 "default": {
-                    "name": "",
                     "services": [],
                     "actions": {"apply": {"en": "Apply"}},
                 },
@@ -277,7 +276,9 @@ class ConfigPanel:
                         continue
                     subnode = convert(value, subnode_type)
                     subnode["id"] = key
-                    if node_type == "sections":
+                    if node_type == "toml":
+                        subnode.setdefault("name", {"en": key.capitalize()})
+                    elif node_type == "sections":
                         subnode["name"] = key  # legacy
                         subnode.setdefault("optional", toml_node.get("optional", True))
                     node.setdefault(subnode_type, []).append(subnode)
@@ -364,7 +365,8 @@ class ConfigPanel:
                 display_header(f"\n{'='*40}\n>>>> {name}\n{'='*40}")
                 continue
             name = _value_for_locale(section["name"])
-            display_header(f"\n# {name}")
+            if name:
+                display_header(f"\n# {name}")
 
             # Check and ask unanswered questions
             self.new_values.update(
@@ -473,6 +475,20 @@ class Question(object):
     def normalize(value, option={}):
         return value
 
+    def _prompt(self, text):
+        prefill = ""
+        if self.current_value is not None:
+            prefill = self.humanize(self.current_value, self)
+        elif self.default is not None:
+            prefill = self.humanize(self.default, self)
+        self.value = Moulinette.prompt(
+            message=text,
+            is_password=self.hide_user_input_in_prompt,
+            confirm=False, # We doesn't want to confirm this kind of password like in webadmin
+            prefill=prefill,
+            is_multiline=(self.type == "text"),
+        )
+
     def ask_if_needed(self):
         for i in range(5):
             # Display question if no value filled or if it's a readonly message
@@ -480,20 +496,8 @@ class Question(object):
                 text_for_user_input_in_cli = self._format_text_for_user_input_in_cli()
                 if getattr(self, "readonly", False):
                     Moulinette.display(text_for_user_input_in_cli)
-
                 elif self.value is None:
-                    prefill = ""
-                    if self.current_value is not None:
-                        prefill = self.humanize(self.current_value, self)
-                    elif self.default is not None:
-                        prefill = self.humanize(self.default, self)
-                    self.value = Moulinette.prompt(
-                        message=text_for_user_input_in_cli,
-                        is_password=self.hide_user_input_in_prompt,
-                        confirm=self.hide_user_input_in_prompt,
-                        prefill=prefill,
-                        is_multiline=(self.type == "text"),
-                    )
+                    self._prompt(text_for_user_input_in_cli)
 
             # Apply default value
             class_default = getattr(self, "default_value", None)
@@ -529,7 +533,7 @@ class Question(object):
             raise YunohostValidationError("app_argument_required", name=self.name)
 
         # we have an answer, do some post checks
-        if self.value is not None:
+        if self.value not in [None, ""]:
             if self.choices and self.value not in self.choices:
                 self._raise_invalid_answer()
             if self.pattern and not re.match(self.pattern["regexp"], str(self.value)):
@@ -547,13 +551,13 @@ class Question(object):
             choices=", ".join(self.choices),
         )
 
-    def _format_text_for_user_input_in_cli(self):
+    def _format_text_for_user_input_in_cli(self, column=False):
         text_for_user_input_in_cli = _value_for_locale(self.ask)
 
         if self.choices:
             text_for_user_input_in_cli += " [{0}]".format(" | ".join(self.choices))
 
-        if self.help:
+        if self.help or column:
             text_for_user_input_in_cli += ":\033[m"
         if self.help:
             text_for_user_input_in_cli += "\n - "
@@ -694,6 +698,23 @@ class PasswordQuestion(Question):
 
             assert_password_is_strong_enough("user", self.value)
 
+    def _format_text_for_user_input_in_cli(self):
+        need_column = self.current_value or self.optional
+        text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli(need_column)
+        if self.current_value:
+            text_for_user_input_in_cli += "\n - " + m18n.n("app_argument_password_help_keep")
+        if self.optional:
+            text_for_user_input_in_cli += "\n - " + m18n.n("app_argument_password_help_optional")
+
+        return text_for_user_input_in_cli
+
+    def _prompt(self, text):
+        super()._prompt(text)
+        if self.current_value and self.value == "":
+            self.value = self.current_value
+        elif self.value == " ":
+            self.value = ""
+
 
 class PathQuestion(Question):
     argument_type = "path"
@@ -802,6 +823,14 @@ class UserQuestion(Question):
 
         super().__init__(question, user_answers)
         self.choices = user_list()["users"]
+
+        if not self.choices:
+            raise YunohostValidationError(
+                "app_argument_invalid",
+                name=self.name,
+                error="You should create a YunoHost user first."
+            )
+
         if self.default is None:
             root_mail = "root@%s" % _get_maindomain()
             for user in self.choices.keys():
