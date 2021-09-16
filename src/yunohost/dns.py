@@ -647,25 +647,21 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
         wanted = [r for r in records["wanted"] if r["content"] not in current_contents]
 
         #
-        # Step 2 : simple case: 0 or 1 record on one side, 0 or 1 on the other
-        #           -> either nothing do (0/0) or a creation (0/1) or a deletion (1/0), or an update (1/1)
+        # Step 2 : simple case: 0 record on one side, 0 on the other
+        #           -> either nothing do (0/0) or creations (0/N) or deletions (N/0)
         #
         if len(current) == 0 and len(wanted) == 0:
             # No diff, nothing to do
             continue
 
-        if len(current) == 1 and len(wanted) == 0:
-            changes["delete"].append(current[0])
+        elif len(wanted) == 0:
+            for r in current:
+                changes["delete"].append(r)
             continue
 
-        if len(current) == 0 and len(wanted) == 1:
-            changes["create"].append(wanted[0])
-            continue
-
-        if len(current) == 1 and len(wanted) == 1:
-            current[0]["old_content"] = current[0]["content"]
-            current[0]["content"] = wanted[0]["content"]
-            changes["update"].append(current[0])
+        elif len(current) == 0:
+            for r in current:
+                changes["create"].append(r)
             continue
 
         #
