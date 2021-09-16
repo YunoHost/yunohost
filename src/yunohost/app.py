@@ -2180,6 +2180,13 @@ def _set_default_ask_questions(arguments):
                 key = "app_manifest_%s_ask_%s" % (script_name, arg["name"])
                 arg["ask"] = m18n.n(key)
 
+            # Also it in fact doesn't make sense for any of those questions to have an example value nor a default value...
+            if arg.get("type") in ["domain", "user", "password"]:
+                if "example" in arg:
+                    del arg["example"]
+                if "default" in arg:
+                    del arg["domain"]
+
     return arguments
 
 
