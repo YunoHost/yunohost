@@ -69,7 +69,13 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
     logs = list(reversed(sorted(logs)))
 
     if limit is not None:
-        logs = logs[:limit]
+        if with_suboperations:
+            logs = logs[:limit]
+        else:
+            # If we displaying only parent, we are still gonna load up to limit * 5 logs
+            # because many of them are suboperations which are not gonna be kept
+            # Yet we still want to obtain ~limit number of logs
+            logs = logs[:limit * 5]
 
     for log in logs:
 
@@ -121,6 +127,9 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
         operations = [o for o in operations.values() if o["parent"] is None]
     else:
         operations = [o for o in operations.values()]
+
+    if limit:
+        operations = operations[:limit]
 
     operations = list(reversed(sorted(operations, key=lambda o: o["name"])))
     # Reverse the order of log when in cli, more comfortable to read (avoid
