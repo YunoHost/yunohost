@@ -65,10 +65,6 @@ class ConfigPanel:
         self._load_current_values()
         self._hydrate()
 
-        # Format result in full mode
-        if mode == "full":
-            return self.config
-
         # In 'classic' mode, we display the current value if key refer to an option
         if self.filter_key.count(".") == 2 and mode == "classic":
             option = self.filter_key.split(".")[-1]
@@ -81,13 +77,19 @@ class ConfigPanel:
             key = f"{panel['id']}.{section['id']}.{option['id']}"
             if mode == "export":
                 result[option["id"]] = option.get("current_value")
+                continue
+
+            ask = None
+            if "ask" in option:
+                ask = _value_for_locale(option["ask"])
+            elif "i18n" in self.config:
+                ask = m18n.n(self.config["i18n"] + "_" + option["id"])
+
+            if mode == "full":
+                # edit self.config directly
+                option["ask"] = ask
             else:
-                if "ask" in option:
-                    result[key] = {"ask": _value_for_locale(option["ask"])}
-                elif "i18n" in self.config:
-                    result[key] = {
-                        "ask": m18n.n(self.config["i18n"] + "_" + option["id"])
-                    }
+                result[key] = {"ask": ask}
                 if "current_value" in option:
                     question_class = ARGUMENTS_TYPE_PARSERS[
                         option.get("type", "string")
@@ -96,7 +98,10 @@ class ConfigPanel:
                         option["current_value"], option
                     )
 
-        return result
+        if mode == "full":
+            return self.config
+        else:
+            return result
 
     def set(
         self, key=None, value=None, args=None, args_file=None, operation_logger=None
