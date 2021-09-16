@@ -905,8 +905,8 @@ class DisplayTextQuestion(Question):
                 "warning": "yellow",
                 "danger": "red",
             }
-            text = m18n.g(self.style) if self.style != "danger" else m18n.n("danger")
-            return colorize(text, color[self.style]) + f" {text}"
+            prompt = m18n.g(self.style) if self.style != "danger" else m18n.n("danger")
+            return colorize(prompt, color[self.style]) + f" {text}"
         else:
             return text
 
