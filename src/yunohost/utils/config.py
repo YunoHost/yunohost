@@ -815,6 +815,14 @@ class UserQuestion(Question):
 
         super().__init__(question, user_answers)
         self.choices = user_list()["users"]
+
+        if not self.choices:
+            raise YunohostValidationError(
+                "app_argument_invalid",
+                name=self.name,
+                error="You should create a YunoHost user first."
+            )
+
         if self.default is None:
             root_mail = "root@%s" % _get_maindomain()
             for user in self.choices.keys():
