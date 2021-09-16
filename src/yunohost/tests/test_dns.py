@@ -58,7 +58,7 @@ def test_magic_guess_registrar_yunodyndns():
 @pytest.fixture
 def example_domain():
     domain_add("example.tld")
-    yield "example_tld"
+    yield "example.tld"
     domain_remove("example.tld")
 
 
