@@ -552,7 +552,7 @@ def test_question_password_input_test_ask():
         prompt.assert_called_with(
             message=ask_text,
             is_password=True,
-            confirm=True,
+            confirm=False,
             prefill="",
             is_multiline=False,
         )
