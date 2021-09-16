@@ -526,7 +526,7 @@ class Question(object):
             raise YunohostValidationError("app_argument_required", name=self.name)
 
         # we have an answer, do some post checks
-        if self.value is not None:
+        if self.value not in [None, ""]:
             if self.choices and self.value not in self.choices:
                 self._raise_invalid_answer()
             if self.pattern and not re.match(self.pattern["regexp"], str(self.value)):
