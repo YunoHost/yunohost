@@ -423,7 +423,8 @@ class ConfigPanel:
         if services_to_reload:
             logger.info("Reloading services...")
         for service in services_to_reload:
-            service = service.replace("__APP__", self.app)
+            if hasattr(self, "app"):
+                service = service.replace("__APP__", self.app)
             service_reload_or_restart(service)
 
     def _iterate(self, trigger=["option"]):
