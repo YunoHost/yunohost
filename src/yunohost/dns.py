@@ -26,6 +26,8 @@
 import os
 import re
 import time
+import hashlib
+
 from difflib import SequenceMatcher
 from collections import OrderedDict
 
@@ -33,7 +35,7 @@ from moulinette import m18n, Moulinette
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, write_to_file, read_toml
 
-from yunohost.domain import domain_list, _assert_domain_exists, domain_config_get
+from yunohost.domain import domain_list, _assert_domain_exists, domain_config_get, _get_domain_settings, _set_domain_settings
 from yunohost.utils.dns import dig, YNH_DYNDNS_DOMAINS
 from yunohost.utils.error import YunohostValidationError
 from yunohost.utils.network import get_public_ip
@@ -516,7 +518,7 @@ def _get_registrar_config_section(domain):
 
 
 @is_unit_operation()
-def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=False, purge=False):
+def domain_registrar_push(operation_logger, domain, dry_run=False, force=False, purge=False):
     """
     Send DNS records to the previously-configured registrar of the domain.
     """
@@ -532,6 +534,8 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
 
     if not registrar or registrar in ["None", "yunohost"]:
         raise YunohostValidationError("registrar_push_not_applicable", domain=domain)
+
+    base_dns_zone = _get_dns_zone_for_domain(domain)
 
     registrar_credentials = {
         k.split('.')[-1]: v["value"]
@@ -549,13 +553,13 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
         for record in records:
 
             # Make sure the name is a FQDN
-            name = f"{record['name']}.{domain}" if record["name"] != "@" else f"{domain}"
+            name = f"{record['name']}.{base_dns_zone}" if record["name"] != "@" else base_dns_zone
             type_ = record["type"]
             content = record["value"]
 
             # Make sure the content is also a FQDN (with trailing . ?)
             if content == "@" and record["type"] == "CNAME":
-                content = domain + "."
+                content = base_dns_zone + "."
 
             wanted_records.append({
                 "name": name,
@@ -572,29 +576,31 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
 
     if purge:
         wanted_records = []
-        autoremove = True
+        force = True
 
     # Construct the base data structure to use lexicon's API.
 
     base_config = {
         "provider_name": registrar,
-        "domain": domain,
+        "domain": base_dns_zone,
         registrar: registrar_credentials
     }
 
     # Ugly hack to be able to fetch all record types at once:
-    # we initialize a LexiconClient with type: dummytype,
+    # we initialize a LexiconClient with a dummy type "all"
+    # (which lexicon doesnt actually understands)
     # then trigger ourselves the authentication + list_records
     # instead of calling .execute()
     query = (
             LexiconConfigResolver()
             .with_dict(dict_object=base_config)
-            .with_dict(dict_object={"action": "list", "type": "dummytype"})
+            .with_dict(dict_object={"action": "list", "type": "all"})
     )
     #    current_records.extend(
     client = LexiconClient(query)
     client.provider.authenticate()
     current_records = client.provider.list_records()
+    managed_dns_records_hashes = _get_managed_dns_records_hashes(domain)
 
     # Keep only records for relevant types: A, AAAA, MX, TXT, CNAME, SRV
     relevant_types = ["A", "AAAA", "MX", "TXT", "CNAME", "SRV"]
@@ -602,7 +608,7 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
 
     # Ignore records which are for a higher-level domain
     # i.e. we don't care about the records for domain.tld when pushing yuno.domain.tld
-    current_records = [r for r in current_records if r['name'].endswith(f'.{domain}')]
+    current_records = [r for r in current_records if r['name'].endswith(f'.{domain}') or r['name'] == domain]
 
     for record in current_records:
 
@@ -610,7 +616,10 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
         record["name"] = record["name"].strip("@").strip(".")
 
         # Some API return '@' in content and we shall convert it to absolute/fqdn
-        record["content"] = record["content"].replace('@.', domain + ".").replace('@', domain + ".")
+        record["content"] = record["content"].replace('@.', base_dns_zone + ".").replace('@', base_dns_zone + ".")
+
+        # Check if this record was previously set by YunoHost
+        record["managed_by_yunohost"] = _hash_dns_record(record) in managed_dns_records_hashes
 
     # Step 0 : Get the list of unique (type, name)
     # And compare the current and wanted records
@@ -624,7 +633,7 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
     # (MX, .domain.tld)      10 domain.tld     [10 mx1.ovh.net, 20 mx2.ovh.net]
     # (TXT, .domain.tld)     "v=spf1 ..."      ["v=spf1", "foobar"]
     # (SRV, .domain.tld)                       0 5 5269 domain.tld
-    changes = {"delete": [], "update": [], "create": []}
+    changes = {"delete": [], "update": [], "create": [], "unchanged": []}
     type_and_names = set([(r["type"], r["name"]) for r in current_records + wanted_records])
     comparison = {type_and_name: {"current": [], "wanted": []} for type_and_name in type_and_names}
 
@@ -652,16 +661,15 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
         #
         if len(current) == 0 and len(wanted) == 0:
             # No diff, nothing to do
+            changes["unchanged"].extend(records["current"])
             continue
 
         elif len(wanted) == 0:
-            for r in current:
-                changes["delete"].append(r)
+            changes["delete"].extend(current)
             continue
 
         elif len(current) == 0:
-            for r in current:
-                changes["create"].append(r)
+            changes["create"].extend(wanted)
             continue
 
         #
@@ -699,8 +707,8 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
     def human_readable_record(action, record):
         name = record["name"]
         name = name.strip(".")
-        name = name.replace('.' + domain, "")
-        name = name.replace(domain, "@")
+        name = name.replace('.' + base_dns_zone, "")
+        name = name.replace(base_dns_zone, "@")
         name = name[:20]
         t = record["type"]
         if action in ["create", "update"]:
@@ -710,10 +718,15 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
             new_content = record.get("old_content", "(None)")[:30]
             old_content = record.get("content", "(None)")[:30]
 
-        return f'{name:>20} [{t:^5}] {old_content:^30} -> {new_content:^30}'
+        if not force and action in ["update", "delete"]:
+            ignored = "" if record["managed_by_yunohost"] else "(ignored, won't be changed by Yunohost unless forced)"
+        else:
+            ignored = ""
+
+        return f'{name:>20} [{t:^5}] {old_content:^30} -> {new_content:^30}  {ignored}'
 
     if dry_run:
-        out = {"delete": [], "create": [], "update": [], "ignored": []}
+        out = {"delete": [], "create": [], "update": []}
         for action in ["delete", "create", "update"]:
             for record in changes[action]:
                 out[action].append(human_readable_record(action, record))
@@ -722,12 +735,16 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
 
     operation_logger.start()
 
+    new_managed_dns_records_hashes = [_hash_dns_record(r) for r in changes["unchanged"]]
+
     # Push the records
     for action in ["delete", "create", "update"]:
-        if action == "delete" and not autoremove:
-            continue
 
         for record in changes[action]:
+
+            if not force and action in ["update", "delete"] and not record["managed_by_yunohost"]:
+                # Don't overwrite manually-set or manually-modified records
+                continue
 
             record["action"] = action
 
@@ -737,11 +754,10 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
                 record["identifier"] = record["id"]
                 del record["id"]
 
-            if "old_content" in record:
-                del record["old_content"]
+            logger.info(action + " : " + human_readable_record(action, record))
 
             if registrar == "godaddy":
-                if record["name"] == domain:
+                if record["name"] == base_dns_zone:
                     record["name"] = "@." + record["name"]
                 if record["type"] in ["MX", "SRV"]:
                     logger.warning(f"Pushing {record['type']} records is not properly supported by Lexicon/Godaddy.")
@@ -752,8 +768,6 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
             # But I think there is another issue with Gandi. Or I'm misusing the API...
             if registrar == "gandi":
                 del record["ttl"]
-
-            logger.info(action + " : " + human_readable_record(action, record))
 
             query = (
                 LexiconConfigResolver()
@@ -767,8 +781,29 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, autoremove=Fa
                 logger.error(f"Failed to {action} record {record['type']}/{record['name']} : {e}")
             else:
                 if result:
+                    new_managed_dns_records_hashes.append(_hash_dns_record(record))
                     logger.success("Done!")
                 else:
                     logger.error("Uhoh!?")
 
-            # FIXME : implement a system to properly report what worked and what did not at the end of the command..
+    _set_managed_dns_records_hashes(domain, new_managed_dns_records_hashes)
+
+    # FIXME : implement a system to properly report what worked and what did not at the end of the command..
+
+
+def _get_managed_dns_records_hashes(domain: str) -> list:
+    return _get_domain_settings(domain).get("managed_dns_records_hashes", [])
+
+
+def _set_managed_dns_records_hashes(domain: str, hashes: list) -> None:
+    settings = _get_domain_settings(domain)
+    settings["managed_dns_records_hashes"] = hashes or []
+    _set_domain_settings(domain, settings)
+
+
+def _hash_dns_record(record: dict) -> int:
+
+    fields = ["name", "type", "content"]
+    record_ = {f: record.get(f) for f in fields}
+
+    return hash(frozenset(record_.items()))

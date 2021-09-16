@@ -28,7 +28,7 @@ import os
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import write_to_file
+from moulinette.utils.filesystem import write_to_file, read_yaml, write_to_yaml
 
 from yunohost.app import (
     app_ssowatconf,
@@ -449,6 +449,24 @@ class DomainConfigPanel(ConfigPanel):
         # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
         self.values["registrar"] = self.registar_id
 
+
+def _get_domain_settings(domain: str) -> dict:
+
+    _assert_domain_exists(domain)
+
+    if os.path.exists(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"):
+        return read_yaml(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml") or {}
+    else:
+        return {}
+
+
+def _set_domain_settings(domain: str, settings: dict) -> None:
+
+    _assert_domain_exists(domain)
+
+    write_to_yaml(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml", settings)
+
+
 #
 #
 # Stuff managed in other files
@@ -491,6 +509,6 @@ def domain_dns_suggest(domain):
     return yunohost.dns.domain_dns_suggest(domain)
 
 
-def domain_dns_push(domain, dry_run, autoremove, purge):
+def domain_dns_push(domain, dry_run, force, purge):
     import yunohost.dns
-    return yunohost.dns.domain_registrar_push(domain, dry_run, autoremove, purge)
+    return yunohost.dns.domain_registrar_push(domain, dry_run, force, purge)

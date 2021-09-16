@@ -641,8 +641,8 @@ domain:
                             full: --dry-run
                             help: Only display what's to be pushed
                             action: store_true
-                        --autoremove:
-                            help: Also autoremove records which are stale or not part of the recommended configuration
+                        --force:
+                            help: Also update/remove records which were not originally set by Yunohost, or which have been manually modified
                             action: store_true
                         --purge:
                             help: Delete all records
