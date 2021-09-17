@@ -512,4 +512,4 @@ def domain_dns_suggest(domain):
 
 def domain_dns_push(domain, dry_run, force, purge):
     import yunohost.dns
-    return yunohost.dns.domain_registrar_push(domain, dry_run, force, purge)
+    return yunohost.dns.domain_dns_push(domain, dry_run, force, purge)

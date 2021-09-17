@@ -518,7 +518,7 @@ def _get_registrar_config_section(domain):
 
 
 @is_unit_operation()
-def domain_registrar_push(operation_logger, domain, dry_run=False, force=False, purge=False):
+def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=False):
     """
     Send DNS records to the previously-configured registrar of the domain.
     """
@@ -533,7 +533,7 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, force=False, 
     registrar = settings["dns.registrar.registrar"].get("value")
 
     if not registrar or registrar in ["None", "yunohost"]:
-        raise YunohostValidationError("registrar_push_not_applicable", domain=domain)
+        raise YunohostValidationError("domain_dns_push_not_applicable", domain=domain)
 
     base_dns_zone = _get_dns_zone_for_domain(domain)
 
@@ -544,7 +544,7 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, force=False, 
     }
 
     if not all(registrar_credentials.values()):
-        raise YunohostValidationError("registrar_is_not_configured", domain=domain)
+        raise YunohostValidationError("domain_registrar_is_not_configured", domain=domain)
 
     # Convert the generated conf into a format that matches what we'll fetch using the API
     # Makes it easier to compare "wanted records" with "current records on remote"
