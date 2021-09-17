@@ -348,9 +348,7 @@ def test_question_password():
     ]
     answers = {"some_password": "some_value"}
     expected_result = OrderedDict({"some_password": ("some_value", "password")})
-    Question.operation_logger = MagicMock()
-    with patch.object(Question.operation_logger, "data_to_redact", create=True):
-        assert parse_args_in_yunohost_format(answers, questions) == expected_result
+    assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
 def test_question_password_no_input():
@@ -375,13 +373,9 @@ def test_question_password_input():
         }
     ]
     answers = {}
-    Question.operation_logger = {"data_to_redact": []}
     expected_result = OrderedDict({"some_password": ("some_value", "password")})
 
-    Question.operation_logger = MagicMock()
-    with patch.object(
-        Question.operation_logger, "data_to_redact", create=True
-    ), patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
+    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
         os, "isatty", return_value=True
     ):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
@@ -397,10 +391,7 @@ def test_question_password_input_no_ask():
     answers = {}
     expected_result = OrderedDict({"some_password": ("some_value", "password")})
 
-    Question.operation_logger = MagicMock()
-    with patch.object(
-        Question.operation_logger, "data_to_redact", create=True
-    ), patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
+    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
         os, "isatty", return_value=True
     ):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
@@ -417,20 +408,14 @@ def test_question_password_no_input_optional():
     answers = {}
     expected_result = OrderedDict({"some_password": ("", "password")})
 
-    Question.operation_logger = MagicMock()
-    with patch.object(
-        Question.operation_logger, "data_to_redact", create=True
-    ), patch.object(os, "isatty", return_value=False):
+    with patch.object(os, "isatty", return_value=False):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
     questions = [
         {"name": "some_password", "type": "password", "optional": True, "default": ""}
     ]
 
-    Question.operation_logger = MagicMock()
-    with patch.object(
-        Question.operation_logger, "data_to_redact", create=True
-    ), patch.object(os, "isatty", return_value=False):
+    with patch.object(os, "isatty", return_value=False):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
 
 
@@ -446,10 +431,7 @@ def test_question_password_optional_with_input():
     answers = {}
     expected_result = OrderedDict({"some_password": ("some_value", "password")})
 
-    Question.operation_logger = MagicMock()
-    with patch.object(
-        Question.operation_logger, "data_to_redact", create=True
-    ), patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
+    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
         os, "isatty", return_value=True
     ):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
@@ -467,10 +449,7 @@ def test_question_password_optional_with_empty_input():
     answers = {}
     expected_result = OrderedDict({"some_password": ("", "password")})
 
-    Question.operation_logger = MagicMock()
-    with patch.object(
-        Question.operation_logger, "data_to_redact", create=True
-    ), patch.object(Moulinette, "prompt", return_value=""), patch.object(
+    with patch.object(Moulinette, "prompt", return_value=""), patch.object(
         os, "isatty", return_value=True
     ):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
@@ -487,10 +466,7 @@ def test_question_password_optional_with_input_without_ask():
     answers = {}
     expected_result = OrderedDict({"some_password": ("some_value", "password")})
 
-    Question.operation_logger = MagicMock()
-    with patch.object(
-        Question.operation_logger, "data_to_redact", create=True
-    ), patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
+    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
         os, "isatty", return_value=True
     ):
         assert parse_args_in_yunohost_format(answers, questions) == expected_result
@@ -540,10 +516,7 @@ def test_question_password_input_test_ask():
     ]
     answers = {}
 
-    Question.operation_logger = MagicMock()
     with patch.object(
-        Question.operation_logger, "data_to_redact", create=True
-    ), patch.object(
         Moulinette, "prompt", return_value="some_value"
     ) as prompt, patch.object(
         os, "isatty", return_value=True
@@ -572,10 +545,7 @@ def test_question_password_input_test_ask_with_example():
     ]
     answers = {}
 
-    Question.operation_logger = MagicMock()
     with patch.object(
-        Question.operation_logger, "data_to_redact", create=True
-    ), patch.object(
         Moulinette, "prompt", return_value="some_value"
     ) as prompt, patch.object(
         os, "isatty", return_value=True
@@ -599,10 +569,7 @@ def test_question_password_input_test_ask_with_help():
     ]
     answers = {}
 
-    Question.operation_logger = MagicMock()
     with patch.object(
-        Question.operation_logger, "data_to_redact", create=True
-    ), patch.object(
         Moulinette, "prompt", return_value="some_value"
     ) as prompt, patch.object(
         os, "isatty", return_value=True

@@ -39,6 +39,7 @@ from moulinette.utils.filesystem import (
 
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.log import OperationLogger
 
 logger = getActionLogger("yunohost.config")
 CONFIG_PANEL_VERSION_SUPPORTED = 1.0
@@ -441,7 +442,6 @@ class ConfigPanel:
 
 class Question(object):
     hide_user_input_in_prompt = False
-    operation_logger = None
     pattern = None
 
     def __init__(self, question, user_answers):
@@ -575,13 +575,9 @@ class Question(object):
             for data in data_to_redact
             if urllib.parse.quote(data) != data
         ]
-        if self.operation_logger:
-            self.operation_logger.data_to_redact.extend(data_to_redact)
-        elif data_to_redact:
-            raise YunohostError(
-                f"Can't redact {self.name} because no operation logger available in the context",
-                raw_msg=True,
-            )
+
+        for operation_logger in OperationLogger._instances:
+            operation_logger.data_to_redact.extend(data_to_redact)
 
         return self.value
 
