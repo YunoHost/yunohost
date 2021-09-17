@@ -457,22 +457,26 @@ def permission_create(
             "permission_creation_failed", permission=permission, error=e
         )
 
-    permission_url(
-        permission,
-        url=url,
-        add_url=additional_urls,
-        auth_header=auth_header,
-        sync_perm=False,
-    )
+    try:
+        permission_url(
+            permission,
+            url=url,
+            add_url=additional_urls,
+            auth_header=auth_header,
+            sync_perm=False,
+        )
 
-    new_permission = _update_ldap_group_permission(
-        permission=permission,
-        allowed=allowed,
-        label=label,
-        show_tile=show_tile,
-        protected=protected,
-        sync_perm=sync_perm,
-    )
+        new_permission = _update_ldap_group_permission(
+            permission=permission,
+            allowed=allowed,
+            label=label,
+            show_tile=show_tile,
+            protected=protected,
+            sync_perm=sync_perm,
+        )
+    except:
+        permission_delete(permission, force=True)
+        raise
 
     logger.debug(m18n.n("permission_created", permission=permission))
     return new_permission
