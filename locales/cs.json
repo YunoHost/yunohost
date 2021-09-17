@@ -11,7 +11,6 @@
     "action_invalid": "Nesprávné akce '{action}'",
     "aborting": "Zrušeno.",
     "app_change_url_identical_domains": "Stará a nová doména/url_cesta jsou totožné ('{domain}{path}'), nebudou provedeny žádné změny.",
-    "app_change_url_failed_nginx_reload": "Nepodařilo se znovunačís NGINX. Následuje výpis příkazu 'nginx -t':\n{nginx_errors}",
     "app_argument_invalid": "Vyberte správnou hodnotu pro argument '{name}': {error}",
     "app_argument_choice_invalid": "Vyberte jednu z možností '{choices}' pro argument'{name}'",
     "app_already_up_to_date": "{app} aplikace je/jsou aktuální",
