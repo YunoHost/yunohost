@@ -19,13 +19,15 @@
 
 """
 import dns.resolver
+from typing import List
+
 from moulinette.utils.filesystem import read_file
 
 YNH_DYNDNS_DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
 
 # Lazy dev caching to avoid re-reading the file multiple time when calling
 # dig() often during same yunohost operation
-external_resolvers_ = []
+external_resolvers_: List[str] = []
 
 
 def external_resolvers():

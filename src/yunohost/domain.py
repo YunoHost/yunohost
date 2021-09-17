@@ -24,6 +24,7 @@
     Manage domains
 """
 import os
+from typing import Dict, Any
 
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
@@ -47,7 +48,7 @@ DOMAIN_CONFIG_PATH = "/usr/share/yunohost/other/config_domain.toml"
 DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 
 # Lazy dev caching to avoid re-query ldap every time we need the domain list
-domain_list_cache = {}
+domain_list_cache: Dict[str, Any] = {}
 
 
 def domain_list(exclude_subdomains=False):
