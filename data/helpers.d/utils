@@ -2,7 +2,7 @@
 
 if [ -z "$YNH_APP_BASEDIR" ];
 then
-    ynh_print_warn --message="YNH_APP_BASEDIR is not defined, many helpers use it, please define it!"
+    echo -e "YNH_APP_BASEDIR is not defined, many helpers use it, please define it!" >&2
     YNH_APP_BASEDIR=$(realpath ..)
 fi
 
