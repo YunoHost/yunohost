@@ -56,7 +56,6 @@ from yunohost.utils import packages
 from yunohost.utils.config import (
     ConfigPanel,
     parse_args_in_yunohost_format,
-    Question,
 )
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
