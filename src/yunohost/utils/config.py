@@ -126,7 +126,7 @@ class ConfigPanel:
 
         if args_file:
             # Import YAML / JSON file but keep --args values
-            self.args = {**read_yaml(args_file), **self.args}
+            self.args = {**read_yaml(args_file.name), **self.args}
 
         if value is not None:
             self.args = {self.filter_key.split(".")[-1]: value}
