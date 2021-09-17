@@ -123,7 +123,10 @@ _ynh_app_config_apply() {
                     ynh_print_info --message="File '$bind_file' removed"
                 else
                     ynh_backup_if_checksum_is_different --file="$bind_file"
-                    cp "${!short_setting}" "$bind_file"
+                    if [[ "${!short_setting}" != "$bind_file" ]]
+                    then
+                        cp "${!short_setting}" "$bind_file"
+                    fi
                     ynh_store_file_checksum --file="$bind_file" --update_only
                     ynh_print_info --message="File '$bind_file' overwrited with ${!short_setting}"
                 fi

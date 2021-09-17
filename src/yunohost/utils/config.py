@@ -927,11 +927,11 @@ class FileQuestion(Question):
                     "content": self.value,
                     "filename": user_answers.get(f"{self.name}[name]", self.name),
                 }
-        # If path file are the same
-        if self.value and str(self.value) == self.current_value:
-            self.value = None
 
     def _prevalidate(self):
+        if self.value is None:
+            self.value = self.current_value
+
         super()._prevalidate()
         if (
             isinstance(self.value, str)
@@ -966,7 +966,7 @@ class FileQuestion(Question):
         if not self.value:
             return self.value
 
-        if Moulinette.interface.type == "api":
+        if Moulinette.interface.type == "api" and isinstance(self.value, dict):
 
             upload_dir = tempfile.mkdtemp(prefix="tmp_configpanel_")
             FileQuestion.upload_dirs += [upload_dir]
