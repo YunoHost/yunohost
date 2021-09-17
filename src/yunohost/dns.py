@@ -547,6 +547,8 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
     registrar_credentials = settings
     registrar_credentials.pop("registrar")
+    if "experimental_disclaimer" in registrar_credentials:
+        registrar_credentials.pop("experimental_disclaimer")
 
     if not all(registrar_credentials.values()):
         raise YunohostValidationError("domain_registrar_is_not_configured", domain=domain)
