@@ -894,9 +894,6 @@ def app_install(
     else:
         app_instance_name = app_id
 
-    # Neede to redact password question
-    Question.operation_logger = operation_logger
-
     # Retrieve arguments list for install script
     args_dict = (
         {} if not args else dict(urllib.parse.parse_qsl(args, keep_blank_values=True))
