@@ -618,6 +618,12 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, force=False, 
         # Some API return '@' in content and we shall convert it to absolute/fqdn
         record["content"] = record["content"].replace('@.', base_dns_zone + ".").replace('@', base_dns_zone + ".")
 
+        if record["type"] == "TXT":
+            if not record["content"].startswith('"'):
+                record["content"] = '"' + record["content"]
+            if not record["content"].endswith('"'):
+                record["content"] = record["content"] + '"'
+
         # Check if this record was previously set by YunoHost
         record["managed_by_yunohost"] = _hash_dns_record(record) in managed_dns_records_hashes
 
@@ -711,26 +717,33 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, force=False, 
         name = name.replace(base_dns_zone, "@")
         name = name[:20]
         t = record["type"]
-        if action in ["create", "update"]:
-            old_content = record.get("old_content", "(None)")[:30]
-            new_content = record.get("content", "(None)")[:30]
-        else:
-            new_content = record.get("old_content", "(None)")[:30]
-            old_content = record.get("content", "(None)")[:30]
 
         if not force and action in ["update", "delete"]:
             ignored = "" if record["managed_by_yunohost"] else "(ignored, won't be changed by Yunohost unless forced)"
         else:
             ignored = ""
 
-        return f'{name:>20} [{t:^5}] {old_content:^30} -> {new_content:^30}  {ignored}'
+        if action == "create":
+            old_content = record.get("old_content", "(None)")[:30]
+            new_content = record.get("content", "(None)")[:30]
+            return f'{name:>20} [{t:^5}] {new_content:^30}  {ignored}'
+        elif action == "update":
+            old_content = record.get("old_content", "(None)")[:30]
+            new_content = record.get("content", "(None)")[:30]
+            return f'{name:>20} [{t:^5}] {old_content:^30} -> {new_content:^30}  {ignored}'
+        elif action == "unchanged":
+            old_content = new_content = record.get("content", "(None)")[:30]
+            return f'{name:>20} [{t:^5}] {old_content:^30}'
+        else:
+            old_content = record.get("content", "(None)")[:30]
+            return f'{name:>20} [{t:^5}] {old_content:^30} {ignored}'
 
     if dry_run:
         if Moulinette.interface.type == "api":
             return changes
         else:
-            out = {"delete": [], "create": [], "update": []}
-            for action in ["delete", "create", "update"]:
+            out = {"delete": [], "create": [], "update": [], "unchanged": []}
+            for action in ["delete", "create", "update", "unchanged"]:
                 for record in changes[action]:
                     out[action].append(human_readable_record(action, record))
 
