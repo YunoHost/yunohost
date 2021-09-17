@@ -1048,6 +1048,7 @@ def app_install(
             env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
             env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
             env_dict_remove["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
+            env_dict_remove["YNH_APP_BASEDIR"] = extracted_app_folder
 
             # Execute remove script
             operation_logger_remove = OperationLogger(
@@ -1165,6 +1166,8 @@ def app_remove(operation_logger, app, purge=False):
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
     env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
     env_dict["YNH_APP_PURGE"] = str(purge)
+    env_dict["YNH_APP_BASEDIR"] = tmp_workdir_for_app
+
     operation_logger.extra.update({"env": env_dict})
     operation_logger.flush()
 
@@ -1783,6 +1786,7 @@ ynh_app_config_run $1
                 "app": self.app,
                 "app_instance_nb": str(app_instance_nb),
                 "final_path": settings.get("final_path", ""),
+                "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, self.app),
             }
         )
 
