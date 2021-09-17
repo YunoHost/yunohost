@@ -423,7 +423,8 @@ class ConfigPanel:
         if services_to_reload:
             logger.info("Reloading services...")
         for service in services_to_reload:
-            service = service.replace("__APP__", self.app)
+            if hasattr(self, "app"):
+                service = service.replace("__APP__", self.app)
             service_reload_or_restart(service)
 
     def _iterate(self, trigger=["option"]):
@@ -815,6 +816,14 @@ class UserQuestion(Question):
 
         super().__init__(question, user_answers)
         self.choices = user_list()["users"]
+
+        if not self.choices:
+            raise YunohostValidationError(
+                "app_argument_invalid",
+                name=self.name,
+                error="You should create a YunoHost user first."
+            )
+
         if self.default is None:
             root_mail = "root@%s" % _get_maindomain()
             for user in self.choices.keys():
@@ -897,8 +906,8 @@ class DisplayTextQuestion(Question):
                 "warning": "yellow",
                 "danger": "red",
             }
-            text = m18n.g(self.style) if self.style != "danger" else m18n.n("danger")
-            return colorize(text, color[self.style]) + f" {text}"
+            prompt = m18n.g(self.style) if self.style != "danger" else m18n.n("danger")
+            return colorize(prompt, color[self.style]) + f" {text}"
         else:
             return text
 

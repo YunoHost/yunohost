@@ -1,6 +1,6 @@
 #!/bin/bash
 
-YNH_APP_BASEDIR=$(realpath $([[ "$(basename $0)" =~ ^backup|restore$ ]] && echo '../settings' || [[ -n "$YNH_ACTION" ]] && echo '.' || echo '..' ))
+YNH_APP_BASEDIR=$(realpath $([[ "$(basename $0)" =~ ^backup|restore$ ]] && echo '../settings' || [[ -n "${YNH_ACTION:-}" ]] && echo '.' || echo '..' ))
 
 # Handle script crashes / failures
 #
@@ -519,6 +519,8 @@ ynh_read_var_in_file() {
 
     [[ -f $file ]] || ynh_die --message="File $file does not exists"
 
+    set +o xtrace # set +x
+
     # Get the line number after which we search for the variable
     local line_number=1
     if [[ -n "$after" ]];
@@ -526,6 +528,7 @@ ynh_read_var_in_file() {
         line_number=$(grep -n $after $file | cut -d: -f1)
         if [[ -z "$line_number" ]];
         then
+            set -o xtrace # set -x
             return 1
         fi
     fi
@@ -555,6 +558,7 @@ ynh_read_var_in_file() {
     # Extract the part after assignation sign
     local expression_with_comment="$(tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL | head -n1)"
     if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
+        set -o xtrace # set -x
         echo YNH_NULL
         return 0
     fi
@@ -570,6 +574,7 @@ ynh_read_var_in_file() {
     else
         echo "$expression"
     fi
+    set -o xtrace # set -x
 }
 
 # Set a value into heterogeneous file (yaml, json, php, python...)
@@ -594,6 +599,8 @@ ynh_write_var_in_file() {
 
     [[ -f $file ]] || ynh_die --message="File $file does not exists"
 
+    set +o xtrace # set +x
+
     # Get the line number after which we search for the variable
     local line_number=1
     if [[ -n "$after" ]];
@@ -601,6 +608,7 @@ ynh_write_var_in_file() {
         line_number=$(grep -n $after $file | cut -d: -f1)
         if [[ -z "$line_number" ]];
         then
+            set -o xtrace # set -x
             return 1
         fi
     fi
@@ -631,9 +639,10 @@ ynh_write_var_in_file() {
     # Extract the part after assignation sign
     local expression_with_comment="$(tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL | head -n1)"
     if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
+        set -o xtrace # set -x
         return 1
     fi
-    
+
     # Remove comments if needed
     local expression="$(echo "$expression_with_comment" | sed "s@$comments[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
     endline=${expression_with_comment#"$expression"}
@@ -661,6 +670,7 @@ ynh_write_var_in_file() {
         fi
         sed -ri "${range}s$delimiter(^${var_part}).*\$$delimiter\1${value}${endline}${delimiter}i" ${file}
     fi
+    set -o xtrace # set -x
 }
 
 
@@ -727,6 +737,7 @@ ynh_secure_remove () {
     local file
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    set +o xtrace # set +x
 
     local forbidden_path=" \
     /var/www \
@@ -754,6 +765,8 @@ ynh_secure_remove () {
     else
         ynh_print_info --message="'$file' wasn't deleted because it doesn't exist."
     fi
+
+    set -o xtrace # set -x
 }
 
 # Extract a key from a plain command output
