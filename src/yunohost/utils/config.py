@@ -25,6 +25,7 @@ import urllib.parse
 import tempfile
 import shutil
 from collections import OrderedDict
+from typing import Optional, Dict, List
 
 from moulinette.interfaces.cli import colorize
 from moulinette import Moulinette, m18n
@@ -442,7 +443,7 @@ class ConfigPanel:
 
 class Question(object):
     hide_user_input_in_prompt = False
-    pattern = None
+    pattern: Optional[Dict] = None
 
     def __init__(self, question, user_answers):
         self.name = question["name"]
@@ -927,7 +928,7 @@ class DisplayTextQuestion(Question):
 
 class FileQuestion(Question):
     argument_type = "file"
-    upload_dirs = []
+    upload_dirs: List[str] = []
 
     @classmethod
     def clean_upload_dirs(cls):

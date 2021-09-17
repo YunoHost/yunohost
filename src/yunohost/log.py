@@ -29,6 +29,7 @@ import re
 import yaml
 import glob
 import psutil
+from typing import List
 
 from datetime import datetime, timedelta
 from logging import FileHandler, getLogger, Formatter
@@ -478,7 +479,7 @@ class OperationLogger(object):
     This class record logs and metadata like context or start time/end time.
     """
 
-    _instances = []
+    _instances: List[object] = []
 
     def __init__(self, operation, related_to=None, **kwargs):
         # TODO add a way to not save password on app installation

@@ -23,6 +23,7 @@ import re
 import logging
 import time
 import dns.resolver
+from typing import List
 
 from moulinette.utils.filesystem import read_file, write_to_file
 from moulinette.utils.network import download_text
@@ -126,7 +127,7 @@ def get_gateway():
 
 # Lazy dev caching to avoid re-reading the file multiple time when calling
 # dig() often during same yunohost operation
-external_resolvers_ = []
+external_resolvers_: List[str] = []
 
 
 def external_resolvers():
