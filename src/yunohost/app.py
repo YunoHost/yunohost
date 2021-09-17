@@ -895,6 +895,9 @@ def app_install(
     else:
         app_instance_name = app_id
 
+    # Neede to redact password question
+    Question.operation_logger = operation_logger
+
     # Retrieve arguments list for install script
     args_dict = (
         {} if not args else dict(urllib.parse.parse_qsl(args, keep_blank_values=True))
@@ -912,19 +915,6 @@ def app_install(
 
     # We'll check that the app didn't brutally edit some system configuration
     manually_modified_files_before_install = manually_modified_files()
-
-    # Tell the operation_logger to redact all password-type args
-    # Also redact the % escaped version of the password that might appear in
-    # the 'args' section of metadata (relevant for password with non-alphanumeric char)
-    data_to_redact = [
-        value[0] for value in args_odict.values() if value[1] == "password"
-    ]
-    data_to_redact += [
-        urllib.parse.quote(data)
-        for data in data_to_redact
-        if urllib.parse.quote(data) != data
-    ]
-    operation_logger.data_to_redact.extend(data_to_redact)
 
     operation_logger.related_to = [
         s for s in operation_logger.related_to if s[0] != "app"
