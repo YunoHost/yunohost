@@ -1,6 +1,6 @@
 #!/bin/bash
 
-if [ -z "$YNH_APP_BASEDIR" ];
+if [ -z "${YNH_APP_BASEDIR:-}" ];
 then
     echo -e "YNH_APP_BASEDIR is not defined, many helpers use it, please define it!" >&2
     YNH_APP_BASEDIR=$(realpath ..)
