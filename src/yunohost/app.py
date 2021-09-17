@@ -456,19 +456,21 @@ def app_change_url(operation_logger, app, domain, path):
     # TODO: Allow to specify arguments
     args_odict = _parse_args_from_manifest(manifest, "change_url")
 
+    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
+
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(app, args=args_odict)
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
     env_dict["YNH_APP_OLD_PATH"] = old_path
     env_dict["YNH_APP_NEW_DOMAIN"] = domain
     env_dict["YNH_APP_NEW_PATH"] = path
+    env_dict["YNH_APP_BASEDIR"] = tmp_workdir_for_app
 
     if domain != old_domain:
         operation_logger.related_to.append(("domain", old_domain))
     operation_logger.extra.update({"env": env_dict})
     operation_logger.start()
 
-    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
     change_url_script = os.path.join(tmp_workdir_for_app, "scripts/change_url")
 
     # Execute App change_url script
@@ -619,6 +621,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
         env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
+        env_dict["YNH_APP_BASEDIR"] = extracted_app_folder
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
@@ -980,6 +983,7 @@ def app_install(
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(app_instance_name, args=args_odict)
+    env_dict["YNH_APP_BASEDIR"] = extracted_app_folder
 
     env_dict_for_logging = env_dict.copy()
     for arg_name, arg_value_and_type in args_odict.items():
@@ -1645,12 +1649,14 @@ def app_action_run(operation_logger, app, action, args=None):
     )
     args_odict = _parse_args_for_action(actions[action], args=args_dict)
 
+    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
+
     env_dict = _make_environment_for_app_script(
         app, args=args_odict, args_prefix="ACTION_"
     )
     env_dict["YNH_ACTION"] = action
+    env_dict["YNH_APP_BASEDIR"] = tmp_workdir_for_app
 
-    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
     _, action_script = tempfile.mkstemp(dir=tmp_workdir_for_app)
 
     with open(action_script, "w") as script:

@@ -707,6 +707,7 @@ class BackupManager:
 
         # Prepare environment
         env_dict = self._get_env_var(app)
+        env_dict["YNH_APP_BASEDIR"] = os.path.join(self.work_dir, "apps", app, "settings")
         tmp_app_bkp_dir = env_dict["YNH_APP_BACKUP_DIR"]
         settings_dir = os.path.join(self.work_dir, "apps", app, "settings")
 
@@ -1487,6 +1488,7 @@ class RestoreManager:
                 "YNH_APP_BACKUP_DIR": os.path.join(
                     self.work_dir, "apps", app_instance_name, "backup"
                 ),
+                "YNH_APP_BASEDIR": os.path.join(self.work_dir, "apps", app_instance_name, "settings"),
             }
         )
 
@@ -1524,6 +1526,7 @@ class RestoreManager:
 
                 # Setup environment for remove script
                 env_dict_remove = _make_environment_for_app_script(app_instance_name)
+                env_dict_remove["YNH_APP_BASEDIR"] = os.path.join(self.work_dir, "apps", app_instance_name, "settings")
 
                 remove_operation_logger = OperationLogger(
                     "remove_on_failed_restore",
