@@ -121,7 +121,7 @@
     "pattern_password": "Devas esti almenaŭ 3 signoj longaj",
     "root_password_desynchronized": "La pasvorta administranto estis ŝanĝita, sed YunoHost ne povis propagandi ĉi tion al la radika pasvorto!",
     "service_remove_failed": "Ne povis forigi la servon '{service}'",
-    "backup_permission": "Rezerva permeso por app {app}",
+    "backup_permission": "Rezerva permeso por {app}",
     "log_user_group_delete": "Forigi grupon '{}'",
     "log_user_group_update": "Ĝisdatigi grupon '{}'",
     "dyndns_provider_unreachable": "Ne povas atingi la provizanton DynDNS {provider}: ĉu via YunoHost ne estas ĝuste konektita al la interreto aŭ la dyneta servilo malŝaltiĝas.",
