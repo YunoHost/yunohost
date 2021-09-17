@@ -478,7 +478,7 @@ class Question(object):
         self.value = Moulinette.prompt(
             message=text,
             is_password=self.hide_user_input_in_prompt,
-            confirm=False, # We doesn't want to confirm this kind of password like in webadmin
+            confirm=False,  # We doesn't want to confirm this kind of password like in webadmin
             prefill=prefill,
             is_multiline=(self.type == "text"),
         )
@@ -705,11 +705,17 @@ class PasswordQuestion(Question):
 
     def _format_text_for_user_input_in_cli(self):
         need_column = self.current_value or self.optional
-        text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli(need_column)
+        text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli(
+            need_column
+        )
         if self.current_value:
-            text_for_user_input_in_cli += "\n - " + m18n.n("app_argument_password_help_keep")
+            text_for_user_input_in_cli += "\n - " + m18n.n(
+                "app_argument_password_help_keep"
+            )
         if self.optional:
-            text_for_user_input_in_cli += "\n - " + m18n.n("app_argument_password_help_optional")
+            text_for_user_input_in_cli += "\n - " + m18n.n(
+                "app_argument_password_help_optional"
+            )
 
         return text_for_user_input_in_cli
 
@@ -832,7 +838,7 @@ class UserQuestion(Question):
             raise YunohostValidationError(
                 "app_argument_invalid",
                 name=self.name,
-                error="You should create a YunoHost user first."
+                error="You should create a YunoHost user first.",
             )
 
         if self.default is None:

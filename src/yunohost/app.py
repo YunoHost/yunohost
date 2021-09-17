@@ -1779,7 +1779,7 @@ ynh_app_config_run $1
                 "app_id": app_id,
                 "app": self.app,
                 "app_instance_nb": str(app_instance_nb),
-                "final_path": settings.get("final_path", "")
+                "final_path": settings.get("final_path", ""),
             }
         )
 
