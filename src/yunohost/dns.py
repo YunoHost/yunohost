@@ -536,20 +536,17 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
     _assert_domain_exists(domain)
 
-    settings = domain_config_get(domain, key='dns.registrar')
+    settings = domain_config_get(domain, key='dns.registrar', export=True)
 
-    registrar = settings["dns.registrar.registrar"].get("value")
+    registrar = settings.get("registrar")
 
     if not registrar or registrar in ["None", "yunohost"]:
         raise YunohostValidationError("domain_dns_push_not_applicable", domain=domain)
 
     base_dns_zone = _get_dns_zone_for_domain(domain)
 
-    registrar_credentials = {
-        k.split('.')[-1]: v["value"]
-        for k, v in settings.items()
-        if k != "dns.registrar.registar"
-    }
+    registrar_credentials = settings
+    registrar_credentials.pop("registrar")
 
     if not all(registrar_credentials.values()):
         raise YunohostValidationError("domain_registrar_is_not_configured", domain=domain)
