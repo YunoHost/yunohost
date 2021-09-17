@@ -13,7 +13,7 @@ i18n = "domain_config"
 [feature]
     
     [feature.mail]
-    services = ['postfix', 'dovecot']
+    #services = ['postfix', 'dovecot']
 
         [feature.mail.mail_out]
         type = "boolean"
@@ -23,11 +23,11 @@ i18n = "domain_config"
         type = "boolean"
         default = 1
         
-        [feature.mail.backup_mx]
-        type = "tags"
-        default = []
-        pattern.regexp = '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
-        pattern.error = "pattern_error"
+        #[feature.mail.backup_mx]
+        #type = "tags"
+        #default = []
+        #pattern.regexp = '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
+        #pattern.error = "pattern_error"
     
     [feature.xmpp]
 

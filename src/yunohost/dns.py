@@ -26,7 +26,6 @@
 import os
 import re
 import time
-import hashlib
 
 from difflib import SequenceMatcher
 from collections import OrderedDict
@@ -506,6 +505,15 @@ def _get_registrar_config_section(domain):
             "ask": f"YunoHost automatically detected that this domain is handled by the registrar **{registrar}**. If you want, YunoHost will automatically configure this DNS zone, if you provide it with the appropriate API credentials. You can also manually configure your DNS records following the documentation as https://yunohost.org/dns.",  # FIXME: i18n
             "value": registrar
         })
+
+        TESTED_REGISTRARS = ["ovh", "gandi"]
+        if registrar not in TESTED_REGISTRARS:
+            registrar_infos["experimental_disclaimer"] = OrderedDict({
+                "type": "alert",
+                "style": "danger",
+                "ask": f"So far, the interface with **{registrar}**'s API has not been properly tested and reviewed by the YunoHost's community. Support is **very experimental** - be careful!",  # FIXME: i18n
+            })
+
         # TODO : add a help tip with the link to the registar's API doc (c.f. Lexicon's README)
         registrar_list = read_toml(DOMAIN_REGISTRAR_LIST_PATH)
         registrar_credentials = registrar_list[registrar]
@@ -572,6 +580,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     # See https://github.com/AnalogJ/lexicon/issues/282 and https://github.com/AnalogJ/lexicon/pull/371
     # They say it's trivial to implement it!
     # And yet, it is still not done/merged
+    # Update by Aleks: it works - at least with Gandi ?!
     #wanted_records = [record for record in wanted_records if record["type"] != "CAA"]
 
     if purge:
@@ -756,7 +765,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     # If --force ain't used, we won't delete/update records not managed by yunohost
     if not force:
         for action in ["delete", "update"]:
-            changes[action] = [r for r in changes[action] if not r["managed_by_yunohost"]]
+            changes[action] = [r for r in changes[action] if r["managed_by_yunohost"]]
 
     def progress(info=""):
         progress.nb += 1

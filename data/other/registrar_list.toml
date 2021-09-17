@@ -230,6 +230,8 @@
     type = "string"
     choices.rpc = "RPC"
     choices.rest = "REST"
+    default = "rest"
+    visible = "false"
     
 [gehirn]
     [gehirn.auth_token]
