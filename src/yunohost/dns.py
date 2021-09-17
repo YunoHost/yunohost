@@ -723,11 +723,14 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         for record in current:
             changes["delete"].append(record)
 
-    def human_readable_record(action, record):
-        name = record["name"]
+    def relative_name(name):
         name = name.strip(".")
         name = name.replace('.' + base_dns_zone, "")
         name = name.replace(base_dns_zone, "@")
+        return name
+
+    def human_readable_record(action, record):
+        name = relative_name(record["name"])
         name = name[:20]
         t = record["type"]
 
@@ -753,6 +756,9 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
     if dry_run:
         if Moulinette.interface.type == "api":
+            for records in changes.values():
+                for record in records:
+                    record["name"] = relative_name(record["name"])
             return changes
         else:
             out = {"delete": [], "create": [], "update": [], "unchanged": []}
