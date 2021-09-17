@@ -646,6 +646,12 @@ class TagsQuestion(Question):
             return ",".join(value)
         return value
 
+    @staticmethod
+    def normalize(value, option={}):
+        if isinstance(value, list):
+            return ",".join(value)
+        return value
+
     def _prevalidate(self):
         values = self.value
         if isinstance(values, str):
@@ -656,6 +662,11 @@ class TagsQuestion(Question):
             self.value = value
             super()._prevalidate()
         self.value = values
+
+    def _post_parse_value(self):
+        if isinstance(self.value, list):
+            self.value = ",".join(self.value)
+        return super()._post_parse_value()
 
 
 class PasswordQuestion(Question):
