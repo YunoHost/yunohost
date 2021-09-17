@@ -354,6 +354,11 @@ class ConfigPanel:
     def _ask(self):
         logger.debug("Ask unanswered question and prevalidate data")
 
+        if "i18n" in self.config:
+            for panel, section, option in self._iterate():
+                if "ask" not in option:
+                    option["ask"] = m18n.n(self.config["i18n"] + "_" + option["id"])
+
         def display_header(message):
             """CLI panel/section header display"""
             if Moulinette.interface.type == "cli" and self.filter_key.count(".") < 2:
