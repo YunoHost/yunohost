@@ -323,6 +323,8 @@
     "domain_config_mail_out": "Outgoing emails",
     "domain_config_xmpp": "XMPP",
     "domain_config_auth_token": "Authentication token",
+    "domain_config_auth_key": "Authentication key",
+    "domain_config_auth_secret": "Authentication secret",
     "domain_config_api_protocol": "API protocol",
     "domain_config_auth_entrypoint": "API entry point",
     "domain_config_auth_application_key": "Application key",
