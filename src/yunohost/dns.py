@@ -37,7 +37,7 @@ from moulinette.utils.filesystem import read_file, write_to_file, read_toml
 
 from yunohost.domain import domain_list, _assert_domain_exists, domain_config_get, _get_domain_settings, _set_domain_settings
 from yunohost.utils.dns import dig, YNH_DYNDNS_DOMAINS
-from yunohost.utils.error import YunohostValidationError
+from yunohost.utils.error import YunohostValidationError, YunohostError
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
@@ -572,7 +572,7 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, force=False, 
     # See https://github.com/AnalogJ/lexicon/issues/282 and https://github.com/AnalogJ/lexicon/pull/371
     # They say it's trivial to implement it!
     # And yet, it is still not done/merged
-    wanted_records = [record for record in wanted_records if record["type"] != "CAA"]
+    #wanted_records = [record for record in wanted_records if record["type"] != "CAA"]
 
     if purge:
         wanted_records = []
@@ -596,14 +596,17 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, force=False, 
             .with_dict(dict_object=base_config)
             .with_dict(dict_object={"action": "list", "type": "all"})
     )
-    #    current_records.extend(
     client = LexiconClient(query)
     client.provider.authenticate()
-    current_records = client.provider.list_records()
+    try:
+        current_records = client.provider.list_records()
+    except Exception as e:
+        raise YunohostError("Failed to list current records using the registrar's API: %s" % str(e), raw_msg=True)  # FIXME: i18n
+
     managed_dns_records_hashes = _get_managed_dns_records_hashes(domain)
 
     # Keep only records for relevant types: A, AAAA, MX, TXT, CNAME, SRV
-    relevant_types = ["A", "AAAA", "MX", "TXT", "CNAME", "SRV"]
+    relevant_types = ["A", "AAAA", "MX", "TXT", "CNAME", "SRV", "CAA"]
     current_records = [r for r in current_records if r["type"] in relevant_types]
 
     # Ignore records which are for a higher-level domain
@@ -640,7 +643,8 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, force=False, 
     # (TXT, .domain.tld)     "v=spf1 ..."      ["v=spf1", "foobar"]
     # (SRV, .domain.tld)                       0 5 5269 domain.tld
     changes = {"delete": [], "update": [], "create": [], "unchanged": []}
-    type_and_names = set([(r["type"], r["name"]) for r in current_records + wanted_records])
+
+    type_and_names = sorted(set([(r["type"], r["name"]) for r in current_records + wanted_records]))
     comparison = {type_and_name: {"current": [], "wanted": []} for type_and_name in type_and_names}
 
     for record in current_records:
@@ -749,20 +753,47 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, force=False, 
 
             return out
 
+    # If --force ain't used, we won't delete/update records not managed by yunohost
+    if not force:
+        for action in ["delete", "update"]:
+            changes[action] = [r for r in changes[action] if not r["managed_by_yunohost"]]
+
+    def progress(info=""):
+        progress.nb += 1
+        width = 20
+        bar = int(progress.nb * width / progress.total)
+        bar = "[" + "#" * bar + "." * (width - bar) + "]"
+        if info:
+            bar += " > " + info
+        if progress.old == bar:
+            return
+        progress.old = bar
+        logger.info(bar)
+
+    progress.nb = 0
+    progress.old = ""
+    progress.total = len(changes["delete"] + changes["create"] + changes["update"])
+
+    if progress.total == 0:
+        logger.success("Records already up to date, nothing to do.")  # FIXME : i18n
+        return {}
+
+    #
+    # Actually push the records
+    #
+
     operation_logger.start()
+    logger.info("Pushing DNS records...")
 
     new_managed_dns_records_hashes = [_hash_dns_record(r) for r in changes["unchanged"]]
+    results = {"warnings": [], "errors": []}
 
-    # Push the records
     for action in ["delete", "create", "update"]:
 
         for record in changes[action]:
 
-            if not force and action in ["update", "delete"] and not record["managed_by_yunohost"]:
-                # Don't overwrite manually-set or manually-modified records
-                continue
-
-            record["action"] = action
+            relative_name = record['name'].replace(base_dns_zone, '').rstrip('.') or '@'
+            progress(f"{action} {record['type']:^5} / {relative_name}")  # FIXME: i18n
 
             # Apparently Lexicon yields us some 'id' during fetch
             # But wants 'identifier' during push ...
@@ -770,21 +801,15 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, force=False, 
                 record["identifier"] = record["id"]
                 del record["id"]
 
-            logger.info(action + " : " + human_readable_record(action, record))
-
             if registrar == "godaddy":
                 if record["name"] == base_dns_zone:
                     record["name"] = "@." + record["name"]
                 if record["type"] in ["MX", "SRV"]:
                     logger.warning(f"Pushing {record['type']} records is not properly supported by Lexicon/Godaddy.")
+                    results["warning"].append(f"Pushing {record['type']} records is not properly supported by Lexicon/Godaddy.")
                     continue
 
-            # FIXME Removed TTL, because it doesn't work with Gandi.
-            # See https://github.com/AnalogJ/lexicon/issues/726 (similar issue)
-            # But I think there is another issue with Gandi. Or I'm misusing the API...
-            if registrar == "gandi":
-                del record["ttl"]
-
+            record["action"] = action
             query = (
                 LexiconConfigResolver()
                 .with_dict(dict_object=base_config)
@@ -794,18 +819,27 @@ def domain_registrar_push(operation_logger, domain, dry_run=False, force=False, 
             try:
                 result = LexiconClient(query).execute()
             except Exception as e:
-                logger.error(f"Failed to {action} record {record['type']}/{record['name']} : {e}")
+                logger.error(f"Failed to {action} record {record['type']}/{record['name']} : {e}")  # i18n?
+                results["errors"].append(f"Failed to {action} record {record['type']}/{record['name']} : {e}")
             else:
                 if result:
                     new_managed_dns_records_hashes.append(_hash_dns_record(record))
-                    logger.success("Done!")
                 else:
-                    logger.error("Uhoh!?")
+                    results["errors"].append(f"Failed to {action} record {record['type']}/{record['name']} : unknown error?")
 
     _set_managed_dns_records_hashes(domain, new_managed_dns_records_hashes)
 
-    # FIXME : implement a system to properly report what worked and what did not at the end of the command..
+    # Everything succeeded
+    if len(results["errors"]) == 0:
+        logger.success("DNS records updated!")  # FIXME: i18n
+        return {}
+    # Everything failed
+    elif len(results["errors"]) + len(results["warnings"]) == progress.total:
+        logger.error("Updating the DNS records failed miserably")  # FIXME: i18n
+    else:
+        logger.warning("DNS records partially updated: some warnings/errors were reported.")  # FIXME: i18n
 
+    return results
 
 def _get_managed_dns_records_hashes(domain: str) -> list:
     return _get_domain_settings(domain).get("managed_dns_records_hashes", [])
