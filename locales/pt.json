@@ -110,7 +110,7 @@
     "backup_output_directory_forbidden": "Escolha um diretório de saída diferente. Backups não podem ser criados nos subdiretórios /bin, /boot, /dev, /etc, /lib, /root, /run, /sbin, /sys, /usr, /var ou /home/yunohost.backup/archives",
     "app_already_installed_cant_change_url": "Este aplicativo já está instalado. A URL não pode ser alterada apenas por esta função. Confira em `app changeurl` se está disponível.",
     "app_already_up_to_date": "{app} já está atualizado",
-    "app_argument_choice_invalid": "Use uma das opções '{choices}' para o argumento '{name}'",
+    "app_argument_choice_invalid": "Use uma das opções '{choices}' para o argumento '{name}' em vez de '{value}'",
     "app_argument_invalid": "Escolha um valor válido para o argumento '{name}': {error}",
     "app_argument_required": "O argumento '{name}' é obrigatório",
     "app_change_url_failed_nginx_reload": "Não foi possível reiniciar o nginx. Aqui está o retorno de 'nginx -t':\n{nginx_errors}",
