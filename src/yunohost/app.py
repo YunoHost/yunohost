@@ -235,6 +235,9 @@ def app_info(app, full=False):
     ret["supports_multi_instance"] = is_true(
         local_manifest.get("multi_instance", False)
     )
+    ret["supports_config_panel"] = os.path.exists(
+        os.path.join(setting_path, "config_panel.toml")
+    )
 
     ret["permissions"] = permissions
     ret["label"] = permissions.get(app + ".main", {}).get("label")
