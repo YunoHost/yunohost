@@ -319,6 +319,7 @@
     "domain_uninstall_app_first": "Those applications are still installed on your domain:\n{apps}\n\nPlease uninstall them using 'yunohost app remove the_app_id' or move them to another domain using 'yunohost app change-url the_app_id' before proceeding to domain removal",
     "domain_registrar_is_not_configured": "The registrar is not yet configured for domain {domain}.",
     "domain_dns_push_not_applicable": "The DNS push feature is not applicable to domain {domain}",
+    "domain_dns_push_failed_to_authenticate": "Failed to authenticate on registrar's API. Most probably the credentials are incorrect? (Error: {error})",
     "domain_config_mail_in": "Incoming emails",
     "domain_config_mail_out": "Outgoing emails",
     "domain_config_xmpp": "XMPP",

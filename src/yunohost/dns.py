@@ -605,7 +605,11 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
             .with_dict(dict_object={"action": "list", "type": "all"})
     )
     client = LexiconClient(query)
-    client.provider.authenticate()
+    try:
+        client.provider.authenticate()
+    except Exception as e:
+        raise YunohostValidationError("domain_dns_push_failed_to_authenticate", error=str(e))
+
     try:
         current_records = client.provider.list_records()
     except Exception as e:
