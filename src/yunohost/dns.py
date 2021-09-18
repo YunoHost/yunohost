@@ -470,11 +470,17 @@ def _get_registrar_config_section(domain):
     # If parent domain exists in yunohost
     parent_domain = domain.split(".", 1)[1]
     if parent_domain in domain_list()["domains"]:
+
+        if Moulinette.interface.type = "api":
+            parent_domain_link = "[{parent_domain}](#/domains/{parent_domain}/config)"
+        else:
+            parent_domain_link = parent_domain
+
         registrar_infos["registrar"] = OrderedDict({
             "type": "alert",
             "style": "info",
-            "ask": f"This domain is a subdomain of {parent_domain}. DNS registrar configuration should be managed in {parent_domain}'s configuration panel.",  # FIXME: i18n
-            "value": None
+            "ask": f"This domain is a subdomain of {parent_domain_link}. DNS registrar configuration should be managed in {parent_domain}'s configuration panel.",  # FIXME: i18n
+            "value": "parent_domain"
         })
         return OrderedDict(registrar_infos)
 
@@ -543,6 +549,9 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
     if not registrar or registrar in ["None", "yunohost"]:
         raise YunohostValidationError("domain_dns_push_not_applicable", domain=domain)
+
+    if registrar == "parent_domain":
+        raise YunohostValidationError("domain_dns_push_managed_in_parent_domain", domain=domain, parent_domain=registrar)
 
     base_dns_zone = _get_dns_zone_for_domain(domain)
 
