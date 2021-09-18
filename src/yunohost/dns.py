@@ -490,7 +490,7 @@ def _get_registrar_config_section(domain):
         registrar_infos["registrar"] = OrderedDict({
             "type": "alert",
             "style": "success",
-            "ask": "This domain is a nohost.me / nohost.st / ynh.fr and its DNS configuration is therefore automatically handled by Yunohost.",  # FIXME: i18n
+            "ask": "This domain is a nohost.me / nohost.st / ynh.fr and its DNS configuration is therefore automatically handled by Yunohost without any further configuration.",  # FIXME: i18n
             "value": "yunohost"
         })
         return OrderedDict(registrar_infos)
@@ -532,6 +532,20 @@ def _get_registrar_config_section(domain):
     return OrderedDict(registrar_infos)
 
 
+def _get_registar_settings(domain):
+
+    _assert_domain_exists(domain)
+
+    settings = domain_config_get(domain, key='dns.registrar', export=True)
+
+    registrar = settings.pop("registrar")
+
+    if "experimental_disclaimer" in settings:
+        settings.pop("experimental_disclaimer")
+
+    return registrar, settings
+
+
 @is_unit_operation()
 def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=False):
     """
@@ -541,28 +555,30 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     from lexicon.client import Client as LexiconClient
     from lexicon.config import ConfigResolver as LexiconConfigResolver
 
+    registrar, registrar_credentials = _get_registar_settings(domain)
+
     _assert_domain_exists(domain)
 
-    settings = domain_config_get(domain, key='dns.registrar', export=True)
-
-    registrar = settings.get("registrar")
-
-    if not registrar or registrar in ["None", "yunohost"]:
+    if not registrar or registrar == "None":  # yes it's None as a string
         raise YunohostValidationError("domain_dns_push_not_applicable", domain=domain)
+
+    # FIXME: in the future, properly unify this with yunohost dyndns update
+    if registrar == "yunohost":
+        logger.info("This domain is a nohost.me / nohost.st / ynh.fr and its DNS configuration is therefore already automatically handled by Yunohost without any further configuration.")  # FIXME: i18n
+        return {}
 
     if registrar == "parent_domain":
         parent_domain = domain.split(".", 1)[1]
-        raise YunohostValidationError("domain_dns_push_managed_in_parent_domain", domain=domain, parent_domain=parent_domain)
-
-    base_dns_zone = _get_dns_zone_for_domain(domain)
-
-    registrar_credentials = settings
-    registrar_credentials.pop("registrar")
-    if "experimental_disclaimer" in registrar_credentials:
-        registrar_credentials.pop("experimental_disclaimer")
+        registar, registrar_credentials = _get_registar_settings(parent_domain)
+        if any(registrar_credentials.values()):
+            raise YunohostValidationError("domain_dns_push_managed_in_parent_domain", domain=domain, parent_domain=parent_domain)
+        else:
+            raise YunohostValidationError("domain_registrar_is_not_configured", domain=domain)
 
     if not all(registrar_credentials.values()):
         raise YunohostValidationError("domain_registrar_is_not_configured", domain=domain)
+
+    base_dns_zone = _get_dns_zone_for_domain(domain)
 
     # Convert the generated conf into a format that matches what we'll fetch using the API
     # Makes it easier to compare "wanted records" with "current records on remote"
@@ -619,7 +635,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     try:
         client.provider.authenticate()
     except Exception as e:
-        raise YunohostValidationError("domain_dns_push_failed_to_authenticate", error=str(e))
+        raise YunohostValidationError("domain_dns_push_failed_to_authenticate", domain=domain, error=str(e))
 
     try:
         current_records = client.provider.list_records()
