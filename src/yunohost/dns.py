@@ -177,7 +177,7 @@ def _build_dns_conf(base_domain):
         suffix = f".{basename}" if basename != "@" else ""
 
         #ttl = settings["ttl"]
-        ttl = "3600"
+        ttl = 3600
 
         ###########################
         # Basic ipv4/ipv6 records #
@@ -573,7 +573,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         if any(registrar_credentials.values()):
             raise YunohostValidationError("domain_dns_push_managed_in_parent_domain", domain=domain, parent_domain=parent_domain)
         else:
-            raise YunohostValidationError("domain_registrar_is_not_configured", domain=domain)
+            raise YunohostValidationError("domain_registrar_is_not_configured", domain=parent_domain)
 
     if not all(registrar_credentials.values()):
         raise YunohostValidationError("domain_registrar_is_not_configured", domain=domain)
