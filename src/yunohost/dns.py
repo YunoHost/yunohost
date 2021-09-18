@@ -471,6 +471,7 @@ def _get_registrar_config_section(domain):
     parent_domain = domain.split(".", 1)[1]
     if parent_domain in domain_list()["domains"]:
 
+        # Dirty hack to have a link on the webadmin
         if Moulinette.interface.type == "api":
             parent_domain_link = f"[{parent_domain}](#/domains/{parent_domain}/config)"
         else:
@@ -509,7 +510,7 @@ def _get_registrar_config_section(domain):
         registrar_infos["registrar"] = OrderedDict({
             "type": "alert",
             "style": "info",
-            "ask": f"YunoHost automatically detected that this domain is handled by the registrar **{registrar}**. If you want, YunoHost will automatically configure this DNS zone, if you provide it with the appropriate API credentials. You can also manually configure your DNS records following the documentation as https://yunohost.org/dns.",  # FIXME: i18n
+            "ask": f"YunoHost automatically detected that this domain is handled by the registrar **{registrar}**. If you want, YunoHost will automatically configure this DNS zone, if you provide it with the appropriate API credentials. You read documentation on how to get your API credentials on this page: https://yunohost.org/registar_api_{registrar}. (You can also manually configure your DNS records following the documentation as https://yunohost.org/dns )",  # FIXME: i18n
             "value": registrar
         })
 
