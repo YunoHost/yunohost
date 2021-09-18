@@ -42,9 +42,9 @@ i18n = "domain_config"
 
         # This part is automatically generated in DomainConfigPanel
 
-    [dns.advanced]
-
-        [dns.advanced.ttl]
-        type = "number"
-        min = 0
-        default = 3600
+#   [dns.advanced]
+#
+#        [dns.advanced.ttl]
+#        type = "number"
+#        min = 0
+#        default = 3600

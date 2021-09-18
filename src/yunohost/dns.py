@@ -176,7 +176,8 @@ def _build_dns_conf(base_domain):
         basename = domain.replace(f"{base_dns_zone}", "").rstrip(".") or "@"
         suffix = f".{basename}" if basename != "@" else ""
 
-        ttl = settings["ttl"]
+        #ttl = settings["ttl"]
+        ttl = "3600"
 
         ###########################
         # Basic ipv4/ipv6 records #
