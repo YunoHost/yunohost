@@ -663,7 +663,7 @@
     "app_argument_password_help_optional": "Escribe un espazo para limpar o contrasinal",
     "config_validate_date": "Debe ser unha data válida co formato YYYY-MM-DD",
     "config_validate_email": "Debe ser un email válido",
-    "config_validate_time": "Debe ser unha hora válida tal que XX:YY",
+    "config_validate_time": "Debe ser unha hora válida tal que HH:MM",
     "config_validate_url": "Debe ser un URL válido",
     "danger": "Perigo:",
     "app_argument_password_help_keep": "Preme Enter para manter o valor actual",
