@@ -15,6 +15,11 @@ i18n = "domain_config"
     [feature.mail]
     #services = ['postfix', 'dovecot']
 
+        [feature.mail.features_disclaimer]
+        type = "alert"
+        style = "warning"
+        icon = "warning"
+
         [feature.mail.mail_out]
         type = "boolean"
         default = 1
