@@ -472,7 +472,7 @@ def _get_registrar_config_section(domain):
     if parent_domain in domain_list()["domains"]:
 
         if Moulinette.interface.type == "api":
-            parent_domain_link = "[{parent_domain}](#/domains/{parent_domain}/config)"
+            parent_domain_link = f"[{parent_domain}](#/domains/{parent_domain}/config)"
         else:
             parent_domain_link = parent_domain
 
