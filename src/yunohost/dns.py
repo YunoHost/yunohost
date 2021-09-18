@@ -834,7 +834,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
                     record["name"] = "@." + record["name"]
                 if record["type"] in ["MX", "SRV"]:
                     logger.warning(f"Pushing {record['type']} records is not properly supported by Lexicon/Godaddy.")
-                    results["warning"].append(f"Pushing {record['type']} records is not properly supported by Lexicon/Godaddy.")
+                    results["warnings"].append(f"Pushing {record['type']} records is not properly supported by Lexicon/Godaddy.")
                     continue
 
             record["action"] = action
