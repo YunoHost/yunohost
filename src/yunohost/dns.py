@@ -551,7 +551,8 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         raise YunohostValidationError("domain_dns_push_not_applicable", domain=domain)
 
     if registrar == "parent_domain":
-        raise YunohostValidationError("domain_dns_push_managed_in_parent_domain", domain=domain, parent_domain=registrar)
+        parent_domain = domain.split(".", 1)[1]
+        raise YunohostValidationError("domain_dns_push_managed_in_parent_domain", domain=domain, parent_domain=parent_domain)
 
     base_dns_zone = _get_dns_zone_for_domain(domain)
 
