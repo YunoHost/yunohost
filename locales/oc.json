@@ -448,7 +448,7 @@
     "diagnosis_ports_could_not_diagnose_details": "Error : {error}",
     "diagnosis_http_could_not_diagnose": "Impossible de diagnosticar se lo domeni es accessible de l’exterior.",
     "diagnosis_http_could_not_diagnose_details": "Error : {error}",
-    "apps_catalog_updating": "Actualizacion del catalòg d’aplicacion…",
+    "apps_catalog_updating": "Actualizacion del catalòg d’aplicacion...",
     "apps_catalog_failed_to_download": "Telecargament impossible del catalòg d’aplicacions {apps_catalog} : {error}",
     "apps_catalog_obsolete_cache": "La memòria cache del catalòg d’aplicacion es voida o obsolèta.",
     "apps_catalog_update_success": "Lo catalòg d’aplicacions es a jorn !",
