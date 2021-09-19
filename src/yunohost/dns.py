@@ -110,7 +110,7 @@ def _list_subdomains_of(parent_domain):
     return out
 
 
-def _build_dns_conf(base_domain):
+def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
     """
     Internal function that will returns a data structure containing the needed
     information to generate/adapt the dns configuration
@@ -197,9 +197,8 @@ def _build_dns_conf(base_domain):
 
         if ipv6:
             basic.append([basename, ttl, "AAAA", ipv6])
-        # TODO
-        # elif include_empty_AAAA_if_no_ipv6:
-        #     basic.append(["@", ttl, "AAAA", None])
+        elif include_empty_aaaa_if_no_ipv6:
+            basic.append(["@", ttl, "AAAA", None])
 
         #########
         # Email #
@@ -251,9 +250,8 @@ def _build_dns_conf(base_domain):
 
         if ipv6:
             extra.append([f"*{suffix}", ttl, "AAAA", ipv6])
-        # TODO
-        # elif include_empty_AAAA_if_no_ipv6:
-        #     extra.append(["*", ttl, "AAAA", None])
+        elif include_empty_AAAA_if_no_ipv6:
+            extra.append(["*", ttl, "AAAA", None])
 
         extra.append([basename, ttl, "CAA", '128 issue "letsencrypt.org"'])
 
