@@ -36,8 +36,10 @@ def test_get_dns_zone_from_domain_existing():
     )
     assert _get_dns_zone_for_domain("yolo.nohost.me") == "nohost.me"
     assert _get_dns_zone_for_domain("foo.yolo.nohost.me") == "nohost.me"
-    assert _get_dns_zone_for_domain("yolo.test") == "yolo.test"
+    assert _get_dns_zone_for_domain("yolo.test") == "test"
     assert _get_dns_zone_for_domain("foo.yolo.test") == "test"
+    assert _get_dns_zone_for_domain("yolo.tld") == "yolo.tld"
+    assert _get_dns_zone_for_domain("foo.yolo.tld") == "yolo.tld"
 
 
 # Domain registrar testing
