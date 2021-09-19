@@ -187,6 +187,3 @@ def test_unused_i18n_keys():
         raise Exception(
             "Those i18n keys appears unused:\n" "    - " + "\n    - ".join(unused_keys)
         )
-
-test_undefined_i18n_keys()
-test_unused_i18n_keys()
