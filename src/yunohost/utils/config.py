@@ -53,8 +53,8 @@ class ConfigPanel:
         self.values = {}
         self.new_values = {}
 
-    def get(self, key="", mode="classic"):
-        self.filter_key = key or ""
+    def get(self, key='', mode='classic'):
+        self.filter_key = key or ''
 
         # Read config panel toml
         self._get_config_panel()
@@ -65,10 +65,6 @@ class ConfigPanel:
         # Read or get values and hydrate the config
         self._load_current_values()
         self._hydrate()
-
-        # Format result in full mode
-        if mode == "full":
-            return self.config
 
         # In 'classic' mode, we display the current value if key refer to an option
         if self.filter_key.count(".") == 2 and mode == "classic":
@@ -82,13 +78,19 @@ class ConfigPanel:
             key = f"{panel['id']}.{section['id']}.{option['id']}"
             if mode == "export":
                 result[option["id"]] = option.get("current_value")
+                continue
+
+            ask = None
+            if "ask" in option:
+                ask = _value_for_locale(option["ask"])
+            elif "i18n" in self.config:
+                ask = m18n.n(self.config["i18n"] + "_" + option["id"])
+
+            if mode == "full":
+                # edit self.config directly
+                option["ask"] = ask
             else:
-                if "ask" in option:
-                    result[key] = {"ask": _value_for_locale(option["ask"])}
-                elif "i18n" in self.config:
-                    result[key] = {
-                        "ask": m18n.n(self.config["i18n"] + "_" + option["id"])
-                    }
+                result[key] = {"ask": ask}
                 if "current_value" in option:
                     question_class = ARGUMENTS_TYPE_PARSERS[
                         option.get("type", "string")
@@ -97,7 +99,10 @@ class ConfigPanel:
                         option["current_value"], option
                     )
 
-        return result
+        if mode == "full":
+            return self.config
+        else:
+            return result
 
     def set(
         self, key=None, value=None, args=None, args_file=None, operation_logger=None
@@ -179,7 +184,9 @@ class ConfigPanel:
             )
 
         if not os.path.exists(self.config_path):
+            logger.debug(f"Config panel {self.config_path} doesn't exists")
             return None
+
         toml_config_panel = self._get_toml()
 
         # Check TOML config panel is in a supported version
@@ -348,6 +355,11 @@ class ConfigPanel:
     def _ask(self):
         logger.debug("Ask unanswered question and prevalidate data")
 
+        if "i18n" in self.config:
+            for panel, section, option in self._iterate():
+                if "ask" not in option:
+                    option["ask"] = m18n.n(self.config["i18n"] + "_" + option["id"])
+
         def display_header(message):
             """CLI panel/section header display"""
             if Moulinette.interface.type == "cli" and self.filter_key.count(".") < 2:
@@ -409,7 +421,7 @@ class ConfigPanel:
             }
 
         # Save the settings to the .yaml file
-        write_to_yaml(self.save_path, self.new_values)
+        write_to_yaml(self.save_path, values_to_save)
 
     def _reload_services(self):
 
@@ -736,6 +748,7 @@ class BooleanQuestion(Question):
 
     @staticmethod
     def humanize(value, option={}):
+
         yes = option.get("yes", 1)
         no = option.get("no", 0)
         value = str(value).lower()
@@ -1010,6 +1023,7 @@ class FileQuestion(Question):
             while os.path.exists(file_path):
                 file_path = os.path.normpath(upload_dir + "/" + filename + (".%d" % i))
                 i += 1
+
             content = self.value["content"]
 
             write_to_file(file_path, b64decode(content), file_mode="wb")

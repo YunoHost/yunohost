@@ -234,6 +234,9 @@ def app_info(app, full=False):
     ret["supports_multi_instance"] = is_true(
         local_manifest.get("multi_instance", False)
     )
+    ret["supports_config_panel"] = os.path.exists(
+        os.path.join(setting_path, "config_panel.toml")
+    )
 
     ret["permissions"] = permissions
     ret["label"] = permissions.get(app + ".main", {}).get("label")
@@ -819,6 +822,10 @@ def app_install(
         if confirm is None or force or Moulinette.interface.type == "api":
             return
 
+        # i18n: confirm_app_install_warning
+        # i18n: confirm_app_install_danger
+        # i18n: confirm_app_install_thirdparty
+
         if confirm in ["danger", "thirdparty"]:
             answer = Moulinette.prompt(
                 m18n.n("confirm_app_install_" + confirm, answers="Yes, I understand"),
@@ -1259,7 +1266,7 @@ def app_makedefault(operation_logger, app, domain=None):
         domain
 
     """
-    from yunohost.domain import domain_list
+    from yunohost.domain import _assert_domain_exists
 
     app_settings = _get_app_settings(app)
     app_domain = app_settings["domain"]
@@ -1267,9 +1274,10 @@ def app_makedefault(operation_logger, app, domain=None):
 
     if domain is None:
         domain = app_domain
-        operation_logger.related_to.append(("domain", domain))
-    elif domain not in domain_list()["domains"]:
-        raise YunohostValidationError("domain_name_unknown", domain=domain)
+
+    _assert_domain_exists(domain)
+
+    operation_logger.related_to.append(("domain", domain))
 
     if "/" in app_map(raw=True)[domain]:
         raise YunohostValidationError(
@@ -2496,13 +2504,12 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
         ignore_app -- An optional app id to ignore (c.f. the change_url usecase)
     """
 
-    from yunohost.domain import domain_list
+    from yunohost.domain import _assert_domain_exists
 
     domain, path = _normalize_domain_path(domain, path)
 
     # Abort if domain is unknown
-    if domain not in domain_list()["domains"]:
-        raise YunohostValidationError("domain_name_unknown", domain=domain)
+    _assert_domain_exists(domain)
 
     # Fetch apps map
     apps_map = app_map(raw=True)

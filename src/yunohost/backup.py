@@ -44,6 +44,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
 from moulinette.utils.process import check_output
 
+from yunohost.domain import domain_list_cache
 from yunohost.app import (
     app_info,
     _is_installed,
@@ -1283,6 +1284,8 @@ class RestoreManager:
             )
         else:
             operation_logger.success()
+
+        domain_list_cache = {}
 
         regen_conf()
 

@@ -121,6 +121,10 @@ class WebDiagnoser(Diagnoser):
 
         for domain in domains:
 
+            # i18n: diagnosis_http_bad_status_code
+            # i18n: diagnosis_http_connection_error
+            # i18n: diagnosis_http_timeout
+
             # If both IPv4 and IPv6 (if applicable) are good
             if all(
                 results[ipversion][domain]["status"] == "ok" for ipversion in ipversions

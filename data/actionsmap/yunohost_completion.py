@@ -13,6 +13,7 @@ import yaml
 
 THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ACTIONSMAP_FILE = THIS_SCRIPT_DIR + "/yunohost.yml"
+os.system(f"mkdir {THIS_SCRIPT_DIR}/../bash-completion.d")
 BASH_COMPLETION_FILE = THIS_SCRIPT_DIR + "/../bash-completion.d/yunohost"
 
 

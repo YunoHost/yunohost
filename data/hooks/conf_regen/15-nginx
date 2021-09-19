@@ -65,7 +65,7 @@ do_pre_regen() {
   export experimental="$(yunohost settings get 'security.experimental.enabled')"
   ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
 
-  cert_status=$(yunohost domain cert-status --json)
+  cert_status=$(yunohost domain cert status --json)
 
   # add domain conf files
   for domain in $YNH_DOMAINS; do

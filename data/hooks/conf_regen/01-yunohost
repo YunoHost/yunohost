@@ -35,6 +35,10 @@ do_init_regen() {
   mkdir -p /home/yunohost.app
   chmod 755 /home/yunohost.app
 
+  # Domain settings
+  mkdir -p /etc/yunohost/domains
+  chmod 700 /etc/yunohost/domains
+
   # Backup folders
   mkdir -p /home/yunohost.backup/archives
   chmod 750 /home/yunohost.backup/archives
@@ -82,7 +86,7 @@ EOF
   # Cron job that renew lets encrypt certificates if there's any that needs renewal
   cat > $pending_dir/etc/cron.daily/yunohost-certificate-renew << EOF
 #!/bin/bash
-yunohost domain cert-renew --email
+yunohost domain cert renew --email
 EOF
 
   # If we subscribed to a dyndns domain, add the corresponding cron
@@ -179,6 +183,8 @@ do_post_regen() {
     [ ! -e "/home/$USER" ] || setfacl -m g:all_users:--- /home/$USER
   done
 
+  # Domain settings
+  mkdir -p /etc/yunohost/domains
 
   # Misc configuration / state files
   chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
@@ -187,6 +193,7 @@ do_post_regen() {
   # Apps folder, custom hooks folder
   [[ ! -e /etc/yunohost/hooks.d ]] || (chown root /etc/yunohost/hooks.d && chmod 700 /etc/yunohost/hooks.d)
   [[ ! -e /etc/yunohost/apps ]] || (chown root /etc/yunohost/apps && chmod 700 /etc/yunohost/apps)
+  [[ ! -e /etc/yunohost/domains ]] || (chown root /etc/yunohost/domains && chmod 700 /etc/yunohost/domains)
 
   # Create ssh.app and sftp.app groups if they don't exist yet
   grep -q '^ssh.app:' /etc/group || groupadd ssh.app
