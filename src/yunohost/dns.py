@@ -61,24 +61,28 @@ def domain_dns_suggest(domain):
 
     result = ""
 
-    result += "; Basic ipv4/ipv6 records"
-    for record in dns_conf["basic"]:
-        result += "\n{name} {ttl} IN {type} {value}".format(**record)
+    if dns_conf["basic"]:
+        result += "; Basic ipv4/ipv6 records"
+        for record in dns_conf["basic"]:
+            result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
-    result += "\n\n"
-    result += "; XMPP"
-    for record in dns_conf["xmpp"]:
-        result += "\n{name} {ttl} IN {type} {value}".format(**record)
+    if dns_conf["mail"]:
+        result += "\n\n"
+        result += "; Mail"
+        for record in dns_conf["mail"]:
+            result += "\n{name} {ttl} IN {type} {value}".format(**record)
+        result += "\n\n"
 
-    result += "\n\n"
-    result += "; Mail"
-    for record in dns_conf["mail"]:
-        result += "\n{name} {ttl} IN {type} {value}".format(**record)
-    result += "\n\n"
+    if dns_conf["xmpp"]:
+        result += "\n\n"
+        result += "; XMPP"
+        for record in dns_conf["xmpp"]:
+            result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
-    result += "; Extra"
-    for record in dns_conf["extra"]:
-        result += "\n{name} {ttl} IN {type} {value}".format(**record)
+    if dns_conf["extra"]:
+        result += "; Extra"
+        for record in dns_conf["extra"]:
+            result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     for name, record_list in dns_conf.items():
         if name not in ("basic", "xmpp", "mail", "extra") and record_list:
