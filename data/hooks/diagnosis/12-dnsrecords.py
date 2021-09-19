@@ -86,7 +86,11 @@ class DNSRecordsDiagnoser(Diagnoser):
 
                 # Ugly hack to not check mail records for subdomains stuff, otherwise will end up in a shitstorm of errors for people with many subdomains...
                 # Should find a cleaner solution in the suggested conf...
-                if r["type"] in ["MX", "TXT"] and fqdn not in [domain, f'mail._domainkey.{domain}', f'_dmarc.{domain}']:
+                if r["type"] in ["MX", "TXT"] and fqdn not in [
+                    domain,
+                    f"mail._domainkey.{domain}",
+                    f"_dmarc.{domain}",
+                ]:
                     continue
 
                 r["current"] = self.get_current_record(fqdn, r["type"])
@@ -112,7 +116,10 @@ class DNSRecordsDiagnoser(Diagnoser):
                     # A bad or missing A record is critical ...
                     # And so is a wrong AAAA record
                     # (However, a missing AAAA record is acceptable)
-                    if results[f"A:{basename}"] != "OK" or results[f"AAAA:{basename}"] == "WRONG":
+                    if (
+                        results[f"A:{basename}"] != "OK"
+                        or results[f"AAAA:{basename}"] == "WRONG"
+                    ):
                         return True
 
                 return False
@@ -175,7 +182,7 @@ class DNSRecordsDiagnoser(Diagnoser):
             )
 
             # For SPF, ignore parts starting by ip4: or ip6:
-            if 'v=spf1' in r["value"]:
+            if "v=spf1" in r["value"]:
                 current = {
                     part
                     for part in current

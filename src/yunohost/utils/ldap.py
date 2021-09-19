@@ -102,7 +102,7 @@ class LDAPInterface:
                 raise YunohostError(
                     "Service slapd is not running but is required to perform this action ... "
                     "You can try to investigate what's happening with 'systemctl status slapd'",
-                    raw_msg=True
+                    raw_msg=True,
                 )
 
         # Check that we are indeed logged in with the right identity

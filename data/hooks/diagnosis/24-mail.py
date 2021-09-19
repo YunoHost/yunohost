@@ -35,11 +35,11 @@ class MailDiagnoser(Diagnoser):
         # TODO check that the recent mail logs are not filled with thousand of email sending (unusual number of mail sent)
         # TODO check for unusual failed sending attempt being refused in the logs ?
         checks = [
-            "check_outgoing_port_25",   # i18n: diagnosis_mail_outgoing_port_25_ok
-            "check_ehlo",   # i18n: diagnosis_mail_ehlo_ok
-            "check_fcrdns",   # i18n: diagnosis_mail_fcrdns_ok
-            "check_blacklist",   # i18n: diagnosis_mail_blacklist_ok
-            "check_queue",   # i18n: diagnosis_mail_queue_ok
+            "check_outgoing_port_25",  # i18n: diagnosis_mail_outgoing_port_25_ok
+            "check_ehlo",  # i18n: diagnosis_mail_ehlo_ok
+            "check_fcrdns",  # i18n: diagnosis_mail_fcrdns_ok
+            "check_blacklist",  # i18n: diagnosis_mail_blacklist_ok
+            "check_queue",  # i18n: diagnosis_mail_queue_ok
         ]
         for check in checks:
             self.logger_debug("Running " + check)

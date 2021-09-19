@@ -75,6 +75,7 @@ moulinette.core.Moulinette18n.n = new_m18nn
 def pytest_cmdline_main(config):
 
     import sys
+
     sys.path.insert(0, "/usr/lib/moulinette/")
     import yunohost
 

@@ -15,11 +15,7 @@ from yunohost.domain import (
     domain_config_set,
 )
 
-TEST_DOMAINS = [
-    "example.tld",
-    "sub.example.tld",
-    "other-example.com"
-]
+TEST_DOMAINS = ["example.tld", "sub.example.tld", "other-example.com"]
 
 
 def setup_function(function):

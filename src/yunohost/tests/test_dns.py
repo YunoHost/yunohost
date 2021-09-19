@@ -31,7 +31,9 @@ def test_get_dns_zone_from_domain_existing():
     assert _get_dns_zone_for_domain("donate.yunohost.org") == "yunohost.org"
     assert _get_dns_zone_for_domain("fr.wikipedia.org") == "wikipedia.org"
     assert _get_dns_zone_for_domain("www.fr.wikipedia.org") == "wikipedia.org"
-    assert _get_dns_zone_for_domain("non-existing-domain.yunohost.org") == "yunohost.org"
+    assert (
+        _get_dns_zone_for_domain("non-existing-domain.yunohost.org") == "yunohost.org"
+    )
     assert _get_dns_zone_for_domain("yolo.nohost.me") == "nohost.me"
     assert _get_dns_zone_for_domain("foo.yolo.nohost.me") == "nohost.me"
     assert _get_dns_zone_for_domain("yolo.test") == "yolo.test"
@@ -48,11 +50,17 @@ def test_magic_guess_registrar_weird_domain():
 
 
 def test_magic_guess_registrar_ovh():
-    assert _get_registrar_config_section("yolo.yunohost.org")["registrar"]["value"] == "ovh"
+    assert (
+        _get_registrar_config_section("yolo.yunohost.org")["registrar"]["value"]
+        == "ovh"
+    )
 
 
 def test_magic_guess_registrar_yunodyndns():
-    assert _get_registrar_config_section("yolo.nohost.me")["registrar"]["value"] == "yunohost"
+    assert (
+        _get_registrar_config_section("yolo.nohost.me")["registrar"]["value"]
+        == "yunohost"
+    )
 
 
 @pytest.fixture
@@ -66,6 +74,7 @@ def test_domain_dns_suggest(example_domain):
 
     assert _build_dns_conf(example_domain)
 
-#def domain_dns_push(domain, dry_run):
+
+# def domain_dns_push(domain, dry_run):
 #    import yunohost.dns
 #    return yunohost.dns.domain_registrar_push(domain, dry_run)

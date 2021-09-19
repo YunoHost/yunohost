@@ -36,9 +36,7 @@ from yunohost.app import (
     _get_app_settings,
     _get_conflicting_apps,
 )
-from yunohost.regenconf import (
-    regen_conf, _force_clear_hashes, _process_regen_conf
-)
+from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.config import ConfigPanel, Question
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation
@@ -392,13 +390,15 @@ def _get_maindomain():
     return maindomain
 
 
-def domain_config_get(domain, key='', full=False, export=False):
+def domain_config_get(domain, key="", full=False, export=False):
     """
     Display a domain configuration
     """
 
     if full and export:
-        raise YunohostValidationError("You can't use --full and --export together.", raw_msg=True)
+        raise YunohostValidationError(
+            "You can't use --full and --export together.", raw_msg=True
+        )
 
     if full:
         mode = "full"
@@ -412,7 +412,9 @@ def domain_config_get(domain, key='', full=False, export=False):
 
 
 @is_unit_operation()
-def domain_config_set(operation_logger, domain, key=None, value=None, args=None, args_file=None):
+def domain_config_set(
+    operation_logger, domain, key=None, value=None, args=None, args_file=None
+):
     """
     Apply a new domain configuration
     """
@@ -422,14 +424,13 @@ def domain_config_set(operation_logger, domain, key=None, value=None, args=None,
 
 
 class DomainConfigPanel(ConfigPanel):
-
     def __init__(self, domain):
         _assert_domain_exists(domain)
         self.domain = domain
         self.save_mode = "diff"
         super().__init__(
             config_path=DOMAIN_CONFIG_PATH,
-            save_path=f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
+            save_path=f"{DOMAIN_SETTINGS_DIR}/{domain}.yml",
         )
 
     def _get_toml(self):
@@ -437,12 +438,14 @@ class DomainConfigPanel(ConfigPanel):
 
         toml = super()._get_toml()
 
-        toml['feature']['xmpp']['xmpp']['default'] = 1 if self.domain == _get_maindomain() else 0
-        toml['dns']['registrar'] = _get_registrar_config_section(self.domain)
+        toml["feature"]["xmpp"]["xmpp"]["default"] = (
+            1 if self.domain == _get_maindomain() else 0
+        )
+        toml["dns"]["registrar"] = _get_registrar_config_section(self.domain)
 
         # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
-        self.registar_id = toml['dns']['registrar']['registrar']['value']
-        del toml['dns']['registrar']['registrar']['value']
+        self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
+        del toml["dns"]["registrar"]["registrar"]["value"]
 
         return toml
 
@@ -511,9 +514,11 @@ def domain_dns_conf(domain):
 
 def domain_dns_suggest(domain):
     import yunohost.dns
+
     return yunohost.dns.domain_dns_suggest(domain)
 
 
 def domain_dns_push(domain, dry_run, force, purge):
     import yunohost.dns
+
     return yunohost.dns.domain_dns_push(domain, dry_run, force, purge)

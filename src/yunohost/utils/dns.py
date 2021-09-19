@@ -91,4 +91,3 @@ def dig(
         answers = [answer.to_text() for answer in answers]
 
     return ("ok", answers)
-
