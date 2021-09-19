@@ -6,6 +6,7 @@ import glob
 import json
 import yaml
 import subprocess
+import toml
 
 ignore = [
     "password_too_simple_",
@@ -165,6 +166,24 @@ def find_expected_string_keys():
     for check in checks:
         yield "diagnosis_mail_%s" % check
 
+    registrars = toml.load(open('data/other/registrar_list.toml'))
+    supported_registrars = ["ovh", "gandi", "godaddy"]
+    for registrar in supported_registrars:
+        for key in registrars[registrar].keys():
+            yield f"domain_config_{key}"
+
+    domain_config = toml.load(open('data/other/config_domain.toml'))
+    for panel in domain_config.values():
+        if not isinstance(panel, dict):
+            continue
+        for section in panel.values():
+            if not isinstance(section, dict):
+                continue
+            for key, values in section.items():
+                if not isinstance(values, dict):
+                    continue
+                yield f"domain_config_{key}"
+
 
 ###############################################################################
 #   Load en locale json keys                                                  #
@@ -204,3 +223,6 @@ def test_unused_i18n_keys():
         raise Exception(
             "Those i18n keys appears unused:\n" "    - " + "\n    - ".join(unused_keys)
         )
+
+test_undefined_i18n_keys()
+test_unused_i18n_keys()

@@ -831,7 +831,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     #
 
     operation_logger.start()
-    logger.info(m18n.n("domain_dns_puhsing"))
+    logger.info(m18n.n("domain_dns_pushing"))
 
     new_managed_dns_records_hashes = [_hash_dns_record(r) for r in changes["unchanged"]]
     results = {"warnings": [], "errors": []}
@@ -882,13 +882,13 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
     # Everything succeeded
     if len(results["errors"]) == 0:
-        logger.success(m18n.("domain_dns_push_success"))
+        logger.success(m18n.n("domain_dns_push_success"))
         return {}
     # Everything failed
     elif len(results["errors"]) + len(results["warnings"]) == progress.total:
-        logger.error(m18n.("domain_dns_push_failed"))
+        logger.error(m18n.n("domain_dns_push_failed"))
     else:
-        logger.warning(m18n.("domain_dns_push_partial_failure"))
+        logger.warning(m18n.n("domain_dns_push_partial_failure"))
 
     return results
 
