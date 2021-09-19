@@ -160,7 +160,14 @@ def _build_dns_conf(base_domain):
     ipv4 = get_public_ip()
     ipv6 = get_public_ip(6)
 
-    subdomains = _list_subdomains_of(base_domain)
+    # If this is a ynh_dyndns_domain, we're not gonna include all the subdomains in the conf
+    # Because dynette only accept a specific list of name/type
+    # And the wildcard */A already covers the bulk of use cases
+    if any(base_domain.endswith("." + ynh_dyndns_domain) for ynh_dyndns_domain in YNH_DYNDNS_DOMAINS):
+        subdomains = []
+    else:
+        subdomains = _list_subdomains_of(base_domain)
+
     domains_settings = {domain: domain_config_get(domain, export=True)
                         for domain in [base_domain] + subdomains}
 
