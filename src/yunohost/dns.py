@@ -172,8 +172,7 @@ def _build_dns_conf(base_domain):
         #     sub.domain.tld #   sub.domain.tld  #        @  #          #
         # foo.sub.domain.tld #   sub.domain.tld  #      foo  # .foo     #
 
-        # FIXME: shouldn't the basename just be based on the dns_zone setting of this domain ?
-        basename = domain.replace(f"{base_dns_zone}", "").rstrip(".") or "@"
+        basename = domain.replace(base_dns_zone, "").rstrip(".") or "@"
         suffix = f".{basename}" if basename != "@" else ""
 
         #ttl = settings["ttl"]
@@ -480,7 +479,7 @@ def _get_registrar_config_section(domain):
         registrar_infos["registrar"] = OrderedDict({
             "type": "alert",
             "style": "info",
-            "ask": f"This domain is a subdomain of {parent_domain_link}. DNS registrar configuration should be managed in {parent_domain}'s configuration panel.",  # FIXME: i18n
+            "ask": m18n.n("domain_dns_registrar_managed_in_parent_domain", parent_domain=domain, parent_domain_link=parent_domain_link),
             "value": "parent_domain"
         })
         return OrderedDict(registrar_infos)
@@ -491,7 +490,7 @@ def _get_registrar_config_section(domain):
         registrar_infos["registrar"] = OrderedDict({
             "type": "alert",
             "style": "success",
-            "ask": "This domain is a nohost.me / nohost.st / ynh.fr and its DNS configuration is therefore automatically handled by Yunohost without any further configuration.",  # FIXME: i18n
+            "ask": m18n.n("domain_dns_registrar_yunohost"),
             "value": "yunohost"
         })
         return OrderedDict(registrar_infos)
@@ -502,7 +501,7 @@ def _get_registrar_config_section(domain):
         registrar_infos["registrar"] = OrderedDict({
             "type": "alert",
             "style": "warning",
-            "ask": "YunoHost could not automatically detect the registrar handling this domain. You should manually configure your DNS records following the documentation at https://yunohost.org/dns.",  # FIXME : i18n
+            "ask": m18n.n("domain_dns_registrar_not_supported"),
             "value": None
         })
     else:
@@ -510,7 +509,7 @@ def _get_registrar_config_section(domain):
         registrar_infos["registrar"] = OrderedDict({
             "type": "alert",
             "style": "info",
-            "ask": f"YunoHost automatically detected that this domain is handled by the registrar **{registrar}**. If you want, YunoHost will automatically configure this DNS zone, if you provide it with the appropriate API credentials. You read documentation on how to get your API credentials on this page: https://yunohost.org/registar_api_{registrar}. (You can also manually configure your DNS records following the documentation as https://yunohost.org/dns )",  # FIXME: i18n
+            "ask": m18n.n("domain_dns_registrar_supported", registrar=registrar),
             "value": registrar
         })
 
@@ -519,7 +518,7 @@ def _get_registrar_config_section(domain):
             registrar_infos["experimental_disclaimer"] = OrderedDict({
                 "type": "alert",
                 "style": "danger",
-                "ask": f"So far, the interface with **{registrar}**'s API has not been properly tested and reviewed by the YunoHost's community. Support is **very experimental** - be careful!",  # FIXME: i18n
+                "ask": m18n.n("domain_dns_registrar_experimental", registrar=registrar),
             })
 
         # TODO : add a help tip with the link to the registar's API doc (c.f. Lexicon's README)
@@ -565,7 +564,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
     # FIXME: in the future, properly unify this with yunohost dyndns update
     if registrar == "yunohost":
-        logger.info("This domain is a nohost.me / nohost.st / ynh.fr and its DNS configuration is therefore already automatically handled by Yunohost without any further configuration.")  # FIXME: i18n
+        logger.info(m18n.n("domain_dns_registrar_yunohost"))
         return {}
 
     if registrar == "parent_domain":
@@ -641,7 +640,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     try:
         current_records = client.provider.list_records()
     except Exception as e:
-        raise YunohostError("Failed to list current records using the registrar's API: %s" % str(e), raw_msg=True)  # FIXME: i18n
+        raise YunohostValidationError("domain_dns_push_failed_to_list", error=str(e))
 
     managed_dns_records_hashes = _get_managed_dns_records_hashes(domain)
 
@@ -697,7 +696,6 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
         #
         # Step 1 : compute a first "diff" where we remove records which are the same on both sides
-        # NB / FIXME? : in all this we ignore the TTL value for now...
         #
         wanted_contents = [r["content"] for r in records["wanted"]]
         current_contents = [r["content"] for r in records["current"]]
@@ -821,7 +819,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     progress.total = len(changes["delete"] + changes["create"] + changes["update"])
 
     if progress.total == 0:
-        logger.success("Records already up to date, nothing to do.")  # FIXME : i18n
+        logger.success(m18n.n("domain_dns_push_already_up_to_date"))
         return {}
 
     #
@@ -829,7 +827,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     #
 
     operation_logger.start()
-    logger.info("Pushing DNS records...")
+    logger.info(m18n.n("domain_dns_puhsing"))
 
     new_managed_dns_records_hashes = [_hash_dns_record(r) for r in changes["unchanged"]]
     results = {"warnings": [], "errors": []}
@@ -839,7 +837,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         for record in changes[action]:
 
             relative_name = record['name'].replace(base_dns_zone, '').rstrip('.') or '@'
-            progress(f"{action} {record['type']:^5} / {relative_name}")  # FIXME: i18n
+            progress(f"{action} {record['type']:^5} / {relative_name}")  # FIXME: i18n but meh
 
             # Apparently Lexicon yields us some 'id' during fetch
             # But wants 'identifier' during push ...
@@ -865,27 +863,31 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
             try:
                 result = LexiconClient(query).execute()
             except Exception as e:
-                logger.error(f"Failed to {action} record {record['type']}/{record['name']} : {e}")  # i18n?
-                results["errors"].append(f"Failed to {action} record {record['type']}/{record['name']} : {e}")
+                msg = m18n.n("domain_dns_push_record_failed", action=action, type=record['type'], name=record['name'], error=str(e))
+                logger.error(msg)
+                results["errors"].append(msg)
             else:
                 if result:
                     new_managed_dns_records_hashes.append(_hash_dns_record(record))
                 else:
-                    results["errors"].append(f"Failed to {action} record {record['type']}/{record['name']} : unknown error?")
+                    msg = m18n.n("domain_dns_push_record_failed", action=action, type=record['type'], name=record['name'], error="unkonwn error?")
+                    logger.error(msg)
+                    results["errors"].append(msg)
 
     _set_managed_dns_records_hashes(domain, new_managed_dns_records_hashes)
 
     # Everything succeeded
     if len(results["errors"]) == 0:
-        logger.success("DNS records updated!")  # FIXME: i18n
+        logger.success(m18n.("domain_dns_push_success"))
         return {}
     # Everything failed
     elif len(results["errors"]) + len(results["warnings"]) == progress.total:
-        logger.error("Updating the DNS records failed miserably")  # FIXME: i18n
+        logger.error(m18n.("domain_dns_push_failed"))
     else:
-        logger.warning("DNS records partially updated: some warnings/errors were reported.")  # FIXME: i18n
+        logger.warning(m18n.("domain_dns_push_partial_failure"))
 
     return results
+
 
 def _get_managed_dns_records_hashes(domain: str) -> list:
     return _get_domain_settings(domain).get("managed_dns_records_hashes", [])
