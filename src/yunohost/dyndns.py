@@ -228,10 +228,6 @@ def dyndns_update(
 
     from yunohost.dns import _build_dns_conf
 
-    # Get old ipv4/v6
-
-    old_ipv4, old_ipv6 = (None, None)  # (default values)
-
     # If domain is not given, try to guess it from keys available...
     if domain is None:
         (domain, key) = _guess_current_dyndns_domain(dyn_host)
@@ -310,6 +306,10 @@ def dyndns_update(
 
     logger.debug("Old IPv4/v6 are (%s, %s)" % (old_ipv4, old_ipv6))
     logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
+
+    if ipv4 is None and ipv6 is None:
+        logger.debug("No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ip.yunohost.org infrastructure is down somehow")
+        return
 
     # no need to update
     if (not force and not dry_run) and (old_ipv4 == ipv4 and old_ipv6 == ipv6):
