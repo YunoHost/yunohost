@@ -308,7 +308,9 @@ def dyndns_update(
     logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
 
     if ipv4 is None and ipv6 is None:
-        logger.debug("No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ip.yunohost.org infrastructure is down somehow")
+        logger.debug(
+            "No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ip.yunohost.org infrastructure is down somehow"
+        )
         return
 
     # no need to update

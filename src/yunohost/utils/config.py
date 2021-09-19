@@ -53,8 +53,8 @@ class ConfigPanel:
         self.values = {}
         self.new_values = {}
 
-    def get(self, key='', mode='classic'):
-        self.filter_key = key or ''
+    def get(self, key="", mode="classic"):
+        self.filter_key = key or ""
 
         # Read config panel toml
         self._get_config_panel()

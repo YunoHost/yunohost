@@ -34,7 +34,13 @@ from moulinette import m18n, Moulinette
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, write_to_file, read_toml
 
-from yunohost.domain import domain_list, _assert_domain_exists, domain_config_get, _get_domain_settings, _set_domain_settings
+from yunohost.domain import (
+    domain_list,
+    _assert_domain_exists,
+    domain_config_get,
+    _get_domain_settings,
+    _set_domain_settings,
+)
 from yunohost.utils.dns import dig, YNH_DYNDNS_DOMAINS
 from yunohost.utils.error import YunohostValidationError, YunohostError
 from yunohost.utils.network import get_public_ip
@@ -163,13 +169,18 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
     # If this is a ynh_dyndns_domain, we're not gonna include all the subdomains in the conf
     # Because dynette only accept a specific list of name/type
     # And the wildcard */A already covers the bulk of use cases
-    if any(base_domain.endswith("." + ynh_dyndns_domain) for ynh_dyndns_domain in YNH_DYNDNS_DOMAINS):
+    if any(
+        base_domain.endswith("." + ynh_dyndns_domain)
+        for ynh_dyndns_domain in YNH_DYNDNS_DOMAINS
+    ):
         subdomains = []
     else:
         subdomains = _list_subdomains_of(base_domain)
 
-    domains_settings = {domain: domain_config_get(domain, export=True)
-                        for domain in [base_domain] + subdomains}
+    domains_settings = {
+        domain: domain_config_get(domain, export=True)
+        for domain in [base_domain] + subdomains
+    }
 
     base_dns_zone = _get_dns_zone_for_domain(base_domain)
 
@@ -186,7 +197,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
         basename = domain.replace(base_dns_zone, "").rstrip(".") or "@"
         suffix = f".{basename}" if basename != "@" else ""
 
-        #ttl = settings["ttl"]
+        # ttl = settings["ttl"]
         ttl = 3600
 
         ###########################
@@ -416,7 +427,7 @@ def _get_dns_zone_for_domain(domain):
     # This is mainly meant to speed up things for "dyndns update"
     # ... otherwise we end up constantly doing a bunch of dig requests
     for ynh_dyndns_domain in YNH_DYNDNS_DOMAINS:
-        if domain.endswith('.' + ynh_dyndns_domain):
+        if domain.endswith("." + ynh_dyndns_domain):
             return ynh_dyndns_domain
 
     # Check cache
@@ -453,8 +464,7 @@ def _get_dns_zone_for_domain(domain):
     #         baz.gni
     #             gni
     # Until we find the first one that has a NS record
-    parent_list = [domain.split(".", i)[-1]
-                   for i, _ in enumerate(domain.split("."))]
+    parent_list = [domain.split(".", i)[-1] for i, _ in enumerate(domain.split("."))]
 
     for parent in parent_list:
 
@@ -470,7 +480,9 @@ def _get_dns_zone_for_domain(domain):
     else:
         zone = parent_list[-1]
 
-    logger.warning(f"Could not identify the dns zone for domain {domain}, returning {zone}")
+    logger.warning(
+        f"Could not identify the dns zone for domain {domain}, returning {zone}"
+    )
     return zone
 
 
@@ -492,50 +504,66 @@ def _get_registrar_config_section(domain):
         else:
             parent_domain_link = parent_domain
 
-        registrar_infos["registrar"] = OrderedDict({
-            "type": "alert",
-            "style": "info",
-            "ask": m18n.n("domain_dns_registrar_managed_in_parent_domain", parent_domain=domain, parent_domain_link=parent_domain_link),
-            "value": "parent_domain"
-        })
+        registrar_infos["registrar"] = OrderedDict(
+            {
+                "type": "alert",
+                "style": "info",
+                "ask": m18n.n(
+                    "domain_dns_registrar_managed_in_parent_domain",
+                    parent_domain=domain,
+                    parent_domain_link=parent_domain_link,
+                ),
+                "value": "parent_domain",
+            }
+        )
         return OrderedDict(registrar_infos)
 
     # TODO big project, integrate yunohost's dynette as a registrar-like provider
     # TODO big project, integrate other dyndns providers such as netlib.re, or cf the list of dyndns providers supported by cloudron...
     if dns_zone in YNH_DYNDNS_DOMAINS:
-        registrar_infos["registrar"] = OrderedDict({
-            "type": "alert",
-            "style": "success",
-            "ask": m18n.n("domain_dns_registrar_yunohost"),
-            "value": "yunohost"
-        })
+        registrar_infos["registrar"] = OrderedDict(
+            {
+                "type": "alert",
+                "style": "success",
+                "ask": m18n.n("domain_dns_registrar_yunohost"),
+                "value": "yunohost",
+            }
+        )
         return OrderedDict(registrar_infos)
 
     try:
         registrar = _relevant_provider_for_domain(dns_zone)[0]
     except ValueError:
-        registrar_infos["registrar"] = OrderedDict({
-            "type": "alert",
-            "style": "warning",
-            "ask": m18n.n("domain_dns_registrar_not_supported"),
-            "value": None
-        })
+        registrar_infos["registrar"] = OrderedDict(
+            {
+                "type": "alert",
+                "style": "warning",
+                "ask": m18n.n("domain_dns_registrar_not_supported"),
+                "value": None,
+            }
+        )
     else:
 
-        registrar_infos["registrar"] = OrderedDict({
-            "type": "alert",
-            "style": "info",
-            "ask": m18n.n("domain_dns_registrar_supported", registrar=registrar),
-            "value": registrar
-        })
+        registrar_infos["registrar"] = OrderedDict(
+            {
+                "type": "alert",
+                "style": "info",
+                "ask": m18n.n("domain_dns_registrar_supported", registrar=registrar),
+                "value": registrar,
+            }
+        )
 
         TESTED_REGISTRARS = ["ovh", "gandi"]
         if registrar not in TESTED_REGISTRARS:
-            registrar_infos["experimental_disclaimer"] = OrderedDict({
-                "type": "alert",
-                "style": "danger",
-                "ask": m18n.n("domain_dns_registrar_experimental", registrar=registrar),
-            })
+            registrar_infos["experimental_disclaimer"] = OrderedDict(
+                {
+                    "type": "alert",
+                    "style": "danger",
+                    "ask": m18n.n(
+                        "domain_dns_registrar_experimental", registrar=registrar
+                    ),
+                }
+            )
 
         # TODO : add a help tip with the link to the registar's API doc (c.f. Lexicon's README)
         registrar_list = read_toml(DOMAIN_REGISTRAR_LIST_PATH)
@@ -552,7 +580,7 @@ def _get_registar_settings(domain):
 
     _assert_domain_exists(domain)
 
-    settings = domain_config_get(domain, key='dns.registrar', export=True)
+    settings = domain_config_get(domain, key="dns.registrar", export=True)
 
     registrar = settings.pop("registrar")
 
@@ -587,12 +615,20 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         parent_domain = domain.split(".", 1)[1]
         registar, registrar_credentials = _get_registar_settings(parent_domain)
         if any(registrar_credentials.values()):
-            raise YunohostValidationError("domain_dns_push_managed_in_parent_domain", domain=domain, parent_domain=parent_domain)
+            raise YunohostValidationError(
+                "domain_dns_push_managed_in_parent_domain",
+                domain=domain,
+                parent_domain=parent_domain,
+            )
         else:
-            raise YunohostValidationError("domain_registrar_is_not_configured", domain=parent_domain)
+            raise YunohostValidationError(
+                "domain_registrar_is_not_configured", domain=parent_domain
+            )
 
     if not all(registrar_credentials.values()):
-        raise YunohostValidationError("domain_registrar_is_not_configured", domain=domain)
+        raise YunohostValidationError(
+            "domain_registrar_is_not_configured", domain=domain
+        )
 
     base_dns_zone = _get_dns_zone_for_domain(domain)
 
@@ -603,7 +639,11 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         for record in records:
 
             # Make sure the name is a FQDN
-            name = f"{record['name']}.{base_dns_zone}" if record["name"] != "@" else base_dns_zone
+            name = (
+                f"{record['name']}.{base_dns_zone}"
+                if record["name"] != "@"
+                else base_dns_zone
+            )
             type_ = record["type"]
             content = record["value"]
 
@@ -611,19 +651,16 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
             if content == "@" and record["type"] == "CNAME":
                 content = base_dns_zone + "."
 
-            wanted_records.append({
-                "name": name,
-                "type": type_,
-                "ttl": record["ttl"],
-                "content": content
-            })
+            wanted_records.append(
+                {"name": name, "type": type_, "ttl": record["ttl"], "content": content}
+            )
 
     # FIXME Lexicon does not support CAA records
     # See https://github.com/AnalogJ/lexicon/issues/282 and https://github.com/AnalogJ/lexicon/pull/371
     # They say it's trivial to implement it!
     # And yet, it is still not done/merged
     # Update by Aleks: it works - at least with Gandi ?!
-    #wanted_records = [record for record in wanted_records if record["type"] != "CAA"]
+    # wanted_records = [record for record in wanted_records if record["type"] != "CAA"]
 
     if purge:
         wanted_records = []
@@ -634,7 +671,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     base_config = {
         "provider_name": registrar,
         "domain": base_dns_zone,
-        registrar: registrar_credentials
+        registrar: registrar_credentials,
     }
 
     # Ugly hack to be able to fetch all record types at once:
@@ -643,15 +680,17 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     # then trigger ourselves the authentication + list_records
     # instead of calling .execute()
     query = (
-            LexiconConfigResolver()
-            .with_dict(dict_object=base_config)
-            .with_dict(dict_object={"action": "list", "type": "all"})
+        LexiconConfigResolver()
+        .with_dict(dict_object=base_config)
+        .with_dict(dict_object={"action": "list", "type": "all"})
     )
     client = LexiconClient(query)
     try:
         client.provider.authenticate()
     except Exception as e:
-        raise YunohostValidationError("domain_dns_push_failed_to_authenticate", domain=domain, error=str(e))
+        raise YunohostValidationError(
+            "domain_dns_push_failed_to_authenticate", domain=domain, error=str(e)
+        )
 
     try:
         current_records = client.provider.list_records()
@@ -666,7 +705,11 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
     # Ignore records which are for a higher-level domain
     # i.e. we don't care about the records for domain.tld when pushing yuno.domain.tld
-    current_records = [r for r in current_records if r['name'].endswith(f'.{domain}') or r['name'] == domain]
+    current_records = [
+        r
+        for r in current_records
+        if r["name"].endswith(f".{domain}") or r["name"] == domain
+    ]
 
     for record in current_records:
 
@@ -674,7 +717,11 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         record["name"] = record["name"].strip("@").strip(".")
 
         # Some API return '@' in content and we shall convert it to absolute/fqdn
-        record["content"] = record["content"].replace('@.', base_dns_zone + ".").replace('@', base_dns_zone + ".")
+        record["content"] = (
+            record["content"]
+            .replace("@.", base_dns_zone + ".")
+            .replace("@", base_dns_zone + ".")
+        )
 
         if record["type"] == "TXT":
             if not record["content"].startswith('"'):
@@ -683,7 +730,9 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
                 record["content"] = record["content"] + '"'
 
         # Check if this record was previously set by YunoHost
-        record["managed_by_yunohost"] = _hash_dns_record(record) in managed_dns_records_hashes
+        record["managed_by_yunohost"] = (
+            _hash_dns_record(record) in managed_dns_records_hashes
+        )
 
     # Step 0 : Get the list of unique (type, name)
     # And compare the current and wanted records
@@ -699,8 +748,12 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     # (SRV, .domain.tld)                       0 5 5269 domain.tld
     changes = {"delete": [], "update": [], "create": [], "unchanged": []}
 
-    type_and_names = sorted(set([(r["type"], r["name"]) for r in current_records + wanted_records]))
-    comparison = {type_and_name: {"current": [], "wanted": []} for type_and_name in type_and_names}
+    type_and_names = sorted(
+        set([(r["type"], r["name"]) for r in current_records + wanted_records])
+    )
+    comparison = {
+        type_and_name: {"current": [], "wanted": []} for type_and_name in type_and_names
+    }
 
     for record in current_records:
         comparison[(record["type"], record["name"])]["current"].append(record)
@@ -748,7 +801,9 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
             def likeliness(r):
                 # We compute this only on the first 100 chars, to have a high value even for completely different DKIM keys
-                return SequenceMatcher(None, r["content"][:100], record["content"][:100]).ratio()
+                return SequenceMatcher(
+                    None, r["content"][:100], record["content"][:100]
+                ).ratio()
 
             matches = sorted(current, key=lambda r: likeliness(r), reverse=True)
             if matches and likeliness(matches[0]) > 0.50:
@@ -770,7 +825,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
     def relative_name(name):
         name = name.strip(".")
-        name = name.replace('.' + base_dns_zone, "")
+        name = name.replace("." + base_dns_zone, "")
         name = name.replace(base_dns_zone, "@")
         return name
 
@@ -780,24 +835,30 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         t = record["type"]
 
         if not force and action in ["update", "delete"]:
-            ignored = "" if record["managed_by_yunohost"] else "(ignored, won't be changed by Yunohost unless forced)"
+            ignored = (
+                ""
+                if record["managed_by_yunohost"]
+                else "(ignored, won't be changed by Yunohost unless forced)"
+            )
         else:
             ignored = ""
 
         if action == "create":
             old_content = record.get("old_content", "(None)")[:30]
             new_content = record.get("content", "(None)")[:30]
-            return f'{name:>20} [{t:^5}] {new_content:^30}  {ignored}'
+            return f"{name:>20} [{t:^5}] {new_content:^30}  {ignored}"
         elif action == "update":
             old_content = record.get("old_content", "(None)")[:30]
             new_content = record.get("content", "(None)")[:30]
-            return f'{name:>20} [{t:^5}] {old_content:^30} -> {new_content:^30}  {ignored}'
+            return (
+                f"{name:>20} [{t:^5}] {old_content:^30} -> {new_content:^30}  {ignored}"
+            )
         elif action == "unchanged":
             old_content = new_content = record.get("content", "(None)")[:30]
-            return f'{name:>20} [{t:^5}] {old_content:^30}'
+            return f"{name:>20} [{t:^5}] {old_content:^30}"
         else:
             old_content = record.get("content", "(None)")[:30]
-            return f'{name:>20} [{t:^5}] {old_content:^30} {ignored}'
+            return f"{name:>20} [{t:^5}] {old_content:^30} {ignored}"
 
     if dry_run:
         if Moulinette.interface.type == "api":
@@ -852,8 +913,10 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
         for record in changes[action]:
 
-            relative_name = record['name'].replace(base_dns_zone, '').rstrip('.') or '@'
-            progress(f"{action} {record['type']:^5} / {relative_name}")  # FIXME: i18n but meh
+            relative_name = record["name"].replace(base_dns_zone, "").rstrip(".") or "@"
+            progress(
+                f"{action} {record['type']:^5} / {relative_name}"
+            )  # FIXME: i18n but meh
 
             # Apparently Lexicon yields us some 'id' during fetch
             # But wants 'identifier' during push ...
@@ -865,8 +928,12 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
                 if record["name"] == base_dns_zone:
                     record["name"] = "@." + record["name"]
                 if record["type"] in ["MX", "SRV", "CAA"]:
-                    logger.warning(f"Pushing {record['type']} records is not properly supported by Lexicon/Godaddy.")
-                    results["warnings"].append(f"Pushing {record['type']} records is not properly supported by Lexicon/Godaddy.")
+                    logger.warning(
+                        f"Pushing {record['type']} records is not properly supported by Lexicon/Godaddy."
+                    )
+                    results["warnings"].append(
+                        f"Pushing {record['type']} records is not properly supported by Lexicon/Godaddy."
+                    )
                     continue
 
             record["action"] = action
@@ -879,14 +946,26 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
             try:
                 result = LexiconClient(query).execute()
             except Exception as e:
-                msg = m18n.n("domain_dns_push_record_failed", action=action, type=record['type'], name=record['name'], error=str(e))
+                msg = m18n.n(
+                    "domain_dns_push_record_failed",
+                    action=action,
+                    type=record["type"],
+                    name=record["name"],
+                    error=str(e),
+                )
                 logger.error(msg)
                 results["errors"].append(msg)
             else:
                 if result:
                     new_managed_dns_records_hashes.append(_hash_dns_record(record))
                 else:
-                    msg = m18n.n("domain_dns_push_record_failed", action=action, type=record['type'], name=record['name'], error="unkonwn error?")
+                    msg = m18n.n(
+                        "domain_dns_push_record_failed",
+                        action=action,
+                        type=record["type"],
+                        name=record["name"],
+                        error="unkonwn error?",
+                    )
                     logger.error(msg)
                     results["errors"].append(msg)
 

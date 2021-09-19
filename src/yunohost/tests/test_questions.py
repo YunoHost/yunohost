@@ -518,9 +518,7 @@ def test_question_password_input_test_ask():
 
     with patch.object(
         Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(
-        os, "isatty", return_value=True
-    ):
+    ) as prompt, patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
         prompt.assert_called_with(
             message=ask_text,
@@ -547,9 +545,7 @@ def test_question_password_input_test_ask_with_example():
 
     with patch.object(
         Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(
-        os, "isatty", return_value=True
-    ):
+    ) as prompt, patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
         assert ask_text in prompt.call_args[1]["message"]
         assert example_text in prompt.call_args[1]["message"]
@@ -571,9 +567,7 @@ def test_question_password_input_test_ask_with_help():
 
     with patch.object(
         Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(
-        os, "isatty", return_value=True
-    ):
+    ) as prompt, patch.object(os, "isatty", return_value=True):
         parse_args_in_yunohost_format(answers, questions)
         assert ask_text in prompt.call_args[1]["message"]
         assert help_text in prompt.call_args[1]["message"]

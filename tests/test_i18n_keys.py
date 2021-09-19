@@ -130,13 +130,13 @@ def find_expected_string_keys():
         yield "backup_applying_method_%s" % method
         yield "backup_method_%s_finished" % method
 
-    registrars = toml.load(open('data/other/registrar_list.toml'))
+    registrars = toml.load(open("data/other/registrar_list.toml"))
     supported_registrars = ["ovh", "gandi", "godaddy"]
     for registrar in supported_registrars:
         for key in registrars[registrar].keys():
             yield f"domain_config_{key}"
 
-    domain_config = toml.load(open('data/other/config_domain.toml'))
+    domain_config = toml.load(open("data/other/config_domain.toml"))
     for panel in domain_config.values():
         if not isinstance(panel, dict):
             continue
