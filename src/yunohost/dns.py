@@ -197,7 +197,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
 
         if ipv6:
             basic.append([basename, ttl, "AAAA", ipv6])
-        elif include_empty_aaaa_if_no_ipv6:
+        elif include_empty_AAAA_if_no_ipv6:
             basic.append(["@", ttl, "AAAA", None])
 
         #########
