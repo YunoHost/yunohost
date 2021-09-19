@@ -93,6 +93,10 @@ def domain_list(exclude_subdomains=False):
 
     result_list = sorted(result_list, key=cmp_domain)
 
+    # Don't cache answer if using exclude_subdomains
+    if exclude_subdomains:
+        return {"domains": result_list, "main": _get_maindomain()}
+
     domain_list_cache = {"domains": result_list, "main": _get_maindomain()}
     return domain_list_cache
 

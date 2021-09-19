@@ -198,7 +198,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
         if ipv6:
             basic.append([basename, ttl, "AAAA", ipv6])
         elif include_empty_AAAA_if_no_ipv6:
-            basic.append(["@", ttl, "AAAA", None])
+            basic.append([basename, ttl, "AAAA", None])
 
         #########
         # Email #
@@ -245,15 +245,17 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
         # Extra #
         #########
 
-        if ipv4:
-            extra.append([f"*{suffix}", ttl, "A", ipv4])
+        # Only recommend wildcard and CAA for the top level
+        if domain == base_domain:
+            if ipv4:
+                extra.append([f"*{suffix}", ttl, "A", ipv4])
 
-        if ipv6:
-            extra.append([f"*{suffix}", ttl, "AAAA", ipv6])
-        elif include_empty_AAAA_if_no_ipv6:
-            extra.append(["*", ttl, "AAAA", None])
+            if ipv6:
+                extra.append([f"*{suffix}", ttl, "AAAA", ipv6])
+            elif include_empty_AAAA_if_no_ipv6:
+                extra.append([f"*{suffix}", ttl, "AAAA", None])
 
-        extra.append([basename, ttl, "CAA", '128 issue "letsencrypt.org"'])
+            extra.append([basename, ttl, "CAA", '128 issue "letsencrypt.org"'])
 
         ####################
         # Standard records #
@@ -463,8 +465,13 @@ def _get_dns_zone_for_domain(domain):
             write_to_file(cache_file, parent)
             return parent
 
-    logger.warning(f"Could not identify the dns_zone for domain {domain}, returning {parent_list[-1]}")
-    return parent_list[-1]
+    if len(parent_list) >= 2:
+        zone = parent_list[-2]
+    else:
+        zone = parent_list[-1]
+
+    logger.warning(f"Could not identify the dns zone for domain {domain}, returning {zone}")
+    return zone
 
 
 def _get_registrar_config_section(domain):
@@ -649,7 +656,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     try:
         current_records = client.provider.list_records()
     except Exception as e:
-        raise YunohostValidationError("domain_dns_push_failed_to_list", error=str(e))
+        raise YunohostError("domain_dns_push_failed_to_list", error=str(e))
 
     managed_dns_records_hashes = _get_managed_dns_records_hashes(domain)
 
