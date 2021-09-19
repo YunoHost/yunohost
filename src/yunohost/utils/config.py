@@ -39,6 +39,7 @@ from moulinette.utils.filesystem import (
 
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.log import OperationLogger
 
 logger = getActionLogger("yunohost.config")
 CONFIG_PANEL_VERSION_SUPPORTED = 1.0
@@ -453,7 +454,6 @@ class ConfigPanel:
 
 class Question(object):
     hide_user_input_in_prompt = False
-    operation_logger = None
     pattern = None
 
     def __init__(self, question, user_answers):
@@ -490,7 +490,7 @@ class Question(object):
         self.value = Moulinette.prompt(
             message=text,
             is_password=self.hide_user_input_in_prompt,
-            confirm=False, # We doesn't want to confirm this kind of password like in webadmin
+            confirm=False,  # We doesn't want to confirm this kind of password like in webadmin
             prefill=prefill,
             is_multiline=(self.type == "text"),
         )
@@ -587,13 +587,9 @@ class Question(object):
             for data in data_to_redact
             if urllib.parse.quote(data) != data
         ]
-        if self.operation_logger:
-            self.operation_logger.data_to_redact.extend(data_to_redact)
-        elif data_to_redact:
-            raise YunohostError(
-                f"Can't redact {self.name} because no operation logger available in the context",
-                raw_msg=True,
-            )
+
+        for operation_logger in OperationLogger._instances:
+            operation_logger.data_to_redact.extend(data_to_redact)
 
         return self.value
 
@@ -658,6 +654,12 @@ class TagsQuestion(Question):
             return ",".join(value)
         return value
 
+    @staticmethod
+    def normalize(value, option={}):
+        if isinstance(value, list):
+            return ",".join(value)
+        return value
+
     def _prevalidate(self):
         values = self.value
         if isinstance(values, str):
@@ -668,6 +670,11 @@ class TagsQuestion(Question):
             self.value = value
             super()._prevalidate()
         self.value = values
+
+    def _post_parse_value(self):
+        if isinstance(self.value, list):
+            self.value = ",".join(self.value)
+        return super()._post_parse_value()
 
 
 class PasswordQuestion(Question):
@@ -706,11 +713,17 @@ class PasswordQuestion(Question):
 
     def _format_text_for_user_input_in_cli(self):
         need_column = self.current_value or self.optional
-        text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli(need_column)
+        text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli(
+            need_column
+        )
         if self.current_value:
-            text_for_user_input_in_cli += "\n - " + m18n.n("app_argument_password_help_keep")
+            text_for_user_input_in_cli += "\n - " + m18n.n(
+                "app_argument_password_help_keep"
+            )
         if self.optional:
-            text_for_user_input_in_cli += "\n - " + m18n.n("app_argument_password_help_optional")
+            text_for_user_input_in_cli += "\n - " + m18n.n(
+                "app_argument_password_help_optional"
+            )
 
         return text_for_user_input_in_cli
 
@@ -834,7 +847,7 @@ class UserQuestion(Question):
             raise YunohostValidationError(
                 "app_argument_invalid",
                 name=self.name,
-                error="You should create a YunoHost user first."
+                error="You should create a YunoHost user first.",
             )
 
         if self.default is None:
@@ -949,11 +962,11 @@ class FileQuestion(Question):
                     "content": self.value,
                     "filename": user_answers.get(f"{self.name}[name]", self.name),
                 }
-        # If path file are the same
-        if self.value and str(self.value) == self.current_value:
-            self.value = None
 
     def _prevalidate(self):
+        if self.value is None:
+            self.value = self.current_value
+
         super()._prevalidate()
         if (
             isinstance(self.value, str)
@@ -988,7 +1001,7 @@ class FileQuestion(Question):
         if not self.value:
             return self.value
 
-        if Moulinette.interface.type == "api":
+        if Moulinette.interface.type == "api" and isinstance(self.value, dict):
 
             upload_dir = tempfile.mkdtemp(prefix="tmp_configpanel_")
             FileQuestion.upload_dirs += [upload_dir]

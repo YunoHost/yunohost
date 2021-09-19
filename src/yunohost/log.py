@@ -75,7 +75,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
             # If we displaying only parent, we are still gonna load up to limit * 5 logs
             # because many of them are suboperations which are not gonna be kept
             # Yet we still want to obtain ~limit number of logs
-            logs = logs[:limit * 5]
+            logs = logs[: limit * 5]
 
     for log in logs:
 
@@ -186,11 +186,16 @@ def log_show(
                 r"DEBUG - \+ exit (1|0)$",
             ]
             filters = [re.compile(f) for f in filters]
-            return [line for line in lines if not any(f.search(line.strip()) for f in filters)]
+            return [
+                line
+                for line in lines
+                if not any(f.search(line.strip()) for f in filters)
+            ]
+
     else:
+
         def _filter(lines):
             return lines
-
 
     # Normalize log/metadata paths and filenames
     abs_path = path

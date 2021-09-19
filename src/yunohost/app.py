@@ -56,7 +56,6 @@ from yunohost.utils import packages
 from yunohost.utils.config import (
     ConfigPanel,
     parse_args_in_yunohost_format,
-    Question,
 )
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -460,19 +459,21 @@ def app_change_url(operation_logger, app, domain, path):
     # TODO: Allow to specify arguments
     args_odict = _parse_args_from_manifest(manifest, "change_url")
 
+    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
+
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(app, args=args_odict)
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
     env_dict["YNH_APP_OLD_PATH"] = old_path
     env_dict["YNH_APP_NEW_DOMAIN"] = domain
     env_dict["YNH_APP_NEW_PATH"] = path
+    env_dict["YNH_APP_BASEDIR"] = tmp_workdir_for_app
 
     if domain != old_domain:
         operation_logger.related_to.append(("domain", old_domain))
     operation_logger.extra.update({"env": env_dict})
     operation_logger.start()
 
-    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
     change_url_script = os.path.join(tmp_workdir_for_app, "scripts/change_url")
 
     # Execute App change_url script
@@ -623,6 +624,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
         env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
+        env_dict["YNH_APP_BASEDIR"] = extracted_app_folder
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
@@ -920,19 +922,6 @@ def app_install(
     # We'll check that the app didn't brutally edit some system configuration
     manually_modified_files_before_install = manually_modified_files()
 
-    # Tell the operation_logger to redact all password-type args
-    # Also redact the % escaped version of the password that might appear in
-    # the 'args' section of metadata (relevant for password with non-alphanumeric char)
-    data_to_redact = [
-        value[0] for value in args_odict.values() if value[1] == "password"
-    ]
-    data_to_redact += [
-        urllib.parse.quote(data)
-        for data in data_to_redact
-        if urllib.parse.quote(data) != data
-    ]
-    operation_logger.data_to_redact.extend(data_to_redact)
-
     operation_logger.related_to = [
         s for s in operation_logger.related_to if s[0] != "app"
     ]
@@ -988,6 +977,7 @@ def app_install(
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(app_instance_name, args=args_odict)
+    env_dict["YNH_APP_BASEDIR"] = extracted_app_folder
 
     env_dict_for_logging = env_dict.copy()
     for arg_name, arg_value_and_type in args_odict.items():
@@ -1052,6 +1042,7 @@ def app_install(
             env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
             env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
             env_dict_remove["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
+            env_dict_remove["YNH_APP_BASEDIR"] = extracted_app_folder
 
             # Execute remove script
             operation_logger_remove = OperationLogger(
@@ -1169,6 +1160,8 @@ def app_remove(operation_logger, app, purge=False):
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
     env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
     env_dict["YNH_APP_PURGE"] = str(purge)
+    env_dict["YNH_APP_BASEDIR"] = tmp_workdir_for_app
+
     operation_logger.extra.update({"env": env_dict})
     operation_logger.flush()
 
@@ -1654,12 +1647,14 @@ def app_action_run(operation_logger, app, action, args=None):
     )
     args_odict = _parse_args_for_action(actions[action], args=args_dict)
 
+    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
+
     env_dict = _make_environment_for_app_script(
         app, args=args_odict, args_prefix="ACTION_"
     )
     env_dict["YNH_ACTION"] = action
+    env_dict["YNH_APP_BASEDIR"] = tmp_workdir_for_app
 
-    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
     _, action_script = tempfile.mkstemp(dir=tmp_workdir_for_app)
 
     with open(action_script, "w") as script:
@@ -1731,8 +1726,6 @@ def app_config_set(
 
     config_ = AppConfigPanel(app)
 
-    Question.operation_logger = operation_logger
-
     return config_.set(key, value, args, args_file, operation_logger=operation_logger)
 
 
@@ -1787,7 +1780,8 @@ ynh_app_config_run $1
                 "app_id": app_id,
                 "app": self.app,
                 "app_instance_nb": str(app_instance_nb),
-                "final_path": settings.get("final_path", "")
+                "final_path": settings.get("final_path", ""),
+                "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, self.app),
             }
         )
 
