@@ -8,14 +8,6 @@ import yaml
 import subprocess
 import toml
 
-ignore = [
-    "password_too_simple_",
-    "password_listed",
-    "backup_method_",
-    "backup_applying_method_",
-    "confirm_app_install_",
-]
-
 ###############################################################################
 #   Find used keys in python code                                             #
 ###############################################################################
@@ -137,34 +129,6 @@ def find_expected_string_keys():
     for method in ["tar", "copy", "custom"]:
         yield "backup_applying_method_%s" % method
         yield "backup_method_%s_finished" % method
-
-    for level in ["danger", "thirdparty", "warning"]:
-        yield "confirm_app_install_%s" % level
-
-    for errortype in ["not_found", "error", "warning", "success", "not_found_details"]:
-        yield "diagnosis_domain_expiration_%s" % errortype
-    yield "diagnosis_domain_not_found_details"
-
-    for errortype in ["bad_status_code", "connection_error", "timeout"]:
-        yield "diagnosis_http_%s" % errortype
-
-    yield "password_listed"
-    for i in [1, 2, 3, 4]:
-        yield "password_too_simple_%s" % i
-
-    checks = [
-        "outgoing_port_25_ok",
-        "ehlo_ok",
-        "fcrdns_ok",
-        "blacklist_ok",
-        "queue_ok",
-        "ehlo_bad_answer",
-        "ehlo_unreachable",
-        "ehlo_bad_answer_details",
-        "ehlo_unreachable_details",
-    ]
-    for check in checks:
-        yield "diagnosis_mail_%s" % check
 
     registrars = toml.load(open('data/other/registrar_list.toml'))
     supported_registrars = ["ovh", "gandi", "godaddy"]

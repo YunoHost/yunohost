@@ -199,6 +199,7 @@ class DNSRecordsDiagnoser(Diagnoser):
                 status_ns, _ = dig(domain, "NS", resolvers="force_external")
                 status_a, _ = dig(domain, "A", resolvers="force_external")
                 if "ok" not in [status_ns, status_a]:
+                    # i18n: diagnosis_domain_not_found_details
                     details["not_found"].append(
                         (
                             "diagnosis_domain_%s_details" % (expire_date),
@@ -233,6 +234,12 @@ class DNSRecordsDiagnoser(Diagnoser):
                 # Allow to ignore specifically a single domain
                 if len(details[alert_type]) == 1:
                     meta["domain"] = details[alert_type][0][1]["domain"]
+
+                # i18n: diagnosis_domain_expiration_not_found
+                # i18n: diagnosis_domain_expiration_error
+                # i18n: diagnosis_domain_expiration_warning
+                # i18n: diagnosis_domain_expiration_success
+                # i18n: diagnosis_domain_expiration_not_found_details
                 yield dict(
                     meta=meta,
                     data={},

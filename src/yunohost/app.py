@@ -820,6 +820,10 @@ def app_install(
         if confirm is None or force or Moulinette.interface.type == "api":
             return
 
+        # i18n: confirm_app_install_warning
+        # i18n: confirm_app_install_danger
+        # i18n: confirm_app_install_thirdparty
+
         if confirm in ["danger", "thirdparty"]:
             answer = Moulinette.prompt(
                 m18n.n("confirm_app_install_" + confirm, answers="Yes, I understand"),
