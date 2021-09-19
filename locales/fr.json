@@ -4,7 +4,7 @@
     "admin_password_change_failed": "Impossible de changer le mot de passe",
     "admin_password_changed": "Le mot de passe d'administration a été modifié",
     "app_already_installed": "{app} est déjà installé",
-    "app_argument_choice_invalid": "Choix invalide pour le paramètre '{name}', il doit être l'un de {choices} au lieu de '{value}'",
+    "app_argument_choice_invalid": "Choix invalide pour le paramètre '{name}'. Les valeurs acceptées sont {choices}, au lieu de '{value}'",
     "app_argument_invalid": "Valeur invalide pour le paramètre '{name}' : {error}",
     "app_argument_required": "Le paramètre '{name}' est requis",
     "app_extraction_failed": "Impossible d'extraire les fichiers d'installation",
@@ -678,7 +678,7 @@
     "invalid_number_min": "Doit être supérieur à {min}",
     "invalid_number_max": "Doit être inférieur à {max}",
     "log_app_config_set": "Appliquer la configuration à l'application '{}'",
-    "service_not_reloading_because_conf_broken": "Le service '{name}' n'est pas rechargé/redémarré car sa configuration est cassée : {errors}",
+    "service_not_reloading_because_conf_broken": "Le service '{name}' n'a pas été rechargé/redémarré car sa configuration est cassée : {errors}",
     "app_argument_password_help_keep": "Tapez sur Entrée pour conserver la valeur actuelle",
     "app_argument_password_help_optional": "Tapez un espace pour vider le mot de passe"
 }
