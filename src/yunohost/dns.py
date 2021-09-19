@@ -886,7 +886,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     _set_managed_dns_records_hashes(domain, new_managed_dns_records_hashes)
 
     # Everything succeeded
-    if len(results["errors"]) == 0:
+    if len(results["errors"]) + len(results["warnings"]) == 0:
         logger.success(m18n.n("domain_dns_push_success"))
         return {}
     # Everything failed
