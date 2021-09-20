@@ -13,7 +13,7 @@ import socket
 from time import sleep
 from typing import List, Dict
 
-from zeroconf import Zeroconf, ServiceInfo
+from zeroconf import Zeroconf, ServiceInfo, ServiceBrowser
 
 # Helper command taken from Moulinette
 def check_output(args, stderr=subprocess.STDOUT, shell=True, **kwargs):
@@ -93,6 +93,24 @@ def get_network_interfaces():
 
     return devices
 
+# Listener class, to detect duplicates on the network
+# Stores the list of servers in its list property
+class Listener:
+
+    def __init__(self):
+        self.list = []
+
+    def remove_service(self, zeroconf, type, name):
+        info = zeroconf.get_service_info(type, name)
+        self.list.remove(info.server)
+
+    def update_service(self, zeroconf, type, name):
+        pass
+
+    def add_service(self, zeroconf, type, name):
+        info = zeroconf.get_service_info(type, name)
+        self.list.append(info.server[:-1])
+
 if __name__ == '__main__':
 
     ###
@@ -113,8 +131,25 @@ if __name__ == '__main__':
         print('No interface listed for broadcast.')
         sys.exit(0)
 
-    if 'yunohost.local' not in config['domains']:
-        config['domains'].append('yunohost.local')
+    # Let's discover currently published .local domains accross the network
+    zc = Zeroconf()
+    listener = Listener()
+    browser = ServiceBrowser(zc, "_device-info._tcp.local.", listener)
+    sleep(2)
+    browser.cancel()
+    zc.close()
+    # If yunohost.local already exists, try yunohost-2.local, and so on.
+    def yunohost_local(i):
+        return "yunohost.local" if i < 2 else "yunohost-"+str(i)+".local"
+    i=1
+    while yunohost_local(i) in listener.list:
+        print("Uh oh, "+yunohost_local(i)+" already exists on the network...")
+        if yunohost_local(i) in config['domains']:
+            config['domains'].remove(yunohost_local(i))
+        i += 1
+    if yunohost_local(i) not in config['domains']:
+        print("Adding "+yunohost_local(i)+" to the domains to publish.")
+        config['domains'].append(yunohost_local(i))
 
     zcs = {}
     interfaces = get_network_interfaces()
