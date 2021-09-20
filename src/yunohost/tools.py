@@ -1114,7 +1114,9 @@ class Migration(object):
     # Those are to be implemented by daughter classes
 
     mode = "auto"
-    dependencies: List[str] = []  # List of migration ids required before running this migration
+    dependencies: List[
+        str
+    ] = []  # List of migration ids required before running this migration
 
     @property
     def disclaimer(self):
