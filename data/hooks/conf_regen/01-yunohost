@@ -55,6 +55,15 @@ do_init_regen() {
   mkdir -p /var/cache/yunohost/repo
   chown root:root /var/cache/yunohost
   chmod 700 /var/cache/yunohost
+
+  cp yunoprompt.service /etc/systemd/system/yunoprompt.service
+  cp dpkg-origins /etc/dpkg/origins/yunohost
+
+  # Change dpkg vendor
+  # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
+  readlink -f /etc/dpkg/origins/default | grep -q debian \
+    && rm -f /etc/dpkg/origins/default \
+    && ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
 }
 
 do_pre_regen() {
@@ -66,6 +75,7 @@ do_pre_regen() {
   touch /etc/yunohost/services.yml
   yunohost tools shell -c "from yunohost.service import _get_services, _save_services; _save_services(_get_services())"
 
+  mkdir -p $pending_dir/etc/systemd/system
   mkdir -p $pending_dir/etc/cron.d/
   mkdir -p $pending_dir/etc/cron.daily/
 
@@ -131,14 +141,17 @@ HandleLidSwitch=ignore
 HandleLidSwitchDocked=ignore
 HandleLidSwitchExternalPower=ignore
 EOF
-  
-  mkdir -p ${pending_dir}/etc/systemd/
+
+  cp yunoprompt.service ${pending_dir}/etc/systemd/system/yunoprompt.service
+
   if [[ "$(yunohost settings get 'security.experimental.enabled')" == "True" ]]
   then
       cp proc-hidepid.service ${pending_dir}/etc/systemd/system/proc-hidepid.service
   else
       touch ${pending_dir}/etc/systemd/system/proc-hidepid.service
   fi
+
+  cp dpkg-origins ${pending_dir}/etc/dpkg/origins/yunohost
 
 }
 
@@ -203,12 +216,24 @@ do_post_regen() {
   [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || { systemctl daemon-reload; systemctl restart ntp; }
   [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || systemctl daemon-reload
   [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] || systemctl daemon-reload
+  if [[ "$regen_conf_files" =~ "yunoprompt.service" ]]
+  then
+    systemctl daemon-reload
+    action=$([[ -e /etc/systemd/system/yunoprompt.service ]] && echo 'enable' || echo 'disable')
+    systemctl $action yunoprompt --quiet --now
+  fi
   if [[ "$regen_conf_files" =~ "proc-hidepid.service" ]]
   then
     systemctl daemon-reload
     action=$([[ -e /etc/systemd/system/proc-hidepid.service ]] && echo 'enable' || echo 'disable')
     systemctl $action proc-hidepid --quiet --now
   fi
+
+  # Change dpkg vendor
+  # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
+  readlink -f /etc/dpkg/origins/default | grep -q debian \
+    && rm -f /etc/dpkg/origins/default \
+    && ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
 }
 
 FORCE=${2:-0}
