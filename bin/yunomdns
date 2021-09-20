@@ -167,7 +167,5 @@ if __name__ == '__main__':
         pass
     finally:
         print("Unregistering...")
-        for zc, infos in zcs.items():
-            for info in infos:
-                zc.unregister_service(info)
-            zc.close()
+        zc.unregister_all_services()
+        zc.close()
