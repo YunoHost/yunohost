@@ -146,7 +146,7 @@ if __name__ == '__main__':
                     # Create a ServiceInfo object for each .local domain
                     zcs[zc].append(ServiceInfo(
                                    type_='_device-info._tcp.local.',
-                                   name=interface+': '+d_domain+'._device-info._tcp.local.',
+                                   name=d_domain+'._device-info._tcp.local.',
                                    addresses=b_ips,
                                    port=80,
                                    server=d+'.',
@@ -157,7 +157,7 @@ if __name__ == '__main__':
     print("Registering...")
     for zc, infos in zcs.items():
         for info in infos:
-            zc.register_service(info)
+            zc.register_service(info, allow_name_change=True, cooperating_responders=True)
 
     try:
         print("Registered. Press Ctrl+C or stop service to stop.")
