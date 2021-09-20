@@ -92,7 +92,7 @@ def main() -> bool:
     print("Registering...")
     for zc, infos in zcs.items():
         for info in infos:
-            zc.register_service(info)
+            zc.register_service(info, allow_name_change=True, cooperating_responders=True)
 
     try:
         print("Registered. Press Ctrl+C or stop service to stop.")
