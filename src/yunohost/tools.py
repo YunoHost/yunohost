@@ -29,6 +29,7 @@ import subprocess
 import time
 from importlib import import_module
 from packaging import version
+from typing import List
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
@@ -1086,7 +1087,9 @@ class Migration(object):
     # Those are to be implemented by daughter classes
 
     mode = "auto"
-    dependencies = []  # List of migration ids required before running this migration
+    dependencies: List[
+        str
+    ] = []  # List of migration ids required before running this migration
 
     @property
     def disclaimer(self):

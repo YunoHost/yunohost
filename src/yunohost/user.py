@@ -141,7 +141,7 @@ def user_create(
     from_import=False,
 ):
 
-    from yunohost.domain import domain_list, _get_maindomain
+    from yunohost.domain import domain_list, _get_maindomain, _assert_domain_exists
     from yunohost.hook import hook_callback
     from yunohost.utils.password import assert_password_is_strong_enough
     from yunohost.utils.ldap import _get_ldap_interface
@@ -169,8 +169,7 @@ def user_create(
                 domain = maindomain
 
     # Check that the domain exists
-    if domain not in domain_list()["domains"]:
-        raise YunohostValidationError("domain_name_unknown", domain=domain)
+    _assert_domain_exists(domain)
 
     mail = username + "@" + domain
     ldap = _get_ldap_interface()

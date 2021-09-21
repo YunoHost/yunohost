@@ -37,6 +37,13 @@ class MyMigration(Migration):
         logger.info(m18n.n("migration_0021_start"))
 
         #
+        # Add new apt .deb signing key
+        #
+
+        new_apt_key = "https://forge.yunohost.org/yunohost_bullseye.asc"
+        check_output(f"wget -O- {new_apt_key} -q | apt-key add -qq -")
+
+        #
         # Patch sources.list
         #
         logger.info(m18n.n("migration_0021_patching_sources_list"))

@@ -37,8 +37,9 @@ from moulinette.utils.filesystem import write_to_file, read_file
 from moulinette.utils.network import download_json
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.domain import _get_maindomain, _build_dns_conf
-from yunohost.utils.network import get_public_ip, dig
+from yunohost.domain import _get_maindomain
+from yunohost.utils.network import get_public_ip
+from yunohost.utils.dns import dig
 from yunohost.log import is_unit_operation
 from yunohost.regenconf import regen_conf
 
@@ -224,9 +225,8 @@ def dyndns_update(
         ipv6 -- IPv6 address to send
 
     """
-    # Get old ipv4/v6
 
-    old_ipv4, old_ipv6 = (None, None)  # (default values)
+    from yunohost.dns import _build_dns_conf
 
     # If domain is not given, try to guess it from keys available...
     if domain is None:
@@ -306,6 +306,12 @@ def dyndns_update(
 
     logger.debug("Old IPv4/v6 are (%s, %s)" % (old_ipv4, old_ipv6))
     logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
+
+    if ipv4 is None and ipv6 is None:
+        logger.debug(
+            "No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ip.yunohost.org infrastructure is down somehow"
+        )
+        return
 
     # no need to update
     if (not force and not dry_run) and (old_ipv4 == ipv4 and old_ipv6 == ipv6):

@@ -18,6 +18,13 @@ invalidcode39:
   script:
     - tox -e py39-invalidcode
 
+mypy:
+  stage: lint
+  image: "before-install"
+  needs: []
+  script:
+    - tox -e py37-mypy
+
 format-check:
   stage: lint
   image: "before-install"

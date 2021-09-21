@@ -86,11 +86,8 @@ def certificate_status(domain_list, full=False):
         domain_list = yunohost.domain.domain_list()["domains"]
     # Else, validate that yunohost knows the domains given
     else:
-        yunohost_domains_list = yunohost.domain.domain_list()["domains"]
         for domain in domain_list:
-            # Is it in Yunohost domain list?
-            if domain not in yunohost_domains_list:
-                raise YunohostValidationError("domain_name_unknown", domain=domain)
+            yunohost.domain._assert_domain_exists(domain)
 
     certificates = {}
 
@@ -267,9 +264,7 @@ def _certificate_install_letsencrypt(
     # Else, validate that yunohost knows the domains given
     else:
         for domain in domain_list:
-            yunohost_domains_list = yunohost.domain.domain_list()["domains"]
-            if domain not in yunohost_domains_list:
-                raise YunohostValidationError("domain_name_unknown", domain=domain)
+            yunohost.domain._assert_domain_exists(domain)
 
             # Is it self-signed?
             status = _get_status(domain)
@@ -368,9 +363,8 @@ def certificate_renew(
     else:
         for domain in domain_list:
 
-            # Is it in Yunohost dmomain list?
-            if domain not in yunohost.domain.domain_list()["domains"]:
-                raise YunohostValidationError("domain_name_unknown", domain=domain)
+            # Is it in Yunohost domain list?
+            yunohost.domain._assert_domain_exists(domain)
 
             status = _get_status(domain)
 

@@ -457,22 +457,26 @@ def permission_create(
             "permission_creation_failed", permission=permission, error=e
         )
 
-    permission_url(
-        permission,
-        url=url,
-        add_url=additional_urls,
-        auth_header=auth_header,
-        sync_perm=False,
-    )
+    try:
+        permission_url(
+            permission,
+            url=url,
+            add_url=additional_urls,
+            auth_header=auth_header,
+            sync_perm=False,
+        )
 
-    new_permission = _update_ldap_group_permission(
-        permission=permission,
-        allowed=allowed,
-        label=label,
-        show_tile=show_tile,
-        protected=protected,
-        sync_perm=sync_perm,
-    )
+        new_permission = _update_ldap_group_permission(
+            permission=permission,
+            allowed=allowed,
+            label=label,
+            show_tile=show_tile,
+            protected=protected,
+            sync_perm=sync_perm,
+        )
+    except:
+        permission_delete(permission, force=True)
+        raise
 
     logger.debug(m18n.n("permission_created", permission=permission))
     return new_permission
@@ -860,10 +864,8 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
         re:^/api/.*|/scripts/api.js$
     """
 
-    from yunohost.domain import domain_list
+    from yunohost.domain import _assert_domain_exists
     from yunohost.app import _assert_no_conflicting_apps
-
-    domains = domain_list()["domains"]
 
     #
     # Regexes
@@ -896,8 +898,8 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
         domain, path = url[3:].split("/", 1)
         path = "/" + path
 
-        if domain.replace("%", "").replace("\\", "") not in domains:
-            raise YunohostValidationError("domain_name_unknown", domain=domain)
+        domain_with_no_regex = domain.replace("%", "").replace("\\", "")
+        _assert_domain_exists(domain_with_no_regex)
 
         validate_regex(path)
 
@@ -931,8 +933,7 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
         domain, path = split_domain_path(url)
         sanitized_url = domain + path
 
-        if domain not in domains:
-            raise YunohostValidationError("domain_name_unknown", domain=domain)
+        _assert_domain_exists(domain)
 
     _assert_no_conflicting_apps(domain, path, ignore_app=app)
 

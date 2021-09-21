@@ -59,4 +59,4 @@ class YunohostValidationError(YunohostError):
 
     def content(self):
 
-        return {"error": self.strerror, "error_key": self.key}
+        return {"error": self.strerror, "error_key": self.key, **self.kwargs}
