@@ -1,5 +1,4 @@
 bin/* /usr/bin/
-sbin/* /usr/sbin/
 data/* /usr/share/yunohost/
 data/bash-completion.d/yunohost /etc/bash_completion.d/
 doc/yunohost.8.gz /usr/share/man/man8/
