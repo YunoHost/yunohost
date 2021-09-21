@@ -110,6 +110,8 @@ DEFAULTS = OrderedDict(
         ("smtp.relay.port", {"type": "int", "default": 587}),
         ("smtp.relay.user", {"type": "string", "default": ""}),
         ("smtp.relay.password", {"type": "string", "default": ""}),
+        ("smtp.backup_mx.domains", {"type": "string", "default": ""}),
+        ("smtp.backup_mx.emails_whitelisted", {"type": "string", "default": ""}),
         ("backup.compress_tar_archives", {"type": "bool", "default": False}),
         ("ssowat.panel_overlay.enabled", {"type": "bool", "default": True}),
         ("security.webadmin.allowlist.enabled", {"type": "bool", "default": False}),
@@ -437,6 +439,8 @@ def reconfigure_ssh_and_fail2ban(setting_name, old_value, new_value):
 @post_change_hook("smtp.relay.port")
 @post_change_hook("smtp.relay.user")
 @post_change_hook("smtp.relay.password")
+@post_change_hook("smtp.backup_mx.domains")
+@post_change_hook("smtp.backup_mx.emails_whitelisted")
 @post_change_hook("security.postfix.compatibility")
 def reconfigure_postfix(setting_name, old_value, new_value):
     if old_value != new_value:
