@@ -48,8 +48,6 @@ regen_local_ca() {
     popd
 }
 
-
-
 do_init_regen() {
 
   LOGFILE=/tmp/yunohost-ssl-init
@@ -121,23 +119,4 @@ do_post_regen() {
   fi
 }
 
-FORCE=${2:-0}
-DRY_RUN=${3:-0}
-
-case "$1" in
-  pre)
-    do_pre_regen $4
-    ;;
-  post)
-    do_post_regen $4
-    ;;
-  init)
-    do_init_regen
-    ;;
-  *)
-    echo "hook called with unknown argument \`$1'" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+do_$1_regen ${@:2}
