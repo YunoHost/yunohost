@@ -36,8 +36,6 @@ def test_get_dns_zone_from_domain_existing():
     )
     assert _get_dns_zone_for_domain("yolo.nohost.me") == "nohost.me"
     assert _get_dns_zone_for_domain("foo.yolo.nohost.me") == "nohost.me"
-    assert _get_dns_zone_for_domain("yolo.test") == "test"
-    assert _get_dns_zone_for_domain("foo.yolo.test") == "test"
     assert _get_dns_zone_for_domain("yolo.tld") == "yolo.tld"
     assert _get_dns_zone_for_domain("foo.yolo.tld") == "yolo.tld"
 
@@ -48,7 +46,7 @@ def test_registrar_list_integrity():
 
 
 def test_magic_guess_registrar_weird_domain():
-    assert _get_registrar_config_section("yolo.test")["registrar"]["value"] is None
+    assert _get_registrar_config_section("yolo.tld")["registrar"]["value"] is None
 
 
 def test_magic_guess_registrar_ovh():
