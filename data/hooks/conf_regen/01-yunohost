@@ -71,10 +71,6 @@ do_pre_regen() {
 
   cd /usr/share/yunohost/templates/yunohost
 
-  # Legacy code that can be removed once on bullseye
-  touch /etc/yunohost/services.yml
-  yunohost tools shell -c "from yunohost.service import _get_services, _save_services; _save_services(_get_services())"
-
   mkdir -p $pending_dir/etc/systemd/system
   mkdir -p $pending_dir/etc/cron.d/
   mkdir -p $pending_dir/etc/cron.daily/
