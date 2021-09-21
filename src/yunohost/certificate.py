@@ -500,13 +500,7 @@ Subject: %s
 def _check_acme_challenge_configuration(domain):
 
     domain_conf = "/etc/nginx/conf.d/%s.conf" % domain
-    if "include /etc/nginx/conf.d/acme-challenge.conf.inc" in read_file(domain_conf):
-        return True
-    else:
-        # This is for legacy setups which haven't updated their domain conf to
-        # the new conf that include the acme snippet...
-        legacy_acme_conf = "/etc/nginx/conf.d/%s.d/000-acmechallenge.conf" % domain
-        return os.path.exists(legacy_acme_conf)
+    return "include /etc/nginx/conf.d/acme-challenge.conf.inc" in read_file(domain_conf)
 
 
 def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
