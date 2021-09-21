@@ -53,15 +53,17 @@ full-tests:
 test-i18n-keys:
   extends: .test-stage
   script:
-    - python3 -m pytest tests tests/test_i18n_keys.py
+    - python3 -m pytest tests/test_i18n_keys.py
   only:
     changes:
-      - locales/*
+      - locales/en.json
+      - src/yunohost/*.py
+      - data/hooks/diagnosis/*.py
 
 test-translation-format-consistency:
   extends: .test-stage
   script:
-    - python3 -m pytest tests tests/test_translation_format_consistency.py
+    - python3 -m pytest tests/test_translation_format_consistency.py
   only:
     changes:
       - locales/*
@@ -69,7 +71,7 @@ test-translation-format-consistency:
 test-actionmap:
   extends: .test-stage
   script:
-    - python3 -m pytest tests tests/test_actionmap.py
+    - python3 -m pytest tests/test_actionmap.py
   only:
     changes:
       - data/actionsmap/*.yml
@@ -83,11 +85,27 @@ test-helpers:
     changes:
       - data/helpers.d/*
 
+test-domains:
+  extends: .test-stage
+  script:
+    - python3 -m pytest src/yunohost/tests/test_domains.py
+  only:
+    changes:
+      - src/yunohost/domain.py
+
+test-dns:
+  extends: .test-stage
+  script:
+    - python3 -m pytest src/yunohost/tests/test_dns.py
+  only:
+    changes:
+      - src/yunohost/dns.py
+      - src/yunohost/utils/dns.py
+
 test-apps:
   extends: .test-stage
   script:
-    - cd src/yunohost
-    - python3 -m pytest tests/test_apps.py
+    - python3 -m pytest src/yunohost/tests/test_apps.py
   only:
     changes:
       - src/yunohost/app.py
@@ -95,8 +113,7 @@ test-apps:
 test-appscatalog:
   extends: .test-stage
   script:
-    - cd src/yunohost
-    - python3 -m pytest tests/test_appscatalog.py
+    - python3 -m pytest src/yunohost/tests/test_appscatalog.py
   only:
     changes:
       - src/yunohost/app.py
@@ -104,26 +121,32 @@ test-appscatalog:
 test-appurl:
   extends: .test-stage
   script:
-    - cd src/yunohost
-    - python3 -m pytest tests/test_appurl.py
+    - python3 -m pytest src/yunohost/tests/test_appurl.py
   only:
     changes:
       - src/yunohost/app.py
 
-test-apps-arguments-parsing:
+test-questions:
   extends: .test-stage
   script:
-    - cd src/yunohost
-    - python3 -m pytest tests/test_apps_arguments_parsing.py
+    - python3 -m pytest src/yunohost/tests/test_questions.py
+  only:
+    changes:
+      - src/yunohost/utils/config.py
+
+test-app-config:
+  extends: .test-stage
+  script:
+    - python3 -m pytest src/yunohost/tests/test_app_config.py
   only:
     changes:
       - src/yunohost/app.py
+      - src/yunohost/utils/config.py
 
 test-changeurl:
   extends: .test-stage
   script:
-    - cd src/yunohost
-    - python3 -m pytest tests/test_changeurl.py
+    - python3 -m pytest src/yunohost/tests/test_changeurl.py
   only:
     changes:
       - src/yunohost/app.py
@@ -131,8 +154,7 @@ test-changeurl:
 test-backuprestore:
   extends: .test-stage
   script:
-    - cd src/yunohost
-    - python3 -m pytest tests/test_backuprestore.py
+    - python3 -m pytest src/yunohost/tests/test_backuprestore.py
   only:
     changes:
       - src/yunohost/backup.py
@@ -140,8 +162,7 @@ test-backuprestore:
 test-permission:
   extends: .test-stage
   script:
-    - cd src/yunohost
-    - python3 -m pytest tests/test_permission.py
+    - python3 -m pytest src/yunohost/tests/test_permission.py
   only:
     changes:
       - src/yunohost/permission.py
@@ -149,8 +170,7 @@ test-permission:
 test-settings:
   extends: .test-stage
   script:
-    - cd src/yunohost
-    - python3 -m pytest tests/test_settings.py
+    - python3 -m pytest src/yunohost/tests/test_settings.py
   only:
     changes:
       - src/yunohost/settings.py
@@ -158,8 +178,7 @@ test-settings:
 test-user-group:
   extends: .test-stage
   script:
-    - cd src/yunohost
-    - python3 -m pytest tests/test_user-group.py
+    - python3 -m pytest src/yunohost/tests/test_user-group.py
   only:
     changes:
       - src/yunohost/user.py
@@ -167,8 +186,7 @@ test-user-group:
 test-regenconf:
   extends: .test-stage
   script:
-    - cd src/yunohost
-    - python3 -m pytest tests/test_regenconf.py
+    - python3 -m pytest src/yunohost/tests/test_regenconf.py
   only:
     changes:
       - src/yunohost/regenconf.py
@@ -176,8 +194,15 @@ test-regenconf:
 test-service:
   extends: .test-stage
   script:
-    - cd src/yunohost
-    - python3 -m pytest tests/test_service.py
+    - python3 -m pytest src/yunohost/tests/test_service.py
   only:
     changes:
       - src/yunohost/service.py
+
+test-ldapauth:
+  extends: .test-stage
+  script:
+    - python3 -m pytest src/yunohost/tests/test_ldapauth.py
+  only:
+    changes:
+      - src/yunohost/authenticators/*.py

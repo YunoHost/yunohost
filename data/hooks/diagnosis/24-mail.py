@@ -12,7 +12,7 @@ from moulinette.utils.filesystem import read_yaml
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import _get_maindomain, domain_list
 from yunohost.settings import settings_get
-from yunohost.utils.network import dig
+from yunohost.utils.dns import dig
 
 DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/other/dnsbl_list.yml"
 
@@ -35,11 +35,11 @@ class MailDiagnoser(Diagnoser):
         # TODO check that the recent mail logs are not filled with thousand of email sending (unusual number of mail sent)
         # TODO check for unusual failed sending attempt being refused in the logs ?
         checks = [
-            "check_outgoing_port_25",
-            "check_ehlo",
-            "check_fcrdns",
-            "check_blacklist",
-            "check_queue",
+            "check_outgoing_port_25",  # i18n: diagnosis_mail_outgoing_port_25_ok
+            "check_ehlo",  # i18n: diagnosis_mail_ehlo_ok
+            "check_fcrdns",  # i18n: diagnosis_mail_fcrdns_ok
+            "check_blacklist",  # i18n: diagnosis_mail_blacklist_ok
+            "check_queue",  # i18n: diagnosis_mail_queue_ok
         ]
         for check in checks:
             self.logger_debug("Running " + check)
@@ -102,6 +102,10 @@ class MailDiagnoser(Diagnoser):
                 continue
 
             if r["status"] != "ok":
+                # i18n: diagnosis_mail_ehlo_bad_answer
+                # i18n: diagnosis_mail_ehlo_bad_answer_details
+                # i18n: diagnosis_mail_ehlo_unreachable
+                # i18n: diagnosis_mail_ehlo_unreachable_details
                 summary = r["status"].replace("error_smtp_", "diagnosis_mail_ehlo_")
                 yield dict(
                     meta={"test": "mail_ehlo", "ipversion": ipversion},

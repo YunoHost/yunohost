@@ -1,6 +1,6 @@
 #!/bin/bash
 
-YNH_APP_BASEDIR=$(realpath $([[ "$(basename $0)" =~ ^backup|restore$ ]] && echo '../settings' || echo '..'))
+YNH_APP_BASEDIR=${YNH_APP_BASEDIR:-$(realpath ..)}
 
 # Handle script crashes / failures
 #
@@ -473,6 +473,207 @@ ynh_replace_vars () {
     done
 }
 
+# Get a value from heterogeneous file (yaml, json, php, python...)
+#
+# usage: ynh_read_var_in_file --file=PATH --key=KEY
+# | arg: -f, --file=     - the path to the file
+# | arg: -k, --key=     - the key to get
+#
+# This helpers match several var affectation use case in several languages
+# We don't use jq or equivalent to keep comments and blank space in files
+# This helpers work line by line, it is not able to work correctly
+# if you have several identical keys in your files
+#
+# Example of line this helpers can managed correctly
+# .yml
+#     title: YunoHost documentation
+#     email: 'yunohost@yunohost.org'
+# .json
+#     "theme": "colib'ris",
+#     "port": 8102
+#     "some_boolean":     false,
+#     "user": null
+# .ini
+#     some_boolean = On
+#     action = "Clear"
+#     port = 20
+# .php
+#     $user=
+#     user => 20
+# .py
+#     USER = 8102
+#     user = 'https://donate.local'
+#     CUSTOM['user'] = 'YunoHost'
+#
+# Requires YunoHost version 4.3 or higher.
+ynh_read_var_in_file() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=fka
+    local -A args_array=( [f]=file= [k]=key= [a]=after=)
+    local file
+    local key
+    local after
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    after="${after:-}"
+
+    [[ -f $file ]] || ynh_die --message="File $file does not exists"
+
+    set +o xtrace # set +x
+
+    # Get the line number after which we search for the variable
+    local line_number=1
+    if [[ -n "$after" ]];
+    then
+        line_number=$(grep -n $after $file | cut -d: -f1)
+        if [[ -z "$line_number" ]];
+        then
+            set -o xtrace # set -x
+            return 1
+        fi
+    fi
+
+    local filename="$(basename -- "$file")"
+    local ext="${filename##*.}"
+    local endline=',;'
+    local assign="=>|:|="
+    local comments="#"
+    local string="\"'"
+    if [[ "$ext" =~ ^ini|env|toml|yml|yaml$ ]]; then
+        endline='#'
+    fi
+    if [[ "$ext" =~ ^ini|env$ ]]; then
+        comments="[;#]"
+    fi
+    if [[ "php"  == "$ext" ]] || [[ "$ext" == "js" ]]; then
+        comments="//"
+    fi
+    local list='\[\s*['$string']?\w+['$string']?\]'
+    local var_part='^\s*((const|var|let)\s+)?\$?(\w+('$list')*(->|\.|\[))*\s*'
+    var_part+="[$string]?${key}[$string]?"
+    var_part+='\s*\]?\s*'
+    var_part+="($assign)"
+    var_part+='\s*'
+
+    # Extract the part after assignation sign
+    local expression_with_comment="$(tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL | head -n1)"
+    if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
+        set -o xtrace # set -x
+        echo YNH_NULL
+        return 0
+    fi
+
+    # Remove comments if needed
+    local expression="$(echo "$expression_with_comment" | sed "s@$comments[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
+
+    local first_char="${expression:0:1}"
+    if [[ "$first_char" == '"' ]] ; then
+        echo "$expression" | grep -m1 -o -P '"\K([^"](\\")?)*[^\\](?=")' | head -n1  | sed 's/\\"/"/g'
+    elif [[ "$first_char" == "'" ]] ; then
+        echo "$expression" | grep -m1 -o -P "'\K([^'](\\\\')?)*[^\\\\](?=')" | head -n1  | sed "s/\\\\'/'/g"
+    else
+        echo "$expression"
+    fi
+    set -o xtrace # set -x
+}
+
+# Set a value into heterogeneous file (yaml, json, php, python...)
+#
+# usage: ynh_write_var_in_file --file=PATH --key=KEY --value=VALUE
+# | arg: -f, --file=     - the path to the file
+# | arg: -k, --key=     - the key to set
+# | arg: -v, --value=     - the value to set
+#
+# Requires YunoHost version 4.3 or higher.
+ynh_write_var_in_file() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=fkva
+    local -A args_array=( [f]=file= [k]=key= [v]=value= [a]=after=)
+    local file
+    local key
+    local value
+    local after
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    after="${after:-}"
+
+    [[ -f $file ]] || ynh_die --message="File $file does not exists"
+
+    set +o xtrace # set +x
+
+    # Get the line number after which we search for the variable
+    local line_number=1
+    if [[ -n "$after" ]];
+    then
+        line_number=$(grep -n $after $file | cut -d: -f1)
+        if [[ -z "$line_number" ]];
+        then
+            set -o xtrace # set -x
+            return 1
+        fi
+    fi
+    local range="${line_number},\$ "
+
+    local filename="$(basename -- "$file")"
+    local ext="${filename##*.}"
+    local endline=',;'
+    local assign="=>|:|="
+    local comments="#"
+    local string="\"'"
+    if [[ "$ext" =~ ^ini|env|toml|yml|yaml$ ]]; then
+        endline='#'
+    fi
+    if [[ "$ext" =~ ^ini|env$ ]]; then
+        comments="[;#]"
+    fi
+    if [[ "php"  == "$ext" ]] || [[ "$ext" == "js" ]]; then
+        comments="//"
+    fi
+    local list='\[\s*['$string']?\w+['$string']?\]'
+    local var_part='^\s*((const|var|let)\s+)?\$?(\w+('$list')*(->|\.|\[))*\s*'
+    var_part+="[$string]?${key}[$string]?"
+    var_part+='\s*\]?\s*'
+    var_part+="($assign)"
+    var_part+='\s*'
+
+    # Extract the part after assignation sign
+    local expression_with_comment="$(tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL | head -n1)"
+    if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
+        set -o xtrace # set -x
+        return 1
+    fi
+
+    # Remove comments if needed
+    local expression="$(echo "$expression_with_comment" | sed "s@$comments[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
+    endline=${expression_with_comment#"$expression"}
+    endline="$(echo "$endline" | sed 's/\\/\\\\/g')"
+    value="$(echo "$value" | sed 's/\\/\\\\/g')"
+    local first_char="${expression:0:1}"
+    delimiter=$'\001'
+    if [[ "$first_char" == '"' ]] ; then
+        # \ and sed is quite complex you need 2 \\ to get one in a sed
+        # So we need \\\\ to go through 2 sed
+        value="$(echo "$value" | sed 's/"/\\\\"/g')"
+        sed -ri "${range}s$delimiter"'(^'"${var_part}"'")([^"]|\\")*("[\s;,]*)(\s*'$comments'.*)?$'$delimiter'\1'"${value}"'"'"${endline}${delimiter}i" ${file}
+    elif [[ "$first_char" == "'" ]] ; then
+        # \ and sed is quite complex you need 2 \\ to get one in a sed
+        # However double quotes implies to double \\ to
+        # So we need \\\\\\\\ to go through 2 sed and 1 double quotes str
+        value="$(echo "$value" | sed "s/'/\\\\\\\\'/g")"
+        sed -ri "${range}s$delimiter(^${var_part}')([^']|\\')*('"'[\s,;]*)(\s*'$comments'.*)?$'$delimiter'\1'"${value}'${endline}${delimiter}i" ${file}
+    else
+        if [[ "$value" == *"'"* ]] || [[ "$value" == *'"'* ]] || [[ "$ext" =~ ^php|py|json|js$ ]] ; then
+            value='\"'"$(echo "$value" | sed 's/"/\\\\"/g')"'\"'
+        fi
+        if [[ "$ext" =~ ^yaml|yml$ ]] ; then
+            value=" $value"
+        fi
+        sed -ri "${range}s$delimiter(^${var_part}).*\$$delimiter\1${value}${endline}${delimiter}i" ${file}
+    fi
+    set -o xtrace # set -x
+}
+
+
 # Render templates with Jinja2
 #
 # [internal]
@@ -536,6 +737,7 @@ ynh_secure_remove () {
     local file
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    set +o xtrace # set +x
 
     local forbidden_path=" \
     /var/www \
@@ -563,6 +765,8 @@ ynh_secure_remove () {
     else
         ynh_print_info --message="'$file' wasn't deleted because it doesn't exist."
     fi
+
+    set -o xtrace # set -x
 }
 
 # Extract a key from a plain command output

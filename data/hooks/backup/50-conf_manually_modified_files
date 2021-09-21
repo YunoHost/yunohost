@@ -12,7 +12,7 @@ ynh_backup --src_path="./manually_modified_files_list"
 
 for file in $(cat ./manually_modified_files_list)
 do
-    ynh_backup --src_path="$file"
+    [[ -e $file ]] && ynh_backup --src_path="$file"
 done
     
 ynh_backup --src_path="/etc/ssowat/conf.json.persistent"

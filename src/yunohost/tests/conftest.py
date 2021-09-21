@@ -1,13 +1,10 @@
 import os
 import pytest
-import sys
 
 import moulinette
-from moulinette import m18n, msettings
+from moulinette import m18n, Moulinette
 from yunohost.utils.error import YunohostError
 from contextlib import contextmanager
-
-sys.path.append("..")
 
 
 @pytest.fixture(scope="session", autouse=True)
@@ -77,8 +74,21 @@ moulinette.core.Moulinette18n.n = new_m18nn
 
 def pytest_cmdline_main(config):
 
+    import sys
+
     sys.path.insert(0, "/usr/lib/moulinette/")
     import yunohost
 
     yunohost.init(debug=config.option.yunodebug)
-    msettings["interface"] = "test"
+
+    class DummyInterface:
+
+        type = "cli"
+
+        def prompt(self, *args, **kwargs):
+            raise NotImplementedError
+
+        def display(self, message, *args, **kwargs):
+            print(message)
+
+    Moulinette._interface = DummyInterface()

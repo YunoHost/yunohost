@@ -5,6 +5,9 @@ set -e
 do_configure() {
   rm -rf /var/cache/moulinette/*
 
+  mkdir -p /usr/share/moulinette/actionsmap/
+  ln -sf /usr/share/yunohost/actionsmap/yunohost.yml /usr/share/moulinette/actionsmap/yunohost.yml
+
   if [ ! -f /etc/yunohost/installed ]; then
       # If apps/ is not empty, we're probably already installed in the past and
       # something funky happened ...
@@ -18,6 +21,7 @@ do_configure() {
           bash /usr/share/yunohost/hooks/conf_regen/46-nsswitch init
           bash /usr/share/yunohost/hooks/conf_regen/06-slapd init
           bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
+          bash /usr/share/yunohost/hooks/conf_regen/37-mdns init
       fi
   else
       echo "Regenerating configuration, this might take a while..."
@@ -30,14 +34,6 @@ do_configure() {
       yunohost diagnosis run --force
   fi
 
-  # Change dpkg vendor
-  # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
-  readlink -f /etc/dpkg/origins/default | grep -q debian \
-    && rm -f /etc/dpkg/origins/default \
-    && ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
-
-  # Yunoprompt
-  systemctl enable yunoprompt.service
 }
 
 # summary of how this script can be called:

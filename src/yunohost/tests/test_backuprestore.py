@@ -2,6 +2,7 @@ import pytest
 import os
 import shutil
 import subprocess
+from mock import patch
 
 from .conftest import message, raiseYunohostError, get_test_apps_dir
 
@@ -77,7 +78,8 @@ def setup_function(function):
     if "with_permission_app_installed" in markers:
         assert not app_is_installed("permissions_app")
         user_create("alice", "Alice", "White", maindomain, "test123Ynh")
-        install_app("permissions_app_ynh", "/urlpermissionapp" "&admin=alice")
+        with patch.object(os, "isatty", return_value=False):
+            install_app("permissions_app_ynh", "/urlpermissionapp" "&admin=alice")
         assert app_is_installed("permissions_app")
 
     if "with_custom_domain" in markers:
@@ -469,7 +471,7 @@ def test_restore_app_script_failure_handling(monkeypatch, mocker):
             monkeypatch.undo()
             return (1, None)
 
-    monkeypatch.setattr("yunohost.backup.hook_exec", custom_hook_exec)
+    monkeypatch.setattr("yunohost.hook.hook_exec", custom_hook_exec)
 
     assert not _is_installed("wordpress")
 

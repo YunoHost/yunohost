@@ -33,18 +33,10 @@
 #     Global parameters     #
 #############################
 _global:
-    configuration:
-        authenticate:
-            - api
-        authenticator:
-            default:
-                vendor: ldap
-                help: admin_password
-                parameters:
-                    uri: ldap://localhost:389
-                    base_dn: dc=yunohost,dc=org
-                    user_rdn: cn=admin,dc=yunohost,dc=org
-        argument_auth: false
+    name: yunohost.admin
+    authentication:
+        api: ldap_admin
+        cli: null
     arguments:
         -v:
             full: --version
@@ -67,7 +59,7 @@ user:
             api: GET /users
             arguments:
                --fields:
-                    help: fields to fetch
+                    help: fields to fetch (username, fullname, mail, mail-alias, mail-forward, mailbox-quota, groups, shell, home-path)
                     nargs: "+"
 
         ### user_create()
@@ -206,6 +198,28 @@ user:
             arguments:
                 username:
                     help: Username or email to get information
+        
+        ### user_export()
+        export:
+            action_help: Export users into CSV
+            api: GET /users/export
+        
+        ### user_import()
+        import:
+            action_help: Import several users from CSV
+            api: POST /users/import
+            arguments:
+                csvfile:
+                    help: "CSV file with columns username, firstname, lastname, password, mail, mailbox-quota, mail-alias, mail-forward, groups (separated by coma)"
+                    type: open
+                -u:
+                    full: --update
+                    help: Update all existing users contained in the CSV file (by default existing users are ignored)
+                    action: store_true
+                -d:
+                    full: --delete
+                    help: Delete all existing users that are not contained in the CSV file (by default existing users are kept)
+                    action: store_true
 
     subcategories:
         group:
@@ -465,21 +479,17 @@ domain:
                     help: Do not ask confirmation to remove apps
                     action: store_true
 
+
         ### domain_dns_conf()
         dns-conf:
+            deprecated: true
             action_help: Generate sample DNS configuration for a domain
-            api: GET /domains/<domain>/dns
             arguments:
                 domain:
                     help: Target domain
-                -t:
-                    full: --ttl
-                    help: Time To Live (TTL) in second before DNS servers update. Default is 3600 seconds (i.e. 1 hour).
                     extra:
-                        pattern:
-                            - !!str ^[0-9]+$
-                            - "pattern_positive_number"
-
+                        pattern: *pattern_domain
+        
         ### domain_maindomain()
         main-domain:
             action_help: Check the current main domain, or change it
@@ -497,8 +507,8 @@ domain:
 
         ### certificate_status()
         cert-status:
+            deprecated: true
             action_help: List status of current certificates (all by default).
-            api: GET /domains/<domain_list>/cert
             arguments:
                 domain_list:
                     help: Domains to check
@@ -509,8 +519,8 @@ domain:
 
         ### certificate_install()
         cert-install:
+            deprecated: true
             action_help: Install Let's Encrypt certificates for given domains (all by default).
-            api: PUT /domains/<domain_list>/cert
             arguments:
                 domain_list:
                     help: Domains for which to install the certificates
@@ -530,8 +540,8 @@ domain:
 
         ### certificate_renew()
         cert-renew:
+            deprecated: true
             action_help: Renew the Let's Encrypt certificates for given domains (all by default).
-            api: PUT /domains/<domain_list>/cert/renew
             arguments:
                 domain_list:
                     help: Domains for which to renew the certificates
@@ -560,6 +570,141 @@ domain:
                         pattern: *pattern_domain
                 path:
                     help: The path to check (e.g. /coffee)
+
+    subcategories:
+
+        config:
+            subcategory_help: Domain settings
+            actions:
+
+                ### domain_config_get()
+                get:
+                    action_help: Display a domain configuration
+                    api: GET /domains/<domain>/config
+                    arguments:
+                      domain:
+                          help: Domain name
+                      key:
+                          help: A specific panel, section or a question identifier
+                          nargs: '?'
+                      -f:
+                          full: --full
+                          help: Display all details (meant to be used by the API)
+                          action: store_true
+                      -e:
+                          full: --export
+                          help: Only export key/values, meant to be reimported using "config set --args-file"
+                          action: store_true
+
+                ### domain_config_set()
+                set:
+                    action_help: Apply a new configuration
+                    api: PUT /domains/<domain>/config
+                    arguments:
+                      domain:
+                          help: Domain name
+                      key:
+                          help: The question or form key 
+                          nargs: '?'
+                      -v:
+                          full: --value
+                          help: new value
+                      -a:
+                          full: --args
+                          help: Serialized arguments for new configuration (i.e. "mail_in=0&mail_out=0")
+
+        dns:
+            subcategory_help: Manage domains DNS
+            actions:
+                ### domain_dns_conf()
+                suggest:
+                    action_help: Generate sample DNS configuration for a domain
+                    api: 
+                      - GET /domains/<domain>/dns
+                      - GET /domains/<domain>/dns/suggest
+                    arguments:
+                        domain:
+                            help: Target domain
+                            extra:
+                                pattern: *pattern_domain
+                
+                ### domain_dns_push()
+                push:
+                    action_help: Push DNS records to registrar
+                    api: POST /domains/<domain>/dns/push
+                    arguments:
+                        domain:
+                            help: Domain name to push DNS conf for
+                            extra:
+                                pattern: *pattern_domain
+                        -d:
+                            full: --dry-run
+                            help: Only display what's to be pushed
+                            action: store_true
+                        --force:
+                            help: Also update/remove records which were not originally set by Yunohost, or which have been manually modified
+                            action: store_true
+                        --purge:
+                            help: Delete all records
+                            action: store_true
+
+        cert:
+            subcategory_help: Manage domain certificates
+            actions:
+                ### certificate_status()
+                status:
+                    action_help: List status of current certificates (all by default).
+                    api: GET /domains/<domain_list>/cert
+                    arguments:
+                        domain_list:
+                            help: Domains to check
+                            nargs: "*"
+                        --full:
+                            help: Show more details
+                            action: store_true
+
+                ### certificate_install()
+                install:
+                    action_help: Install Let's Encrypt certificates for given domains (all by default).
+                    api: PUT /domains/<domain_list>/cert
+                    arguments:
+                        domain_list:
+                            help: Domains for which to install the certificates
+                            nargs: "*"
+                        --force:
+                            help: Install even if current certificate is not self-signed
+                            action: store_true
+                        --no-checks:
+                            help: Does not perform any check that your domain seems correctly configured (DNS, reachability) before attempting to install. (Not recommended)
+                            action: store_true
+                        --self-signed:
+                            help: Install self-signed certificate instead of Let's Encrypt
+                            action: store_true
+                        --staging:
+                            help: Use the fake/staging Let's Encrypt certification authority. The new certificate won't actually be enabled - it is only intended to test the main steps of the procedure.
+                            action: store_true
+
+                ### certificate_renew()
+                renew:
+                    action_help: Renew the Let's Encrypt certificates for given domains (all by default).
+                    api: PUT /domains/<domain_list>/cert/renew
+                    arguments:
+                        domain_list:
+                            help: Domains for which to renew the certificates
+                            nargs: "*"
+                        --force:
+                            help: Ignore the validity threshold (30 days)
+                            action: store_true
+                        --email:
+                            help: Send an email to root with logs if some renewing fails
+                            action: store_true
+                        --no-checks:
+                            help: Does not perform any check that your domain seems correctly configured (DNS, reachability) before attempting to renew. (Not recommended)
+                            action: store_true
+                        --staging:
+                            help: Use the fake/staging Let's Encrypt certification authority. The new certificate won't actually be enabled - it is only intended to test the main steps of the procedure.
+                            action: store_true
+
 
 #############################
 #            App            #
@@ -673,7 +818,11 @@ app:
             api: DELETE /apps/<app>
             arguments:
                 app:
-                    help: App to delete
+                    help: App to remove
+                -p:
+                    full: --purge
+                    help: Also remove all application data
+                    action: store_true
 
         ### app_upgrade()
         upgrade:
@@ -692,6 +841,10 @@ app:
                 -F:
                     full: --force
                     help: Force the update, even though the app is up to date
+                    action: store_true
+                -b:
+                    full: --no-safety-backup
+                    help: Disable the safety backup during upgrade
                     action: store_true
 
         ### app_change_url()
@@ -831,24 +984,45 @@ app:
           subcategory_help: Applications configuration panel
           actions:
 
-              ### app_config_show_panel()
-              show-panel:
-                  action_help: show config panel for the application
+              ### app_config_get()
+              get:
+                  action_help: Display an app configuration
                   api: GET /apps/<app>/config-panel
                   arguments:
-                      app:
-                          help: App name
+                    app:
+                        help: App name
+                    key:
+                        help: A specific panel, section or a question identifier
+                        nargs: '?'
+                    -f:
+                        full: --full
+                        help: Display all details (meant to be used by the API)
+                        action: store_true
+                    -e:
+                        full: --export
+                        help: Only export key/values, meant to be reimported using "config set --args-file"
+                        action: store_true
 
-              ### app_config_apply()
-              apply:
-                  action_help: apply the new configuration
+              ### app_config_set()
+              set:
+                  action_help: Apply a new configuration
                   api: PUT /apps/<app>/config
                   arguments:
-                      app:
-                          help: App name
-                      -a:
-                          full: --args
-                          help: Serialized arguments for new configuration (i.e. "domain=domain.tld&path=/path")
+                    app:
+                        help: App name
+                    key:
+                        help: The question or panel key 
+                        nargs: '?'
+                    -v:
+                        full: --value
+                        help: new value
+                    -a:
+                        full: --args
+                        help: Serialized arguments for new configuration (i.e. "domain=domain.tld&path=/path")
+                    -f:
+                        full: --args-file
+                        help: YAML or JSON file with key/value couples
+                        type: open
 
 #############################
 #          Backup           #
@@ -1394,9 +1568,9 @@ tools:
         postinstall:
             action_help: YunoHost post-install
             api: POST /postinstall
-            configuration:
+            authentication:
                 # We need to be able to run the postinstall without being authenticated, otherwise we can't run the postinstall
-                authenticate: false
+                api: null
             arguments:
                 -d:
                     full: --domain

@@ -29,11 +29,13 @@ import re
 import yaml
 import glob
 import psutil
+from typing import List
 
 from datetime import datetime, timedelta
 from logging import FileHandler, getLogger, Formatter
+from io import IOBase
 
-from moulinette import m18n, msettings
+from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.packages import get_ynh_package_version
@@ -44,7 +46,6 @@ CATEGORIES_PATH = "/var/log/yunohost/categories/"
 OPERATIONS_PATH = "/var/log/yunohost/categories/operation/"
 METADATA_FILE_EXT = ".yml"
 LOG_FILE_EXT = ".log"
-RELATED_CATEGORIES = ["app", "domain", "group", "service", "user"]
 
 logger = getActionLogger("yunohost.log")
 
@@ -69,7 +70,13 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
     logs = list(reversed(sorted(logs)))
 
     if limit is not None:
-        logs = logs[:limit]
+        if with_suboperations:
+            logs = logs[:limit]
+        else:
+            # If we displaying only parent, we are still gonna load up to limit * 5 logs
+            # because many of them are suboperations which are not gonna be kept
+            # Yet we still want to obtain ~limit number of logs
+            logs = logs[: limit * 5]
 
     for log in logs:
 
@@ -122,10 +129,13 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
     else:
         operations = [o for o in operations.values()]
 
+    if limit:
+        operations = operations[:limit]
+
     operations = list(reversed(sorted(operations, key=lambda o: o["name"])))
     # Reverse the order of log when in cli, more comfortable to read (avoid
     # unecessary scrolling)
-    is_api = msettings.get("interface") == "api"
+    is_api = Moulinette.interface.type == "api"
     if not is_api:
         operations = list(reversed(operations))
 
@@ -151,26 +161,42 @@ def log_show(
         filter_irrelevant = True
 
     if filter_irrelevant:
-        filters = [
-            r"set [+-]x$",
-            r"set [+-]o xtrace$",
-            r"local \w+$",
-            r"local legacy_args=.*$",
-            r".*Helper used in legacy mode.*",
-            r"args_array=.*$",
-            r"local -A args_array$",
-            r"ynh_handle_getopts_args",
-            r"ynh_script_progression",
-        ]
+
+        def _filter(lines):
+            filters = [
+                r"set [+-]x$",
+                r"set [+-]o xtrace$",
+                r"set [+-]o errexit$",
+                r"set [+-]o nounset$",
+                r"trap '' EXIT",
+                r"local \w+$",
+                r"local exit_code=(1|0)$",
+                r"local legacy_args=.*$",
+                r"local -A args_array$",
+                r"args_array=.*$",
+                r"ret_code=1",
+                r".*Helper used in legacy mode.*",
+                r"ynh_handle_getopts_args",
+                r"ynh_script_progression",
+                r"sleep 0.5",
+                r"'\[' (1|0) -eq (1|0) '\]'$",
+                r"\[?\['? -n '' '?\]\]?$",
+                r"rm -rf /var/cache/yunohost/download/$",
+                r"type -t ynh_clean_setup$",
+                r"DEBUG - \+ echo '",
+                r"DEBUG - \+ exit (1|0)$",
+            ]
+            filters = [re.compile(f) for f in filters]
+            return [
+                line
+                for line in lines
+                if not any(f.search(line.strip()) for f in filters)
+            ]
+
     else:
-        filters = []
 
-    def _filter_lines(lines, filters=[]):
-
-        filters = [re.compile(f) for f in filters]
-        return [
-            line for line in lines if not any(f.search(line.strip()) for f in filters)
-        ]
+        def _filter(lines):
+            return lines
 
     # Normalize log/metadata paths and filenames
     abs_path = path
@@ -209,12 +235,12 @@ def log_show(
             content += "\n============\n\n"
         if os.path.exists(log_path):
             actual_log = read_file(log_path)
-            content += "\n".join(_filter_lines(actual_log.split("\n"), filters))
+            content += "\n".join(_filter(actual_log.split("\n")))
 
         url = yunopaste(content)
 
         logger.info(m18n.n("log_available_on_yunopaste", url=url))
-        if msettings.get("interface") == "api":
+        if Moulinette.interface.type == "api":
             return {"url": url}
         else:
             return
@@ -222,7 +248,7 @@ def log_show(
     # Display metadata if exist
     if os.path.exists(md_path):
         try:
-            metadata = read_yaml(md_path)
+            metadata = read_yaml(md_path) or {}
         except MoulinetteError as e:
             error = m18n.n("log_corrupted_md_file", md_file=md_path, error=e)
             if os.path.exists(log_path):
@@ -282,13 +308,13 @@ def log_show(
     if os.path.exists(log_path):
         from yunohost.service import _tail
 
-        if number and filters:
+        if number and filter_irrelevant:
             logs = _tail(log_path, int(number * 4))
         elif number:
             logs = _tail(log_path, int(number))
         else:
             logs = read_file(log_path)
-        logs = _filter_lines(logs, filters)
+        logs = list(_filter(logs))
         if number:
             logs = logs[-number:]
         infos["log_path"] = log_path
@@ -371,6 +397,18 @@ def is_unit_operation(
             for field in exclude:
                 if field in context:
                     context.pop(field, None)
+
+            # Context is made from args given to main function by argparse
+            # This context will be added in extra parameters in yml file, so this context should
+            # be serializable and short enough (it will be displayed in webadmin)
+            # Argparse can provide some File or Stream, so here we display the filename or
+            # the IOBase, if we have no name.
+            for field, value in context.items():
+                if isinstance(value, IOBase):
+                    try:
+                        context[field] = value.name
+                    except:
+                        context[field] = "IOBase"
             operation_logger = OperationLogger(op_key, related_to, args=context)
 
             try:
@@ -415,7 +453,7 @@ class RedactingFormatter(Formatter):
             # (the secret part being at least 3 chars to avoid catching some lines like just "db_pwd=")
             # Some names like "key" or "manifest_key" are ignored, used in helpers like ynh_app_setting_set or ynh_read_manifest
             match = re.search(
-                r"(pwd|pass|password|passphrase|secret\w*|\w+key|token|PASSPHRASE)=(\S{3,})$",
+                r"(pwd|pass|passwd|password|passphrase|secret\w*|\w+key|token|PASSPHRASE)=(\S{3,})$",
                 record.strip(),
             )
             if (
@@ -441,7 +479,7 @@ class OperationLogger(object):
     This class record logs and metadata like context or start time/end time.
     """
 
-    _instances = []
+    _instances: List[object] = []
 
     def __init__(self, operation, related_to=None, **kwargs):
         # TODO add a way to not save password on app installation
@@ -609,7 +647,7 @@ class OperationLogger(object):
             "operation": self.operation,
             "parent": self.parent,
             "yunohost_version": get_ynh_package_version("yunohost")["version"],
-            "interface": msettings.get("interface"),
+            "interface": Moulinette.interface.type,
         }
         if self.related_to is not None:
             data["related_to"] = self.related_to
@@ -663,7 +701,7 @@ class OperationLogger(object):
             self.logger.removeHandler(self.file_handler)
             self.file_handler.close()
 
-        is_api = msettings.get("interface") == "api"
+        is_api = Moulinette.interface.type == "api"
         desc = _get_description_from_name(self.name)
         if error is None:
             if is_api:
@@ -694,6 +732,52 @@ class OperationLogger(object):
             return
         else:
             self.error(m18n.n("log_operation_unit_unclosed_properly"))
+
+    def dump_script_log_extract_for_debugging(self):
+
+        with open(self.log_path, "r") as f:
+            lines = f.readlines()
+
+        filters = [
+            r"set [+-]x$",
+            r"set [+-]o xtrace$",
+            r"local \w+$",
+            r"local legacy_args=.*$",
+            r".*Helper used in legacy mode.*",
+            r"args_array=.*$",
+            r"local -A args_array$",
+            r"ynh_handle_getopts_args",
+            r"ynh_script_progression",
+        ]
+
+        filters = [re.compile(f_) for f_ in filters]
+
+        lines_to_display = []
+        for line in lines:
+
+            if ": " not in line.strip():
+                continue
+
+            # A line typically looks like
+            # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
+            # And we just want the part starting by "DEBUG - "
+            line = line.strip().split(": ", 1)[1]
+
+            if any(filter_.search(line) for filter_ in filters):
+                continue
+
+            lines_to_display.append(line)
+
+            if line.endswith("+ ynh_exit_properly") or " + ynh_die " in line:
+                break
+            elif len(lines_to_display) > 20:
+                lines_to_display.pop(0)
+
+        logger.warning(
+            "Here's an extract of the logs before the crash. It might help debugging the error:"
+        )
+        for line in lines_to_display:
+            logger.info(line)
 
 
 def _get_datetime_from_name(name):
