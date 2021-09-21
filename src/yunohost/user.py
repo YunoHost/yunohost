@@ -420,7 +420,7 @@ def user_update(
         # without a specified value, change_password will be set to the const 0.
         # In this case we prompt for the new password.
         if Moulinette.interface.type == "cli" and not change_password:
-            change_password = Moulinette.prompt(m18n.n("ask_password"), True, True)
+            change_password = Moulinette.prompt(m18n.n("ask_password"), is_password=True, confirm=True)
         # Ensure sufficiently complex password
         assert_password_is_strong_enough("user", change_password)
 

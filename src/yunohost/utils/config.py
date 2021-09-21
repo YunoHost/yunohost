@@ -99,6 +99,9 @@ class ConfigPanel:
                     result[key]["value"] = question_class.humanize(
                         option["current_value"], option
                     )
+                    # FIXME: semantics, technically here this is not about a prompt...
+                    if question_class.hide_user_input_in_prompt:
+                        result[key]["value"] = "**************"  # Prevent displaying password in `config get`
 
         if mode == "full":
             return self.config
@@ -480,6 +483,8 @@ class Question(object):
 
     @staticmethod
     def normalize(value, option={}):
+        if isinstance(value, str):
+            value = value.strip()
         return value
 
     def _prompt(self, text):
@@ -491,9 +496,11 @@ class Question(object):
         self.value = Moulinette.prompt(
             message=text,
             is_password=self.hide_user_input_in_prompt,
-            confirm=False,  # We doesn't want to confirm this kind of password like in webadmin
+            confirm=False,
             prefill=prefill,
             is_multiline=(self.type == "text"),
+            autocomplete=self.choices,
+            help=_value_for_locale(self.help)
         )
 
     def ask_if_needed(self):
@@ -558,18 +565,8 @@ class Question(object):
             choices=", ".join(self.choices),
         )
 
-    def _format_text_for_user_input_in_cli(self, column=False):
-        text_for_user_input_in_cli = _value_for_locale(self.ask)
-
-        if self.choices:
-            text_for_user_input_in_cli += " [{0}]".format(" | ".join(self.choices))
-
-        if self.help or column:
-            text_for_user_input_in_cli += ":\033[m"
-        if self.help:
-            text_for_user_input_in_cli += "\n - "
-            text_for_user_input_in_cli += _value_for_locale(self.help)
-        return text_for_user_input_in_cli
+    def _format_text_for_user_input_in_cli(self):
+        return _value_for_locale(self.ask)
 
     def _post_parse_value(self):
         if not self.redact:
@@ -659,6 +656,8 @@ class TagsQuestion(Question):
     def normalize(value, option={}):
         if isinstance(value, list):
             return ",".join(value)
+        if isinstance(value, str):
+            value = value.strip()
         return value
 
     def _prevalidate(self):
@@ -692,12 +691,6 @@ class PasswordQuestion(Question):
                 "app_argument_password_no_default", name=self.name
             )
 
-    @staticmethod
-    def humanize(value, option={}):
-        if value:
-            return "********"  # Avoid to display the password on screen
-        return ""
-
     def _prevalidate(self):
         super()._prevalidate()
 
@@ -711,29 +704,6 @@ class PasswordQuestion(Question):
             from yunohost.utils.password import assert_password_is_strong_enough
 
             assert_password_is_strong_enough("user", self.value)
-
-    def _format_text_for_user_input_in_cli(self):
-        need_column = self.current_value or self.optional
-        text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli(
-            need_column
-        )
-        if self.current_value:
-            text_for_user_input_in_cli += "\n - " + m18n.n(
-                "app_argument_password_help_keep"
-            )
-        if self.optional:
-            text_for_user_input_in_cli += "\n - " + m18n.n(
-                "app_argument_password_help_optional"
-            )
-
-        return text_for_user_input_in_cli
-
-    def _prompt(self, text):
-        super()._prompt(text)
-        if self.current_value and self.value == "":
-            self.value = self.current_value
-        elif self.value == " ":
-            self.value = ""
 
 
 class PathQuestion(Question):
@@ -769,14 +739,30 @@ class BooleanQuestion(Question):
             "app_argument_choice_invalid",
             name=option.get("name", ""),
             value=value,
+            # FIXME : this doesn't match yes_answers / no_answers...
             choices="yes, no, y, n, 1, 0",
         )
 
     @staticmethod
     def normalize(value, option={}):
+        if isinstance(value, str):
+            value = value.strip()
+
         yes = option.get("yes", 1)
         no = option.get("no", 0)
 
+        #
+        # FIXME: Shouldn't we also check that value == yes ?
+        # Otherwise is yes = "foobar", normalize is not idempotent
+        # i.e normalize("true") will return "foobar"
+        # but normalize(normalize("true")) will raise an exception ?
+        #
+        # FIXME: it's also a bit confusing to understand if the
+        # packager-provided 'yes' value is meant for humans (in which case
+        # shouldn't it be used as a return value for humanize?)
+        # or as an internal value for better interfacing with scripts/computers
+        #
+        # Also shouldnt we be using normalize() in humanize() ?
         if str(value).lower() in BooleanQuestion.yes_answers:
             return yes
 
@@ -881,14 +867,18 @@ class NumberQuestion(Question):
         if isinstance(value, int):
             return value
 
+        if isinstance(value, str):
+            value = value.strip()
+
         if isinstance(value, str) and value.isdigit():
             return int(value)
 
         if value in [None, ""]:
             return value
 
+        # FIXME: option.name may not exist if option={}...
         raise YunohostValidationError(
-            "app_argument_invalid", name=option.name, error=m18n.n("invalid_number")
+            "app_argument_invalid", name=option.get("name", ""), error=m18n.n("invalid_number")
         )
 
     def _prevalidate(self):
