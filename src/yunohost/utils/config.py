@@ -573,13 +573,16 @@ class Question(object):
 
             # Prevent displaying a shitload of choices
             # (e.g. 100+ available users when choosing an app admin...)
-            choices_to_display = self.choices[:20]
-            remaining_choices = len(self.choices[20:])
+            choices = list(self.choices.values()) if isinstance(self.choices, dict) else self.choices
+            choices_to_display = choices[:20]
+            remaining_choices = len(choices[20:])
 
             if remaining_choices > 0:
                 choices_to_display += [m18n.n("other_available_options", n=remaining_choices)]
 
-            text_for_user_input_in_cli += " [{0}]".format(" | ".join(choices_to_display))
+            choices_to_display = " | ".join(choices_to_display)
+
+            text_for_user_input_in_cli += f" [{choices_to_display}]"
 
         return text_for_user_input_in_cli
 
@@ -752,7 +755,7 @@ class BooleanQuestion(Question):
 
         raise YunohostValidationError(
             "app_argument_choice_invalid",
-            name=option.get("name", ""),
+            name=getattr(option, "name", None) or option.get("name"),
             value=value,
             # FIXME : this doesn't match yes_answers / no_answers...
             choices="yes, no, y, n, 1, 0",
@@ -788,7 +791,7 @@ class BooleanQuestion(Question):
             return None
         raise YunohostValidationError(
             "app_argument_choice_invalid",
-            name=option.get("name", ""),
+            name=getattr(option, "name", None) or option.get("name"),
             value=value,
             choices="yes, no, y, n, 1, 0",
         )
@@ -808,10 +811,7 @@ class BooleanQuestion(Question):
         return text_for_user_input_in_cli
 
     def get(self, key, default=None):
-        try:
-            return getattr(self, key)
-        except AttributeError:
-            return default
+        return getattr(self, key, default)
 
 
 class DomainQuestion(Question):
@@ -843,7 +843,7 @@ class UserQuestion(Question):
         from yunohost.domain import _get_maindomain
 
         super().__init__(question, user_answers)
-        self.choices = user_list()["users"]
+        self.choices = list(user_list()["users"].keys())
 
         if not self.choices:
             raise YunohostValidationError(
@@ -854,7 +854,7 @@ class UserQuestion(Question):
 
         if self.default is None:
             root_mail = "root@%s" % _get_maindomain()
-            for user in self.choices.keys():
+            for user in self.choices:
                 if root_mail in user_info(user).get("mail-aliases", []):
                     self.default = user
                     break
@@ -891,9 +891,10 @@ class NumberQuestion(Question):
         if value in [None, ""]:
             return value
 
-        # FIXME: option.name may not exist if option={}...
         raise YunohostValidationError(
-            "app_argument_invalid", name=option.get("name", ""), error=m18n.n("invalid_number")
+            "app_argument_invalid",
+            name=getattr(option, "name", None) or option.get("name"),
+            error=m18n.n("invalid_number")
         )
 
     def _prevalidate(self):

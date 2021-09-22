@@ -207,6 +207,8 @@ def test_question_string_input_test_ask():
             confirm=False,
             prefill="",
             is_multiline=False,
+            autocomplete=[],
+            help=None,
         )
 
 
@@ -232,6 +234,8 @@ def test_question_string_input_test_ask_with_default():
             confirm=False,
             prefill=default_text,
             is_multiline=False,
+            autocomplete=[],
+            help=None,
         )
 
 
@@ -526,6 +530,8 @@ def test_question_password_input_test_ask():
             confirm=False,
             prefill="",
             is_multiline=False,
+            autocomplete=[],
+            help=None,
         )
 
 
@@ -787,6 +793,8 @@ def test_question_path_input_test_ask():
             confirm=False,
             prefill="",
             is_multiline=False,
+            autocomplete=[],
+            help=None,
         )
 
 
@@ -813,6 +821,8 @@ def test_question_path_input_test_ask_with_default():
             confirm=False,
             prefill=default_text,
             is_multiline=False,
+            autocomplete=[],
+            help=None,
         )
 
 
@@ -1162,6 +1172,8 @@ def test_question_boolean_input_test_ask():
             confirm=False,
             prefill="no",
             is_multiline=False,
+            autocomplete=[],
+            help=None,
         )
 
 
@@ -1188,6 +1200,8 @@ def test_question_boolean_input_test_ask_with_default():
             confirm=False,
             prefill="yes",
             is_multiline=False,
+            autocomplete=[],
+            help=None,
         )
 
 
@@ -1735,6 +1749,8 @@ def test_question_number_input_test_ask():
             confirm=False,
             prefill="",
             is_multiline=False,
+            autocomplete=[],
+            help=None,
         )
 
 
@@ -1761,6 +1777,8 @@ def test_question_number_input_test_ask_with_default():
             confirm=False,
             prefill=str(default_value),
             is_multiline=False,
+            autocomplete=[],
+            help=None,
         )
 
 
