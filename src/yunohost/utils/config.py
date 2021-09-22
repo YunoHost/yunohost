@@ -566,7 +566,22 @@ class Question(object):
         )
 
     def _format_text_for_user_input_in_cli(self):
-        return _value_for_locale(self.ask)
+
+        text_for_user_input_in_cli = _value_for_locale(self.ask)
+
+        if self.choices:
+
+            # Prevent displaying a shitload of choices
+            # (e.g. 100+ available users when choosing an app admin...)
+            choices_to_display = self.choices[:20]
+            remaining_choices = len(self.choices[20:])
+
+            if remaining_choices > 0:
+                choices_to_display += [m18n.n("other_available_options", n=remaining_choices)]
+
+            text_for_user_input_in_cli += " [{0}]".format(" | ".join(choices_to_display))
+
+        return text_for_user_input_in_cli
 
     def _post_parse_value(self):
         if not self.redact:

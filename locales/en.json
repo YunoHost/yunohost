@@ -541,6 +541,7 @@
     "migrations_to_be_ran_manually": "Migration {id} has to be run manually. Please go to Tools → Migrations on the webadmin page, or run `yunohost tools migrations run`.",
     "not_enough_disk_space": "Not enough free space on '{path}'",
     "operation_interrupted": "The operation was manually interrupted?",
+    "other_available_options": "... and {n} other available options not shown",
     "packages_upgrade_failed": "Could not upgrade all the packages",
     "password_listed": "This password is among the most used passwords in the world. Please choose something more unique.",
     "password_too_simple_1": "The password needs to be at least 8 characters long",
