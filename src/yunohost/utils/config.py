@@ -31,6 +31,7 @@ from moulinette.interfaces.cli import colorize
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
+    read_file,
     write_to_file,
     read_toml,
     read_yaml,
@@ -167,6 +168,9 @@ class ConfigPanel:
             raise
         finally:
             # Delete files uploaded from API
+            # FIXME : this is currently done in the context of config panels,
+            # but could also happen in the context of app install ... (or anywhere else
+            # where we may parse args etc...)
             FileQuestion.clean_upload_dirs()
 
         self._reload_services()
@@ -969,10 +973,9 @@ class FileQuestion(Question):
     @classmethod
     def clean_upload_dirs(cls):
         # Delete files uploaded from API
-        if Moulinette.interface.type == "api":
-            for upload_dir in cls.upload_dirs:
-                if os.path.exists(upload_dir):
-                    shutil.rmtree(upload_dir)
+        for upload_dir in cls.upload_dirs:
+            if os.path.exists(upload_dir):
+                shutil.rmtree(upload_dir)
 
     def __init__(self, question):
         super().__init__(question)
@@ -984,12 +987,13 @@ class FileQuestion(Question):
 
         super()._prevalidate()
 
-        if not self.value or not os.path.exists(str(self.value)):
-            raise YunohostValidationError(
-                "app_argument_invalid",
-                name=self.name,
-                error=m18n.n("file_does_not_exist", path=str(self.value)),
-            )
+        if Moulinette.interface.type != "api":
+            if not self.value or not os.path.exists(str(self.value)):
+                raise YunohostValidationError(
+                    "app_argument_invalid",
+                    name=self.name,
+                    error=m18n.n("file_does_not_exist", path=str(self.value)),
+                )
 
     def _post_parse_value(self):
         from base64 import b64decode
@@ -997,22 +1001,21 @@ class FileQuestion(Question):
         if not self.value:
             return self.value
 
-        # FIXME : in the cli case, don't we want to also copy the file
-        # to a tmp work dir ?
+        upload_dir = tempfile.mkdtemp(prefix="ynh_filequestion_")
+        _, file_path = tempfile.mkstemp(dir=upload_dir)
+
+        FileQuestion.upload_dirs += [upload_dir]
+
+        logger.debug(f"Saving file {self.name} for file question into {file_path}")
+        if Moulinette.interface.type != "api":
+            content = read_file(str(self.value), file_mode="rb")
 
         if Moulinette.interface.type == "api":
+            content = b64decode(self.value)
 
-            upload_dir = tempfile.mkdtemp(prefix="tmp_configpanel_")
-            _, file_path = tempfile.mkstemp(prefix="foobar", dir=upload_dir)
+        write_to_file(file_path, content, file_mode="wb")
 
-            FileQuestion.upload_dirs += [upload_dir]
-            logger.debug(f"Save uploaded file from API into {file_path}")
-
-            content = self.value
-
-            write_to_file(file_path, b64decode(content), file_mode="wb")
-
-            self.value = file_path
+        self.value = file_path
 
         return self.value
 

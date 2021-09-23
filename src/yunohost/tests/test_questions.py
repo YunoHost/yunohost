@@ -14,7 +14,8 @@ from yunohost.utils.config import (
     PasswordQuestion,
     DomainQuestion,
     PathQuestion,
-    BooleanQuestion
+    BooleanQuestion,
+    FileQuestion
 )
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
@@ -54,6 +55,23 @@ def test_question_string():
         }
     ]
     answers = {"some_string": "some_value"}
+
+    out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_string"
+    assert out.type == "string"
+    assert out.value == "some_value"
+
+
+def test_question_string_from_query_string():
+
+    questions = [
+        {
+            "name": "some_string",
+            "type": "string",
+        }
+    ]
+    answers = "foo=bar&some_string=some_value&lorem=ipsum"
 
     out = ask_questions_and_parse_answers(questions, answers)[0]
 
@@ -1916,7 +1934,13 @@ def test_question_number_input_test_ask_with_help():
 
 
 def test_question_display_text():
-    questions = [{"name": "some_app", "type": "display_text", "ask": "foobar"}]
+    questions = [
+            {
+                "name": "some_app",
+                "type": "display_text",
+                "ask": "foobar"
+            }
+    ]
     answers = {}
 
     with patch.object(sys, "stdout", new_callable=StringIO) as stdout, patch.object(
@@ -1924,6 +1948,72 @@ def test_question_display_text():
     ):
         ask_questions_and_parse_answers(questions, answers)
         assert "foobar" in stdout.getvalue()
+
+
+def test_question_file_from_cli():
+
+    FileQuestion.clean_upload_dirs()
+
+    filename = "/tmp/ynh_test_question_file"
+    os.system(f"rm -f {filename}")
+    os.system(f"echo helloworld > {filename}")
+
+    questions = [
+        {
+            "name": "some_file",
+            "type": "file",
+        }
+    ]
+    answers = {"some_file": filename}
+
+    out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_file"
+    assert out.type == "file"
+
+    # The file is supposed to be copied somewhere else
+    assert out.value != filename
+    assert out.value.startswith("/tmp/")
+    assert os.path.exists(out.value)
+    assert "helloworld" in open(out.value).read().strip()
+
+    FileQuestion.clean_upload_dirs()
+
+    assert not os.path.exists(out.value)
+
+
+def test_question_file_from_api():
+
+    FileQuestion.clean_upload_dirs()
+
+    from base64 import b64encode
+
+    b64content = b64encode("helloworld".encode())
+    questions = [
+        {
+            "name": "some_file",
+            "type": "file",
+        }
+    ]
+    answers = {"some_file": b64content}
+
+    interface_type_bkp = Moulinette.interface.type
+    try:
+        Moulinette.interface.type = "api"
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+    finally:
+        Moulinette.interface.type = interface_type_bkp
+
+    assert out.name == "some_file"
+    assert out.type == "file"
+
+    assert out.value.startswith("/tmp/")
+    assert os.path.exists(out.value)
+    assert "helloworld" in open(out.value).read().strip()
+
+    FileQuestion.clean_upload_dirs()
+
+    assert not os.path.exists(out.value)
 
 
 def test_normalize_boolean_nominal():
