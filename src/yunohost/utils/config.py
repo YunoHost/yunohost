@@ -25,7 +25,7 @@ import urllib.parse
 import tempfile
 import shutil
 from collections import OrderedDict
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Union, Any, Mapping
 
 from moulinette.interfaces.cli import colorize
 from moulinette import Moulinette, m18n
@@ -461,7 +461,7 @@ class Question(object):
     hide_user_input_in_prompt = False
     pattern: Optional[Dict] = None
 
-    def __init__(self, question):
+    def __init__(self, question: Dict[str, Any]):
         self.name = question["name"]
         self.type = question.get("type", "string")
         self.default = question.get("default", None)
@@ -1043,7 +1043,7 @@ ARGUMENTS_TYPE_PARSERS = {
 }
 
 
-def ask_questions_and_parse_answers(questions, prefilled_answers=""):
+def ask_questions_and_parse_answers(questions: Dict, prefilled_answers: Union[str, Mapping[str, Any]] = {}) -> Mapping[str, Any]:
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
 
@@ -1051,10 +1051,12 @@ def ask_questions_and_parse_answers(questions, prefilled_answers=""):
         questions         -- the arguments description store in yunohost
                               format from actions.json/toml, manifest.json/toml
                               or config_panel.json/toml
-        prefilled_answers -- a url-formated string such as "domain=yolo.test&path=/foobar&admin=sam"
+        prefilled_answers -- a url "query-string" such as "domain=yolo.test&path=/foobar&admin=sam"
+                             or a dict such as {"domain": "yolo.test", "path": "/foobar", "admin": "sam"}
     """
 
-    prefilled_answers = dict(urllib.parse.parse_qsl(prefilled_answers or "", keep_blank_values=True))
+    if isinstance(prefilled_answers, str):
+        prefilled_answers = dict(urllib.parse.parse_qs(prefilled_answers or "", keep_blank_values=True))
 
     out = OrderedDict()
 
