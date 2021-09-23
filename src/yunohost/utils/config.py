@@ -102,7 +102,9 @@ class ConfigPanel:
                     )
                     # FIXME: semantics, technically here this is not about a prompt...
                     if question_class.hide_user_input_in_prompt:
-                        result[key]["value"] = "**************"  # Prevent displaying password in `config get`
+                        result[key][
+                            "value"
+                        ] = "**************"  # Prevent displaying password in `config get`
 
         if mode == "full":
             return self.config
@@ -269,9 +271,7 @@ class ConfigPanel:
 
             # Now fill the sublevels (+ apply filter_key)
             i = list(format_description).index(level)
-            sublevel = (
-                list(format_description)[i + 1] if level != "options" else None
-            )
+            sublevel = list(format_description)[i + 1] if level != "options" else None
             search_key = filter_key[i] if len(filter_key) > i else False
 
             for key, value in raw_infos.items():
@@ -385,11 +385,13 @@ class ConfigPanel:
 
             # Check and ask unanswered questions
             questions = ask_questions_and_parse_answers(section["options"], self.args)
-            self.new_values.update({
-                question.name: question.value
-                for question in questions
-                if question.value is not None
-            })
+            self.new_values.update(
+                {
+                    question.name: question.value
+                    for question in questions
+                    if question.value is not None
+                }
+            )
 
         self.errors = None
 
@@ -506,7 +508,7 @@ class Question(object):
             prefill=prefill,
             is_multiline=(self.type == "text"),
             autocomplete=self.choices,
-            help=_value_for_locale(self.help)
+            help=_value_for_locale(self.help),
         )
 
     def ask_if_needed(self):
@@ -574,12 +576,18 @@ class Question(object):
 
             # Prevent displaying a shitload of choices
             # (e.g. 100+ available users when choosing an app admin...)
-            choices = list(self.choices.values()) if isinstance(self.choices, dict) else self.choices
+            choices = (
+                list(self.choices.values())
+                if isinstance(self.choices, dict)
+                else self.choices
+            )
             choices_to_display = choices[:20]
             remaining_choices = len(choices[20:])
 
             if remaining_choices > 0:
-                choices_to_display += [m18n.n("other_available_options", n=remaining_choices)]
+                choices_to_display += [
+                    m18n.n("other_available_options", n=remaining_choices)
+                ]
 
             choices_to_display = " | ".join(choices_to_display)
 
@@ -744,7 +752,7 @@ class PathQuestion(Question):
                 raise YunohostValidationError(
                     "app_argument_invalid",
                     name=option.get("name"),
-                    error="Question is mandatory"
+                    error="Question is mandatory",
                 )
 
         return "/" + value.strip().strip(" /")
@@ -794,8 +802,12 @@ class BooleanQuestion(Question):
         no_answers = BooleanQuestion.no_answers
         yes_answers = BooleanQuestion.yes_answers
 
-        assert str(technical_yes).lower() not in no_answers, f"'yes' value can't be in {no_answers}"
-        assert str(technical_no).lower() not in yes_answers, f"'no' value can't be in {yes_answers}"
+        assert (
+            str(technical_yes).lower() not in no_answers
+        ), f"'yes' value can't be in {no_answers}"
+        assert (
+            str(technical_no).lower() not in yes_answers
+        ), f"'no' value can't be in {yes_answers}"
 
         no_answers += [str(technical_no).lower()]
         yes_answers += [str(technical_yes).lower()]
@@ -851,9 +863,9 @@ class DomainQuestion(Question):
     @staticmethod
     def normalize(value, option={}):
         if value.startswith("https://"):
-            value = value[len("https://"):]
+            value = value[len("https://") :]
         elif value.startswith("http://"):
-            value = value[len("http://"):]
+            value = value[len("http://") :]
 
         # Remove trailing slashes
         value = value.rstrip("/").lower()
@@ -915,7 +927,7 @@ class NumberQuestion(Question):
         raise YunohostValidationError(
             "app_argument_invalid",
             name=option.get("name"),
-            error=m18n.n("invalid_number")
+            error=m18n.n("invalid_number"),
         )
 
     def _prevalidate(self):
@@ -1044,7 +1056,9 @@ ARGUMENTS_TYPE_PARSERS = {
 }
 
 
-def ask_questions_and_parse_answers(questions: Dict, prefilled_answers: Union[str, Mapping[str, Any]] = {}) -> List[Question]:
+def ask_questions_and_parse_answers(
+    questions: Dict, prefilled_answers: Union[str, Mapping[str, Any]] = {}
+) -> List[Question]:
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
 
@@ -1062,7 +1076,9 @@ def ask_questions_and_parse_answers(questions: Dict, prefilled_answers: Union[st
         # whereas parse.qs return list of values (which is useful for tags, etc)
         # For now, let's not migrate this piece of code to parse_qs
         # Because Aleks believes some bits of the app CI rely on overriding values (e.g. foo=foo&...&foo=bar)
-        prefilled_answers = dict(urllib.parse.parse_qsl(prefilled_answers or "", keep_blank_values=True))
+        prefilled_answers = dict(
+            urllib.parse.parse_qsl(prefilled_answers or "", keep_blank_values=True)
+        )
 
     if not prefilled_answers:
         prefilled_answers = {}

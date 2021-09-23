@@ -58,7 +58,7 @@ from yunohost.utils.config import (
     ask_questions_and_parse_answers,
     Question,
     DomainQuestion,
-    PathQuestion
+    PathQuestion,
 )
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -903,7 +903,11 @@ def app_install(
     # Retrieve arguments list for install script
     raw_questions = manifest.get("arguments", {}).get("install", {})
     questions = ask_questions_and_parse_answers(raw_questions, prefilled_answers=args)
-    args = {question.name: question.value for question in questions if question.value is not None}
+    args = {
+        question.name: question.value
+        for question in questions
+        if question.value is not None
+    }
 
     # Validate domain / path availability for webapps
     path_requirement = _guess_webapp_path_requirement(questions, extracted_app_folder)
@@ -1642,13 +1646,15 @@ def app_action_run(operation_logger, app, action, args=None):
     # Retrieve arguments list for install script
     raw_questions = actions[action].get("arguments", {})
     questions = ask_questions_and_parse_answers(raw_questions, prefilled_answers=args)
-    args = {question.name: question.value for question in questions if question.value is not None}
+    args = {
+        question.name: question.value
+        for question in questions
+        if question.value is not None
+    }
 
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
-    env_dict = _make_environment_for_app_script(
-        app, args=args, args_prefix="ACTION_"
-    )
+    env_dict = _make_environment_for_app_script(app, args=args, args_prefix="ACTION_")
     env_dict["YNH_ACTION"] = action
     env_dict["YNH_APP_BASEDIR"] = tmp_workdir_for_app
 
@@ -2404,15 +2410,15 @@ def _guess_webapp_path_requirement(questions: List[Question], app_folder: str) -
 
         if re.search(
             r"\npath(_url)?=[\"']?/[\"']?", install_script_content
-        ) and re.search(
-            r"ynh_webpath_register", install_script_content
-        ):
+        ) and re.search(r"ynh_webpath_register", install_script_content):
             return "full_domain"
 
     return "?"
 
 
-def _validate_webpath_requirement(questions: List[Question], path_requirement: str) -> None:
+def _validate_webpath_requirement(
+    questions: List[Question], path_requirement: str
+) -> None:
 
     domain_questions = [question for question in questions if question.type == "domain"]
     path_questions = [question for question in questions if question.type == "path"]

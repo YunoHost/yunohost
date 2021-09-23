@@ -14,7 +14,7 @@ from yunohost.utils.config import (
     DomainQuestion,
     PathQuestion,
     BooleanQuestion,
-    FileQuestion
+    FileQuestion,
 )
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
@@ -92,7 +92,6 @@ def test_question_string_default_type():
     assert out.name == "some_string"
     assert out.type == "string"
     assert out.value == "some_value"
-
 
 
 def test_question_string_no_input():
@@ -486,12 +485,7 @@ def test_question_password_no_input_optional():
     assert out.value == ""
 
     questions = [
-        {
-            "name": "some_password",
-            "type": "password",
-            "optional": True,
-            "default": ""
-        }
+        {"name": "some_password", "type": "password", "optional": True, "default": ""}
     ]
 
     with patch.object(os, "isatty", return_value=False):
@@ -1725,6 +1719,7 @@ def test_question_number_input():
     assert out.type == "number"
     assert out.value == 0
 
+
 def test_question_number_input_no_ask():
     questions = [
         {
@@ -1933,13 +1928,7 @@ def test_question_number_input_test_ask_with_help():
 
 
 def test_question_display_text():
-    questions = [
-            {
-                "name": "some_app",
-                "type": "display_text",
-                "ask": "foobar"
-            }
-    ]
+    questions = [{"name": "some_app", "type": "display_text", "ask": "foobar"}]
     answers = {}
 
     with patch.object(sys, "stdout", new_callable=StringIO) as stdout, patch.object(
