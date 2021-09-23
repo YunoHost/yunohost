@@ -4,7 +4,7 @@ import os
 from .conftest import get_test_apps_dir
 
 from yunohost.utils.error import YunohostError
-from yunohost.app import app_install, app_remove, _normalize_domain_path
+from yunohost.app import app_install, app_remove
 from yunohost.domain import _get_maindomain, domain_url_available
 from yunohost.permission import _validate_and_sanitize_permission_url
 
@@ -26,22 +26,6 @@ def teardown_function(function):
         app_remove("register_url_app")
     except Exception:
         pass
-
-
-def test_normalize_domain_path():
-
-    assert _normalize_domain_path("https://yolo.swag/", "macnuggets") == (
-        "yolo.swag",
-        "/macnuggets",
-    )
-    assert _normalize_domain_path("http://yolo.swag", "/macnuggets/") == (
-        "yolo.swag",
-        "/macnuggets",
-    )
-    assert _normalize_domain_path("yolo.swag/", "macnuggets/") == (
-        "yolo.swag",
-        "/macnuggets",
-    )
 
 
 def test_urlavailable():

@@ -12,6 +12,8 @@ from yunohost import domain, user
 from yunohost.utils.config import (
     ask_questions_and_parse_answers,
     PasswordQuestion,
+    DomainQuestion,
+    PathQuestion
 )
 from yunohost.utils.error import YunohostError
 
@@ -1834,3 +1836,19 @@ def test_question_display_text():
     ):
         ask_questions_and_parse_answers(questions, answers)
         assert "foobar" in stdout.getvalue()
+
+
+def test_normalize_domain():
+
+    assert DomainQuestion("https://yolo.swag/") == "yolo.swag"
+    assert DomainQuestion("http://yolo.swag") == "yolo.swag"
+    assert DomainQuestion("yolo.swag/") == "yolo.swag"
+
+
+def test_normalize_path():
+
+    assert PathQuestion("macnuggets") == "/macnuggets"
+    assert PathQuestion("mac/nuggets") == "/mac/nuggets"
+    assert PathQuestion("/macnuggets/") == "/macnuggets"
+    assert PathQuestion("macnuggets/") == "/macnuggets"
+    assert PathQuestion("////macnuggets///") == "/macnuggets"
