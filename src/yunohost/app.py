@@ -2386,7 +2386,7 @@ def _guess_webapp_path_requirement(questions: List[Question], app_folder: str) -
     path_questions = [question for question in questions if question.type == "path"]
 
     if len(domain_questions) == 0 and len(path_questions) == 0:
-        return None
+        return ""
     if len(domain_questions) == 1 and len(path_questions) == 1:
         return "domain_and_path"
     if len(domain_questions) == 1 and len(path_questions) == 0:

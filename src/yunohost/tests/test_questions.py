@@ -43,7 +43,7 @@ User answers:
 
 
 def test_question_empty():
-    assert ask_questions_and_parse_answers([], {}) == {}
+    ask_questions_and_parse_answers([], {}) == []
 
 
 def test_question_string():
@@ -54,8 +54,12 @@ def test_question_string():
         }
     ]
     answers = {"some_string": "some_value"}
-    expected_result = OrderedDict({"some_string": ("some_value", "string")})
-    assert ask_questions_and_parse_answers(questions, answers) == expected_result
+
+    out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_string"
+    assert out.type == "string"
+    assert out.value == "some_value"
 
 
 def test_question_string_default_type():
@@ -65,8 +69,13 @@ def test_question_string_default_type():
         }
     ]
     answers = {"some_string": "some_value"}
-    expected_result = OrderedDict({"some_string": ("some_value", "string")})
-    assert ask_questions_and_parse_answers(questions, answers) == expected_result
+
+    out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_string"
+    assert out.type == "string"
+    assert out.value == "some_value"
+
 
 
 def test_question_string_no_input():
@@ -89,12 +98,15 @@ def test_question_string_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_string": ("some_value", "string")})
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_string"
+    assert out.type == "string"
+    assert out.value == "some_value"
 
 
 def test_question_string_input_no_ask():
@@ -104,12 +116,15 @@ def test_question_string_input_no_ask():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_string": ("some_value", "string")})
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_string"
+    assert out.type == "string"
+    assert out.value == "some_value"
 
 
 def test_question_string_no_input_optional():
@@ -120,9 +135,12 @@ def test_question_string_no_input_optional():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_string": ("", "string")})
     with patch.object(os, "isatty", return_value=False):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_string"
+    assert out.type == "string"
+    assert out.value == ""
 
 
 def test_question_string_optional_with_input():
@@ -134,12 +152,15 @@ def test_question_string_optional_with_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_string": ("some_value", "string")})
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_string"
+    assert out.type == "string"
+    assert out.value == "some_value"
 
 
 def test_question_string_optional_with_empty_input():
@@ -151,12 +172,15 @@ def test_question_string_optional_with_empty_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_string": ("", "string")})
 
     with patch.object(Moulinette, "prompt", return_value=""), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_string"
+    assert out.type == "string"
+    assert out.value == ""
 
 
 def test_question_string_optional_with_input_without_ask():
@@ -167,12 +191,15 @@ def test_question_string_optional_with_input_without_ask():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_string": ("some_value", "string")})
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_string"
+    assert out.type == "string"
+    assert out.value == "some_value"
 
 
 def test_question_string_no_input_default():
@@ -184,9 +211,12 @@ def test_question_string_no_input_default():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_string": ("some_value", "string")})
     with patch.object(os, "isatty", return_value=False):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_string"
+    assert out.type == "string"
+    assert out.value == "some_value"
 
 
 def test_question_string_input_test_ask():
@@ -286,18 +316,24 @@ def test_question_string_input_test_ask_with_help():
 def test_question_string_with_choice():
     questions = [{"name": "some_string", "type": "string", "choices": ["fr", "en"]}]
     answers = {"some_string": "fr"}
-    expected_result = OrderedDict({"some_string": ("fr", "string")})
-    assert ask_questions_and_parse_answers(questions, answers) == expected_result
+    out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_string"
+    assert out.type == "string"
+    assert out.value == "fr"
 
 
 def test_question_string_with_choice_prompt():
     questions = [{"name": "some_string", "type": "string", "choices": ["fr", "en"]}]
     answers = {"some_string": "fr"}
-    expected_result = OrderedDict({"some_string": ("fr", "string")})
     with patch.object(Moulinette, "prompt", return_value="fr"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_string"
+    assert out.type == "string"
+    assert out.value == "fr"
 
 
 def test_question_string_with_choice_bad():
@@ -305,7 +341,7 @@ def test_question_string_with_choice_bad():
     answers = {"some_string": "bad"}
 
     with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        assert ask_questions_and_parse_answers(questions, answers)
+        ask_questions_and_parse_answers(questions, answers)
 
 
 def test_question_string_with_choice_ask():
@@ -340,9 +376,12 @@ def test_question_string_with_choice_default():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_string": ("en", "string")})
     with patch.object(os, "isatty", return_value=False):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_string"
+    assert out.type == "string"
+    assert out.value == "en"
 
 
 def test_question_password():
@@ -353,8 +392,11 @@ def test_question_password():
         }
     ]
     answers = {"some_password": "some_value"}
-    expected_result = OrderedDict({"some_password": ("some_value", "password")})
-    assert ask_questions_and_parse_answers(questions, answers) == expected_result
+    out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_password"
+    assert out.type == "password"
+    assert out.value == "some_value"
 
 
 def test_question_password_no_input():
@@ -379,12 +421,15 @@ def test_question_password_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_password": ("some_value", "password")})
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_password"
+    assert out.type == "password"
+    assert out.value == "some_value"
 
 
 def test_question_password_input_no_ask():
@@ -395,12 +440,15 @@ def test_question_password_input_no_ask():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_password": ("some_value", "password")})
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_password"
+    assert out.type == "password"
+    assert out.value == "some_value"
 
 
 def test_question_password_no_input_optional():
@@ -412,17 +460,29 @@ def test_question_password_no_input_optional():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_password": ("", "password")})
 
     with patch.object(os, "isatty", return_value=False):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_password"
+    assert out.type == "password"
+    assert out.value == ""
 
     questions = [
-        {"name": "some_password", "type": "password", "optional": True, "default": ""}
+        {
+            "name": "some_password",
+            "type": "password",
+            "optional": True,
+            "default": ""
+        }
     ]
 
     with patch.object(os, "isatty", return_value=False):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_password"
+    assert out.type == "password"
+    assert out.value == ""
 
 
 def test_question_password_optional_with_input():
@@ -435,12 +495,15 @@ def test_question_password_optional_with_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_password": ("some_value", "password")})
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_password"
+    assert out.type == "password"
+    assert out.value == "some_value"
 
 
 def test_question_password_optional_with_empty_input():
@@ -453,12 +516,15 @@ def test_question_password_optional_with_empty_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_password": ("", "password")})
 
     with patch.object(Moulinette, "prompt", return_value=""), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_password"
+    assert out.type == "password"
+    assert out.value == ""
 
 
 def test_question_password_optional_with_input_without_ask():
@@ -470,12 +536,15 @@ def test_question_password_optional_with_input_without_ask():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_password": ("some_value", "password")})
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_password"
+    assert out.type == "password"
+    assert out.value == "some_value"
 
 
 def test_question_password_no_input_default():
@@ -642,8 +711,11 @@ def test_question_path():
         }
     ]
     answers = {"some_path": "/some_value"}
-    expected_result = OrderedDict({"some_path": ("/some_value", "path")})
-    assert ask_questions_and_parse_answers(questions, answers) == expected_result
+    out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_path"
+    assert out.type == "path"
+    assert out.value == "/some_value"
 
 
 def test_question_path_no_input():
@@ -668,12 +740,15 @@ def test_question_path_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_path": ("/some_value", "path")})
 
     with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_path"
+    assert out.type == "path"
+    assert out.value == "/some_value"
 
 
 def test_question_path_input_no_ask():
@@ -684,12 +759,15 @@ def test_question_path_input_no_ask():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_path": ("/some_value", "path")})
 
     with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_path"
+    assert out.type == "path"
+    assert out.value == "/some_value"
 
 
 def test_question_path_no_input_optional():
@@ -701,9 +779,12 @@ def test_question_path_no_input_optional():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_path": ("", "path")})
     with patch.object(os, "isatty", return_value=False):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_path"
+    assert out.type == "path"
+    assert out.value == ""
 
 
 def test_question_path_optional_with_input():
@@ -716,12 +797,15 @@ def test_question_path_optional_with_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_path": ("/some_value", "path")})
 
     with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_path"
+    assert out.type == "path"
+    assert out.value == "/some_value"
 
 
 def test_question_path_optional_with_empty_input():
@@ -734,12 +818,15 @@ def test_question_path_optional_with_empty_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_path": ("", "path")})
 
     with patch.object(Moulinette, "prompt", return_value=""), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_path"
+    assert out.type == "path"
+    assert out.value == ""
 
 
 def test_question_path_optional_with_input_without_ask():
@@ -751,12 +838,15 @@ def test_question_path_optional_with_input_without_ask():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_path": ("/some_value", "path")})
 
     with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_path"
+    assert out.type == "path"
+    assert out.value == "/some_value"
 
 
 def test_question_path_no_input_default():
@@ -769,9 +859,12 @@ def test_question_path_no_input_default():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_path": ("/some_value", "path")})
     with patch.object(os, "isatty", return_value=False):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_path"
+    assert out.type == "path"
+    assert out.value == "/some_value"
 
 
 def test_question_path_input_test_ask():
@@ -880,8 +973,11 @@ def test_question_boolean():
         }
     ]
     answers = {"some_boolean": "y"}
-    expected_result = OrderedDict({"some_boolean": (1, "boolean")})
-    assert ask_questions_and_parse_answers(questions, answers) == expected_result
+    out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_boolean"
+    assert out.type == "boolean"
+    assert out.value == 1
 
 
 def test_question_boolean_all_yes():
@@ -891,50 +987,12 @@ def test_question_boolean_all_yes():
             "type": "boolean",
         }
     ]
-    expected_result = OrderedDict({"some_boolean": (1, "boolean")})
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "y"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "Y"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "yes"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "Yes"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "YES"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "1"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": 1}) == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": True})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "True"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "TRUE"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "true"})
-        == expected_result
-    )
+
+    for value in ["Y", "yes", "Yes", "YES", "1", 1, True, "True", "TRUE", "true"]:
+        out = ask_questions_and_parse_answers(questions, {"some_boolean": value})[0]
+        assert out.name == "some_boolean"
+        assert out.type == "boolean"
+        assert out.value == 1
 
 
 def test_question_boolean_all_no():
@@ -944,50 +1002,12 @@ def test_question_boolean_all_no():
             "type": "boolean",
         }
     ]
-    expected_result = OrderedDict({"some_boolean": (0, "boolean")})
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "n"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "N"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "no"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "No"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "No"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "0"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": 0}) == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": False})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "False"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "FALSE"})
-        == expected_result
-    )
-    assert (
-        ask_questions_and_parse_answers(questions, {"some_boolean": "false"})
-        == expected_result
-    )
+
+    for value in ["n", "N", "no", "No", "No", "0", 0, False, "False", "FALSE", "false"]:
+        out = ask_questions_and_parse_answers(questions, {"some_boolean": value})[0]
+        assert out.name == "some_boolean"
+        assert out.type == "boolean"
+        assert out.value == 0
 
 
 # XXX apparently boolean are always False (0) by default, I'm not sure what to think about that
@@ -1000,9 +1020,10 @@ def test_question_boolean_no_input():
     ]
     answers = {}
 
-    expected_result = OrderedDict({"some_boolean": (0, "boolean")})
     with patch.object(os, "isatty", return_value=False):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.value == 0
 
 
 def test_question_boolean_bad_input():
@@ -1028,17 +1049,17 @@ def test_question_boolean_input():
     ]
     answers = {}
 
-    expected_result = OrderedDict({"some_boolean": (1, "boolean")})
     with patch.object(Moulinette, "prompt", return_value="y"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+    assert out.value == 1
 
-    expected_result = OrderedDict({"some_boolean": (0, "boolean")})
     with patch.object(Moulinette, "prompt", return_value="n"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+    assert out.value == 0
 
 
 def test_question_boolean_input_no_ask():
@@ -1049,12 +1070,12 @@ def test_question_boolean_input_no_ask():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_boolean": (1, "boolean")})
 
     with patch.object(Moulinette, "prompt", return_value="y"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+    assert out.value == 1
 
 
 def test_question_boolean_no_input_optional():
@@ -1066,9 +1087,9 @@ def test_question_boolean_no_input_optional():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_boolean": (0, "boolean")})  # default to false
     with patch.object(os, "isatty", return_value=False):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+    assert out.value == 0
 
 
 def test_question_boolean_optional_with_input():
@@ -1081,12 +1102,12 @@ def test_question_boolean_optional_with_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_boolean": (1, "boolean")})
 
     with patch.object(Moulinette, "prompt", return_value="y"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+    assert out.value == 1
 
 
 def test_question_boolean_optional_with_empty_input():
@@ -1099,12 +1120,13 @@ def test_question_boolean_optional_with_empty_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_boolean": (0, "boolean")})  # default to false
 
     with patch.object(Moulinette, "prompt", return_value=""), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.value == 0
 
 
 def test_question_boolean_optional_with_input_without_ask():
@@ -1116,12 +1138,13 @@ def test_question_boolean_optional_with_input_without_ask():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_boolean": (0, "boolean")})
 
     with patch.object(Moulinette, "prompt", return_value="n"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.value == 0
 
 
 def test_question_boolean_no_input_default():
@@ -1134,9 +1157,11 @@ def test_question_boolean_no_input_default():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_boolean": (0, "boolean")})
+
     with patch.object(os, "isatty", return_value=False):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.value == 0
 
 
 def test_question_boolean_bad_default():
@@ -1215,7 +1240,6 @@ def test_question_domain_empty():
         }
     ]
     main_domain = "my_main_domain.com"
-    expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
     answers = {}
 
     with patch.object(
@@ -1225,7 +1249,11 @@ def test_question_domain_empty():
     ), patch.object(
         os, "isatty", return_value=False
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_domain"
+    assert out.type == "domain"
+    assert out.value == main_domain
 
 
 def test_question_domain():
@@ -1239,12 +1267,15 @@ def test_question_domain():
     ]
 
     answers = {"some_domain": main_domain}
-    expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
 
     with patch.object(
         domain, "_get_maindomain", return_value=main_domain
     ), patch.object(domain, "domain_list", return_value={"domains": domains}):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_domain"
+    assert out.type == "domain"
+    assert out.value == main_domain
 
 
 def test_question_domain_two_domains():
@@ -1259,20 +1290,26 @@ def test_question_domain_two_domains():
         }
     ]
     answers = {"some_domain": other_domain}
-    expected_result = OrderedDict({"some_domain": (other_domain, "domain")})
 
     with patch.object(
         domain, "_get_maindomain", return_value=main_domain
     ), patch.object(domain, "domain_list", return_value={"domains": domains}):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_domain"
+    assert out.type == "domain"
+    assert out.value == other_domain
 
     answers = {"some_domain": main_domain}
-    expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
 
     with patch.object(
         domain, "_get_maindomain", return_value=main_domain
     ), patch.object(domain, "domain_list", return_value={"domains": domains}):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_domain"
+    assert out.type == "domain"
+    assert out.value == main_domain
 
 
 def test_question_domain_two_domains_wrong_answer():
@@ -1309,7 +1346,6 @@ def test_question_domain_two_domains_default_no_ask():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
 
     with patch.object(
         domain, "_get_maindomain", return_value=main_domain
@@ -1318,7 +1354,11 @@ def test_question_domain_two_domains_default_no_ask():
     ), patch.object(
         os, "isatty", return_value=False
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_domain"
+    assert out.type == "domain"
+    assert out.value == main_domain
 
 
 def test_question_domain_two_domains_default():
@@ -1328,7 +1368,6 @@ def test_question_domain_two_domains_default():
 
     questions = [{"name": "some_domain", "type": "domain", "ask": "choose a domain"}]
     answers = {}
-    expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
 
     with patch.object(
         domain, "_get_maindomain", return_value=main_domain
@@ -1337,7 +1376,11 @@ def test_question_domain_two_domains_default():
     ), patch.object(
         os, "isatty", return_value=False
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_domain"
+    assert out.type == "domain"
+    assert out.value == main_domain
 
 
 def test_question_domain_two_domains_default_input():
@@ -1355,13 +1398,19 @@ def test_question_domain_two_domains_default_input():
     ), patch.object(
         os, "isatty", return_value=True
     ):
-        expected_result = OrderedDict({"some_domain": (main_domain, "domain")})
         with patch.object(Moulinette, "prompt", return_value=main_domain):
-            assert ask_questions_and_parse_answers(questions, answers) == expected_result
+            out = ask_questions_and_parse_answers(questions, answers)[0]
 
-        expected_result = OrderedDict({"some_domain": (other_domain, "domain")})
+        assert out.name == "some_domain"
+        assert out.type == "domain"
+        assert out.value == main_domain
+
         with patch.object(Moulinette, "prompt", return_value=other_domain):
-            assert ask_questions_and_parse_answers(questions, answers) == expected_result
+            out = ask_questions_and_parse_answers(questions, answers)[0]
+
+        assert out.name == "some_domain"
+        assert out.type == "domain"
+        assert out.value == other_domain
 
 
 def test_question_user_empty():
@@ -1410,12 +1459,14 @@ def test_question_user():
     ]
     answers = {"some_user": username}
 
-    expected_result = OrderedDict({"some_user": (username, "user")})
-
     with patch.object(user, "user_list", return_value={"users": users}), patch.object(
         user, "user_info", return_value={}
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_user"
+    assert out.type == "user"
+    assert out.value == username
 
 
 def test_question_user_two_users():
@@ -1445,20 +1496,26 @@ def test_question_user_two_users():
         }
     ]
     answers = {"some_user": other_user}
-    expected_result = OrderedDict({"some_user": (other_user, "user")})
 
     with patch.object(user, "user_list", return_value={"users": users}), patch.object(
         user, "user_info", return_value={}
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_user"
+    assert out.type == "user"
+    assert out.value == other_user
 
     answers = {"some_user": username}
-    expected_result = OrderedDict({"some_user": (username, "user")})
 
     with patch.object(user, "user_list", return_value={"users": users}), patch.object(
         user, "user_info", return_value={}
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_user"
+    assert out.type == "user"
+    assert out.value == username
 
 
 def test_question_user_two_users_wrong_answer():
@@ -1553,17 +1610,20 @@ def test_question_user_two_users_default_input():
         os, "isatty", return_value=True
     ):
         with patch.object(user, "user_info", return_value={}):
-            expected_result = OrderedDict({"some_user": (username, "user")})
-            with patch.object(Moulinette, "prompt", return_value=username):
-                assert (
-                    ask_questions_and_parse_answers(questions, answers) == expected_result
-                )
 
-            expected_result = OrderedDict({"some_user": (other_user, "user")})
+            with patch.object(Moulinette, "prompt", return_value=username):
+                out = ask_questions_and_parse_answers(questions, answers)[0]
+
+            assert out.name == "some_user"
+            assert out.type == "user"
+            assert out.value == username
+
             with patch.object(Moulinette, "prompt", return_value=other_user):
-                assert (
-                    ask_questions_and_parse_answers(questions, answers) == expected_result
-                )
+                out = ask_questions_and_parse_answers(questions, answers)[0]
+
+            assert out.name == "some_user"
+            assert out.type == "user"
+            assert out.value == other_user
 
 
 def test_question_number():
@@ -1574,8 +1634,11 @@ def test_question_number():
         }
     ]
     answers = {"some_number": 1337}
-    expected_result = OrderedDict({"some_number": (1337, "number")})
-    assert ask_questions_and_parse_answers(questions, answers) == expected_result
+    out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_number"
+    assert out.type == "number"
+    assert out.value == 1337
 
 
 def test_question_number_no_input():
@@ -1618,23 +1681,32 @@ def test_question_number_input():
     ]
     answers = {}
 
-    expected_result = OrderedDict({"some_number": (1337, "number")})
     with patch.object(Moulinette, "prompt", return_value="1337"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_number"
+    assert out.type == "number"
+    assert out.value == 1337
 
     with patch.object(Moulinette, "prompt", return_value=1337), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
 
-    expected_result = OrderedDict({"some_number": (0, "number")})
+    assert out.name == "some_number"
+    assert out.type == "number"
+    assert out.value == 1337
+
     with patch.object(Moulinette, "prompt", return_value="0"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
 
+    assert out.name == "some_number"
+    assert out.type == "number"
+    assert out.value == 0
 
 def test_question_number_input_no_ask():
     questions = [
@@ -1644,12 +1716,15 @@ def test_question_number_input_no_ask():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_number": (1337, "number")})
 
     with patch.object(Moulinette, "prompt", return_value="1337"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_number"
+    assert out.type == "number"
+    assert out.value == 1337
 
 
 def test_question_number_no_input_optional():
@@ -1661,9 +1736,12 @@ def test_question_number_no_input_optional():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_number": (None, "number")})  # default to 0
     with patch.object(os, "isatty", return_value=False):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_number"
+    assert out.type == "number"
+    assert out.value == None
 
 
 def test_question_number_optional_with_input():
@@ -1676,12 +1754,15 @@ def test_question_number_optional_with_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_number": (1337, "number")})
 
     with patch.object(Moulinette, "prompt", return_value="1337"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_number"
+    assert out.type == "number"
+    assert out.value == 1337
 
 
 def test_question_number_optional_with_input_without_ask():
@@ -1693,12 +1774,15 @@ def test_question_number_optional_with_input_without_ask():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_number": (0, "number")})
 
     with patch.object(Moulinette, "prompt", return_value="0"), patch.object(
         os, "isatty", return_value=True
     ):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_number"
+    assert out.type == "number"
+    assert out.value == 0
 
 
 def test_question_number_no_input_default():
@@ -1711,9 +1795,12 @@ def test_question_number_no_input_default():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_number": (1337, "number")})
     with patch.object(os, "isatty", return_value=False):
-        assert ask_questions_and_parse_answers(questions, answers) == expected_result
+        out = ask_questions_and_parse_answers(questions, answers)[0]
+
+    assert out.name == "some_number"
+    assert out.type == "number"
+    assert out.value == 1337
 
 
 def test_question_number_bad_default():
@@ -1865,7 +1952,7 @@ def test_normalize_boolean_nominal():
     assert BooleanQuestion.normalize("   ") is None
     assert BooleanQuestion.normalize(" none   ") is None
     assert BooleanQuestion.normalize("None") is None
-    assert BooleanQuestion.normalize("none") is None
+    assert BooleanQuestion.normalize("noNe") is None
     assert BooleanQuestion.normalize(None) is None
 
 
