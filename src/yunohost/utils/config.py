@@ -520,12 +520,9 @@ class Question(object):
             ):
                 self.value = class_default if self.default is None else self.default
 
-            # Normalization
-            # This is done to enforce a certain formating like for boolean
-            self.value = self.normalize(self.value, self)
-
-            # Prevalidation
             try:
+                # Normalize and validate
+                self.value = self.normalize(self.value, self)
                 self._prevalidate()
             except YunohostValidationError as e:
                 # If in interactive cli, re-ask the current question
