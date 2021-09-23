@@ -730,7 +730,23 @@ class PathQuestion(Question):
 
     @staticmethod
     def normalize(value, option={}):
-        return "/" + value.strip("/")
+
+        option = option.__dict__ if isinstance(option, Question) else option
+
+        if not value.strip():
+            if option.get("optional"):
+                return ""
+            # Hmpf here we could just have a "else" case
+            # but we also want PathQuestion.normalize("") to return "/"
+            # (i.e. if no option is provided, hence .get("optional") is None
+            elif option.get("optional") is False:
+                raise YunohostValidationError(
+                    "app_argument_invalid",
+                    name=option.get("name"),
+                    error="Question is mandatory"
+                )
+
+        return "/" + value.strip().strip(" /")
 
 
 class BooleanQuestion(Question):
@@ -741,6 +757,8 @@ class BooleanQuestion(Question):
 
     @staticmethod
     def humanize(value, option={}):
+
+        option = option.__dict__ if isinstance(option, Question) else option
 
         yes = option.get("yes", 1)
         no = option.get("no", 0)
@@ -756,50 +774,45 @@ class BooleanQuestion(Question):
 
         raise YunohostValidationError(
             "app_argument_choice_invalid",
-            name=getattr(option, "name", None) or option.get("name"),
+            name=option.get("name"),
             value=value,
             choices="yes/no",
         )
 
     @staticmethod
     def normalize(value, option={}):
+
+        option = option.__dict__ if isinstance(option, Question) else option
+
         if isinstance(value, str):
             value = value.strip()
 
-        yes = option.get("yes", 1)
-        no = option.get("no", 0)
+        technical_yes = option.get("yes", 1)
+        technical_no = option.get("no", 0)
+
+        no_answers = BooleanQuestion.no_answers
+        yes_answers = BooleanQuestion.yes_answers
+
+        assert str(technical_yes).lower() not in no_answers, f"'yes' value can't be in {no_answers}"
+        assert str(technical_no).lower() not in yes_answers, f"'no' value can't be in {yes_answers}"
+
+        no_answers += [str(technical_no).lower()]
+        yes_answers += [str(technical_yes).lower()]
 
         strvalue = str(value).lower()
 
-        #
-        # N.B.:
-        # we check first if the value is equal to yes
-        # then if equal to no
-        # then if in yes_answers
-        # then if in no_answers
-        #
-        # This is to hopefully cover the weird edgecase
-        # where the value for yes/no could be reversed
-        # such as yes=false or yes=0
-        #          no=true      no=1
-        #
+        if strvalue in yes_answers:
+            return technical_yes
+        if strvalue in no_answers:
+            return technical_no
 
-        if strvalue == str(yes).lower():
-            return yes
-        if strvalue == str(no).lower():
-            return no
-        if strvalue in BooleanQuestion.yes_answers:
-            return yes
-        if strvalue in BooleanQuestion.no_answers:
-            return no
-
-        if value in [None, ""]:
+        if strvalue in ["none", ""]:
             return None
 
         raise YunohostValidationError(
             "app_argument_choice_invalid",
-            name=getattr(option, "name", None) or option.get("name"),
-            value=value,
+            name=option.get("name"),
+            value=strvalue,
             choices="yes/no",
         )
 
@@ -898,6 +911,7 @@ class NumberQuestion(Question):
 
     @staticmethod
     def normalize(value, option={}):
+
         if isinstance(value, int):
             return value
 
@@ -910,9 +924,10 @@ class NumberQuestion(Question):
         if value in [None, ""]:
             return value
 
+        option = option.__dict__ if isinstance(option, Question) else option
         raise YunohostValidationError(
             "app_argument_invalid",
-            name=getattr(option, "name", None) or option.get("name"),
+            name=option.get("name"),
             error=m18n.n("invalid_number")
         )
 

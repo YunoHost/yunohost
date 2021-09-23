@@ -13,9 +13,10 @@ from yunohost.utils.config import (
     ask_questions_and_parse_answers,
     PasswordQuestion,
     DomainQuestion,
-    PathQuestion
+    PathQuestion,
+    BooleanQuestion
 )
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 
 """
@@ -640,8 +641,8 @@ def test_question_path():
             "type": "path",
         }
     ]
-    answers = {"some_path": "some_value"}
-    expected_result = OrderedDict({"some_path": ("some_value", "path")})
+    answers = {"some_path": "/some_value"}
+    expected_result = OrderedDict({"some_path": ("/some_value", "path")})
     assert ask_questions_and_parse_answers(questions, answers) == expected_result
 
 
@@ -667,9 +668,9 @@ def test_question_path_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_path": ("some_value", "path")})
+    expected_result = OrderedDict({"some_path": ("/some_value", "path")})
 
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
+    with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
         os, "isatty", return_value=True
     ):
         assert ask_questions_and_parse_answers(questions, answers) == expected_result
@@ -683,9 +684,9 @@ def test_question_path_input_no_ask():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_path": ("some_value", "path")})
+    expected_result = OrderedDict({"some_path": ("/some_value", "path")})
 
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
+    with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
         os, "isatty", return_value=True
     ):
         assert ask_questions_and_parse_answers(questions, answers) == expected_result
@@ -715,9 +716,9 @@ def test_question_path_optional_with_input():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_path": ("some_value", "path")})
+    expected_result = OrderedDict({"some_path": ("/some_value", "path")})
 
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
+    with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
         os, "isatty", return_value=True
     ):
         assert ask_questions_and_parse_answers(questions, answers) == expected_result
@@ -750,9 +751,9 @@ def test_question_path_optional_with_input_without_ask():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_path": ("some_value", "path")})
+    expected_result = OrderedDict({"some_path": ("/some_value", "path")})
 
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
+    with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
         os, "isatty", return_value=True
     ):
         assert ask_questions_and_parse_answers(questions, answers) == expected_result
@@ -768,7 +769,7 @@ def test_question_path_no_input_default():
         }
     ]
     answers = {}
-    expected_result = OrderedDict({"some_path": ("some_value", "path")})
+    expected_result = OrderedDict({"some_path": ("/some_value", "path")})
     with patch.object(os, "isatty", return_value=False):
         assert ask_questions_and_parse_answers(questions, answers) == expected_result
 
@@ -801,7 +802,7 @@ def test_question_path_input_test_ask():
 
 def test_question_path_input_test_ask_with_default():
     ask_text = "some question"
-    default_text = "some example"
+    default_text = "someexample"
     questions = [
         {
             "name": "some_path",
@@ -1838,17 +1839,92 @@ def test_question_display_text():
         assert "foobar" in stdout.getvalue()
 
 
+def test_normalize_boolean_nominal():
+
+    assert BooleanQuestion.normalize("yes") == 1
+    assert BooleanQuestion.normalize("Yes") == 1
+    assert BooleanQuestion.normalize(" yes  ") == 1
+    assert BooleanQuestion.normalize("y") == 1
+    assert BooleanQuestion.normalize("true") == 1
+    assert BooleanQuestion.normalize("True") == 1
+    assert BooleanQuestion.normalize("on") == 1
+    assert BooleanQuestion.normalize("1") == 1
+    assert BooleanQuestion.normalize(1) == 1
+
+    assert BooleanQuestion.normalize("no") == 0
+    assert BooleanQuestion.normalize("No") == 0
+    assert BooleanQuestion.normalize(" no  ") == 0
+    assert BooleanQuestion.normalize("n") == 0
+    assert BooleanQuestion.normalize("false") == 0
+    assert BooleanQuestion.normalize("False") == 0
+    assert BooleanQuestion.normalize("off") == 0
+    assert BooleanQuestion.normalize("0") == 0
+    assert BooleanQuestion.normalize(0) == 0
+
+    assert BooleanQuestion.normalize("") is None
+    assert BooleanQuestion.normalize("   ") is None
+    assert BooleanQuestion.normalize(" none   ") is None
+    assert BooleanQuestion.normalize("None") is None
+    assert BooleanQuestion.normalize("none") is None
+    assert BooleanQuestion.normalize(None) is None
+
+
+def test_normalize_boolean_humanize():
+
+    assert BooleanQuestion.humanize("yes") == "yes"
+    assert BooleanQuestion.humanize("true") == "yes"
+    assert BooleanQuestion.humanize("on") == "yes"
+
+    assert BooleanQuestion.humanize("no") == "no"
+    assert BooleanQuestion.humanize("false") == "no"
+    assert BooleanQuestion.humanize("off") == "no"
+
+
+def test_normalize_boolean_invalid():
+
+    with pytest.raises(YunohostValidationError):
+        BooleanQuestion.normalize("yesno")
+    with pytest.raises(YunohostValidationError):
+        BooleanQuestion.normalize("foobar")
+    with pytest.raises(YunohostValidationError):
+        BooleanQuestion.normalize("enabled")
+
+
+def test_normalize_boolean_special_yesno():
+
+    customyesno = {"yes": "enabled", "no": "disabled"}
+
+    assert BooleanQuestion.normalize("yes", customyesno) == "enabled"
+    assert BooleanQuestion.normalize("true", customyesno) == "enabled"
+    assert BooleanQuestion.normalize("enabled", customyesno) == "enabled"
+    assert BooleanQuestion.humanize("yes", customyesno) == "yes"
+    assert BooleanQuestion.humanize("true", customyesno) == "yes"
+    assert BooleanQuestion.humanize("enabled", customyesno) == "yes"
+
+    assert BooleanQuestion.normalize("no", customyesno) == "disabled"
+    assert BooleanQuestion.normalize("false", customyesno) == "disabled"
+    assert BooleanQuestion.normalize("disabled", customyesno) == "disabled"
+    assert BooleanQuestion.humanize("no", customyesno) == "no"
+    assert BooleanQuestion.humanize("false", customyesno) == "no"
+    assert BooleanQuestion.humanize("disabled", customyesno) == "no"
+
+
 def test_normalize_domain():
 
-    assert DomainQuestion("https://yolo.swag/") == "yolo.swag"
-    assert DomainQuestion("http://yolo.swag") == "yolo.swag"
-    assert DomainQuestion("yolo.swag/") == "yolo.swag"
+    assert DomainQuestion.normalize("https://yolo.swag/") == "yolo.swag"
+    assert DomainQuestion.normalize("http://yolo.swag") == "yolo.swag"
+    assert DomainQuestion.normalize("yolo.swag/") == "yolo.swag"
 
 
 def test_normalize_path():
 
-    assert PathQuestion("macnuggets") == "/macnuggets"
-    assert PathQuestion("mac/nuggets") == "/mac/nuggets"
-    assert PathQuestion("/macnuggets/") == "/macnuggets"
-    assert PathQuestion("macnuggets/") == "/macnuggets"
-    assert PathQuestion("////macnuggets///") == "/macnuggets"
+    assert PathQuestion.normalize("") == "/"
+    assert PathQuestion.normalize("") == "/"
+    assert PathQuestion.normalize("macnuggets") == "/macnuggets"
+    assert PathQuestion.normalize("/macnuggets") == "/macnuggets"
+    assert PathQuestion.normalize("   /macnuggets      ") == "/macnuggets"
+    assert PathQuestion.normalize("/macnuggets") == "/macnuggets"
+    assert PathQuestion.normalize("mac/nuggets") == "/mac/nuggets"
+    assert PathQuestion.normalize("/macnuggets/") == "/macnuggets"
+    assert PathQuestion.normalize("macnuggets/") == "/macnuggets"
+    assert PathQuestion.normalize("////macnuggets///") == "/macnuggets"
