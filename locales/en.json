@@ -654,7 +654,7 @@
     "service_stop_failed": "Unable to stop the service '{service}'\n\nRecent service logs:{logs}",
     "service_stopped": "Service '{service}' stopped",
     "service_unknown": "Unknown service '{service}'",
-    "show_tile_cant_be_enabled_for_regex": "You cannot enable 'show_tile' right no, because the URL for the permission '{permission}' is a regex",
+    "show_tile_cant_be_enabled_for_regex": "You cannot enable 'show_tile' right now, because the URL for the permission '{permission}' is a regex",
     "show_tile_cant_be_enabled_for_url_not_defined": "You cannot enable 'show_tile' right now, because you must first define an URL for the permission '{permission}'",
     "ssowat_conf_generated": "SSOwat configuration regenerated",
     "ssowat_conf_updated": "SSOwat configuration updated",
