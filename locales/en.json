@@ -364,7 +364,6 @@
     "extracting": "Extracting...",
     "field_invalid": "Invalid field '{}'",
     "file_does_not_exist": "The file {path} does not exist.",
-    "file_extension_not_accepted": "Refusing file '{path}' because its extension is not among the accepted extensions: {accept}",
     "firewall_reload_failed": "Could not reload the firewall",
     "firewall_reloaded": "Firewall reloaded",
     "firewall_rules_cmd_failed": "Some firewall rule commands have failed. More info in log.",
