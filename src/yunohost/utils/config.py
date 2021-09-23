@@ -961,83 +961,44 @@ class FileQuestion(Question):
 
     def __init__(self, question, user_answers):
         super().__init__(question, user_answers)
-        if question.get("accept"):
-            self.accept = question.get("accept")
-        else:
-            self.accept = ""
-        if Moulinette.interface.type == "api":
-            if user_answers.get(f"{self.name}[name]"):
-                self.value = {
-                    "content": self.value,
-                    "filename": user_answers.get(f"{self.name}[name]", self.name),
-                }
+        self.accept = question.get("accept", "")
 
     def _prevalidate(self):
         if self.value is None:
             self.value = self.current_value
 
         super()._prevalidate()
-        if (
-            isinstance(self.value, str)
-            and self.value
-            and not os.path.exists(self.value)
-        ):
-            raise YunohostValidationError(
-                "app_argument_invalid",
-                name=self.name,
-                error=m18n.n("file_does_not_exist", path=self.value),
-            )
-        if self.value in [None, ""] or not self.accept:
-            return
 
-        filename = self.value if isinstance(self.value, str) else self.value["filename"]
-        if "." not in filename or "." + filename.split(".")[
-            -1
-        ] not in self.accept.replace(" ", "").split(","):
+        if not self.value or not os.path.exists(str(self.value)):
             raise YunohostValidationError(
                 "app_argument_invalid",
                 name=self.name,
-                error=m18n.n(
-                    "file_extension_not_accepted", file=filename, accept=self.accept
-                ),
+                error=m18n.n("file_does_not_exist", path=str(self.value)),
             )
 
     def _post_parse_value(self):
         from base64 import b64decode
 
-        # Upload files from API
-        # A file arg contains a string with "FILENAME:BASE64_CONTENT"
         if not self.value:
             return self.value
 
-        if Moulinette.interface.type == "api" and isinstance(self.value, dict):
+        # FIXME : in the cli case, don't we want to also copy the file
+        # to a tmp work dir ?
+
+        if Moulinette.interface.type == "api":
 
             upload_dir = tempfile.mkdtemp(prefix="tmp_configpanel_")
+            _, file_path = tempfile.mkstemp(prefix="foobar", dir=upload_dir)
+
             FileQuestion.upload_dirs += [upload_dir]
-            filename = self.value["filename"]
-            logger.debug(
-                f"Save uploaded file {self.value['filename']} from API into {upload_dir}"
-            )
+            logger.debug(f"Save uploaded file from API into {file_path}")
 
-            # Filename is given by user of the API. For security reason, we have replaced
-            # os.path.join to avoid the user to be able to rewrite a file in filesystem
-            # i.e. os.path.join("/foo", "/etc/passwd") == "/etc/passwd"
-            file_path = os.path.normpath(upload_dir + "/" + filename)
-            if not file_path.startswith(upload_dir + "/"):
-                raise YunohostError(
-                    f"Filename '{filename}' received from the API got a relative parent path, which is forbidden",
-                    raw_msg=True,
-                )
-            i = 2
-            while os.path.exists(file_path):
-                file_path = os.path.normpath(upload_dir + "/" + filename + (".%d" % i))
-                i += 1
-
-            content = self.value["content"]
+            content = self.value
 
             write_to_file(file_path, b64decode(content), file_mode="wb")
 
             self.value = file_path
+
         return self.value
 
 
@@ -1066,19 +1027,18 @@ ARGUMENTS_TYPE_PARSERS = {
 
 
 def ask_questions_and_parse_answers(questions, prefilled_answers=""):
-    _setuser_answers, argument_questions):
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
 
     Keyword arguments:
-        prefilled_answers -- a dictionnary of arguments from the user (generally
-                             empty in CLI, filed from the admin interface)
-        argument_questions -- the arguments description store in yunohost
+        questions         -- the arguments description store in yunohost
                               format from actions.json/toml, manifest.json/toml
                               or config_panel.json/toml
+        prefilled_answers -- a url-formated string such as "domain=yolo.test&path=/foobar&admin=sam"
     """
 
     prefilled_answers = dict(urllib.parse.parse_qsl(prefilled_answers or "", keep_blank_values=True))
+
     out = OrderedDict()
 
     for question in questions:
