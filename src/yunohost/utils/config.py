@@ -549,21 +549,18 @@ class Question(object):
         # we have an answer, do some post checks
         if self.value not in [None, ""]:
             if self.choices and self.value not in self.choices:
-                self._raise_invalid_answer()
+                raise YunohostValidationError(
+                    "app_argument_choice_invalid",
+                    name=self.name,
+                    value=self.value,
+                    choices=", ".join(self.choices),
+                )
             if self.pattern and not re.match(self.pattern["regexp"], str(self.value)):
                 raise YunohostValidationError(
                     self.pattern["error"],
                     name=self.name,
                     value=self.value,
                 )
-
-    def _raise_invalid_answer(self):
-        raise YunohostValidationError(
-            "app_argument_choice_invalid",
-            name=self.name,
-            value=self.value,
-            choices=", ".join(self.choices),
-        )
 
     def _format_text_for_user_input_in_cli(self):
 
@@ -847,13 +844,6 @@ class DomainQuestion(Question):
 
         self.choices = domain_list()["domains"]
 
-    def _raise_invalid_answer(self):
-        raise YunohostValidationError(
-            "app_argument_invalid",
-            name=self.name,
-            error=m18n.n("domain_name_unknown", domain=self.value),
-        )
-
     @staticmethod
     def normalize(value, option={}):
         if value.startswith("https://"):
@@ -890,13 +880,6 @@ class UserQuestion(Question):
                 if root_mail in user_info(user).get("mail-aliases", []):
                     self.default = user
                     break
-
-    def _raise_invalid_answer(self):
-        raise YunohostValidationError(
-            "app_argument_invalid",
-            name=self.name,
-            error=m18n.n("user_unknown", user=self.value),
-        )
 
 
 class NumberQuestion(Question):
