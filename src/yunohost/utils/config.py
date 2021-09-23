@@ -201,20 +201,20 @@ class ConfigPanel:
 
         # Transform toml format into internal format
         format_description = {
-            "toml": {
+            "root": {
                 "properties": ["version", "i18n"],
-                "default": {"version": 1.0},
+                "defaults": {"version": 1.0},
             },
             "panels": {
                 "properties": ["name", "services", "actions", "help"],
-                "default": {
+                "defaults": {
                     "services": [],
                     "actions": {"apply": {"en": "Apply"}},
                 },
             },
             "sections": {
                 "properties": ["name", "services", "optional", "help", "visible"],
-                "default": {
+                "defaults": {
                     "name": "",
                     "services": [],
                     "optional": True,
@@ -244,11 +244,11 @@ class ConfigPanel:
                     "accept",
                     "redact",
                 ],
-                "default": {},
+                "defaults": {},
             },
         }
 
-        def convert(toml_node, node_type):
+        def _build_internal_config_panel(raw_infos, level):
             """Convert TOML in internal format ('full' mode used by webadmin)
             Here are some properties of 1.0 config panel in toml:
             - node properties and node children are mixed,
@@ -256,48 +256,49 @@ class ConfigPanel:
             - some properties have default values
             This function detects all children nodes and put them in a list
             """
-            # Prefill the node default keys if needed
-            default = format_description[node_type]["default"]
-            node = {key: toml_node.get(key, value) for key, value in default.items()}
 
-            properties = format_description[node_type]["properties"]
+            defaults = format_description[level]["defaults"]
+            properties = format_description[level]["properties"]
 
-            # Define the filter_key part to use and the children type
-            i = list(format_description).index(node_type)
-            subnode_type = (
-                list(format_description)[i + 1] if node_type != "options" else None
+            # Start building the ouput (merging the raw infos + defaults)
+            out = {key: raw_infos.get(key, value) for key, value in defaults.items()}
+
+            # Now fill the sublevels (+ apply filter_key)
+            i = list(format_description).index(level)
+            sublevel = (
+                list(format_description)[i + 1] if level != "options" else None
             )
             search_key = filter_key[i] if len(filter_key) > i else False
 
-            for key, value in toml_node.items():
+            for key, value in raw_infos.items():
                 # Key/value are a child node
                 if (
                     isinstance(value, OrderedDict)
                     and key not in properties
-                    and subnode_type
+                    and sublevel
                 ):
                     # We exclude all nodes not referenced by the filter_key
                     if search_key and key != search_key:
                         continue
-                    subnode = convert(value, subnode_type)
+                    subnode = _build_internal_config_panel(value, sublevel)
                     subnode["id"] = key
-                    if node_type == "toml":
+                    if level == "root":
                         subnode.setdefault("name", {"en": key.capitalize()})
-                    elif node_type == "sections":
+                    elif level == "sections":
                         subnode["name"] = key  # legacy
-                        subnode.setdefault("optional", toml_node.get("optional", True))
-                    node.setdefault(subnode_type, []).append(subnode)
+                        subnode.setdefault("optional", raw_infos.get("optional", True))
+                    out.setdefault(sublevel, []).append(subnode)
                 # Key/value are a property
                 else:
                     if key not in properties:
-                        logger.warning(f"Unknown key '{key}' found in config toml")
+                        logger.warning(f"Unknown key '{key}' found in config panel")
                     # Todo search all i18n keys
-                    node[key] = (
+                    out[key] = (
                         value if key not in ["ask", "help", "name"] else {"en": value}
                     )
-            return node
+            return out
 
-        self.config = convert(toml_config_panel, "toml")
+        self.config = _build_internal_config_panel(toml_config_panel, "root")
 
         try:
             self.config["panels"][0]["sections"][0]["options"][0]
