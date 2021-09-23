@@ -461,7 +461,7 @@ class Question(object):
     hide_user_input_in_prompt = False
     pattern: Optional[Dict] = None
 
-    def __init__(self, question, user_answers):
+    def __init__(self, question):
         self.name = question["name"]
         self.type = question.get("type", "string")
         self.default = question.get("default", None)
@@ -474,7 +474,7 @@ class Question(object):
         # .current_value is the currently stored value
         self.current_value = question.get("current_value")
         # .value is the "proposed" value which we got from the user
-        self.value = user_answers.get(self.name)
+        self.value = question.get("value")
 
         # Empty value is parsed as empty string
         if self.default == "":
@@ -701,8 +701,8 @@ class PasswordQuestion(Question):
     default_value = ""
     forbidden_chars = "{}"
 
-    def __init__(self, question, user_answers):
-        super().__init__(question, user_answers)
+    def __init__(self, question):
+        super().__init__(question)
         self.redact = True
         if self.default is not None:
             raise YunohostValidationError(
@@ -799,8 +799,8 @@ class BooleanQuestion(Question):
             choices="yes/no",
         )
 
-    def __init__(self, question, user_answers):
-        super().__init__(question, user_answers)
+    def __init__(self, question):
+        super().__init__(question)
         self.yes = question.get("yes", 1)
         self.no = question.get("no", 0)
         if self.default is None:
@@ -820,10 +820,10 @@ class BooleanQuestion(Question):
 class DomainQuestion(Question):
     argument_type = "domain"
 
-    def __init__(self, question, user_answers):
+    def __init__(self, question):
         from yunohost.domain import domain_list, _get_maindomain
 
-        super().__init__(question, user_answers)
+        super().__init__(question)
 
         if self.default is None:
             self.default = _get_maindomain()
@@ -841,11 +841,11 @@ class DomainQuestion(Question):
 class UserQuestion(Question):
     argument_type = "user"
 
-    def __init__(self, question, user_answers):
+    def __init__(self, question):
         from yunohost.user import user_list, user_info
         from yunohost.domain import _get_maindomain
 
-        super().__init__(question, user_answers)
+        super().__init__(question)
         self.choices = list(user_list()["users"].keys())
 
         if not self.choices:
@@ -874,8 +874,8 @@ class NumberQuestion(Question):
     argument_type = "number"
     default_value = None
 
-    def __init__(self, question, user_answers):
-        super().__init__(question, user_answers)
+    def __init__(self, question):
+        super().__init__(question)
         self.min = question.get("min", None)
         self.max = question.get("max", None)
         self.step = question.get("step", None)
@@ -924,8 +924,8 @@ class DisplayTextQuestion(Question):
     argument_type = "display_text"
     readonly = True
 
-    def __init__(self, question, user_answers):
-        super().__init__(question, user_answers)
+    def __init__(self, question):
+        super().__init__(question)
 
         self.optional = True
         self.style = question.get(
@@ -960,8 +960,8 @@ class FileQuestion(Question):
                 if os.path.exists(upload_dir):
                     shutil.rmtree(upload_dir)
 
-    def __init__(self, question, user_answers):
-        super().__init__(question, user_answers)
+    def __init__(self, question):
+        super().__init__(question)
         self.accept = question.get("accept", "")
 
     def _prevalidate(self):
@@ -1044,7 +1044,8 @@ def ask_questions_and_parse_answers(questions, prefilled_answers=""):
 
     for question in questions:
         question_class = ARGUMENTS_TYPE_PARSERS[question.get("type", "string")]
-        question = question_class(question, prefilled_answers)
+        question["value"] = prefilled_answers.get(question["name"])
+        question = question_class(question)
 
         answer = question.ask_if_needed()
         if answer is not None:
