@@ -34,6 +34,7 @@ import subprocess
 import glob
 import tempfile
 from collections import OrderedDict
+from typing import List
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
@@ -55,6 +56,7 @@ from yunohost.utils import packages
 from yunohost.utils.config import (
     ConfigPanel,
     ask_questions_and_parse_answers,
+    Question,
     DomainQuestion,
     PathQuestion
 )
@@ -899,11 +901,13 @@ def app_install(
         app_instance_name = app_id
 
     # Retrieve arguments list for install script
-    questions = manifest.get("arguments", {}).get("install", {})
-    args = ask_questions_and_parse_answers(questions, prefilled_answers=args)
+    raw_questions = manifest.get("arguments", {}).get("install", {})
+    questions = ask_questions_and_parse_answers(raw_questions, prefilled_answers=args)
+    args = {question.name: question.value for question in questions if question.value is not None}
 
     # Validate domain / path availability for webapps
-    _validate_and_normalize_webpath(args, extracted_app_folder)
+    path_requirement = _guess_webapp_path_requirement(questions, extracted_app_folder)
+    _validate_webpath_requirement(questions, path_requirement)
 
     # Attempt to patch legacy helpers ...
     _patch_legacy_helpers(extracted_app_folder)
@@ -972,9 +976,10 @@ def app_install(
     env_dict["YNH_APP_BASEDIR"] = extracted_app_folder
 
     env_dict_for_logging = env_dict.copy()
-    for arg_name, arg_value_and_type in args.items():
-        if arg_value_and_type[1] == "password":
-            del env_dict_for_logging["YNH_APP_ARG_%s" % arg_name.upper()]
+    for question in questions:
+        # Or should it be more generally question.redact ?
+        if question.type == "password":
+            del env_dict_for_logging["YNH_APP_ARG_%s" % question.name.upper()]
 
     operation_logger.extra.update({"env": env_dict_for_logging})
 
@@ -1635,8 +1640,9 @@ def app_action_run(operation_logger, app, action, args=None):
     action_declaration = actions[action]
 
     # Retrieve arguments list for install script
-    questions = actions[action].get("arguments", {})
-    args = ask_questions_and_parse_answers(questions, prefilled_answers=args)
+    raw_questions = actions[action].get("arguments", {})
+    questions = ask_questions_and_parse_answers(raw_questions, prefilled_answers=args)
+    args = {question.name: question.value for question in questions if question.value is not None}
 
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
@@ -2371,35 +2377,20 @@ def _check_manifest_requirements(manifest, app_instance_name):
             )
 
 
-def _validate_and_normalize_webpath(args_dict, app_folder):
+def _guess_webapp_path_requirement(questions: List[Question], app_folder: str) -> str:
 
     # If there's only one "domain" and "path", validate that domain/path
     # is an available url and normalize the path.
 
-    domain_args = [
-        (name, value[0]) for name, value in args_dict.items() if value[1] == "domain"
-    ]
-    path_args = [
-        (name, value[0]) for name, value in args_dict.items() if value[1] == "path"
-    ]
+    domain_questions = [question for question in questions if question.type == "domain"]
+    path_questions = [question for question in questions if question.type == "path"]
 
-    if len(domain_args) == 1 and len(path_args) == 1:
-
-        domain = domain_args[0][1]
-        path = path_args[0][1]
-
-        domain = DomainQuestion.normalize(domain)
-        path = PathQuestion.normalize(path)
-
-        # Check the url is available
-        _assert_no_conflicting_apps(domain, path)
-
-        # (We save this normalized path so that the install script have a
-        # standard path format to deal with no matter what the user inputted)
-        args_dict[path_args[0][0]] = (path, "path")
-
-    # This is likely to be a full-domain app...
-    elif len(domain_args) == 1 and len(path_args) == 0:
+    if len(domain_questions) == 0 and len(path_questions) == 0:
+        return None
+    if len(domain_questions) == 1 and len(path_questions) == 1:
+        return "domain_and_path"
+    if len(domain_questions) == 1 and len(path_questions) == 0:
+        # This is likely to be a full-domain app...
 
         # Confirm that this is a full-domain app This should cover most cases
         # ...  though anyway the proper solution is to implement some mechanism
@@ -2409,18 +2400,33 @@ def _validate_and_normalize_webpath(args_dict, app_folder):
 
         # Full-domain apps typically declare something like path_url="/" or path=/
         # and use ynh_webpath_register or yunohost_app_checkurl inside the install script
-        install_script_content = open(
-            os.path.join(app_folder, "scripts/install")
-        ).read()
+        install_script_content = read_file(os.path.join(app_folder, "scripts/install"))
 
         if re.search(
-            r"\npath(_url)?=[\"']?/[\"']?\n", install_script_content
+            r"\npath(_url)?=[\"']?/[\"']?", install_script_content
         ) and re.search(
-            r"(ynh_webpath_register|yunohost app checkurl)", install_script_content
+            r"ynh_webpath_register", install_script_content
         ):
+            return "full_domain"
 
-            domain = domain_args[0][1]
-            _assert_no_conflicting_apps(domain, "/", full_domain=True)
+    return "?"
+
+
+def _validate_webpath_requirement(questions: List[Question], path_requirement: str) -> None:
+
+    domain_questions = [question for question in questions if question.type == "domain"]
+    path_questions = [question for question in questions if question.type == "path"]
+
+    if path_requirement == "domain_and_path":
+
+        domain = domain_questions[0].value
+        path = path_questions[0].value
+        _assert_no_conflicting_apps(domain, path, full_domain=True)
+
+    elif path_requirement == "full_domain":
+
+        domain = domain_questions[0].value
+        _assert_no_conflicting_apps(domain, "/", full_domain=True)
 
 
 def _get_conflicting_apps(domain, path, ignore_app=None):
@@ -2499,10 +2505,8 @@ def _make_environment_for_app_script(app, args={}, args_prefix="APP_ARG_"):
         "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?"),
     }
 
-    for arg_name, arg_value_and_type in args.items():
-        env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = str(
-            arg_value_and_type[0]
-        )
+    for arg_name, arg_value in args.items():
+        env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = str(arg_value)
 
     return env_dict
 

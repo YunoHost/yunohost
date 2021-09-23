@@ -380,14 +380,13 @@ class ConfigPanel:
                 display_header(f"\n# {name}")
 
             # Check and ask unanswered questions
-            self.new_values.update(
-                ask_questions_and_parse_answers(section["options"], self.args)
-            )
-        self.new_values = {
-            key: value[0]
-            for key, value in self.new_values.items()
-            if not value[0] is None
-        }
+            questions = ask_questions_and_parse_answers(section["options"], self.args)
+            self.new_values.update({
+                question.name: question.value
+                for question in questions
+                if question.value is not None
+            })
+
         self.errors = None
 
     def _get_default_values(self):
@@ -538,9 +537,10 @@ class Question(object):
                 raise
 
             break
+
         self.value = self._post_parse_value()
 
-        return (self.value, self.argument_type)
+        return self.value
 
     def _prevalidate(self):
         if self.value in [None, ""] and not self.optional:
@@ -1058,7 +1058,7 @@ ARGUMENTS_TYPE_PARSERS = {
 }
 
 
-def ask_questions_and_parse_answers(questions: Dict, prefilled_answers: Union[str, Mapping[str, Any]] = {}) -> Mapping[str, Any]:
+def ask_questions_and_parse_answers(questions: Dict, prefilled_answers: Union[str, Mapping[str, Any]] = {}) -> List[Question]:
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
 
@@ -1071,17 +1071,24 @@ def ask_questions_and_parse_answers(questions: Dict, prefilled_answers: Union[st
     """
 
     if isinstance(prefilled_answers, str):
-        prefilled_answers = dict(urllib.parse.parse_qs(prefilled_answers or "", keep_blank_values=True))
+        # FIXME FIXME : this is not uniform with config_set() which uses parse.qs (no l)
+        # parse_qsl parse single values
+        # whereas parse.qs return list of values (which is useful for tags, etc)
+        # For now, let's not migrate this piece of code to parse_qs
+        # Because Aleks believes some bits of the app CI rely on overriding values (e.g. foo=foo&...&foo=bar)
+        prefilled_answers = dict(urllib.parse.parse_qsl(prefilled_answers or "", keep_blank_values=True))
 
-    out = OrderedDict()
+    if not prefilled_answers:
+        prefilled_answers = {}
+
+    out = []
 
     for question in questions:
         question_class = ARGUMENTS_TYPE_PARSERS[question.get("type", "string")]
         question["value"] = prefilled_answers.get(question["name"])
         question = question_class(question)
 
-        answer = question.ask_if_needed()
-        if answer is not None:
-            out[question.name] = answer
+        question.ask_if_needed()
+        out.append(question)
 
     return out
