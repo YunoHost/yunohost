@@ -740,25 +740,21 @@ class BooleanQuestion(Question):
 
         yes = option.get("yes", 1)
         no = option.get("no", 0)
-        value = str(value).lower()
-        if value == str(yes).lower():
-            return "yes"
-        if value == str(no).lower():
-            return "no"
-        if value in BooleanQuestion.yes_answers:
-            return "yes"
-        if value in BooleanQuestion.no_answers:
-            return "no"
 
-        if value in ["none", ""]:
+        value = BooleanQuestion.normalize(value, option)
+
+        if value == yes:
+            return "yes"
+        if value == no:
+            return "no"
+        if value is None:
             return ""
 
         raise YunohostValidationError(
             "app_argument_choice_invalid",
             name=getattr(option, "name", None) or option.get("name"),
             value=value,
-            # FIXME : this doesn't match yes_answers / no_answers...
-            choices="yes, no, y, n, 1, 0",
+            choices="yes/no",
         )
 
     @staticmethod
@@ -769,31 +765,38 @@ class BooleanQuestion(Question):
         yes = option.get("yes", 1)
         no = option.get("no", 0)
 
-        #
-        # FIXME: Shouldn't we also check that value == yes ?
-        # Otherwise is yes = "foobar", normalize is not idempotent
-        # i.e normalize("true") will return "foobar"
-        # but normalize(normalize("true")) will raise an exception ?
-        #
-        # FIXME: it's also a bit confusing to understand if the
-        # packager-provided 'yes' value is meant for humans (in which case
-        # shouldn't it be used as a return value for humanize?)
-        # or as an internal value for better interfacing with scripts/computers
-        #
-        # Also shouldnt we be using normalize() in humanize() ?
-        if str(value).lower() in BooleanQuestion.yes_answers:
-            return yes
+        strvalue = str(value).lower()
 
-        if str(value).lower() in BooleanQuestion.no_answers:
+        #
+        # N.B.:
+        # we check first if the value is equal to yes
+        # then if equal to no
+        # then if in yes_answers
+        # then if in no_answers
+        #
+        # This is to hopefully cover the weird edgecase
+        # where the value for yes/no could be reversed
+        # such as yes=false or yes=0
+        #          no=true      no=1
+        #
+
+        if strvalue == str(yes).lower():
+            return yes
+        if strvalue == str(no).lower():
+            return no
+        if strvalue in BooleanQuestion.yes_answers:
+            return yes
+        if strvalue in BooleanQuestion.no_answers:
             return no
 
         if value in [None, ""]:
             return None
+
         raise YunohostValidationError(
             "app_argument_choice_invalid",
             name=getattr(option, "name", None) or option.get("name"),
             value=value,
-            choices="yes, no, y, n, 1, 0",
+            choices="yes/no",
         )
 
     def __init__(self, question, user_answers):
