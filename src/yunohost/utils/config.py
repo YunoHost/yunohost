@@ -728,6 +728,10 @@ class PathQuestion(Question):
     argument_type = "path"
     default_value = ""
 
+    @staticmethod
+    def normalize(value, option={}):
+        return "/" + value.strip("/")
+
 
 class BooleanQuestion(Question):
     argument_type = "boolean"
@@ -836,6 +840,18 @@ class DomainQuestion(Question):
             name=self.name,
             error=m18n.n("domain_name_unknown", domain=self.value),
         )
+
+    @staticmethod
+    def normalize(value, option={}):
+        if value.startswith("https://"):
+            value = value[len("https://"):]
+        elif value.startswith("http://"):
+            value = value[len("http://"):]
+
+        # Remove trailing slashes
+        value = value.rstrip("/").lower()
+
+        return value
 
 
 class UserQuestion(Question):

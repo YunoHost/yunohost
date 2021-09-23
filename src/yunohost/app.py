@@ -55,6 +55,8 @@ from yunohost.utils import packages
 from yunohost.utils.config import (
     ConfigPanel,
     ask_questions_and_parse_answers,
+    DomainQuestion,
+    PathQuestion
 )
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -441,8 +443,11 @@ def app_change_url(operation_logger, app, domain, path):
     old_path = app_setting(app, "path")
 
     # Normalize path and domain format
-    old_domain, old_path = _normalize_domain_path(old_domain, old_path)
-    domain, path = _normalize_domain_path(domain, path)
+
+    domain = DomainQuestion.normalize(domain)
+    old_domain = DomainQuestion.normalize(old_domain)
+    path = PathQuestion.normalize(path)
+    old_path = PathQuestion.normalize(old_path)
 
     if (domain, path) == (old_domain, old_path):
         raise YunohostValidationError(
@@ -1459,7 +1464,8 @@ def app_register_url(app, domain, path):
         permission_sync_to_user,
     )
 
-    domain, path = _normalize_domain_path(domain, path)
+    domain = DomainQuestion.normalize(domain)
+    path = PathQuestion.normalize(path)
 
     # We cannot change the url of an app already installed simply by changing
     # the settings...
@@ -2381,7 +2387,9 @@ def _validate_and_normalize_webpath(args_dict, app_folder):
 
         domain = domain_args[0][1]
         path = path_args[0][1]
-        domain, path = _normalize_domain_path(domain, path)
+
+        domain = DomainQuestion.normalize(domain)
+        path = PathQuestion.normalize(path)
 
         # Check the url is available
         _assert_no_conflicting_apps(domain, path)
@@ -2415,24 +2423,6 @@ def _validate_and_normalize_webpath(args_dict, app_folder):
             _assert_no_conflicting_apps(domain, "/", full_domain=True)
 
 
-def _normalize_domain_path(domain, path):
-
-    # We want url to be of the format :
-    #  some.domain.tld/foo
-
-    # Remove http/https prefix if it's there
-    if domain.startswith("https://"):
-        domain = domain[len("https://") :]
-    elif domain.startswith("http://"):
-        domain = domain[len("http://") :]
-
-    # Remove trailing slashes
-    domain = domain.rstrip("/").lower()
-    path = "/" + path.strip("/")
-
-    return domain, path
-
-
 def _get_conflicting_apps(domain, path, ignore_app=None):
     """
     Return a list of all conflicting apps with a domain/path (it can be empty)
@@ -2445,7 +2435,8 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
 
     from yunohost.domain import _assert_domain_exists
 
-    domain, path = _normalize_domain_path(domain, path)
+    domain = DomainQuestion.normalize(domain)
+    path = PathQuestion.normalize(path)
 
     # Abort if domain is unknown
     _assert_domain_exists(domain)
