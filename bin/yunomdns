@@ -74,13 +74,16 @@ def _extract_inet(string, skip_netmask=False, skip_loopback=True):
 # Helper command taken from Moulinette
 def get_network_interfaces():
 
+    local_prefixes = ["192.168.", "10.", "172.16.", "fc00:"]
+    
     # Get network devices and their addresses (raw infos from 'ip addr')
     devices_raw = {}
     output = check_output("ip --brief a").split("\n")
     for line in output:
         line = line.split()
         iname = line[0]
-        ips = ' '.join(line[2:])
+        local_ips = [ip for ip in line[2:] if any(ip.startswith(prefix) for prefix in local_prefixes)]
+        ips = ' '.join(local_ips)
 
         devices_raw[iname] = ips
 
