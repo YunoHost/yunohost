@@ -4,7 +4,6 @@ import os
 
 from mock import patch
 from io import StringIO
-from collections import OrderedDict
 
 from moulinette import Moulinette
 
@@ -1759,7 +1758,7 @@ def test_question_number_no_input_optional():
 
     assert out.name == "some_number"
     assert out.type == "number"
-    assert out.value == None
+    assert out.value is None
 
 
 def test_question_number_optional_with_input():
