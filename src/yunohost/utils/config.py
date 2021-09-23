@@ -381,7 +381,7 @@ class ConfigPanel:
 
             # Check and ask unanswered questions
             self.new_values.update(
-                parse_args_in_yunohost_format(self.args, section["options"])
+                ask_questions_and_parse_answers(section["options"], self.args)
             )
         self.new_values = {
             key: value[0]
