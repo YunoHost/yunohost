@@ -32,7 +32,6 @@ import time
 import re
 import subprocess
 import glob
-import urllib.parse
 import tempfile
 from collections import OrderedDict
 
@@ -55,7 +54,7 @@ from moulinette.utils.filesystem import (
 from yunohost.utils import packages
 from yunohost.utils.config import (
     ConfigPanel,
-    parse_args_in_yunohost_format,
+    ask_questions_and_parse_answers,
 )
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -453,16 +452,10 @@ def app_change_url(operation_logger, app, domain, path):
     # Check the url is available
     _assert_no_conflicting_apps(domain, path, ignore_app=app)
 
-    manifest = _get_manifest_of_app(os.path.join(APPS_SETTING_PATH, app))
-
-    # Retrieve arguments list for change_url script
-    # TODO: Allow to specify arguments
-    args_odict = _parse_args_from_manifest(manifest, "change_url")
-
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
     # Prepare env. var. to pass to script
-    env_dict = _make_environment_for_app_script(app, args=args_odict)
+    env_dict = _make_environment_for_app_script(app)
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
     env_dict["YNH_APP_OLD_PATH"] = old_path
     env_dict["YNH_APP_NEW_DOMAIN"] = domain
@@ -614,12 +607,8 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
         app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
 
-        # Retrieve arguments list for upgrade script
-        # TODO: Allow to specify arguments
-        args_odict = _parse_args_from_manifest(manifest, "upgrade")
-
         # Prepare env. var. to pass to script
-        env_dict = _make_environment_for_app_script(app_instance_name, args=args_odict)
+        env_dict = _make_environment_for_app_script(app_instance_name)
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
@@ -905,13 +894,11 @@ def app_install(
         app_instance_name = app_id
 
     # Retrieve arguments list for install script
-    args_dict = (
-        {} if not args else dict(urllib.parse.parse_qsl(args, keep_blank_values=True))
-    )
-    args_odict = _parse_args_from_manifest(manifest, "install", args=args_dict)
+    questions = manifest.get("arguments", {}).get("install", {})
+    args = ask_questions_and_parse_answers(questions, prefilled_answers=args)
 
     # Validate domain / path availability for webapps
-    _validate_and_normalize_webpath(args_odict, extracted_app_folder)
+    _validate_and_normalize_webpath(args, extracted_app_folder)
 
     # Attempt to patch legacy helpers ...
     _patch_legacy_helpers(extracted_app_folder)
@@ -976,11 +963,11 @@ def app_install(
     )
 
     # Prepare env. var. to pass to script
-    env_dict = _make_environment_for_app_script(app_instance_name, args=args_odict)
+    env_dict = _make_environment_for_app_script(app_instance_name, args=args)
     env_dict["YNH_APP_BASEDIR"] = extracted_app_folder
 
     env_dict_for_logging = env_dict.copy()
-    for arg_name, arg_value_and_type in args_odict.items():
+    for arg_name, arg_value_and_type in args.items():
         if arg_value_and_type[1] == "password":
             del env_dict_for_logging["YNH_APP_ARG_%s" % arg_name.upper()]
 
@@ -1642,15 +1629,13 @@ def app_action_run(operation_logger, app, action, args=None):
     action_declaration = actions[action]
 
     # Retrieve arguments list for install script
-    args_dict = (
-        dict(urllib.parse.parse_qsl(args, keep_blank_values=True)) if args else {}
-    )
-    args_odict = _parse_args_for_action(actions[action], args=args_dict)
+    questions = actions[action].get("arguments", {})
+    args = ask_questions_and_parse_answers(questions, prefilled_answers=args)
 
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
     env_dict = _make_environment_for_app_script(
-        app, args=args_odict, args_prefix="ACTION_"
+        app, args=args, args_prefix="ACTION_"
     )
     env_dict["YNH_ACTION"] = action
     env_dict["YNH_APP_BASEDIR"] = tmp_workdir_for_app
@@ -2378,52 +2363,6 @@ def _check_manifest_requirements(manifest, app_instance_name):
                 spec=spec,
                 app=app_instance_name,
             )
-
-
-def _parse_args_from_manifest(manifest, action, args={}):
-    """Parse arguments needed for an action from the manifest
-
-    Retrieve specified arguments for the action from the manifest, and parse
-    given args according to that. If some required arguments are not provided,
-    its values will be asked if interaction is possible.
-    Parsed arguments will be returned as an OrderedDict
-
-    Keyword arguments:
-        manifest -- The app manifest to use
-        action -- The action to retrieve arguments for
-        args -- A dictionnary of arguments to parse
-
-    """
-    if action not in manifest["arguments"]:
-        logger.debug("no arguments found for '%s' in manifest", action)
-        return OrderedDict()
-
-    action_args = manifest["arguments"][action]
-    return parse_args_in_yunohost_format(args, action_args)
-
-
-def _parse_args_for_action(action, args={}):
-    """Parse arguments needed for an action from the actions list
-
-    Retrieve specified arguments for the action from the manifest, and parse
-    given args according to that. If some required arguments are not provided,
-    its values will be asked if interaction is possible.
-    Parsed arguments will be returned as an OrderedDict
-
-    Keyword arguments:
-        action -- The action
-        args -- A dictionnary of arguments to parse
-
-    """
-    args_dict = OrderedDict()
-
-    if "arguments" not in action:
-        logger.debug("no arguments found for '%s' in manifest", action)
-        return args_dict
-
-    action_args = action["arguments"]
-
-    return parse_args_in_yunohost_format(args, action_args)
 
 
 def _validate_and_normalize_webpath(args_dict, app_folder):

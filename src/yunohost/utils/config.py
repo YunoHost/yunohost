@@ -464,14 +464,16 @@ class Question(object):
         self.name = question["name"]
         self.type = question.get("type", "string")
         self.default = question.get("default", None)
-        self.current_value = question.get("current_value")
         self.optional = question.get("optional", False)
         self.choices = question.get("choices", [])
         self.pattern = question.get("pattern", self.pattern)
         self.ask = question.get("ask", {"en": self.name})
         self.help = question.get("help")
-        self.value = user_answers.get(self.name)
         self.redact = question.get("redact", False)
+        # .current_value is the currently stored value
+        self.current_value = question.get("current_value")
+        # .value is the "proposed" value which we got from the user
+        self.value = user_answers.get(self.name)
 
         # Empty value is parsed as empty string
         if self.default == "":
@@ -1063,25 +1065,28 @@ ARGUMENTS_TYPE_PARSERS = {
 }
 
 
-def parse_args_in_yunohost_format(user_answers, argument_questions):
+def ask_questions_and_parse_answers(questions, prefilled_answers=""):
+    _setuser_answers, argument_questions):
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
 
     Keyword arguments:
-        user_answers -- a dictionnary of arguments from the user (generally
-                        empty in CLI, filed from the admin interface)
+        prefilled_answers -- a dictionnary of arguments from the user (generally
+                             empty in CLI, filed from the admin interface)
         argument_questions -- the arguments description store in yunohost
                               format from actions.json/toml, manifest.json/toml
                               or config_panel.json/toml
     """
-    parsed_answers_dict = OrderedDict()
 
-    for question in argument_questions:
+    prefilled_answers = dict(urllib.parse.parse_qsl(prefilled_answers or "", keep_blank_values=True))
+    out = OrderedDict()
+
+    for question in questions:
         question_class = ARGUMENTS_TYPE_PARSERS[question.get("type", "string")]
-        question = question_class(question, user_answers)
+        question = question_class(question, prefilled_answers)
 
         answer = question.ask_if_needed()
         if answer is not None:
-            parsed_answers_dict[question.name] = answer
+            out[question.name] = answer
 
-    return parsed_answers_dict
+    return out
