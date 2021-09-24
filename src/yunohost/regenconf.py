@@ -135,6 +135,9 @@ def regen_conf(
     if "glances" in names:
         names.remove("glances")
 
+    if "avahi-daemon" in names:
+        names.remove("avahi-daemon")
+
     # [Optimization] We compute and feed the domain list to the conf regen
     # hooks to avoid having to call "yunohost domain list" so many times which
     # ends up in wasted time (about 3~5 seconds per call on a RPi2)
@@ -454,6 +457,10 @@ def _save_regenconf_infos(infos):
     # Ugly hack to get rid of legacy glances stuff
     if "glances" in infos:
         del infos["glances"]
+
+    # Ugly hack to get rid of legacy avahi stuff
+    if "avahi-daemon" in infos:
+        del infos["avahi-daemon"]
 
     try:
         with open(REGEN_CONF_FILE, "w") as f:
