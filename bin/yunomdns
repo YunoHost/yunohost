@@ -10,6 +10,7 @@ from time import sleep
 from typing import List, Dict
 
 import ifaddr
+from ipaddress import ip_address
 from zeroconf import Zeroconf, ServiceInfo, ServiceBrowser
 
 
@@ -18,14 +19,10 @@ def get_network_local_interfaces() -> Dict[str, Dict[str, List[str]]]:
     Returns interfaces with their associated local IPs
     """
 
-    def islocal(ip: str) -> bool:
-        local_prefixes = ["192.168.", "10.", "172.16.", "fc00:"]
-        return any(ip.startswith(prefix) for prefix in local_prefixes)
-
     interfaces = {
         adapter.name: {
-            "ipv4": [ip.ip for ip in adapter.ips if ip.is_IPv4 and islocal(ip.ip)],
-            "ipv6": [ip.ip[0] for ip in adapter.ips if ip.is_IPv6 and islocal(ip.ip[0])],
+            "ipv4": [ip.ip for ip in adapter.ips if ip.is_IPv4 and ip_address(ip.ip).is_private],
+            "ipv6": [ip.ip[0] for ip in adapter.ips if ip.is_IPv6 and ip_address(ip.ip[0]).is_private],
         }
         for adapter in ifaddr.get_adapters()
         if adapter.name != "lo"
