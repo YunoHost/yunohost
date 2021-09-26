@@ -228,7 +228,7 @@ def firewall_reload(skip_upnp=False):
 
     # IPv4
     try:
-        process.check_output("nft list ruleset -n -a")
+        process.check_output("nft -n -a list ruleset")
     except process.CalledProcessError as e:
         logger.debug(
             "nftables/nft seems to be not available, it outputs:\n%s",
@@ -267,7 +267,7 @@ def firewall_reload(skip_upnp=False):
 
     # IPv6
     try:
-        process.check_output("nft list ruleset -n -a")
+        process.check_output("nft -n -a list ruleset")
     except process.CalledProcessError as e:
         logger.debug(
             "ip6tables/nft seems to be not available, it outputs:\n%s",
