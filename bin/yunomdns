@@ -38,31 +38,31 @@ def main() -> bool:
     #  CONFIG
     ###
 
-    with open('/etc/yunohost/mdns.yml', 'r') as f:
+    with open("/etc/yunohost/mdns.yml", "r") as f:
         config = yaml.safe_load(f) or {}
 
     required_fields = ["interfaces", "domains"]
     missing_fields = [field for field in required_fields if field not in config]
 
     if missing_fields:
-        print("The fields %s are required" % ', '.join(missing_fields))
+        print("The fields %s are required" % ", ".join(missing_fields))
 
-    if config['interfaces'] is None:
-        print('No interface listed for broadcast.')
+    if config["interfaces"] is None:
+        print("No interface listed for broadcast.")
         return True
 
-    if 'yunohost.local' not in config['domains']:
-        config['domains'].append('yunohost.local')
+    if "yunohost.local" not in config["domains"]:
+        config["domains"].append("yunohost.local")
 
     zcs: Dict[Zeroconf, List[ServiceInfo]] = {}
 
     interfaces = get_network_local_interfaces()
-    for interface in config['interfaces']:
+    for interface in config["interfaces"]:
         if interface not in interfaces:
-            print(f'Interface {interface} of config file is not present on system.')
+            print(f"Interface {interface} of config file is not present on system.")
             continue
 
-        ips: List[str] = interfaces[interface]['ipv4'] + interfaces[interface]['ipv6']
+        ips: List[str] = interfaces[interface]["ipv4"] + interfaces[interface]["ipv6"]
 
         # If at least one IP is listed
         if not ips:
@@ -71,22 +71,22 @@ def main() -> bool:
         zc = Zeroconf(interfaces=ips)  # type: ignore
         zcs[zc] = []
 
-        for d in config['domains']:
-            d_domain = d.replace('.local', '')
-            if '.' in d_domain:
-                print(f'{d_domain}.local: subdomains are not supported.')
+        for d in config["domains"]:
+            d_domain = d.replace(".local", "")
+            if "." in d_domain:
+                print(f"{d_domain}.local: subdomains are not supported.")
                 continue
             # Create a ServiceInfo object for each .local domain
             zcs[zc].append(
                 ServiceInfo(
-                    type_='_device-info._tcp.local.',
-                    name=f'{interface}: {d_domain}._device-info._tcp.local.',
+                    type_="_device-info._tcp.local.",
+                    name=f"{interface}: {d_domain}._device-info._tcp.local.",
                     parsed_addresses=ips,
                     port=80,
-                    server=f'{d}.',
+                    server=f"{d}.",
                 )
             )
-            print(f'Adding {d} with addresses {ips} on interface {interface}')
+            print(f"Adding {d} with addresses {ips} on interface {interface}")
 
     # Run registration
     print("Registering...")
