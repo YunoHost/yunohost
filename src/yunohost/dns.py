@@ -428,7 +428,8 @@ def _get_dns_zone_for_domain(domain):
     # ... otherwise we end up constantly doing a bunch of dig requests
     for ynh_dyndns_domain in YNH_DYNDNS_DOMAINS:
         if domain.endswith("." + ynh_dyndns_domain):
-            return ynh_dyndns_domain
+            # Keep only foo.nohost.me even if we have subsub.sub.foo.nohost.me
+            return '.'.join(domain.rsplit('.', 3)[-3:])
 
     # Check cache
     cache_folder = "/var/cache/yunohost/dns_zones"
@@ -520,7 +521,7 @@ def _get_registrar_config_section(domain):
 
     # TODO big project, integrate yunohost's dynette as a registrar-like provider
     # TODO big project, integrate other dyndns providers such as netlib.re, or cf the list of dyndns providers supported by cloudron...
-    if dns_zone in YNH_DYNDNS_DOMAINS:
+    if any(dns_zone.endswith('.' + ynh_dyndns_domain) for ynh_dyndns_domain in YNH_DYNDNS_DOMAINS):
         registrar_infos["registrar"] = OrderedDict(
             {
                 "type": "alert",
