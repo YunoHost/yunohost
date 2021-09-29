@@ -431,7 +431,7 @@
     "diagnosis_cache_still_valid": "(Le cache est encore valide pour le diagnostic {category}. Il ne sera pas re-diagnostiqué pour le moment !)",
     "diagnosis_ignored_issues": "(+ {nb_ignored} problème(s) ignoré(s))",
     "diagnosis_found_warnings": "Trouvé {warnings} objet(s) pouvant être amélioré(s) pour {category}.",
-    "diagnosis_everything_ok": "Tout semble bien pour {category} !",
+    "diagnosis_everything_ok": "Tout semble OK pour {category} !",
     "diagnosis_failed": "Échec de la récupération du résultat du diagnostic pour la catégorie '{category}' : {error}",
     "diagnosis_ip_connected_ipv4": "Le serveur est connecté à Internet en IPv4 !",
     "diagnosis_ip_no_ipv4": "Le serveur ne dispose pas d'une adresse IPv4.",

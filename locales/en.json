@@ -201,7 +201,7 @@
     "diagnosis_domain_expiration_warning": "Some domains will expire soon!",
     "diagnosis_domain_expires_in": "{domain} expires in {days} days.",
     "diagnosis_domain_not_found_details": "The domain {domain} doesn't exist in WHOIS database or is expired!",
-    "diagnosis_everything_ok": "Everything looks good for {category}!",
+    "diagnosis_everything_ok": "Everything looks OK for {category}!",
     "diagnosis_failed": "Failed to fetch diagnosis result for category '{category}': {error}",
     "diagnosis_failed_for_category": "Diagnosis failed for category '{category}': {error}",
     "diagnosis_found_errors": "Found {errors} significant issue(s) related to {category}!",
