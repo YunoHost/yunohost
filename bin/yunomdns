@@ -29,6 +29,7 @@ def get_network_local_interfaces() -> Dict[str, Dict[str, List[str]]]:
     }
     return interfaces
 
+
 # Listener class, to detect duplicates on the network
 # Stores the list of servers in its list property
 class Listener:
@@ -47,6 +48,7 @@ class Listener:
         info = zeroconf.get_service_info(type, name)
         self.list.append(info.server[:-1])
 
+
 def main() -> bool:
     ###
     #  CONFIG
@@ -59,7 +61,8 @@ def main() -> bool:
     missing_fields = [field for field in required_fields if field not in config]
 
     if missing_fields:
-        print("The fields %s are required" % ", ".join(missing_fields))
+        print(f"The fields {missing_fields} are required in mdns.yml")
+        return False
 
     if config["interfaces"] is None:
         print("No interface listed for broadcast.")
@@ -72,17 +75,20 @@ def main() -> bool:
     sleep(2)
     browser.cancel()
     zc.close()
+
     # If yunohost.local already exists, try yunohost-2.local, and so on.
     def yunohost_local(i):
-        return "yunohost.local" if i < 2 else "yunohost-"+str(i)+".local"
-    i=1
+        return "yunohost.local" if i < 2 else f"yunohost-{i}.local"
+
+    i = 1
     while yunohost_local(i) in listener.list:
-        print("Uh oh, "+yunohost_local(i)+" already exists on the network...")
+        print(f"Uh oh, {yunohost_local(i)} already exists on the network...")
         if yunohost_local(i) in config['domains']:
             config['domains'].remove(yunohost_local(i))
         i += 1
+
     if yunohost_local(i) not in config['domains']:
-        print("Adding "+yunohost_local(i)+" to the domains to publish.")
+        print(f"Adding {yunohost_local(i)} to the domains to publish.")
         config['domains'].append(yunohost_local(i))
 
     zcs: Dict[Zeroconf, List[ServiceInfo]] = {}
