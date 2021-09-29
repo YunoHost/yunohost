@@ -881,9 +881,9 @@ def _check_domain_is_ready_for_ACME(domain):
 
     # Fallback to wildcard in case no result yet for the DNS name?
     if not A_record_status:
-        A_record_status = dnsrecords.get("data").get(f"A:*")
+        A_record_status = dnsrecords.get("data").get("A:*")
     if not AAAA_record_status:
-        AAAA_record_status = dnsrecords.get("data").get(f"AAAA:*")
+        AAAA_record_status = dnsrecords.get("data").get("AAAA:*")
 
     if (
         not httpreachable
