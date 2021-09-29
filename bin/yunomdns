@@ -76,20 +76,27 @@ def main() -> bool:
     browser.cancel()
     zc.close()
 
-    # If yunohost.local already exists, try yunohost-2.local, and so on.
-    def yunohost_local(i):
-        return "yunohost.local" if i < 2 else f"yunohost-{i}.local"
+    # Always attempt to publish yunohost.local
+    if "yunohost.local" not in config["domains"]:
+        config["domains"].append("yunohost.local")
 
-    i = 1
-    while yunohost_local(i) in listener.list:
-        print(f"Uh oh, {yunohost_local(i)} already exists on the network...")
-        if yunohost_local(i) in config['domains']:
-            config['domains'].remove(yunohost_local(i))
-        i += 1
+    def find_domain_not_already_published(domain):
 
-    if yunohost_local(i) not in config['domains']:
-        print(f"Adding {yunohost_local(i)} to the domains to publish.")
-        config['domains'].append(yunohost_local(i))
+        # Try domain.local ... but if it's already published by another entity,
+        # try domain-2.local, domain-3.local, ...
+
+        i = 1
+        domain_i = domain
+
+        while domain_i in listener.list:
+            print(f"Uh oh, {domain_i} already exists on the network...")
+
+            i += 1
+            domain_i = domain.replace(".local", f"-{i}.local")
+
+        return domain_i
+
+    config['domains'] = [find_domain_not_already_published(domain) for domain in config['domains']]
 
     zcs: Dict[Zeroconf, List[ServiceInfo]] = {}
 
