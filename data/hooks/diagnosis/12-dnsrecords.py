@@ -24,8 +24,8 @@ class DNSRecordsDiagnoser(Diagnoser):
 
         main_domain = _get_maindomain()
 
-        all_domains = domain_list(exclude_subdomains=True)["domains"]
-        for domain in all_domains:
+        major_domains = domain_list(exclude_subdomains=True)["domains"]
+        for domain in major_domains:
             self.logger_debug("Diagnosing DNS conf for %s" % domain)
 
             for report in self.check_domain(
@@ -37,7 +37,7 @@ class DNSRecordsDiagnoser(Diagnoser):
         # Check if a domain buy by the user will expire soon
         psl = PublicSuffixList()
         domains_from_registrar = [
-            psl.get_public_suffix(domain) for domain in all_domains
+            psl.get_public_suffix(domain) for domain in major_domains
         ]
         domains_from_registrar = [
             domain for domain in domains_from_registrar if "." in domain
@@ -50,15 +50,6 @@ class DNSRecordsDiagnoser(Diagnoser):
 
     def check_domain(self, domain, is_main_domain):
 
-        base_dns_zone = _get_dns_zone_for_domain(domain)
-        basename = domain.replace(base_dns_zone, "").rstrip(".") or "@"
-
-        expected_configuration = _build_dns_conf(
-            domain, include_empty_AAAA_if_no_ipv6=True
-        )
-
-        categories = ["basic", "mail", "xmpp", "extra"]
-
         if is_special_use_tld(domain):
             categories = []
             yield dict(
@@ -67,6 +58,15 @@ class DNSRecordsDiagnoser(Diagnoser):
                 status="INFO",
                 summary="diagnosis_dns_specialusedomain",
             )
+
+        base_dns_zone = _get_dns_zone_for_domain(domain)
+        basename = domain.replace(base_dns_zone, "").rstrip(".") or "@"
+
+        expected_configuration = _build_dns_conf(
+            domain, include_empty_AAAA_if_no_ipv6=True
+        )
+
+        categories = ["basic", "mail", "xmpp", "extra"]
 
         for category in categories:
 
@@ -79,7 +79,8 @@ class DNSRecordsDiagnoser(Diagnoser):
                 id_ = r["type"] + ":" + r["name"]
                 fqdn = r["name"] + "." + base_dns_zone if r["name"] != "@" else domain
 
-                # Ugly hack to not check mail records for subdomains stuff, otherwise will end up in a shitstorm of errors for people with many subdomains...
+                # Ugly hack to not check mail records for subdomains stuff,
+                # otherwise will end up in a shitstorm of errors for people with many subdomains...
                 # Should find a cleaner solution in the suggested conf...
                 if r["type"] in ["MX", "TXT"] and fqdn not in [
                     domain,
@@ -125,6 +126,12 @@ class DNSRecordsDiagnoser(Diagnoser):
             else:
                 status = "SUCCESS"
                 summary = "diagnosis_dns_good_conf"
+
+            # If status is okay and there's actually no expected records
+            # (e.g. XMPP disabled)
+            # then let's not yield any diagnosis line
+            if not records and "status" == "SUCCESS":
+                continue
 
             output = dict(
                 meta={"domain": domain, "category": category},
