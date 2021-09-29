@@ -105,6 +105,33 @@ def _assert_domain_exists(domain):
         raise YunohostValidationError("domain_name_unknown", domain=domain)
 
 
+def _list_subdomains_of(parent_domain):
+
+    _assert_domain_exists(parent_domain)
+
+    out = []
+    for domain in domain_list()["domains"]:
+        if domain.endswith(f".{parent_domain}"):
+            out.append(domain)
+
+    return out
+
+
+def _get_parent_domain_of(domain):
+
+    _assert_domain_exists(domain)
+
+    if "." not in domain:
+        return domain
+
+    parent_domain = domain.split(".", 1)[-1]
+    if parent_domain not in domain_list()["domains"]:
+        return domain  # Domain is its own parent
+
+    else:
+        return _get_parent_domain_of(parent_domain)
+
+
 @is_unit_operation()
 def domain_add(operation_logger, domain, dyndns=False):
     """

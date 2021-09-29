@@ -40,6 +40,8 @@ from yunohost.domain import (
     domain_config_get,
     _get_domain_settings,
     _set_domain_settings,
+    _get_parent_domain_of,
+    _list_subdomains_of,
 )
 from yunohost.utils.dns import dig, is_yunohost_dyndns_domain, is_special_use_tld
 from yunohost.utils.error import YunohostValidationError, YunohostError
@@ -105,18 +107,6 @@ def domain_dns_suggest(domain):
         logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 
     return result
-
-
-def _list_subdomains_of(parent_domain):
-
-    _assert_domain_exists(parent_domain)
-
-    out = []
-    for domain in domain_list()["domains"]:
-        if domain.endswith(f".{parent_domain}"):
-            out.append(domain)
-
-    return out
 
 
 def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
