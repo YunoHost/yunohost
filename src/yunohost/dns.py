@@ -40,7 +40,6 @@ from yunohost.domain import (
     domain_config_get,
     _get_domain_settings,
     _set_domain_settings,
-    _get_parent_domain_of,
     _list_subdomains_of,
 )
 from yunohost.utils.dns import dig, is_yunohost_dyndns_domain, is_special_use_tld
