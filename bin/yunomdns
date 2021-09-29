@@ -57,16 +57,23 @@ def main() -> bool:
     with open("/etc/yunohost/mdns.yml", "r") as f:
         config = yaml.safe_load(f) or {}
 
-    required_fields = ["interfaces", "domains"]
+    required_fields = ["domains"]
     missing_fields = [field for field in required_fields if field not in config]
+    interfaces = get_network_local_interfaces()
 
     if missing_fields:
         print(f"The fields {missing_fields} are required in mdns.yml")
         return False
 
-    if config["interfaces"] is None:
-        print("No interface listed for broadcast.")
-        return True
+    if "interfaces" not in config:
+        config["interfaces"] = [interface
+                                for interface, local_ips in interfaces.items()
+                                if local_ips["ipv4"]]
+
+    if "ban_interfaces" in config:
+        config["interfaces"] = [interface
+                                for interface in config["interfaces"]
+                                if interface not in config["ban_interfaces"]]
 
     # Let's discover currently published .local domains accross the network
     zc = Zeroconf()
@@ -100,10 +107,10 @@ def main() -> bool:
 
     zcs: Dict[Zeroconf, List[ServiceInfo]] = {}
 
-    interfaces = get_network_local_interfaces()
     for interface in config["interfaces"]:
+
         if interface not in interfaces:
-            print(f"Interface {interface} of config file is not present on system.")
+            print(f"Interface {interface} listed in config file is not present on system.")
             continue
 
         ips: List[str] = interfaces[interface]["ipv4"] + interfaces[interface]["ipv6"]
@@ -111,6 +118,10 @@ def main() -> bool:
         # If at least one IP is listed
         if not ips:
             continue
+
+        print(f"Publishing on {interface} ...")
+        print(ips)
+
         # Create a Zeroconf object, and store the ServiceInfos
         zc = Zeroconf(interfaces=ips)  # type: ignore
         zcs[zc] = []
