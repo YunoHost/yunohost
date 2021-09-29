@@ -1,50 +1,224 @@
+import socket
+import requests
 import pytest
+import string
+import os
+import json
+import shutil
 
-from moulinette.core import MoulinetteError
-from yunohost.app import app_install, app_remove, app_change_url, app_list
-from yunohost.user import user_list, user_create, user_permission_list, user_delete, user_group_list, user_group_delete, user_permission_add, user_permission_remove, user_permission_clear
-from yunohost.permission import permission_add, permission_update, permission_remove
-from yunohost.domain import _get_maindomain
-from yunohost.utils.error import YunohostError
+from .conftest import message, raiseYunohostError, get_test_apps_dir
+
+from yunohost.app import (
+    app_install,
+    app_upgrade,
+    app_remove,
+    app_change_url,
+    app_map,
+    _installed_apps,
+    APPS_SETTING_PATH,
+    _set_app_settings,
+    _get_app_settings,
+)
+from yunohost.user import (
+    user_list,
+    user_create,
+    user_delete,
+    user_group_list,
+    user_group_delete,
+)
+from yunohost.permission import (
+    user_permission_update,
+    user_permission_list,
+    user_permission_reset,
+    permission_create,
+    permission_delete,
+    permission_url,
+)
+from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
 
 # Get main domain
-maindomain = _get_maindomain()
+maindomain = ""
+other_domains = []
+dummy_password = "test123Ynh"
+
+# Dirty patch of DNS resolution. Force the DNS to 127.0.0.1 address even if dnsmasq have the public address.
+# Mainly used for 'can_access_webpage' function
+
+prv_getaddrinfo = socket.getaddrinfo
+
+
+def _permission_create_with_dummy_app(
+    permission,
+    allowed=None,
+    url=None,
+    additional_urls=None,
+    auth_header=True,
+    label=None,
+    show_tile=False,
+    protected=True,
+    sync_perm=True,
+    domain=None,
+    path=None,
+):
+    app = permission.split(".")[0]
+    if app not in _installed_apps():
+        app_setting_path = os.path.join(APPS_SETTING_PATH, app)
+        if not os.path.exists(app_setting_path):
+            os.makedirs(app_setting_path)
+        settings = {"id": app, "dummy_permission_app": True}
+        if domain:
+            settings["domain"] = domain
+        if path:
+            settings["path"] = path
+        _set_app_settings(app, settings)
+
+        with open(os.path.join(APPS_SETTING_PATH, app, "manifest.json"), "w") as f:
+            json.dump(
+                {
+                    "name": app,
+                    "id": app,
+                    "description": {"en": "Dummy app to test permissions"},
+                },
+                f,
+            )
+    permission_create(
+        permission=permission,
+        allowed=allowed,
+        url=url,
+        additional_urls=additional_urls,
+        auth_header=auth_header,
+        label=label,
+        show_tile=show_tile,
+        protected=protected,
+        sync_perm=sync_perm,
+    )
+
+
+def _clear_dummy_app_settings():
+    # Clean dummy app settings
+    for app in _installed_apps():
+        if _get_app_settings(app).get("dummy_permission_app", False):
+            app_setting_path = os.path.join(APPS_SETTING_PATH, app)
+            if os.path.exists(app_setting_path):
+                shutil.rmtree(app_setting_path)
+
 
 def clean_user_groups_permission():
-    for u in user_list()['users']:
+    for u in user_list()["users"]:
         user_delete(u)
 
-    for g in user_group_list()['groups']:
-        if g != "all_users":
+    for g in user_group_list()["groups"]:
+        if g not in ["all_users", "visitors"]:
             user_group_delete(g)
 
-    for a, per in user_permission_list()['permissions'].items():
-        if a in ['wiki', 'blog', 'site']:
-            for p in per:
-                permission_remove(a, p, force=True, sync_perm=False)
+    for p in user_permission_list()["permissions"]:
+        if any(
+            p.startswith(name)
+            for name in ["wiki", "blog", "site", "web", "permissions_app"]
+        ):
+            permission_delete(p, force=True, sync_perm=False)
+    socket.getaddrinfo = prv_getaddrinfo
+
 
 def setup_function(function):
     clean_user_groups_permission()
 
-    user_create("alice", "Alice", "White", "alice@" + maindomain, "test123Ynh")
-    user_create("bob", "Bob", "Snow", "bob@" + maindomain, "test123Ynh")
-    permission_add("wiki", "main", [maindomain + "/wiki"], sync_perm=False)
-    permission_add("blog", "main", sync_perm=False)
+    global maindomain
+    global other_domains
+    maindomain = _get_maindomain()
 
-    user_permission_add(["blog"], "main", group="alice")
+    markers = {
+        m.name: {"args": m.args, "kwargs": m.kwargs}
+        for m in function.__dict__.get("pytestmark", [])
+    }
+
+    if "other_domains" in markers:
+        other_domains = [
+            "domain_%s.dev" % string.ascii_lowercase[number]
+            for number in range(markers["other_domains"]["kwargs"]["number"])
+        ]
+        for domain in other_domains:
+            if domain not in domain_list()["domains"]:
+                domain_add(domain)
+
+    # Dirty patch of DNS resolution. Force the DNS to 127.0.0.1 address even if dnsmasq have the public address.
+    # Mainly used for 'can_access_webpage' function
+    dns_cache = {(maindomain, 443, 0, 1): [(2, 1, 6, "", ("127.0.0.1", 443))]}
+    for domain in other_domains:
+        dns_cache[(domain, 443, 0, 1)] = [(2, 1, 6, "", ("127.0.0.1", 443))]
+
+    def new_getaddrinfo(*args):
+        try:
+            return dns_cache[args]
+        except KeyError:
+            res = prv_getaddrinfo(*args)
+            dns_cache[args] = res
+            return res
+
+    socket.getaddrinfo = new_getaddrinfo
+
+    user_create("alice", "Alice", "White", maindomain, dummy_password)
+    user_create("bob", "Bob", "Snow", maindomain, dummy_password)
+    _permission_create_with_dummy_app(
+        permission="wiki.main",
+        url="/",
+        additional_urls=["/whatever", "/idontnow"],
+        auth_header=False,
+        label="Wiki",
+        show_tile=True,
+        allowed=["all_users"],
+        protected=False,
+        sync_perm=False,
+        domain=maindomain,
+        path="/wiki",
+    )
+    _permission_create_with_dummy_app(
+        permission="blog.main",
+        url="/",
+        auth_header=True,
+        show_tile=False,
+        protected=False,
+        sync_perm=False,
+        allowed=["alice"],
+        domain=maindomain,
+        path="/blog",
+    )
+    _permission_create_with_dummy_app(
+        permission="blog.api", allowed=["visitors"], protected=True, sync_perm=True
+    )
+
 
 def teardown_function(function):
     clean_user_groups_permission()
+    global other_domains
+    for domain in other_domains:
+        domain_remove(domain)
+    other_domains = []
+
+    _clear_dummy_app_settings()
+
     try:
         app_remove("permissions_app")
-    except:
+    except Exception:
         pass
+    try:
+        app_remove("legacy_app")
+    except Exception:
+        pass
+
+
+def teardown_module(module):
+    global other_domains
+    for domain in other_domains:
+        domain_remove(domain)
+
 
 @pytest.fixture(autouse=True)
 def check_LDAP_db_integrity_call():
     check_LDAP_db_integrity()
     yield
     check_LDAP_db_integrity()
+
 
 def check_LDAP_db_integrity():
     # Here we check that all attributes in all object are sychronized.
@@ -57,180 +231,392 @@ def check_LDAP_db_integrity():
     # One part should be done automatically by the "memberOf" overlay of LDAP.
     # The other part is done by the the "permission_sync_to_user" function of the permission module
 
-    from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
+
     ldap = _get_ldap_interface()
 
-    user_search = ldap.search('ou=users,dc=yunohost,dc=org',
-                              '(&(objectclass=person)(!(uid=root))(!(uid=nobody)))',
-                              ['uid', 'memberOf', 'permission'])
-    group_search = ldap.search('ou=groups,dc=yunohost,dc=org',
-                               '(objectclass=groupOfNamesYnh)',
-                               ['cn', 'member', 'memberUid', 'permission'])
-    permission_search = ldap.search('ou=permission,dc=yunohost,dc=org',
-                                    '(objectclass=permissionYnh)',
-                                    ['cn', 'groupPermission', 'inheritPermission', 'memberUid'])
+    user_search = ldap.search(
+        "ou=users,dc=yunohost,dc=org",
+        "(&(objectclass=person)(!(uid=root))(!(uid=nobody)))",
+        ["uid", "memberOf", "permission"],
+    )
+    group_search = ldap.search(
+        "ou=groups,dc=yunohost,dc=org",
+        "(objectclass=groupOfNamesYnh)",
+        ["cn", "member", "memberUid", "permission"],
+    )
+    permission_search = ldap.search(
+        "ou=permission,dc=yunohost,dc=org",
+        "(objectclass=permissionYnh)",
+        ["cn", "groupPermission", "inheritPermission", "memberUid"],
+    )
 
-    user_map = {u['uid'][0]: u for u in user_search}
-    group_map = {g['cn'][0]: g for g in group_search}
-    permission_map = {p['cn'][0]: p for p in permission_search}
+    user_map = {u["uid"][0]: u for u in user_search}
+    group_map = {g["cn"][0]: g for g in group_search}
+    permission_map = {p["cn"][0]: p for p in permission_search}
 
     for user in user_search:
-        user_dn = 'uid=' + user['uid'][0] + ',ou=users,dc=yunohost,dc=org'
-        group_list = [m.split("=")[1].split(",")[0] for m in user['memberOf']]
-        permission_list = []
-        if 'permission' in user:
-            permission_list = [m.split("=")[1].split(",")[0] for m in user['permission']]
+        user_dn = "uid=" + user["uid"][0] + ",ou=users,dc=yunohost,dc=org"
+        group_list = [_ldap_path_extract(m, "cn") for m in user["memberOf"]]
+        permission_list = [
+            _ldap_path_extract(m, "cn") for m in user.get("permission", [])
+        ]
 
+        # This user's DN sould be found in all groups it is a member of
         for group in group_list:
-            assert user_dn in group_map[group]['member']
+            assert user_dn in group_map[group]["member"]
+
+        # This user's DN should be found in all perms it has access to
         for permission in permission_list:
-            assert user_dn in permission_map[permission]['inheritPermission']
+            assert user_dn in permission_map[permission]["inheritPermission"]
 
     for permission in permission_search:
-        permission_dn = 'cn=' + permission['cn'][0] + ',ou=permission,dc=yunohost,dc=org'
-        user_list = []
-        group_list = []
-        if 'inheritPermission' in permission:
-            user_list = [m.split("=")[1].split(",")[0] for m in permission['inheritPermission']]
-            assert set(user_list) == set(permission['memberUid'])
-        if 'groupPermission' in permission:
-            group_list = [m.split("=")[1].split(",")[0] for m in permission['groupPermission']]
+        permission_dn = (
+            "cn=" + permission["cn"][0] + ",ou=permission,dc=yunohost,dc=org"
+        )
 
+        # inheritPermission uid's should match memberUids
+        user_list = [
+            _ldap_path_extract(m, "uid")
+            for m in permission.get("inheritPermission", [])
+        ]
+        assert set(user_list) == set(permission.get("memberUid", []))
+
+        # This perm's DN should be found on all related users it is related to
         for user in user_list:
-            assert permission_dn in user_map[user]['permission']
+            assert permission_dn in user_map[user]["permission"]
+
+        # Same for groups : we should find the permission's DN for all related groups
+        group_list = [
+            _ldap_path_extract(m, "cn") for m in permission.get("groupPermission", [])
+        ]
         for group in group_list:
-            assert permission_dn in group_map[group]['permission']
-            if 'member' in group_map[group]:
-                user_list_in_group = [m.split("=")[1].split(",")[0] for m in group_map[group]['member']]
-                assert set(user_list_in_group) <= set(user_list)
+            assert permission_dn in group_map[group]["permission"]
+
+            # The list of user in the group should be a subset of all users related to the current permission
+            users_in_group = [
+                _ldap_path_extract(m, "uid") for m in group_map[group].get("member", [])
+            ]
+            assert set(users_in_group) <= set(user_list)
 
     for group in group_search:
-        group_dn = 'cn=' + group['cn'][0] + ',ou=groups,dc=yunohost,dc=org'
-        user_list = []
-        permission_list = []
-        if 'member' in group:
-            user_list = [m.split("=")[1].split(",")[0] for m in group['member']]
-            if group['cn'][0] in user_list:
-                # If it's the main group of the user it's normal that it is not in the memberUid
-                g_list = list(user_list)
-                g_list.remove(group['cn'][0])
-                if 'memberUid' in group:
-                    assert set(g_list) == set(group['memberUid'])
-                else:
-                    assert g_list == []
-            else:
-                assert set(user_list) == set(group['memberUid'])
-        if 'permission' in group:
-            permission_list = [m.split("=")[1].split(",")[0] for m in group['permission']]
+        group_dn = "cn=" + group["cn"][0] + ",ou=groups,dc=yunohost,dc=org"
 
+        user_list = [_ldap_path_extract(m, "uid") for m in group.get("member", [])]
+        # For primary groups, we should find that :
+        #    - len(user_list) is 1 (a primary group has only 1 member)
+        #    - the group name should be an existing yunohost user
+        #    - memberUid is empty (meaning no other member than the corresponding user)
+        if group["cn"][0] in user_list:
+            assert len(user_list) == 1
+            assert group["cn"][0] in user_map
+            assert group.get("memberUid", []) == []
+        # Otherwise, user_list and memberUid should have the same content
+        else:
+            assert set(user_list) == set(group.get("memberUid", []))
+
+        # For all users members, this group should be in the "memberOf" on the other side
         for user in user_list:
-            assert group_dn in user_map[user]['memberOf']
+            assert group_dn in user_map[user]["memberOf"]
+
+        # For all the permissions of this group, the group should be among the "groupPermission" on the other side
+        permission_list = [
+            _ldap_path_extract(m, "cn") for m in group.get("permission", [])
+        ]
         for permission in permission_list:
-            assert group_dn in permission_map[permission]['groupPermission']
-            if 'inheritPermission' in permission_map:
-                allowed_user_list = [m.split("=")[1].split(",")[0] for m in permission_map[permission]['inheritPermission']]
-                assert set(user_list) <= set(allowed_user_list)
+            assert group_dn in permission_map[permission]["groupPermission"]
+
+            # And the list of user of this group (user_list) should be a subset of all allowed users for this perm...
+            allowed_user_list = [
+                _ldap_path_extract(m, "uid")
+                for m in permission_map[permission].get("inheritPermission", [])
+            ]
+            assert set(user_list) <= set(allowed_user_list)
 
 
 def check_permission_for_apps():
     # We check that the for each installed apps we have at last the "main" permission
     # and we don't have any permission linked to no apps. The only exception who is not liked to an app
-    # is mail, metronome, and sftp
+    # is mail, xmpp, and sftp
 
-    from yunohost.utils.ldap import _get_ldap_interface
-    ldap = _get_ldap_interface()
-    permission_search = ldap.search('ou=permission,dc=yunohost,dc=org',
-                                    '(objectclass=permissionYnh)',
-                                    ['cn', 'groupPermission', 'inheritPermission', 'memberUid'])
+    app_perms = user_permission_list(ignore_system_perms=True)["permissions"].keys()
 
-    installed_apps = {app['id'] for app in app_list(installed=True)['apps']}
-    permission_list_set = {permission['cn'][0].split(".")[1] for permission in permission_search}
+    # Keep only the prefix so that
+    # ["foo.main", "foo.pwet", "bar.main"]
+    # becomes
+    # {"bar", "foo"}
+    # and compare this to the list of installed apps ...
 
-    extra_service_permission = set(['mail', 'metronome'])
-    if 'sftp' in permission_list_set:
-        extra_service_permission.add('sftp')
-    assert installed_apps == permission_list_set - extra_service_permission
+    app_perms_prefix = set(p.split(".")[0] for p in app_perms)
+
+    assert set(_installed_apps()) == app_perms_prefix
+
+
+def can_access_webpage(webpath, logged_as=None):
+
+    webpath = webpath.rstrip("/")
+    sso_url = "https://" + maindomain + "/yunohost/sso/"
+
+    # Anonymous access
+    if not logged_as:
+        r = requests.get(webpath, verify=False)
+    # Login as a user using dummy password
+    else:
+        with requests.Session() as session:
+            session.post(
+                sso_url,
+                data={"user": logged_as, "password": dummy_password},
+                headers={
+                    "Referer": sso_url,
+                    "Content-Type": "application/x-www-form-urlencoded",
+                },
+                verify=False,
+            )
+            # We should have some cookies related to authentication now
+            assert session.cookies
+            r = session.get(webpath, verify=False)
+
+    # If we can't access it, we got redirected to the SSO
+    return not r.url.startswith(sso_url)
+
 
 #
 # List functions
 #
 
-def test_list_permission():
-    res = user_permission_list()['permissions']
 
-    assert "wiki" in res
-    assert "main" in res['wiki']
-    assert "blog" in res
-    assert "main" in res['blog']
-    assert "mail" in res
-    assert "main" in res['mail']
-    assert "metronome" in res
-    assert "main" in res['metronome']
-    assert ["all_users"] == res['wiki']['main']['allowed_groups']
-    assert ["alice"] == res['blog']['main']['allowed_groups']
-    assert set(["alice", "bob"]) == set(res['wiki']['main']['allowed_users'])
-    assert ["alice"] == res['blog']['main']['allowed_users']
-    assert [maindomain + "/wiki"] == res['wiki']['main']['URL']
+def test_permission_list():
+    res = user_permission_list(full=True)["permissions"]
+
+    assert "mail.main" in res
+    assert "xmpp.main" in res
+
+    assert "wiki.main" in res
+    assert "blog.main" in res
+    assert "blog.api" in res
+
+    assert res["wiki.main"]["allowed"] == ["all_users"]
+    assert res["blog.main"]["allowed"] == ["alice"]
+    assert res["blog.api"]["allowed"] == ["visitors"]
+    assert set(res["wiki.main"]["corresponding_users"]) == set(["alice", "bob"])
+    assert res["blog.main"]["corresponding_users"] == ["alice"]
+    assert res["blog.api"]["corresponding_users"] == []
+    assert res["wiki.main"]["url"] == "/"
+    assert res["blog.main"]["url"] == "/"
+    assert res["blog.api"]["url"] is None
+    assert set(res["wiki.main"]["additional_urls"]) == {"/whatever", "/idontnow"}
+    assert res["wiki.main"]["protected"] is False
+    assert res["blog.main"]["protected"] is False
+    assert res["blog.api"]["protected"] is True
+    assert res["wiki.main"]["label"] == "Wiki"
+    assert res["blog.main"]["label"] == "Blog"
+    assert res["blog.api"]["label"] == "Blog (api)"
+    assert res["wiki.main"]["show_tile"] is True
+    assert res["blog.main"]["show_tile"] is False
+    assert res["blog.api"]["show_tile"] is False
+    assert res["wiki.main"]["auth_header"] is False
+    assert res["blog.main"]["auth_header"] is True
+    assert res["blog.api"]["auth_header"] is True
+
+    res = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    assert res["wiki.main"]["url"] == maindomain + "/wiki"
+    assert res["blog.main"]["url"] == maindomain + "/blog"
+    assert res["blog.api"]["url"] is None
+    assert set(res["wiki.main"]["additional_urls"]) == {
+        maindomain + "/wiki/whatever",
+        maindomain + "/wiki/idontnow",
+    }
+    assert res["blog.main"]["additional_urls"] == []
+    assert res["blog.api"]["additional_urls"] == []
+
 
 #
 # Create - Remove functions
 #
 
-def test_add_permission_1():
-    permission_add("site", "test")
 
-    res = user_permission_list()['permissions']
-    assert "site" in res
-    assert "test" in res['site']
-    assert "all_users" in res['site']['test']['allowed_groups']
-    assert set(["alice", "bob"]) == set(res['site']['test']['allowed_users'])
+def test_permission_create_main(mocker):
+    with message(mocker, "permission_created", permission="site.main"):
+        permission_create("site.main", allowed=["all_users"], protected=False)
 
-def test_add_permission_2():
-    permission_add("site", "main", default_allow=False)
+    res = user_permission_list(full=True)["permissions"]
+    assert "site.main" in res
+    assert res["site.main"]["allowed"] == ["all_users"]
+    assert set(res["site.main"]["corresponding_users"]) == set(["alice", "bob"])
+    assert res["site.main"]["protected"] is False
 
-    res = user_permission_list()['permissions']
-    assert "site" in res
-    assert "main" in res['site']
-    assert [] == res['site']['main']['allowed_groups']
-    assert [] == res['site']['main']['allowed_users']
 
-def test_remove_permission():
-    permission_remove("wiki", "main", force=True)
+def test_permission_create_extra(mocker):
+    with message(mocker, "permission_created", permission="site.test"):
+        permission_create("site.test")
 
-    res = user_permission_list()['permissions']
-    assert "wiki" not in res
+    res = user_permission_list(full=True)["permissions"]
+    assert "site.test" in res
+    # all_users is only enabled by default on .main perms
+    assert "all_users" not in res["site.test"]["allowed"]
+    assert res["site.test"]["corresponding_users"] == []
+    assert res["site.test"]["protected"] is False
+
+
+def test_permission_create_with_specific_user():
+    permission_create("site.test", allowed=["alice"])
+
+    res = user_permission_list(full=True)["permissions"]
+    assert "site.test" in res
+    assert res["site.test"]["allowed"] == ["alice"]
+
+
+def test_permission_create_with_tile_management(mocker):
+    with message(mocker, "permission_created", permission="site.main"):
+        _permission_create_with_dummy_app(
+            "site.main",
+            allowed=["all_users"],
+            label="The Site",
+            show_tile=False,
+            domain=maindomain,
+            path="/site",
+        )
+
+    res = user_permission_list(full=True)["permissions"]
+    assert "site.main" in res
+    assert res["site.main"]["label"] == "The Site"
+    assert res["site.main"]["show_tile"] is False
+
+
+def test_permission_create_with_tile_management_with_main_default_value(mocker):
+    with message(mocker, "permission_created", permission="site.main"):
+        _permission_create_with_dummy_app(
+            "site.main",
+            allowed=["all_users"],
+            show_tile=True,
+            url="/",
+            domain=maindomain,
+            path="/site",
+        )
+
+    res = user_permission_list(full=True)["permissions"]
+    assert "site.main" in res
+    assert res["site.main"]["label"] == "Site"
+    assert res["site.main"]["show_tile"] is True
+
+
+def test_permission_create_with_tile_management_with_not_main_default_value(mocker):
+    with message(mocker, "permission_created", permission="wiki.api"):
+        _permission_create_with_dummy_app(
+            "wiki.api",
+            allowed=["all_users"],
+            show_tile=True,
+            url="/",
+            domain=maindomain,
+            path="/site",
+        )
+
+    res = user_permission_list(full=True)["permissions"]
+    assert "wiki.api" in res
+    assert res["wiki.api"]["label"] == "Wiki (api)"
+    assert res["wiki.api"]["show_tile"] is True
+
+
+def test_permission_create_with_urls_management_without_url(mocker):
+    with message(mocker, "permission_created", permission="wiki.api"):
+        _permission_create_with_dummy_app(
+            "wiki.api", allowed=["all_users"], domain=maindomain, path="/site"
+        )
+
+    res = user_permission_list(full=True)["permissions"]
+    assert "wiki.api" in res
+    assert res["wiki.api"]["url"] is None
+    assert res["wiki.api"]["additional_urls"] == []
+    assert res["wiki.api"]["auth_header"] is True
+
+
+def test_permission_create_with_urls_management_simple_domain(mocker):
+    with message(mocker, "permission_created", permission="site.main"):
+        _permission_create_with_dummy_app(
+            "site.main",
+            allowed=["all_users"],
+            url="/",
+            additional_urls=["/whatever", "/idontnow"],
+            auth_header=False,
+            domain=maindomain,
+            path="/site",
+        )
+
+    res = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    assert "site.main" in res
+    assert res["site.main"]["url"] == maindomain + "/site"
+    assert set(res["site.main"]["additional_urls"]) == {
+        maindomain + "/site/whatever",
+        maindomain + "/site/idontnow",
+    }
+    assert res["site.main"]["auth_header"] is False
+
+
+@pytest.mark.other_domains(number=2)
+def test_permission_create_with_urls_management_multiple_domain(mocker):
+    with message(mocker, "permission_created", permission="site.main"):
+        _permission_create_with_dummy_app(
+            "site.main",
+            allowed=["all_users"],
+            url=maindomain + "/site/something",
+            additional_urls=[other_domains[0] + "/blabla", other_domains[1] + "/ahh"],
+            auth_header=True,
+            domain=maindomain,
+            path="/site",
+        )
+
+    res = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    assert "site.main" in res
+    assert res["site.main"]["url"] == maindomain + "/site/something"
+    assert set(res["site.main"]["additional_urls"]) == {
+        other_domains[0] + "/blabla",
+        other_domains[1] + "/ahh",
+    }
+    assert res["site.main"]["auth_header"] is True
+
+
+def test_permission_delete(mocker):
+    with message(mocker, "permission_deleted", permission="wiki.main"):
+        permission_delete("wiki.main", force=True)
+
+    res = user_permission_list()["permissions"]
+    assert "wiki.main" not in res
+
+    with message(mocker, "permission_deleted", permission="blog.api"):
+        permission_delete("blog.api", force=False)
+
+    res = user_permission_list()["permissions"]
+    assert "blog.api" not in res
+
 
 #
 # Error on create - remove function
 #
 
-def test_add_bad_permission():
-    # Create permission with same name
-    with pytest.raises(YunohostError):
-        permission_add("wiki", "main")
 
-def test_remove_bad_permission():
-    # Remove not existant permission
-    with pytest.raises(MoulinetteError):
-        permission_remove("non_exit", "main", force=True)
+def test_permission_create_already_existing(mocker):
+    with raiseYunohostError(mocker, "permission_already_exist"):
+        permission_create("wiki.main")
 
-    res = user_permission_list()['permissions']
-    assert "wiki" in res
-    assert "main" in res['wiki']
-    assert "blog" in res
-    assert "main" in res['blog']
-    assert "mail" in res
-    assert "main" in res ['mail']
-    assert "metronome" in res
-    assert "main" in res['metronome']
 
-def test_remove_main_permission():
-    with pytest.raises(YunohostError):
-        permission_remove("blog", "main")
+def test_permission_delete_doesnt_existing(mocker):
+    with raiseYunohostError(mocker, "permission_not_found"):
+        permission_delete("doesnt.exist", force=True)
 
-    res = user_permission_list()['permissions']
-    assert "mail" in res
-    assert "main" in res['mail']
+    res = user_permission_list()["permissions"]
+    assert "wiki.main" in res
+    assert "blog.main" in res
+    assert "mail.main" in res
+    assert "xmpp.main" in res
+
+
+def test_permission_delete_main_without_force(mocker):
+    with raiseYunohostError(mocker, "permission_cannot_remove_main"):
+        permission_delete("blog.main")
+
+    res = user_permission_list()["permissions"]
+    assert "blog.main" in res
+
 
 #
 # Update functions
@@ -238,182 +624,538 @@ def test_remove_main_permission():
 
 # user side functions
 
-def test_allow_first_group():
-    # Remove permission to all_users and define per users
-    user_permission_add(["wiki"], "main", group="alice")
 
-    res = user_permission_list()['permissions']
-    assert ['alice'] == res['wiki']['main']['allowed_users']
-    assert ['alice'] == res['wiki']['main']['allowed_groups']
+def test_permission_add_group(mocker):
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", add="alice")
 
-def test_allow_other_group():
-    # Allow new user in a permission
-    user_permission_add(["blog"], "main", group="bob")
+    res = user_permission_list(full=True)["permissions"]
+    assert set(res["wiki.main"]["allowed"]) == set(["all_users", "alice"])
+    assert set(res["wiki.main"]["corresponding_users"]) == set(["alice", "bob"])
 
-    res = user_permission_list()['permissions']
-    assert set(["alice", "bob"]) == set(res['blog']['main']['allowed_users'])
-    assert set(["alice", "bob"]) == set(res['blog']['main']['allowed_groups'])
 
-def test_disallow_group_1():
-    # Disallow a user in a permission
-    user_permission_remove(["blog"], "main", group="alice")
+def test_permission_remove_group(mocker):
+    with message(mocker, "permission_updated", permission="blog.main"):
+        user_permission_update("blog.main", remove="alice")
 
-    res = user_permission_list()['permissions']
-    assert [] == res['blog']['main']['allowed_users']
-    assert [] == res['blog']['main']['allowed_groups']
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.main"]["allowed"] == []
+    assert res["blog.main"]["corresponding_users"] == []
 
-def test_allow_group_1():
-    # Allow a user when he is already allowed
-    user_permission_add(["blog"], "main", group="alice")
 
-    res = user_permission_list()['permissions']
-    assert ["alice"] == res['blog']['main']['allowed_users']
-    assert ["alice"] == res['blog']['main']['allowed_groups']
+def test_permission_add_and_remove_group(mocker):
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", add="alice", remove="all_users")
 
-def test_disallow_group_1():
-    # Disallow a user when he is already disallowed
-    user_permission_remove(["blog"], "main", group="bob")
+    res = user_permission_list(full=True)["permissions"]
+    assert res["wiki.main"]["allowed"] == ["alice"]
+    assert res["wiki.main"]["corresponding_users"] == ["alice"]
 
-    res = user_permission_list()['permissions']
-    assert ["alice"] == res['blog']['main']['allowed_users']
-    assert ["alice"] == res['blog']['main']['allowed_groups']
 
-def test_reset_permission():
+def test_permission_add_group_already_allowed(mocker):
+    with message(
+        mocker, "permission_already_allowed", permission="blog.main", group="alice"
+    ):
+        user_permission_update("blog.main", add="alice")
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.main"]["allowed"] == ["alice"]
+    assert res["blog.main"]["corresponding_users"] == ["alice"]
+
+
+def test_permission_remove_group_already_not_allowed(mocker):
+    with message(
+        mocker, "permission_already_disallowed", permission="blog.main", group="bob"
+    ):
+        user_permission_update("blog.main", remove="bob")
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.main"]["allowed"] == ["alice"]
+    assert res["blog.main"]["corresponding_users"] == ["alice"]
+
+
+def test_permission_reset(mocker):
+    with message(mocker, "permission_updated", permission="blog.main"):
+        user_permission_reset("blog.main")
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.main"]["allowed"] == ["all_users"]
+    assert set(res["blog.main"]["corresponding_users"]) == set(["alice", "bob"])
+
+
+def test_permission_reset_idempotency():
     # Reset permission
-    user_permission_clear(["blog"], "main")
+    user_permission_reset("blog.main")
+    user_permission_reset("blog.main")
 
-    res = user_permission_list()['permissions']
-    assert set(["alice", "bob"]) == set(res['blog']['main']['allowed_users'])
-    assert ["all_users"] == res['blog']['main']['allowed_groups']
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.main"]["allowed"] == ["all_users"]
+    assert set(res["blog.main"]["corresponding_users"]) == set(["alice", "bob"])
 
-# internal functions
 
-def test_add_url_1():
-    # Add URL in permission which hasn't any URL defined
-    permission_update("blog", "main", add_url=[maindomain + "/testA"])
+def test_permission_change_label(mocker):
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", label="New Wiki")
 
-    res = user_permission_list()['permissions']
-    assert [maindomain + "/testA"] == res['blog']['main']['URL']
+    res = user_permission_list(full=True)["permissions"]
+    assert res["wiki.main"]["label"] == "New Wiki"
 
-def test_add_url_2():
-    # Add a second URL in a permission
-    permission_update("wiki", "main", add_url=[maindomain + "/testA"])
 
-    res = user_permission_list()['permissions']
-    assert set([maindomain + "/testA", maindomain + "/wiki"]) == set(res['wiki']['main']['URL'])
+def test_permission_change_label_with_same_value(mocker):
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", label="Wiki")
 
-def test_remove_url_1():
-    permission_update("wiki", "main", remove_url=[maindomain + "/wiki"])
+    res = user_permission_list(full=True)["permissions"]
+    assert res["wiki.main"]["label"] == "Wiki"
 
-    res = user_permission_list()['permissions']
-    assert 'URL' not in res['wiki']['main']
 
-def test_add_url_3():
-    # Add a url already added
-    permission_update("wiki", "main", add_url=[maindomain + "/wiki"])
+def test_permission_switch_show_tile(mocker):
+    # Note that from the actionmap the value is passed as string, not as bool
+    # Try with lowercase
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", show_tile="false")
 
-    res = user_permission_list()['permissions']
-    assert [maindomain + "/wiki"] == res['wiki']['main']['URL']
+    res = user_permission_list(full=True)["permissions"]
+    assert res["wiki.main"]["show_tile"] is False
 
-def test_remove_url_2():
-    # Remove a url not added (with a permission which contain some URL)
-    permission_update("wiki", "main", remove_url=[maindomain + "/not_exist"])
+    # Try with uppercase
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", show_tile="TRUE")
 
-    res = user_permission_list()['permissions']
-    assert [maindomain + "/wiki"] == res['wiki']['main']['URL']
+    res = user_permission_list(full=True)["permissions"]
+    assert res["wiki.main"]["show_tile"] is True
 
-def test_remove_url_2():
-    # Remove a url not added (with a permission which contain no URL)
-    permission_update("blog", "main", remove_url=[maindomain + "/not_exist"])
 
-    res = user_permission_list()['permissions']
-    assert 'URL' not in res['blog']['main']
+def test_permission_switch_show_tile_with_same_value(mocker):
+    # Note that from the actionmap the value is passed as string, not as bool
+    with message(mocker, "permission_updated", permission="wiki.main"):
+        user_permission_update("wiki.main", show_tile="True")
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["wiki.main"]["show_tile"] is True
+
 
 #
 # Error on update function
 #
 
-def test_disallow_bad_group_1():
-    # Disallow a group when the group all_users is allowed
-    with pytest.raises(YunohostError):
-        user_permission_remove("wiki", "main", group="alice")
 
-    res = user_permission_list()['permissions']
-    assert ["all_users"] == res['wiki']['main']['allowed_groups']
-    assert set(["alice", "bob"]) == set(res['wiki']['main']['allowed_users'])
+def test_permission_add_group_that_doesnt_exist(mocker):
+    with raiseYunohostError(mocker, "group_unknown"):
+        user_permission_update("blog.main", add="doesnt_exist")
 
-def test_allow_bad_user():
-    # Allow a non existant group
-    with pytest.raises(YunohostError):
-        user_permission_add(["blog"], "main", group="not_exist")
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.main"]["allowed"] == ["alice"]
+    assert res["blog.main"]["corresponding_users"] == ["alice"]
 
-    res = user_permission_list()['permissions']
-    assert ["alice"] == res['blog']['main']['allowed_groups']
-    assert ["alice"] == res['blog']['main']['allowed_users']
 
-def test_disallow_bad_group_2():
-    # Disallow a non existant group
-    with pytest.raises(YunohostError):
-        user_permission_remove(["blog"], "main", group="not_exist")
+def test_permission_update_permission_that_doesnt_exist(mocker):
+    with raiseYunohostError(mocker, "permission_not_found"):
+        user_permission_update("doesnt.exist", add="alice")
 
-    res = user_permission_list()['permissions']
-    assert ["alice"] == res['blog']['main']['allowed_groups']
-    assert ["alice"] == res['blog']['main']['allowed_users']
 
-def test_allow_bad_permission_1():
-    # Allow a user to a non existant permission
-    with pytest.raises(YunohostError):
-        user_permission_add(["wiki"], "not_exit", group="alice")
+def test_permission_protected_update(mocker):
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.api"]["allowed"] == ["visitors"]
 
-def test_allow_bad_permission_2():
-    # Allow a user to a non existant permission
-    with pytest.raises(YunohostError):
-        user_permission_add(["not_exit"], "main", group="alice")
+    with raiseYunohostError(mocker, "permission_protected"):
+        user_permission_update("blog.api", remove="visitors")
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.api"]["allowed"] == ["visitors"]
+
+    user_permission_update("blog.api", remove="visitors", force=True)
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.api"]["allowed"] == []
+
+    with raiseYunohostError(mocker, "permission_protected"):
+        user_permission_update("blog.api", add="visitors")
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.api"]["allowed"] == []
+
+
+# Permission url management
+
+
+def test_permission_redefine_url():
+    permission_url("blog.main", url="/pwet")
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.main"]["url"] == "/pwet"
+
+
+def test_permission_remove_url():
+    permission_url("blog.main", clear_urls=True)
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.main"]["url"] is None
+
+
+def test_permission_main_url_regex():
+    permission_url("blog.main", url="re:/[a-z]+reboy/.*")
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.main"]["url"] == "re:/[a-z]+reboy/.*"
+
+    res = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    assert res["blog.main"]["url"] == "re:%s/blog/[a-z]+reboy/.*" % maindomain.replace(
+        ".", r"\."
+    )
+
+
+def test_permission_main_url_bad_regex(mocker):
+    with raiseYunohostError(mocker, "invalid_regex"):
+        permission_url("blog.main", url="re:/[a-z]++reboy/.*")
+
+
+@pytest.mark.other_domains(number=1)
+def test_permission_add_additional_url():
+    permission_url("wiki.main", add_url=[other_domains[0] + "/heyby", "/myhouse"])
+
+    res = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    assert res["wiki.main"]["url"] == maindomain + "/wiki"
+    assert set(res["wiki.main"]["additional_urls"]) == {
+        maindomain + "/wiki/whatever",
+        maindomain + "/wiki/idontnow",
+        other_domains[0] + "/heyby",
+        maindomain + "/wiki/myhouse",
+    }
+
+
+def test_permission_add_additional_regex():
+    permission_url("blog.main", add_url=["re:/[a-z]+reboy/.*"])
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["blog.main"]["additional_urls"] == ["re:/[a-z]+reboy/.*"]
+
+    res = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    assert res["blog.main"]["additional_urls"] == [
+        "re:%s/blog/[a-z]+reboy/.*" % maindomain.replace(".", r"\.")
+    ]
+
+
+def test_permission_add_additional_bad_regex(mocker):
+    with raiseYunohostError(mocker, "invalid_regex"):
+        permission_url("blog.main", add_url=["re:/[a-z]++reboy/.*"])
+
+
+def test_permission_remove_additional_url():
+    permission_url("wiki.main", remove_url=["/whatever"])
+
+    res = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    assert res["wiki.main"]["url"] == maindomain + "/wiki"
+    assert res["wiki.main"]["additional_urls"] == [maindomain + "/wiki/idontnow"]
+
+
+def test_permssion_add_additional_url_already_exist():
+    permission_url("wiki.main", add_url=["/whatever", "/myhouse"])
+    permission_url("wiki.main", add_url=["/whatever"])
+
+    res = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    assert res["wiki.main"]["url"] == maindomain + "/wiki"
+    assert set(res["wiki.main"]["additional_urls"]) == {
+        maindomain + "/wiki/whatever",
+        maindomain + "/wiki/idontnow",
+        maindomain + "/wiki/myhouse",
+    }
+
+
+def test_permission_remove_additional_url_dont_exist():
+    permission_url("wiki.main", remove_url=["/shouldntexist", "/whatever"])
+    permission_url("wiki.main", remove_url=["/shouldntexist"])
+
+    res = user_permission_list(full=True, absolute_urls=True)["permissions"]
+    assert res["wiki.main"]["url"] == maindomain + "/wiki"
+    assert res["wiki.main"]["additional_urls"] == [maindomain + "/wiki/idontnow"]
+
+
+def test_permission_clear_additional_url():
+    permission_url("wiki.main", clear_urls=True)
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["wiki.main"]["url"] is None
+    assert res["wiki.main"]["additional_urls"] == []
+
+
+def test_permission_switch_auth_header():
+    permission_url("wiki.main", auth_header=True)
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["wiki.main"]["auth_header"] is True
+
+    permission_url("wiki.main", auth_header=False)
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["wiki.main"]["auth_header"] is False
+
+
+def test_permission_switch_auth_header_with_same_value():
+    permission_url("wiki.main", auth_header=False)
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["wiki.main"]["auth_header"] is False
+
+
+# Permission protected
+
+
+def test_permission_switch_protected():
+    user_permission_update("wiki.main", protected=True)
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["wiki.main"]["protected"] is True
+
+    user_permission_update("wiki.main", protected=False)
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["wiki.main"]["protected"] is False
+
+
+def test_permission_switch_protected_with_same_value():
+    user_permission_update("wiki.main", protected=False)
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["wiki.main"]["protected"] is False
+
+
+# Test SSOWAT conf generation
+
+
+def test_ssowat_conf():
+    with open("/etc/ssowat/conf.json") as f:
+        res = json.load(f)
+
+    permissions = res["permissions"]
+    assert "wiki.main" in permissions
+    assert "blog.main" in permissions
+    assert (
+        "blog.api" not in permissions
+    )  # blog.api has no url/additional url defined and therefore is not added to ssowat conf
+
+    assert set(permissions["wiki.main"]["users"]) == {"alice", "bob"}
+    assert permissions["blog.main"]["users"] == ["alice"]
+
+    assert permissions["wiki.main"]["uris"][0] == maindomain + "/wiki"
+
+    assert set(permissions["wiki.main"]["uris"]) == {
+        maindomain + "/wiki",
+        maindomain + "/wiki/whatever",
+        maindomain + "/wiki/idontnow",
+    }
+    assert permissions["blog.main"]["uris"] == [maindomain + "/blog"]
+
+    assert permissions["wiki.main"]["public"] is False
+    assert permissions["blog.main"]["public"] is False
+
+    assert permissions["wiki.main"]["auth_header"] is False
+    assert permissions["blog.main"]["auth_header"] is True
+
+    assert permissions["wiki.main"]["label"] == "Wiki"
+    assert permissions["blog.main"]["label"] == "Blog"
+
+    assert permissions["wiki.main"]["show_tile"] is True
+    assert permissions["blog.main"]["show_tile"] is False
+
+
+def test_show_tile_cant_be_enabled():
+    _permission_create_with_dummy_app(
+        permission="site.main",
+        auth_header=False,
+        label="Site",
+        show_tile=True,
+        allowed=["all_users"],
+        protected=False,
+        sync_perm=False,
+        domain=maindomain,
+        path="/site",
+    )
+
+    _permission_create_with_dummy_app(
+        permission="web.main",
+        url="re:/[a-z]{3}/bla",
+        auth_header=False,
+        label="Web",
+        show_tile=True,
+        allowed=["all_users"],
+        protected=False,
+        sync_perm=True,
+        domain=maindomain,
+        path="/web",
+    )
+
+    permissions = user_permission_list(full=True)["permissions"]
+
+    assert permissions["site.main"]["show_tile"] is False
+    assert permissions["web.main"]["show_tile"] is False
+
 
 #
 # Application interaction
 #
 
-def test_install_app():
-    app_install("./tests/apps/permissions_app_ynh",
-                args="domain=%s&path=%s&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
 
-    res = user_permission_list()['permissions']
-    assert "permissions_app" in res
-    assert "main" in res['permissions_app']
-    assert [maindomain + "/urlpermissionapp"] == res['permissions_app']['main']['URL']
-    assert [maindomain + "/urlpermissionapp/admin"] == res['permissions_app']['admin']['URL']
-    assert [maindomain + "/urlpermissionapp/dev"] == res['permissions_app']['dev']['URL']
+@pytest.mark.other_domains(number=1)
+def test_permission_app_install():
+    app_install(
+        os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
+        args="domain=%s&domain_2=%s&path=%s&is_public=0&admin=%s"
+        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        force=True,
+    )
 
-    assert ["all_users"] == res['permissions_app']['main']['allowed_groups']
-    assert set(["alice", "bob"]) == set(res['permissions_app']['main']['allowed_users'])
+    res = user_permission_list(full=True)["permissions"]
+    assert "permissions_app.main" in res
+    assert "permissions_app.admin" in res
+    assert "permissions_app.dev" in res
+    assert res["permissions_app.main"]["url"] == "/"
+    assert res["permissions_app.admin"]["url"] == "/admin"
+    assert res["permissions_app.dev"]["url"] == "/dev"
 
-    assert ["alice"] == res['permissions_app']['admin']['allowed_groups']
-    assert ["alice"] == res['permissions_app']['admin']['allowed_users']
+    assert res["permissions_app.main"]["allowed"] == ["all_users"]
+    assert set(res["permissions_app.main"]["corresponding_users"]) == set(
+        ["alice", "bob"]
+    )
 
-    assert ["all_users"] == res['permissions_app']['dev']['allowed_groups']
-    assert set(["alice", "bob"]) == set(res['permissions_app']['dev']['allowed_users'])
+    assert res["permissions_app.admin"]["allowed"] == ["alice"]
+    assert res["permissions_app.admin"]["corresponding_users"] == ["alice"]
 
-def test_remove_app():
-    app_install("./tests/apps/permissions_app_ynh",
-                args="domain=%s&path=%s&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
+    assert res["permissions_app.dev"]["allowed"] == []
+    assert set(res["permissions_app.dev"]["corresponding_users"]) == set()
+
+    # Check that we get the right stuff in app_map, which is used to generate the ssowatconf
+    assert maindomain + "/urlpermissionapp" in app_map(user="alice").keys()
+    user_permission_update("permissions_app.main", remove="all_users", add="bob")
+    assert maindomain + "/urlpermissionapp" not in app_map(user="alice").keys()
+    assert maindomain + "/urlpermissionapp" in app_map(user="bob").keys()
+
+
+@pytest.mark.other_domains(number=1)
+def test_permission_app_remove():
+    app_install(
+        os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
+        args="domain=%s&domain_2=%s&path=%s&is_public=0&admin=%s"
+        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        force=True,
+    )
     app_remove("permissions_app")
 
-    res = user_permission_list()['permissions']
-    assert "permissions_app" not in res
+    # Check all permissions for this app got deleted
+    res = user_permission_list(full=True)["permissions"]
+    assert not any(p.startswith("permissions_app.") for p in res.keys())
 
-def test_change_url():
-    app_install("./tests/apps/permissions_app_ynh",
-                args="domain=%s&path=%s&admin=%s" % (maindomain, "/urlpermissionapp", "alice"), force=True)
 
-    res = user_permission_list()['permissions']
-    assert [maindomain + "/urlpermissionapp"] == res['permissions_app']['main']['URL']
-    assert [maindomain + "/urlpermissionapp/admin"] == res['permissions_app']['admin']['URL']
-    assert [maindomain + "/urlpermissionapp/dev"] == res['permissions_app']['dev']['URL']
+@pytest.mark.other_domains(number=1)
+def test_permission_app_change_url():
+    app_install(
+        os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
+        args="domain=%s&domain_2=%s&path=%s&admin=%s"
+        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        force=True,
+    )
+
+    # FIXME : should rework this test to look for differences in the generated app map / app tiles ...
+    res = user_permission_list(full=True)["permissions"]
+    assert res["permissions_app.main"]["url"] == "/"
+    assert res["permissions_app.admin"]["url"] == "/admin"
+    assert res["permissions_app.dev"]["url"] == "/dev"
 
     app_change_url("permissions_app", maindomain, "/newchangeurl")
 
-    res = user_permission_list()['permissions']
-    assert [maindomain + "/newchangeurl"] == res['permissions_app']['main']['URL']
-    assert [maindomain + "/newchangeurl/admin"] == res['permissions_app']['admin']['URL']
-    assert [maindomain + "/newchangeurl/dev"] == res['permissions_app']['dev']['URL']
+    res = user_permission_list(full=True)["permissions"]
+    assert res["permissions_app.main"]["url"] == "/"
+    assert res["permissions_app.admin"]["url"] == "/admin"
+    assert res["permissions_app.dev"]["url"] == "/dev"
+
+
+@pytest.mark.other_domains(number=1)
+def test_permission_protection_management_by_helper():
+    app_install(
+        os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
+        args="domain=%s&domain_2=%s&path=%s&admin=%s"
+        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        force=True,
+    )
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["permissions_app.main"]["protected"] is False
+    assert res["permissions_app.admin"]["protected"] is True
+    assert res["permissions_app.dev"]["protected"] is False
+
+    app_upgrade(
+        ["permissions_app"],
+        file=os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
+    )
+
+    res = user_permission_list(full=True)["permissions"]
+    assert res["permissions_app.main"]["protected"] is False
+    assert res["permissions_app.admin"]["protected"] is False
+    assert res["permissions_app.dev"]["protected"] is True
+
+
+@pytest.mark.other_domains(number=1)
+def test_permission_app_propagation_on_ssowat():
+
+    app_install(
+        os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
+        args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
+        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        force=True,
+    )
+
+    res = user_permission_list(full=True)["permissions"]
+    assert "visitors" in res["permissions_app.main"]["allowed"]
+    assert "all_users" in res["permissions_app.main"]["allowed"]
+
+    app_webroot = "https://%s/urlpermissionapp" % maindomain
+    assert can_access_webpage(app_webroot, logged_as=None)
+    assert can_access_webpage(app_webroot, logged_as="alice")
+
+    user_permission_update(
+        "permissions_app.main", remove=["visitors", "all_users"], add="bob"
+    )
+    res = user_permission_list(full=True)["permissions"]
+
+    assert not can_access_webpage(app_webroot, logged_as=None)
+    assert not can_access_webpage(app_webroot, logged_as="alice")
+    assert can_access_webpage(app_webroot, logged_as="bob")
+
+    # Test admin access, as configured during install, only alice should be able to access it
+
+    # alice gotta be allowed on the main permission to access the admin tho
+    user_permission_update("permissions_app.main", remove="bob", add="all_users")
+
+    assert not can_access_webpage(app_webroot + "/admin", logged_as=None)
+    assert can_access_webpage(app_webroot + "/admin", logged_as="alice")
+    assert not can_access_webpage(app_webroot + "/admin", logged_as="bob")
+
+
+@pytest.mark.other_domains(number=1)
+def test_permission_legacy_app_propagation_on_ssowat():
+
+    app_install(
+        os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
+        args="domain=%s&domain_2=%s&path=%s"
+        % (maindomain, other_domains[0], "/legacy"),
+        force=True,
+    )
+
+    # App is configured as public by default using the legacy unprotected_uri mechanics
+    # It should automatically be migrated during the install
+    res = user_permission_list(full=True)["permissions"]
+    assert "visitors" in res["legacy_app.main"]["allowed"]
+    assert "all_users" in res["legacy_app.main"]["allowed"]
+
+    app_webroot = "https://%s/legacy" % maindomain
+
+    assert can_access_webpage(app_webroot, logged_as=None)
+    assert can_access_webpage(app_webroot, logged_as="alice")
+
+    # Try to update the permission and check that permissions are still consistent
+    user_permission_update(
+        "legacy_app.main", remove=["visitors", "all_users"], add="bob"
+    )
+
+    assert not can_access_webpage(app_webroot, logged_as=None)
+    assert not can_access_webpage(app_webroot, logged_as="alice")
+    assert can_access_webpage(app_webroot, logged_as="bob")

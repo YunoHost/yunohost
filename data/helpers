@@ -1,7 +1,8 @@
 # -*- shell-script -*-
 
-# TODO : use --regex to validate against a namespace
+readonly XTRACE_ENABLE=$(set +o | grep xtrace) # This is a trick to later only restore set -x if it was set when calling this script
+set +x
 for helper in $(run-parts --list /usr/share/yunohost/helpers.d 2>/dev/null) ; do
     [ -r $helper ] && . $helper || true
 done
-
+eval "$XTRACE_ENABLE"

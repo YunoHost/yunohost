@@ -26,23 +26,21 @@ do_pre_regen() {
   ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
   ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
   ynh_validate_ip6 "$ipv6" || ipv6=''
-  domain_list=$(sudo yunohost domain list --output-as plain --quiet)
+
+  export ipv4
+  export ipv6
 
   # add domain conf files
-  for domain in $domain_list; do
-    cat domain.tpl \
-      | sed "s/{{ domain }}/${domain}/g" \
-      | sed "s/{{ ip }}/${ipv4}/g" \
-      > "${dnsmasq_dir}/${domain}"
-    [[ -n $ipv6 ]] \
-      && echo "address=/${domain}/${ipv6}" >> "${dnsmasq_dir}/${domain}"
+  for domain in $YNH_DOMAINS; do
+      export domain
+      ynh_render_template "domain.tpl" "${dnsmasq_dir}/${domain}"
   done
 
   # remove old domain conf files
   conf_files=$(ls -1 /etc/dnsmasq.d \
                  | awk '/^[^\.]+\.[^\.]+.*$/ { print $1 }')
   for domain in $conf_files; do
-    [[ $domain_list =~ $domain ]] \
+    [[ $YNH_DOMAINS =~ $domain ]] \
       || touch "${dnsmasq_dir}/${domain}"
   done
 }
@@ -50,24 +48,36 @@ do_pre_regen() {
 do_post_regen() {
   regen_conf_files=$1
 
-  [[ -z "$regen_conf_files" ]] \
-    || sudo service dnsmasq restart
+  # Fuck it, those domain/search entries from dhclient are usually annoying
+  # lying shit from the ISP trying to MiTM
+  if grep -q -E "^ *(domain|search)" /run/resolvconf/resolv.conf
+  then
+      if grep -q -E "^ *(domain|search)" /run/resolvconf/interface/*.dhclient 2>/dev/null
+      then
+        sed -E "s/^(domain|search)/#\1/g" -i /run/resolvconf/interface/*.dhclient
+      fi
+
+      grep -q '^supersede domain-name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-name "";' >> /etc/dhcp/dhclient.conf
+      grep -q '^supersede domain-search "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-search "";' >> /etc/dhcp/dhclient.conf
+      grep -q '^supersede name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede name "";' >> /etc/dhcp/dhclient.conf
+      systemctl restart resolvconf
+  fi
+
+  # Some stupid things like rabbitmq-server used by onlyoffice won't work if
+  # the *short* hostname doesn't exists in /etc/hosts -_-
+  short_hostname=$(hostname -s)
+  grep -q "127.0.0.1.*$short_hostname" /etc/hosts || echo -e "\n127.0.0.1\t$short_hostname" >>/etc/hosts
+
+  [[ -n "$regen_conf_files" ]] || return
+
+  # Remove / disable services likely to conflict with dnsmasq
+  for SERVICE in systemd-resolved bind9
+  do
+      systemctl is-enabled $SERVICE &>/dev/null && systemctl disable $SERVICE 2>/dev/null
+      systemctl is-active $SERVICE &>/dev/null && systemctl stop $SERVICE
+  done
+
+  systemctl restart dnsmasq
 }
 
-FORCE=${2:-0}
-DRY_RUN=${3:-0}
-
-case "$1" in
-  pre)
-    do_pre_regen $4
-    ;;
-  post)
-    do_post_regen $4
-    ;;
-  *)
-    echo "hook called with unknown argument \`$1'" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+do_$1_regen ${@:2}

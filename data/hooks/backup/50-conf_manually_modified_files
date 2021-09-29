@@ -1,0 +1,18 @@
+#!/bin/bash
+
+source /usr/share/yunohost/helpers
+ynh_abort_if_errors
+YNH_CWD="${YNH_BACKUP_DIR%/}/conf/manually_modified_files"
+mkdir -p "$YNH_CWD"
+cd "$YNH_CWD"
+
+yunohost tools shell -c "from yunohost.regenconf import manually_modified_files; print('\n'.join(manually_modified_files()))" > ./manually_modified_files_list
+
+ynh_backup --src_path="./manually_modified_files_list"
+
+for file in $(cat ./manually_modified_files_list)
+do
+    [[ -e $file ]] && ynh_backup --src_path="$file"
+done
+    
+ynh_backup --src_path="/etc/ssowat/conf.json.persistent"

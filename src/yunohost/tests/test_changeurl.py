@@ -1,6 +1,9 @@
 import pytest
 import time
 import requests
+import os
+
+from .conftest import get_test_apps_dir
 
 from yunohost.app import app_install, app_change_url, app_remove, app_map
 from yunohost.domain import _get_maindomain
@@ -8,11 +11,12 @@ from yunohost.domain import _get_maindomain
 from yunohost.utils.error import YunohostError
 
 # Get main domain
-maindomain = _get_maindomain()
+maindomain = ""
 
 
 def setup_function(function):
-    pass
+    global maindomain
+    maindomain = _get_maindomain()
 
 
 def teardown_function(function):
@@ -20,8 +24,11 @@ def teardown_function(function):
 
 
 def install_changeurl_app(path):
-    app_install("./tests/apps/change_url_app_ynh",
-                args="domain=%s&path=%s" % (maindomain, path), force=True)
+    app_install(
+        os.path.join(get_test_apps_dir(), "change_url_app_ynh"),
+        args="domain=%s&path=%s" % (maindomain, path),
+        force=True,
+    )
 
 
 def check_changeurl_app(path):
@@ -31,7 +38,9 @@ def check_changeurl_app(path):
 
     assert appmap[maindomain][path]["id"] == "change_url_app"
 
-    r = requests.get("https://127.0.0.1%s/" % path, headers={"domain": maindomain}, verify=False)
+    r = requests.get(
+        "https://127.0.0.1%s/" % path, headers={"domain": maindomain}, verify=False
+    )
     assert r.status_code == 200
 
 

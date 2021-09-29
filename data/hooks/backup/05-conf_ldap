@@ -10,8 +10,8 @@ source /usr/share/yunohost/helpers
 backup_dir="${1}/conf/ldap"
 
 # Backup the configuration
-ynh_backup "/etc/ldap/slapd.conf" "${backup_dir}/slapd.conf"
-sudo slapcat -b cn=config -l "${backup_dir}/cn=config.master.ldif"
+ynh_backup "/etc/ldap/ldap.conf" "${backup_dir}/ldap.conf"
+slapcat -b cn=config -l "${backup_dir}/cn=config.master.ldif"
 
 # Backup the database
-sudo slapcat -b dc=yunohost,dc=org -l "${backup_dir}/dc=yunohost-dc=org.ldif"
+slapcat -b dc=yunohost,dc=org -l "${backup_dir}/dc=yunohost-dc=org.ldif"

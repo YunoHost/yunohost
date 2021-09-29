@@ -1,0 +1,15 @@
+[Unit]
+Description=YunoHost boot prompt
+After=getty@tty2.service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/yunoprompt
+StandardInput=tty
+TTYPath=/dev/tty2
+TTYReset=yes
+TTYVHangup=yes
+
+[Install]
+WantedBy=default.target

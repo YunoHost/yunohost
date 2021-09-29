@@ -1,52 +1,16 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import os
 import sys
 import argparse
 
-# Either we are in a development environment or not
-IN_DEVEL = False
+sys.path.insert(0, "/usr/lib/moulinette/")
+import yunohost
 
 # Default server configuration
 DEFAULT_HOST = 'localhost'
 DEFAULT_PORT = 6787
 
-# Level for which loggers will log
-LOGGERS_LEVEL = 'DEBUG'
-API_LOGGER_LEVEL = 'INFO'
-
-# Handlers that will be used by loggers
-#  - file: log to the file LOG_DIR/LOG_FILE
-#  - api: serve logs through the api
-#  - console: log to stderr
-LOGGERS_HANDLERS = ['file', 'api']
-
-# Directory and file to be used by logging
-LOG_DIR = '/var/log/yunohost'
-LOG_FILE = 'yunohost-api.log'
-
-# Check and load - as needed - development environment
-if not __file__.startswith('/usr/'):
-    IN_DEVEL = True
-if IN_DEVEL:
-    basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
-    if os.path.isdir(os.path.join(basedir, 'moulinette')):
-        sys.path.insert(0, basedir)
-    LOG_DIR = os.path.join(basedir, 'log')
-
-
-import moulinette
-from moulinette.actionsmap import ActionsMap
-from moulinette.interfaces.cli import colorize
-
-
-# Initialization & helpers functions -----------------------------------
-
-def _die(message, title='Error:'):
-    """Print error message and exit"""
-    print('%s %s' % (colorize(title, 'red'), message))
-    sys.exit(1)
 
 def _parse_api_args():
     """Parse main arguments for the api"""
@@ -62,23 +26,10 @@ def _parse_api_args():
         action='store', default=DEFAULT_PORT, type=int,
         help="Port to listen on (default: %d)" % DEFAULT_PORT,
     )
-    srv_group.add_argument('--no-websocket',
-        action='store_true', default=True, dest='use_websocket',
-        help="Serve without WebSocket support, used to handle "
-        "asynchronous responses such as the messages",
-    )
     glob_group = parser.add_argument_group('global arguments')
-    glob_group.add_argument('--no-cache',
-        action='store_false', default=True, dest='use_cache',
-        help="Don't use actions map cache",
-    )
     glob_group.add_argument('--debug',
         action='store_true', default=False,
         help="Set log level to DEBUG",
-    )
-    glob_group.add_argument('--verbose',
-        action='store_true', default=False,
-        help="Be verbose in the output",
     )
     glob_group.add_argument('--help',
         action='help', help="Show this help message and exit",
@@ -86,125 +37,8 @@ def _parse_api_args():
 
     return parser.parse_args()
 
-def _init_moulinette(use_websocket=True, debug=False, verbose=False):
-    """Configure logging and initialize the moulinette"""
-    # Define loggers handlers
-    handlers = set(LOGGERS_HANDLERS)
-    if not use_websocket and 'api' in handlers:
-        handlers.remove('api')
-    if verbose and 'console' not in handlers:
-        handlers.add('console')
-    root_handlers = handlers - set(['api'])
-
-    # Define loggers level
-    level = LOGGERS_LEVEL
-    api_level = API_LOGGER_LEVEL
-    if debug:
-        level = 'DEBUG'
-        api_level = 'DEBUG'
-
-    # Custom logging configuration
-    logging = {
-        'version': 1,
-        'disable_existing_loggers': True,
-        'formatters': {
-            'console': {
-                'format': '%(relativeCreated)-5d %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s'
-            },
-            'precise': {
-                'format': '%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s'
-            },
-        },
-        'filters': {
-            'action': {
-                '()': 'moulinette.utils.log.ActionFilter',
-            },
-        },
-        'handlers': {
-            'api': {
-                'level': api_level,
-                'class': 'moulinette.interfaces.api.APIQueueHandler',
-            },
-            'file': {
-                'class': 'logging.handlers.WatchedFileHandler',
-                'formatter': 'precise',
-                'filename': '%s/%s' % (LOG_DIR, LOG_FILE),
-                'filters': ['action'],
-            },
-            'console': {
-                'class': 'logging.StreamHandler',
-                'formatter': 'console',
-                'stream': 'ext://sys.stdout',
-                'filters': ['action'],
-            },
-        },
-        'loggers': {
-            'yunohost': {
-                'level': level,
-                'handlers': handlers,
-                'propagate': False,
-            },
-            'moulinette': {
-                'level': level,
-                'handlers': [],
-                'propagate': True,
-            },
-            'gnupg': {
-                'level': 'INFO',
-                'handlers': [],
-                'propagate': False,
-            },
-        },
-        'root': {
-            'level': level,
-            'handlers': root_handlers,
-        },
-    }
-
-    # Create log directory
-    if not os.path.isdir(LOG_DIR):
-        try:
-            os.makedirs(LOG_DIR, 0750)
-        except os.error as e:
-            _die(str(e))
-
-    # Initialize moulinette
-    moulinette.init(logging_config=logging, _from_source=IN_DEVEL)
-
-def _retrieve_namespaces():
-    """Return the list of namespaces to load"""
-    ret = ['yunohost']
-    for n in ActionsMap.get_namespaces():
-        # Append YunoHost modules
-        if n.startswith('ynh_'):
-            ret.append(n)
-    return ret
-
-
-# Callbacks for additional routes --------------------------------------
-
-def is_installed():
-    """
-    Check whether YunoHost is installed or not
-
-    """
-    installed = False
-    if os.path.isfile('/etc/yunohost/installed'):
-        installed = True
-    return { 'installed': installed }
-
-
-# Main action ----------------------------------------------------------
 
 if __name__ == '__main__':
     opts = _parse_api_args()
-    _init_moulinette(opts.use_websocket, opts.debug, opts.verbose)
-
     # Run the server
-    ret = moulinette.api(
-        _retrieve_namespaces(),
-        host=opts.host, port=opts.port, routes={
-            ('GET', '/installed'): is_installed,
-        }, use_cache=opts.use_cache, use_websocket=opts.use_websocket
-    )
-    sys.exit(ret)
+    yunohost.api(debug=opts.debug, host=opts.host, port=opts.port)

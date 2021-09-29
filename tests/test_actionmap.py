@@ -1,4 +1,5 @@
 import yaml
 
+
 def test_yaml_syntax():
-    yaml.load(open("data/actionsmap/yunohost.yml"))
+    yaml.safe_load(open("data/actionsmap/yunohost.yml"))

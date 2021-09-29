@@ -2,52 +2,52 @@ Source: yunohost
 Section: utils
 Priority: extra
 Maintainer: YunoHost Contributors <contrib@yunohost.org>
-Build-Depends: debhelper (>=9), dh-systemd, dh-python, python-all (>= 2.7), python-yaml, python-jinja2
+Build-Depends: debhelper (>=9), dh-systemd, dh-python, python3-all (>= 3.7), python3-yaml, python3-jinja2
 Standards-Version: 3.9.6
-X-Python-Version: >= 2.7
 Homepage: https://yunohost.org/
 
 Package: yunohost
 Essential: yes
 Architecture: all
-Depends: ${python:Depends}, ${misc:Depends}
- , moulinette (>= 2.7.1), ssowat (>= 2.7.1)
- , python-psutil, python-requests, python-dnspython, python-openssl
- , python-apt, python-miniupnpc, python-dbus, python-jinja2
- , python-toml
- , glances, apt-transport-https
- , dnsutils, bind9utils, unzip, git, curl, cron, wget, jq
- , ca-certificates, netcat-openbsd, iproute
- , mariadb-server, php-mysql | php-mysqlnd
+Depends: ${python3:Depends}, ${misc:Depends}
+ , moulinette (>= 4.2), ssowat (>= 4.0)
+ , python3-psutil, python3-requests, python3-dnspython, python3-openssl
+ , python3-miniupnpc, python3-dbus, python3-jinja2
+ , python3-toml, python3-packaging, python3-publicsuffix,
+ , python3-ldap, python3-zeroconf, python3-lexicon,
+ , apt, apt-transport-https, apt-utils, dirmngr
+ , php7.3-common, php7.3-fpm, php7.3-ldap, php7.3-intl
+ , mariadb-server, php7.3-mysql
+ , openssh-server, iptables, fail2ban, dnsutils, bind9utils
+ , openssl, ca-certificates, netcat-openbsd, iproute2
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
- , postfix-ldap, postfix-policyd-spf-perl, postfix-pcre, procmail, mailutils, postsrsd
- , dovecot-ldap, dovecot-lmtpd, dovecot-managesieved
- , dovecot-antispam, fail2ban, iptables
- , nginx-extras (>=1.6.2), php-fpm, php-ldap, php-intl
- , dnsmasq, openssl, avahi-daemon, libnss-mdns, resolvconf, libnss-myhostname
- , metronome
- , rspamd (>= 1.6.0), redis-server, opendkim-tools
- , haveged, fake-hwclock
- , equivs, lsof
+ , dnsmasq, resolvconf, libnss-myhostname
+ , postfix, postfix-ldap, postfix-policyd-spf-perl, postfix-pcre
+ , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved, dovecot-antispam
+ , rspamd, opendkim-tools, postsrsd, procmail, mailutils
+ , redis-server
+ , metronome (>=3.14.0)
+ , acl
+ , git, curl, wget, cron, unzip, jq, bc, at
+ , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
 Recommends: yunohost-admin
- , openssh-server, ntp, inetutils-ping | iputils-ping
- , bash-completion, rsyslog, etckeeper
- , php-gd, php-curl, php-gettext, php-mcrypt
- , python-pip
+ , ntp, inetutils-ping | iputils-ping
+ , bash-completion, rsyslog
+ , php7.3-gd, php7.3-curl, php-gettext
+ , python3-pip
  , unattended-upgrades
  , libdbd-ldap-perl, libnet-dns-perl
 Suggests: htop, vim, rsync, acpi-support-base, udisks2
 Conflicts: iptables-persistent
- , moulinette-yunohost, yunohost-config
- , yunohost-config-others, yunohost-config-postfix
- , yunohost-config-dovecot, yunohost-config-slapd
- , yunohost-config-nginx, yunohost-config-amavis
- , yunohost-config-mysql, yunohost-predepends
-Replaces: moulinette-yunohost, yunohost-config
- , yunohost-config-others, yunohost-config-postfix
- , yunohost-config-dovecot, yunohost-config-slapd
- , yunohost-config-nginx, yunohost-config-amavis
- , yunohost-config-mysql, yunohost-predepends
+ , apache2
+ , bind9
+ , nginx-extras (>= 1.16)
+ , openssl (>= 1.1.1g)
+ , slapd (>= 2.4.49)
+ , dovecot-core (>= 1:2.3.7)
+ , redis-server (>= 5:5.0.7)
+ , fail2ban (>= 0.11)
+ , iptables (>= 1.8.3)
 Description: manageable and configured self-hosting server
  YunoHost aims to make self-hosting accessible to everyone. It configures
  an email, Web and IM server alongside a LDAP base. It also provides

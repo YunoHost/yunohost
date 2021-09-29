@@ -22,20 +22,24 @@ template = Template(open(os.path.join(base_path, "manpage.template")).read())
 
 
 THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ACTIONSMAP_FILE = os.path.join(THIS_SCRIPT_DIR, '../data/actionsmap/yunohost.yml')
+ACTIONSMAP_FILE = os.path.join(THIS_SCRIPT_DIR, "../data/actionsmap/yunohost.yml")
 
 
 def ordered_yaml_load(stream):
-    class OrderedLoader(yaml.Loader):
+    class OrderedLoader(yaml.SafeLoader):
         pass
+
     OrderedLoader.add_constructor(
         yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG,
-        lambda loader, node: OrderedDict(loader.construct_pairs(node)))
+        lambda loader, node: OrderedDict(loader.construct_pairs(node)),
+    )
     return yaml.load(stream, OrderedLoader)
 
 
 def main():
-    parser = argparse.ArgumentParser(description="generate yunohost manpage based on actionsmap.yml")
+    parser = argparse.ArgumentParser(
+        description="generate yunohost manpage based on actionsmap.yml"
+    )
     parser.add_argument("-o", "--output", default="output/yunohost")
     parser.add_argument("-z", "--gzip", action="store_true", default=False)
 
@@ -55,12 +59,12 @@ def main():
         output_path = args.output
 
     # man pages of "yunohost *"
-    with open(ACTIONSMAP_FILE, 'r') as actionsmap:
+    with open(ACTIONSMAP_FILE, "r") as actionsmap:
 
         # Getting the dictionary containning what actions are possible per domain
         actionsmap = ordered_yaml_load(actionsmap)
 
-        for i in actionsmap.keys():
+        for i in list(actionsmap.keys()):
             if i.startswith("_"):
                 del actionsmap[i]
 
@@ -78,8 +82,8 @@ def main():
                 output.write(result)
         else:
             with gzip.open(output_path, mode="w", compresslevel=9) as output:
-                output.write(result)
+                output.write(result.encode())
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()
