@@ -8,7 +8,12 @@ from publicsuffix import PublicSuffixList
 
 from moulinette.utils.process import check_output
 
-from yunohost.utils.dns import dig, YNH_DYNDNS_DOMAINS, is_yunohost_dyndns_domain, is_special_use_tld
+from yunohost.utils.dns import (
+    dig,
+    YNH_DYNDNS_DOMAINS,
+    is_yunohost_dyndns_domain,
+    is_special_use_tld,
+)
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _get_maindomain
 from yunohost.dns import _build_dns_conf, _get_dns_zone_for_domain
