@@ -34,7 +34,9 @@ external_resolvers_: List[str] = []
 
 def is_yunohost_dyndns_domain(domain):
 
-    return any(domain.endswith(f".{dyndns_domain}") for dyndns_domain in YNH_DYNDNS_DOMAINS)
+    return any(
+        domain.endswith(f".{dyndns_domain}") for dyndns_domain in YNH_DYNDNS_DOMAINS
+    )
 
 
 def is_special_use_tld(domain):
