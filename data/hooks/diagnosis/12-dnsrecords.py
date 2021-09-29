@@ -8,12 +8,10 @@ from publicsuffix import PublicSuffixList
 
 from moulinette.utils.process import check_output
 
-from yunohost.utils.dns import dig, YNH_DYNDNS_DOMAINS
+from yunohost.utils.dns import dig, YNH_DYNDNS_DOMAINS, is_yunohost_dyndns_domain, is_special_use_tld
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _get_maindomain
 from yunohost.dns import _build_dns_conf, _get_dns_zone_for_domain
-
-SPECIAL_USE_TLDS = ["local", "localhost", "onion", "test"]
 
 
 class DNSRecordsDiagnoser(Diagnoser):
@@ -29,13 +27,10 @@ class DNSRecordsDiagnoser(Diagnoser):
         all_domains = domain_list(exclude_subdomains=True)["domains"]
         for domain in all_domains:
             self.logger_debug("Diagnosing DNS conf for %s" % domain)
-            is_specialusedomain = any(
-                domain.endswith("." + tld) for tld in SPECIAL_USE_TLDS
-            )
+
             for report in self.check_domain(
                 domain,
                 domain == main_domain,
-                is_specialusedomain=is_specialusedomain,
             ):
                 yield report
 
@@ -53,7 +48,7 @@ class DNSRecordsDiagnoser(Diagnoser):
         for report in self.check_expiration_date(domains_from_registrar):
             yield report
 
-    def check_domain(self, domain, is_main_domain, is_specialusedomain):
+    def check_domain(self, domain, is_main_domain):
 
         base_dns_zone = _get_dns_zone_for_domain(domain)
         basename = domain.replace(base_dns_zone, "").rstrip(".") or "@"
@@ -64,7 +59,7 @@ class DNSRecordsDiagnoser(Diagnoser):
 
         categories = ["basic", "mail", "xmpp", "extra"]
 
-        if is_specialusedomain:
+        if is_special_use_tld(domain):
             categories = []
             yield dict(
                 meta={"domain": domain},
@@ -140,10 +135,7 @@ class DNSRecordsDiagnoser(Diagnoser):
 
             if discrepancies:
                 # For ynh-managed domains (nohost.me etc...), tell people to try to "yunohost dyndns update --force"
-                if any(
-                    domain.endswith(ynh_dyndns_domain)
-                    for ynh_dyndns_domain in YNH_DYNDNS_DOMAINS
-                ):
+                if is_yunohost_dyndns_domain(domain):
                     output["details"] = ["diagnosis_dns_try_dyndns_update_force"]
                 # Otherwise point to the documentation
                 else:

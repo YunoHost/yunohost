@@ -23,11 +23,23 @@ from typing import List
 
 from moulinette.utils.filesystem import read_file
 
+SPECIAL_USE_TLDS = ["local", "localhost", "onion", "test"]
+
 YNH_DYNDNS_DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
 
 # Lazy dev caching to avoid re-reading the file multiple time when calling
 # dig() often during same yunohost operation
 external_resolvers_: List[str] = []
+
+
+def is_yunohost_dyndns_domain(domain):
+
+    return any(domain.endswith(f".{dyndns_domain}") for dyndns_domain in YNH_DYNDNS_DOMAINS)
+
+
+def is_special_use_tld(domain):
+
+    return any(domain.endswith(f".{tld}") for tld in SPECIAL_USE_TLDS)
 
 
 def external_resolvers():
