@@ -1160,7 +1160,7 @@ def app_remove(operation_logger, app, purge=False):
     env_dict["YNH_APP_INSTANCE_NAME"] = app
     env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
     env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
-    env_dict["YNH_APP_PURGE"] = str(purge)
+    env_dict["YNH_APP_PURGE"] = str(1 if purge else 0)
     env_dict["YNH_APP_BASEDIR"] = tmp_workdir_for_app
 
     operation_logger.extra.update({"env": env_dict})
