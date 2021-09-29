@@ -1733,6 +1733,18 @@ class BackupMethod(object):
             logger.debug("unable to load info json", exc_info=1)
             raise YunohostError('backup_invalid_archive')
 
+	# (legacy) Retrieve backup size
+        # FIXME
+	size = info.get("size", 0)
+	if not size:
+            tar = tarfile.open(
+		archive_file, "r:gz" if archive_file.endswith(".gz") else "r"
+            )
+            size = reduce(
+		lambda x, y: getattr(x, "size", x) + getattr(y, "size", y), tar.getmembers()
+            )
+            tar.close()
+
         return info
 
     def clean(self):
@@ -2137,6 +2149,7 @@ class TarBackupMethod(BackupMethod):
 
         return [remove_extension(f) for f in archives]
 
+
     def _archive_exists(self):
         return os.path.lexists(self.archive_path)
 
@@ -2154,21 +2167,63 @@ class TarBackupMethod(BackupMethod):
                                     path=archive_file)
 
     def _get_info_string(self):
-        info_file = os.path.join(self.repo.path, self.name + '.info.json')
+	name = self.name
+	if name.endswith(".tar.gz"):
+            name = name[: -len(".tar.gz")]
+	elif name.endswith(".tar"):
+            name = name[: -len(".tar")]
 
-        if not os.path.exists(info_file):
-            tar = tarfile.open(self.archive_path, "r:gz")
-            info_dir = info_file + '.d'
+	archive_file = "%s/%s.tar" % (self.repo.path, name)
+
+	# Check file exist (even if it's a broken symlink)
+	if not os.path.lexists(archive_file):
+            archive_file += ".gz"
+            if not os.path.lexists(archive_file):
+		raise YunohostValidationError("backup_archive_name_unknown", name=name)
+
+	# If symlink, retrieve the real path
+	if os.path.islink(archive_file):
+            archive_file = os.path.realpath(archive_file)
+
+            # Raise exception if link is broken (e.g. on unmounted external storage)
+            if not os.path.exists(archive_file):
+		raise YunohostValidationError(
+                    "backup_archive_broken_link", path=archive_file
+		)
+
+	info_file = "%s/%s.info.json" % (self.repo.path, name)
+
+	if not os.path.exists(info_file):
+            tar = tarfile.open(
+		archive_file, "r:gz" if archive_file.endswith(".gz") else "r"
+            )
+            info_dir = info_file + ".d"
+
             try:
-                tar.extract('info.json', path=info_dir)
+		files_in_archive = tar.getnames()
+            except (IOError, EOFError, tarfile.ReadError) as e:
+		raise YunohostError(
+                    "backup_archive_corrupted", archive=archive_file, error=str(e)
+		)
+
+            try:
+		if "info.json" in files_in_archive:
+                    tar.extract("info.json", path=info_dir)
+		elif "./info.json" in files_in_archive:
+                    tar.extract("./info.json", path=info_dir)
+		else:
+                    raise KeyError
             except KeyError:
-                logger.debug("unable to retrieve '%s' inside the archive",
-                             info_file, exc_info=1)
-                raise YunohostError('backup_invalid_archive')
+		logger.debug(
+                    "unable to retrieve '%s' inside the archive", info_file, exc_info=1
+		)
+		raise YunohostError(
+                    "backup_archive_cant_retrieve_info_json", archive=archive_file
+		)
             else:
-                shutil.move(os.path.join(info_dir, 'info.json'), info_file)
+		shutil.move(os.path.join(info_dir, "info.json"), info_file)
             finally:
-                tar.close()
+		tar.close()
             os.rmdir(info_dir)
 
         try:
@@ -2176,7 +2231,6 @@ class TarBackupMethod(BackupMethod):
         except MoulinetteError:
             logger.debug("unable to load '%s'", info_file, exc_info=1)
             raise YunohostError('backup_invalid_archive')
-        # FIXME : Don't we want to close the tar archive here or at some point ?
 
 
 class BorgBackupMethod(BackupMethod):
@@ -2661,19 +2715,11 @@ def backup_info(name, repo=None, with_details=False, human_readable=False):
 
     info = repo.method.info(name)
 
-    # Historically backup size was not here, in that case we know it's a tar archive
-    size = info.get('size', 0)
-    if not size:
-        tar = tarfile.open(repo.archive_path, "r:gz" if archive_file.endswith(".gz") else "r")
-        size = reduce(lambda x, y: getattr(x, 'size', x) + getattr(y, 'size', y),
-                      tar.getmembers())
-        tar.close()
-
     result = {
-        'path': repo.archive_path,
-        'created_at': datetime.utcfromtimestamp(info['created_at']),
-        'description': info['description'],
-        'size': size,
+        "path": repo.archive_path,
+        "created_at": datetime.utcfromtimestamp(info["created_at"]),
+        "description": info["description"],
+        "size": size,
     }
     if human_readable:
         result['size'] = binary_to_human(result['size']) + 'B'
