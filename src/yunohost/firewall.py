@@ -31,7 +31,6 @@ from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils import process
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.text import prependlines
 
 FIREWALL_FILE = "/etc/yunohost/firewall.yml"
 UPNP_CRON_JOB = "/etc/cron.d/yunohost-firewall-upnp"
@@ -240,7 +239,7 @@ def firewall_reload(skip_upnp=False):
     except process.CalledProcessError as e:
         logger.debug(
             "iptables seems to be not available, it outputs:\n%s",
-            prependlines(e.output.rstrip(), "> "),
+            e.output.decode().strip(),
         )
         logger.warning(m18n.n("iptables_unavailable"))
     else:
@@ -273,7 +272,7 @@ def firewall_reload(skip_upnp=False):
     except process.CalledProcessError as e:
         logger.debug(
             "ip6tables seems to be not available, it outputs:\n%s",
-            prependlines(e.output.rstrip(), "> "),
+            e.output.decode().strip(),
         )
         logger.warning(m18n.n("ip6tables_unavailable"))
     else:
@@ -526,6 +525,6 @@ def _on_rule_command_error(returncode, cmd, output):
         '"%s" returned non-zero exit status %d:\n%s',
         cmd,
         returncode,
-        prependlines(output.rstrip(), "> "),
+        output.decode().strip(),
     )
     return True
