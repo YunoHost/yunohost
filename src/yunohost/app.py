@@ -45,6 +45,10 @@ from moulinette.utils.filesystem import (
     read_yaml,
     write_to_file,
     write_to_json,
+    cp,
+    rm,
+    chown,
+    chmod,
 )
 
 from yunohost.utils import packages
@@ -643,15 +647,15 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             # Replace scripts and manifest and conf (if exists)
             # Move scripts and manifest to the right place
             for file_to_copy in APP_FILES_TO_COPY:
-                os.system(f"rm -rf '{app_setting_path}/{file_to_copy}'")
+                rm(f'{app_setting_path}/{file_to_copy}', recursive=True, force=True)
                 if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
-                    os.system(f"cp -R '{extracted_app_folder}/{file_to_copy}' '{app_setting_path}'")
+                    cp(f'{extracted_app_folder}/{file_to_copy}', f'{app_setting_path}/{file_to_copy}', recursive=True)
 
             # Clean and set permissions
             shutil.rmtree(extracted_app_folder)
-            os.system("chmod 600 %s" % app_setting_path)
-            os.system("chmod 400 %s/settings.yml" % app_setting_path)
-            os.system("chown -R root: %s" % app_setting_path)
+            chmod(app_setting_path, 0o600)
+            chmod(f"{app_setting_path}/settings.yml", 0o400)
+            chown(app_setting_path, "root", recursive=True)
 
             # So much win
             logger.success(m18n.n("app_upgraded", app=app_instance_name))
@@ -816,7 +820,7 @@ def app_install(
     # Move scripts and manifest to the right place
     for file_to_copy in APP_FILES_TO_COPY:
         if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
-            os.system(f"cp -R '{extracted_app_folder}/{file_to_copy}' '{app_setting_path}'")
+            cp(f'{extracted_app_folder}/{file_to_copy}', f'{app_setting_path}/{file_to_copy}', recursive=True)
 
     # Initialize the main permission for the app
     # The permission is initialized with no url associated, and with tile disabled
@@ -955,9 +959,9 @@ def app_install(
 
     # Clean and set permissions
     shutil.rmtree(extracted_app_folder)
-    os.system("chmod 600 %s" % app_setting_path)
-    os.system("chmod 400 %s/settings.yml" % app_setting_path)
-    os.system("chown -R root: %s" % app_setting_path)
+    chmod(app_setting_path, 0o600)
+    chmod(f"{app_setting_path}/settings.yml", 0o400)
+    chown(app_setting_path, "root", recursive=True)
 
     logger.success(m18n.n("installation_complete"))
 
@@ -1153,7 +1157,7 @@ def app_makedefault(operation_logger, app, domain=None):
     write_to_json(
         "/etc/ssowat/conf.json.persistent", ssowat_conf, sort_keys=True, indent=4
     )
-    os.system("chmod 644 /etc/ssowat/conf.json.persistent")
+    chmod("/etc/ssowat/conf.json.persistent", 0o644)
 
     logger.success(m18n.n("ssowat_conf_updated"))
 
@@ -2077,24 +2081,16 @@ def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
 
     extracted_app_folder = _make_tmp_workdir_for_app()
 
-    if ".zip" in path:
-        extract_result = os.system(
-            f"unzip '{path}' -d {extracted_app_folder} > /dev/null 2>&1"
-        )
-    elif ".tar" in path:
-        extract_result = os.system(
-            f"tar -xf '{path}' -C {extracted_app_folder} > /dev/null 2>&1"
-        )
-    elif os.path.isdir(path):
+    if os.path.isdir(path):
         shutil.rmtree(extracted_app_folder)
         if path[-1] != "/":
             path = path + "/"
-        extract_result = os.system(f"cp -a '{path}' '{extracted_app_folder}'")
+        cp(path, extracted_app_folder, recursive=True)
     else:
-        extract_result = 1
-
-    if extract_result != 0:
-        raise YunohostError("app_extraction_failed")
+        try:
+            shutil.unpack_archive(path, extracted_app_folder)
+        except Exception:
+            raise YunohostError("app_extraction_failed")
 
     try:
         if len(os.listdir(extracted_app_folder)) == 1:

@@ -29,7 +29,7 @@ from typing import Dict, Any
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import write_to_file, read_yaml, write_to_yaml
+from moulinette.utils.filesystem import write_to_file, read_yaml, write_to_yaml, rm
 
 from yunohost.app import (
     app_ssowatconf,
@@ -328,7 +328,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     ]
 
     for stuff in stuff_to_delete:
-        os.system("rm -rf {stuff}")
+        rm(stuff, force=True, recursive=True)
 
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...
