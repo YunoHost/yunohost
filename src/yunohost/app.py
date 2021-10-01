@@ -79,6 +79,17 @@ re_app_instance_name = re.compile(
     r"^(?P<appid>[\w-]+?)(__(?P<appinstancenb>[1-9][0-9]*))?$"
 )
 
+APP_FILES_TO_COPY = [
+    "manifest.json",
+    "manifest.toml",
+    "actions.json",
+    "actions.toml",
+    "config_panel.toml",
+    "scripts",
+    "conf",
+    "hooks",
+    "doc",
+]
 
 def app_catalog(full=False, with_categories=False):
     """
@@ -710,38 +721,11 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     hook_add(app_instance_name, extracted_app_folder + "/hooks/" + hook)
 
             # Replace scripts and manifest and conf (if exists)
-            os.system(
-                'rm -rf "%s/scripts" "%s/manifest.toml %s/manifest.json %s/conf"'
-                % (
-                    app_setting_path,
-                    app_setting_path,
-                    app_setting_path,
-                    app_setting_path,
-                )
-            )
-
-            if os.path.exists(os.path.join(extracted_app_folder, "manifest.json")):
-                os.system(
-                    'mv "%s/manifest.json" "%s/scripts" %s'
-                    % (extracted_app_folder, extracted_app_folder, app_setting_path)
-                )
-            if os.path.exists(os.path.join(extracted_app_folder, "manifest.toml")):
-                os.system(
-                    'mv "%s/manifest.toml" "%s/scripts" %s'
-                    % (extracted_app_folder, extracted_app_folder, app_setting_path)
-                )
-
-            for file_to_copy in [
-                "actions.json",
-                "actions.toml",
-                "config_panel.toml",
-                "conf",
-            ]:
+            # Move scripts and manifest to the right place
+            for file_to_copy in APP_FILES_TO_COPY:
+                os.system(f"rm -rf '{app_setting_path}/{file_to_copy}'")
                 if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
-                    os.system(
-                        "cp -R %s/%s %s"
-                        % (extracted_app_folder, file_to_copy, app_setting_path)
-                    )
+                    os.system(f"cp -R '{extracted_app_folder}/{file_to_copy} {app_setting_path}'")
 
             # Clean and set permissions
             shutil.rmtree(extracted_app_folder)
@@ -945,23 +929,9 @@ def app_install(
     _set_app_settings(app_instance_name, app_settings)
 
     # Move scripts and manifest to the right place
-    if os.path.exists(os.path.join(extracted_app_folder, "manifest.json")):
-        os.system("cp %s/manifest.json %s" % (extracted_app_folder, app_setting_path))
-    if os.path.exists(os.path.join(extracted_app_folder, "manifest.toml")):
-        os.system("cp %s/manifest.toml %s" % (extracted_app_folder, app_setting_path))
-    os.system("cp -R %s/scripts %s" % (extracted_app_folder, app_setting_path))
-
-    for file_to_copy in [
-        "actions.json",
-        "actions.toml",
-        "config_panel.toml",
-        "conf",
-    ]:
+    for file_to_copy in APP_FILES_TO_COPY:
         if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
-            os.system(
-                "cp -R %s/%s %s"
-                % (extracted_app_folder, file_to_copy, app_setting_path)
-            )
+            os.system(f"cp -R '{extracted_app_folder}/{file_to_copy}' '{app_setting_path}'"
 
     # Initialize the main permission for the app
     # The permission is initialized with no url associated, and with tile disabled
@@ -1038,11 +1008,7 @@ def app_install(
                 logger.warning(m18n.n("app_remove_after_failed_install"))
 
             # Setup environment for remove script
-            env_dict_remove = {}
-            env_dict_remove["YNH_APP_ID"] = app_id
-            env_dict_remove["YNH_APP_INSTANCE_NAME"] = app_instance_name
-            env_dict_remove["YNH_APP_INSTANCE_NUMBER"] = str(instance_number)
-            env_dict_remove["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
+            env_dict_remove = _make_environment_for_app_script(app_instance_name)
             env_dict_remove["YNH_APP_BASEDIR"] = extracted_app_folder
 
             # Execute remove script
@@ -1156,12 +1122,9 @@ def app_remove(operation_logger, app, purge=False):
 
     env_dict = {}
     app_id, app_instance_nb = _parse_app_instance_name(app)
-    env_dict["YNH_APP_ID"] = app_id
-    env_dict["YNH_APP_INSTANCE_NAME"] = app
-    env_dict["YNH_APP_INSTANCE_NUMBER"] = str(app_instance_nb)
-    env_dict["YNH_APP_MANIFEST_VERSION"] = manifest.get("version", "?")
-    env_dict["YNH_APP_PURGE"] = str(1 if purge else 0)
+    env_dict = _make_environment_for_app_script(app)
     env_dict["YNH_APP_BASEDIR"] = tmp_workdir_for_app
+    env_dict["YNH_APP_PURGE"] = str(1 if purge else 0)
 
     operation_logger.extra.update({"env": env_dict})
     operation_logger.flush()
