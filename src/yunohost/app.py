@@ -1986,21 +1986,21 @@ def _is_app_repo_url(string: str) -> bool:
     return APP_REPO_URL.match(string)
 
 
-def _app_quality(app: str) -> str:
+def _app_quality(src: str) -> str:
     """
        app may in fact be an app name, an url, or a path
     """
 
     raw_app_catalog = _load_apps_catalog()["apps"]
-    if app in raw_app_catalog or _is_app_repo_url(app):
+    if src in raw_app_catalog or _is_app_repo_url(src):
 
         # If we got an app name directly (e.g. just "wordpress"), we gonna test this name
-        if app in raw_app_catalog:
-            app_name_to_test = app
+        if src in raw_app_catalog:
+            app_name_to_test = src
         # If we got an url like "https://github.com/foo/bar_ynh, we want to
         # extract "bar" and test if we know this app
-        elif ("http://" in app) or ("https://" in app):
-            app_name_to_test = app.strip("/").split("/")[-1].replace("_ynh", "")
+        elif ("http://" in src) or ("https://" in src):
+            app_name_to_test = src.strip("/").split("/")[-1].replace("_ynh", "")
         else:
             # FIXME : watdo if '@' in app ?
             return "thirdparty"
@@ -2018,9 +2018,11 @@ def _app_quality(app: str) -> str:
         else:
             return "thirdparty"
 
-    elif os.path.exists(app):
+    elif os.path.exists(src):
         return "thirdparty"
     else:
+        if "http://" in src or "https://" in src:
+            logger.error(f"{src} is not a valid app url: app url are expected to look like https://domain.tld/path/to/repo_ynh")
         raise YunohostValidationError("app_unknown")
 
 
@@ -2043,7 +2045,7 @@ def _extract_app(src: str) -> Tuple[Dict, str]:
         return _extract_app_from_gitrepo(url, branch, revision, app_info)
     # App is a git repo url
     elif _is_app_repo_url(src):
-        url = src
+        url = src.strip().strip("/")
         branch = "master"
         revision = "HEAD"
         # gitlab urls may look like 'https://domain/org/group/repo/-/tree/testing'
