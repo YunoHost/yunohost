@@ -471,7 +471,7 @@ def _get_dns_zone_for_domain(domain):
         # Check if there's a NS record for that domain
         answer = dig(parent, rdtype="NS", full_answers=True, resolvers="force_external")
         if answer[0] == "ok":
-            mkdir(cache_folder, parents=True)
+            mkdir(cache_folder, parents=True, force=True)
             write_to_file(cache_file, parent)
             return parent
 
