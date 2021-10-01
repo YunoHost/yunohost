@@ -69,6 +69,10 @@ re_app_instance_name = re.compile(
     r"^(?P<appid>[\w-]+?)(__(?P<appinstancenb>[1-9][0-9]*))?$"
 )
 
+APP_REPO_URL = re.compile(
+    r"^https://[a-zA-Z0-9-_.]+/[a-zA-Z0-9-_./]+/[a-zA-Z0-9-_.]+_ynh(/?(-/)?tree/[a-zA-Z0-9-_]+)?(\.git)?/?$"
+)
+
 APP_FILES_TO_COPY = [
     "manifest.json",
     "manifest.toml",
@@ -1971,13 +1975,24 @@ def _set_default_ask_questions(arguments):
     return arguments
 
 
+def _is_app_repo_url(string: str) -> bool:
+
+    string = string.strip()
+
+    # Dummy test for ssh-based stuff ... should probably be improved somehow
+    if '@' in string:
+        return True
+
+    return APP_REPO_URL.match(string)
+
+
 def _app_quality(app: str) -> str:
     """
        app may in fact be an app name, an url, or a path
     """
 
     raw_app_catalog = _load_apps_catalog()["apps"]
-    if app in raw_app_catalog or ("@" in app) or ("http://" in app) or ("https://" in app):
+    if app in raw_app_catalog or _is_app_repo_url(app):
 
         # If we got an app name directly (e.g. just "wordpress"), we gonna test this name
         if app in raw_app_catalog:
@@ -2027,10 +2042,14 @@ def _extract_app(src: str) -> Tuple[Dict, str]:
         revision = str(app_info["git"]["revision"])
         return _extract_app_from_gitrepo(url, branch, revision, app_info)
     # App is a git repo url
-    elif ("@" in src) or ("http://" in src) or ("https://" in src):
+    elif _is_app_repo_url(src):
         url = src
         branch = "master"
         revision = "HEAD"
+        # gitlab urls may look like 'https://domain/org/group/repo/-/tree/testing'
+        # compated to github urls looking like 'https://domain/org/repo/tree/testing'
+        if '/-/' in url:
+            url = url.replace('/-/', '/')
         if "/tree/" in url:
             url, branch = url.split("/tree/", 1)
         return _extract_app_from_gitrepo(url, branch, revision, {})
@@ -2038,6 +2057,8 @@ def _extract_app(src: str) -> Tuple[Dict, str]:
     elif os.path.exists(src):
         return _extract_app_from_folder(src)
     else:
+        if "http://" in src or "https://" in src:
+            logger.error(f"{src} is not a valid app url: app url are expected to look like https://domain.tld/path/to/repo_ynh")
         raise YunohostValidationError("app_unknown")
 
 
