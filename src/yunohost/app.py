@@ -538,7 +538,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     upgrade_type = "UPGRADE_FULL"
 
         # Check requirements
-        _check_manifest_requirements(manifest, app_instance_name=app_instance_name)
+        _check_manifest_requirements(manifest)
         _assert_system_is_sane_for_app(manifest, "pre")
 
         app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
@@ -753,7 +753,7 @@ def app_install(
     label = label if label else manifest["name"]
 
     # Check requirements
-    _check_manifest_requirements(manifest, app_id)
+    _check_manifest_requirements(manifest)
     _assert_system_is_sane_for_app(manifest, "pre")
 
     # Check if app can be forked
@@ -2187,7 +2187,7 @@ def _get_all_installed_apps_id():
     return all_apps_ids_formatted
 
 
-def _check_manifest_requirements(manifest: Dict, app: str):
+def _check_manifest_requirements(manifest: Dict):
     """Check if required packages are met from the manifest"""
 
     packaging_format = int(manifest.get("packaging_format", 0))
@@ -2198,6 +2198,8 @@ def _check_manifest_requirements(manifest: Dict, app: str):
 
     if not requirements:
         return
+
+    app = manifest.get("id", "?")
 
     logger.debug(m18n.n("app_requirements_checking", app=app))
 
