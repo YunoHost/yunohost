@@ -1988,7 +1988,7 @@ def _app_quality(app: str) -> str:
             app_name_to_test = app.strip("/").split("/")[-1].replace("_ynh", "")
         else:
             # FIXME : watdo if '@' in app ?
-            app_name_to_test = None
+            return "thirdparty"
 
         if app_name_to_test in raw_app_catalog:
 
