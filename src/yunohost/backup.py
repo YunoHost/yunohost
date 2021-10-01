@@ -49,10 +49,6 @@ from yunohost.app import (
     app_info,
     _is_installed,
     _make_environment_for_app_script,
-    _patch_legacy_helpers,
-    _patch_legacy_php_versions,
-    _patch_legacy_php_versions_in_settings,
-    LEGACY_PHP_VERSION_REPLACEMENTS,
     _make_tmp_workdir_for_app,
 )
 from yunohost.hook import (
@@ -1190,6 +1186,7 @@ class RestoreManager:
         """
         Apply dirty patch to redirect php5 and php7.0 files to php7.3
         """
+        from yunohost.utils.legacy import LEGACY_PHP_VERSION_REPLACEMENTS
 
         backup_csv = os.path.join(self.work_dir, "backup.csv")
 
@@ -1351,6 +1348,7 @@ class RestoreManager:
         app_instance_name -- (string) The app name to restore (no app with this
                              name should be already install)
         """
+        from yunohost.utils.legacy import _patch_legacy_php_versions, _patch_legacy_php_versions_in_settings, _patch_legacy_helpers
         from yunohost.user import user_group_list
         from yunohost.permission import (
             permission_create,
