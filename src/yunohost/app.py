@@ -645,7 +645,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             for file_to_copy in APP_FILES_TO_COPY:
                 os.system(f"rm -rf '{app_setting_path}/{file_to_copy}'")
                 if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
-                    os.system(f"cp -R '{extracted_app_folder}/{file_to_copy} {app_setting_path}'")
+                    os.system(f"cp -R '{extracted_app_folder}/{file_to_copy}' '{app_setting_path}'")
 
             # Clean and set permissions
             shutil.rmtree(extracted_app_folder)
@@ -2089,7 +2089,7 @@ def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
         shutil.rmtree(extracted_app_folder)
         if path[-1] != "/":
             path = path + "/"
-        extract_result = os.system(f"cp -a '{path}' {extracted_app_folder}")
+        extract_result = os.system(f"cp -a '{path}' '{extracted_app_folder}'")
     else:
         extract_result = 1
 
