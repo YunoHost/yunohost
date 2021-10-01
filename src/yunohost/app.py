@@ -609,7 +609,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             if upgrade_failed or broke_the_system:
 
                 # display this if there are remaining apps
-                if apps[number + 1 :]:
+                if apps[number + 1:]:
                     not_upgraded_apps = apps[number:]
                     logger.error(
                         m18n.n(
@@ -663,8 +663,6 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
 
 def app_manifest(app):
-
-    raw_app_list = _load_apps_catalog()["apps"]
 
     manifest, extracted_app_folder = _extract_app(app)
 
@@ -721,7 +719,7 @@ def app_install(
         if force or Moulinette.interface.type == "api":
             return
 
-        quality = app_quality(app)
+        quality = _app_quality(app)
         if quality == "success":
             return
 
@@ -816,7 +814,7 @@ def app_install(
     # Move scripts and manifest to the right place
     for file_to_copy in APP_FILES_TO_COPY:
         if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
-            os.system(f"cp -R '{extracted_app_folder}/{file_to_copy}' '{app_setting_path}'"
+            os.system(f"cp -R '{extracted_app_folder}/{file_to_copy}' '{app_setting_path}'")
 
     # Initialize the main permission for the app
     # The permission is initialized with no url associated, and with tile disabled
@@ -976,6 +974,7 @@ def app_remove(operation_logger, app, purge=False):
         purge -- Remove with all app data
 
     """
+    from yunohost.utils.legacy import _patch_legacy_php_versions, _patch_legacy_helpers
     from yunohost.hook import hook_exec, hook_remove, hook_callback
     from yunohost.permission import (
         user_permission_list,
@@ -1987,7 +1986,7 @@ def _app_quality(app: str) -> str:
     if app in raw_app_catalog or ("@" in app) or ("http://" in app) or ("https://" in app):
 
         # If we got an app name directly (e.g. just "wordpress"), we gonna test this name
-        if app in raw_app_list:
+        if app in raw_app_catalog:
             app_name_to_test = app
         # If we got an url like "https://github.com/foo/bar_ynh, we want to
         # extract "bar" and test if we know this app
@@ -1997,10 +1996,10 @@ def _app_quality(app: str) -> str:
             # FIXME : watdo if '@' in app ?
             app_name_to_test = None
 
-        if app_name_to_test in raw_app_list:
+        if app_name_to_test in raw_app_catalog:
 
-            state = raw_app_list[app_name_to_test].get("state", "notworking")
-            level = raw_app_list[app_name_to_test].get("level", None)
+            state = raw_app_catalog[app_name_to_test].get("state", "notworking")
+            level = raw_app_catalog[app_name_to_test].get("level", None)
             if state in ["working", "validated"]:
                 if isinstance(level, int) and level >= 5:
                     return "success"
@@ -2096,7 +2095,7 @@ def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
     return manifest, extracted_app_folder
 
 
-def _extract_app_from_gitrepo(url: str, branch: str, revision: str, app_info={}: Dict) -> Tuple[Dict, str]:
+def _extract_app_from_gitrepo(url: str, branch: str, revision: str, app_info: Dict = {}) -> Tuple[Dict, str]:
 
     logger.debug(m18n.n("downloading"))
 
