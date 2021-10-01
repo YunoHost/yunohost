@@ -1983,7 +1983,7 @@ def _is_app_repo_url(string: str) -> bool:
     if '@' in string:
         return True
 
-    return APP_REPO_URL.match(string)
+    return bool(APP_REPO_URL.match(string))
 
 
 def _app_quality(src: str) -> str:
