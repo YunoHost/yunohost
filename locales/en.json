@@ -36,7 +36,6 @@
     "app_manifest_install_ask_is_public": "Should this app be exposed to anonymous visitors?",
     "app_manifest_install_ask_password": "Choose an administration password for this app",
     "app_manifest_install_ask_path": "Choose the URL path (after the domain) where this app should be installed",
-    "app_manifest_invalid": "Something is wrong with the app manifest: {error}",
     "app_not_correctly_installed": "{app} seems to be incorrectly installed",
     "app_not_installed": "Could not find {app} in the list of installed apps: {all_apps}",
     "app_not_properly_removed": "{app} has not been properly removed",
