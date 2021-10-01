@@ -390,12 +390,11 @@ def app_change_url(operation_logger, app, domain, path):
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
     # Prepare env. var. to pass to script
-    env_dict = _make_environment_for_app_script(app)
+    env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app)
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
     env_dict["YNH_APP_OLD_PATH"] = old_path
     env_dict["YNH_APP_NEW_DOMAIN"] = domain
     env_dict["YNH_APP_NEW_PATH"] = path
-    env_dict["YNH_APP_BASEDIR"] = tmp_workdir_for_app
 
     if domain != old_domain:
         operation_logger.related_to.append(("domain", old_domain))
@@ -544,12 +543,11 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
 
         # Prepare env. var. to pass to script
-        env_dict = _make_environment_for_app_script(app_instance_name)
+        env_dict = _make_environment_for_app_script(app_instance_name, workdir=extracted_app_folder)
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
         env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
-        env_dict["YNH_APP_BASEDIR"] = extracted_app_folder
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
@@ -829,8 +827,7 @@ def app_install(
     )
 
     # Prepare env. var. to pass to script
-    env_dict = _make_environment_for_app_script(app_instance_name, args=args)
-    env_dict["YNH_APP_BASEDIR"] = extracted_app_folder
+    env_dict = _make_environment_for_app_script(app_instance_name, args=args, workdir=extracted_app_folder)
 
     env_dict_for_logging = env_dict.copy()
     for question in questions:
@@ -891,8 +888,7 @@ def app_install(
                 logger.warning(m18n.n("app_remove_after_failed_install"))
 
             # Setup environment for remove script
-            env_dict_remove = _make_environment_for_app_script(app_instance_name)
-            env_dict_remove["YNH_APP_BASEDIR"] = extracted_app_folder
+            env_dict_remove = _make_environment_for_app_script(app_instance_name, workdir=extracted_app_folder)
 
             # Execute remove script
             operation_logger_remove = OperationLogger(
@@ -1006,8 +1002,7 @@ def app_remove(operation_logger, app, purge=False):
 
     env_dict = {}
     app_id, app_instance_nb = _parse_app_instance_name(app)
-    env_dict = _make_environment_for_app_script(app)
-    env_dict["YNH_APP_BASEDIR"] = tmp_workdir_for_app
+    env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app)
     env_dict["YNH_APP_PURGE"] = str(1 if purge else 0)
 
     operation_logger.extra.update({"env": env_dict})
@@ -1501,9 +1496,8 @@ def app_action_run(operation_logger, app, action, args=None):
 
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
-    env_dict = _make_environment_for_app_script(app, args=args, args_prefix="ACTION_")
+    env_dict = _make_environment_for_app_script(app, args=args, args_prefix="ACTION_", workdir=tmp_workdir_for_app)
     env_dict["YNH_ACTION"] = action
-    env_dict["YNH_APP_BASEDIR"] = tmp_workdir_for_app
 
     _, action_script = tempfile.mkstemp(dir=tmp_workdir_for_app)
 
@@ -2328,7 +2322,7 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
             )
 
 
-def _make_environment_for_app_script(app, args={}, args_prefix="APP_ARG_"):
+def _make_environment_for_app_script(app, args={}, args_prefix="APP_ARG_", workdir=None):
 
     app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
@@ -2341,6 +2335,9 @@ def _make_environment_for_app_script(app, args={}, args_prefix="APP_ARG_"):
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
         "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?"),
     }
+
+    if workdir:
+        env_dict["YNH_APP_BASEDIR"] = workdir
 
     for arg_name, arg_value in args.items():
         env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = str(arg_value)

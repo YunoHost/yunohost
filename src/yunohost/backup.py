@@ -1483,16 +1483,15 @@ class RestoreManager:
         logger.debug(m18n.n("restore_running_app_script", app=app_instance_name))
 
         # Prepare env. var. to pass to script
-        env_dict = _make_environment_for_app_script(app_instance_name)
+        # FIXME : workdir should be a tmp workdir
+        app_workdir = os.path.join(self.work_dir, "apps", app_instance_name, "settings")
+        env_dict = _make_environment_for_app_script(app_instance_name, workdir=app_workdir)
         env_dict.update(
             {
                 "YNH_BACKUP_DIR": self.work_dir,
                 "YNH_BACKUP_CSV": os.path.join(self.work_dir, "backup.csv"),
                 "YNH_APP_BACKUP_DIR": os.path.join(
                     self.work_dir, "apps", app_instance_name, "backup"
-                ),
-                "YNH_APP_BASEDIR": os.path.join(
-                    self.work_dir, "apps", app_instance_name, "settings"
                 ),
             }
         )
@@ -1530,11 +1529,7 @@ class RestoreManager:
                 remove_script = os.path.join(app_scripts_in_archive, "remove")
 
                 # Setup environment for remove script
-                env_dict_remove = _make_environment_for_app_script(app_instance_name)
-                env_dict_remove["YNH_APP_BASEDIR"] = os.path.join(
-                    self.work_dir, "apps", app_instance_name, "settings"
-                )
-
+                env_dict_remove = _make_environment_for_app_script(app_instance_name, workdir=app_workdir)
                 remove_operation_logger = OperationLogger(
                     "remove_on_failed_restore",
                     [("app", app_instance_name)],
