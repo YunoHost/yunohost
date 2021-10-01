@@ -6,6 +6,7 @@
 
 <div align="center">
 
+![Version](https://img.shields.io/github/v/tag/yunohost/yunohost?label=version&sort=semver)
 [![Build status](https://shields.io/gitlab/pipeline/yunohost/yunohost/dev)](https://gitlab.com/yunohost/yunohost/-/pipelines)
 ![Test coverage](https://img.shields.io/gitlab/coverage/yunohost/yunohost/dev)
 [![GitHub license](https://img.shields.io/github/license/YunoHost/yunohost)](https://github.com/YunoHost/yunohost/blob/dev/LICENSE)
