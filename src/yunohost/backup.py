@@ -1647,7 +1647,7 @@ class BackupMethod(object):
         """
         self.manager = manager
         if not repo or isinstance(repo, basestring):
-            repo = BackupRepository.get_or_create(ARCHIVES_PATH)
+            repo = BackupRepository.get(ARCHIVES_PATH)
         self.repo = repo
 
     @property
@@ -2635,7 +2635,7 @@ def backup_list(repos=[], with_info=False, human_readable=False):
     result = OrderedDict()
 
     if repos == []:
-        repos = BackupRepository.all()
+        repos = backup_repository_list(full=True)
     else:
         for k, repo in repos:
             repos[k] = BackupRepository.get(repo)

@@ -1161,33 +1161,43 @@ backup:
                 ### backup_repository_add()
                 add:
                     action_help: Add a backup repository
-                    api: POST /backup/repository/<name>
+                    api: POST /backup/repository/<shortname>
                     arguments:
-                        location:
+                        shortname:
+                            help: ID of the repository
+                            extra:
+                                pattern: &pattern_backup_repository_id
+                                    - !!str ^\w+$
+                                    - "pattern_backup_repository_id"
+                        -n:
+                            full: --name
+                            help: Short description of the repository
+                        -l:
+                            full: --location
                             help: Location on this server or on an other
                             extra:
                                 pattern: &pattern_backup_repository_location
                                     - !!str ^((ssh://)?[a-z_]\w*@\[\w\-\.]+:)?(~?/)?[\w/]*$
                                     - "pattern_backup_repository_location"
-                        -n:
-                            full: --name
-                            help: Name of the repository
-                            extra:
-                                pattern: &pattern_backup_repository_name
-                                    - !!str ^\w+$
-                                    - "pattern_backup_repository_name"
-                        -d:
-                            full: --description
-                            help: Short description of the repository
-                        --methods:
-                            help: List of backup methods accepted
-                            nargs: "*"
+                        -m:
+                            full: --method
+                            help: By default 'borg' method is used, could be 'tar' or a custom method
+                            default: borg
                         -q:
                             full: --quota
                             help: Quota to configure with this repository
-                        -e:
-                            full: --encryption
-                            help: Type of encryption
+                        -p:
+                            full: --passphrase
+                            help: A strong passphrase to encrypt/decrypt your backup (keep it preciously)
+                            action: store_true
+                        -a:
+                            full: --alert
+                            help: List of mails to which sent inactivity alert
+                            nargs: "*"
+                        -d:
+                            full: --alert-delay
+                            help: Inactivity delay in days after which we sent alerts mails
+                            default: 7
 
                 ### backup_repository_update()
                 update:

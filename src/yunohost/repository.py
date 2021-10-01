@@ -27,6 +27,8 @@ import os
 import re
 import time
 import subprocess
+import re
+import urllib.parse
 
 from moulinette import msignals, m18n
 from moulinette.core import MoulinetteError
@@ -40,58 +42,43 @@ from yunohost.monitor import binary_to_human
 from yunohost.log import OperationLogger, is_unit_operation
 
 logger = getActionLogger('yunohost.repository')
-REPOSITORIES_PATH = '/etc/yunohost/repositories.yml'
+REPOSITORIES_PATH = '/etc/yunohost/repositories'
+REPOSITORY_CONFIG_PATH = "/usr/share/yunohost/other/config_repository.toml"
 
+# TODO
+# TODO i18n
+# TODO visible in cli
+# TODO split COnfigPanel.get to extract "Format result" part and be able to override it
+# TODO Migration
+# TODO Remove BackupRepository.get_or_create()
+# TODO Backup method
+# TODO auto test F2F by testing .well-known url
+# TODO API params to get description of forms
+# TODO tests
+# TODO detect external hard drive already mounted and suggest it
+# TODO F2F client detection / add / update / delete
+# TODO F2F server
 
-class BackupRepository(object):
+class BackupRepository(ConfigPanel):
     """
     BackupRepository manage all repository the admin added to the instance
     """
-    repositories = {}
-
     @classmethod
-    def create(cls, location, name, *args, **kwargs):
-        cls.load()
-
-        return BackupRepository(True, location, name, *args, **kwargs)
-
-    @classmethod
-    def get(cls, name):
-        cls.load()
-
+    def get(cls, shortname):
+        # FIXME
         if name not in cls.repositories:
             raise YunohostError('backup_repository_doesnt_exists', name=name)
 
-        return BackupRepository(False, **cls.repositories[name])
+        return cls.repositories[name]
 
-    @classmethod
-    def load(cls):
-        """
-        Read repositories configuration from file
-        """
-        if cls.repositories != {}:
-            return cls.repositories
+    def __init__(self, repository):
+        self.repository = repository
+        self.save_mode = "full"
+        super().__init__(
+            config_path=REPOSITORY_CONFIG_PATH,
+            save_path=f"{REPOSITORY_SETTINGS_DIR}/{repository}.yml",
+        )
 
-        if os.path.exists(REPOSITORIES_PATH):
-            try:
-                cls.repositories = read_yaml(REPOSITORIES_PATH)['repositories']
-            except MoulinetteError as e:
-                raise YunohostError(
-                    'backup_cant_open_repositories_file', reason=e)
-        return cls.repositories
-
-    @classmethod
-    def save(cls):
-        """
-        Save managed repositories to file
-        """
-        try:
-            write_to_json(REPOSITORIES_PATH, cls.repositories)
-        except Exception as e:
-            raise YunohostError('backup_cant_save_repositories_file', reason=e)
-
-    def __init__(self, created, location, name=None, description=None, method=None,
-                 encryption=None, quota=None):
 
         from yunohost.backup import BackupMethod
         self.location = location
@@ -102,12 +89,6 @@ class BackupRepository(object):
             raise YunohostError(
                 'backup_repository_already_exists', repositories=self.name)
 
-        self.description = description
-        self.encryption = encryption
-        self.quota = quota
-
-        if method is None:
-            method = 'tar' if self.domain is None else 'borg'
         self.method = BackupMethod.get(method, self)
 
     def list(self, with_info=False):
@@ -122,21 +103,16 @@ class BackupRepository(object):
         return self.used
 
     def purge(self):
+        # TODO F2F delete
         self.method.purge()
 
     def delete(self, purge=False):
-        repositories = BackupRepository.repositories
-
-        repositories.pop(self.name)
-
-        BackupRepository.save()
 
         if purge:
             self.purge()
 
-    def save(self):
-        BackupRepository.reposirories[self.name] = self.__dict__
-        BackupRepository.save()
+        os.system("rm -rf {REPOSITORY_SETTINGS_DIR}/{self.repository}.yml")
+
 
     def _split_location(self):
         """
@@ -159,27 +135,41 @@ def backup_repository_list(full=False):
     """
     List available repositories where put archives
     """
-    repositories = BackupRepository.load()
 
-    if full:
+    try:
+        repositories = [f.rstrip(".yml")
+                        for f in os.listdir(REPOSITORIES_PATH)
+                        if os.path.isfile(f) and f.endswith(".yml")]
+    except FileNotFoundError:
+        repositories = []
+
+    if not full:
         return repositories
-    else:
-        return repositories.keys()
+
+    # FIXME: what if one repo.yml is corrupted ?
+    repositories = {repo: BackupRepository(repo).get(mode="export")
+                    for repo in repositories}
+
+    return repositories
 
 
-def backup_repository_info(name, human_readable=True, space_used=False):
+def backup_repository_info(shortname, human_readable=True, space_used=False):
     """
     Show info about a repository
 
     Keyword arguments:
         name -- Name of the backup repository
     """
-    repository = BackupRepository.get(name)
-
+    Question.operation_logger = operation_logger
+    repository = BackupRepository(shortname)
+    # TODO
     if space_used:
         repository.compute_space_used()
 
-    repository = repository.__dict__
+    repository = repository.get(
+        mode="export"
+    )
+
     if human_readable:
         if 'quota' in repository:
             repository['quota'] = binary_to_human(repository['quota'])
@@ -190,58 +180,92 @@ def backup_repository_info(name, human_readable=True, space_used=False):
 
 
 @is_unit_operation()
-def backup_repository_add(operation_logger, location, name, description=None,
-                          methods=None, quota=None, encryption="passphrase"):
+def backup_repository_add(operation_logger, shortname, name=None, location=None,
+                          method=None, quota=None, passphrase=None,
+                          alert=[], alert_delay=7):
     """
     Add a backup repository
 
     Keyword arguments:
         location -- Location of the repository (could be a remote location)
-        name -- Name of the backup repository
-        description -- An optionnal description
+        shortname -- Name of the backup repository
+        name -- An optionnal description
         quota -- Maximum size quota of the repository
         encryption -- If available, the kind of encryption to use
     """
-    repository = BackupRepository(
-        location, name, description, methods, quota, encryption)
+    # FIXME i18n
+    # Deduce some value from location
+    args = {}
+    args['name'] = name
+    args['creation'] = True
+    if location:
+        args["location"] = location
+        args["is_remote"] = True
+        args["method"] = method if method else "borg"
+        domain_re = '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
+        if re.match(domain_re, location):
+            args["is_f2f"] = True
+        elif location[0] != "/":
+            args["is_f2f"] = False
+        else:
+            args["is_remote"] = False
+            args["method"] = method
+    elif method == "tar":
+        args["is_remote"] = False
+    if not location:
+        args["method"] = method
 
-    try:
-        repository.save()
-    except MoulinetteError:
-        raise YunohostError('backup_repository_add_failed',
-                            repository=name, location=location)
+    args["quota"] = quota
+    args["passphrase"] = passphrase
+    args["alert"]= ",".join(alert) if alert else None
+    args["alert_delay"]= alert_delay
 
-    logger.success(m18n.n('backup_repository_added',
-                        repository=name, location=location))
+    # TODO validation
+    # TODO activate service in apply (F2F or not)
+    Question.operation_logger = operation_logger
+    repository = BackupRepository(shortname)
+    return repository.set(
+        args=urllib.parse.urlencode(args),
+        operation_logger=operation_logger
+    )
 
 
 @is_unit_operation()
-def backup_repository_update(operation_logger, name, description=None,
-                            quota=None, password=None):
+def backup_repository_update(operation_logger, shortname, name=None,
+                             quota=None, passphrase=None,
+                             alert=[], alert_delay=None):
     """
     Update a backup repository
 
     Keyword arguments:
         name -- Name of the backup repository
     """
-    repository = BackupRepository.get(name)
 
-    if description is not None:
-        repository.description = description
+    args = {}
+    args['creation'] = False
+    if name:
+        args['name'] = name
+    if quota:
+        args["quota"] = quota
+    if passphrase:
+        args["passphrase"] = passphrase
+    if alert is not None:
+        args["alert"]= ",".join(alert) if alert else None
+    if alert_delay:
+        args["alert_delay"]= alert_delay
 
-    if quota is not None:
-        repository.quota = quota
-
-    try:
-        repository.save()
-    except MoulinetteError:
-        raise YunohostError('backup_repository_update_failed', repository=name)
-    logger.success(m18n.n('backup_repository_updated', repository=name,
-                        location=repository['location']))
+    # TODO validation
+    # TODO activate service in apply
+    Question.operation_logger = operation_logger
+    repository = BackupRepository(shortname)
+    return repository.set(
+        args=urllib.parse.urlencode(args),
+        operation_logger=operation_logger
+    )
 
 
 @is_unit_operation()
-def backup_repository_remove(operation_logger, name, purge=False):
+def backup_repository_remove(operation_logger, shortname, purge=False):
     """
     Remove a backup repository
 
@@ -249,7 +273,6 @@ def backup_repository_remove(operation_logger, name, purge=False):
         name -- Name of the backup repository to remove
 
     """
-    repository = BackupRepository.get(name)
-    repository.delete(purge)
-    logger.success(m18n.n('backup_repository_removed', repository=name,
+    BackupRepository(shortname).delete(purge)
+    logger.success(m18n.n('backup_repository_removed', repository=shortname,
                         path=repository['path']))

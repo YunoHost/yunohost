@@ -1,0 +1,83 @@
+
+version = "1.0"
+i18n = "repository_config"
+[main]
+name.en = ""
+    []
+    name.en = ""
+        # if method == "tar": question["value"] = False
+        [creation] # TODO "Remote repository"
+        type = "boolean"
+        visible = "false"
+
+        [name] # TODO "Remote repository"
+        type = "string"
+
+        [is_remote] # TODO "Remote repository"
+        type = "boolean"
+        yes = true
+        no = false
+        visible = "creation && is_remote"
+
+        [is_f2f] # TODO "It's a YunoHost",
+        help = "" # "Answer yes if the remote server is a YunoHost instance or an other F2F compatible provider",
+        type = "boolean"
+        yes = true
+        no = false
+        visible = "creation && is_remote"
+
+        [public_key] # TODO "Here is the public key to give to your BorgBackup  provider : {public_key}"
+        type = "alert"
+        style = "info"
+        visible = "creation && is_remote && ! is_f2f"
+
+        [location]
+        ask = "Remote server domain"
+        type = "string"
+        visible = "creation && is_remote"
+        pattern.regexp = '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
+        pattern.error = '' # TODO "Please provide a valid domain"
+        # FIXME: can't be a domain of this instances ?
+
+        [alert] # TODO "Alert emails"
+        help = '' # TODO Declare emails to which sent inactivity alerts",
+        type = "tags"
+        visible = "is_remote && is_f2f"
+        pattern.regexp = '^[\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
+        pattern.error = "It seems it's not a valid email"
+        # "value": alert,
+
+        [alert_delay] # TODO "Alert delay"
+        help = '' # TODO "After how many inactivity days send email alerts",
+        type = "number"
+        visible = "is_remote && is_f2f"
+        min = 1
+
+        [quota] # TODO "Quota"
+        type = "string"
+        visible = "is_remote && is_f2f"
+        pattern.regexp = '^\d+[MGT]$'
+        pattern.error = '' # TODO ""
+
+        [port] # TODO "Port"
+        type = "number"
+        visible = "is_remote && !is_f2f"
+        min = 1
+        max = 65535
+
+        [user] # TODO User
+        type = "string"
+        visible = "is_remote && !is_f2f"
+
+        [method] # TODO "Backup method"
+        type = "select"
+        # "value": method,
+        choices.borg = "BorgBackup (recommended)"
+        choices.tar = "Legacy tar archive mechanism"
+        default = "borg"
+        visible = "!is_remote"
+        
+        [path] # TODO "Archive path"
+        type = "path"
+        visible = "!is_remote or (is_remote and !is_f2f)"
+
