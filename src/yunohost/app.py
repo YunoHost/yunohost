@@ -33,7 +33,7 @@ import re
 import subprocess
 import tempfile
 from collections import OrderedDict
-from typing import List, Tuple, Dict
+from typing import List, Tuple, Dict, Any
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
@@ -51,7 +51,6 @@ from yunohost.utils import packages
 from yunohost.utils.config import (
     ConfigPanel,
     ask_questions_and_parse_answers,
-    Question,
     DomainQuestion,
     PathQuestion,
 )
@@ -384,8 +383,9 @@ def app_change_url(operation_logger, app, domain, path):
             "app_change_url_identical_domains", domain=domain, path=path
         )
 
-    # Check the url is available
-    _assert_no_conflicting_apps(domain, path, ignore_app=app)
+    app_setting_path = os.path.join(APPS_SETTING_PATH, app)
+    path_requirement = _guess_webapp_path_requirement(app_setting_path)
+    _validate_webpath_requirement({"domain": domain, "path": path}, path_requirement, ignore_app=app)
 
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
@@ -777,8 +777,8 @@ def app_install(
     }
 
     # Validate domain / path availability for webapps
-    path_requirement = _guess_webapp_path_requirement(questions, extracted_app_folder)
-    _validate_webpath_requirement(questions, path_requirement)
+    path_requirement = _guess_webapp_path_requirement(extracted_app_folder)
+    _validate_webpath_requirement(args, path_requirement)
 
     # Attempt to patch legacy helpers ...
     _patch_legacy_helpers(extracted_app_folder)
@@ -2214,13 +2214,16 @@ def _check_manifest_requirements(manifest: Dict, app: str):
             )
 
 
-def _guess_webapp_path_requirement(questions: List[Question], app_folder: str) -> str:
+def _guess_webapp_path_requirement(app_folder: str) -> str:
 
     # If there's only one "domain" and "path", validate that domain/path
     # is an available url and normalize the path.
 
-    domain_questions = [question for question in questions if question.type == "domain"]
-    path_questions = [question for question in questions if question.type == "path"]
+    manifest = _get_manifest_of_app(app_folder)
+    raw_questions = manifest.get("arguments", {}).get("install", {})
+
+    domain_questions = [question for question in raw_questions if question.get("type") == "domain"]
+    path_questions = [question for question in raw_questions if question.get("type") == "path"]
 
     if len(domain_questions) == 0 and len(path_questions) == 0:
         return ""
@@ -2248,22 +2251,17 @@ def _guess_webapp_path_requirement(questions: List[Question], app_folder: str) -
 
 
 def _validate_webpath_requirement(
-    questions: List[Question], path_requirement: str
+    args: Dict[str, Any], path_requirement: str, ignore_app=None
 ) -> None:
 
-    domain_questions = [question for question in questions if question.type == "domain"]
-    path_questions = [question for question in questions if question.type == "path"]
+    domain = args.get("domain")
+    path = args.get("path")
 
     if path_requirement == "domain_and_path":
-
-        domain = domain_questions[0].value
-        path = path_questions[0].value
-        _assert_no_conflicting_apps(domain, path, full_domain=True)
+        _assert_no_conflicting_apps(domain, path, ignore_app=ignore_app)
 
     elif path_requirement == "full_domain":
-
-        domain = domain_questions[0].value
-        _assert_no_conflicting_apps(domain, "/", full_domain=True)
+        _assert_no_conflicting_apps(domain, "/", full_domain=True, ignore_app=ignore_app)
 
 
 def _get_conflicting_apps(domain, path, ignore_app=None):
