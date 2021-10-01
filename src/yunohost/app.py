@@ -566,21 +566,21 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
         if file and isinstance(file, dict):
             # We use this dirty hack to test chained upgrades in unit/functional tests
-            manifest, extracted_app_folder = _extract_app_from_file(
-                file[app_instance_name]
-            )
+            new_app_src = file[app_instance_name]
         elif file:
-            manifest, extracted_app_folder = _extract_app_from_file(file)
+            new_app_src = file
         elif url:
-            manifest, extracted_app_folder = _fetch_app_from_git(url)
+            new_app_src = url
         elif app_dict["upgradable"] == "url_required":
             logger.warning(m18n.n("custom_app_url_required", app=app_instance_name))
             continue
         elif app_dict["upgradable"] == "yes" or force:
-            manifest, extracted_app_folder = _fetch_app_from_git(app_instance_name)
+            new_app_src = app_dict["id"]
         else:
             logger.success(m18n.n("app_already_up_to_date", app=app_instance_name))
             continue
+
+        manifest, extracted_app_folder = _extract_app(new_app_src)
 
         # Manage upgrade type and avoid any upgrade if there is nothing to do
         upgrade_type = "UNKNOWN"
@@ -748,12 +748,7 @@ def app_manifest(app):
 
     raw_app_list = _load_apps_catalog()["apps"]
 
-    if app in raw_app_list or ("@" in app) or ("http://" in app) or ("https://" in app):
-        manifest, extracted_app_folder = _fetch_app_from_git(app)
-    elif os.path.exists(app):
-        manifest, extracted_app_folder = _extract_app_from_file(app)
-    else:
-        raise YunohostValidationError("app_unknown")
+    manifest, extracted_app_folder = _extract_app(app)
 
     shutil.rmtree(extracted_app_folder)
 
@@ -796,19 +791,28 @@ def app_install(
     )
     from yunohost.regenconf import manually_modified_files
 
-    def confirm_install(confirm):
+    # Check if disk space available
+    if free_space_in_directory("/") <= 512 * 1000 * 1000:
+        raise YunohostValidationError("disk_space_not_sufficient_install")
+
+    def confirm_install(app):
+
         # Ignore if there's nothing for confirm (good quality app), if --force is used
         # or if request on the API (confirm already implemented on the API side)
-        if confirm is None or force or Moulinette.interface.type == "api":
+        if force or Moulinette.interface.type == "api":
+            return
+
+        quality = app_quality(app)
+        if quality == "success":
             return
 
         # i18n: confirm_app_install_warning
         # i18n: confirm_app_install_danger
         # i18n: confirm_app_install_thirdparty
 
-        if confirm in ["danger", "thirdparty"]:
+        if quality in ["danger", "thirdparty"]:
             answer = Moulinette.prompt(
-                m18n.n("confirm_app_install_" + confirm, answers="Yes, I understand"),
+                m18n.n("confirm_app_install_" + quality, answers="Yes, I understand"),
                 color="red",
             )
             if answer != "Yes, I understand":
@@ -816,51 +820,13 @@ def app_install(
 
         else:
             answer = Moulinette.prompt(
-                m18n.n("confirm_app_install_" + confirm, answers="Y/N"), color="yellow"
+                m18n.n("confirm_app_install_" + quality, answers="Y/N"), color="yellow"
             )
             if answer.upper() != "Y":
                 raise YunohostError("aborting")
 
-    raw_app_list = _load_apps_catalog()["apps"]
-
-    if app in raw_app_list or ("@" in app) or ("http://" in app) or ("https://" in app):
-
-        # If we got an app name directly (e.g. just "wordpress"), we gonna test this name
-        if app in raw_app_list:
-            app_name_to_test = app
-        # If we got an url like "https://github.com/foo/bar_ynh, we want to
-        # extract "bar" and test if we know this app
-        elif ("http://" in app) or ("https://" in app):
-            app_name_to_test = app.strip("/").split("/")[-1].replace("_ynh", "")
-        else:
-            # FIXME : watdo if '@' in app ?
-            app_name_to_test = None
-
-        if app_name_to_test in raw_app_list:
-
-            state = raw_app_list[app_name_to_test].get("state", "notworking")
-            level = raw_app_list[app_name_to_test].get("level", None)
-            confirm = "danger"
-            if state in ["working", "validated"]:
-                if isinstance(level, int) and level >= 5:
-                    confirm = None
-                elif isinstance(level, int) and level > 0:
-                    confirm = "warning"
-        else:
-            confirm = "thirdparty"
-
-        confirm_install(confirm)
-
-        manifest, extracted_app_folder = _fetch_app_from_git(app)
-    elif os.path.exists(app):
-        confirm_install("thirdparty")
-        manifest, extracted_app_folder = _extract_app_from_file(app)
-    else:
-        raise YunohostValidationError("app_unknown")
-
-    # Check if disk space available
-    if free_space_in_directory("/") <= 512 * 1000 * 1000:
-        raise YunohostValidationError("disk_space_not_sufficient_install")
+    confirm_install(app)
+    manifest, extracted_app_folder = _extract_app(app)
 
     # Check ID
     if "id" not in manifest or "__" in manifest["id"] or "." in manifest["id"]:
@@ -874,7 +840,7 @@ def app_install(
     _assert_system_is_sane_for_app(manifest, "pre")
 
     # Check if app can be forked
-    instance_number = _installed_instance_number(app_id, last=True) + 1
+    instance_number = _next_instance_number_for_app(app_id)
     if instance_number > 1:
         if "multi_instance" not in manifest or not is_true(manifest["multi_instance"]):
             raise YunohostValidationError("app_already_installed", app=app_id)
@@ -1914,55 +1880,6 @@ def _set_app_settings(app_id, settings):
         yaml.safe_dump(settings, f, default_flow_style=False)
 
 
-def _extract_app_from_file(path):
-    """
-    Unzip / untar / copy application tarball or directory to a tmp work directory
-
-    Keyword arguments:
-        path -- Path of the tarball or directory
-    """
-    logger.debug(m18n.n("extracting"))
-
-    path = os.path.abspath(path)
-
-    extracted_app_folder = _make_tmp_workdir_for_app()
-
-    if ".zip" in path:
-        extract_result = os.system(
-            f"unzip '{path}' -d {extracted_app_folder} > /dev/null 2>&1"
-        )
-    elif ".tar" in path:
-        extract_result = os.system(
-            f"tar -xf '{path}' -C {extracted_app_folder} > /dev/null 2>&1"
-        )
-    elif os.path.isdir(path):
-        shutil.rmtree(extracted_app_folder)
-        if path[-1] != "/":
-            path = path + "/"
-        extract_result = os.system(f"cp -a '{path}' {extracted_app_folder}")
-    else:
-        extract_result = 1
-
-    if extract_result != 0:
-        raise YunohostError("app_extraction_failed")
-
-    try:
-        if len(os.listdir(extracted_app_folder)) == 1:
-            for folder in os.listdir(extracted_app_folder):
-                extracted_app_folder = extracted_app_folder + "/" + folder
-        manifest = _get_manifest_of_app(extracted_app_folder)
-        manifest["lastUpdate"] = int(time.time())
-    except IOError:
-        raise YunohostError("app_install_files_invalid")
-    except ValueError as e:
-        raise YunohostError("app_manifest_invalid", error=e)
-
-    logger.debug(m18n.n("done"))
-
-    manifest["remote"] = {"type": "file", "path": path}
-    return manifest, extracted_app_folder
-
-
 def _get_manifest_of_app(path):
     "Get app manifest stored in json or in toml"
 
@@ -2158,143 +2075,169 @@ def _set_default_ask_questions(arguments):
     return arguments
 
 
-def _get_git_last_commit_hash(repository, reference="HEAD"):
+def _app_quality(app: str) -> str:
     """
-    Attempt to retrieve the last commit hash of a git repository
-
-    Keyword arguments:
-        repository -- The URL or path of the repository
-
+       app may in fact be an app name, an url, or a path
     """
-    try:
-        cmd = "git ls-remote --exit-code {0} {1} | awk '{{print $1}}'".format(
-            repository, reference
-        )
-        commit = check_output(cmd)
-    except subprocess.CalledProcessError:
-        logger.error("unable to get last commit from %s", repository)
-        raise ValueError("Unable to get last commit with git")
+
+    raw_app_catalog = _load_apps_catalog()["apps"]
+    if app in raw_app_catalog or ("@" in app) or ("http://" in app) or ("https://" in app):
+
+        # If we got an app name directly (e.g. just "wordpress"), we gonna test this name
+        if app in raw_app_list:
+            app_name_to_test = app
+        # If we got an url like "https://github.com/foo/bar_ynh, we want to
+        # extract "bar" and test if we know this app
+        elif ("http://" in app) or ("https://" in app):
+            app_name_to_test = app.strip("/").split("/")[-1].replace("_ynh", "")
+        else:
+            # FIXME : watdo if '@' in app ?
+            app_name_to_test = None
+
+        if app_name_to_test in raw_app_list:
+
+            state = raw_app_list[app_name_to_test].get("state", "notworking")
+            level = raw_app_list[app_name_to_test].get("level", None)
+            if state in ["working", "validated"]:
+                if isinstance(level, int) and level >= 5:
+                    return "success"
+                elif isinstance(level, int) and level > 0:
+                    return "warning"
+            return "danger"
+        else:
+            return "thirdparty"
+
+    elif os.path.exists(app):
+        return "thirdparty"
     else:
-        return commit.strip()
+        raise YunohostValidationError("app_unknown")
 
 
-def _fetch_app_from_git(app):
+def _extract_app(src: str) -> Tuple[Dict, str]:
     """
-    Unzip or untar application tarball to a tmp directory
-
-    Keyword arguments:
-        app -- App_id or git repo URL
+       src may be an app name, an url, or a path
     """
 
-    # Extract URL, branch and revision to download
-    if ("@" in app) or ("http://" in app) or ("https://" in app):
-        url = app
-        branch = "master"
-        if "/tree/" in url:
-            url, branch = url.split("/tree/", 1)
-        revision = "HEAD"
-    else:
-        app_dict = _load_apps_catalog()["apps"]
+    raw_app_catalog = _load_apps_catalog()["apps"]
 
-        app_id, _ = _parse_app_instance_name(app)
-
-        if app_id not in app_dict:
-            raise YunohostValidationError("app_unknown")
-        elif "git" not in app_dict[app_id]:
+    # App is an appname in the catalog
+    if src in raw_app_catalog:
+        if "git" not in raw_app_catalog[src]:
             raise YunohostValidationError("app_unsupported_remote_type")
 
-        app_info = app_dict[app_id]
+        app_info = raw_app_catalog[src]
         url = app_info["git"]["url"]
         branch = app_info["git"]["branch"]
         revision = str(app_info["git"]["revision"])
+        return _extract_app_from_gitrepo(url, branch, revision, app_info)
+    # App is a git repo url
+    elif ("@" in src) or ("http://" in src) or ("https://" in src):
+        url = src
+        branch = "master"
+        revision = "HEAD"
+        if "/tree/" in url:
+            url, branch = url.split("/tree/", 1)
+        return _extract_app_from_gitrepo(url, branch, revision, {})
+    # App is a local folder
+    elif os.path.exists(src):
+        return _extract_app_from_folder(src)
+    else:
+        raise YunohostValidationError("app_unknown")
+
+
+def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
+    """
+    Unzip / untar / copy application tarball or directory to a tmp work directory
+
+    Keyword arguments:
+        path -- Path of the tarball or directory
+    """
+    logger.debug(m18n.n("extracting"))
+
+    path = os.path.abspath(path)
 
     extracted_app_folder = _make_tmp_workdir_for_app()
 
+    if ".zip" in path:
+        extract_result = os.system(
+            f"unzip '{path}' -d {extracted_app_folder} > /dev/null 2>&1"
+        )
+    elif ".tar" in path:
+        extract_result = os.system(
+            f"tar -xf '{path}' -C {extracted_app_folder} > /dev/null 2>&1"
+        )
+    elif os.path.isdir(path):
+        shutil.rmtree(extracted_app_folder)
+        if path[-1] != "/":
+            path = path + "/"
+        extract_result = os.system(f"cp -a '{path}' {extracted_app_folder}")
+    else:
+        extract_result = 1
+
+    if extract_result != 0:
+        raise YunohostError("app_extraction_failed")
+
+    try:
+        if len(os.listdir(extracted_app_folder)) == 1:
+            for folder in os.listdir(extracted_app_folder):
+                extracted_app_folder = extracted_app_folder + "/" + folder
+    except IOError:
+        raise YunohostError("app_install_files_invalid")
+
+    manifest = _get_manifest_of_app(extracted_app_folder)
+    manifest["lastUpdate"] = int(time.time())
+
+    logger.debug(m18n.n("done"))
+
+    manifest["remote"] = {"type": "file", "path": path}
+    return manifest, extracted_app_folder
+
+
+def _extract_app_from_gitrepo(url: str, branch: str, revision: str, app_info={}: Dict) -> Tuple[Dict, str]:
+
     logger.debug(m18n.n("downloading"))
+
+    extracted_app_folder = _make_tmp_workdir_for_app()
 
     # Download only this commit
     try:
         # We don't use git clone because, git clone can't download
         # a specific revision only
+        ref = branch if revision == "HEAD" else revision
         run_commands([["git", "init", extracted_app_folder]], shell=False)
         run_commands(
             [
                 ["git", "remote", "add", "origin", url],
-                [
-                    "git",
-                    "fetch",
-                    "--depth=1",
-                    "origin",
-                    branch if revision == "HEAD" else revision,
-                ],
+                ["git", "fetch", "--depth=1", "origin", ref],
                 ["git", "reset", "--hard", "FETCH_HEAD"],
             ],
             cwd=extracted_app_folder,
             shell=False,
         )
-        manifest = _get_manifest_of_app(extracted_app_folder)
     except subprocess.CalledProcessError:
         raise YunohostError("app_sources_fetch_failed")
-    except ValueError as e:
-        raise YunohostError("app_manifest_invalid", error=e)
     else:
         logger.debug(m18n.n("done"))
+
+    manifest = _get_manifest_of_app(extracted_app_folder)
 
     # Store remote repository info into the returned manifest
     manifest["remote"] = {"type": "git", "url": url, "branch": branch}
     if revision == "HEAD":
         try:
-            manifest["remote"]["revision"] = _get_git_last_commit_hash(url, branch)
+            # Get git last commit hash
+            cmd = f"git ls-remote --exit-code {url} {branch} | awk '{{print $1}}'"
+            manifest["remote"]["revision"] = check_output(cmd)
         except Exception as e:
-            logger.debug("cannot get last commit hash because: %s ", e)
+            logger.warning("cannot get last commit hash because: %s ", e)
     else:
         manifest["remote"]["revision"] = revision
-        manifest["lastUpdate"] = app_info["lastUpdate"]
+        manifest["lastUpdate"] = app_info.get("lastUpdate")
 
     return manifest, extracted_app_folder
 
 
-def _installed_instance_number(app, last=False):
-    """
-    Check if application is installed and return instance number
-
-    Keyword arguments:
-        app -- id of App to check
-        last -- Return only last instance number
-
-    Returns:
-        Number of last installed instance | List or instances
-
-    """
-    if last:
-        number = 0
-        try:
-            installed_apps = os.listdir(APPS_SETTING_PATH)
-        except OSError:
-            os.makedirs(APPS_SETTING_PATH)
-            return 0
-
-        for installed_app in installed_apps:
-            if number == 0 and app == installed_app:
-                number = 1
-            elif "__" in installed_app:
-                if app == installed_app[: installed_app.index("__")]:
-                    if int(installed_app[installed_app.index("__") + 2 :]) > number:
-                        number = int(installed_app[installed_app.index("__") + 2 :])
-
-        return number
-
-    else:
-        instance_number_list = []
-        instances_dict = app_map(app=app, raw=True)
-        for key, domain in instances_dict.items():
-            for key, path in domain.items():
-                instance_number_list.append(path["instance"])
-
-        return sorted(instance_number_list)
-
-
-def _is_installed(app):
+def _is_installed(app: str) -> bool:
     """
     Check if application is installed
 
@@ -2308,18 +2251,18 @@ def _is_installed(app):
     return os.path.isdir(APPS_SETTING_PATH + app)
 
 
-def _assert_is_installed(app):
+def _assert_is_installed(app: str) -> None:
     if not _is_installed(app):
         raise YunohostValidationError(
             "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
         )
 
 
-def _installed_apps():
+def _installed_apps() -> List[str]:
     return os.listdir(APPS_SETTING_PATH)
 
 
-def _check_manifest_requirements(manifest, app_instance_name):
+def _check_manifest_requirements(manifest: Dict, app: str):
     """Check if required packages are met from the manifest"""
 
     packaging_format = int(manifest.get("packaging_format", 0))
@@ -2331,7 +2274,7 @@ def _check_manifest_requirements(manifest, app_instance_name):
     if not requirements:
         return
 
-    logger.debug(m18n.n("app_requirements_checking", app=app_instance_name))
+    logger.debug(m18n.n("app_requirements_checking", app=app))
 
     # Iterate over requirements
     for pkgname, spec in requirements.items():
@@ -2342,7 +2285,7 @@ def _check_manifest_requirements(manifest, app_instance_name):
                 pkgname=pkgname,
                 version=version,
                 spec=spec,
-                app=app_instance_name,
+                app=app,
             )
 
 
@@ -2511,6 +2454,25 @@ def _parse_app_instance_name(app_instance_name):
         else 1
     )
     return (appid, app_instance_nb)
+
+
+def _next_instance_number_for_app(app):
+
+    # Get list of sibling apps, such as {app}, {app}__2, {app}__4
+    apps = _installed_apps()
+    sibling_app_ids = [a for a in apps if a == app or a.startswith(f"{app}__")]
+
+    # Find the list of ids, such as [1, 2, 4]
+    sibling_ids = [_parse_app_instance_name(a)[1] for a in sibling_app_ids]
+
+    # Find the first 'i' that's not in the sibling_ids list already
+    i = 1
+    while True:
+        if i not in sibling_ids:
+            return i
+        else:
+            i += 1
+
 
 
 #
