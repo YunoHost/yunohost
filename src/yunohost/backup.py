@@ -49,10 +49,6 @@ from yunohost.app import (
     app_info,
     _is_installed,
     _make_environment_for_app_script,
-    _patch_legacy_helpers,
-    _patch_legacy_php_versions,
-    _patch_legacy_php_versions_in_settings,
-    LEGACY_PHP_VERSION_REPLACEMENTS,
     _make_tmp_workdir_for_app,
 )
 from yunohost.hook import (
@@ -1194,6 +1190,7 @@ class RestoreManager:
         """
         Apply dirty patch to redirect php5 and php7.0 files to php7.4
         """
+        from yunohost.utils.legacy import LEGACY_PHP_VERSION_REPLACEMENTS
 
         backup_csv = os.path.join(self.work_dir, "backup.csv")
 
@@ -1355,6 +1352,11 @@ class RestoreManager:
         app_instance_name -- (string) The app name to restore (no app with this
                              name should be already install)
         """
+        from yunohost.utils.legacy import (
+            _patch_legacy_php_versions,
+            _patch_legacy_php_versions_in_settings,
+            _patch_legacy_helpers,
+        )
         from yunohost.user import user_group_list
         from yunohost.permission import (
             permission_create,
@@ -1489,16 +1491,17 @@ class RestoreManager:
         logger.debug(m18n.n("restore_running_app_script", app=app_instance_name))
 
         # Prepare env. var. to pass to script
-        env_dict = _make_environment_for_app_script(app_instance_name)
+        # FIXME : workdir should be a tmp workdir
+        app_workdir = os.path.join(self.work_dir, "apps", app_instance_name, "settings")
+        env_dict = _make_environment_for_app_script(
+            app_instance_name, workdir=app_workdir
+        )
         env_dict.update(
             {
                 "YNH_BACKUP_DIR": self.work_dir,
                 "YNH_BACKUP_CSV": os.path.join(self.work_dir, "backup.csv"),
                 "YNH_APP_BACKUP_DIR": os.path.join(
                     self.work_dir, "apps", app_instance_name, "backup"
-                ),
-                "YNH_APP_BASEDIR": os.path.join(
-                    self.work_dir, "apps", app_instance_name, "settings"
                 ),
             }
         )
@@ -1536,11 +1539,9 @@ class RestoreManager:
                 remove_script = os.path.join(app_scripts_in_archive, "remove")
 
                 # Setup environment for remove script
-                env_dict_remove = _make_environment_for_app_script(app_instance_name)
-                env_dict_remove["YNH_APP_BASEDIR"] = os.path.join(
-                    self.work_dir, "apps", app_instance_name, "settings"
+                env_dict_remove = _make_environment_for_app_script(
+                    app_instance_name, workdir=app_workdir
                 )
-
                 remove_operation_logger = OperationLogger(
                     "remove_on_failed_restore",
                     [("app", app_instance_name)],

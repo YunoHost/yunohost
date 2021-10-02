@@ -25,12 +25,13 @@ import urllib.parse
 import tempfile
 import shutil
 from collections import OrderedDict
-from typing import Optional, Dict, List
+from typing import Optional, Dict, List, Union, Any, Mapping
 
 from moulinette.interfaces.cli import colorize
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
+    read_file,
     write_to_file,
     read_toml,
     read_yaml,
@@ -99,6 +100,11 @@ class ConfigPanel:
                     result[key]["value"] = question_class.humanize(
                         option["current_value"], option
                     )
+                    # FIXME: semantics, technically here this is not about a prompt...
+                    if question_class.hide_user_input_in_prompt:
+                        result[key][
+                            "value"
+                        ] = "**************"  # Prevent displaying password in `config get`
 
         if mode == "full":
             return self.config
@@ -164,6 +170,9 @@ class ConfigPanel:
             raise
         finally:
             # Delete files uploaded from API
+            # FIXME : this is currently done in the context of config panels,
+            # but could also happen in the context of app install ... (or anywhere else
+            # where we may parse args etc...)
             FileQuestion.clean_upload_dirs()
 
         self._reload_services()
@@ -198,20 +207,20 @@ class ConfigPanel:
 
         # Transform toml format into internal format
         format_description = {
-            "toml": {
+            "root": {
                 "properties": ["version", "i18n"],
-                "default": {"version": 1.0},
+                "defaults": {"version": 1.0},
             },
             "panels": {
                 "properties": ["name", "services", "actions", "help"],
-                "default": {
+                "defaults": {
                     "services": [],
                     "actions": {"apply": {"en": "Apply"}},
                 },
             },
             "sections": {
                 "properties": ["name", "services", "optional", "help", "visible"],
-                "default": {
+                "defaults": {
                     "name": "",
                     "services": [],
                     "optional": True,
@@ -241,11 +250,11 @@ class ConfigPanel:
                     "accept",
                     "redact",
                 ],
-                "default": {},
+                "defaults": {},
             },
         }
 
-        def convert(toml_node, node_type):
+        def _build_internal_config_panel(raw_infos, level):
             """Convert TOML in internal format ('full' mode used by webadmin)
             Here are some properties of 1.0 config panel in toml:
             - node properties and node children are mixed,
@@ -253,48 +262,47 @@ class ConfigPanel:
             - some properties have default values
             This function detects all children nodes and put them in a list
             """
-            # Prefill the node default keys if needed
-            default = format_description[node_type]["default"]
-            node = {key: toml_node.get(key, value) for key, value in default.items()}
 
-            properties = format_description[node_type]["properties"]
+            defaults = format_description[level]["defaults"]
+            properties = format_description[level]["properties"]
 
-            # Define the filter_key part to use and the children type
-            i = list(format_description).index(node_type)
-            subnode_type = (
-                list(format_description)[i + 1] if node_type != "options" else None
-            )
+            # Start building the ouput (merging the raw infos + defaults)
+            out = {key: raw_infos.get(key, value) for key, value in defaults.items()}
+
+            # Now fill the sublevels (+ apply filter_key)
+            i = list(format_description).index(level)
+            sublevel = list(format_description)[i + 1] if level != "options" else None
             search_key = filter_key[i] if len(filter_key) > i else False
 
-            for key, value in toml_node.items():
+            for key, value in raw_infos.items():
                 # Key/value are a child node
                 if (
                     isinstance(value, OrderedDict)
                     and key not in properties
-                    and subnode_type
+                    and sublevel
                 ):
                     # We exclude all nodes not referenced by the filter_key
                     if search_key and key != search_key:
                         continue
-                    subnode = convert(value, subnode_type)
+                    subnode = _build_internal_config_panel(value, sublevel)
                     subnode["id"] = key
-                    if node_type == "toml":
+                    if level == "root":
                         subnode.setdefault("name", {"en": key.capitalize()})
-                    elif node_type == "sections":
+                    elif level == "sections":
                         subnode["name"] = key  # legacy
-                        subnode.setdefault("optional", toml_node.get("optional", True))
-                    node.setdefault(subnode_type, []).append(subnode)
+                        subnode.setdefault("optional", raw_infos.get("optional", True))
+                    out.setdefault(sublevel, []).append(subnode)
                 # Key/value are a property
                 else:
                     if key not in properties:
-                        logger.warning(f"Unknown key '{key}' found in config toml")
+                        logger.warning(f"Unknown key '{key}' found in config panel")
                     # Todo search all i18n keys
-                    node[key] = (
+                    out[key] = (
                         value if key not in ["ask", "help", "name"] else {"en": value}
                     )
-            return node
+            return out
 
-        self.config = convert(toml_config_panel, "toml")
+        self.config = _build_internal_config_panel(toml_config_panel, "root")
 
         try:
             self.config["panels"][0]["sections"][0]["options"][0]
@@ -376,14 +384,15 @@ class ConfigPanel:
                 display_header(f"\n# {name}")
 
             # Check and ask unanswered questions
+            questions = ask_questions_and_parse_answers(section["options"], self.args)
             self.new_values.update(
-                parse_args_in_yunohost_format(self.args, section["options"])
+                {
+                    question.name: question.value
+                    for question in questions
+                    if question.value is not None
+                }
             )
-        self.new_values = {
-            key: value[0]
-            for key, value in self.new_values.items()
-            if not value[0] is None
-        }
+
         self.errors = None
 
     def _get_default_values(self):
@@ -457,18 +466,20 @@ class Question(object):
     hide_user_input_in_prompt = False
     pattern: Optional[Dict] = None
 
-    def __init__(self, question, user_answers):
+    def __init__(self, question: Dict[str, Any]):
         self.name = question["name"]
         self.type = question.get("type", "string")
         self.default = question.get("default", None)
-        self.current_value = question.get("current_value")
         self.optional = question.get("optional", False)
         self.choices = question.get("choices", [])
         self.pattern = question.get("pattern", self.pattern)
         self.ask = question.get("ask", {"en": self.name})
         self.help = question.get("help")
-        self.value = user_answers.get(self.name)
         self.redact = question.get("redact", False)
+        # .current_value is the currently stored value
+        self.current_value = question.get("current_value")
+        # .value is the "proposed" value which we got from the user
+        self.value = question.get("value")
 
         # Empty value is parsed as empty string
         if self.default == "":
@@ -480,6 +491,8 @@ class Question(object):
 
     @staticmethod
     def normalize(value, option={}):
+        if isinstance(value, str):
+            value = value.strip()
         return value
 
     def _prompt(self, text):
@@ -491,9 +504,11 @@ class Question(object):
         self.value = Moulinette.prompt(
             message=text,
             is_password=self.hide_user_input_in_prompt,
-            confirm=False,  # We doesn't want to confirm this kind of password like in webadmin
+            confirm=False,
             prefill=prefill,
             is_multiline=(self.type == "text"),
+            autocomplete=self.choices,
+            help=_value_for_locale(self.help),
         )
 
     def ask_if_needed(self):
@@ -513,12 +528,9 @@ class Question(object):
             ):
                 self.value = class_default if self.default is None else self.default
 
-            # Normalization
-            # This is done to enforce a certain formating like for boolean
-            self.value = self.normalize(self.value, self)
-
-            # Prevalidation
             try:
+                # Normalize and validate
+                self.value = self.normalize(self.value, self)
                 self._prevalidate()
             except YunohostValidationError as e:
                 # If in interactive cli, re-ask the current question
@@ -531,9 +543,10 @@ class Question(object):
                 raise
 
             break
+
         self.value = self._post_parse_value()
 
-        return (self.value, self.argument_type)
+        return self.value
 
     def _prevalidate(self):
         if self.value in [None, ""] and not self.optional:
@@ -542,7 +555,12 @@ class Question(object):
         # we have an answer, do some post checks
         if self.value not in [None, ""]:
             if self.choices and self.value not in self.choices:
-                self._raise_invalid_answer()
+                raise YunohostValidationError(
+                    "app_argument_choice_invalid",
+                    name=self.name,
+                    value=self.value,
+                    choices=", ".join(self.choices),
+                )
             if self.pattern and not re.match(self.pattern["regexp"], str(self.value)):
                 raise YunohostValidationError(
                     self.pattern["error"],
@@ -550,25 +568,31 @@ class Question(object):
                     value=self.value,
                 )
 
-    def _raise_invalid_answer(self):
-        raise YunohostValidationError(
-            "app_argument_choice_invalid",
-            name=self.name,
-            value=self.value,
-            choices=", ".join(self.choices),
-        )
+    def _format_text_for_user_input_in_cli(self):
 
-    def _format_text_for_user_input_in_cli(self, column=False):
         text_for_user_input_in_cli = _value_for_locale(self.ask)
 
         if self.choices:
-            text_for_user_input_in_cli += " [{0}]".format(" | ".join(self.choices))
 
-        if self.help or column:
-            text_for_user_input_in_cli += ":\033[m"
-        if self.help:
-            text_for_user_input_in_cli += "\n - "
-            text_for_user_input_in_cli += _value_for_locale(self.help)
+            # Prevent displaying a shitload of choices
+            # (e.g. 100+ available users when choosing an app admin...)
+            choices = (
+                list(self.choices.values())
+                if isinstance(self.choices, dict)
+                else self.choices
+            )
+            choices_to_display = choices[:20]
+            remaining_choices = len(choices[20:])
+
+            if remaining_choices > 0:
+                choices_to_display += [
+                    m18n.n("other_available_options", n=remaining_choices)
+                ]
+
+            choices_to_display = " | ".join(choices_to_display)
+
+            text_for_user_input_in_cli += f" [{choices_to_display}]"
+
         return text_for_user_input_in_cli
 
     def _post_parse_value(self):
@@ -659,6 +683,8 @@ class TagsQuestion(Question):
     def normalize(value, option={}):
         if isinstance(value, list):
             return ",".join(value)
+        if isinstance(value, str):
+            value = value.strip()
         return value
 
     def _prevalidate(self):
@@ -684,19 +710,13 @@ class PasswordQuestion(Question):
     default_value = ""
     forbidden_chars = "{}"
 
-    def __init__(self, question, user_answers):
-        super().__init__(question, user_answers)
+    def __init__(self, question):
+        super().__init__(question)
         self.redact = True
         if self.default is not None:
             raise YunohostValidationError(
                 "app_argument_password_no_default", name=self.name
             )
-
-    @staticmethod
-    def humanize(value, option={}):
-        if value:
-            return "********"  # Avoid to display the password on screen
-        return ""
 
     def _prevalidate(self):
         super()._prevalidate()
@@ -712,33 +732,30 @@ class PasswordQuestion(Question):
 
             assert_password_is_strong_enough("user", self.value)
 
-    def _format_text_for_user_input_in_cli(self):
-        need_column = self.current_value or self.optional
-        text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli(
-            need_column
-        )
-        if self.current_value:
-            text_for_user_input_in_cli += "\n - " + m18n.n(
-                "app_argument_password_help_keep"
-            )
-        if self.optional:
-            text_for_user_input_in_cli += "\n - " + m18n.n(
-                "app_argument_password_help_optional"
-            )
-
-        return text_for_user_input_in_cli
-
-    def _prompt(self, text):
-        super()._prompt(text)
-        if self.current_value and self.value == "":
-            self.value = self.current_value
-        elif self.value == " ":
-            self.value = ""
-
 
 class PathQuestion(Question):
     argument_type = "path"
     default_value = ""
+
+    @staticmethod
+    def normalize(value, option={}):
+
+        option = option.__dict__ if isinstance(option, Question) else option
+
+        if not value.strip():
+            if option.get("optional"):
+                return ""
+            # Hmpf here we could just have a "else" case
+            # but we also want PathQuestion.normalize("") to return "/"
+            # (i.e. if no option is provided, hence .get("optional") is None
+            elif option.get("optional") is False:
+                raise YunohostValidationError(
+                    "app_argument_invalid",
+                    name=option.get("name"),
+                    error="Question is mandatory",
+                )
+
+        return "/" + value.strip().strip(" /")
 
 
 class BooleanQuestion(Question):
@@ -750,50 +767,70 @@ class BooleanQuestion(Question):
     @staticmethod
     def humanize(value, option={}):
 
+        option = option.__dict__ if isinstance(option, Question) else option
+
         yes = option.get("yes", 1)
         no = option.get("no", 0)
-        value = str(value).lower()
-        if value == str(yes).lower():
-            return "yes"
-        if value == str(no).lower():
-            return "no"
-        if value in BooleanQuestion.yes_answers:
-            return "yes"
-        if value in BooleanQuestion.no_answers:
-            return "no"
 
-        if value in ["none", ""]:
+        value = BooleanQuestion.normalize(value, option)
+
+        if value == yes:
+            return "yes"
+        if value == no:
+            return "no"
+        if value is None:
             return ""
 
         raise YunohostValidationError(
             "app_argument_choice_invalid",
-            name=option.get("name", ""),
+            name=option.get("name"),
             value=value,
-            choices="yes, no, y, n, 1, 0",
+            choices="yes/no",
         )
 
     @staticmethod
     def normalize(value, option={}):
-        yes = option.get("yes", 1)
-        no = option.get("no", 0)
 
-        if str(value).lower() in BooleanQuestion.yes_answers:
-            return yes
+        option = option.__dict__ if isinstance(option, Question) else option
 
-        if str(value).lower() in BooleanQuestion.no_answers:
-            return no
+        if isinstance(value, str):
+            value = value.strip()
 
-        if value in [None, ""]:
+        technical_yes = option.get("yes", 1)
+        technical_no = option.get("no", 0)
+
+        no_answers = BooleanQuestion.no_answers
+        yes_answers = BooleanQuestion.yes_answers
+
+        assert (
+            str(technical_yes).lower() not in no_answers
+        ), f"'yes' value can't be in {no_answers}"
+        assert (
+            str(technical_no).lower() not in yes_answers
+        ), f"'no' value can't be in {yes_answers}"
+
+        no_answers += [str(technical_no).lower()]
+        yes_answers += [str(technical_yes).lower()]
+
+        strvalue = str(value).lower()
+
+        if strvalue in yes_answers:
+            return technical_yes
+        if strvalue in no_answers:
+            return technical_no
+
+        if strvalue in ["none", ""]:
             return None
+
         raise YunohostValidationError(
             "app_argument_choice_invalid",
-            name=option.get("name", ""),
-            value=value,
-            choices="yes, no, y, n, 1, 0",
+            name=option.get("name"),
+            value=strvalue,
+            choices="yes/no",
         )
 
-    def __init__(self, question, user_answers):
-        super().__init__(question, user_answers)
+    def __init__(self, question):
+        super().__init__(question)
         self.yes = question.get("yes", 1)
         self.no = question.get("no", 0)
         if self.default is None:
@@ -807,42 +844,44 @@ class BooleanQuestion(Question):
         return text_for_user_input_in_cli
 
     def get(self, key, default=None):
-        try:
-            return getattr(self, key)
-        except AttributeError:
-            return default
+        return getattr(self, key, default)
 
 
 class DomainQuestion(Question):
     argument_type = "domain"
 
-    def __init__(self, question, user_answers):
+    def __init__(self, question):
         from yunohost.domain import domain_list, _get_maindomain
 
-        super().__init__(question, user_answers)
+        super().__init__(question)
 
         if self.default is None:
             self.default = _get_maindomain()
 
         self.choices = domain_list()["domains"]
 
-    def _raise_invalid_answer(self):
-        raise YunohostValidationError(
-            "app_argument_invalid",
-            name=self.name,
-            error=m18n.n("domain_name_unknown", domain=self.value),
-        )
+    @staticmethod
+    def normalize(value, option={}):
+        if value.startswith("https://"):
+            value = value[len("https://") :]
+        elif value.startswith("http://"):
+            value = value[len("http://") :]
+
+        # Remove trailing slashes
+        value = value.rstrip("/").lower()
+
+        return value
 
 
 class UserQuestion(Question):
     argument_type = "user"
 
-    def __init__(self, question, user_answers):
+    def __init__(self, question):
         from yunohost.user import user_list, user_info
         from yunohost.domain import _get_maindomain
 
-        super().__init__(question, user_answers)
-        self.choices = user_list()["users"]
+        super().__init__(question)
+        self.choices = list(user_list()["users"].keys())
 
         if not self.choices:
             raise YunohostValidationError(
@@ -853,33 +892,30 @@ class UserQuestion(Question):
 
         if self.default is None:
             root_mail = "root@%s" % _get_maindomain()
-            for user in self.choices.keys():
+            for user in self.choices:
                 if root_mail in user_info(user).get("mail-aliases", []):
                     self.default = user
                     break
-
-    def _raise_invalid_answer(self):
-        raise YunohostValidationError(
-            "app_argument_invalid",
-            name=self.name,
-            error=m18n.n("user_unknown", user=self.value),
-        )
 
 
 class NumberQuestion(Question):
     argument_type = "number"
     default_value = None
 
-    def __init__(self, question, user_answers):
-        super().__init__(question, user_answers)
+    def __init__(self, question):
+        super().__init__(question)
         self.min = question.get("min", None)
         self.max = question.get("max", None)
         self.step = question.get("step", None)
 
     @staticmethod
     def normalize(value, option={}):
+
         if isinstance(value, int):
             return value
+
+        if isinstance(value, str):
+            value = value.strip()
 
         if isinstance(value, str) and value.isdigit():
             return int(value)
@@ -887,8 +923,11 @@ class NumberQuestion(Question):
         if value in [None, ""]:
             return value
 
+        option = option.__dict__ if isinstance(option, Question) else option
         raise YunohostValidationError(
-            "app_argument_invalid", name=option.name, error=m18n.n("invalid_number")
+            "app_argument_invalid",
+            name=option.get("name"),
+            error=m18n.n("invalid_number"),
         )
 
     def _prevalidate(self):
@@ -915,8 +954,8 @@ class DisplayTextQuestion(Question):
     argument_type = "display_text"
     readonly = True
 
-    def __init__(self, question, user_answers):
-        super().__init__(question, user_answers)
+    def __init__(self, question):
+        super().__init__(question)
 
         self.optional = True
         self.style = question.get(
@@ -946,90 +985,50 @@ class FileQuestion(Question):
     @classmethod
     def clean_upload_dirs(cls):
         # Delete files uploaded from API
-        if Moulinette.interface.type == "api":
-            for upload_dir in cls.upload_dirs:
-                if os.path.exists(upload_dir):
-                    shutil.rmtree(upload_dir)
+        for upload_dir in cls.upload_dirs:
+            if os.path.exists(upload_dir):
+                shutil.rmtree(upload_dir)
 
-    def __init__(self, question, user_answers):
-        super().__init__(question, user_answers)
-        if question.get("accept"):
-            self.accept = question.get("accept")
-        else:
-            self.accept = ""
-        if Moulinette.interface.type == "api":
-            if user_answers.get(f"{self.name}[name]"):
-                self.value = {
-                    "content": self.value,
-                    "filename": user_answers.get(f"{self.name}[name]", self.name),
-                }
+    def __init__(self, question):
+        super().__init__(question)
+        self.accept = question.get("accept", "")
 
     def _prevalidate(self):
         if self.value is None:
             self.value = self.current_value
 
         super()._prevalidate()
-        if (
-            isinstance(self.value, str)
-            and self.value
-            and not os.path.exists(self.value)
-        ):
-            raise YunohostValidationError(
-                "app_argument_invalid",
-                name=self.name,
-                error=m18n.n("file_does_not_exist", path=self.value),
-            )
-        if self.value in [None, ""] or not self.accept:
-            return
 
-        filename = self.value if isinstance(self.value, str) else self.value["filename"]
-        if "." not in filename or "." + filename.split(".")[
-            -1
-        ] not in self.accept.replace(" ", "").split(","):
-            raise YunohostValidationError(
-                "app_argument_invalid",
-                name=self.name,
-                error=m18n.n(
-                    "file_extension_not_accepted", file=filename, accept=self.accept
-                ),
-            )
+        if Moulinette.interface.type != "api":
+            if not self.value or not os.path.exists(str(self.value)):
+                raise YunohostValidationError(
+                    "app_argument_invalid",
+                    name=self.name,
+                    error=m18n.n("file_does_not_exist", path=str(self.value)),
+                )
 
     def _post_parse_value(self):
         from base64 import b64decode
 
-        # Upload files from API
-        # A file arg contains a string with "FILENAME:BASE64_CONTENT"
         if not self.value:
             return self.value
 
-        if Moulinette.interface.type == "api" and isinstance(self.value, dict):
+        upload_dir = tempfile.mkdtemp(prefix="ynh_filequestion_")
+        _, file_path = tempfile.mkstemp(dir=upload_dir)
 
-            upload_dir = tempfile.mkdtemp(prefix="tmp_configpanel_")
-            FileQuestion.upload_dirs += [upload_dir]
-            filename = self.value["filename"]
-            logger.debug(
-                f"Save uploaded file {self.value['filename']} from API into {upload_dir}"
-            )
+        FileQuestion.upload_dirs += [upload_dir]
 
-            # Filename is given by user of the API. For security reason, we have replaced
-            # os.path.join to avoid the user to be able to rewrite a file in filesystem
-            # i.e. os.path.join("/foo", "/etc/passwd") == "/etc/passwd"
-            file_path = os.path.normpath(upload_dir + "/" + filename)
-            if not file_path.startswith(upload_dir + "/"):
-                raise YunohostError(
-                    f"Filename '{filename}' received from the API got a relative parent path, which is forbidden",
-                    raw_msg=True,
-                )
-            i = 2
-            while os.path.exists(file_path):
-                file_path = os.path.normpath(upload_dir + "/" + filename + (".%d" % i))
-                i += 1
+        logger.debug(f"Saving file {self.name} for file question into {file_path}")
+        if Moulinette.interface.type != "api":
+            content = read_file(str(self.value), file_mode="rb")
 
-            content = self.value["content"]
+        if Moulinette.interface.type == "api":
+            content = b64decode(self.value)
 
-            write_to_file(file_path, b64decode(content), file_mode="wb")
+        write_to_file(file_path, content, file_mode="wb")
 
-            self.value = file_path
+        self.value = file_path
+
         return self.value
 
 
@@ -1057,25 +1056,41 @@ ARGUMENTS_TYPE_PARSERS = {
 }
 
 
-def parse_args_in_yunohost_format(user_answers, argument_questions):
+def ask_questions_and_parse_answers(
+    questions: Dict, prefilled_answers: Union[str, Mapping[str, Any]] = {}
+) -> List[Question]:
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
 
     Keyword arguments:
-        user_answers -- a dictionnary of arguments from the user (generally
-                        empty in CLI, filed from the admin interface)
-        argument_questions -- the arguments description store in yunohost
+        questions         -- the arguments description store in yunohost
                               format from actions.json/toml, manifest.json/toml
                               or config_panel.json/toml
+        prefilled_answers -- a url "query-string" such as "domain=yolo.test&path=/foobar&admin=sam"
+                             or a dict such as {"domain": "yolo.test", "path": "/foobar", "admin": "sam"}
     """
-    parsed_answers_dict = OrderedDict()
 
-    for question in argument_questions:
+    if isinstance(prefilled_answers, str):
+        # FIXME FIXME : this is not uniform with config_set() which uses parse.qs (no l)
+        # parse_qsl parse single values
+        # whereas parse.qs return list of values (which is useful for tags, etc)
+        # For now, let's not migrate this piece of code to parse_qs
+        # Because Aleks believes some bits of the app CI rely on overriding values (e.g. foo=foo&...&foo=bar)
+        prefilled_answers = dict(
+            urllib.parse.parse_qsl(prefilled_answers or "", keep_blank_values=True)
+        )
+
+    if not prefilled_answers:
+        prefilled_answers = {}
+
+    out = []
+
+    for question in questions:
         question_class = ARGUMENTS_TYPE_PARSERS[question.get("type", "string")]
-        question = question_class(question, user_answers)
+        question["value"] = prefilled_answers.get(question["name"])
+        question = question_class(question)
 
-        answer = question.ask_if_needed()
-        if answer is not None:
-            parsed_answers_dict[question.name] = answer
+        question.ask_if_needed()
+        out.append(question)
 
-    return parsed_answers_dict
+    return out

@@ -12,13 +12,6 @@ _generate_config() {
       [[ "$domain" =~ ^[^.]+\.local$ ]] || continue
       echo "    - $domain"
   done
-
-  echo "interfaces:"
-  local_network_interfaces="$(ip --brief a | grep ' 10\.\| 192\.168\.' | awk '{print $1}')"
-  for interface in $local_network_interfaces
-  do
-      echo "    - $interface"
-  done
 }
 
 do_init_regen() {

@@ -8,12 +8,15 @@ from publicsuffix2 import PublicSuffixList
 
 from moulinette.utils.process import check_output
 
-from yunohost.utils.dns import dig, YNH_DYNDNS_DOMAINS
+from yunohost.utils.dns import (
+    dig,
+    YNH_DYNDNS_DOMAINS,
+    is_yunohost_dyndns_domain,
+    is_special_use_tld,
+)
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _get_maindomain
 from yunohost.dns import _build_dns_conf, _get_dns_zone_for_domain
-
-SPECIAL_USE_TLDS = ["local", "localhost", "onion", "test"]
 
 
 class DNSRecordsDiagnoser(Diagnoser):
@@ -26,23 +29,20 @@ class DNSRecordsDiagnoser(Diagnoser):
 
         main_domain = _get_maindomain()
 
-        all_domains = domain_list(exclude_subdomains=True)["domains"]
-        for domain in all_domains:
+        major_domains = domain_list(exclude_subdomains=True)["domains"]
+        for domain in major_domains:
             self.logger_debug("Diagnosing DNS conf for %s" % domain)
-            is_specialusedomain = any(
-                domain.endswith("." + tld) for tld in SPECIAL_USE_TLDS
-            )
+
             for report in self.check_domain(
                 domain,
                 domain == main_domain,
-                is_specialusedomain=is_specialusedomain,
             ):
                 yield report
 
         # Check if a domain buy by the user will expire soon
         psl = PublicSuffixList()
         domains_from_registrar = [
-            psl.get_public_suffix(domain) for domain in all_domains
+            psl.get_public_suffix(domain) for domain in major_domains
         ]
         domains_from_registrar = [
             domain for domain in domains_from_registrar if "." in domain
@@ -53,7 +53,16 @@ class DNSRecordsDiagnoser(Diagnoser):
         for report in self.check_expiration_date(domains_from_registrar):
             yield report
 
-    def check_domain(self, domain, is_main_domain, is_specialusedomain):
+    def check_domain(self, domain, is_main_domain):
+
+        if is_special_use_tld(domain):
+            categories = []
+            yield dict(
+                meta={"domain": domain},
+                data={},
+                status="INFO",
+                summary="diagnosis_dns_specialusedomain",
+            )
 
         base_dns_zone = _get_dns_zone_for_domain(domain)
         basename = domain.replace(base_dns_zone, "").rstrip(".") or "@"
@@ -63,15 +72,6 @@ class DNSRecordsDiagnoser(Diagnoser):
         )
 
         categories = ["basic", "mail", "xmpp", "extra"]
-
-        if is_specialusedomain:
-            categories = []
-            yield dict(
-                meta={"domain": domain},
-                data={},
-                status="INFO",
-                summary="diagnosis_dns_specialusedomain",
-            )
 
         for category in categories:
 
@@ -84,7 +84,8 @@ class DNSRecordsDiagnoser(Diagnoser):
                 id_ = r["type"] + ":" + r["name"]
                 fqdn = r["name"] + "." + base_dns_zone if r["name"] != "@" else domain
 
-                # Ugly hack to not check mail records for subdomains stuff, otherwise will end up in a shitstorm of errors for people with many subdomains...
+                # Ugly hack to not check mail records for subdomains stuff,
+                # otherwise will end up in a shitstorm of errors for people with many subdomains...
                 # Should find a cleaner solution in the suggested conf...
                 if r["type"] in ["MX", "TXT"] and fqdn not in [
                     domain,
@@ -131,6 +132,12 @@ class DNSRecordsDiagnoser(Diagnoser):
                 status = "SUCCESS"
                 summary = "diagnosis_dns_good_conf"
 
+            # If status is okay and there's actually no expected records
+            # (e.g. XMPP disabled)
+            # then let's not yield any diagnosis line
+            if not records and "status" == "SUCCESS":
+                continue
+
             output = dict(
                 meta={"domain": domain, "category": category},
                 data=results,
@@ -140,10 +147,7 @@ class DNSRecordsDiagnoser(Diagnoser):
 
             if discrepancies:
                 # For ynh-managed domains (nohost.me etc...), tell people to try to "yunohost dyndns update --force"
-                if any(
-                    domain.endswith(ynh_dyndns_domain)
-                    for ynh_dyndns_domain in YNH_DYNDNS_DOMAINS
-                ):
+                if is_yunohost_dyndns_domain(domain):
                     output["details"] = ["diagnosis_dns_try_dyndns_update_force"]
                 # Otherwise point to the documentation
                 else:

@@ -142,6 +142,7 @@ EOF
       touch ${pending_dir}/etc/systemd/system/proc-hidepid.service
   fi
 
+  mkdir -p ${pending_dir}/etc/dpkg/origins/
   cp dpkg-origins ${pending_dir}/etc/dpkg/origins/yunohost
 
 }

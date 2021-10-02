@@ -845,14 +845,9 @@ def _backup_current_cert(domain):
 
 def _check_domain_is_ready_for_ACME(domain):
 
-    dnsrecords = (
-        Diagnoser.get_cached_report(
-            "dnsrecords",
-            item={"domain": domain, "category": "basic"},
-            warn_if_no_cache=False,
-        )
-        or {}
-    )
+    from yunohost.domain import _get_parent_domain_of
+    from yunohost.dns import _get_dns_zone_for_domain
+
     httpreachable = (
         Diagnoser.get_cached_report(
             "web", item={"domain": domain}, warn_if_no_cache=False
@@ -860,16 +855,47 @@ def _check_domain_is_ready_for_ACME(domain):
         or {}
     )
 
-    if not dnsrecords or not httpreachable:
+    parent_domain = _get_parent_domain_of(domain)
+
+    dnsrecords = (
+        Diagnoser.get_cached_report(
+            "dnsrecords",
+            item={"domain": parent_domain, "category": "basic"},
+            warn_if_no_cache=False,
+        )
+        or {}
+    )
+
+    base_dns_zone = _get_dns_zone_for_domain(domain)
+    record_name = (
+        domain.replace(f".{base_dns_zone}", "") if domain != base_dns_zone else "@"
+    )
+    A_record_status = dnsrecords.get("data").get(f"A:{record_name}")
+    AAAA_record_status = dnsrecords.get("data").get(f"AAAA:{record_name}")
+
+    # Fallback to wildcard in case no result yet for the DNS name?
+    if not A_record_status:
+        A_record_status = dnsrecords.get("data").get("A:*")
+    if not AAAA_record_status:
+        AAAA_record_status = dnsrecords.get("data").get("AAAA:*")
+
+    if (
+        not httpreachable
+        or not dnsrecords.get("data")
+        or (A_record_status, AAAA_record_status) == (None, None)
+    ):
         raise YunohostValidationError(
             "certmanager_domain_not_diagnosed_yet", domain=domain
         )
 
     # Check if IP from DNS matches public IP
-    if not dnsrecords.get("status") in [
-        "SUCCESS",
-        "WARNING",
-    ]:  # Warning is for missing IPv6 record which ain't critical for ACME
+    # - 'MISSING' for IPv6 ain't critical for ACME
+    # - IPv4 can be None assuming there's at least an IPv6, and viveversa
+    #    - (the case where both are None is checked before)
+    if not (
+        A_record_status in [None, "OK"]
+        and AAAA_record_status in [None, "OK", "MISSING"]
+    ):
         raise YunohostValidationError(
             "certmanager_domain_dns_ip_differs_from_public_ip", domain=domain
         )
