@@ -2401,7 +2401,7 @@ def _make_environment_for_app_script(
     return env_dict
 
 
-def _parse_app_instance_name(app_instance_name):
+def _parse_app_instance_name(app_instance_name: str) -> Tuple[str, int]:
     """
     Parse a Yunohost app instance name and extracts the original appid
     and the application instance number
