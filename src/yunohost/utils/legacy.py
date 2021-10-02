@@ -4,7 +4,13 @@ import glob
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, write_to_file, write_to_json, write_to_yaml, read_yaml
+from moulinette.utils.filesystem import (
+    read_file,
+    write_to_file,
+    write_to_json,
+    write_to_yaml,
+    read_yaml,
+)
 
 from yunohost.user import user_list
 from yunohost.app import (

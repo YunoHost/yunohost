@@ -62,7 +62,12 @@ from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.log import is_unit_operation, OperationLogger
-from yunohost.app_catalog import app_catalog, app_search, _load_apps_catalog, app_fetchlist  # noqa
+from yunohost.app_catalog import (
+    app_catalog,
+    app_search,
+    _load_apps_catalog,
+    app_fetchlist,
+)  # noqa
 
 logger = getActionLogger("yunohost.app")
 
@@ -393,7 +398,9 @@ def app_change_url(operation_logger, app, domain, path):
 
     app_setting_path = os.path.join(APPS_SETTING_PATH, app)
     path_requirement = _guess_webapp_path_requirement(app_setting_path)
-    _validate_webpath_requirement({"domain": domain, "path": path}, path_requirement, ignore_app=app)
+    _validate_webpath_requirement(
+        {"domain": domain, "path": path}, path_requirement, ignore_app=app
+    )
 
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
@@ -551,7 +558,9 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
 
         # Prepare env. var. to pass to script
-        env_dict = _make_environment_for_app_script(app_instance_name, workdir=extracted_app_folder)
+        env_dict = _make_environment_for_app_script(
+            app_instance_name, workdir=extracted_app_folder
+        )
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
@@ -615,7 +624,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             if upgrade_failed or broke_the_system:
 
                 # display this if there are remaining apps
-                if apps[number + 1:]:
+                if apps[number + 1 :]:
                     not_upgraded_apps = apps[number:]
                     logger.error(
                         m18n.n(
@@ -647,9 +656,13 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             # Replace scripts and manifest and conf (if exists)
             # Move scripts and manifest to the right place
             for file_to_copy in APP_FILES_TO_COPY:
-                rm(f'{app_setting_path}/{file_to_copy}', recursive=True, force=True)
+                rm(f"{app_setting_path}/{file_to_copy}", recursive=True, force=True)
                 if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
-                    cp(f'{extracted_app_folder}/{file_to_copy}', f'{app_setting_path}/{file_to_copy}', recursive=True)
+                    cp(
+                        f"{extracted_app_folder}/{file_to_copy}",
+                        f"{app_setting_path}/{file_to_copy}",
+                        recursive=True,
+                    )
 
             # Clean and set permissions
             shutil.rmtree(extracted_app_folder)
@@ -820,7 +833,11 @@ def app_install(
     # Move scripts and manifest to the right place
     for file_to_copy in APP_FILES_TO_COPY:
         if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
-            cp(f'{extracted_app_folder}/{file_to_copy}', f'{app_setting_path}/{file_to_copy}', recursive=True)
+            cp(
+                f"{extracted_app_folder}/{file_to_copy}",
+                f"{app_setting_path}/{file_to_copy}",
+                recursive=True,
+            )
 
     # Initialize the main permission for the app
     # The permission is initialized with no url associated, and with tile disabled
@@ -835,7 +852,9 @@ def app_install(
     )
 
     # Prepare env. var. to pass to script
-    env_dict = _make_environment_for_app_script(app_instance_name, args=args, workdir=extracted_app_folder)
+    env_dict = _make_environment_for_app_script(
+        app_instance_name, args=args, workdir=extracted_app_folder
+    )
 
     env_dict_for_logging = env_dict.copy()
     for question in questions:
@@ -896,7 +915,9 @@ def app_install(
                 logger.warning(m18n.n("app_remove_after_failed_install"))
 
             # Setup environment for remove script
-            env_dict_remove = _make_environment_for_app_script(app_instance_name, workdir=extracted_app_folder)
+            env_dict_remove = _make_environment_for_app_script(
+                app_instance_name, workdir=extracted_app_folder
+            )
 
             # Execute remove script
             operation_logger_remove = OperationLogger(
@@ -1504,7 +1525,9 @@ def app_action_run(operation_logger, app, action, args=None):
 
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
-    env_dict = _make_environment_for_app_script(app, args=args, args_prefix="ACTION_", workdir=tmp_workdir_for_app)
+    env_dict = _make_environment_for_app_script(
+        app, args=args, args_prefix="ACTION_", workdir=tmp_workdir_for_app
+    )
     env_dict["YNH_ACTION"] = action
 
     _, action_script = tempfile.mkstemp(dir=tmp_workdir_for_app)
@@ -1984,7 +2007,7 @@ def _is_app_repo_url(string: str) -> bool:
     string = string.strip()
 
     # Dummy test for ssh-based stuff ... should probably be improved somehow
-    if '@' in string:
+    if "@" in string:
         return True
 
     return bool(APP_REPO_URL.match(string))
@@ -1992,7 +2015,7 @@ def _is_app_repo_url(string: str) -> bool:
 
 def _app_quality(src: str) -> str:
     """
-       app may in fact be an app name, an url, or a path
+    app may in fact be an app name, an url, or a path
     """
 
     raw_app_catalog = _load_apps_catalog()["apps"]
@@ -2026,13 +2049,15 @@ def _app_quality(src: str) -> str:
         return "thirdparty"
     else:
         if "http://" in src or "https://" in src:
-            logger.error(f"{src} is not a valid app url: app url are expected to look like https://domain.tld/path/to/repo_ynh")
+            logger.error(
+                f"{src} is not a valid app url: app url are expected to look like https://domain.tld/path/to/repo_ynh"
+            )
         raise YunohostValidationError("app_unknown")
 
 
 def _extract_app(src: str) -> Tuple[Dict, str]:
     """
-       src may be an app name, an url, or a path
+    src may be an app name, an url, or a path
     """
 
     raw_app_catalog = _load_apps_catalog()["apps"]
@@ -2054,8 +2079,8 @@ def _extract_app(src: str) -> Tuple[Dict, str]:
         revision = "HEAD"
         # gitlab urls may look like 'https://domain/org/group/repo/-/tree/testing'
         # compated to github urls looking like 'https://domain/org/repo/tree/testing'
-        if '/-/' in url:
-            url = url.replace('/-/', '/')
+        if "/-/" in url:
+            url = url.replace("/-/", "/")
         if "/tree/" in url:
             url, branch = url.split("/tree/", 1)
         return _extract_app_from_gitrepo(url, branch, revision, {})
@@ -2064,7 +2089,9 @@ def _extract_app(src: str) -> Tuple[Dict, str]:
         return _extract_app_from_folder(src)
     else:
         if "http://" in src or "https://" in src:
-            logger.error(f"{src} is not a valid app url: app url are expected to look like https://domain.tld/path/to/repo_ynh")
+            logger.error(
+                f"{src} is not a valid app url: app url are expected to look like https://domain.tld/path/to/repo_ynh"
+            )
         raise YunohostValidationError("app_unknown")
 
 
@@ -2108,7 +2135,9 @@ def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
     return manifest, extracted_app_folder
 
 
-def _extract_app_from_gitrepo(url: str, branch: str, revision: str, app_info: Dict = {}) -> Tuple[Dict, str]:
+def _extract_app_from_gitrepo(
+    url: str, branch: str, revision: str, app_info: Dict = {}
+) -> Tuple[Dict, str]:
 
     logger.debug(m18n.n("downloading"))
 
@@ -2237,8 +2266,12 @@ def _guess_webapp_path_requirement(app_folder: str) -> str:
     manifest = _get_manifest_of_app(app_folder)
     raw_questions = manifest.get("arguments", {}).get("install", {})
 
-    domain_questions = [question for question in raw_questions if question.get("type") == "domain"]
-    path_questions = [question for question in raw_questions if question.get("type") == "path"]
+    domain_questions = [
+        question for question in raw_questions if question.get("type") == "domain"
+    ]
+    path_questions = [
+        question for question in raw_questions if question.get("type") == "path"
+    ]
 
     if len(domain_questions) == 0 and len(path_questions) == 0:
         return ""
@@ -2276,7 +2309,9 @@ def _validate_webpath_requirement(
         _assert_no_conflicting_apps(domain, path, ignore_app=ignore_app)
 
     elif path_requirement == "full_domain":
-        _assert_no_conflicting_apps(domain, "/", full_domain=True, ignore_app=ignore_app)
+        _assert_no_conflicting_apps(
+            domain, "/", full_domain=True, ignore_app=ignore_app
+        )
 
 
 def _get_conflicting_apps(domain, path, ignore_app=None):
@@ -2341,7 +2376,9 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
             )
 
 
-def _make_environment_for_app_script(app, args={}, args_prefix="APP_ARG_", workdir=None):
+def _make_environment_for_app_script(
+    app, args={}, args_prefix="APP_ARG_", workdir=None
+):
 
     app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 

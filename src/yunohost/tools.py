@@ -1151,7 +1151,11 @@ class Migration(object):
                 os.system("systemctl stop slapd")
                 cp("/etc/ldap", f"{backup_folder}/ldap_config", recursive=True)
                 cp("/var/lib/ldap", f"{backup_folder}/ldap_db", recursive=True)
-                cp("/etc/yunohost/apps", f"{backup_folder}/apps_settings", recursive=True)
+                cp(
+                    "/etc/yunohost/apps",
+                    f"{backup_folder}/apps_settings",
+                    recursive=True,
+                )
             except Exception as e:
                 raise YunohostError(
                     "migration_ldap_can_not_backup_before_migration", error=str(e)
@@ -1170,7 +1174,11 @@ class Migration(object):
                 rm("/etc/ldap/slapd.d", force=True, recursive=True)
                 cp(f"{backup_folder}/ldap_config", "/etc/ldap", recursive=True)
                 cp(f"{backup_folder}/ldap_db", "/var/lib/ldap", recursive=True)
-                cp(f"{backup_folder}/apps_settings", "/etc/yunohost/apps", recursive=True)
+                cp(
+                    f"{backup_folder}/apps_settings",
+                    "/etc/yunohost/apps",
+                    recursive=True,
+                )
                 os.system("systemctl start slapd")
                 rm(backup_folder, force=True, recursive=True)
                 logger.info(m18n.n("migration_ldap_rollback_success"))
