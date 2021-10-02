@@ -23,16 +23,6 @@ APPS_CATALOG_API_VERSION = 2
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 
 
-# Old legacy function...
-def app_fetchlist():
-    logger.warning(
-        "'yunohost app fetchlist' is deprecated. Please use 'yunohost tools update --apps' instead"
-    )
-    from yunohost.tools import tools_update
-
-    tools_update(target="apps")
-
-
 def app_catalog(full=False, with_categories=False):
     """
     Return a dict of apps available to installation from Yunohost's app catalog

@@ -66,7 +66,6 @@ from yunohost.app_catalog import (  # noqa
     app_catalog,
     app_search,
     _load_apps_catalog,
-    app_fetchlist,
 )
 
 logger = getActionLogger("yunohost.app")
