@@ -1,7 +1,10 @@
 import os
+import re
+import glob
 from moulinette import m18n
+from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import write_to_json, read_yaml
+from moulinette.utils.filesystem import read_file, write_to_file, write_to_json, write_to_yaml, read_yaml
 
 from yunohost.user import user_list
 from yunohost.app import (
@@ -14,6 +17,8 @@ from yunohost.permission import (
     user_permission_update,
     permission_sync_to_user,
 )
+from yunohost.utils.error import YunohostValidationError
+
 
 logger = getActionLogger("yunohost.legacy")
 
@@ -237,3 +242,213 @@ def translate_legacy_rules_in_ssowant_conf_json_persistent():
     logger.warning(
         "YunoHost automatically translated some legacy rules in /etc/ssowat/conf.json.persistent to match the new permission system"
     )
+
+
+LEGACY_PHP_VERSION_REPLACEMENTS = [
+    ("/etc/php5", "/etc/php/7.3"),
+    ("/etc/php/7.0", "/etc/php/7.3"),
+    ("/var/run/php5-fpm", "/var/run/php/php7.3-fpm"),
+    ("/var/run/php/php7.0-fpm", "/var/run/php/php7.3-fpm"),
+    ("php5", "php7.3"),
+    ("php7.0", "php7.3"),
+    (
+        'phpversion="${phpversion:-7.0}"',
+        'phpversion="${phpversion:-7.3}"',
+    ),  # Many helpers like the composer ones use 7.0 by default ...
+    (
+        '"$phpversion" == "7.0"',
+        '$(bc <<< "$phpversion >= 7.3") -eq 1',
+    ),  # patch ynh_install_php to refuse installing/removing php <= 7.3
+]
+
+
+def _patch_legacy_php_versions(app_folder):
+
+    files_to_patch = []
+    files_to_patch.extend(glob.glob("%s/conf/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/*/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
+    files_to_patch.append("%s/manifest.json" % app_folder)
+    files_to_patch.append("%s/manifest.toml" % app_folder)
+
+    for filename in files_to_patch:
+
+        # Ignore non-regular files
+        if not os.path.isfile(filename):
+            continue
+
+        c = (
+            "sed -i "
+            + "".join(
+                "-e 's@{pattern}@{replace}@g' ".format(pattern=p, replace=r)
+                for p, r in LEGACY_PHP_VERSION_REPLACEMENTS
+            )
+            + "%s" % filename
+        )
+        os.system(c)
+
+
+def _patch_legacy_php_versions_in_settings(app_folder):
+
+    settings = read_yaml(os.path.join(app_folder, "settings.yml"))
+
+    if settings.get("fpm_config_dir") == "/etc/php/7.0/fpm":
+        settings["fpm_config_dir"] = "/etc/php/7.3/fpm"
+    if settings.get("fpm_service") == "php7.0-fpm":
+        settings["fpm_service"] = "php7.3-fpm"
+    if settings.get("phpversion") == "7.0":
+        settings["phpversion"] = "7.3"
+
+    # We delete these checksums otherwise the file will appear as manually modified
+    list_to_remove = ["checksum__etc_php_7.0_fpm_pool", "checksum__etc_nginx_conf.d"]
+    settings = {
+        k: v
+        for k, v in settings.items()
+        if not any(k.startswith(to_remove) for to_remove in list_to_remove)
+    }
+
+    write_to_yaml(app_folder + "/settings.yml", settings)
+
+
+def _patch_legacy_helpers(app_folder):
+
+    files_to_patch = []
+    files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
+    files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
+
+    stuff_to_replace = {
+        # Replace
+        #    sudo yunohost app initdb $db_user -p $db_pwd
+        # by
+        #    ynh_mysql_setup_db --db_user=$db_user --db_name=$db_user --db_pwd=$db_pwd
+        "yunohost app initdb": {
+            "pattern": r"(sudo )?yunohost app initdb \"?(\$\{?\w+\}?)\"?\s+-p\s\"?(\$\{?\w+\}?)\"?",
+            "replace": r"ynh_mysql_setup_db --db_user=\2 --db_name=\2 --db_pwd=\3",
+            "important": True,
+        },
+        # Replace
+        #    sudo yunohost app checkport whaterver
+        # by
+        #    ynh_port_available whatever
+        "yunohost app checkport": {
+            "pattern": r"(sudo )?yunohost app checkport",
+            "replace": r"ynh_port_available",
+            "important": True,
+        },
+        # We can't migrate easily port-available
+        # .. but at the time of writing this code, only two non-working apps are using it.
+        "yunohost tools port-available": {"important": True},
+        # Replace
+        #    yunohost app checkurl "${domain}${path_url}" -a "${app}"
+        # by
+        #    ynh_webpath_register --app=${app} --domain=${domain} --path_url=${path_url}
+        "yunohost app checkurl": {
+            "pattern": r"(sudo )?yunohost app checkurl \"?(\$\{?\w+\}?)\/?(\$\{?\w+\}?)\"?\s+-a\s\"?(\$\{?\w+\}?)\"?",
+            "replace": r"ynh_webpath_register --app=\4 --domain=\2 --path_url=\3",
+            "important": True,
+        },
+        # Remove
+        #    Automatic diagnosis data from YunoHost
+        #    __PRE_TAG1__$(yunohost tools diagnosis | ...)__PRE_TAG2__"
+        #
+        "yunohost tools diagnosis": {
+            "pattern": r"(Automatic diagnosis data from YunoHost( *\n)*)? *(__\w+__)? *\$\(yunohost tools diagnosis.*\)(__\w+__)?",
+            "replace": r"",
+            "important": False,
+        },
+        # Old $1, $2 in backup/restore scripts...
+        "app=$2": {
+            "only_for": ["scripts/backup", "scripts/restore"],
+            "pattern": r"app=\$2",
+            "replace": r"app=$YNH_APP_INSTANCE_NAME",
+            "important": True,
+        },
+        # Old $1, $2 in backup/restore scripts...
+        "backup_dir=$1": {
+            "only_for": ["scripts/backup", "scripts/restore"],
+            "pattern": r"backup_dir=\$1",
+            "replace": r"backup_dir=.",
+            "important": True,
+        },
+        # Old $1, $2 in backup/restore scripts...
+        "restore_dir=$1": {
+            "only_for": ["scripts/restore"],
+            "pattern": r"restore_dir=\$1",
+            "replace": r"restore_dir=.",
+            "important": True,
+        },
+        # Old $1, $2 in install scripts...
+        # We ain't patching that shit because it ain't trivial to patch all args...
+        "domain=$1": {"only_for": ["scripts/install"], "important": True},
+    }
+
+    for helper, infos in stuff_to_replace.items():
+        infos["pattern"] = (
+            re.compile(infos["pattern"]) if infos.get("pattern") else None
+        )
+        infos["replace"] = infos.get("replace")
+
+    for filename in files_to_patch:
+
+        # Ignore non-regular files
+        if not os.path.isfile(filename):
+            continue
+
+        try:
+            content = read_file(filename)
+        except MoulinetteError:
+            continue
+
+        replaced_stuff = False
+        show_warning = False
+
+        for helper, infos in stuff_to_replace.items():
+
+            # Ignore if not relevant for this file
+            if infos.get("only_for") and not any(
+                filename.endswith(f) for f in infos["only_for"]
+            ):
+                continue
+
+            # If helper is used, attempt to patch the file
+            if helper in content and infos["pattern"]:
+                content = infos["pattern"].sub(infos["replace"], content)
+                replaced_stuff = True
+                if infos["important"]:
+                    show_warning = True
+
+            # If the helper is *still* in the content, it means that we
+            # couldn't patch the deprecated helper in the previous lines.  In
+            # that case, abort the install or whichever step is performed
+            if helper in content and infos["important"]:
+                raise YunohostValidationError(
+                    "This app is likely pretty old and uses deprecated / outdated helpers that can't be migrated easily. It can't be installed anymore.",
+                    raw_msg=True,
+                )
+
+        if replaced_stuff:
+
+            # Check the app do load the helper
+            # If it doesn't, add the instruction ourselve (making sure it's after the #!/bin/bash if it's there...
+            if filename.split("/")[-1] in [
+                "install",
+                "remove",
+                "upgrade",
+                "backup",
+                "restore",
+            ]:
+                source_helpers = "source /usr/share/yunohost/helpers"
+                if source_helpers not in content:
+                    content.replace("#!/bin/bash", "#!/bin/bash\n" + source_helpers)
+                if source_helpers not in content:
+                    content = source_helpers + "\n" + content
+
+            # Actually write the new content in the file
+            write_to_file(filename, content)
+
+        if show_warning:
+            # And complain about those damn deprecated helpers
+            logger.error(
+                r"/!\ Packagers ! This app uses a very old deprecated helpers ... Yunohost automatically patched the helpers to use the new recommended practice, but please do consider fixing the upstream code right now ..."
+            )

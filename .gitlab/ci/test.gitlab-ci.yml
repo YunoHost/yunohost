@@ -113,10 +113,10 @@ test-apps:
 test-appscatalog:
   extends: .test-stage
   script:
-    - python3 -m pytest src/yunohost/tests/test_appscatalog.py
+    - python3 -m pytest src/yunohost/tests/test_app_catalog.py
   only:
     changes:
-      - src/yunohost/app.py
+      - src/yunohost/app_calalog.py
 
 test-appurl:
   extends: .test-stage

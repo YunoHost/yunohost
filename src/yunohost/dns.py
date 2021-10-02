@@ -32,7 +32,7 @@ from collections import OrderedDict
 
 from moulinette import m18n, Moulinette
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, write_to_file, read_toml
+from moulinette.utils.filesystem import read_file, write_to_file, read_toml, mkdir
 
 from yunohost.domain import (
     domain_list,
@@ -471,7 +471,7 @@ def _get_dns_zone_for_domain(domain):
         # Check if there's a NS record for that domain
         answer = dig(parent, rdtype="NS", full_answers=True, resolvers="force_external")
         if answer[0] == "ok":
-            os.system(f"mkdir -p {cache_folder}")
+            mkdir(cache_folder, parents=True, force=True)
             write_to_file(cache_file, parent)
             return parent
 
