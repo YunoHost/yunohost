@@ -62,12 +62,12 @@ from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.log import is_unit_operation, OperationLogger
-from yunohost.app_catalog import (
+from yunohost.app_catalog import (  # noqa
     app_catalog,
     app_search,
     _load_apps_catalog,
     app_fetchlist,
-)  # noqa
+)
 
 logger = getActionLogger("yunohost.app")
 
