@@ -32,17 +32,25 @@ def test_repo_url_definition():
     assert _is_app_repo_url("https://github.com/YunoHost-Apps/foobar123_ynh")
     assert _is_app_repo_url("https://github.com/YunoHost-Apps/foobar123_ynh/")
     assert _is_app_repo_url("https://github.com/YunoHost-Apps/foobar123_ynh.git")
-    assert _is_app_repo_url("https://github.com/YunoHost-Apps/foobar123_ynh/tree/testing")
-    assert _is_app_repo_url("https://github.com/YunoHost-Apps/foobar123_ynh/tree/testing/")
+    assert _is_app_repo_url(
+        "https://github.com/YunoHost-Apps/foobar123_ynh/tree/testing"
+    )
+    assert _is_app_repo_url(
+        "https://github.com/YunoHost-Apps/foobar123_ynh/tree/testing/"
+    )
     assert _is_app_repo_url("https://github.com/YunoHost-Apps/foo-bar-123_ynh")
     assert _is_app_repo_url("https://github.com/YunoHost-Apps/foo_bar_123_ynh")
     assert _is_app_repo_url("https://github.com/YunoHost-Apps/FooBar123_ynh")
     assert _is_app_repo_url("https://github.com/labriqueinternet/vpnclient_ynh")
     assert _is_app_repo_url("https://framagit.org/YunoHost/apps/nodebb_ynh")
-    assert _is_app_repo_url("https://framagit.org/YunoHost/apps/nodebb_ynh/-/tree/testing")
+    assert _is_app_repo_url(
+        "https://framagit.org/YunoHost/apps/nodebb_ynh/-/tree/testing"
+    )
     assert _is_app_repo_url("https://gitlab.com/yunohost-apps/foobar_ynh")
     assert _is_app_repo_url("https://code.antopie.org/miraty/qr_ynh")
-    assert _is_app_repo_url("https://gitlab.domainepublic.net/Neutrinet/neutrinet_ynh/-/tree/unstable")
+    assert _is_app_repo_url(
+        "https://gitlab.domainepublic.net/Neutrinet/neutrinet_ynh/-/tree/unstable"
+    )
     assert _is_app_repo_url("git@github.com:YunoHost-Apps/foobar_ynh.git")
 
     assert not _is_app_repo_url("github.com/YunoHost-Apps/foobar_ynh")
@@ -50,7 +58,9 @@ def test_repo_url_definition():
     assert not _is_app_repo_url("https://github.com/YunoHost-Apps/foobar_wat")
     assert not _is_app_repo_url("https://github.com/YunoHost-Apps/foobar_ynh_wat")
     assert not _is_app_repo_url("https://github.com/YunoHost-Apps/foobar/tree/testing")
-    assert not _is_app_repo_url("https://github.com/YunoHost-Apps/foobar_ynh_wat/tree/testing")
+    assert not _is_app_repo_url(
+        "https://github.com/YunoHost-Apps/foobar_ynh_wat/tree/testing"
+    )
     assert not _is_app_repo_url("https://framagit.org/YunoHost/apps/")
     assert not _is_app_repo_url("https://framagit.org/YunoHost/apps/pwet")
     assert not _is_app_repo_url("https://framagit.org/YunoHost/apps/pwet_foo")

@@ -1348,7 +1348,11 @@ class RestoreManager:
         app_instance_name -- (string) The app name to restore (no app with this
                              name should be already install)
         """
-        from yunohost.utils.legacy import _patch_legacy_php_versions, _patch_legacy_php_versions_in_settings, _patch_legacy_helpers
+        from yunohost.utils.legacy import (
+            _patch_legacy_php_versions,
+            _patch_legacy_php_versions_in_settings,
+            _patch_legacy_helpers,
+        )
         from yunohost.user import user_group_list
         from yunohost.permission import (
             permission_create,
@@ -1485,7 +1489,9 @@ class RestoreManager:
         # Prepare env. var. to pass to script
         # FIXME : workdir should be a tmp workdir
         app_workdir = os.path.join(self.work_dir, "apps", app_instance_name, "settings")
-        env_dict = _make_environment_for_app_script(app_instance_name, workdir=app_workdir)
+        env_dict = _make_environment_for_app_script(
+            app_instance_name, workdir=app_workdir
+        )
         env_dict.update(
             {
                 "YNH_BACKUP_DIR": self.work_dir,
@@ -1529,7 +1535,9 @@ class RestoreManager:
                 remove_script = os.path.join(app_scripts_in_archive, "remove")
 
                 # Setup environment for remove script
-                env_dict_remove = _make_environment_for_app_script(app_instance_name, workdir=app_workdir)
+                env_dict_remove = _make_environment_for_app_script(
+                    app_instance_name, workdir=app_workdir
+                )
                 remove_operation_logger = OperationLogger(
                     "remove_on_failed_restore",
                     [("app", app_instance_name)],
