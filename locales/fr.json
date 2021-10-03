@@ -593,7 +593,7 @@
     "diagnosis_package_installed_from_sury": "Des paquets du système devraient être rétrogradé de version",
     "additional_urls_already_added": "URL supplémentaire '{url}' déjà ajoutée pour la permission '{permission}'",
     "unknown_main_domain_path": "Domaine ou chemin inconnu pour '{app}'. Vous devez spécifier un domaine et un chemin pour pouvoir spécifier une URL pour l'autorisation.",
-    "show_tile_cant_be_enabled_for_regex": "Vous ne pouvez pas activer 'show_tile' pour le moment, car l'URL de l'autorisation '{permission}' est une expression régulière",
+    "show_tile_cant_be_enabled_for_regex": "Vous ne pouvez pas activer 'show_tile' pour le moment, cela car l'URL de l'autorisation '{permission}' est une expression régulière",
     "show_tile_cant_be_enabled_for_url_not_defined": "Vous ne pouvez pas activer 'show_tile' pour le moment, car vous devez d'abord définir une URL pour l'autorisation '{permission}'",
     "regex_with_only_domain": "Vous ne pouvez pas utiliser une expression régulière pour le domaine, uniquement pour le chemin",
     "regex_incompatible_with_tile": "/!\\ Packagers ! La permission '{permission}' a 'show_tile' définie sur 'true' et vous ne pouvez donc pas définir une URL regex comme URL principale",
@@ -678,7 +678,7 @@
     "app_argument_password_help_optional": "Tapez un espace pour vider le mot de passe",
     "domain_registrar_is_not_configured": "Le registrar n'est pas encore configuré pour le domaine {domain}.",
     "domain_dns_push_not_applicable": "La fonction de configuration DNS automatique n'est pas applicable au domaine {domain}. Vous devez configurer manuellement vos enregistrements DNS en suivant la documentation sur https://yunohost.org/dns_config.",
-    "domain_dns_registrar_yunohost": "Ce domaine est nohost.me / nohost.st / ynh.fr et sa configuration DNS est donc automatiquement gérée par YunoHost sans autre configuration. (voir la commande 'yunohost dyndns update')",
+    "domain_dns_registrar_yunohost": "Ce domaine est de type nohost.me / nohost.st / ynh.fr et sa configuration DNS est donc automatiquement gérée par YunoHost sans qu'il n'y ait d'autre configuration à faire. (voir la commande 'yunohost dyndns update')",
     "domain_dns_registrar_supported": "YunoHost a détecté automatiquement que ce domaine est géré par le registrar **{registrar}**. Si vous le souhaitez, YunoHost configurera automatiquement cette zone DNS, si vous lui fournissez les identifiants API appropriés. Vous pouvez trouver de la documentation sur la façon d'obtenir vos identifiants API sur cette page : https://yunohost.org/registar_api_{registrar}. (Vous pouvez également configurer manuellement vos enregistrements DNS en suivant la documentation sur https://yunohost.org/dns )",
     "domain_config_features_disclaimer": "Jusqu'à présent, l'activation/désactivation des fonctionnalités de messagerie ou XMPP n'a d'impact que sur la configuration DNS recommandée et automatique, et non sur les configurations système !",
     "domain_dns_push_managed_in_parent_domain": "La fonctionnalité de configuration DNS automatique est gérée dans le domaine parent {parent_domain}.",
@@ -707,5 +707,7 @@
     "log_domain_config_set": "Mettre à jour la configuration du domaine '{}'",
     "log_domain_dns_push": "Pousser les enregistrements DNS pour le domaine '{}'",
     "diagnosis_http_special_use_tld": "Le domaine {domain} est basé sur un domaine de premier niveau (TLD) à usage spécial tel que .local ou .test et n'est donc pas censé être exposé en dehors du réseau local.",
-    "domain_dns_conf_special_use_tld": "Ce domaine est basé sur un domaine de premier niveau (TLD) à usage spécial tel que .local ou .test et ne devrait donc pas avoir d'enregistrements DNS réels."
+    "domain_dns_conf_special_use_tld": "Ce domaine est basé sur un domaine de premier niveau (TLD) à usage spécial tel que .local ou .test et ne devrait donc pas avoir d'enregistrements DNS réels.",
+    "other_available_options": "... et {n} autres options disponibles non affichées",
+    "domain_config_auth_consumer_key": "Consumer key"
 }
