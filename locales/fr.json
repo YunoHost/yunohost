@@ -4,7 +4,7 @@
     "admin_password_change_failed": "Impossible de changer le mot de passe",
     "admin_password_changed": "Le mot de passe d'administration a été modifié",
     "app_already_installed": "{app} est déjà installé",
-    "app_argument_choice_invalid": "Choix invalide pour le paramètre '{name}'. Les valeurs acceptées sont {choices}, au lieu de '{value}'",
+    "app_argument_choice_invalid": "Choisir une valeur valide pour l'argument '{name}' : '{value}' ne fait pas partie des choix disponibles ({choices})",
     "app_argument_invalid": "Valeur invalide pour le paramètre '{name}' : {error}",
     "app_argument_required": "Le paramètre '{name}' est requis",
     "app_extraction_failed": "Impossible d'extraire les fichiers d'installation",
@@ -632,7 +632,7 @@
     "global_settings_setting_security_webadmin_allowlist": "Adresses IP autorisées à accéder à la webadmin. Elles doivent être séparées par une virgule.",
     "global_settings_setting_security_webadmin_allowlist_enabled": "Autoriser seulement certaines IP à accéder à la webadmin.",
     "diagnosis_http_localdomain": "Le domaine {domain}, avec un TLD .local, ne devrait pas être exposé en dehors du réseau local.",
-    "diagnosis_dns_specialusedomain": "Le domaine {domain} est basé sur un domaine de premier niveau (TLD) à usage spécial et ne devrait donc pas avoir d'enregistrements DNS réels.",
+    "diagnosis_dns_specialusedomain": "Le domaine {domain} est basé sur un domaine de premier niveau (TLD) à usage spécial comme .local ou .test et ne devrait donc pas avoir d'enregistrements DNS réels.",
     "invalid_password": "Mot de passe incorrect",
     "ldap_server_is_down_restart_it": "Le service LDAP est en panne, essayez de le redémarrer...",
     "ldap_server_down": "Impossible d'atteindre le serveur LDAP",
@@ -705,5 +705,7 @@
     "domain_config_auth_application_secret": "Clé secrète de l'application",
     "ldap_attribute_already_exists": "L'attribut LDAP '{attribute}' existe déjà avec la valeur '{value}'",
     "log_domain_config_set": "Mettre à jour la configuration du domaine '{}'",
-    "log_domain_dns_push": "Pousser les enregistrements DNS pour le domaine '{}'"
+    "log_domain_dns_push": "Pousser les enregistrements DNS pour le domaine '{}'",
+    "diagnosis_http_special_use_tld": "Le domaine {domain} est basé sur un domaine de premier niveau (TLD) à usage spécial tel que .local ou .test et n'est donc pas censé être exposé en dehors du réseau local.",
+    "domain_dns_conf_special_use_tld": "Ce domaine est basé sur un domaine de premier niveau (TLD) à usage spécial tel que .local ou .test et ne devrait donc pas avoir d'enregistrements DNS réels."
 }
