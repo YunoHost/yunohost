@@ -4,7 +4,7 @@ import os
 from .conftest import get_test_apps_dir
 
 from yunohost.utils.error import YunohostError
-from yunohost.app import app_install, app_remove, _is_app_repo_url
+from yunohost.app import app_install, app_remove, _is_app_repo_url, _parse_app_instance_name
 from yunohost.domain import _get_maindomain, domain_url_available
 from yunohost.permission import _validate_and_sanitize_permission_url
 
@@ -26,6 +26,18 @@ def teardown_function(function):
         app_remove("register_url_app")
     except Exception:
         pass
+
+
+def test_parse_app_instance_name():
+
+    assert _parse_app_instance_name('yolo') == ('yolo', 1)
+    assert _parse_app_instance_name('yolo1') == ('yolo1', 1)
+    assert _parse_app_instance_name('yolo__0') == ('yolo__0', 1)
+    assert _parse_app_instance_name('yolo__1') == ('yolo', 1)
+    assert _parse_app_instance_name('yolo__23') == ('yolo', 23)
+    assert _parse_app_instance_name('yolo__42__72') == ('yolo__42', 72)
+    assert _parse_app_instance_name('yolo__23qdqsd') == ('yolo__23qdqsd', 1)
+    assert _parse_app_instance_name('yolo__23qdqsd56') == ('yolo__23qdqsd56', 1)
 
 
 def test_repo_url_definition():

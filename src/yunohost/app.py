@@ -2406,22 +2406,14 @@ def _parse_app_instance_name(app_instance_name: str) -> Tuple[str, int]:
     Parse a Yunohost app instance name and extracts the original appid
     and the application instance number
 
-    >>> _parse_app_instance_name('yolo') == ('yolo', 1)
-    True
-    >>> _parse_app_instance_name('yolo1') == ('yolo1', 1)
-    True
-    >>> _parse_app_instance_name('yolo__0') == ('yolo__0', 1)
-    True
-    >>> _parse_app_instance_name('yolo__1') == ('yolo', 1)
-    True
-    >>> _parse_app_instance_name('yolo__23') == ('yolo', 23)
-    True
-    >>> _parse_app_instance_name('yolo__42__72') == ('yolo__42', 72)
-    True
-    >>> _parse_app_instance_name('yolo__23qdqsd') == ('yolo__23qdqsd', 1)
-    True
-    >>> _parse_app_instance_name('yolo__23qdqsd56') == ('yolo__23qdqsd56', 1)
-    True
+    'yolo'      -> ('yolo', 1)
+    'yolo1'     -> ('yolo1', 1)
+    'yolo__0'   -> ('yolo__0', 1)
+    'yolo__1'   -> ('yolo', 1)
+    'yolo__23'  -> ('yolo', 23)
+    'yolo__42__72'    -> ('yolo__42', 72)
+    'yolo__23qdqsd'   -> ('yolo__23qdqsd', 1)
+    'yolo__23qdqsd56' -> ('yolo__23qdqsd56', 1)
     """
     match = re_app_instance_name.match(app_instance_name)
     assert match, f"Could not parse app instance name : {app_instance_name}"
