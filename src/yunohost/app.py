@@ -507,7 +507,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             logger.warning(m18n.n("custom_app_url_required", app=app_instance_name))
             continue
         elif app_dict["upgradable"] == "yes" or force:
-            new_app_src = app_dict["id"]
+            new_app_src = app_dict["manifest"]["id"]
         else:
             logger.success(m18n.n("app_already_up_to_date", app=app_instance_name))
             continue
