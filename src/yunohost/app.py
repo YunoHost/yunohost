@@ -2326,31 +2326,26 @@ def _parse_app_instance_name(app_instance_name: str) -> Tuple[str, int]:
     Parse a Yunohost app instance name and extracts the original appid
     and the application instance number
 
-    >>> _parse_app_instance_name('yolo') == ('yolo', 1)
-    True
-    >>> _parse_app_instance_name('yolo1') == ('yolo1', 1)
-    True
-    >>> _parse_app_instance_name('yolo__0') == ('yolo__0', 1)
-    True
-    >>> _parse_app_instance_name('yolo__1') == ('yolo', 1)
-    True
-    >>> _parse_app_instance_name('yolo__23') == ('yolo', 23)
-    True
-    >>> _parse_app_instance_name('yolo__42__72') == ('yolo__42', 72)
-    True
-    >>> _parse_app_instance_name('yolo__23qdqsd') == ('yolo__23qdqsd', 1)
-    True
-    >>> _parse_app_instance_name('yolo__23qdqsd56') == ('yolo__23qdqsd56', 1)
-    True
+    'yolo'      -> ('yolo', 1)
+    'yolo1'     -> ('yolo1', 1)
+    'yolo__0'   -> ('yolo__0', 1)
+    'yolo__1'   -> ('yolo', 1)
+    'yolo__23'  -> ('yolo', 23)
+    'yolo__42__72'    -> ('yolo__42', 72)
+    'yolo__23qdqsd'   -> ('yolo__23qdqsd', 1)
+    'yolo__23qdqsd56' -> ('yolo__23qdqsd56', 1)
     """
     match = re_app_instance_name.match(app_instance_name)
-    assert match, "Could not parse app instance name : %s" % app_instance_name
+    assert match, f"Could not parse app instance name : {app_instance_name}"
     appid = match.groupdict().get("appid")
-    app_instance_nb = (
-        int(match.groupdict().get("appinstancenb"))
-        if match.groupdict().get("appinstancenb") is not None
-        else 1
-    )
+    app_instance_nb_ = match.groupdict().get("appinstancenb") or "1"
+    if not appid:
+        raise Exception(f"Could not parse app instance name : {app_instance_name}")
+    if not str(app_instance_nb_).isdigit():
+        raise Exception(f"Could not parse app instance name : {app_instance_name}")
+    else:
+        app_instance_nb = int(str(app_instance_nb_))
+
     return (appid, app_instance_nb)
 
 

@@ -4,6 +4,16 @@ yunohost (11.0.0~alpha) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Feb 2021 00:02:38 +0100
 
+yunohost (4.3.1.1) testing; urgency=low
+
+  - [enh] app helpers: Update n version ([#1347](https://github.com/YunoHost/yunohost/pull/1347))
+  - [enh] Misc app.py refactoring + Prevent change_url from being used to move a fulldomain app to a subpath ([#1346](https://github.com/YunoHost/yunohost/pull/1346))
+  - [i18n] Translations updated for French, Galician, Portuguese, Ukrainian
+
+  Thanks to all contributors <3 ! (Éric Gaspar, José M, mifegui, ppr, Tymofii-Lytvynenko)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 04 Oct 2021 01:33:22 +0200
+
 yunohost (4.3.1) testing; urgency=low
 
   - [fix] diagnosis: new app diagnosis grep reporing comments as issues ([#1333](https://github.com/YunoHost/yunohost/pull/1333))
