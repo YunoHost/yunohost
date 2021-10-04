@@ -23,7 +23,7 @@ mypy:
   image: "before-install"
   needs: []
   script:
-    - tox -e py37-mypy
+    - tox -e py39-mypy
 
 format-check:
   stage: lint
