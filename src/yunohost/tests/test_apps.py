@@ -192,7 +192,7 @@ def test_legacy_app_install_main_domain():
 def test_app_from_catalog():
     main_domain = _get_maindomain()
 
-    app_install("my_webapp", args="domain={main_domain}&path=/site&with_sftp=0&password=superpassword&is_public=1&with_mysql=0")
+    app_install("my_webapp", args=f"domain={main_domain}&path=/site&with_sftp=0&password=superpassword&is_public=1&with_mysql=0")
     app_map_ = app_map(raw=True)
     assert main_domain in app_map_
     assert "/site" in app_map_[main_domain]
