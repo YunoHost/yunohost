@@ -189,6 +189,29 @@ def test_legacy_app_install_main_domain():
     assert app_is_not_installed(main_domain, "legacy_app")
 
 
+def test_app_from_catalog():
+    main_domain = _get_maindomain()
+
+    app_install("my_webapp", args="domain={main_domain}&path=/site&with_sftp=0&password=superpassword&is_public=1&with_mysql=0")
+    app_map_ = app_map(raw=True)
+    assert main_domain in app_map_
+    assert "/site" in app_map_[main_domain]
+    assert "id" in app_map_[main_domain]["/site"]
+    assert app_map_[main_domain]["/site"]["id"] == "my_webapp"
+
+    assert app_is_installed(main_domain, "my_webapp")
+    assert app_is_exposed_on_http(main_domain, "/site", "Custom Web App")
+
+    # Try upgrade, should do nothing
+    app_upgrade("my_webapp")
+    # Force upgrade, should upgrade to the same version
+    app_upgrade("my_webapp", force=True)
+
+    app_remove("my_webapp")
+
+    assert app_is_not_installed(main_domain, "my_webapp")
+
+
 def test_legacy_app_install_secondary_domain(secondary_domain):
 
     install_legacy_app(secondary_domain, "/legacy")
