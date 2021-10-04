@@ -2418,13 +2418,13 @@ def _parse_app_instance_name(app_instance_name: str) -> Tuple[str, int]:
     match = re_app_instance_name.match(app_instance_name)
     assert match, f"Could not parse app instance name : {app_instance_name}"
     appid = match.groupdict().get("appid")
-    app_instance_nb = match.groupdict().get("appinstancenb") or "1"
+    app_instance_nb_ = match.groupdict().get("appinstancenb") or "1"
     if not appid:
         raise Exception(f"Could not parse app instance name : {app_instance_name}")
-    if not str(app_instance_nb).isdigit():
+    if not str(app_instance_nb_).isdigit():
         raise Exception(f"Could not parse app instance name : {app_instance_name}")
     else:
-        app_instance_nb = int(str(app_instance_nb))
+        app_instance_nb = int(str(app_instance_nb_))
 
     return (appid, app_instance_nb)
 
