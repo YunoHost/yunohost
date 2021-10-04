@@ -41,7 +41,7 @@ def clean():
     os.system("mkdir -p /etc/ssowat/")
     app_ssowatconf()
 
-    test_apps = ["break_yo_system", "legacy_app", "legacy_app__2", "full_domain_app"]
+    test_apps = ["break_yo_system", "legacy_app", "legacy_app__2", "full_domain_app", "my_webapp"]
 
     for test_app in test_apps:
 
