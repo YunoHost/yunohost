@@ -96,6 +96,10 @@ $logfile {
 EOF
     mkdir --parents $(dirname "$logfile")	# Create the log directory, if not exist
     cat ${app}-logrotate | $customtee /etc/logrotate.d/$app > /dev/null	# Append this config to the existing config file, or replace the whole config file (depending on $customtee)
+
+    ynh_user_exists "$app" || chown $app:$app "/var/log/$app"
+    chmod o-rwx "/var/log/$app"
+
 }
 
 # Remove the app's logrotate config.
