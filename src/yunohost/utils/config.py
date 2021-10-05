@@ -1019,7 +1019,9 @@ class FileQuestion(Question):
         FileQuestion.upload_dirs += [upload_dir]
 
         logger.debug(f"Saving file {self.name} for file question into {file_path}")
-        if Moulinette.interface.type != "api" or (self.value.startswith("/") and os.path.exists(self.value)):
+        if Moulinette.interface.type != "api" or (
+            self.value.startswith("/") and os.path.exists(self.value)
+        ):
             content = read_file(str(self.value), file_mode="rb")
         else:
             content = b64decode(self.value)
