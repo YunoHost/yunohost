@@ -51,15 +51,15 @@ _ynh_app_config_get_one() {
         then
             bind=":/etc/yunohost/apps/$app/settings.yml"
         fi
-        local bind_key="$(echo "$bind" | cut -d: -f1)"
-        bind_key=${bind_key:-$short_setting}
-        if [[ "$bind_key" == *">"* ]];
+        local bind_key_="$(echo "$bind" | cut -d: -f1)"
+        bind_key_=${bind_key_:-$short_setting}
+        if [[ "$bind_key_" == *">"* ]];
         then
-            bind_after="$(echo "${bind_key}" | cut -d'>' -f1)"
-            bind_key="$(echo "${bind_key}" | cut -d'>' -f2)"
+            bind_after="$(echo "${bind_key_}" | cut -d'>' -f1)"
+            bind_key_="$(echo "${bind_key_}" | cut -d'>' -f2)"
         fi
         local bind_file="$(echo "$bind" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
-        old[$short_setting]="$(ynh_read_var_in_file --file="${bind_file}" --key="${bind_key}" --after="${bind_after}")"
+        old[$short_setting]="$(ynh_read_var_in_file --file="${bind_file}" --key="${bind_key_}" --after="${bind_after}")"
 
     fi
 }
@@ -129,22 +129,22 @@ _ynh_app_config_apply_one() {
         # Set value into a kind of key/value file
         else
             local bind_after=""
-            local bind_key="$(echo "$bind" | cut -d: -f1)"
-            bind_key=${bind_key:-$short_setting}
-            if [[ "$bind_key" == *">"* ]];
+            local bind_key_="$(echo "$bind" | cut -d: -f1)"
+            bind_key_=${bind_key_:-$short_setting}
+            if [[ "$bind_key_" == *">"* ]];
             then
-                bind_after="$(echo "${bind_key}" | cut -d'>' -f1)"
-                bind_key="$(echo "${bind_key}" | cut -d'>' -f2)"
+                bind_after="$(echo "${bind_key_}" | cut -d'>' -f1)"
+                bind_key_="$(echo "${bind_key_}" | cut -d'>' -f2)"
             fi
             local bind_file="$(echo "$bind" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
 
             ynh_backup_if_checksum_is_different --file="$bind_file"
-            ynh_write_var_in_file --file="${bind_file}" --key="${bind_key}" --value="${!short_setting}" --after="${bind_after}"
+            ynh_write_var_in_file --file="${bind_file}" --key="${bind_key_}" --value="${!short_setting}" --after="${bind_after}"
             ynh_store_file_checksum --file="$bind_file" --update_only
 
             # We stored the info in settings in order to be able to upgrade the app
             ynh_app_setting_set --app=$app --key=$short_setting --value="${!short_setting}"
-            ynh_print_info --message="Configuration key '$bind_key' edited into $bind_file"
+            ynh_print_info --message="Configuration key '$bind_key_' edited into $bind_file"
 
         fi
     fi
