@@ -169,7 +169,7 @@ def app_info(app, full=False):
     ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
     ret["upgradable"] = _app_upgradable(ret)
 
-    ret["is_webapp"] = ("domain" in settings and "path" in settings)
+    ret["is_webapp"] = "domain" in settings and "path" in settings
 
     ret["supports_change_url"] = os.path.exists(
         os.path.join(setting_path, "scripts", "change_url")
