@@ -66,7 +66,7 @@
 ynh_permission_create() {
     # Declare an array to define the options of this helper.
     local legacy_args=puAhaltP
-    local -A args_array=( [p]=permission= [u]=url= [A]=additional_urls= [h]=auth_header= [a]=allowed= [l]=label= [t]=show_tile= [P]=protected= )
+    local -A args_array=([p]=permission= [u]=url= [A]=additional_urls= [h]=auth_header= [a]=allowed= [l]=label= [t]=show_tile= [P]=protected=)
     local permission
     local url
     local additional_urls
@@ -84,13 +84,11 @@ ynh_permission_create() {
     show_tile=${show_tile:-}
     protected=${protected:-}
 
-    if [[ -n $url ]]
-    then
+    if [[ -n $url ]]; then
         url=",url='$url'"
     fi
 
-    if [[ -n $additional_urls ]]
-    then
+    if [[ -n $additional_urls ]]; then
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
         # By example:
@@ -100,18 +98,15 @@ ynh_permission_create() {
         additional_urls=",additional_urls=['${additional_urls//;/\',\'}']"
     fi
 
-    if [[ -n $auth_header ]]
-    then
-        if [ $auth_header == "true" ]
-        then
+    if [[ -n $auth_header ]]; then
+        if [ $auth_header == "true" ]; then
             auth_header=",auth_header=True"
         else
             auth_header=",auth_header=False"
         fi
     fi
 
-    if [[ -n $allowed ]]
-    then
+    if [[ -n $allowed ]]; then
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
         # By example:
@@ -127,20 +122,16 @@ ynh_permission_create() {
         label=",label='$permission'"
     fi
 
-    if [[ -n ${show_tile:-} ]]
-    then
-        if [ $show_tile == "true" ]
-        then
+    if [[ -n ${show_tile:-} ]]; then
+        if [ $show_tile == "true" ]; then
             show_tile=",show_tile=True"
         else
             show_tile=",show_tile=False"
         fi
     fi
 
-    if [[ -n ${protected:-} ]]
-    then
-        if [ $protected == "true" ]
-        then
+    if [[ -n ${protected:-} ]]; then
+        if [ $protected == "true" ]; then
             protected=",protected=True"
         else
             protected=",protected=False"
@@ -161,7 +152,7 @@ ynh_permission_create() {
 ynh_permission_delete() {
     # Declare an array to define the options of this helper.
     local legacy_args=p
-    local -A args_array=( [p]=permission= )
+    local -A args_array=([p]=permission=)
     local permission
     ynh_handle_getopts_args "$@"
 
@@ -178,7 +169,7 @@ ynh_permission_delete() {
 ynh_permission_exists() {
     # Declare an array to define the options of this helper.
     local legacy_args=p
-    local -A args_array=( [p]=permission= )
+    local -A args_array=([p]=permission=)
     local permission
     ynh_handle_getopts_args "$@"
 
@@ -201,7 +192,7 @@ ynh_permission_exists() {
 ynh_permission_url() {
     # Declare an array to define the options of this helper.
     local legacy_args=puarhc
-    local -A args_array=( [p]=permission= [u]=url= [a]=add_url= [r]=remove_url= [h]=auth_header= [c]=clear_urls )
+    local -A args_array=([p]=permission= [u]=url= [a]=add_url= [r]=remove_url= [h]=auth_header= [c]=clear_urls)
     local permission
     local url
     local add_url
@@ -215,13 +206,11 @@ ynh_permission_url() {
     auth_header=${auth_header:-}
     clear_urls=${clear_urls:-}
 
-    if [[ -n $url ]]
-    then
+    if [[ -n $url ]]; then
         url=",url='$url'"
     fi
 
-    if [[ -n $add_url ]]
-    then
+    if [[ -n $add_url ]]; then
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
         # For example:
@@ -231,8 +220,7 @@ ynh_permission_url() {
         add_url=",add_url=['${add_url//;/\',\'}']"
     fi
 
-    if [[ -n $remove_url ]]
-    then
+    if [[ -n $remove_url ]]; then
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
         # For example:
@@ -242,24 +230,20 @@ ynh_permission_url() {
         remove_url=",remove_url=['${remove_url//;/\',\'}']"
     fi
 
-    if [[ -n $auth_header ]]
-    then
-        if [ $auth_header == "true" ]
-        then
+    if [[ -n $auth_header ]]; then
+        if [ $auth_header == "true" ]; then
             auth_header=",auth_header=True"
         else
             auth_header=",auth_header=False"
         fi
     fi
 
-    if [[ -n $clear_urls ]] && [ $clear_urls -eq 1 ]
-    then
+    if [[ -n $clear_urls ]] && [ $clear_urls -eq 1 ]; then
         clear_urls=",clear_urls=True"
     fi
 
     yunohost tools shell -c "from yunohost.permission import permission_url; permission_url('$app.$permission' $url $add_url $remove_url $auth_header $clear_urls)"
 }
-
 
 # Update a permission for the app
 #
@@ -276,7 +260,7 @@ ynh_permission_url() {
 ynh_permission_update() {
     # Declare an array to define the options of this helper.
     local legacy_args=parltP
-    local -A args_array=( [p]=permission= [a]=add= [r]=remove= [l]=label= [t]=show_tile= [P]=protected= )
+    local -A args_array=([p]=permission= [a]=add= [r]=remove= [l]=label= [t]=show_tile= [P]=protected=)
     local permission
     local add
     local remove
@@ -290,8 +274,7 @@ ynh_permission_update() {
     show_tile=${show_tile:-}
     protected=${protected:-}
 
-    if [[ -n $add ]]
-    then
+    if [[ -n $add ]]; then
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
         # For example:
@@ -300,8 +283,7 @@ ynh_permission_update() {
         # add=['alice', 'bob']
         add=",add=['${add//';'/"','"}']"
     fi
-    if [[ -n $remove ]]
-    then
+    if [[ -n $remove ]]; then
         # Convert a list from getopts to python list
         # Note that getopts separate the args with ';'
         # For example:
@@ -311,15 +293,12 @@ ynh_permission_update() {
         remove=",remove=['${remove//';'/"','"}']"
     fi
 
-    if [[ -n $label ]]
-    then
+    if [[ -n $label ]]; then
         label=",label='$label'"
     fi
 
-    if [[ -n $show_tile ]]
-    then
-        if [ $show_tile == "true" ]
-        then
+    if [[ -n $show_tile ]]; then
+        if [ $show_tile == "true" ]; then
             show_tile=",show_tile=True"
         else
             show_tile=",show_tile=False"
@@ -327,8 +306,7 @@ ynh_permission_update() {
     fi
 
     if [[ -n $protected ]]; then
-        if [ $protected == "true" ]
-        then
+        if [ $protected == "true" ]; then
             protected=",protected=True"
         else
             protected=",protected=False"
@@ -351,23 +329,20 @@ ynh_permission_update() {
 ynh_permission_has_user() {
     local legacy_args=pu
     # Declare an array to define the options of this helper.
-    local -A args_array=( [p]=permission= [u]=user= )
+    local -A args_array=([p]=permission= [u]=user=)
     local permission
     local user
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if ! ynh_permission_exists --permission=$permission
-    then
+    if ! ynh_permission_exists --permission=$permission; then
         return 1
     fi
 
     # Check both allowed and corresponding_users sections in the json
-    for section in "allowed" "corresponding_users"
-    do
+    for section in "allowed" "corresponding_users"; do
         if yunohost user permission info "$app.$permission" --output-as json --quiet \
-            | jq -e --arg user $user --arg section $section '.[$section] | index($user)' >/dev/null
-        then
+            | jq -e --arg user $user --arg section $section '.[$section] | index($user)' >/dev/null; then
             return 0
         fi
     done
@@ -381,9 +356,8 @@ ynh_permission_has_user() {
 # | exit: Return 1 if the permission doesn't exist, 0 otherwise
 #
 # Requires YunoHost version 4.1.2 or higher.
-ynh_legacy_permissions_exists () {
-    for permission in "skipped" "unprotected" "protected"
-    do
+ynh_legacy_permissions_exists() {
+    for permission in "skipped" "unprotected" "protected"; do
         if ynh_permission_exists --permission="legacy_${permission}_uris"; then
             return 0
         fi
@@ -402,9 +376,8 @@ ynh_legacy_permissions_exists () {
 #       # You can recreate the required permissions here with ynh_permission_create
 #   fi
 # Requires YunoHost version 4.1.2 or higher.
-ynh_legacy_permissions_delete_all () {
-    for permission in "skipped" "unprotected" "protected"
-    do
+ynh_legacy_permissions_delete_all() {
+    for permission in "skipped" "unprotected" "protected"; do
         if ynh_permission_exists --permission="legacy_${permission}_uris"; then
             ynh_permission_delete --permission="legacy_${permission}_uris"
         fi
