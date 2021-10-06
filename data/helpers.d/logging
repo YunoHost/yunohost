@@ -249,7 +249,7 @@ ynh_script_progression () {
         local weight_valuesB="$(grep --perl-regexp "^[^#]*ynh_script_progression.*-w " $0 | sed 's/.*-w[= ]\([[:digit:]]*\).*/\1/g')"
         # Each value will be on a different line.
         # Remove each 'end of line' and replace it by a '+' to sum the values.
-        local weight_values=$(( $(echo "$weight_valuesA" | tr '\n' '+') + $(echo "$weight_valuesB" | tr '\n' '+') 0 ))
+        local weight_values=$(( $(echo "$weight_valuesA" "$weight_valuesB" | grep -v -E '^\s*$' | tr '\n' '+' | sed 's/+$/+0/g') ))
 
         # max_progression is a total number of calls to this helper.
         # 	Less the number of calls with a weight value.
