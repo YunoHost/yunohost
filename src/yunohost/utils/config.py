@@ -121,7 +121,6 @@ def evaluate_simple_ast(node, context={}):
 
     # and / or
     elif isinstance(node, ast.BoolOp): # <op> <values>
-        values = node.values
         for value in node.values:
             value = evaluate_simple_ast(value, context)
             if isinstance(node.op, ast.And) and not value:
@@ -600,7 +599,7 @@ class Question(object):
     hide_user_input_in_prompt = False
     pattern: Optional[Dict] = None
 
-    def __init__(self, question: Dict[str, Any], context: Dict[str, Any] = {}):
+    def __init__(self, question: Dict[str, Any], context: Mapping[str, Any] = {}):
         self.name = question["name"]
         self.type = question.get("type", "string")
         self.default = question.get("default", None)
@@ -855,7 +854,7 @@ class PasswordQuestion(Question):
     default_value = ""
     forbidden_chars = "{}"
 
-    def __init__(self, question, context: Dict[str, Any] = {}):
+    def __init__(self, question, context: Mapping[str, Any] = {}):
         super().__init__(question, context)
         self.redact = True
         if self.default is not None:
@@ -974,7 +973,7 @@ class BooleanQuestion(Question):
             choices="yes/no",
         )
 
-    def __init__(self, question, context: Dict[str, Any] = {}):
+    def __init__(self, question, context: Mapping[str, Any] = {}):
         super().__init__(question, context)
         self.yes = question.get("yes", 1)
         self.no = question.get("no", 0)
@@ -995,7 +994,7 @@ class BooleanQuestion(Question):
 class DomainQuestion(Question):
     argument_type = "domain"
 
-    def __init__(self, question, context: Dict[str, Any] = {}):
+    def __init__(self, question, context: Mapping[str, Any] = {}):
         from yunohost.domain import domain_list, _get_maindomain
 
         super().__init__(question, context)
@@ -1021,7 +1020,7 @@ class DomainQuestion(Question):
 class UserQuestion(Question):
     argument_type = "user"
 
-    def __init__(self, question, context: Dict[str, Any] = {}):
+    def __init__(self, question, context: Mapping[str, Any] = {}):
         from yunohost.user import user_list, user_info
         from yunohost.domain import _get_maindomain
 
@@ -1047,7 +1046,7 @@ class NumberQuestion(Question):
     argument_type = "number"
     default_value = None
 
-    def __init__(self, question, context: Dict[str, Any] = {}):
+    def __init__(self, question, context: Mapping[str, Any] = {}):
         super().__init__(question, context)
         self.min = question.get("min", None)
         self.max = question.get("max", None)
@@ -1099,7 +1098,7 @@ class DisplayTextQuestion(Question):
     argument_type = "display_text"
     readonly = True
 
-    def __init__(self, question, context: Dict[str, Any] = {}):
+    def __init__(self, question, context: Mapping[str, Any] = {}):
         super().__init__(question, context)
 
         self.optional = True
@@ -1134,7 +1133,7 @@ class FileQuestion(Question):
             if os.path.exists(upload_dir):
                 shutil.rmtree(upload_dir)
 
-    def __init__(self, question, context: Dict[str, Any] = {}):
+    def __init__(self, question, context: Mapping[str, Any] = {}):
         super().__init__(question, context)
         self.accept = question.get("accept", "")
 
@@ -1205,15 +1204,15 @@ ARGUMENTS_TYPE_PARSERS = {
 
 
 def ask_questions_and_parse_answers(
-    questions: Dict, prefilled_answers: Union[str, Mapping[str, Any]] = {}
+    raw_questions: Dict, prefilled_answers: Union[str, Mapping[str, Any]] = {}
 ) -> List[Question]:
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
 
     Keyword arguments:
-        questions         -- the arguments description store in yunohost
-                              format from actions.json/toml, manifest.json/toml
-                              or config_panel.json/toml
+        raw_questions     -- the arguments description store in yunohost
+                             format from actions.json/toml, manifest.json/toml
+                             or config_panel.json/toml
         prefilled_answers -- a url "query-string" such as "domain=yolo.test&path=/foobar&admin=sam"
                              or a dict such as {"domain": "yolo.test", "path": "/foobar", "admin": "sam"}
     """
@@ -1224,20 +1223,22 @@ def ask_questions_and_parse_answers(
         # whereas parse.qs return list of values (which is useful for tags, etc)
         # For now, let's not migrate this piece of code to parse_qs
         # Because Aleks believes some bits of the app CI rely on overriding values (e.g. foo=foo&...&foo=bar)
-        prefilled_answers = dict(
+        answers = dict(
             urllib.parse.parse_qsl(prefilled_answers or "", keep_blank_values=True)
         )
+    elif isinstance(prefilled_answers, Mapping):
+        answers = {**prefilled_answers}
+    else:
+        answers = {}
 
-    if not prefilled_answers:
-        prefilled_answers = {}
 
     out = []
 
-    for question in questions:
-        question_class = ARGUMENTS_TYPE_PARSERS[question.get("type", "string")]
-        question["value"] = prefilled_answers.get(question["name"])
-        question = question_class(question, prefilled_answers)
-        prefilled_answers[question.name] = question.ask_if_needed()
+    for raw_question in raw_questions:
+        question_class = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")]
+        raw_question["value"] = answers.get(raw_question["name"])
+        question = question_class(raw_question, context=answers)
+        answers[question.name] = question.ask_if_needed()
         out.append(question)
 
     return out
