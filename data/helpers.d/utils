@@ -542,7 +542,7 @@ ynh_read_var_in_file() {
     fi
 
     # Remove comments if needed
-    local expression="$(echo "$expression_with_comment" | sed "s@$comments[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
+    local expression="$(echo "$expression_with_comment" | sed "s@${comments}[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
 
     local first_char="${expression:0:1}"
     if [[ "$first_char" == '"' ]]; then
@@ -620,7 +620,7 @@ ynh_write_var_in_file() {
     fi
 
     # Remove comments if needed
-    local expression="$(echo "$expression_with_comment" | sed "s@$comments[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
+    local expression="$(echo "$expression_with_comment" | sed "s@${comments}[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
     endline=${expression_with_comment#"$expression"}
     endline="$(echo "$endline" | sed 's/\\/\\\\/g')"
     value="$(echo "$value" | sed 's/\\/\\\\/g')"
