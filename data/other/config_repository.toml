@@ -3,73 +3,79 @@ version = "1.0"
 i18n = "repository_config"
 [main]
 name.en = ""
-    []
+    [main.main]
     name.en = ""
         # if method == "tar": question["value"] = False
-        [creation] # TODO "Remote repository"
-        type = "boolean"
-        visible = "false"
-
-        [name] # TODO "Remote repository"
+        [main.main.description]
         type = "string"
+        default = ""
 
-        [is_remote] # TODO "Remote repository"
+        [main.main.is_remote]
         type = "boolean"
         yes = true
         no = false
         visible = "creation && is_remote"
+        default = "no"
 
-        [is_f2f] # TODO "It's a YunoHost",
-        help = "" # "Answer yes if the remote server is a YunoHost instance or an other F2F compatible provider",
-        type = "boolean"
-        yes = true
-        no = false
-        visible = "creation && is_remote"
-
-        [public_key] # TODO "Here is the public key to give to your BorgBackup  provider : {public_key}"
-        type = "alert"
-        style = "info"
-        visible = "creation && is_remote && ! is_f2f"
-
-        [location]
-        ask = "Remote server domain"
+        [main.main.location]
+        ask.en = "{is_remote}"
         type = "string"
         visible = "creation && is_remote"
         pattern.regexp = '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
         pattern.error = '' # TODO "Please provide a valid domain"
+        default = ""
         # FIXME: can't be a domain of this instances ?
 
-        [alert] # TODO "Alert emails"
-        help = '' # TODO Declare emails to which sent inactivity alerts",
+        [main.main.is_f2f]
+        ask.en = "{is_remote}"
+        help = ""
+        type = "boolean"
+        yes = true
+        no = false
+        visible = "creation && is_remote"
+        default = "no"
+
+        [main.main.public_key]
+        type = "alert"
+        style = "info"
+        visible = "creation && is_remote && ! is_f2f"
+
+        [main.main.alert]
+        help = ''
         type = "tags"
         visible = "is_remote && is_f2f"
         pattern.regexp = '^[\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
         pattern.error = "It seems it's not a valid email"
+        default = []
         # "value": alert,
 
-        [alert_delay] # TODO "Alert delay"
-        help = '' # TODO "After how many inactivity days send email alerts",
+        [main.main.alert_delay]
+        help = ''
         type = "number"
         visible = "is_remote && is_f2f"
         min = 1
+        default = 7
 
-        [quota] # TODO "Quota"
+        [main.main.quota]
         type = "string"
         visible = "is_remote && is_f2f"
         pattern.regexp = '^\d+[MGT]$'
         pattern.error = '' # TODO ""
+        default = ""
 
-        [port] # TODO "Port"
+        [main.main.port]
         type = "number"
         visible = "is_remote && !is_f2f"
         min = 1
         max = 65535
+        default = 22
 
-        [user] # TODO User
+        [main.main.user]
         type = "string"
         visible = "is_remote && !is_f2f"
+        default = ""
 
-        [method] # TODO "Backup method"
+        [main.main.method]
         type = "select"
         # "value": method,
         choices.borg = "BorgBackup (recommended)"
@@ -77,7 +83,8 @@ name.en = ""
         default = "borg"
         visible = "!is_remote"
         
-        [path] # TODO "Archive path"
+        [main.main.path]
         type = "path"
         visible = "!is_remote or (is_remote and !is_f2f)"
+        default = "/home/yunohost.backup/archives"
 

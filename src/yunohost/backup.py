@@ -73,7 +73,7 @@ from yunohost.log import OperationLogger, is_unit_operation
 from yunohost.repository import BackupRepository
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.packages import ynh_packages_version
-from yunohost.utils.filesystem import free_space_in_directory
+from yunohost.utils.filesystem import free_space_in_directory, disk_usage, binary_to_human
 from yunohost.settings import settings_get
 
 BACKUP_PATH = "/home/yunohost.backup"
@@ -1733,15 +1733,15 @@ class BackupMethod(object):
             logger.debug("unable to load info json", exc_info=1)
             raise YunohostError('backup_invalid_archive')
 
-	# (legacy) Retrieve backup size
+        # (legacy) Retrieve backup size
         # FIXME
-	size = info.get("size", 0)
-	if not size:
+        size = info.get("size", 0)
+        if not size:
             tar = tarfile.open(
-		archive_file, "r:gz" if archive_file.endswith(".gz") else "r"
+                archive_file, "r:gz" if archive_file.endswith(".gz") else "r"
             )
             size = reduce(
-		lambda x, y: getattr(x, "size", x) + getattr(y, "size", y), tar.getmembers()
+                lambda x, y: getattr(x, "size", x) + getattr(y, "size", y), tar.getmembers()
             )
             tar.close()
 
@@ -2167,63 +2167,63 @@ class TarBackupMethod(BackupMethod):
                                     path=archive_file)
 
     def _get_info_string(self):
-	name = self.name
-	if name.endswith(".tar.gz"):
+        name = self.name
+        if name.endswith(".tar.gz"):
             name = name[: -len(".tar.gz")]
-	elif name.endswith(".tar"):
+        elif name.endswith(".tar"):
             name = name[: -len(".tar")]
 
-	archive_file = "%s/%s.tar" % (self.repo.path, name)
+        archive_file = "%s/%s.tar" % (self.repo.path, name)
 
-	# Check file exist (even if it's a broken symlink)
-	if not os.path.lexists(archive_file):
+        # Check file exist (even if it's a broken symlink)
+        if not os.path.lexists(archive_file):
             archive_file += ".gz"
             if not os.path.lexists(archive_file):
-		raise YunohostValidationError("backup_archive_name_unknown", name=name)
+                raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
-	# If symlink, retrieve the real path
-	if os.path.islink(archive_file):
+        # If symlink, retrieve the real path
+        if os.path.islink(archive_file):
             archive_file = os.path.realpath(archive_file)
 
             # Raise exception if link is broken (e.g. on unmounted external storage)
             if not os.path.exists(archive_file):
-		raise YunohostValidationError(
+                raise YunohostValidationError(
                     "backup_archive_broken_link", path=archive_file
-		)
+                )
 
-	info_file = "%s/%s.info.json" % (self.repo.path, name)
+        info_file = "%s/%s.info.json" % (self.repo.path, name)
 
-	if not os.path.exists(info_file):
+        if not os.path.exists(info_file):
             tar = tarfile.open(
-		archive_file, "r:gz" if archive_file.endswith(".gz") else "r"
+                archive_file, "r:gz" if archive_file.endswith(".gz") else "r"
             )
             info_dir = info_file + ".d"
 
             try:
-		files_in_archive = tar.getnames()
+                files_in_archive = tar.getnames()
             except (IOError, EOFError, tarfile.ReadError) as e:
-		raise YunohostError(
+                raise YunohostError(
                     "backup_archive_corrupted", archive=archive_file, error=str(e)
-		)
+                )
 
             try:
-		if "info.json" in files_in_archive:
+                if "info.json" in files_in_archive:
                     tar.extract("info.json", path=info_dir)
-		elif "./info.json" in files_in_archive:
+                elif "./info.json" in files_in_archive:
                     tar.extract("./info.json", path=info_dir)
-		else:
+                else:
                     raise KeyError
             except KeyError:
-		logger.debug(
+                logger.debug(
                     "unable to retrieve '%s' inside the archive", info_file, exc_info=1
-		)
-		raise YunohostError(
+                )
+                raise YunohostError(
                     "backup_archive_cant_retrieve_info_json", archive=archive_file
-		)
+                )
             else:
-		shutil.move(os.path.join(info_dir, "info.json"), info_file)
+                shutil.move(os.path.join(info_dir, "info.json"), info_file)
             finally:
-		tar.close()
+                tar.close()
             os.rmdir(info_dir)
 
         try:
@@ -2804,24 +2804,28 @@ def backup_delete(name):
 import yunohost.repository
 
 
-def backup_repository_list(full):
+def backup_repository_list(full=False):
     return yunohost.repository.backup_repository_list(full)
 
 
-def backup_repository_info(name, human_readable, space_used):
-    return yunohost.repository.backup_repository_info(name, human_readable, space_used)
+def backup_repository_info(shortname, human_readable=True, space_used=False):
+    return yunohost.repository.backup_repository_info(shortname, human_readable, space_used)
 
 
-def backup_repository_add(location, name, description, methods, quota, encryption):
-    return yunohost.repository.backup_repository_add(location, name, description, methods, quota, encryption)
+def backup_repository_add(shortname, name=None, location=None,
+                          method=None, quota=None, passphrase=None,
+                          alert=[], alert_delay=7):
+    return yunohost.repository.backup_repository_add(location, shortname, name, method, quota, passphrase, alert, alert_delay)
 
 
-def backup_repository_update(name, description, quota, password):
-    return yunohost.repository.backup_repository_update(name, description, quota, password)
+def backup_repository_update(shortname, name=None,
+                             quota=None, passphrase=None,
+                             alert=[], alert_delay=None):
+    return yunohost.repository.backup_repository_update(shortname, name, quota, passphrase, alert, alert_delay)
 
 
-def backup_repository_remove(name, purge):
-    return yunohost.repository.backup_repository_remove(name, purge)
+def backup_repository_remove(shortname, purge=False):
+    return yunohost.repository.backup_repository_remove(shortname, purge)
 
 
 
@@ -2882,29 +2886,3 @@ def _recursive_umount(directory):
     return everything_went_fine
 
 
-def disk_usage(path):
-    # We don't do this in python with os.stat because we don't want
-    # to follow symlinks
-
-    du_output = check_output(["du", "-sb", path], shell=False)
-    return int(du_output.split()[0])
-
-
-def binary_to_human(n, customary=False):
-    """
-    Convert bytes or bits into human readable format with binary prefix
-    Keyword argument:
-        n -- Number to convert
-        customary -- Use customary symbol instead of IEC standard
-    """
-    symbols = ("Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi")
-    if customary:
-        symbols = ("K", "M", "G", "T", "P", "E", "Z", "Y")
-    prefix = {}
-    for i, s in enumerate(symbols):
-        prefix[s] = 1 << (i + 1) * 10
-    for s in reversed(symbols):
-        if n >= prefix[s]:
-            value = float(n) / prefix[s]
-            return "%.1f%s" % (value, s)
-    return "%s" % n

@@ -1166,9 +1166,9 @@ backup:
                         shortname:
                             help: ID of the repository
                             extra:
-                                pattern: &pattern_backup_repository_id
-                                    - !!str ^\w+$
-                                    - "pattern_backup_repository_id"
+                                pattern: &pattern_backup_repository_shortname
+                                    - !!str ^[a-zA-Z0-9-_]+$
+                                    - "pattern_backup_repository_shortname"
                         -n:
                             full: --name
                             help: Short description of the repository
@@ -1207,7 +1207,7 @@ backup:
                         name:
                             help: Name of the backup repository to update
                             extra:
-                                pattern: *pattern_backup_repository_name
+                                pattern: *pattern_backup_repository_shortname
                         -d:
                             full: --description
                             help: Short description of the repository
@@ -1229,7 +1229,7 @@ backup:
                         name:
                             help: Name of the backup repository to remove
                             extra:
-                                pattern: *pattern_backup_repository_name
+                                pattern: *pattern_backup_repository_shortname
                         --purge:
                             help: Remove all archives and data inside repository
                             action: store_false

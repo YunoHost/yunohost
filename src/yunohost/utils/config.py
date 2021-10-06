@@ -86,7 +86,7 @@ class ConfigPanel:
             if "ask" in option:
                 ask = _value_for_locale(option["ask"])
             elif "i18n" in self.config:
-                ask = m18n.n(self.config["i18n"] + "_" + option["id"])
+                ask = m18n.n(self.config["i18n"] + "_" + option["id"], **self.values)
 
             if mode == "full":
                 # edit self.config directly
@@ -298,7 +298,9 @@ class ConfigPanel:
                         logger.warning(f"Unknown key '{key}' found in config panel")
                     # Todo search all i18n keys
                     out[key] = (
-                        value if key not in ["ask", "help", "name"] else {"en": value}
+                        value
+                        if key not in ["ask", "help", "name"] or isinstance(value, (dict, OrderedDict))
+                        else {"en": value}
                     )
             return out
 
@@ -367,7 +369,7 @@ class ConfigPanel:
         if "i18n" in self.config:
             for panel, section, option in self._iterate():
                 if "ask" not in option:
-                    option["ask"] = m18n.n(self.config["i18n"] + "_" + option["id"])
+                    option["ask"] = m18n.n(self.config["i18n"] + "_" + option["id"], **self.values)
 
         def display_header(message):
             """CLI panel/section header display"""
@@ -377,7 +379,8 @@ class ConfigPanel:
         for panel, section, obj in self._iterate(["panel", "section"]):
             if panel == obj:
                 name = _value_for_locale(panel["name"])
-                display_header(f"\n{'='*40}\n>>>> {name}\n{'='*40}")
+                if name:
+                    display_header(f"\n{'='*40}\n>>>> {name}\n{'='*40}")
                 continue
             name = _value_for_locale(section["name"])
             if name:
@@ -570,7 +573,7 @@ class Question(object):
 
     def _format_text_for_user_input_in_cli(self):
 
-        text_for_user_input_in_cli = _value_for_locale(self.ask)
+        text_for_user_input_in_cli = _value_for_locale(self.ask).format(**self.context)
 
         if self.choices:
 

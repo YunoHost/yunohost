@@ -165,3 +165,14 @@ def _extract_inet(string, skip_netmask=False, skip_loopback=True):
         break
 
     return result
+
+def get_ssh_public_key():
+    keys = [
+        '/etc/ssh/ssh_host_ed25519_key.pub',
+        '/etc/ssh/ssh_host_rsa_key.pub'
+    ]
+    for key in keys:
+        if os.path.exists(key):
+            # We return the key without user and machine name.
+            # Providers don't need this info.
+            return " ".join(read_file(key).split(" ")[0:2])

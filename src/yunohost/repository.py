@@ -30,24 +30,24 @@ import subprocess
 import re
 import urllib.parse
 
-from moulinette import msignals, m18n
+from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml, write_to_json
 
 
+from yunohost.utils.config import ConfigPanel, Question
 from yunohost.utils.error import YunohostError
-from yunohost.monitor import binary_to_human
+from yunohost.utils.filesystem import binary_to_human
+from yunohost.utils.network import get_ssh_public_key
 from yunohost.log import OperationLogger, is_unit_operation
 
 logger = getActionLogger('yunohost.repository')
-REPOSITORIES_PATH = '/etc/yunohost/repositories'
+REPOSITORIES_DIR = '/etc/yunohost/repositories'
 REPOSITORY_CONFIG_PATH = "/usr/share/yunohost/other/config_repository.toml"
 
-# TODO
 # TODO i18n
-# TODO visible in cli
 # TODO split COnfigPanel.get to extract "Format result" part and be able to override it
 # TODO Migration
 # TODO Remove BackupRepository.get_or_create()
@@ -76,20 +76,15 @@ class BackupRepository(ConfigPanel):
         self.save_mode = "full"
         super().__init__(
             config_path=REPOSITORY_CONFIG_PATH,
-            save_path=f"{REPOSITORY_SETTINGS_DIR}/{repository}.yml",
+            save_path=f"{REPOSITORIES_DIR}/{repository}.yml",
         )
 
+        #self.method = BackupMethod.get(method, self)
 
-        from yunohost.backup import BackupMethod
-        self.location = location
-        self._split_location()
-
-        self.name = location if name is None else name
-        if created and self.name in BackupMethod.repositories:
-            raise YunohostError(
-                'backup_repository_already_exists', repositories=self.name)
-
-        self.method = BackupMethod.get(method, self)
+    def _get_default_values(self):
+        values = super()._get_default_values()
+        values["public_key"] = get_ssh_public_key()
+        return values
 
     def list(self, with_info=False):
         return self.method.list(with_info)
@@ -138,7 +133,7 @@ def backup_repository_list(full=False):
 
     try:
         repositories = [f.rstrip(".yml")
-                        for f in os.listdir(REPOSITORIES_PATH)
+                        for f in os.listdir(REPOSITORIES_DIR)
                         if os.path.isfile(f) and f.endswith(".yml")]
     except FileNotFoundError:
         repositories = []
@@ -196,7 +191,7 @@ def backup_repository_add(operation_logger, shortname, name=None, location=None,
     # FIXME i18n
     # Deduce some value from location
     args = {}
-    args['name'] = name
+    args['description'] = name
     args['creation'] = True
     if location:
         args["location"] = location
@@ -244,7 +239,7 @@ def backup_repository_update(operation_logger, shortname, name=None,
     args = {}
     args['creation'] = False
     if name:
-        args['name'] = name
+        args['description'] = name
     if quota:
         args["quota"] = quota
     if passphrase:
