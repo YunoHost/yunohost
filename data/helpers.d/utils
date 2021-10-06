@@ -748,13 +748,13 @@ ynh_secure_remove() {
 # (Deprecated, use --output-as json and jq instead)
 ynh_get_plain_key() {
     local prefix="#"
-    local founded=0
+    local found=0
     # We call this key_ so that it's not caught as
     # an info to be redacted by the core
     local key_=$1
     shift
     while read line; do
-        if [[ "$founded" == "1" ]]; then
+        if [[ "$found" == "1" ]]; then
             [[ "$line" =~ ^${prefix}[^#] ]] && return
             echo $line
         elif [[ "$line" =~ ^${prefix}${key_}$ ]]; then
@@ -763,7 +763,7 @@ ynh_get_plain_key() {
                 key_=$1
                 shift
             else
-                founded=1
+                found=1
             fi
         fi
     done
