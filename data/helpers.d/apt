@@ -252,7 +252,8 @@ ynh_install_app_dependencies () {
 
     # Check for specific php dependencies which requires sury
     # This grep will for example return "7.4" if dependencies is "foo bar php7.4-pwet php-gni"
-    local specific_php_version=$(echo $dependencies | tr '-' ' ' | grep -o -E "\<php[0-9.]+\>" | sed 's/php//g' | sort | uniq)
+    # The (?<=php) syntax corresponds to lookbehind ;)
+    local specific_php_version=$(echo $dependencies | grep -oP '(?<=php)[0-9.]+(?=-|\>)' | sort -u)
 
     # Ignore case where the php version found is the one available in debian vanilla
     [[ "$specific_php_version" != "$YNH_DEFAULT_PHP_VERSION" ]] || specific_php_version=""
