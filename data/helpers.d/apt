@@ -370,6 +370,7 @@ ynh_add_app_dependencies () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
+    ynh_print_warn --message="Packagers: ynh_add_app_dependencies is deprecated and is now only an alias to ynh_install_app_dependencies"
     ynh_install_app_dependencies "${package}"
 }
 
