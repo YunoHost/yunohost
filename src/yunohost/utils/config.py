@@ -667,7 +667,7 @@ class Question(object):
             # - we want to keep the previous value
             # - we want the default value
             self.value = None
-            return self.value
+            return { self.name: self.value }
 
         for i in range(5):
             # Display question if no value filled or if it's a readonly message
@@ -689,6 +689,10 @@ class Question(object):
                 # Normalize and validate
                 self.value = self.normalize(self.value, self)
                 self._prevalidate()
+                # Search for validator in hooks
+                validator = f"validate__{self.name}"
+                if validator in self.hooks:
+                    self.hooks[validator](self)
             except YunohostValidationError as e:
                 # If in interactive cli, re-ask the current question
                 if i < 4 and Moulinette.interface.type == "cli" and os.isatty(1):
@@ -703,7 +707,12 @@ class Question(object):
 
         self.value = self._post_parse_value()
 
-        return self.value
+        # Search for post actions in hooks
+        post_hook = f"post_parse__{self.name}"
+        if post_hook in self.hooks:
+            self.hooks[post_hook](self)
+
+        return { self.name: self.value }
 
     def _prevalidate(self):
         if self.value in [None, ""] and not self.optional:
@@ -1217,7 +1226,8 @@ ARGUMENTS_TYPE_PARSERS = {
 
 
 def ask_questions_and_parse_answers(
-    raw_questions: Dict, prefilled_answers: Union[str, Mapping[str, Any]] = {}
+    raw_questions: Dict, prefilled_answers: Union[str, Mapping[str, Any]] = {},
+    hooks: Dict[str, Callable[[], None]] = {}
 ) -> List[Question]:
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
@@ -1251,7 +1261,7 @@ def ask_questions_and_parse_answers(
         question_class = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")]
         raw_question["value"] = answers.get(raw_question["name"])
         question = question_class(raw_question, context=answers)
-        answers[question.name] = question.ask_if_needed()
+        answers.update(question.ask_if_needed())
         out.append(question)
 
     return out

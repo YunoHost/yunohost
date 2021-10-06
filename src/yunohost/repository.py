@@ -81,6 +81,10 @@ class BackupRepository(ConfigPanel):
 
         #self.method = BackupMethod.get(method, self)
 
+    def set__domain(self, question):
+        # TODO query on domain name .well-known
+        question.value
+
     def _get_default_values(self):
         values = super()._get_default_values()
         values["public_key"] = get_ssh_public_key()

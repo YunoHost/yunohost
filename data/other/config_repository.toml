@@ -5,6 +5,7 @@ i18n = "repository_config"
 name.en = ""
     [main.main]
     name.en = ""
+    optional = false
         # if method == "tar": question["value"] = False
         [main.main.description]
         type = "string"
@@ -14,20 +15,18 @@ name.en = ""
         type = "boolean"
         yes = true
         no = false
-        visible = "creation && is_remote"
+        visible = "creation"
         default = "no"
 
         [main.main.location]
-        ask.en = "{is_remote}"
         type = "string"
         visible = "creation && is_remote"
         pattern.regexp = '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
-        pattern.error = '' # TODO "Please provide a valid domain"
+        pattern.error = 'location_error' # TODO "Please provide a valid domain"
         default = ""
         # FIXME: can't be a domain of this instances ?
 
         [main.main.is_f2f]
-        ask.en = "{is_remote}"
         help = ""
         type = "boolean"
         yes = true
