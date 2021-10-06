@@ -15,6 +15,7 @@ from yunohost.utils.config import (
     PathQuestion,
     BooleanQuestion,
     FileQuestion,
+    evaluate_simple_js_expression,
 )
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
@@ -2093,3 +2094,96 @@ def test_normalize_path():
     assert PathQuestion.normalize("/macnuggets/") == "/macnuggets"
     assert PathQuestion.normalize("macnuggets/") == "/macnuggets"
     assert PathQuestion.normalize("////macnuggets///") == "/macnuggets"
+
+
+def test_simple_evaluate():
+    context = {
+        "a1": 1,
+        "b2": 2,
+        "c10": 10,
+        "foo": "bar",
+        "comp": "1>2",
+        "empty": "",
+        "lorem": "Lorem ipsum dolor et si qua met!",
+        "warning": "Warning! This sentence will fail!",
+        "quote": "Je s'apelle Groot",
+        "and_": "&&",
+        "object": {"a": "Security risk"},
+    }
+    supported = {
+        "42": 42,
+        "9.5": 9.5,
+        "'bopbidibopbopbop'": "bopbidibopbopbop",
+        "true": True,
+        "false": False,
+        "null": None,
+        # Math
+        "1 * (2 + 3 * (4 - 3))": 5,
+        "1 * (2 + 3 * (4 - 3)) > 10 - 2 || 3 * 2 > 9 - 2 * 3": True,
+        "(9 - 2) * 3 - 10": 11,
+        "12 - 2 * -2 + (3 - 4) * 3.1": 12.9,
+        "9 / 12 + 12 * 3 - 5": 31.75,
+        "9 / 12 + 12 * (3 - 5)": -23.25,
+        "12 > 13.1": False,
+        "12 < 14": True,
+        "12 <= 14": True,
+        "12 >= 14": False,
+        "12 == 14": False,
+        "12 % 5 > 3": False,
+        "12 != 14": True,
+        "9 - 1 > 10 && 3 * 5 > 10": False,
+        "9 - 1 > 10 || 3 * 5 > 10": True,
+        "a1 > 0 || a1 < -12": True,
+        "a1 > 0 && a1 < -12": False,
+        "a1 + 1 > 0 && -a1 > -12": True,
+        "-(a1 + 1) < 0 || -(a1 + 2) > -12": True,
+        "-a1 * 2": -2,
+        "(9 - 2) * 3 - c10": 11,
+        "(9 - b2) * 3 - c10": 11,
+        "c10 > b2": True,
+        # String
+        "foo == 'bar'": True,
+        "foo != 'bar'": False,
+        'foo == "bar" && 1 > 0': True,
+        "!!foo": True,
+        "!foo": False,
+        "foo": "bar",
+        '!(foo > "baa") || 1 > 2': False,
+        '!(foo > "baa") || 1 < 2': True,
+        'empty == ""': True,
+        '1 == "1"': True,
+        '1.0 == "1"': True,
+        '1 == "aaa"': False,
+        "'I am ' + b2 + ' years'": "I am 2 years",
+        "quote == 'Je s\\'apelle Groot'": True,
+        "lorem == 'Lorem ipsum dolor et si qua met!'": True,
+        "and_ == '&&'": True,
+        "warning == 'Warning! This sentence will fail!'": True,
+        # Match
+        "match(lorem, '^Lorem [ia]psumE?')": bool,
+        "match(foo, '^Lorem [ia]psumE?')": None,
+        "match(lorem, '^Lorem [ia]psumE?') && 1 == 1": bool,
+        # No code
+        "": False,
+        " ": False,
+    }
+    trigger_errors = {
+        "object.a": YunohostError,  # Keep unsupported, for security reasons
+        "a1 ** b2": YunohostError,  # Keep unsupported, for security reasons
+        "().__class__.__bases__[0].__subclasses__()": YunohostError,  # Very dangerous code
+        "a1 > 11 ? 1 : 0": SyntaxError,
+        "c10 > b2 == false": YunohostError,  # JS and Python doesn't do the same thing for this situation
+        "c10 > b2 == true": YunohostError,
+    }
+
+    for expression, result in supported.items():
+        if result == bool:
+            assert bool(evaluate_simple_js_expression(expression, context)), expression
+        else:
+            assert (
+                evaluate_simple_js_expression(expression, context) == result
+            ), expression
+
+    for expression, error in trigger_errors.items():
+        with pytest.raises(error):
+            evaluate_simple_js_expression(expression, context)

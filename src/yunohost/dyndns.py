@@ -33,7 +33,7 @@ import subprocess
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import write_to_file, read_file
+from moulinette.utils.filesystem import write_to_file, read_file, rm, chown, chmod
 from moulinette.utils.network import download_json
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -152,12 +152,11 @@ def dyndns_subscribe(
 
             os.system(
                 "cd /etc/yunohost/dyndns && "
-                "dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER %s"
-                % domain
+                f"dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER {domain}"
             )
-            os.system(
-                "chmod 600 /etc/yunohost/dyndns/*.key /etc/yunohost/dyndns/*.private"
-            )
+
+            chmod("/etc/yunohost/dyndns", 0o600, recursive=True)
+            chown("/etc/yunohost/dyndns", "root", recursive=True)
 
         private_file = glob.glob("/etc/yunohost/dyndns/*%s*.private" % domain)[0]
         key_file = glob.glob("/etc/yunohost/dyndns/*%s*.key" % domain)[0]
@@ -175,12 +174,12 @@ def dyndns_subscribe(
             timeout=30,
         )
     except Exception as e:
-        os.system("rm -f %s" % private_file)
-        os.system("rm -f %s" % key_file)
+        rm(private_file, force=True)
+        rm(key_file, force=True)
         raise YunohostError("dyndns_registration_failed", error=str(e))
     if r.status_code != 201:
-        os.system("rm -f %s" % private_file)
-        os.system("rm -f %s" % key_file)
+        rm(private_file, force=True)
+        rm(key_file, force=True)
         try:
             error = json.loads(r.text)["error"]
         except Exception:

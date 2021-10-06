@@ -36,7 +36,7 @@ full-tests:
     - *install_debs
     - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns --force-diskspace
   script:
-    - python3 -m pytest --cov=yunohost tests/ src/yunohost/tests/ --junitxml=report.xml
+    - python3 -m pytest --cov=yunohost tests/ src/yunohost/tests/ data/hooks/diagnosis/ --junitxml=report.xml
     - cd tests
     - bash test_helpers.sh
   needs:
@@ -113,10 +113,10 @@ test-apps:
 test-appscatalog:
   extends: .test-stage
   script:
-    - python3 -m pytest src/yunohost/tests/test_appscatalog.py
+    - python3 -m pytest src/yunohost/tests/test_app_catalog.py
   only:
     changes:
-      - src/yunohost/app.py
+      - src/yunohost/app_calalog.py
 
 test-appurl:
   extends: .test-stage
