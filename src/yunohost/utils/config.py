@@ -55,24 +55,24 @@ def evaluate_simple_ast(node, context={}):
     operators = {
         ast.Not: op.not_,
         ast.Mult: op.mul,
-        ast.Div: op.truediv, # number
-        ast.Mod: op.mod, # number
-        ast.Add: op.add, #str
-        ast.Sub: op.sub, #number
-        ast.USub: op.neg, # Negative number
+        ast.Div: op.truediv,  # number
+        ast.Mod: op.mod,  # number
+        ast.Add: op.add,  # str
+        ast.Sub: op.sub,  # number
+        ast.USub: op.neg,  # Negative number
         ast.Gt: op.gt,
         ast.Lt: op.lt,
         ast.GtE: op.ge,
         ast.LtE: op.le,
         ast.Eq: op.eq,
-        ast.NotEq: op.ne
+        ast.NotEq: op.ne,
     }
-    context['true'] = True
-    context['false'] = False
-    context['null'] = None
+    context["true"] = True
+    context["false"] = False
+    context["null"] = None
 
     # Variable
-    if isinstance(node, ast.Name): # Variable
+    if isinstance(node, ast.Name):  # Variable
         return context[node.id]
 
     # Python <=3.7 String
@@ -88,14 +88,16 @@ def evaluate_simple_ast(node, context={}):
         return node.value
 
     # + - * / %
-    elif isinstance(node, ast.BinOp) and type(node.op) in operators: # <left> <operator> <right>
+    elif (
+        isinstance(node, ast.BinOp) and type(node.op) in operators
+    ):  # <left> <operator> <right>
         left = evaluate_simple_ast(node.left, context)
         right = evaluate_simple_ast(node.right, context)
         if type(node.op) == ast.Add:
-            if isinstance(left, str) or isinstance(right, str): # support 'I am ' + 42
+            if isinstance(left, str) or isinstance(right, str):  # support 'I am ' + 42
                 left = str(left)
                 right = str(right)
-        elif type(left) != type(right): # support "111" - "1" -> 110
+        elif type(left) != type(right):  # support "111" - "1" -> 110
             left = float(left)
             right = float(right)
 
@@ -104,7 +106,9 @@ def evaluate_simple_ast(node, context={}):
     # Comparison
     # JS and Python don't give the same result for multi operators
     # like True == 10 > 2.
-    elif isinstance(node, ast.Compare) and len(node.comparators) == 1: # <left> <ops> <comparators>
+    elif (
+        isinstance(node, ast.Compare) and len(node.comparators) == 1
+    ):  # <left> <ops> <comparators>
         left = evaluate_simple_ast(node.left, context)
         right = evaluate_simple_ast(node.comparators[0], context)
         operator = node.ops[0]
@@ -116,11 +120,11 @@ def evaluate_simple_ast(node, context={}):
                 return type(operator) == ast.NotEq
         try:
             return operators[type(operator)](left, right)
-        except TypeError: # support "e" > 1 -> False like in JS
+        except TypeError:  # support "e" > 1 -> False like in JS
             return False
 
     # and / or
-    elif isinstance(node, ast.BoolOp): # <op> <values>
+    elif isinstance(node, ast.BoolOp):  # <op> <values>
         values = node.values
         for value in node.values:
             value = evaluate_simple_ast(value, context)
@@ -131,20 +135,22 @@ def evaluate_simple_ast(node, context={}):
         return isinstance(node.op, ast.And)
 
     # not / USub (it's negation number -\d)
-    elif isinstance(node, ast.UnaryOp): # <operator> <operand> e.g., -1
+    elif isinstance(node, ast.UnaryOp):  # <operator> <operand> e.g., -1
         return operators[type(node.op)](evaluate_simple_ast(node.operand, context))
 
     # match function call
-    elif isinstance(node, ast.Call) and node.func.__dict__.get('id') == 'match':
+    elif isinstance(node, ast.Call) and node.func.__dict__.get("id") == "match":
         return re.match(
-            evaluate_simple_ast(node.args[1], context),
-            context[node.args[0].id]
+            evaluate_simple_ast(node.args[1], context), context[node.args[0].id]
         )
 
     # Unauthorized opcode
     else:
         opcode = str(type(node))
-        raise YunohostError(f"Unauthorize opcode '{opcode}' in visible attribute", raw_msg=True)
+        raise YunohostError(
+            f"Unauthorize opcode '{opcode}' in visible attribute", raw_msg=True
+        )
+
 
 def js_to_python(expr):
     in_string = None
@@ -163,7 +169,7 @@ def js_to_python(expr):
 
         # If we are not in a string, replace operators
         elif not in_string:
-            if char == "!" and expr[i +1] != "=":
+            if char == "!" and expr[i + 1] != "=":
                 char = "not "
             elif char in "|&" and py_expr[-1:] == char:
                 py_expr = py_expr[:-1]
@@ -172,14 +178,16 @@ def js_to_python(expr):
         # Determine if next loop will be in escaped mode
         escaped = char == "\\" and not escaped
         py_expr += char
-        i+=1
+        i += 1
     return py_expr
+
 
 def evaluate_simple_js_expression(expr, context={}):
     if not expr.strip():
         return False
     node = ast.parse(js_to_python(expr), mode="eval").body
     return evaluate_simple_ast(node, context)
+
 
 class ConfigPanel:
     def __init__(self, config_path, save_path=None):
@@ -649,7 +657,9 @@ class Question(object):
 
     def ask_if_needed(self):
 
-        if self.visible and not evaluate_simple_js_expression(self.visible, context=self.context):
+        if self.visible and not evaluate_simple_js_expression(
+            self.visible, context=self.context
+        ):
             # FIXME There could be several use case if the question is not displayed:
             # - we doesn't want to give a specific value
             # - we want to keep the previous value
