@@ -293,7 +293,7 @@ ynh_install_app_dependencies () {
     # https://github.com/YunoHost/issues/issues/1407
     #
     # If we require to install php dependency
-    if echo $dependencies | grep --quiet 'php'
+    if grep --quiet 'php' <<< "$dependencies"
     then
         # And we have packages from sury installed (7.0.33-10+weirdshiftafter instead of 7.0.33-0 on debian)
         if dpkg --list | grep "php7.0" | grep --quiet --invert-match "7.0.33-0+deb9"
@@ -333,6 +333,9 @@ EOF
 
         # Integrate new php-fpm service in yunohost
         yunohost service add php${specific_php_version}-fpm --log "/var/log/php${phpversion}-fpm.log"
+    elif grep --quiet 'php' <<< "$dependencies"
+        # Store phpversion into the config of this app
+        ynh_app_setting_set --app=$app --key=phpversion --value=$YNH_DEFAULT_PHP_VERSION
     fi
 }
 
