@@ -397,7 +397,7 @@ ynh_remove_app_dependencies () {
     # if the corresponding php-fpm is still there. Otherwise, we remove the
     # service from yunohost as well
 
-    local specific_php_version=$(echo $dependencies | tr '-' ' ' | grep -o -E "\<php[0-9.]+\>" | sed 's/php//g' | sort | uniq)
+    local specific_php_version=$(echo $current_dependencies | tr '-' ' ' | grep -o -E "\<php[0-9.]+\>" | sed 's/php//g' | sort | uniq)
     [[ "$specific_php_version" != "$YNH_DEFAULT_PHP_VERSION" ]] || specific_php_version=""
     if [[ -n "$specific_php_version" ]] && ! ynh_package_is_installed --package="php${specific_php_version}-fpm";
     then
