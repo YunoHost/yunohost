@@ -577,7 +577,7 @@ class BackupManager:
         env_var["YNH_BACKUP_CSV"] = tmp_csv
 
         if app is not None:
-            env_var.update(_make_environment_for_app_script(app))
+            env_var.update(_make_environment_for_app_script(app, action="backup"))
             env_var["YNH_APP_BACKUP_DIR"] = os.path.join(
                 self.work_dir, "apps", app, "backup"
             )
@@ -1490,7 +1490,7 @@ class RestoreManager:
         # FIXME : workdir should be a tmp workdir
         app_workdir = os.path.join(self.work_dir, "apps", app_instance_name, "settings")
         env_dict = _make_environment_for_app_script(
-            app_instance_name, workdir=app_workdir
+            app_instance_name, workdir=app_workdir, action="restore"
         )
         env_dict.update(
             {

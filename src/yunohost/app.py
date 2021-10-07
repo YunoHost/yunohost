@@ -408,7 +408,7 @@ def app_change_url(operation_logger, app, domain, path):
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
     # Prepare env. var. to pass to script
-    env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app)
+    env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app, action="change_url")
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
     env_dict["YNH_APP_OLD_PATH"] = old_path
     env_dict["YNH_APP_NEW_DOMAIN"] = domain
@@ -562,7 +562,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
         # Prepare env. var. to pass to script
         env_dict = _make_environment_for_app_script(
-            app_instance_name, workdir=extracted_app_folder
+            app_instance_name, workdir=extracted_app_folder, action="upgrade"
         )
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
@@ -868,7 +868,7 @@ def app_install(
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(
-        app_instance_name, args=args, workdir=extracted_app_folder
+        app_instance_name, args=args, workdir=extracted_app_folder, action="install"
     )
 
     env_dict_for_logging = env_dict.copy()
@@ -931,7 +931,7 @@ def app_install(
 
             # Setup environment for remove script
             env_dict_remove = _make_environment_for_app_script(
-                app_instance_name, workdir=extracted_app_folder
+                app_instance_name, workdir=extracted_app_folder, action="remove"
             )
 
             # Execute remove script
@@ -1046,7 +1046,7 @@ def app_remove(operation_logger, app, purge=False):
 
     env_dict = {}
     app_id, app_instance_nb = _parse_app_instance_name(app)
-    env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app)
+    env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app, action="remove")
     env_dict["YNH_APP_PURGE"] = str(1 if purge else 0)
 
     operation_logger.extra.update({"env": env_dict})
@@ -1541,9 +1541,8 @@ def app_action_run(operation_logger, app, action, args=None):
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
     env_dict = _make_environment_for_app_script(
-        app, args=args, args_prefix="ACTION_", workdir=tmp_workdir_for_app
+        app, args=args, args_prefix="ACTION_", workdir=tmp_workdir_for_app, action=action
     )
-    env_dict["YNH_ACTION"] = action
 
     _, action_script = tempfile.mkstemp(dir=tmp_workdir_for_app)
 
@@ -2430,7 +2429,11 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
 
 
 def _make_environment_for_app_script(
-    app, args={}, args_prefix="APP_ARG_", workdir=None
+    app,
+    args={},
+    args_prefix="APP_ARG_",
+    workdir=None,
+    action=None
 ):
 
     app_setting_path = os.path.join(APPS_SETTING_PATH, app)
@@ -2447,6 +2450,9 @@ def _make_environment_for_app_script(
 
     if workdir:
         env_dict["YNH_APP_BASEDIR"] = workdir
+
+    if action:
+        env_dict["YNH_ACTION"] = action
 
     for arg_name, arg_value in args.items():
         env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = str(arg_value)
