@@ -1241,7 +1241,6 @@ def ask_questions_and_parse_answers(
     else:
         answers = {}
 
-
     out = []
 
     for raw_question in raw_questions:
