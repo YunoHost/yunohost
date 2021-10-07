@@ -737,7 +737,7 @@ _acceptable_path_to_delete() {
 
     # Use realpath to normalize the path ..
     # i.e convert ///foo//bar//..///baz//// to /foo/baz
-    file=$(realpath --no-symlinks $file)
+    file=$(realpath --no-symlinks "$file")
     if [ -z "$file" ] || grep -q -x -F "$file" <<< "$forbidden_paths"; then
         return 1
     else
