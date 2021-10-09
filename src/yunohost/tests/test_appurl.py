@@ -68,7 +68,7 @@ def test_repo_url_definition():
     assert _is_app_repo_url(
         "https://gitlab.domainepublic.net/Neutrinet/neutrinet_ynh/-/tree/unstable"
     )
-    assert _is_app_repo_url("https://github.com/YunoHost-Apps/foobar/tree/1.23.4")
+    assert _is_app_repo_url("https://github.com/YunoHost-Apps/foobar_ynh/tree/1.23.4")
     assert _is_app_repo_url("git@github.com:YunoHost-Apps/foobar_ynh.git")
 
     assert not _is_app_repo_url("github.com/YunoHost-Apps/foobar_ynh")
