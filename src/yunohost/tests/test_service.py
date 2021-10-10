@@ -9,6 +9,7 @@ from yunohost.service import (
     service_add,
     service_remove,
     service_log,
+    service_reload_or_restart,
 )
 
 
@@ -37,6 +38,10 @@ def clean():
         del services["networking"]
 
     _save_services(services)
+
+    if os.path.exists("/etc/nginx/conf.d/broken.conf"):
+        os.remove("/etc/nginx/conf.d/broken.conf")
+        os.system("systemctl reload-or-restart nginx")
 
 
 def test_service_status_all():
@@ -118,3 +123,20 @@ def test_service_update_to_remove_properties():
     assert _get_services()["dummyservice"].get("test_status") == "false"
     service_add("dummyservice", description="dummy", test_status="")
     assert not _get_services()["dummyservice"].get("test_status")
+
+
+def test_service_conf_broken():
+
+    os.system("echo pwet > /etc/nginx/conf.d/broken.conf")
+
+    status = service_status("nginx")
+    assert status["status"] == "running"
+    assert status["configuration"] == "broken"
+    assert "broken.conf" in status["configuration-details"][0]
+
+    # Service reload-or-restart should check that the conf ain't valid
+    # before reload-or-restart, hence the service should still be running
+    service_reload_or_restart("nginx")
+    assert status["status"] == "running"
+
+    os.remove("/etc/nginx/conf.d/broken.conf")

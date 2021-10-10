@@ -86,11 +86,8 @@ def certificate_status(domain_list, full=False):
         domain_list = yunohost.domain.domain_list()["domains"]
     # Else, validate that yunohost knows the domains given
     else:
-        yunohost_domains_list = yunohost.domain.domain_list()["domains"]
         for domain in domain_list:
-            # Is it in Yunohost domain list?
-            if domain not in yunohost_domains_list:
-                raise YunohostValidationError("domain_name_unknown", domain=domain)
+            yunohost.domain._assert_domain_exists(domain)
 
     certificates = {}
 
@@ -267,9 +264,7 @@ def _certificate_install_letsencrypt(
     # Else, validate that yunohost knows the domains given
     else:
         for domain in domain_list:
-            yunohost_domains_list = yunohost.domain.domain_list()["domains"]
-            if domain not in yunohost_domains_list:
-                raise YunohostValidationError("domain_name_unknown", domain=domain)
+            yunohost.domain._assert_domain_exists(domain)
 
             # Is it self-signed?
             status = _get_status(domain)
@@ -368,9 +363,8 @@ def certificate_renew(
     else:
         for domain in domain_list:
 
-            # Is it in Yunohost dmomain list?
-            if domain not in yunohost.domain.domain_list()["domains"]:
-                raise YunohostValidationError("domain_name_unknown", domain=domain)
+            # Is it in Yunohost domain list?
+            yunohost.domain._assert_domain_exists(domain)
 
             status = _get_status(domain)
 
@@ -432,7 +426,7 @@ def certificate_renew(
 
             stack = StringIO()
             traceback.print_exc(file=stack)
-            msg = "Certificate renewing for %s failed !" % (domain)
+            msg = "Certificate renewing for %s failed!" % (domain)
             if no_checks:
                 msg += (
                     "\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s."
@@ -454,6 +448,7 @@ def certificate_renew(
 #
 # Back-end stuff                                                            #
 #
+
 
 def _email_renewing_failed(domain, exception_message, stack=""):
     from_ = "certmanager@%s (Certificate Manager)" % domain
@@ -498,7 +493,7 @@ Subject: %s
     import smtplib
 
     smtp = smtplib.SMTP("localhost")
-    smtp.sendmail(from_, [to_], message)
+    smtp.sendmail(from_, [to_], message.encode("utf-8"))
     smtp.quit()
 
 
@@ -856,14 +851,9 @@ def _backup_current_cert(domain):
 
 def _check_domain_is_ready_for_ACME(domain):
 
-    dnsrecords = (
-        Diagnoser.get_cached_report(
-            "dnsrecords",
-            item={"domain": domain, "category": "basic"},
-            warn_if_no_cache=False,
-        )
-        or {}
-    )
+    from yunohost.domain import _get_parent_domain_of
+    from yunohost.dns import _get_dns_zone_for_domain
+
     httpreachable = (
         Diagnoser.get_cached_report(
             "web", item={"domain": domain}, warn_if_no_cache=False
@@ -871,21 +861,56 @@ def _check_domain_is_ready_for_ACME(domain):
         or {}
     )
 
-    if not dnsrecords or not httpreachable:
-        raise YunohostValidationError("certmanager_domain_not_diagnosed_yet", domain=domain)
+    parent_domain = _get_parent_domain_of(domain)
+
+    dnsrecords = (
+        Diagnoser.get_cached_report(
+            "dnsrecords",
+            item={"domain": parent_domain, "category": "basic"},
+            warn_if_no_cache=False,
+        )
+        or {}
+    )
+
+    base_dns_zone = _get_dns_zone_for_domain(domain)
+    record_name = (
+        domain.replace(f".{base_dns_zone}", "") if domain != base_dns_zone else "@"
+    )
+    A_record_status = dnsrecords.get("data").get(f"A:{record_name}")
+    AAAA_record_status = dnsrecords.get("data").get(f"AAAA:{record_name}")
+
+    # Fallback to wildcard in case no result yet for the DNS name?
+    if not A_record_status:
+        A_record_status = dnsrecords.get("data").get("A:*")
+    if not AAAA_record_status:
+        AAAA_record_status = dnsrecords.get("data").get("AAAA:*")
+
+    if (
+        not httpreachable
+        or not dnsrecords.get("data")
+        or (A_record_status, AAAA_record_status) == (None, None)
+    ):
+        raise YunohostValidationError(
+            "certmanager_domain_not_diagnosed_yet", domain=domain
+        )
 
     # Check if IP from DNS matches public IP
-    if not dnsrecords.get("status") in [
-        "SUCCESS",
-        "WARNING",
-    ]:  # Warning is for missing IPv6 record which ain't critical for ACME
+    # - 'MISSING' for IPv6 ain't critical for ACME
+    # - IPv4 can be None assuming there's at least an IPv6, and viveversa
+    #    - (the case where both are None is checked before)
+    if not (
+        A_record_status in [None, "OK"]
+        and AAAA_record_status in [None, "OK", "MISSING"]
+    ):
         raise YunohostValidationError(
             "certmanager_domain_dns_ip_differs_from_public_ip", domain=domain
         )
 
     # Check if domain seems to be accessible through HTTP?
     if not httpreachable.get("status") == "SUCCESS":
-        raise YunohostValidationError("certmanager_domain_http_not_working", domain=domain)
+        raise YunohostValidationError(
+            "certmanager_domain_http_not_working", domain=domain
+        )
 
 
 # FIXME / TODO : ideally this should not be needed. There should be a proper
@@ -944,11 +969,6 @@ def _name_self_CA():
 
 
 def _tail(n, file_path):
-    stdin, stdout = os.popen2("tail -n %s '%s'" % (n, file_path))
+    from moulinette.utils.process import check_output
 
-    stdin.close()
-
-    lines = stdout.readlines()
-    stdout.close()
-
-    return "".join(lines)
+    return check_output(f"tail -n {n} '{file_path}'")

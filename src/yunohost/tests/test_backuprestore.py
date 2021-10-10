@@ -2,6 +2,7 @@ import pytest
 import os
 import shutil
 import subprocess
+from mock import patch
 
 from .conftest import message, raiseYunohostError, get_test_apps_dir
 
@@ -47,8 +48,8 @@ def setup_function(function):
         for m in function.__dict__.get("pytestmark", [])
     }
 
-    if "with_wordpress_archive_from_2p4" in markers:
-        add_archive_wordpress_from_2p4()
+    if "with_wordpress_archive_from_3p8" in markers:
+        add_archive_wordpress_from_3p8()
         assert len(backup_list()["archives"]) == 1
 
     if "with_legacy_app_installed" in markers:
@@ -70,14 +71,15 @@ def setup_function(function):
         )
         assert app_is_installed("backup_recommended_app")
 
-    if "with_system_archive_from_2p4" in markers:
-        add_archive_system_from_2p4()
+    if "with_system_archive_from_3p8" in markers:
+        add_archive_system_from_3p8()
         assert len(backup_list()["archives"]) == 1
 
     if "with_permission_app_installed" in markers:
         assert not app_is_installed("permissions_app")
         user_create("alice", "Alice", "White", maindomain, "test123Ynh")
-        install_app("permissions_app_ynh", "/urlpermissionapp" "&admin=alice")
+        with patch.object(os, "isatty", return_value=False):
+            install_app("permissions_app_ynh", "/urlpermissionapp" "&admin=alice")
         assert app_is_installed("permissions_app")
 
     if "with_custom_domain" in markers:
@@ -107,7 +109,8 @@ def teardown_function(function):
 
     if "with_custom_domain" in markers:
         domain = markers["with_custom_domain"]["args"][0]
-        domain_remove(domain)
+        if domain != maindomain:
+            domain_remove(domain)
 
 
 @pytest.fixture(autouse=True)
@@ -147,7 +150,7 @@ def backup_test_dependencies_are_met():
 
     # Dummy test apps (or backup archives)
     assert os.path.exists(
-        os.path.join(get_test_apps_dir(), "backup_wordpress_from_2p4")
+        os.path.join(get_test_apps_dir(), "backup_wordpress_from_3p8")
     )
     assert os.path.exists(os.path.join(get_test_apps_dir(), "legacy_app_ynh"))
     assert os.path.exists(
@@ -216,39 +219,25 @@ def install_app(app, path, additionnal_args=""):
     )
 
 
-def add_archive_wordpress_from_2p4():
+def add_archive_wordpress_from_3p8():
 
     os.system("mkdir -p /home/yunohost.backup/archives")
 
     os.system(
         "cp "
-        + os.path.join(
-            get_test_apps_dir(), "backup_wordpress_from_2p4/backup.info.json"
-        )
-        + " /home/yunohost.backup/archives/backup_wordpress_from_2p4.info.json"
-    )
-
-    os.system(
-        "cp "
-        + os.path.join(get_test_apps_dir(), "backup_wordpress_from_2p4/backup.tar.gz")
-        + " /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz"
+        + os.path.join(get_test_apps_dir(), "backup_wordpress_from_3p8/backup.tar.gz")
+        + " /home/yunohost.backup/archives/backup_wordpress_from_3p8.tar.gz"
     )
 
 
-def add_archive_system_from_2p4():
+def add_archive_system_from_3p8():
 
     os.system("mkdir -p /home/yunohost.backup/archives")
 
     os.system(
         "cp "
-        + os.path.join(get_test_apps_dir(), "backup_system_from_2p4/backup.info.json")
-        + " /home/yunohost.backup/archives/backup_system_from_2p4.info.json"
-    )
-
-    os.system(
-        "cp "
-        + os.path.join(get_test_apps_dir(), "backup_system_from_2p4/backup.tar.gz")
-        + " /home/yunohost.backup/archives/backup_system_from_2p4.tar.gz"
+        + os.path.join(get_test_apps_dir(), "backup_system_from_3p8/backup.tar.gz")
+        + " /home/yunohost.backup/archives/backup_system_from_3p8.tar.gz"
     )
 
 
@@ -314,12 +303,12 @@ def test_backup_and_restore_all_sys(mocker):
 
 
 #
-# System restore from 2.4                                                    #
+# System restore from 3.8                                                    #
 #
 
 
-@pytest.mark.with_system_archive_from_2p4
-def test_restore_system_from_Ynh2p4(monkeypatch, mocker):
+@pytest.mark.with_system_archive_from_3p8
+def test_restore_system_from_Ynh3p8(monkeypatch, mocker):
 
     # Backup current system
     with message(mocker, "backup_created"):
@@ -327,7 +316,7 @@ def test_restore_system_from_Ynh2p4(monkeypatch, mocker):
     archives = backup_list()["archives"]
     assert len(archives) == 2
 
-    # Restore system archive from 2.4
+    # Restore system archive from 3.8
     try:
         with message(mocker, "restore_complete"):
             backup_restore(
@@ -426,7 +415,7 @@ def test_backup_with_different_output_directory(mocker):
     # Create the backup
     with message(mocker, "backup_created"):
         backup_create(
-            system=["conf_ssh"],
+            system=["conf_ynh_settings"],
             apps=None,
             output_directory="/opt/test_backup_output_directory",
             name="backup",
@@ -440,7 +429,7 @@ def test_backup_with_different_output_directory(mocker):
     archives_info = backup_info(archives[0], with_details=True)
     assert archives_info["apps"] == {}
     assert len(archives_info["system"].keys()) == 1
-    assert "conf_ssh" in archives_info["system"].keys()
+    assert "conf_ynh_settings" in archives_info["system"].keys()
 
 
 @pytest.mark.clean_opt_dir
@@ -449,7 +438,7 @@ def test_backup_using_copy_method(mocker):
     # Create the backup
     with message(mocker, "backup_created"):
         backup_create(
-            system=["conf_nginx"],
+            system=["conf_ynh_settings"],
             apps=None,
             output_directory="/opt/test_backup_output_directory",
             methods=["copy"],
@@ -464,9 +453,9 @@ def test_backup_using_copy_method(mocker):
 #
 
 
-@pytest.mark.with_wordpress_archive_from_2p4
+@pytest.mark.with_wordpress_archive_from_3p8
 @pytest.mark.with_custom_domain("yolo.test")
-def test_restore_app_wordpress_from_Ynh2p4(mocker):
+def test_restore_app_wordpress_from_Ynh3p8(mocker):
 
     with message(mocker, "restore_complete"):
         backup_restore(
@@ -474,19 +463,19 @@ def test_restore_app_wordpress_from_Ynh2p4(mocker):
         )
 
 
-@pytest.mark.with_wordpress_archive_from_2p4
+@pytest.mark.with_wordpress_archive_from_3p8
 @pytest.mark.with_custom_domain("yolo.test")
 def test_restore_app_script_failure_handling(monkeypatch, mocker):
     def custom_hook_exec(name, *args, **kwargs):
         if os.path.basename(name).startswith("restore"):
             monkeypatch.undo()
-            raise Exception
+            return (1, None)
 
-    monkeypatch.setattr("yunohost.backup.hook_exec", custom_hook_exec)
+    monkeypatch.setattr("yunohost.hook.hook_exec", custom_hook_exec)
 
     assert not _is_installed("wordpress")
 
-    with message(mocker, "restore_app_failed", app="wordpress"):
+    with message(mocker, "app_restore_script_failed"):
         with raiseYunohostError(mocker, "restore_nothings_done"):
             backup_restore(
                 system=None, name=backup_list()["archives"][0], apps=["wordpress"]
@@ -495,7 +484,7 @@ def test_restore_app_script_failure_handling(monkeypatch, mocker):
     assert not _is_installed("wordpress")
 
 
-@pytest.mark.with_wordpress_archive_from_2p4
+@pytest.mark.with_wordpress_archive_from_3p8
 def test_restore_app_not_enough_free_space(monkeypatch, mocker):
     def custom_free_space_in_directory(dirpath):
         return 0
@@ -514,7 +503,7 @@ def test_restore_app_not_enough_free_space(monkeypatch, mocker):
     assert not _is_installed("wordpress")
 
 
-@pytest.mark.with_wordpress_archive_from_2p4
+@pytest.mark.with_wordpress_archive_from_3p8
 def test_restore_app_not_in_backup(mocker):
 
     assert not _is_installed("wordpress")
@@ -530,7 +519,7 @@ def test_restore_app_not_in_backup(mocker):
     assert not _is_installed("yoloswag")
 
 
-@pytest.mark.with_wordpress_archive_from_2p4
+@pytest.mark.with_wordpress_archive_from_3p8
 @pytest.mark.with_custom_domain("yolo.test")
 def test_restore_app_already_installed(mocker):
 
@@ -648,18 +637,18 @@ def test_restore_archive_with_no_json(mocker):
         backup_restore(name="badbackup", force=True)
 
 
-@pytest.mark.with_wordpress_archive_from_2p4
+@pytest.mark.with_wordpress_archive_from_3p8
 def test_restore_archive_with_bad_archive(mocker):
 
     # Break the archive
     os.system(
-        "head -n 1000 /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz > /home/yunohost.backup/archives/backup_wordpress_from_2p4.tar.gz"
+        "head -n 1000 /home/yunohost.backup/archives/backup_wordpress_from_3p8.tar.gz > /home/yunohost.backup/archives/backup_wordpress_from_3p8_bad.tar.gz"
     )
 
-    assert "backup_wordpress_from_2p4" in backup_list()["archives"]
+    assert "backup_wordpress_from_3p8_bad" in backup_list()["archives"]
 
-    with raiseYunohostError(mocker, "backup_archive_open_failed"):
-        backup_restore(name="backup_wordpress_from_2p4", force=True)
+    with raiseYunohostError(mocker, "backup_archive_corrupted"):
+        backup_restore(name="backup_wordpress_from_3p8_bad", force=True)
 
     clean_tmp_backup_directory()
 
@@ -688,9 +677,9 @@ def test_backup_binds_are_readonly(mocker, monkeypatch):
     def custom_mount_and_backup(self):
         self._organize_files()
 
-        confssh = os.path.join(self.work_dir, "conf/ssh")
+        conf = os.path.join(self.work_dir, "conf/ynh/dkim")
         output = subprocess.check_output(
-            "touch %s/test 2>&1 || true" % confssh,
+            "touch %s/test 2>&1 || true" % conf,
             shell=True,
             env={"LANG": "en_US.UTF-8"},
         )

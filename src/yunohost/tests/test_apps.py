@@ -41,7 +41,13 @@ def clean():
     os.system("mkdir -p /etc/ssowat/")
     app_ssowatconf()
 
-    test_apps = ["break_yo_system", "legacy_app", "legacy_app__2", "full_domain_app"]
+    test_apps = [
+        "break_yo_system",
+        "legacy_app",
+        "legacy_app__2",
+        "full_domain_app",
+        "my_webapp",
+    ]
 
     for test_app in test_apps:
 
@@ -56,7 +62,9 @@ def clean():
             shutil.rmtree(folderpath, ignore_errors=True)
 
         os.system("bash -c \"mysql -B 2>/dev/null <<< 'DROP DATABASE %s' \"" % test_app)
-        os.system("bash -c \"mysql -B 2>/dev/null <<< 'DROP USER %s@localhost'\"" % test_app)
+        os.system(
+            "bash -c \"mysql -B 2>/dev/null <<< 'DROP USER %s@localhost'\"" % test_app
+        )
 
     # Reset failed quota for service to avoid running into start-limit rate ?
     os.system("systemctl reset-failed nginx")
@@ -130,7 +138,7 @@ def app_is_exposed_on_http(domain, path, message_in_page):
 
     try:
         r = requests.get(
-            "http://127.0.0.1" + path + "/",
+            "https://127.0.0.1" + path + "/",
             headers={"Host": domain},
             timeout=10,
             verify=False,
@@ -185,6 +193,32 @@ def test_legacy_app_install_main_domain():
     app_remove("legacy_app")
 
     assert app_is_not_installed(main_domain, "legacy_app")
+
+
+def test_app_from_catalog():
+    main_domain = _get_maindomain()
+
+    app_install(
+        "my_webapp",
+        args=f"domain={main_domain}&path=/site&with_sftp=0&password=superpassword&is_public=1&with_mysql=0",
+    )
+    app_map_ = app_map(raw=True)
+    assert main_domain in app_map_
+    assert "/site" in app_map_[main_domain]
+    assert "id" in app_map_[main_domain]["/site"]
+    assert app_map_[main_domain]["/site"]["id"] == "my_webapp"
+
+    assert app_is_installed(main_domain, "my_webapp")
+    assert app_is_exposed_on_http(main_domain, "/site", "Custom Web App")
+
+    # Try upgrade, should do nothing
+    app_upgrade("my_webapp")
+    # Force upgrade, should upgrade to the same version
+    app_upgrade("my_webapp", force=True)
+
+    app_remove("my_webapp")
+
+    assert app_is_not_installed(main_domain, "my_webapp")
 
 
 def test_legacy_app_install_secondary_domain(secondary_domain):

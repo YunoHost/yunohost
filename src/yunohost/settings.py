@@ -9,6 +9,7 @@ from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.log import getActionLogger
 from yunohost.regenconf import regen_conf
+from yunohost.firewall import firewall_reload
 
 logger = getActionLogger("yunohost.settings")
 
@@ -17,6 +18,9 @@ SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.json"
 
 
 def is_boolean(value):
+    TRUE = ["true", "on", "yes", "y", "1"]
+    FALSE = ["false", "off", "no", "n", "0"]
+
     """
     Ensure a string value is intended as a boolean
 
@@ -29,9 +33,11 @@ def is_boolean(value):
     """
     if isinstance(value, bool):
         return True, value
+    if value in [0, 1]:
+        return True, bool(value)
     elif isinstance(value, str):
-        if str(value).lower() in ["true", "on", "yes", "false", "off", "no"]:
-            return True, str(value).lower() in ["true", "on", "yes"]
+        if str(value).lower() in TRUE + FALSE:
+            return True, str(value).lower() in TRUE
         else:
             return False, None
     else:
@@ -72,6 +78,17 @@ DEFAULTS = OrderedDict(
             },
         ),
         (
+            "security.ssh.port",
+            {"type": "int", "default": 22},
+        ),
+        (
+            "security.nginx.redirect_to_https",
+            {
+                "type": "bool",
+                "default": True,
+            },
+        ),
+        (
             "security.nginx.compatibility",
             {
                 "type": "enum",
@@ -95,8 +112,12 @@ DEFAULTS = OrderedDict(
         ("smtp.relay.password", {"type": "string", "default": ""}),
         ("backup.compress_tar_archives", {"type": "bool", "default": False}),
         ("ssowat.panel_overlay.enabled", {"type": "bool", "default": True}),
+        ("security.webadmin.allowlist.enabled", {"type": "bool", "default": False}),
+        ("security.webadmin.allowlist", {"type": "string", "default": ""}),
+        ("security.experimental.enabled", {"type": "bool", "default": False}),
     ]
 )
+
 
 def settings_get(key, full=False):
     """
@@ -109,7 +130,9 @@ def settings_get(key, full=False):
     settings = _get_settings()
 
     if key not in settings:
-        raise YunohostValidationError("global_settings_key_doesnt_exists", settings_key=key)
+        raise YunohostValidationError(
+            "global_settings_key_doesnt_exists", settings_key=key
+        )
 
     if full:
         return settings[key]
@@ -137,7 +160,9 @@ def settings_set(key, value):
     settings = _get_settings()
 
     if key not in settings:
-        raise YunohostValidationError("global_settings_key_doesnt_exists", settings_key=key)
+        raise YunohostValidationError(
+            "global_settings_key_doesnt_exists", settings_key=key
+        )
 
     key_type = settings[key]["type"]
 
@@ -214,7 +239,9 @@ def settings_reset(key):
     settings = _get_settings()
 
     if key not in settings:
-        raise YunohostValidationError("global_settings_key_doesnt_exists", settings_key=key)
+        raise YunohostValidationError(
+            "global_settings_key_doesnt_exists", settings_key=key
+        )
 
     settings[key]["value"] = settings[key]["default"]
     _save_settings(settings)
@@ -253,19 +280,18 @@ def settings_reset_all():
     }
 
 
+def _get_setting_description(key):
+    return m18n.n("global_settings_setting_%s" % key.replace(".", "_"))
+
+
 def _get_settings():
-    def get_setting_description(key):
-        if key.startswith("example"):
-            # (This is for dummy stuff used during unit tests)
-            return "Dummy %s setting" % key.split(".")[-1]
-        return m18n.n("global_settings_setting_%s" % key.replace(".", "_"))
 
     settings = {}
 
     for key, value in DEFAULTS.copy().items():
         settings[key] = value
         settings[key]["value"] = value["default"]
-        settings[key]["description"] = get_setting_description(key)
+        settings[key]["description"] = _get_setting_description(key)
 
     if not os.path.exists(SETTINGS_PATH):
         return settings
@@ -294,7 +320,7 @@ def _get_settings():
             for key, value in local_settings.items():
                 if key in settings:
                     settings[key] = value
-                    settings[key]["description"] = get_setting_description(key)
+                    settings[key]["description"] = _get_setting_description(key)
                 else:
                     logger.warning(
                         m18n.n(
@@ -376,17 +402,34 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 #
 # ===========================================
 
+
 @post_change_hook("ssowat.panel_overlay.enabled")
+@post_change_hook("security.nginx.redirect_to_https")
 @post_change_hook("security.nginx.compatibility")
+@post_change_hook("security.webadmin.allowlist.enabled")
+@post_change_hook("security.webadmin.allowlist")
 def reconfigure_nginx(setting_name, old_value, new_value):
     if old_value != new_value:
         regen_conf(names=["nginx"])
+
+
+@post_change_hook("security.experimental.enabled")
+def reconfigure_nginx_and_yunohost(setting_name, old_value, new_value):
+    if old_value != new_value:
+        regen_conf(names=["nginx", "yunohost"])
 
 
 @post_change_hook("security.ssh.compatibility")
 def reconfigure_ssh(setting_name, old_value, new_value):
     if old_value != new_value:
         regen_conf(names=["ssh"])
+
+
+@post_change_hook("security.ssh.port")
+def reconfigure_ssh_and_fail2ban(setting_name, old_value, new_value):
+    if old_value != new_value:
+        regen_conf(names=["ssh", "fail2ban"])
+        firewall_reload()
 
 
 @post_change_hook("smtp.allow_ipv6")

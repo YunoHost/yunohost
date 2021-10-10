@@ -25,13 +25,26 @@ ssl_dhparam /usr/share/yunohost/other/ffdhe2048.pem;
 # Follows the Web Security Directives from the Mozilla Dev Lab and the Mozilla Obervatory + Partners
 # https://wiki.mozilla.org/Security/Guidelines/Web_Security
 # https://observatory.mozilla.org/
+{% if experimental == "True" %}
+more_set_headers "Content-Security-Policy : upgrade-insecure-requests; default-src https: data:";
+{% else %}
 more_set_headers "Content-Security-Policy : upgrade-insecure-requests";
+{% endif %}
 more_set_headers "Content-Security-Policy-Report-Only : default-src https: data: 'unsafe-inline' 'unsafe-eval'  ";
 more_set_headers "X-Content-Type-Options : nosniff";
 more_set_headers "X-XSS-Protection : 1; mode=block";
 more_set_headers "X-Download-Options : noopen";
 more_set_headers "X-Permitted-Cross-Domain-Policies : none";
 more_set_headers "X-Frame-Options : SAMEORIGIN";
+
+# Disable the disaster privacy thing that is FLoC
+{% if experimental == "True" %}
+more_set_headers "Permissions-Policy : fullscreen=(), geolocation=(), payment=(), accelerometer=(), battery=(), magnetometer=(), usb=(), interest-cohort=()";
+# Force HTTPOnly and Secure for all cookies
+proxy_cookie_path ~$ "; HTTPOnly; Secure;";
+{% else %}
+more_set_headers "Permissions-Policy : interest-cohort=()";
+{% endif %}
 
 # Disable gzip to protect against BREACH
 # Read https://trac.nginx.org/nginx/ticket/1720 (text/html cannot be disabled!)

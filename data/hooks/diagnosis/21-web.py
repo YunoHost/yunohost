@@ -8,6 +8,7 @@ from moulinette.utils.filesystem import read_file
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list
+from yunohost.utils.dns import is_special_use_tld
 
 DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 
@@ -33,6 +34,12 @@ class WebDiagnoser(Diagnoser):
                     status="WARNING",
                     summary="diagnosis_http_nginx_conf_not_up_to_date",
                     details=["diagnosis_http_nginx_conf_not_up_to_date_details"],
+                )
+            elif is_special_use_tld(domain):
+                yield dict(
+                    meta={"domain": domain},
+                    status="INFO",
+                    summary="diagnosis_http_special_use_tld",
                 )
             else:
                 domains_to_check.append(domain)
@@ -114,6 +121,10 @@ class WebDiagnoser(Diagnoser):
             return
 
         for domain in domains:
+
+            # i18n: diagnosis_http_bad_status_code
+            # i18n: diagnosis_http_connection_error
+            # i18n: diagnosis_http_timeout
 
             # If both IPv4 and IPv6 (if applicable) are good
             if all(

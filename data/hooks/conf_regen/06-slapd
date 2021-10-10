@@ -2,7 +2,10 @@
 
 set -e
 
-tmp_backup_dir_file="/tmp/slapd-backup-dir.txt"
+tmp_backup_dir_file="/root/slapd-backup-dir.txt"
+
+config="/usr/share/yunohost/templates/slapd/config.ldif"
+db_init="/usr/share/yunohost/templates/slapd/db_init.ldif"
 
 do_init_regen() {
   if [[ $EUID -ne 0 ]]; then
@@ -12,16 +15,12 @@ do_init_regen() {
 
   do_pre_regen ""
 
-  systemctl daemon-reload
-
-  systemctl restart slapd
-
   # Drop current existing slapd data
 
   rm -rf /var/backups/*.ldapdb
   rm -rf /var/backups/slapd-*
 
-debconf-set-selections << EOF
+  debconf-set-selections << EOF
 slapd slapd/password1 password yunohost
 slapd slapd/password2 password yunohost
 slapd slapd/domain string yunohost.org
@@ -36,20 +35,38 @@ EOF
 
   DEBIAN_FRONTEND=noninteractive dpkg-reconfigure slapd -u
 
-  # Regen conf
-
-  _regenerate_slapd_conf
-
-   # Enforce permissions
-  chown root:openldap /etc/ldap/slapd.ldif
+  # Enforce permissions
   chown -R openldap:openldap /etc/ldap/schema/
   usermod -aG ssl-cert openldap
 
+  # (Re-)init data according to default ldap entries
+  echo '  Initializing LDAP with YunoHost DB structure'
+
+  rm -rf /etc/ldap/slapd.d
+  mkdir -p /etc/ldap/slapd.d
+  slapadd -F /etc/ldap/slapd.d -b cn=config -l "$config" 2>&1 \
+      | grep -v "none elapsed\|Closing DB" || true
+  chown -R openldap: /etc/ldap/slapd.d
+
+  rm -rf /var/lib/ldap
+  mkdir -p /var/lib/ldap
+  slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org -l "$db_init" 2>&1 \
+      | grep -v "none elapsed\|Closing DB" || true
+  chown -R openldap: /var/lib/ldap
+
+  nscd -i group || true
+  nscd -i passwd || true
+
   systemctl restart slapd
 
-  # (Re-)init data according to ldap_scheme.yaml
-
-  yunohost tools shell -c "from yunohost.tools import tools_ldapinit; tools_ldapinit()"
+  # We don't use mkhomedir_helper because 'admin' may not be recognized
+  # when this script is ran in a chroot (e.g. ISO install)
+  # We also refer to admin as uid 1007 for the same reason
+  if [ ! -d /home/admin ]
+  then
+      cp -r /etc/skel /home/admin
+      chown -R 1007:1007 /home/admin
+  fi
 }
 
 _regenerate_slapd_conf() {
@@ -59,7 +76,7 @@ _regenerate_slapd_conf() {
   # so we use a temporary directory slapd_new.d
   rm -Rf /etc/ldap/slapd_new.d
   mkdir /etc/ldap/slapd_new.d
-  slapadd -n0 -l /etc/ldap/slapd.ldif -F /etc/ldap/slapd_new.d/ 2>&1 \
+  slapadd -b cn=config -l "$config" -F /etc/ldap/slapd_new.d/ 2>&1 \
       | grep -v "none elapsed\|Closing DB" || true
   # Actual validation (-Q is for quiet, -u is for dry-run)
   slaptest -Q -u -F /etc/ldap/slapd_new.d
@@ -101,7 +118,7 @@ do_pre_regen() {
   cd /usr/share/yunohost/templates/slapd
 
   # copy configuration files
-  cp -a ldap.conf slapd.ldif "$ldap_dir"
+  cp -a ldap.conf "$ldap_dir"
   cp -a sudo.ldif mailserver.ldif permission.ldif "$schema_dir"
 
   mkdir -p ${pending_dir}/etc/systemd/system/slapd.service.d/
@@ -117,7 +134,6 @@ do_post_regen() {
   echo "Enforce permissions on ldap/slapd directories and certs ..."
   # penldap user should be in the ssl-cert group to let it access the certificate for TLS
   usermod -aG ssl-cert openldap
-  chown root:openldap /etc/ldap/slapd.ldif
   chown -R openldap:openldap /etc/ldap/schema/
   chown -R openldap:openldap /etc/ldap/slapd.d/
 
@@ -126,12 +142,28 @@ do_post_regen() {
   then
       systemctl daemon-reload
       systemctl restart slapd
+      sleep 3
+  fi
+
+  # For some reason, old setups don't have the admins group defined...
+  if ! slapcat | grep -q 'cn=admins,ou=groups,dc=yunohost,dc=org'
+  then
+      slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org <<< \
+"dn: cn=admins,ou=groups,dc=yunohost,dc=org
+cn: admins
+gidNumber: 4001
+memberUid: admin
+objectClass: posixGroup
+objectClass: top"
+      chown -R openldap: /var/lib/ldap
+      systemctl restart slapd
+      nscd -i group
   fi
 
   [ -z "$regen_conf_files" ] && exit 0
 
   # regenerate LDAP config directory from slapd.conf
-  echo "Regenerate LDAP config directory from slapd.ldif"
+  echo "Regenerate LDAP config directory from config.ldif"
   _regenerate_slapd_conf
 
   # If there's a backup, re-import its data
@@ -147,7 +179,7 @@ do_post_regen() {
   su openldap -s "/bin/bash" -c "/usr/sbin/slapindex"
 
   echo "Reloading slapd"
-  service slapd force-reload
+  systemctl force-reload slapd
 
   # on slow hardware/vm this regen conf would exit before the admin user that
   # is stored in ldap is available because ldap seems to slow to restart
@@ -167,26 +199,4 @@ do_post_regen() {
   done
 }
 
-FORCE=${2:-0}
-DRY_RUN=${3:-0}
-
-case "$1" in
-  pre)
-    do_pre_regen $4
-    ;;
-  post)
-    do_post_regen $4
-    ;;
-  init)
-    do_init_regen
-    ;;
-  apply_config)
-    do_post_regen /etc/ldap/slapd.ldif
-    ;;
-  *)
-    echo "hook called with unknown argument \`$1'" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+do_$1_regen ${@:2}

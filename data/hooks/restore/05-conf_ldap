@@ -1,61 +1,53 @@
+#!/bin/bash
+
 backup_dir="${1}/conf/ldap"
 
-if [[ $EUID -ne 0 ]]; then
+systemctl stop slapd
 
-    # We need to execute this script as root, since the ldap
-    # service will be shut down during the operation (and sudo
-    # won't be available)
-    /bin/bash $(readlink -f $0) $1
+# Create a directory for backup
+TMPDIR="/tmp/$(date +%s)"
+mkdir -p "$TMPDIR"
 
-else
+die() {
+    state=$1
+    error=$2
 
-    service slapd stop || true
+    # Restore saved configuration and database
+    [[ $state -ge 1 ]] \
+      && (rm -rf /etc/ldap/slapd.d &&
+          mv "${TMPDIR}/slapd.d" /etc/ldap/slapd.d)
+    [[ $state -ge 2 ]] \
+      && (rm -rf /var/lib/ldap &&
+          mv "${TMPDIR}/ldap" /var/lib/ldap)
+    chown -R openldap: /etc/ldap/slapd.d /var/lib/ldap
 
-    # Create a directory for backup
-    TMPDIR="/tmp/$(date +%s)"
-    mkdir -p "$TMPDIR"
-
-    die() {
-        state=$1
-        error=$2
-
-        # Restore saved configuration and database
-        [[ $state -ge 1 ]] \
-          && (rm -rf /etc/ldap/slapd.d &&
-              mv "${TMPDIR}/slapd.d" /etc/ldap/slapd.d)
-        [[ $state -ge 2 ]] \
-          && (rm -rf /var/lib/ldap &&
-              mv "${TMPDIR}/ldap" /var/lib/ldap)
-        chown -R openldap: /etc/ldap/slapd.d /var/lib/ldap
-
-        service slapd start
-        rm -rf "$TMPDIR"
-
-        # Print an error message and exit
-        printf "%s" "$error" 1>&2
-        exit 1
-    }
-
-    # Restore the configuration
-    mv /etc/ldap/slapd.d "$TMPDIR"
-    mkdir -p /etc/ldap/slapd.d
-    cp -a "${backup_dir}/ldap.conf" /etc/ldap/ldap.conf
-    cp -a "${backup_dir}/slapd.ldif" /etc/ldap/slapd.ldif
-    # Legacy thing but we need it to force the regen-conf in case of it exist
-    cp -a "${backup_dir}/slapd.conf" /etc/ldap/slapd.conf
-    slapadd -F /etc/ldap/slapd.d -b cn=config \
-        -l "${backup_dir}/cn=config.master.ldif" \
-      || die 1 "Unable to restore LDAP configuration"
-    chown -R openldap: /etc/ldap/slapd.d
-
-    # Restore the database
-    mv /var/lib/ldap "$TMPDIR"
-    mkdir -p /var/lib/ldap
-    slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org \
-        -l "${backup_dir}/dc=yunohost-dc=org.ldif" \
-      || die 2 "Unable to restore LDAP database"
-    chown -R openldap: /var/lib/ldap
-
-    service slapd start
+    systemctl start slapd
     rm -rf "$TMPDIR"
-fi
+
+    # Print an error message and exit
+    printf "%s" "$error" 1>&2
+    exit 1
+}
+
+# Restore the configuration
+mv /etc/ldap/slapd.d "$TMPDIR"
+mkdir -p /etc/ldap/slapd.d
+cp -a "${backup_dir}/ldap.conf" /etc/ldap/ldap.conf
+# Legacy thing but we need it to force the regen-conf in case of it exist
+[ ! -e "${backup_dir}/slapd.conf" ] \
+    || cp -a "${backup_dir}/slapd.conf" /etc/ldap/slapd.conf
+slapadd -F /etc/ldap/slapd.d -b cn=config \
+    -l "${backup_dir}/cn=config.master.ldif" \
+  || die 1 "Unable to restore LDAP configuration"
+chown -R openldap: /etc/ldap/slapd.d
+
+# Restore the database
+mv /var/lib/ldap "$TMPDIR"
+mkdir -p /var/lib/ldap
+slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org \
+    -l "${backup_dir}/dc=yunohost-dc=org.ldif" \
+  || die 2 "Unable to restore LDAP database"
+chown -R openldap: /var/lib/ldap
+
+systemctl start slapd
+rm -rf "$TMPDIR"

@@ -33,12 +33,13 @@ import subprocess
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import write_to_file, read_file
+from moulinette.utils.filesystem import write_to_file, read_file, rm, chown, chmod
 from moulinette.utils.network import download_json
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.domain import _get_maindomain, _build_dns_conf
-from yunohost.utils.network import get_public_ip, dig
+from yunohost.domain import _get_maindomain
+from yunohost.utils.network import get_public_ip
+from yunohost.utils.dns import dig
 from yunohost.log import is_unit_operation
 from yunohost.regenconf import regen_conf
 
@@ -124,7 +125,7 @@ def dyndns_subscribe(
     """
 
     if _guess_current_dyndns_domain(subscribe_host) != (None, None):
-        raise YunohostValidationError('domain_dyndns_already_subscribed')
+        raise YunohostValidationError("domain_dyndns_already_subscribed")
 
     if domain is None:
         domain = _get_maindomain()
@@ -151,12 +152,11 @@ def dyndns_subscribe(
 
             os.system(
                 "cd /etc/yunohost/dyndns && "
-                "dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER %s"
-                % domain
+                f"dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER {domain}"
             )
-            os.system(
-                "chmod 600 /etc/yunohost/dyndns/*.key /etc/yunohost/dyndns/*.private"
-            )
+
+            chmod("/etc/yunohost/dyndns", 0o600, recursive=True)
+            chown("/etc/yunohost/dyndns", "root", recursive=True)
 
         private_file = glob.glob("/etc/yunohost/dyndns/*%s*.private" % domain)[0]
         key_file = glob.glob("/etc/yunohost/dyndns/*%s*.key" % domain)[0]
@@ -174,12 +174,12 @@ def dyndns_subscribe(
             timeout=30,
         )
     except Exception as e:
-        os.system("rm -f %s" % private_file)
-        os.system("rm -f %s" % key_file)
+        rm(private_file, force=True)
+        rm(key_file, force=True)
         raise YunohostError("dyndns_registration_failed", error=str(e))
     if r.status_code != 201:
-        os.system("rm -f %s" % private_file)
-        os.system("rm -f %s" % key_file)
+        rm(private_file, force=True)
+        rm(key_file, force=True)
         try:
             error = json.loads(r.text)["error"]
         except Exception:
@@ -192,12 +192,14 @@ def dyndns_subscribe(
 
     # Add some dyndns update in 2 and 4 minutes from now such that user should
     # not have to wait 10ish minutes for the conf to propagate
-    cmd = "at -M now + {t} >/dev/null 2>&1 <<< \"/bin/bash -c 'yunohost dyndns update'\""
+    cmd = (
+        "at -M now + {t} >/dev/null 2>&1 <<< \"/bin/bash -c 'yunohost dyndns update'\""
+    )
     # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
     subprocess.check_call(["bash", "-c", cmd.format(t="2 min")])
     subprocess.check_call(["bash", "-c", cmd.format(t="4 min")])
 
-    logger.success(m18n.n('dyndns_registered'))
+    logger.success(m18n.n("dyndns_registered"))
 
 
 @is_unit_operation()
@@ -222,16 +224,15 @@ def dyndns_update(
         ipv6 -- IPv6 address to send
 
     """
-    # Get old ipv4/v6
 
-    old_ipv4, old_ipv6 = (None, None)  # (default values)
+    from yunohost.dns import _build_dns_conf
 
     # If domain is not given, try to guess it from keys available...
     if domain is None:
         (domain, key) = _guess_current_dyndns_domain(dyn_host)
 
     if domain is None:
-        raise YunohostValidationError('dyndns_no_domain_registered')
+        raise YunohostValidationError("dyndns_no_domain_registered")
 
     # If key is not given, pick the first file we find with the domain given
     else:
@@ -260,7 +261,7 @@ def dyndns_update(
         ok, result = dig(dyn_host, "A")
         dyn_host_ip = result[0] if ok == "ok" and len(result) else None
         if not dyn_host_ip:
-            raise YunohostError("Failed to resolve %s" % dyn_host)
+            raise YunohostError("Failed to resolve %s" % dyn_host, raw_msg=True)
 
         ok, result = dig(domain, rdtype, resolvers=[dyn_host_ip])
         if ok == "ok":
@@ -304,6 +305,12 @@ def dyndns_update(
 
     logger.debug("Old IPv4/v6 are (%s, %s)" % (old_ipv4, old_ipv6))
     logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
+
+    if ipv4 is None and ipv6 is None:
+        logger.debug(
+            "No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ip.yunohost.org infrastructure is down somehow"
+        )
+        return
 
     # no need to update
     if (not force and not dry_run) and (old_ipv4 == ipv4 and old_ipv6 == ipv6):
@@ -374,11 +381,15 @@ def dyndns_update(
 
 
 def dyndns_installcron():
-    logger.warning("This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'.")
+    logger.warning(
+        "This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'."
+    )
 
 
 def dyndns_removecron():
-    logger.warning("This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'.")
+    logger.warning(
+        "This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'."
+    )
 
 
 def _guess_current_dyndns_domain(dyn_host):

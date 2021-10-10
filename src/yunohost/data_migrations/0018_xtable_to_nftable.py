@@ -122,5 +122,5 @@ class MyMigration(Migration):
                 )
             )
 
-        out = out.strip().split("\n")
+        out = out.strip().split(b"\n")
         return (returncode, out, err)

@@ -52,11 +52,14 @@ do_post_regen() {
     mkdir -p "/var/lib/metronome/${domain//./%2e}/pep"
     # http_upload directory must be writable by metronome and readable by nginx
     mkdir -p  "/var/xmpp-upload/${domain}/upload"
+    # sgid bit allows that file created in that dir will be owned by www-data
+    # despite the fact that metronome ain't in the www-data group
     chmod g+s "/var/xmpp-upload/${domain}/upload"
-    chown -R metronome:www-data "/var/xmpp-upload/${domain}"
   done
 
   # fix some permissions
+  [ ! -e '/var/xmpp-upload' ] || chown -R metronome:www-data "/var/xmpp-upload/"
+  [ ! -e '/var/xmpp-upload' ] || chmod 750 "/var/xmpp-upload/"
 
   # metronome should be in ssl-cert group to let it access SSL certificates
   usermod -aG ssl-cert metronome
@@ -64,23 +67,7 @@ do_post_regen() {
   chown -R metronome: /etc/metronome/conf.d/
 
   [[ -z "$regen_conf_files" ]] \
-    || service metronome restart
+    || systemctl restart metronome
 }
 
-FORCE=${2:-0}
-DRY_RUN=${3:-0}
-
-case "$1" in
-  pre)
-    do_pre_regen $4
-    ;;
-  post)
-    do_post_regen $4
-    ;;
-  *)
-    echo "hook called with unknown argument \`$1'" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+do_$1_regen ${@:2}
