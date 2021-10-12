@@ -724,6 +724,28 @@ properly with chmod/chown."
     echo $TMP_DIR
 }
 
+_acceptable_path_to_delete() {
+    local file=$1
+
+    local forbidden_paths=$(ls -d / /* /{var,home,usr}/* /etc/{default,sudoers.d,yunohost,cron*})
+
+    # Legacy : A couple apps still have data in /home/$app ...
+    if [[ -n "$app" ]]
+    then
+        forbidden_paths=$(echo "$forbidden_paths" | grep -v "/home/$app")
+    fi
+
+    # Use realpath to normalize the path ..
+    # i.e convert ///foo//bar//..///baz//// to /foo/baz
+    file=$(realpath --no-symlinks "$file")
+    if [ -z "$file" ] || grep -q -x -F "$file" <<< "$forbidden_paths"; then
+        return 1
+    else
+        return 0
+    fi
+}
+
+
 # Remove a file or a directory securely
 #
 # usage: ynh_secure_remove --file=path_to_remove
@@ -739,31 +761,18 @@ ynh_secure_remove () {
     ynh_handle_getopts_args "$@"
     set +o xtrace # set +x
 
-    local forbidden_path=" \
-    /var/www \
-    /home/yunohost.app"
-
-    if [ $# -ge 2 ]
-    then
+    if [ $# -ge 2 ]; then
         ynh_print_warn --message="/!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time."
     fi
 
-    if [[ -z "$file" ]]
-    then
+    if [[ -z "$file" ]]; then
         ynh_print_warn --message="ynh_secure_remove called with empty argument, ignoring."
-    elif [[ "$forbidden_path" =~ "$file" \
-        # Match all paths or subpaths in $forbidden_path
-        || "$file" =~ ^/[[:alnum:]]+$ \
-        # Match all first level paths from / (Like /var, /root, etc...)
-        || "${file:${#file}-1}" = "/" ]]
-        # Match if the path finishes by /. Because it seems there is an empty variable
-    then
-        ynh_print_warn --message="Not deleting '$file' because it is not an acceptable path to delete."
-    elif [ -e "$file" ]
-    then
-        rm --recursive "$file"
-    else
+    elif [[ ! -e $file ]]; then
         ynh_print_info --message="'$file' wasn't deleted because it doesn't exist."
+    elif ! _acceptable_path_to_delete "$file"; then
+        ynh_print_warn --message="Not deleting '$file' because it is not an acceptable path to delete."
+    else
+        rm --recursive "$file"
     fi
 
     set -o xtrace # set -x
