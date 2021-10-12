@@ -107,7 +107,7 @@ ynh_add_fpm_config() {
         ynh_install_php --phpversion="$phpversion" "$additionnal_packages"
     elif [ -n "$package" ]; then
         # Install the additionnal packages from the default repository
-        ynh_add_app_dependencies --package="$package"
+        ynh_install_app_dependencies "$package"
     fi
 
     if [ $dedicated_service -eq 1 ]; then
@@ -313,35 +313,12 @@ ynh_install_php() {
     ynh_handle_getopts_args "$@"
     package=${package:-}
 
-    # Store phpversion into the config of this app
-    ynh_app_setting_set $app phpversion $phpversion
-
     if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ]; then
         ynh_die --message="Do not use ynh_install_php to install php$YNH_DEFAULT_PHP_VERSION"
     fi
 
-    # Create the file if doesn't exist already
-    touch /etc/php/ynh_app_version
-
-    # Do not add twice the same line
-    if ! grep --quiet "$YNH_APP_INSTANCE_NAME:" "/etc/php/ynh_app_version"; then
-        # Store the ID of this app and the version of PHP requested for it
-        echo "$YNH_APP_INSTANCE_NAME:$phpversion" | tee --append "/etc/php/ynh_app_version"
-    fi
-
-    # Add an extra repository for those packages
-    ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version --priority=600
-
-    # Install requested dependencies from this extra repository.
-    # Install PHP-FPM first, otherwise PHP will install apache as a dependency.
-    ynh_add_app_dependencies --package="php${phpversion}-fpm"
-    ynh_add_app_dependencies --package="php$phpversion php${phpversion}-common $package"
-
-    # Set the default PHP version back as the default version for php-cli.
-    update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
-
-    # Advertise service in admin panel
-    yunohost service add php${phpversion}-fpm --log "/var/log/php${phpversion}-fpm.log"
+    ynh_install_app_dependencies "$package"
+    ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
 }
 
 # Remove the specific version of PHP used by the app.
@@ -351,33 +328,8 @@ ynh_install_php() {
 # usage: ynh_install_php
 #
 # Requires YunoHost version 3.8.1 or higher.
-ynh_remove_php() {
-    # Get the version of PHP used by this app
-    local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
-
-    if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ] || [ -z "$phpversion" ]; then
-        if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ]; then
-            ynh_print_err "Do not use ynh_remove_php to remove php$YNH_DEFAULT_PHP_VERSION !"
-        fi
-        return 0
-    fi
-
-    # Create the file if doesn't exist already
-    touch /etc/php/ynh_app_version
-
-    # Remove the line for this app
-    sed --in-place "/$YNH_APP_INSTANCE_NAME:$phpversion/d" "/etc/php/ynh_app_version"
-
-    # If no other app uses this version of PHP, remove it.
-    if ! grep --quiet "$phpversion" "/etc/php/ynh_app_version"; then
-        # Remove the service from the admin panel
-        if ynh_package_is_installed --package="php${phpversion}-fpm"; then
-            yunohost service remove php${phpversion}-fpm
-        fi
-
-        # Purge PHP dependencies for this version.
-        ynh_package_autopurge "php$phpversion php${phpversion}-fpm php${phpversion}-common"
-    fi
+ynh_remove_php () {
+    ynh_remove_app_dependencies
 }
 
 # Define the values to configure PHP-FPM
