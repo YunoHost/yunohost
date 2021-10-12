@@ -478,28 +478,28 @@ ynh_get_scalable_phpfpm () {
 
     if [ $print -eq 1 ]
     then
-        ynh_debug --message="Footprint=${footprint}Mb by pool."
-        ynh_debug --message="Process manager=$php_pm"
-        ynh_debug --message="Max RAM=${max_ram}Mb"
+        ynh_print_warn --message="Footprint=${footprint}Mb by pool."
+        ynh_print_warn --message="Process manager=$php_pm"
+        ynh_print_warn --message="Max RAM=${max_ram}Mb"
         if [ "$php_pm" != "static" ]
         then
-            ynh_debug --message="\nMax estimated footprint=$(( $php_max_children * $footprint ))"
-            ynh_debug --message="Min estimated footprint=$(( $php_min_spare_servers * $footprint ))"
+            ynh_print_warn --message="\nMax estimated footprint=$(( $php_max_children * $footprint ))"
+            ynh_print_warn --message="Min estimated footprint=$(( $php_min_spare_servers * $footprint ))"
         fi
         if [ "$php_pm" = "dynamic" ]
         then
-            ynh_debug --message="Estimated average footprint=$(( $php_max_spare_servers * $footprint ))"
+            ynh_print_warn --message="Estimated average footprint=$(( $php_max_spare_servers * $footprint ))"
         elif [ "$php_pm" = "static" ]
         then
-            ynh_debug --message="Estimated footprint=$(( $php_max_children * $footprint ))"
+            ynh_print_warn --message="Estimated footprint=$(( $php_max_children * $footprint ))"
         fi
-        ynh_debug --message="\nRaw php-fpm values:"
-        ynh_debug --message="pm.max_children = $php_max_children"
+        ynh_print_warn --message="\nRaw php-fpm values:"
+        ynh_print_warn --message="pm.max_children = $php_max_children"
         if [ "$php_pm" = "dynamic" ]
         then
-            ynh_debug --message="pm.start_servers = $php_start_servers"
-            ynh_debug --message="pm.min_spare_servers = $php_min_spare_servers"
-            ynh_debug --message="pm.max_spare_servers = $php_max_spare_servers"
+            ynh_print_warn --message="pm.start_servers = $php_start_servers"
+            ynh_print_warn --message="pm.min_spare_servers = $php_min_spare_servers"
+            ynh_print_warn --message="pm.max_spare_servers = $php_max_spare_servers"
         fi
     fi
 }
