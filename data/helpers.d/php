@@ -56,10 +56,10 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 #   children ready to answer.
 #
 # Requires YunoHost version 4.1.0 or higher.
-ynh_add_fpm_config () {
+ynh_add_fpm_config() {
     # Declare an array to define the options of this helper.
     local legacy_args=vtufpd
-    local -A args_array=( [v]=phpversion= [t]=use_template [u]=usage= [f]=footprint= [p]=package= [d]=dedicated_service )
+    local -A args_array=([v]=phpversion= [t]=use_template [u]=usage= [f]=footprint= [p]=package= [d]=dedicated_service)
     local phpversion
     local use_template
     local usage
@@ -86,8 +86,7 @@ ynh_add_fpm_config () {
     local old_phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
 
     # If the PHP version changed, remove the old fpm conf
-    if [ -n "$old_phpversion" ] && [ "$old_phpversion" != "$phpversion" ]
-    then
+    if [ -n "$old_phpversion" ] && [ "$old_phpversion" != "$phpversion" ]; then
         local old_php_fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
         local old_php_finalphpconf="$old_php_fpm_config_dir/pool.d/$app.conf"
 
@@ -97,25 +96,21 @@ ynh_add_fpm_config () {
     fi
 
     # If the requested PHP version is not the default version for YunoHost
-    if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]
-    then
+    if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]; then
         # If the argument --package is used, add the packages to ynh_install_php to install them from sury
-        if [ -n "$package" ]
-        then
+        if [ -n "$package" ]; then
             local additionnal_packages="--package=$package"
         else
             local additionnal_packages=""
         fi
         # Install this specific version of PHP.
         ynh_install_php --phpversion="$phpversion" "$additionnal_packages"
-    elif [ -n "$package" ]
-    then
+    elif [ -n "$package" ]; then
         # Install the additionnal packages from the default repository
         ynh_install_app_dependencies "$package"
     fi
 
-    if [ $dedicated_service -eq 1 ]
-    then
+    if [ $dedicated_service -eq 1 ]; then
         local fpm_service="${app}-phpfpm"
         local fpm_config_dir="/etc/php/$phpversion/dedicated-fpm"
     else
@@ -132,12 +127,10 @@ ynh_add_fpm_config () {
     ynh_app_setting_set --app=$app --key=phpversion --value=$phpversion
 
     # Migrate from mutual PHP service to dedicated one.
-    if [ $dedicated_service -eq 1 ]
-    then
+    if [ $dedicated_service -eq 1 ]; then
         local old_fpm_config_dir="/etc/php/$phpversion/fpm"
         # If a config file exist in the common pool, move it.
-        if [ -e "$old_fpm_config_dir/pool.d/$app.conf" ]
-        then
+        if [ -e "$old_fpm_config_dir/pool.d/$app.conf" ]; then
             ynh_print_info --message="Migrate to a dedicated php-fpm service for $app."
             # Create a backup of the old file before migration
             ynh_backup_if_checksum_is_different --file="$old_fpm_config_dir/pool.d/$app.conf"
@@ -148,8 +141,7 @@ ynh_add_fpm_config () {
         fi
     fi
 
-    if [ $use_template -eq 1 ]
-    then
+    if [ $use_template -eq 1 ]; then
         # Usage 1, use the template in conf/php-fpm.conf
         local phpfpm_path="$YNH_APP_BASEDIR/conf/php-fpm.conf"
         # Make sure now that the template indeed exists
@@ -181,49 +173,45 @@ pm = __PHP_PM__
 pm.max_children = __PHP_MAX_CHILDREN__
 pm.max_requests = 500
 request_terminate_timeout = 1d
-" > $phpfpm_path
+" >$phpfpm_path
 
-        if [ "$php_pm" = "dynamic" ]
-        then
+        if [ "$php_pm" = "dynamic" ]; then
             echo "
 pm.start_servers = __PHP_START_SERVERS__
 pm.min_spare_servers = __PHP_MIN_SPARE_SERVERS__
 pm.max_spare_servers = __PHP_MAX_SPARE_SERVERS__
-" >> $phpfpm_path
+" >>$phpfpm_path
 
-        elif [ "$php_pm" = "ondemand" ]
-        then
+        elif [ "$php_pm" = "ondemand" ]; then
             echo "
 pm.process_idle_timeout = 10s
-" >> $phpfpm_path
+" >>$phpfpm_path
         fi
 
         # Concatene the extra config.
         if [ -e $YNH_APP_BASEDIR/conf/extra_php-fpm.conf ]; then
-            cat $YNH_APP_BASEDIR/conf/extra_php-fpm.conf >> "$phpfpm_path"
+            cat $YNH_APP_BASEDIR/conf/extra_php-fpm.conf >>"$phpfpm_path"
         fi
     fi
 
     local finalphpconf="$fpm_config_dir/pool.d/$app.conf"
     ynh_add_config --template="$phpfpm_path" --destination="$finalphpconf"
 
-    if [ -e "$YNH_APP_BASEDIR/conf/php-fpm.ini" ]
-    then
+    if [ -e "$YNH_APP_BASEDIR/conf/php-fpm.ini" ]; then
         ynh_print_warn --message="Packagers ! Please do not use a separate php ini file, merge your directives in the pool file instead."
         ynh_add_config --template="$YNH_APP_BASEDIR/conf/php-fpm.ini" --destination="$fpm_config_dir/conf.d/20-$app.ini"
     fi
 
-    if [ $dedicated_service -eq 1 ]
-    then
+    if [ $dedicated_service -eq 1 ]; then
         # Create a dedicated php-fpm.conf for the service
         local globalphpconf=$fpm_config_dir/php-fpm-$app.conf
 
-echo "[global]
+        echo "[global]
 pid = /run/php/php__PHPVERSION__-fpm-__APP__.pid
 error_log = /var/log/php/fpm-php.__APP__.log
 syslog.ident = php-fpm-__APP__
 include = __FINALPHPCONF__
-" > $YNH_APP_BASEDIR/conf/php-fpm-$app.conf
+" >$YNH_APP_BASEDIR/conf/php-fpm-$app.conf
 
         ynh_add_config --template="$YNH_APP_BASEDIR/conf/php-fpm-$app.conf" --destination="$globalphpconf"
 
@@ -240,7 +228,7 @@ ExecReload=/bin/kill -USR2 \$MAINPID
 
 [Install]
 WantedBy=multi-user.target
-" > $YNH_APP_BASEDIR/conf/$fpm_service
+" >$YNH_APP_BASEDIR/conf/$fpm_service
 
         # Create this dedicated PHP-FPM service
         ynh_add_systemd_config --service=$fpm_service --template=$fpm_service
@@ -252,8 +240,7 @@ WantedBy=multi-user.target
         ynh_systemd_action --service_name=$fpm_service --action=restart
     else
         # Validate that the new php conf doesn't break php-fpm entirely
-        if ! php-fpm${phpversion} --test 2>/dev/null
-        then
+        if ! php-fpm${phpversion} --test 2>/dev/null; then
             php-fpm${phpversion} --test || true
             ynh_secure_remove --file="$finalphpconf"
             ynh_die --message="The new configuration broke php-fpm?"
@@ -267,7 +254,7 @@ WantedBy=multi-user.target
 # usage: ynh_remove_fpm_config
 #
 # Requires YunoHost version 2.7.2 or higher.
-ynh_remove_fpm_config () {
+ynh_remove_fpm_config() {
     local fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
     local fpm_service=$(ynh_app_setting_get --app=$app --key=fpm_service)
     local dedicated_service=$(ynh_app_setting_get --app=$app --key=fpm_dedicated_service)
@@ -279,20 +266,17 @@ ynh_remove_fpm_config () {
     phpversion="${phpversion:-$YNH_DEFAULT_PHP_VERSION}"
 
     # Assume default PHP files if not set
-    if [ -z "$fpm_config_dir" ]
-    then
+    if [ -z "$fpm_config_dir" ]; then
         fpm_config_dir="/etc/php/$YNH_DEFAULT_PHP_VERSION/fpm"
         fpm_service="php$YNH_DEFAULT_PHP_VERSION-fpm"
     fi
 
     ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
-    if [ -e $fpm_config_dir/conf.d/20-$app.ini ]
-    then
+    if [ -e $fpm_config_dir/conf.d/20-$app.ini ]; then
         ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini"
     fi
 
-    if [ $dedicated_service -eq 1 ]
-    then
+    if [ $dedicated_service -eq 1 ]; then
         # Remove the dedicated service PHP-FPM service for the app
         ynh_remove_systemd_config --service=$fpm_service
         # Remove the global PHP-FPM conf
@@ -304,8 +288,7 @@ ynh_remove_fpm_config () {
     fi
 
     # If the PHP version used is not the default version for YunoHost
-    if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]
-    then
+    if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]; then
         # Remove this specific version of PHP
         ynh_remove_php
     fi
@@ -320,18 +303,17 @@ ynh_remove_fpm_config () {
 # | arg: -p, --package=     - Additionnal PHP packages to install
 #
 # Requires YunoHost version 3.8.1 or higher.
-ynh_install_php () {
+ynh_install_php() {
     # Declare an array to define the options of this helper.
     local legacy_args=vp
-    local -A args_array=( [v]=phpversion= [p]=package= )
+    local -A args_array=([v]=phpversion= [p]=package=)
     local phpversion
     local package
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     package=${package:-}
 
-    if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ]
-    then
+    if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ]; then
         ynh_die --message="Do not use ynh_install_php to install php$YNH_DEFAULT_PHP_VERSION"
     fi
 
@@ -369,10 +351,10 @@ ynh_remove_php () {
 # high   - High usage, frequently visited website.
 #
 # | arg: -p, --print            - Print the result (intended for debug purpose only when packaging the app)
-ynh_get_scalable_phpfpm () {
+ynh_get_scalable_phpfpm() {
     local legacy_args=ufp
     # Declare an array to define the options of this helper.
-    local -A args_array=( [u]=usage= [f]=footprint= [p]=print )
+    local -A args_array=([u]=usage= [f]=footprint= [p]=print)
     local usage
     local footprint
     local print
@@ -383,38 +365,30 @@ ynh_get_scalable_phpfpm () {
     usage=${usage,,}
     print=${print:-0}
 
-    if [ "$footprint" = "low" ]
-    then
+    if [ "$footprint" = "low" ]; then
         footprint=20
-    elif [ "$footprint" = "medium" ]
-    then
+    elif [ "$footprint" = "medium" ]; then
         footprint=35
-    elif [ "$footprint" = "high" ]
-    then
+    elif [ "$footprint" = "high" ]; then
         footprint=50
     fi
 
     # Define the factor to determine min_spare_servers
     # to avoid having too few children ready to start for heavy apps
-    if [ $footprint -le 20 ]
-    then
+    if [ $footprint -le 20 ]; then
         min_spare_servers_factor=8
-    elif [ $footprint -le 35 ]
-    then
+    elif [ $footprint -le 35 ]; then
         min_spare_servers_factor=5
     else
         min_spare_servers_factor=3
     fi
 
     # Define the way the process manager handle child processes.
-    if [ "$usage" = "low" ]
-    then
+    if [ "$usage" = "low" ]; then
         php_pm=ondemand
-    elif [ "$usage" = "medium" ]
-    then
+    elif [ "$usage" = "medium" ]; then
         php_pm=dynamic
-    elif [ "$usage" = "high" ]
-    then
+    elif [ "$usage" = "high" ]; then
         php_pm=static
     else
         ynh_die --message="Does not recognize '$usage' as an usage value."
@@ -425,8 +399,7 @@ ynh_get_scalable_phpfpm () {
 
     at_least_one() {
         # Do not allow value below 1
-        if [ $1 -le 0 ]
-        then
+        if [ $1 -le 0 ]; then
             echo 1
         else
             echo $1
@@ -436,20 +409,18 @@ ynh_get_scalable_phpfpm () {
     # Define pm.max_children
     # The value of pm.max_children is the total amount of ram divide by 2 and divide again by the footprint of a pool for this app.
     # So if PHP-FPM start the maximum of children, it won't exceed half of the ram.
-    php_max_children=$(( $max_ram / 2 / $footprint ))
+    php_max_children=$(($max_ram / 2 / $footprint))
     # If process manager is set as static, use half less children.
     # Used as static, there's always as many children as the value of pm.max_children
-    if [ "$php_pm" = "static" ]
-    then
-        php_max_children=$(( $php_max_children / 2 ))
+    if [ "$php_pm" = "static" ]; then
+        php_max_children=$(($php_max_children / 2))
     fi
     php_max_children=$(at_least_one $php_max_children)
 
     # To not overload the proc, limit the number of children to 4 times the number of cores.
     local core_number=$(nproc)
-    local max_proc=$(( $core_number * 4 ))
-    if [ $php_max_children -gt $max_proc ]
-    then
+    local max_proc=$(($core_number * 4))
+    if [ $php_max_children -gt $max_proc ]; then
         php_max_children=$max_proc
     fi
 
@@ -459,16 +430,15 @@ ynh_get_scalable_phpfpm () {
         php_max_children=$php_forced_max_children
     fi
 
-    if [ "$php_pm" = "dynamic" ]
-    then
+    if [ "$php_pm" = "dynamic" ]; then
         # Define pm.start_servers, pm.min_spare_servers and pm.max_spare_servers for a dynamic process manager
-        php_min_spare_servers=$(( $php_max_children / $min_spare_servers_factor ))
+        php_min_spare_servers=$(($php_max_children / $min_spare_servers_factor))
         php_min_spare_servers=$(at_least_one $php_min_spare_servers)
 
-        php_max_spare_servers=$(( $php_max_children / 2 ))
+        php_max_spare_servers=$(($php_max_children / 2))
         php_max_spare_servers=$(at_least_one $php_max_spare_servers)
 
-        php_start_servers=$(( $php_min_spare_servers + ( $php_max_spare_servers - $php_min_spare_servers ) /2 ))
+        php_start_servers=$(($php_min_spare_servers + ($php_max_spare_servers - $php_min_spare_servers) / 2))
         php_start_servers=$(at_least_one $php_start_servers)
     else
         php_min_spare_servers=0
@@ -476,27 +446,22 @@ ynh_get_scalable_phpfpm () {
         php_start_servers=0
     fi
 
-    if [ $print -eq 1 ]
-    then
+    if [ $print -eq 1 ]; then
         ynh_print_warn --message="Footprint=${footprint}Mb by pool."
         ynh_print_warn --message="Process manager=$php_pm"
         ynh_print_warn --message="Max RAM=${max_ram}Mb"
-        if [ "$php_pm" != "static" ]
-        then
-            ynh_print_warn --message="\nMax estimated footprint=$(( $php_max_children * $footprint ))"
-            ynh_print_warn --message="Min estimated footprint=$(( $php_min_spare_servers * $footprint ))"
+        if [ "$php_pm" != "static" ]; then
+            ynh_print_warn --message="\nMax estimated footprint=$(($php_max_children * $footprint))"
+            ynh_print_warn --message="Min estimated footprint=$(($php_min_spare_servers * $footprint))"
         fi
-        if [ "$php_pm" = "dynamic" ]
-        then
-            ynh_print_warn --message="Estimated average footprint=$(( $php_max_spare_servers * $footprint ))"
-        elif [ "$php_pm" = "static" ]
-        then
-            ynh_print_warn --message="Estimated footprint=$(( $php_max_children * $footprint ))"
+        if [ "$php_pm" = "dynamic" ]; then
+            ynh_print_warn --message="Estimated average footprint=$(($php_max_spare_servers * $footprint))"
+        elif [ "$php_pm" = "static" ]; then
+            ynh_print_warn --message="Estimated footprint=$(($php_max_children * $footprint))"
         fi
         ynh_print_warn --message="\nRaw php-fpm values:"
         ynh_print_warn --message="pm.max_children = $php_max_children"
-        if [ "$php_pm" = "dynamic" ]
-        then
+        if [ "$php_pm" = "dynamic" ]; then
             ynh_print_warn --message="pm.start_servers = $php_start_servers"
             ynh_print_warn --message="pm.min_spare_servers = $php_min_spare_servers"
             ynh_print_warn --message="pm.max_spare_servers = $php_max_spare_servers"
@@ -517,10 +482,10 @@ YNH_COMPOSER_VERSION=${YNH_COMPOSER_VERSION:-$YNH_DEFAULT_COMPOSER_VERSION}
 # | arg: -c, --commands - Commands to execute.
 #
 # Requires YunoHost version 4.2 or higher.
-ynh_composer_exec () {
+ynh_composer_exec() {
     # Declare an array to define the options of this helper.
     local legacy_args=vwc
-    declare -Ar args_array=( [v]=phpversion= [w]=workdir= [c]=commands= )
+    declare -Ar args_array=([v]=phpversion= [w]=workdir= [c]=commands=)
     local phpversion
     local workdir
     local commands
@@ -543,10 +508,10 @@ ynh_composer_exec () {
 # | arg: -c, --composerversion - Composer version to install
 #
 # Requires YunoHost version 4.2 or higher.
-ynh_install_composer () {
+ynh_install_composer() {
     # Declare an array to define the options of this helper.
     local legacy_args=vwac
-    declare -Ar args_array=( [v]=phpversion= [w]=workdir= [a]=install_args= [c]=composerversion=)
+    declare -Ar args_array=([v]=phpversion= [w]=workdir= [a]=install_args= [c]=composerversion=)
     local phpversion
     local workdir
     local install_args
@@ -560,7 +525,7 @@ ynh_install_composer () {
 
     curl -sS https://getcomposer.org/installer \
         | COMPOSER_HOME="$workdir/.composer" \
-        php${phpversion} -- --quiet --install-dir="$workdir" --version=$composerversion \
+            php${phpversion} -- --quiet --install-dir="$workdir" --version=$composerversion \
         || ynh_die --message="Unable to install Composer."
 
     # install dependencies

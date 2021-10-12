@@ -16,19 +16,17 @@
 # location
 #
 # Requires YunoHost version 4.1.0 or higher.
-ynh_add_nginx_config () {
+ynh_add_nginx_config() {
 
     local finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
 
-    if [ "${path_url:-}" != "/" ]
-    then
+    if [ "${path_url:-}" != "/" ]; then
         ynh_replace_string --match_string="^#sub_path_only" --replace_string="" --target_file="$YNH_APP_BASEDIR/conf/nginx.conf"
     else
         ynh_replace_string --match_string="^#root_path_only" --replace_string="" --target_file="$YNH_APP_BASEDIR/conf/nginx.conf"
     fi
 
     ynh_add_config --template="$YNH_APP_BASEDIR/conf/nginx.conf" --destination="$finalnginxconf"
-
 
     ynh_systemd_action --service_name=nginx --action=reload
 }
@@ -38,7 +36,7 @@ ynh_add_nginx_config () {
 # usage: ynh_remove_nginx_config
 #
 # Requires YunoHost version 2.7.2 or higher.
-ynh_remove_nginx_config () {
+ynh_remove_nginx_config() {
     ynh_secure_remove --file="/etc/nginx/conf.d/$domain.d/$app.conf"
     ynh_systemd_action --service_name=nginx --action=reload
 }
