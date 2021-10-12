@@ -83,72 +83,107 @@ ynh_print_err () {
 
 # Execute a command and print the result as an error
 #
-# usage: ynh_exec_err "your_command [ | other_command ]"
+# usage: ynh_exec_err your command and args
 # | arg: command - command to execute
 #
-# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
-#
-# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
+# Note that you should NOT quote the command but only prefix it with ynh_exec_err
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_exec_err () {
-    ynh_print_err "$(eval $@)"
+    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
+    # (because in the past eval was used) ...
+    # we detect this by checking that there's no 2nd arg, and $1 contains a space
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
+    then
+        ynh_print_err "$(eval $@)"
+    else
+        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+        ynh_print_err "$("$@")"
+    fi
 }
 
 # Execute a command and print the result as a warning
 #
-# usage: ynh_exec_warn "your_command [ | other_command ]"
+# usage: ynh_exec_warn your command and args
 # | arg: command - command to execute
 #
-# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
-#
-# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
+# Note that you should NOT quote the command but only prefix it with ynh_exec_warn
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_exec_warn () {
-    ynh_print_warn "$(eval $@)"
+    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
+    # (because in the past eval was used) ...
+    # we detect this by checking that there's no 2nd arg, and $1 contains a space
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
+    then
+        ynh_print_warn "$(eval $@)"
+    else
+        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+        ynh_print_warn "$("$@")"
+    fi
 }
 
 # Execute a command and force the result to be printed on stdout
 #
-# usage: ynh_exec_warn_less "your_command [ | other_command ]"
+# usage: ynh_exec_warn_less your command and args
 # | arg: command - command to execute
 #
-# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
-#
-# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
+# Note that you should NOT quote the command but only prefix it with ynh_exec_warn
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_exec_warn_less () {
-    eval $@ 2>&1
+    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
+    # (because in the past eval was used) ...
+    # we detect this by checking that there's no 2nd arg, and $1 contains a space
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
+    then
+        eval $@ 2>&1
+    else
+        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+        "$@" 2>&1
+    fi
 }
 
 # Execute a command and redirect stdout in /dev/null
 #
-# usage: ynh_exec_quiet "your_command [ | other_command ]"
+# usage: ynh_exec_quiet your command and args
 # | arg: command - command to execute
 #
-# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
-#
-# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
+# Note that you should NOT quote the command but only prefix it with ynh_exec_warn
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_exec_quiet () {
-    eval $@ > /dev/null
+    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
+    # (because in the past eval was used) ...
+    # we detect this by checking that there's no 2nd arg, and $1 contains a space
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
+    then
+        eval $@ > /dev/null
+    else
+        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+        "$@" > /dev/null
+    fi
 }
 
 # Execute a command and redirect stdout and stderr in /dev/null
 #
-# usage: ynh_exec_fully_quiet "your_command [ | other_command ]"
+# usage: ynh_exec_quiet your command and args
 # | arg: command - command to execute
 #
-# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
-#
-# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
+# Note that you should NOT quote the command but only prefix it with ynh_exec_quiet
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_exec_fully_quiet () {
-    eval $@ > /dev/null 2>&1
+    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
+    # (because in the past eval was used) ...
+    # we detect this by checking that there's no 2nd arg, and $1 contains a space
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
+    then
+        eval $@ > /dev/null 2>&1
+    else
+        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+        "$@" > /dev/null 2>&1
+    fi
 }
 
 # Remove any logs for all the following commands.
