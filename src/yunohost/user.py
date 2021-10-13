@@ -670,7 +670,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
 
     def to_list(str_list):
         L = str_list.split(",") if str_list else []
-        L = [l.strip() for l in L]
+        L = [element.strip() for element in L]
         return L
 
     existing_users = user_list()["users"]

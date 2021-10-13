@@ -8,15 +8,14 @@ do_pre_regen() {
     mkdir --parents "${pending_dir}/etc/apt/preferences.d"
 
     packages_to_refuse_from_sury="php php-fpm php-mysql php-xml php-zip php-mbstring php-ldap php-gd php-curl php-bz2 php-json php-sqlite3 php-intl openssl libssl1.1 libssl-dev"
-    for package in $packages_to_refuse_from_sury
-    do
+    for package in $packages_to_refuse_from_sury; do
         echo "
 Package: $package
 Pin: origin \"packages.sury.org\" 
-Pin-Priority: -1" >> "${pending_dir}/etc/apt/preferences.d/extra_php_version"
+Pin-Priority: -1" >>"${pending_dir}/etc/apt/preferences.d/extra_php_version"
     done
 
-        echo "
+    echo "
 
 # PLEASE READ THIS WARNING AND DON'T EDIT THIS FILE
 
@@ -43,15 +42,15 @@ Pin-Priority: -1
 Package: bind9
 Pin: release *
 Pin-Priority: -1
-" >> "${pending_dir}/etc/apt/preferences.d/ban_packages"
+" >>"${pending_dir}/etc/apt/preferences.d/ban_packages"
 
 }
 
 do_post_regen() {
-  regen_conf_files=$1
+    regen_conf_files=$1
 
-  # Make sure php7.4 is the default version when using php in cli
-  update-alternatives --set php /usr/bin/php7.4
+    # Make sure php7.4 is the default version when using php in cli
+    update-alternatives --set php /usr/bin/php7.4
 }
 
 do_$1_regen ${@:2}

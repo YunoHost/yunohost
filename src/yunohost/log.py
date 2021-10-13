@@ -407,7 +407,7 @@ def is_unit_operation(
                 if isinstance(value, IOBase):
                     try:
                         context[field] = value.name
-                    except:
+                    except Exception:
                         context[field] = "IOBase"
             operation_logger = OperationLogger(op_key, related_to, args=context)
 

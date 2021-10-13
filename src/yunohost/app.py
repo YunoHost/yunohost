@@ -78,7 +78,7 @@ re_app_instance_name = re.compile(
 )
 
 APP_REPO_URL = re.compile(
-    r"^https://[a-zA-Z0-9-_.]+/[a-zA-Z0-9-_./]+/[a-zA-Z0-9-_.]+_ynh(/?(-/)?tree/[a-zA-Z0-9-_]+)?(\.git)?/?$"
+    r"^https://[a-zA-Z0-9-_.]+/[a-zA-Z0-9-_./]+/[a-zA-Z0-9-_.]+_ynh(/?(-/)?tree/[a-zA-Z0-9-_.]+)?(\.git)?/?$"
 )
 
 APP_FILES_TO_COPY = [
@@ -150,6 +150,9 @@ def app_info(app, full=False):
     absolute_app_name, _ = _parse_app_instance_name(app)
     ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
     ret["upgradable"] = _app_upgradable(ret)
+
+    ret["is_webapp"] = "domain" in settings and "path" in settings
+
     ret["supports_change_url"] = os.path.exists(
         os.path.join(setting_path, "scripts", "change_url")
     )
@@ -489,7 +492,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             logger.warning(m18n.n("custom_app_url_required", app=app_instance_name))
             continue
         elif app_dict["upgradable"] == "yes" or force:
-            new_app_src = app_dict["id"]
+            new_app_src = app_dict["manifest"]["id"]
         else:
             logger.success(m18n.n("app_already_up_to_date", app=app_instance_name))
             continue

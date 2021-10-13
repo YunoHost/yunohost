@@ -76,7 +76,7 @@ class AppDiagnoser(Diagnoser):
         for deprecated_helper in deprecated_helpers:
             if (
                 os.system(
-                    f"grep -hr '{deprecated_helper}' {app['setting_path']}/scripts/ | grep -v -q '^\s*#'"
+                    f"grep -hr '{deprecated_helper}' {app['setting_path']}/scripts/ | grep -v -q '^\\s*#'"
                 )
                 == 0
             ):
