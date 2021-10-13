@@ -112,6 +112,9 @@ SHELL=/bin/bash
 #   - trigger yunohost dyndns update
 */10 * * * * root : YunoHost DynDNS update; sleep \$((RANDOM\\%60)); ! ping -q -W5 -c1 ip.yunohost.org >/dev/null 2>&1 || test -e /var/run/moulinette_yunohost.lock || yunohost dyndns update >> /dev/null
 EOF
+    else
+        # (Delete cron if no dyndns domain found)
+        touch $pending_dir/etc/cron.d/yunohost-dyndns
     fi
 
     # legacy stuff to avoid yunohost reporting etckeeper as manually modified
