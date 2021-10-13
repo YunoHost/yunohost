@@ -1371,7 +1371,7 @@ def app_register_url(app, domain, path):
             raise YunohostValidationError("app_already_installed_cant_change_url")
 
     # Check the url is available
-    _assert_no_conflicting_apps(domain, path)
+    _assert_no_conflicting_apps(domain, path, ignore_app=app)
 
     app_setting(app, "domain", value=domain)
     app_setting(app, "path", value=path)
@@ -1930,7 +1930,9 @@ def _get_manifest_of_app(path):
             raw_msg=True,
         )
 
-    if int(manifest.get("packaging_format", 0)) <= 1:
+    manifest["packaging_format"] = float(str(manifest.get("packaging_format", "")).strip() or "0")
+
+    if manifest["packaging_format"] < 2:
         manifest = _convert_v1_manifest_to_v2(manifest)
 
     manifest["install"] = _set_default_ask_questions(manifest.get("install", {}))
@@ -2284,8 +2286,7 @@ def _get_all_installed_apps_id():
 def _check_manifest_requirements(manifest: Dict):
     """Check if required packages are met from the manifest"""
 
-    packaging_format = int(manifest.get("packaging_format", 0))
-    if packaging_format not in [2]:
+    if manifest["packaging_format"] not in [1, 2]:
         raise YunohostValidationError("app_packaging_format_not_supported")
 
     requirements = manifest.get("requirements", dict())
@@ -2446,20 +2447,20 @@ def _make_environment_for_app_script(
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
         "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?"),
+        "YNH_APP_PACKAGING_FORMAT": str(manifest["packaging_format"]),
     }
 
     if workdir:
         env_dict["YNH_APP_BASEDIR"] = workdir
 
     if action:
-        env_dict["YNH_ACTION"] = action
+        env_dict["YNH_APP_ACTION"] = action
 
     for arg_name, arg_value in args.items():
         env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = str(arg_value)
 
     # If packaging format v2, load all settings
-    packaging_format = int(manifest.get("packaging_format", 0))
-    if packaging_format >= 2:
+    if manifest["packaging_format"] >= 2:
         env_dict["app"] = app
         for setting_name, setting_value in _get_app_settings(app):
 

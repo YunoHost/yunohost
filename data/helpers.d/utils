@@ -61,6 +61,12 @@ ynh_abort_if_errors() {
     trap ynh_exit_properly EXIT # Capturing exit signals on shell script
 }
 
+# When running an app script with packaging format >= 2, auto-enable ynh_abort_if_errors except for remove script
+if [[ ${YNH_APP_PACKAGING_FORMAT:-0} -ge 2 ]] && [[ ${YNH_APP_ACTION} != "remove" ]]
+then
+    ynh_abort_if_errors
+fi
+
 # Download, check integrity, uncompress and patch the source from app.src
 #
 # usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"]
