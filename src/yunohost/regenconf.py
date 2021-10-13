@@ -105,13 +105,9 @@ def regen_conf(
     else:
         filesystem.mkdir(PENDING_CONF_DIR, 0o755, True)
 
-    # Format common hooks arguments
-    common_args = [1 if force else 0, 1 if dry_run else 0]
-
     # Execute hooks for pre-regen
-    pre_args = [
-        "pre",
-    ] + common_args
+    # element 2 and 3 with empty string is because of legacy...
+    pre_args = ["pre", "", ""]
 
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the category
@@ -138,6 +134,9 @@ def regen_conf(
     # this can be safely removed once we're in >= 4.0
     if "glances" in names:
         names.remove("glances")
+
+    if "avahi-daemon" in names:
+        names.remove("avahi-daemon")
 
     # [Optimization] We compute and feed the domain list to the conf regen
     # hooks to avoid having to call "yunohost domain list" so many times which
@@ -417,9 +416,8 @@ def regen_conf(
         return result
 
     # Execute hooks for post-regen
-    post_args = [
-        "post",
-    ] + common_args
+    # element 2 and 3 with empty string is because of legacy...
+    post_args = ["post", "", ""]
 
     def _pre_call(name, priority, path, args):
         # append coma-separated applied changes for the category
@@ -444,7 +442,7 @@ def _get_regenconf_infos():
     """
     try:
         with open(REGEN_CONF_FILE, "r") as f:
-            return yaml.load(f)
+            return yaml.safe_load(f)
     except Exception:
         return {}
 
@@ -459,6 +457,10 @@ def _save_regenconf_infos(infos):
     # Ugly hack to get rid of legacy glances stuff
     if "glances" in infos:
         del infos["glances"]
+
+    # Ugly hack to get rid of legacy avahi stuff
+    if "avahi-daemon" in infos:
+        del infos["avahi-daemon"]
 
     try:
         with open(REGEN_CONF_FILE, "w") as f:

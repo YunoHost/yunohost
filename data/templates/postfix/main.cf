@@ -54,7 +54,12 @@ smtpd_tls_loglevel=1
 
 # -- TLS for outgoing connections
 # Use TLS if this is supported by the remote SMTP server, otherwise use plaintext.
+{% if relay_port == "465" %}
+smtp_tls_wrappermode = yes
+smtp_tls_security_level = encrypt
+{% else %}
 smtp_tls_security_level = may
+{% endif %}
 smtp_tls_session_cache_database = btree:${data_directory}/smtp_scache
 smtp_tls_exclude_ciphers = aNULL, MD5, DES, ADH, RC4, 3DES
 smtp_tls_mandatory_ciphers= high
@@ -84,8 +89,11 @@ mailbox_size_limit = 0
 recipient_delimiter = +
 inet_interfaces = all
 
-#### Fit to the maximum message size to 30mb, more than allowed by GMail or Yahoo ####
-message_size_limit = 31457280
+#### Fit to the maximum message size to 25mb, more than allowed by GMail or Yahoo ####
+# /!\ This size is the size of the attachment in base64. 
+# BASE64_SIZE_IN_BYTE = ORIGINAL_SIZE_IN_MEGABYTE * 1,37 *1024*1024 + 980
+# See https://serverfault.com/questions/346895/postfix-mail-size-counting
+message_size_limit = 35914708
 
 # Virtual Domains Control
 virtual_mailbox_domains = ldap:/etc/postfix/ldap-domains.cf

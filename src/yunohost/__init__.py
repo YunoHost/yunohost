@@ -89,116 +89,73 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
     if not os.path.isdir(logdir):
         os.makedirs(logdir, 0o750)
 
-    # ####################################################################### #
+    logging_configuration = {
+        "version": 1,
+        "disable_existing_loggers": True,
+        "formatters": {
+            "console": {
+                "format": "%(relativeCreated)-5d %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s"
+            },
+            "tty-debug": {"format": "%(relativeCreated)-4d %(fmessage)s"},
+            "precise": {
+                "format": "%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s"
+            },
+        },
+        "filters": {
+            "action": {
+                "()": "moulinette.utils.log.ActionFilter",
+            },
+        },
+        "handlers": {
+            "cli": {
+                "level": "DEBUG" if debug else "INFO",
+                "class": "moulinette.interfaces.cli.TTYHandler",
+                "formatter": "tty-debug" if debug else "",
+            },
+            "api": {
+                "level": "DEBUG" if debug else "INFO",
+                "class": "moulinette.interfaces.api.APIQueueHandler",
+            },
+            "file": {
+                "class": "logging.FileHandler",
+                "formatter": "precise",
+                "filename": logfile,
+                "filters": ["action"],
+            },
+        },
+        "loggers": {
+            "yunohost": {
+                "level": "DEBUG",
+                "handlers": ["file", interface] if not quiet else ["file"],
+                "propagate": False,
+            },
+            "moulinette": {
+                "level": "DEBUG",
+                "handlers": ["file", interface] if not quiet else ["file"],
+                "propagate": False,
+            },
+        },
+        "root": {
+            "level": "DEBUG",
+            "handlers": ["file", interface] if debug else ["file"],
+        },
+    }
+
     #  Logging configuration for CLI (or any other interface than api...)     #
-    # ####################################################################### #
     if interface != "api":
-        configure_logging(
-            {
-                "version": 1,
-                "main_logger": "yunohost",
-                "disable_existing_loggers": True,
-                "formatters": {
-                    "tty-debug": {"format": "%(relativeCreated)-4d %(fmessage)s"},
-                    "precise": {
-                        "format": "%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s"
-                    },
-                },
-                "filters": {
-                    "action": {
-                        "()": "moulinette.utils.log.ActionFilter",
-                    },
-                },
-                "handlers": {
-                    "tty": {
-                        "level": "DEBUG" if debug else "INFO",
-                        "class": "moulinette.interfaces.cli.TTYHandler",
-                        "formatter": "tty-debug" if debug else "",
-                    },
-                    "file": {
-                        "class": "logging.FileHandler",
-                        "formatter": "precise",
-                        "filename": logfile,
-                        "filters": ["action"],
-                    },
-                },
-                "loggers": {
-                    "yunohost": {
-                        "level": "DEBUG",
-                        "handlers": ["file", "tty"] if not quiet else ["file"],
-                        "propagate": False,
-                    },
-                    "moulinette": {
-                        "level": "DEBUG",
-                        "handlers": [],
-                        "propagate": True,
-                    },
-                    "moulinette.interface": {
-                        "level": "DEBUG",
-                        "handlers": ["file", "tty"] if not quiet else ["file"],
-                        "propagate": False,
-                    },
-                },
-                "root": {
-                    "level": "DEBUG",
-                    "handlers": ["file", "tty"] if debug else ["file"],
-                },
-            }
-        )
-    # ####################################################################### #
+        configure_logging(logging_configuration)
+
     #  Logging configuration for API                                          #
-    # ####################################################################### #
     else:
-        configure_logging(
-            {
-                "version": 1,
-                "disable_existing_loggers": True,
-                "formatters": {
-                    "console": {
-                        "format": "%(relativeCreated)-5d %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s"
-                    },
-                    "precise": {
-                        "format": "%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s"
-                    },
-                },
-                "filters": {
-                    "action": {
-                        "()": "moulinette.utils.log.ActionFilter",
-                    },
-                },
-                "handlers": {
-                    "api": {
-                        "level": "DEBUG" if debug else "INFO",
-                        "class": "moulinette.interfaces.api.APIQueueHandler",
-                    },
-                    "file": {
-                        "class": "logging.handlers.WatchedFileHandler",
-                        "formatter": "precise",
-                        "filename": logfile,
-                        "filters": ["action"],
-                    },
-                    "console": {
-                        "class": "logging.StreamHandler",
-                        "formatter": "console",
-                        "stream": "ext://sys.stdout",
-                        "filters": ["action"],
-                    },
-                },
-                "loggers": {
-                    "yunohost": {
-                        "level": "DEBUG",
-                        "handlers": ["file", "api"] + (["console"] if debug else []),
-                        "propagate": False,
-                    },
-                    "moulinette": {
-                        "level": "DEBUG",
-                        "handlers": [],
-                        "propagate": True,
-                    },
-                },
-                "root": {
-                    "level": "DEBUG",
-                    "handlers": ["file"] + (["console"] if debug else []),
-                },
-            }
-        )
+        # We use a WatchedFileHandler instead of regular FileHandler to possibly support log rotation etc
+        logging_configuration["handlers"]["file"][
+            "class"
+        ] = "logging.handlers.WatchedFileHandler"
+
+        # This is for when launching yunohost-api in debug mode, we want to display stuff in the console
+        if debug:
+            logging_configuration["loggers"]["yunohost"]["handlers"].append("cli")
+            logging_configuration["loggers"]["moulinette"]["handlers"].append("cli")
+            logging_configuration["root"]["handlers"].append("cli")
+
+        configure_logging(logging_configuration)

@@ -28,7 +28,7 @@ import re
 import os
 import time
 
-from moulinette import m18n, msettings
+from moulinette import m18n, Moulinette
 from moulinette.utils import log
 from moulinette.utils.filesystem import (
     read_json,
@@ -37,7 +37,7 @@ from moulinette.utils.filesystem import (
     write_to_yaml,
 )
 
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.hook import hook_list, hook_exec
 
 logger = log.getActionLogger("yunohost.diagnosis")
@@ -59,11 +59,13 @@ def diagnosis_get(category, item):
     all_categories_names = [c for c, _ in all_categories]
 
     if category not in all_categories_names:
-        raise YunohostError("diagnosis_unknown_categories", categories=category)
+        raise YunohostValidationError(
+            "diagnosis_unknown_categories", categories=category
+        )
 
     if isinstance(item, list):
         if any("=" not in criteria for criteria in item):
-            raise YunohostError(
+            raise YunohostValidationError(
                 "Criterias should be of the form key=value (e.g. domain=yolo.test)"
             )
 
@@ -91,7 +93,7 @@ def diagnosis_show(
     else:
         unknown_categories = [c for c in categories if c not in all_categories_names]
         if unknown_categories:
-            raise YunohostError(
+            raise YunohostValidationError(
                 "diagnosis_unknown_categories", categories=", ".join(unknown_categories)
             )
 
@@ -136,7 +138,7 @@ def diagnosis_show(
         url = yunopaste(content)
 
         logger.info(m18n.n("log_available_on_yunopaste", url=url))
-        if msettings.get("interface") == "api":
+        if Moulinette.interface.type == "api":
             return {"url": url}
         else:
             return
@@ -181,7 +183,7 @@ def diagnosis_run(
     else:
         unknown_categories = [c for c in categories if c not in all_categories_names]
         if unknown_categories:
-            raise YunohostError(
+            raise YunohostValidationError(
                 "diagnosis_unknown_categories", categories=", ".join(unknown_categories)
             )
 
@@ -217,11 +219,19 @@ def diagnosis_run(
 
     if email:
         _email_diagnosis_issues()
-    if issues and msettings.get("interface") == "cli":
+    if issues and Moulinette.interface.type == "cli":
         logger.warning(m18n.n("diagnosis_display_tip"))
 
 
-def diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
+def diagnosis_ignore(filter, list=False):
+    return _diagnosis_ignore(add_filter=filter, list=list)
+
+
+def diagnosis_unignore(filter):
+    return _diagnosis_ignore(remove_filter=filter)
+
+
+def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
     """
     This action is meant for the admin to ignore issues reported by the
     diagnosis system if they are known and understood by the admin.  For
@@ -270,14 +280,14 @@ def diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
 
         # Sanity checks for the provided arguments
         if len(filter_) == 0:
-            raise YunohostError(
+            raise YunohostValidationError(
                 "You should provide at least one criteria being the diagnosis category to ignore"
             )
         category = filter_[0]
         if category not in all_categories_names:
-            raise YunohostError("%s is not a diagnosis category" % category)
+            raise YunohostValidationError("%s is not a diagnosis category" % category)
         if any("=" not in criteria for criteria in filter_[1:]):
-            raise YunohostError(
+            raise YunohostValidationError(
                 "Criterias should be of the form key=value (e.g. domain=yolo.test)"
             )
 
@@ -331,7 +341,7 @@ def diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             configuration["ignore_filters"][category] = []
 
         if criterias not in configuration["ignore_filters"][category]:
-            raise YunohostError("This filter does not exists.")
+            raise YunohostValidationError("This filter does not exists.")
 
         configuration["ignore_filters"][category].remove(criterias)
         _diagnosis_write_configuration(configuration)
@@ -551,9 +561,8 @@ class Diagnoser:
     @staticmethod
     def get_description(id_):
         key = "diagnosis_description_" + id_
-        descr = m18n.n(key)
         # If no description available, fallback to id
-        return descr if descr != key else id_
+        return m18n.n(key) if m18n.key_exists(key) else id_
 
     @staticmethod
     def i18n(report, force_remove_html_tags=False):
@@ -586,7 +595,7 @@ class Diagnoser:
                 info[1].update(meta_data)
                 s = m18n.n(info[0], **(info[1]))
                 # In cli, we remove the html tags
-                if msettings.get("interface") != "api" or force_remove_html_tags:
+                if Moulinette.interface.type != "api" or force_remove_html_tags:
                     s = s.replace("<cmd>", "'").replace("</cmd>", "'")
                     s = html_tags.sub("", s.replace("<br>", "\n"))
                 else:
@@ -703,5 +712,5 @@ Subject: %s
     import smtplib
 
     smtp = smtplib.SMTP("localhost")
-    smtp.sendmail(from_, [to_], message)
+    smtp.sendmail(from_, [to_], message.encode("utf-8"))
     smtp.quit()

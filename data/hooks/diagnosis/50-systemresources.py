@@ -77,7 +77,9 @@ class SystemResourcesDiagnoser(Diagnoser):
 
         # Ignore /dev/loop stuff which are ~virtual partitions ? (e.g. mounted to /snap/)
         disk_partitions = [
-            d for d in disk_partitions if not d.device.startswith("/dev/loop")
+            d
+            for d in disk_partitions
+            if d.mountpoint in ["/", "/var"] or not d.device.startswith("/dev/loop")
         ]
 
         for disk_partition in disk_partitions:
@@ -139,7 +141,7 @@ class SystemResourcesDiagnoser(Diagnoser):
                 status="ERROR",
                 summary="diagnosis_rootfstotalspace_critical",
             )
-        if main_space < 14 * GB:
+        elif main_space < 14 * GB:
             yield dict(
                 meta={"test": "rootfstotalspace"},
                 data={"space": human_size(main_space)},

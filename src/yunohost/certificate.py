@@ -37,7 +37,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file
 
 from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.network import get_public_ip
 
 from yunohost.diagnosis import Diagnoser
@@ -86,11 +86,8 @@ def certificate_status(domain_list, full=False):
         domain_list = yunohost.domain.domain_list()["domains"]
     # Else, validate that yunohost knows the domains given
     else:
-        yunohost_domains_list = yunohost.domain.domain_list()["domains"]
         for domain in domain_list:
-            # Is it in Yunohost domain list?
-            if domain not in yunohost_domains_list:
-                raise YunohostError("domain_name_unknown", domain=domain)
+            yunohost.domain._assert_domain_exists(domain)
 
     certificates = {}
 
@@ -166,7 +163,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
             status = _get_status(domain)
 
             if status["summary"]["code"] in ("good", "great"):
-                raise YunohostError(
+                raise YunohostValidationError(
                     "certmanager_attempt_to_replace_valid_cert", domain=domain
                 )
 
@@ -196,6 +193,8 @@ def _certificate_install_selfsigned(domain_list, force=False):
             )
 
             out, _ = p.communicate()
+
+            out = out.decode("utf-8")
 
             if p.returncode != 0:
                 logger.warning(out)
@@ -265,14 +264,12 @@ def _certificate_install_letsencrypt(
     # Else, validate that yunohost knows the domains given
     else:
         for domain in domain_list:
-            yunohost_domains_list = yunohost.domain.domain_list()["domains"]
-            if domain not in yunohost_domains_list:
-                raise YunohostError("domain_name_unknown", domain=domain)
+            yunohost.domain._assert_domain_exists(domain)
 
             # Is it self-signed?
             status = _get_status(domain)
             if not force and status["CA_type"]["code"] != "self-signed":
-                raise YunohostError(
+                raise YunohostValidationError(
                     "certmanager_domain_cert_not_selfsigned", domain=domain
                 )
 
@@ -315,8 +312,6 @@ def _certificate_install_letsencrypt(
                     % domain
                 )
         else:
-            _install_cron(no_checks=no_checks)
-
             logger.success(m18n.n("certmanager_cert_install_success", domain=domain))
 
             operation_logger.success()
@@ -368,27 +363,26 @@ def certificate_renew(
     else:
         for domain in domain_list:
 
-            # Is it in Yunohost dmomain list?
-            if domain not in yunohost.domain.domain_list()["domains"]:
-                raise YunohostError("domain_name_unknown", domain=domain)
+            # Is it in Yunohost domain list?
+            yunohost.domain._assert_domain_exists(domain)
 
             status = _get_status(domain)
 
             # Does it expire soon?
             if status["validity"] > VALIDITY_LIMIT and not force:
-                raise YunohostError(
+                raise YunohostValidationError(
                     "certmanager_attempt_to_renew_valid_cert", domain=domain
                 )
 
             # Does it have a Let's Encrypt cert?
             if status["CA_type"]["code"] != "lets-encrypt":
-                raise YunohostError(
+                raise YunohostValidationError(
                     "certmanager_attempt_to_renew_nonLE_cert", domain=domain
                 )
 
             # Check ACME challenge configured for given domain
             if not _check_acme_challenge_configuration(domain):
-                raise YunohostError(
+                raise YunohostValidationError(
                     "certmanager_acme_not_configured_for_domain", domain=domain
                 )
 
@@ -432,7 +426,7 @@ def certificate_renew(
 
             stack = StringIO()
             traceback.print_exc(file=stack)
-            msg = "Certificate renewing for %s failed !" % (domain)
+            msg = "Certificate renewing for %s failed!" % (domain)
             if no_checks:
                 msg += (
                     "\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s."
@@ -454,31 +448,6 @@ def certificate_renew(
 #
 # Back-end stuff                                                            #
 #
-
-
-def _install_cron(no_checks=False):
-    cron_job_file = "/etc/cron.daily/yunohost-certificate-renew"
-
-    # we need to check if "--no-checks" isn't already put inside the existing
-    # crontab, if it's the case it's probably because another domain needed it
-    # at some point so we keep it
-    if not no_checks and os.path.exists(cron_job_file):
-        with open(cron_job_file, "r") as f:
-            # no the best test in the world but except if we uses a shell
-            # script parser I'm not expected a much more better way to do that
-            no_checks = "--no-checks" in f.read()
-
-    command = "yunohost domain cert-renew --email\n"
-
-    if no_checks:
-        # handle trailing "\n with ":-1"
-        command = command[:-1] + " --no-checks\n"
-
-    with open(cron_job_file, "w") as f:
-        f.write("#!/bin/bash\n")
-        f.write(command)
-
-    _set_permissions(cron_job_file, "root", "root", 0o755)
 
 
 def _email_renewing_failed(domain, exception_message, stack=""):
@@ -524,7 +493,7 @@ Subject: %s
     import smtplib
 
     smtp = smtplib.SMTP("localhost")
-    smtp.sendmail(from_, [to_], message)
+    smtp.sendmail(from_, [to_], message.encode("utf-8"))
     smtp.quit()
 
 
@@ -887,14 +856,9 @@ def _backup_current_cert(domain):
 
 def _check_domain_is_ready_for_ACME(domain):
 
-    dnsrecords = (
-        Diagnoser.get_cached_report(
-            "dnsrecords",
-            item={"domain": domain, "category": "basic"},
-            warn_if_no_cache=False,
-        )
-        or {}
-    )
+    from yunohost.domain import _get_parent_domain_of
+    from yunohost.dns import _get_dns_zone_for_domain
+
     httpreachable = (
         Diagnoser.get_cached_report(
             "web", item={"domain": domain}, warn_if_no_cache=False
@@ -902,21 +866,56 @@ def _check_domain_is_ready_for_ACME(domain):
         or {}
     )
 
-    if not dnsrecords or not httpreachable:
-        raise YunohostError("certmanager_domain_not_diagnosed_yet", domain=domain)
+    parent_domain = _get_parent_domain_of(domain)
+
+    dnsrecords = (
+        Diagnoser.get_cached_report(
+            "dnsrecords",
+            item={"domain": parent_domain, "category": "basic"},
+            warn_if_no_cache=False,
+        )
+        or {}
+    )
+
+    base_dns_zone = _get_dns_zone_for_domain(domain)
+    record_name = (
+        domain.replace(f".{base_dns_zone}", "") if domain != base_dns_zone else "@"
+    )
+    A_record_status = dnsrecords.get("data").get(f"A:{record_name}")
+    AAAA_record_status = dnsrecords.get("data").get(f"AAAA:{record_name}")
+
+    # Fallback to wildcard in case no result yet for the DNS name?
+    if not A_record_status:
+        A_record_status = dnsrecords.get("data").get("A:*")
+    if not AAAA_record_status:
+        AAAA_record_status = dnsrecords.get("data").get("AAAA:*")
+
+    if (
+        not httpreachable
+        or not dnsrecords.get("data")
+        or (A_record_status, AAAA_record_status) == (None, None)
+    ):
+        raise YunohostValidationError(
+            "certmanager_domain_not_diagnosed_yet", domain=domain
+        )
 
     # Check if IP from DNS matches public IP
-    if not dnsrecords.get("status") in [
-        "SUCCESS",
-        "WARNING",
-    ]:  # Warning is for missing IPv6 record which ain't critical for ACME
-        raise YunohostError(
+    # - 'MISSING' for IPv6 ain't critical for ACME
+    # - IPv4 can be None assuming there's at least an IPv6, and viveversa
+    #    - (the case where both are None is checked before)
+    if not (
+        A_record_status in [None, "OK"]
+        and AAAA_record_status in [None, "OK", "MISSING"]
+    ):
+        raise YunohostValidationError(
             "certmanager_domain_dns_ip_differs_from_public_ip", domain=domain
         )
 
     # Check if domain seems to be accessible through HTTP?
     if not httpreachable.get("status") == "SUCCESS":
-        raise YunohostError("certmanager_domain_http_not_working", domain=domain)
+        raise YunohostValidationError(
+            "certmanager_domain_http_not_working", domain=domain
+        )
 
 
 # FIXME / TODO : ideally this should not be needed. There should be a proper
@@ -975,11 +974,6 @@ def _name_self_CA():
 
 
 def _tail(n, file_path):
-    stdin, stdout = os.popen2("tail -n %s '%s'" % (n, file_path))
+    from moulinette.utils.process import check_output
 
-    stdin.close()
-
-    lines = stdout.readlines()
-    stdout.close()
-
-    return "".join(lines)
+    return check_output(f"tail -n {n} '{file_path}'")

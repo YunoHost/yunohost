@@ -34,12 +34,21 @@ from glob import glob
 from datetime import datetime
 
 from moulinette import m18n
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, append_to_file, write_to_file
+from moulinette.utils.filesystem import (
+    read_file,
+    append_to_file,
+    write_to_file,
+    read_yaml,
+    write_to_yaml,
+)
 
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
+
+SERVICES_CONF = "/etc/yunohost/services.yml"
+SERVICES_CONF_BASE = "/usr/share/yunohost/templates/yunohost/services.yml"
 
 logger = getActionLogger("yunohost.service")
 
@@ -127,7 +136,8 @@ def service_add(
 
     try:
         _save_services(services)
-    except Exception:
+    except Exception as e:
+        logger.warning(e)
         # we'll get a logger.warning with more details in _save_services
         raise YunohostError("service_add_failed", service=name)
 
@@ -145,7 +155,7 @@ def service_remove(name):
     services = _get_services()
 
     if name not in services:
-        raise YunohostError("service_unknown", service=name)
+        raise YunohostValidationError("service_unknown", service=name)
 
     del services[name]
     try:
@@ -246,7 +256,7 @@ def service_restart(names):
                 )
 
 
-def service_reload_or_restart(names):
+def service_reload_or_restart(names, test_conf=True):
     """
     Reload one or more services if they support it. If not, restart them instead. If the services are not running yet, they will be started.
 
@@ -256,7 +266,36 @@ def service_reload_or_restart(names):
     """
     if isinstance(names, str):
         names = [names]
+
+    services = _get_services()
+
     for name in names:
+
+        logger.debug(f"Reloading service {name}")
+
+        test_conf_cmd = services.get(name, {}).get("test_conf")
+        if test_conf and test_conf_cmd:
+
+            p = subprocess.Popen(
+                test_conf_cmd,
+                shell=True,
+                executable="/bin/bash",
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+            )
+
+            out, _ = p.communicate()
+            if p.returncode != 0:
+                errors = out.decode().strip().split("\n")
+                logger.error(
+                    m18n.n(
+                        "service_not_reloading_because_conf_broken",
+                        name=name,
+                        errors=errors,
+                    )
+                )
+                continue
+
         if _run_service_command("reload-or-restart", name):
             logger.success(m18n.n("service_reloaded_or_restarted", service=name))
         else:
@@ -325,7 +364,7 @@ def service_status(names=[]):
         # Validate service names requested
         for name in names:
             if name not in services.keys():
-                raise YunohostError("service_unknown", service=name)
+                raise YunohostValidationError("service_unknown", service=name)
 
         # Filter only requested servivces
         services = {k: v for k, v in services.items() if k in names}
@@ -397,14 +436,11 @@ def _get_and_format_service_status(service, infos):
 
     # If no description was there, try to get it from the .json locales
     if not description:
-        translation_key = "service_description_%s" % service
-        description = m18n.n(translation_key)
 
-        # If descrption is still equal to the translation key,
-        # that mean that we don't have a translation for this string
-        # that's the only way to test for that for now
-        # if we don't have it, uses the one provided by systemd
-        if description == translation_key:
+        translation_key = "service_description_%s" % service
+        if m18n.key_exists(translation_key):
+            description = m18n.n(translation_key)
+        else:
             description = str(raw_status.get("Description", ""))
 
     output = {
@@ -468,6 +504,7 @@ def _get_and_format_service_status(service, infos):
         if p.returncode == 0:
             output["configuration"] = "valid"
         else:
+            out = out.decode()
             output["configuration"] = "broken"
             output["configuration-details"] = out.strip().split("\n")
 
@@ -487,7 +524,7 @@ def service_log(name, number=50):
     number = int(number)
 
     if name not in services.keys():
-        raise YunohostError("service_unknown", service=name)
+        raise YunohostValidationError("service_unknown", service=name)
 
     log_list = services[name].get("log", [])
 
@@ -548,7 +585,7 @@ def service_regen_conf(
 
     for name in names:
         if name not in services.keys():
-            raise YunohostError("service_unknown", service=name)
+            raise YunohostValidationError("service_unknown", service=name)
 
     if names is []:
         names = list(services.keys())
@@ -571,7 +608,7 @@ def _run_service_command(action, service):
     """
     services = _get_services()
     if service not in services.keys():
-        raise YunohostError("service_unknown", service=service)
+        raise YunohostValidationError("service_unknown", service=service)
 
     possible_actions = [
         "start",
@@ -671,16 +708,20 @@ def _get_services():
 
     """
     try:
-        with open("/etc/yunohost/services.yml", "r") as f:
-            services = yaml.load(f) or {}
+        services = read_yaml(SERVICES_CONF_BASE) or {}
+
+        # These are keys flagged 'null' in the base conf
+        legacy_keys_to_delete = [k for k, v in services.items() if v is None]
+
+        services.update(read_yaml(SERVICES_CONF) or {})
+
+        services = {
+            name: infos
+            for name, infos in services.items()
+            if name not in legacy_keys_to_delete
+        }
     except Exception:
         return {}
-
-    # some services are marked as None to remove them from YunoHost
-    # filter this
-    for key, value in list(services.items()):
-        if value is None:
-            del services[key]
 
     # Dirty hack to automatically find custom SSH port ...
     ssh_port_line = re.findall(
@@ -705,6 +746,13 @@ def _get_services():
             del services["postgresql"]["description"]
         services["postgresql"]["actual_systemd_service"] = "postgresql@11-main"
 
+    # Remove legacy /var/log/daemon.log and /var/log/syslog from log entries
+    # because they are too general. Instead, now the journalctl log is
+    # returned by default which is more relevant.
+    for infos in services.values():
+        if infos.get("log") in ["/var/log/syslog", "/var/log/daemon.log"]:
+            del infos["log"]
+
     return services
 
 
@@ -716,12 +764,26 @@ def _save_services(services):
         services -- A dict of managed services with their parameters
 
     """
-    try:
-        with open("/etc/yunohost/services.yml", "w") as f:
-            yaml.safe_dump(services, f, default_flow_style=False)
-    except Exception as e:
-        logger.warning("Error while saving services, exception: %s", e, exc_info=1)
-        raise
+
+    # Compute the diff with the base file
+    # such that /etc/yunohost/services.yml contains the minimal
+    # changes with respect to the base conf
+
+    conf_base = yaml.safe_load(open(SERVICES_CONF_BASE)) or {}
+
+    diff = {}
+
+    for service_name, service_infos in services.items():
+        service_conf_base = conf_base.get(service_name, {})
+        diff[service_name] = {}
+
+        for key, value in service_infos.items():
+            if service_conf_base.get(key) != value:
+                diff[service_name][key] = value
+
+    diff = {name: infos for name, infos in diff.items() if infos}
+
+    write_to_yaml(SERVICES_CONF, diff)
 
 
 def _tail(file, n):

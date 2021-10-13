@@ -90,11 +90,11 @@ class PasswordValidator(object):
         # on top (at least not the moulinette ones)
         # because the moulinette needs to be correctly initialized
         # as well as modules available in python's path.
-        from yunohost.utils.error import YunohostError
+        from yunohost.utils.error import YunohostValidationError
 
         status, msg = self.validation_summary(password)
         if status == "error":
-            raise YunohostError(msg)
+            raise YunohostValidationError(msg)
 
     def validation_summary(self, password):
         """
@@ -111,8 +111,13 @@ class PasswordValidator(object):
         listed = password in SMALL_PWD_LIST or self.is_in_most_used_list(password)
         strength_level = self.strength_level(password)
         if listed:
+            # i18n: password_listed
             return ("error", "password_listed")
         if strength_level < self.validation_strength:
+            # i18n: password_too_simple_1
+            # i18n: password_too_simple_2
+            # i18n: password_too_simple_3
+            # i18n: password_too_simple_4
             return ("error", "password_too_simple_%s" % self.validation_strength)
 
         return ("success", "")

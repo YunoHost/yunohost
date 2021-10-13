@@ -28,10 +28,9 @@ import yaml
 import miniupnpc
 
 from moulinette import m18n
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils import process
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.text import prependlines
 
 FIREWALL_FILE = "/etc/yunohost/firewall.yml"
 UPNP_CRON_JOB = "/etc/cron.d/yunohost-firewall-upnp"
@@ -179,7 +178,7 @@ def firewall_list(raw=False, by_ip_version=False, list_forwarded=False):
 
     """
     with open(FIREWALL_FILE) as f:
-        firewall = yaml.load(f)
+        firewall = yaml.safe_load(f)
     if raw:
         return firewall
 
@@ -188,18 +187,25 @@ def firewall_list(raw=False, by_ip_version=False, list_forwarded=False):
     for i in ["ipv4", "ipv6"]:
         f = firewall[i]
         # Combine TCP and UDP ports
-        ports[i] = sorted(set(f["TCP"]) | set(f["UDP"]))
+        ports[i] = sorted(
+            set(f["TCP"]) | set(f["UDP"]),
+            key=lambda p: int(p.split(":")[0]) if isinstance(p, str) else p,
+        )
 
     if not by_ip_version:
         # Combine IPv4 and IPv6 ports
-        ports = sorted(set(ports["ipv4"]) | set(ports["ipv6"]))
+        ports = sorted(
+            set(ports["ipv4"]) | set(ports["ipv6"]),
+            key=lambda p: int(p.split(":")[0]) if isinstance(p, str) else p,
+        )
 
     # Format returned dict
     ret = {"opened_ports": ports}
     if list_forwarded:
         # Combine TCP and UDP forwarded ports
         ret["forwarded_ports"] = sorted(
-            set(firewall["uPnP"]["TCP"]) | set(firewall["uPnP"]["UDP"])
+            set(firewall["uPnP"]["TCP"]) | set(firewall["uPnP"]["UDP"]),
+            key=lambda p: int(p.split(":")[0]) if isinstance(p, str) else p,
         )
     return ret
 
@@ -233,7 +239,7 @@ def firewall_reload(skip_upnp=False):
     except process.CalledProcessError as e:
         logger.debug(
             "iptables seems to be not available, it outputs:\n%s",
-            prependlines(e.output.rstrip(), "> "),
+            e.output.decode().strip(),
         )
         logger.warning(m18n.n("iptables_unavailable"))
     else:
@@ -266,7 +272,7 @@ def firewall_reload(skip_upnp=False):
     except process.CalledProcessError as e:
         logger.debug(
             "ip6tables seems to be not available, it outputs:\n%s",
-            prependlines(e.output.rstrip(), "> "),
+            e.output.decode().strip(),
         )
         logger.warning(m18n.n("ip6tables_unavailable"))
     else:
@@ -366,7 +372,7 @@ def firewall_upnp(action="status", no_refresh=False):
         if action == "status":
             no_refresh = True
     else:
-        raise YunohostError("action_invalid", action=action)
+        raise YunohostValidationError("action_invalid", action=action)
 
     # Refresh port mapping using UPnP
     if not no_refresh:
@@ -392,6 +398,12 @@ def firewall_upnp(action="status", no_refresh=False):
                 for protocol in ["TCP", "UDP"]:
                     if protocol + "_TO_CLOSE" in firewall["uPnP"]:
                         for port in firewall["uPnP"][protocol + "_TO_CLOSE"]:
+
+                            if not isinstance(port, int):
+                                # FIXME : how should we handle port ranges ?
+                                logger.warning("Can't use UPnP to close '%s'" % port)
+                                continue
+
                             # Clean the mapping of this port
                             if upnpc.getspecificportmapping(port, protocol):
                                 try:
@@ -401,6 +413,12 @@ def firewall_upnp(action="status", no_refresh=False):
                         firewall["uPnP"][protocol + "_TO_CLOSE"] = []
 
                     for port in firewall["uPnP"][protocol]:
+
+                        if not isinstance(port, int):
+                            # FIXME : how should we handle port ranges ?
+                            logger.warning("Can't use UPnP to open '%s'" % port)
+                            continue
+
                         # Clean the mapping of this port
                         if upnpc.getspecificportmapping(port, protocol):
                             try:
@@ -507,6 +525,6 @@ def _on_rule_command_error(returncode, cmd, output):
         '"%s" returned non-zero exit status %d:\n%s',
         cmd,
         returncode,
-        prependlines(output.rstrip(), "> "),
+        output.decode().strip(),
     )
     return True

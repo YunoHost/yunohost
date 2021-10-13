@@ -133,6 +133,13 @@ class BaseSystemDiagnoser(Diagnoser):
                 summary="diagnosis_backports_in_sources_list",
             )
 
+        if self.number_of_recent_auth_failure() > 500:
+            yield dict(
+                meta={"test": "high_number_auth_failure"},
+                status="WARNING",
+                summary="diagnosis_high_number_auth_failures",
+            )
+
     def bad_sury_packages(self):
 
         packages_to_check = ["openssl", "libssl1.1", "libssl-dev"]
@@ -153,6 +160,23 @@ class BaseSystemDiagnoser(Diagnoser):
 
         cmd = "grep -q -nr '^ *deb .*-backports' /etc/apt/sources.list*"
         return os.system(cmd) == 0
+
+    def number_of_recent_auth_failure(self):
+
+        # Those syslog facilities correspond to auth and authpriv
+        # c.f. https://unix.stackexchange.com/a/401398
+        # and https://wiki.archlinux.org/title/Systemd/Journal#Facility
+        cmd = "journalctl -q SYSLOG_FACILITY=10 SYSLOG_FACILITY=4 --since '1day ago' | grep 'authentication failure' | wc -l"
+
+        n_failures = check_output(cmd)
+        try:
+            return int(n_failures)
+        except Exception:
+            self.logger_warning(
+                "Failed to parse number of recent auth failures, expected an int, got '%s'"
+                % n_failures
+            )
+            return -1
 
     def is_vulnerable_to_meltdown(self):
         # meltdown CVE: https://security-tracker.debian.org/tracker/CVE-2017-5754

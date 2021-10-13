@@ -1,0 +1,170 @@
+#!/usr/bin/env python3
+
+"""
+Pythonic declaration of mDNS .local domains for YunoHost
+"""
+
+import sys
+import yaml
+from time import sleep
+from typing import List, Dict
+
+import ifaddr
+from ipaddress import ip_address
+from zeroconf import Zeroconf, ServiceInfo, ServiceBrowser
+
+
+def get_network_local_interfaces() -> Dict[str, Dict[str, List[str]]]:
+    """
+    Returns interfaces with their associated local IPs
+    """
+
+    interfaces = {
+        adapter.name: {
+            "ipv4": [ip.ip for ip in adapter.ips if ip.is_IPv4 and ip_address(ip.ip).is_private],
+            "ipv6": [ip.ip[0] for ip in adapter.ips if ip.is_IPv6 and ip_address(ip.ip[0]).is_private and not ip_address(ip.ip[0]).is_link_local],
+        }
+        for adapter in ifaddr.get_adapters()
+        if adapter.name != "lo"
+    }
+    return interfaces
+
+
+# Listener class, to detect duplicates on the network
+# Stores the list of servers in its list property
+class Listener:
+
+    def __init__(self):
+        self.list = []
+
+    def remove_service(self, zeroconf, type, name):
+        info = zeroconf.get_service_info(type, name)
+        self.list.remove(info.server)
+
+    def update_service(self, zeroconf, type, name):
+        pass
+
+    def add_service(self, zeroconf, type, name):
+        info = zeroconf.get_service_info(type, name)
+        self.list.append(info.server[:-1])
+
+
+def main() -> bool:
+    ###
+    #  CONFIG
+    ###
+
+    with open("/etc/yunohost/mdns.yml", "r") as f:
+        config = yaml.safe_load(f) or {}
+
+    required_fields = ["domains"]
+    missing_fields = [field for field in required_fields if field not in config]
+    interfaces = get_network_local_interfaces()
+
+    if missing_fields:
+        print(f"The fields {missing_fields} are required in mdns.yml")
+        return False
+
+    if "interfaces" not in config:
+        config["interfaces"] = [interface
+                                for interface, local_ips in interfaces.items()
+                                if local_ips["ipv4"]]
+
+    if "ban_interfaces" in config:
+        config["interfaces"] = [interface
+                                for interface in config["interfaces"]
+                                if interface not in config["ban_interfaces"]]
+
+    # Let's discover currently published .local domains accross the network
+    zc = Zeroconf()
+    listener = Listener()
+    browser = ServiceBrowser(zc, "_device-info._tcp.local.", listener)
+    sleep(2)
+    browser.cancel()
+    zc.close()
+
+    # Always attempt to publish yunohost.local
+    if "yunohost.local" not in config["domains"]:
+        config["domains"].append("yunohost.local")
+
+    def find_domain_not_already_published(domain):
+
+        # Try domain.local ... but if it's already published by another entity,
+        # try domain-2.local, domain-3.local, ...
+
+        i = 1
+        domain_i = domain
+
+        while domain_i in listener.list:
+            print(f"Uh oh, {domain_i} already exists on the network...")
+
+            i += 1
+            domain_i = domain.replace(".local", f"-{i}.local")
+
+        return domain_i
+
+    config['domains'] = [find_domain_not_already_published(domain) for domain in config['domains']]
+
+    zcs: Dict[Zeroconf, List[ServiceInfo]] = {}
+
+    for interface in config["interfaces"]:
+
+        if interface not in interfaces:
+            print(f"Interface {interface} listed in config file is not present on system.")
+            continue
+
+        # Only broadcast IPv4 because IPv6 is buggy ... because we ain't using python3-ifaddr >= 0.1.7
+        # Buster only ships 0.1.6
+        # Bullseye ships 0.1.7
+        # To be re-enabled once we're on bullseye...
+        # ips: List[str] = interfaces[interface]["ipv4"] + interfaces[interface]["ipv6"]
+        ips: List[str] = interfaces[interface]["ipv4"]
+
+        # If at least one IP is listed
+        if not ips:
+            continue
+
+        # Create a Zeroconf object, and store the ServiceInfos
+        zc = Zeroconf(interfaces=ips)  # type: ignore
+        zcs[zc] = []
+
+        for d in config["domains"]:
+            d_domain = d.replace(".local", "")
+            if "." in d_domain:
+                print(f"{d_domain}.local: subdomains are not supported.")
+                continue
+            # Create a ServiceInfo object for each .local domain
+            zcs[zc].append(
+                ServiceInfo(
+                    type_="_device-info._tcp.local.",
+                    name=f"{interface}: {d_domain}._device-info._tcp.local.",
+                    parsed_addresses=ips,
+                    port=80,
+                    server=f"{d}.",
+                )
+            )
+            print(f"Adding {d} with addresses {ips} on interface {interface}")
+
+    # Run registration
+    print("Registering...")
+    for zc, infos in zcs.items():
+        for info in infos:
+            zc.register_service(info, allow_name_change=True, cooperating_responders=True)
+
+    try:
+        print("Registered. Press Ctrl+C or stop service to stop.")
+        while True:
+            sleep(1)
+    except KeyboardInterrupt:
+        pass
+    finally:
+        print("Unregistering...")
+        for zc, infos in zcs.items():
+            zc.unregister_all_services()
+            zc.close()
+
+    return True
+
+
+if __name__ == "__main__":
+    sys.exit(0 if main() else 1)

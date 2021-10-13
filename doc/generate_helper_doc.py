@@ -39,7 +39,7 @@ def render(helpers):
     def shell_to_html(shell):
         return conv.convert(shell, False)
 
-    template = open("helper_doc_template.html", "r").read()
+    template = open("helper_doc_template.md", "r").read()
     t = Template(template)
     t.globals["now"] = datetime.datetime.utcnow
     result = t.render(
@@ -48,7 +48,7 @@ def render(helpers):
         convert=shell_to_html,
         shell_css=shell_css,
     )
-    open("helpers.html", "w").write(result)
+    open("helpers.md", "w").write(result)
 
 
 ##############################################################################

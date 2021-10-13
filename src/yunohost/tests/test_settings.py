@@ -1,8 +1,11 @@
 import os
 import json
+import glob
 import pytest
 
 from yunohost.utils.error import YunohostError
+
+import yunohost.settings as settings
 
 from yunohost.settings import (
     settings_get,
@@ -28,6 +31,15 @@ def setup_function(function):
 
 def teardown_function(function):
     os.system("mv /etc/yunohost/settings.json.saved /etc/yunohost/settings.json")
+    for filename in glob.glob("/etc/yunohost/settings-*.json"):
+        os.remove(filename)
+
+
+def monkey_get_setting_description(key):
+    return "Dummy %s setting" % key.split(".")[-1]
+
+
+settings._get_setting_description = monkey_get_setting_description
 
 
 def test_settings_get_bool():
