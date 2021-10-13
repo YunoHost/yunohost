@@ -758,16 +758,12 @@ class Question(object):
 
         self.value = self.values[self.name] = self._post_parse_value()
 
-<<<<<<< HEAD
-        return self.value
-=======
         # Search for post actions in hooks
         post_hook = f"post_ask__{self.name}"
         if post_hook in self.hooks:
             self.values.update(self.hooks[post_hook](self))
 
         return self.values
->>>>>>> c0cd8dbf... [enh] config panel python method hook
 
     def _prevalidate(self):
         if self.value in [None, ""] and not self.optional:
@@ -1289,14 +1285,10 @@ ARGUMENTS_TYPE_PARSERS = {
 
 
 def ask_questions_and_parse_answers(
-<<<<<<< HEAD
-    raw_questions: Dict, prefilled_answers: Union[str, Mapping[str, Any]] = {}
-=======
     raw_questions: Dict,
     prefilled_answers: Union[str, Mapping[str, Any]] = {},
     current_values: Union[str, Mapping[str, Any]] = {},
     hooks: Dict[str, Callable[[], None]] = {}
->>>>>>> c0cd8dbf... [enh] config panel python method hook
 ) -> List[Question]:
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
@@ -1323,24 +1315,16 @@ def ask_questions_and_parse_answers(
     else:
         answers = {}
 
-<<<<<<< HEAD
-=======
     context = {**current_values, **answers}
->>>>>>> c0cd8dbf... [enh] config panel python method hook
     out = []
 
     for raw_question in raw_questions:
         question_class = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")]
         raw_question["value"] = answers.get(raw_question["name"])
-<<<<<<< HEAD
-        question = question_class(raw_question, context=answers)
-        answers[question.name] = question.ask_if_needed()
-=======
         question = question_class(raw_question, context=context, hooks=hooks)
         new_values = question.ask_if_needed()
         answers.update(new_values)
         context.update(new_values)
->>>>>>> c0cd8dbf... [enh] config panel python method hook
         out.append(question)
 
     return out
