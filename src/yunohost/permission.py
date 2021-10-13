@@ -474,7 +474,7 @@ def permission_create(
             protected=protected,
             sync_perm=sync_perm,
         )
-    except:
+    except Exception:
         permission_delete(permission, force=True)
         raise
 

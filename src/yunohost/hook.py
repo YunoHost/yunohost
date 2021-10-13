@@ -34,7 +34,7 @@ from importlib import import_module
 from moulinette import m18n, Moulinette
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils import log
-from moulinette.utils.filesystem import read_yaml
+from moulinette.utils.filesystem import read_yaml, cp
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"
@@ -60,8 +60,7 @@ def hook_add(app, file):
         os.makedirs(CUSTOM_HOOK_FOLDER + action)
 
     finalpath = CUSTOM_HOOK_FOLDER + action + "/" + priority + "-" + app
-    os.system("cp %s %s" % (file, finalpath))
-    os.system("chown -hR admin: %s" % HOOK_FOLDER)
+    cp(file, finalpath)
 
     return {"hook": finalpath}
 

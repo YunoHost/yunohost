@@ -1,3 +1,48 @@
+yunohost (4.3.1.3) testing; urgency=low
+
+  - [fix] app: repo url branch names may contain dots (38cff4a9)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 07 Oct 2021 18:31:09 +0200
+
+yunohost (4.3.1.2) testing; urgency=low
+
+  - [fix] apps: upgrade was broken because of typo ([#1350](https://github.com/YunoHost/yunohost/pull/1350))
+  - [enh] apps: in app_info, return a new is_webapp info meant to be used by API/webadmin (4cd5e9b6)
+  - [fix] configpanel: handle case where file question didnt get modified from webadmin, in which case self.value contains a path (54d901ad)
+  - [fix] configpanel: bind_key -> bind_key_ to prevent yunohost from redacting key names which leads to broken log metadata.yml somehow (941cc294)
+  - [enh] questions: Add visible attribute support in cli (74256845)
+  - [enh] helpers: Simplify apt/php dependencies helpers ([#1018](https://github.com/YunoHost/yunohost/pull/1018))
+  - [enh] helpers: In logrotate helper, enforce decent permissions on log file if app user exists ([#1352](https://github.com/YunoHost/yunohost/pull/1352))
+
+  Thanks to all contributors <3 ! (Éric Gaspar, Kay0u, ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 07 Oct 2021 10:42:06 +0200
+
+yunohost (4.3.1.1) testing; urgency=low
+
+  - [enh] app helpers: Update n version ([#1347](https://github.com/YunoHost/yunohost/pull/1347))
+  - [enh] Misc app.py refactoring + Prevent change_url from being used to move a fulldomain app to a subpath ([#1346](https://github.com/YunoHost/yunohost/pull/1346))
+  - [i18n] Translations updated for French, Galician, Portuguese, Ukrainian
+
+  Thanks to all contributors <3 ! (Éric Gaspar, José M, mifegui, ppr, Tymofii-Lytvynenko)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 04 Oct 2021 01:33:22 +0200
+
+yunohost (4.3.1) testing; urgency=low
+
+  - [fix] diagnosis: new app diagnosis grep reporing comments as issues ([#1333](https://github.com/YunoHost/yunohost/pull/1333))
+  - [enh] configpanel: Bind function for hotspot (79126809)
+  - [enh] cli: Rework/improve prompt mecanic ([#1338](https://github.com/YunoHost/yunohost/pull/1338))
+  - [fix] dyndns update broke because of buggy dns record names (da1b9089)
+  - [enh] dns: general improvement for special-use TLD / ynh dyndns domains (17aafe6f)
+  - [fix] yunomdns: various fixes/improvements ([#1335](https://github.com/YunoHost/yunohost/pull/1335))
+  - [fix] certs: Adapt ready_for_ACME check to the new dnsrecord result format... (d75c1a61)
+  - [i18n] Translations updated for French
+
+  Thanks to all contributors <3 ! (Éric Gaspar, Félix Piédallu, Kayou, ljf, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 29 Sep 2021 22:22:42 +0200
+
 yunohost (4.3.0) testing; urgency=low
 
   - [users] Import/export users from/to CSV ([#1089](https://github.com/YunoHost/yunohost/pull/1089))

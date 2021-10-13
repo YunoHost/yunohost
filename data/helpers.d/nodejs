@@ -1,6 +1,6 @@
 #!/bin/bash
 
-n_version=7.3.0
+n_version=7.5.0
 n_install_dir="/opt/node_n"
 node_version_path="$n_install_dir/n/versions/node"
 # N_PREFIX is the directory of n, it needs to be loaded as a environment variable.
@@ -13,16 +13,18 @@ export N_PREFIX="$n_install_dir"
 # usage: ynh_install_n
 #
 # Requires YunoHost version 2.7.12 or higher.
-ynh_install_n () {
+ynh_install_n() {
     ynh_print_info --message="Installation of N - Node.js version management"
     # Build an app.src for n
     echo "SOURCE_URL=https://github.com/tj/n/archive/v${n_version}.tar.gz
-SOURCE_SUM=b908b0fc86922ede37e89d1030191285209d7d521507bf136e62895e5797847f" > "$YNH_APP_BASEDIR/conf/n.src"
+SOURCE_SUM=d4da7ea91f680de0c9b5876e097e2a793e8234fcd0f7ca87a0599b925be087a3" >"$YNH_APP_BASEDIR/conf/n.src"
     # Download and extract n
     ynh_setup_source --dest_dir="$n_install_dir/git" --source_id=n
     # Install n
-    (cd "$n_install_dir/git"
-    PREFIX=$N_PREFIX make install 2>&1)
+    (
+        cd "$n_install_dir/git"
+        PREFIX=$N_PREFIX make install 2>&1
+    )
 }
 
 # Load the version of node for an app, and set variables.
@@ -69,7 +71,7 @@ SOURCE_SUM=b908b0fc86922ede37e89d1030191285209d7d521507bf136e62895e5797847f" > "
 #   - $nodejs_version: Just the version number of node for this app. Stored as 'nodejs_version' in settings.yml.
 #
 # Requires YunoHost version 2.7.12 or higher.
-ynh_use_nodejs () {
+ynh_use_nodejs() {
     nodejs_version=$(ynh_app_setting_get --app=$app --key=nodejs_version)
 
     # Get the absolute path of this version of node
@@ -109,12 +111,12 @@ ynh_use_nodejs () {
 # Refer to `ynh_use_nodejs` for more information about available commands and variables
 #
 # Requires YunoHost version 2.7.12 or higher.
-ynh_install_nodejs () {
+ynh_install_nodejs() {
     # Use n, https://github.com/tj/n to manage the nodejs versions
 
     # Declare an array to define the options of this helper.
     local legacy_args=n
-    local -A args_array=( [n]=nodejs_version= )
+    local -A args_array=([n]=nodejs_version=)
     local nodejs_version
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -132,11 +134,9 @@ ynh_install_nodejs () {
     test -x /usr/bin/npm && mv /usr/bin/npm /usr/bin/npm_n
 
     # If n is not previously setup, install it
-    if ! $n_install_dir/bin/n --version > /dev/null 2>&1
-    then
+    if ! $n_install_dir/bin/n --version >/dev/null 2>&1; then
         ynh_install_n
-    elif dpkg --compare-versions "$($n_install_dir/bin/n --version)" lt $n_version
-    then
+    elif dpkg --compare-versions "$($n_install_dir/bin/n --version)" lt $n_version; then
         ynh_install_n
     fi
 
@@ -152,8 +152,7 @@ ynh_install_nodejs () {
 
     # Install the requested version of nodejs
     uname=$(uname --machine)
-    if [[ $uname =~ aarch64 || $uname =~ arm64 ]]
-    then
+    if [[ $uname =~ aarch64 || $uname =~ arm64 ]]; then
         n $nodejs_version --arch=arm64
     else
         n $nodejs_version
@@ -164,8 +163,7 @@ ynh_install_nodejs () {
     real_nodejs_version=$(basename $real_nodejs_version)
 
     # Create a symbolic link for this major version if the file doesn't already exist
-    if [ ! -e "$node_version_path/$nodejs_version" ]
-    then
+    if [ ! -e "$node_version_path/$nodejs_version" ]; then
         ln --symbolic --force --no-target-directory $node_version_path/$real_nodejs_version $node_version_path/$nodejs_version
     fi
 
@@ -190,21 +188,19 @@ ynh_install_nodejs () {
 # - If no other app uses node, n will be also removed.
 #
 # Requires YunoHost version 2.7.12 or higher.
-ynh_remove_nodejs () {
+ynh_remove_nodejs() {
     nodejs_version=$(ynh_app_setting_get --app=$app --key=nodejs_version)
 
     # Remove the line for this app
     sed --in-place "/$YNH_APP_INSTANCE_NAME:$nodejs_version/d" "$n_install_dir/ynh_app_version"
 
     # If no other app uses this version of nodejs, remove it.
-    if ! grep --quiet "$nodejs_version" "$n_install_dir/ynh_app_version"
-    then
+    if ! grep --quiet "$nodejs_version" "$n_install_dir/ynh_app_version"; then
         $n_install_dir/bin/n rm $nodejs_version
     fi
 
     # If no other app uses n, remove n
-    if [ ! -s "$n_install_dir/ynh_app_version" ]
-    then
+    if [ ! -s "$n_install_dir/ynh_app_version" ]; then
         ynh_secure_remove --file="$n_install_dir"
         ynh_secure_remove --file="/usr/local/n"
         sed --in-place "/N_PREFIX/d" /root/.bashrc
@@ -221,9 +217,9 @@ ynh_remove_nodejs () {
 # usage: ynh_cron_upgrade_node
 #
 # Requires YunoHost version 2.7.12 or higher.
-ynh_cron_upgrade_node () {
+ynh_cron_upgrade_node() {
     # Build the update script
-    cat > "$n_install_dir/node_update.sh" << EOF
+    cat >"$n_install_dir/node_update.sh" <<EOF
 #!/bin/bash
 
 version_path="$node_version_path"
@@ -259,7 +255,7 @@ EOF
     chmod +x "$n_install_dir/node_update.sh"
 
     # Build the cronjob
-    cat > "/etc/cron.daily/node_update" << EOF
+    cat >"/etc/cron.daily/node_update" <<EOF
 #!/bin/bash
 
 $n_install_dir/node_update.sh >> $n_install_dir/node_update.log

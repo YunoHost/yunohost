@@ -32,7 +32,7 @@ from collections import OrderedDict
 
 from moulinette import m18n, Moulinette
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, write_to_file, read_toml
+from moulinette.utils.filesystem import read_file, write_to_file, read_toml, mkdir
 
 from yunohost.domain import (
     domain_list,
@@ -40,8 +40,9 @@ from yunohost.domain import (
     domain_config_get,
     _get_domain_settings,
     _set_domain_settings,
+    _list_subdomains_of,
 )
-from yunohost.utils.dns import dig, YNH_DYNDNS_DOMAINS
+from yunohost.utils.dns import dig, is_yunohost_dyndns_domain, is_special_use_tld
 from yunohost.utils.error import YunohostValidationError, YunohostError
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
@@ -60,6 +61,9 @@ def domain_dns_suggest(domain):
         domain -- Domain name
 
     """
+
+    if is_special_use_tld(domain):
+        return m18n.n("domain_dns_conf_special_use_tld")
 
     _assert_domain_exists(domain)
 
@@ -102,18 +106,6 @@ def domain_dns_suggest(domain):
         logger.info(m18n.n("domain_dns_conf_is_just_a_recommendation"))
 
     return result
-
-
-def _list_subdomains_of(parent_domain):
-
-    _assert_domain_exists(parent_domain)
-
-    out = []
-    for domain in domain_list()["domains"]:
-        if domain.endswith(f".{parent_domain}"):
-            out.append(domain)
-
-    return out
 
 
 def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
@@ -169,10 +161,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
     # If this is a ynh_dyndns_domain, we're not gonna include all the subdomains in the conf
     # Because dynette only accept a specific list of name/type
     # And the wildcard */A already covers the bulk of use cases
-    if any(
-        base_domain.endswith("." + ynh_dyndns_domain)
-        for ynh_dyndns_domain in YNH_DYNDNS_DOMAINS
-    ):
+    if is_yunohost_dyndns_domain(base_domain):
         subdomains = []
     else:
         subdomains = _list_subdomains_of(base_domain)
@@ -296,6 +285,12 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
     ##################
 
     # Defined by custom hooks ships in apps for example ...
+
+    # FIXME : this ain't practical for apps that may want to add
+    # custom dns records for a subdomain ... there's no easy way for
+    # an app to compare the base domain is the parent of the subdomain ?
+    # (On the other hand, in sep 2021, it looks like no app is using
+    # this mechanism...)
 
     hook_results = hook_callback("custom_dns_rules", args=[base_domain])
     for hook_name, results in hook_results.items():
@@ -426,9 +421,14 @@ def _get_dns_zone_for_domain(domain):
     # First, check if domain is a nohost.me / noho.st / ynh.fr
     # This is mainly meant to speed up things for "dyndns update"
     # ... otherwise we end up constantly doing a bunch of dig requests
-    for ynh_dyndns_domain in YNH_DYNDNS_DOMAINS:
-        if domain.endswith("." + ynh_dyndns_domain):
-            return ynh_dyndns_domain
+    if is_yunohost_dyndns_domain(domain):
+        # Keep only foo.nohost.me even if we have subsub.sub.foo.nohost.me
+        return ".".join(domain.rsplit(".", 3)[-3:])
+
+    # Same thing with .local, .test, ... domains
+    if is_special_use_tld(domain):
+        # Keep only foo.local even if we have subsub.sub.foo.local
+        return ".".join(domain.rsplit(".", 2)[-2:])
 
     # Check cache
     cache_folder = "/var/cache/yunohost/dns_zones"
@@ -471,7 +471,7 @@ def _get_dns_zone_for_domain(domain):
         # Check if there's a NS record for that domain
         answer = dig(parent, rdtype="NS", full_answers=True, resolvers="force_external")
         if answer[0] == "ok":
-            os.system(f"mkdir -p {cache_folder}")
+            mkdir(cache_folder, parents=True, force=True)
             write_to_file(cache_file, parent)
             return parent
 
@@ -520,7 +520,7 @@ def _get_registrar_config_section(domain):
 
     # TODO big project, integrate yunohost's dynette as a registrar-like provider
     # TODO big project, integrate other dyndns providers such as netlib.re, or cf the list of dyndns providers supported by cloudron...
-    if dns_zone in YNH_DYNDNS_DOMAINS:
+    if is_yunohost_dyndns_domain(dns_zone):
         registrar_infos["registrar"] = OrderedDict(
             {
                 "type": "alert",
@@ -530,6 +530,15 @@ def _get_registrar_config_section(domain):
             }
         )
         return OrderedDict(registrar_infos)
+    elif is_special_use_tld(dns_zone):
+        registrar_infos["registrar"] = OrderedDict(
+            {
+                "type": "alert",
+                "style": "info",
+                "ask": m18n.n("domain_dns_conf_special_use_tld"),
+                "value": None,
+            }
+        )
 
     try:
         registrar = _relevant_provider_for_domain(dns_zone)[0]
@@ -602,6 +611,10 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     registrar, registrar_credentials = _get_registar_settings(domain)
 
     _assert_domain_exists(domain)
+
+    if is_special_use_tld(domain):
+        logger.info(m18n.n("domain_dns_conf_special_use_tld"))
+        return {}
 
     if not registrar or registrar == "None":  # yes it's None as a string
         raise YunohostValidationError("domain_dns_push_not_applicable", domain=domain)

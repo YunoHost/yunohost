@@ -6,6 +6,7 @@ After=network.target
 User=mdns
 Group=mdns
 Type=simple
+Environment=PYTHONUNBUFFERED=1
 ExecStart=/usr/bin/yunomdns
 StandardOutput=syslog
 
