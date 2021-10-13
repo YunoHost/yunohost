@@ -452,14 +452,9 @@ def domain_config_set(
 
 
 class DomainConfigPanel(ConfigPanel):
-    def __init__(self, domain):
-        _assert_domain_exists(domain)
-        self.domain = domain
-        self.save_mode = "diff"
-        super().__init__(
-            config_path=DOMAIN_CONFIG_PATH,
-            save_path=f"{DOMAIN_SETTINGS_DIR}/{domain}.yml",
-        )
+    entity_type = "domain"
+    save_path_tpl = f"{DOMAIN_SETTINGS_PATH}/{entity}.yml")
+    save_mode = "diff"
 
     def _get_toml(self):
         from yunohost.dns import _get_registrar_config_section

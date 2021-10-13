@@ -19,6 +19,7 @@
 
 """
 
+import glob
 import os
 import re
 import urllib.parse
@@ -27,7 +28,7 @@ import shutil
 import ast
 import operator as op
 from collections import OrderedDict
-from typing import Optional, Dict, List, Union, Any, Mapping
+from typing import Optional, Dict, List, Union, Any, Mapping, Callable
 
 from moulinette.interfaces.cli import colorize
 from moulinette import Moulinette, m18n
@@ -189,12 +190,44 @@ def evaluate_simple_js_expression(expr, context={}):
 
 
 class ConfigPanel:
-    def __init__(self, config_path, save_path=None):
+    entity_type = "config"
+    save_path_tpl = None
+    config_path_tpl = "/usr/share/yunohost/other/config_{entity}.toml"
+
+    @classmethod
+    def list(cls):
+        """
+        List available config panel
+        """
+        try:
+            entities = [re.match("^" + cls.save_path_tpl.format(entity="(?p<entity>)") + "$", f).group('entity')
+                        for f in glob.glob(cls.save_path_tpl.format(entity="*"))
+                        if os.path.isfile(f)]
+        except FileNotFoundError:
+            entities = []
+        return entities
+
+    def __init__(self, entity, config_path=None, save_path=None, creation=False):
+        self.entity = entity
         self.config_path = config_path
+        if not config_path:
+            self.config_path = self.config_path_tpl.format(entity=entity)
         self.save_path = save_path
+        if not save_path and self.save_path_tpl:
+            self.save_path = self.save_path_tpl.format(entity=entity)
         self.config = {}
         self.values = {}
         self.new_values = {}
+
+        if self.save_path and not creation and not os.path.exists(self.save_path):
+            raise YunohostError(f"{self.entity_type}_doesnt_exists", name=entity)
+        if self.save_path and creation and os.path.exists(self.save_path):
+            raise YunohostError(f"{self.entity_type}_already_exists", name=entity)
+
+        # Search for hooks in the config panel
+        self.hooks = {func: getattr(self, func)
+                   for func in dir(self)
+                   if callable(getattr(self, func)) and re.match("^(validate|post_ask)__", func)}
 
     def get(self, key="", mode="classic"):
         self.filter_key = key or ""
@@ -274,19 +307,12 @@ class ConfigPanel:
 
         # Import and parse pre-answered options
         logger.debug("Import and parse pre-answered options")
-        args = urllib.parse.parse_qs(args or "", keep_blank_values=True)
-        self.args = {key: ",".join(value_) for key, value_ in args.items()}
-
-        if args_file:
-            # Import YAML / JSON file but keep --args values
-            self.args = {**read_yaml(args_file), **self.args}
-
-        if value is not None:
-            self.args = {self.filter_key.split(".")[-1]: value}
+        self._parse_pre_answered(args, value, args_file)
 
         # Read or get values and hydrate the config
         self._load_current_values()
         self._hydrate()
+        Question.operation_logger = operation_logger
         self._ask()
 
         if operation_logger:
@@ -528,7 +554,12 @@ class ConfigPanel:
                 display_header(f"\n# {name}")
 
             # Check and ask unanswered questions
-            questions = ask_questions_and_parse_answers(section["options"], self.args)
+            questions = ask_questions_and_parse_answers(
+                section["options"],
+                prefilled_answers=self.args,
+                current_values=self.values,
+                hooks=self.hooks
+            )
             self.new_values.update(
                 {
                     question.name: question.value
@@ -546,20 +577,42 @@ class ConfigPanel:
             if "default" in option
         }
 
+    @property
+    def future_values(self): # TODO put this in ConfigPanel ?
+        return {**self.values, **self.new_values}
+
+    def __getattr__(self, name):
+        if "new_values" in self.__dict__ and name in self.new_values:
+            return self.new_values[name]
+
+        if "values" in self.__dict__ and name in self.values:
+            return self.values[name]
+
+        return self.__dict__[name]
+
     def _load_current_values(self):
         """
         Retrieve entries in YAML file
         And set default values if needed
         """
 
-        # Retrieve entries in the YAML
-        on_disk_settings = {}
-        if os.path.exists(self.save_path) and os.path.isfile(self.save_path):
-            on_disk_settings = read_yaml(self.save_path) or {}
-
         # Inject defaults if needed (using the magic .update() ;))
         self.values = self._get_default_values()
-        self.values.update(on_disk_settings)
+
+        # Retrieve entries in the YAML
+        if os.path.exists(self.save_path) and os.path.isfile(self.save_path):
+            self.values.update(read_yaml(self.save_path) or {})
+
+    def _parse_pre_answered(self, args, value, args_file):
+        args = urllib.parse.parse_qs(args or "", keep_blank_values=True)
+        self.args = {key: ",".join(value_) for key, value_ in args.items()}
+
+        if args_file:
+            # Import YAML / JSON file but keep --args values
+            self.args = {**read_yaml(args_file), **self.args}
+
+        if value is not None:
+            self.args = {self.filter_key.split(".")[-1]: value}
 
     def _apply(self):
         logger.info("Saving the new configuration...")
@@ -567,7 +620,7 @@ class ConfigPanel:
         if not os.path.exists(dir_path):
             mkdir(dir_path, mode=0o700)
 
-        values_to_save = {**self.values, **self.new_values}
+        values_to_save = self.future_values
         if self.save_mode == "diff":
             defaults = self._get_default_values()
             values_to_save = {
@@ -590,8 +643,8 @@ class ConfigPanel:
         if services_to_reload:
             logger.info("Reloading services...")
         for service in services_to_reload:
-            if hasattr(self, "app"):
-                service = service.replace("__APP__", self.app)
+            if hasattr(self, "entity"):
+                service = service.replace("__APP__", self.entity)
             service_reload_or_restart(service)
 
     def _iterate(self, trigger=["option"]):
@@ -610,13 +663,16 @@ class Question(object):
     hide_user_input_in_prompt = False
     pattern: Optional[Dict] = None
 
-    def __init__(self, question: Dict[str, Any], context: Mapping[str, Any] = {}):
+    def __init__(self, question: Dict[str, Any],
+                 context: Mapping[str, Any] = {},
+                 hooks: Dict[str, Callable] = {}):
         self.name = question["name"]
+        self.context = context
+        self.hooks = hooks
         self.type = question.get("type", "string")
         self.default = question.get("default", None)
         self.optional = question.get("optional", False)
         self.visible = question.get("visible", None)
-        self.context = context
         self.choices = question.get("choices", [])
         self.pattern = question.get("pattern", self.pattern)
         self.ask = question.get("ask", {"en": self.name})
@@ -626,6 +682,8 @@ class Question(object):
         self.current_value = question.get("current_value")
         # .value is the "proposed" value which we got from the user
         self.value = question.get("value")
+        # Use to return several values in case answer is in mutipart
+        self.values = {}
 
         # Empty value is parsed as empty string
         if self.default == "":
@@ -666,8 +724,8 @@ class Question(object):
             # - we doesn't want to give a specific value
             # - we want to keep the previous value
             # - we want the default value
-            self.value = None
-            return { self.name: self.value }
+            self.value = self.values[self.name] = None
+            return self.values
 
         for i in range(5):
             # Display question if no value filled or if it's a readonly message
@@ -705,14 +763,14 @@ class Question(object):
 
             break
 
-        self.value = self._post_parse_value()
+        self.value = self.values[self.name] = self._post_parse_value()
 
         # Search for post actions in hooks
-        post_hook = f"post_parse__{self.name}"
+        post_hook = f"post_ask__{self.name}"
         if post_hook in self.hooks:
-            self.hooks[post_hook](self)
+            self.values.update(self.hooks[post_hook](self))
 
-        return { self.name: self.value }
+        return self.values
 
     def _prevalidate(self):
         if self.value in [None, ""] and not self.optional:
@@ -876,8 +934,10 @@ class PasswordQuestion(Question):
     default_value = ""
     forbidden_chars = "{}"
 
-    def __init__(self, question, context: Mapping[str, Any] = {}):
-        super().__init__(question, context)
+    def __init__(self, question,
+                 context: Mapping[str, Any] = {},
+                 hooks: Dict[str, Callable] = {}):
+        super().__init__(question, context, hooks)
         self.redact = True
         if self.default is not None:
             raise YunohostValidationError(
@@ -995,8 +1055,9 @@ class BooleanQuestion(Question):
             choices="yes/no",
         )
 
-    def __init__(self, question, context: Mapping[str, Any] = {}):
-        super().__init__(question, context)
+    def __init__(self, question, context: Mapping[str, Any] = {},
+                 hooks: Dict[str, Callable] = {}):
+        super().__init__(question, context, hooks)
         self.yes = question.get("yes", 1)
         self.no = question.get("no", 0)
         if self.default is None:
@@ -1016,10 +1077,11 @@ class BooleanQuestion(Question):
 class DomainQuestion(Question):
     argument_type = "domain"
 
-    def __init__(self, question, context: Mapping[str, Any] = {}):
+    def __init__(self, question, context: Mapping[str, Any] = {},
+                 hooks: Dict[str, Callable] = {}):
         from yunohost.domain import domain_list, _get_maindomain
 
-        super().__init__(question, context)
+        super().__init__(question, context, hooks)
 
         if self.default is None:
             self.default = _get_maindomain()
@@ -1042,11 +1104,12 @@ class DomainQuestion(Question):
 class UserQuestion(Question):
     argument_type = "user"
 
-    def __init__(self, question, context: Mapping[str, Any] = {}):
+    def __init__(self, question, context: Mapping[str, Any] = {},
+                 hooks: Dict[str, Callable] = {}):
         from yunohost.user import user_list, user_info
         from yunohost.domain import _get_maindomain
 
-        super().__init__(question, context)
+        super().__init__(question, context, hooks)
         self.choices = list(user_list()["users"].keys())
 
         if not self.choices:
@@ -1068,8 +1131,9 @@ class NumberQuestion(Question):
     argument_type = "number"
     default_value = None
 
-    def __init__(self, question, context: Mapping[str, Any] = {}):
-        super().__init__(question, context)
+    def __init__(self, question, context: Mapping[str, Any] = {},
+                 hooks: Dict[str, Callable] = {}):
+        super().__init__(question, context, hooks)
         self.min = question.get("min", None)
         self.max = question.get("max", None)
         self.step = question.get("step", None)
@@ -1120,8 +1184,9 @@ class DisplayTextQuestion(Question):
     argument_type = "display_text"
     readonly = True
 
-    def __init__(self, question, context: Mapping[str, Any] = {}):
-        super().__init__(question, context)
+    def __init__(self, question, context: Mapping[str, Any] = {},
+                 hooks: Dict[str, Callable] = {}):
+        super().__init__(question, context, hooks)
 
         self.optional = True
         self.style = question.get(
@@ -1155,8 +1220,9 @@ class FileQuestion(Question):
             if os.path.exists(upload_dir):
                 shutil.rmtree(upload_dir)
 
-    def __init__(self, question, context: Mapping[str, Any] = {}):
-        super().__init__(question, context)
+    def __init__(self, question, context: Mapping[str, Any] = {},
+                 hooks: Dict[str, Callable] = {}):
+        super().__init__(question, context, hooks)
         self.accept = question.get("accept", "")
 
     def _prevalidate(self):
@@ -1226,7 +1292,9 @@ ARGUMENTS_TYPE_PARSERS = {
 
 
 def ask_questions_and_parse_answers(
-    raw_questions: Dict, prefilled_answers: Union[str, Mapping[str, Any]] = {},
+    raw_questions: Dict,
+    prefilled_answers: Union[str, Mapping[str, Any]] = {},
+    current_values: Union[str, Mapping[str, Any]] = {},
     hooks: Dict[str, Callable[[], None]] = {}
 ) -> List[Question]:
     """Parse arguments store in either manifest.json or actions.json or from a
@@ -1254,14 +1322,16 @@ def ask_questions_and_parse_answers(
     else:
         answers = {}
 
-
+    context = {**current_values, **answers}
     out = []
 
     for raw_question in raw_questions:
         question_class = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")]
         raw_question["value"] = answers.get(raw_question["name"])
-        question = question_class(raw_question, context=answers)
-        answers.update(question.ask_if_needed())
+        question = question_class(raw_question, context=context, hooks=hooks)
+        new_values = question.ask_if_needed()
+        answers.update(new_values)
+        context.update(new_values)
         out.append(question)
 
     return out
