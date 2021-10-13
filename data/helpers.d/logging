@@ -38,25 +38,6 @@ ynh_print_info() {
     echo "$message" >&$YNH_STDINFO
 }
 
-# Ignore the yunohost-cli log to prevent errors with conditional commands
-#
-# [internal]
-#
-# usage: ynh_no_log COMMAND
-#
-# Simply duplicate the log, execute the yunohost command and replace the log without the result of this command
-# It's a very badly hack...
-#
-# Requires YunoHost version 2.6.4 or higher.
-ynh_no_log() {
-    local ynh_cli_log=/var/log/yunohost/yunohost-cli.log
-    cp --archive ${ynh_cli_log} ${ynh_cli_log}-move
-    eval $@
-    local exit_code=$?
-    mv ${ynh_cli_log}-move ${ynh_cli_log}
-    return $exit_code
-}
-
 # Main printer, just in case in the future we have to change anything about that.
 #
 # [internal]
@@ -102,72 +83,107 @@ ynh_print_err() {
 
 # Execute a command and print the result as an error
 #
-# usage: ynh_exec_err "your_command [ | other_command ]"
+# usage: ynh_exec_err your command and args
 # | arg: command - command to execute
 #
-# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
-#
-# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
+# Note that you should NOT quote the command but only prefix it with ynh_exec_err
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_exec_err() {
-    ynh_print_err "$(eval $@)"
+    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
+    # (because in the past eval was used) ...
+    # we detect this by checking that there's no 2nd arg, and $1 contains a space
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
+    then
+        ynh_print_err "$(eval $@)"
+    else
+        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+        ynh_print_err "$("$@")"
+    fi
 }
 
 # Execute a command and print the result as a warning
 #
-# usage: ynh_exec_warn "your_command [ | other_command ]"
+# usage: ynh_exec_warn your command and args
 # | arg: command - command to execute
 #
-# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
-#
-# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
+# Note that you should NOT quote the command but only prefix it with ynh_exec_warn
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_exec_warn() {
-    ynh_print_warn "$(eval $@)"
+    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
+    # (because in the past eval was used) ...
+    # we detect this by checking that there's no 2nd arg, and $1 contains a space
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
+    then
+        ynh_print_warn "$(eval $@)"
+    else
+        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+        ynh_print_warn "$("$@")"
+    fi
 }
 
 # Execute a command and force the result to be printed on stdout
 #
-# usage: ynh_exec_warn_less "your_command [ | other_command ]"
+# usage: ynh_exec_warn_less your command and args
 # | arg: command - command to execute
 #
-# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
-#
-# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
+# Note that you should NOT quote the command but only prefix it with ynh_exec_warn
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_exec_warn_less() {
-    eval $@ 2>&1
+    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
+    # (because in the past eval was used) ...
+    # we detect this by checking that there's no 2nd arg, and $1 contains a space
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
+    then
+        eval $@ 2>&1
+    else
+        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+        "$@" 2>&1
+    fi
 }
 
 # Execute a command and redirect stdout in /dev/null
 #
-# usage: ynh_exec_quiet "your_command [ | other_command ]"
+# usage: ynh_exec_quiet your command and args
 # | arg: command - command to execute
 #
-# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
-#
-# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
+# Note that you should NOT quote the command but only prefix it with ynh_exec_warn
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_exec_quiet() {
-    eval $@ >/dev/null
+    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
+    # (because in the past eval was used) ...
+    # we detect this by checking that there's no 2nd arg, and $1 contains a space
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
+    then
+        eval $@ > /dev/null
+    else
+        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+        "$@" > /dev/null
+    fi
 }
 
 # Execute a command and redirect stdout and stderr in /dev/null
 #
-# usage: ynh_exec_fully_quiet "your_command [ | other_command ]"
+# usage: ynh_exec_quiet your command and args
 # | arg: command - command to execute
 #
-# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
-#
-# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
+# Note that you should NOT quote the command but only prefix it with ynh_exec_quiet
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_exec_fully_quiet() {
-    eval $@ >/dev/null 2>&1
+    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
+    # (because in the past eval was used) ...
+    # we detect this by checking that there's no 2nd arg, and $1 contains a space
+    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
+    then
+        eval $@ > /dev/null 2>&1
+    else
+        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+        "$@" > /dev/null 2>&1
+    fi
 }
 
 # Remove any logs for all the following commands.
@@ -301,68 +317,4 @@ ynh_script_progression() {
 # Requires YunoHost version 3.6.0 or higher.
 ynh_return() {
     echo "$1" >>"$YNH_STDRETURN"
-}
-
-# Debugger for app packagers
-#
-# usage: ynh_debug [--message=message] [--trace=1/0]
-# | arg: -m, --message= - The text to print
-# | arg: -t, --trace=   - Turn on or off the trace of the script. Usefull to trace nonly a small part of a script.
-#
-# Requires YunoHost version 3.5.0 or higher.
-ynh_debug() {
-    # Disable set xtrace for the helper itself, to not pollute the debug log
-    set +o xtrace # set +x
-    # Declare an array to define the options of this helper.
-    local legacy_args=mt
-    local -A args_array=([m]=message= [t]=trace=)
-    local message
-    local trace
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-    # Re-disable xtrace, ynh_handle_getopts_args set it back
-    set +o xtrace # set +x
-    message=${message:-}
-    trace=${trace:-}
-
-    if [ -n "$message" ]; then
-        ynh_print_log "[Debug] ${message}" >&2
-    fi
-
-    if [ "$trace" == "1" ]; then
-        ynh_debug --message="Enable debugging"
-        set +o xtrace # set +x
-        # Get the current file descriptor of xtrace
-        old_bash_xtracefd=$BASH_XTRACEFD
-        # Add the current file name and the line number of any command currently running while tracing.
-        PS4='$(basename ${BASH_SOURCE[0]})-L${LINENO}: '
-        # Force xtrace to stderr
-        BASH_XTRACEFD=2
-        # Force stdout to stderr
-        exec 1>&2
-    fi
-    if [ "$trace" == "0" ]; then
-        ynh_debug --message="Disable debugging"
-        set +o xtrace # set +x
-        # Put xtrace back to its original fild descriptor
-        BASH_XTRACEFD=$old_bash_xtracefd
-        # Restore stdout
-        exec 1>&1
-    fi
-    # Renable set xtrace
-    set -o xtrace # set -x
-}
-
-# Execute a command and print the result as debug
-#
-# usage: ynh_debug_exec "your_command [ | other_command ]"
-# | arg: command - command to execute
-#
-# When using pipes, double quotes are required - otherwise, this helper will run the first command, and the whole output will be sent through the next pipe.
-#
-# If the command to execute uses double quotes, they have to be escaped or they will be interpreted and removed.
-#
-# Requires YunoHost version 3.5.0 or higher.
-ynh_debug_exec() {
-    ynh_debug --message="$(eval $@)"
 }
