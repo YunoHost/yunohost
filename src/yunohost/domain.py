@@ -453,7 +453,7 @@ def domain_config_set(
 
 class DomainConfigPanel(ConfigPanel):
     entity_type = "domain"
-    save_path_tpl = "{DOMAIN_SETTINGS_DIR}/{entity}.yml"
+    save_path_tpl = f"{DOMAIN_SETTINGS_DIR}/{{entity}}.yml"
     save_mode = "diff"
 
     def _get_toml(self):
