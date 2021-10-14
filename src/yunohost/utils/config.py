@@ -224,11 +224,11 @@ class ConfigPanel:
         self.new_values = {}
 
         if self.save_path and not creation and not os.path.exists(self.save_path):
-            raise YunohostError(
+            raise YunohostValidationError(
                 f"{self.entity_type}_unknown", **{self.entity_type: entity}
             )
         if self.save_path and creation and os.path.exists(self.save_path):
-            raise YunohostError(
+            raise YunohostValidationError(
                 f"{self.entity_type}_exists", **{self.entity_type: entity}
             )
 
