@@ -1610,7 +1610,7 @@ def app_config_set(
 class AppConfigPanel(ConfigPanel):
     entity_type = "app"
     save_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/settings.yml")
-    config_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/config_panel.yml")
+    config_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/config_panel.toml")
 
     def _load_current_values(self):
         self.values = self._call_config_script("show")
