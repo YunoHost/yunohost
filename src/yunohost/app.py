@@ -1634,7 +1634,9 @@ class AppConfigPanel(ConfigPanel):
         from yunohost.hook import hook_exec
 
         # Add default config script if needed
-        config_script = os.path.join(APPS_SETTING_PATH, self.entity, "scripts", "config")
+        config_script = os.path.join(
+            APPS_SETTING_PATH, self.entity, "scripts", "config"
+        )
         if not os.path.exists(config_script):
             logger.debug("Adding a default config script")
             default_script = """#!/bin/bash
