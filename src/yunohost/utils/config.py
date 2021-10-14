@@ -220,9 +220,9 @@ class ConfigPanel:
         self.new_values = {}
 
         if self.save_path and not creation and not os.path.exists(self.save_path):
-            raise YunohostError(f"{self.entity_type}_doesnt_exists", name=entity)
+            raise YunohostError(f"{self.entity_type}_unknown", name=entity)
         if self.save_path and creation and os.path.exists(self.save_path):
-            raise YunohostError(f"{self.entity_type}_already_exists", name=entity)
+            raise YunohostError(f"{self.entity_type}_exists", name=entity)
 
         # Search for hooks in the config panel
         self.hooks = {func: getattr(self, func)
