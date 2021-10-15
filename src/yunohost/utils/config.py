@@ -562,9 +562,12 @@ class ConfigPanel:
                 display_header(f"\n# {name}")
 
             # Check and ask unanswered questions
+            prefilled_answers = self.args.copy()
+            prefilled_answers.update(self.new_values)
+
             questions = ask_questions_and_parse_answers(
                 section["options"],
-                prefilled_answers=self.args,
+                prefilled_answers=prefilled_answers,
                 current_values=self.values,
                 hooks=self.hooks,
             )
