@@ -424,7 +424,7 @@
     "group_cannot_be_deleted": "Die Gruppe {group} kann nicht manuell entfernt werden.",
     "group_cannot_edit_primary_group": "Die Gruppe '{group}' kann nicht manuell bearbeitet werden. Es ist die primäre Gruppe, welche dazu gedacht ist, nur einen spezifischen Benutzer zu enthalten.",
     "diagnosis_processes_killed_by_oom_reaper": "Das System hat einige Prozesse beendet, weil ihm der Arbeitsspeicher ausgegangen ist. Das passiert normalerweise, wenn das System ingesamt nicht genügend Arbeitsspeicher zur Verfügung hat oder wenn ein einzelner Prozess zu viel Speicher verbraucht. Zusammenfassung der beendeten Prozesse: \n{kills_summary}",
-    "diagnosis_description_ports": "Offene Ports",
+    "diagnosis_description_ports": "Geöffnete Ports",
     "additional_urls_already_added": "Zusätzliche URL '{url}' bereits hinzugefügt in der zusätzlichen URL für Berechtigung '{permission}'",
     "additional_urls_already_removed": "Zusätzliche URL '{url}' bereits entfernt in der zusätzlichen URL für Berechtigung '{permission}'",
     "app_label_deprecated": "Dieser Befehl ist veraltet! Bitte nutzen Sie den neuen Befehl 'yunohost user permission update' um das Applabel zu verwalten.",
