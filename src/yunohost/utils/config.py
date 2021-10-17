@@ -193,6 +193,7 @@ class ConfigPanel:
     entity_type = "config"
     save_path_tpl = None
     config_path_tpl = "/usr/share/yunohost/other/config_{entity}.toml"
+    save_mode = "full"
 
     @classmethod
     def list(cls):
