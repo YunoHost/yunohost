@@ -1,3 +1,13 @@
+yunohost (4.3.1.5) testing; urgency=low
+
+  - [enh] configpanel: Add hook mecanism between questions (9f7fb61b)
+  - [fix] configpanel: Issue with visible-if context missing between section
+  - [mod] Force-disable old avahi-daemon (af3d6dd7, 3a07a780)
+
+  Thanks to all contributors <3 ! (ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 17 Oct 2021 20:44:33 +0200
+
 yunohost (4.3.1.4) testing; urgency=low
 
   - [mod] codequality: Safer, clearer ynh_secure_remove ([#1357](https://github.com/YunoHost/yunohost/pull/1357))
