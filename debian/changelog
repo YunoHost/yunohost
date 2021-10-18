@@ -1,3 +1,12 @@
+yunohost (4.3.1.6) testing; urgency=low
+
+  - [fix] configpanel: Various technical fixes (07c1ddce, eae826b2, ff69067d)
+  - [i18n] Translations updated for Basque, Galician, German, Russian, Ukrainian
+
+  Thanks to all contributors <3 ! (Colin Wawrik, Daniel, José M, ljf, punkrockgirl, Semen Turchikhin, Tymofii-Lytvynenko)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 18 Oct 2021 18:50:00 +0200
+
 yunohost (4.3.1.5) testing; urgency=low
 
   - [enh] configpanel: Add hook mecanism between questions (9f7fb61b)
