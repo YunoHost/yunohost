@@ -260,12 +260,16 @@ def dyndns_update(
         ok, result = dig(dyn_host, "A")
         dyn_host_ipv4 = result[0] if ok == "ok" and len(result) else None
         if not dyn_host_ipv4:
-           raise YunohostError("Failed to resolve IPv4 for %s ?" % dyn_host, raw_msg=True)
-           
+            raise YunohostError(
+                "Failed to resolve IPv4 for %s ?" % dyn_host, raw_msg=True
+            )
+
         ok, result = dig(dyn_host, "AAAA")
         dyn_host_ipv6 = result[0] if ok == "ok" and len(result) else None
         if not dyn_host_ipv6:
-            raise YunohostError("Failed to resolve IPv6 for %s ?" % dyn_host, raw_msg=True)
+            raise YunohostError(
+                "Failed to resolve IPv6 for %s ?" % dyn_host, raw_msg=True
+            )
 
         ok, result = dig(domain, rdtype, resolvers=[dyn_host_ipv4, dyn_host_ipv6])
         if ok == "ok":
