@@ -1,3 +1,12 @@
+yunohost (4.3.1.7) testing; urgency=low
+
+  - [fix] configpanel: Misc technical fixes ... (341059d0, 9c22329e)
+  - [i18n] Translations updated for Basque, French
+
+  Thanks to all contributors <3 ! (ljf, ppr, punkrockgirl)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 19 Oct 2021 15:30:50 +0200
+
 yunohost (4.3.1.6) testing; urgency=low
 
   - [fix] configpanel: Various technical fixes (07c1ddce, eae826b2, ff69067d)
