@@ -221,7 +221,7 @@ def test_create_user_already_exists(mocker):
 
 
 def test_create_user_with_domain_that_doesnt_exists(mocker):
-    with raiseYunohostError(mocker, "domain_name_unknown"):
+    with raiseYunohostError(mocker, "domain_unknown"):
         user_create("alice", "Alice", "White", "doesnt.exists", "test123Ynh")
 
 
