@@ -216,7 +216,9 @@ class ConfigPanel:
         self.entity = entity
         self.config_path = config_path
         if not config_path:
-            self.config_path = self.config_path_tpl.format(entity=entity, entity_type=self.entity_type)
+            self.config_path = self.config_path_tpl.format(
+                entity=entity, entity_type=self.entity_type
+            )
         self.save_path = save_path
         if not save_path and self.save_path_tpl:
             self.save_path = self.save_path_tpl.format(entity=entity)
