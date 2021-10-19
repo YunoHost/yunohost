@@ -4,6 +4,47 @@ yunohost (11.0.0~alpha) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Feb 2021 00:02:38 +0100
 
+yunohost (4.3.1.7) testing; urgency=low
+
+  - [fix] configpanel: Misc technical fixes ... (341059d0, 9c22329e)
+  - [i18n] Translations updated for Basque, French
+
+  Thanks to all contributors <3 ! (ljf, ppr, punkrockgirl)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 19 Oct 2021 15:30:50 +0200
+
+yunohost (4.3.1.6) testing; urgency=low
+
+  - [fix] configpanel: Various technical fixes (07c1ddce, eae826b2, ff69067d)
+  - [i18n] Translations updated for Basque, Galician, German, Russian, Ukrainian
+
+  Thanks to all contributors <3 ! (Colin Wawrik, Daniel, José M, ljf, punkrockgirl, Semen Turchikhin, Tymofii-Lytvynenko)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 18 Oct 2021 18:50:00 +0200
+
+yunohost (4.3.1.5) testing; urgency=low
+
+  - [enh] configpanel: Add hook mecanism between questions (9f7fb61b)
+  - [fix] configpanel: Issue with visible-if context missing between section
+  - [mod] Force-disable old avahi-daemon (af3d6dd7, 3a07a780)
+
+  Thanks to all contributors <3 ! (ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 17 Oct 2021 20:44:33 +0200
+
+yunohost (4.3.1.4) testing; urgency=low
+
+  - [mod] codequality: Safer, clearer ynh_secure_remove ([#1357](https://github.com/YunoHost/yunohost/pull/1357))
+  - [mod] codequality: Lint/autoformat helpers, hooks and debian scripts ([#1356](https://github.com/YunoHost/yunohost/pull/1356))
+  - [mod] helpers: Flag ynh_print_ON/OFF as internal to not advertise them in the doc (fe959bd7)
+  - [fix] helpers: Eval mecanism in ynh_exec_* lead to epic bugs ([#1358](https://github.com/YunoHost/yunohost/pull/1358))
+  - [enh] dyndns: validate that we're connected to the internet before triggering yunohost dyndns update (55bacd74)
+  - [enh] regenconf/dyndns: Delete dyndns cron in regenconf if no dyndns domain found (cb835a2d)
+  - [fix] regenconf/dovecot: add conf snippet to get rid of stupid stats-writer errors in mail.log (dab3dc6f)
+  - [enh] regenconf/dnsmasq: Don't generate dnsmasq conf for .local domains (df02f898)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 13 Oct 2021 15:41:21 +0200
+
 yunohost (4.3.1.3) testing; urgency=low
 
   - [fix] app: repo url branch names may contain dots (38cff4a9)

@@ -193,7 +193,7 @@ _ynh_app_config_validate() {
         if [ -z ${!short_setting+x} ]; then
             # Assign the var with the old value in order to allows multiple
             # args validation
-            declare "$short_setting"="${old[$short_setting]}"
+            declare -g "$short_setting"="${old[$short_setting]}"
             continue
         fi
         if [ ! -z "${file_hash[${short_setting}]}" ]; then
