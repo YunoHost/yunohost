@@ -3,7 +3,7 @@ import os
 
 from moulinette.core import MoulinetteError
 
-from yunohost.utils.error import YunohostValidationError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.domain import (
     DOMAIN_SETTINGS_DIR,
     _get_maindomain,
