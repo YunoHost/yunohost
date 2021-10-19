@@ -1,3 +1,10 @@
 {
-    "password_too_simple_1": "Pasahitzak gutxienez 8 karaktere izan behar ditu"
+    "password_too_simple_1": "Pasahitzak gutxienez 8 karaktere izan behar ditu",
+    "action_invalid": "'{action}' ekintza baliogabea",
+    "aborting": "Bertan behera uzten.",
+    "admin_password_changed": "Administrazio-pasahitza aldatu da",
+    "admin_password_change_failed": "Ezinezkoa izan da pasahitza aldatzea",
+    "additional_urls_already_added": "'{url}' URL gehigarria '{permission}' baimenerako gehitu da dagoeneko",
+    "additional_urls_already_removed": "'{url}' URL gehigarriari '{permission}' baimena kendu zaio dagoeneko",
+    "admin_password": "Administrazio-pasahitza"
 }

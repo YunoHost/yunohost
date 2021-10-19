@@ -192,7 +192,8 @@ def evaluate_simple_js_expression(expr, context={}):
 class ConfigPanel:
     entity_type = "config"
     save_path_tpl = None
-    config_path_tpl = "/usr/share/yunohost/other/config_{entity}.toml"
+    config_path_tpl = "/usr/share/yunohost/other/config_{entity_type}.toml"
+    save_mode = "full"
 
     @classmethod
     def list(cls):
@@ -200,9 +201,13 @@ class ConfigPanel:
         List available config panel
         """
         try:
-            entities = [re.match("^" + cls.save_path_tpl.format(entity="(?p<entity>)") + "$", f).group('entity')
-                        for f in glob.glob(cls.save_path_tpl.format(entity="*"))
-                        if os.path.isfile(f)]
+            entities = [
+                re.match(
+                    "^" + cls.save_path_tpl.format(entity="(?p<entity>)") + "$", f
+                ).group("entity")
+                for f in glob.glob(cls.save_path_tpl.format(entity="*"))
+                if os.path.isfile(f)
+            ]
         except FileNotFoundError:
             entities = []
         return entities
@@ -211,7 +216,7 @@ class ConfigPanel:
         self.entity = entity
         self.config_path = config_path
         if not config_path:
-            self.config_path = self.config_path_tpl.format(entity=entity)
+            self.config_path = self.config_path_tpl.format(entity=entity, entity_type=self.entity_type)
         self.save_path = save_path
         if not save_path and self.save_path_tpl:
             self.save_path = self.save_path_tpl.format(entity=entity)
@@ -219,15 +224,27 @@ class ConfigPanel:
         self.values = {}
         self.new_values = {}
 
-        if self.save_path and not creation and not os.path.exists(self.save_path):
-            raise YunohostError(f"{self.entity_type}_doesnt_exists", name=entity)
+        if (
+            self.save_path
+            and self.save_mode != "diff"
+            and not creation
+            and not os.path.exists(self.save_path)
+        ):
+            raise YunohostValidationError(
+                f"{self.entity_type}_unknown", **{self.entity_type: entity}
+            )
         if self.save_path and creation and os.path.exists(self.save_path):
-            raise YunohostError(f"{self.entity_type}_already_exists", name=entity)
+            raise YunohostValidationError(
+                f"{self.entity_type}_exists", **{self.entity_type: entity}
+            )
 
         # Search for hooks in the config panel
-        self.hooks = {func: getattr(self, func)
-                   for func in dir(self)
-                   if callable(getattr(self, func)) and re.match("^(validate|post_ask)__", func)}
+        self.hooks = {
+            func: getattr(self, func)
+            for func in dir(self)
+            if callable(getattr(self, func))
+            and re.match("^(validate|post_ask)__", func)
+        }
 
     def get(self, key="", mode="classic"):
         self.filter_key = key or ""
@@ -554,11 +571,14 @@ class ConfigPanel:
                 display_header(f"\n# {name}")
 
             # Check and ask unanswered questions
+            prefilled_answers = self.args.copy()
+            prefilled_answers.update(self.new_values)
+
             questions = ask_questions_and_parse_answers(
                 section["options"],
-                prefilled_answers=self.args,
+                prefilled_answers=prefilled_answers,
                 current_values=self.values,
-                hooks=self.hooks
+                hooks=self.hooks,
             )
             self.new_values.update(
                 {
@@ -578,7 +598,7 @@ class ConfigPanel:
         }
 
     @property
-    def future_values(self): # TODO put this in ConfigPanel ?
+    def future_values(self):  # TODO put this in ConfigPanel ?
         return {**self.values, **self.new_values}
 
     def __getattr__(self, name):
@@ -663,9 +683,12 @@ class Question(object):
     hide_user_input_in_prompt = False
     pattern: Optional[Dict] = None
 
-    def __init__(self, question: Dict[str, Any],
-                 context: Mapping[str, Any] = {},
-                 hooks: Dict[str, Callable] = {}):
+    def __init__(
+        self,
+        question: Dict[str, Any],
+        context: Mapping[str, Any] = {},
+        hooks: Dict[str, Callable] = {},
+    ):
         self.name = question["name"]
         self.context = context
         self.hooks = hooks
@@ -934,9 +957,9 @@ class PasswordQuestion(Question):
     default_value = ""
     forbidden_chars = "{}"
 
-    def __init__(self, question,
-                 context: Mapping[str, Any] = {},
-                 hooks: Dict[str, Callable] = {}):
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
         super().__init__(question, context, hooks)
         self.redact = True
         if self.default is not None:
@@ -1055,8 +1078,9 @@ class BooleanQuestion(Question):
             choices="yes/no",
         )
 
-    def __init__(self, question, context: Mapping[str, Any] = {},
-                 hooks: Dict[str, Callable] = {}):
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
         super().__init__(question, context, hooks)
         self.yes = question.get("yes", 1)
         self.no = question.get("no", 0)
@@ -1077,8 +1101,9 @@ class BooleanQuestion(Question):
 class DomainQuestion(Question):
     argument_type = "domain"
 
-    def __init__(self, question, context: Mapping[str, Any] = {},
-                 hooks: Dict[str, Callable] = {}):
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
         from yunohost.domain import domain_list, _get_maindomain
 
         super().__init__(question, context, hooks)
@@ -1104,8 +1129,9 @@ class DomainQuestion(Question):
 class UserQuestion(Question):
     argument_type = "user"
 
-    def __init__(self, question, context: Mapping[str, Any] = {},
-                 hooks: Dict[str, Callable] = {}):
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
         from yunohost.user import user_list, user_info
         from yunohost.domain import _get_maindomain
 
@@ -1131,8 +1157,9 @@ class NumberQuestion(Question):
     argument_type = "number"
     default_value = None
 
-    def __init__(self, question, context: Mapping[str, Any] = {},
-                 hooks: Dict[str, Callable] = {}):
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
         super().__init__(question, context, hooks)
         self.min = question.get("min", None)
         self.max = question.get("max", None)
@@ -1184,8 +1211,9 @@ class DisplayTextQuestion(Question):
     argument_type = "display_text"
     readonly = True
 
-    def __init__(self, question, context: Mapping[str, Any] = {},
-                 hooks: Dict[str, Callable] = {}):
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
         super().__init__(question, context, hooks)
 
         self.optional = True
@@ -1220,8 +1248,9 @@ class FileQuestion(Question):
             if os.path.exists(upload_dir):
                 shutil.rmtree(upload_dir)
 
-    def __init__(self, question, context: Mapping[str, Any] = {},
-                 hooks: Dict[str, Callable] = {}):
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
         super().__init__(question, context, hooks)
         self.accept = question.get("accept", "")
 
@@ -1295,7 +1324,7 @@ def ask_questions_and_parse_answers(
     raw_questions: Dict,
     prefilled_answers: Union[str, Mapping[str, Any]] = {},
     current_values: Union[str, Mapping[str, Any]] = {},
-    hooks: Dict[str, Callable[[], None]] = {}
+    hooks: Dict[str, Callable[[], None]] = {},
 ) -> List[Question]:
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.

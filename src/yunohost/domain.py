@@ -102,7 +102,7 @@ def domain_list(exclude_subdomains=False):
 
 def _assert_domain_exists(domain):
     if domain not in domain_list()["domains"]:
-        raise YunohostValidationError("domain_name_unknown", domain=domain)
+        raise YunohostValidationError("domain_unknown", domain=domain)
 
 
 def _list_subdomains_of(parent_domain):
@@ -453,7 +453,7 @@ def domain_config_set(
 
 class DomainConfigPanel(ConfigPanel):
     entity_type = "domain"
-    save_path_tpl = f"{DOMAIN_SETTINGS_PATH}/{entity}.yml")
+    save_path_tpl = f"{DOMAIN_SETTINGS_DIR}/{{entity}}.yml"
     save_mode = "diff"
 
     def _get_toml(self):
