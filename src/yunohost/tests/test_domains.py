@@ -114,5 +114,5 @@ def test_domain_config_set():
 
 
 def test_domain_configs_unknown():
-    with pytest.raises(YunohostValidationError):
+    with pytest.raises(YunohostError):
         domain_config_get(TEST_DOMAINS[2], "feature.xmpp.xmpp.xmpp")
