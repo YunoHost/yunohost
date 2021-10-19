@@ -462,9 +462,9 @@ class DomainConfigPanel(ConfigPanel):
         toml = super()._get_toml()
 
         toml["feature"]["xmpp"]["xmpp"]["default"] = (
-            1 if self.domain == _get_maindomain() else 0
+            1 if self.entity == _get_maindomain() else 0
         )
-        toml["dns"]["registrar"] = _get_registrar_config_section(self.domain)
+        toml["dns"]["registrar"] = _get_registrar_config_section(self.entity)
 
         # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
         self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
