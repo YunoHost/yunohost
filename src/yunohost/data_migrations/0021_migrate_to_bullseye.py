@@ -5,11 +5,11 @@ from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
-from moulinette.utils.filesystem import read_file
+from moulinette.utils.filesystem import read_file, rm
 
 from yunohost.tools import Migration, tools_update, tools_upgrade
 from yunohost.app import unstable_apps
-from yunohost.regenconf import manually_modified_files
+from yunohost.regenconf import manually_modified_files, _force_clear_hashes
 from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.utils.packages import (
     get_ynh_package_version,
@@ -66,6 +66,16 @@ class MyMigration(Migration):
         logger.info(m18n.n("migration_0021_patch_yunohost_conflicts"))
 
         self.patch_yunohost_conflicts()
+
+        #
+        # Specific tweaking to get rid of custom my.cnf and use debian's default one
+        # (my.cnf is actually a symlink to mariadb.cnf)
+        #
+
+        _force_clear_hashes(["/etc/mysql/my.cnf"])
+        rm("/etc/mysql/mariadb.cnf", force=True)
+        rm("/etc/mysql/my.cnf", force=True)
+        self.apt_install("mariadb-common --reinstall -o Dpkg::Options::='--force-confmiss'")
 
         #
         # Main upgrade
