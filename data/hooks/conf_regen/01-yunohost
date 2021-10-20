@@ -63,7 +63,7 @@ do_init_regen() {
     # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
     if readlink -f /etc/dpkg/origins/default | grep -q debian;
     then
-        rm -f /etc/dpkg/origins/default \
+        rm -f /etc/dpkg/origins/default
         ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
     fi
 }
