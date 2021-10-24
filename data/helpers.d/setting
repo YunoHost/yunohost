@@ -8,6 +8,7 @@
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_get() {
+    local _globalapp=${app-:}
     # Declare an array to define the options of this helper.
     local legacy_args=ak
     local -A args_array=([a]=app= [k]=key=)
@@ -15,6 +16,7 @@ ynh_app_setting_get() {
     local key
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
 
     if [[ $key =~ (unprotected|protected|skipped)_ ]]; then
         yunohost app setting $app $key
@@ -32,6 +34,7 @@ ynh_app_setting_get() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_set() {
+    local _globalapp=${app-:}
     # Declare an array to define the options of this helper.
     local legacy_args=akv
     local -A args_array=([a]=app= [k]=key= [v]=value=)
@@ -40,6 +43,7 @@ ynh_app_setting_set() {
     local value
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
 
     if [[ $key =~ (unprotected|protected|skipped)_ ]]; then
         yunohost app setting $app $key -v $value
@@ -56,6 +60,7 @@ ynh_app_setting_set() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_delete() {
+    local _globalapp=${app-:}
     # Declare an array to define the options of this helper.
     local legacy_args=ak
     local -A args_array=([a]=app= [k]=key=)
@@ -63,6 +68,7 @@ ynh_app_setting_delete() {
     local key
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
 
     if [[ "$key" =~ (unprotected|skipped|protected)_ ]]; then
         yunohost app setting $app $key -d
