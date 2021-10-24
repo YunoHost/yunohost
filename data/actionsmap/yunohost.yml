@@ -1483,9 +1483,6 @@ dyndns:
         subscribe:
             action_help: Subscribe to a DynDNS service
             arguments:
-                --subscribe-host:
-                    help: Dynette HTTP API to subscribe to
-                    default: "dyndns.yunohost.org"
                 -d:
                     full: --domain
                     help: Full domain to subscribe with
@@ -1499,9 +1496,6 @@ dyndns:
         update:
             action_help: Update IP on DynDNS platform
             arguments:
-                --dyn-host:
-                    help: Dynette DNS server to inform
-                    default: "dyndns.yunohost.org"
                 -d:
                     full: --domain
                     help: Full domain to update
