@@ -1046,11 +1046,9 @@ backup:
                 -d:
                     full: --description
                     help: Short description of the backup
-                -o:
-                    full: --output-directory
-                    help: Output directory for the backup
-                --methods:
-                    help: List of backup methods to apply (copy or tar by default)
+                -r:
+                    full: --repositories
+                    help: List of repositories where send backup files (local borg repo use by default)
                     nargs: "*"
                 --system:
                     help: List of system parts to backup (or all if none given).
@@ -1085,7 +1083,7 @@ backup:
             api: GET /backups
             arguments:
                 -r:
-                    full: --repos
+                    full: --repositories
                     help: List archives in these repositories
                     nargs: "*"
                 -i:
@@ -1120,7 +1118,7 @@ backup:
             arguments:
                 name:
                     help: Name of the local backup archive
-
+        
         ### backup_delete()
         delete:
             action_help: Delete a backup archive
@@ -1139,7 +1137,7 @@ backup:
                 ### backup_repository_list()
                 list:
                     action_help: List available repositories where put archives
-                    api: GET /backup/repositories
+                    api: GET /backups/repositories
                     arguments:
                         --full:
                             help: Show more details
@@ -1148,8 +1146,14 @@ backup:
                 ### backup_repository_info()
                 info:
                     action_help: Show info about a repository
-                    api: GET /backup/repository
+                    api: GET /backups/repository/<shortname>
                     arguments:
+                        shortname:
+                            help: ID of the repository
+                            extra:
+                                pattern: &pattern_backup_repository_shortname
+                                    - !!str ^[a-zA-Z0-9-_\.]+$
+                                    - "pattern_backup_repository_shortname"
                         -H:
                             full: --human-readable
                             help: Print sizes in human readable format
@@ -1161,14 +1165,12 @@ backup:
                 ### backup_repository_add()
                 add:
                     action_help: Add a backup repository
-                    api: POST /backup/repository/<shortname>
+                    api: POST /backups/repository/<shortname>
                     arguments:
                         shortname:
                             help: ID of the repository
                             extra:
-                                pattern: &pattern_backup_repository_shortname
-                                    - !!str ^[a-zA-Z0-9-_]+$
-                                    - "pattern_backup_repository_shortname"
+                                pattern: *pattern_backup_repository_shortname
                         -n:
                             full: --name
                             help: Short description of the repository
@@ -1182,7 +1184,6 @@ backup:
                         -m:
                             full: --method
                             help: By default 'borg' method is used, could be 'tar' or a custom method
-                            default: borg
                         -q:
                             full: --quota
                             help: Quota to configure with this repository
@@ -1197,14 +1198,13 @@ backup:
                         -d:
                             full: --alert-delay
                             help: Inactivity delay in days after which we sent alerts mails
-                            default: 7
 
                 ### backup_repository_update()
                 update:
                     action_help: Update a backup repository
-                    api: PUT /backup/repository/<name>
+                    api: PUT /backups/repository/<shortname>
                     arguments:
-                        name:
+                        shortname:
                             help: Name of the backup repository to update
                             extra:
                                 pattern: *pattern_backup_repository_shortname
@@ -1224,15 +1224,114 @@ backup:
                 ### backup_repository_remove()
                 remove:
                     action_help: Remove a backup repository
-                    api: DELETE /backup/repository/<name>
+                    api: DELETE /backups/repository/<shortname>
                     arguments:
-                        name:
+                        shortname:
                             help: Name of the backup repository to remove
                             extra:
                                 pattern: *pattern_backup_repository_shortname
                         --purge:
                             help: Remove all archives and data inside repository
-                            action: store_false
+                            action: store_true
+        timer:
+            subcategory_help: Manage backup timer
+            actions:
+                
+                ### backup_timer_list()
+                list:
+                    action_help: List backup timer
+                    api: GET /backup/timer
+                    arguments:
+                        -r:
+                            full: --repositories
+                            help: List archives in these repositories
+                            nargs: "*"
+
+                ### backup_timer_add()
+                add:
+                    action_help: Add a backup timer
+                    api: POST /backup/timer/<name>
+                    arguments:
+                        name:
+                            help: Short prefix of the backup archives
+                            extra:
+                                pattern: &pattern_backup_archive_name
+                                    - !!str ^[\w\-\._]{1,50}(?<!\.)$
+                                    - "pattern_backup_archive_name"
+                        -d:
+                            full: --description
+                            help: Short description of the backup
+                        -r:
+                            full: --repositories
+                            help: List of repositories where send backup files (local borg repo use by default)
+                            nargs: "*"
+                        --system:
+                            help: List of system parts to backup (or all if none given).
+                            nargs: "*"
+                        --apps:
+                            help: List of application names to backup (or all if none given)
+                            nargs: "*"
+                        --schedule:
+                            help: Regular backup frequency (see systemd OnCalendar format)
+                        --alert:
+                            help: Email to alert
+                        --keep-hourly:
+                            default: 2
+                        --keep-daily:
+                            default: 7
+                        --keep-weekly:
+                            default: 8
+                        --keep-monthly:
+                            default: 12
+
+                ### backup_timer_update()
+                update:
+                    action_help: Update a backup timer
+                    api: PUT /backup/timer/<name>
+                    arguments:
+                        name:
+                            help: Short prefix of the backup archives
+                        -d:
+                            full: --description
+                            help: Short description of the backup
+                        -r:
+                            full: --repositories
+                            help: List of repositories where send backup files (local borg repo use by default)
+                            nargs: "*"
+                        --system:
+                            help: List of system parts to backup (or all if none given).
+                            nargs: "*"
+                        --apps:
+                            help: List of application names to backup (or all if none given)
+                            nargs: "*"
+                        --schedule:
+                            help: Regular backup frequency (see systemd OnCalendar format)
+                        --alert:
+                            help: Email to alert
+                        --keep-hourly:
+                            default: 2
+                        --keep-daily:
+                            default: 7
+                        --keep-weekly:
+                            default: 8
+                        --keep-monthly:
+                            default: 12
+
+                ### backup_timer_remove()
+                remove:
+                    action_help: Remove a backup timer
+                    api: DELETE /backup/timer/<name>
+                    arguments:
+                        name:
+                            help: Short prefix of the backup archives
+
+                ### backup_timer_info()
+                info:
+                    action_help: Get info about a backup timer
+                    api: GET /backup/timer/<name>
+                    arguments:
+                        name:
+                            help: Short prefix of the backup archives
 
 #############################
 #         Settings          #

@@ -29,6 +29,7 @@ from moulinette.utils.process import check_output
 
 logger = logging.getLogger("yunohost.utils.network")
 
+SHF_BASE_URL = "https://{domain}/.well-known/self-hosting-federation/v1"
 
 def get_public_ip(protocol=4):
 
@@ -167,6 +168,9 @@ def _extract_inet(string, skip_netmask=False, skip_loopback=True):
     return result
 
 def get_ssh_public_key():
+    """ Return the prefered public key
+    This is used by the Self-Hosting Federation protocol
+    """
     keys = [
         '/etc/ssh/ssh_host_ed25519_key.pub',
         '/etc/ssh/ssh_host_rsa_key.pub'
@@ -176,3 +180,46 @@ def get_ssh_public_key():
             # We return the key without user and machine name.
             # Providers don't need this info.
             return " ".join(read_file(key).split(" ")[0:2])
+
+def shf_request(domain, service, shf_id=None, data={}):
+    # Get missing info from SHF protocol
+    import requests
+    # We try to get the URL repo through SHFi
+    base_url = SHF_BASE_URL.format(domain=domain)
+    url = f"{base_url}/service/{service}"
+
+    # FIXME add signature mechanism and portection against replay attack
+    # FIXME add password to manage the service ?
+    # FIXME support self-signed destination domain by asking validation to user
+    try:
+        if data is None:
+            r = requests.delete(url, timeout=30)
+        else:
+            if shf_id:
+                r = requests.put(f"{url}/{shf_id}", data=data, timeout=30)
+            else:
+                r = requests.post(url, data=data, timeout=30)
+    # SSL exceptions
+    except requests.exceptions.SSLError:
+        raise MoulinetteError("download_ssl_error", url=url)
+    # Invalid URL
+    except requests.exceptions.ConnectionError:
+        raise MoulinetteError("invalid_url", url=url)
+    # Timeout exceptions
+    except requests.exceptions.Timeout:
+        raise MoulinetteError("download_timeout", url=url)
+    # Unknown stuff
+    except Exception as e:
+        raise MoulinetteError("download_unknown_error", url=url, error=str(e))
+    if r.status_code in [401, 403]:
+        if self.creation:
+            raise YunohostError("repository_shf_creation_{r.status_code}")
+        else:
+            response = r.json()
+            raise YunohostError("repository_shf_update_{r.status_code}", message=response['message'])
+
+    elif r.status_code in [200, 201, 202]:
+        return r.json()
+        # FIXME validate repository and id
+    else:
+        raise YunohostError("repository_shf_invalid")

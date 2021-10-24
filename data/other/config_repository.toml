@@ -18,60 +18,60 @@ name.en = ""
         visible = "creation"
         default = "no"
 
-        [main.main.location]
+        [main.main.domain]
         type = "string"
         visible = "creation && is_remote"
         pattern.regexp = '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
-        pattern.error = 'location_error' # TODO "Please provide a valid domain"
+        pattern.error = 'domain_error' # TODO "Please provide a valid domain"
         default = ""
         # FIXME: can't be a domain of this instances ?
 
-        [main.main.is_f2f]
+        [main.main.is_shf]
         help = ""
         type = "boolean"
         yes = true
         no = false
         visible = "creation && is_remote"
-        default = "no"
+        default = false
 
         [main.main.public_key]
         type = "alert"
         style = "info"
-        visible = "creation && is_remote && ! is_f2f"
+        visible = "creation && is_remote && ! is_shf"
 
         [main.main.alert]
         help = ''
         type = "tags"
-        visible = "is_remote && is_f2f"
+        visible = "is_remote && is_shf"
         pattern.regexp = '^[\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
-        pattern.error = "It seems it's not a valid email"
+        pattern.error = "alert_error"
         default = []
         # "value": alert,
 
         [main.main.alert_delay]
         help = ''
         type = "number"
-        visible = "is_remote && is_f2f"
+        visible = "is_remote && is_shf"
         min = 1
         default = 7
 
         [main.main.quota]
         type = "string"
-        visible = "is_remote && is_f2f"
+        visible = "is_remote && is_shf"
         pattern.regexp = '^\d+[MGT]$'
         pattern.error = '' # TODO ""
         default = ""
 
         [main.main.port]
         type = "number"
-        visible = "is_remote && !is_f2f"
+        visible = "is_remote && !is_shf"
         min = 1
         max = 65535
         default = 22
 
         [main.main.user]
         type = "string"
-        visible = "is_remote && !is_f2f"
+        visible = "is_remote && !is_shf"
         default = ""
 
         [main.main.method]
@@ -84,6 +84,6 @@ name.en = ""
         
         [main.main.path]
         type = "path"
-        visible = "!is_remote or (is_remote and !is_f2f)"
+        visible = "!is_remote or (is_remote and !is_shf)"
         default = "/home/yunohost.backup/archives"
 
