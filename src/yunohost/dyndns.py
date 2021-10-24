@@ -203,6 +203,16 @@ def dyndns_update(
 
         key = keys[0]
 
+    # Get current IPv4 and IPv6
+    ipv4 = get_public_ip()
+    ipv6 = get_public_ip(6)
+
+    if ipv4 is None and ipv6 is None:
+        logger.debug(
+            "No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ip.yunohost.org infrastructure is down somehow"
+        )
+        return
+
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
     host = domain.split(".")[1:]
     host = ".".join(host)
@@ -259,18 +269,8 @@ def dyndns_update(
     old_ipv4 = resolve_domain(domain, "A")
     old_ipv6 = resolve_domain(domain, "AAAA")
 
-    # Get current IPv4 and IPv6
-    ipv4 = get_public_ip()
-    ipv6 = get_public_ip(6)
-
     logger.debug("Old IPv4/v6 are (%s, %s)" % (old_ipv4, old_ipv6))
     logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
-
-    if ipv4 is None and ipv6 is None:
-        logger.debug(
-            "No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ip.yunohost.org infrastructure is down somehow"
-        )
-        return
 
     # no need to update
     if (not force and not dry_run) and (old_ipv4 == ipv4 and old_ipv6 == ipv6):
