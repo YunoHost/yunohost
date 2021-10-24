@@ -174,9 +174,6 @@ def dyndns_subscribe(
 def dyndns_update(
     operation_logger,
     domain=None,
-    key=None,
-    ipv4=None,
-    ipv6=None,
     force=False,
     dry_run=False,
 ):
@@ -185,15 +182,12 @@ def dyndns_update(
 
     Keyword argument:
         domain -- Full domain to update
-        key -- Public DNS key
-        ipv4 -- IP address to send
-        ipv6 -- IPv6 address to send
-
     """
 
     from yunohost.dns import _build_dns_conf
 
     # If domain is not given, try to guess it from keys available...
+    key = None
     if domain is None:
         (domain, key) = _guess_current_dyndns_domain()
 
@@ -201,14 +195,13 @@ def dyndns_update(
         raise YunohostValidationError("dyndns_no_domain_registered")
 
     # If key is not given, pick the first file we find with the domain given
-    else:
-        if key is None:
-            keys = glob.glob("/etc/yunohost/dyndns/K{0}.+*.private".format(domain))
+    elif key is None:
+        keys = glob.glob("/etc/yunohost/dyndns/K{0}.+*.private".format(domain))
 
-            if not keys:
-                raise YunohostValidationError("dyndns_key_not_found")
+        if not keys:
+            raise YunohostValidationError("dyndns_key_not_found")
 
-            key = keys[0]
+        key = keys[0]
 
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
     host = domain.split(".")[1:]
@@ -267,14 +260,8 @@ def dyndns_update(
     old_ipv6 = resolve_domain(domain, "AAAA")
 
     # Get current IPv4 and IPv6
-    ipv4_ = get_public_ip()
-    ipv6_ = get_public_ip(6)
-
-    if ipv4 is None:
-        ipv4 = ipv4_
-
-    if ipv6 is None:
-        ipv6 = ipv6_
+    ipv4 = get_public_ip()
+    ipv6 = get_public_ip(6)
 
     logger.debug("Old IPv4/v6 are (%s, %s)" % (old_ipv4, old_ipv6))
     logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
@@ -379,6 +366,7 @@ def _guess_current_dyndns_domain():
     # Retrieve the first registered domain
     paths = list(glob.iglob("/etc/yunohost/dyndns/K*.private"))
     for path in paths:
+        # MD5 is legacy ugh
         match = RE_DYNDNS_PRIVATE_KEY_MD5.match(path)
         if not match:
             match = RE_DYNDNS_PRIVATE_KEY_SHA512.match(path)

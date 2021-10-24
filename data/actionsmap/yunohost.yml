@@ -1501,12 +1501,6 @@ dyndns:
                     help: Full domain to update
                     extra:
                         pattern: *pattern_domain
-                -k:
-                    full: --key
-                    help: Public DNS key
-                -i:
-                    full: --ipv4
-                    help: IP address to send
                 -f:
                     full: --force
                     help: Force the update (for debugging only)
@@ -1515,9 +1509,6 @@ dyndns:
                     full: --dry-run
                     help: Only display the generated zone
                     action: store_true
-                -6:
-                    full: --ipv6
-                    help: IPv6 address to send
 
         ### dyndns_installcron()
         installcron:
