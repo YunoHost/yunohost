@@ -191,7 +191,7 @@ def evaluate_simple_js_expression(expr, context={}):
 
 class ConfigPanel:
     entity_type = "config"
-    save_path_tpl = None
+    save_path_tpl: Union[str, None] = None
     config_path_tpl = "/usr/share/yunohost/other/config_{entity_type}.toml"
     save_mode = "full"
 
@@ -705,7 +705,7 @@ class Question(object):
         # .value is the "proposed" value which we got from the user
         self.value = question.get("value")
         # Use to return several values in case answer is in mutipart
-        self.values = {}
+        self.values: Dict[str, Any] = {}
 
         # Empty value is parsed as empty string
         if self.default == "":
@@ -1318,7 +1318,7 @@ ARGUMENTS_TYPE_PARSERS = {
 def ask_questions_and_parse_answers(
     raw_questions: Dict,
     prefilled_answers: Union[str, Mapping[str, Any]] = {},
-    current_values: Union[str, Mapping[str, Any]] = {},
+    current_values: Mapping[str, Any] = {},
     hooks: Dict[str, Callable[[], None]] = {},
 ) -> List[Question]:
     """Parse arguments store in either manifest.json or actions.json or from a
