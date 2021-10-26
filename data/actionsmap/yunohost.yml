@@ -1041,7 +1041,7 @@ backup:
                     help: Name of the backup archive
                     extra:
                         pattern: &pattern_backup_archive_name
-                            - !!str ^[\w\-\._]{1,50}(?<!\.)$
+                            - !!str ^[\w\-\._]{1,50}$
                             - "pattern_backup_archive_name"
                 -d:
                     full: --description
@@ -1255,9 +1255,9 @@ backup:
                         name:
                             help: Short prefix of the backup archives
                             extra:
-                                pattern: &pattern_backup_archive_name
-                                    - !!str ^[\w\-\._]{1,50}(?<!\.)$
-                                    - "pattern_backup_archive_name"
+                                pattern: &pattern_backup_timer_name
+                                    - !!str ^[\w\-\._]{1,50}$
+                                    - "pattern_backup_timer_name"
                         -d:
                             full: --description
                             help: Short description of the backup
@@ -1291,6 +1291,8 @@ backup:
                     arguments:
                         name:
                             help: Short prefix of the backup archives
+                            extra:
+                                pattern: *pattern_backup_timer_name
                         -d:
                             full: --description
                             help: Short description of the backup
@@ -1324,6 +1326,8 @@ backup:
                     arguments:
                         name:
                             help: Short prefix of the backup archives
+                            extra:
+                                pattern: *pattern_backup_timer_name
 
                 ### backup_timer_info()
                 info:
@@ -1332,6 +1336,8 @@ backup:
                     arguments:
                         name:
                             help: Short prefix of the backup archives
+                            extra:
+                                pattern: *pattern_backup_timer_name
 
 #############################
 #         Settings          #

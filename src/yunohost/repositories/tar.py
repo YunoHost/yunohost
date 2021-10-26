@@ -18,11 +18,26 @@
     along with this program; if not, see http://www.gnu.org/licenses
 
 """
+import glob
+import os
+import tarfile
+import shutil
+
+from moulinette.utils.log import getActionLogger
+from moulinette import m18n
+
+from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.repository import LocalBackupRepository
+from yunohost.backup import BackupManager
+from yunohost.utils.filesystem import space_used_in_directory
+from yunohost.settings import settings_get
+logger = getActionLogger("yunohost.repository")
 
 
 class TarBackupRepository(LocalBackupRepository):
     need_organized_files = False
     method_name = "tar"
+
     def list_archives_names(self):
         # Get local archives sorted according to last modification time
         # (we do a realpath() to resolve symlinks)
@@ -96,7 +111,7 @@ class TarBackupArchive:
         # Move info file
         shutil.copy(
             os.path.join(self.work_dir, "info.json"),
-            os.path.join(ARCHIVES_PATH, self.name + ".info.json"),
+            os.path.join(self.repo.location, self.name + ".info.json"),
         )
 
         # If backuped to a non-default location, keep a symlink of the archive

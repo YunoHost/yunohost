@@ -18,6 +18,18 @@
     along with this program; if not, see http://www.gnu.org/licenses
 
 """
+import os
+import subprocess
+import json
+
+from datetime import datetime
+
+from moulinette.utils.log import getActionLogger
+from moulinette import m18n
+
+from yunohost.utils.error import YunohostError
+from yunohost.repository import LocalBackupRepository
+logger = getActionLogger("yunohost.repository")
 
 
 class BorgBackupRepository(LocalBackupRepository):
@@ -59,7 +71,7 @@ class BorgBackupRepository(LocalBackupRepository):
         if json_output:
             try:
                 return json.loads(out)
-            except json.decoder.JSONDecodeError, TypeError:
+            except (json.decoder.JSONDecodeError, TypeError):
                 raise YunohostError(f"backup_borg_{action}_error")
         return out
 
@@ -79,12 +91,12 @@ class BorgBackupRepository(LocalBackupRepository):
                     domain=self.domain,
                     service=services[self.method],
                     shf_id=values.pop('shf_id', None),
-                    data = {
+                    data={
                         'origin': self.domain,
                         'public_key': self.public_key,
-                        'quota':  self.quota,
-                        'alert':  self.alert,
-                        'alert_delay':  self.alert_delay,
+                        'quota': self.quota,
+                        'alert': self.alert,
+                        'alert_delay': self.alert_delay,
                         #password: "XXXXXXXX",
                     }
                 )
@@ -99,14 +111,12 @@ class BorgBackupRepository(LocalBackupRepository):
         else:
             super().install()
 
-
         # Initialize borg repo
         cmd = ["borg", "init", "--encryption", "repokey", self.location]
 
         if "quota" in self.future_values:
             cmd += ['--storage-quota', self.quota]
         self._call('init', cmd)
-
 
     def update(self):
         raise NotImplementedError()
@@ -117,7 +127,7 @@ class BorgBackupRepository(LocalBackupRepository):
                 domain=self.domain,
                 service="borgbackup",
                 shf_id=values.pop('shf_id', None),
-                data = {
+                data={
                     'origin': self.domain,
                     #password: "XXXXXXXX",
                 }
@@ -143,7 +153,7 @@ class BorgBackupRepository(LocalBackupRepository):
             response = self._call('info', cmd)
             return response["cache"]["stats"]["unique_size"]
 
-    def prune(self, prefix=None, hourly=None, daily=None, weekly=None, yearly=None):
+    def prune(self, prefix=None, **kwargs):
 
         # List archives with creation date
         archives = {}
@@ -155,17 +165,30 @@ class BorgBackupRepository(LocalBackupRepository):
         if not archives:
             return
 
-        # Generate period in which keep one archive
-        now = datetime.now()
-        periods = []
-        for in range(hourly):
+        # Generate periods in which keep one archive
+        now = datetime.utcnow()
+        now -= timedelta(
+            minutes=now.minute,
+            seconds=now.second,
+            microseconds=now.microsecond
+        )
+        periods = set([])
 
+        for unit, qty in kwargs:
+            if not qty:
+                continue
+            period = timedelta(**{unit: 1})
+            periods += set([(now - period * i, now - period * (i - 1))
+                        for i in range(qty)])
 
-
+        # Delete unneeded archive
         for created_at in sorted(archives, reverse=True):
-            created_at = datetime.fromtimestamp(created_at)
-            if hourly > 0 and :
-                hourly-=1
+            created_at = datetime.utcfromtimestamp(created_at)
+            keep_for = set(filter(lambda period: period[0] <= created_at <= period[1], periods))
+
+            if keep_for:
+                periods -= keep_for
+                continue
 
             archive.delete()
 

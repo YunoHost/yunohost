@@ -58,6 +58,7 @@ REPOSITORY_CONFIG_PATH = "/usr/share/yunohost/other/config_repository.toml"
 # TODO F2F server
 # TODO i18n pattern error
 
+
 class BackupRepository(ConfigPanel):
     """
     BackupRepository manage all repository the admin added to the instance
@@ -74,7 +75,7 @@ class BackupRepository(ConfigPanel):
         Split a repository location into protocol, user, domain and path
         """
         if "/" not in location:
-            return { "domain": location }
+            return {"domain": location}
 
         location_regex = r'^((?P<protocol>ssh://)?(?P<user>[^@ ]+)@(?P<domain>[^: ]+):((?P<port>\d+)/)?)?(?P<path>[^:]+)$'
         location_match = re.match(location_regex, location)
@@ -198,10 +199,13 @@ class BackupRepository(ConfigPanel):
 
         if self.__class__ == BackupRepository:
             if self.method == 'tar':
+                from yunohost.repositories.tar import TarBackupRepository
                 self.__class__ = TarBackupRepository
             elif self.method == 'borg':
+                from yunohost.repositories.borg import BorgBackupRepository
                 self.__class__ = BorgBackupRepository
             else:
+                from yunohost.repositories.hook import HookBackupRepository
                 self.__class__ = HookBackupRepository
 
     def _check_is_enough_free_space(self):
@@ -259,6 +263,45 @@ class BackupRepository(ConfigPanel):
 
         return archives
 
+    def prune(self, prefix=None, **kwargs):
+
+        # List archives with creation date
+        archives = {}
+        for archive_name in self.list_archive_name(prefix):
+            archive = BackupArchive(repo=self, name=archive_name)
+            created_at = archive.info()["created_at"]
+            archives[created_at] = archive
+
+        if not archives:
+            return
+
+        # Generate periods in which keep one archive
+        now = datetime.utcnow()
+        now -= timedelta(
+            minutes=now.minute,
+            seconds=now.second,
+            microseconds=now.microsecond
+        )
+        periods = set([])
+
+        for unit, qty in kwargs:
+            if not qty:
+                continue
+            period = timedelta(**{unit: 1})
+            periods += set([(now - period * i, now - period * (i - 1))
+                        for i in range(qty)])
+
+        # Delete unneeded archive
+        for created_at in sorted(archives, reverse=True):
+            created_at = datetime.utcfromtimestamp(created_at)
+            keep_for = set(filter(lambda period: period[0] <= created_at <= period[1], periods))
+
+            if keep_for:
+                periods -= keep_for
+                continue
+
+            archive.delete()
+
     # =================================================
     # Repository abstract actions
     # =================================================
@@ -277,8 +320,6 @@ class BackupRepository(ConfigPanel):
     def compute_space_used(self):
         raise NotImplementedError()
 
-    def prune(self):
-        raise NotImplementedError() # TODO prune
 
 class LocalBackupRepository(BackupRepository):
     def install(self):
