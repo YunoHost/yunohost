@@ -143,6 +143,10 @@ user:
                         pattern: &pattern_domain
                             - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
                             - "pattern_domain"
+                        autocomplete: &domains_list
+                            ynh_selector: domain list
+                            jq_selector: '.domains[]'
+                            use_cache: true
                 -q:
                     full: --mailbox-quota
                     help: Mailbox size quota
@@ -255,6 +259,9 @@ user:
                 csvfile:
                     help: "CSV file with columns username, firstname, lastname, password, mail, mailbox-quota, mail-alias, mail-forward, groups (separated by coma)"
                     type: open
+                    extra:
+                        autocomplete:
+                            zsh_completion: _files
                 -u:
                     full: --update
                     help: Update all existing users contained in the CSV file (by default existing users are ignored)
@@ -322,6 +329,7 @@ user:
                             help: Name of the group to fetch info about
                             extra:
                                 pattern: *pattern_username
+                                autocomplete: *group
 
                 ### user_group_add()
                 add:
@@ -349,13 +357,14 @@ user:
                         groupname:
                             help: Name of the group to remove user(s) from
                             extra:
+                                autocomplete: *group
                                 pattern: *pattern_groupname
                         usernames:
                             help: User(s) to remove from the group
                             nargs: "*"
                             metavar: USERNAME
                             extra:
-                                autocomplete: *group
+                                autocomplete: *username
                                 pattern: *pattern_username
 
         permission:
@@ -417,6 +426,8 @@ user:
                     arguments:
                         permission:
                             help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                            extra:
+                                autocomplete: *permission
                         names:
                             help: Group or usernames to grant this permission to
                             nargs: "*"
@@ -435,6 +446,8 @@ user:
                     arguments:
                         permission:
                             help: Permission to manage (e.g. mail or nextcloud or wordpress.editors) (use "yunohost user permission list" and "yunohost user permission -f" to see all the current permissions)
+                            extra:
+                                autocomplete: *permission
                         names:
                             help: Group or usernames to revoke this permission to
                             nargs: "*"
@@ -535,12 +548,8 @@ domain:
                 domain:
                     help: Domain to delete
                     extra:
-                        autocomplete: &domains_list
-                            ynh_selector: domain list
-                            jq_selector: '.domains[]'
-                            use_cache: true
-                    extra:
                         pattern: *pattern_domain
+                        autocomplete: *domains_list
                 -r:
                     full: --remove-apps
                     help: Remove apps installed on the domain
@@ -665,6 +674,9 @@ domain:
                     arguments:
                       domain:
                           help: Domain name
+                          extra:
+                            autocomplete: *domains_list
+                            pattern: *pattern_domain
                       key:
                           help: A specific panel, section or a question identifier
                           nargs: '?'
@@ -684,6 +696,9 @@ domain:
                     arguments:
                       domain:
                           help: Domain name
+                          extra:
+                            autocomplete: *domains_list
+                            pattern: *pattern_domain
                       key:
                           help: The question or form key 
                           nargs: '?'
@@ -707,6 +722,7 @@ domain:
                         domain:
                             help: Target domain
                             extra:
+                                autocomplete: *domains_list
                                 pattern: *pattern_domain
                 
                 ### domain_dns_push()
@@ -717,6 +733,7 @@ domain:
                         domain:
                             help: Domain name to push DNS conf for
                             extra:
+                                autocomplete: *domains_list
                                 pattern: *pattern_domain
                         -d:
                             full: --dry-run
@@ -740,6 +757,9 @@ domain:
                         domain_list:
                             help: Domains to check
                             nargs: "*"
+                            extra:
+                                autocomplete: *domains_list
+                                pattern: *pattern_domain
                         --full:
                             help: Show more details
                             action: store_true
@@ -752,6 +772,9 @@ domain:
                         domain_list:
                             help: Domains for which to install the certificates
                             nargs: "*"
+                            extra:
+                                autocomplete: *domains_list
+                                pattern: *pattern_domain
                         --force:
                             help: Install even if current certificate is not self-signed
                             action: store_true
@@ -773,6 +796,9 @@ domain:
                         domain_list:
                             help: Domains for which to renew the certificates
                             nargs: "*"
+                            extra:
+                                autocomplete: *domains_list
+                                pattern: *pattern_domain
                         --force:
                             help: Ignore the validity threshold (30 days)
                             action: store_true
@@ -1228,15 +1254,22 @@ backup:
                     help: Name of the local backup archive
                     extra:
                         autocomplete: &backup_list
-                            zsh_completion: _files -W /home/yunohost.backup/archives/ -g "*.tar.gz(:s/.tar.gz//)"
+                            ynh_selector: backup list
+                            jq_selector: '.archives[]'
                 --system:
                     help: List of system parts to restore (or all if none is given)
                     nargs: "*"
+                    extra:
+                        autocomplete: &backup_system_inside
+                            ynh_selector: backup info ${words[2]} --with-details
+                            jq_selector: '.system|keys[]' 
                 --apps:
                     help: List of application names to restore (or all if none is given)
                     nargs: "*"
                     extra:
-                        autocomplete: *app_list
+                        autocomplete: &backup_app_inside
+                            ynh_selector: backup info ${words[2]} --with-details
+                            jq_selector: '.apps|keys[]'   
                 --force:
                     help: Force restauration on an already installed system
                     action: store_true
@@ -1280,6 +1313,8 @@ backup:
             arguments:
                 name:
                     help: Name of the local backup archive
+                    extra:
+                        autocomplete: *backup_list
 
         ### backup_delete()
         delete:
@@ -1632,6 +1667,9 @@ firewall:
                     help: Port or range of ports to close
                     extra:
                         pattern: *pattern_port_or_range
+                        autocomplete: &port_list
+                            ynh_selector: firewall list
+                            jq_selector: '.opened_ports[]'
                 -4:
                     full: --ipv4-only
                     help: Only remove the rule for IPv4 connections
@@ -1700,6 +1738,7 @@ dyndns:
                     help: Full domain to subscribe with
                     extra:
                         pattern: *pattern_domain
+                        autocomplete: *domains_list
                 -k:
                     full: --key
                     help: Public DNS key
@@ -1718,6 +1757,7 @@ dyndns:
                     help: Full domain to update
                     extra:
                         pattern: *pattern_domain
+                        autocomplete: *domains_list
                 -k:
                     full: --key
                     help: Public DNS key
@@ -1893,6 +1933,8 @@ tools:
                     help: Categories to regenerate configuration of (all by default)
                     nargs: "*"
                     metavar: NAME
+                    extra:
+                        autocomplete: *services_pending
                 -d:
                     full: --with-diff
                     help: Show differences in case of configuration changes
@@ -2122,8 +2164,9 @@ log:
                 path:
                     help: Log file which to display the content
                     extra:
-                        autocomplete:
-                            zsh_completion: _files -W /var/log/yunohost/categories/operation -g "*.log(:r)"
+                        autocomplete: &log_list
+                            ynh_selector: log list
+                            jq_selector: '.operation[].name'
                 -n:
                     full: --number
                     help: Number of lines to display
@@ -2148,6 +2191,8 @@ log:
             arguments:
                 path:
                     help: Log file to share
+                    extra:
+                        autocomplete: *log_list
 
 
 #############################
@@ -2191,6 +2236,8 @@ diagnosis:
             arguments:
                 category:
                     help: Diagnosis category to fetch results from
+                    extra:
+                        autocomplete: *diagnosis_categories
                 item:
                     help: "List of criteria describing the test. Must correspond exactly to the 'meta' infos in 'yunohost diagnosis show'"
                     metavar: CRITERIA
