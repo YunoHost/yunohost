@@ -1,5 +1,5 @@
-avahi-daemon: {}
-dnsmasq: {}
+dnsmasq:
+  test_conf: dnsmasq --test
 dovecot:
   log: [/var/log/mail.log,/var/log/mail.err]
   needs_exposed_ports: [993]
@@ -7,6 +7,7 @@ dovecot:
 fail2ban:
   log: /var/log/fail2ban.log
   category: security
+  test_conf: fail2ban-server --test
 metronome:
   log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
   needs_exposed_ports: [5222, 5269]
@@ -37,6 +38,7 @@ rspamd:
   category: email
 slapd:
   category: database
+  test_conf: slapd -Tt
 ssh:
   log: /var/log/auth.log
   test_conf: sshd -t
@@ -49,6 +51,8 @@ yunohost-firewall:
   need_lock: true
   test_status: iptables -S | grep "^-A INPUT" | grep " --dport" | grep -q ACCEPT
   category: security
+yunomdns:
+  category: mdns
 glances: null
 nsswitch: null
 ssl: null
@@ -65,3 +69,4 @@ rmilter: null
 php5-fpm: null
 php7.0-fpm: null
 nslcd: null
+avahi-daemon: null

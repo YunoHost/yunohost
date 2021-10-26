@@ -1,9 +1,0 @@
-backup_dir="$1/conf/ssh"
-
-if [ -d /etc/ssh/ ]; then
-    cp -a $backup_dir/. /etc/ssh
-    service ssh restart
-else
-    echo "SSH is not installed"
-fi
-

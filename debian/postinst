@@ -3,32 +3,36 @@
 set -e
 
 do_configure() {
-  rm -rf /var/cache/moulinette/*
+    rm -rf /var/cache/moulinette/*
 
-  if [ ! -f /etc/yunohost/installed ]; then
-      bash /usr/share/yunohost/hooks/conf_regen/01-yunohost init
-      bash /usr/share/yunohost/hooks/conf_regen/02-ssl init
-      bash /usr/share/yunohost/hooks/conf_regen/06-slapd init
-      bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
-  else
-      echo "Regenerating configuration, this might take a while..."
-      yunohost tools regen-conf --output-as none
+    mkdir -p /usr/share/moulinette/actionsmap/
+    ln -sf /usr/share/yunohost/actionsmap/yunohost.yml /usr/share/moulinette/actionsmap/yunohost.yml
 
-      echo "Launching migrations..."
-      yunohost tools migrations migrate --auto
+    if [ ! -f /etc/yunohost/installed ]; then
+        # If apps/ is not empty, we're probably already installed in the past and
+        # something funky happened ...
+        if [ -d /etc/yunohost/apps/ ] && ls /etc/yunohost/apps/* >/dev/null 2>&1; then
+            echo "Sounds like /etc/yunohost/installed mysteriously disappeared ... You should probably contact the Yunohost support ..."
+        else
+            bash /usr/share/yunohost/hooks/conf_regen/01-yunohost init
+            bash /usr/share/yunohost/hooks/conf_regen/02-ssl init
+            bash /usr/share/yunohost/hooks/conf_regen/09-nslcd init
+            bash /usr/share/yunohost/hooks/conf_regen/46-nsswitch init
+            bash /usr/share/yunohost/hooks/conf_regen/06-slapd init
+            bash /usr/share/yunohost/hooks/conf_regen/15-nginx init
+            bash /usr/share/yunohost/hooks/conf_regen/37-mdns init
+        fi
+    else
+        echo "Regenerating configuration, this might take a while..."
+        yunohost tools regen-conf --output-as none
 
-      echo "Re-diagnosing server health..."
-      yunohost diagnosis run --force
-  fi
+        echo "Launching migrations..."
+        yunohost tools migrations run --auto
 
-  # Change dpkg vendor
-  # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
-  readlink -f /etc/dpkg/origins/default | grep -q debian \
-    && rm -f /etc/dpkg/origins/default \
-    && ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
+        echo "Re-diagnosing server health..."
+        yunohost diagnosis run --force
+    fi
 
-  # Yunoprompt
-  systemctl enable yunoprompt.service
 }
 
 # summary of how this script can be called:
@@ -45,13 +49,13 @@ do_configure() {
 case "$1" in
     configure)
         do_configure
-    ;;
-    abort-upgrade|abort-remove|abort-deconfigure)
-    ;;
+        ;;
+    abort-upgrade | abort-remove | abort-deconfigure) ;;
+
     *)
         echo "postinst called with unknown argument \`$1'" >&2
         exit 1
-    ;;
+        ;;
 esac
 
 #DEBHELPER#

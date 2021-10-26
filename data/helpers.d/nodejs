@@ -1,6 +1,6 @@
 #!/bin/bash
 
-n_version=6.5.1
+n_version=7.5.0
 n_install_dir="/opt/node_n"
 node_version_path="$n_install_dir/n/versions/node"
 # N_PREFIX is the directory of n, it needs to be loaded as a environment variable.
@@ -13,26 +13,30 @@ export N_PREFIX="$n_install_dir"
 # usage: ynh_install_n
 #
 # Requires YunoHost version 2.7.12 or higher.
-ynh_install_n () {
+ynh_install_n() {
     ynh_print_info --message="Installation of N - Node.js version management"
     # Build an app.src for n
-    mkdir --parents "../conf"
     echo "SOURCE_URL=https://github.com/tj/n/archive/v${n_version}.tar.gz
-SOURCE_SUM=5833f15893b9951a9ed59487e87b6c181d96b83a525846255872c4f92f0d25dd" > "../conf/n.src"
+SOURCE_SUM=d4da7ea91f680de0c9b5876e097e2a793e8234fcd0f7ca87a0599b925be087a3" >"$YNH_APP_BASEDIR/conf/n.src"
     # Download and extract n
     ynh_setup_source --dest_dir="$n_install_dir/git" --source_id=n
     # Install n
-    (cd "$n_install_dir/git"
-    PREFIX=$N_PREFIX make install 2>&1)
+    (
+        cd "$n_install_dir/git"
+        PREFIX=$N_PREFIX make install 2>&1
+    )
 }
 
 # Load the version of node for an app, and set variables.
 #
-# ynh_use_nodejs has to be used in any app scripts before using node for the first time.
+# usage: ynh_use_nodejs
+#
+# `ynh_use_nodejs` has to be used in any app scripts before using node for the first time.
 # This helper will provide alias and variables to use in your scripts.
 #
-# To use npm or node, use the alias `ynh_npm` and `ynh_node`
-# Those alias will use the correct version installed for the app
+# To use npm or node, use the alias `ynh_npm` and `ynh_node`.
+#
+# Those alias will use the correct version installed for the app.
 # For example: use `ynh_npm install` instead of `npm install`
 #
 # With `sudo` or `ynh_exec_as`, use instead the fallback variables `$ynh_npm` and `$ynh_node`
@@ -40,32 +44,34 @@ SOURCE_SUM=5833f15893b9951a9ed59487e87b6c181d96b83a525846255872c4f92f0d25dd" > "
 # Exemple: `ynh_exec_as $app $ynh_node_load_PATH $ynh_npm install`
 #
 # $PATH contains the path of the requested version of node.
-# However, $PATH is duplicated into $node_PATH to outlast any manipulation of $PATH
+# However, $PATH is duplicated into $node_PATH to outlast any manipulation of `$PATH`
 # You can use the variable `$ynh_node_load_PATH` to quickly load your node version
-#  in $PATH for an usage into a separate script.
+# in $PATH for an usage into a separate script.
 # Exemple: $ynh_node_load_PATH $final_path/script_that_use_npm.sh`
 #
 #
 # Finally, to start a nodejs service with the correct version, 2 solutions
 #  Either the app is dependent of node or npm, but does not called it directly.
-#  In such situation, you need to load PATH
-#    `Environment="__NODE_ENV_PATH__"`
-#    `ExecStart=__FINALPATH__/my_app`
-#     You will replace __NODE_ENV_PATH__ with $ynh_node_load_PATH
+#  In such situation, you need to load PATH :
+# ```
+# Environment="__NODE_ENV_PATH__"
+# ExecStart=__FINALPATH__/my_app
+# ```
+# You will replace __NODE_ENV_PATH__ with $ynh_node_load_PATH.
 #
 #  Or node start the app directly, then you don't need to load the PATH variable
-#    `ExecStart=__YNH_NODE__ my_app run`
-#     You will replace __YNH_NODE__ with $ynh_node
+# ```
+# ExecStart=__YNH_NODE__ my_app run
+# ```
+# You will replace __YNH_NODE__ with $ynh_node
 #
 #
 # 2 other variables are also available
 #   - $nodejs_path: The absolute path to node binaries for the chosen version.
 #   - $nodejs_version: Just the version number of node for this app. Stored as 'nodejs_version' in settings.yml.
 #
-# usage: ynh_use_nodejs
-#
 # Requires YunoHost version 2.7.12 or higher.
-ynh_use_nodejs () {
+ynh_use_nodejs() {
     nodejs_version=$(ynh_app_setting_get --app=$app --key=nodejs_version)
 
     # Get the absolute path of this version of node
@@ -88,6 +94,8 @@ ynh_use_nodejs () {
     node_PATH="$PATH"
     # Create an alias to easily load the PATH
     ynh_node_load_PATH="PATH=$node_PATH"
+    # Same var but in lower case to be compatible with ynh_replace_vars...
+    ynh_node_load_path="PATH=$node_PATH"
 }
 
 # Install a specific version of nodejs
@@ -97,18 +105,18 @@ ynh_use_nodejs () {
 # usage: ynh_install_nodejs --nodejs_version=nodejs_version
 # | arg: -n, --nodejs_version=      - Version of node to install. When possible, your should prefer to use major version number (e.g. 8 instead of 8.10.0). The crontab will then handle the update of minor versions when needed.
 #
-# n (Node version management) uses the PATH variable to store the path of the version of node it is going to use.
+# `n` (Node version management) uses the `PATH` variable to store the path of the version of node it is going to use.
 # That's how it changes the version
 #
-# Refer to ynh_use_nodejs for more information about available commands and variables
+# Refer to `ynh_use_nodejs` for more information about available commands and variables
 #
 # Requires YunoHost version 2.7.12 or higher.
-ynh_install_nodejs () {
+ynh_install_nodejs() {
     # Use n, https://github.com/tj/n to manage the nodejs versions
 
     # Declare an array to define the options of this helper.
     local legacy_args=n
-    local -A args_array=( [n]=nodejs_version= )
+    local -A args_array=([n]=nodejs_version=)
     local nodejs_version
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -126,11 +134,9 @@ ynh_install_nodejs () {
     test -x /usr/bin/npm && mv /usr/bin/npm /usr/bin/npm_n
 
     # If n is not previously setup, install it
-    if ! $n_install_dir/bin/n --version > /dev/null 2>&1
-    then
+    if ! $n_install_dir/bin/n --version >/dev/null 2>&1; then
         ynh_install_n
-    elif dpkg --compare-versions "$($n_install_dir/bin/n --version)" lt $n_version
-    then
+    elif dpkg --compare-versions "$($n_install_dir/bin/n --version)" lt $n_version; then
         ynh_install_n
     fi
 
@@ -146,8 +152,7 @@ ynh_install_nodejs () {
 
     # Install the requested version of nodejs
     uname=$(uname --machine)
-    if [[ $uname =~ aarch64 || $uname =~ arm64 ]]
-    then
+    if [[ $uname =~ aarch64 || $uname =~ arm64 ]]; then
         n $nodejs_version --arch=arm64
     else
         n $nodejs_version
@@ -158,8 +163,7 @@ ynh_install_nodejs () {
     real_nodejs_version=$(basename $real_nodejs_version)
 
     # Create a symbolic link for this major version if the file doesn't already exist
-    if [ ! -e "$node_version_path/$nodejs_version" ]
-    then
+    if [ ! -e "$node_version_path/$nodejs_version" ]; then
         ln --symbolic --force --no-target-directory $node_version_path/$real_nodejs_version $node_version_path/$nodejs_version
     fi
 
@@ -177,28 +181,26 @@ ynh_install_nodejs () {
 
 # Remove the version of node used by the app.
 #
-# This helper will check if another app uses the same version of node,
-# if not, this version of node will be removed.
-# If no other app uses node, n will be also removed.
-#
 # usage: ynh_remove_nodejs
 #
+# This helper will check if another app uses the same version of node.
+# - If not, this version of node will be removed.
+# - If no other app uses node, n will be also removed.
+#
 # Requires YunoHost version 2.7.12 or higher.
-ynh_remove_nodejs () {
+ynh_remove_nodejs() {
     nodejs_version=$(ynh_app_setting_get --app=$app --key=nodejs_version)
 
     # Remove the line for this app
     sed --in-place "/$YNH_APP_INSTANCE_NAME:$nodejs_version/d" "$n_install_dir/ynh_app_version"
 
     # If no other app uses this version of nodejs, remove it.
-    if ! grep --quiet "$nodejs_version" "$n_install_dir/ynh_app_version"
-    then
+    if ! grep --quiet "$nodejs_version" "$n_install_dir/ynh_app_version"; then
         $n_install_dir/bin/n rm $nodejs_version
     fi
 
     # If no other app uses n, remove n
-    if [ ! -s "$n_install_dir/ynh_app_version" ]
-    then
+    if [ ! -s "$n_install_dir/ynh_app_version" ]; then
         ynh_secure_remove --file="$n_install_dir"
         ynh_secure_remove --file="/usr/local/n"
         sed --in-place "/N_PREFIX/d" /root/.bashrc
@@ -215,9 +217,9 @@ ynh_remove_nodejs () {
 # usage: ynh_cron_upgrade_node
 #
 # Requires YunoHost version 2.7.12 or higher.
-ynh_cron_upgrade_node () {
+ynh_cron_upgrade_node() {
     # Build the update script
-    cat > "$n_install_dir/node_update.sh" << EOF
+    cat >"$n_install_dir/node_update.sh" <<EOF
 #!/bin/bash
 
 version_path="$node_version_path"
@@ -253,7 +255,7 @@ EOF
     chmod +x "$n_install_dir/node_update.sh"
 
     # Build the cronjob
-    cat > "/etc/cron.daily/node_update" << EOF
+    cat >"/etc/cron.daily/node_update" <<EOF
 #!/bin/bash
 
 $n_install_dir/node_update.sh >> $n_install_dir/node_update.log

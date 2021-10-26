@@ -27,7 +27,9 @@ def find_inconsistencies(locale_file):
         # should also be in the translated string, otherwise the .format
         # will trigger an exception!
         subkeys_in_ref = set(k[0] for k in re.findall(r"{(\w+)(:\w)?}", string))
-        subkeys_in_this_locale = set(k[0] for k in re.findall(r"{(\w+)(:\w)?}", this_locale[key]))
+        subkeys_in_this_locale = set(
+            k[0] for k in re.findall(r"{(\w+)(:\w)?}", this_locale[key])
+        )
 
         if any(k not in subkeys_in_ref for k in subkeys_in_this_locale):
             yield """\n
@@ -35,11 +37,16 @@ def find_inconsistencies(locale_file):
 Format inconsistency for string {key} in {locale_file}:"
 en.json   -> {string}
 {locale_file}   -> {translated_string}
-""".format(key=key, string=string.encode("utf-8"), locale_file=locale_file, translated_string=this_locale[key].encode("utf-8"))
+""".format(
+                key=key,
+                string=string.encode("utf-8"),
+                locale_file=locale_file,
+                translated_string=this_locale[key].encode("utf-8"),
+            )
 
 
-@pytest.mark.parametrize('locale_file', locale_files)
+@pytest.mark.parametrize("locale_file", locale_files)
 def test_translation_format_consistency(locale_file):
     inconsistencies = list(find_inconsistencies(locale_file))
     if inconsistencies:
-        raise Exception(''.join(inconsistencies))
+        raise Exception("".join(inconsistencies))

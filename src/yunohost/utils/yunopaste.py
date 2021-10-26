@@ -8,7 +8,8 @@ from yunohost.domain import _get_maindomain, domain_list
 from yunohost.utils.network import get_public_ip
 from yunohost.utils.error import YunohostError
 
-logger = logging.getLogger('yunohost.utils.yunopaste')
+logger = logging.getLogger("yunohost.utils.yunopaste")
+
 
 def yunopaste(data):
 
@@ -17,33 +18,47 @@ def yunopaste(data):
     try:
         data = anonymize(data)
     except Exception as e:
-        logger.warning("For some reason, YunoHost was not able to anonymize the pasted data. Sorry about that. Be careful about sharing the link, as it may contain somewhat private infos like domain names or IP addresses. Error: %s" % e)
+        logger.warning(
+            "For some reason, YunoHost was not able to anonymize the pasted data. Sorry about that. Be careful about sharing the link, as it may contain somewhat private infos like domain names or IP addresses. Error: %s"
+            % e
+        )
+
+    data = data.encode()
 
     try:
         r = requests.post("%s/documents" % paste_server, data=data, timeout=30)
     except Exception as e:
-        raise YunohostError("Something wrong happened while trying to paste data on paste.yunohost.org : %s" % str(e), raw_msg=True)
+        raise YunohostError(
+            "Something wrong happened while trying to paste data on paste.yunohost.org : %s"
+            % str(e),
+            raw_msg=True,
+        )
 
     if r.status_code != 200:
-        raise YunohostError("Something wrong happened while trying to paste data on paste.yunohost.org : %s, %s" % (r.status_code, r.text), raw_msg=True)
+        raise YunohostError(
+            "Something wrong happened while trying to paste data on paste.yunohost.org : %s, %s"
+            % (r.status_code, r.text),
+            raw_msg=True,
+        )
 
     try:
         url = json.loads(r.text)["key"]
-    except:
-        raise YunohostError("Uhoh, couldn't parse the answer from paste.yunohost.org : %s" % r.text, raw_msg=True)
+    except Exception:
+        raise YunohostError(
+            "Uhoh, couldn't parse the answer from paste.yunohost.org : %s" % r.text,
+            raw_msg=True,
+        )
 
     return "%s/raw/%s" % (paste_server, url)
 
 
 def anonymize(data):
-
     def anonymize_domain(data, domain, redact):
         data = data.replace(domain, redact)
         # This stuff appears sometimes because some folder in
         # /var/lib/metronome/ have some folders named this way
         data = data.replace(domain.replace(".", "%2e"), redact.replace(".", "%2e"))
         return data
-
 
     # First, let's replace every occurence of the main domain by "domain.tld"
     # This should cover a good fraction of the info leaked

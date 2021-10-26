@@ -2,6 +2,8 @@ uPnP:
     enabled: false
     TCP: [22, 25, 80, 443, 587, 993, 5222, 5269]
     UDP: []
+    TCP_TO_CLOSE: []
+    UDP_TO_CLOSE: []
 ipv4:
     TCP: [22, 25, 53, 80, 443, 587, 993, 5222, 5269]
     UDP: [53, 5353]

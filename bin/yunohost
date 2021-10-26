@@ -1,74 +1,32 @@
-#! /usr/bin/python
+#! /usr/bin/python3
 # -*- coding: utf-8 -*-
 
 import os
 import sys
 import argparse
 
-# Either we are in a development environment or not
-IN_DEVEL = False
+sys.path.insert(0, "/usr/lib/moulinette/")
+import yunohost
 
-# Level for which loggers will log
-LOGGERS_LEVEL = 'DEBUG'
-TTY_LOG_LEVEL = 'INFO'
-
-# Handlers that will be used by loggers
-#  - file: log to the file LOG_DIR/LOG_FILE
-#  - tty: log to current tty
-LOGGERS_HANDLERS = ['file', 'tty']
-
-# Directory and file to be used by logging
-LOG_DIR = '/var/log/yunohost'
-LOG_FILE = 'yunohost-cli.log'
-
-# Check and load - as needed - development environment
-if not __file__.startswith('/usr/'):
-    IN_DEVEL = True
-if IN_DEVEL:
-    basedir = os.path.abspath('%s/../' % os.path.dirname(__file__))
-    if os.path.isdir(os.path.join(basedir, 'moulinette')):
-        sys.path.insert(0, basedir)
-    LOG_DIR = os.path.join(basedir, 'log')
-
-
-import moulinette
-from moulinette.actionsmap import ActionsMap
-from moulinette.interfaces.cli import colorize, get_locale
-
-
-# Initialization & helpers functions -----------------------------------
-
-def _die(message, title='Error:'):
-    """Print error message and exit"""
-    print('%s %s' % (colorize(title, 'red'), message))
-    sys.exit(1)
 
 def _parse_cli_args():
     """Parse additional arguments for the cli"""
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument('--no-cache',
-        action='store_false', default=True, dest='use_cache',
-        help="Don't use actions map cache",
-    )
     parser.add_argument('--output-as',
         choices=['json', 'plain', 'none'], default=None,
-        help="Output result in another format",
+        help="Output result in another format"
     )
     parser.add_argument('--debug',
         action='store_true', default=False,
-        help="Log and print debug messages",
+        help="Log and print debug messages"
     )
     parser.add_argument('--quiet',
         action='store_true', default=False,
-        help="Don't produce any output",
+        help="Don't produce any output"
     )
     parser.add_argument('--timeout',
         type=int, default=None,
-        help="Number of seconds before this command will timeout because it can't acquire the lock (meaning that another command is currently running), by default there is no timeout and the command will wait until it can get the lock",
-    )
-    parser.add_argument('--admin-password',
-        default=None, dest='password', metavar='PASSWORD',
-        help="The admin password to use to authenticate",
+        help="Number of seconds before this command will timeout because it can't acquire the lock (meaning that another command is currently running), by default there is no timeout and the command will wait until it can get the lock"
     )
     # deprecated arguments
     parser.add_argument('--plain',
@@ -88,96 +46,6 @@ def _parse_cli_args():
 
     return (parser, opts, args)
 
-def _init_moulinette(debug=False, quiet=False):
-    """Configure logging and initialize the moulinette"""
-    # Define loggers handlers
-    handlers = set(LOGGERS_HANDLERS)
-    if quiet and 'tty' in handlers:
-        handlers.remove('tty')
-    elif 'tty' not in handlers:
-        handlers.append('tty')
-
-    root_handlers = set(handlers)
-    if not debug and 'tty' in root_handlers:
-        root_handlers.remove('tty')
-
-    # Define loggers level
-    level = LOGGERS_LEVEL
-    tty_level = TTY_LOG_LEVEL
-    if debug:
-        tty_level = 'DEBUG'
-
-    # Custom logging configuration
-    logging = {
-        'version': 1,
-        'disable_existing_loggers': True,
-        'formatters': {
-            'tty-debug': {
-                'format': '%(relativeCreated)-4d %(fmessage)s'
-            },
-            'precise': {
-                'format': '%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s'
-            },
-        },
-        'filters': {
-            'action': {
-                '()': 'moulinette.utils.log.ActionFilter',
-            },
-        },
-        'handlers': {
-            'tty': {
-                'level': tty_level,
-                'class': 'moulinette.interfaces.cli.TTYHandler',
-                'formatter': 'tty-debug' if debug else '',
-            },
-            'file': {
-                'class': 'logging.FileHandler',
-                'formatter': 'precise',
-                'filename': '%s/%s' % (LOG_DIR, LOG_FILE),
-                'filters': ['action'],
-            },
-        },
-        'loggers': {
-            'yunohost': {
-                'level': level,
-                'handlers': handlers,
-                'propagate': False,
-            },
-            'moulinette': {
-                'level': level,
-                'handlers': [],
-                'propagate': True,
-            },
-            'moulinette.interface': {
-                'level': level,
-                'handlers': handlers,
-                'propagate': False,
-            },
-        },
-        'root': {
-            'level': level,
-            'handlers': root_handlers,
-        },
-    }
-
-    # Create log directory
-    if not os.path.isdir(LOG_DIR):
-        try:
-            os.makedirs(LOG_DIR, 0750)
-        except os.error as e:
-            _die(str(e))
-
-    # Initialize moulinette
-    moulinette.init(logging_config=logging, _from_source=IN_DEVEL)
-
-def _retrieve_namespaces():
-    """Return the list of namespaces to load"""
-    ret = ['yunohost']
-    for n in ActionsMap.get_namespaces():
-        # Append YunoHost modules
-        if n.startswith('ynh_'):
-            ret.append(n)
-    return ret
 
 # Stupid PATH management because sometimes (e.g. some cron job) PATH is only /usr/bin:/bin ...
 default_path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
@@ -188,33 +56,18 @@ if os.environ["PATH"] != default_path:
 
 if __name__ == '__main__':
     if os.geteuid() != 0:
-        # since moulinette isn't initialized, we can't use m18n here
-        sys.stderr.write("\033[1;31mError:\033[0m yunohost command must be " \
+        sys.stderr.write("\033[1;31mError:\033[0m yunohost command must be "
                          "run as root or with sudo.\n")
         sys.exit(1)
 
     parser, opts, args = _parse_cli_args()
-    _init_moulinette(opts.debug, opts.quiet)
-
-    # Check that YunoHost is installed
-    if not os.path.isfile('/etc/yunohost/installed') and \
-       (len(args) < 2 or (args[0] +' '+ args[1] != 'tools postinstall' and \
-                          args[0] +' '+ args[1] != 'backup restore' and \
-                          args[0] +' '+ args[1] != 'log display')):
-
-        from moulinette import m18n
-        # Init i18n
-        m18n.load_namespace('yunohost')
-        m18n.set_locale(get_locale())
-
-        # Print error and exit
-        _die(m18n.n('yunohost_not_installed'), m18n.g('error'))
 
     # Execute the action
-    ret = moulinette.cli(
-        _retrieve_namespaces(), args,
-        use_cache=opts.use_cache, output_as=opts.output_as,
-        password=opts.password, parser_kwargs={'top_parser': parser},
+    yunohost.cli(
+        debug=opts.debug,
+        quiet=opts.quiet,
+        output_as=opts.output_as,
         timeout=opts.timeout,
+        args=args,
+        parser=parser
     )
-    sys.exit(ret)

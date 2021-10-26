@@ -25,6 +25,8 @@ from moulinette import m18n
 
 class YunohostError(MoulinetteError):
 
+    http_code = 500
+
     """
     Yunohost base exception
 
@@ -32,11 +34,29 @@ class YunohostError(MoulinetteError):
     are translated via m18n.n (namespace) instead of m18n.g (global?)
     """
 
-    def __init__(self, key, raw_msg=False, *args, **kwargs):
-        self.key = key # Saving the key is useful for unit testing
-        self.kwargs = kwargs # Saving the key is useful for unit testing
+    def __init__(self, key, raw_msg=False, log_ref=None, *args, **kwargs):
+        self.key = key  # Saving the key is useful for unit testing
+        self.kwargs = kwargs  # Saving the key is useful for unit testing
+        self.log_ref = log_ref
         if raw_msg:
             msg = key
         else:
             msg = m18n.n(key, *args, **kwargs)
+
         super(YunohostError, self).__init__(msg, raw_msg=True)
+
+    def content(self):
+
+        if not self.log_ref:
+            return super().content()
+        else:
+            return {"error": self.strerror, "log_ref": self.log_ref}
+
+
+class YunohostValidationError(YunohostError):
+
+    http_code = 400
+
+    def content(self):
+
+        return {"error": self.strerror, "error_key": self.key, **self.kwargs}

@@ -8,11 +8,15 @@ from publicsuffix import PublicSuffixList
 
 from moulinette.utils.process import check_output
 
-from yunohost.utils.network import dig
+from yunohost.utils.dns import (
+    dig,
+    YNH_DYNDNS_DOMAINS,
+    is_yunohost_dyndns_domain,
+    is_special_use_tld,
+)
 from yunohost.diagnosis import Diagnoser
-from yunohost.domain import domain_list, _build_dns_conf, _get_maindomain
-
-YNH_DYNDNS_DOMAINS = ['nohost.me', 'noho.st', 'ynh.fr']
+from yunohost.domain import domain_list, _get_maindomain
+from yunohost.dns import _build_dns_conf, _get_dns_zone_for_domain
 
 
 class DNSRecordsDiagnoser(Diagnoser):
@@ -25,29 +29,50 @@ class DNSRecordsDiagnoser(Diagnoser):
 
         main_domain = _get_maindomain()
 
-        all_domains = domain_list()["domains"]
-        for domain in all_domains:
+        major_domains = domain_list(exclude_subdomains=True)["domains"]
+        for domain in major_domains:
             self.logger_debug("Diagnosing DNS conf for %s" % domain)
-            is_subdomain = domain.split(".", 1)[1] in all_domains
-            for report in self.check_domain(domain, domain == main_domain, is_subdomain=is_subdomain):
+
+            for report in self.check_domain(
+                domain,
+                domain == main_domain,
+            ):
                 yield report
 
         # Check if a domain buy by the user will expire soon
         psl = PublicSuffixList()
-        domains_from_registrar = [psl.get_public_suffix(domain) for domain in all_domains]
-        domains_from_registrar = [domain for domain in domains_from_registrar if "." in domain]
-        domains_from_registrar = set(domains_from_registrar) - set(YNH_DYNDNS_DOMAINS + ["netlib.re"])
+        domains_from_registrar = [
+            psl.get_public_suffix(domain) for domain in major_domains
+        ]
+        domains_from_registrar = [
+            domain for domain in domains_from_registrar if "." in domain
+        ]
+        domains_from_registrar = set(domains_from_registrar) - set(
+            YNH_DYNDNS_DOMAINS + ["netlib.re"]
+        )
         for report in self.check_expiration_date(domains_from_registrar):
             yield report
 
-    def check_domain(self, domain, is_main_domain, is_subdomain):
+    def check_domain(self, domain, is_main_domain):
 
-        expected_configuration = _build_dns_conf(domain, include_empty_AAAA_if_no_ipv6=True)
+        if is_special_use_tld(domain):
+            categories = []
+            yield dict(
+                meta={"domain": domain},
+                data={},
+                status="INFO",
+                summary="diagnosis_dns_specialusedomain",
+            )
+            return
+
+        base_dns_zone = _get_dns_zone_for_domain(domain)
+        basename = domain.replace(base_dns_zone, "").rstrip(".") or "@"
+
+        expected_configuration = _build_dns_conf(
+            domain, include_empty_AAAA_if_no_ipv6=True
+        )
 
         categories = ["basic", "mail", "xmpp", "extra"]
-        # For subdomains, we only diagnosis A and AAAA records
-        if is_subdomain:
-            categories = ["basic"]
 
         for category in categories:
 
@@ -56,8 +81,21 @@ class DNSRecordsDiagnoser(Diagnoser):
             results = {}
 
             for r in records:
+
                 id_ = r["type"] + ":" + r["name"]
-                r["current"] = self.get_current_record(domain, r["name"], r["type"])
+                fqdn = r["name"] + "." + base_dns_zone if r["name"] != "@" else domain
+
+                # Ugly hack to not check mail records for subdomains stuff,
+                # otherwise will end up in a shitstorm of errors for people with many subdomains...
+                # Should find a cleaner solution in the suggested conf...
+                if r["type"] in ["MX", "TXT"] and fqdn not in [
+                    domain,
+                    f"mail._domainkey.{domain}",
+                    f"_dmarc.{domain}",
+                ]:
+                    continue
+
+                r["current"] = self.get_current_record(fqdn, r["type"])
                 if r["value"] == "@":
                     r["value"] = domain + "."
 
@@ -80,7 +118,10 @@ class DNSRecordsDiagnoser(Diagnoser):
                     # A bad or missing A record is critical ...
                     # And so is a wrong AAAA record
                     # (However, a missing AAAA record is acceptable)
-                    if results["A:@"] != "OK" or results["AAAA:@"] == "WRONG":
+                    if (
+                        results[f"A:{basename}"] != "OK"
+                        or results[f"AAAA:{basename}"] == "WRONG"
+                    ):
                         return True
 
                 return False
@@ -92,14 +133,22 @@ class DNSRecordsDiagnoser(Diagnoser):
                 status = "SUCCESS"
                 summary = "diagnosis_dns_good_conf"
 
-            output = dict(meta={"domain": domain, "category": category},
-                          data=results,
-                          status=status,
-                          summary=summary)
+            # If status is okay and there's actually no expected records
+            # (e.g. XMPP disabled)
+            # then let's not yield any diagnosis line
+            if not records and "status" == "SUCCESS":
+                continue
+
+            output = dict(
+                meta={"domain": domain, "category": category},
+                data=results,
+                status=status,
+                summary=summary,
+            )
 
             if discrepancies:
                 # For ynh-managed domains (nohost.me etc...), tell people to try to "yunohost dyndns update --force"
-                if any(domain.endswith(ynh_dyndns_domain) for ynh_dyndns_domain in YNH_DYNDNS_DOMAINS):
+                if is_yunohost_dyndns_domain(domain):
                     output["details"] = ["diagnosis_dns_try_dyndns_update_force"]
                 # Otherwise point to the documentation
                 else:
@@ -108,10 +157,9 @@ class DNSRecordsDiagnoser(Diagnoser):
 
             yield output
 
-    def get_current_record(self, domain, name, type_):
+    def get_current_record(self, fqdn, type_):
 
-        query = "%s.%s" % (name, domain) if name != "@" else domain
-        success, answers = dig(query, type_, resolvers="force_external")
+        success, answers = dig(fqdn, type_, resolvers="force_external")
 
         if success != "ok":
             return None
@@ -130,12 +178,21 @@ class DNSRecordsDiagnoser(Diagnoser):
             # Split expected/current
             #  from  "v=DKIM1; k=rsa; p=hugekey;"
             #  to a set like {'v=DKIM1', 'k=rsa', 'p=...'}
+            # Additionally, for DKIM, because the key is pretty long,
+            # some DNS registrar sometime split it into several pieces like this:
+            # "p=foo" "bar" (with a space and quotes in the middle)...
             expected = set(r["value"].strip(';" ').replace(";", " ").split())
-            current = set(r["current"].strip(';" ').replace(";", " ").split())
+            current = set(
+                r["current"].replace('" "', "").strip(';" ').replace(";", " ").split()
+            )
 
             # For SPF, ignore parts starting by ip4: or ip6:
-            if r["name"] == "@":
-                current = {part for part in current if not part.startswith("ip4:") and not part.startswith("ip6:")}
+            if "v=spf1" in r["value"]:
+                current = {
+                    part
+                    for part in current
+                    if not part.startswith("ip4:") and not part.startswith("ip6:")
+                }
             return expected == current
         elif r["type"] == "MX":
             # For MX, we want to ignore the priority
@@ -149,13 +206,7 @@ class DNSRecordsDiagnoser(Diagnoser):
         """
         Alert if expiration date of a domain is soon
         """
-
-        details = {
-            "not_found": [],
-            "error": [],
-            "warning": [],
-            "success": []
-        }
+        details = {"not_found": [], "error": [], "warning": [], "success": []}
 
         for domain in domains:
             expire_date = self.get_domain_expiration(domain)
@@ -164,9 +215,13 @@ class DNSRecordsDiagnoser(Diagnoser):
                 status_ns, _ = dig(domain, "NS", resolvers="force_external")
                 status_a, _ = dig(domain, "A", resolvers="force_external")
                 if "ok" not in [status_ns, status_a]:
-                    details["not_found"].append((
-                        "diagnosis_domain_%s_details" % (expire_date),
-                        {"domain": domain}))
+                    # i18n: diagnosis_domain_not_found_details
+                    details["not_found"].append(
+                        (
+                            "diagnosis_domain_%s_details" % (expire_date),
+                            {"domain": domain},
+                        )
+                    )
                 else:
                     self.logger_debug("Dyndns domain: %s" % (domain))
                 continue
@@ -182,7 +237,7 @@ class DNSRecordsDiagnoser(Diagnoser):
             args = {
                 "domain": domain,
                 "days": expire_in.days - 1,
-                "expire_date": str(expire_date)
+                "expire_date": str(expire_date),
             }
             details[alert_type].append(("diagnosis_domain_expires_in", args))
 
@@ -195,39 +250,52 @@ class DNSRecordsDiagnoser(Diagnoser):
                 # Allow to ignore specifically a single domain
                 if len(details[alert_type]) == 1:
                     meta["domain"] = details[alert_type][0][1]["domain"]
-                yield dict(meta=meta,
-                           data={},
-                           status=alert_type.upper() if alert_type != "not_found" else "WARNING",
-                           summary="diagnosis_domain_expiration_" + alert_type,
-                           details=details[alert_type])
+
+                # i18n: diagnosis_domain_expiration_not_found
+                # i18n: diagnosis_domain_expiration_error
+                # i18n: diagnosis_domain_expiration_warning
+                # i18n: diagnosis_domain_expiration_success
+                # i18n: diagnosis_domain_expiration_not_found_details
+                yield dict(
+                    meta=meta,
+                    data={},
+                    status=alert_type.upper()
+                    if alert_type != "not_found"
+                    else "WARNING",
+                    summary="diagnosis_domain_expiration_" + alert_type,
+                    details=details[alert_type],
+                )
 
     def get_domain_expiration(self, domain):
         """
         Return the expiration datetime of a domain or None
         """
         command = "whois -H %s || echo failed" % (domain)
-        out = check_output(command).strip().split("\n")
+        out = check_output(command).split("\n")
 
         # Reduce output to determine if whois answer is equivalent to NOT FOUND
-        filtered_out = [line for line in out
-               if re.search(r'^[a-zA-Z0-9 ]{4,25}:', line, re.IGNORECASE) and
-               not re.match(r'>>> Last update of whois', line, re.IGNORECASE) and
-               not re.match(r'^NOTICE:', line, re.IGNORECASE) and
-               not re.match(r'^%%', line, re.IGNORECASE) and
-               not re.match(r'"https?:"', line, re.IGNORECASE)]
+        filtered_out = [
+            line
+            for line in out
+            if re.search(r"^[a-zA-Z0-9 ]{4,25}:", line, re.IGNORECASE)
+            and not re.match(r">>> Last update of whois", line, re.IGNORECASE)
+            and not re.match(r"^NOTICE:", line, re.IGNORECASE)
+            and not re.match(r"^%%", line, re.IGNORECASE)
+            and not re.match(r'"https?:"', line, re.IGNORECASE)
+        ]
 
         # If there is less than 7 lines, it's NOT FOUND response
         if len(filtered_out) <= 6:
             return "not_found"
 
         for line in out:
-            match = re.search(r'Expir.+(\d{4}-\d{2}-\d{2})', line, re.IGNORECASE)
+            match = re.search(r"Expir.+(\d{4}-\d{2}-\d{2})", line, re.IGNORECASE)
             if match is not None:
-                return datetime.strptime(match.group(1), '%Y-%m-%d')
+                return datetime.strptime(match.group(1), "%Y-%m-%d")
 
-            match = re.search(r'Expir.+(\d{2}-\w{3}-\d{4})', line, re.IGNORECASE)
+            match = re.search(r"Expir.+(\d{2}-\w{3}-\d{4})", line, re.IGNORECASE)
             if match is not None:
-                return datetime.strptime(match.group(1), '%d-%b-%Y')
+                return datetime.strptime(match.group(1), "%d-%b-%Y")
 
         return "expiration_not_found"
 

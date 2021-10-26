@@ -25,7 +25,7 @@ do_pre_regen() {
 
     # Support different strategy for security configurations
     export compatibility="$(yunohost settings get 'security.ssh.compatibility')"
-
+    export port="$(yunohost settings get 'security.ssh.port')"
     export ssh_keys
     export ipv6_enabled
     ynh_render_template "sshd_config" "${pending_dir}/etc/ssh/sshd_config"
@@ -48,20 +48,4 @@ do_post_regen() {
     systemctl restart ssh
 }
 
-FORCE=${2:-0}
-DRY_RUN=${3:-0}
-
-case "$1" in
-  pre)
-    do_pre_regen $4
-    ;;
-  post)
-    do_post_regen $4
-    ;;
-  *)
-    echo "hook called with unknown argument \`$1'" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+do_$1_regen ${@:2}

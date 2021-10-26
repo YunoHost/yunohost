@@ -7,20 +7,18 @@
 # | arg: -n, --nonappend        - (optional) Replace the config file instead of appending this new config.
 # | arg: -u, --specific_user=   - run logrotate as the specified user and group. If not specified logrotate is runned as root.
 #
-# If no --logfile is provided, /var/log/${app} will be used as default.
-# logfile can be just a directory, or a full path to a logfile :
-# /parentdir/logdir
-# /parentdir/logdir/logfile.log
+# If no `--logfile` is provided, `/var/log/$app` will be used as default.
+# `logfile` can point to a directory or a file.
 #
 # It's possible to use this helper multiple times, each config will be added to
-# the same logrotate config file.  Unless you use the option --non-append
+# the same logrotate config file. Unless you use the option `--non-append`
 #
 # Requires YunoHost version 2.6.4 or higher.
-# Requires YunoHost version 3.2.0 or higher for the argument --specific_user
-ynh_use_logrotate () {
+# Requires YunoHost version 3.2.0 or higher for the argument `--specific_user`
+ynh_use_logrotate() {
     # Declare an array to define the options of this helper.
     local legacy_args=lnuya
-    local -A args_array=( [l]=logfile= [n]=nonappend [u]=specific_user= [y]=non [a]=append )
+    local -A args_array=([l]=logfile= [n]=nonappend [u]=specific_user= [y]=non [a]=append)
     # [y]=non [a]=append are only for legacy purpose, to not fail on the old option '--non-append'
     local logfile
     local nonappend
@@ -32,22 +30,18 @@ ynh_use_logrotate () {
     specific_user="${specific_user:-}"
 
     # LEGACY CODE - PRE GETOPTS
-    if [ $# -gt 0 ] && [ "$1" == "--non-append" ]
-    then
+    if [ $# -gt 0 ] && [ "$1" == "--non-append" ]; then
         nonappend=1
         # Destroy this argument for the next command.
         shift
-    elif [ $# -gt 1 ] && [ "$2" == "--non-append" ]
-    then
+    elif [ $# -gt 1 ] && [ "$2" == "--non-append" ]; then
         nonappend=1
     fi
 
-    if [ $# -gt 0 ] && [ "$(echo ${1:0:1})" != "-" ]
-    then
+    if [ $# -gt 0 ] && [ "$(echo ${1:0:1})" != "-" ]; then
         # If the given logfile parameter already exists as a file, or if it ends up with ".log",
         # we just want to manage a single file
-        if [ -f "$1" ] || [ "$(echo ${1##*.})" == "log" ]
-        then
+        if [ -f "$1" ] || [ "$(echo ${1##*.})" == "log" ]; then
             local logfile=$1
         # Otherwise we assume we want to manage a directory and all its .log file inside
         else
@@ -60,22 +54,20 @@ ynh_use_logrotate () {
     if [ "$nonappend" -eq 1 ]; then
         customtee="tee"
     fi
-    if [ -n "$logfile" ]
-    then
-        if [ ! -f "$1" ] && [ "$(echo ${logfile##*.})" != "log" ]; then	# Keep only the extension to check if it's a logfile
-            local logfile="$logfile/*.log"	# Else, uses the directory and all logfile into it.
+    if [ -n "$logfile" ]; then
+        if [ ! -f "$1" ] && [ "$(echo ${logfile##*.})" != "log" ]; then # Keep only the extension to check if it's a logfile
+            local logfile="$logfile/*.log"                              # Else, uses the directory and all logfile into it.
         fi
     else
         logfile="/var/log/${app}/*.log" # Without argument, use a defaut directory in /var/log
     fi
     local su_directive=""
-    if [[ -n $specific_user ]]
-    then
+    if [[ -n $specific_user ]]; then
         su_directive="	# Run logorotate as specific user - group
     su ${specific_user%/*} ${specific_user#*/}"
     fi
 
-    cat > ./${app}-logrotate << EOF	# Build a config file for logrotate
+    cat >./${app}-logrotate <<EOF # Build a config file for logrotate
 $logfile {
         # Rotate if the logfile exceeds 100Mo
     size 100M
@@ -96,8 +88,13 @@ $logfile {
     $su_directive
 }
 EOF
-    mkdir --parents $(dirname "$logfile")	# Create the log directory, if not exist
-    cat ${app}-logrotate | $customtee /etc/logrotate.d/$app > /dev/null	# Append this config to the existing config file, or replace the whole config file (depending on $customtee)
+    mkdir --parents $(dirname "$logfile")                              # Create the log directory, if not exist
+    cat ${app}-logrotate | $customtee /etc/logrotate.d/$app >/dev/null # Append this config to the existing config file, or replace the whole config file (depending on $customtee)
+
+    if ynh_user_exists --username="$app"; then
+        chown $app:$app "$logfile"
+        chmod o-rwx "$logfile"
+    fi
 }
 
 # Remove the app's logrotate config.
@@ -105,7 +102,7 @@ EOF
 # usage: ynh_remove_logrotate
 #
 # Requires YunoHost version 2.6.4 or higher.
-ynh_remove_logrotate () {
+ynh_remove_logrotate() {
     if [ -e "/etc/logrotate.d/$app" ]; then
         rm "/etc/logrotate.d/$app"
     fi

@@ -8,15 +8,21 @@
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_get() {
+    local _globalapp=${app-:}
     # Declare an array to define the options of this helper.
     local legacy_args=ak
-    local -A args_array=( [a]=app= [k]=key= )
+    local -A args_array=([a]=app= [k]=key=)
     local app
     local key
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
 
-    ynh_app_setting "get" "$app" "$key"
+    if [[ $key =~ (unprotected|protected|skipped)_ ]]; then
+        yunohost app setting $app $key
+    else
+        ynh_app_setting "get" "$app" "$key"
+    fi
 }
 
 # Set an application setting
@@ -28,16 +34,22 @@ ynh_app_setting_get() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_set() {
+    local _globalapp=${app-:}
     # Declare an array to define the options of this helper.
     local legacy_args=akv
-    local -A args_array=( [a]=app= [k]=key= [v]=value= )
+    local -A args_array=([a]=app= [k]=key= [v]=value=)
     local app
     local key
     local value
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
 
-    ynh_app_setting "set" "$app" "$key" "$value"
+    if [[ $key =~ (unprotected|protected|skipped)_ ]]; then
+        yunohost app setting $app $key -v $value
+    else
+        ynh_app_setting "set" "$app" "$key" "$value"
+    fi
 }
 
 # Delete an application setting
@@ -48,15 +60,21 @@ ynh_app_setting_set() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_delete() {
+    local _globalapp=${app-:}
     # Declare an array to define the options of this helper.
     local legacy_args=ak
-    local -A args_array=( [a]=app= [k]=key= )
+    local -A args_array=([a]=app= [k]=key=)
     local app
     local key
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    app="${app:-$_globalapp}"
 
-    ynh_app_setting "delete" "$app" "$key"
+    if [[ "$key" =~ (unprotected|skipped|protected)_ ]]; then
+        yunohost app setting $app $key -d
+    else
+        ynh_app_setting "delete" "$app" "$key"
+    fi
 }
 
 # Small "hard-coded" interface to avoid calling "yunohost app" directly each
@@ -64,21 +82,16 @@ ynh_app_setting_delete() {
 #
 # [internal]
 #
-ynh_app_setting()
-{
-    if [[ "$1" == "delete" ]] && [[ "$3" =~ ^(unprotected|skipped)_ ]] 
-    then
-        current_value=$(ynh_app_setting_get --app=$app --key=$3)
-    fi
-
-    ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python2.7 - <<EOF
+ynh_app_setting() {
+    set +o xtrace # set +x
+    ACTION="$1" APP="$2" KEY="$3" VALUE="${4:-}" python3 - <<EOF
 import os, yaml, sys
 app, action = os.environ['APP'], os.environ['ACTION'].lower()
 key, value = os.environ['KEY'], os.environ.get('VALUE', None)
 setting_file = "/etc/yunohost/apps/%s/settings.yml" % app
 assert os.path.exists(setting_file), "Setting file %s does not exists ?" % setting_file
 with open(setting_file) as f:
-    settings = yaml.load(f)
+    settings = yaml.safe_load(f)
 if action == "get":
     if key in settings:
         print(settings[key])
@@ -88,43 +101,29 @@ else:
             del settings[key]
     elif action == "set":
         if key in ['redirected_urls', 'redirected_regex']:
-            value = yaml.load(value)
-        if any(key.startswith(word+"_") for word in ["unprotected", "protected", "skipped"]):
-            sys.stderr.write("/!\\ Packagers! This app is still using the skipped/protected/unprotected_uris/regex settings which are now obsolete and deprecated... Instead, you should use the new helpers 'ynh_permission_{create,urls,update,delete}' and the 'visitors' group to initialize the public/private access. Check out the documentation at the bottom of yunohost.org/groups_and_permissions to learn how to use the new permission mechanism.\n")
+            value = yaml.safe_load(value)
         settings[key] = value
     else:
         raise ValueError("action should either be get, set or delete")
     with open(setting_file, "w") as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
 EOF
-
-    # Fucking legacy permission management.
-    # We need this because app temporarily set the app as unprotected to configure it with curl...
-    if [[ "$3" =~ ^(unprotected|skipped)_ ]]
-    then
-        if [[ "$1" == "set" ]] && [[ "${4:-}" == "/" ]]
-        then
-            ynh_permission_update --permission "main" --add "visitors"
-        elif [[ "$1" == "delete" ]] && [[ "${current_value:-}" == "/" ]] && [[ -n "$(ynh_app_setting_get --app=$2 --key='is_public' )" ]]
-        then
-            ynh_permission_update --permission "main" --remove "visitors"
-        fi
-    fi
+    set -o xtrace # set -x
 }
 
 # Check availability of a web path
-#
-# example: ynh_webpath_available --domain=some.domain.tld --path_url=/coffee
 #
 # usage: ynh_webpath_available --domain=domain --path_url=path
 # | arg: -d, --domain=      - the domain/host of the url
 # | arg: -p, --path_url=    - the web path to check the availability of
 #
+# example: ynh_webpath_available --domain=some.domain.tld --path_url=/coffee
+#
 # Requires YunoHost version 2.6.4 or higher.
-ynh_webpath_available () {
+ynh_webpath_available() {
     # Declare an array to define the options of this helper.
     local legacy_args=dp
-    local -A args_array=( [d]=domain= [p]=path_url= )
+    local -A args_array=([d]=domain= [p]=path_url=)
     local domain
     local path_url
     # Manage arguments with getopts
@@ -135,18 +134,18 @@ ynh_webpath_available () {
 
 # Register/book a web path for an app
 #
-# example: ynh_webpath_register --app=wordpress --domain=some.domain.tld --path_url=/coffee
-#
 # usage: ynh_webpath_register --app=app --domain=domain --path_url=path
 # | arg: -a, --app=         - the app for which the domain should be registered
 # | arg: -d, --domain=      - the domain/host of the web path
 # | arg: -p, --path_url=    - the web path to be registered
 #
+# example: ynh_webpath_register --app=wordpress --domain=some.domain.tld --path_url=/coffee
+#
 # Requires YunoHost version 2.6.4 or higher.
-ynh_webpath_register () {
+ynh_webpath_register() {
     # Declare an array to define the options of this helper.
     local legacy_args=adp
-    local -A args_array=( [a]=app= [d]=domain= [p]=path_url= )
+    local -A args_array=([a]=app= [d]=domain= [p]=path_url=)
     local app
     local domain
     local path_url
@@ -154,170 +153,4 @@ ynh_webpath_register () {
     ynh_handle_getopts_args "$@"
 
     yunohost app register-url $app $domain $path_url
-}
-
-# Create a new permission for the app
-#
-# example: ynh_permission_create --permission=admin --url=/admin --allowed="alice bob"
-#
-# usage: ynh_permission_create --permission "permission" [--url=url] [--allowed="group1 group2"]
-# | arg: -p, --permission=  - the name for the permission (by default a permission named "main" already exist)
-# | arg: -u, --url=         - (optional) URL for which access will be allowed/forbidden
-# | arg: -a, --allowed=     - (optional) A list of group/user to allow for the permission
-#
-# If provided, 'url' is assumed to be relative to the app domain/path if they
-# start with '/'.  For example:
-#    /                             -> domain.tld/app
-#    /admin                        -> domain.tld/app/admin
-#    domain.tld/app/api            -> domain.tld/app/api
-#
-# 'url' can be later treated as a regex if it starts with "re:".
-# For example:
-#    re:/api/[A-Z]*$               -> domain.tld/app/api/[A-Z]*$
-#    re:domain.tld/app/api/[A-Z]*$ -> domain.tld/app/api/[A-Z]*$
-#
-# Requires YunoHost version 3.7.0 or higher.
-ynh_permission_create() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=pua
-    local -A args_array=( [p]=permission= [u]=url= [a]=allowed= )
-    local permission
-    local url
-    local allowed
-    ynh_handle_getopts_args "$@"
-    url=${url:-}
-    allowed=${allowed:-}
-
-    if [[ -n $url ]]
-    then
-        url="'$url'"
-    else
-        url="None"
-    fi
-
-    if [[ -n $allowed ]]; then
-        allowed=",allowed=['${allowed//';'/"','"}']"
-    fi
-    
-    yunohost tools shell -c "from yunohost.permission import permission_create; permission_create('$app.$permission', url=$url $allowed , sync_perm=False)"
-}
-
-# Remove a permission for the app (note that when the app is removed all permission is automatically removed)
-#
-# example: ynh_permission_delete --permission=editors
-#
-# usage: ynh_permission_delete --permission="permission"
-# | arg: -p, --permission=      - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
-#
-# Requires YunoHost version 3.7.0 or higher.
-ynh_permission_delete() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=p
-    local -A args_array=( [p]=permission= )
-    local permission
-    ynh_handle_getopts_args "$@"
-
-    yunohost tools shell -c "from yunohost.permission import permission_delete; permission_delete('$app.$permission', sync_perm=False)"
-}
-
-# Check if a permission exists
-#
-# usage: ynh_permission_exists --permission=permission
-# | arg: -p, --permission=      - the permission to check
-# | exit: Return 1 if the permission doesn't exist, 0 otherwise
-#
-# Requires YunoHost version 3.7.0 or higher.
-ynh_permission_exists() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=p
-    local -A args_array=( [p]=permission= )
-    local permission
-    ynh_handle_getopts_args "$@"
-
-    yunohost user permission list --short | grep --word-regexp --quiet "$app.$permission"
-}
-
-# Redefine the url associated to a permission
-#
-# usage: ynh_permission_url --permission="permission" [--url="url"]
-# | arg: -p, --permission=  - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
-# | arg: -u, --url=         - (optional) URL for which access will be allowed/forbidden
-#
-# Requires YunoHost version 3.7.0 or higher.
-ynh_permission_url() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=pu
-    local -A args_array=([p]=permission= [u]=url=)
-    local permission
-    local url
-    ynh_handle_getopts_args "$@"
-    url=${url:-}
-
-    if [[ -n $url ]]
-    then
-        url="'$url'"
-    else
-        url="None"
-    fi
-
-    yunohost tools shell -c "from yunohost.permission import permission_url; permission_url('$app.$permission', url=$url)"
-}
-
-
-# Update a permission for the app
-#
-# example: ynh_permission_update --permission admin --add=samdoe --remove=all_users
-#
-# usage: ynh_permission_update --permission="permission" [--add="group1 group2"] [--remove="group1 group2"]
-# | arg: -p, --permission=  - the name for the permission (by default a permission named "main" already exist)
-# | arg: -a, --add=         - the list of group or users to enable add to the permission
-# | arg: -r, --remove=      - the list of group or users to remove from the permission
-#
-# Requires YunoHost version 3.7.0 or higher.
-ynh_permission_update() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=par
-    local -A args_array=( [p]=permission= [a]=add= [r]=remove= )
-    local permission
-    local add
-    local remove
-    ynh_handle_getopts_args "$@"
-    add=${add:-}
-    remove=${remove:-}
-
-    if [[ -n $add ]]; then
-        add="--add ${add//';'/" "}"
-    fi
-    if [[ -n $remove ]]; then
-        remove="--remove ${remove//';'/" "} "
-    fi
-
-    yunohost user permission update "$app.$permission" $add $remove
-}
-
-# Check if a permission has an user
-#
-# example: ynh_permission_has_user --permission=main --user=visitors
-#
-# usage: ynh_permission_has_user --permission=permission --user=user
-# | arg: -p, --permission=  - the permission to check
-# | arg: -u, --user=        - the user seek in the permission
-# | exit: Return 1 if the permission doesn't have that user or doesn't exist, 0 otherwise
-#
-# Requires YunoHost version 3.7.1 or higher.
-ynh_permission_has_user() {
-    local legacy_args=pu
-    # Declare an array to define the options of this helper.
-    local -A args_array=( [p]=permission= [u]=user= )
-    local permission
-    local user
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-
-    if ! ynh_permission_exists --permission=$permission
-    then
-        return 1
-    fi
-
-    yunohost user permission info "$app.$permission" | grep --word-regexp --quiet "$user"
 }

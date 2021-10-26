@@ -1,3 +1,0 @@
-backup_dir="$1/conf/ssowat"
-
-cp -a $backup_dir/. /etc/ssowat

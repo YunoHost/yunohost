@@ -2,54 +2,55 @@
 
 # Find a free port and return it
 #
-# example: port=$(ynh_find_port --port=8080)
-#
 # usage: ynh_find_port --port=begin_port
 # | arg: -p, --port=    - port to start to search
 # | ret: the port number
 #
+# example: port=$(ynh_find_port --port=8080)
+#
 # Requires YunoHost version 2.6.4 or higher.
-ynh_find_port () {
+ynh_find_port() {
     # Declare an array to define the options of this helper.
     local legacy_args=p
-    local -A args_array=( [p]=port= )
+    local -A args_array=([p]=port=)
     local port
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
     test -n "$port" || ynh_die --message="The argument of ynh_find_port must be a valid port."
-    while ! ynh_port_available --port=$port
-    do
-        port=$((port+1))	# Else, pass to next port
+    while ! ynh_port_available --port=$port; do
+        port=$((port + 1))
     done
     echo $port
 }
 
 # Test if a port is available
 #
-# example: ynh_port_available --port=1234 || ynh_die "Port 1234 is needs to be available for this app"
-#
 # usage: ynh_find_port --port=XYZ
 # | arg: -p, --port=    - port to check
-# | exit: Return 1 if the port is already used by another process.
+# | ret: 0 if the port is available, 1 if it is already used by another process.
+#
+# example: ynh_port_available --port=1234 || ynh_die --message="Port 1234 is needs to be available for this app"
 #
 # Requires YunoHost version 3.8.0 or higher.
-ynh_port_available () {
+ynh_port_available() {
     # Declare an array to define the options of this helper.
     local legacy_args=p
-    local -A args_array=( [p]=port= )
+    local -A args_array=([p]=port=)
     local port
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ":$port$"       # Check if the port is free
-    then
+    # Check if the port is free
+    if ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ":$port$"; then
+        return 1
+    # This is to cover (most) case where an app is using a port yet ain't currently using it for some reason (typically service ain't up)
+    elif grep -q "port: '$port'" /etc/yunohost/apps/*/settings.yml; then
         return 1
     else
         return 0
     fi
 }
-
 
 # Validate an IP address
 #
@@ -61,13 +62,12 @@ ynh_port_available () {
 # example: ynh_validate_ip 4 111.222.333.444
 #
 # Requires YunoHost version 2.2.4 or higher.
-ynh_validate_ip()
-{
+ynh_validate_ip() {
     # http://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python#319298
 
     # Declare an array to define the options of this helper.
     local legacy_args=fi
-    local -A args_array=( [f]=family= [i]=ip_address= )
+    local -A args_array=([f]=family= [i]=ip_address=)
     local family
     local ip_address
     # Manage arguments with getopts
@@ -75,7 +75,7 @@ ynh_validate_ip()
 
     [ "$family" == "4" ] || [ "$family" == "6" ] || return 1
 
-  python /dev/stdin << EOF
+    python3 /dev/stdin <<EOF
 import socket
 import sys
 family = { "4" : socket.AF_INET, "6" : socket.AF_INET6 }
@@ -89,18 +89,17 @@ EOF
 
 # Validate an IPv4 address
 #
-# example: ynh_validate_ip4 111.222.333.444
-#
 # usage: ynh_validate_ip4 --ip_address=ip_address
 # | arg: -i, --ip_address=     - the ipv4 address to check
 # | ret: 0 for valid ipv4 addresses, 1 otherwise
 #
+# example: ynh_validate_ip4 111.222.333.444
+#
 # Requires YunoHost version 2.2.4 or higher.
-ynh_validate_ip4()
-{
+ynh_validate_ip4() {
     # Declare an array to define the options of this helper.
     local legacy_args=i
-    local -A args_array=( [i]=ip_address= )
+    local -A args_array=([i]=ip_address=)
     local ip_address
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
@@ -108,21 +107,19 @@ ynh_validate_ip4()
     ynh_validate_ip --family=4 --ip_address=$ip_address
 }
 
-
 # Validate an IPv6 address
+#
+# usage: ynh_validate_ip6 --ip_address=ip_address
+# | arg: -i, --ip_address=  - the ipv6 address to check
+# | ret: 0 for valid ipv6 addresses, 1 otherwise
 #
 # example: ynh_validate_ip6 2000:dead:beef::1
 #
-# usage: ynh_validate_ip6 --ip_address=ip_address
-# | arg: -i, --ip_address=     - the ipv6 address to check
-# | ret: 0 for valid ipv6 addresses, 1 otherwise
-#
 # Requires YunoHost version 2.2.4 or higher.
-ynh_validate_ip6()
-{
+ynh_validate_ip6() {
     # Declare an array to define the options of this helper.
     local legacy_args=i
-    local -A args_array=( [i]=ip_address= )
+    local -A args_array=([i]=ip_address=)
     local ip_address
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"

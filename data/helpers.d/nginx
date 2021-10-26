@@ -2,69 +2,31 @@
 
 # Create a dedicated nginx config
 #
-# usage: ynh_add_nginx_config "list of others variables to replace"
+# usage: ynh_add_nginx_config
 #
-# | arg: list - (Optional) list of others variables to replace separated by spaces. For example : 'path_2 port_2 ...'
+# This will use a template in `../conf/nginx.conf`
+# See the documentation of `ynh_add_config` for a description of the template
+# format and how placeholders are replaced with actual variables.
 #
-# This will use a template in ../conf/nginx.conf
-#   __PATH__      by  $path_url
-#   __DOMAIN__    by  $domain
-#   __PORT__      by  $port
-#   __NAME__      by  $app
-#   __FINALPATH__ by  $final_path
-#   __PHPVERSION__ by  $YNH_PHP_VERSION ($YNH_PHP_VERSION is either the default php version or the version defined for the app)
+# Additionally, ynh_add_nginx_config will replace:
+# - `#sub_path_only`      by empty string if `path_url` is not `'/'`
+# - `#root_path_only`     by empty string if `path_url`  *is*  `'/'`
 #
-#  And dynamic variables (from the last example) :
-#   __PATH_2__    by $path_2
-#   __PORT_2__    by $port_2
+# This allows to enable/disable specific behaviors dependenging on the install
+# location
 #
-# Requires YunoHost version 2.7.2 or higher.
-# Requires YunoHost version 2.7.13 or higher for dynamic variables
-ynh_add_nginx_config () {
-    finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
-    local others_var=${1:-}
-    ynh_backup_if_checksum_is_different --file="$finalnginxconf"
-    cp ../conf/nginx.conf "$finalnginxconf"
+# Requires YunoHost version 4.1.0 or higher.
+ynh_add_nginx_config() {
 
-    # To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
-    # Substitute in a nginx config file only if the variable is not empty
-    if test -n "${path_url:-}"
-    then
-        # path_url_slash_less is path_url, or a blank value if path_url is only '/'
-        local path_url_slash_less=${path_url%/}
-        ynh_replace_string --match_string="__PATH__/" --replace_string="$path_url_slash_less/" --target_file="$finalnginxconf"
-        ynh_replace_string --match_string="__PATH__" --replace_string="$path_url" --target_file="$finalnginxconf"
-    fi
-    if test -n "${domain:-}"; then
-        ynh_replace_string --match_string="__DOMAIN__" --replace_string="$domain" --target_file="$finalnginxconf"
-    fi
-    if test -n "${port:-}"; then
-        ynh_replace_string --match_string="__PORT__" --replace_string="$port" --target_file="$finalnginxconf"
-    fi
-    if test -n "${app:-}"; then
-        ynh_replace_string --match_string="__NAME__" --replace_string="$app" --target_file="$finalnginxconf"
-    fi
-    if test -n "${final_path:-}"; then
-        ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalnginxconf"
-    fi
-    ynh_replace_string --match_string="__PHPVERSION__" --replace_string="$YNH_PHP_VERSION" --target_file="$finalnginxconf"
+    local finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
 
-    # Replace all other variable given as arguments
-    for var_to_replace in $others_var
-    do
-        # ${var_to_replace^^} make the content of the variable on upper-cases
-        # ${!var_to_replace} get the content of the variable named $var_to_replace 
-        ynh_replace_string --match_string="__${var_to_replace^^}__" --replace_string="${!var_to_replace}" --target_file="$finalnginxconf"
-    done
-
-    if [ "${path_url:-}" != "/" ]
-    then
-        ynh_replace_string --match_string="^#sub_path_only" --replace_string="" --target_file="$finalnginxconf"
+    if [ "${path_url:-}" != "/" ]; then
+        ynh_replace_string --match_string="^#sub_path_only" --replace_string="" --target_file="$YNH_APP_BASEDIR/conf/nginx.conf"
     else
-        ynh_replace_string --match_string="^#root_path_only" --replace_string="" --target_file="$finalnginxconf"
+        ynh_replace_string --match_string="^#root_path_only" --replace_string="" --target_file="$YNH_APP_BASEDIR/conf/nginx.conf"
     fi
 
-    ynh_store_file_checksum --file="$finalnginxconf"
+    ynh_add_config --template="$YNH_APP_BASEDIR/conf/nginx.conf" --destination="$finalnginxconf"
 
     ynh_systemd_action --service_name=nginx --action=reload
 }
@@ -74,7 +36,7 @@ ynh_add_nginx_config () {
 # usage: ynh_remove_nginx_config
 #
 # Requires YunoHost version 2.7.2 or higher.
-ynh_remove_nginx_config () {
+ynh_remove_nginx_config() {
     ynh_secure_remove --file="/etc/nginx/conf.d/$domain.d/$app.conf"
     ynh_systemd_action --service_name=nginx --action=reload
 }

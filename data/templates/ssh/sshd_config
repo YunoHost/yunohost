@@ -2,7 +2,7 @@
 # by YunoHost
 
 Protocol 2
-Port 22
+Port {{ port }}
 
 {% if ipv6_enabled == "true" %}ListenAddress ::{% endif %}
 ListenAddress 0.0.0.0
@@ -64,14 +64,40 @@ PrintLastLog yes
 ClientAliveInterval 60
 AcceptEnv LANG LC_*
 
+# Disallow user without ssh or sftp permissions
+AllowGroups ssh.main sftp.main ssh.app sftp.app admins root
+
+# Allow users to create tunnels or forwarding
+AllowTcpForwarding yes
+AllowStreamLocalForwarding yes
+PermitTunnel yes
+PermitUserRC yes
+
 # SFTP stuff
 Subsystem sftp internal-sftp
-Match User sftpusers
-        ForceCommand internal-sftp
-        ChrootDirectory /home/%u
-        AllowTcpForwarding no
-        GatewayPorts no
-        X11Forwarding no
+
+# Apply following instructions to user with sftp perm only
+Match Group sftp.main,!ssh.main
+    ForceCommand internal-sftp
+    # We can't restrict to /home/%u because the chroot base must be owned by root
+    # So we chroot only on /home
+    # See https://serverfault.com/questions/584986/bad-ownership-or-modes-for-chroot-directory-component
+    ChrootDirectory /home
+    # Forbid SFTP users from using their account SSH as a VPN (even if SSH login is disabled)
+    AllowTcpForwarding no
+    AllowStreamLocalForwarding no
+    PermitTunnel no
+    # Disable .ssh/rc, which could be edited (e.g. from Nextcloud or whatever) by users to execute arbitrary commands even if SSH login is disabled
+    PermitUserRC no
+
+Match Group sftp.app,!ssh.app
+    ForceCommand internal-sftp
+    ChrootDirectory %h
+    AllowTcpForwarding no
+    AllowStreamLocalForwarding no
+    PermitTunnel no
+    PermitUserRC no
+    PasswordAuthentication yes
 
 # root login is allowed on local networks
 # It's meant to be a backup solution in case LDAP is down and
@@ -79,4 +105,4 @@ Match User sftpusers
 # If the server is a VPS, it's expected that the owner of the
 # server has access to a web console through which to log in.
 Match Address 192.168.0.0/16,10.0.0.0/8,172.16.0.0/12,169.254.0.0/16,fe80::/10,fd00::/8
-        PermitRootLogin yes
+    PermitRootLogin yes

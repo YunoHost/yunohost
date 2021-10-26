@@ -6,9 +6,22 @@ generate-helpers-doc:
   stage: doc
   image: "before-install"
   needs: []
+  before_script:
+    - apt-get update -y && apt-get install git hub -y
+    - git config --global user.email "yunohost@yunohost.org"
+    - git config --global user.name "$GITHUB_USER"
   script:
     - cd doc
-    - python generate_helper_doc.py
+    - python3 generate_helper_doc.py
+    - hub clone https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/doc.git doc_repo
+    - cp helpers.md doc_repo/pages/04.contribute/04.packaging_apps/11.helpers/packaging_apps_helpers.md
+    - cd doc_repo
+    # replace ${CI_COMMIT_REF_NAME} with ${CI_COMMIT_TAG} ?
+    - hub checkout -b "${CI_COMMIT_REF_NAME}"
+    - hub commit -am "[CI] Helper for ${CI_COMMIT_REF_NAME}"
+    - hub pull-request -m "[CI] Helper for ${CI_COMMIT_REF_NAME}" -p # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
   artifacts:
     paths:
-      - doc/helpers.html
+      - doc/helpers.md
+  only:
+    - tags

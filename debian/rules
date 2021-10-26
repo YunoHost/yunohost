@@ -5,13 +5,13 @@
 #export DH_VERBOSE=1
 
 %:
-	dh ${@} --with=python2,systemd
+	dh ${@} --with=python3,systemd
 
 override_dh_auto_build:
 	# Generate bash completion file
-	python data/actionsmap/yunohost_completion.py
+	python3 data/actionsmap/yunohost_completion.py
 	python3 data/actionsmap/zsh_completion.py
-	python doc/generate_manpages.py --gzip --output doc/yunohost.8.gz
+	python3 doc/generate_manpages.py --gzip --output doc/yunohost.8.gz
 
 override_dh_installinit:
 	dh_installinit -pyunohost --name=yunohost-api --restart-after-upgrade

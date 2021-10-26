@@ -27,7 +27,6 @@ import sys
 import shutil
 import pwd
 import grp
-import smtplib
 import subprocess
 import glob
 
@@ -38,7 +37,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file
 
 from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.network import get_public_ip
 
 from yunohost.diagnosis import Diagnoser
@@ -46,7 +45,7 @@ from yunohost.service import _run_service_command
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
 
-logger = getActionLogger('yunohost.certmanager')
+logger = getActionLogger("yunohost.certmanager")
 
 CERT_FOLDER = "/etc/yunohost/certs/"
 TMP_FOLDER = "/tmp/acme-challenge-private/"
@@ -55,18 +54,16 @@ WEBROOT_FOLDER = "/tmp/acme-challenge-public/"
 SELF_CA_FILE = "/etc/ssl/certs/ca-yunohost_crt.pem"
 ACCOUNT_KEY_FILE = "/etc/yunohost/letsencrypt_account.pem"
 
-SSL_DIR = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
+SSL_DIR = "/usr/share/yunohost/yunohost-config/ssl/yunoCA"
 
 KEY_SIZE = 3072
 
 VALIDITY_LIMIT = 15  # days
 
 # For tests
-STAGING_CERTIFICATION_AUTHORITY = "https://acme-staging.api.letsencrypt.org"
+STAGING_CERTIFICATION_AUTHORITY = "https://acme-staging-v02.api.letsencrypt.org"
 # For prod
 PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
-
-INTERMEDIATE_CERTIFICATE_URL = "https://letsencrypt.org/certs/lets-encrypt-x3-cross-signed.pem"
 
 #
 # Front-end stuff                                                           #
@@ -86,14 +83,11 @@ def certificate_status(domain_list, full=False):
 
     # If no domains given, consider all yunohost domains
     if domain_list == []:
-        domain_list = yunohost.domain.domain_list()['domains']
+        domain_list = yunohost.domain.domain_list()["domains"]
     # Else, validate that yunohost knows the domains given
     else:
-        yunohost_domains_list = yunohost.domain.domain_list()['domains']
         for domain in domain_list:
-            # Is it in Yunohost domain list?
-            if domain not in yunohost_domains_list:
-                raise YunohostError('certmanager_domain_unknown', domain=domain)
+            yunohost.domain._assert_domain_exists(domain)
 
     certificates = {}
 
@@ -110,7 +104,7 @@ def certificate_status(domain_list, full=False):
             try:
                 _check_domain_is_ready_for_ACME(domain)
                 status["ACME_eligible"] = True
-            except:
+            except Exception:
                 status["ACME_eligible"] = False
 
         del status["domain"]
@@ -119,7 +113,9 @@ def certificate_status(domain_list, full=False):
     return {"certificates": certificates}
 
 
-def certificate_install(domain_list, force=False, no_checks=False, self_signed=False, staging=False):
+def certificate_install(
+    domain_list, force=False, no_checks=False, self_signed=False, staging=False
+):
     """
     Install a Let's Encrypt certificate for given domains (all by default)
 
@@ -134,21 +130,24 @@ def certificate_install(domain_list, force=False, no_checks=False, self_signed=F
     if self_signed:
         _certificate_install_selfsigned(domain_list, force)
     else:
-        _certificate_install_letsencrypt(
-            domain_list, force, no_checks, staging)
+        _certificate_install_letsencrypt(domain_list, force, no_checks, staging)
 
 
 def _certificate_install_selfsigned(domain_list, force=False):
 
     for domain in domain_list:
 
-        operation_logger = OperationLogger('selfsigned_cert_install', [('domain', domain)],
-                                           args={'force': force})
+        operation_logger = OperationLogger(
+            "selfsigned_cert_install", [("domain", domain)], args={"force": force}
+        )
 
         # Paths of files and folder we'll need
         date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
         new_cert_folder = "%s/%s-history/%s-selfsigned" % (
-            CERT_FOLDER, domain, date_tag)
+            CERT_FOLDER,
+            domain,
+            date_tag,
+        )
 
         conf_template = os.path.join(SSL_DIR, "openssl.cnf")
 
@@ -163,8 +162,10 @@ def _certificate_install_selfsigned(domain_list, force=False):
         if not force and os.path.isfile(current_cert_file):
             status = _get_status(domain)
 
-            if status["summary"]["code"] in ('good', 'great'):
-                raise YunohostError('certmanager_attempt_to_replace_valid_cert', domain=domain)
+            if status["summary"]["code"] in ("good", "great"):
+                raise YunohostValidationError(
+                    "certmanager_attempt_to_replace_valid_cert", domain=domain
+                )
 
         operation_logger.start()
 
@@ -188,13 +189,16 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
         for command in commands:
             p = subprocess.Popen(
-                command.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+                command.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+            )
 
             out, _ = p.communicate()
 
+            out = out.decode("utf-8")
+
             if p.returncode != 0:
                 logger.warning(out)
-                raise YunohostError('domain_cert_gen_failed')
+                raise YunohostError("domain_cert_gen_failed")
             else:
                 logger.debug(out)
 
@@ -220,17 +224,27 @@ def _certificate_install_selfsigned(domain_list, force=False):
         # Check new status indicate a recently created self-signed certificate
         status = _get_status(domain)
 
-        if status and status["CA_type"]["code"] == "self-signed" and status["validity"] > 3648:
+        if (
+            status
+            and status["CA_type"]["code"] == "self-signed"
+            and status["validity"] > 3648
+        ):
             logger.success(
-                m18n.n("certmanager_cert_install_success_selfsigned", domain=domain))
+                m18n.n("certmanager_cert_install_success_selfsigned", domain=domain)
+            )
             operation_logger.success()
         else:
-            msg = "Installation of self-signed certificate installation for %s failed !" % (domain)
+            msg = (
+                "Installation of self-signed certificate installation for %s failed !"
+                % (domain)
+            )
             logger.error(msg)
             operation_logger.error(msg)
 
 
-def _certificate_install_letsencrypt(domain_list, force=False, no_checks=False, staging=False):
+def _certificate_install_letsencrypt(
+    domain_list, force=False, no_checks=False, staging=False
+):
     import yunohost.domain
 
     if not os.path.exists(ACCOUNT_KEY_FILE):
@@ -239,7 +253,7 @@ def _certificate_install_letsencrypt(domain_list, force=False, no_checks=False, 
     # If no domains given, consider all yunohost domains with self-signed
     # certificates
     if domain_list == []:
-        for domain in yunohost.domain.domain_list()['domains']:
+        for domain in yunohost.domain.domain_list()["domains"]:
 
             status = _get_status(domain)
             if status["CA_type"]["code"] != "self-signed":
@@ -250,18 +264,19 @@ def _certificate_install_letsencrypt(domain_list, force=False, no_checks=False, 
     # Else, validate that yunohost knows the domains given
     else:
         for domain in domain_list:
-            yunohost_domains_list = yunohost.domain.domain_list()['domains']
-            if domain not in yunohost_domains_list:
-                raise YunohostError('certmanager_domain_unknown', domain=domain)
+            yunohost.domain._assert_domain_exists(domain)
 
             # Is it self-signed?
             status = _get_status(domain)
             if not force and status["CA_type"]["code"] != "self-signed":
-                raise YunohostError('certmanager_domain_cert_not_selfsigned', domain=domain)
+                raise YunohostValidationError(
+                    "certmanager_domain_cert_not_selfsigned", domain=domain
+                )
 
     if staging:
         logger.warning(
-            "Please note that you used the --staging option, and that no new certificate will actually be enabled !")
+            "Please note that you used the --staging option, and that no new certificate will actually be enabled !"
+        )
 
     # Actual install steps
     for domain in domain_list:
@@ -273,32 +288,38 @@ def _certificate_install_letsencrypt(domain_list, force=False, no_checks=False, 
                 logger.error(e)
                 continue
 
-        logger.info(
-            "Now attempting install of certificate for domain %s!", domain)
+        logger.info("Now attempting install of certificate for domain %s!", domain)
 
-        operation_logger = OperationLogger('letsencrypt_cert_install', [('domain', domain)],
-                                           args={'force': force, 'no_checks': no_checks,
-                                                 'staging': staging})
+        operation_logger = OperationLogger(
+            "letsencrypt_cert_install",
+            [("domain", domain)],
+            args={"force": force, "no_checks": no_checks, "staging": staging},
+        )
         operation_logger.start()
 
         try:
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
         except Exception as e:
-            msg = "Certificate installation for %s failed !\nException: %s" % (domain, e)
+            msg = "Certificate installation for %s failed !\nException: %s" % (
+                domain,
+                e,
+            )
             logger.error(msg)
             operation_logger.error(msg)
             if no_checks:
-                logger.error("Please consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s." % domain)
+                logger.error(
+                    "Please consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s."
+                    % domain
+                )
         else:
-            _install_cron(no_checks=no_checks)
-
-            logger.success(
-                m18n.n("certmanager_cert_install_success", domain=domain))
+            logger.success(m18n.n("certmanager_cert_install_success", domain=domain))
 
             operation_logger.success()
 
 
-def certificate_renew(domain_list, force=False, no_checks=False, email=False, staging=False):
+def certificate_renew(
+    domain_list, force=False, no_checks=False, email=False, staging=False
+):
     """
     Renew Let's Encrypt certificate for given domains (all by default)
 
@@ -315,7 +336,7 @@ def certificate_renew(domain_list, force=False, no_checks=False, email=False, st
     # If no domains given, consider all yunohost domains with Let's Encrypt
     # certificates
     if domain_list == []:
-        for domain in yunohost.domain.domain_list()['domains']:
+        for domain in yunohost.domain.domain_list()["domains"]:
 
             # Does it have a Let's Encrypt cert?
             status = _get_status(domain)
@@ -328,8 +349,9 @@ def certificate_renew(domain_list, force=False, no_checks=False, email=False, st
 
             # Check ACME challenge configured for given domain
             if not _check_acme_challenge_configuration(domain):
-                logger.warning(m18n.n(
-                    'certmanager_acme_not_configured_for_domain', domain=domain))
+                logger.warning(
+                    m18n.n("certmanager_acme_not_configured_for_domain", domain=domain)
+                )
                 continue
 
             domain_list.append(domain)
@@ -341,27 +363,33 @@ def certificate_renew(domain_list, force=False, no_checks=False, email=False, st
     else:
         for domain in domain_list:
 
-            # Is it in Yunohost dmomain list?
-            if domain not in yunohost.domain.domain_list()['domains']:
-                raise YunohostError('certmanager_domain_unknown', domain=domain)
+            # Is it in Yunohost domain list?
+            yunohost.domain._assert_domain_exists(domain)
 
             status = _get_status(domain)
 
             # Does it expire soon?
             if status["validity"] > VALIDITY_LIMIT and not force:
-                raise YunohostError('certmanager_attempt_to_renew_valid_cert', domain=domain)
+                raise YunohostValidationError(
+                    "certmanager_attempt_to_renew_valid_cert", domain=domain
+                )
 
             # Does it have a Let's Encrypt cert?
             if status["CA_type"]["code"] != "lets-encrypt":
-                raise YunohostError('certmanager_attempt_to_renew_nonLE_cert', domain=domain)
+                raise YunohostValidationError(
+                    "certmanager_attempt_to_renew_nonLE_cert", domain=domain
+                )
 
             # Check ACME challenge configured for given domain
             if not _check_acme_challenge_configuration(domain):
-                raise YunohostError('certmanager_acme_not_configured_for_domain', domain=domain)
+                raise YunohostValidationError(
+                    "certmanager_acme_not_configured_for_domain", domain=domain
+                )
 
     if staging:
         logger.warning(
-            "Please note that you used the --staging option, and that no new certificate will actually be enabled !")
+            "Please note that you used the --staging option, and that no new certificate will actually be enabled !"
+        )
 
     # Actual renew steps
     for domain in domain_list:
@@ -376,24 +404,34 @@ def certificate_renew(domain_list, force=False, no_checks=False, email=False, st
                     _email_renewing_failed(domain, e)
                 continue
 
-        logger.info(
-            "Now attempting renewing of certificate for domain %s !", domain)
+        logger.info("Now attempting renewing of certificate for domain %s !", domain)
 
-        operation_logger = OperationLogger('letsencrypt_cert_renew', [('domain', domain)],
-                                           args={'force': force, 'no_checks': no_checks,
-                                                 'staging': staging, 'email': email})
+        operation_logger = OperationLogger(
+            "letsencrypt_cert_renew",
+            [("domain", domain)],
+            args={
+                "force": force,
+                "no_checks": no_checks,
+                "staging": staging,
+                "email": email,
+            },
+        )
         operation_logger.start()
 
         try:
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
         except Exception as e:
             import traceback
-            from StringIO import StringIO
+            from io import StringIO
+
             stack = StringIO()
             traceback.print_exc(file=stack)
-            msg = "Certificate renewing for %s failed !" % (domain)
+            msg = "Certificate renewing for %s failed!" % (domain)
             if no_checks:
-                msg += "\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s." % domain
+                msg += (
+                    "\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s."
+                    % domain
+                )
             logger.error(msg)
             operation_logger.error(msg)
             logger.error(stack.getvalue())
@@ -401,40 +439,15 @@ def certificate_renew(domain_list, force=False, no_checks=False, email=False, st
 
             if email:
                 logger.error("Sending email with details to root ...")
-                _email_renewing_failed(domain, msg + "\n" + e, stack.getvalue())
+                _email_renewing_failed(domain, msg + "\n" + str(e), stack.getvalue())
         else:
-            logger.success(
-                m18n.n("certmanager_cert_renew_success", domain=domain))
+            logger.success(m18n.n("certmanager_cert_renew_success", domain=domain))
             operation_logger.success()
+
 
 #
 # Back-end stuff                                                            #
 #
-
-
-def _install_cron(no_checks=False):
-    cron_job_file = "/etc/cron.daily/yunohost-certificate-renew"
-
-    # we need to check if "--no-checks" isn't already put inside the existing
-    # crontab, if it's the case it's probably because another domain needed it
-    # at some point so we keep it
-    if not no_checks and os.path.exists(cron_job_file):
-        with open(cron_job_file, "r") as f:
-            # no the best test in the world but except if we uses a shell
-            # script parser I'm not expected a much more better way to do that
-            no_checks = "--no-checks" in f.read()
-
-    command = "yunohost domain cert-renew --email\n"
-
-    if no_checks:
-        # handle trailing "\n with ":-1"
-        command = command[:-1] + " --no-checks\n"
-
-    with open(cron_job_file, "w") as f:
-        f.write("#!/bin/bash\n")
-        f.write(command)
-
-    _set_permissions(cron_job_file, "root", "root", 0o755)
 
 
 def _email_renewing_failed(domain, exception_message, stack=""):
@@ -457,7 +470,12 @@ investigate :
 
 -- Certificate Manager
 
-""" % (domain, exception_message, stack, logs)
+""" % (
+        domain,
+        exception_message,
+        stack,
+        logs,
+    )
 
     message = """\
 From: %s
@@ -465,10 +483,17 @@ To: %s
 Subject: %s
 
 %s
-""" % (from_, to_, subject_, text)
+""" % (
+        from_,
+        to_,
+        subject_,
+        text,
+    )
+
+    import smtplib
 
     smtp = smtplib.SMTP("localhost")
-    smtp.sendmail(from_, [to_], message)
+    smtp.sendmail(from_, [to_], message.encode("utf-8"))
     smtp.quit()
 
 
@@ -485,6 +510,10 @@ def _check_acme_challenge_configuration(domain):
 
 
 def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
+
+    if not os.path.exists(ACCOUNT_KEY_FILE):
+        _generate_account_key()
+
     # Make sure tmp folder exists
     logger.debug("Making sure tmp folders exists...")
 
@@ -501,8 +530,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
     _regen_dnsmasq_if_needed()
 
     # Prepare certificate signing request
-    logger.debug(
-        "Prepare key and certificate signing request (CSR) for %s...", domain)
+    logger.debug("Prepare key and certificate signing request (CSR) for %s...", domain)
 
     domain_key_file = "%s/%s.pem" % (TMP_FOLDER, domain)
     _generate_key(domain_key_file)
@@ -521,29 +549,25 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
         certification_authority = PRODUCTION_CERTIFICATION_AUTHORITY
 
     try:
-        signed_certificate = sign_certificate(ACCOUNT_KEY_FILE,
-                                              domain_csr_file,
-                                              WEBROOT_FOLDER,
-                                              log=logger,
-                                              disable_check=no_checks,
-                                              CA=certification_authority)
+        signed_certificate = sign_certificate(
+            ACCOUNT_KEY_FILE,
+            domain_csr_file,
+            WEBROOT_FOLDER,
+            log=logger,
+            disable_check=no_checks,
+            CA=certification_authority,
+        )
     except ValueError as e:
         if "urn:acme:error:rateLimited" in str(e):
-            raise YunohostError('certmanager_hit_rate_limit', domain=domain)
+            raise YunohostError("certmanager_hit_rate_limit", domain=domain)
         else:
             logger.error(str(e))
-            raise YunohostError('certmanager_cert_signing_failed')
+            raise YunohostError("certmanager_cert_signing_failed")
 
     except Exception as e:
         logger.error(str(e))
 
-        raise YunohostError('certmanager_cert_signing_failed')
-
-    import requests  # lazy loading this module for performance reasons
-    try:
-        intermediate_certificate = requests.get(INTERMEDIATE_CERTIFICATE_URL, timeout=30).text
-    except requests.exceptions.Timeout as e:
-        raise YunohostError('certmanager_couldnt_fetch_intermediate_cert')
+        raise YunohostError("certmanager_cert_signing_failed")
 
     # Now save the key and signed certificate
     logger.debug("Saving the key and signed certificate...")
@@ -557,7 +581,11 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
         folder_flag = "letsencrypt"
 
     new_cert_folder = "%s/%s-history/%s-%s" % (
-        CERT_FOLDER, domain, date_tag, folder_flag)
+        CERT_FOLDER,
+        domain,
+        date_tag,
+        folder_flag,
+    )
 
     os.makedirs(new_cert_folder)
 
@@ -573,7 +601,6 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
 
     with open(domain_cert_file, "w") as f:
         f.write(signed_certificate)
-        f.write(intermediate_certificate)
 
     _set_permissions(domain_cert_file, "root", "ssl-cert", 0o640)
 
@@ -586,11 +613,14 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
     status_summary = _get_status(domain)["summary"]
 
     if status_summary["code"] != "great":
-        raise YunohostError('certmanager_certificate_fetching_or_enabling_failed', domain=domain)
+        raise YunohostError(
+            "certmanager_certificate_fetching_or_enabling_failed", domain=domain
+        )
 
 
 def _prepare_certificate_signing_request(domain, key_file, output_folder):
     from OpenSSL import crypto  # lazy loading this module for performance reasons
+
     # Init a request
     csr = crypto.X509Req()
 
@@ -598,17 +628,37 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     csr.get_subject().CN = domain
 
     from yunohost.domain import domain_list
+
     # For "parent" domains, include xmpp-upload subdomain in subject alternate names
     if domain in domain_list(exclude_subdomains=True)["domains"]:
         subdomain = "xmpp-upload." + domain
-        xmpp_records = Diagnoser.get_cached_report("dnsrecords", item={"domain": domain, "category": "xmpp"}).get("data") or {}
+        xmpp_records = (
+            Diagnoser.get_cached_report(
+                "dnsrecords", item={"domain": domain, "category": "xmpp"}
+            ).get("data")
+            or {}
+        )
         if xmpp_records.get("CNAME:xmpp-upload") == "OK":
-            csr.add_extensions([crypto.X509Extension("subjectAltName", False, "DNS:" + subdomain)])
+            csr.add_extensions(
+                [
+                    crypto.X509Extension(
+                        "subjectAltName".encode("utf8"),
+                        False,
+                        ("DNS:" + subdomain).encode("utf8"),
+                    )
+                ]
+            )
         else:
-            logger.warning(m18n.n('certmanager_warning_subdomain_dns_record', subdomain=subdomain, domain=domain))
+            logger.warning(
+                m18n.n(
+                    "certmanager_warning_subdomain_dns_record",
+                    subdomain=subdomain,
+                    domain=domain,
+                )
+            )
 
     # Set the key
-    with open(key_file, 'rt') as f:
+    with open(key_file, "rt") as f:
         key = crypto.load_privatekey(crypto.FILETYPE_PEM, f.read())
 
     csr.set_pubkey(key)
@@ -620,7 +670,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     csr_file = output_folder + domain + ".csr"
     logger.debug("Saving to %s.", csr_file)
 
-    with open(csr_file, "w") as f:
+    with open(csr_file, "wb") as f:
         f.write(crypto.dump_certificate_request(crypto.FILETYPE_PEM, csr))
 
 
@@ -629,29 +679,38 @@ def _get_status(domain):
     cert_file = os.path.join(CERT_FOLDER, domain, "crt.pem")
 
     if not os.path.isfile(cert_file):
-        raise YunohostError('certmanager_no_cert_file', domain=domain, file=cert_file)
+        raise YunohostError("certmanager_no_cert_file", domain=domain, file=cert_file)
 
     from OpenSSL import crypto  # lazy loading this module for performance reasons
+
     try:
-        cert = crypto.load_certificate(
-            crypto.FILETYPE_PEM, open(cert_file).read())
+        cert = crypto.load_certificate(crypto.FILETYPE_PEM, open(cert_file).read())
     except Exception as exception:
         import traceback
+
         traceback.print_exc(file=sys.stdout)
-        raise YunohostError('certmanager_cannot_read_cert', domain=domain, file=cert_file, reason=exception)
+        raise YunohostError(
+            "certmanager_cannot_read_cert",
+            domain=domain,
+            file=cert_file,
+            reason=exception,
+        )
 
     cert_subject = cert.get_subject().CN
     cert_issuer = cert.get_issuer().CN
-    valid_up_to = datetime.strptime(cert.get_notAfter(), "%Y%m%d%H%M%SZ")
+    organization_name = cert.get_issuer().O
+    valid_up_to = datetime.strptime(
+        cert.get_notAfter().decode("utf-8"), "%Y%m%d%H%M%SZ"
+    )
     days_remaining = (valid_up_to - datetime.utcnow()).days
 
-    if cert_issuer == _name_self_CA():
+    if cert_issuer == "yunohost.org" or cert_issuer == _name_self_CA():
         CA_type = {
             "code": "self-signed",
             "verbose": "Self-signed",
         }
 
-    elif cert_issuer.startswith("Let's Encrypt"):
+    elif organization_name == "Let's Encrypt":
         CA_type = {
             "code": "lets-encrypt",
             "verbose": "Let's Encrypt",
@@ -714,6 +773,7 @@ def _get_status(domain):
         "summary": status_summary,
     }
 
+
 #
 # Misc small stuff ...                                                      #
 #
@@ -727,10 +787,11 @@ def _generate_account_key():
 
 def _generate_key(destination_path):
     from OpenSSL import crypto  # lazy loading this module for performance reasons
+
     k = crypto.PKey()
     k.generate_key(crypto.TYPE_RSA, KEY_SIZE)
 
-    with open(destination_path, "w") as f:
+    with open(destination_path, "wb") as f:
         f.write(crypto.dump_privatekey(crypto.FILETYPE_PEM, k))
 
 
@@ -765,15 +826,16 @@ def _enable_certificate(domain, new_cert_folder):
     for service in ("postfix", "dovecot", "metronome"):
         _run_service_command("restart", service)
 
-    if os.path.isfile('/etc/yunohost/installed'):
+    if os.path.isfile("/etc/yunohost/installed"):
         # regen nginx conf to be sure it integrates OCSP Stapling
         # (We don't do this yet if postinstall is not finished yet)
-        regen_conf(names=['nginx'])
+        regen_conf(names=["nginx"])
 
     _run_service_command("reload", "nginx")
 
     from yunohost.hook import hook_callback
-    hook_callback('post_cert_update', args=[domain])
+
+    hook_callback("post_cert_update", args=[domain])
 
 
 def _backup_current_cert(domain):
@@ -789,19 +851,66 @@ def _backup_current_cert(domain):
 
 def _check_domain_is_ready_for_ACME(domain):
 
-    dnsrecords = Diagnoser.get_cached_report("dnsrecords", item={"domain": domain, "category": "basic"}, warn_if_no_cache=False) or {}
-    httpreachable = Diagnoser.get_cached_report("web", item={"domain": domain}, warn_if_no_cache=False) or {}
+    from yunohost.domain import _get_parent_domain_of
+    from yunohost.dns import _get_dns_zone_for_domain
 
-    if not dnsrecords or not httpreachable:
-        raise YunohostError('certmanager_domain_not_diagnosed_yet', domain=domain)
+    httpreachable = (
+        Diagnoser.get_cached_report(
+            "web", item={"domain": domain}, warn_if_no_cache=False
+        )
+        or {}
+    )
+
+    parent_domain = _get_parent_domain_of(domain)
+
+    dnsrecords = (
+        Diagnoser.get_cached_report(
+            "dnsrecords",
+            item={"domain": parent_domain, "category": "basic"},
+            warn_if_no_cache=False,
+        )
+        or {}
+    )
+
+    base_dns_zone = _get_dns_zone_for_domain(domain)
+    record_name = (
+        domain.replace(f".{base_dns_zone}", "") if domain != base_dns_zone else "@"
+    )
+    A_record_status = dnsrecords.get("data").get(f"A:{record_name}")
+    AAAA_record_status = dnsrecords.get("data").get(f"AAAA:{record_name}")
+
+    # Fallback to wildcard in case no result yet for the DNS name?
+    if not A_record_status:
+        A_record_status = dnsrecords.get("data").get("A:*")
+    if not AAAA_record_status:
+        AAAA_record_status = dnsrecords.get("data").get("AAAA:*")
+
+    if (
+        not httpreachable
+        or not dnsrecords.get("data")
+        or (A_record_status, AAAA_record_status) == (None, None)
+    ):
+        raise YunohostValidationError(
+            "certmanager_domain_not_diagnosed_yet", domain=domain
+        )
 
     # Check if IP from DNS matches public IP
-    if not dnsrecords.get("status") in ["SUCCESS", "WARNING"]:  # Warning is for missing IPv6 record which ain't critical for ACME
-        raise YunohostError('certmanager_domain_dns_ip_differs_from_public_ip', domain=domain)
+    # - 'MISSING' for IPv6 ain't critical for ACME
+    # - IPv4 can be None assuming there's at least an IPv6, and viveversa
+    #    - (the case where both are None is checked before)
+    if not (
+        A_record_status in [None, "OK"]
+        and AAAA_record_status in [None, "OK", "MISSING"]
+    ):
+        raise YunohostValidationError(
+            "certmanager_domain_dns_ip_differs_from_public_ip", domain=domain
+        )
 
     # Check if domain seems to be accessible through HTTP?
     if not httpreachable.get("status") == "SUCCESS":
-        raise YunohostError('certmanager_domain_http_not_working', domain=domain)
+        raise YunohostValidationError(
+            "certmanager_domain_http_not_working", domain=domain
+        )
 
 
 # FIXME / TODO : ideally this should not be needed. There should be a proper
@@ -822,11 +931,11 @@ def _regen_dnsmasq_if_needed():
     for domainconf in domainsconf:
 
         # Look for the IP, it's in the lines with this format :
-        # address=/the.domain.tld/11.22.33.44
+        # host-record=the.domain.tld,11.22.33.44
         for line in open(domainconf).readlines():
-            if not line.startswith("address"):
+            if not line.startswith("host-record"):
                 continue
-            ip = line.strip().split("/")[2]
+            ip = line.strip().split(",")[-1]
 
             # Compared found IP to current IPv4 / IPv6
             #             IPv6                   IPv4
@@ -845,7 +954,7 @@ def _name_self_CA():
     ca_conf = os.path.join(SSL_DIR, "openssl.ca.cnf")
 
     if not os.path.exists(ca_conf):
-        logger.warning(m18n.n('certmanager_self_ca_conf_file_not_found', file=ca_conf))
+        logger.warning(m18n.n("certmanager_self_ca_conf_file_not_found", file=ca_conf))
         return ""
 
     with open(ca_conf) as f:
@@ -855,16 +964,11 @@ def _name_self_CA():
         if line.startswith("commonName_default"):
             return line.split()[2]
 
-    logger.warning(m18n.n('certmanager_unable_to_parse_self_CA_name', file=ca_conf))
+    logger.warning(m18n.n("certmanager_unable_to_parse_self_CA_name", file=ca_conf))
     return ""
 
 
 def _tail(n, file_path):
-    stdin, stdout = os.popen2("tail -n %s '%s'" % (n, file_path))
+    from moulinette.utils.process import check_output
 
-    stdin.close()
-
-    lines = stdout.readlines()
-    stdout.close()
-
-    return "".join(lines)
+    return check_output(f"tail -n {n} '{file_path}'")

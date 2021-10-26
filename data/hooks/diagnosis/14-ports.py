@@ -3,8 +3,8 @@
 import os
 
 from yunohost.diagnosis import Diagnoser
-from yunohost.utils.error import YunohostError
 from yunohost.service import _get_services
+
 
 class PortsDiagnoser(Diagnoser):
 
@@ -42,16 +42,18 @@ class PortsDiagnoser(Diagnoser):
         results = {}
         for ipversion in ipversions:
             try:
-                r = Diagnoser.remote_diagnosis('check-ports',
-                                               data={'ports': ports.keys()},
-                                               ipversion=ipversion)
+                r = Diagnoser.remote_diagnosis(
+                    "check-ports", data={"ports": list(ports)}, ipversion=ipversion
+                )
                 results[ipversion] = r["ports"]
             except Exception as e:
-                yield dict(meta={"reason": "remote_diagnosis_failed", "ipversion": ipversion},
-                           data={"error": str(e)},
-                           status="WARNING",
-                           summary="diagnosis_ports_could_not_diagnose",
-                           details=["diagnosis_ports_could_not_diagnose_details"])
+                yield dict(
+                    meta={"reason": "remote_diagnosis_failed", "ipversion": ipversion},
+                    data={"error": str(e)},
+                    status="WARNING",
+                    summary="diagnosis_ports_could_not_diagnose",
+                    details=["diagnosis_ports_could_not_diagnose_details"],
+                )
                 continue
 
         ipversions = results.keys()
@@ -64,18 +66,27 @@ class PortsDiagnoser(Diagnoser):
 
             # If both IPv4 and IPv6 (if applicable) are good
             if all(results[ipversion].get(port) is True for ipversion in ipversions):
-                yield dict(meta={"port": port},
-                           data={"service": service, "category": category},
-                           status="SUCCESS",
-                           summary="diagnosis_ports_ok",
-                           details=["diagnosis_ports_needed_by"])
+                yield dict(
+                    meta={"port": port},
+                    data={"service": service, "category": category},
+                    status="SUCCESS",
+                    summary="diagnosis_ports_ok",
+                    details=["diagnosis_ports_needed_by"],
+                )
             # If both IPv4 and IPv6 (if applicable) are failed
-            elif all(results[ipversion].get(port) is not True for ipversion in ipversions):
-                yield dict(meta={"port": port},
-                           data={"service": service, "category": category},
-                           status="ERROR",
-                           summary="diagnosis_ports_unreachable",
-                           details=["diagnosis_ports_needed_by", "diagnosis_ports_forwarding_tip"])
+            elif all(
+                results[ipversion].get(port) is not True for ipversion in ipversions
+            ):
+                yield dict(
+                    meta={"port": port},
+                    data={"service": service, "category": category},
+                    status="ERROR",
+                    summary="diagnosis_ports_unreachable",
+                    details=[
+                        "diagnosis_ports_needed_by",
+                        "diagnosis_ports_forwarding_tip",
+                    ],
+                )
             # If only IPv4 is failed or only IPv6 is failed (if applicable)
             else:
                 passed, failed = (4, 6) if results[4].get(port) is True else (6, 4)
@@ -87,29 +98,54 @@ class PortsDiagnoser(Diagnoser):
                 # If any AAAA record is set, IPv6 is important...
                 def ipv6_is_important():
                     dnsrecords = Diagnoser.get_cached_report("dnsrecords") or {}
-                    return any(record["data"].get("AAAA:@") in ["OK", "WRONG"] for record in dnsrecords.get("items", []))
+                    return any(
+                        record["data"].get("AAAA:@") in ["OK", "WRONG"]
+                        for record in dnsrecords.get("items", [])
+                    )
 
                 if failed == 4 or ipv6_is_important():
-                    yield dict(meta={"port": port},
-                               data={"service": service, "category": category, "passed": passed, "failed": failed},
-                               status="ERROR",
-                               summary="diagnosis_ports_partially_unreachable",
-                               details=["diagnosis_ports_needed_by", "diagnosis_ports_forwarding_tip"])
+                    yield dict(
+                        meta={"port": port},
+                        data={
+                            "service": service,
+                            "category": category,
+                            "passed": passed,
+                            "failed": failed,
+                        },
+                        status="ERROR",
+                        summary="diagnosis_ports_partially_unreachable",
+                        details=[
+                            "diagnosis_ports_needed_by",
+                            "diagnosis_ports_forwarding_tip",
+                        ],
+                    )
                 # So otherwise we report a success
                 # And in addition we report an info about the failure in IPv6
                 # *with a different meta* (important to avoid conflicts when
                 # fetching the other info...)
                 else:
-                    yield dict(meta={"port": port},
-                               data={"service": service, "category": category},
-                               status="SUCCESS",
-                               summary="diagnosis_ports_ok",
-                               details=["diagnosis_ports_needed_by"])
-                    yield dict(meta={"test": "ipv6", "port": port},
-                               data={"service": service, "category": category, "passed": passed, "failed": failed},
-                               status="INFO",
-                               summary="diagnosis_ports_partially_unreachable",
-                               details=["diagnosis_ports_needed_by", "diagnosis_ports_forwarding_tip"])
+                    yield dict(
+                        meta={"port": port},
+                        data={"service": service, "category": category},
+                        status="SUCCESS",
+                        summary="diagnosis_ports_ok",
+                        details=["diagnosis_ports_needed_by"],
+                    )
+                    yield dict(
+                        meta={"test": "ipv6", "port": port},
+                        data={
+                            "service": service,
+                            "category": category,
+                            "passed": passed,
+                            "failed": failed,
+                        },
+                        status="INFO",
+                        summary="diagnosis_ports_partially_unreachable",
+                        details=[
+                            "diagnosis_ports_needed_by",
+                            "diagnosis_ports_forwarding_tip",
+                        ],
+                    )
 
 
 def main(args, env, loggers):

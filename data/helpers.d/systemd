@@ -3,61 +3,32 @@
 # Create a dedicated systemd config
 #
 # usage: ynh_add_systemd_config [--service=service] [--template=template]
-# usage: ynh_add_systemd_config [--service=service] [--template=template]  [--others_var="list of others variables to replace"]
-# | arg: -s, --service=     - Service name (optionnal, $app by default)
-# | arg: -t, --template=    - Name of template file (optionnal, this is 'systemd' by default, meaning ./conf/systemd.service will be used as template)
-# | arg: -v, --others_var=  - List of others variables to replace separated by a space. For example: 'var_1 var_2 ...'
+# | arg: -s, --service=     - Service name (optionnal, `$app` by default)
+# | arg: -t, --template=    - Name of template file (optionnal, this is 'systemd' by default, meaning `../conf/systemd.service` will be used as template)
 #
-# This will use the template ../conf/<templatename>.service
-# to generate a systemd config, by replacing the following keywords
-# with global variables that should be defined before calling
-# this helper :
+# This will use the template `../conf/<templatename>.service`.
 #
-#   __APP__       by  $app
-#   __FINALPATH__ by  $final_path
+# See the documentation of `ynh_add_config` for a description of the template
+# format and how placeholders are replaced with actual variables.
 #
-# And dynamic variables (from the last example) :
-#   __VAR_1__    by $var_1
-#   __VAR_2__    by $var_2
-#
-# Requires YunoHost version 2.7.11 or higher.
-ynh_add_systemd_config () {
+# Requires YunoHost version 4.1.0 or higher.
+ynh_add_systemd_config() {
     # Declare an array to define the options of this helper.
     local legacy_args=stv
-    local -A args_array=( [s]=service= [t]=template= [v]=others_var= )
+    local -A args_array=([s]=service= [t]=template= [v]=others_var=)
     local service
     local template
     local others_var
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    local service="${service:-$app}"
-    local template="${template:-systemd.service}"
+    service="${service:-$app}"
+    template="${template:-systemd.service}"
     others_var="${others_var:-}"
 
-    finalsystemdconf="/etc/systemd/system/$service.service"
-    ynh_backup_if_checksum_is_different --file="$finalsystemdconf"
-    cp ../conf/$template "$finalsystemdconf"
+    [[ -z "$others_var" ]] || ynh_print_warn --message="Packagers: using --others_var is unecessary since YunoHost 4.2"
 
-    # To avoid a break by set -u, use a void substitution ${var:-}. If the variable is not set, it's simply set with an empty variable.
-    # Substitute in a nginx config file only if the variable is not empty
-    if [ -n "${final_path:-}" ]; then
-        ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$finalsystemdconf"
-    fi
-    if [ -n "${app:-}" ]; then
-        ynh_replace_string --match_string="__APP__" --replace_string="$app" --target_file="$finalsystemdconf"
-    fi
+    ynh_add_config --template="$YNH_APP_BASEDIR/conf/$template" --destination="/etc/systemd/system/$service.service"
 
-    # Replace all other variables given as arguments
-    for var_to_replace in $others_var
-    do
-        # ${var_to_replace^^} make the content of the variable on upper-cases
-        # ${!var_to_replace} get the content of the variable named $var_to_replace 
-        ynh_replace_string --match_string="__${var_to_replace^^}__" --replace_string="${!var_to_replace}" --target_file="$finalsystemdconf"
-    done
-
-    ynh_store_file_checksum --file="$finalsystemdconf"
-
-    chown root: "$finalsystemdconf"
     systemctl enable $service --quiet
     systemctl daemon-reload
 }
@@ -68,18 +39,17 @@ ynh_add_systemd_config () {
 # | arg: -s, --service=     - Service name (optionnal, $app by default)
 #
 # Requires YunoHost version 2.7.2 or higher.
-ynh_remove_systemd_config () {
+ynh_remove_systemd_config() {
     # Declare an array to define the options of this helper.
     local legacy_args=s
-    local -A args_array=( [s]=service= )
+    local -A args_array=([s]=service=)
     local service
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     local service="${service:-$app}"
 
     local finalsystemdconf="/etc/systemd/system/$service.service"
-    if [ -e "$finalsystemdconf" ]
-    then
+    if [ -e "$finalsystemdconf" ]; then
         ynh_systemd_action --service_name=$service --action=stop
         systemctl disable $service --quiet
         ynh_secure_remove --file="$finalsystemdconf"
@@ -90,10 +60,10 @@ ynh_remove_systemd_config () {
 # Start (or other actions) a service,  print a log in case of failure and optionnaly wait until the service is completely started
 #
 # usage: ynh_systemd_action [--service_name=service_name] [--action=action] [ [--line_match="line to match"] [--log_path=log_path] [--timeout=300] [--length=20] ]
-# | arg: -n, --service_name= - Name of the service to start. Default : $app
+# | arg: -n, --service_name= - Name of the service to start. Default : `$app`
 # | arg: -a, --action=       - Action to perform with systemctl. Default: start
-# | arg: -l, --line_match=   - Line to match - The line to find in the log to attest the service have finished to boot. If not defined it don't wait until the service is completely started. WARNING: When using --line_match, you should always add `ynh_clean_check_starting` into your `ynh_clean_setup` at the beginning of the script. Otherwise, tail will not stop in case of failure of the script. The script will then hang forever.
-# | arg: -p, --log_path=     - Log file - Path to the log file. Default : /var/log/$app/$app.log
+# | arg: -l, --line_match=   - Line to match - The line to find in the log to attest the service have finished to boot. If not defined it don't wait until the service is completely started.
+# | arg: -p, --log_path=     - Log file - Path to the log file. Default : `/var/log/$app/$app.log`
 # | arg: -t, --timeout=      - Timeout - The maximum time to wait before ending the watching. Default : 300 seconds.
 # | arg: -e, --length=       - Length of the error log : Default : 20
 #
@@ -101,7 +71,7 @@ ynh_remove_systemd_config () {
 ynh_systemd_action() {
     # Declare an array to define the options of this helper.
     local legacy_args=nalpte
-    local -A args_array=( [n]=service_name= [a]=action= [l]=line_match= [p]=log_path= [t]=timeout= [e]=length= )
+    local -A args_array=([n]=service_name= [a]=action= [l]=line_match= [p]=log_path= [t]=timeout= [e]=length=)
     local service_name
     local action
     local line_match
@@ -117,20 +87,23 @@ ynh_systemd_action() {
     log_path="${log_path:-/var/log/$service_name/$service_name.log}"
     timeout=${timeout:-300}
 
+    # Manage case of service already stopped
+    if [ "$action" == "stop" ] && ! systemctl is-active --quiet $service_name; then
+        return 0
+    fi
+
     # Start to read the log
-    if [[ -n "$line_match" ]]
-    then
+    if [[ -n "$line_match" ]]; then
         local templog="$(mktemp)"
         # Following the starting of the app in its log
-        if [ "$log_path" == "systemd" ]
-        then
+        if [ "$log_path" == "systemd" ]; then
             # Read the systemd journal
-            journalctl --unit=$service_name --follow --since=-0 --quiet > "$templog" &
+            journalctl --unit=$service_name --follow --since=-0 --quiet >"$templog" &
             # Get the PID of the journalctl command
             local pid_tail=$!
         else
             # Read the specified log file
-            tail --follow=name --retry --lines=0 "$log_path" > "$templog" 2>&1 &
+            tail --follow=name --retry --lines=0 "$log_path" >"$templog" 2>&1 &
             # Get the PID of the tail command
             local pid_tail=$!
         fi
@@ -142,50 +115,41 @@ ynh_systemd_action() {
     fi
 
     # If the service fails to perform the action
-    if ! systemctl $action $service_name
-    then
+    if ! systemctl $action $service_name; then
         # Show syslog for this service
         ynh_exec_err journalctl --quiet --no-hostname --no-pager --lines=$length --unit=$service_name
         # If a log is specified for this service, show also the content of this log
-        if [ -e "$log_path" ]
-        then
-            ynh_print_err --message="--"
+        if [ -e "$log_path" ]; then
             ynh_exec_err tail --lines=$length "$log_path"
         fi
-        # Fail the app script, since the service failed.
-        ynh_die
+        ynh_clean_check_starting
+        return 1
     fi
 
     # Start the timeout and try to find line_match
-    if [[ -n "${line_match:-}" ]]
-    then
+    if [[ -n "${line_match:-}" ]]; then
+        set +x
         local i=0
-        for i in $(seq 1 $timeout)
-        do
+        for i in $(seq 1 $timeout); do
             # Read the log until the sentence is found, that means the app finished to start. Or run until the timeout
-            if grep --extended-regexp --quiet "$line_match" "$templog"
-            then
+            if grep --extended-regexp --quiet "$line_match" "$templog"; then
                 ynh_print_info --message="The service $service_name has correctly executed the action ${action}."
                 break
             fi
-            if [ $i -eq 3 ]; then
-                echo -n "Please wait, the service $service_name is ${action}ing" >&2
-            fi
-            if [ $i -ge 3 ]; then
-                echo -n "." >&2
+            if [ $i -eq 30 ]; then
+                echo "(this may take some time)" >&2
             fi
             sleep 1
         done
+        set -x
         if [ $i -ge 3 ]; then
             echo "" >&2
         fi
-        if [ $i -eq $timeout ]
-        then
+        if [ $i -eq $timeout ]; then
             ynh_print_warn --message="The service $service_name didn't fully executed the action ${action} before the timeout."
             ynh_print_warn --message="Please find here an extract of the end of the log of the service $service_name:"
             ynh_exec_warn journalctl --quiet --no-hostname --no-pager --lines=$length --unit=$service_name
-            if [ -e "$log_path" ]
-            then
+            if [ -e "$log_path" ]; then
                 ynh_print_warn --message="\-\-\-"
                 ynh_exec_warn tail --lines=$length "$log_path"
             fi
@@ -195,20 +159,16 @@ ynh_systemd_action() {
 }
 
 # Clean temporary process and file used by ynh_check_starting
-# (usually used in ynh_clean_setup scripts)
 #
-# usage: ynh_clean_check_starting
+# [internal]
 #
 # Requires YunoHost version 3.5.0 or higher.
-ynh_clean_check_starting () {
-    if [ -n "$pid_tail" ]
-    then
+ynh_clean_check_starting() {
+    if [ -n "${pid_tail:-}" ]; then
         # Stop the execution of tail.
         kill -SIGTERM $pid_tail 2>&1
     fi
-    if [ -n "$templog" ]
-    then
-        ynh_secure_remove "$templog" 2>&1
+    if [ -n "${templog:-}" ]; then
+        ynh_secure_remove --file="$templog" 2>&1
     fi
 }
-

@@ -2,41 +2,29 @@
 
 set -e
 
+. /usr/share/yunohost/helpers
+
 do_pre_regen() {
-  pending_dir=$1
+    pending_dir=$1
 
-  cd /usr/share/yunohost/templates/fail2ban
+    cd /usr/share/yunohost/templates/fail2ban
 
-  fail2ban_dir="${pending_dir}/etc/fail2ban"
-  mkdir -p "${fail2ban_dir}/filter.d"
-  mkdir -p "${fail2ban_dir}/jail.d"
+    fail2ban_dir="${pending_dir}/etc/fail2ban"
+    mkdir -p "${fail2ban_dir}/filter.d"
+    mkdir -p "${fail2ban_dir}/jail.d"
 
-  cp yunohost.conf "${fail2ban_dir}/filter.d/yunohost.conf"
-  cp jail.conf "${fail2ban_dir}/jail.conf"
-  cp yunohost-jails.conf "${fail2ban_dir}/jail.d/"
+    cp yunohost.conf "${fail2ban_dir}/filter.d/yunohost.conf"
+    cp jail.conf "${fail2ban_dir}/jail.conf"
+
+    export ssh_port="$(yunohost settings get 'security.ssh.port')"
+    ynh_render_template "yunohost-jails.conf" "${fail2ban_dir}/jail.d/yunohost-jails.conf"
 }
 
 do_post_regen() {
-  regen_conf_files=$1
+    regen_conf_files=$1
 
-  [[ -z "$regen_conf_files" ]] \
-    || service fail2ban restart
+    [[ -z "$regen_conf_files" ]] \
+        || systemctl reload fail2ban
 }
 
-FORCE=${2:-0}
-DRY_RUN=${3:-0}
-
-case "$1" in
-  pre)
-    do_pre_regen $4
-    ;;
-  post)
-    do_post_regen $4
-    ;;
-  *)
-    echo "hook called with unknown argument \`$1'" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+do_$1_regen ${@:2}

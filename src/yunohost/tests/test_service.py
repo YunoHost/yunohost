@@ -1,8 +1,16 @@
 import os
 
-from conftest import raiseYunohostError
+from .conftest import raiseYunohostError
 
-from yunohost.service import _get_services, _save_services, service_status, service_add, service_remove, service_log
+from yunohost.service import (
+    _get_services,
+    _save_services,
+    service_status,
+    service_add,
+    service_remove,
+    service_log,
+    service_reload_or_restart,
+)
 
 
 def setup_function(function):
@@ -31,6 +39,10 @@ def clean():
 
     _save_services(services)
 
+    if os.path.exists("/etc/nginx/conf.d/broken.conf"):
+        os.remove("/etc/nginx/conf.d/broken.conf")
+        os.system("systemctl reload-or-restart nginx")
+
 
 def test_service_status_all():
 
@@ -55,7 +67,7 @@ def test_service_log():
 
 def test_service_status_unknown_service(mocker):
 
-    with raiseYunohostError(mocker, 'service_unknown'):
+    with raiseYunohostError(mocker, "service_unknown"):
         service_status(["ssh", "doesnotexists"])
 
 
@@ -64,10 +76,12 @@ def test_service_add():
     service_add("dummyservice", description="A dummy service to run tests")
     assert "dummyservice" in service_status().keys()
 
+
 def test_service_add_real_service():
 
     service_add("networking")
     assert "networking" in service_status().keys()
+
 
 def test_service_remove():
 
@@ -81,7 +95,7 @@ def test_service_remove_service_that_doesnt_exists(mocker):
 
     assert "dummyservice" not in service_status().keys()
 
-    with raiseYunohostError(mocker, 'service_unknown'):
+    with raiseYunohostError(mocker, "service_unknown"):
         service_remove("dummyservice")
 
     assert "dummyservice" not in service_status().keys()
@@ -109,3 +123,20 @@ def test_service_update_to_remove_properties():
     assert _get_services()["dummyservice"].get("test_status") == "false"
     service_add("dummyservice", description="dummy", test_status="")
     assert not _get_services()["dummyservice"].get("test_status")
+
+
+def test_service_conf_broken():
+
+    os.system("echo pwet > /etc/nginx/conf.d/broken.conf")
+
+    status = service_status("nginx")
+    assert status["status"] == "running"
+    assert status["configuration"] == "broken"
+    assert "broken.conf" in status["configuration-details"][0]
+
+    # Service reload-or-restart should check that the conf ain't valid
+    # before reload-or-restart, hence the service should still be running
+    service_reload_or_restart("nginx")
+    assert status["status"] == "running"
+
+    os.remove("/etc/nginx/conf.d/broken.conf")

@@ -38,7 +38,8 @@ build-ssowat:
   variables:
     PACKAGE: "ssowat"
   script:
-    - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE
+    - DEBIAN_DEPENDS=$(cat debian/control | tr "," "\n" | grep -Po "ssowat \([>,=,<]+ .*\)" | grep -Po "[0-9\.]+")
+    - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE -b $DEBIAN_DEPENDS $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE --depth 1
     - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
     - *build_script
 
@@ -47,6 +48,7 @@ build-moulinette:
   variables:
     PACKAGE: "moulinette"
   script:
-    - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE
+    - DEBIAN_DEPENDS=$(cat debian/control | tr "," "\n" | grep -Po "moulinette \([>,=,<]+ .*\)" | grep -Po "[0-9\.]+")
+    - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE -b $DEBIAN_DEPENDS $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE --depth 1
     - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
     - *build_script

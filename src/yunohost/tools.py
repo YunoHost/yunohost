@@ -25,101 +25,47 @@
 """
 import re
 import os
-import yaml
-import json
 import subprocess
-import pwd
-import socket
+import time
 from importlib import import_module
+from packaging import version
+from typing import List
 
-from moulinette import msignals, m18n
+from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
-from moulinette.utils.filesystem import read_json, write_to_json, read_yaml, write_to_yaml
+from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm
 
-from yunohost.app import _update_apps_catalog, app_info, app_upgrade, app_ssowatconf, app_list, _initialize_apps_catalog_system
-from yunohost.domain import domain_add, domain_list
+from yunohost.app import (
+    app_info,
+    app_upgrade,
+)
+from yunohost.app_catalog import (
+    _initialize_apps_catalog_system,
+    _update_apps_catalog,
+)
+from yunohost.domain import domain_add
 from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_start, service_enable
 from yunohost.regenconf import regen_conf
-from yunohost.utils.packages import _dump_sources_list, _list_upgradable_apt_packages, ynh_packages_version
-from yunohost.utils.error import YunohostError
+from yunohost.utils.packages import (
+    _dump_sources_list,
+    _list_upgradable_apt_packages,
+    ynh_packages_version,
+)
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation, OperationLogger
 
 # FIXME this is a duplicate from apps.py
-APPS_SETTING_PATH = '/etc/yunohost/apps/'
+APPS_SETTING_PATH = "/etc/yunohost/apps/"
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
-logger = getActionLogger('yunohost.tools')
+logger = getActionLogger("yunohost.tools")
+
 
 def tools_versions():
     return ynh_packages_version()
-
-def tools_ldapinit():
-    """
-    YunoHost LDAP initialization
-
-
-    """
-
-    with open('/usr/share/yunohost/yunohost-config/moulinette/ldap_scheme.yml') as f:
-        ldap_map = yaml.load(f)
-
-    from yunohost.utils.ldap import _get_ldap_interface
-    ldap = _get_ldap_interface()
-
-    for rdn, attr_dict in ldap_map['parents'].items():
-        try:
-            ldap.add(rdn, attr_dict)
-        except Exception as e:
-            logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
-
-    for rdn, attr_dict in ldap_map['children'].items():
-        try:
-            ldap.add(rdn, attr_dict)
-        except Exception as e:
-            logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
-
-    for rdn, attr_dict in ldap_map['depends_children'].items():
-        try:
-            ldap.add(rdn, attr_dict)
-        except Exception as e:
-            logger.warn("Error when trying to inject '%s' -> '%s' into ldap: %s" % (rdn, attr_dict, e))
-
-    admin_dict = {
-        'cn': ['admin'],
-        'uid': ['admin'],
-        'description': ['LDAP Administrator'],
-        'gidNumber': ['1007'],
-        'uidNumber': ['1007'],
-        'homeDirectory': ['/home/admin'],
-        'loginShell': ['/bin/bash'],
-        'objectClass': ['organizationalRole', 'posixAccount', 'simpleSecurityObject'],
-        'userPassword': ['yunohost']
-    }
-
-    ldap.update('cn=admin', admin_dict)
-
-    # Force nscd to refresh cache to take admin creation into account
-    subprocess.call(['nscd', '-i', 'passwd'])
-
-    # Check admin actually exists now
-    try:
-        pwd.getpwnam("admin")
-    except KeyError:
-        logger.error(m18n.n('ldap_init_failed_to_create_admin'))
-        raise YunohostError('installation_failed')
-
-    try:
-        # Attempt to create user home folder
-        subprocess.check_call(["mkhomedir_helper", "admin"])
-    except subprocess.CalledProcessError:
-        if not os.path.isdir('/home/{0}'.format("admin")):
-            logger.warning(m18n.n('user_home_creation_failed'),
-                           exc_info=1)
-        
-    logger.success(m18n.n('ldap_initialized'))
 
 
 def tools_adminpw(new_password, check_strength=True):
@@ -140,40 +86,58 @@ def tools_adminpw(new_password, check_strength=True):
     # UNIX seems to not like password longer than 127 chars ...
     # e.g. SSH login gets broken (or even 'su admin' when entering the password)
     if len(new_password) >= 127:
-        raise YunohostError('admin_password_too_long')
+        raise YunohostValidationError("admin_password_too_long")
 
     new_hash = _hash_user_password(new_password)
 
     from yunohost.utils.ldap import _get_ldap_interface
+
     ldap = _get_ldap_interface()
 
     try:
-        ldap.update("cn=admin", {"userPassword": [ new_hash ], })
-    except:
-        logger.exception('unable to change admin password')
-        raise YunohostError('admin_password_change_failed')
+        ldap.update(
+            "cn=admin",
+            {"userPassword": [new_hash]},
+        )
+    except Exception as e:
+        logger.error("unable to change admin password : %s" % e)
+        raise YunohostError("admin_password_change_failed")
     else:
         # Write as root password
         try:
             hash_root = spwd.getspnam("root").sp_pwd
 
-            with open('/etc/shadow', 'r') as before_file:
+            with open("/etc/shadow", "r") as before_file:
                 before = before_file.read()
 
-            with open('/etc/shadow', 'w') as after_file:
-                after_file.write(before.replace("root:" + hash_root,
-                                                "root:" + new_hash.replace('{CRYPT}', '')))
-        except IOError:
-            logger.warning(m18n.n('root_password_desynchronized'))
+            with open("/etc/shadow", "w") as after_file:
+                after_file.write(
+                    before.replace(
+                        "root:" + hash_root, "root:" + new_hash.replace("{CRYPT}", "")
+                    )
+                )
+        # An IOError may be thrown if for some reason we can't read/write /etc/passwd
+        # A KeyError could also be thrown if 'root' is not in /etc/passwd in the first place (for example because no password defined ?)
+        # (c.f. the line about getspnam)
+        except (IOError, KeyError):
+            logger.warning(m18n.n("root_password_desynchronized"))
             return
 
         logger.info(m18n.n("root_password_replaced_by_admin_password"))
-        logger.success(m18n.n('admin_password_changed'))
+        logger.success(m18n.n("admin_password_changed"))
 
 
 def tools_maindomain(new_main_domain=None):
     from yunohost.domain import domain_main_domain
-    logger.warning(m18n.g("deprecated_command_alias", prog="yunohost", old="tools maindomain", new="domain main-domain"))
+
+    logger.warning(
+        m18n.g(
+            "deprecated_command_alias",
+            prog="yunohost",
+            old="tools maindomain",
+            new="domain main-domain",
+        )
+    )
     return domain_main_domain(new_main_domain=new_main_domain)
 
 
@@ -186,26 +150,24 @@ def _set_hostname(hostname, pretty_hostname=None):
         pretty_hostname = "(YunoHost/%s)" % hostname
 
     # First clear nsswitch cache for hosts to make sure hostname is resolved...
-    subprocess.call(['nscd', '-i', 'hosts'])
+    subprocess.call(["nscd", "-i", "hosts"])
 
     # Then call hostnamectl
     commands = [
         "hostnamectl --static    set-hostname".split() + [hostname],
         "hostnamectl --transient set-hostname".split() + [hostname],
-        "hostnamectl --pretty    set-hostname".split() + [pretty_hostname]
+        "hostnamectl --pretty    set-hostname".split() + [pretty_hostname],
     ]
 
     for command in commands:
-        p = subprocess.Popen(command,
-                             stdout=subprocess.PIPE,
-                             stderr=subprocess.STDOUT)
+        p = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
 
         out, _ = p.communicate()
 
         if p.returncode != 0:
             logger.warning(command)
             logger.warning(out)
-            logger.error(m18n.n('domain_hostname_failed'))
+            logger.error(m18n.n("domain_hostname_failed"))
         else:
             logger.debug(out)
 
@@ -216,17 +178,23 @@ def _detect_virt():
     You can check the man of the command to have a list of possible outputs...
     """
 
-    p = subprocess.Popen("systemd-detect-virt".split(),
-                         stdout=subprocess.PIPE,
-                         stderr=subprocess.STDOUT)
+    p = subprocess.Popen(
+        "systemd-detect-virt".split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT
+    )
 
     out, _ = p.communicate()
     return out.split()[0]
 
 
 @is_unit_operation()
-def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
-                      force_password=False):
+def tools_postinstall(
+    operation_logger,
+    domain,
+    password,
+    ignore_dyndns=False,
+    force_password=False,
+    force_diskspace=False,
+):
     """
     YunoHost post-install
 
@@ -239,12 +207,29 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     """
     from yunohost.utils.password import assert_password_is_strong_enough
     from yunohost.domain import domain_main_domain
+    import psutil
 
     dyndns_provider = "dyndns.yunohost.org"
 
     # Do some checks at first
-    if os.path.isfile('/etc/yunohost/installed'):
-        raise YunohostError('yunohost_already_installed')
+    if os.path.isfile("/etc/yunohost/installed"):
+        raise YunohostValidationError("yunohost_already_installed")
+
+    if os.path.isdir("/etc/yunohost/apps") and os.listdir("/etc/yunohost/apps") != []:
+        raise YunohostValidationError(
+            "It looks like you're trying to re-postinstall a system that was already working previously ... If you recently had some bug or issues with your installation, please first discuss with the team on how to fix the situation instead of savagely re-running the postinstall ...",
+            raw_msg=True,
+        )
+
+    # Check there's at least 10 GB on the rootfs...
+    disk_partitions = sorted(psutil.disk_partitions(), key=lambda k: k.mountpoint)
+    main_disk_partitions = [d for d in disk_partitions if d.mountpoint in ["/", "/var"]]
+    main_space = sum(
+        [psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions]
+    )
+    GB = 1024 ** 3
+    if not force_diskspace and main_space < 10 * GB:
+        raise YunohostValidationError("postinstall_low_rootfsspace")
 
     # Check password
     if not force_password:
@@ -258,9 +243,10 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
         # If an exception is thrown, most likely we don't have internet
         # connectivity or something. Assume that this domain isn't manageable
         # and inform the user that we could not contact the dyndns host server.
-        except:
-            logger.warning(m18n.n('dyndns_provider_unreachable',
-                                  provider=dyndns_provider))
+        except Exception:
+            logger.warning(
+                m18n.n("dyndns_provider_unreachable", provider=dyndns_provider)
+            )
             is_nohostme_or_nohost = False
 
         # If this is a nohost.me/noho.st, actually check for availability
@@ -273,88 +259,30 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
                 dyndns = True
             # If not, abort the postinstall
             else:
-                raise YunohostError('dyndns_unavailable', domain=domain)
+                raise YunohostValidationError("dyndns_unavailable", domain=domain)
         else:
             dyndns = False
     else:
         dyndns = False
 
+    if os.system("iptables -V >/dev/null 2>/dev/null") != 0:
+        raise YunohostValidationError(
+            "iptables/nftables does not seems to be working on your setup. You may be in a container or your kernel does have the proper modules loaded. Sometimes, rebooting the machine may solve the issue.",
+            raw_msg=True,
+        )
+
     operation_logger.start()
-    logger.info(m18n.n('yunohost_installing'))
-
-    regen_conf(['nslcd', 'nsswitch'], force=True)
-
-    # Initialize LDAP for YunoHost
-    # TODO: Improve this part by integrate ldapinit into conf_regen hook
-    tools_ldapinit()
-
-    # Create required folders
-    folders_to_create = [
-        '/etc/yunohost/apps',
-        '/etc/yunohost/certs',
-        '/var/cache/yunohost/repo',
-        '/home/yunohost.backup',
-        '/home/yunohost.app'
-    ]
-
-    for folder in filter(lambda x: not os.path.exists(x), folders_to_create):
-        os.makedirs(folder)
-
-    # Change folders permissions
-    os.system('chmod 755 /home/yunohost.app')
-
-    # Set hostname to avoid amavis bug
-    if os.system('hostname -d >/dev/null') != 0:
-        os.system('hostname yunohost.yunohost.org')
-
-    # Add a temporary SSOwat rule to redirect SSO to admin page
-    if not os.path.exists('/etc/ssowat/conf.json.persistent'):
-        ssowat_conf = {}
-    else:
-        ssowat_conf = read_json('/etc/ssowat/conf.json.persistent')
-
-    write_to_json('/etc/ssowat/conf.json.persistent', ssowat_conf)
-    os.system('chmod 644 /etc/ssowat/conf.json.persistent')
-
-    # Create SSL CA
-    regen_conf(['ssl'], force=True)
-    ssl_dir = '/usr/share/yunohost/yunohost-config/ssl/yunoCA'
-    # (Update the serial so that it's specific to this very instance)
-    os.system("openssl rand -hex 19 > %s/serial" % ssl_dir)
-    commands = [
-        'rm %s/index.txt' % ssl_dir,
-        'touch %s/index.txt' % ssl_dir,
-        'cp %s/openssl.cnf %s/openssl.ca.cnf' % (ssl_dir, ssl_dir),
-        'sed -i s/yunohost.org/%s/g %s/openssl.ca.cnf ' % (domain, ssl_dir),
-        'openssl req -x509 -new -config %s/openssl.ca.cnf -days 3650 -out %s/ca/cacert.pem -keyout %s/ca/cakey.pem -nodes -batch -subj /CN=%s/O=%s' % (ssl_dir, ssl_dir, ssl_dir, domain, os.path.splitext(domain)[0]),
-        'cp %s/ca/cacert.pem /etc/ssl/certs/ca-yunohost_crt.pem' % ssl_dir,
-        'update-ca-certificates'
-    ]
-
-    for command in commands:
-        p = subprocess.Popen(
-            command.split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
-
-        out, _ = p.communicate()
-
-        if p.returncode != 0:
-            logger.warning(out)
-            raise YunohostError('yunohost_ca_creation_failed')
-        else:
-            logger.debug(out)
-
-    logger.success(m18n.n('yunohost_ca_creation_success'))
+    logger.info(m18n.n("yunohost_installing"))
 
     # New domain config
-    regen_conf(['nsswitch'], force=True)
     domain_add(domain, dyndns)
     domain_main_domain(domain)
 
-    # Change LDAP admin password
+    # Update LDAP admin and create home dir
     tools_adminpw(password, check_strength=not force_password)
 
     # Enable UPnP silently and reload firewall
-    firewall_upnp('enable', no_refresh=True)
+    firewall_upnp("enable", no_refresh=True)
 
     # Initialize the apps catalog system
     _initialize_apps_catalog_system()
@@ -367,16 +295,10 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     except Exception as e:
         logger.warning(str(e))
 
-    # Create the archive directory (makes it easier for people to upload backup
-    # archives, otherwise it's only created after running `yunohost backup
-    # create` once.
-    from yunohost.backup import _create_archive_dir
-    _create_archive_dir()
-
     # Init migrations (skip them, no need to run them on a fresh system)
     _skip_all_migrations()
 
-    os.system('touch /etc/yunohost/installed')
+    os.system("touch /etc/yunohost/installed")
 
     # Enable and start YunoHost firewall at boot time
     service_enable("yunohost-firewall")
@@ -393,38 +315,51 @@ def tools_postinstall(operation_logger, domain, password, ignore_dyndns=False,
     # the initial, existing sshd configuration
     # instead of YunoHost's recommended conf
     #
-    original_sshd_conf = '/etc/ssh/sshd_config.before_yunohost'
+    original_sshd_conf = "/etc/ssh/sshd_config.before_yunohost"
     if os.path.exists(original_sshd_conf):
-        os.rename(original_sshd_conf, '/etc/ssh/sshd_config')
+        os.rename(original_sshd_conf, "/etc/ssh/sshd_config")
 
     regen_conf(force=True)
 
-    logger.success(m18n.n('yunohost_configured'))
+    logger.success(m18n.n("yunohost_configured"))
 
-    logger.warning(m18n.n('yunohost_postinstall_end_tip'))
+    logger.warning(m18n.n("yunohost_postinstall_end_tip"))
 
 
-def tools_regen_conf(names=[], with_diff=False, force=False, dry_run=False,
-                     list_pending=False):
+def tools_regen_conf(
+    names=[], with_diff=False, force=False, dry_run=False, list_pending=False
+):
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
-def tools_update(apps=False, system=False):
+def tools_update(target=None, apps=False, system=False):
     """
     Update apps & system package cache
-
-    Keyword arguments:
-        system -- Fetch available system packages upgrades (equivalent to apt update)
-        apps -- Fetch the application list to check which apps can be upgraded
     """
 
-    # If neither --apps nor --system specified, do both
-    if not apps and not system:
-        apps = True
-        system = True
+    # Legacy options (--system, --apps)
+    if apps or system:
+        logger.warning(
+            "Using 'yunohost tools update' with --apps / --system is deprecated, just write 'yunohost tools update apps system' (no -- prefix anymore)"
+        )
+        if apps and system:
+            target = "all"
+        elif apps:
+            target = "apps"
+        else:
+            target = "system"
+
+    elif not target:
+        target = "all"
+
+    if target not in ["system", "apps", "all"]:
+        raise YunohostError(
+            "Unknown target %s, should be 'system', 'apps' or 'all'" % target,
+            raw_msg=True,
+        )
 
     upgradable_system_packages = []
-    if system:
+    if target in ["system", "all"]:
 
         # Update APT cache
         # LC_ALL=C is here to make sure the results are in english
@@ -435,7 +370,10 @@ def tools_update(apps=False, system=False):
         warnings = []
 
         def is_legit_warning(m):
-            legit_warning = m.rstrip() and "apt does not have a stable CLI interface" not in m.rstrip()
+            legit_warning = (
+                m.rstrip()
+                and "apt does not have a stable CLI interface" not in m.rstrip()
+            )
             if legit_warning:
                 warnings.append(m)
             return legit_warning
@@ -444,23 +382,32 @@ def tools_update(apps=False, system=False):
             # stdout goes to debug
             lambda l: logger.debug(l.rstrip()),
             # stderr goes to warning except for the boring apt messages
-            lambda l: logger.warning(l.rstrip()) if is_legit_warning(l) else logger.debug(l.rstrip())
+            lambda l: logger.warning(l.rstrip())
+            if is_legit_warning(l)
+            else logger.debug(l.rstrip()),
         )
 
-        logger.info(m18n.n('updating_apt_cache'))
+        logger.info(m18n.n("updating_apt_cache"))
 
         returncode = call_async_output(command, callbacks, shell=True)
 
         if returncode != 0:
-            raise YunohostError('update_apt_cache_failed', sourceslist='\n'.join(_dump_sources_list()))
+            raise YunohostError(
+                "update_apt_cache_failed", sourceslist="\n".join(_dump_sources_list())
+            )
         elif warnings:
-            logger.error(m18n.n('update_apt_cache_warning', sourceslist='\n'.join(_dump_sources_list())))
+            logger.error(
+                m18n.n(
+                    "update_apt_cache_warning",
+                    sourceslist="\n".join(_dump_sources_list()),
+                )
+            )
 
         upgradable_system_packages = list(_list_upgradable_apt_packages())
-        logger.debug(m18n.n('done'))
+        logger.debug(m18n.n("done"))
 
     upgradable_apps = []
-    if apps:
+    if target in ["apps", "all"]:
         try:
             _update_apps_catalog()
         except YunohostError as e:
@@ -469,9 +416,9 @@ def tools_update(apps=False, system=False):
         upgradable_apps = list(_list_upgradable_apps())
 
     if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
-        logger.info(m18n.n('already_up_to_date'))
+        logger.info(m18n.n("already_up_to_date"))
 
-    return {'system': upgradable_system_packages, 'apps': upgradable_apps}
+    return {"system": upgradable_system_packages, "apps": upgradable_apps}
 
 
 def _list_upgradable_apps():
@@ -487,24 +434,32 @@ def _list_upgradable_apps():
             # directly in app_info and used to check the upgradability of
             # the app...
             current_version = app_dict.get("manifest", {}).get("version", "?")
-            current_commit = app_dict.get("settings", {}).get("current_revision", "?")[:7]
-            new_version = app_dict.get("from_catalog", {}).get("manifest", {}).get("version", "?")
-            new_commit = app_dict.get("from_catalog", {}).get("git", {}).get("revision", "?")[:7]
+            current_commit = app_dict.get("settings", {}).get("current_revision", "?")[
+                :7
+            ]
+            new_version = (
+                app_dict.get("from_catalog", {}).get("manifest", {}).get("version", "?")
+            )
+            new_commit = (
+                app_dict.get("from_catalog", {}).get("git", {}).get("revision", "?")[:7]
+            )
 
             if current_version == new_version:
                 current_version += " (" + current_commit + ")"
                 new_version += " (" + new_commit + ")"
 
             yield {
-                'id': app_id,
-                'label': app_dict['settings']['label'],
-                'current_version': current_version,
-                'new_version': new_version
+                "id": app_id,
+                "label": app_dict["label"],
+                "current_version": current_version,
+                "new_version": new_version,
             }
 
 
 @is_unit_operation()
-def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgrade=True):
+def tools_upgrade(
+    operation_logger, target=None, apps=False, system=False, allow_yunohost_upgrade=True
+):
     """
     Update apps & package cache, then display changelog
 
@@ -513,41 +468,56 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
        system -- True to upgrade system
     """
     from yunohost.utils import packages
+
     if packages.dpkg_is_broken():
-        raise YunohostError("dpkg_is_broken")
+        raise YunohostValidationError("dpkg_is_broken")
 
     # Check for obvious conflict with other dpkg/apt commands already running in parallel
     if not packages.dpkg_lock_available():
-        raise YunohostError("dpkg_lock_not_available")
+        raise YunohostValidationError("dpkg_lock_not_available")
 
-    if system is not False and apps is not None:
-        raise YunohostError("tools_upgrade_cant_both")
+    # Legacy options management (--system, --apps)
+    if target is None:
 
-    if system is False and apps is None:
-        raise YunohostError("tools_upgrade_at_least_one")
+        logger.warning(
+            "Using 'yunohost tools upgrade' with --apps / --system is deprecated, just write 'yunohost tools upgrade apps' or 'system' (no -- prefix anymore)"
+        )
+
+        if (system, apps) == (True, True):
+            raise YunohostValidationError("tools_upgrade_cant_both")
+
+        if (system, apps) == (False, False):
+            raise YunohostValidationError("tools_upgrade_at_least_one")
+
+        target = "apps" if apps else "system"
+
+    if target not in ["apps", "system"]:
+        raise Exception(
+            "Uhoh ?! tools_upgrade should have 'apps' or 'system' value for argument target"
+        )
 
     #
     # Apps
     # This is basically just an alias to yunohost app upgrade ...
     #
 
-    if apps is not None:
+    if target == "apps":
 
         # Make sure there's actually something to upgrade
 
         upgradable_apps = [app["id"] for app in _list_upgradable_apps()]
 
-        if not upgradable_apps or (len(apps) and all(app not in upgradable_apps for app in apps)):
+        if not upgradable_apps:
             logger.info(m18n.n("apps_already_up_to_date"))
             return
 
         # Actually start the upgrades
 
         try:
-            app_upgrade(app=apps)
+            app_upgrade(app=upgradable_apps)
         except Exception as e:
-            logger.warning('unable to upgrade apps: %s' % str(e))
-            logger.error(m18n.n('app_upgrade_some_app_failed'))
+            logger.warning("unable to upgrade apps: %s" % str(e))
+            logger.error(m18n.n("app_upgrade_some_app_failed"))
 
         return
 
@@ -555,28 +525,34 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
     # System
     #
 
-    if system is True:
+    if target == "system":
 
         # Check that there's indeed some packages to upgrade
         upgradables = list(_list_upgradable_apt_packages())
         if not upgradables:
-            logger.info(m18n.n('already_up_to_date'))
+            logger.info(m18n.n("already_up_to_date"))
 
-        logger.info(m18n.n('upgrading_packages'))
+        logger.info(m18n.n("upgrading_packages"))
         operation_logger.start()
 
         # Critical packages are packages that we can't just upgrade
         # randomly from yunohost itself... upgrading them is likely to
         critical_packages = ["moulinette", "yunohost", "yunohost-admin", "ssowat"]
 
-        critical_packages_upgradable = [p["name"] for p in upgradables if p["name"] in critical_packages]
-        noncritical_packages_upgradable = [p["name"] for p in upgradables if p["name"] not in critical_packages]
+        critical_packages_upgradable = [
+            p["name"] for p in upgradables if p["name"] in critical_packages
+        ]
+        noncritical_packages_upgradable = [
+            p["name"] for p in upgradables if p["name"] not in critical_packages
+        ]
 
         # Prepare dist-upgrade command
         dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
         dist_upgrade += " APT_LISTCHANGES_FRONTEND=none"
         dist_upgrade += " apt-get"
-        dist_upgrade += " --fix-broken --show-upgraded --assume-yes --quiet -o=Dpkg::Use-Pty=0"
+        dist_upgrade += (
+            " --fix-broken --show-upgraded --assume-yes --quiet -o=Dpkg::Use-Pty=0"
+        )
         for conf_flag in ["old", "miss", "def"]:
             dist_upgrade += ' -o Dpkg::Options::="--force-conf{}"'.format(conf_flag)
         dist_upgrade += " dist-upgrade"
@@ -596,31 +572,40 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
             held_packages = check_output("apt-mark showhold").split("\n")
             if any(p not in held_packages for p in critical_packages):
                 logger.warning(m18n.n("tools_upgrade_cant_hold_critical_packages"))
-                operation_logger.error(m18n.n('packages_upgrade_failed'))
-                raise YunohostError(m18n.n('packages_upgrade_failed'))
+                operation_logger.error(m18n.n("packages_upgrade_failed"))
+                raise YunohostError(m18n.n("packages_upgrade_failed"))
 
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
-
-            def is_relevant(l):
+            def is_relevant(line):
                 irrelevants = [
                     "service sudo-ldap already provided",
-                    "Reading database ..."
+                    "Reading database ...",
                 ]
-                return all(i not in l.rstrip() for i in irrelevants)
+                return all(i not in line.rstrip() for i in irrelevants)
 
             callbacks = (
-                lambda l: logger.info("+ " + l.rstrip() + "\r") if is_relevant(l) else logger.debug(l.rstrip() + "\r"),
-                lambda l: logger.warning(l.rstrip()) if is_relevant(l) else logger.debug(l.rstrip()),
+                lambda l: logger.info("+ " + l.rstrip() + "\r")
+                if is_relevant(l)
+                else logger.debug(l.rstrip() + "\r"),
+                lambda l: logger.warning(l.rstrip())
+                if is_relevant(l)
+                else logger.debug(l.rstrip()),
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
             if returncode != 0:
                 upgradables = list(_list_upgradable_apt_packages())
-                noncritical_packages_upgradable = [p["name"] for p in upgradables if p["name"] not in critical_packages]
-                logger.warning(m18n.n('tools_upgrade_regular_packages_failed',
-                                      packages_list=', '.join(noncritical_packages_upgradable)))
-                operation_logger.error(m18n.n('packages_upgrade_failed'))
-                raise YunohostError(m18n.n('packages_upgrade_failed'))
+                noncritical_packages_upgradable = [
+                    p["name"] for p in upgradables if p["name"] not in critical_packages
+                ]
+                logger.warning(
+                    m18n.n(
+                        "tools_upgrade_regular_packages_failed",
+                        packages_list=", ".join(noncritical_packages_upgradable),
+                    )
+                )
+                operation_logger.error(m18n.n("packages_upgrade_failed"))
+                raise YunohostError(m18n.n("packages_upgrade_failed"))
 
         #
         # Critical packages upgrade
@@ -637,13 +622,13 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
             held_packages = check_output("apt-mark showhold").split("\n")
             if any(p in held_packages for p in critical_packages):
                 logger.warning(m18n.n("tools_upgrade_cant_unhold_critical_packages"))
-                operation_logger.error(m18n.n('packages_upgrade_failed'))
-                raise YunohostError(m18n.n('packages_upgrade_failed'))
+                operation_logger.error(m18n.n("packages_upgrade_failed"))
+                raise YunohostError(m18n.n("packages_upgrade_failed"))
 
             #
             # Here we use a dirty hack to run a command after the current
             # "yunohost tools upgrade", because the upgrade of yunohost
-            # will also trigger other yunohost commands (e.g. "yunohost tools migrations migrate")
+            # will also trigger other yunohost commands (e.g. "yunohost tools migrations run")
             # (also the upgrade of the package, if executed from the webadmin, is
             # likely to kill/restart the api which is in turn likely to kill this
             # command before it ends...)
@@ -652,9 +637,19 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
             dist_upgrade = dist_upgrade + " 2>&1 | tee -a {}".format(logfile)
 
             MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
-            wait_until_end_of_yunohost_command = "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
-            mark_success = "(echo 'Done!' | tee -a {} && echo 'success: true' >> {})".format(logfile, operation_logger.md_path)
-            mark_failure = "(echo 'Failed :(' | tee -a {} && echo 'success: false' >> {})".format(logfile, operation_logger.md_path)
+            wait_until_end_of_yunohost_command = (
+                "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
+            )
+            mark_success = (
+                "(echo 'Done!' | tee -a {} && echo 'success: true' >> {})".format(
+                    logfile, operation_logger.md_path
+                )
+            )
+            mark_failure = (
+                "(echo 'Failed :(' | tee -a {} && echo 'success: false' >> {})".format(
+                    logfile, operation_logger.md_path
+                )
+            )
             update_log_metadata = "sed -i \"s/ended_at: .*$/ended_at: $(date -u +'%Y-%m-%d %H:%M:%S.%N')/\" {}"
             update_log_metadata = update_log_metadata.format(operation_logger.md_path)
 
@@ -665,18 +660,23 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
             # the huge command launched by os.system)
             operation_logger.ended_at = "notyet"
 
-            upgrade_completed = "\n" + m18n.n("tools_upgrade_special_packages_completed")
+            upgrade_completed = "\n" + m18n.n(
+                "tools_upgrade_special_packages_completed"
+            )
             command = "({wait} && {dist_upgrade}) && {mark_success} || {mark_failure}; {update_metadata}; echo '{done}'".format(
-                      wait=wait_until_end_of_yunohost_command,
-                      dist_upgrade=dist_upgrade,
-                      mark_success=mark_success,
-                      mark_failure=mark_failure,
-                      update_metadata=update_log_metadata,
-                      done=upgrade_completed)
+                wait=wait_until_end_of_yunohost_command,
+                dist_upgrade=dist_upgrade,
+                mark_success=mark_success,
+                mark_failure=mark_failure,
+                update_metadata=update_log_metadata,
+                done=upgrade_completed,
+            )
 
             logger.warning(m18n.n("tools_upgrade_special_packages_explanation"))
             logger.debug("Running command :\n{}".format(command))
-            open("/tmp/yunohost-selfupgrade", "w").write("rm /tmp/yunohost-selfupgrade; " + command)
+            open("/tmp/yunohost-selfupgrade", "w").write(
+                "rm /tmp/yunohost-selfupgrade; " + command
+            )
             # Using systemd-run --scope is like nohup/disown and &, but more robust somehow
             # (despite using nohup/disown and &, the self-upgrade process was still getting killed...)
             # ref: https://unix.stackexchange.com/questions/420594/why-process-killed-with-nohup
@@ -685,7 +685,7 @@ def tools_upgrade(operation_logger, apps=None, system=False, allow_yunohost_upgr
             return
 
         else:
-            logger.success(m18n.n('system_upgraded'))
+            logger.success(m18n.n("system_upgraded"))
             operation_logger.success()
 
 
@@ -695,17 +695,17 @@ def tools_shutdown(operation_logger, force=False):
     if not shutdown:
         try:
             # Ask confirmation for server shutdown
-            i = msignals.prompt(m18n.n('server_shutdown_confirm', answers='y/N'))
+            i = Moulinette.prompt(m18n.n("server_shutdown_confirm", answers="y/N"))
         except NotImplemented:
             pass
         else:
-            if i.lower() == 'y' or i.lower() == 'yes':
+            if i.lower() == "y" or i.lower() == "yes":
                 shutdown = True
 
     if shutdown:
         operation_logger.start()
-        logger.warn(m18n.n('server_shutdown'))
-        subprocess.check_call(['systemctl', 'poweroff'])
+        logger.warn(m18n.n("server_shutdown"))
+        subprocess.check_call(["systemctl", "poweroff"])
 
 
 @is_unit_operation()
@@ -714,16 +714,16 @@ def tools_reboot(operation_logger, force=False):
     if not reboot:
         try:
             # Ask confirmation for restoring
-            i = msignals.prompt(m18n.n('server_reboot_confirm', answers='y/N'))
+            i = Moulinette.prompt(m18n.n("server_reboot_confirm", answers="y/N"))
         except NotImplemented:
             pass
         else:
-            if i.lower() == 'y' or i.lower() == 'yes':
+            if i.lower() == "y" or i.lower() == "yes":
                 reboot = True
     if reboot:
         operation_logger.start()
-        logger.warn(m18n.n('server_reboot'))
-        subprocess.check_call(['systemctl', 'reboot'])
+        logger.warn(m18n.n("server_reboot"))
+        subprocess.check_call(["systemctl", "reboot"])
 
 
 def tools_shell(command=None):
@@ -734,6 +734,7 @@ def tools_shell(command=None):
     """
 
     from yunohost.utils.ldap import _get_ldap_interface
+
     ldap = _get_ldap_interface()
 
     if command:
@@ -743,14 +744,19 @@ def tools_shell(command=None):
     logger.warn("The \033[1;34mldap\033[0m interface is available in this context")
     try:
         from IPython import embed
+
         embed()
     except ImportError:
-        logger.warn("You don't have IPython installed, consider installing it as it is way better than the standard shell.")
+        logger.warn(
+            "You don't have IPython installed, consider installing it as it is way better than the standard shell."
+        )
         logger.warn("Falling back on the standard shell.")
 
         import readline  # will allow Up/Down/History in the console
+
         readline  # to please pyflakes
         import code
+
         vars = globals().copy()
         vars.update(locals())
         shell = code.InteractiveConsole(vars)
@@ -763,6 +769,7 @@ def tools_shell(command=None):
 #                                              #
 # ############################################ #
 
+
 def tools_migrations_list(pending=False, done=False):
     """
     List existing migrations
@@ -770,19 +777,24 @@ def tools_migrations_list(pending=False, done=False):
 
     # Check for option conflict
     if pending and done:
-        raise YunohostError("migrations_list_conflict_pending_done")
+        raise YunohostValidationError("migrations_list_conflict_pending_done")
 
     # Get all migrations
     migrations = _get_migrations_list()
 
     # Reduce to dictionnaries
-    migrations = [{"id": migration.id,
-                   "number": migration.number,
-                   "name": migration.name,
-                   "mode": migration.mode,
-                   "state": migration.state,
-                   "description": migration.description,
-                   "disclaimer": migration.disclaimer} for migration in migrations]
+    migrations = [
+        {
+            "id": migration.id,
+            "number": migration.number,
+            "name": migration.name,
+            "mode": migration.mode,
+            "state": migration.state,
+            "description": migration.description,
+            "disclaimer": migration.disclaimer,
+        }
+        for migration in migrations
+    ]
 
     # If asked, filter pending or done migrations
     if pending or done:
@@ -794,7 +806,9 @@ def tools_migrations_list(pending=False, done=False):
     return {"migrations": migrations}
 
 
-def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False):
+def tools_migrations_run(
+    targets=[], skip=False, auto=False, force_rerun=False, accept_disclaimer=False
+):
     """
     Perform migrations
 
@@ -813,17 +827,17 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
             if m.id == target or m.name == target or m.id.split("_")[0] == target:
                 return m
 
-        raise YunohostError("migrations_no_such_migration", id=target)
+        raise YunohostValidationError("migrations_no_such_migration", id=target)
 
     # auto, skip and force are exclusive options
     if auto + skip + force_rerun > 1:
-        raise YunohostError("migrations_exclusive_options")
+        raise YunohostValidationError("migrations_exclusive_options")
 
     # If no target specified
     if not targets:
         # skip, revert or force require explicit targets
-        if (skip or force_rerun):
-            raise YunohostError("migrations_must_provide_explicit_targets")
+        if skip or force_rerun:
+            raise YunohostValidationError("migrations_must_provide_explicit_targets")
 
         # Otherwise, targets are all pending migrations
         targets = [m for m in all_migrations if m.state == "pending"]
@@ -835,15 +849,19 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
         pending = [t.id for t in targets if t.state == "pending"]
 
         if skip and done:
-            raise YunohostError("migrations_not_pending_cant_skip", ids=', '.join(done))
+            raise YunohostValidationError(
+                "migrations_not_pending_cant_skip", ids=", ".join(done)
+            )
         if force_rerun and pending:
-            raise YunohostError("migrations_pending_cant_rerun", ids=', '.join(pending))
+            raise YunohostValidationError(
+                "migrations_pending_cant_rerun", ids=", ".join(pending)
+            )
         if not (skip or force_rerun) and done:
-            raise YunohostError("migrations_already_ran", ids=', '.join(done))
+            raise YunohostValidationError("migrations_already_ran", ids=", ".join(done))
 
     # So, is there actually something to do ?
     if not targets:
-        logger.info(m18n.n('migrations_no_migrations_to_run'))
+        logger.info(m18n.n("migrations_no_migrations_to_run"))
         return
 
     # Actually run selected migrations
@@ -854,19 +872,27 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
         # migrations to be ran manually by the user, stop there and ask the
         # user to run the migration manually.
         if auto and migration.mode == "manual":
-            logger.warn(m18n.n('migrations_to_be_ran_manually', id=migration.id))
+            logger.warn(m18n.n("migrations_to_be_ran_manually", id=migration.id))
 
             # We go to the next migration
             continue
 
         # Check for migration dependencies
         if not skip:
-            dependencies = [get_matching_migration(dep) for dep in migration.dependencies]
-            pending_dependencies = [dep.id for dep in dependencies if dep.state == "pending"]
+            dependencies = [
+                get_matching_migration(dep) for dep in migration.dependencies
+            ]
+            pending_dependencies = [
+                dep.id for dep in dependencies if dep.state == "pending"
+            ]
             if pending_dependencies:
-                logger.error(m18n.n('migrations_dependencies_not_satisfied',
-                                    id=migration.id,
-                                    dependencies_id=', '.join(pending_dependencies)))
+                logger.error(
+                    m18n.n(
+                        "migrations_dependencies_not_satisfied",
+                        id=migration.id,
+                        dependencies_id=", ".join(pending_dependencies),
+                    )
+                )
                 continue
 
         # If some migrations have disclaimers (and we're not trying to skip them)
@@ -874,20 +900,24 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
             # require the --accept-disclaimer option.
             # Otherwise, go to the next migration
             if not accept_disclaimer:
-                logger.warn(m18n.n('migrations_need_to_accept_disclaimer',
-                                   id=migration.id,
-                                   disclaimer=migration.disclaimer))
+                logger.warn(
+                    m18n.n(
+                        "migrations_need_to_accept_disclaimer",
+                        id=migration.id,
+                        disclaimer=migration.disclaimer,
+                    )
+                )
                 continue
             # --accept-disclaimer will only work for the first migration
             else:
                 accept_disclaimer = False
 
         # Start register change on system
-        operation_logger = OperationLogger('tools_migrations_migrate_forward')
+        operation_logger = OperationLogger("tools_migrations_migrate_forward")
         operation_logger.start()
 
         if skip:
-            logger.warn(m18n.n('migrations_skip_migration', id=migration.id))
+            logger.warn(m18n.n("migrations_skip_migration", id=migration.id))
             migration.state = "skipped"
             _write_migration_state(migration.id, "skipped")
             operation_logger.success()
@@ -895,17 +925,18 @@ def tools_migrations_migrate(targets=[], skip=False, auto=False, force_rerun=Fal
 
             try:
                 migration.operation_logger = operation_logger
-                logger.info(m18n.n('migrations_running_forward', id=migration.id))
+                logger.info(m18n.n("migrations_running_forward", id=migration.id))
                 migration.run()
             except Exception as e:
                 # migration failed, let's stop here but still update state because
                 # we managed to run the previous ones
-                msg = m18n.n('migrations_migration_has_failed',
-                             exception=e, id=migration.id)
+                msg = m18n.n(
+                    "migrations_migration_has_failed", exception=e, id=migration.id
+                )
                 logger.error(msg, exc_info=1)
                 operation_logger.error(msg)
             else:
-                logger.success(m18n.n('migrations_success_forward', id=migration.id))
+                logger.success(m18n.n("migrations_success_forward", id=migration.id))
                 migration.state = "done"
                 _write_migration_state(migration.id, "done")
 
@@ -916,42 +947,10 @@ def tools_migrations_state():
     """
     Show current migration state
     """
-    if os.path.exists("/etc/yunohost/migrations_state.json"):
-        _migrate_legacy_migration_json()
-
     if not os.path.exists(MIGRATIONS_STATE_PATH):
         return {"migrations": {}}
 
     return read_yaml(MIGRATIONS_STATE_PATH)
-
-
-def _migrate_legacy_migration_json():
-
-    from moulinette.utils.filesystem import read_json
-
-    logger.debug("Migrating legacy migration state json to yaml...")
-
-    # We fetch the old state containing the last run migration
-    old_state = read_json("/etc/yunohost/migrations_state.json")["last_run_migration"]
-    last_run_migration_id = str(old_state["number"]) + "_" + old_state["name"]
-
-    # Extract the list of migration ids
-    from . import data_migrations
-    migrations_path = data_migrations.__path__[0]
-    migration_files = filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path))
-    # (here we remove the .py extension and make sure the ids are sorted)
-    migration_ids = sorted([f.rsplit(".", 1)[0] for f in migration_files])
-
-    # So now build the new dict for every id up to the last run migration
-    migrations = {}
-    for migration_id in migration_ids:
-        migrations[migration_id] = "done"
-        if last_run_migration_id in migration_id:
-            break
-
-    # Write the new file and rename the old one
-    write_to_yaml(MIGRATIONS_STATE_PATH, {"migrations": migrations})
-    os.rename("/etc/yunohost/migrations_state.json", "/etc/yunohost/migrations_state.json.old")
 
 
 def _write_migration_state(migration_id, state):
@@ -973,7 +972,7 @@ def _get_migrations_list():
     migrations_path = data_migrations.__path__[0]
 
     if not os.path.exists(migrations_path):
-        logger.warn(m18n.n('migrations_cant_reach_migration_file', migrations_path))
+        logger.warn(m18n.n("migrations_cant_reach_migration_file", migrations_path))
         return migrations
 
     # states is a datastructure that represents the last run migration
@@ -987,7 +986,11 @@ def _get_migrations_list():
     # (in particular, pending migrations / not already ran are not listed
     states = tools_migrations_state()["migrations"]
 
-    for migration_file in filter(lambda x: re.match("^\d+_[a-zA-Z0-9_]+\.py$", x), os.listdir(migrations_path)):
+    for migration_file in [
+        x
+        for x in os.listdir(migrations_path)
+        if re.match(r"^\d+_[a-zA-Z0-9_]+\.py$", x)
+    ]:
         m = _load_migration(migration_file)
         m.state = states.get(m.id, "pending")
         migrations.append(m)
@@ -1006,18 +1009,24 @@ def _get_migration_by_name(migration_name):
         raise AssertionError("Unable to find migration with name %s" % migration_name)
 
     migrations_path = data_migrations.__path__[0]
-    migrations_found = filter(lambda x: re.match("^\d+_%s\.py$" % migration_name, x), os.listdir(migrations_path))
+    migrations_found = [
+        x
+        for x in os.listdir(migrations_path)
+        if re.match(r"^\d+_%s\.py$" % migration_name, x)
+    ]
 
-    assert len(migrations_found) == 1, "Unable to find migration with name %s" % migration_name
+    assert len(migrations_found) == 1, (
+        "Unable to find migration with name %s" % migration_name
+    )
 
     return _load_migration(migrations_found[0])
 
 
 def _load_migration(migration_file):
 
-    migration_id = migration_file[:-len(".py")]
+    migration_id = migration_file[: -len(".py")]
 
-    logger.debug(m18n.n('migrations_loading_migration', id=migration_id))
+    logger.debug(m18n.n("migrations_loading_migration", id=migration_id))
 
     try:
         # this is python builtin method to import a module using a name, we
@@ -1027,9 +1036,12 @@ def _load_migration(migration_file):
         return module.MyMigration(migration_id)
     except Exception as e:
         import traceback
+
         traceback.print_exc()
 
-        raise YunohostError('migrations_failed_to_load_migration', id=migration_id, error=e)
+        raise YunohostError(
+            "migrations_failed_to_load_migration", id=migration_id, error=e
+        )
 
 
 def _skip_all_migrations():
@@ -1045,12 +1057,68 @@ def _skip_all_migrations():
     write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
 
 
+def _tools_migrations_run_after_system_restore(backup_version):
+
+    all_migrations = _get_migrations_list()
+
+    current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
+    backup_version = version.parse(backup_version)
+
+    if backup_version == current_version:
+        return
+
+    for migration in all_migrations:
+        if (
+            hasattr(migration, "introduced_in_version")
+            and version.parse(migration.introduced_in_version) > backup_version
+            and hasattr(migration, "run_after_system_restore")
+        ):
+            try:
+                logger.info(m18n.n("migrations_running_forward", id=migration.id))
+                migration.run_after_system_restore()
+            except Exception as e:
+                msg = m18n.n(
+                    "migrations_migration_has_failed", exception=e, id=migration.id
+                )
+                logger.error(msg, exc_info=1)
+                raise
+
+
+def _tools_migrations_run_before_app_restore(backup_version, app_id):
+
+    all_migrations = _get_migrations_list()
+
+    current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
+    backup_version = version.parse(backup_version)
+
+    if backup_version == current_version:
+        return
+
+    for migration in all_migrations:
+        if (
+            hasattr(migration, "introduced_in_version")
+            and version.parse(migration.introduced_in_version) > backup_version
+            and hasattr(migration, "run_before_app_restore")
+        ):
+            try:
+                logger.info(m18n.n("migrations_running_forward", id=migration.id))
+                migration.run_before_app_restore(app_id)
+            except Exception as e:
+                msg = m18n.n(
+                    "migrations_migration_has_failed", exception=e, id=migration.id
+                )
+                logger.error(msg, exc_info=1)
+                raise
+
+
 class Migration(object):
 
     # Those are to be implemented by daughter classes
 
     mode = "auto"
-    dependencies = [] # List of migration ids required before running this migration
+    dependencies: List[
+        str
+    ] = []  # List of migration ids required before running this migration
 
     @property
     def disclaimer(self):
@@ -1069,3 +1137,53 @@ class Migration(object):
     @property
     def description(self):
         return m18n.n("migration_description_%s" % self.id)
+
+    def ldap_migration(run):
+        def func(self):
+
+            # Backup LDAP before the migration
+            logger.info(m18n.n("migration_ldap_backup_before_migration"))
+            try:
+                backup_folder = "/home/yunohost.backup/premigration/" + time.strftime(
+                    "%Y%m%d-%H%M%S", time.gmtime()
+                )
+                mkdir(backup_folder, 0o750, parents=True)
+                os.system("systemctl stop slapd")
+                cp("/etc/ldap", f"{backup_folder}/ldap_config", recursive=True)
+                cp("/var/lib/ldap", f"{backup_folder}/ldap_db", recursive=True)
+                cp(
+                    "/etc/yunohost/apps",
+                    f"{backup_folder}/apps_settings",
+                    recursive=True,
+                )
+            except Exception as e:
+                raise YunohostError(
+                    "migration_ldap_can_not_backup_before_migration", error=str(e)
+                )
+            finally:
+                os.system("systemctl start slapd")
+
+            try:
+                run(self, backup_folder)
+            except Exception:
+                logger.warning(
+                    m18n.n("migration_ldap_migration_failed_trying_to_rollback")
+                )
+                os.system("systemctl stop slapd")
+                # To be sure that we don't keep some part of the old config
+                rm("/etc/ldap/slapd.d", force=True, recursive=True)
+                cp(f"{backup_folder}/ldap_config", "/etc/ldap", recursive=True)
+                cp(f"{backup_folder}/ldap_db", "/var/lib/ldap", recursive=True)
+                cp(
+                    f"{backup_folder}/apps_settings",
+                    "/etc/yunohost/apps",
+                    recursive=True,
+                )
+                os.system("systemctl start slapd")
+                rm(backup_folder, force=True, recursive=True)
+                logger.info(m18n.n("migration_ldap_rollback_success"))
+                raise
+            else:
+                rm(backup_folder, force=True, recursive=True)
+
+        return func

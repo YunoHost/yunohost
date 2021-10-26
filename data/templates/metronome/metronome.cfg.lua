@@ -32,6 +32,7 @@ modules_enabled = {
 		"private"; -- Private XML storage (for room bookmarks, etc.)
 		"vcard"; -- Allow users to set vCards
 		"pep"; -- Allows setting of mood, tune, etc.
+		"pubsub";  -- Publish-subscribe XEP-0060
 		"posix"; -- POSIX functionality, sends server to background, enables syslog, etc.
 		"bidi"; -- Enables Bidirectional Server-to-Server Streams.
  
@@ -94,6 +95,10 @@ allow_registration = false
 
 -- Use LDAP storage backend for all stores
 storage = "ldap"
+
+-- stanza optimization
+csi_config_queue_all_muc_messages_but_mentions = false;
+
 
 -- Logging configuration
 log = {

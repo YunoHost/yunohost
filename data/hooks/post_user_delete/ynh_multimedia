@@ -1,0 +1,8 @@
+#!/bin/bash
+
+user=$1
+MEDIA_DIRECTORY=/home/yunohost.multimedia
+
+if [ -n "$user" ] && [ -e "$MEDIA_DIRECTORY/$user" ]; then
+    sudo rm -r "$MEDIA_DIRECTORY/$user"
+fi

@@ -1,0 +1,56 @@
+#!/bin/bash
+
+set -e
+
+do_pre_regen() {
+    pending_dir=$1
+
+    mkdir --parents "${pending_dir}/etc/apt/preferences.d"
+
+    packages_to_refuse_from_sury="php php-fpm php-mysql php-xml php-zip php-mbstring php-ldap php-gd php-curl php-bz2 php-json php-sqlite3 php-intl openssl libssl1.1 libssl-dev"
+    for package in $packages_to_refuse_from_sury; do
+        echo "
+Package: $package
+Pin: origin \"packages.sury.org\" 
+Pin-Priority: -1" >>"${pending_dir}/etc/apt/preferences.d/extra_php_version"
+    done
+
+    echo "
+
+# PLEASE READ THIS WARNING AND DON'T EDIT THIS FILE
+
+# You are probably reading this file because you tried to install apache2 or 
+# bind9. These 2 packages conflict with YunoHost.
+
+# Installing apache2 will break nginx and break the entire YunoHost ecosystem
+# on your server, therefore don't remove those lines! 
+
+# You have been warned.
+
+Package: apache2
+Pin: release *
+Pin-Priority: -1
+
+Package: apache2-bin
+Pin: release *
+Pin-Priority: -1
+
+# Also bind9 will conflict with dnsmasq.
+# Same story as for apache2.
+# Don't install it, don't remove those lines.
+
+Package: bind9
+Pin: release *
+Pin-Priority: -1
+" >>"${pending_dir}/etc/apt/preferences.d/ban_packages"
+
+}
+
+do_post_regen() {
+    regen_conf_files=$1
+
+    # Make sure php7.3 is the default version when using php in cli
+    update-alternatives --set php /usr/bin/php7.3
+}
+
+do_$1_regen ${@:2}

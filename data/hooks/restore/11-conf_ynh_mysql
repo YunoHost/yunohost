@@ -1,5 +1,0 @@
-# We don't backup/restore mysql password anymore
-# c.f. https://github.com/YunoHost/yunohost/pull/912
-
-# This is a dummy empty file as a workaround for
-# https://github.com/YunoHost/issues/issues/1553 until it is fixed

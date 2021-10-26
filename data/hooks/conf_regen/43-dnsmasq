@@ -4,97 +4,80 @@ set -e
 . /usr/share/yunohost/helpers
 
 do_pre_regen() {
-  pending_dir=$1
+    pending_dir=$1
 
-  cd /usr/share/yunohost/templates/dnsmasq
+    cd /usr/share/yunohost/templates/dnsmasq
 
-  # create directory for pending conf
-  dnsmasq_dir="${pending_dir}/etc/dnsmasq.d"
-  mkdir -p "$dnsmasq_dir"
-  etcdefault_dir="${pending_dir}/etc/default"
-  mkdir -p "$etcdefault_dir"
+    # create directory for pending conf
+    dnsmasq_dir="${pending_dir}/etc/dnsmasq.d"
+    mkdir -p "$dnsmasq_dir"
+    etcdefault_dir="${pending_dir}/etc/default"
+    mkdir -p "$etcdefault_dir"
 
-  # add general conf files
-  cp plain/etcdefault ${pending_dir}/etc/default/dnsmasq
-  cp plain/dnsmasq.conf ${pending_dir}/etc/dnsmasq.conf
+    # add general conf files
+    cp plain/etcdefault ${pending_dir}/etc/default/dnsmasq
+    cp plain/dnsmasq.conf ${pending_dir}/etc/dnsmasq.conf
 
-  # add resolver file
-  cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf > ${pending_dir}/etc/resolv.dnsmasq.conf
+    # add resolver file
+    cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf >${pending_dir}/etc/resolv.dnsmasq.conf
 
-  # retrieve variables
-  ipv4=$(curl -s -4 https://ip.yunohost.org 2>/dev/null || true)
-  ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
-  ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
-  ynh_validate_ip6 "$ipv6" || ipv6=''
+    # retrieve variables
+    ipv4=$(curl -s -4 https://ip.yunohost.org 2>/dev/null || true)
+    ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
+    ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
+    ynh_validate_ip6 "$ipv6" || ipv6=''
 
-  # add domain conf files
-  for domain in $YNH_DOMAINS; do
-    cat domain.tpl \
-      | sed "s/{{ domain }}/${domain}/g" \
-      | sed "s/{{ ip }}/${ipv4}/g" \
-      > "${dnsmasq_dir}/${domain}"
-    [[ -n $ipv6 ]] \
-      && echo "address=/${domain}/${ipv6}" >> "${dnsmasq_dir}/${domain}"
-  done
+    export ipv4
+    export ipv6
 
-  # remove old domain conf files
-  conf_files=$(ls -1 /etc/dnsmasq.d \
-                 | awk '/^[^\.]+\.[^\.]+.*$/ { print $1 }')
-  for domain in $conf_files; do
-    [[ $YNH_DOMAINS =~ $domain ]] \
-      || touch "${dnsmasq_dir}/${domain}"
-  done
+    # add domain conf files
+    for domain in $YNH_DOMAINS; do
+        [[ ! $domain =~ \.local$ ]] || continue
+        export domain
+        ynh_render_template "domain.tpl" "${dnsmasq_dir}/${domain}"
+    done
+
+    # remove old domain conf files
+    conf_files=$(ls -1 /etc/dnsmasq.d \
+        | awk '/^[^\.]+\.[^\.]+.*$/ { print $1 }')
+    for domain in $conf_files; do
+        if [[ ! $YNH_DOMAINS =~ $domain ]] && [[ ! $domain =~ \.local$ ]]
+        then
+            touch "${dnsmasq_dir}/${domain}"
+        fi
+    done
 }
 
 do_post_regen() {
-  regen_conf_files=$1
+    regen_conf_files=$1
 
-  # Fuck it, those domain/search entries from dhclient are usually annoying
-  # lying shit from the ISP trying to MiTM
-  if grep -q -E "^ *(domain|search)" /run/resolvconf/resolv.conf
-  then
-      if grep -q -E "^ *(domain|search)" /run/resolvconf/interface/*.dhclient 2>/dev/null
-      then
-        sed -E "s/^(domain|search)/#\1/g" -i /run/resolvconf/interface/*.dhclient
-      fi
+    # Fuck it, those domain/search entries from dhclient are usually annoying
+    # lying shit from the ISP trying to MiTM
+    if grep -q -E "^ *(domain|search)" /run/resolvconf/resolv.conf; then
+        if grep -q -E "^ *(domain|search)" /run/resolvconf/interface/*.dhclient 2>/dev/null; then
+            sed -E "s/^(domain|search)/#\1/g" -i /run/resolvconf/interface/*.dhclient
+        fi
 
-      grep -q '^supersede domain-name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-name "";' >> /etc/dhcp/dhclient.conf
-      grep -q '^supersede domain-search "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-search "";' >> /etc/dhcp/dhclient.conf
-      grep -q '^supersede name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede name "";' >> /etc/dhcp/dhclient.conf
-      systemctl restart resolvconf
-  fi
+        grep -q '^supersede domain-name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-name "";' >>/etc/dhcp/dhclient.conf
+        grep -q '^supersede domain-search "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-search "";' >>/etc/dhcp/dhclient.conf
+        grep -q '^supersede name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede name "";' >>/etc/dhcp/dhclient.conf
+        systemctl restart resolvconf
+    fi
 
-  # Some stupid things like rabbitmq-server used by onlyoffice won't work if
-  # the *short* hostname doesn't exists in /etc/hosts -_-
-  short_hostname=$(hostname -s)
-  grep -q "127.0.0.1.*$short_hostname" /etc/hosts || echo -e "\n127.0.0.1\t$short_hostname" >>/etc/hosts
+    # Some stupid things like rabbitmq-server used by onlyoffice won't work if
+    # the *short* hostname doesn't exists in /etc/hosts -_-
+    short_hostname=$(hostname -s)
+    grep -q "127.0.0.1.*$short_hostname" /etc/hosts || echo -e "\n127.0.0.1\t$short_hostname" >>/etc/hosts
 
-  [[ -n "$regen_conf_files" ]] || return
+    [[ -n "$regen_conf_files" ]] || return 0
 
-  # Remove / disable services likely to conflict with dnsmasq
-  for SERVICE in systemd-resolved bind9
-  do
-      systemctl is-enabled $SERVICE &>/dev/null && systemctl disable $SERVICE 2>/dev/null
-      systemctl is-active $SERVICE &>/dev/null && systemctl stop $SERVICE
-  done
+    # Remove / disable services likely to conflict with dnsmasq
+    for SERVICE in systemd-resolved bind9; do
+        systemctl is-enabled $SERVICE &>/dev/null && systemctl disable $SERVICE 2>/dev/null
+        systemctl is-active $SERVICE &>/dev/null && systemctl stop $SERVICE
+    done
 
-  systemctl restart dnsmasq
+    systemctl restart dnsmasq
 }
 
-FORCE=${2:-0}
-DRY_RUN=${3:-0}
-
-case "$1" in
-  pre)
-    do_pre_regen $4
-    ;;
-  post)
-    do_post_regen $4
-    ;;
-  *)
-    echo "hook called with unknown argument \`$1'" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+do_$1_regen ${@:2}

@@ -45,11 +45,10 @@
 # e.g. for `my_helper "val1" val2`, arg1 will be filled with val1, and arg2 with val2.
 #
 # Requires YunoHost version 3.2.2 or higher.
-ynh_handle_getopts_args () {
+ynh_handle_getopts_args() {
     # Manage arguments only if there's some provided
     set +o xtrace # set +x
-    if [ $# -ne 0 ]
-    then
+    if [ $# -ne 0 ]; then
         # Store arguments in an array to keep each argument separated
         local arguments=("$@")
 
@@ -58,14 +57,12 @@ ynh_handle_getopts_args () {
         # ${!args_array[@]} is the list of all option_flags in the array (An option_flag is 'u' in [u]=user, user is a value)
         local getopts_parameters=""
         local option_flag=""
-        for option_flag in "${!args_array[@]}"
-        do
+        for option_flag in "${!args_array[@]}"; do
             # Concatenate each option_flags of the array to build the string of arguments for getopts
             # Will looks like 'abcd' for -a -b -c -d
             # If the value of an option_flag finish by =, it's an option with additionnal values. (e.g. --user bob or -u bob)
             # Check the last character of the value associate to the option_flag
-            if [ "${args_array[$option_flag]: -1}" = "=" ]
-            then
+            if [ "${args_array[$option_flag]: -1}" = "=" ]; then
                 # For an option with additionnal values, add a ':' after the letter for getopts.
                 getopts_parameters="${getopts_parameters}${option_flag}:"
             else
@@ -74,8 +71,7 @@ ynh_handle_getopts_args () {
             # Check each argument given to the function
             local arg=""
             # ${#arguments[@]} is the size of the array
-            for arg in `seq 0 $(( ${#arguments[@]} - 1 ))`
-            do
+            for arg in $(seq 0 $((${#arguments[@]} - 1))); do
                 # Escape options' values starting with -. Otherwise the - will be considered as another option.
                 arguments[arg]="${arguments[arg]//--${args_array[$option_flag]}-/--${args_array[$option_flag]}\\TOBEREMOVED\\-}"
                 # And replace long option (value of the option_flag) by the short option, the option_flag itself
@@ -89,10 +85,9 @@ ynh_handle_getopts_args () {
 
         # Read and parse all the arguments
         # Use a function here, to use standart arguments $@ and be able to use shift.
-        parse_arg () {
+        parse_arg() {
             # Read all arguments, until no arguments are left
-            while [ $# -ne 0 ]
-            do
+            while [ $# -ne 0 ]; do
                 # Initialize the index of getopts
                 OPTIND=1
                 # Parse with getopts only if the argument begin by -, that means the argument is an option
@@ -100,11 +95,9 @@ ynh_handle_getopts_args () {
                 local parameter=""
                 getopts ":$getopts_parameters" parameter || true
 
-                if [ "$parameter" = "?" ]
-                then
+                if [ "$parameter" = "?" ]; then
                     ynh_die --message="Invalid argument: -${OPTARG:-}"
-                elif [ "$parameter" = ":" ]
-                then
+                elif [ "$parameter" = ":" ]; then
                     ynh_die --message="-$OPTARG parameter requires an argument."
                 else
                     local shift_value=1
@@ -115,8 +108,7 @@ ynh_handle_getopts_args () {
                     local option_var="${args_array[$parameter]%=}"
                     # If this option doesn't take values
                     # if there's a '=' at the end of the long option name, this option takes values
-                    if [ "${args_array[$parameter]: -1}" != "=" ]
-                    then
+                    if [ "${args_array[$parameter]: -1}" != "=" ]; then
                         # 'eval ${option_var}' will use the content of 'option_var'
                         eval ${option_var}=1
                     else
@@ -126,35 +118,35 @@ ynh_handle_getopts_args () {
 
                         # If the first argument is longer than 2 characters,
                         # There's a value attached to the option, in the same array cell
-                        if [ ${#all_args[0]} -gt 2 ]
-                        then
+                        if [ ${#all_args[0]} -gt 2 ]; then
                             # Remove the option and the space, so keep only the value itself.
                             all_args[0]="${all_args[0]#-${parameter} }"
+
+                            # At this point, if all_args[0] start with "-", then the argument is not well formed
+                            if [ "${all_args[0]:0:1}" == "-" ]; then
+                                ynh_die --message="Argument \"${all_args[0]}\" not valid! Did you use a single \"-\" instead of two?"
+                            fi
                             # Reduce the value of shift, because the option has been removed manually
-                            shift_value=$(( shift_value - 1 ))
+                            shift_value=$((shift_value - 1))
                         fi
 
                         # Declare the content of option_var as a variable.
                         eval ${option_var}=""
                         # Then read the array value per value
                         local i
-                        for i in `seq 0 $(( ${#all_args[@]} - 1 ))`
-                        do
+                        for i in $(seq 0 $((${#all_args[@]} - 1))); do
                             # If this argument is an option, end here.
-                            if [ "${all_args[$i]:0:1}" == "-" ]
-                            then
+                            if [ "${all_args[$i]:0:1}" == "-" ]; then
                                 # Ignore the first value of the array, which is the option itself
                                 if [ "$i" -ne 0 ]; then
                                     break
                                 fi
                             else
                                 # Ignore empty parameters
-                                if [ -n "${all_args[$i]}" ]
-                                then
+                                if [ -n "${all_args[$i]}" ]; then
                                     # Else, add this value to this option
                                     # Each value will be separated by ';'
-                                    if [ -n "${!option_var}" ]
-                                    then
+                                    if [ -n "${!option_var}" ]; then
                                         # If there's already another value for this option, add a ; before adding the new value
                                         eval ${option_var}+="\;"
                                     fi
@@ -171,7 +163,7 @@ ynh_handle_getopts_args () {
 
                                     eval ${option_var}+='"${all_args[$i]}"'
                                 fi
-                                shift_value=$(( shift_value + 1 ))
+                                shift_value=$((shift_value + 1))
                             fi
                         done
                     fi
@@ -184,24 +176,23 @@ ynh_handle_getopts_args () {
 
         # LEGACY MODE
         # Check if there's getopts arguments
-        if [ "${arguments[0]:0:1}" != "-" ]
-        then
+        if [ "${arguments[0]:0:1}" != "-" ]; then
             # If not, enter in legacy mode and manage the arguments as positionnal ones..
             # Dot not echo, to prevent to go through a helper output. But print only in the log.
-            set -x; echo "! Helper used in legacy mode !" > /dev/null; set +x
+            set -x
+            echo "! Helper used in legacy mode !" >/dev/null
+            set +x
             local i
-            for i in `seq 0 $(( ${#arguments[@]} -1 ))`
-            do
+            for i in $(seq 0 $((${#arguments[@]} - 1))); do
                 # Try to use legacy_args as a list of option_flag of the array args_array
                 # Otherwise, fallback to getopts_parameters to get the option_flag. But an associative arrays isn't always sorted in the correct order...
                 # Remove all ':' in getopts_parameters
-                getopts_parameters=${legacy_args:-${getopts_parameters//:}}
+                getopts_parameters=${legacy_args:-${getopts_parameters//:/}}
                 # Get the option_flag from getopts_parameters, by using the option_flag according to the position of the argument.
                 option_flag=${getopts_parameters:$i:1}
-                if [ -z "$option_flag" ]
-                then
-                        ynh_print_warn --message="Too many arguments ! \"${arguments[$i]}\" will be ignored."
-                        continue
+                if [ -z "$option_flag" ]; then
+                    ynh_print_warn --message="Too many arguments ! \"${arguments[$i]}\" will be ignored."
+                    continue
                 fi
                 # Use the long option, corresponding to the option_flag, as a variable
                 # (e.g. for [u]=user, 'user' will be used as a variable)

@@ -5,68 +5,77 @@ set -e
 . /usr/share/yunohost/helpers
 
 do_pre_regen() {
-  pending_dir=$1
+    pending_dir=$1
 
-  cd /usr/share/yunohost/templates/postfix
+    cd /usr/share/yunohost/templates/postfix
 
-  postfix_dir="${pending_dir}/etc/postfix"
-  mkdir -p "$postfix_dir"
+    postfix_dir="${pending_dir}/etc/postfix"
+    mkdir -p "$postfix_dir"
 
-  default_dir="${pending_dir}/etc/default/"
-  mkdir -p "$default_dir"
+    default_dir="${pending_dir}/etc/default/"
+    mkdir -p "$default_dir"
 
-  # install plain conf files
-  cp plain/* "$postfix_dir"
+    # install plain conf files
+    cp plain/* "$postfix_dir"
 
-  # prepare main.cf conf file
-  main_domain=$(cat /etc/yunohost/current_host)
+    # prepare main.cf conf file
+    main_domain=$(cat /etc/yunohost/current_host)
 
-  # Support different strategy for security configurations
-  export compatibility="$(yunohost settings get 'security.postfix.compatibility')"
+    # Support different strategy for security configurations
+    export compatibility="$(yunohost settings get 'security.postfix.compatibility')"
 
-  export main_domain
-  export domain_list="$YNH_DOMAINS"
-  ynh_render_template "main.cf" "${postfix_dir}/main.cf"
+    # Add possibility to specify a relay
+    # Could be useful with some isp with no 25 port open or more complex setup
+    export relay_port=""
+    export relay_user=""
+    export relay_host="$(yunohost settings get 'smtp.relay.host')"
+    if [ -n "${relay_host}" ]; then
+        relay_port="$(yunohost settings get 'smtp.relay.port')"
+        relay_user="$(yunohost settings get 'smtp.relay.user')"
+        relay_password="$(yunohost settings get 'smtp.relay.password')"
 
-  cat postsrsd \
-    | sed "s/{{ main_domain }}/${main_domain}/g" \
-    | sed "s/{{ domain_list }}/${YNH_DOMAINS}/g" \
-    > "${default_dir}/postsrsd"
+        # Avoid to display "Relay account paswword" to other users
+        touch ${postfix_dir}/sasl_passwd
+        chmod 750 ${postfix_dir}/sasl_passwd
+        # Avoid "postmap: warning: removing zero-length database file"
+        chown postfix ${pending_dir}/etc/postfix
+        chown postfix ${pending_dir}/etc/postfix/sasl_passwd
 
-  # adapt it for IPv4-only hosts
-  ipv6="$(yunohost settings get 'smtp.allow_ipv6')"
-  if [ "$ipv6" == "False" ] || [ ! -f /proc/net/if_inet6 ]; then
-    sed -i \
-      's/ \[::ffff:127.0.0.0\]\/104 \[::1\]\/128//g' \
-      "${postfix_dir}/main.cf"
-    sed -i \
-      's/inet_interfaces = all/&\ninet_protocols = ipv4/' \
-      "${postfix_dir}/main.cf"
-  fi
+        cat <<<"[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" >${postfix_dir}/sasl_passwd
+        postmap ${postfix_dir}/sasl_passwd
+    fi
+    export main_domain
+    export domain_list="$YNH_DOMAINS"
+    ynh_render_template "main.cf" "${postfix_dir}/main.cf"
+
+    cat postsrsd \
+        | sed "s/{{ main_domain }}/${main_domain}/g" \
+        | sed "s/{{ domain_list }}/${YNH_DOMAINS}/g" \
+            >"${default_dir}/postsrsd"
+
+    # adapt it for IPv4-only hosts
+    ipv6="$(yunohost settings get 'smtp.allow_ipv6')"
+    if [ "$ipv6" == "False" ] || [ ! -f /proc/net/if_inet6 ]; then
+        sed -i \
+            's/ \[::ffff:127.0.0.0\]\/104 \[::1\]\/128//g' \
+            "${postfix_dir}/main.cf"
+        sed -i \
+            's/inet_interfaces = all/&\ninet_protocols = ipv4/' \
+            "${postfix_dir}/main.cf"
+    fi
 }
 
 do_post_regen() {
-  regen_conf_files=$1
+    regen_conf_files=$1
 
-  [[ -z "$regen_conf_files" ]] \
-    || { service postfix restart && service postsrsd restart; }
+    if [ -e /etc/postfix/sasl_passwd ]; then
+        chmod 750 /etc/postfix/sasl_passwd*
+        chown postfix:root /etc/postfix/sasl_passwd*
+    fi
+
+    [[ -z "$regen_conf_files" ]] \
+        || { systemctl restart postfix && systemctl restart postsrsd; }
 
 }
 
-FORCE=${2:-0}
-DRY_RUN=${3:-0}
-
-case "$1" in
-  pre)
-    do_pre_regen $4
-    ;;
-  post)
-    do_post_regen $4
-    ;;
-  *)
-    echo "hook called with unknown argument \`$1'" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+do_$1_regen ${@:2}
