@@ -1,6 +1,6 @@
 {
     "password_too_simple_1": "Pasahitzak gutxienez zortzi karaktere izan behar ditu",
-    "action_invalid": "'{action}' ekintza baliogabea",
+    "action_invalid": "'{action}' eragiketa baliogabea",
     "aborting": "Bertan behera uzten.",
     "admin_password_changed": "Administrazio-pasahitza aldatu da",
     "admin_password_change_failed": "Ezinezkoa izan da pasahitza aldatzea",
@@ -44,7 +44,7 @@
     "diagnosis_ip_not_connected_at_all": "Badirudi zerbitzaria ez dagoela internetera konektatuta!?",
     "app_already_up_to_date": "{app} aplikazioa egunean da dagoeneko",
     "app_change_url_success": "{app} aplikazioaren URLa {domain}{path} da orain",
-    "admin_password_too_long": "Mesedez aukeratu 127 karaktere baino laburragoa den pasahitz bat",
+    "admin_password_too_long": "Mesedez, aukeratu 127 karaktere baino laburragoa den pasahitz bat",
     "app_action_broke_system": "Ekintza honek {services} zerbitzu garrantzitsuak hondatu dituela dirudi",
     "diagnosis_basesystem_hardware_model": "Zerbitzariaren modeloa {model} da",
     "already_up_to_date": "Ez dago egiteko ezer. Guztia dago egunean.",
