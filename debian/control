@@ -16,8 +16,6 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , python3-toml, python3-packaging, python3-publicsuffix,
  , python3-ldap, python3-zeroconf, python3-lexicon,
  , apt, apt-transport-https, apt-utils, dirmngr
- , php7.3-common, php7.3-fpm, php7.3-ldap, php7.3-intl
- , mariadb-server, php7.3-mysql
  , openssh-server, iptables, fail2ban, dnsutils, bind9utils
  , openssl, ca-certificates, netcat-openbsd, iproute2
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
@@ -26,17 +24,19 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved, dovecot-antispam
  , rspamd, opendkim-tools, postsrsd, procmail, mailutils
  , redis-server
- , metronome (>=3.14.0)
  , acl
  , git, curl, wget, cron, unzip, jq, bc, at
  , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog
+ , php7.3-common, php7.3-fpm, php7.3-ldap, php7.3-intl
+ , mariadb-server, php7.3-mysql
  , php7.3-gd, php7.3-curl, php-gettext
  , python3-pip
  , unattended-upgrades
  , libdbd-ldap-perl, libnet-dns-perl
+ , metronome (>=3.14.0)
 Suggests: htop, vim, rsync, acpi-support-base, udisks2
 Conflicts: iptables-persistent
  , apache2
