@@ -123,7 +123,7 @@ def service_add(
         # Try to get the description from systemd service
         _, systemd_info = _get_service_information_from_systemd(name)
         type_ = systemd_info.get("Type") if systemd_info is not None else ""
-        if type_ == "oneshot" and name != "postgresql":
+        if type_ == "oneshot":
             logger.warning(
                 "/!\\ Packagers! Please provide a --test_status when adding oneshot-type services in Yunohost, such that it has a reliable way to check if the service is running or not."
             )
@@ -738,13 +738,20 @@ def _get_services():
         if "log" not in services["ynh-vpnclient"]:
             services["ynh-vpnclient"]["log"] = ["/var/log/ynh-vpnclient.log"]
 
-    # Stupid hack for postgresql which ain't an official service ... Can't
-    # really inject that info otherwise. Real service we want to check for
-    # status and log is in fact postgresql@x.y-main (x.y being the version)
-    if "postgresql" in services:
-        if "description" in services["postgresql"]:
-            del services["postgresql"]["description"]
-        services["postgresql"]["actual_systemd_service"] = "postgresql@11-main"
+    services_with_package_condition = [name for name, infos in services.items() if infos.get("ignore_if_package_is_not_installed")]
+    for name in services_with_package_condition:
+        package = services[name]["ignore_if_package_is_not_installed"]
+        if os.system(f"dpkg --list | grep -q 'ii *{package}'") != 0:
+            del services[name]
+
+    php_fpm_versions = check_output(r"dpkg --list | grep -P 'ii  php\d.\d-fpm' | awk '{print $2}' | grep -o -P '\d.\d'")
+    php_fpm_versions = [v for v in php_fpm_versions.split('\n') if v.strip()]
+    for version in php_fpm_versions:
+        services[f"php{version}-fpm"] = {
+            "log": f"/var/log/php{version}-fpm.log",
+            "test_conf": f"php-fpm{version} --test",  # ofc the service is phpx.y-fpm but the program is php-fpmx.y because why not ...
+            "category": "web"
+        }
 
     # Remove legacy /var/log/daemon.log and /var/log/syslog from log entries
     # because they are too general. Instead, now the journalctl log is
@@ -864,11 +871,7 @@ def _get_journalctl_logs(service, number="all"):
     services = _get_services()
     systemd_service = services.get(service, {}).get("actual_systemd_service", service)
     try:
-        return check_output(
-            "journalctl --no-hostname --no-pager -u {0} -n{1}".format(
-                systemd_service, number
-            )
-        )
+        return check_output(f"journalctl --no-hostname --no-pager -u {systemd_service} -n{number}")
     except Exception:
         import traceback
 
