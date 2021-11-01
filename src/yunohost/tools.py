@@ -248,7 +248,9 @@ def tools_postinstall(
             # and inform the user that we could not contact the dyndns host server.
             except Exception:
                 logger.warning(
-                    m18n.n("dyndns_provider_unreachable", provider="dyndns.yunohost.org")
+                    m18n.n(
+                        "dyndns_provider_unreachable", provider="dyndns.yunohost.org"
+                    )
                 )
 
             if available:

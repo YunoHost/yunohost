@@ -70,7 +70,9 @@ def _dyndns_available(domain):
     logger.debug(f"Checking if domain {domain} is available on {DYNDNS_PROVIDER} ...")
 
     try:
-        r = download_json(f"https://{DYNDNS_PROVIDER}/test/{domain}", expected_status_code=None)
+        r = download_json(
+            f"https://{DYNDNS_PROVIDER}/test/{domain}", expected_status_code=None
+        )
     except MoulinetteError as e:
         logger.error(str(e))
         raise YunohostError(
@@ -81,9 +83,7 @@ def _dyndns_available(domain):
 
 
 @is_unit_operation()
-def dyndns_subscribe(
-    operation_logger, domain=None, key=None
-):
+def dyndns_subscribe(operation_logger, domain=None, key=None):
     """
     Subscribe to a DynDNS service
 
