@@ -167,15 +167,16 @@ def domain_add(operation_logger, domain, dyndns=False):
     # DynDNS domain
     if dyndns:
 
-        from yunohost.dyndns import _dyndns_provides, _guess_current_dyndns_domain
+        from yunohost.utils.dns import is_yunohost_dyndns_domain
+        from yunohost.dyndns import _guess_current_dyndns_domain
 
         # Do not allow to subscribe to multiple dyndns domains...
-        if _guess_current_dyndns_domain("dyndns.yunohost.org") != (None, None):
+        if _guess_current_dyndns_domain() != (None, None):
             raise YunohostValidationError("domain_dyndns_already_subscribed")
 
         # Check that this domain can effectively be provided by
         # dyndns.yunohost.org. (i.e. is it a nohost.me / noho.st)
-        if not _dyndns_provides("dyndns.yunohost.org", domain):
+        if not is_yunohost_dyndns_domain(domain):
             raise YunohostValidationError("domain_dyndns_root_unknown")
 
     operation_logger.start()

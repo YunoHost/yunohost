@@ -39,7 +39,7 @@ from moulinette.utils.network import download_json
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.domain import _get_maindomain
 from yunohost.utils.network import get_public_ip
-from yunohost.utils.dns import dig
+from yunohost.utils.dns import dig, is_yunohost_dyndns_domain
 from yunohost.log import is_unit_operation
 from yunohost.regenconf import regen_conf
 
@@ -53,66 +53,36 @@ RE_DYNDNS_PRIVATE_KEY_SHA512 = re.compile(
     r".*/K(?P<domain>[^\s\+]+)\.\+165.+\.private$"
 )
 
+DYNDNS_PROVIDER = "dyndns.yunohost.org"
+DYNDNS_DNS_AUTH = ["ns0.yunohost.org", "ns1.yunohost.org"]
 
-def _dyndns_provides(provider, domain):
+
+def _dyndns_available(domain):
     """
-    Checks if a provider provide/manage a given domain.
+    Checks if a domain is available on dyndns.yunohost.org
 
     Keyword arguments:
-        provider -- The url of the provider, e.g. "dyndns.yunohost.org"
-        domain -- The full domain that you'd like.. e.g. "foo.nohost.me"
-
-    Returns:
-        True if the provider provide/manages the domain. False otherwise.
-    """
-
-    logger.debug("Checking if %s is managed by %s ..." % (domain, provider))
-
-    try:
-        # Dyndomains will be a list of domains supported by the provider
-        # e.g. [ "nohost.me", "noho.st" ]
-        dyndomains = download_json("https://%s/domains" % provider, timeout=30)
-    except MoulinetteError as e:
-        logger.error(str(e))
-        raise YunohostError(
-            "dyndns_could_not_check_provide", domain=domain, provider=provider
-        )
-
-    # Extract 'dyndomain' from 'domain', e.g. 'nohost.me' from 'foo.nohost.me'
-    dyndomain = ".".join(domain.split(".")[1:])
-
-    return dyndomain in dyndomains
-
-
-def _dyndns_available(provider, domain):
-    """
-    Checks if a domain is available from a given provider.
-
-    Keyword arguments:
-        provider -- The url of the provider, e.g. "dyndns.yunohost.org"
         domain -- The full domain that you'd like.. e.g. "foo.nohost.me"
 
     Returns:
         True if the domain is available, False otherwise.
     """
-    logger.debug("Checking if domain %s is available on %s ..." % (domain, provider))
+    logger.debug(f"Checking if domain {domain} is available on {DYNDNS_PROVIDER} ...")
 
     try:
-        r = download_json(
-            "https://%s/test/%s" % (provider, domain), expected_status_code=None
-        )
+        r = download_json(f"https://{DYNDNS_PROVIDER}/test/{domain}", expected_status_code=None)
     except MoulinetteError as e:
         logger.error(str(e))
         raise YunohostError(
-            "dyndns_could_not_check_available", domain=domain, provider=provider
+            "dyndns_could_not_check_available", domain=domain, provider=DYNDNS_PROVIDER
         )
 
-    return r == "Domain %s is available" % domain
+    return r == f"Domain {domain} is available"
 
 
 @is_unit_operation()
 def dyndns_subscribe(
-    operation_logger, subscribe_host="dyndns.yunohost.org", domain=None, key=None
+    operation_logger, domain=None, key=None
 ):
     """
     Subscribe to a DynDNS service
@@ -120,11 +90,9 @@ def dyndns_subscribe(
     Keyword argument:
         domain -- Full domain to subscribe with
         key -- Public DNS key
-        subscribe_host -- Dynette HTTP API to subscribe to
-
     """
 
-    if _guess_current_dyndns_domain(subscribe_host) != (None, None):
+    if _guess_current_dyndns_domain() != (None, None):
         raise YunohostValidationError("domain_dyndns_already_subscribed")
 
     if domain is None:
@@ -132,13 +100,13 @@ def dyndns_subscribe(
         operation_logger.related_to.append(("domain", domain))
 
     # Verify if domain is provided by subscribe_host
-    if not _dyndns_provides(subscribe_host, domain):
+    if not is_yunohost_dyndns_domain(domain):
         raise YunohostValidationError(
-            "dyndns_domain_not_provided", domain=domain, provider=subscribe_host
+            "dyndns_domain_not_provided", domain=domain, provider=DYNDNS_PROVIDER
         )
 
     # Verify if domain is available
-    if not _dyndns_available(subscribe_host, domain):
+    if not _dyndns_available(domain):
         raise YunohostValidationError("dyndns_unavailable", domain=domain)
 
     operation_logger.start()
@@ -167,9 +135,9 @@ def dyndns_subscribe(
 
     # Send subscription
     try:
+        b64encoded_key = base64.b64encode(key.encode()).decode()
         r = requests.post(
-            "https://%s/key/%s?key_algo=hmac-sha512"
-            % (subscribe_host, base64.b64encode(key.encode()).decode()),
+            f"https://{DYNDNS_PROVIDER}/key/{b64encoded_key}?key_algo=hmac-sha512",
             data={"subdomain": domain},
             timeout=30,
         )
@@ -205,11 +173,7 @@ def dyndns_subscribe(
 @is_unit_operation()
 def dyndns_update(
     operation_logger,
-    dyn_host="dyndns.yunohost.org",
     domain=None,
-    key=None,
-    ipv4=None,
-    ipv6=None,
     force=False,
     dry_run=False,
 ):
@@ -218,31 +182,36 @@ def dyndns_update(
 
     Keyword argument:
         domain -- Full domain to update
-        dyn_host -- Dynette DNS server to inform
-        key -- Public DNS key
-        ipv4 -- IP address to send
-        ipv6 -- IPv6 address to send
-
     """
 
     from yunohost.dns import _build_dns_conf
 
     # If domain is not given, try to guess it from keys available...
+    key = None
     if domain is None:
-        (domain, key) = _guess_current_dyndns_domain(dyn_host)
+        (domain, key) = _guess_current_dyndns_domain()
 
     if domain is None:
         raise YunohostValidationError("dyndns_no_domain_registered")
 
     # If key is not given, pick the first file we find with the domain given
-    else:
-        if key is None:
-            keys = glob.glob("/etc/yunohost/dyndns/K{0}.+*.private".format(domain))
+    elif key is None:
+        keys = glob.glob("/etc/yunohost/dyndns/K{0}.+*.private".format(domain))
 
-            if not keys:
-                raise YunohostValidationError("dyndns_key_not_found")
+        if not keys:
+            raise YunohostValidationError("dyndns_key_not_found")
 
-            key = keys[0]
+        key = keys[0]
+
+    # Get current IPv4 and IPv6
+    ipv4 = get_public_ip()
+    ipv6 = get_public_ip(6)
+
+    if ipv4 is None and ipv6 is None:
+        logger.debug(
+            "No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ip.yunohost.org infrastructure is down somehow"
+        )
+        return
 
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
     host = domain.split(".")[1:]
@@ -251,33 +220,32 @@ def dyndns_update(
     logger.debug("Building zone update file ...")
 
     lines = [
-        "server %s" % dyn_host,
-        "zone %s" % host,
+        f"server {DYNDNS_PROVIDER}",
+        f"zone {host}",
     ]
+
+    auth_resolvers = []
+
+    for dns_auth in DYNDNS_DNS_AUTH:
+        for type_ in ["A", "AAAA"]:
+
+            ok, result = dig(dns_auth, type_)
+            if ok == "ok" and len(result) and result[0]:
+                auth_resolvers.append(result[0])
+
+    if not auth_resolvers:
+        raise YunohostError(
+            f"Failed to resolve IPv4/IPv6 for {DYNDNS_DNS_AUTH} ?", raw_msg=True
+        )
 
     def resolve_domain(domain, rdtype):
 
-        ok, result = dig(dyn_host, "A")
-        dyn_host_ipv4 = result[0] if ok == "ok" and len(result) else None
-        if not dyn_host_ipv4:
-            raise YunohostError(
-                "Failed to resolve IPv4 for %s ?" % dyn_host, raw_msg=True
-            )
-
-        ok, result = dig(dyn_host, "AAAA")
-        dyn_host_ipv6 = result[0] if ok == "ok" and len(result) else None
-        if not dyn_host_ipv6:
-            raise YunohostError(
-                "Failed to resolve IPv6 for %s ?" % dyn_host, raw_msg=True
-            )
-
-        ok, result = dig(domain, rdtype, resolvers=[dyn_host_ipv4, dyn_host_ipv6])
+        ok, result = dig(domain, rdtype, resolvers=auth_resolvers)
         if ok == "ok":
             return result[0] if len(result) else None
         elif result[0] == "Timeout":
             logger.debug(
-                "Timed-out while trying to resolve %s record for %s using %s"
-                % (rdtype, domain, dyn_host)
+                f"Timed-out while trying to resolve {rdtype} record for {domain}"
             )
         else:
             return None
@@ -301,24 +269,8 @@ def dyndns_update(
     old_ipv4 = resolve_domain(domain, "A")
     old_ipv6 = resolve_domain(domain, "AAAA")
 
-    # Get current IPv4 and IPv6
-    ipv4_ = get_public_ip()
-    ipv6_ = get_public_ip(6)
-
-    if ipv4 is None:
-        ipv4 = ipv4_
-
-    if ipv6 is None:
-        ipv6 = ipv6_
-
     logger.debug("Old IPv4/v6 are (%s, %s)" % (old_ipv4, old_ipv6))
     logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
-
-    if ipv4 is None and ipv6 is None:
-        logger.debug(
-            "No ipv4 nor ipv6 ?! Sounds like the server is not connected to the internet, or the ip.yunohost.org infrastructure is down somehow"
-        )
-        return
 
     # no need to update
     if (not force and not dry_run) and (old_ipv4 == ipv4 and old_ipv6 == ipv6):
@@ -388,19 +340,21 @@ def dyndns_update(
         )
 
 
+# Legacy
 def dyndns_installcron():
     logger.warning(
         "This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'."
     )
 
 
+# Legacy
 def dyndns_removecron():
     logger.warning(
         "This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'."
     )
 
 
-def _guess_current_dyndns_domain(dyn_host):
+def _guess_current_dyndns_domain():
     """
     This function tries to guess which domain should be updated by
     "dyndns_update()" because there's not proper management of the current
@@ -412,6 +366,7 @@ def _guess_current_dyndns_domain(dyn_host):
     # Retrieve the first registered domain
     paths = list(glob.iglob("/etc/yunohost/dyndns/K*.private"))
     for path in paths:
+        # MD5 is legacy ugh
         match = RE_DYNDNS_PRIVATE_KEY_MD5.match(path)
         if not match:
             match = RE_DYNDNS_PRIVATE_KEY_SHA512.match(path)
@@ -423,7 +378,7 @@ def _guess_current_dyndns_domain(dyn_host):
         # current domain beause that's not the one we want to update..)
         # If there's only 1 such key found, then avoid doing the request
         # for nothing (that's very probably the one we want to find ...)
-        if len(paths) > 1 and _dyndns_available(dyn_host, _domain):
+        if len(paths) > 1 and _dyndns_available(_domain):
             continue
         else:
             return (_domain, path)
