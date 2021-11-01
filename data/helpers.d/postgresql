@@ -281,6 +281,8 @@ ynh_psql_remove_db() {
 
 # Create a master password and set up global settings
 #
+# [internal]
+#
 # usage: ynh_psql_test_if_first_run
 #
 # It also make sure that postgresql is installed and running
