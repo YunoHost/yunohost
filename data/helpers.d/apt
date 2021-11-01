@@ -262,8 +262,6 @@ ynh_install_app_dependencies() {
             || ynh_die --message="Inconsistent php versions in dependencies ... found : $specific_php_version"
 
         dependencies+=", php${specific_php_version}, php${specific_php_version}-fpm, php${specific_php_version}-common"
-
-        ynh_add_sury
     fi
 
 
@@ -283,23 +281,6 @@ ynh_install_app_dependencies() {
             current_dependencies=${current_dependencies// | /|}
         fi
         dependencies="$current_dependencies, $dependencies"
-    fi
-
-    #
-    # Epic ugly hack to fix the goddamn dependency nightmare of sury
-    # Sponsored by the "Djeezusse Fokin Kraiste Why Do Adminsys Has To Be So Fucking Complicated I Should Go Grow Potatoes Instead Of This Shit" collective
-    # https://github.com/YunoHost/issues/issues/1407
-    #
-    # If we require to install php dependency
-    if grep --quiet 'php' <<< "$dependencies"; then
-        # And we have packages from sury installed (7.0.33-10+weirdshiftafter instead of 7.0.33-0 on debian)
-        if dpkg --list | grep "php7.0" | grep --quiet --invert-match "7.0.33-0+deb9"; then
-            # And sury ain't already in sources.lists
-            if ! grep --recursive --quiet "^ *deb.*sury" /etc/apt/sources.list*; then
-                # Re-add sury
-                ynh_add_sury
-            fi
-        fi
     fi
 
     cat >/tmp/${dep_app}-ynh-deps.control <<EOF # Make a control file for equivs-build
@@ -333,20 +314,6 @@ EOF
         ynh_app_setting_set --app=$app --key=phpversion --value=$YNH_DEFAULT_PHP_VERSION
     fi
 }
-
-# Add sury repository with adequate pin strategy
-#
-# [internal]
-#
-# usage: ynh_add_sury
-#
-ynh_add_sury() {
-
-    # Add an extra repository for those packages
-    ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version --priority=600
-
-}
-
 
 # Add dependencies to install with ynh_install_app_dependencies
 #

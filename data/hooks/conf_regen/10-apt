@@ -44,10 +44,21 @@ Pin: release *
 Pin-Priority: -1
 " >>"${pending_dir}/etc/apt/preferences.d/ban_packages"
 
+  # Add sury
+  mkdir -p ${pending_dir}/etc/apt/sources.list.d/
+  echo "deb https://packages.sury.org/php/ $(ynh_get_debian_release) main" > "${pending_dir}/etc/apt/sources.list.d/extra_php_version.list"
+
 }
 
 do_post_regen() {
     regen_conf_files=$1
+
+    # Add sury key
+    # We do this only at the post regen and if the key doesn't already exists, because we don't want the regenconf to fuck everything up if the regenconf runs while the network is down
+    if [[ ! -s /etc/apt/trusted.gpg.d/extra_php_version.gpg ]]
+    then
+        wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"
+    fi
 
     # Make sure php7.3 is the default version when using php in cli
     update-alternatives --set php /usr/bin/php7.3
