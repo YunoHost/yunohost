@@ -469,6 +469,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
     from yunohost.permission import permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
     from yunohost.utils.legacy import _patch_legacy_php_versions, _patch_legacy_helpers
+    from yunohost.backup import backup_list, backup_create, backup_delete, backup_restore
 
     apps = app
     # Check if disk space available
@@ -556,6 +557,31 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
         # Check requirements
         _check_manifest_requirements(manifest)
+
+        if manifest["packaging_format"] >= 2:
+            if no_safety_backup:
+                logger.warning("Skipping the creation of a backup prior to the upgrade.")
+            else:
+                # FIXME: i18n
+                logger.info("Creating a safety backup prior to the upgrade")
+
+                # Switch between pre-upgrade1 or pre-upgrade2
+                safety_backup_name = f"{app_instance_name}-pre-upgrade1"
+                other_safety_backup_name = f"{app_instance_name}-pre-upgrade2"
+                if safety_backup_name in backup_list()["archives"]:
+                    safety_backup_name = f"{app_instance_name}-pre-upgrade2"
+                    other_safety_backup_name = f"{app_instance_name}-pre-upgrade1"
+
+                backup_create(name=safety_backup_name, apps=[app_instance_name])
+
+                if safety_backup_name in backup_list()["archives"]:
+                    # if the backup suceeded, delete old safety backup to save space
+                    if other_safety_backup_name in backup_list()["archives"]:
+                        backup_delete(other_safety_backup_name)
+                else:
+                    # Is this needed ? Shouldn't backup_create report an expcetion if backup failed ?
+                    raise YunohostError("Uhoh the safety backup failed ?! Aborting the upgrade process.", raw_msg=True)
+
         _assert_system_is_sane_for_app(manifest, "pre")
 
         app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
@@ -567,7 +593,8 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
         env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
         env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
-        env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
+        if manifest["packaging_format"] < 2:
+            env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
@@ -599,6 +626,16 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                 ),
             )
         finally:
+
+            # If upgrade failed, try to restore the safety backup
+            if upgrade_failed and manifest["packaging_format"] >= 2 and not no_safety_backup:
+                logger.warning("Upgrade failed ... attempting to restore the satefy backup (Yunohost first need to remove the app for this) ...")
+
+                app_remove(app_instance_name)
+                backup_restore(name=safety_backup_name, apps=[app_instance_name], force=True)
+                if not _is_installed(app_instance_name):
+                    logger.error("Uhoh ... Yunohost failed to restore the app to the way it was before the failed upgrade :|")
+
             # Whatever happened (install success or failure) we check if it broke the system
             # and warn the user about it
             try:
