@@ -7,6 +7,11 @@ do_pre_regen() {
 
     mkdir --parents "${pending_dir}/etc/apt/preferences.d"
 
+    # Add sury
+    mkdir -p ${pending_dir}/etc/apt/sources.list.d/
+    echo "deb https://packages.sury.org/php/ $(lsb_release --codename --short) main" > "${pending_dir}/etc/apt/sources.list.d/extra_php_version.list"
+
+    # Ban some packages from sury
     packages_to_refuse_from_sury="php php-fpm php-mysql php-xml php-zip php-mbstring php-ldap php-gd php-curl php-bz2 php-json php-sqlite3 php-intl openssl libssl1.1 libssl-dev"
     for package in $packages_to_refuse_from_sury; do
         echo "
@@ -15,6 +20,7 @@ Pin: origin \"packages.sury.org\"
 Pin-Priority: -1" >>"${pending_dir}/etc/apt/preferences.d/extra_php_version"
     done
 
+    # Ban some packages that users may inadvertendly try to install such as apache2 ...
     echo "
 
 # PLEASE READ THIS WARNING AND DON'T EDIT THIS FILE
@@ -44,9 +50,6 @@ Pin: release *
 Pin-Priority: -1
 " >>"${pending_dir}/etc/apt/preferences.d/ban_packages"
 
-  # Add sury
-  mkdir -p ${pending_dir}/etc/apt/sources.list.d/
-  echo "deb https://packages.sury.org/php/ $(ynh_get_debian_release) main" > "${pending_dir}/etc/apt/sources.list.d/extra_php_version.list"
 
 }
 
