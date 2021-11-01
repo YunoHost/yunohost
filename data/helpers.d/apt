@@ -252,9 +252,6 @@ ynh_install_app_dependencies() {
     # The (?<=php) syntax corresponds to lookbehind ;)
     local specific_php_version=$(echo $dependencies | grep -oP '(?<=php)[0-9.]+(?=-|\>)' | sort -u)
 
-    # Ignore case where the php version found is the one available in debian vanilla
-    [[ "$specific_php_version" != "$YNH_DEFAULT_PHP_VERSION" ]] || specific_php_version=""
-
     if [[ -n "$specific_php_version" ]]
     then
         # Cover a small edge case where a packager could have specified "php7.4-pwet php5-gni" which is confusing
@@ -301,17 +298,10 @@ EOF
 
     if [[ -n "$specific_php_version" ]]
     then
-        # Set the default php version back as the default version for php-cli.
-        update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
-
-        # Store phpversion into the config of this app
         ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
 
-        # Integrate new php-fpm service in yunohost
-        yunohost service add php${specific_php_version}-fpm --log "/var/log/php${phpversion}-fpm.log"
-    elif grep --quiet 'php' <<< "$dependencies"; then
-        # Store phpversion into the config of this app
-        ynh_app_setting_set --app=$app --key=phpversion --value=$YNH_DEFAULT_PHP_VERSION
+        # Set the default php version back as the default version for php-cli.
+        update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
     fi
 }
 
