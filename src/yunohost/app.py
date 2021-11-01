@@ -627,7 +627,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             if upgrade_failed or broke_the_system:
 
                 # display this if there are remaining apps
-                if apps[number + 1 :]:
+                if apps[number + 1:]:
                     not_upgraded_apps = apps[number:]
                     logger.error(
                         m18n.n(
@@ -2048,9 +2048,9 @@ def _set_default_ask_questions(questions, script_name="install"):
 
             # Also it in fact doesn't make sense for any of those questions to have an example value nor a default value...
             if question.get("type") in ["domain", "user", "password"]:
-                if "example" in arg:
+                if "example" in question:
                     del question["example"]
-                if "default" in arg:
+                if "default" in question:
                     del question["domain"]
 
     return questions
