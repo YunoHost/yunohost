@@ -14,7 +14,6 @@ export N_PREFIX="$n_install_dir"
 #
 # Requires YunoHost version 2.7.12 or higher.
 ynh_install_n() {
-    ynh_print_info --message="Installation of N - Node.js version management"
     # Build an app.src for n
     echo "SOURCE_URL=https://github.com/tj/n/archive/v${n_version}.tar.gz
 SOURCE_SUM=d4da7ea91f680de0c9b5876e097e2a793e8234fcd0f7ca87a0599b925be087a3" >"$YNH_APP_BASEDIR/conf/n.src"
