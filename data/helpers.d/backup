@@ -482,7 +482,7 @@ ynh_restore_upgradebackup() {
             if [[ -d /etc/yunohost/apps/$app ]]
             then
                 ynh_die --message="The app was restored to the way it was before the failed upgrade."
-            elif
+            else
                 ynh_die --message="Uhoh ... Yunohost failed to restore the app to the way it was before the failed upgrade :|"
             fi
         fi
