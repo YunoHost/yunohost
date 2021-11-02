@@ -261,7 +261,7 @@ ynh_install_app_dependencies() {
         dependencies+=", php${specific_php_version}, php${specific_php_version}-fpm, php${specific_php_version}-common"
     fi
 
-    local psql_installed2="$(dpkg --list | grep -q "ii *postgresql-$PSQL_VERSION" && echo yes || echo no)"
+    local psql_installed="$(ynh_package_is_installed "postgresql-$PSQL_VERSION" && echo yes || echo no)"
 
     # The first time we run ynh_install_app_dependencies, we will replace the
     # entire control file (This is in particular meant to cover the case of
@@ -306,7 +306,7 @@ EOF
     fi
 
     # Trigger postgresql regenconf if we may have just installed postgresql
-    local psql_installed2="$(dpkg --list | grep -q "ii *postgresql-$PSQL_VERSION" && echo yes || echo no)"
+    local psql_installed2="$(ynh_package_is_installed "postgresql-$PSQL_VERSION" && echo yes || echo no)"
     if [[ "$psql_installed" != "$psql_installed2" ]]
     then
         yunohost tools regen-conf postgresql
