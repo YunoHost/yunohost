@@ -59,6 +59,21 @@ class AppResourceSet:
 
 
 class AptDependenciesAppResource(AppResource):
+    """
+        is_provisioned -> package __APP__-ynh-deps exists  (ideally should check the Depends: but hmgn)
+        is_available   -> True? idk
+
+        update -> update deps on __APP__-ynh-deps
+        provision -> create/update deps on __APP__-ynh-deps
+
+        deprovision -> remove __APP__-ynh-deps (+autoremove?)
+
+        deep_clean  -> remove any __APP__-ynh-deps for app not in app list
+
+        backup -> nothing
+        restore = provision
+    """
+
     type = "apt"
 
     default_properties = {
@@ -71,7 +86,23 @@ class AptDependenciesAppResource(AppResource):
         # call helpers idk ...
         pass
 
+
 class SourcesAppResource(AppResource):
+    """
+        is_provisioned -> (if pre_download,) cache exists with appropriate checksum
+        is_available   -> curl HEAD returns 200
+
+        update    -> none?
+        provision ->  full download + check checksum
+
+        deprovision -> remove cache for __APP__ ?
+
+        deep_clean  -> remove all cache
+
+        backup -> nothing
+        restore -> nothing
+    """
+
     type = "sources"
 
     default_properties = {
@@ -85,6 +116,21 @@ class SourcesAppResource(AppResource):
 
 
 class RoutesAppResource(AppResource):
+    """
+        is_provisioned -> main perm exists
+        is_available   -> perm urls do not conflict
+
+        update    -> refresh/update values for url/additional_urls/show_tile/auth/protected/... create new perms / delete any perm not listed
+        provision -> same as update?
+
+        deprovision -> delete permissions
+
+        deep_clean  -> delete permissions for any __APP__.foobar where app not in app list...
+
+        backup -> handled elsewhere by the core, should be integrated in there (dump .ldif/yml?)
+        restore -> handled by the core, should be integrated in there (restore .ldif/yml?)
+    """
+
     type = "routes"
 
     default_properties = {
@@ -136,10 +182,26 @@ class RoutesAppResource(AppResource):
 
 
 class PortAppResource(AppResource):
+    """
+        is_provisioned -> port setting exists and is not the port used by another app (ie not in another app setting)
+        is_available   -> true
+
+        update    -> true
+        provision -> find a port not used by any app
+
+        deprovision -> delete the port setting
+
+        deep_clean  -> ?
+
+        backup -> nothing (backup port setting)
+        restore -> nothing (restore port setting)
+    """
+
     type = "port"
 
     default_properties = {
-        "value": 1000
+        "value": 1000,
+        "type": "internal",
     }
 
     def _port_is_used(self, port):
@@ -167,11 +229,26 @@ class PortAppResource(AppResource):
 
 
 class SystemuserAppResource(AppResource):
+    """
+        is_provisioned -> user __APP__ exists
+        is_available   -> user and group __APP__ doesn't exists
+
+        update    -> update values for home / shell / groups
+        provision -> create user
+
+        deprovision -> delete user
+
+        deep_clean  -> uuuuh ? delete any user that could correspond to an app x_x ?
+
+        backup -> nothing
+        restore -> provision
+    """
+
     type = "system_user"
 
     default_properties = {
         "username": "__APP__",
-        "home_dir": "/var/www/__APP__",
+        "home_dir": "__INSTALL_DIR__",
         "use_shell": False,
         "groups": []
     }
@@ -190,11 +267,27 @@ class SystemuserAppResource(AppResource):
 
 
 class InstalldirAppResource(AppResource):
+    """
+        is_provisioned -> setting install_dir exists + /dir/ exists
+        is_available   -> /dir/ doesn't exists
+
+        provision -> create setting + create dir
+        update    -> update perms ?
+
+        deprovision -> delete dir + delete setting
+
+        deep_clean  -> uuuuh ? delete any dir in /var/www/ that would not correspond to an app x_x ?
+
+        backup -> cp install dir
+        restore -> cp install dir
+    """
+
     type = "install_dir"
 
     default_properties = {
         "dir": "/var/www/__APP__",    # FIXME or choose to move this elsewhere nowadays idk...
-        "alias": "final_path"
+        "alias": "final_path",
+        # FIXME : add something about perms ?
     }
 
     # FIXME: change default dir to /opt/stuff if app ain't a webapp ...
@@ -219,6 +312,21 @@ class InstalldirAppResource(AppResource):
 
 
 class DatadirAppResource(AppResource):
+    """
+        is_provisioned -> setting data_dir exists + /dir/ exists
+        is_available   -> /dir/ doesn't exists
+
+        provision -> create setting + create dir
+        update    -> update perms ?
+
+        deprovision -> (only if purge enabled...) delete dir + delete setting
+
+        deep_clean  -> zblerg idk nothing
+
+        backup -> cp data dir ? (if not backup_core_only)
+        restore -> cp data dir ? (if in backup)
+    """
+
     type = "data_dir"
 
     default_properties = {
@@ -239,6 +347,21 @@ class DatadirAppResource(AppResource):
 
 
 class DBAppResource(AppResource):
+    """
+        is_provisioned -> setting db_user, db_name, db_pwd exists
+        is_available   -> db doesn't already exists ( ... also gotta make sure that mysql / postgresql is indeed installed ... or will be after apt provisions it)
+
+        provision -> setup the db + init the setting
+        update    -> ??
+
+        deprovision -> delete the db
+
+        deep_clean  -> ... idk look into any db name that would not be related to any app ...
+
+        backup -> dump db
+        restore -> setup + inject db dump
+    """
+
     type = "db"
 
     default_properties = {
