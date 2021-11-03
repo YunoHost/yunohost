@@ -2695,3 +2695,4 @@ def binary_to_human(n, customary=False):
             value = float(n) / prefix[s]
             return "%.1f%s" % (value, s)
     return "%s" % n
+

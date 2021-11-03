@@ -35,6 +35,7 @@ import tempfile
 import copy
 from collections import OrderedDict
 from typing import List, Tuple, Dict, Any
+from packaging import version
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
@@ -52,7 +53,7 @@ from moulinette.utils.filesystem import (
     chmod,
 )
 
-from yunohost.utils import packages
+from yunohost.utils.packages import dpkg_is_broken, get_ynh_package_version
 from yunohost.utils.config import (
     ConfigPanel,
     ask_questions_and_parse_answers,
@@ -194,7 +195,6 @@ def app_info(app, full=False):
 
 
 def _app_upgradable(app_infos):
-    from packaging import version
 
     # Determine upgradability
 
@@ -460,7 +460,6 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         no_safety_backup -- Disable the safety backup during upgrade
 
     """
-    from packaging import version
     from yunohost.hook import (
         hook_add,
         hook_remove,
@@ -557,7 +556,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     upgrade_type = "UPGRADE_FULL"
 
         # Check requirements
-        _check_manifest_requirements(manifest)
+        _check_manifest_requirements(manifest, action="upgrade")
 
         if manifest["packaging_format"] >= 2:
             if no_safety_backup:
@@ -814,15 +813,12 @@ def app_install(
     label = label if label else manifest["name"]
 
     # Check requirements
-    _check_manifest_requirements(manifest)
+    _check_manifest_requirements(manifest, action="install")
     _assert_system_is_sane_for_app(manifest, "pre")
 
     # Check if app can be forked
     instance_number = _next_instance_number_for_app(app_id)
     if instance_number > 1:
-        if "multi_instance" not in manifest or not is_true(manifest["multi_instance"]):
-            raise YunohostValidationError("app_already_installed", app=app_id)
-
         # Change app_id to the forked app id
         app_instance_name = app_id + "__" + str(instance_number)
     else:
@@ -1995,11 +1991,13 @@ def _convert_v1_manifest_to_v2(manifest):
         manifest["upstream"]["website"] = manifest["url"]
 
     manifest["integration"] = {
-        "yunohost": manifest.get("requirements", {}).get("yunohost"),
+        "yunohost": manifest.get("requirements", {}).get("yunohost", "").replace(">", "").replace("=", "").replace(" ", ""),
         "architectures": "all",
-        "multi_instance": manifest.get("multi_instance", False),
+        "multi_instance": is_true(manifest.get("multi_instance", False)),
         "ldap": "?",
         "sso": "?",
+        "disk": "50M",
+        "ram": {"build": "50M", "runtime": "10M", "include_swap": False}
     }
 
     maintainer = manifest.get("maintainer", {}).get("name")
@@ -2017,28 +2015,11 @@ def _convert_v1_manifest_to_v2(manifest):
         manifest["install"][name] = question
 
     manifest["resources"] = {
-        "disk": {
-            "build": "50M",     # This is an *estimate* minimum value for the disk needed at build time (e.g. during install/upgrade) and during regular usage
-            "usage": "50M"      # Please only use round values such as: 10M, 100M, 200M, 400M, 800M, 1G, 2G, 4G, 8G
-        },
-        "ram": {
-            "build": "50M",     # This is an *estimate* minimum value for the RAM needed at build time (i.e. during install/upgrade) and during regular usage
-            "usage": "10M",     # Please only use round values like ["10M", "100M", "200M", "400M", "800M", "1G", "2G", "4G", "8G"]
-            "include_swap": False
-        },
-        "route": {},
+        "system_user": {},
         "install_dir": {
-            "base_dir": "/var/www/",  # This means that the app shall be installed in /var/www/$app which is the standard for webapps. You may change this to /opt/ if the app is a system app.
             "alias": "final_path"
         }
     }
-
-    if "domain" in manifest["install"] and "path" in manifest["install"]:
-        manifest["resources"]["route"]["url"] = "{domain}{path}"
-    elif "path" not in manifest["install"]:
-        manifest["resources"]["route"]["url"] = "{domain}/"
-    else:
-        del manifest["resources"]["route"]
 
     keys_to_keep = ["packaging_format", "id", "name", "description", "version", "maintainers", "upstream", "integration", "install", "resources"]
 
@@ -2325,32 +2306,60 @@ def _get_all_installed_apps_id():
     return all_apps_ids_formatted
 
 
-def _check_manifest_requirements(manifest: Dict):
+def _check_manifest_requirements(manifest: Dict, action: str):
     """Check if required packages are met from the manifest"""
 
     if manifest["packaging_format"] not in [1, 2]:
         raise YunohostValidationError("app_packaging_format_not_supported")
 
-    requirements = manifest.get("requirements", dict())
-
-    if not requirements:
-        return
-
-    app = manifest.get("id", "?")
+    app_id = manifest["id"]
 
     logger.debug(m18n.n("app_requirements_checking", app=app))
 
-    # Iterate over requirements
-    for pkgname, spec in requirements.items():
-        if not packages.meets_version_specifier(pkgname, spec):
-            version = packages.ynh_packages_version()[pkgname]["version"]
-            raise YunohostValidationError(
-                "app_requirements_unmeet",
-                pkgname=pkgname,
-                version=version,
-                spec=spec,
-                app=app,
-            )
+    # Yunohost version requirement
+
+    yunohost_requirement = version.parse(manifest["integration"]["yunohost"] or "4.3")
+    yunohost_installed_version = get_ynh_package_version("yunohost")["version"]
+    if yunohost_requirement > yunohost_installed_version:
+        # FIXME : i18n
+        raise YunohostValidationError(f"This app requires Yunohost >= {yunohost_requirement} but current installed version is {yunohost_installed_version}")
+
+    # Architectures
+    arch_requirement = manifest["integration"]["architectures"]
+    if arch_requirement != "all":
+        arch = check_output("dpkg --print-architecture")
+        if arch not in arch_requirement:
+            # FIXME: i18n
+            raise YunohostValidationError(f"This app can only be installed on architectures {', '.join(arch_requirement)} but your server architecture is {arch}")
+
+    # Multi-instance
+    if action == "install" and manifest["integration"]["multi_instance"] == False:
+        apps = _installed_apps()
+        sibling_apps = [a for a in apps if a == app_id or a.startswith(f"{app_id}__")]
+        if len(sibling_apps) > 0:
+            raise YunohostValidationError("app_already_installed", app=app_id)
+
+    # Disk
+    if action == "install":
+        disk_requirement = manifest["integration"]["disk"]
+
+        if free_space_in_directory("/") <= human_to_binary[disk_requirement] \
+        or free_space_in_directory("/var") <= human_to_binary[disk_requirement]:
+            # FIXME : i18m
+            raise YunohostValidationError("This app requires {disk_requirement} free space.")
+
+    # Ram for build
+    import psutil
+    ram_build_requirement = manifest["integration"]["ram"]["build"]
+    ram_include_swap = manifest["integration"]["ram"]["include_swap"]
+
+    ram_available = psutil.virtual_memory().available
+    if ram_include_swap:
+        ram_available += psutil.swap_memory().available
+
+    if ram_available < human_to_binary(ram_build_requirement):
+        # FIXME : i18n
+        raise YunohostValidationError("This app requires {ram_build_requirement} RAM available to install/upgrade")
 
 
 def _guess_webapp_path_requirement(app_folder: str) -> str:
@@ -2688,8 +2697,30 @@ def _assert_system_is_sane_for_app(manifest, when):
                 "app_action_broke_system", services=", ".join(faulty_services)
             )
 
-    if packages.dpkg_is_broken():
+    if dpkg_is_broken():
         if when == "pre":
             raise YunohostValidationError("dpkg_is_broken")
         elif when == "post":
             raise YunohostError("this_action_broke_dpkg")
+
+
+
+def human_to_binary(size: str) -> int:
+
+    symbols = ("K", "M", "G", "T", "P", "E", "Z", "Y")
+    factor = {}
+    for i, s in enumerate(symbols):
+        factor[s] = 1 << (i + 1) * 10
+
+    suffix = size[-1]
+    size = size[:-1]
+
+    if suffix not in symbols:
+        raise YunohostError(f"Invalid size suffix '{suffix}', expected one of {symbols}")
+
+    try:
+        size = float(size)
+    except Exception:
+        raise YunohostError(f"Failed to convert size {size} to float")
+
+    return size * factor[suffix]

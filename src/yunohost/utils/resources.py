@@ -20,11 +20,9 @@
 """
 import os
 import copy
-import psutil
 from typing import Dict, Any
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.filesystem import free_space_in_directory
 
 
 class AppResource(object):
@@ -58,75 +56,6 @@ class AppResourceSet:
 
         for name, resource in self.set.items():
             resource.check_availability(context={})
-
-
-M = 1024 ** 2
-G = 1024 * M
-sizes = {
-    "10M": 10 * M,
-    "20M": 20 * M,
-    "40M": 40 * M,
-    "80M": 80 * M,
-    "100M": 100 * M,
-    "200M": 200 * M,
-    "400M": 400 * M,
-    "800M": 800 * M,
-    "1G": 1 * G,
-    "2G": 2 * G,
-    "4G": 4 * G,
-    "8G": 8 * G,
-    "10G": 10 * G,
-    "20G": 20 * G,
-    "40G": 40 * G,
-    "80G": 80 * G,
-}
-
-
-class DiskAppResource(AppResource):
-    type = "disk"
-
-    default_properties = {
-        "space": "10M",
-    }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # FIXME: better error handling
-        assert self.space in sizes
-
-    def assert_availability(self, context: Dict):
-
-        if free_space_in_directory("/") <= sizes[self.space] \
-        or free_space_in_directory("/var") <= sizes[self.space]:
-            raise YunohostValidationError("Not enough disk space")  # FIXME: i18n / better messaging
-
-
-class RamAppResource(AppResource):
-    type = "ram"
-
-    default_properties = {
-        "build": "10M",
-        "runtime": "10M",
-        "include_swap": False
-    }
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        # FIXME: better error handling
-        assert self.build in sizes
-        assert self.runtime in sizes
-        assert isinstance(self.include_swap, bool)
-
-    def assert_availability(self, context: Dict):
-
-        memory = psutil.virtual_memory().available
-        if self.include_swap:
-            memory += psutil.swap_memory().available
-
-        max_size = max(sizes[self.build], sizes[self.runtime])
-
-        if memory <= max_size:
-            raise YunohostValidationError("Not enough RAM/swap")  # FIXME: i18n / better messaging
 
 
 class AptDependenciesAppResource(AppResource):
