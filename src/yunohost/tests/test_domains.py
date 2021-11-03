@@ -3,7 +3,7 @@ import os
 
 from moulinette.core import MoulinetteError
 
-from yunohost.utils.error import YunohostValidationError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.domain import (
     DOMAIN_SETTINGS_DIR,
     _get_maindomain,
@@ -114,5 +114,5 @@ def test_domain_config_set():
 
 
 def test_domain_configs_unknown():
-    with pytest.raises(YunohostValidationError):
+    with pytest.raises(YunohostError):
         domain_config_get(TEST_DOMAINS[2], "feature.xmpp.xmpp.xmpp")

@@ -709,5 +709,6 @@
     "domain_dns_push_not_applicable": "A función de rexistro DNS automático non é aplicable ao dominio {domain}. Debes configurar manualmente os teus rexistros DNS seguindo a documentación de https://yunohost.org/dns_config.",
     "domain_dns_push_managed_in_parent_domain": "A función de rexistro DNS automático está xestionada polo dominio nai {parent_domain}.",
     "ldap_attribute_already_exists": "Xa existe o atributo LDAP '{attribute}' con valor '{value}'",
-    "log_domain_config_set": "Actualizar configuración para o dominio '{}'"
+    "log_domain_config_set": "Actualizar configuración para o dominio '{}'",
+    "domain_unknown": "Dominio '{domain}' descoñecido"
 }

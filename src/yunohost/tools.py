@@ -45,7 +45,6 @@ from yunohost.app_catalog import (
     _update_apps_catalog,
 )
 from yunohost.domain import domain_add
-from yunohost.dyndns import _dyndns_available, _dyndns_provides
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_start, service_enable
 from yunohost.regenconf import regen_conf
@@ -205,11 +204,11 @@ def tools_postinstall(
         password -- YunoHost admin password
 
     """
+    from yunohost.dyndns import _dyndns_available
+    from yunohost.utils.dns import is_yunohost_dyndns_domain
     from yunohost.utils.password import assert_password_is_strong_enough
     from yunohost.domain import domain_main_domain
     import psutil
-
-    dyndns_provider = "dyndns.yunohost.org"
 
     # Do some checks at first
     if os.path.isfile("/etc/yunohost/installed"):
@@ -235,33 +234,30 @@ def tools_postinstall(
     if not force_password:
         assert_password_is_strong_enough("admin", password)
 
-    if not ignore_dyndns:
-        # Check if yunohost dyndns can handle the given domain
-        # (i.e. is it a .nohost.me ? a .noho.st ?)
-        try:
-            is_nohostme_or_nohost = _dyndns_provides(dyndns_provider, domain)
-        # If an exception is thrown, most likely we don't have internet
-        # connectivity or something. Assume that this domain isn't manageable
-        # and inform the user that we could not contact the dyndns host server.
-        except Exception:
-            logger.warning(
-                m18n.n("dyndns_provider_unreachable", provider=dyndns_provider)
-            )
-            is_nohostme_or_nohost = False
+    # If this is a nohost.me/noho.st, actually check for availability
+    if not ignore_dyndns and is_yunohost_dyndns_domain(domain):
+        # (Except if the user explicitly said he/she doesn't care about dyndns)
+        if ignore_dyndns:
+            dyndns = False
+        # Check if the domain is available...
+        else:
+            try:
+                available = _dyndns_available(domain)
+            # If an exception is thrown, most likely we don't have internet
+            # connectivity or something. Assume that this domain isn't manageable
+            # and inform the user that we could not contact the dyndns host server.
+            except Exception:
+                logger.warning(
+                    m18n.n(
+                        "dyndns_provider_unreachable", provider="dyndns.yunohost.org"
+                    )
+                )
 
-        # If this is a nohost.me/noho.st, actually check for availability
-        if is_nohostme_or_nohost:
-            # (Except if the user explicitly said he/she doesn't care about dyndns)
-            if ignore_dyndns:
-                dyndns = False
-            # Check if the domain is available...
-            elif _dyndns_available(dyndns_provider, domain):
+            if available:
                 dyndns = True
             # If not, abort the postinstall
             else:
                 raise YunohostValidationError("dyndns_unavailable", domain=domain)
-        else:
-            dyndns = False
     else:
         dyndns = False
 

@@ -95,17 +95,8 @@ ynh_add_fpm_config() {
         ynh_remove_fpm_config
     fi
 
-    # If the requested PHP version is not the default version for YunoHost
-    if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]; then
-        # If the argument --package is used, add the packages to ynh_install_php to install them from sury
-        if [ -n "$package" ]; then
-            local additionnal_packages="--package=$package"
-        else
-            local additionnal_packages=""
-        fi
-        # Install this specific version of PHP.
-        ynh_install_php --phpversion="$phpversion" "$additionnal_packages"
-    elif [ -n "$package" ]; then
+    # Legacy args (packager should just list their php dependency as regular apt dependencies...
+    if [ -n "$package" ]; then
         # Install the additionnal packages from the default repository
         ynh_install_app_dependencies "$package"
     fi
@@ -289,14 +280,16 @@ ynh_remove_fpm_config() {
 
     # If the PHP version used is not the default version for YunoHost
     if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]; then
-        # Remove this specific version of PHP
-        ynh_remove_php
+        # Remove app dependencies ... but ideally should happen via an explicit call from packager
+        ynh_remove_app_dependencies
     fi
 }
 
 # Install another version of PHP.
 #
 # [internal]
+#
+# Legacy, to be remove on bullseye
 #
 # usage: ynh_install_php --phpversion=phpversion [--package=packages]
 # | arg: -v, --phpversion=  - Version of PHP to install.
@@ -318,14 +311,15 @@ ynh_install_php() {
     fi
 
     ynh_install_app_dependencies "$package"
-    ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
 }
 
 # Remove the specific version of PHP used by the app.
 #
 # [internal]
 #
-# usage: ynh_install_php
+# Legacy, to be remove on bullseye
+#
+# usage: ynh_remove_php
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_remove_php () {
@@ -496,7 +490,7 @@ ynh_composer_exec() {
 
     COMPOSER_HOME="$workdir/.composer" COMPOSER_MEMORY_LIMIT=-1 \
         php${phpversion} "$workdir/composer.phar" $commands \
-        -d "$workdir" --quiet --no-interaction
+        -d "$workdir" --no-interaction --no-ansi 2>&1
 }
 
 # Install and initialize Composer in the given directory

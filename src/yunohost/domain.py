@@ -102,7 +102,7 @@ def domain_list(exclude_subdomains=False):
 
 def _assert_domain_exists(domain):
     if domain not in domain_list()["domains"]:
-        raise YunohostValidationError("domain_name_unknown", domain=domain)
+        raise YunohostValidationError("domain_unknown", domain=domain)
 
 
 def _list_subdomains_of(parent_domain):
@@ -167,15 +167,16 @@ def domain_add(operation_logger, domain, dyndns=False):
     # DynDNS domain
     if dyndns:
 
-        from yunohost.dyndns import _dyndns_provides, _guess_current_dyndns_domain
+        from yunohost.utils.dns import is_yunohost_dyndns_domain
+        from yunohost.dyndns import _guess_current_dyndns_domain
 
         # Do not allow to subscribe to multiple dyndns domains...
-        if _guess_current_dyndns_domain("dyndns.yunohost.org") != (None, None):
+        if _guess_current_dyndns_domain() != (None, None):
             raise YunohostValidationError("domain_dyndns_already_subscribed")
 
         # Check that this domain can effectively be provided by
         # dyndns.yunohost.org. (i.e. is it a nohost.me / noho.st)
-        if not _dyndns_provides("dyndns.yunohost.org", domain):
+        if not is_yunohost_dyndns_domain(domain):
             raise YunohostValidationError("domain_dyndns_root_unknown")
 
     operation_logger.start()
@@ -452,14 +453,9 @@ def domain_config_set(
 
 
 class DomainConfigPanel(ConfigPanel):
-    def __init__(self, domain):
-        _assert_domain_exists(domain)
-        self.domain = domain
-        self.save_mode = "diff"
-        super().__init__(
-            config_path=DOMAIN_CONFIG_PATH,
-            save_path=f"{DOMAIN_SETTINGS_DIR}/{domain}.yml",
-        )
+    entity_type = "domain"
+    save_path_tpl = f"{DOMAIN_SETTINGS_DIR}/{{entity}}.yml"
+    save_mode = "diff"
 
     def _get_toml(self):
         from yunohost.dns import _get_registrar_config_section
@@ -467,9 +463,9 @@ class DomainConfigPanel(ConfigPanel):
         toml = super()._get_toml()
 
         toml["feature"]["xmpp"]["xmpp"]["default"] = (
-            1 if self.domain == _get_maindomain() else 0
+            1 if self.entity == _get_maindomain() else 0
         )
-        toml["dns"]["registrar"] = _get_registrar_config_section(self.domain)
+        toml["dns"]["registrar"] = _get_registrar_config_section(self.entity)
 
         # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
         self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]

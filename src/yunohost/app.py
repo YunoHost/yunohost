@@ -1664,14 +1664,9 @@ def app_config_set(
 
 
 class AppConfigPanel(ConfigPanel):
-    def __init__(self, app):
-
-        # Check app is installed
-        _assert_is_installed(app)
-
-        self.app = app
-        config_path = os.path.join(APPS_SETTING_PATH, app, "config_panel.toml")
-        super().__init__(config_path=config_path)
+    entity_type = "app"
+    save_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/settings.yml")
+    config_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/config_panel.toml")
 
     def _load_current_values(self):
         self.values = self._call_config_script("show")
@@ -1695,7 +1690,9 @@ class AppConfigPanel(ConfigPanel):
         from yunohost.hook import hook_exec
 
         # Add default config script if needed
-        config_script = os.path.join(APPS_SETTING_PATH, self.app, "scripts", "config")
+        config_script = os.path.join(
+            APPS_SETTING_PATH, self.entity, "scripts", "config"
+        )
         if not os.path.exists(config_script):
             logger.debug("Adding a default config script")
             default_script = """#!/bin/bash
@@ -1707,15 +1704,15 @@ ynh_app_config_run $1
 
         # Call config script to extract current values
         logger.debug(f"Calling '{action}' action from config script")
-        app_id, app_instance_nb = _parse_app_instance_name(self.app)
+        app_id, app_instance_nb = _parse_app_instance_name(self.entity)
         settings = _get_app_settings(app_id)
         env.update(
             {
                 "app_id": app_id,
-                "app": self.app,
+                "app": self.entity,
                 "app_instance_nb": str(app_instance_nb),
                 "final_path": settings.get("final_path", ""),
-                "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, self.app),
+                "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, self.entity),
             }
         )
 
@@ -2493,6 +2490,7 @@ def _make_environment_for_app_script(
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
         "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?"),
         "YNH_APP_PACKAGING_FORMAT": str(manifest["packaging_format"]),
+        "YNH_ARCH": check_output("dpkg --print-architecture"),
     }
 
     if workdir:

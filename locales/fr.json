@@ -685,7 +685,7 @@
     "domain_dns_registrar_managed_in_parent_domain": "Ce domaine est un sous-domaine de {parent_domain_link}. La configuration du registrar DNS doit être gérée dans le panneau de configuration de {parent_domain}.",
     "domain_dns_registrar_not_supported": "YunoHost n'a pas pu détecter automatiquement le bureau d'enregistrement gérant ce domaine. Vous devez configurer manuellement vos enregistrements DNS en suivant la documentation sur https://yunohost.org/dns.",
     "domain_dns_registrar_experimental": "Jusqu'à présent, l'interface avec l'API de **{registrar}** n'a pas été correctement testée et revue par la communauté YunoHost. L'assistance est **très expérimentale** - soyez prudent !",
-    "domain_dns_push_failed_to_authenticate": "Échec de l'authentification sur l'API du bureau d'enregistrement pour le domaine « {domain} ». Très probablement les informations d'identification sont incorrectes ? (Erreur : {error})",
+    "domain_dns_push_failed_to_authenticate": "Échec de l'authentification sur l'API du registrar qui gère votre nom de domaine internet pour '{domain}'. Il est très probable que les informations d'identification soient incorrectes ? (Erreur : {error})",
     "domain_dns_push_failed_to_list": "Échec de la liste des enregistrements actuels à l'aide de l'API du registraire : {error}",
     "domain_dns_push_already_up_to_date": "Dossiers déjà à jour.",
     "domain_dns_pushing": "Transmission des enregistrements DNS...",
@@ -709,5 +709,6 @@
     "diagnosis_http_special_use_tld": "Le domaine {domain} est basé sur un domaine de premier niveau (TLD) à usage spécial tel que .local ou .test et n'est donc pas censé être exposé en dehors du réseau local.",
     "domain_dns_conf_special_use_tld": "Ce domaine est basé sur un domaine de premier niveau (TLD) à usage spécial tel que .local ou .test et ne devrait donc pas avoir d'enregistrements DNS réels.",
     "other_available_options": "... et {n} autres options disponibles non affichées",
-    "domain_config_auth_consumer_key": "Consumer key"
+    "domain_config_auth_consumer_key": "Consumer key",
+    "domain_unknown": "Domaine '{domain}' inconnu"
 }

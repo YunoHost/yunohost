@@ -709,5 +709,6 @@
     "other_available_options": "...і {n} інших доступних опцій, які не показано",
     "domain_dns_pushing": "Передання записів DNS...",
     "ldap_attribute_already_exists": "Атрибут LDAP '{attribute}' вже існує зі значенням '{value}'",
-    "domain_dns_push_already_up_to_date": "Записи вже оновлені, нічого не потрібно робити."
+    "domain_dns_push_already_up_to_date": "Записи вже оновлені, нічого не потрібно робити.",
+    "domain_unknown": "Домен '{domain}' є невідомим"
 }
