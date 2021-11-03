@@ -59,6 +59,7 @@ from yunohost.utils.config import (
     DomainQuestion,
     PathQuestion,
 )
+from yunohost.utils.resources import AppResourceSet
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.filesystem import free_space_in_directory
@@ -803,6 +804,7 @@ def app_install(
 
     confirm_install(app)
     manifest, extracted_app_folder = _extract_app(app)
+    packaging_format = manifest["packaging_format"]
 
     # Check ID
     if "id" not in manifest or "__" in manifest["id"] or "." in manifest["id"]:
@@ -827,7 +829,7 @@ def app_install(
         app_instance_name = app_id
 
     # Retrieve arguments list for install script
-    raw_questions = manifest.get("arguments", {}).get("install", {})
+    raw_questions = manifest["install"]
     questions = ask_questions_and_parse_answers(raw_questions, prefilled_answers=args)
     args = {
         question.name: question.value
@@ -836,11 +838,12 @@ def app_install(
     }
 
     # Validate domain / path availability for webapps
-    path_requirement = _guess_webapp_path_requirement(extracted_app_folder)
-    _validate_webpath_requirement(args, path_requirement)
+    if packaging_format < 2:
+        path_requirement = _guess_webapp_path_requirement(extracted_app_folder)
+        _validate_webpath_requirement(args, path_requirement)
 
-    # Attempt to patch legacy helpers ...
-    _patch_legacy_helpers(extracted_app_folder)
+        # Attempt to patch legacy helpers ...
+        _patch_legacy_helpers(extracted_app_folder)
 
     # Apply dirty patch to make php5 apps compatible with php7
     _patch_legacy_php_versions(extracted_app_folder)
@@ -870,7 +873,6 @@ def app_install(
     }
 
     # If packaging_format v2+, save all install questions as settings
-    packaging_format = int(manifest.get("packaging_format", 0))
     if packaging_format >= 2:
         for arg_name, arg_value in args.items():
 
@@ -891,17 +893,23 @@ def app_install(
                 recursive=True,
             )
 
-    # Initialize the main permission for the app
-    # The permission is initialized with no url associated, and with tile disabled
-    # For web app, the root path of the app will be added as url and the tile
-    # will be enabled during the app install. C.f. 'app_register_url()' below.
-    permission_create(
-        app_instance_name + ".main",
-        allowed=["all_users"],
-        label=label,
-        show_tile=False,
-        protected=False,
-    )
+
+    resources = AppResourceSet(manifest["resources"], app_instance_name)
+    resources.check_availability()
+    resources.provision()
+
+    if packaging_format < 2:
+        # Initialize the main permission for the app
+        # The permission is initialized with no url associated, and with tile disabled
+        # For web app, the root path of the app will be added as url and the tile
+        # will be enabled during the app install. C.f. 'app_register_url()' below.
+        permission_create(
+            app_instance_name + ".main",
+            allowed=["all_users"],
+            label=label,
+            show_tile=False,
+            protected=False,
+        )
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(
@@ -2354,13 +2362,13 @@ def _guess_webapp_path_requirement(app_folder: str) -> str:
     # is an available url and normalize the path.
 
     manifest = _get_manifest_of_app(app_folder)
-    raw_questions = manifest.get("arguments", {}).get("install", {})
+    raw_questions = manifest["install"]
 
     domain_questions = [
-        question for question in raw_questions if question.get("type") == "domain"
+        question for question in raw_questions.values() if question.get("type") == "domain"
     ]
     path_questions = [
-        question for question in raw_questions if question.get("type") == "path"
+        question for question in raw_questions.values() if question.get("type") == "path"
     ]
 
     if len(domain_questions) == 0 and len(path_questions) == 0:

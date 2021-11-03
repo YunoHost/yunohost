@@ -27,15 +27,37 @@ from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.filesystem import free_space_in_directory
 
 
-class AppResource:
+class AppResource(object):
 
-    def __init__(self, properties: Dict[str, Any], app_id: str, app_settings):
+    def __init__(self, properties: Dict[str, Any], app_id: str):
+
+        self.app_id = app_id
 
         for key, value in self.default_properties.items():
             setattr(self, key, value)
 
-        for key, value in properties:
-            setattr(self. key, value)
+        for key, value in properties.items():
+            setattr(self, key, value)
+
+    def get_app_settings(self):
+        from yunohost.app import _get_app_settings
+        return _get_app_settings(self.app_id)
+
+    def check_availability(self, context: Dict):
+        pass
+
+
+class AppResourceSet:
+
+    def __init__(self, resources_dict: Dict[str, Dict[str, Any]], app_id: str):
+
+        self.set = {name: AppResourceClassesByType[name](infos, app_id)
+                    for name, infos in resources_dict.items()}
+
+    def check_availability(self):
+
+        for name, resource in self.set.items():
+            resource.check_availability(context={})
 
 
 M = 1024 ** 2
@@ -68,18 +90,15 @@ class DiskAppResource(AppResource):
     }
 
     def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         # FIXME: better error handling
         assert self.space in sizes
 
-    def provision_or_update(self, context: Dict):
+    def assert_availability(self, context: Dict):
 
         if free_space_in_directory("/") <= sizes[self.space] \
         or free_space_in_directory("/var") <= sizes[self.space]:
             raise YunohostValidationError("Not enough disk space")  # FIXME: i18n / better messaging
-
-    def deprovision(self, context: Dict):
-        pass
 
 
 class RamAppResource(AppResource):
@@ -92,13 +111,13 @@ class RamAppResource(AppResource):
     }
 
     def __init__(self, *args, **kwargs):
-        super().__init__(self, *args, **kwargs)
+        super().__init__(*args, **kwargs)
         # FIXME: better error handling
         assert self.build in sizes
         assert self.runtime in sizes
         assert isinstance(self.include_swap, bool)
 
-    def provision_or_update(self, context: Dict):
+    def assert_availability(self, context: Dict):
 
         memory = psutil.virtual_memory().available
         if self.include_swap:
@@ -109,37 +128,78 @@ class RamAppResource(AppResource):
         if memory <= max_size:
             raise YunohostValidationError("Not enough RAM/swap")  # FIXME: i18n / better messaging
 
-    def deprovision(self, context: Dict):
+
+class AptDependenciesAppResource(AppResource):
+    type = "apt"
+
+    default_properties = {
+        "packages": [],
+        "extras": {}
+    }
+
+    def check_availability(self, context):
+        # ? FIXME
+        # call helpers idk ...
+        pass
+
+class SourcesAppResource(AppResource):
+    type = "sources"
+
+    default_properties = {
+        "main": {"url": "?", "sha256sum": "?", "predownload": True}
+    }
+
+    def check_availability(self, context):
+        # ? FIXME
+        # call request.head on the url idk
         pass
 
 
-class WebpathAppResource(AppResource):
-    type = "webpath"
+class RoutesAppResource(AppResource):
+    type = "routes"
 
     default_properties = {
-        "url": "__DOMAIN____PATH__"
+        "full_domain": False,
+        "main": {
+            "url": "/",
+            "additional_urls": [],
+            "init_allowed": "__FIXME__",
+            "show_tile": True,
+            "protected": False,
+            "auth_header": True,
+            "label": "FIXME",
+        }
     }
 
-    def provision_or_update(self, context: Dict):
+    def check_availability(self, context):
 
         from yunohost.app import _assert_no_conflicting_apps
 
-        # Check the url is available
-        domain = context["app_settings"]["domain"]
-        path = context["app_settings"]["path"] or "/"
-        _assert_no_conflicting_apps(domain, path, ignore_app=context["app"])
-        context["app_settings"]["path"] = path
+        app_settings = self.get_app_settings()
+        domain = app_settings["domain"]
+        path = app_settings["path"] if not self.full_domain else "/"
+        _assert_no_conflicting_apps(domain, path, ignore_app=self.app_id)
+
+    def provision_or_update(self, context: Dict):
 
         if context["app_action"] == "install":
+            pass # FIXME
             # Initially, the .main permission is created with no url at all associated
             # When the app register/books its web url, we also add the url '/'
             # (meaning the root of the app, domain.tld/path/)
             # and enable the tile to the SSO, and both of this should match 95% of apps
             # For more specific cases, the app is free to change / add urls or disable
             # the tile using the permission helpers.
-            permission_url(app + ".main", url="/", sync_perm=False)
-            user_permission_update(app + ".main", show_tile=True, sync_perm=False)
-            permission_sync_to_user()
+            #permission_create(
+            #    self.app_id + ".main",
+            #    allowed=["all_users"],
+            #    label=label,
+            #    show_tile=False,
+            #    protected=False,
+            #)
+            #permission_url(app + ".main", url="/", sync_perm=False)
+            #user_permission_update(app + ".main", show_tile=True, sync_perm=False)
+            #permission_sync_to_user()
 
     def deprovision(self, context: Dict):
         del context["app_settings"]["domain"]
@@ -177,8 +237,8 @@ class PortAppResource(AppResource):
         raise NotImplementedError()
 
 
-class UserAppResource(AppResource):
-    type = "user"
+class SystemuserAppResource(AppResource):
+    type = "system_user"
 
     default_properties = {
         "username": "__APP__",
@@ -186,6 +246,12 @@ class UserAppResource(AppResource):
         "use_shell": False,
         "groups": []
     }
+
+    def check_availability(self, context):
+        if os.system(f"getent passwd {self.username} &>/dev/null") != 0:
+            raise YunohostValidationError(f"User {self.username} already exists")
+        if os.system(f"getent group {self.username} &>/dev/null") != 0:
+            raise YunohostValidationError(f"Group {self.username} already exists")
 
     def provision_or_update(self, context: str):
         raise NotImplementedError()
@@ -195,12 +261,18 @@ class UserAppResource(AppResource):
 
 
 class InstalldirAppResource(AppResource):
-    type = "installdir"
+    type = "install_dir"
 
     default_properties = {
-        "dir": "/var/www/__APP__",
+        "dir": "/var/www/__APP__",    # FIXME or choose to move this elsewhere nowadays idk...
         "alias": "final_path"
     }
+
+    # FIXME: change default dir to /opt/stuff if app ain't a webapp ...
+
+    def check_availability(self, context):
+        if os.path.exists(self.dir):
+            raise YunohostValidationError(f"Folder {self.dir} already exists")
 
     def provision_or_update(self, context: Dict):
 
@@ -218,11 +290,15 @@ class InstalldirAppResource(AppResource):
 
 
 class DatadirAppResource(AppResource):
-    type = "datadir"
+    type = "data_dir"
 
     default_properties = {
-        "dir": "/home/yunohost.app/__APP__",
+        "dir": "/home/yunohost.app/__APP__",    # FIXME or choose to move this elsewhere nowadays idk...
     }
+
+    def check_availability(self, context):
+        if os.path.exists(self.dir):
+            raise YunohostValidationError(f"Folder {self.dir} already exists")
 
     def provision_or_update(self, context: Dict):
         if "datadir" not in context["app_settings"]:
@@ -240,8 +316,16 @@ class DBAppResource(AppResource):
         "type": "mysql"
     }
 
+    def check_availability(self, context):
+        # FIXME : checking availability sort of imply that mysql / postgresql is installed
+        # or we gotta make sure mariadb-server or postgresql is gonna be installed (apt resource)
+        pass
+
     def provision_or_update(self, context: str):
         raise NotImplementedError()
 
     def deprovision(self, context: Dict):
         raise NotImplementedError()
+
+
+AppResourceClassesByType = {c.type: c for c in AppResource.__subclasses__()}
