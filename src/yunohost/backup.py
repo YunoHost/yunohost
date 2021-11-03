@@ -39,9 +39,8 @@ from functools import reduce
 from packaging import version
 
 from moulinette import Moulinette, m18n
-from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml
+from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml, rm, chown, chmod
 from moulinette.utils.process import check_output
 
 import yunohost.domain
@@ -67,8 +66,12 @@ from yunohost.tools import (
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger, is_unit_operation
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.packages import ynh_packages_version
-from yunohost.utils.filesystem import free_space_in_directory
+from yunohost.utils.system import (
+    free_space_in_directory,
+    get_ynh_package_version,
+    binary_to_human,
+    space_used_by_directory,
+)
 from yunohost.settings import settings_get
 
 BACKUP_PATH = "/home/yunohost.backup"
@@ -312,7 +315,7 @@ class BackupManager:
             "size_details": self.size_details,
             "apps": self.apps_return,
             "system": self.system_return,
-            "from_yunohost_version": ynh_packages_version()["yunohost"]["version"],
+            "from_yunohost_version": get_ynh_package_version("yunohost")["version"],
         }
 
     @property
@@ -342,7 +345,7 @@ class BackupManager:
         # FIXME replace isdir by exists ? manage better the case where the path
         # exists
         if not os.path.isdir(self.work_dir):
-            filesystem.mkdir(self.work_dir, 0o750, parents=True, uid="admin")
+            mkdir(self.work_dir, 0o750, parents=True, uid="admin")
         elif self.is_tmp_work_dir:
 
             logger.debug(
@@ -357,8 +360,8 @@ class BackupManager:
                 # If umount succeeded, remove the directory (we checked that
                 # we're in /home/yunohost.backup/tmp so that should be okay...
                 # c.f. method clean() which also does this)
-                filesystem.rm(self.work_dir, recursive=True, force=True)
-                filesystem.mkdir(self.work_dir, 0o750, parents=True, uid="admin")
+                rm(self.work_dir, recursive=True, force=True)
+                mkdir(self.work_dir, 0o750, parents=True, uid="admin")
 
     #
     # Backup target management                                              #
@@ -535,7 +538,7 @@ class BackupManager:
         successfull_system = self.targets.list("system", include=["Success", "Warning"])
 
         if not successfull_apps and not successfull_system:
-            filesystem.rm(self.work_dir, True, True)
+            rm(self.work_dir, True, True)
             raise YunohostError("backup_nothings_done")
 
         # Add unlisted files from backup tmp dir
@@ -647,7 +650,7 @@ class BackupManager:
 
         restore_hooks_dir = os.path.join(self.work_dir, "hooks", "restore")
         if not os.path.exists(restore_hooks_dir):
-            filesystem.mkdir(restore_hooks_dir, mode=0o700, parents=True, uid="root")
+            mkdir(restore_hooks_dir, mode=0o700, parents=True, uid="root")
 
         restore_hooks = hook_list("restore")["hooks"]
 
@@ -714,7 +717,7 @@ class BackupManager:
         tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
         try:
             # Prepare backup directory for the app
-            filesystem.mkdir(tmp_app_bkp_dir, 0o700, True, uid="root")
+            mkdir(tmp_app_bkp_dir, 0o700, True, uid="root")
 
             # Copy the app settings to be able to call _common.sh
             shutil.copytree(app_setting_path, settings_dir)
@@ -753,7 +756,7 @@ class BackupManager:
         # Remove tmp files in all situations
         finally:
             shutil.rmtree(tmp_workdir_for_app)
-            filesystem.rm(env_dict["YNH_BACKUP_CSV"], force=True)
+            rm(env_dict["YNH_BACKUP_CSV"], force=True)
 
     #
     # Actual backup archive creation / method management                    #
@@ -796,7 +799,7 @@ class BackupManager:
             if row["dest"] == "info.json":
                 continue
 
-            size = disk_usage(row["source"])
+            size = space_used_by_directory(row["source"], follow_symlinks=False)
 
             # Add size to apps details
             splitted_dest = row["dest"].split("/")
@@ -945,7 +948,7 @@ class RestoreManager:
             ret = subprocess.call(["umount", self.work_dir])
             if ret != 0:
                 logger.warning(m18n.n("restore_cleaning_failed"))
-        filesystem.rm(self.work_dir, recursive=True, force=True)
+        rm(self.work_dir, recursive=True, force=True)
 
     #
     # Restore target manangement                                            #
@@ -975,7 +978,7 @@ class RestoreManager:
         available_restore_system_hooks = hook_list("restore")["hooks"]
 
         custom_restore_hook_folder = os.path.join(CUSTOM_HOOK_FOLDER, "restore")
-        filesystem.mkdir(custom_restore_hook_folder, 755, parents=True, force=True)
+        mkdir(custom_restore_hook_folder, 755, parents=True, force=True)
 
         for system_part in target_list:
             # By default, we'll use the restore hooks on the current install
@@ -1080,7 +1083,7 @@ class RestoreManager:
             else:
                 raise YunohostError("restore_removing_tmp_dir_failed")
 
-        filesystem.mkdir(self.work_dir, parents=True)
+        mkdir(self.work_dir, parents=True)
 
         self.method.mount()
 
@@ -1398,7 +1401,7 @@ class RestoreManager:
 
         # Delete _common.sh file in backup
         common_file = os.path.join(app_backup_in_archive, "_common.sh")
-        filesystem.rm(common_file, force=True)
+        rm(common_file, force=True)
 
         # Check if the app has a restore script
         app_restore_script_in_archive = os.path.join(app_scripts_in_archive, "restore")
@@ -1414,14 +1417,14 @@ class RestoreManager:
             )
             app_scripts_new_path = os.path.join(app_settings_new_path, "scripts")
             shutil.copytree(app_settings_in_archive, app_settings_new_path)
-            filesystem.chmod(app_settings_new_path, 0o400, 0o400, True)
-            filesystem.chown(app_scripts_new_path, "root", None, True)
+            chmod(app_settings_new_path, 0o400, 0o400, True)
+            chown(app_scripts_new_path, "root", None, True)
 
             # Copy the app scripts to a writable temporary folder
             tmp_workdir_for_app = _make_tmp_workdir_for_app()
             copytree(app_scripts_in_archive, tmp_workdir_for_app)
-            filesystem.chmod(tmp_workdir_for_app, 0o700, 0o700, True)
-            filesystem.chown(tmp_workdir_for_app, "root", None, True)
+            chmod(tmp_workdir_for_app, 0o700, 0o700, True)
+            chown(tmp_workdir_for_app, "root", None, True)
             restore_script = os.path.join(tmp_workdir_for_app, "restore")
 
             # Restore permissions
@@ -1724,7 +1727,7 @@ class BackupMethod(object):
                 raise YunohostError("backup_cleaning_failed")
 
         if self.manager.is_tmp_work_dir:
-            filesystem.rm(self.work_dir, True, True)
+            rm(self.work_dir, True, True)
 
     def _check_is_enough_free_space(self):
         """
@@ -1772,11 +1775,11 @@ class BackupMethod(object):
 
             # Be sure the parent dir of destination exists
             if not os.path.isdir(dest_dir):
-                filesystem.mkdir(dest_dir, parents=True)
+                mkdir(dest_dir, parents=True)
 
             # For directory, attempt to mount bind
             if os.path.isdir(src):
-                filesystem.mkdir(dest, parents=True, force=True)
+                mkdir(dest, parents=True, force=True)
 
                 try:
                     subprocess.check_call(["mount", "--rbind", src, dest])
@@ -1830,7 +1833,7 @@ class BackupMethod(object):
         # to mounting error
 
         # Compute size to copy
-        size = sum(disk_usage(path["source"]) for path in paths_needed_to_be_copied)
+        size = sum(space_used_by_directory(path["source"], follow_symlinks=False) for path in paths_needed_to_be_copied)
         size /= 1024 * 1024  # Convert bytes to megabytes
 
         # Ask confirmation for copying
@@ -1882,7 +1885,7 @@ class CopyBackupMethod(BackupMethod):
 
             dest_parent = os.path.dirname(dest)
             if not os.path.exists(dest_parent):
-                filesystem.mkdir(dest_parent, 0o700, True, uid="admin")
+                mkdir(dest_parent, 0o700, True, uid="admin")
 
             if os.path.isdir(source):
                 shutil.copytree(source, dest)
@@ -1900,7 +1903,7 @@ class CopyBackupMethod(BackupMethod):
         if not os.path.isdir(self.repo):
             raise YunohostError("backup_no_uncompress_archive_dir")
 
-        filesystem.mkdir(self.work_dir, parent=True)
+        mkdir(self.work_dir, parent=True)
         ret = subprocess.call(["mount", "-r", "--rbind", self.repo, self.work_dir])
         if ret == 0:
             return
@@ -1944,7 +1947,7 @@ class TarBackupMethod(BackupMethod):
         """
 
         if not os.path.exists(self.repo):
-            filesystem.mkdir(self.repo, 0o750, parents=True, uid="admin")
+            mkdir(self.repo, 0o750, parents=True, uid="admin")
 
         # Check free space in output
         self._check_is_enough_free_space()
@@ -2667,32 +2670,3 @@ def _recursive_umount(directory):
             continue
 
     return everything_went_fine
-
-
-def disk_usage(path):
-    # We don't do this in python with os.stat because we don't want
-    # to follow symlinks
-
-    du_output = check_output(["du", "-sb", path], shell=False)
-    return int(du_output.split()[0])
-
-
-def binary_to_human(n, customary=False):
-    """
-    Convert bytes or bits into human readable format with binary prefix
-    Keyword argument:
-        n -- Number to convert
-        customary -- Use customary symbol instead of IEC standard
-    """
-    symbols = ("Ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi", "Yi")
-    if customary:
-        symbols = ("K", "M", "G", "T", "P", "E", "Z", "Y")
-    prefix = {}
-    for i, s in enumerate(symbols):
-        prefix[s] = 1 << (i + 1) * 10
-    for s in reversed(symbols):
-        if n >= prefix[s]:
-            value = float(n) / prefix[s]
-            return "%.1f%s" % (value, s)
-    return "%s" % n
-

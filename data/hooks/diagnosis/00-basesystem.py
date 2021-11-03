@@ -7,7 +7,11 @@ import subprocess
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file, read_json, write_to_json
 from yunohost.diagnosis import Diagnoser
-from yunohost.utils.packages import ynh_packages_version
+from yunohost.utils.system import (
+    ynh_packages_version,
+    system_virt,
+    system_arch,
+)
 
 
 class BaseSystemDiagnoser(Diagnoser):
@@ -18,15 +22,12 @@ class BaseSystemDiagnoser(Diagnoser):
 
     def run(self):
 
-        # Detect virt technology (if not bare metal) and arch
-        # Gotta have this "|| true" because it systemd-detect-virt return 'none'
-        # with an error code on bare metal ~.~
-        virt = check_output("systemd-detect-virt || true", shell=True)
+        virt = system_virt()
         if virt.lower() == "none":
             virt = "bare-metal"
 
         # Detect arch
-        arch = check_output("dpkg --print-architecture")
+        arch = system_arch()
         hardware = dict(
             meta={"test": "hardware"},
             status="INFO",

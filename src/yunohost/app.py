@@ -53,7 +53,6 @@ from moulinette.utils.filesystem import (
     chmod,
 )
 
-from yunohost.utils.packages import dpkg_is_broken, get_ynh_package_version
 from yunohost.utils.config import (
     ConfigPanel,
     ask_questions_and_parse_answers,
@@ -63,7 +62,15 @@ from yunohost.utils.config import (
 from yunohost.utils.resources import AppResourceSet
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.filesystem import free_space_in_directory
+from yunohost.utils.system import (
+    free_space_in_directory,
+    dpkg_is_broken,
+    get_ynh_package_version,
+    system_arch,
+    human_to_binary,
+    binary_to_human,
+    ram_available,
+)
 from yunohost.log import is_unit_operation, OperationLogger
 from yunohost.app_catalog import (  # noqa
     app_catalog,
@@ -179,9 +186,7 @@ def app_info(app, full=False):
     ret["supports_backup_restore"] = os.path.exists(
         os.path.join(setting_path, "scripts", "backup")
     ) and os.path.exists(os.path.join(setting_path, "scripts", "restore"))
-    ret["supports_multi_instance"] = is_true(
-        local_manifest.get("integration", {}).get("multi_instance", False)
-    )
+    ret["supports_multi_instance"] = local_manifest.get("integration", {}).get("multi_instance", False)
     ret["supports_config_panel"] = os.path.exists(
         os.path.join(setting_path, "config_panel.toml")
     )
@@ -1993,7 +1998,7 @@ def _convert_v1_manifest_to_v2(manifest):
     manifest["integration"] = {
         "yunohost": manifest.get("requirements", {}).get("yunohost", "").replace(">", "").replace("=", "").replace(" ", ""),
         "architectures": "all",
-        "multi_instance": is_true(manifest.get("multi_instance", False)),
+        "multi_instance": manifest.get("multi_instance", False),
         "ldap": "?",
         "sso": "?",
         "disk": "50M",
@@ -2314,12 +2319,12 @@ def _check_manifest_requirements(manifest: Dict, action: str):
 
     app_id = manifest["id"]
 
-    logger.debug(m18n.n("app_requirements_checking", app=app))
+    logger.debug(m18n.n("app_requirements_checking", app=app_id))
 
     # Yunohost version requirement
 
     yunohost_requirement = version.parse(manifest["integration"]["yunohost"] or "4.3")
-    yunohost_installed_version = get_ynh_package_version("yunohost")["version"]
+    yunohost_installed_version = version.parse(get_ynh_package_version("yunohost")["version"])
     if yunohost_requirement > yunohost_installed_version:
         # FIXME : i18n
         raise YunohostValidationError(f"This app requires Yunohost >= {yunohost_requirement} but current installed version is {yunohost_installed_version}")
@@ -2327,7 +2332,7 @@ def _check_manifest_requirements(manifest: Dict, action: str):
     # Architectures
     arch_requirement = manifest["integration"]["architectures"]
     if arch_requirement != "all":
-        arch = check_output("dpkg --print-architecture")
+        arch = system_arch()
         if arch not in arch_requirement:
             # FIXME: i18n
             raise YunohostValidationError(f"This app can only be installed on architectures {', '.join(arch_requirement)} but your server architecture is {arch}")
@@ -2343,23 +2348,23 @@ def _check_manifest_requirements(manifest: Dict, action: str):
     if action == "install":
         disk_requirement = manifest["integration"]["disk"]
 
-        if free_space_in_directory("/") <= human_to_binary[disk_requirement] \
-        or free_space_in_directory("/var") <= human_to_binary[disk_requirement]:
+        if free_space_in_directory("/") <= human_to_binary(disk_requirement) \
+        or free_space_in_directory("/var") <= human_to_binary(disk_requirement):
             # FIXME : i18m
-            raise YunohostValidationError("This app requires {disk_requirement} free space.")
+            raise YunohostValidationError(f"This app requires {disk_requirement} free space.")
 
     # Ram for build
-    import psutil
     ram_build_requirement = manifest["integration"]["ram"]["build"]
     ram_include_swap = manifest["integration"]["ram"]["include_swap"]
 
-    ram_available = psutil.virtual_memory().available
+    ram, swap = ram_available()
     if ram_include_swap:
-        ram_available += psutil.swap_memory().available
+        ram += swap
 
-    if ram_available < human_to_binary(ram_build_requirement):
+    if ram < human_to_binary(ram_build_requirement):
         # FIXME : i18n
-        raise YunohostValidationError("This app requires {ram_build_requirement} RAM available to install/upgrade")
+        ram_human = binary_to_human(ram)
+        raise YunohostValidationError(f"This app requires {ram_build_requirement} RAM to install/upgrade but only {ram_human} is available right now.")
 
 
 def _guess_webapp_path_requirement(app_folder: str) -> str:
@@ -2499,7 +2504,7 @@ def _make_environment_for_app_script(
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
         "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?"),
         "YNH_APP_PACKAGING_FORMAT": str(manifest["packaging_format"]),
-        "YNH_ARCH": check_output("dpkg --print-architecture"),
+        "YNH_ARCH": system_arch(),
     }
 
     if workdir:
@@ -2607,26 +2612,6 @@ def _make_tmp_workdir_for_app(app=None):
     return tmpdir
 
 
-def is_true(arg):
-    """
-    Convert a string into a boolean
-
-    Keyword arguments:
-        arg -- The string to convert
-
-    Returns:
-        Boolean
-
-    """
-    if isinstance(arg, bool):
-        return arg
-    elif isinstance(arg, str):
-        return arg.lower() in ["yes", "true", "on"]
-    else:
-        logger.debug("arg should be a boolean or a string, got %r", arg)
-        return True if arg else False
-
-
 def unstable_apps():
 
     output = []
@@ -2703,24 +2688,3 @@ def _assert_system_is_sane_for_app(manifest, when):
         elif when == "post":
             raise YunohostError("this_action_broke_dpkg")
 
-
-
-def human_to_binary(size: str) -> int:
-
-    symbols = ("K", "M", "G", "T", "P", "E", "Z", "Y")
-    factor = {}
-    for i, s in enumerate(symbols):
-        factor[s] = 1 << (i + 1) * 10
-
-    suffix = size[-1]
-    size = size[:-1]
-
-    if suffix not in symbols:
-        raise YunohostError(f"Invalid size suffix '{suffix}', expected one of {symbols}")
-
-    try:
-        size = float(size)
-    except Exception:
-        raise YunohostError(f"Failed to convert size {size} to float")
-
-    return size * factor[suffix]

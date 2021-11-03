@@ -43,7 +43,7 @@ _global:
             help: Display YunoHost packages versions
             action: callback
             callback:
-                method: yunohost.utils.packages.ynh_packages_version
+                method: yunohost.utils.system.ynh_packages_version
                 return: true
 
 #############################
