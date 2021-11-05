@@ -11,10 +11,13 @@ _generate_config() {
         [[ "$domain" =~ ^[^.]+\.local$ ]] || continue
         echo "    - $domain"
     done
-    for localalias in $(cat /etc/yunohost/mdns.aliases | grep -v "^ *$")
-    do
-        echo "    - $localalias.local"
-    done
+    if [[ -e /etc/yunohot/mdns.aliases ]]
+    then
+        for localalias in $(cat /etc/yunohost/mdns.aliases | grep -v "^ *$")
+        do
+            echo "    - $localalias.local"
+        done
+    fi
 }
 
 do_init_regen() {
