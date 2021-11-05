@@ -1,3 +1,12 @@
+yunohost (4.3.2) stable; urgency=low
+
+  - Release as stable
+  - [i18n] Translations updated for Basque, Occitan
+
+  Thanks to all contributors <3 ! (punkrockgirl, Quentí)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Nov 2021 02:32:56 +0100
+
 yunohost (4.3.1.8) testing; urgency=low
 
   - [enh] dyndns: Drop some YAGNI + improve IPv6-only support + resilience w.r.t. ns0 / ns1 being down (a61d0231, [#1367](https://github.com/YunoHost/yunohost/pull/1367))
