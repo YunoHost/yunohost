@@ -1,3 +1,9 @@
+yunohost (4.3.2.2) stable; urgency=low
+
+  - [fix] nginx: Try to fix again the webadmin cache hell (74e2a51e)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Nov 2021 17:39:58 +0100
+
 yunohost (4.3.2.1) stable; urgency=low
 
   - [enh] mdns: Add possibility to manually add .local aliases via /etc/yunohost/mdns.aliases (meant for internetcube) (3da2df6e)
