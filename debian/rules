@@ -13,7 +13,7 @@ override_dh_auto_build:
 	python3 doc/generate_manpages.py --gzip --output doc/yunohost.8.gz
 
 override_dh_installinit:
-	dh_installinit -pyunohost --name=yunohost-api --restart-after-upgrade
+	dh_installinit -pyunohost --name=yunohost-api --noscripts
 	dh_installinit -pyunohost --name=yunohost-firewall --noscripts
 
 override_dh_systemd_enable:
