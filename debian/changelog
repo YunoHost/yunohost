@@ -1,3 +1,11 @@
+yunohost (4.3.2.1) stable; urgency=low
+
+  - [enh] mdns: Add possibility to manually add .local aliases via /etc/yunohost/mdns.aliases (meant for internetcube) (3da2df6e)
+  - [fix] debian: Fix conflict with redis-server (6558b23d)
+  - [fix] nginx: Refine experimental CSP header (in the end still gotta enable unsafe-inline and unsafe-eval for a bunch of things, but better than no policy at all...) (1cc3e440)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Nov 2021 16:58:07 +0100
+
 yunohost (4.3.2) stable; urgency=low
 
   - Release as stable
