@@ -42,12 +42,36 @@ from yunohost.utils.packages import get_ynh_package_version
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml
 
+logger = getActionLogger("yunohost.log")
+
 CATEGORIES_PATH = "/var/log/yunohost/categories/"
 OPERATIONS_PATH = "/var/log/yunohost/categories/operation/"
 METADATA_FILE_EXT = ".yml"
 LOG_FILE_EXT = ".log"
 
-logger = getActionLogger("yunohost.log")
+BORING_LOG_LINES = [
+    r"set [+-]x$",
+    r"set [+-]o xtrace$",
+    r"set [+-]o errexit$",
+    r"set [+-]o nounset$",
+    r"trap '' EXIT",
+    r"local \w+$",
+    r"local exit_code=(1|0)$",
+    r"local legacy_args=.*$",
+    r"local -A args_array$",
+    r"args_array=.*$",
+    r"ret_code=1",
+    r".*Helper used in legacy mode.*",
+    r"ynh_handle_getopts_args",
+    r"ynh_script_progression",
+    r"sleep 0.5",
+    r"'\[' (1|0) -eq (1|0) '\]'$",
+    r"\[?\['? -n '' '?\]\]?$",
+    r"rm -rf /var/cache/yunohost/download/$",
+    r"type -t ynh_clean_setup$",
+    r"DEBUG - \+ echo '",
+    r"DEBUG - \+ exit (1|0)$",
+]
 
 
 def log_list(limit=None, with_details=False, with_suboperations=False):
@@ -163,30 +187,7 @@ def log_show(
     if filter_irrelevant:
 
         def _filter(lines):
-            filters = [
-                r"set [+-]x$",
-                r"set [+-]o xtrace$",
-                r"set [+-]o errexit$",
-                r"set [+-]o nounset$",
-                r"trap '' EXIT",
-                r"local \w+$",
-                r"local exit_code=(1|0)$",
-                r"local legacy_args=.*$",
-                r"local -A args_array$",
-                r"args_array=.*$",
-                r"ret_code=1",
-                r".*Helper used in legacy mode.*",
-                r"ynh_handle_getopts_args",
-                r"ynh_script_progression",
-                r"sleep 0.5",
-                r"'\[' (1|0) -eq (1|0) '\]'$",
-                r"\[?\['? -n '' '?\]\]?$",
-                r"rm -rf /var/cache/yunohost/download/$",
-                r"type -t ynh_clean_setup$",
-                r"DEBUG - \+ echo '",
-                r"DEBUG - \+ exit (1|0)$",
-            ]
-            filters = [re.compile(f) for f in filters]
+            filters = [re.compile(f) for f in BORING_LOG_LINES]
             return [
                 line
                 for line in lines
@@ -738,40 +739,31 @@ class OperationLogger(object):
         with open(self.log_path, "r") as f:
             lines = f.readlines()
 
-        filters = [
-            r"set [+-]x$",
-            r"set [+-]o xtrace$",
-            r"local \w+$",
-            r"local legacy_args=.*$",
-            r".*Helper used in legacy mode.*",
-            r"args_array=.*$",
-            r"local -A args_array$",
-            r"ynh_handle_getopts_args",
-            r"ynh_script_progression",
-        ]
-
-        filters = [re.compile(f_) for f_ in filters]
+        # A line typically looks like
+        # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
+        # And we just want the part starting by "DEBUG - "
+        lines = [line for line in lines if ":" in line.strip()]
+        lines = [line.strip().split(": ", 1)[1] for line in lines]
+        # And we ignore boring/irrelevant lines
+        # Annnnnnd we also ignore lines matching [number] + such as
+        # 72971 [37m[1mDEBUG [m29739 + ynh_exit_properly
+        # which are lines from backup-before-upgrade or restore-after-failed-upgrade ...
+        filters = [re.compile(f_) for f_ in BORING_LOG_LINES]
+        filters.append(re.compile(r'\d+ \+ '))
+        lines = [line for line in lines if not any(filter_.search(line) for filter_ in filters)]
 
         lines_to_display = []
-        for line in lines:
 
-            if ": " not in line.strip():
-                continue
-
-            # A line typically looks like
-            # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
-            # And we just want the part starting by "DEBUG - "
-            line = line.strip().split(": ", 1)[1]
-
-            if any(filter_.search(line) for filter_ in filters):
-                continue
-
-            lines_to_display.append(line)
-
-            if line.endswith("+ ynh_exit_properly") or " + ynh_die " in line:
+        # Get the 20 lines before the last 'ynh_exit_properly'
+        rev_lines = list(reversed(lines))
+        for i, line in enumerate(rev_lines):
+            if line.endswith("+ ynh_exit_properly"):
+                lines_to_display = reversed(rev_lines[i:i + 20])
                 break
-            elif len(lines_to_display) > 20:
-                lines_to_display.pop(0)
+
+        # If didnt find anything, just get the last 20 lines
+        if not lines_to_display:
+            lines_to_display = lines[-20:]
 
         logger.warning(
             "Here's an extract of the logs before the crash. It might help debugging the error:"
