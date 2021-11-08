@@ -753,8 +753,16 @@ class OperationLogger(object):
         filters = [re.compile(f_) for f_ in filters]
 
         lines_to_display = []
-        for line in lines:
 
+        # The logs may contain multiple ynh_exit_properly (backup + upgrade e.g)
+        # We want to get the last one.
+        rev_lines = reversed(lines)
+        for line in rev_lines:
+            if line.endswith("+ ynh_exit_properly") or " + ynh_die " in line:
+                lines_to_display.append(line)
+                break
+
+        for line in rev_lines:
             if ": " not in line.strip():
                 continue
 
@@ -768,10 +776,10 @@ class OperationLogger(object):
 
             lines_to_display.append(line)
 
-            if line.endswith("+ ynh_exit_properly") or " + ynh_die " in line:
+            if len(lines_to_display) > 20:
                 break
-            elif len(lines_to_display) > 20:
-                lines_to_display.pop(0)
+
+        lines_to_display.reverse()
 
         logger.warning(
             "Here's an extract of the logs before the crash. It might help debugging the error:"
