@@ -739,36 +739,31 @@ class OperationLogger(object):
         with open(self.log_path, "r") as f:
             lines = f.readlines()
 
+        # A line typically looks like
+        # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
+        # And we just want the part starting by "DEBUG - "
+        lines = [line for line in lines if ":" in line.strip()]
+        lines = [line.strip().split(": ", 1)[1] for line in lines]
+        # And we ignore boring/irrelevant lines
+        # Annnnnnd we also ignore lines matching [number] + such as
+        # 72971 [37m[1mDEBUG [m29739 + ynh_exit_properly
+        # which are lines from backup-before-upgrade or restore-after-failed-upgrade ...
         filters = [re.compile(f_) for f_ in BORING_LOG_LINES]
+        filters.append(re.compile(r'\d+ \+ '))
+        lines = [line for line in lines if not any(filter_.search(line) for filter_ in filters)]
 
         lines_to_display = []
 
-        # The logs may contain multiple ynh_exit_properly (backup + upgrade e.g)
-        # We want to get the last one.
-        rev_lines = reversed(lines)
-        for line in rev_lines:
-            if line.endswith("+ ynh_exit_properly") or " + ynh_die " in line:
-                lines_to_display.append(line)
+        # Get the 20 lines before the last 'ynh_exit_properly'
+        rev_lines = list(reversed(lines))
+        for i, line in enumerate(rev_lines):
+            if line.endswith("+ ynh_exit_properly"):
+                lines_to_display = reversed(rev_lines[i:i + 20])
                 break
 
-        for line in rev_lines:
-            if ": " not in line.strip():
-                continue
-
-            # A line typically looks like
-            # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
-            # And we just want the part starting by "DEBUG - "
-            line = line.strip().split(": ", 1)[1]
-
-            if any(filter_.search(line) for filter_ in filters):
-                continue
-
-            lines_to_display.append(line)
-
-            if len(lines_to_display) > 20:
-                break
-
-        lines_to_display.reverse()
+        # If didnt find anything, just get the last 20 lines
+        if not lines_to_display:
+            lines_to_display = lines[-20:]
 
         logger.warning(
             "Here's an extract of the logs before the crash. It might help debugging the error:"
