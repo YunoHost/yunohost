@@ -629,5 +629,7 @@
     "global_settings_setting_security_webadmin_allowlist": "Indirizzi IP con il permesso di accedere al webadmin, separati da virgola.",
     "global_settings_setting_security_webadmin_allowlist_enabled": "Permetti solo ad alcuni IP di accedere al webadmin.",
     "disk_space_not_sufficient_update": "Non c'è abbastanza spazio libero per aggiornare questa applicazione",
-    "disk_space_not_sufficient_install": "Non c'è abbastanza spazio libero per installare questa applicazione"
+    "disk_space_not_sufficient_install": "Non c'è abbastanza spazio libero per installare questa applicazione",
+    "app_config_unable_to_apply": "Applicazione dei valori nel pannello di configurazione non riuscita.",
+    "app_config_unable_to_read": "Lettura dei valori nel pannello di configurazione non riuscita."
 }
