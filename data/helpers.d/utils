@@ -290,8 +290,18 @@ ynh_local_curl() {
     chown root $cookiefile
     chmod 700 $cookiefile
 
+    # Temporarily enable visitors if needed...
+    local visitors_enabled=$(ynh_permission_has_user "main" "visitors" && echo yes || echo no)
+    if [[ $visitors_enabled == "no" ]]; then
+        ynh_permission_update --permission "main" --add "visitors"
+    fi
+
     # Curl the URL
     curl --silent --show-error --insecure --location --header "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar $cookiefile --cookie $cookiefile
+
+    if [[ $visitors_enabled == "no" ]]; then
+        ynh_permission_update --permission "main" --remove "visitors"
+    fi
 }
 
 # Create a dedicated config file from a template

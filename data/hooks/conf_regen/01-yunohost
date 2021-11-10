@@ -61,9 +61,11 @@ do_init_regen() {
 
     # Change dpkg vendor
     # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
-    readlink -f /etc/dpkg/origins/default | grep -q debian \
-        && rm -f /etc/dpkg/origins/default \
-        && ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
+    if readlink -f /etc/dpkg/origins/default | grep -q debian;
+    then
+        rm -f /etc/dpkg/origins/default
+        ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
+    fi
 }
 
 do_pre_regen() {
@@ -229,9 +231,11 @@ do_post_regen() {
 
     # Change dpkg vendor
     # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
-    readlink -f /etc/dpkg/origins/default | grep -q debian \
-        && rm -f /etc/dpkg/origins/default \
-        && ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
+    if readlink -f /etc/dpkg/origins/default | grep -q debian;
+    then
+        rm -f /etc/dpkg/origins/default
+        ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
+    fi
 }
 
 do_$1_regen ${@:2}

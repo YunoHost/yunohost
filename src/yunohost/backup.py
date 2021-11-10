@@ -734,7 +734,8 @@ class BackupManager:
             this_app_permissions = {name: infos for name, infos in permissions.items()}
             write_to_yaml("%s/permissions.yml" % settings_dir, this_app_permissions)
 
-        except Exception:
+        except Exception as e:
+            logger.debug(e)
             abs_tmp_app_dir = os.path.join(self.work_dir, "apps/", app)
             shutil.rmtree(abs_tmp_app_dir, ignore_errors=True)
             logger.error(m18n.n("backup_app_failed", app=app))

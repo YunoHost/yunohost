@@ -317,8 +317,6 @@ EOF
         || ynh_die --message="Unable to install dependencies" # Install the fake package and its dependencies
     rm /tmp/${dep_app}-ynh-deps.control
 
-    ynh_app_setting_set --app=$app --key=apt_dependencies --value="$dependencies"
-
     if [[ -n "$specific_php_version" ]]
     then
         # Set the default php version back as the default version for php-cli.

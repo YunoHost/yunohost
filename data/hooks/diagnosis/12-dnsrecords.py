@@ -63,6 +63,7 @@ class DNSRecordsDiagnoser(Diagnoser):
                 status="INFO",
                 summary="diagnosis_dns_specialusedomain",
             )
+            return
 
         base_dns_zone = _get_dns_zone_for_domain(domain)
         basename = domain.replace(base_dns_zone, "").rstrip(".") or "@"

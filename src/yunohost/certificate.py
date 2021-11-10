@@ -847,6 +847,7 @@ def _check_domain_is_ready_for_ACME(domain):
 
     from yunohost.domain import _get_parent_domain_of
     from yunohost.dns import _get_dns_zone_for_domain
+    from yunohost.utils.dns import is_yunohost_dyndns_domain
 
     httpreachable = (
         Diagnoser.get_cached_report(
@@ -870,6 +871,15 @@ def _check_domain_is_ready_for_ACME(domain):
     record_name = (
         domain.replace(f".{base_dns_zone}", "") if domain != base_dns_zone else "@"
     )
+
+    # Stupid edge case for subdomains of ynh dyndns domains ...
+    # ... related to the fact that we don't actually check subdomains for
+    # dyndns domains because we assume that there's already the wildcard doing
+    # the job, hence no "A:foobar" ... Instead, just check that the parent domain
+    # is correctly configured.
+    if is_yunohost_dyndns_domain(parent_domain):
+        record_name = "@"
+
     A_record_status = dnsrecords.get("data").get(f"A:{record_name}")
     AAAA_record_status = dnsrecords.get("data").get(f"AAAA:{record_name}")
 

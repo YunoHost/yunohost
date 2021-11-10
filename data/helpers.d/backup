@@ -466,7 +466,12 @@ ynh_restore_upgradebackup() {
             yunohost app remove $app
             # Restore the backup
             yunohost backup restore $app_bck-pre-upgrade$backup_number --apps $app --force --debug
-            ynh_die --message="The app was restored to the way it was before the failed upgrade."
+            if [[ -d /etc/yunohost/apps/$app ]]
+            then
+                ynh_die --message="The app was restored to the way it was before the failed upgrade."
+            else
+                ynh_die --message="Uhoh ... Yunohost failed to restore the app to the way it was before the failed upgrade :|"
+            fi
         fi
     else
         ynh_print_warn --message="\$NO_BACKUP_UPGRADE is set, that means there's no backup to restore. You have to fix this upgrade by yourself !"
