@@ -26,7 +26,7 @@ def find_expected_string_keys():
 
     python_files = glob.glob("src/*.py")
     python_files.extend(glob.glob("src/utils/*.py"))
-    python_files.extend(glob.glob("src/data_migrations/*.py"))
+    python_files.extend(glob.glob("src/migrations/*.py"))
     python_files.extend(glob.glob("src/authenticators/*.py"))
     python_files.extend(glob.glob("src/diagnosis/*.py"))
     python_files.append("bin/yunohost")
@@ -63,7 +63,7 @@ def find_expected_string_keys():
         ]
 
     # For each migration, expect to find "migration_description_<name>"
-    for path in glob.glob("src/data_migrations/*.py"):
+    for path in glob.glob("src/migrations/*.py"):
         if "__init__" in path:
             continue
         yield "migration_description_" + os.path.basename(path)[:-3]

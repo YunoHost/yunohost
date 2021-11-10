@@ -933,12 +933,12 @@ def _get_migrations_list():
     migrations = []
 
     try:
-        from . import data_migrations
+        from . import migrations
     except ImportError:
         # not data migrations present, return empty list
         return migrations
 
-    migrations_path = data_migrations.__path__[0]
+    migrations_path = migrations.__path__[0]
 
     if not os.path.exists(migrations_path):
         logger.warn(m18n.n("migrations_cant_reach_migration_file", migrations_path))
@@ -973,11 +973,11 @@ def _get_migration_by_name(migration_name):
     """
 
     try:
-        from . import data_migrations
+        from . import migrations
     except ImportError:
         raise AssertionError("Unable to find migration with name %s" % migration_name)
 
-    migrations_path = data_migrations.__path__[0]
+    migrations_path = migrations.__path__[0]
     migrations_found = [
         x
         for x in os.listdir(migrations_path)
@@ -1001,7 +1001,7 @@ def _load_migration(migration_file):
         # this is python builtin method to import a module using a name, we
         # use that to import the migration as a python object so we'll be
         # able to run it in the next loop
-        module = import_module("yunohost.data_migrations.{}".format(migration_id))
+        module = import_module("yunohost.migrations.{}".format(migration_id))
         return module.MyMigration(migration_id)
     except Exception as e:
         import traceback
