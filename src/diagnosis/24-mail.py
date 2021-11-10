@@ -6,6 +6,7 @@ import re
 
 from subprocess import CalledProcessError
 
+from moulinette.utils import log
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_yaml
 
@@ -16,8 +17,10 @@ from yunohost.utils.dns import dig
 
 DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/dnsbl_list.yml"
 
+logger = log.getActionLogger("yunohost.diagnosis")
 
-class MailDiagnoser(Diagnoser):
+
+class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
@@ -42,7 +45,7 @@ class MailDiagnoser(Diagnoser):
             "check_queue",  # i18n: diagnosis_mail_queue_ok
         ]
         for check in checks:
-            self.logger_debug("Running " + check)
+            logger.debug("Running " + check)
             reports = list(getattr(self, check)())
             for report in reports:
                 yield report
@@ -292,7 +295,3 @@ class MailDiagnoser(Diagnoser):
                 if global_ipv6:
                     outgoing_ips.append(global_ipv6)
         return (outgoing_ipversions, outgoing_ips)
-
-
-def main(args, env, loggers):
-    return MailDiagnoser(args, env, loggers).diagnose()

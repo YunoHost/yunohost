@@ -4,13 +4,16 @@ import os
 import json
 import subprocess
 
+from moulinette.utils import log
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file, read_json, write_to_json
 from yunohost.diagnosis import Diagnoser
 from yunohost.utils.packages import ynh_packages_version
 
+logger = log.getActionLogger("yunohost.diagnosis")
 
-class BaseSystemDiagnoser(Diagnoser):
+
+class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
@@ -172,7 +175,7 @@ class BaseSystemDiagnoser(Diagnoser):
         try:
             return int(n_failures)
         except Exception:
-            self.logger_warning(
+            logger.warning(
                 "Failed to parse number of recent auth failures, expected an int, got '%s'"
                 % n_failures
             )
@@ -196,7 +199,7 @@ class BaseSystemDiagnoser(Diagnoser):
             if not os.path.exists(dpkg_log) or os.path.getmtime(
                 cache_file
             ) > os.path.getmtime(dpkg_log):
-                self.logger_debug(
+                logger.debug(
                     "Using cached results for meltdown checker, from %s" % cache_file
                 )
                 return read_json(cache_file)[0]["VULNERABLE"]
@@ -209,7 +212,7 @@ class BaseSystemDiagnoser(Diagnoser):
         # example output from the script:
         # [{"NAME":"MELTDOWN","CVE":"CVE-2017-5754","VULNERABLE":false,"INFOS":"PTI mitigates the vulnerability"}]
         try:
-            self.logger_debug("Running meltdown vulnerability checker")
+            logger.debug("Running meltdown vulnerability checker")
             call = subprocess.Popen(
                 "bash %s --batch json --variant 3" % SCRIPT_PATH,
                 shell=True,
@@ -231,7 +234,7 @@ class BaseSystemDiagnoser(Diagnoser):
             # stuff which should be the last line
             output = output.strip()
             if "\n" in output:
-                self.logger_debug("Original meltdown checker output : %s" % output)
+                logger.debug("Original meltdown checker output : %s" % output)
                 output = output.split("\n")[-1]
 
             CVEs = json.loads(output)
@@ -241,18 +244,14 @@ class BaseSystemDiagnoser(Diagnoser):
             import traceback
 
             traceback.print_exc()
-            self.logger_warning(
+            logger.warning(
                 "Something wrong happened when trying to diagnose Meltdown vunerability, exception: %s"
                 % e
             )
             raise Exception("Command output for failed meltdown check: '%s'" % output)
 
-        self.logger_debug(
+        logger.debug(
             "Writing results from meltdown checker to cache file, %s" % cache_file
         )
         write_to_json(cache_file, CVEs)
         return CVEs[0]["VULNERABLE"]
-
-
-def main(args, env, loggers):
-    return BaseSystemDiagnoser(args, env, loggers).diagnose()

@@ -4,6 +4,7 @@ import re
 import os
 import random
 
+from moulinette.utils import log
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file
@@ -11,8 +12,10 @@ from moulinette.utils.filesystem import read_file
 from yunohost.diagnosis import Diagnoser
 from yunohost.utils.network import get_network_interfaces
 
+logger = log.getActionLogger("yunohost.diagnosis")
 
-class IPDiagnoser(Diagnoser):
+
+class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
@@ -144,7 +147,7 @@ class IPDiagnoser(Diagnoser):
             )
 
         if not any(is_default_route(r) for r in routes):
-            self.logger_debug(
+            logger.debug(
                 "No default route for IPv%s, so assuming there's no IP address for that version"
                 % protocol
             )
@@ -220,11 +223,7 @@ class IPDiagnoser(Diagnoser):
         try:
             return download_text(url, timeout=30).strip()
         except Exception as e:
-            self.logger_debug(
+            logger.debug(
                 "Could not get public IPv%s : %s" % (str(protocol), str(e))
             )
             return None
-
-
-def main(args, env, loggers):
-    return IPDiagnoser(args, env, loggers).diagnose()

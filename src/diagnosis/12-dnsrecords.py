@@ -6,6 +6,7 @@ import re
 from datetime import datetime, timedelta
 from publicsuffix2 import PublicSuffixList
 
+from moulinette.utils import log
 from moulinette.utils.process import check_output
 
 from yunohost.utils.dns import (
@@ -18,8 +19,9 @@ from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _get_maindomain
 from yunohost.dns import _build_dns_conf, _get_dns_zone_for_domain
 
+logger = log.getActionLogger("yunohost.diagnosis")
 
-class DNSRecordsDiagnoser(Diagnoser):
+class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
@@ -31,7 +33,7 @@ class DNSRecordsDiagnoser(Diagnoser):
 
         major_domains = domain_list(exclude_subdomains=True)["domains"]
         for domain in major_domains:
-            self.logger_debug("Diagnosing DNS conf for %s" % domain)
+            logger.debug("Diagnosing DNS conf for %s" % domain)
 
             for report in self.check_domain(
                 domain,
@@ -223,7 +225,7 @@ class DNSRecordsDiagnoser(Diagnoser):
                         )
                     )
                 else:
-                    self.logger_debug("Dyndns domain: %s" % (domain))
+                    logger.debug("Dyndns domain: %s" % (domain))
                 continue
 
             expire_in = expire_date - datetime.now()
@@ -298,7 +300,3 @@ class DNSRecordsDiagnoser(Diagnoser):
                 return datetime.strptime(match.group(1), "%d-%b-%Y")
 
         return "expiration_not_found"
-
-
-def main(args, env, loggers):
-    return DNSRecordsDiagnoser(args, env, loggers).diagnose()

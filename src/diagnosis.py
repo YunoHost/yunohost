@@ -27,6 +27,8 @@
 import re
 import os
 import time
+import glob
+from importlib import import_module
 
 from moulinette import m18n, Moulinette
 from moulinette.utils import log
@@ -38,7 +40,6 @@ from moulinette.utils.filesystem import (
 )
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.hook import hook_list, hook_exec
 
 logger = log.getActionLogger("yunohost.diagnosis")
 
@@ -48,15 +49,13 @@ DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 
 
 def diagnosis_list():
-    all_categories_names = [h for h, _ in _list_diagnosis_categories()]
-    return {"categories": all_categories_names}
+    return {"categories": _list_diagnosis_categories()}
 
 
 def diagnosis_get(category, item):
 
     # Get all the categories
-    all_categories = _list_diagnosis_categories()
-    all_categories_names = [c for c, _ in all_categories]
+    all_categories_names = _list_diagnosis_categories()
 
     if category not in all_categories_names:
         raise YunohostValidationError(
@@ -84,8 +83,7 @@ def diagnosis_show(
         return
 
     # Get all the categories
-    all_categories = _list_diagnosis_categories()
-    all_categories_names = [category for category, _ in all_categories]
+    all_categories_names = _list_diagnosis_categories()
 
     # Check the requested category makes sense
     if categories == []:
@@ -174,8 +172,7 @@ def diagnosis_run(
         return
 
     # Get all the categories
-    all_categories = _list_diagnosis_categories()
-    all_categories_names = [category for category, _ in all_categories]
+    all_categories_names = _list_diagnosis_categories()
 
     # Check the requested category makes sense
     if categories == []:
@@ -192,10 +189,11 @@ def diagnosis_run(
     diagnosed_categories = []
     for category in categories:
         logger.debug("Running diagnosis for %s ..." % category)
-        path = [p for n, p in all_categories if n == category][0]
+
+        diagnoser = _load_diagnoser(category)
 
         try:
-            code, report = hook_exec(path, args={"force": force}, env=None)
+            code, report = diagnoser.diagnose(force=force)
         except Exception:
             import traceback
 
@@ -275,8 +273,7 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
     def validate_filter_criterias(filter_):
 
         # Get all the categories
-        all_categories = _list_diagnosis_categories()
-        all_categories_names = [category for category, _ in all_categories]
+        all_categories_names = _list_diagnosis_categories()
 
         # Sanity checks for the provided arguments
         if len(filter_) == 0:
@@ -404,12 +401,8 @@ def add_ignore_flag_to_issues(report):
 
 
 class Diagnoser:
-    def __init__(self, args, env, loggers):
+    def __init__(self):
 
-        # FIXME ? That stuff with custom loggers is weird ... (mainly inherited from the bash hooks, idk)
-        self.logger_debug, self.logger_warning, self.logger_info = loggers
-        self.env = env
-        self.args = args or {}
         self.cache_file = Diagnoser.cache_file(self.id_)
         self.description = Diagnoser.get_description(self.id_)
 
@@ -424,10 +417,10 @@ class Diagnoser:
             os.makedirs(DIAGNOSIS_CACHE)
         return write_to_json(self.cache_file, report)
 
-    def diagnose(self):
+    def diagnose(self, force=False):
 
         if (
-            not self.args.get("force", False)
+            not force
             and self.cached_time_ago() < self.cache_duration
         ):
             self.logger_debug("Cache still valid : %s" % self.cache_file)
@@ -666,13 +659,36 @@ class Diagnoser:
 
 
 def _list_diagnosis_categories():
-    hooks_raw = hook_list("diagnosis", list_by="priority", show_info=True)["hooks"]
-    hooks = []
-    for _, some_hooks in sorted(hooks_raw.items(), key=lambda h: int(h[0])):
-        for name, info in some_hooks.items():
-            hooks.append((name, info["path"]))
 
-    return hooks
+    paths = glob.glob(os.path.dirname(__file__) + "/diagnosis/??-*.py")
+    names = sorted([os.path.basename(path)[: -len(".py")] for path in paths])
+
+    return names
+
+
+def _load_diagnoser(diagnoser_name):
+
+    logger.debug(f"Loading diagnoser {diagnoser_name}")
+
+    paths = glob.glob(os.path.dirname(__file__) + f"/diagnosis/??-{diagnoser_name}.py")
+
+    if len(paths) != 1:
+        raise YunohostError(f"Uhoh, found several matches (or none?) for diagnoser {diagnoser_name} : {paths}", raw_msg=True)
+
+    module_id = os.path.basename(paths[0][: -len(".py")])
+
+    try:
+        # this is python builtin method to import a module using a name, we
+        # use that to import the migration as a python object so we'll be
+        # able to run it in the next loop
+        module = import_module("yunohost.diagnosis.{}".format(module_id))
+        return module.MyDiagnoser()
+    except Exception as e:
+        import traceback
+
+        traceback.print_exc()
+
+        raise YunohostError(f"Failed to load diagnoser {diagnoser_name} : {e}", raw_msg=True)
 
 
 def _email_diagnosis_issues():

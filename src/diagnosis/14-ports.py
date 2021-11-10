@@ -6,7 +6,7 @@ from yunohost.diagnosis import Diagnoser
 from yunohost.service import _get_services
 
 
-class PortsDiagnoser(Diagnoser):
+class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
@@ -146,7 +146,3 @@ class PortsDiagnoser(Diagnoser):
                             "diagnosis_ports_forwarding_tip",
                         ],
                     )
-
-
-def main(args, env, loggers):
-    return PortsDiagnoser(args, env, loggers).diagnose()

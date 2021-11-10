@@ -13,7 +13,7 @@ from yunohost.utils.dns import is_special_use_tld
 DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 
 
-class WebDiagnoser(Diagnoser):
+class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
@@ -198,7 +198,3 @@ class WebDiagnoser(Diagnoser):
                         summary="diagnosis_http_partially_unreachable",
                         details=[detail.replace("error_http_check", "diagnosis_http")],
                     )
-
-
-def main(args, env, loggers):
-    return WebDiagnoser(args, env, loggers).diagnose()

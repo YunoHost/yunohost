@@ -9,7 +9,7 @@ from yunohost.regenconf import _get_regenconf_infos, _calculate_hash
 from moulinette.utils.filesystem import read_file
 
 
-class RegenconfDiagnoser(Diagnoser):
+class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
@@ -70,7 +70,3 @@ class RegenconfDiagnoser(Diagnoser):
             for path, hash_ in infos["conffiles"].items():
                 if hash_ != _calculate_hash(path):
                     yield {"path": path, "category": category}
-
-
-def main(args, env, loggers):
-    return RegenconfDiagnoser(args, env, loggers).diagnose()

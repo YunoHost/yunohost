@@ -7,7 +7,7 @@ from yunohost.app import app_list
 from yunohost.diagnosis import Diagnoser
 
 
-class AppDiagnoser(Diagnoser):
+class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
@@ -90,7 +90,3 @@ class AppDiagnoser(Diagnoser):
             == 0
         ):
             yield ("error", "diagnosis_apps_deprecated_practices")
-
-
-def main(args, env, loggers):
-    return AppDiagnoser(args, env, loggers).diagnose()

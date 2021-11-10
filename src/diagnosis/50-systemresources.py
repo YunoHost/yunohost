@@ -9,7 +9,7 @@ from moulinette.utils.process import check_output
 from yunohost.diagnosis import Diagnoser
 
 
-class SystemResourcesDiagnoser(Diagnoser):
+class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
@@ -214,7 +214,3 @@ def round_(n):
     if n > 10:
         n = int(round(n))
     return n
-
-
-def main(args, env, loggers):
-    return SystemResourcesDiagnoser(args, env, loggers).diagnose()

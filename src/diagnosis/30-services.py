@@ -6,7 +6,7 @@ from yunohost.diagnosis import Diagnoser
 from yunohost.service import service_status
 
 
-class ServicesDiagnoser(Diagnoser):
+class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
@@ -41,7 +41,3 @@ class ServicesDiagnoser(Diagnoser):
                 item["summary"] = "diagnosis_services_running"
 
             yield item
-
-
-def main(args, env, loggers):
-    return ServicesDiagnoser(args, env, loggers).diagnose()
