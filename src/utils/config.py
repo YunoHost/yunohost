@@ -192,7 +192,7 @@ def evaluate_simple_js_expression(expr, context={}):
 class ConfigPanel:
     entity_type = "config"
     save_path_tpl: Union[str, None] = None
-    config_path_tpl = "/usr/share/yunohost/other/config_{entity_type}.toml"
+    config_path_tpl = "/usr/share/yunohost/config_{entity_type}.toml"
     save_mode = "full"
 
     @classmethod

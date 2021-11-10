@@ -6,7 +6,7 @@ set -e
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/templates/dnsmasq
+    cd /usr/share/yunohost/conf/dnsmasq
 
     # create directory for pending conf
     dnsmasq_dir="${pending_dir}/etc/dnsmasq.d"

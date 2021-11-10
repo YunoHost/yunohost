@@ -12,9 +12,8 @@ import os
 import yaml
 
 THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ACTIONSMAP_FILE = THIS_SCRIPT_DIR + "/yunohost.yml"
-os.system(f"mkdir {THIS_SCRIPT_DIR}/../bash-completion.d")
-BASH_COMPLETION_FILE = THIS_SCRIPT_DIR + "/../bash-completion.d/yunohost"
+ACTIONSMAP_FILE = THIS_SCRIPT_DIR + "/../share/actionsmap.yml"
+BASH_COMPLETION_FILE = THIS_SCRIPT_DIR + "/bash-completion.sh"
 
 
 def get_dict_actions(OPTION_SUBTREE, category):

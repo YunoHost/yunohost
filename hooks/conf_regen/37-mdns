@@ -29,7 +29,7 @@ do_init_regen() {
 do_pre_regen() {
     pending_dir="$1"
 
-    cd /usr/share/yunohost/templates/mdns
+    cd /usr/share/yunohost/conf/mdns
     mkdir -p ${pending_dir}/etc/systemd/system/
     cp yunomdns.service ${pending_dir}/etc/systemd/system/
 

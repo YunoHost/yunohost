@@ -7,7 +7,7 @@ set -e
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/templates/fail2ban
+    cd /usr/share/yunohost/conf/fail2ban
 
     fail2ban_dir="${pending_dir}/etc/fail2ban"
     mkdir -p "${fail2ban_dir}/filter.d"

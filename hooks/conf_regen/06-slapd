@@ -4,8 +4,8 @@ set -e
 
 tmp_backup_dir_file="/root/slapd-backup-dir.txt"
 
-config="/usr/share/yunohost/templates/slapd/config.ldif"
-db_init="/usr/share/yunohost/templates/slapd/db_init.ldif"
+config="/usr/share/yunohost/conf/slapd/config.ldif"
+db_init="/usr/share/yunohost/conf/slapd/db_init.ldif"
 
 do_init_regen() {
     if [[ $EUID -ne 0 ]]; then
@@ -109,7 +109,7 @@ do_pre_regen() {
     schema_dir="${ldap_dir}/schema"
     mkdir -p "$ldap_dir" "$schema_dir"
 
-    cd /usr/share/yunohost/templates/slapd
+    cd /usr/share/yunohost/conf/slapd
 
     # copy configuration files
     cp -a ldap.conf "$ldap_dir"

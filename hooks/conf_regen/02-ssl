@@ -6,7 +6,7 @@ ssl_dir="/usr/share/yunohost/yunohost-config/ssl/yunoCA"
 ynh_ca="/etc/yunohost/certs/yunohost.org/ca.pem"
 ynh_crt="/etc/yunohost/certs/yunohost.org/crt.pem"
 ynh_key="/etc/yunohost/certs/yunohost.org/key.pem"
-openssl_conf="/usr/share/yunohost/templates/ssl/openssl.cnf"
+openssl_conf="/usr/share/yunohost/conf/ssl/openssl.cnf"
 
 regen_local_ca() {
 
@@ -26,7 +26,7 @@ regen_local_ca() {
     RANDFILE=.rnd openssl rand -hex 19 >serial
     rm -f index.txt
     touch index.txt
-    cp /usr/share/yunohost/templates/ssl/openssl.cnf openssl.ca.cnf
+    cp /usr/share/yunohost/conf/ssl/openssl.cnf openssl.ca.cnf
     sed -i "s/yunohost.org/${domain}/g" openssl.ca.cnf
     openssl req -x509 \
         -new \
@@ -57,7 +57,7 @@ do_init_regen() {
 
     # Make sure this conf exists
     mkdir -p ${ssl_dir}
-    cp /usr/share/yunohost/templates/ssl/openssl.cnf ${ssl_dir}/openssl.ca.cnf
+    cp /usr/share/yunohost/conf/ssl/openssl.cnf ${ssl_dir}/openssl.ca.cnf
 
     # create default certificates
     if [[ ! -f "$ynh_ca" ]]; then
@@ -99,7 +99,7 @@ do_init_regen() {
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/templates/ssl
+    cd /usr/share/yunohost/conf/ssl
 
     install -D -m 644 openssl.cnf "${pending_dir}/${ssl_dir}/openssl.cnf"
 }

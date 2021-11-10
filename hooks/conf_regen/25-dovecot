@@ -7,7 +7,7 @@ set -e
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/templates/dovecot
+    cd /usr/share/yunohost/conf/dovecot
 
     dovecot_dir="${pending_dir}/etc/dovecot"
     mkdir -p "${dovecot_dir}/global_script"

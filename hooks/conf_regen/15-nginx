@@ -10,7 +10,7 @@ do_init_regen() {
         exit 1
     fi
 
-    cd /usr/share/yunohost/templates/nginx
+    cd /usr/share/yunohost/conf/nginx
 
     nginx_dir="/etc/nginx"
     nginx_conf_dir="${nginx_dir}/conf.d"
@@ -47,7 +47,7 @@ do_init_regen() {
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/templates/nginx
+    cd /usr/share/yunohost/conf/nginx
 
     nginx_dir="${pending_dir}/etc/nginx"
     nginx_conf_dir="${nginx_dir}/conf.d"

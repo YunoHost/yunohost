@@ -5,7 +5,7 @@ set -e
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/templates/metronome
+    cd /usr/share/yunohost/conf/metronome
 
     # create directories for pending conf
     metronome_dir="${pending_dir}/etc/metronome"

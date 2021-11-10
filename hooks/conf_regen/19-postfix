@@ -7,7 +7,7 @@ set -e
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/templates/postfix
+    cd /usr/share/yunohost/conf/postfix
 
     postfix_dir="${pending_dir}/etc/postfix"
     mkdir -p "$postfix_dir"

@@ -18,7 +18,7 @@ ssl_prefer_server_ciphers off;
 # Pre-defined FFDHE group (RFC 7919)
 # From https://ssl-config.mozilla.org/ffdhe2048.txt
 # https://security.stackexchange.com/a/149818
-ssl_dhparam /usr/share/yunohost/other/ffdhe2048.pem;
+ssl_dhparam /usr/share/yunohost/ffdhe2048.pem;
 {% endif %}
 
 

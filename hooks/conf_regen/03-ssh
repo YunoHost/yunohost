@@ -7,7 +7,7 @@ set -e
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/templates/ssh
+    cd /usr/share/yunohost/conf/ssh
 
     # do not listen to IPv6 if unavailable
     [[ -f /proc/net/if_inet6 ]] && ipv6_enabled=true || ipv6_enabled=false

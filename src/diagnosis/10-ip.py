@@ -152,7 +152,7 @@ class IPDiagnoser(Diagnoser):
 
         # We use the resolver file as a list of well-known, trustable (ie not google ;)) IPs that we can ping
         resolver_file = (
-            "/usr/share/yunohost/templates/dnsmasq/plain/resolv.dnsmasq.conf"
+            "/usr/share/yunohost/conf/dnsmasq/plain/resolv.dnsmasq.conf"
         )
         resolvers = [
             r.split(" ")[1]

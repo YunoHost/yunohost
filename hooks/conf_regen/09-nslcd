@@ -10,7 +10,7 @@ do_init_regen() {
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/templates/nslcd
+    cd /usr/share/yunohost/conf/nslcd
 
     install -D -m 644 nslcd.conf "${pending_dir}/etc/nslcd.conf"
 }

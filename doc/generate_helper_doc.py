@@ -217,7 +217,7 @@ def malformed_error(line_number):
 
 def main():
 
-    helper_files = sorted(glob.glob("../data/helpers.d/*"))
+    helper_files = sorted(glob.glob("../helpers/*"))
     helpers = []
 
     for helper_file in helper_files:

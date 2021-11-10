@@ -50,7 +50,7 @@ from yunohost.hook import hook_callback
 
 logger = getActionLogger("yunohost.domain")
 
-DOMAIN_REGISTRAR_LIST_PATH = "/usr/share/yunohost/other/registrar_list.toml"
+DOMAIN_REGISTRAR_LIST_PATH = "/usr/share/yunohost/registrar_list.toml"
 
 
 def domain_dns_suggest(domain):

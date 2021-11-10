@@ -14,7 +14,7 @@ from yunohost.domain import _get_maindomain, domain_list
 from yunohost.settings import settings_get
 from yunohost.utils.dns import dig
 
-DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/other/dnsbl_list.yml"
+DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/dnsbl_list.yml"
 
 
 class MailDiagnoser(Diagnoser):

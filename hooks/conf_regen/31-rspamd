@@ -5,7 +5,7 @@ set -e
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/templates/rspamd
+    cd /usr/share/yunohost/conf/rspamd
 
     install -D -m 644 metrics.local.conf \
         "${pending_dir}/etc/rspamd/local.d/metrics.conf"

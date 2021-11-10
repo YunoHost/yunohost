@@ -48,7 +48,7 @@ from moulinette.utils.filesystem import (
 MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 
 SERVICES_CONF = "/etc/yunohost/services.yml"
-SERVICES_CONF_BASE = "/usr/share/yunohost/templates/yunohost/services.yml"
+SERVICES_CONF_BASE = "/usr/share/yunohost/conf/yunohost/services.yml"
 
 logger = getActionLogger("yunohost.service")
 

@@ -8,7 +8,7 @@ do_init_regen() {
         exit 1
     fi
 
-    cd /usr/share/yunohost/templates/yunohost
+    cd /usr/share/yunohost/conf/yunohost
 
     [[ -d /etc/yunohost ]] || mkdir -p /etc/yunohost
 
@@ -71,7 +71,7 @@ do_init_regen() {
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/templates/yunohost
+    cd /usr/share/yunohost/conf/yunohost
 
     mkdir -p $pending_dir/etc/systemd/system
     mkdir -p $pending_dir/etc/cron.d/
