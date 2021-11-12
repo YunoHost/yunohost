@@ -11,6 +11,7 @@
       - $YNH_BUILD_DIR/*.deb
 
 .build_script: &build_script
+  - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" install devscripts --no-install-recommends
   - cd $YNH_BUILD_DIR/$PACKAGE
   - VERSION=$(dpkg-parsechangelog -S Version 2>/dev/null)
   - VERSION_NIGHTLY="${VERSION}+$(date +%Y%m%d%H%M)"
