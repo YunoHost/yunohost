@@ -735,6 +735,37 @@ def app_manifest(app):
     return manifest
 
 
+def _confirm_app_install(app, force=False):
+
+    # Ignore if there's nothing for confirm (good quality app), if --force is used
+    # or if request on the API (confirm already implemented on the API side)
+    if force or Moulinette.interface.type == "api":
+        return
+
+    quality = _app_quality(app)
+    if quality == "success":
+        return
+
+    # i18n: confirm_app_install_warning
+    # i18n: confirm_app_install_danger
+    # i18n: confirm_app_install_thirdparty
+
+    if quality in ["danger", "thirdparty"]:
+        answer = Moulinette.prompt(
+            m18n.n("confirm_app_install_" + quality, answers="Yes, I understand"),
+            color="red",
+        )
+        if answer != "Yes, I understand":
+            raise YunohostError("aborting")
+
+    else:
+        answer = Moulinette.prompt(
+            m18n.n("confirm_app_install_" + quality, answers="Y/N"), color="yellow"
+        )
+        if answer.upper() != "Y":
+            raise YunohostError("aborting")
+
+
 @is_unit_operation()
 def app_install(
     operation_logger,
@@ -776,37 +807,7 @@ def app_install(
     if free_space_in_directory("/") <= 512 * 1000 * 1000:
         raise YunohostValidationError("disk_space_not_sufficient_install")
 
-    def confirm_install(app):
-
-        # Ignore if there's nothing for confirm (good quality app), if --force is used
-        # or if request on the API (confirm already implemented on the API side)
-        if force or Moulinette.interface.type == "api":
-            return
-
-        quality = _app_quality(app)
-        if quality == "success":
-            return
-
-        # i18n: confirm_app_install_warning
-        # i18n: confirm_app_install_danger
-        # i18n: confirm_app_install_thirdparty
-
-        if quality in ["danger", "thirdparty"]:
-            answer = Moulinette.prompt(
-                m18n.n("confirm_app_install_" + quality, answers="Yes, I understand"),
-                color="red",
-            )
-            if answer != "Yes, I understand":
-                raise YunohostError("aborting")
-
-        else:
-            answer = Moulinette.prompt(
-                m18n.n("confirm_app_install_" + quality, answers="Y/N"), color="yellow"
-            )
-            if answer.upper() != "Y":
-                raise YunohostError("aborting")
-
-    confirm_install(app)
+    _confirm_app_install(app)
     manifest, extracted_app_folder = _extract_app(app)
     packaging_format = manifest["packaging_format"]
 
@@ -815,7 +816,6 @@ def app_install(
         raise YunohostValidationError("app_id_invalid")
 
     app_id = manifest["id"]
-    label = label if label else manifest["name"]
 
     # Check requirements
     _check_manifest_requirements(manifest, action="install")
@@ -828,6 +828,8 @@ def app_install(
         app_instance_name = app_id + "__" + str(instance_number)
     else:
         app_instance_name = app_id
+
+    app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
 
     # Retrieve arguments list for install script
     raw_questions = manifest["install"]
@@ -861,7 +863,6 @@ def app_install(
     logger.info(m18n.n("app_start_install", app=app_id))
 
     # Create app directory
-    app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
     os.makedirs(app_setting_path)
@@ -894,23 +895,31 @@ def app_install(
                 recursive=True,
             )
 
+    # Initialize the main permission for the app
+    # The permission is initialized with no url associated, and with tile disabled
+    # For web app, the root path of the app will be added as url and the tile
+    # will be enabled during the app install. C.f. 'app_register_url()' below.
+    if packaging_format >= 2:
+        init_main_perm_allowed = ["visitors"] if not args.get("is_public") else ["all_users"]
+    else:
+        init_main_perm_allowed = ["all_users"]
 
-    resources = AppResourceSet(manifest["resources"], app_instance_name)
-    resources.check_availability()
-    resources.provision()
+    permission_create(
+        app_instance_name + ".main",
+        allowed=init_main_perm_allowed,
+        label=label if label else manifest["name"],
+        show_tile=False,
+        protected=False,
+    )
 
-    if packaging_format < 2:
-        # Initialize the main permission for the app
-        # The permission is initialized with no url associated, and with tile disabled
-        # For web app, the root path of the app will be added as url and the tile
-        # will be enabled during the app install. C.f. 'app_register_url()' below.
-        permission_create(
-            app_instance_name + ".main",
-            allowed=["all_users"],
-            label=label,
-            show_tile=False,
-            protected=False,
-        )
+    if packaging_format >= 2:
+        try:
+            from yunohost.utils.resources import AppResourceManager
+            resources = AppResourceManager(app_instance_name, current=app_setting_path, wanted=extracted_app_folder)
+            resources.apply()
+        except:
+            raise
+            # FIXME : error handling
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(
@@ -2519,7 +2528,7 @@ def _make_environment_for_app_script(
     # If packaging format v2, load all settings
     if manifest["packaging_format"] >= 2:
         env_dict["app"] = app
-        for setting_name, setting_value in _get_app_settings(app):
+        for setting_name, setting_value in _get_app_settings(app).items():
 
             # Ignore special internal settings like checksum__
             # (not a huge deal to load them but idk...)
