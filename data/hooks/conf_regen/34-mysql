@@ -6,7 +6,7 @@ set -e
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/templates/mysql
+    #cd /usr/share/yunohost/templates/mysql
 
     # Nothing to do
 }
