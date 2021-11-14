@@ -368,7 +368,6 @@
     "log_app_change_url": "'{}' aplikazioaren URLa aldatu",
     "log_app_config_set": "Ezarri '{}' aplikazioko konfigurazioa",
     "downloading": "Deskargatzen…",
-    "dyndns_could_not_check_provide": "Ezinezkoa izan da {provider}(e)k {domain} eskaini dezakeen egiaztatzea.",
     "log_available_on_yunopaste": "Erregistroa {url} estekan ikus daiteke",
     "log_dyndns_update": "Eguneratu YunoHosten '{}' domeinuari lotutako IP helbidea",
     "log_letsencrypt_cert_install": "Instalatu Let's Encrypt ziurtagiria '{}' domeinurako",
