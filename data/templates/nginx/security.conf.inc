@@ -26,11 +26,11 @@ ssl_dhparam /usr/share/yunohost/other/ffdhe2048.pem;
 # https://wiki.mozilla.org/Security/Guidelines/Web_Security
 # https://observatory.mozilla.org/
 {% if experimental == "True" %}
-more_set_headers "Content-Security-Policy : upgrade-insecure-requests; default-src https: data:";
+more_set_headers "Content-Security-Policy : upgrade-insecure-requests; default-src https: data: blob: ; object-src https: data: 'unsafe-inline'; style-src https: data: 'unsafe-inline' ; script-src https: data: 'unsafe-inline' 'unsafe-eval'";
 {% else %}
 more_set_headers "Content-Security-Policy : upgrade-insecure-requests";
+more_set_headers "Content-Security-Policy-Report-Only : default-src https: data: blob: ; object-src https: data: 'unsafe-inline'; style-src https: data: 'unsafe-inline' ; script-src https: data: 'unsafe-inline' 'unsafe-eval'";
 {% endif %}
-more_set_headers "Content-Security-Policy-Report-Only : default-src https: data: 'unsafe-inline' 'unsafe-eval'  ";
 more_set_headers "X-Content-Type-Options : nosniff";
 more_set_headers "X-XSS-Protection : 1; mode=block";
 more_set_headers "X-Download-Options : noopen";

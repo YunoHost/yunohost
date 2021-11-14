@@ -11,47 +11,47 @@ from yunohost.service import _run_service_command
 
 logger = getActionLogger("yunohost.migration")
 
-PHP70_POOLS = "/etc/php/7.0/fpm/pool.d"
-PHP73_POOLS = "/etc/php/7.3/fpm/pool.d"
+OLDPHP_POOLS = "/etc/php/7.3/fpm/pool.d"
+NEWPHP_POOLS = "/etc/php/7.4/fpm/pool.d"
 
-PHP70_SOCKETS_PREFIX = "/run/php/php7.0-fpm"
-PHP73_SOCKETS_PREFIX = "/run/php/php7.3-fpm"
+OLDPHP_SOCKETS_PREFIX = "/run/php/php7.3-fpm"
+NEWPHP_SOCKETS_PREFIX = "/run/php/php7.4-fpm"
 
 MIGRATION_COMMENT = (
-    "; YunoHost note : this file was automatically moved from {}".format(PHP70_POOLS)
+    "; YunoHost note : this file was automatically moved from {}".format(OLDPHP_POOLS)
 )
 
 
 class MyMigration(Migration):
 
-    "Migrate php7.0-fpm 'pool' conf files to php7.3"
+    "Migrate php7.3-fpm 'pool' conf files to php7.4"
 
-    dependencies = ["migrate_to_buster"]
+    dependencies = ["migrate_to_bullseye"]
 
     def run(self):
-        # Get list of php7.0 pool files
-        php70_pool_files = glob.glob("{}/*.conf".format(PHP70_POOLS))
+        # Get list of php7.3 pool files
+        oldphp_pool_files = glob.glob("{}/*.conf".format(OLDPHP_POOLS))
 
         # Keep only basenames
-        php70_pool_files = [os.path.basename(f) for f in php70_pool_files]
+        oldphp_pool_files = [os.path.basename(f) for f in oldphp_pool_files]
 
         # Ignore the "www.conf" (default stuff, probably don't want to touch it ?)
-        php70_pool_files = [f for f in php70_pool_files if f != "www.conf"]
+        oldphp_pool_files = [f for f in oldphp_pool_files if f != "www.conf"]
 
-        for f in php70_pool_files:
+        for f in oldphp_pool_files:
 
-            # Copy the files to the php7.3 pool
-            src = "{}/{}".format(PHP70_POOLS, f)
-            dest = "{}/{}".format(PHP73_POOLS, f)
+            # Copy the files to the php7.4 pool
+            src = "{}/{}".format(OLDPHP_POOLS, f)
+            dest = "{}/{}".format(NEWPHP_POOLS, f)
             copy2(src, dest)
 
             # Replace the socket prefix if it's found
             c = "sed -i -e 's@{}@{}@g' {}".format(
-                PHP70_SOCKETS_PREFIX, PHP73_SOCKETS_PREFIX, dest
+                OLDPHP_SOCKETS_PREFIX, NEWPHP_SOCKETS_PREFIX, dest
             )
             os.system(c)
 
-            # Also add a comment that it was automatically moved from php7.0
+            # Also add a comment that it was automatically moved from php7.3
             # (for human traceability and backward migration)
             c = "sed -i '1i {}' {}".format(MIGRATION_COMMENT, dest)
             os.system(c)
@@ -66,19 +66,19 @@ class MyMigration(Migration):
             for f in nginx_conf_files:
                 # Replace the socket prefix if it's found
                 c = "sed -i -e 's@{}@{}@g' {}".format(
-                    PHP70_SOCKETS_PREFIX, PHP73_SOCKETS_PREFIX, f
+                    OLDPHP_SOCKETS_PREFIX, NEWPHP_SOCKETS_PREFIX, f
                 )
                 os.system(c)
 
         os.system(
-            "rm /etc/logrotate.d/php7.0-fpm"
+            "rm /etc/logrotate.d/php7.3-fpm"
         )  # We remove this otherwise the logrotate cron will be unhappy
 
         # Reload/restart the php pools
-        _run_service_command("restart", "php7.3-fpm")
-        _run_service_command("enable", "php7.3-fpm")
-        os.system("systemctl stop php7.0-fpm")
-        os.system("systemctl disable php7.0-fpm")
+        _run_service_command("restart", "php7.4-fpm")
+        _run_service_command("enable", "php7.4-fpm")
+        os.system("systemctl stop php7.3-fpm")
+        os.system("systemctl disable php7.3-fpm")
 
         # Reload nginx
         _run_service_command("reload", "nginx")

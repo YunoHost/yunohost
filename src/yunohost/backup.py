@@ -734,7 +734,8 @@ class BackupManager:
             this_app_permissions = {name: infos for name, infos in permissions.items()}
             write_to_yaml("%s/permissions.yml" % settings_dir, this_app_permissions)
 
-        except Exception:
+        except Exception as e:
+            logger.debug(e)
             abs_tmp_app_dir = os.path.join(self.work_dir, "apps/", app)
             shutil.rmtree(abs_tmp_app_dir, ignore_errors=True)
             logger.error(m18n.n("backup_app_failed", app=app))
@@ -861,9 +862,13 @@ class RestoreManager:
         # FIXME this way to get the info is not compatible with copy or custom
         # backup methods
         self.info = backup_info(name, with_details=True)
-        if not self.info["from_yunohost_version"] or version.parse(
-            self.info["from_yunohost_version"]
-        ) < version.parse("3.8.0"):
+
+        from_version = self.info.get("from_yunohost_version", "")
+        # Remove any '~foobar' in the version ... c.f ~alpha, ~beta version during
+        # early dev for next debian version
+        from_version = re.sub(r'~\w+', '', from_version)
+
+        if not from_version or version.parse(from_version) < version.parse("4.2.0"):
             raise YunohostValidationError("restore_backup_too_old")
 
         self.archive_path = self.info["path"]
@@ -1184,7 +1189,7 @@ class RestoreManager:
 
     def _patch_legacy_php_versions_in_csv_file(self):
         """
-        Apply dirty patch to redirect php5 and php7.0 files to php7.3
+        Apply dirty patch to redirect php5 and php7.0 files to php7.4
         """
         from yunohost.utils.legacy import LEGACY_PHP_VERSION_REPLACEMENTS
 

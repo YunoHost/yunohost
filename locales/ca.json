@@ -563,7 +563,7 @@
     "migration_description_0015_migrate_to_buster": "Actualitza els sistema a Debian Buster i YunoHost 4.x",
     "regenconf_need_to_explicitly_specify_ssh": "La configuració ssh ha estat modificada manualment, però heu d'especificar explícitament la categoria «ssh» amb --force per fer realment els canvis.",
     "migration_0015_weak_certs": "S'han trobat els següents certificats que encara utilitzen algoritmes de signatura febles i s'han d'actualitzar per a ser compatibles amb la propera versió de nginx: {certs}",
-    "service_description_php7.3-fpm": "Executa aplicacions escrites en PHP amb NGINX",
+    "service_description_php7.4-fpm": "Executa aplicacions escrites en PHP amb NGINX",
     "migration_0018_failed_to_reset_legacy_rules": "No s'ha pogut restaurar les regles legacy iptables: {error}",
     "migration_0018_failed_to_migrate_iptables_rules": "No s'ha pogut migrar les regles legacy iptables a nftables: {error}",
     "migration_0017_not_enough_space": "Feu suficient espai disponible en {path} per a realitzar la migració.",

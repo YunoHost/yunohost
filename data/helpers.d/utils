@@ -290,8 +290,18 @@ ynh_local_curl() {
     chown root $cookiefile
     chmod 700 $cookiefile
 
+    # Temporarily enable visitors if needed...
+    local visitors_enabled=$(ynh_permission_has_user "main" "visitors" && echo yes || echo no)
+    if [[ $visitors_enabled == "no" ]]; then
+        ynh_permission_update --permission "main" --add "visitors"
+    fi
+
     # Curl the URL
     curl --silent --show-error --insecure --location --header "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar $cookiefile --cookie $cookiefile
+
+    if [[ $visitors_enabled == "no" ]]; then
+        ynh_permission_update --permission "main" --remove "visitors"
+    fi
 }
 
 # Create a dedicated config file from a template
@@ -679,26 +689,6 @@ ynh_get_debian_release() {
     echo $(lsb_release --codename --short)
 }
 
-# Create a directory under /tmp
-#
-# [internal]
-#
-# Deprecated helper
-#
-# usage: ynh_mkdir_tmp
-# | ret: the created directory path
-ynh_mkdir_tmp() {
-    ynh_print_warn --message="The helper ynh_mkdir_tmp is deprecated."
-    ynh_print_warn --message="You should use 'mktemp -d' instead and manage permissions \
-properly with chmod/chown."
-    local TMP_DIR=$(mktemp --directory)
-
-    # Give rights to other users could be a security risk.
-    # But for retrocompatibility we need it. (This helpers is deprecated)
-    chmod 755 $TMP_DIR
-    echo $TMP_DIR
-}
-
 _acceptable_path_to_delete() {
     local file=$1
 
@@ -719,7 +709,6 @@ _acceptable_path_to_delete() {
         return 0
     fi
 }
-
 
 # Remove a file or a directory securely
 #
@@ -751,34 +740,6 @@ ynh_secure_remove() {
     fi
 
     set -o xtrace # set -x
-}
-
-# Extract a key from a plain command output
-#
-# [internal]
-#
-# (Deprecated, use --output-as json and jq instead)
-ynh_get_plain_key() {
-    local prefix="#"
-    local found=0
-    # We call this key_ so that it's not caught as
-    # an info to be redacted by the core
-    local key_=$1
-    shift
-    while read line; do
-        if [[ "$found" == "1" ]]; then
-            [[ "$line" =~ ^${prefix}[^#] ]] && return
-            echo $line
-        elif [[ "$line" =~ ^${prefix}${key_}$ ]]; then
-            if [[ -n "${1:-}" ]]; then
-                prefix+="#"
-                key_=$1
-                shift
-            else
-                found=1
-            fi
-        fi
-    done
 }
 
 # Read the value of a key in a ynh manifest file

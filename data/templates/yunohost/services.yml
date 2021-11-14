@@ -24,9 +24,9 @@ nginx:
   needs_exposed_ports: [80, 443]
   category: web
 # Yunohost will dynamically add installed php-fpm services (7.3, 7.4, 8.0, ...) in services.py
-#php7.3-fpm:
-#  log: /var/log/php7.3-fpm.log
-#  test_conf: php-fpm7.3 --test
+#php7.4-fpm:
+#  log: /var/log/php7.4-fpm.log
+#  test_conf: php-fpm7.4 --test
 #  category: web
 postfix:
   log: [/var/log/mail.log,/var/log/mail.err]
@@ -34,9 +34,9 @@ postfix:
   needs_exposed_ports: [25, 587]
   category: email
 postgresql:
-  actual_systemd_service: 'postgresql@11-main'
+  actual_systemd_service: 'postgresql@13-main'
   category: database
-  ignore_if_package_is_not_installed: postgresql-11
+  ignore_if_package_is_not_installed: postgresql-13
 redis-server:
   log: /var/log/redis/redis-server.log
   category: database
@@ -75,5 +75,6 @@ spamassassin: null
 rmilter: null
 php5-fpm: null
 php7.0-fpm: null
+php7.3-fpm:
 nslcd: null
 avahi-daemon: null

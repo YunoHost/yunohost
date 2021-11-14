@@ -109,11 +109,6 @@ do_pre_regen() {
     schema_dir="${ldap_dir}/schema"
     mkdir -p "$ldap_dir" "$schema_dir"
 
-    # remove legacy configuration file
-    [ ! -f /etc/ldap/slapd-yuno.conf ] || touch "${ldap_dir}/slapd-yuno.conf"
-    [ ! -f /etc/ldap/slapd.conf ] || touch "${ldap_dir}/slapd.conf"
-    [ ! -f /etc/ldap/schema/yunohost.schema ] || touch "${schema_dir}/yunohost.schema"
-
     cd /usr/share/yunohost/templates/slapd
 
     # copy configuration files

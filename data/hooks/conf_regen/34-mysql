@@ -12,9 +12,9 @@ fi
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/templates/mysql
+    #cd /usr/share/yunohost/templates/mysql
 
-    install -D -m 644 my.cnf "${pending_dir}/etc/mysql/my.cnf"
+    # Nothing to do
 }
 
 do_post_regen() {
@@ -33,27 +33,6 @@ do_post_regen() {
         sleep 5
 
         echo "" | mysql && echo "Can't connect to mysql using unix_socket auth ... something went wrong during initial configuration of mysql !?" >&2
-    fi
-
-    # Legacy code to get rid of /etc/yunohost/mysql ...
-    # Nowadays, we can simply run mysql while being run as root of unix_socket/auth_socket is enabled...
-    if [ -f /etc/yunohost/mysql ]; then
-
-        # This is a trick to check if we're able to use mysql without password
-        # Expect instances installed in stretch to already have unix_socket
-        #configured, but not old instances from the jessie/wheezy era
-        if ! echo "" | mysql 2>/dev/null; then
-            password="$(cat /etc/yunohost/mysql)"
-            # Enable plugin unix_socket for root on localhost
-            mysql -u root -p"$password" <<<"GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost' IDENTIFIED WITH unix_socket WITH GRANT OPTION;"
-        fi
-
-        # If now we're able to login without password, drop the mysql password
-        if echo "" | mysql 2>/dev/null; then
-            rm /etc/yunohost/mysql
-        else
-            echo "Can't connect to mysql using unix_socket auth ... something went wrong while trying to get rid of mysql password !?" >&2
-        fi
     fi
 
     # mysql is supposed to be an alias to mariadb... but in some weird case is not

@@ -134,18 +134,6 @@ do_post_regen() {
         mkdir -p "/etc/nginx/conf.d/${domain}.d"
     done
 
-    # Get rid of legacy lets encrypt snippets
-    for domain in $YNH_DOMAINS; do
-        # If the legacy letsencrypt / acme-challenge domain-specific snippet is still there
-        if [ -e /etc/nginx/conf.d/${domain}.d/000-acmechallenge.conf ]; then
-            # And if we're effectively including the new domain-independant snippet now
-            if grep -q "include /etc/nginx/conf.d/acme-challenge.conf.inc;" /etc/nginx/conf.d/${domain}.conf; then
-                # Delete the old domain-specific snippet
-                rm /etc/nginx/conf.d/${domain}.d/000-acmechallenge.conf
-            fi
-        fi
-    done
-
     # Reload nginx if conf looks good, otherwise display error and exit unhappy
     nginx -t 2>/dev/null || {
         nginx -t

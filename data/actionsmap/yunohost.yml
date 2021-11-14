@@ -89,9 +89,6 @@ user:
                         pattern: &pattern_lastname
                             - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_lastname"
-                -m:
-                    full: --mail
-                    help: (Deprecated, see --domain) Main unique email address
                 -p:
                     full: --password
                     help: User password
@@ -741,9 +738,6 @@ app:
                 app:
                     help: Name, local path or git URL of the app to fetch the manifest of
 
-        fetchlist:
-            deprecated: true
-
         ### app_list()
         list:
             action_help: List installed apps
@@ -753,12 +747,6 @@ app:
                     full: --full
                     help: Display all details, including the app manifest and various other infos
                     action: store_true
-                -i:
-                    full: --installed
-                    help: Dummy argument, does nothing anymore (still there only for backward compatibility)
-                    action: store_true
-                filter:
-                    nargs: '?'
 
         ### app_info()
         info:
@@ -922,36 +910,6 @@ app:
                     help: App ID
                 new_label:
                     help: New app label
-
-        ### app_addaccess() TODO: Write help
-        addaccess:
-            action_help: Grant access right to users (everyone by default)
-            deprecated: true
-            arguments:
-                apps:
-                    nargs: "+"
-                -u:
-                    full: --users
-                    nargs: "*"
-
-        ### app_removeaccess() TODO: Write help
-        removeaccess:
-            action_help: Revoke access right to users (everyone by default)
-            deprecated: true
-            arguments:
-                apps:
-                    nargs: "+"
-                -u:
-                    full: --users
-                    nargs: "*"
-
-        ### app_clearaccess()
-        clearaccess:
-            action_help: Reset access rights for the app
-            deprecated: true
-            arguments:
-                apps:
-                    nargs: "+"
 
     subcategories:
 
@@ -1197,13 +1155,6 @@ service:
                     full: --log
                     help: Absolute path to log file to display
                     nargs: "+"
-                -t:
-                    full: --log_type
-                    help: Type of the log (file or systemd)
-                    nargs: "+"
-                    choices:
-                        - file
-                        - systemd
                 --test_status:
                     help: Specify a custom bash command to check the status of the service. Note that it only makes sense to specify this if the corresponding systemd service does not return the proper information already.
                 --test_conf:
@@ -1217,9 +1168,6 @@ service:
                     full: --need_lock
                     help: Use this option to prevent deadlocks if the service does invoke yunohost commands.
                     action: store_true
-                -s:
-                    full: --status
-                    help: Deprecated, old option. Does nothing anymore. Possibly check the --test_status option.
 
         ### service_remove()
         remove:
@@ -1320,35 +1268,6 @@ service:
                     help: Number of lines to display
                     default: 50
                     type: int
-
-        ### service_regen_conf()
-        regen-conf:
-            action_help: Regenerate the configuration file(s) for a service
-            deprecated_alias:
-                - regenconf
-            arguments:
-                names:
-                    help: Services name to regenerate configuration of
-                    nargs: "*"
-                    metavar: NAME
-                -d:
-                    full: --with-diff
-                    help: Show differences in case of configuration changes
-                    action: store_true
-                -f:
-                    full: --force
-                    help: >
-                        Override all manual modifications in configuration
-                        files
-                    action: store_true
-                -n:
-                    full: --dry-run
-                    help: Show what would have been regenerated
-                    action: store_true
-                -p:
-                    full: --list-pending
-                    help: List pending configuration files and exit
-                    action: store_true
 
 #############################
 #         Firewall          #
@@ -1510,14 +1429,6 @@ dyndns:
                     help: Only display the generated zone
                     action: store_true
 
-        ### dyndns_installcron()
-        installcron:
-            deprecated: true
-
-        ### dyndns_removecron()
-        removecron:
-            deprecated: true
-
 
 #############################
 #           Tools           #
@@ -1597,12 +1508,6 @@ tools:
                     nargs: "?"
                     metavar: TARGET
                     default: all
-                --apps:
-                    help: (Deprecated, see first positional arg) Fetch the application list to check which apps can be upgraded
-                    action: store_true
-                --system:
-                    help: (Deprecated, see first positional arg) Fetch available system packages upgrades (equivalent to apt update)
-                    action: store_true
 
         ### tools_upgrade()
         upgrade:
@@ -1615,12 +1520,6 @@ tools:
                         - apps
                         - system
                     nargs: "?"
-                --apps:
-                    help: (Deprecated, see first positional arg) Upgrade all applications
-                    action: store_true
-                --system:
-                    help: (Deprecated, see first positional arg) Upgrade only the system packages
-                    action: store_true
 
         ### tools_shell()
         shell:

@@ -57,12 +57,10 @@ def service_add(
     name,
     description=None,
     log=None,
-    log_type=None,
     test_status=None,
     test_conf=None,
     needs_exposed_ports=None,
     need_lock=False,
-    status=None,
 ):
     """
     Add a custom service
@@ -71,12 +69,10 @@ def service_add(
         name -- Service name to add
         description -- description of the service
         log -- Absolute path to log file to display
-        log_type -- (deprecated) Specify if the corresponding log is a file or a systemd log
         test_status -- Specify a custom bash command to check the status of the service. N.B. : it only makes sense to specify this if the corresponding systemd service does not return the proper information.
         test_conf -- Specify a custom bash command to check if the configuration of the service is valid or broken, similar to nginx -t.
         needs_exposed_ports -- A list of ports that needs to be publicly exposed for the service to work as intended.
         need_lock -- Use this option to prevent deadlocks if the service does invoke yunohost commands.
-        status -- Deprecated, doesn't do anything anymore. Use test_status instead.
     """
     services = _get_services()
 
@@ -85,15 +81,6 @@ def service_add(
     if log is not None:
         if not isinstance(log, list):
             log = [log]
-
-        # Deprecated log_type stuff
-        if log_type is not None:
-            logger.warning(
-                "/!\\ Packagers! --log_type is deprecated. You do not need to specify --log_type systemd anymore ... Yunohost now automatically fetch the journalctl of the systemd service by default."
-            )
-            # Usually when adding such a service, the service name will be provided so we remove it as it's not a log file path
-            if name in log:
-                log.remove(name)
 
         service["log"] = log
 
@@ -574,29 +561,6 @@ def service_log(name, number=50):
     return result
 
 
-def service_regen_conf(
-    names=[], with_diff=False, force=False, dry_run=False, list_pending=False
-):
-
-    services = _get_services()
-
-    if isinstance(names, str):
-        names = [names]
-
-    for name in names:
-        if name not in services.keys():
-            raise YunohostValidationError("service_unknown", service=name)
-
-    if names is []:
-        names = list(services.keys())
-
-    logger.warning(m18n.n("service_regen_conf_is_deprecated"))
-
-    from yunohost.regenconf import regen_conf
-
-    return regen_conf(names, with_diff, force, dry_run, list_pending)
-
-
 def _run_service_command(action, service):
     """
     Run services management command (start, stop, enable, disable, restart, reload)
@@ -732,9 +696,6 @@ def _get_services():
 
     # Dirty hack to check the status of ynh-vpnclient
     if "ynh-vpnclient" in services:
-        status_check = "systemctl is-active openvpn@client.service"
-        if "test_status" not in services["ynh-vpnclient"]:
-            services["ynh-vpnclient"]["test_status"] = status_check
         if "log" not in services["ynh-vpnclient"]:
             services["ynh-vpnclient"]["log"] = ["/var/log/ynh-vpnclient.log"]
 

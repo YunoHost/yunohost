@@ -12,41 +12,41 @@ logger = getActionLogger("yunohost.migration")
 
 class MyMigration(Migration):
 
-    "Migrate DBs from Postgresql 9.6 to 11 after migrating to Buster"
+    "Migrate DBs from Postgresql 11 to 13 after migrating to Bullseye"
 
-    dependencies = ["migrate_to_buster"]
+    dependencies = ["migrate_to_bullseye"]
 
     def run(self):
 
-        if not self.package_is_installed("postgresql-9.6"):
-            logger.warning(m18n.n("migration_0017_postgresql_96_not_installed"))
+        if not self.package_is_installed("postgresql-11"):
+            logger.warning(m18n.n("migration_0023_postgresql_11_not_installed"))
             return
 
-        if not self.package_is_installed("postgresql-11"):
-            raise YunohostValidationError("migration_0017_postgresql_11_not_installed")
+        if not self.package_is_installed("postgresql-13"):
+            raise YunohostValidationError("migration_0023_postgresql_13_not_installed")
 
-        # Make sure there's a 9.6 cluster
+        # Make sure there's a 11 cluster
         try:
-            self.runcmd("pg_lsclusters | grep -q '^9.6 '")
+            self.runcmd("pg_lsclusters | grep -q '^11 '")
         except Exception:
             logger.warning(
-                "It looks like there's not active 9.6 cluster, so probably don't need to run this migration"
+                "It looks like there's not active 11 cluster, so probably don't need to run this migration"
             )
             return
 
         if not space_used_by_directory(
-            "/var/lib/postgresql/9.6"
+            "/var/lib/postgresql/11"
         ) > free_space_in_directory("/var/lib/postgresql"):
             raise YunohostValidationError(
-                "migration_0017_not_enough_space", path="/var/lib/postgresql/"
+                "migration_0023_not_enough_space", path="/var/lib/postgresql/"
             )
 
         self.runcmd("systemctl stop postgresql")
         self.runcmd(
-            "LC_ALL=C pg_dropcluster --stop 11 main || true"
-        )  # We do not trigger an exception if the command fails because that probably means cluster 11 doesn't exists, which is fine because it's created during the pg_upgradecluster)
-        self.runcmd("LC_ALL=C pg_upgradecluster -m upgrade 9.6 main")
-        self.runcmd("LC_ALL=C pg_dropcluster --stop 9.6 main")
+            "LC_ALL=C pg_dropcluster --stop 13 main || true"
+        )  # We do not trigger an exception if the command fails because that probably means cluster 13 doesn't exists, which is fine because it's created during the pg_upgradecluster)
+        self.runcmd("LC_ALL=C pg_upgradecluster -m upgrade 11 main")
+        self.runcmd("LC_ALL=C pg_dropcluster --stop 11 main")
         self.runcmd("systemctl start postgresql")
 
     def package_is_installed(self, package_name):

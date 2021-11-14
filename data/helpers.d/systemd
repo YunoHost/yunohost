@@ -15,17 +15,13 @@
 ynh_add_systemd_config() {
     # Declare an array to define the options of this helper.
     local legacy_args=stv
-    local -A args_array=([s]=service= [t]=template= [v]=others_var=)
+    local -A args_array=([s]=service= [t]=template=)
     local service
     local template
-    local others_var
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     service="${service:-$app}"
     template="${template:-systemd.service}"
-    others_var="${others_var:-}"
-
-    [[ -z "$others_var" ]] || ynh_print_warn --message="Packagers: using --others_var is unecessary since YunoHost 4.2"
 
     ynh_add_config --template="$YNH_APP_BASEDIR/conf/$template" --destination="/etc/systemd/system/$service.service"
 

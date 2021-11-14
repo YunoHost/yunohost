@@ -70,7 +70,9 @@ def _dyndns_available(domain):
     logger.debug(f"Checking if domain {domain} is available on {DYNDNS_PROVIDER} ...")
 
     try:
-        r = download_json(f"https://{DYNDNS_PROVIDER}/test/{domain}", expected_status_code=None)
+        r = download_json(
+            f"https://{DYNDNS_PROVIDER}/test/{domain}", expected_status_code=None
+        )
     except MoulinetteError as e:
         logger.error(str(e))
         raise YunohostError(
@@ -81,9 +83,7 @@ def _dyndns_available(domain):
 
 
 @is_unit_operation()
-def dyndns_subscribe(
-    operation_logger, domain=None, key=None
-):
+def dyndns_subscribe(operation_logger, domain=None, key=None):
     """
     Subscribe to a DynDNS service
 
@@ -338,20 +338,6 @@ def dyndns_update(
         print(
             "Warning: dry run, this is only the generated config, it won't be applied"
         )
-
-
-# Legacy
-def dyndns_installcron():
-    logger.warning(
-        "This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'."
-    )
-
-
-# Legacy
-def dyndns_removecron():
-    logger.warning(
-        "This command is deprecated. The dyndns cron job should automatically be added/removed by the regenconf depending if there's a private key in /etc/yunohost/dyndns. You can run the regenconf yourself with 'yunohost tools regen-conf yunohost'."
-    )
 
 
 def _guess_current_dyndns_domain():

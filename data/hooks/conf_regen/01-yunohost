@@ -73,10 +73,6 @@ do_pre_regen() {
 
     cd /usr/share/yunohost/templates/yunohost
 
-    # Legacy code that can be removed once on bullseye
-    touch /etc/yunohost/services.yml
-    yunohost tools shell -c "from yunohost.service import _get_services, _save_services; _save_services(_get_services())"
-
     mkdir -p $pending_dir/etc/systemd/system
     mkdir -p $pending_dir/etc/cron.d/
     mkdir -p $pending_dir/etc/cron.daily/
@@ -119,18 +115,13 @@ EOF
         touch $pending_dir/etc/cron.d/yunohost-dyndns
     fi
 
-    # legacy stuff to avoid yunohost reporting etckeeper as manually modified
-    # (this make sure that the hash is null / file is flagged as to-delete)
-    mkdir -p $pending_dir/etc/etckeeper
-    touch $pending_dir/etc/etckeeper/etckeeper.conf
-
     # Skip ntp if inside a container (inspired from the conf of systemd-timesyncd)
     mkdir -p ${pending_dir}/etc/systemd/system/ntp.service.d/
-    echo "
+    cat >${pending_dir}/etc/systemd/system/ntp.service.d/ynh-override.conf <<EOF
 [Unit]
 ConditionCapability=CAP_SYS_TIME
 ConditionVirtualization=!container
-" >${pending_dir}/etc/systemd/system/ntp.service.d/ynh-override.conf
+EOF
 
     # Make nftable conflict with yunohost-firewall
     mkdir -p ${pending_dir}/etc/systemd/system/nftables.service.d/

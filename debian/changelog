@@ -1,3 +1,47 @@
+yunohost (11.0.0~alpha) unstable; urgency=low
+
+  - Placeholder for 11.0
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Feb 2021 00:02:38 +0100
+
+yunohost (4.3.2.2) stable; urgency=low
+
+  - [fix] nginx: Try to fix again the webadmin cache hell (74e2a51e)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Nov 2021 17:39:58 +0100
+
+yunohost (4.3.2.1) stable; urgency=low
+
+  - [enh] mdns: Add possibility to manually add .local aliases via /etc/yunohost/mdns.aliases (meant for internetcube) (3da2df6e)
+  - [fix] debian: Fix conflict with redis-server (6558b23d)
+  - [fix] nginx: Refine experimental CSP header (in the end still gotta enable unsafe-inline and unsafe-eval for a bunch of things, but better than no policy at all...) (1cc3e440)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Nov 2021 16:58:07 +0100
+
+yunohost (4.3.2) stable; urgency=low
+
+  - Release as stable
+  - [i18n] Translations updated for Basque, Occitan
+
+  Thanks to all contributors <3 ! (punkrockgirl, Quentí)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Nov 2021 02:32:56 +0100
+
+yunohost (4.3.1.8) testing; urgency=low
+
+  - [enh] dyndns: Drop some YAGNI + improve IPv6-only support + resilience w.r.t. ns0 / ns1 being down (a61d0231, [#1367](https://github.com/YunoHost/yunohost/pull/1367))
+  - [fix] helpers: improve composer debug when it can't install dependencies (4ebcaf8d)
+  - [enh] helpers: allow to get/set/delete app settings without explicitly passing app id everytime... (fcd2ef9d)
+  - [fix] helpers: Don't say the 'app was restored' when restore failed after failed upgrade (019d207c)
+  - [enh] helpers: temporarily auto-add visitors during ynh_local_curl if needed ([#1370](https://github.com/YunoHost/yunohost/pull/1370))
+  - [enh] apps: Add YNH_ARCH to app script env for easier debugging and arch check in script (85eb43a7)
+  - [mod] misc fixes/enh (2687121f, 146fba7d, 86a9cb37, 4e917b5e, 974ea71f, edc5295d, ba489bfc)
+  - [i18n] Translations updated for Basque, French, Spanish
+
+  Thanks to all contributors <3 ! (ljf, Page Asgardius, ppr, punkrockgirl)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 03 Nov 2021 18:35:18 +0100
+
 yunohost (4.3.1.7) testing; urgency=low
 
   - [fix] configpanel: Misc technical fixes ... (341059d0, 9c22329e)

@@ -66,7 +66,6 @@ from yunohost.app_catalog import (  # noqa
     app_catalog,
     app_search,
     _load_apps_catalog,
-    app_fetchlist,
 )
 
 logger = getActionLogger("yunohost.app")
@@ -95,30 +94,13 @@ APP_FILES_TO_COPY = [
 ]
 
 
-def app_list(full=False, installed=False, filter=None):
+def app_list(full=False):
     """
     List installed apps
     """
 
-    # Old legacy argument ... app_list was a combination of app_list and
-    # app_catalog before 3.8 ...
-    if installed:
-        logger.warning(
-            "Argument --installed ain't needed anymore when using 'yunohost app list'. It directly returns the list of installed apps.."
-        )
-
-    # Filter is a deprecated option...
-    if filter:
-        logger.warning(
-            "Using -f $appname in 'yunohost app list' is deprecated. Just use 'yunohost app list | grep -q 'id: $appname' to check a specific app is installed"
-        )
-
     out = []
     for app_id in sorted(_installed_apps()):
-
-        if filter and not app_id.startswith(filter):
-            continue
-
         try:
             app_info_dict = app_info(app_id, full=full)
         except Exception as e:
@@ -1073,64 +1055,6 @@ def app_remove(operation_logger, app, purge=False):
     _assert_system_is_sane_for_app(manifest, "post")
 
 
-def app_addaccess(apps, users=[]):
-    """
-    Grant access right to users (everyone by default)
-
-    Keyword argument:
-        users
-        apps
-
-    """
-    from yunohost.permission import user_permission_update
-
-    output = {}
-    for app in apps:
-        permission = user_permission_update(
-            app + ".main", add=users, remove="all_users"
-        )
-        output[app] = permission["corresponding_users"]
-
-    return {"allowed_users": output}
-
-
-def app_removeaccess(apps, users=[]):
-    """
-    Revoke access right to users (everyone by default)
-
-    Keyword argument:
-        users
-        apps
-
-    """
-    from yunohost.permission import user_permission_update
-
-    output = {}
-    for app in apps:
-        permission = user_permission_update(app + ".main", remove=users)
-        output[app] = permission["corresponding_users"]
-
-    return {"allowed_users": output}
-
-
-def app_clearaccess(apps):
-    """
-    Reset access rights for the app
-
-    Keyword argument:
-        apps
-
-    """
-    from yunohost.permission import user_permission_reset
-
-    output = {}
-    for app in apps:
-        permission = user_permission_reset(app + ".main")
-        output[app] = permission["corresponding_users"]
-
-    return {"allowed_users": output}
-
-
 @is_unit_operation()
 def app_makedefault(operation_logger, app, domain=None):
     """
@@ -1459,10 +1383,6 @@ def app_ssowatconf():
     }
 
     write_to_json("/etc/ssowat/conf.json", conf_dict, sort_keys=True, indent=4)
-
-    from .utils.legacy import translate_legacy_rules_in_ssowant_conf_json_persistent
-
-    translate_legacy_rules_in_ssowant_conf_json_persistent()
 
     logger.debug(m18n.n("ssowat_conf_generated"))
 
@@ -2390,6 +2310,7 @@ def _make_environment_for_app_script(
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
         "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?"),
+        "YNH_ARCH": check_output("dpkg --print-architecture"),
     }
 
     if workdir:
@@ -2520,10 +2441,10 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     services = manifest.get("services", [])
 
-    # Some apps use php-fpm or php5-fpm which is now php7.0-fpm
+    # Some apps use php-fpm, php5-fpm or php7.x-fpm which is now php7.4-fpm
     def replace_alias(service):
-        if service in ["php-fpm", "php5-fpm", "php7.0-fpm"]:
-            return "php7.3-fpm"
+        if service in ["php-fpm", "php5-fpm", "php7.0-fpm", "php7.3-fpm"]:
+            return "php7.4-fpm"
         else:
             return service
 
@@ -2532,7 +2453,7 @@ def _assert_system_is_sane_for_app(manifest, when):
     # We only check those, mostly to ignore "custom" services
     # (added by apps) and because those are the most popular
     # services
-    service_filter = ["nginx", "php7.3-fpm", "mysql", "postfix"]
+    service_filter = ["nginx", "php7.4-fpm", "mysql", "postfix"]
     services = [str(s) for s in services if s in service_filter]
 
     if "nginx" not in services:
@@ -2542,6 +2463,7 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     # Wait if a service is reloading
     test_nb = 0
+
     while test_nb < 16:
         if not any(s for s in services if service_status(s)["status"] == "reloading"):
             break

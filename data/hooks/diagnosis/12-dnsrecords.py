@@ -4,7 +4,7 @@ import os
 import re
 
 from datetime import datetime, timedelta
-from publicsuffix import PublicSuffixList
+from publicsuffix2 import PublicSuffixList
 
 from moulinette.utils.process import check_output
 

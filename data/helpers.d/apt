@@ -176,8 +176,9 @@ ynh_package_install_from_equivs() {
     # Build and install the package
     local TMPDIR=$(mktemp --directory)
 
-    # Force the compatibility level at 10, levels below are deprecated
-    echo 10 >/usr/share/equivs/template/debian/compat
+    # Make sure to delete the legacy compat file
+    # It's now handle somewhat magically through the control file
+    rm -f /usr/share/equivs/template/debian/compat
 
     # Note that the cd executes into a sub shell
     # Create a fake deb package with equivs-build and the given control file
@@ -187,7 +188,7 @@ ynh_package_install_from_equivs() {
     cp "$controlfile" "${TMPDIR}/control"
     (
         cd "$TMPDIR"
-        LC_ALL=C equivs-build ./control 1>/dev/null
+        LC_ALL=C equivs-build ./control 2>&1
         LC_ALL=C dpkg --force-depends --install "./${pkgname}_${pkgversion}_all.deb" 2>&1 | tee ./dpkg_log
     )
 
@@ -294,8 +295,6 @@ EOF
     ynh_package_install_from_equivs /tmp/${dep_app}-ynh-deps.control \
         || ynh_die --message="Unable to install dependencies" # Install the fake package and its dependencies
     rm /tmp/${dep_app}-ynh-deps.control
-
-    ynh_app_setting_set --app=$app --key=apt_dependencies --value="$dependencies"
 
     if [[ -n "$specific_php_version" ]]
     then

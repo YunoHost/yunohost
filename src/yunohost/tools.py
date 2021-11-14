@@ -248,7 +248,9 @@ def tools_postinstall(
             # and inform the user that we could not contact the dyndns host server.
             except Exception:
                 logger.warning(
-                    m18n.n("dyndns_provider_unreachable", provider="dyndns.yunohost.org")
+                    m18n.n(
+                        "dyndns_provider_unreachable", provider="dyndns.yunohost.org"
+                    )
                 )
 
             if available:
@@ -326,24 +328,12 @@ def tools_regen_conf(
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
-def tools_update(target=None, apps=False, system=False):
+def tools_update(target=None):
     """
     Update apps & system package cache
     """
 
-    # Legacy options (--system, --apps)
-    if apps or system:
-        logger.warning(
-            "Using 'yunohost tools update' with --apps / --system is deprecated, just write 'yunohost tools update apps system' (no -- prefix anymore)"
-        )
-        if apps and system:
-            target = "all"
-        elif apps:
-            target = "apps"
-        else:
-            target = "system"
-
-    elif not target:
+    if not target:
         target = "all"
 
     if target not in ["system", "apps", "all"]:
@@ -452,7 +442,7 @@ def _list_upgradable_apps():
 
 @is_unit_operation()
 def tools_upgrade(
-    operation_logger, target=None, apps=False, system=False, allow_yunohost_upgrade=True
+    operation_logger, target=None, allow_yunohost_upgrade=True
 ):
     """
     Update apps & package cache, then display changelog
@@ -469,21 +459,6 @@ def tools_upgrade(
     # Check for obvious conflict with other dpkg/apt commands already running in parallel
     if not packages.dpkg_lock_available():
         raise YunohostValidationError("dpkg_lock_not_available")
-
-    # Legacy options management (--system, --apps)
-    if target is None:
-
-        logger.warning(
-            "Using 'yunohost tools upgrade' with --apps / --system is deprecated, just write 'yunohost tools upgrade apps' or 'system' (no -- prefix anymore)"
-        )
-
-        if (system, apps) == (True, True):
-            raise YunohostValidationError("tools_upgrade_cant_both")
-
-        if (system, apps) == (False, False):
-            raise YunohostValidationError("tools_upgrade_at_least_one")
-
-        target = "apps" if apps else "system"
 
     if target not in ["apps", "system"]:
         raise Exception(

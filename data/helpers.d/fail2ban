@@ -10,9 +10,8 @@
 #
 # -----------------------------------------------------------------------------
 #
-# usage 2: ynh_add_fail2ban_config --use_template [--others_var="list of others variables to replace"]
+# usage 2: ynh_add_fail2ban_config --use_template
 # | arg: -t, --use_template - Use this helper in template mode
-# | arg: -v, --others_var=  - List of others variables to replace separeted by a space for example : 'var_1 var_2 ...'
 #
 # This will use a template in `../conf/f2b_jail.conf` and `../conf/f2b_filter.conf`
 # See the documentation of `ynh_add_config` for a description of the template
@@ -65,21 +64,17 @@
 ynh_add_fail2ban_config() {
     # Declare an array to define the options of this helper.
     local legacy_args=lrmptv
-    local -A args_array=([l]=logpath= [r]=failregex= [m]=max_retry= [p]=ports= [t]=use_template [v]=others_var=)
+    local -A args_array=([l]=logpath= [r]=failregex= [m]=max_retry= [p]=ports= [t]=use_template)
     local logpath
     local failregex
     local max_retry
     local ports
-    local others_var
     local use_template
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     max_retry=${max_retry:-3}
     ports=${ports:-http,https}
-    others_var="${others_var:-}"
     use_template="${use_template:-0}"
-
-    [[ -z "$others_var" ]] || ynh_print_warn --message="Packagers: using --others_var is unecessary since YunoHost 4.2"
 
     if [ $use_template -ne 1 ]; then
         # Usage 1, no template. Build a config file from scratch.

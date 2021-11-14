@@ -9,7 +9,6 @@ CAN_BIND=${CAN_BIND:-1}
 # | arg: -d, --dest_path=       - destination file or directory inside the backup dir
 # | arg: -b, --is_big           - Indicate data are big (mail, video, image ...)
 # | arg: -m, --not_mandatory    - Indicate that if the file is missing, the backup can ignore it.
-# | arg: arg - Deprecated arg
 #
 # This helper can be used both in a system backup hook, and in an app backup script
 #
@@ -288,18 +287,6 @@ ynh_restore_file() {
     fi
 }
 
-# Deprecated helper since it's a dangerous one!
-#
-# [internal]
-#
-ynh_bind_or_cp() {
-    local AS_ROOT=${3:-0}
-    local NO_ROOT=0
-    [[ "${AS_ROOT}" = "1" ]] || NO_ROOT=1
-    ynh_print_warn --message="This helper is deprecated, you should use ynh_backup instead"
-    ynh_backup "$1" "$2" 1
-}
-
 # Calculate and store a file checksum into the app settings
 #
 # usage: ynh_store_file_checksum --file=file
@@ -479,7 +466,12 @@ ynh_restore_upgradebackup() {
             yunohost app remove $app
             # Restore the backup
             yunohost backup restore $app_bck-pre-upgrade$backup_number --apps $app --force --debug
-            ynh_die --message="The app was restored to the way it was before the failed upgrade."
+            if [[ -d /etc/yunohost/apps/$app ]]
+            then
+                ynh_die --message="The app was restored to the way it was before the failed upgrade."
+            else
+                ynh_die --message="Uhoh ... Yunohost failed to restore the app to the way it was before the failed upgrade :|"
+            fi
         fi
     else
         ynh_print_warn --message="\$NO_BACKUP_UPGRADE is set, that means there's no backup to restore. You have to fix this upgrade by yourself !"

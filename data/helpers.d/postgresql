@@ -1,7 +1,7 @@
 #!/bin/bash
 
 PSQL_ROOT_PWD_FILE=/etc/yunohost/psql
-PSQL_VERSION=11
+PSQL_VERSION=13
 
 # Open a connection as a user
 #
