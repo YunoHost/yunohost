@@ -2,7 +2,7 @@ backup_dir="$1/conf/ynh"
 
 cp -a "${backup_dir}/current_host" /etc/yunohost/current_host
 cp -a "${backup_dir}/firewall.yml" /etc/yunohost/firewall.yml
-cp -a "${backup_dir}/domains" /etc/yunohost/domains
+[ ! -d "${backup_dir}/domains" ] || cp -a "${backup_dir}/domains" /etc/yunohost/domains
 [ ! -e "${backup_dir}/settings.json" ] || cp -a "${backup_dir}/settings.json" "/etc/yunohost/settings.json"
 [ ! -d "${backup_dir}/dyndns" ] || cp -raT "${backup_dir}/dyndns" "/etc/yunohost/dyndns"
 [ ! -d "${backup_dir}/dkim" ] || cp -raT "${backup_dir}/dkim" "/etc/dkim"

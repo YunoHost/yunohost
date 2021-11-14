@@ -2390,6 +2390,7 @@ def _make_environment_for_app_script(
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
         "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?"),
+        "YNH_ARCH": check_output("dpkg --print-architecture"),
     }
 
     if workdir:

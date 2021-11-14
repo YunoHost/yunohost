@@ -12,7 +12,7 @@ backup_dir="${1}/conf/ynh"
 # Backup the configuration
 ynh_backup "/etc/yunohost/firewall.yml" "${backup_dir}/firewall.yml"
 ynh_backup "/etc/yunohost/current_host" "${backup_dir}/current_host"
-ynh_backup "/etc/yunohost/domains" "${backup_dir}/domains"
+[ ! -d "/etc/yunohost/domains" ] || ynh_backup "/etc/yunohost/domains" "${backup_dir}/domains"
 [ ! -e "/etc/yunohost/settings.json" ] || ynh_backup "/etc/yunohost/settings.json" "${backup_dir}/settings.json"
 [ ! -d "/etc/yunohost/dyndns" ] || ynh_backup "/etc/yunohost/dyndns" "${backup_dir}/dyndns"
 [ ! -d "/etc/dkim" ] || ynh_backup "/etc/dkim" "${backup_dir}/dkim"

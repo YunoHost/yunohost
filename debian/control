@@ -45,7 +45,7 @@ Conflicts: iptables-persistent
  , openssl (>= 1.1.1g)
  , slapd (>= 2.4.49)
  , dovecot-core (>= 1:2.3.7)
- , redis-server (>= 5:5.0.7)
+ , redis-server (>= 5:5.1)
  , fail2ban (>= 0.11)
  , iptables (>= 1.8.3)
 Description: manageable and configured self-hosting server

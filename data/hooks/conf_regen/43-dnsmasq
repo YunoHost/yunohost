@@ -69,7 +69,7 @@ do_post_regen() {
     short_hostname=$(hostname -s)
     grep -q "127.0.0.1.*$short_hostname" /etc/hosts || echo -e "\n127.0.0.1\t$short_hostname" >>/etc/hosts
 
-    [[ -n "$regen_conf_files" ]] || return
+    [[ -n "$regen_conf_files" ]] || return 0
 
     # Remove / disable services likely to conflict with dnsmasq
     for SERVICE in systemd-resolved bind9; do

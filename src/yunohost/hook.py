@@ -359,6 +359,7 @@ def hook_exec(
             r"Created symlink /etc/systemd",
             r"dpkg: warning: while removing .* not empty so not removed",
             r"apt-key output should not be parsed",
+            r"update-rc.d: ",
         ]
         return all(not re.search(w, msg) for w in irrelevant_warnings)
 

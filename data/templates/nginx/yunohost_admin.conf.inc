@@ -13,6 +13,12 @@ location /yunohost/admin/ {
     deny all;
     {% endif %}
 
+    location = /yunohost/admin/index.html {
+        etag off;
+        expires off;
+        more_set_headers "Cache-Control: no-store, no-cache, must-revalidate";
+    }
+
     more_set_headers "Content-Security-Policy: upgrade-insecure-requests; default-src 'self'; connect-src 'self' https://paste.yunohost.org wss://$host; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; object-src 'none'; img-src 'self' data:;";
     more_set_headers "Content-Security-Policy-Report-Only:";
 }
