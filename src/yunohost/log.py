@@ -749,8 +749,12 @@ class OperationLogger(object):
         # 72971 [37m[1mDEBUG [m29739 + ynh_exit_properly
         # which are lines from backup-before-upgrade or restore-after-failed-upgrade ...
         filters = [re.compile(f_) for f_ in BORING_LOG_LINES]
-        filters.append(re.compile(r'\d+ \+ '))
-        lines = [line for line in lines if not any(filter_.search(line) for filter_ in filters)]
+        filters.append(re.compile(r"\d+ \+ "))
+        lines = [
+            line
+            for line in lines
+            if not any(filter_.search(line) for filter_ in filters)
+        ]
 
         lines_to_display = []
 
@@ -758,7 +762,7 @@ class OperationLogger(object):
         rev_lines = list(reversed(lines))
         for i, line in enumerate(rev_lines):
             if line.endswith("+ ynh_exit_properly"):
-                lines_to_display = reversed(rev_lines[i:i + 20])
+                lines_to_display = reversed(rev_lines[i : i + 20])
                 break
 
         # If didnt find anything, just get the last 20 lines

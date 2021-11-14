@@ -210,7 +210,10 @@ class MailDiagnoser(Diagnoser):
 
                 # Do the DNS Query
                 status, answers = dig(query, "A")
-                if status != "ok" or (answers and set(answers) <= set(blacklist["non_blacklisted_return_code"])):
+                if status != "ok" or (
+                    answers
+                    and set(answers) <= set(blacklist["non_blacklisted_return_code"])
+                ):
                     continue
 
                 # Try to get the reason
