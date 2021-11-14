@@ -212,8 +212,11 @@ class MyDiagnoser(Diagnoser):
                 query = subdomain + "." + blacklist["dns_server"]
 
                 # Do the DNS Query
-                status, _ = dig(query, "A")
-                if status != "ok":
+                status, answers = dig(query, "A")
+                if status != "ok" or (
+                    answers
+                    and set(answers) <= set(blacklist["non_blacklisted_return_code"])
+                ):
                     continue
 
                 # Try to get the reason
