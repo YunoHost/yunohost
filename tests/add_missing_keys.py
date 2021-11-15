@@ -24,11 +24,11 @@ def find_expected_string_keys():
     p3 = re.compile(r"YunohostValidationError\(\n*\s*[\'\"](\w+)[\'\"]")
     p4 = re.compile(r"# i18n: [\'\"]?(\w+)[\'\"]?")
 
-    python_files = glob.glob("src/yunohost/*.py")
-    python_files.extend(glob.glob("src/yunohost/utils/*.py"))
-    python_files.extend(glob.glob("src/yunohost/data_migrations/*.py"))
-    python_files.extend(glob.glob("src/yunohost/authenticators/*.py"))
-    python_files.extend(glob.glob("data/hooks/diagnosis/*.py"))
+    python_files = glob.glob("src/*.py")
+    python_files.extend(glob.glob("src/utils/*.py"))
+    python_files.extend(glob.glob("src/migrations/*.py"))
+    python_files.extend(glob.glob("src/authenticators/*.py"))
+    python_files.extend(glob.glob("src/diagnosis/*.py"))
     python_files.append("bin/yunohost")
 
     for python_file in python_files:
@@ -51,7 +51,7 @@ def find_expected_string_keys():
     # For each diagnosis, try to find strings like "diagnosis_stuff_foo" (c.f. diagnosis summaries)
     # Also we expect to have "diagnosis_description_<name>" for each diagnosis
     p3 = re.compile(r"[\"\'](diagnosis_[a-z]+_\w+)[\"\']")
-    for python_file in glob.glob("data/hooks/diagnosis/*.py"):
+    for python_file in glob.glob("src/diagnosis/*.py"):
         content = open(python_file).read()
         for m in p3.findall(content):
             if m.endswith("_"):
@@ -63,14 +63,14 @@ def find_expected_string_keys():
         ]
 
     # For each migration, expect to find "migration_description_<name>"
-    for path in glob.glob("src/yunohost/data_migrations/*.py"):
+    for path in glob.glob("src/migrations/*.py"):
         if "__init__" in path:
             continue
         yield "migration_description_" + os.path.basename(path)[:-3]
 
     # For each default service, expect to find "service_description_<name>"
     for service, info in yaml.safe_load(
-        open("data/templates/yunohost/services.yml")
+        open("conf/yunohost/services.yml")
     ).items():
         if info is None:
             continue
@@ -79,7 +79,7 @@ def find_expected_string_keys():
     # For all unit operations, expect to find "log_<name>"
     # A unit operation is created either using the @is_unit_operation decorator
     # or using OperationLogger(
-    cmd = "grep -hr '@is_unit_operation' src/yunohost/ -A3 2>/dev/null | grep '^def' | sed -E 's@^def (\\w+)\\(.*@\\1@g'"
+    cmd = "grep -hr '@is_unit_operation' src/ -A3 2>/dev/null | grep '^def' | sed -E 's@^def (\\w+)\\(.*@\\1@g'"
     for funcname in (
         subprocess.check_output(cmd, shell=True).decode("utf-8").strip().split("\n")
     ):
@@ -94,14 +94,14 @@ def find_expected_string_keys():
     # Global settings descriptions
     # Will be on a line like : ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", ...
     p5 = re.compile(r" \(\n*\s*[\"\'](\w[\w\.]+)[\"\'],")
-    content = open("src/yunohost/settings.py").read()
+    content = open("src/settings.py").read()
     for m in (
         "global_settings_setting_" + s.replace(".", "_") for s in p5.findall(content)
     ):
         yield m
 
     # Keys for the actionmap ...
-    for category in yaml.safe_load(open("data/actionsmap/yunohost.yml")).values():
+    for category in yaml.safe_load(open("share/actionsmap.yml")).values():
         if "actions" not in category.keys():
             continue
         for action in category["actions"].values():
