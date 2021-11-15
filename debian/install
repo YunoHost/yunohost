@@ -1,5 +1,6 @@
 bin/* /usr/bin/
 share/* /usr/share/yunohost/
+share/actionsmap.yml /usr/share/moulinette/actionsmap/yunohost.yml
 hooks/* /usr/share/yunohost/hooks/
 helpers/* /usr/share/yunohost/helpers.d/
 conf/* /usr/share/yunohost/conf/
