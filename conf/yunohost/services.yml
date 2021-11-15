@@ -12,24 +12,31 @@ metronome:
   log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
   needs_exposed_ports: [5222, 5269]
   category: xmpp
+  ignore_if_package_is_not_installed: metronome
 mysql:
   log: [/var/log/mysql.log,/var/log/mysql.err,/var/log/mysql/error.log]
   actual_systemd_service: mariadb
   category: database
+  ignore_if_package_is_not_installed: mariadb-server
 nginx:
   log: /var/log/nginx
   test_conf: nginx -t
   needs_exposed_ports: [80, 443]
   category: web
-php7.4-fpm:
-  log: /var/log/php7.4-fpm.log
-  test_conf: php-fpm7.4 --test
-  category: web
+# Yunohost will dynamically add installed php-fpm services (7.3, 7.4, 8.0, ...) in services.py
+#php7.4-fpm:
+#  log: /var/log/php7.4-fpm.log
+#  test_conf: php-fpm7.4 --test
+#  category: web
 postfix:
   log: [/var/log/mail.log,/var/log/mail.err]
   actual_systemd_service: postfix@-
   needs_exposed_ports: [25, 587]
   category: email
+postgresql:
+  actual_systemd_service: 'postgresql@13-main'
+  category: database
+  ignore_if_package_is_not_installed: postgresql-13
 redis-server:
   log: /var/log/redis/redis-server.log
   category: database
