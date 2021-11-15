@@ -21,8 +21,18 @@ def get_network_local_interfaces() -> Dict[str, Dict[str, List[str]]]:
 
     interfaces = {
         adapter.name: {
-            "ipv4": [ip.ip for ip in adapter.ips if ip.is_IPv4 and ip_address(ip.ip).is_private],
-            "ipv6": [ip.ip[0] for ip in adapter.ips if ip.is_IPv6 and ip_address(ip.ip[0]).is_private and not ip_address(ip.ip[0]).is_link_local],
+            "ipv4": [
+                ip.ip
+                for ip in adapter.ips
+                if ip.is_IPv4 and ip_address(ip.ip).is_private
+            ],
+            "ipv6": [
+                ip.ip[0]
+                for ip in adapter.ips
+                if ip.is_IPv6
+                and ip_address(ip.ip[0]).is_private
+                and not ip_address(ip.ip[0]).is_link_local
+            ],
         }
         for adapter in ifaddr.get_adapters()
         if adapter.name != "lo"
@@ -33,7 +43,6 @@ def get_network_local_interfaces() -> Dict[str, Dict[str, List[str]]]:
 # Listener class, to detect duplicates on the network
 # Stores the list of servers in its list property
 class Listener:
-
     def __init__(self):
         self.list = []
 
@@ -66,14 +75,18 @@ def main() -> bool:
         return False
 
     if "interfaces" not in config:
-        config["interfaces"] = [interface
-                                for interface, local_ips in interfaces.items()
-                                if local_ips["ipv4"]]
+        config["interfaces"] = [
+            interface
+            for interface, local_ips in interfaces.items()
+            if local_ips["ipv4"]
+        ]
 
     if "ban_interfaces" in config:
-        config["interfaces"] = [interface
-                                for interface in config["interfaces"]
-                                if interface not in config["ban_interfaces"]]
+        config["interfaces"] = [
+            interface
+            for interface in config["interfaces"]
+            if interface not in config["ban_interfaces"]
+        ]
 
     # Let's discover currently published .local domains accross the network
     zc = Zeroconf()
@@ -103,14 +116,18 @@ def main() -> bool:
 
         return domain_i
 
-    config['domains'] = [find_domain_not_already_published(domain) for domain in config['domains']]
+    config["domains"] = [
+        find_domain_not_already_published(domain) for domain in config["domains"]
+    ]
 
     zcs: Dict[Zeroconf, List[ServiceInfo]] = {}
 
     for interface in config["interfaces"]:
 
         if interface not in interfaces:
-            print(f"Interface {interface} listed in config file is not present on system.")
+            print(
+                f"Interface {interface} listed in config file is not present on system."
+            )
             continue
 
         # Only broadcast IPv4 because IPv6 is buggy ... because we ain't using python3-ifaddr >= 0.1.7
@@ -149,7 +166,9 @@ def main() -> bool:
     print("Registering...")
     for zc, infos in zcs.items():
         for info in infos:
-            zc.register_service(info, allow_name_change=True, cooperating_responders=True)
+            zc.register_service(
+                info, allow_name_change=True, cooperating_responders=True
+            )
 
     try:
         print("Registered. Press Ctrl+C or stop service to stop.")
