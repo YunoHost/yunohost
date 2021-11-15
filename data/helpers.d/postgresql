@@ -281,6 +281,8 @@ ynh_psql_remove_db() {
 
 # Create a master password and set up global settings
 #
+# [internal]
+#
 # usage: ynh_psql_test_if_first_run
 #
 # It also make sure that postgresql is installed and running
@@ -292,34 +294,5 @@ ynh_psql_test_if_first_run() {
     # Make sure postgresql is indeed installed
     dpkg --list | grep -q "ii  postgresql-$PSQL_VERSION" || ynh_die --message="postgresql-$PSQL_VERSION is not installed !?"
 
-    # Check for some weird issue where postgresql could be installed but etc folder would not exist ...
-    [ -e "/etc/postgresql/$PSQL_VERSION" ] || ynh_die --message="It looks like postgresql was not properly configured ? /etc/postgresql/$PSQL_VERSION is missing ... Could be due to a locale issue, c.f.https://serverfault.com/questions/426989/postgresql-etc-postgresql-doesnt-exist"
-
-    # Make sure postgresql is started and enabled
-    # (N.B. : to check the active state, we check the cluster state because
-    # postgresql could be flagged as active even though the cluster is in
-    # failed state because of how the service is configured..)
-    systemctl is-active postgresql@$PSQL_VERSION-main -q || ynh_systemd_action --service_name=postgresql --action=restart
-    systemctl is-enabled postgresql -q || systemctl enable postgresql --quiet
-
-    # If this is the very first time, we define the root password
-    # and configure a few things
-    if [ ! -f "$PSQL_ROOT_PWD_FILE" ]; then
-        local pg_hba=/etc/postgresql/$PSQL_VERSION/main/pg_hba.conf
-
-        local psql_root_password="$(ynh_string_random)"
-        echo "$psql_root_password" >$PSQL_ROOT_PWD_FILE
-        sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$psql_root_password'" postgres
-
-        # force all user to connect to local databases using hashed passwords
-        # https://www.postgresql.org/docs/current/static/auth-pg-hba-conf.html#EXAMPLE-PG-HBA.CONF
-        # Note: we can't use peer since YunoHost create users with nologin
-        #  See: https://github.com/YunoHost/yunohost/blob/unstable/data/helpers.d/user
-        ynh_replace_string --match_string="local\(\s*\)all\(\s*\)all\(\s*\)peer" --replace_string="local\1all\2all\3md5" --target_file="$pg_hba"
-
-        # Integrate postgresql service in yunohost
-        yunohost service add postgresql --log "/var/log/postgresql/"
-
-        ynh_systemd_action --service_name=postgresql --action=reload
-    fi
+    yunohost tools regen-conf postgresql
 }

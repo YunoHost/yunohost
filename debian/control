@@ -18,8 +18,6 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , python-is-python3
  , nginx, nginx-extras (>=1.18)
  , apt, apt-transport-https, apt-utils, dirmngr
- , php7.4-common, php7.4-fpm, php7.4-ldap, php7.4-intl
- , mariadb-server, php7.4-mysql
  , openssh-server, iptables, fail2ban, dnsutils, bind9utils
  , openssl, ca-certificates, netcat-openbsd, iproute2
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
@@ -34,6 +32,8 @@ Depends: ${python3:Depends}, ${misc:Depends}
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog
+ , php7.4-common, php7.4-fpm, php7.4-ldap, php7.4-intl
+ , mariadb-server, php7.4-mysql
  , php7.4-gd, php7.4-curl, php-php-gettext
  , python3-pip
  , unattended-upgrades
