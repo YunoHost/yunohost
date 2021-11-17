@@ -22,7 +22,14 @@ def cli(debug, quiet, output_as, timeout, args, parser):
     if not is_installed():
         check_command_is_valid_before_postinstall(args)
 
-    ret = moulinette.cli(args, output_as=output_as, timeout=timeout, top_parser=parser)
+    ret = moulinette.cli(
+        args,
+        actionsmap="/usr/share/yunohost/actionsmap.yml",
+        locales_dir="/usr/share/yunohost/locales/",
+        output_as=output_as,
+        timeout=timeout,
+        top_parser=parser
+    )
     sys.exit(ret)
 
 
@@ -39,6 +46,8 @@ def api(debug, host, port):
     ret = moulinette.api(
         host=host,
         port=port,
+        actionsmap="/usr/share/yunohost/actionsmap.yml",
+        locales_dir="/usr/share/yunohost/locales/",
         routes={("GET", "/installed"): is_installed_api},
     )
     sys.exit(ret)
@@ -78,7 +87,7 @@ def init(interface="cli", debug=False, quiet=False, logdir="/var/log/yunohost"):
 def init_i18n():
     # This should only be called when not willing to go through moulinette.cli
     # or moulinette.api but still willing to call m18n.n/g...
-    m18n.load_namespace("yunohost")
+    m18n.set_locales_dir("/usr/share/yunohost/locales/")
     m18n.set_locale(get_locale())
 
 

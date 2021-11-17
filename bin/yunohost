@@ -4,8 +4,6 @@
 import os
 import sys
 import argparse
-
-sys.path.insert(0, "/usr/lib/moulinette/")
 import yunohost
 
 
