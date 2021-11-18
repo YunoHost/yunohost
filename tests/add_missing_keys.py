@@ -28,7 +28,7 @@ def find_expected_string_keys():
     python_files.extend(glob.glob("src/utils/*.py"))
     python_files.extend(glob.glob("src/migrations/*.py"))
     python_files.extend(glob.glob("src/authenticators/*.py"))
-    python_files.extend(glob.glob("src/diagnosis/*.py"))
+    python_files.extend(glob.glob("src/diagnosers/*.py"))
     python_files.append("bin/yunohost")
 
     for python_file in python_files:
@@ -51,7 +51,7 @@ def find_expected_string_keys():
     # For each diagnosis, try to find strings like "diagnosis_stuff_foo" (c.f. diagnosis summaries)
     # Also we expect to have "diagnosis_description_<name>" for each diagnosis
     p3 = re.compile(r"[\"\'](diagnosis_[a-z]+_\w+)[\"\']")
-    for python_file in glob.glob("src/diagnosis/*.py"):
+    for python_file in glob.glob("src/diagnosers/*.py"):
         content = open(python_file).read()
         for m in p3.findall(content):
             if m.endswith("_"):

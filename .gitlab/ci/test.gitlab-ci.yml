@@ -37,7 +37,7 @@ full-tests:
     - *install_debs
     - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns --force-diskspace
   script:
-    - python3 -m pytest --cov=yunohost tests/ src/tests/ src/diagnosis/ --junitxml=report.xml
+    - python3 -m pytest --cov=yunohost tests/ src/tests/ src/diagnosers/ --junitxml=report.xml
     - cd tests
     - bash test_helpers.sh
   needs:
@@ -59,7 +59,7 @@ test-i18n-keys:
     changes:
       - locales/en.json
       - src/*.py
-      - src/diagnosis/*.py
+      - src/diagnosers/*.py
 
 test-translation-format-consistency:
   extends: .test-stage

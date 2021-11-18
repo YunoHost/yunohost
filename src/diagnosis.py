@@ -660,7 +660,7 @@ class Diagnoser:
 
 def _list_diagnosis_categories():
 
-    paths = glob.glob(os.path.dirname(__file__) + "/diagnosis/??-*.py")
+    paths = glob.glob(os.path.dirname(__file__) + "/diagnosers/??-*.py")
     names = sorted([os.path.basename(path)[: -len(".py")] for path in paths])
 
     return names
@@ -670,7 +670,7 @@ def _load_diagnoser(diagnoser_name):
 
     logger.debug(f"Loading diagnoser {diagnoser_name}")
 
-    paths = glob.glob(os.path.dirname(__file__) + f"/diagnosis/??-{diagnoser_name}.py")
+    paths = glob.glob(os.path.dirname(__file__) + f"/diagnosers/??-{diagnoser_name}.py")
 
     if len(paths) != 1:
         raise YunohostError(f"Uhoh, found several matches (or none?) for diagnoser {diagnoser_name} : {paths}", raw_msg=True)
@@ -681,7 +681,7 @@ def _load_diagnoser(diagnoser_name):
         # this is python builtin method to import a module using a name, we
         # use that to import the migration as a python object so we'll be
         # able to run it in the next loop
-        module = import_module("yunohost.diagnosis.{}".format(module_id))
+        module = import_module("yunohost.diagnosers.{}".format(module_id))
         return module.MyDiagnoser()
     except Exception as e:
         import traceback
