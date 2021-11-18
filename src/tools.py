@@ -930,19 +930,6 @@ def _write_migration_state(migration_id, state):
 
 
 def _get_migrations_list():
-    migrations = []
-
-    try:
-        from . import migrations
-    except ImportError:
-        # not data migrations present, return empty list
-        return migrations
-
-    migrations_path = migrations.__path__[0]
-
-    if not os.path.exists(migrations_path):
-        logger.warn(m18n.n("migrations_cant_reach_migration_file", migrations_path))
-        return migrations
 
     # states is a datastructure that represents the last run migration
     # it has this form:
@@ -955,9 +942,11 @@ def _get_migrations_list():
     # (in particular, pending migrations / not already ran are not listed
     states = tools_migrations_state()["migrations"]
 
+    migrations = []
+    migrations_folder = os.path.dirname(__file__) + "/migrations/"
     for migration_file in [
         x
-        for x in os.listdir(migrations_path)
+        for x in os.listdir(migrations_folder)
         if re.match(r"^\d+_[a-zA-Z0-9_]+\.py$", x)
     ]:
         m = _load_migration(migration_file)
