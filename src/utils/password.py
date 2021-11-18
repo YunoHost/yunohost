@@ -36,7 +36,7 @@ SMALL_PWD_LIST = [
     "rpi",
 ]
 
-MOST_USED_PASSWORDS = "/usr/share/yunohost/password/100000-most-used-passwords.txt"
+MOST_USED_PASSWORDS = "/usr/share/yunohost/100000-most-used-passwords.txt"
 
 # Length, digits, lowers, uppers, others
 STRENGTH_LEVELS = [
