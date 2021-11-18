@@ -61,12 +61,6 @@ def new_translate(self, key, *args, **kwargs):
 moulinette.core.Translator.translate = new_translate
 
 
-def new_m18nn(self, key, *args, **kwargs):
-    return self._namespaces[self._current_namespace].translate(key, *args, **kwargs)
-
-
-moulinette.core.Moulinette18n.n = new_m18nn
-
 #
 # Init the moulinette to have the cli loggers stuff                         #
 #

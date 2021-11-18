@@ -423,7 +423,7 @@ class Diagnoser:
             not force
             and self.cached_time_ago() < self.cache_duration
         ):
-            self.logger_debug("Cache still valid : %s" % self.cache_file)
+            logger.debug("Cache still valid : %s" % self.cache_file)
             logger.info(
                 m18n.n("diagnosis_cache_still_valid", category=self.description)
             )
@@ -457,7 +457,7 @@ class Diagnoser:
 
         new_report = {"id": self.id_, "cached_for": self.cache_duration, "items": items}
 
-        self.logger_debug("Updating cache %s" % self.cache_file)
+        logger.debug("Updating cache %s" % self.cache_file)
         self.write_cache(new_report)
         Diagnoser.i18n(new_report)
         add_ignore_flag_to_issues(new_report)
