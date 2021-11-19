@@ -638,5 +638,16 @@
     "diagnosis_apps_issue": "Ein Problem für die App {app} ist aufgetreten",
     "config_validate_time": "Sollte eine zulässige Zeit wie HH:MM sein",
     "config_validate_url": "Sollte eine zulässige web URL sein",
-    "config_version_not_supported": "Konfigurationspanel Versionen '{version}' sind nicht unterstützt."
+    "config_version_not_supported": "Konfigurationspanel Versionen '{version}' sind nicht unterstützt.",
+    "diagnosis_apps_allgood": "Alle installierten Apps berücksichtigen die grundlegenden Paketierungspraktiken",
+    "diagnosis_apps_broken": "Diese App ist im YunoHost-Applikationskatalog momentan als defekt gekennzeichnet. Es könnte sich dabei um einen vorübergehendes Problem handeln. Während der Betreuer versucht das Problem zu beheben, ist die Upgrade-Funktion für diese App gesperrt.",
+    "diagnosis_apps_not_in_app_catalog": "Diese App fehlt im Applikationskatalog von YunoHost oder wird in diesem nicht mehr angezeigt. Sie müssen im Betracht ziehen, sie zu deinstallieren, weil sie keine Aktualisierungen mehr erhält und die Integrität und die Sicherheit Ihres Systems kompromittieren könnte.",
+    "diagnosis_apps_outdated_ynh_requirement": "Die installierte Version dieser App erfordert nur YunoHost >=2.x, was darauf hinweist, dass die App nicht mehr auf dem Stand der guten Paketierungspraktiken und der empfohlenen Helper ist. Sie sollten wirklich in Betracht ziehen, sie zu aktualisieren.",
+    "diagnosis_description_apps": "Applikationen",
+    "config_cant_set_value_on_section": "Sie können nicht einen einzelnen Wert auf einen gesamten Konfigurationsbereich anwenden.",
+    "diagnosis_apps_deprecated_practices": "Die installierte Version dieser App verwendet immer noch gewisse veraltete Paketierungspraktiken. Sie sollten die App wirklich aktualisieren.",
+    "app_config_unable_to_apply": "Konnte die Werte des Konfigurations-Panels nicht anwenden.",
+    "app_config_unable_to_read": "Konnte die Werte des Konfigurations-Panels nicht auslesen.",
+    "config_unknown_filter_key": "Der Filterschlüssel '{filter_key}' ist inkorrekt.",
+    "diagnosis_dns_specialusedomain": "Die Domäne {domain} basiert auf einer Top-Level-Domain (TLD) für spezielle Zwecke wie .local oder .test und deshalb wird von ihr nicht erwartet, dass sie echte DNS-Einträge besitzt."
 }
