@@ -16,7 +16,6 @@
     "app_id_invalid": "Неправильный ID приложения",
     "app_install_files_invalid": "Эти файлы не могут быть установлены",
     "app_location_unavailable": "Этот URL отсутствует или конфликтует с уже установленным приложением или приложениями:\n{apps}",
-    "app_manifest_invalid": "Недопустимый манифест приложения: {error}",
     "app_not_correctly_installed": "{app} , кажется, установлены неправильно",
     "app_not_installed": "{app} не найдено в списке установленных приложений: {all_apps}",
     "app_not_properly_removed": "{app} удалены неправильно",

@@ -8,7 +8,6 @@
     "app_extraction_failed": "Kan installatiebestanden niet uitpakken",
     "app_id_invalid": "Ongeldige app-id",
     "app_install_files_invalid": "Deze bestanden kunnen niet worden geïnstalleerd",
-    "app_manifest_invalid": "Ongeldig app-manifest",
     "app_not_installed": "{app} is niet geïnstalleerd",
     "app_removed": "{app} succesvol verwijderd",
     "app_sources_fetch_failed": "Kan bronbestanden niet ophalen, klopt de URL?",
