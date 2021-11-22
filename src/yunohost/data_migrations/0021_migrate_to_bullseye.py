@@ -78,6 +78,13 @@ class MyMigration(Migration):
         self.apt_install("mariadb-common --reinstall -o Dpkg::Options::='--force-confmiss'")
 
         #
+        # /usr/share/yunohost/yunohost-config/ssl/yunoCA -> /usr/share/yunohost/ssl
+        #
+        if os.path.exists("/usr/share/yunohost/yunohost-config/ssl/yunoCA"):
+            os.system("mv /usr/share/yunohost/yunohost-config/ssl/yunoCA /usr/share/yunohost/ssl")
+            rm("/usr/share/yunohost/yunohost-config", recursive=True, force=True)
+
+        #
         # Main upgrade
         #
         logger.info(m18n.n("migration_0021_main_upgrade"))
