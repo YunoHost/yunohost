@@ -206,7 +206,7 @@ class MyDiagnoser(Diagnoser):
 
         # script taken from https://github.com/speed47/spectre-meltdown-checker
         # script commit id is store directly in the script
-        SCRIPT_PATH = "/usr/lib/moulinette/yunohost/vendor/spectre-meltdown-checker/spectre-meltdown-checker.sh"
+        SCRIPT_PATH = "/usr/lib/python3/dist-packages/yunohost/vendor/spectre-meltdown-checker/spectre-meltdown-checker.sh"
 
         # '--variant 3' corresponds to Meltdown
         # example output from the script:
