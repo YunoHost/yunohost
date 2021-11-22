@@ -5,7 +5,7 @@
 
 # This definition stops the following lines choking if HOME isn't
 # defined.
-HOME			= /usr/share/yunohost/yunohost-config/ssl
+HOME			= /usr/share/yunohost/ssl
 RANDFILE		= $ENV::HOME/.rnd
 
 # Extra OBJECT IDENTIFIER info:
@@ -34,7 +34,7 @@ default_ca	= Yunohost		# The default ca section
 ####################################################################
 [ Yunohost ]
 
-dir		= /usr/share/yunohost/yunohost-config/ssl/yunoCA		# Where everything is kept
+dir		= /usr/share/yunohost/ssl		# Where everything is kept
 certs		= $dir/certs		# Where the issued certs are kept
 crl_dir		= $dir/crl		# Where the issued crl are kept
 database	= $dir/index.txt	# database index file.

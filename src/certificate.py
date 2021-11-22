@@ -54,7 +54,7 @@ WEBROOT_FOLDER = "/tmp/acme-challenge-public/"
 SELF_CA_FILE = "/etc/ssl/certs/ca-yunohost_crt.pem"
 ACCOUNT_KEY_FILE = "/etc/yunohost/letsencrypt_account.pem"
 
-SSL_DIR = "/usr/share/yunohost/yunohost-config/ssl/yunoCA"
+SSL_DIR = "/usr/share/yunohost/ssl"
 
 KEY_SIZE = 3072
 
