@@ -185,8 +185,6 @@ do_post_regen() {
 
     chown root:root /var/cache/yunohost
     chmod 700 /var/cache/yunohost
-    chown root:root /var/cache/moulinette
-    chmod 700 /var/cache/moulinette
 
     setfacl -m g:all_users:--- /var/www
     setfacl -m g:all_users:--- /var/log/nginx
