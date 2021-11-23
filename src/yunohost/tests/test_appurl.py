@@ -70,6 +70,7 @@ def test_repo_url_definition():
     )
     assert _is_app_repo_url("https://github.com/YunoHost-Apps/foobar_ynh/tree/1.23.4")
     assert _is_app_repo_url("git@github.com:YunoHost-Apps/foobar_ynh.git")
+    assert _is_app_repo_url("https://git.super.host/~max/foobar_ynh")
 
     assert not _is_app_repo_url("github.com/YunoHost-Apps/foobar_ynh")
     assert not _is_app_repo_url("http://github.com/YunoHost-Apps/foobar_ynh")
