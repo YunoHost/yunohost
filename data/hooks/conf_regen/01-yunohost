@@ -179,6 +179,9 @@ do_post_regen() {
     chown admin:root /home/yunohost.backup
     chown admin:root /home/yunohost.backup/archives
 
+    # NB: x permission for 'others' is important for ssl-cert (and maybe mdns), otherwise slapd will fail to start because can't access the certs
+    chmod 755 /etc/yunohost
+
     # Certs
     # We do this with find because there could be a lot of them...
     chown -R root:ssl-cert /etc/yunohost/certs
