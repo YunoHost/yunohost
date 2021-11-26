@@ -14,7 +14,7 @@ do_pre_regen() {
     etcdefault_dir="${pending_dir}/etc/default"
     mkdir -p "$etcdefault_dir"
 
-    # add general conf files
+    # add default conf files
     cp plain/etcdefault ${pending_dir}/etc/default/dnsmasq
     cp plain/dnsmasq.conf ${pending_dir}/etc/dnsmasq.conf
 
@@ -26,11 +26,22 @@ do_pre_regen() {
     ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
     ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
     ynh_validate_ip6 "$ipv6" || ipv6=''
+    IFS=' ' read -a interfaces <<< "$(ls /sys/class/net)"
+    wireless_interfaces=()
+    for dev in "${interfaces[@]}"; do
+        if [ -d "/sys/class/net/$dev/wireless" ]; then
+            wireless_interfaces+=("$dev")
+        fi
+    done
 
-    export ipv4
-    export ipv6
+    # General configuration
+    export wireless_interfaces
+    ynh_render_template "dnsmasq.conf.tpl" "${pending_dir}/etc/dnsmasq.conf"
 
     # add domain conf files
+    export interfaces
+    export ipv4
+    export ipv6
     for domain in $YNH_DOMAINS; do
         [[ ! $domain =~ \.local$ ]] || continue
         export domain

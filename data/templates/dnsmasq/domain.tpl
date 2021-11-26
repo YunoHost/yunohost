@@ -1,5 +1,7 @@
-host-record={{ domain }},{{ ipv4 }}
-host-record=xmpp-upload.{{ domain }},{{ ipv4 }}
+{% for interface in interfaces %}
+interface-name={{ domain }},{{ interface }}
+interface-name=xmpp-upload.{{ domain }},{{ interface }}
+{% endfor %}
 {% if ipv6 %}
 host-record={{ domain }},{{ ipv6 }}
 host-record=xmpp-upload.{{ domain }},{{ ipv6 }}
