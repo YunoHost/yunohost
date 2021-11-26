@@ -4,7 +4,11 @@ set -e
 
 _generate_config() {
     echo "domains:"
-    echo "    - yunohost.local"
+    # Add yunohost.local (only if yunohost.local ain't already in ynh_domains)
+    if ! echo "$YNH_DOMAINS"  | tr ' ' '\n' | grep -q --line-regexp 'yunohost.local'
+    then
+        echo "    - yunohost.local"
+    fi
     for domain in $YNH_DOMAINS; do
         # Only keep .local domains (don't keep
         [[ "$domain" =~ [^.]+\.[^.]+\.local$ ]] && echo "Subdomain $domain cannot be handled by Bonjour/Zeroconf/mDNS" >&2
