@@ -16,7 +16,6 @@ do_pre_regen() {
 
     # add default conf files
     cp plain/etcdefault ${pending_dir}/etc/default/dnsmasq
-    cp plain/dnsmasq.conf ${pending_dir}/etc/dnsmasq.conf
 
     # add resolver file
     cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf >${pending_dir}/etc/resolv.dnsmasq.conf
@@ -26,9 +25,9 @@ do_pre_regen() {
     ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
     ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
     ynh_validate_ip6 "$ipv6" || ipv6=''
-    interfaces="$(ls /sys/class/net)"
-    wireless_interfaces=""
-    for dev in "${interfaces[@]}"; do
+    interfaces="$(ls -m /sys/class/net | sed s/,//g)"
+    wireless_interfaces="lo"
+    for dev in $(ls /sys/class/net); do
         if [ -d "/sys/class/net/$dev/wireless" ]; then
             wireless_interfaces+=" $dev"
         fi
