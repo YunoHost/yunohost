@@ -1,4 +1,5 @@
-{% for interface in interfaces %}
+{% set interfaces_list = interfaces.split(' ') %}
+{% for interface in interfaces_list %}
 interface-name={{ domain }},{{ interface }}
 interface-name=xmpp-upload.{{ domain }},{{ interface }}
 {% endfor %}

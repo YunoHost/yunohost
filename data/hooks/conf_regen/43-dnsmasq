@@ -26,11 +26,11 @@ do_pre_regen() {
     ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
     ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
     ynh_validate_ip6 "$ipv6" || ipv6=''
-    IFS=' ' read -a interfaces <<< "$(ls /sys/class/net)"
-    wireless_interfaces=()
+    interfaces="$(ls /sys/class/net)"
+    wireless_interfaces=""
     for dev in "${interfaces[@]}"; do
         if [ -d "/sys/class/net/$dev/wireless" ]; then
-            wireless_interfaces+=("$dev")
+            wireless_interfaces+=" $dev"
         fi
     done
 

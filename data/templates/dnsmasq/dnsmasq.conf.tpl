@@ -2,8 +2,8 @@ domain-needed
 expand-hosts
 localise-queries
 
-
-{% for interface in wireless_interfaces %}
+{% set interfaces = wireless_interfaces.strip().split(' ') %}
+{% for interface in interfaces %}
 interface={{ interface }}
 {% endfor %}
 resolv-file=/etc/resolv.dnsmasq.conf
