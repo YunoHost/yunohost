@@ -1,3 +1,13 @@
+yunohost (4.3.4.1) stable; urgency=low
+
+  - [fix] regenconf: Force permission on /etc/resolv.dnsmasq.conf to fix an issue on some setup with umask=027 (5881938c)
+  - [fix] regenconf: Typo in custom mdns alias regen conf (b3df36dd)
+  - [fix] regenconf: Try to fix the return line bug in dnsmasq conf ([#1385](https://github.com/YunoHost/yunohost/pull/1385))
+
+  Thanks to all contributors <3 ! (ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 27 Nov 2021 21:15:29 +0100
+
 yunohost (4.3.4) stable; urgency=low
 
   - [fix] apps: Allow tilde in username/organization for repo URLs ([#1382](https://github.com/YunoHost/yunohost/pull/1382))
