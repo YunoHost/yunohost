@@ -15,7 +15,7 @@ _generate_config() {
         [[ "$domain" =~ ^[^.]+\.local$ ]] || continue
         echo "    - $domain"
     done
-    if [[ -e /etc/yunohot/mdns.aliases ]]
+    if [[ -e /etc/yunohost/mdns.aliases ]]
     then
         for localalias in $(cat /etc/yunohost/mdns.aliases | grep -v "^ *$")
         do
