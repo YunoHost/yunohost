@@ -2,6 +2,7 @@
 # TRANSLATION
 ########################################
 test-i18n-keys:
+  stage: translation
   script:
     - python3 maintenance/missing_i18n_keys --check
   only:
