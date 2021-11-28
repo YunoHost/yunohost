@@ -24,7 +24,9 @@ def get_network_local_interfaces() -> Dict[str, Dict[str, List[str]]]:
             "ipv4": [
                 ip.ip
                 for ip in adapter.ips
-                if ip.is_IPv4 and ip_address(ip.ip).is_private
+                if ip.is_IPv4
+                and ip_address(ip.ip).is_private
+                and not ip_address(ip.ip).is_link_local
             ],
             "ipv6": [
                 ip.ip[0]
