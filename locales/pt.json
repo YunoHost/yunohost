@@ -7,7 +7,6 @@
     "app_extraction_failed": "Não foi possível extrair os arquivos para instalação",
     "app_id_invalid": "App ID invaĺido",
     "app_install_files_invalid": "Esses arquivos não podem ser instalados",
-    "app_manifest_invalid": "Manifesto da aplicação inválido: {error}",
     "app_not_installed": "Não foi possível encontrar {app} na lista de aplicações instaladas: {all_apps}",
     "app_removed": "{app} desinstalada",
     "app_sources_fetch_failed": "Não foi possível carregar os arquivos de código fonte, a URL está correta?",
