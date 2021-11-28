@@ -439,6 +439,12 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
     _env = os.environ.copy()
     _env.update(env)
 
+    # Remove the 'HOME' var which is causing some inconsistencies between
+    # cli and webapi (HOME ain't defined in yunohost-api because ran from systemd)
+    # Apps that need the HOME var should define it in the app scripts
+    if "HOME" in _env:
+        del _env["HOME"]
+
     returncode = call_async_output(command, loggers, shell=False, cwd=chdir, env=_env)
 
     raw_content = None
