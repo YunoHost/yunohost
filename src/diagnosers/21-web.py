@@ -3,6 +3,7 @@
 import os
 import random
 import requests
+from typing import List
 
 from moulinette.utils.filesystem import read_file
 
@@ -17,7 +18,7 @@ class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
-    dependencies = ["ip"]
+    dependencies: List[str] = ["ip"]
 
     def run(self):
 

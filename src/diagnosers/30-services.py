@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import os
+from typing import List
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.service import service_status
@@ -10,7 +11,7 @@ class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
-    dependencies = []
+    dependencies: List[str] = []
 
     def run(self):
 

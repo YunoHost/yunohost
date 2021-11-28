@@ -3,6 +3,7 @@ import os
 import psutil
 import datetime
 import re
+from typing import List
 
 from moulinette.utils.process import check_output
 
@@ -13,7 +14,7 @@ class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
-    dependencies = []
+    dependencies: List[str] = []
 
     def run(self):
 

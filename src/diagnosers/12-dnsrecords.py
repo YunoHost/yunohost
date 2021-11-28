@@ -2,7 +2,7 @@
 
 import os
 import re
-
+from typing import List
 from datetime import datetime, timedelta
 from publicsuffix2 import PublicSuffixList
 
@@ -21,11 +21,12 @@ from yunohost.dns import _build_dns_conf, _get_dns_zone_for_domain
 
 logger = log.getActionLogger("yunohost.diagnosis")
 
+
 class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
-    dependencies = ["ip"]
+    dependencies: List[str] = ["ip"]
 
     def run(self):
 

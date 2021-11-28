@@ -3,6 +3,7 @@
 import os
 import json
 import subprocess
+from typing import List
 
 from moulinette.utils import log
 from moulinette.utils.process import check_output
@@ -17,7 +18,7 @@ class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
-    dependencies = []
+    dependencies: List[str] = []
 
     def run(self):
 

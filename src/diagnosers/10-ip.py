@@ -3,6 +3,7 @@
 import re
 import os
 import random
+from typing import List
 
 from moulinette.utils import log
 from moulinette.utils.network import download_text
@@ -19,7 +20,7 @@ class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
-    dependencies = []
+    dependencies: List[str] = []
 
     def run(self):
 

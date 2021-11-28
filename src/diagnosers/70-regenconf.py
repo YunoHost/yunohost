@@ -2,6 +2,7 @@
 
 import os
 import re
+from typing import List
 
 from yunohost.settings import settings_get
 from yunohost.diagnosis import Diagnoser
@@ -13,7 +14,7 @@ class MyDiagnoser(Diagnoser):
 
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
-    dependencies = []
+    dependencies: List[str] = []
 
     def run(self):
 
