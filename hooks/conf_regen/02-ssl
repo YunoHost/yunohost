@@ -3,10 +3,10 @@
 set -e
 
 ssl_dir="/usr/share/yunohost/ssl"
+template_dir="/usr/share/yunohost/conf/ssl/"
 ynh_ca="/etc/yunohost/certs/yunohost.org/ca.pem"
 ynh_crt="/etc/yunohost/certs/yunohost.org/crt.pem"
 ynh_key="/etc/yunohost/certs/yunohost.org/key.pem"
-template_dir="/usr/share/yunohost/conf/ssl/"
 
 regen_local_ca() {
 
@@ -56,7 +56,7 @@ do_init_regen() {
     chmod 640 $LOGFILE
 
     # Make sure this conf exists
-    mkdir -p ${ssl_dir}
+    mkdir -p ${ssl_dir}/{ca,certs,crl,newcerts}
     install -D -m 644 ${template_dir}/openssl.cnf "${ssl_dir}/openssl.cnf"
 
     # create default certificates
@@ -104,12 +104,26 @@ do_post_regen() {
 
     current_local_ca_domain=$(openssl x509 -in $ynh_ca -text | tr ',' '\n' | grep Issuer | awk '{print $4}')
     main_domain=$(cat /etc/yunohost/current_host)
+   
+    # Automigrate legacy folder
+    if [ -e /usr/share/yunohost/yunohost-config/ssl/yunoCA ]
+    then
+        mv /usr/share/yunohost/yunohost-config/ssl/yunoCA/* ${ssl_dir}
+        rm -rf /usr/share/yunohost/yunohost-config
+    fi
+
+    mkdir -p ${ssl_dir}/{ca,certs,crl,newcerts}
+    chown root:root ${ssl_dir}
+    chmod 750 ${ssl_dir}
+    chmod -R o-rwx ${ssl_dir}
+    chmod o+x ${ssl_dir}/certs 
+    chmod o+r ${ssl_dir}/certs/yunohost_crt.pem
 
     if [[ "$current_local_ca_domain" != "$main_domain" ]]; then
         regen_local_ca $main_domain
         # Idk how useful this is, but this was in the previous python code (domain.main_domain())
-        ln -sf /etc/yunohost/certs/$domain/crt.pem /etc/ssl/certs/yunohost_crt.pem
-        ln -sf /etc/yunohost/certs/$domain/key.pem /etc/ssl/private/yunohost_key.pem
+        ln -sf /etc/yunohost/certs/$main_domain/crt.pem /etc/ssl/certs/yunohost_crt.pem
+        ln -sf /etc/yunohost/certs/$main_domain/key.pem /etc/ssl/private/yunohost_key.pem
     fi
 }
 

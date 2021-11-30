@@ -184,8 +184,6 @@ do_post_regen() {
     find /etc/cron.d/yunohost-* -type f -exec chmod 644 {} \;
     find /etc/cron.*/yunohost-* -type f -exec chown root:root {} \;
 
-    chmod 750 /usr/share/yunohost/ssl
-
     chown root:root /var/cache/yunohost
     chmod 700 /var/cache/yunohost
 
