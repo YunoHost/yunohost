@@ -110,6 +110,9 @@ do_post_regen() {
     then
         mv /usr/share/yunohost/yunohost-config/ssl/yunoCA/* ${ssl_dir}
         rm -rf /usr/share/yunohost/yunohost-config
+        # Overwrite openssl.cnf because it may still contain references to the old yunoCA dir
+        rm -f ${ssl_dir}/openssl.ca.cnf
+        install -D -m 644 ${template_dir}/openssl.cnf "${ssl_dir}/openssl.cnf"
     fi
 
     mkdir -p ${ssl_dir}/{ca,certs,crl,newcerts}

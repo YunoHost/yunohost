@@ -143,11 +143,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
         # Paths of files and folder we'll need
         date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
-        new_cert_folder = "%s/%s-history/%s-selfsigned" % (
-            CERT_FOLDER,
-            domain,
-            date_tag,
-        )
+        new_cert_folder = f"{CERT_FOLDER}/{domain}-history/{date_tag}-selfsigned"
 
         conf_template = os.path.join(SSL_DIR, "openssl.cnf")
 
@@ -181,10 +177,8 @@ def _certificate_install_selfsigned(domain_list, force=False):
         # Use OpenSSL command line to create a certificate signing request,
         # and self-sign the cert
         commands = [
-            "openssl req -new -config %s -out %s -keyout %s -nodes -batch"
-            % (conf_file, csr_file, key_file),
-            "openssl ca -config %s -days 3650 -in %s -out %s -batch"
-            % (conf_file, csr_file, crt_file),
+            f"openssl req -new -config {conf_file} -out {csr_file} -keyout {key_file} -nodes -batch",
+            f"openssl ca -config {conf_file} -days 3650 -in {csr_file} -out {crt_file} -batch",
         ]
 
         for command in commands:
