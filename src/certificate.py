@@ -181,7 +181,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
         # Use OpenSSL command line to create a certificate signing request,
         # and self-sign the cert
         commands = [
-            "openssl req -new -config %s -days 3650 -out %s -keyout %s -nodes -batch"
+            "openssl req -new -config %s -out %s -keyout %s -nodes -batch"
             % (conf_file, csr_file, key_file),
             "openssl ca -config %s -days 3650 -in %s -out %s -batch"
             % (conf_file, csr_file, crt_file),

@@ -6,7 +6,7 @@ ssl_dir="/usr/share/yunohost/ssl"
 ynh_ca="/etc/yunohost/certs/yunohost.org/ca.pem"
 ynh_crt="/etc/yunohost/certs/yunohost.org/crt.pem"
 ynh_key="/etc/yunohost/certs/yunohost.org/key.pem"
-openssl_conf="/usr/share/yunohost/conf/ssl/openssl.cnf"
+template_dir="/usr/share/yunohost/conf/ssl/"
 
 regen_local_ca() {
 
@@ -26,7 +26,7 @@ regen_local_ca() {
     RANDFILE=.rnd openssl rand -hex 19 >serial
     rm -f index.txt
     touch index.txt
-    cp /usr/share/yunohost/conf/ssl/openssl.cnf openssl.ca.cnf
+    cp ${template_dir}/openssl.cnf openssl.ca.cnf
     sed -i "s/yunohost.org/${domain}/g" openssl.ca.cnf
     openssl req -x509 \
         -new \
@@ -57,7 +57,7 @@ do_init_regen() {
 
     # Make sure this conf exists
     mkdir -p ${ssl_dir}
-    cp /usr/share/yunohost/conf/ssl/openssl.cnf ${ssl_dir}/openssl.ca.cnf
+    install -D -m 644 ${template_dir}/openssl.cnf "${ssl_dir}/openssl.cnf"
 
     # create default certificates
     if [[ ! -f "$ynh_ca" ]]; then
@@ -68,14 +68,13 @@ do_init_regen() {
         echo -e "\n# Creating initial key and certificate \n" >>$LOGFILE
 
         openssl req -new \
-            -config "$openssl_conf" \
-            -days 730 \
+            -config "${ssl_dir}/openssl.cnf" \
             -out "${ssl_dir}/certs/yunohost_csr.pem" \
             -keyout "${ssl_dir}/certs/yunohost_key.pem" \
             -nodes -batch &>>$LOGFILE
 
         openssl ca \
-            -config "$openssl_conf" \
+            -config "${ssl_dir}/openssl.cnf" \
             -days 730 \
             -in "${ssl_dir}/certs/yunohost_csr.pem" \
             -out "${ssl_dir}/certs/yunohost_crt.pem" \
@@ -92,16 +91,12 @@ do_init_regen() {
 
     chown -R root:ssl-cert /etc/yunohost/certs/yunohost.org/
     chmod o-rwx /etc/yunohost/certs/yunohost.org/
-
-    install -D -m 644 $openssl_conf "${ssl_dir}/openssl.cnf"
 }
 
 do_pre_regen() {
     pending_dir=$1
 
-    cd /usr/share/yunohost/conf/ssl
-
-    install -D -m 644 openssl.cnf "${pending_dir}/${ssl_dir}/openssl.cnf"
+    install -D -m 644 $template_dir/openssl.cnf "${pending_dir}/${ssl_dir}/openssl.cnf"
 }
 
 do_post_regen() {
