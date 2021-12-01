@@ -534,7 +534,7 @@ def tools_upgrade(
         # Prepare dist-upgrade command
         dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
         if Moulinette.interface.type == "api":
-            dist_upgrade += "YUNOHOST_API_RESTART_WILL_BE_HANDLED_BY_YUNOHOST=yes"
+            dist_upgrade += " YUNOHOST_API_RESTART_WILL_BE_HANDLED_BY_YUNOHOST=yes"
         dist_upgrade += " APT_LISTCHANGES_FRONTEND=none"
         dist_upgrade += " apt-get"
         dist_upgrade += (
