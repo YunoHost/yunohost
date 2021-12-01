@@ -75,6 +75,6 @@ spamassassin: null
 rmilter: null
 php5-fpm: null
 php7.0-fpm: null
-php7.3-fpm:
+php7.3-fpm: null
 nslcd: null
 avahi-daemon: null
