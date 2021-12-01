@@ -504,19 +504,10 @@ def tools_upgrade(
         logger.info(m18n.n("upgrading_packages"))
         operation_logger.start()
 
-        # Critical packages are packages that we can't just upgrade
-        # randomly from yunohost itself... upgrading them is likely to
-        critical_packages = ["moulinette", "yunohost", "yunohost-admin", "ssowat"]
-
-        critical_packages_upgradable = [
-            p["name"] for p in upgradables if p["name"] in critical_packages
-        ]
-        noncritical_packages_upgradable = [
-            p["name"] for p in upgradables if p["name"] not in critical_packages
-        ]
-
         # Prepare dist-upgrade command
         dist_upgrade = "DEBIAN_FRONTEND=noninteractive"
+        if Moulinette.interface.type == "api":
+            dist_upgrade += " YUNOHOST_API_RESTART_WILL_BE_HANDLED_BY_YUNOHOST=yes"
         dist_upgrade += " APT_LISTCHANGES_FRONTEND=none"
         dist_upgrade += " apt-get"
         dist_upgrade += (
@@ -526,136 +517,54 @@ def tools_upgrade(
             dist_upgrade += ' -o Dpkg::Options::="--force-conf{}"'.format(conf_flag)
         dist_upgrade += " dist-upgrade"
 
-        #
-        # "Regular" packages upgrade
-        #
-        if noncritical_packages_upgradable:
+        logger.info(m18n.n("tools_upgrade"))
 
-            logger.info(m18n.n("tools_upgrade_regular_packages"))
+        logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
-            # Mark all critical packages as held
-            for package in critical_packages:
-                check_output("apt-mark hold %s" % package)
+        def is_relevant(line):
+            irrelevants = [
+                "service sudo-ldap already provided",
+                "Reading database ...",
+            ]
+            return all(i not in line.rstrip() for i in irrelevants)
 
-            # Doublecheck with apt-mark showhold that packages are indeed held ...
-            held_packages = check_output("apt-mark showhold").split("\n")
-            if any(p not in held_packages for p in critical_packages):
-                logger.warning(m18n.n("tools_upgrade_cant_hold_critical_packages"))
-                operation_logger.error(m18n.n("packages_upgrade_failed"))
-                raise YunohostError(m18n.n("packages_upgrade_failed"))
+        callbacks = (
+            lambda l: logger.info("+ " + l.rstrip() + "\r")
+            if is_relevant(l)
+            else logger.debug(l.rstrip() + "\r"),
+            lambda l: logger.warning(l.rstrip())
+            if is_relevant(l)
+            else logger.debug(l.rstrip()),
+        )
+        returncode = call_async_output(dist_upgrade, callbacks, shell=True)
 
-            logger.debug("Running apt command :\n{}".format(dist_upgrade))
+        # If yunohost is being upgraded from the webadmin
+        if "yunohost" in upgradables and Moulinette.interface.type == "api":
 
-            def is_relevant(line):
-                irrelevants = [
-                    "service sudo-ldap already provided",
-                    "Reading database ...",
-                ]
-                return all(i not in line.rstrip() for i in irrelevants)
-
-            callbacks = (
-                lambda l: logger.info("+ " + l.rstrip() + "\r")
-                if is_relevant(l)
-                else logger.debug(l.rstrip() + "\r"),
-                lambda l: logger.warning(l.rstrip())
-                if is_relevant(l)
-                else logger.debug(l.rstrip()),
+            # Restart the API after 10 sec (at now doesn't support sub-minute times...)
+            # We do this so that the API / webadmin still gets the proper HTTP response
+            # It's then up to the webadmin to implement a proper UX process to wait 10 sec and then auto-fresh the webadmin
+            cmd = (
+                "at -M now >/dev/null 2>&1 <<< \"sleep 10; systemctl restart yunohost-api\""
             )
-            returncode = call_async_output(dist_upgrade, callbacks, shell=True)
-            if returncode != 0:
-                upgradables = list(_list_upgradable_apt_packages())
-                noncritical_packages_upgradable = [
-                    p["name"] for p in upgradables if p["name"] not in critical_packages
-                ]
-                logger.warning(
-                    m18n.n(
-                        "tools_upgrade_regular_packages_failed",
-                        packages_list=", ".join(noncritical_packages_upgradable),
-                    )
-                )
-                operation_logger.error(m18n.n("packages_upgrade_failed"))
-                raise YunohostError(m18n.n("packages_upgrade_failed"))
+            # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
+            subprocess.check_call(["bash", "-c", cmd])
 
-        #
-        # Critical packages upgrade
-        #
-        if critical_packages_upgradable and allow_yunohost_upgrade:
-
-            logger.info(m18n.n("tools_upgrade_special_packages"))
-
-            # Mark all critical packages as unheld
-            for package in critical_packages:
-                check_output("apt-mark unhold %s" % package)
-
-            # Doublecheck with apt-mark showhold that packages are indeed unheld ...
-            held_packages = check_output("apt-mark showhold").split("\n")
-            if any(p in held_packages for p in critical_packages):
-                logger.warning(m18n.n("tools_upgrade_cant_unhold_critical_packages"))
-                operation_logger.error(m18n.n("packages_upgrade_failed"))
-                raise YunohostError(m18n.n("packages_upgrade_failed"))
-
-            #
-            # Here we use a dirty hack to run a command after the current
-            # "yunohost tools upgrade", because the upgrade of yunohost
-            # will also trigger other yunohost commands (e.g. "yunohost tools migrations run")
-            # (also the upgrade of the package, if executed from the webadmin, is
-            # likely to kill/restart the api which is in turn likely to kill this
-            # command before it ends...)
-            #
-            logfile = operation_logger.log_path
-            dist_upgrade = dist_upgrade + " 2>&1 | tee -a {}".format(logfile)
-
-            MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
-            wait_until_end_of_yunohost_command = (
-                "(while [ -f {} ]; do sleep 2; done)".format(MOULINETTE_LOCK)
-            )
-            mark_success = (
-                "(echo 'Done!' | tee -a {} && echo 'success: true' >> {})".format(
-                    logfile, operation_logger.md_path
+        if returncode != 0:
+            upgradables = list(_list_upgradable_apt_packages())
+            logger.warning(
+                m18n.n(
+                    "tools_upgrade_failed",
+                    packages_list=", ".join(upgradables),
                 )
             )
-            mark_failure = (
-                "(echo 'Failed :(' | tee -a {} && echo 'success: false' >> {})".format(
-                    logfile, operation_logger.md_path
-                )
-            )
-            update_log_metadata = "sed -i \"s/ended_at: .*$/ended_at: $(date -u +'%Y-%m-%d %H:%M:%S.%N')/\" {}"
-            update_log_metadata = update_log_metadata.format(operation_logger.md_path)
+            operation_logger.error(m18n.n("packages_upgrade_failed"))
+            raise YunohostError(m18n.n("packages_upgrade_failed"))
 
-            # Dirty hack such that the operation_logger does not add ended_at
-            # and success keys in the log metadata.  (c.f. the code of the
-            # is_unit_operation + operation_logger.close()) We take care of
-            # this ourselves (c.f. the mark_success and updated_log_metadata in
-            # the huge command launched by os.system)
-            operation_logger.ended_at = "notyet"
+        # FIXME : add a dpkg --audit / check dpkg is broken here ?
 
-            upgrade_completed = "\n" + m18n.n(
-                "tools_upgrade_special_packages_completed"
-            )
-            command = "({wait} && {dist_upgrade}) && {mark_success} || {mark_failure}; {update_metadata}; echo '{done}'".format(
-                wait=wait_until_end_of_yunohost_command,
-                dist_upgrade=dist_upgrade,
-                mark_success=mark_success,
-                mark_failure=mark_failure,
-                update_metadata=update_log_metadata,
-                done=upgrade_completed,
-            )
-
-            logger.warning(m18n.n("tools_upgrade_special_packages_explanation"))
-            logger.debug("Running command :\n{}".format(command))
-            open("/tmp/yunohost-selfupgrade", "w").write(
-                "rm /tmp/yunohost-selfupgrade; " + command
-            )
-            # Using systemd-run --scope is like nohup/disown and &, but more robust somehow
-            # (despite using nohup/disown and &, the self-upgrade process was still getting killed...)
-            # ref: https://unix.stackexchange.com/questions/420594/why-process-killed-with-nohup
-            # (though I still don't understand it 100%...)
-            os.system("systemd-run --scope bash /tmp/yunohost-selfupgrade &")
-            return
-
-        else:
-            logger.success(m18n.n("system_upgraded"))
-            operation_logger.success()
+        logger.success(m18n.n("system_upgraded"))
+        operation_logger.success()
 
 
 @is_unit_operation()
