@@ -1,6 +1,26 @@
-yunohost (11.0.0~alpha) unstable; urgency=low
+yunohost (11.0.1~alpha) unstable; urgency=low
 
-  - Placeholder for 11.0
+  - [mod] Various tweaks for Python 3.9, PHP 7.4, and other changes related to Buster->Bullseye ecosystem
+  - [mod] quality: Rework repository code architecture ([#1377](https://github.com/YunoHost/yunohost/pull/1377))
+  - [mod] quality: Rework where yunohost files are deployed (yunohost now a proper python lib with files in /usr/lib/python3/dist-packages/yunohost/, and other files are in /usr/share/yunohost) ([#1377](https://github.com/YunoHost/yunohost/pull/1377))
+  - [mod] debian: Moved mysql, php, and metronome from Depends to Recommends ([#1369](https://github.com/YunoHost/yunohost/pull/1369))
+  - [mod] apt: Add sury by default ([#1369](https://github.com/YunoHost/yunohost/pull/1369))
+  - [enh] regenconf/helpers: Better integration for postgresql ([#1369](https://github.com/YunoHost/yunohost/pull/1369))
+  - [enh] mysql: Drop super old mysql config, now rely on Debian default's one ([44c972f...144126f](https://github.com/YunoHost/yunohost/compare/44c972f2dd65...144126f56a3d))
+  - [enh] upgrade: Try to implement a smarter self-upgrade mechanism to prevent/limit API downtime and related UX issues ([#1374](https://github.com/YunoHost/yunohost/pull/1374))
+  - [mod] app: During app scripts (and all stuff run in hook_exec), do not inject the HOME variable if it exists. This aims to prevent inconsistencies between CLI (where HOME usually is defined) and API (where HOME doesnt exists) (f43e567b)
+  - [mod] quality: Cleanup legacy stuff
+        - Drop `--other_vars` options in ynh_add_fail2ban_config and systemd_config helpers
+        - Drop deprecated/superold `ynh_bind_or_cp`, `ynh_mkdir_tmp`, `ynh_get_plain_key` helpers
+        - Drop obsolete `yunohost-reset-ldap-password` command
+        - Drop obsolete `yunohost dyndns installcron` and `removecron` commands
+        - Drop deprecated `yunohost service regen-conf` command (see `tools regen-conf` instead)
+        - Drop deprecated `yunohost app fetchlist` command
+        - Drop obsolete `yunohost app add/remove/clearaccess` commands
+        - Drop depcreated `--list` and `--filter` options in `yunohost app list`
+        - Drop deprecated `--apps` and `--system` options in `yunohost tools update/upgrade` (no double dashes anymore)
+        - Drop deprecated `--status` and `--log_type` options in `yunohost service add`
+        - Drop deprecated `--mail` option in `yunohost user create`
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Feb 2021 00:02:38 +0100
 
