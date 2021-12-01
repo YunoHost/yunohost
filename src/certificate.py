@@ -664,6 +664,8 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
 
 def _get_status(domain):
 
+    import yunohost.domain
+
     cert_file = os.path.join(CERT_FOLDER, domain, "crt.pem")
 
     if not os.path.isfile(cert_file):
@@ -692,7 +694,7 @@ def _get_status(domain):
     )
     days_remaining = (valid_up_to - datetime.utcnow()).days
 
-    if cert_issuer == "yunohost.org" or cert_issuer == _name_self_CA():
+    if cert_issuer in ["yunohost.org"] + yunohost.domain.domain_list()["domains"]:
         CA_type = {
             "code": "self-signed",
             "verbose": "Self-signed",
