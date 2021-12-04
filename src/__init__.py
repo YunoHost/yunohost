@@ -53,6 +53,20 @@ def api(debug, host, port):
     sys.exit(ret)
 
 
+def portalapi(debug, host, port):
+
+    # FIXME : is this the logdir we want ? (yolo to work around permission issue)
+    init_logging(interface="portalapi", debug=debug, logdir="/var/log")
+
+    ret = moulinette.api(
+        host=host,
+        port=port,
+        actionsmap="/usr/share/yunohost/actionsmap-portal.yml",
+        locales_dir="/usr/share/yunohost/locales/"
+    )
+    sys.exit(ret)
+
+
 def check_command_is_valid_before_postinstall(args):
 
     allowed_if_not_postinstalled = [
@@ -125,6 +139,10 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
                 "level": "DEBUG" if debug else "INFO",
                 "class": "moulinette.interfaces.api.APIQueueHandler",
             },
+            "portalapi": {
+                "level": "DEBUG" if debug else "INFO",
+                "class": "moulinette.interfaces.api.APIQueueHandler",
+            },
             "file": {
                 "class": "logging.FileHandler",
                 "formatter": "precise",
@@ -151,7 +169,7 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
     }
 
     #  Logging configuration for CLI (or any other interface than api...)     #
-    if interface != "api":
+    if interface not in ["api", "portalapi"]:
         configure_logging(logging_configuration)
 
     #  Logging configuration for API                                          #

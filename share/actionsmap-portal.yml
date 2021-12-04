@@ -1,0 +1,51 @@
+_global:
+    namespace: yunohost
+    cookie_name: yunohost.portal
+    authentication:
+        api: ldap_ynhuser
+        cli: null
+
+portal:
+    category_help: Portal routes
+    actions:
+
+        ### portal_me()
+        me:
+            action_help: Allow user to fetch their own infos
+            api: GET /me
+
+        ### portal_apps()
+        apps:
+            action_help: Allow users to fetch lit of apps they have access to
+            api: GET /me/apps
+
+        ### portal_update()
+        update:
+            action_help: Allow user to update their infos (display name, mail aliases/forward, password, ...)
+            api: PUT /me
+            # FIXME: add args etc
+
+        ### portal_reset_password()
+        reset_password:
+            action_help: Allow user to update their infos (display name, mail aliases/forward, ...)
+            api: PUT /me/reset_password
+            authentication:
+                # FIXME: to be implemented ?
+                api: reset_password_token
+            # FIXME: add args etc
+
+        ### portal_register()
+        register:
+            action_help: Allow user to register using an invite token or ???
+            api: POST /me
+            authentication:
+                # FIXME: to be implemented ?
+                api: register_invite_token
+            # FIXME: add args etc
+
+        ### portal_public()
+        public:
+            action_help: Allow anybody to list public apps and other infos regarding the public portal
+            api: GET /public
+            authentication:
+                api: null
