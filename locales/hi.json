@@ -10,7 +10,6 @@
     "app_extraction_failed": "इन्सटाल्ड फ़ाइलों को निकालने में असमर्थ",
     "app_id_invalid": "अवैध एप्लिकेशन id",
     "app_install_files_invalid": "फाइलों की अमान्य स्थापना",
-    "app_manifest_invalid": "एप्लीकेशन का मैनिफेस्ट अमान्य",
     "app_not_correctly_installed": "{app} ठीक ढंग से इनस्टॉल नहीं हुई",
     "app_not_installed": "{app} इनस्टॉल नहीं हुई",
     "app_not_properly_removed": "{app} ठीक ढंग से नहीं अनइन्सटॉल की  गई",

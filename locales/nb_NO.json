@@ -30,7 +30,6 @@
     "domains_available": "Tilgjengelige domener:",
     "done": "Ferdig",
     "downloading": "Laster ned…",
-    "dyndns_could_not_check_provide": "Kunne ikke sjekke om {provider} kan tilby {domain}.",
     "dyndns_could_not_check_available": "Kunne ikke sjekke om {domain} er tilgjengelig på {provider}.",
     "mail_domain_unknown": "Ukjent e-postadresse for domenet '{domain}'",
     "log_remove_on_failed_restore": "Fjern '{}' etter mislykket gjenoppretting fra sikkerhetskopiarkiv",

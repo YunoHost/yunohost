@@ -4,45 +4,48 @@
 import os
 import sys
 import argparse
-
-sys.path.insert(0, "/usr/lib/moulinette/")
 import yunohost
 
 
 def _parse_cli_args():
     """Parse additional arguments for the cli"""
     parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument('--output-as',
-        choices=['json', 'plain', 'none'], default=None,
-        help="Output result in another format"
+    parser.add_argument(
+        "--output-as",
+        choices=["json", "plain", "none"],
+        default=None,
+        help="Output result in another format",
     )
-    parser.add_argument('--debug',
-        action='store_true', default=False,
-        help="Log and print debug messages"
+    parser.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
+        help="Log and print debug messages",
     )
-    parser.add_argument('--quiet',
-        action='store_true', default=False,
-        help="Don't produce any output"
+    parser.add_argument(
+        "--quiet", action="store_true", default=False, help="Don't produce any output"
     )
-    parser.add_argument('--timeout',
-        type=int, default=None,
-        help="Number of seconds before this command will timeout because it can't acquire the lock (meaning that another command is currently running), by default there is no timeout and the command will wait until it can get the lock"
+    parser.add_argument(
+        "--timeout",
+        type=int,
+        default=None,
+        help="Number of seconds before this command will timeout because it can't acquire the lock (meaning that another command is currently running), by default there is no timeout and the command will wait until it can get the lock",
     )
     # deprecated arguments
-    parser.add_argument('--plain',
-        action='store_true', default=False, help=argparse.SUPPRESS
+    parser.add_argument(
+        "--plain", action="store_true", default=False, help=argparse.SUPPRESS
     )
-    parser.add_argument('--json',
-        action='store_true', default=False, help=argparse.SUPPRESS
+    parser.add_argument(
+        "--json", action="store_true", default=False, help=argparse.SUPPRESS
     )
 
     opts, args = parser.parse_known_args()
 
     # output compatibility
     if opts.plain:
-        opts.output_as = 'plain'
+        opts.output_as = "plain"
     elif opts.json:
-        opts.output_as = 'json'
+        opts.output_as = "json"
 
     return (parser, opts, args)
 
@@ -54,10 +57,12 @@ if os.environ["PATH"] != default_path:
 
 # Main action ----------------------------------------------------------
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     if os.geteuid() != 0:
-        sys.stderr.write("\033[1;31mError:\033[0m yunohost command must be "
-                         "run as root or with sudo.\n")
+        sys.stderr.write(
+            "\033[1;31mError:\033[0m yunohost command must be "
+            "run as root or with sudo.\n"
+        )
         sys.exit(1)
 
     parser, opts, args = _parse_cli_args()
@@ -69,5 +74,5 @@ if __name__ == '__main__':
         output_as=opts.output_as,
         timeout=opts.timeout,
         args=args,
-        parser=parser
+        parser=parser,
     )

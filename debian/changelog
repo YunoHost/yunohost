@@ -1,3 +1,102 @@
+yunohost (11.0.1~alpha) unstable; urgency=low
+
+  - [mod] Various tweaks for Python 3.9, PHP 7.4, and other changes related to Buster->Bullseye ecosystem
+  - [mod] quality: Rework repository code architecture ([#1377](https://github.com/YunoHost/yunohost/pull/1377))
+  - [mod] quality: Rework where yunohost files are deployed (yunohost now a proper python lib with files in /usr/lib/python3/dist-packages/yunohost/, and other files are in /usr/share/yunohost) ([#1377](https://github.com/YunoHost/yunohost/pull/1377))
+  - [mod] debian: Moved mysql, php, and metronome from Depends to Recommends ([#1369](https://github.com/YunoHost/yunohost/pull/1369))
+  - [mod] apt: Add sury by default ([#1369](https://github.com/YunoHost/yunohost/pull/1369))
+  - [enh] regenconf/helpers: Better integration for postgresql ([#1369](https://github.com/YunoHost/yunohost/pull/1369))
+  - [enh] mysql: Drop super old mysql config, now rely on Debian default's one ([44c972f...144126f](https://github.com/YunoHost/yunohost/compare/44c972f2dd65...144126f56a3d))
+  - [enh] upgrade: Try to implement a smarter self-upgrade mechanism to prevent/limit API downtime and related UX issues ([#1374](https://github.com/YunoHost/yunohost/pull/1374))
+  - [mod] app: During app scripts (and all stuff run in hook_exec), do not inject the HOME variable if it exists. This aims to prevent inconsistencies between CLI (where HOME usually is defined) and API (where HOME doesnt exists) (f43e567b)
+  - [mod] quality: Cleanup legacy stuff
+        - Drop `--other_vars` options in ynh_add_fail2ban_config and systemd_config helpers
+        - Drop deprecated/superold `ynh_bind_or_cp`, `ynh_mkdir_tmp`, `ynh_get_plain_key` helpers
+        - Drop obsolete `yunohost-reset-ldap-password` command
+        - Drop obsolete `yunohost dyndns installcron` and `removecron` commands
+        - Drop deprecated `yunohost service regen-conf` command (see `tools regen-conf` instead)
+        - Drop deprecated `yunohost app fetchlist` command
+        - Drop obsolete `yunohost app add/remove/clearaccess` commands
+        - Drop depcreated `--list` and `--filter` options in `yunohost app list`
+        - Drop deprecated `--apps` and `--system` options in `yunohost tools update/upgrade` (no double dashes anymore)
+        - Drop deprecated `--status` and `--log_type` options in `yunohost service add`
+        - Drop deprecated `--mail` option in `yunohost user create`
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Feb 2021 00:02:38 +0100
+
+yunohost (4.3.4.1) stable; urgency=low
+
+  - [fix] regenconf: Force permission on /etc/resolv.dnsmasq.conf to fix an issue on some setup with umask=027 (5881938c)
+  - [fix] regenconf: Typo in custom mdns alias regen conf (b3df36dd)
+  - [fix] regenconf: Try to fix the return line bug in dnsmasq conf ([#1385](https://github.com/YunoHost/yunohost/pull/1385))
+
+  Thanks to all contributors <3 ! (ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 27 Nov 2021 21:15:29 +0100
+
+yunohost (4.3.4) stable; urgency=low
+
+  - [fix] apps: Allow tilde in username/organization for repo URLs ([#1382](https://github.com/YunoHost/yunohost/pull/1382))
+  - [fix] misc: /etc/yunohost permissions broken on some setups (6488b4f6)
+  - [fix] mdns: Don't add yunohost.local in config if it's already among the yunohost domains (c4962834)
+  - [enh] dnsmasq: Tweak conf for better support of some stuff like the hotspot app ([#1383](https://github.com/YunoHost/yunohost/pull/1383))
+
+  Thanks to all contributors <3 ! (ljf, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 27 Nov 2021 00:53:16 +0100
+
+yunohost (4.3.3) stable; urgency=low
+
+  - [fix] log: fix dump_script_log_extract_for_debugging displaying wrong log snippet during failed upgrade ([#1376](https://github.com/YunoHost/yunohost/pull/1376))
+  - [fix] certificate: fix stupid certificate/diagnosis issue with subdomains of ynh domains (7c569d16)
+  - [fix] diagnosis: Read DNS Blacklist answer and compare it against list of non-BL codes ([#1375](https://github.com/YunoHost/yunohost/pull/1375))
+  - [enh] helpers: Update n to 8.0.0 ([#1372](https://github.com/YunoHost/yunohost/pull/1372))
+  - [fix] helpers: Make ynh_add_fpm_config more robust to some edge cases (51d5dca0)
+  - [fix] backup: conf_ynh_settings backup/restore hook, /etc/yunohost/domains may not exist (38f5352f)
+  - [i18n] Translations updated for Basque, Chinese (Simplified), Indonesian, Italian, Ukrainian
+
+  Thanks to all contributors <3 ! (dagangtie, ericgaspar, Félix Piédallu, Flavio Cristoforetti, liimee, punkrockgirl, Romain Thouvenin, Tommi, Tymofii-Lytvynenko)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 14 Nov 2021 22:55:16 +0100
+
+yunohost (4.3.2.2) stable; urgency=low
+
+  - [fix] nginx: Try to fix again the webadmin cache hell (74e2a51e)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Nov 2021 17:39:58 +0100
+
+yunohost (4.3.2.1) stable; urgency=low
+
+  - [enh] mdns: Add possibility to manually add .local aliases via /etc/yunohost/mdns.aliases (meant for internetcube) (3da2df6e)
+  - [fix] debian: Fix conflict with redis-server (6558b23d)
+  - [fix] nginx: Refine experimental CSP header (in the end still gotta enable unsafe-inline and unsafe-eval for a bunch of things, but better than no policy at all...) (1cc3e440)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 06 Nov 2021 16:58:07 +0100
+
+yunohost (4.3.2) stable; urgency=low
+
+  - Release as stable
+  - [i18n] Translations updated for Basque, Occitan
+
+  Thanks to all contributors <3 ! (punkrockgirl, Quentí)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Nov 2021 02:32:56 +0100
+
+yunohost (4.3.1.8) testing; urgency=low
+
+  - [enh] dyndns: Drop some YAGNI + improve IPv6-only support + resilience w.r.t. ns0 / ns1 being down (a61d0231, [#1367](https://github.com/YunoHost/yunohost/pull/1367))
+  - [fix] helpers: improve composer debug when it can't install dependencies (4ebcaf8d)
+  - [enh] helpers: allow to get/set/delete app settings without explicitly passing app id everytime... (fcd2ef9d)
+  - [fix] helpers: Don't say the 'app was restored' when restore failed after failed upgrade (019d207c)
+  - [enh] helpers: temporarily auto-add visitors during ynh_local_curl if needed ([#1370](https://github.com/YunoHost/yunohost/pull/1370))
+  - [enh] apps: Add YNH_ARCH to app script env for easier debugging and arch check in script (85eb43a7)
+  - [mod] misc fixes/enh (2687121f, 146fba7d, 86a9cb37, 4e917b5e, 974ea71f, edc5295d, ba489bfc)
+  - [i18n] Translations updated for Basque, French, Spanish
+
+  Thanks to all contributors <3 ! (ljf, Page Asgardius, ppr, punkrockgirl)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 03 Nov 2021 18:35:18 +0100
+
 yunohost (4.3.1.7) testing; urgency=low
 
   - [fix] configpanel: Misc technical fixes ... (341059d0, 9c22329e)

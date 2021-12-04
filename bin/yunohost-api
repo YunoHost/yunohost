@@ -1,44 +1,53 @@
 #! /usr/bin/python3
 # -*- coding: utf-8 -*-
 
-import sys
 import argparse
-
-sys.path.insert(0, "/usr/lib/moulinette/")
 import yunohost
 
 # Default server configuration
-DEFAULT_HOST = 'localhost'
+DEFAULT_HOST = "localhost"
 DEFAULT_PORT = 6787
 
 
 def _parse_api_args():
     """Parse main arguments for the api"""
-    parser = argparse.ArgumentParser(add_help=False,
+    parser = argparse.ArgumentParser(
+        add_help=False,
         description="Run the YunoHost API to manage your server.",
     )
-    srv_group = parser.add_argument_group('server configuration')
-    srv_group.add_argument('-h', '--host',
-        action='store', default=DEFAULT_HOST,
+    srv_group = parser.add_argument_group("server configuration")
+    srv_group.add_argument(
+        "-h",
+        "--host",
+        action="store",
+        default=DEFAULT_HOST,
         help="Host to listen on (default: %s)" % DEFAULT_HOST,
     )
-    srv_group.add_argument('-p', '--port',
-        action='store', default=DEFAULT_PORT, type=int,
+    srv_group.add_argument(
+        "-p",
+        "--port",
+        action="store",
+        default=DEFAULT_PORT,
+        type=int,
         help="Port to listen on (default: %d)" % DEFAULT_PORT,
     )
-    glob_group = parser.add_argument_group('global arguments')
-    glob_group.add_argument('--debug',
-        action='store_true', default=False,
+    glob_group = parser.add_argument_group("global arguments")
+    glob_group.add_argument(
+        "--debug",
+        action="store_true",
+        default=False,
         help="Set log level to DEBUG",
     )
-    glob_group.add_argument('--help',
-        action='help', help="Show this help message and exit",
+    glob_group.add_argument(
+        "--help",
+        action="help",
+        help="Show this help message and exit",
     )
 
     return parser.parse_args()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     opts = _parse_api_args()
     # Run the server
     yunohost.api(debug=opts.debug, host=opts.host, port=opts.port)

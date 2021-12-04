@@ -1,26 +1,10 @@
 #!/usr/bin/make -f
 # -*- makefile -*-
 
-# Uncomment this to turn on verbose mode.
-#export DH_VERBOSE=1
-
 %:
-	dh ${@} --with=python3,systemd
+	dh ${@} --with python3
 
 override_dh_auto_build:
 	# Generate bash completion file
-	python3 data/actionsmap/yunohost_completion.py
+	python3 doc/generate_bash_completion.py
 	python3 doc/generate_manpages.py --gzip --output doc/yunohost.8.gz
-
-override_dh_installinit:
-	dh_installinit -pyunohost --name=yunohost-api --restart-after-upgrade
-	dh_installinit -pyunohost --name=yunohost-firewall --noscripts
-
-override_dh_systemd_enable:
-	dh_systemd_enable --name=yunohost-api \
-	    yunohost-api.service
-	dh_systemd_enable --name=yunohost-firewall --no-enable \
-	    yunohost-firewall.service
-
-#override_dh_systemd_start:
-#	dh_systemd_start --restart-after-upgrade yunohost-api.service

@@ -1,8 +1,10 @@
 bin/* /usr/bin/
-sbin/* /usr/sbin/
-data/* /usr/share/yunohost/
-data/bash-completion.d/yunohost /etc/bash_completion.d/
+share/* /usr/share/yunohost/
+hooks/* /usr/share/yunohost/hooks/
+helpers/* /usr/share/yunohost/helpers.d/
+conf/* /usr/share/yunohost/conf/
+locales/* /usr/share/yunohost/locales/
 doc/yunohost.8.gz /usr/share/man/man8/
-lib/metronome/modules/* /usr/lib/metronome/modules/
-locales/* /usr/lib/moulinette/yunohost/locales/
-src/yunohost /usr/lib/moulinette
+doc/bash-completion.sh /etc/bash_completion.d/yunohost
+conf/metronome/modules/* /usr/lib/metronome/modules/
+src/* /usr/lib/python3/dist-packages/yunohost/
