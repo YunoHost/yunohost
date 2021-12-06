@@ -35,7 +35,7 @@ from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback, hook_list
 
-BASE_CONF_PATH = "/home/yunohost.conf"
+BASE_CONF_PATH = "/var/cache/yunohost/regenconf"
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, "backup")
 PENDING_CONF_DIR = os.path.join(BASE_CONF_PATH, "pending")
 REGEN_CONF_FILE = "/etc/yunohost/regenconf.yml"

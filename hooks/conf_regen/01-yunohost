@@ -174,12 +174,12 @@ do_post_regen() {
     ######################
 
     chmod 750 /home/admin
-    chmod 750 /home/yunohost.conf
     chmod 750 /home/yunohost.backup
     chmod 750 /home/yunohost.backup/archives
-    chown root:root /home/yunohost.conf
+    chmod 700 /var/cache/yunohost
     chown admin:root /home/yunohost.backup
     chown admin:root /home/yunohost.backup/archives
+    chown root:root /var/cache/yunohost
 
     # NB: x permission for 'others' is important for ssl-cert (and maybe mdns), otherwise slapd will fail to start because can't access the certs
     chmod 755 /etc/yunohost
@@ -194,9 +194,6 @@ do_post_regen() {
     find /etc/cron.*/yunohost-* -type f -exec chmod 755 {} \;
     find /etc/cron.d/yunohost-* -type f -exec chmod 644 {} \;
     find /etc/cron.*/yunohost-* -type f -exec chown root:root {} \;
-
-    chown root:root /var/cache/yunohost
-    chmod 700 /var/cache/yunohost
 
     setfacl -m g:all_users:--- /var/www
     setfacl -m g:all_users:--- /var/log/nginx
