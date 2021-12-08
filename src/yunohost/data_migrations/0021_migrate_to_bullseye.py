@@ -85,6 +85,13 @@ class MyMigration(Migration):
             rm("/usr/share/yunohost/yunohost-config", recursive=True, force=True)
 
         #
+        # /home/yunohost.conf -> /var/cache/yunohost/regenconf
+        #
+        if os.path.exists("/home/yunohost.conf"):
+            os.system("mv /home/yunohost.conf /var/cache/yunohost/regenconf")
+            rm("/home/yunohost.conf", recursive=True, force=True)
+
+        #
         # Main upgrade
         #
         logger.info(m18n.n("migration_0021_main_upgrade"))
