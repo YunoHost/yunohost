@@ -1,3 +1,14 @@
+yunohost (4.3.4.2) stable; urgency=low
+
+  - [fix] yunomdns: Ignore ipv4 link-local addresses (6854f23c)
+  - [fix] backup: Fix path for multimedia restore ([#1386](https://github.com/YunoHost/yunohost/pull/1386))
+  - [fix] helpers apt/php: typo in extra php-fpm yunohost service integration (47f3c00d)
+  - [enh] helpers: Update n to 8.0.1 (d1ab1f67)
+
+  Thanks to all contributors <3 ! (ericgaspar, Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 08 Dec 2021 22:04:04 +0100
+
 yunohost (4.3.4.1) stable; urgency=low
 
   - [fix] regenconf: Force permission on /etc/resolv.dnsmasq.conf to fix an issue on some setup with umask=027 (5881938c)
