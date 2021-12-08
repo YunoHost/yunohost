@@ -6,6 +6,7 @@ yunohost (11.0.1~alpha) unstable; urgency=low
   - [mod] debian: Moved mysql, php, and metronome from Depends to Recommends ([#1369](https://github.com/YunoHost/yunohost/pull/1369))
   - [mod] apt: Add sury by default ([#1369](https://github.com/YunoHost/yunohost/pull/1369))
   - [enh] regenconf/helpers: Better integration for postgresql ([#1369](https://github.com/YunoHost/yunohost/pull/1369))
+  - [enh] regenconf: Store regenconf cache in /var/cache/yunohost/regenconf instead of /home/yunohost.conf (00d535a6)
   - [enh] mysql: Drop super old mysql config, now rely on Debian default's one ([44c972f...144126f](https://github.com/YunoHost/yunohost/compare/44c972f2dd65...144126f56a3d))
   - [enh] upgrade: Try to implement a smarter self-upgrade mechanism to prevent/limit API downtime and related UX issues ([#1374](https://github.com/YunoHost/yunohost/pull/1374))
   - [mod] app: During app scripts (and all stuff run in hook_exec), do not inject the HOME variable if it exists. This aims to prevent inconsistencies between CLI (where HOME usually is defined) and API (where HOME doesnt exists) (f43e567b)
@@ -23,6 +24,17 @@ yunohost (11.0.1~alpha) unstable; urgency=low
         - Drop deprecated `--mail` option in `yunohost user create`
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Feb 2021 00:02:38 +0100
+
+yunohost (4.3.4.2) stable; urgency=low
+
+  - [fix] yunomdns: Ignore ipv4 link-local addresses (6854f23c)
+  - [fix] backup: Fix path for multimedia restore ([#1386](https://github.com/YunoHost/yunohost/pull/1386))
+  - [fix] helpers apt/php: typo in extra php-fpm yunohost service integration (47f3c00d)
+  - [enh] helpers: Update n to 8.0.1 (d1ab1f67)
+
+  Thanks to all contributors <3 ! (ericgaspar, Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 08 Dec 2021 22:04:04 +0100
 
 yunohost (4.3.4.1) stable; urgency=low
 
