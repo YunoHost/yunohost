@@ -325,7 +325,7 @@ EOF
         ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
 
         # Integrate new php-fpm service in yunohost
-        yunohost service add php${specific_php_version}-fpm --log "/var/log/php${phpversion}-fpm.log"
+        yunohost service add php${specific_php_version}-fpm --log "/var/log/php${specific_php_version}-fpm.log"
     elif grep --quiet 'php' <<< "$dependencies"; then
         # Store phpversion into the config of this app
         ynh_app_setting_set --app=$app --key=phpversion --value=$YNH_DEFAULT_PHP_VERSION
