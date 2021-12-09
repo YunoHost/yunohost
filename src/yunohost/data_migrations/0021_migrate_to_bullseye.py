@@ -25,6 +25,7 @@ N_CURRENT_YUNOHOST = 4
 N_NEXT_DEBAN = 11
 N_NEXT_YUNOHOST = 11
 
+
 class MyMigration(Migration):
 
     "Upgrade the system to Debian Bullseye and Yunohost 11.x"
@@ -76,13 +77,17 @@ class MyMigration(Migration):
         _force_clear_hashes(["/etc/mysql/my.cnf"])
         rm("/etc/mysql/mariadb.cnf", force=True)
         rm("/etc/mysql/my.cnf", force=True)
-        self.apt_install("mariadb-common --reinstall -o Dpkg::Options::='--force-confmiss'")
+        self.apt_install(
+            "mariadb-common --reinstall -o Dpkg::Options::='--force-confmiss'"
+        )
 
         #
         # /usr/share/yunohost/yunohost-config/ssl/yunoCA -> /usr/share/yunohost/ssl
         #
         if os.path.exists("/usr/share/yunohost/yunohost-config/ssl/yunoCA"):
-            os.system("mv /usr/share/yunohost/yunohost-config/ssl/yunoCA /usr/share/yunohost/ssl")
+            os.system(
+                "mv /usr/share/yunohost/yunohost-config/ssl/yunoCA /usr/share/yunohost/ssl"
+            )
             rm("/usr/share/yunohost/yunohost-config", recursive=True, force=True)
 
         #
@@ -116,8 +121,12 @@ class MyMigration(Migration):
         # Adding it there shouldnt be a big deal - Yunohost 11.x does add it
         # through its regen conf anyway.
         if not os.path.exists("/etc/apt/sources.list.d/extra_php_version.list"):
-            open("/etc/apt/sources.list.d/extra_php_version.list", "w").write("deb https://packages.sury.org/php/ bullseye main")
-            os.system('wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"')
+            open("/etc/apt/sources.list.d/extra_php_version.list", "w").write(
+                "deb https://packages.sury.org/php/ bullseye main"
+            )
+            os.system(
+                'wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"'
+            )
 
         os.system("apt update")
 
@@ -205,10 +214,10 @@ class MyMigration(Migration):
         message = m18n.n("migration_0021_general_warning")
 
         # FIXME: re-enable this message with updated topic link once we release the migration as stable
-        #message = (
+        # message = (
         #    "N.B.: This migration has been tested by the community over the last few months but has only been declared stable recently. If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration ;)! You can read about remaining known issues and feedback from the community here: https://forum.yunohost.org/t/12195\n\n"
         #    + message
-        #)
+        # )
 
         if problematic_apps:
             message += "\n\n" + m18n.n(
@@ -285,7 +294,6 @@ class MyMigration(Migration):
 
         call_async_output(cmd, callbacks, shell=True)
 
-
     def patch_yunohost_conflicts(self):
         #
         # This is a super dirty hack to remove the conflicts from yunohost's debian/control file
@@ -305,6 +313,8 @@ class MyMigration(Migration):
             # We want to keep conflicting with apache/bind9 tho
             new_conflicts = "Conflicts: apache2, bind9"
 
-            command = f"sed -i /var/lib/dpkg/status -e 's@{conflicts}@{new_conflicts}@g'"
+            command = (
+                f"sed -i /var/lib/dpkg/status -e 's@{conflicts}@{new_conflicts}@g'"
+            )
             logger.debug(f"Running: {command}")
             os.system(command)
