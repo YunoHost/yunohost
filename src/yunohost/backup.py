@@ -2592,7 +2592,7 @@ def backup_delete(name):
     hook_callback("pre_backup_delete", args=[name])
 
     archive_file = "%s/%s.tar" % (ARCHIVES_PATH, name)
-    if os.path.exists(archive_file + ".gz"):
+    if not os.path.exists(archive_file) and os.path.exists(archive_file + ".gz"):
         archive_file += ".gz"
     info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
 
