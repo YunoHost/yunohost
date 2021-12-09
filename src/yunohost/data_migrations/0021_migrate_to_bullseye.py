@@ -15,7 +15,7 @@ from yunohost.utils.packages import (
     get_ynh_package_version,
     _list_upgradable_apt_packages,
 )
-from yunohost.services import _get_services, _save_services
+from yunohost.service import _get_services, _save_services
 
 logger = getActionLogger("yunohost.migration")
 
