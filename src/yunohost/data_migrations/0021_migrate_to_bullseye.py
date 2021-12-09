@@ -108,6 +108,22 @@ class MyMigration(Migration):
         os.system("apt autoremove --assume-yes")
         os.system("apt clean --assume-yes")
 
+        # Force add sury if it's not there yet
+        # This is to solve some weird issue with php-common breaking php7.3-common,
+        # hence breaking many php7.3-deps
+        # hence triggering some dependency conflict (or foobar-ynh-deps uninstall)
+        # Adding it there shouldnt be a big deal - Yunohost 11.x does add it
+        # through its regen conf anyway.
+        if not os.path.exists("/etc/apt/sources.list.d/extra_php_version.list"):
+            open("/etc/apt/sources.list.d/extra_php_version.list", "w").write("deb https://packages.sury.org/php/ bullseye main")
+            os.system('wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"')
+
+        os.system("apt update")
+
+        # Force explicit install of php7.4-fpm to make sure it's ll be there
+        # during 0022_php73_to_php74_pools migration
+        self.apt_install("php7.4-fpm -o Dpkg::Options::='--force-confmiss'")
+
         #
         # Yunohost upgrade
         #
