@@ -15,6 +15,7 @@ from yunohost.utils.packages import (
     get_ynh_package_version,
     _list_upgradable_apt_packages,
 )
+from yunohost.services import _get_services, _save_services
 
 logger = getActionLogger("yunohost.migration")
 
@@ -123,6 +124,13 @@ class MyMigration(Migration):
         # Force explicit install of php7.4-fpm to make sure it's ll be there
         # during 0022_php73_to_php74_pools migration
         self.apt_install("php7.4-fpm -o Dpkg::Options::='--force-confmiss'")
+
+        # Remove legacy postgresql service record added by helpers,
+        # will now be dynamically handled by the core in bullseye
+        services = _get_services()
+        if "postgresql" in services:
+            del services["postgresql"]
+            _save_services(services)
 
         #
         # Yunohost upgrade
