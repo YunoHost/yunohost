@@ -35,6 +35,11 @@ from moulinette.utils.text import prependlines
 
 FIREWALL_FILE = "/etc/yunohost/firewall.yml"
 UPNP_CRON_JOB = "/etc/cron.d/yunohost-firewall-upnp"
+# A UDP port to use for the SSDP discovery phase of UPNP.
+# Assigned by IANA to "Fujitsu ICL Terminal Emulator Program A", so no-one else is
+# likely to use it (unlike port 1900 which is used by SSDP servers such
+# as miniupnpd)
+SSDP_CLIENT_PORT = 1901
 logger = getActionLogger("yunohost.firewall")
 
 
@@ -228,10 +233,10 @@ def firewall_reload(skip_upnp=False):
 
     # IPv4
     try:
-        process.check_output("nft -n -a list ruleset")
+        process.check_output("iptables -w -L")
     except process.CalledProcessError as e:
         logger.debug(
-            "nftables/nft seems to be not available, it outputs:\n%s",
+            "iptables seems to be not available, it outputs:\n%s",
             prependlines(e.output.rstrip(), "> "),
         )
         logger.warning(m18n.n("iptables_unavailable"))
@@ -253,13 +258,7 @@ def firewall_reload(skip_upnp=False):
             "iptables -w -A INPUT -p icmp -j ACCEPT",
             "iptables -w -P INPUT DROP",
         ]
-        # Set of nft rules for allowing SSDP discovery
-        # See https://github.com/mqus/nft-rules/blob/master/files/SSDP_client.md
-        rules += [
-            "nft add set filter ssdp_out {type inet_service \\; timeout 5s \\;}",
-            "nft add rule filter OUTPUT ip daddr 239.255.255.250 udp dport 1900 set add udp sport @ssdp_out",
-            "nft add rule filter INPUT udp dport @ssdp_out accept",
-        ]
+
         # Execute each rule
         if process.run_commands(rules, callback=_on_rule_command_error):
             errors = True
@@ -267,10 +266,10 @@ def firewall_reload(skip_upnp=False):
 
     # IPv6
     try:
-        process.check_output("nft -n -a list ruleset")
+        process.check_output("ip6tables -L")
     except process.CalledProcessError as e:
         logger.debug(
-            "ip6tables/nft seems to be not available, it outputs:\n%s",
+            "ip6tables seems to be not available, it outputs:\n%s",
             prependlines(e.output.rstrip(), "> "),
         )
         logger.warning(m18n.n("ip6tables_unavailable"))
@@ -292,11 +291,7 @@ def firewall_reload(skip_upnp=False):
             "ip6tables -w -A INPUT -p icmpv6 -j ACCEPT",
             "ip6tables -w -P INPUT DROP",
         ]
-        rules += [
-            "nft add set ip6 filter ssdp_out {type inet_service \\; timeout 5s \\;}",
-            "nft add rule ip6 filter OUTPUT ip6 daddr {FF02::C, FF05::C, FF08::C, FF0E::C} udp dport 1900 set add udp sport @ssdp_out",
-            "nft add rule ip6 filter INPUT udp dport @ssdp_out accept",
-        ]
+
         # Execute each rule
         if process.run_commands(rules, callback=_on_rule_command_error):
             errors = True
@@ -343,7 +338,7 @@ def firewall_upnp(action="status", no_refresh=False):
         # Add cron job
         with open(UPNP_CRON_JOB, "w+") as f:
             f.write(
-                "*/12 * * * * root "
+                "*/10 * * * * root "
                 "/usr/bin/yunohost firewall upnp status >>/dev/null\n"
             )
         enabled = True
@@ -360,12 +355,22 @@ def firewall_upnp(action="status", no_refresh=False):
     # Refresh port mapping
     refresh_success = True
     if not no_refresh:
-        upnpc = miniupnpc.UPnP()
+        # Open port to receive discovery message
+        process.run_commands(
+            ["iptables -w -A INPUT -p udp --dport %d -j ACCEPT" % SSDP_CLIENT_PORT],
+            callback=_on_rule_command_error,
+        )
+        upnpc = miniupnpc.UPnP(localport=SSDP_CLIENT_PORT)
         upnpc.discoverdelay = 3000
         # Discover UPnP device(s)
         logger.debug("discovering UPnP devices...")
         nb_dev = upnpc.discover()
         logger.debug("found %d UPnP device(s)", int(nb_dev))
+        # Close discovery port
+        process.run_commands(
+            ["iptables -w -D INPUT -p udp --dport %d -j ACCEPT" % SSDP_CLIENT_PORT],
+            callback=_on_rule_command_error,
+        )
 
         if nb_dev < 1:
             logger.error(m18n.n("upnp_dev_not_found"))
