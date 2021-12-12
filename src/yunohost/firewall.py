@@ -338,7 +338,7 @@ def firewall_upnp(action="status", no_refresh=False):
         # Add cron job
         with open(UPNP_CRON_JOB, "w+") as f:
             f.write(
-                "*/10 * * * * root "
+                "*/12 * * * * root "
                 "/usr/bin/yunohost firewall upnp status >>/dev/null\n"
             )
         enabled = True
