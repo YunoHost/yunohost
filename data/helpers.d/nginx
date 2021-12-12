@@ -15,7 +15,7 @@
 # This allows to enable/disable specific behaviors dependenging on the install
 # location
 #
-# Requires YunoHost version 2.7.2 or higher.
+# Requires YunoHost version 4.1.0 or higher.
 ynh_add_nginx_config () {
 
     local finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"

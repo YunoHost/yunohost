@@ -1,5 +1,4 @@
 _make_dummy_src() {
-echo "test coucou"
     if [ ! -e $HTTPSERVER_DIR/dummy.tar.gz ]
     then
         pushd "$HTTPSERVER_DIR"

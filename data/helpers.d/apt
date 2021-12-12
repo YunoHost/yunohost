@@ -210,6 +210,8 @@ ynh_package_install_from_equivs () {
     ynh_package_is_installed "$pkgname"
 }
 
+YNH_INSTALL_APP_DEPENDENCIES_REPLACE="true"
+
 # Define and install dependencies with a equivs control file
 #
 # This helper can/should only be called once per app
@@ -248,13 +250,51 @@ ynh_install_app_dependencies () {
         dependencies="$(echo "$dependencies" | sed 's/\([^(\<=\>]\)\([\<=\>]\+\)\([^,]\+\)/\1 (\2 \3)/g')"
     fi
 
+    # Check for specific php dependencies which requires sury
+    # This grep will for example return "7.4" if dependencies is "foo bar php7.4-pwet php-gni"
+    # The (?<=php) syntax corresponds to lookbehind ;)
+    local specific_php_version=$(echo $dependencies | grep -oP '(?<=php)[0-9.]+(?=-|\>)' | sort -u)
+
+    # Ignore case where the php version found is the one available in debian vanilla
+    [[ "$specific_php_version" != "$YNH_DEFAULT_PHP_VERSION" ]] || specific_php_version=""
+
+    if [[ -n "$specific_php_version" ]]
+    then
+        # Cover a small edge case where a packager could have specified "php7.4-pwet php5-gni" which is confusing
+        [[ $(echo $specific_php_version | wc -l) -eq 1 ]] \
+            || ynh_die --message="Inconsistent php versions in dependencies ... found : $specific_php_version"
+
+        dependencies+=", php${specific_php_version}, php${specific_php_version}-fpm, php${specific_php_version}-common"
+
+        ynh_add_sury
+    fi
+
+
+    # The first time we run ynh_install_app_dependencies, we will replace the
+    # entire control file (This is in particular meant to cover the case of
+    # upgrade script where ynh_install_app_dependencies is called with this
+    # expected effect) Otherwise, any subsequent call will add dependencies
+    # to those already present in the equivs control file.
+    if [[ $YNH_INSTALL_APP_DEPENDENCIES_REPLACE == "true" ]]
+    then
+        YNH_INSTALL_APP_DEPENDENCIES_REPLACE="false"
+    else
+        local current_dependencies=""
+        if ynh_package_is_installed --package="${dep_app}-ynh-deps"
+        then
+            current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${dep_app}-ynh-deps) "
+            current_dependencies=${current_dependencies// | /|}
+        fi
+        dependencies="$current_dependencies, $dependencies"
+    fi
+
     #
     # Epic ugly hack to fix the goddamn dependency nightmare of sury
     # Sponsored by the "Djeezusse Fokin Kraiste Why Do Adminsys Has To Be So Fucking Complicated I Should Go Grow Potatoes Instead Of This Shit" collective
     # https://github.com/YunoHost/issues/issues/1407
     #
     # If we require to install php dependency
-    if echo $dependencies | grep --quiet 'php'
+    if grep --quiet 'php' <<< "$dependencies"
     then
         # And we have packages from sury installed (7.0.33-10+weirdshiftafter instead of 7.0.33-0 on debian)
         if dpkg --list | grep "php7.0" | grep --quiet --invert-match "7.0.33-0+deb9"
@@ -263,7 +303,7 @@ ynh_install_app_dependencies () {
             if ! grep --recursive --quiet "^ *deb.*sury" /etc/apt/sources.list*
             then
                 # Re-add sury
-                ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version --priority=600
+                ynh_add_sury
             fi
         fi
     fi
@@ -281,14 +321,43 @@ EOF
     ynh_package_install_from_equivs /tmp/${dep_app}-ynh-deps.control \
         || ynh_die --message="Unable to install dependencies"	# Install the fake package and its dependencies
     rm /tmp/${dep_app}-ynh-deps.control
+
     ynh_app_setting_set --app=$app --key=apt_dependencies --value="$dependencies"
+
+    if [[ -n "$specific_php_version" ]]
+    then
+        # Set the default php version back as the default version for php-cli.
+        update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
+
+        # Store phpversion into the config of this app
+        ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
+
+        # Integrate new php-fpm service in yunohost
+        yunohost service add php${specific_php_version}-fpm --log "/var/log/php${phpversion}-fpm.log"
+    elif grep --quiet 'php' <<< "$dependencies"; then
+        # Store phpversion into the config of this app
+        ynh_app_setting_set --app=$app --key=phpversion --value=$YNH_DEFAULT_PHP_VERSION
+    fi
 }
+
+# Add sury repository with adequate pin strategy
+#
+# [internal]
+#
+# usage: ynh_add_sury
+#
+ynh_add_sury() {
+
+    # Add an extra repository for those packages
+    ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version --priority=600
+
+}
+
 
 # Add dependencies to install with ynh_install_app_dependencies
 #
 # usage: ynh_add_app_dependencies --package=phpversion [--replace]
 # | arg: -p, --package=     - Packages to add as dependencies for the app.
-# | arg: -r, --replace      - Replace dependencies instead of adding to existing ones.
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_add_app_dependencies () {
@@ -296,24 +365,11 @@ ynh_add_app_dependencies () {
     local legacy_args=pr
     local -A args_array=( [p]=package= [r]=replace)
     local package
-    local replace
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    replace=${replace:-0}
 
-    local current_dependencies=""
-    if [ $replace -eq 0 ]
-    then
-        local dep_app=${app//_/-}	# Replace all '_' by '-'
-        if ynh_package_is_installed --package="${dep_app}-ynh-deps"
-        then
-            current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${dep_app}-ynh-deps) "
-        fi
-
-        current_dependencies=${current_dependencies// | /|}
-    fi
-
-    ynh_install_app_dependencies "${current_dependencies}${package}"
+    ynh_print_warn --message="Packagers: ynh_add_app_dependencies is deprecated and is now only an alias to ynh_install_app_dependencies"
+    ynh_install_app_dependencies "${package}"
 }
 
 # Remove fake package and its dependencies
@@ -325,7 +381,26 @@ ynh_add_app_dependencies () {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_remove_app_dependencies () {
     local dep_app=${app//_/-}	# Replace all '_' by '-'
+
+    local current_dependencies=""
+    if ynh_package_is_installed --package="${dep_app}-ynh-deps"
+    then
+        current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${dep_app}-ynh-deps) "
+        current_dependencies=${current_dependencies// | /|}
+    fi
+
     ynh_package_autopurge ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
+
+    # Check if this app used a specific php version ... in which case we check
+    # if the corresponding php-fpm is still there. Otherwise, we remove the
+    # service from yunohost as well
+
+    local specific_php_version=$(echo $current_dependencies | tr '-' ' ' | grep -o -E "\<php[0-9.]+\>" | sed 's/php//g' | sort | uniq)
+    [[ "$specific_php_version" != "$YNH_DEFAULT_PHP_VERSION" ]] || specific_php_version=""
+    if [[ -n "$specific_php_version" ]] && ! ynh_package_is_installed --package="php${specific_php_version}-fpm";
+    then
+        yunohost service remove php${specific_php_version}-fpm
+    fi
 }
 
 # Install packages from an extra repository properly.
@@ -359,7 +434,7 @@ ynh_install_extra_app_dependencies () {
     ynh_install_extra_repo --repo="$repo" $key --priority=995 --name=$name
 
     # Install requested dependencies from this extra repository.
-    ynh_add_app_dependencies --package="$package"
+    ynh_install_app_dependencies "$package"
 
     # Remove this extra repository after packages are installed
     ynh_remove_extra_repo --name=$app

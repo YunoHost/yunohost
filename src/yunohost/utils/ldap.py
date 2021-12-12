@@ -1,5 +1,4 @@
 # -*- coding: utf-8 -*-
-
 """ License
 
     Copyright (C) 2019 YunoHost
@@ -21,9 +20,17 @@
 
 import os
 import atexit
-from moulinette.core import MoulinetteLdapIsDownError
-from moulinette.authenticators import ldap
+import logging
+import ldap
+import ldap.sasl
+import time
+import ldap.modlist as modlist
+
+from moulinette import m18n
+from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError
+
+logger = logging.getLogger("yunohost.utils.ldap")
 
 # We use a global variable to do some caching
 # to avoid re-authenticating in case we call _get_ldap_authenticator multiple times
@@ -35,37 +42,9 @@ def _get_ldap_interface():
     global _ldap_interface
 
     if _ldap_interface is None:
-
-        conf = {
-            "vendor": "ldap",
-            "name": "as-root",
-            "parameters": {
-                "uri": "ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi",
-                "base_dn": "dc=yunohost,dc=org",
-                "user_rdn": "gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth",
-            },
-            "extra": {},
-        }
-
-        try:
-            _ldap_interface = ldap.Authenticator(**conf)
-        except MoulinetteLdapIsDownError:
-            raise YunohostError(
-                "Service slapd is not running but is required to perform this action ... You can try to investigate what's happening with 'systemctl status slapd'"
-            )
-
-        assert_slapd_is_running()
+        _ldap_interface = LDAPInterface()
 
     return _ldap_interface
-
-
-def assert_slapd_is_running():
-
-    # Assert slapd is running...
-    if not os.system("pgrep slapd >/dev/null") == 0:
-        raise YunohostError(
-            "Service slapd is not running but is required to perform this action ... You can try to investigate what's happening with 'systemctl status slapd'"
-        )
 
 
 # We regularly want to extract stuff like 'bar' in ldap path like
@@ -74,8 +53,6 @@ def assert_slapd_is_running():
 #
 # e.g. using _ldap_path_extract(path, "foo") on the previous example will
 # return bar
-
-
 def _ldap_path_extract(path, info):
     for element in path.split(","):
         if element.startswith(info + "="):
@@ -93,3 +70,247 @@ def _destroy_ldap_interface():
 
 
 atexit.register(_destroy_ldap_interface)
+
+
+class LDAPInterface:
+    def __init__(self):
+        logger.debug("initializing ldap interface")
+
+        self.uri = "ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi"
+        self.basedn = "dc=yunohost,dc=org"
+        self.rootdn = "gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth"
+        self.connect()
+
+    def connect(self):
+        def _reconnect():
+            con = ldap.ldapobject.ReconnectLDAPObject(
+                self.uri, retry_max=10, retry_delay=0.5
+            )
+            con.sasl_non_interactive_bind_s("EXTERNAL")
+            return con
+
+        try:
+            con = _reconnect()
+        except ldap.SERVER_DOWN:
+            # ldap is down, attempt to restart it before really failing
+            logger.warning(m18n.n("ldap_server_is_down_restart_it"))
+            os.system("systemctl restart slapd")
+            time.sleep(10)  # waits 10 secondes so we are sure that slapd has restarted
+            try:
+                con = _reconnect()
+            except ldap.SERVER_DOWN:
+                raise YunohostError(
+                    "Service slapd is not running but is required to perform this action ... "
+                    "You can try to investigate what's happening with 'systemctl status slapd'",
+                    raw_msg=True,
+                )
+
+        # Check that we are indeed logged in with the right identity
+        try:
+            # whoami_s return dn:..., then delete these 3 characters
+            who = con.whoami_s()[3:]
+        except Exception as e:
+            logger.warning("Error during ldap authentication process: %s", e)
+            raise
+        else:
+            if who != self.rootdn:
+                raise MoulinetteError("Not logged in with the expected userdn ?!")
+            else:
+                self.con = con
+
+    def __del__(self):
+        """Disconnect and free ressources"""
+        if hasattr(self, "con") and self.con:
+            self.con.unbind_s()
+
+    def search(self, base=None, filter="(objectClass=*)", attrs=["dn"]):
+        """Search in LDAP base
+
+        Perform an LDAP search operation with given arguments and return
+        results as a list.
+
+        Keyword arguments:
+            - base -- The dn to search into
+            - filter -- A string representation of the filter to apply
+            - attrs -- A list of attributes to fetch
+
+        Returns:
+            A list of all results
+
+        """
+        if not base:
+            base = self.basedn
+
+        try:
+            result = self.con.search_s(base, ldap.SCOPE_SUBTREE, filter, attrs)
+        except Exception as e:
+            raise MoulinetteError(
+                "error during LDAP search operation with: base='%s', "
+                "filter='%s', attrs=%s and exception %s" % (base, filter, attrs, e),
+                raw_msg=True,
+            )
+
+        result_list = []
+        if not attrs or "dn" not in attrs:
+            result_list = [entry for dn, entry in result]
+        else:
+            for dn, entry in result:
+                entry["dn"] = [dn]
+                result_list.append(entry)
+
+        def decode(value):
+            if isinstance(value, bytes):
+                value = value.decode("utf-8")
+            return value
+
+        # result_list is for example :
+        # [{'virtualdomain': [b'test.com']}, {'virtualdomain': [b'yolo.test']},
+        for stuff in result_list:
+            if isinstance(stuff, dict):
+                for key, values in stuff.items():
+                    stuff[key] = [decode(v) for v in values]
+
+        return result_list
+
+    def add(self, rdn, attr_dict):
+        """
+        Add LDAP entry
+
+        Keyword arguments:
+            rdn         -- DN without domain
+            attr_dict   -- Dictionnary of attributes/values to add
+
+        Returns:
+            Boolean | MoulinetteError
+
+        """
+        dn = rdn + "," + self.basedn
+        ldif = modlist.addModlist(attr_dict)
+        for i, (k, v) in enumerate(ldif):
+            if isinstance(v, list):
+                v = [a.encode("utf-8") for a in v]
+            elif isinstance(v, str):
+                v = [v.encode("utf-8")]
+            ldif[i] = (k, v)
+
+        try:
+            self.con.add_s(dn, ldif)
+        except Exception as e:
+            raise MoulinetteError(
+                "error during LDAP add operation with: rdn='%s', "
+                "attr_dict=%s and exception %s" % (rdn, attr_dict, e),
+                raw_msg=True,
+            )
+        else:
+            return True
+
+    def remove(self, rdn):
+        """
+        Remove LDAP entry
+
+        Keyword arguments:
+            rdn         -- DN without domain
+
+        Returns:
+            Boolean | MoulinetteError
+
+        """
+        dn = rdn + "," + self.basedn
+        try:
+            self.con.delete_s(dn)
+        except Exception as e:
+            raise MoulinetteError(
+                "error during LDAP delete operation with: rdn='%s' and exception %s"
+                % (rdn, e),
+                raw_msg=True,
+            )
+        else:
+            return True
+
+    def update(self, rdn, attr_dict, new_rdn=False):
+        """
+        Modify LDAP entry
+
+        Keyword arguments:
+            rdn         -- DN without domain
+            attr_dict   -- Dictionnary of attributes/values to add
+            new_rdn     -- New RDN for modification
+
+        Returns:
+            Boolean | MoulinetteError
+
+        """
+        dn = rdn + "," + self.basedn
+        actual_entry = self.search(base=dn, attrs=None)
+        ldif = modlist.modifyModlist(actual_entry[0], attr_dict, ignore_oldexistent=1)
+
+        if ldif == []:
+            logger.debug("Nothing to update in LDAP")
+            return True
+
+        try:
+            if new_rdn:
+                self.con.rename_s(dn, new_rdn)
+                new_base = dn.split(",", 1)[1]
+                dn = new_rdn + "," + new_base
+
+            for i, (a, k, vs) in enumerate(ldif):
+                if isinstance(vs, list):
+                    vs = [v.encode("utf-8") for v in vs]
+                elif isinstance(vs, str):
+                    vs = [vs.encode("utf-8")]
+                ldif[i] = (a, k, vs)
+
+            self.con.modify_ext_s(dn, ldif)
+        except Exception as e:
+            raise MoulinetteError(
+                "error during LDAP update operation with: rdn='%s', "
+                "attr_dict=%s, new_rdn=%s and exception: %s"
+                % (rdn, attr_dict, new_rdn, e),
+                raw_msg=True,
+            )
+        else:
+            return True
+
+    def validate_uniqueness(self, value_dict):
+        """
+        Check uniqueness of values
+
+        Keyword arguments:
+            value_dict -- Dictionnary of attributes/values to check
+
+        Returns:
+            Boolean | MoulinetteError
+
+        """
+        attr_found = self.get_conflict(value_dict)
+        if attr_found:
+            logger.info(
+                "attribute '%s' with value '%s' is not unique",
+                attr_found[0],
+                attr_found[1],
+            )
+            raise YunohostError(
+                "ldap_attribute_already_exists",
+                attribute=attr_found[0],
+                value=attr_found[1],
+            )
+        return True
+
+    def get_conflict(self, value_dict, base_dn=None):
+        """
+        Check uniqueness of values
+
+        Keyword arguments:
+            value_dict -- Dictionnary of attributes/values to check
+
+        Returns:
+            None | tuple with Fist conflict attribute name and value
+
+        """
+        for attr, value in value_dict.items():
+            if not self.search(base=base_dn, filter=attr + "=" + value):
+                continue
+            else:
+                return (attr, value)
+        return None

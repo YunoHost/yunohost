@@ -2,8 +2,6 @@
 
 set -e
 
-services_path="/etc/yunohost/services.yml"
-
 do_init_regen() {
   if [[ $EUID -ne 0 ]]; then
     echo "You must be root to run this script" 1>&2
@@ -19,8 +17,6 @@ do_init_regen() {
     || echo "yunohost.org" > /etc/yunohost/current_host
 
   # copy default services and firewall
-  [[ -f $services_path ]] \
-    || cp services.yml "$services_path"
   [[ -f /etc/yunohost/firewall.yml ]] \
     || cp firewall.yml /etc/yunohost/firewall.yml
 
@@ -39,6 +35,10 @@ do_init_regen() {
   mkdir -p /home/yunohost.app
   chmod 755 /home/yunohost.app
 
+  # Domain settings
+  mkdir -p /etc/yunohost/domains
+  chmod 700 /etc/yunohost/domains
+
   # Backup folders
   mkdir -p /home/yunohost.backup/archives
   chmod 750 /home/yunohost.backup/archives
@@ -49,9 +49,21 @@ do_init_regen() {
   chmod 644 /etc/ssowat/conf.json.persistent
   chown root:root /etc/ssowat/conf.json.persistent
 
+  # Empty service conf
+  touch /etc/yunohost/services.yml
+
   mkdir -p /var/cache/yunohost/repo
   chown root:root /var/cache/yunohost
   chmod 700 /var/cache/yunohost
+
+  cp yunoprompt.service /etc/systemd/system/yunoprompt.service
+  cp dpkg-origins /etc/dpkg/origins/yunohost
+
+  # Change dpkg vendor
+  # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
+  readlink -f /etc/dpkg/origins/default | grep -q debian \
+    && rm -f /etc/dpkg/origins/default \
+    && ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
 }
 
 do_pre_regen() {
@@ -59,26 +71,11 @@ do_pre_regen() {
 
   cd /usr/share/yunohost/templates/yunohost
 
-  # update services.yml
-  if [[ -f $services_path ]]; then
-      tmp_services_path="${services_path}-tmp"
-      new_services_path="${services_path}-new"
-      cp "$services_path" "$tmp_services_path"
-      _update_services "$new_services_path" || {
-        mv "$tmp_services_path" "$services_path"
-        exit 1
-      }
-      if [[ -f $new_services_path ]]; then
-          # replace services.yml with new one
-          mv "$new_services_path" "$services_path"
-          mv "$tmp_services_path" "${services_path}-old"
-      else
-          rm -f "$tmp_services_path"
-      fi
-  else
-      cp services.yml /etc/yunohost/services.yml
-  fi
+  # Legacy code that can be removed once on bullseye
+  touch /etc/yunohost/services.yml
+  yunohost tools shell -c "from yunohost.service import _get_services, _save_services; _save_services(_get_services())"
 
+  mkdir -p $pending_dir/etc/systemd/system
   mkdir -p $pending_dir/etc/cron.d/
   mkdir -p $pending_dir/etc/cron.daily/
 
@@ -99,7 +96,7 @@ EOF
   # Cron job that renew lets encrypt certificates if there's any that needs renewal
   cat > $pending_dir/etc/cron.daily/yunohost-certificate-renew << EOF
 #!/bin/bash
-yunohost domain cert-renew --email
+yunohost domain cert renew --email
 EOF
 
   # If we subscribed to a dyndns domain, add the corresponding cron
@@ -135,6 +132,28 @@ Conflicts=yunohost-firewall.service
 ConditionFileIsExecutable=!/etc/init.d/yunohost-firewall
 ConditionPathExists=!/etc/systemd/system/multi-user.target.wants/yunohost-firewall.service
 EOF
+
+  # Don't suspend computer on LidSwitch
+  mkdir -p ${pending_dir}/etc/systemd/logind.conf.d/
+  cat > ${pending_dir}/etc/systemd/logind.conf.d/ynh-override.conf << EOF
+[Login]
+HandleLidSwitch=ignore
+HandleLidSwitchDocked=ignore
+HandleLidSwitchExternalPower=ignore
+EOF
+
+  cp yunoprompt.service ${pending_dir}/etc/systemd/system/yunoprompt.service
+
+  if [[ "$(yunohost settings get 'security.experimental.enabled')" == "True" ]]
+  then
+      cp proc-hidepid.service ${pending_dir}/etc/systemd/system/proc-hidepid.service
+  else
+      touch ${pending_dir}/etc/systemd/system/proc-hidepid.service
+  fi
+
+  mkdir -p ${pending_dir}/etc/dpkg/origins/
+  cp dpkg-origins ${pending_dir}/etc/dpkg/origins/yunohost
+
 }
 
 do_post_regen() {
@@ -144,6 +163,7 @@ do_post_regen() {
   # Enfore permissions #
   ######################
 
+  chmod 750 /home/admin
   chmod 750 /home/yunohost.conf
   chmod 750 /home/yunohost.backup
   chmod 750 /home/yunohost.backup/archives
@@ -164,7 +184,21 @@ do_post_regen() {
 
   chown root:root /var/cache/yunohost
   chmod 700 /var/cache/yunohost
+  chown root:root /var/cache/moulinette
+  chmod 700 /var/cache/moulinette
 
+  setfacl -m g:all_users:--- /var/www
+  setfacl -m g:all_users:--- /var/log/nginx
+  setfacl -m g:all_users:--- /etc/yunohost
+  setfacl -m g:all_users:--- /etc/ssowat
+
+  for USER in $(yunohost user list --quiet --output-as json | jq -r '.users | .[] | .username')
+  do
+    [ ! -e "/home/$USER" ] || setfacl -m g:all_users:--- /home/$USER
+  done
+
+  # Domain settings
+  mkdir -p /etc/yunohost/domains
 
   # Misc configuration / state files
   chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
@@ -173,88 +207,34 @@ do_post_regen() {
   # Apps folder, custom hooks folder
   [[ ! -e /etc/yunohost/hooks.d ]] || (chown root /etc/yunohost/hooks.d && chmod 700 /etc/yunohost/hooks.d)
   [[ ! -e /etc/yunohost/apps ]] || (chown root /etc/yunohost/apps && chmod 700 /etc/yunohost/apps)
+  [[ ! -e /etc/yunohost/domains ]] || (chown root /etc/yunohost/domains && chmod 700 /etc/yunohost/domains)
+
+  # Create ssh.app and sftp.app groups if they don't exist yet
+  grep -q '^ssh.app:' /etc/group || groupadd ssh.app
+  grep -q '^sftp.app:' /etc/group || groupadd sftp.app
 
   # Propagates changes in systemd service config overrides
   [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || { systemctl daemon-reload; systemctl restart ntp; }
   [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || systemctl daemon-reload
+  [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] || systemctl daemon-reload
+  if [[ "$regen_conf_files" =~ "yunoprompt.service" ]]
+  then
+    systemctl daemon-reload
+    action=$([[ -e /etc/systemd/system/yunoprompt.service ]] && echo 'enable' || echo 'disable')
+    systemctl $action yunoprompt --quiet --now
+  fi
+  if [[ "$regen_conf_files" =~ "proc-hidepid.service" ]]
+  then
+    systemctl daemon-reload
+    action=$([[ -e /etc/systemd/system/proc-hidepid.service ]] && echo 'enable' || echo 'disable')
+    systemctl $action proc-hidepid --quiet --now
+  fi
+
+  # Change dpkg vendor
+  # see https://wiki.debian.org/Derivatives/Guidelines#Vendor
+  readlink -f /etc/dpkg/origins/default | grep -q debian \
+    && rm -f /etc/dpkg/origins/default \
+    && ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
 }
 
-_update_services() {
-  python3 - << EOF
-import yaml
-
-
-with open('services.yml') as f:
-    new_services = yaml.load(f)
-
-with open('/etc/yunohost/services.yml') as f:
-    services = yaml.load(f) or {}
-
-updated = False
-
-
-for service, conf in new_services.items():
-    # remove service with empty conf
-    if conf is None:
-        if service in services:
-            print("removing '{0}' from services".format(service))
-            del services[service]
-            updated = True
-
-    # add new service
-    elif not services.get(service, None):
-        print("adding '{0}' to services".format(service))
-        services[service] = conf
-        updated = True
-
-    # update service conf
-    else:
-        conffiles = services[service].pop('conffiles', {})
-
-        # status need to be removed
-        if "status" not in conf and "status" in services[service]:
-            print("update '{0}' service status access".format(service))
-            del services[service]["status"]
-            updated = True
-
-        if services[service] != conf:
-            print("update '{0}' service".format(service))
-            services[service].update(conf)
-            updated = True
-
-        if conffiles:
-            services[service]['conffiles'] = conffiles
-
-        # Remove legacy /var/log/daemon.log and /var/log/syslog from log entries
-        # because they are too general. Instead, now the journalctl log is
-        # returned by default which is more relevant.
-        if "log" in services[service]:
-            if services[service]["log"] in ["/var/log/syslog", "/var/log/daemon.log"]:
-                del services[service]["log"]
-
-if updated:
-    with open('/etc/yunohost/services.yml-new', 'w') as f:
-        yaml.safe_dump(services, f, default_flow_style=False)
-EOF
-}
-
-FORCE=${2:-0}
-DRY_RUN=${3:-0}
-
-case "$1" in
-  pre)
-    do_pre_regen $4
-    ;;
-  post)
-    do_post_regen $4
-    ;;
-  init)
-    do_init_regen
-    ;;
-  *)
-    echo "hook called with unknown argument \`$1'" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+do_$1_regen ${@:2}

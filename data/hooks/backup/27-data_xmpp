@@ -1,0 +1,13 @@
+#!/bin/bash
+
+# Exit hook on subcommand error or unset variable
+set -eu
+
+# Source YNH helpers
+source /usr/share/yunohost/helpers
+
+# Backup destination
+backup_dir="${1}/data/xmpp"
+
+ynh_backup /var/lib/metronome "${backup_dir}/var_lib_metronome"
+ynh_backup /var/xmpp-upload/ "${backup_dir}/var_xmpp-upload"

@@ -207,14 +207,14 @@ ynh_restore () {
 # usage: _get_archive_path ORIGIN_PATH
 _get_archive_path () {
     # For security reasons we use csv python library to read the CSV
-    python -c "
+    python3 -c "
 import sys
 import csv
 with open(sys.argv[1], 'r') as backup_file:
     backup_csv = csv.DictReader(backup_file, fieldnames=['source', 'dest'])
     for row in backup_csv:
         if row['source']==sys.argv[2].strip('\"'):
-            print row['dest']
+            print(row['dest'])
             sys.exit(0)
     raise Exception('Original path for %s not found' % sys.argv[2])
     "  "${YNH_BACKUP_CSV}" "$1"
@@ -326,12 +326,25 @@ ynh_bind_or_cp() {
 ynh_store_file_checksum () {
     # Declare an array to define the options of this helper.
     local legacy_args=f
-    local -A args_array=( [f]=file= )
+    local -A args_array=( [f]=file= [u]=update_only )
     local file
+    local update_only
+    update_only="${update_only:-0}"
+
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
     local checksum_setting_name=checksum_${file//[\/ ]/_}    # Replace all '/' and ' ' by '_'
+    
+    # If update only, we don't save the new checksum if no old checksum exist
+    if [ $update_only -eq 1 ] ; then
+        local checksum_value=$(ynh_app_setting_get --app=$app --key=$checksum_setting_name)
+        if [ -z "${checksum_value}" ] ; then
+            unset backup_file_checksum
+            return 0
+        fi
+    fi
+    
     ynh_app_setting_set --app=$app --key=$checksum_setting_name --value=$(md5sum "$file" | cut --delimiter=' ' --fields=1)
 
     # If backup_file_checksum isn't empty, ynh_backup_if_checksum_is_different has made a backup

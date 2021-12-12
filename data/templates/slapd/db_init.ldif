@@ -1,0 +1,120 @@
+dn: dc=yunohost,dc=org
+objectClass: top
+objectClass: dcObject
+objectClass: organization
+o: yunohost.org
+dc: yunohost
+
+dn: cn=admin,ou=sudo,dc=yunohost,dc=org
+cn: admin
+objectClass: sudoRole
+objectClass: top
+sudoCommand: ALL
+sudoUser: admin
+sudoOption: !authenticate
+sudoHost: ALL
+
+dn: ou=users,dc=yunohost,dc=org
+objectClass: organizationalUnit
+objectClass: top
+ou: users
+
+dn: ou=domains,dc=yunohost,dc=org
+objectClass: organizationalUnit
+objectClass: top
+ou: domains
+
+dn: ou=apps,dc=yunohost,dc=org
+objectClass: organizationalUnit
+objectClass: top
+ou: apps
+
+dn: ou=permission,dc=yunohost,dc=org
+objectClass: organizationalUnit
+objectClass: top
+ou: permission
+
+dn: ou=groups,dc=yunohost,dc=org
+objectClass: organizationalUnit
+objectClass: top
+ou: groups
+
+dn: ou=sudo,dc=yunohost,dc=org
+objectClass: organizationalUnit
+objectClass: top
+ou: sudo
+
+dn: cn=admin,dc=yunohost,dc=org
+objectClass: organizationalRole
+objectClass: posixAccount
+objectClass: simpleSecurityObject
+cn: admin
+uid: admin
+uidNumber: 1007
+gidNumber: 1007
+homeDirectory: /home/admin
+loginShell: /bin/bash
+userPassword: yunohost
+
+dn: cn=admins,ou=groups,dc=yunohost,dc=org
+objectClass: posixGroup
+objectClass: top
+memberUid: admin
+gidNumber: 4001
+cn: admins
+
+dn: cn=all_users,ou=groups,dc=yunohost,dc=org
+objectClass: posixGroup
+objectClass: groupOfNamesYnh
+gidNumber: 4002
+cn: all_users
+permission: cn=mail.main,ou=permission,dc=yunohost,dc=org
+permission: cn=xmpp.main,ou=permission,dc=yunohost,dc=org
+
+dn: cn=visitors,ou=groups,dc=yunohost,dc=org
+objectClass: posixGroup
+objectClass: groupOfNamesYnh
+gidNumber: 4003
+cn: visitors
+
+dn: cn=mail.main,ou=permission,dc=yunohost,dc=org
+groupPermission: cn=all_users,ou=groups,dc=yunohost,dc=org
+cn: mail.main
+objectClass: posixGroup
+objectClass: permissionYnh
+isProtected: TRUE
+label: E-mail
+gidNumber: 5001
+showTile: FALSE
+authHeader: FALSE
+
+dn: cn=xmpp.main,ou=permission,dc=yunohost,dc=org
+groupPermission: cn=all_users,ou=groups,dc=yunohost,dc=org
+cn: xmpp.main
+objectClass: posixGroup
+objectClass: permissionYnh
+isProtected: TRUE
+label: XMPP
+gidNumber: 5002
+showTile: FALSE
+authHeader: FALSE
+
+dn: cn=ssh.main,ou=permission,dc=yunohost,dc=org
+cn: ssh.main
+objectClass: posixGroup
+objectClass: permissionYnh
+isProtected: TRUE
+label: SSH
+gidNumber: 5003
+showTile: FALSE
+authHeader: FALSE
+
+dn: cn=sftp.main,ou=permission,dc=yunohost,dc=org
+cn: sftp.main
+objectClass: posixGroup
+objectClass: permissionYnh
+isProtected: TRUE
+label: SFTP
+gidNumber: 5004
+showTile: FALSE
+authHeader: FALSE

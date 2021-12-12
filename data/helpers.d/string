@@ -43,12 +43,14 @@ ynh_replace_string () {
     local target_file
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    set +o xtrace # set +x
 
     local delimit=@
     # Escape the delimiter if it's in the string.
     match_string=${match_string//${delimit}/"\\${delimit}"}
     replace_string=${replace_string//${delimit}/"\\${delimit}"}
 
+    set -o xtrace # set -x
     sed --in-place "s${delimit}${match_string}${delimit}${replace_string}${delimit}g" "$target_file"
 }
 

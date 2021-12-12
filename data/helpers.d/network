@@ -20,7 +20,7 @@ ynh_find_port () {
     test -n "$port" || ynh_die --message="The argument of ynh_find_port must be a valid port."
     while ! ynh_port_available --port=$port
     do
-        port=$((port+1))	# Else, pass to next port
+        port=$((port+1))
     done
     echo $port
 }
@@ -42,7 +42,12 @@ ynh_port_available () {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ":$port$"       # Check if the port is free
+    # Check if the port is free
+    if ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ":$port$"
+    then
+        return 1
+    # This is to cover (most) case where an app is using a port yet ain't currently using it for some reason (typically service ain't up)
+    elif grep -q "port: '$port'" /etc/yunohost/apps/*/settings.yml
     then
         return 1
     else
@@ -75,7 +80,7 @@ ynh_validate_ip()
 
     [ "$family" == "4" ] || [ "$family" == "6" ] || return 1
 
-  python /dev/stdin << EOF
+    python3 /dev/stdin << EOF
 import socket
 import sys
 family = { "4" : socket.AF_INET, "6" : socket.AF_INET6 }

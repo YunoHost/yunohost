@@ -31,10 +31,10 @@ import mimetypes
 from glob import iglob
 from importlib import import_module
 
-from moulinette import m18n, msettings
+from moulinette import m18n, Moulinette
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils import log
-from moulinette.utils.filesystem import read_json
+from moulinette.utils.filesystem import read_yaml, cp
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"
@@ -60,8 +60,7 @@ def hook_add(app, file):
         os.makedirs(CUSTOM_HOOK_FOLDER + action)
 
     finalpath = CUSTOM_HOOK_FOLDER + action + "/" + priority + "-" + app
-    os.system("cp %s %s" % (file, finalpath))
-    os.system("chown -hR admin: %s" % HOOK_FOLDER)
+    cp(file, finalpath)
 
     return {"hook": finalpath}
 
@@ -320,7 +319,13 @@ def hook_callback(
 
 
 def hook_exec(
-    path, args=None, raise_on_error=False, chdir=None, env=None, return_format="json"
+    path,
+    args=None,
+    raise_on_error=False,
+    chdir=None,
+    env=None,
+    user="root",
+    return_format="yaml",
 ):
     """
     Execute hook from a file with arguments
@@ -331,6 +336,7 @@ def hook_exec(
         raise_on_error -- Raise if the script returns a non-zero exit code
         chdir -- The directory from where the script will be executed
         env -- Dictionnary of environment variables to export
+        user -- User with which to run the command
     """
 
     # Validate hook path
@@ -372,7 +378,7 @@ def hook_exec(
         returncode, returndata = _hook_exec_python(path, args, env, loggers)
     else:
         returncode, returndata = _hook_exec_bash(
-            path, args, chdir, env, return_format, loggers
+            path, args, chdir, env, user, return_format, loggers
         )
 
     # Check and return process' return code
@@ -388,7 +394,7 @@ def hook_exec(
     return returncode, returndata
 
 
-def _hook_exec_bash(path, args, chdir, env, return_format, loggers):
+def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
 
     from moulinette.utils.process import call_async_output
 
@@ -409,24 +415,30 @@ def _hook_exec_bash(path, args, chdir, env, return_format, loggers):
         env = {}
     env["YNH_CWD"] = chdir
 
-    env["YNH_INTERFACE"] = msettings.get("interface")
+    env["YNH_INTERFACE"] = Moulinette.interface.type
 
     stdreturn = os.path.join(tempfile.mkdtemp(), "stdreturn")
     with open(stdreturn, "w") as f:
         f.write("")
     env["YNH_STDRETURN"] = stdreturn
 
+    # Construct command to execute
+    if user == "root":
+        command = ["sh", "-c"]
+    else:
+        command = ["sudo", "-n", "-u", user, "-H", "sh", "-c"]
+
     # use xtrace on fd 7 which is redirected to stdout
     env["BASH_XTRACEFD"] = "7"
     cmd = '/bin/bash -x "{script}" {args} 7>&1'
-    cmd = cmd.format(script=cmd_script, args=cmd_args)
+    command.append(cmd.format(script=cmd_script, args=cmd_args))
 
-    logger.debug("Executing command '%s'" % cmd)
+    logger.debug("Executing command '%s'" % command)
 
     _env = os.environ.copy()
     _env.update(env)
 
-    returncode = call_async_output(cmd, loggers, shell=True, cwd=chdir, env=_env)
+    returncode = call_async_output(command, loggers, shell=False, cwd=chdir, env=_env)
 
     raw_content = None
     try:
@@ -434,10 +446,10 @@ def _hook_exec_bash(path, args, chdir, env, return_format, loggers):
             raw_content = f.read()
         returncontent = {}
 
-        if return_format == "json":
+        if return_format == "yaml":
             if raw_content != "":
                 try:
-                    returncontent = read_json(stdreturn)
+                    returncontent = read_yaml(stdreturn)
                 except Exception as e:
                     raise YunohostError(
                         "hook_json_return_error",
@@ -483,6 +495,40 @@ def _hook_exec_python(path, args, env, loggers):
         and isinstance(ret[1], dict)
     ), ("Module %s did not return a (int, dict) tuple !" % module)
     return ret
+
+
+def hook_exec_with_script_debug_if_failure(*args, **kwargs):
+
+    operation_logger = kwargs.pop("operation_logger")
+    error_message_if_failed = kwargs.pop("error_message_if_failed")
+    error_message_if_script_failed = kwargs.pop("error_message_if_script_failed")
+
+    failed = True
+    failure_message_with_debug_instructions = None
+    try:
+        retcode, retpayload = hook_exec(*args, **kwargs)
+        failed = True if retcode != 0 else False
+        if failed:
+            error = error_message_if_script_failed
+            logger.error(error_message_if_failed(error))
+            failure_message_with_debug_instructions = operation_logger.error(error)
+            if Moulinette.interface.type != "api":
+                operation_logger.dump_script_log_extract_for_debugging()
+    # Script got manually interrupted ...
+    # N.B. : KeyboardInterrupt does not inherit from Exception
+    except (KeyboardInterrupt, EOFError):
+        error = m18n.n("operation_interrupted")
+        logger.error(error_message_if_failed(error))
+        failure_message_with_debug_instructions = operation_logger.error(error)
+    # Something wrong happened in Yunohost's code (most probably hook_exec)
+    except Exception:
+        import traceback
+
+        error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+        logger.error(error_message_if_failed(error))
+        failure_message_with_debug_instructions = operation_logger.error(error)
+
+    return failed, failure_message_with_debug_instructions
 
 
 def _extract_filename_parts(filename):

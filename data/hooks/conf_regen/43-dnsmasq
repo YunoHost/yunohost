@@ -32,6 +32,7 @@ do_pre_regen() {
 
   # add domain conf files
   for domain in $YNH_DOMAINS; do
+      [[ ! $domain =~ \.local$ ]] || continue
       export domain
       ynh_render_template "domain.tpl" "${dnsmasq_dir}/${domain}"
   done
@@ -40,8 +41,10 @@ do_pre_regen() {
   conf_files=$(ls -1 /etc/dnsmasq.d \
                  | awk '/^[^\.]+\.[^\.]+.*$/ { print $1 }')
   for domain in $conf_files; do
-    [[ $YNH_DOMAINS =~ $domain ]] \
-      || touch "${dnsmasq_dir}/${domain}"
+      if [[ ! $YNH_DOMAINS =~ $domain ]] && [[ ! $domain =~ \.local$ ]]
+      then
+          touch "${dnsmasq_dir}/${domain}"
+      fi
   done
 }
 
@@ -80,20 +83,4 @@ do_post_regen() {
   systemctl restart dnsmasq
 }
 
-FORCE=${2:-0}
-DRY_RUN=${3:-0}
-
-case "$1" in
-  pre)
-    do_pre_regen $4
-    ;;
-  post)
-    do_post_regen $4
-    ;;
-  *)
-    echo "hook called with unknown argument \`$1'" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+do_$1_regen ${@:2}

@@ -28,7 +28,7 @@ import re
 import os
 import time
 
-from moulinette import m18n, msettings
+from moulinette import m18n, Moulinette
 from moulinette.utils import log
 from moulinette.utils.filesystem import (
     read_json,
@@ -59,7 +59,9 @@ def diagnosis_get(category, item):
     all_categories_names = [c for c, _ in all_categories]
 
     if category not in all_categories_names:
-        raise YunohostValidationError("diagnosis_unknown_categories", categories=category)
+        raise YunohostValidationError(
+            "diagnosis_unknown_categories", categories=category
+        )
 
     if isinstance(item, list):
         if any("=" not in criteria for criteria in item):
@@ -136,7 +138,7 @@ def diagnosis_show(
         url = yunopaste(content)
 
         logger.info(m18n.n("log_available_on_yunopaste", url=url))
-        if msettings.get("interface") == "api":
+        if Moulinette.interface.type == "api":
             return {"url": url}
         else:
             return
@@ -217,11 +219,19 @@ def diagnosis_run(
 
     if email:
         _email_diagnosis_issues()
-    if issues and msettings.get("interface") == "cli":
+    if issues and Moulinette.interface.type == "cli":
         logger.warning(m18n.n("diagnosis_display_tip"))
 
 
-def diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
+def diagnosis_ignore(filter, list=False):
+    return _diagnosis_ignore(add_filter=filter, list=list)
+
+
+def diagnosis_unignore(filter):
+    return _diagnosis_ignore(remove_filter=filter)
+
+
+def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
     """
     This action is meant for the admin to ignore issues reported by the
     diagnosis system if they are known and understood by the admin.  For
@@ -585,7 +595,7 @@ class Diagnoser:
                 info[1].update(meta_data)
                 s = m18n.n(info[0], **(info[1]))
                 # In cli, we remove the html tags
-                if msettings.get("interface") != "api" or force_remove_html_tags:
+                if Moulinette.interface.type != "api" or force_remove_html_tags:
                     s = s.replace("<cmd>", "'").replace("</cmd>", "'")
                     s = html_tags.sub("", s.replace("<br>", "\n"))
                 else:
@@ -702,5 +712,5 @@ Subject: %s
     import smtplib
 
     smtp = smtplib.SMTP("localhost")
-    smtp.sendmail(from_, [to_], message)
+    smtp.sendmail(from_, [to_], message.encode("utf-8"))
     smtp.quit()

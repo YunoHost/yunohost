@@ -61,7 +61,7 @@
 # fail2ban-regex /var/log/YOUR_LOG_FILE_PATH /etc/fail2ban/filter.d/YOUR_APP.conf
 # ```
 #
-# Requires YunoHost version 3.5.0 or higher.
+# Requires YunoHost version 4.1.0 or higher.
 ynh_add_fail2ban_config () {
     # Declare an array to define the options of this helper.
     local legacy_args=lrmptv
@@ -79,7 +79,7 @@ ynh_add_fail2ban_config () {
     others_var="${others_var:-}"
     use_template="${use_template:-0}"
 
-    [[ -z "$others_var" ]] || ynh_print_warn --message="Packagers: using --others_var is unecessary since Yunohost 4.2"
+    [[ -z "$others_var" ]] || ynh_print_warn --message="Packagers: using --others_var is unecessary since YunoHost 4.2"
 
     if [ $use_template -ne 1 ]
     then

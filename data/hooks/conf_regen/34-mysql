@@ -37,7 +37,7 @@ do_post_regen() {
       # This is a trick to check if we're able to use mysql without password
       # Expect instances installed in stretch to already have unix_socket
       #configured, but not old instances from the jessie/wheezy era
-      if ! echo "" | mysql
+      if ! echo "" | mysql 2>/dev/null
       then
           password="$(cat /etc/yunohost/mysql)"
           # Enable plugin unix_socket for root on localhost
@@ -45,7 +45,7 @@ do_post_regen() {
       fi
 
       # If now we're able to login without password, drop the mysql password
-      if echo "" | mysql
+      if echo "" | mysql 2>/dev/null
       then
           rm /etc/yunohost/mysql
       else
@@ -66,23 +66,7 @@ do_post_regen() {
   fi
 
   [[ -z "$regen_conf_files" ]] \
-    || service mysql restart
+    || systemctl restart mysql
 }
 
-FORCE=${2:-0}
-DRY_RUN=${3:-0}
-
-case "$1" in
-  pre)
-    do_pre_regen $4
-    ;;
-  post)
-    do_post_regen $4
-    ;;
-  *)
-    echo "hook called with unknown argument \`$1'" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+do_$1_regen ${@:2}

@@ -35,7 +35,7 @@ trap cleanup EXIT SIGINT
 HTTPSERVER_DIR=$(mktemp -d)
 HTTPSERVER_PORT=1312
 pushd "$HTTPSERVER_DIR" >/dev/null
-python -m SimpleHTTPServer $HTTPSERVER_PORT &>/dev/null &
+python3 -m http.server $HTTPSERVER_PORT --bind 127.0.0.1 &>/dev/null &
 HTTPSERVER="$!"
 popd >/dev/null
 
@@ -43,7 +43,6 @@ VAR_WWW=$(mktemp -d)/var/www
 mkdir -p $VAR_WWW
 # =========================================================
 
-source /usr/share/yunohost/helpers
 for TEST_SUITE in $(ls test_helpers.d/*)
 do
     source $TEST_SUITE
@@ -58,11 +57,12 @@ for TEST in $TESTS
 do
     log_test $TEST
     cd $(mktemp -d)
-    (app=ynhtest
-     YNH_APP_ID=$app
-     mkdir conf
+    (mkdir conf
      mkdir scripts
      cd scripts
+     source /usr/share/yunohost/helpers
+     app=ynhtest
+     YNH_APP_ID=$app
      set -eux
      $TEST
     ) > ./test.log 2>&1

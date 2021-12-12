@@ -111,8 +111,13 @@ class PasswordValidator(object):
         listed = password in SMALL_PWD_LIST or self.is_in_most_used_list(password)
         strength_level = self.strength_level(password)
         if listed:
+            # i18n: password_listed
             return ("error", "password_listed")
         if strength_level < self.validation_strength:
+            # i18n: password_too_simple_1
+            # i18n: password_too_simple_2
+            # i18n: password_too_simple_3
+            # i18n: password_too_simple_4
             return ("error", "password_too_simple_%s" % self.validation_strength)
 
         return ("success", "")

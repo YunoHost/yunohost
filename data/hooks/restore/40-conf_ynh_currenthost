@@ -1,3 +1,0 @@
-backup_dir="$1/conf/ynh"
-
-cp -a "${backup_dir}/current_host" /etc/yunohost/current_host

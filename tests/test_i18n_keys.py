@@ -6,14 +6,7 @@ import glob
 import json
 import yaml
 import subprocess
-
-ignore = [
-    "password_too_simple_",
-    "password_listed",
-    "backup_method_",
-    "backup_applying_method_",
-    "confirm_app_install_",
-]
+import toml
 
 ###############################################################################
 #   Find used keys in python code                                             #
@@ -35,6 +28,7 @@ def find_expected_string_keys():
     python_files = glob.glob("src/yunohost/*.py")
     python_files.extend(glob.glob("src/yunohost/utils/*.py"))
     python_files.extend(glob.glob("src/yunohost/data_migrations/*.py"))
+    python_files.extend(glob.glob("src/yunohost/authenticators/*.py"))
     python_files.extend(glob.glob("data/hooks/diagnosis/*.py"))
     python_files.append("bin/yunohost")
 
@@ -108,7 +102,7 @@ def find_expected_string_keys():
         yield m
 
     # Keys for the actionmap ...
-    for category in yaml.load(open("data/actionsmap/yunohost.yml")).values():
+    for category in yaml.safe_load(open("data/actionsmap/yunohost.yml")).values():
         if "actions" not in category.keys():
             continue
         for action in category["actions"].values():
@@ -136,33 +130,23 @@ def find_expected_string_keys():
         yield "backup_applying_method_%s" % method
         yield "backup_method_%s_finished" % method
 
-    for level in ["danger", "thirdparty", "warning"]:
-        yield "confirm_app_install_%s" % level
+    registrars = toml.load(open("data/other/registrar_list.toml"))
+    supported_registrars = ["ovh", "gandi", "godaddy"]
+    for registrar in supported_registrars:
+        for key in registrars[registrar].keys():
+            yield f"domain_config_{key}"
 
-    for errortype in ["not_found", "error", "warning", "success", "not_found_details"]:
-        yield "diagnosis_domain_expiration_%s" % errortype
-    yield "diagnosis_domain_not_found_details"
-
-    for errortype in ["bad_status_code", "connection_error", "timeout"]:
-        yield "diagnosis_http_%s" % errortype
-
-    yield "password_listed"
-    for i in [1, 2, 3, 4]:
-        yield "password_too_simple_%s" % i
-
-    checks = [
-        "outgoing_port_25_ok",
-        "ehlo_ok",
-        "fcrdns_ok",
-        "blacklist_ok",
-        "queue_ok",
-        "ehlo_bad_answer",
-        "ehlo_unreachable",
-        "ehlo_bad_answer_details",
-        "ehlo_unreachable_details",
-    ]
-    for check in checks:
-        yield "diagnosis_mail_%s" % check
+    domain_config = toml.load(open("data/other/config_domain.toml"))
+    for panel in domain_config.values():
+        if not isinstance(panel, dict):
+            continue
+        for section in panel.values():
+            if not isinstance(section, dict):
+                continue
+            for key, values in section.items():
+                if not isinstance(values, dict):
+                    continue
+                yield f"domain_config_{key}"
 
 
 ###############################################################################

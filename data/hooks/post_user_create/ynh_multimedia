@@ -15,7 +15,11 @@ mkdir -p "$MEDIA_DIRECTORY/$user/Video"
 mkdir -p "$MEDIA_DIRECTORY/$user/eBook"
 ln -sfn "$MEDIA_DIRECTORY/share" "$MEDIA_DIRECTORY/$user/Share"
 # Création du lien symbolique dans le home de l'utilisateur.
-ln -sfn "$MEDIA_DIRECTORY/$user" "/home/$user/Multimedia"
+#link will only be created if the home directory of the user exists and if it's located in '/home' folder
+user_home="$(getent passwd $user | cut -d: -f6 | grep '^/home/')"
+if [[ -d "$user_home" ]]; then
+    ln -sfn "$MEDIA_DIRECTORY/$user" "$user_home/Multimedia"
+fi
 # Propriétaires des dossiers utilisateurs.
 chown -R $user "$MEDIA_DIRECTORY/$user"
 

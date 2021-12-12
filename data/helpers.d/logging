@@ -293,7 +293,7 @@ ynh_script_progression () {
     set -o xtrace # set -x
 }
 
-# Return data to the Yunohost core for later processing
+# Return data to the YunoHost core for later processing
 # (to be used by special hooks like app config panel and core diagnosis)
 #
 # usage: ynh_return somedata

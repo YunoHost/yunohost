@@ -6,6 +6,8 @@ readonly MEDIA_DIRECTORY=/home/yunohost.multimedia
 # Initialize the multimedia directory system
 #
 # usage: ynh_multimedia_build_main_dir
+#
+# Requires YunoHost version 4.2 or higher.
 ynh_multimedia_build_main_dir() {
 
     ## Création du groupe multimedia
@@ -29,7 +31,11 @@ ynh_multimedia_build_main_dir() {
         mkdir -p "$MEDIA_DIRECTORY/$user/eBook"
         ln -sfn "$MEDIA_DIRECTORY/share" "$MEDIA_DIRECTORY/$user/Share"
         # Création du lien symbolique dans le home de l'utilisateur.
-        ln -sfn "$MEDIA_DIRECTORY/$user" "/home/$user/Multimedia"
+        #link will only be created if the home directory of the user exists and if it's located in '/home' folder
+        local user_home="$(getent passwd $user | cut -d: -f6 | grep '^/home/')"
+        if [[ -d "$user_home" ]]; then
+            ln -sfn "$MEDIA_DIRECTORY/$user" "$user_home/Multimedia"
+        fi
         # Propriétaires des dossiers utilisateurs.
         chown -R $user "$MEDIA_DIRECTORY/$user"
     done
@@ -55,6 +61,7 @@ ynh_multimedia_build_main_dir() {
 #
 # This "directory" will be a symbolic link to a existing directory.
 #
+# Requires YunoHost version 4.2 or higher.
 ynh_multimedia_addfolder() {
 
     # Declare an array to define the options of this helper.
@@ -83,6 +90,7 @@ ynh_multimedia_addfolder() {
 #
 # | arg: -u, --user_name= - The name of the user which gain this access.
 #
+# Requires YunoHost version 4.2 or higher.
 ynh_multimedia_addaccess () {
 	# Declare an array to define the options of this helper.
     local legacy_args=u

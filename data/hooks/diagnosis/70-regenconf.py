@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 
 import os
+import re
 
+from yunohost.settings import settings_get
 from yunohost.diagnosis import Diagnoser
 from yunohost.regenconf import _get_regenconf_infos, _calculate_hash
+from moulinette.utils.filesystem import read_file
 
 
 class RegenconfDiagnoser(Diagnoser):
@@ -34,6 +37,32 @@ class RegenconfDiagnoser(Diagnoser):
                     summary="diagnosis_regenconf_manually_modified",
                     details=["diagnosis_regenconf_manually_modified_details"],
                 )
+
+        if (
+            any(f["path"] == "/etc/ssh/sshd_config" for f in regenconf_modified_files)
+            and os.system(
+                "grep -q '^ *AllowGroups\\|^ *AllowUsers' /etc/ssh/sshd_config"
+            )
+            != 0
+        ):
+            yield dict(
+                meta={"test": "sshd_config_insecure"},
+                status="ERROR",
+                summary="diagnosis_sshd_config_insecure",
+            )
+
+        # Check consistency between actual ssh port in sshd_config vs. setting
+        ssh_port_setting = settings_get("security.ssh.port")
+        ssh_port_line = re.findall(
+            r"\bPort *([0-9]{2,5})\b", read_file("/etc/ssh/sshd_config")
+        )
+        if len(ssh_port_line) == 1 and int(ssh_port_line[0]) != ssh_port_setting:
+            yield dict(
+                meta={"test": "sshd_config_port_inconsistency"},
+                status="WARNING",
+                summary="diagnosis_sshd_config_inconsistent",
+                details=["diagnosis_sshd_config_inconsistent_details"],
+            )
 
     def manually_modified_files(self):
 

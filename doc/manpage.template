@@ -93,7 +93,7 @@ usage: yunohost {{ name }} {{ '{' }}{{ ",".join(value["actions"].keys()) }}{{ '}
 {# each subcategory #}
 {% for subcategory_name, subcategory in value.get("subcategories", {}).items() %}
 {% for action, action_value in subcategory["actions"].items() %}
-.SS "yunohost {{ subcategory_name }} {{ name }} {{ action }} \
+.SS "yunohost {{ name }} {{ subcategory_name }} {{ action }} \
 {% for argument_name, argument_value in action_value.get("arguments", {}).items() %}\
 {% set required=(not str(argument_name).startswith("-")) or argument_value.get("extra", {}).get("required", False) %}\
 {% if not required %}[{% endif %}\

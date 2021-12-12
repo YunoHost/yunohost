@@ -86,7 +86,7 @@ key, value = os.environ['KEY'], os.environ.get('VALUE', None)
 setting_file = "/etc/yunohost/apps/%s/settings.yml" % app
 assert os.path.exists(setting_file), "Setting file %s does not exists ?" % setting_file
 with open(setting_file) as f:
-    settings = yaml.load(f)
+    settings = yaml.safe_load(f)
 if action == "get":
     if key in settings:
         print(settings[key])
@@ -96,7 +96,7 @@ else:
             del settings[key]
     elif action == "set":
         if key in ['redirected_urls', 'redirected_regex']:
-            value = yaml.load(value)
+            value = yaml.safe_load(value)
         settings[key] = value
     else:
         raise ValueError("action should either be get, set or delete")

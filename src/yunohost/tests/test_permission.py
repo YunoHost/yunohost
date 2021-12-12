@@ -1049,7 +1049,7 @@ def test_permission_app_remove():
 def test_permission_app_change_url():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&admin=%s"
+        args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
         % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
         force=True,
     )
@@ -1072,7 +1072,7 @@ def test_permission_app_change_url():
 def test_permission_protection_management_by_helper():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&admin=%s"
+        args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
         % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
         force=True,
     )
@@ -1135,7 +1135,7 @@ def test_permission_legacy_app_propagation_on_ssowat():
 
     app_install(
         os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s"
+        args="domain=%s&domain_2=%s&path=%s&is_public=1"
         % (maindomain, other_domains[0], "/legacy"),
         force=True,
     )

@@ -55,9 +55,7 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 #   RAM) but the impact on the proc is lower. The service will be quick to answer as there's always many
 #   children ready to answer.
 #
-# Requires YunoHost version 2.7.2 or higher.
-# Requires YunoHost version 3.5.1 or higher for the argument --phpversion
-# Requires YunoHost version 3.8.1 or higher for the arguments --use_template, --usage, --footprint, --package and --dedicated_service
+# Requires YunoHost version 4.1.0 or higher.
 ynh_add_fpm_config () {
     # Declare an array to define the options of this helper.
     local legacy_args=vtufpd
@@ -113,7 +111,7 @@ ynh_add_fpm_config () {
     elif [ -n "$package" ]
     then
         # Install the additionnal packages from the default repository
-        ynh_add_app_dependencies --package="$package"
+        ynh_install_app_dependencies "$package"
     fi
 
     if [ $dedicated_service -eq 1 ]
@@ -227,7 +225,7 @@ syslog.ident = php-fpm-__APP__
 include = __FINALPHPCONF__
 " > $YNH_APP_BASEDIR/conf/php-fpm-$app.conf
 
-        ynh_add_config --template="../config/php-fpm-$app.conf" --destination="$globalphpconf"
+        ynh_add_config --template="$YNH_APP_BASEDIR/conf/php-fpm-$app.conf" --destination="$globalphpconf"
 
         # Create a config for a dedicated PHP-FPM service for the app
         echo "[Unit]
@@ -247,7 +245,7 @@ WantedBy=multi-user.target
         # Create this dedicated PHP-FPM service
         ynh_add_systemd_config --service=$fpm_service --template=$fpm_service
         # Integrate the service in YunoHost admin panel
-        yunohost service add $fpm_service --log /var/log/php/fpm-php.$app.log --log_type file --description "Php-fpm dedicated to $app"
+        yunohost service add $fpm_service --log /var/log/php/fpm-php.$app.log --description "Php-fpm dedicated to $app"
         # Configure log rotate
         ynh_use_logrotate --logfile=/var/log/php
         # Restart the service, as this service is either stopped or only for this app
@@ -287,6 +285,12 @@ ynh_remove_fpm_config () {
         fpm_service="php$YNH_DEFAULT_PHP_VERSION-fpm"
     fi
 
+    ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
+    if [ -e $fpm_config_dir/conf.d/20-$app.ini ]
+    then
+        ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini"
+    fi
+
     if [ $dedicated_service -eq 1 ]
     then
         # Remove the dedicated service PHP-FPM service for the app
@@ -297,12 +301,6 @@ ynh_remove_fpm_config () {
         yunohost service remove $fpm_service
     elif ynh_package_is_installed --package="php${phpversion}-fpm"; then
         ynh_systemd_action --service_name=$fpm_service --action=reload
-    fi
-
-    ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
-    if [ -e $fpm_config_dir/conf.d/20-$app.ini ]
-    then
-        ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini"
     fi
 
     # If the PHP version used is not the default version for YunoHost
@@ -332,37 +330,13 @@ ynh_install_php () {
     ynh_handle_getopts_args "$@"
     package=${package:-}
 
-    # Store phpversion into the config of this app
-    ynh_app_setting_set $app phpversion $phpversion
-
     if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ]
     then
         ynh_die --message="Do not use ynh_install_php to install php$YNH_DEFAULT_PHP_VERSION"
     fi
 
-    # Create the file if doesn't exist already
-    touch /etc/php/ynh_app_version
-
-    # Do not add twice the same line
-    if ! grep --quiet "$YNH_APP_INSTANCE_NAME:" "/etc/php/ynh_app_version"
-    then
-        # Store the ID of this app and the version of PHP requested for it
-        echo "$YNH_APP_INSTANCE_NAME:$phpversion" | tee --append "/etc/php/ynh_app_version"
-    fi
-
-    # Add an extra repository for those packages
-    ynh_install_extra_repo --repo="https://packages.sury.org/php/ $(ynh_get_debian_release) main" --key="https://packages.sury.org/php/apt.gpg" --name=extra_php_version --priority=600
-
-    # Install requested dependencies from this extra repository.
-    # Install PHP-FPM first, otherwise PHP will install apache as a dependency.
-    ynh_add_app_dependencies --package="php${phpversion}-fpm"
-    ynh_add_app_dependencies --package="php$phpversion php${phpversion}-common $package"
-
-    # Set the default PHP version back as the default version for php-cli.
-    update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
-
-    # Advertise service in admin panel
-    yunohost service add php${phpversion}-fpm --log "/var/log/php${phpversion}-fpm.log"
+    ynh_install_app_dependencies "$package"
+    ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
 }
 
 # Remove the specific version of PHP used by the app.
@@ -373,35 +347,7 @@ ynh_install_php () {
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_remove_php () {
-    # Get the version of PHP used by this app
-    local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
-
-    if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ] || [ -z "$phpversion" ]
-    then
-        if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ]
-        then
-            ynh_print_err "Do not use ynh_remove_php to remove php$YNH_DEFAULT_PHP_VERSION !"
-        fi
-        return 0
-    fi
-
-    # Create the file if doesn't exist already
-    touch /etc/php/ynh_app_version
-
-    # Remove the line for this app
-    sed --in-place "/$YNH_APP_INSTANCE_NAME:$phpversion/d" "/etc/php/ynh_app_version"
-
-    # If no other app uses this version of PHP, remove it.
-    if ! grep --quiet "$phpversion" "/etc/php/ynh_app_version"
-    then
-        # Remove the service from the admin panel
-        if ynh_package_is_installed --package="php${phpversion}-fpm"; then
-            yunohost service remove php${phpversion}-fpm
-        fi
-
-        # Purge PHP dependencies for this version.
-        ynh_package_autopurge "php$phpversion php${phpversion}-fpm php${phpversion}-common"
-    fi
+    ynh_remove_app_dependencies
 }
 
 # Define the values to configure PHP-FPM
@@ -570,6 +516,7 @@ YNH_COMPOSER_VERSION=${YNH_COMPOSER_VERSION:-$YNH_DEFAULT_COMPOSER_VERSION}
 # | arg: -w, --workdir - The directory from where the command will be executed. Default $final_path.
 # | arg: -c, --commands - Commands to execute.
 #
+# Requires YunoHost version 4.2 or higher.
 ynh_composer_exec () {
     # Declare an array to define the options of this helper.
     local legacy_args=vwc
@@ -582,7 +529,7 @@ ynh_composer_exec () {
     workdir="${workdir:-$final_path}"
     phpversion="${phpversion:-$YNH_PHP_VERSION}"
 
-    COMPOSER_HOME="$workdir/.composer" \
+    COMPOSER_HOME="$workdir/.composer" COMPOSER_MEMORY_LIMIT=-1 \
         php${phpversion} "$workdir/composer.phar" $commands \
         -d "$workdir" --quiet --no-interaction
 }
@@ -595,6 +542,7 @@ ynh_composer_exec () {
 # | arg: -a, --install_args - Additional arguments provided to the composer install. Argument --no-dev already include
 # | arg: -c, --composerversion - Composer version to install
 #
+# Requires YunoHost version 4.2 or higher.
 ynh_install_composer () {
     # Declare an array to define the options of this helper.
     local legacy_args=vwac

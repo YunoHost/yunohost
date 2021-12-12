@@ -48,7 +48,7 @@ class YunohostError(MoulinetteError):
     def content(self):
 
         if not self.log_ref:
-            return super(YunohostError, self).content()
+            return super().content()
         else:
             return {"error": self.strerror, "log_ref": self.log_ref}
 
@@ -56,3 +56,7 @@ class YunohostError(MoulinetteError):
 class YunohostValidationError(YunohostError):
 
     http_code = 400
+
+    def content(self):
+
+        return {"error": self.strerror, "error_key": self.key, **self.kwargs}

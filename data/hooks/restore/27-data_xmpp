@@ -1,0 +1,4 @@
+backup_dir="$1/data/xmpp"
+
+cp -a $backup_dir/var_lib_metronome/. /var/lib/metronome
+cp -a $backup_dir/var_xmpp-upload/. /var/xmpp-upload

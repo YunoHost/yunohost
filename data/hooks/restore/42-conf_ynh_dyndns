@@ -1,9 +1,0 @@
-#!/bin/bash
-
-source /usr/share/yunohost/helpers
-ynh_abort_if_errors
-YNH_CWD="${YNH_BACKUP_DIR%/}/conf/ynh/dyndns"
-cd "$YNH_CWD"
-
-# Restore file if exists
-ynh_restore_file --origin_path="/etc/yunohost/dyndns" --not_mandatory
