@@ -211,7 +211,7 @@
     "tools_upgrade_cant_unhold_critical_packages": "No se pudo liberar los paquetes críticos…",
     "tools_upgrade_cant_hold_critical_packages": "No se pudieron retener los paquetes  críticos…",
     "tools_upgrade_cant_both": "No se puede actualizar el sistema y las aplicaciones al mismo tiempo",
-    "tools_upgrade_at_least_one": "Especifique «--apps», o «--system»",
+    "tools_upgrade_at_least_one": "Especifique «apps», o «system»",
     "this_action_broke_dpkg": "Esta acción rompió dpkg/APT(los gestores de paquetes del sistema)…  Puede tratar de solucionar este problema conectando mediante SSH y ejecutando `sudo dpkg --configure -a`.",
     "service_reloaded_or_restarted": "El servicio '{service}' fue recargado o reiniciado",
     "service_reload_or_restart_failed": "No se pudo recargar o reiniciar el servicio «{service}»\n\nRegistro de servicios recientes:{logs}",

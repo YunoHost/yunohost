@@ -234,7 +234,7 @@
     "service_stop_failed": "Ne povis maldaŭrigi la servon '{service}'\n\nLastatempaj servaj protokoloj: {logs}",
     "unbackup_app": "App '{app}' ne konserviĝos",
     "updating_apt_cache": "Akirante haveblajn ĝisdatigojn por sistemaj pakoj…",
-    "tools_upgrade_at_least_one": "Bonvolu specifi '--apps' aŭ '--system'",
+    "tools_upgrade_at_least_one": "Bonvolu specifi 'apps' aŭ 'system'",
     "service_already_stopped": "La servo '{service}' jam ĉesis",
     "tools_upgrade_cant_both": "Ne eblas ĝisdatigi ambaŭ sistemon kaj programojn samtempe",
     "restore_extracting": "Eltirante bezonatajn dosierojn el la ar theivo…",

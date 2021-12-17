@@ -341,7 +341,7 @@
     "service_reload_or_restart_failed": "Impossible de recargar o reaviar lo servici « {service} »\n\nJornal d’audit recent : {logs}",
     "regenconf_file_kept_back": "S’espèra que lo fichièr de configuracion « {conf} » siá suprimit per regen-conf (categoria {category} mas es estat mantengut.",
     "this_action_broke_dpkg": "Aquesta accion a copat dpkg/apt (los gestionaris de paquets del sistèma)… Podètz ensajar de resòlver aqueste problèma en vos connectant amb SSH e executant « sudo dpkg --configure -a ».",
-    "tools_upgrade_at_least_one": "Especificatz --apps O --system",
+    "tools_upgrade_at_least_one": "Especificatz apps O system",
     "tools_upgrade_cant_unhold_critical_packages": "Se pòt pas quitar de manténer los paquets critics…",
     "tools_upgrade_regular_packages": "Actualizacion dels paquets « normals » (pas ligats a YunoHost)…",
     "tools_upgrade_special_packages": "Actualizacion dels paquets « especials » (ligats a YunoHost)…",
