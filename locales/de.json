@@ -613,7 +613,7 @@
     "tools_upgrade_cant_unhold_critical_packages": "Konnte für die kritischen Pakete das Flag 'hold' nicht aufheben...",
     "tools_upgrade_cant_hold_critical_packages": "Konnte für die kritischen Pakete das Flag 'hold' nicht setzen...",
     "tools_upgrade_cant_both": "Kann das Upgrade für das System und die Applikation nicht gleichzeitig durchführen",
-    "tools_upgrade_at_least_one": "Bitte geben Sie '--apps' oder '--system' an",
+    "tools_upgrade_at_least_one": "Bitte geben Sie 'apps' oder 'system' an",
     "this_action_broke_dpkg": "Diese Aktion hat unkonfigurierte Pakete verursacht, welche durch dpkg/apt (die Paketverwaltungen dieses Systems) zurückgelassen wurden... Sie können versuchen dieses Problem zu lösen, indem Sie 'sudo apt install --fix-broken' und/oder 'sudo dpkg --configure -a' ausführen.",
     "update_apt_cache_failed": "Kann den Cache von APT (Debians Paketmanager) nicht aktualisieren. Hier ist ein Auszug aus den sources.list-Zeilen, die helfen könnten, das Problem zu identifizieren:\n{sourceslist}",
     "tools_upgrade_special_packages_completed": "YunoHost-Paketupdate beendet.\nDrücke [Enter], um zurück zur Kommandoziele zu kommen",
