@@ -1997,7 +1997,7 @@ def _set_default_ask_questions(arguments):
                 if "example" in arg:
                     del arg["example"]
                 if "default" in arg:
-                    del arg["domain"]
+                    del arg["default"]
 
     return arguments
 

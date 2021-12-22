@@ -339,7 +339,7 @@
     "regenconf_failed": "Impossible de régénérer la configuration pour la ou les catégorie(s) : '{categories}'",
     "regenconf_pending_applying": "Applique la configuration en attente pour la catégorie '{category}'...",
     "service_regen_conf_is_deprecated": "'yunohost service regen-conf' est obsolète ! Veuillez plutôt utiliser 'yunohost tools regen-conf' à la place.",
-    "tools_upgrade_at_least_one": "Veuillez spécifier '--apps' ou '--system'",
+    "tools_upgrade_at_least_one": "Veuillez spécifier 'apps' ou 'system'",
     "tools_upgrade_cant_both": "Impossible de mettre à niveau le système et les applications en même temps",
     "tools_upgrade_cant_hold_critical_packages": "Impossibilité d'ajouter le drapeau 'hold' pour les paquets critiques...",
     "tools_upgrade_regular_packages": "Mise à jour des paquets du système (non liés a YunoHost)...",
