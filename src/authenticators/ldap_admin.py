@@ -109,6 +109,9 @@ class Authenticator(BaseAuthenticator):
                 return {"id": random_ascii()}
             raise YunohostAuthenticationError("unable_authenticate")
 
+        if not infos and raise_if_no_session_exists:
+            raise YunohostAuthenticationError("unable_authenticate")
+
         if "id" not in infos:
             infos["id"] = random_ascii()
 
