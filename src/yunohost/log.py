@@ -469,7 +469,7 @@ class RedactingFormatter(Formatter):
             )
 
 
-class OperationLogger(object):
+class OperationLogger:
 
     """
     Instances of this class represents unit operation done on the ynh instance.

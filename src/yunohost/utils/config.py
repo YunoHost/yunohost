@@ -678,7 +678,7 @@ class ConfigPanel:
                         yield (panel, section, option)
 
 
-class Question(object):
+class Question:
     hide_user_input_in_prompt = False
     pattern: Optional[Dict] = None
 

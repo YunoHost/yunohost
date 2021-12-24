@@ -1107,7 +1107,7 @@ def _tools_migrations_run_before_app_restore(backup_version, app_id):
                 raise
 
 
-class Migration(object):
+class Migration:
 
     # Those are to be implemented by daughter classes
 

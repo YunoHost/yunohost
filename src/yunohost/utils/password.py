@@ -51,7 +51,7 @@ def assert_password_is_strong_enough(profile, password):
     PasswordValidator(profile).validate(password)
 
 
-class PasswordValidator(object):
+class PasswordValidator:
     def __init__(self, profile):
         """
         Initialize a password validator.

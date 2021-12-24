@@ -80,7 +80,7 @@ MB_ALLOWED_TO_ORGANIZE = 10
 logger = getActionLogger("yunohost.backup")
 
 
-class BackupRestoreTargetsManager(object):
+class BackupRestoreTargetsManager:
 
     """
     BackupRestoreTargetsManager manage the targets
@@ -1570,7 +1570,7 @@ class RestoreManager:
 #
 # Backup methods                                                            #
 #
-class BackupMethod(object):
+class BackupMethod:
 
     """
     BackupMethod is an abstract class that represents a way to backup and
