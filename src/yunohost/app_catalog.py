@@ -217,7 +217,7 @@ def _load_apps_catalog():
             )
         except Exception as e:
             raise YunohostError(
-                "Unable to read cache for apps_catalog %s : %s" % (cache_file, e),
+                "Unable to read cache for apps_catalog {} : {}".format(cache_file, e),
                 raw_msg=True,
             )
 

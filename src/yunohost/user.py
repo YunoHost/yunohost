@@ -97,7 +97,7 @@ def user_list(fields=None):
         and values[0].strip() == "/bin/false",
     }
 
-    attrs = set(["uid"])
+    attrs = {"uid"}
     users = {}
 
     if not fields:
@@ -215,7 +215,7 @@ def user_create(
         uid_guid_found = uid not in all_uid and uid not in all_gid
 
     # Adapt values for LDAP
-    fullname = "%s %s" % (firstname, lastname)
+    fullname = "{} {}".format(firstname, lastname)
 
     attr_dict = {
         "objectClass": [
@@ -333,8 +333,8 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
     subprocess.call(["nscd", "-i", "passwd"])
 
     if purge:
-        subprocess.call(["rm", "-rf", "/home/{0}".format(username)])
-        subprocess.call(["rm", "-rf", "/var/mail/{0}".format(username)])
+        subprocess.call(["rm", "-rf", "/home/{}".format(username)])
+        subprocess.call(["rm", "-rf", "/var/mail/{}".format(username)])
 
     hook_callback("post_user_delete", args=[username, purge])
 
@@ -1334,9 +1334,9 @@ def user_ssh_remove_key(username, key):
 def _convertSize(num, suffix=""):
     for unit in ["K", "M", "G", "T", "P", "E", "Z"]:
         if abs(num) < 1024.0:
-            return "%3.1f%s%s" % (num, unit, suffix)
+            return "{:3.1f}{}{}".format(num, unit, suffix)
         num /= 1024.0
-    return "%.1f%s%s" % (num, "Yi", suffix)
+    return "{:.1f}{}{}".format(num, "Yi", suffix)
 
 
 def _hash_user_password(password):

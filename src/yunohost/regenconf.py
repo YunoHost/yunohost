@@ -640,7 +640,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
     if save:
         backup_path = os.path.join(
             BACKUP_CONF_DIR,
-            "{0}-{1}".format(
+            "{}-{}".format(
                 system_conf.lstrip("/"), datetime.utcnow().strftime("%Y%m%d.%H%M%S")
             ),
         )

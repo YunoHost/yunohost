@@ -139,7 +139,7 @@ def user_permission_list(
                 continue
             main_perm_label = permissions[main_perm_name]["label"]
             infos["sublabel"] = infos["label"]
-            infos["label"] = "%s (%s)" % (main_perm_label, infos["label"])
+            infos["label"] = "{} ({})".format(main_perm_label, infos["label"])
 
     if short:
         permissions = list(permissions.keys())
@@ -664,13 +664,11 @@ def permission_sync_to_user():
         currently_allowed_users = set(permission_infos["corresponding_users"])
 
         # These are the users that should be allowed because they are member of a group that is allowed for this permission ...
-        should_be_allowed_users = set(
-            [
+        should_be_allowed_users = {
                 user
                 for group in permission_infos["allowed"]
                 for user in groups[group]["members"]
-            ]
-        )
+        }
 
         # Note that a LDAP operation with the same value that is in LDAP crash SLAP.
         # So we need to check before each ldap operation that we really change something in LDAP

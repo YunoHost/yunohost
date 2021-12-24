@@ -132,7 +132,7 @@ class SystemResourcesDiagnoser(Diagnoser):
             d for d in disk_partitions if d.mountpoint in ["/", "/var"]
         ]
         main_space = sum(
-            [psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions]
+            psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions
         )
         if main_space < 10 * GB:
             yield dict(
@@ -156,7 +156,7 @@ class SystemResourcesDiagnoser(Diagnoser):
         kills_count = self.recent_kills_by_oom_reaper()
         if kills_count:
             kills_summary = "\n".join(
-                ["%s (x%s)" % (proc, count) for proc, count in kills_count]
+                ["{} (x{})".format(proc, count) for proc, count in kills_count]
             )
 
             yield dict(
@@ -202,9 +202,9 @@ def human_size(bytes_):
     # Adapted from https://stackoverflow.com/a/1094933
     for unit in ["", "ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
         if abs(bytes_) < 1024.0:
-            return "%s %sB" % (round_(bytes_), unit)
+            return "{} {}B".format(round_(bytes_), unit)
         bytes_ /= 1024.0
-    return "%s %sB" % (round_(bytes_), "Yi")
+    return "{} {}B".format(round_(bytes_), "Yi")
 
 
 def round_(n):

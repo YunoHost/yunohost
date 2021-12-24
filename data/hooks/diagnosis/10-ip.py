@@ -167,7 +167,7 @@ class IPDiagnoser(Diagnoser):
 
         assert (
             resolvers != []
-        ), "Uhoh, need at least one IPv%s DNS resolver in %s ..." % (
+        ), "Uhoh, need at least one IPv{} DNS resolver in {} ...".format(
             protocol,
             resolver_file,
         )
@@ -221,7 +221,7 @@ class IPDiagnoser(Diagnoser):
             return download_text(url, timeout=30).strip()
         except Exception as e:
             self.logger_debug(
-                "Could not get public IPv%s : %s" % (str(protocol), str(e))
+                "Could not get public IPv{} : {}".format(str(protocol), str(e))
             )
             return None
 

@@ -762,7 +762,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     changes = {"delete": [], "update": [], "create": [], "unchanged": []}
 
     type_and_names = sorted(
-        set([(r["type"], r["name"]) for r in current_records + wanted_records])
+        {(r["type"], r["name"]) for r in current_records + wanted_records}
     )
     comparison = {
         type_and_name: {"current": [], "wanted": []} for type_and_name in type_and_names

@@ -70,7 +70,7 @@ def legacy_app(request):
 
     app_install(
         os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
-        args="domain=%s&path=%s&is_public=%s" % (main_domain, "/", 1),
+        args="domain={}&path={}&is_public={}".format(main_domain, "/", 1),
         force=True,
     )
 

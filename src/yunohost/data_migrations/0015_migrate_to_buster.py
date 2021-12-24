@@ -269,14 +269,14 @@ class MyMigration(Migration):
                 % default_crt
             )
 
-            os.system("mv %s %s.old" % (default_crt, default_crt))
-            os.system("mv %s %s.old" % (default_key, default_key))
+            os.system("mv {} {}.old".format(default_crt, default_crt))
+            os.system("mv {} {}.old".format(default_key, default_key))
             ret = os.system("/usr/share/yunohost/hooks/conf_regen/02-ssl init")
 
             if ret != 0 or not os.path.exists(default_crt):
                 logger.error("Upgrading the certificate failed ... reverting")
-                os.system("mv %s.old %s" % (default_crt, default_crt))
-                os.system("mv %s.old %s" % (default_key, default_key))
+                os.system("mv {}.old {}".format(default_crt, default_crt))
+                os.system("mv {}.old {}".format(default_key, default_key))
 
         signatures = {cert: check_output(cmd % cert) for cert in active_certs}
 

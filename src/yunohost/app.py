@@ -122,7 +122,7 @@ def app_list(full=False, installed=False, filter=None):
         try:
             app_info_dict = app_info(app_id, full=full)
         except Exception as e:
-            logger.error("Failed to read info for %s : %s" % (app_id, e))
+            logger.error("Failed to read info for {} : {}".format(app_id, e))
             continue
         app_info_dict["id"] = app_id
         out.append(app_info_dict)
@@ -1219,7 +1219,7 @@ def app_setting(app, key, value=None, delete=False):
         )
 
         permissions = user_permission_list(full=True, apps=[app])["permissions"]
-        permission_name = "%s.legacy_%s_uris" % (app, key.split("_")[0])
+        permission_name = "{}.legacy_{}_uris".format(app, key.split("_")[0])
         permission = permissions.get(permission_name)
 
         # GET
@@ -1562,7 +1562,7 @@ def app_action_run(operation_logger, app, action, args=None):
         shutil.rmtree(tmp_workdir_for_app)
 
     if retcode not in action_declaration.get("accepted_return_codes", [0]):
-        msg = "Error while executing action '%s' of app '%s': return code %s" % (
+        msg = "Error while executing action '{}' of app '{}': return code {}".format(
             action,
             app,
             retcode,
@@ -1989,7 +1989,7 @@ def _set_default_ask_questions(arguments):
                 for question in questions_with_default
             ):
                 # The key is for example "app_manifest_install_ask_domain"
-                key = "app_manifest_%s_ask_%s" % (script_name, arg["name"])
+                key = "app_manifest_{}_ask_{}".format(script_name, arg["name"])
                 arg["ask"] = m18n.n(key)
 
             # Also it in fact doesn't make sense for any of those questions to have an example value nor a default value...
@@ -2397,7 +2397,7 @@ def _make_environment_for_app_script(
         env_dict["YNH_APP_BASEDIR"] = workdir
 
     for arg_name, arg_value in args.items():
-        env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = str(arg_value)
+        env_dict["YNH_{}{}".format(args_prefix, arg_name.upper())] = str(arg_value)
 
     return env_dict
 

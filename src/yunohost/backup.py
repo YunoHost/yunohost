@@ -2380,7 +2380,7 @@ def backup_list(with_info=False, human_readable=False):
     # Get local archives sorted according to last modification time
     # (we do a realpath() to resolve symlinks)
     archives = glob("%s/*.tar.gz" % ARCHIVES_PATH) + glob("%s/*.tar" % ARCHIVES_PATH)
-    archives = set([os.path.realpath(archive) for archive in archives])
+    archives = {os.path.realpath(archive) for archive in archives}
     archives = sorted(archives, key=lambda x: os.path.getctime(x))
     # Extract only filename without the extension
 
@@ -2420,7 +2420,7 @@ def backup_download(name):
         )
         return
 
-    archive_file = "%s/%s.tar" % (ARCHIVES_PATH, name)
+    archive_file = "{}/{}.tar".format(ARCHIVES_PATH, name)
 
     # Check file exist (even if it's a broken symlink)
     if not os.path.lexists(archive_file):
@@ -2462,7 +2462,7 @@ def backup_info(name, with_details=False, human_readable=False):
     elif name.endswith(".tar"):
         name = name[: -len(".tar")]
 
-    archive_file = "%s/%s.tar" % (ARCHIVES_PATH, name)
+    archive_file = "{}/{}.tar".format(ARCHIVES_PATH, name)
 
     # Check file exist (even if it's a broken symlink)
     if not os.path.lexists(archive_file):
@@ -2480,7 +2480,7 @@ def backup_info(name, with_details=False, human_readable=False):
                 "backup_archive_broken_link", path=archive_file
             )
 
-    info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
+    info_file = "{}/{}.info.json".format(ARCHIVES_PATH, name)
 
     if not os.path.exists(info_file):
         tar = tarfile.open(
@@ -2591,10 +2591,10 @@ def backup_delete(name):
 
     hook_callback("pre_backup_delete", args=[name])
 
-    archive_file = "%s/%s.tar" % (ARCHIVES_PATH, name)
+    archive_file = "{}/{}.tar".format(ARCHIVES_PATH, name)
     if not os.path.exists(archive_file) and os.path.exists(archive_file + ".gz"):
         archive_file += ".gz"
-    info_file = "%s/%s.info.json" % (ARCHIVES_PATH, name)
+    info_file = "{}/{}.info.json".format(ARCHIVES_PATH, name)
 
     files_to_delete = [archive_file, info_file]
 
@@ -2693,5 +2693,5 @@ def binary_to_human(n, customary=False):
     for s in reversed(symbols):
         if n >= prefix[s]:
             value = float(n) / prefix[s]
-            return "%.1f%s" % (value, s)
+            return "{:.1f}{}".format(value, s)
     return "%s" % n
