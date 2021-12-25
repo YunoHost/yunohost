@@ -136,7 +136,7 @@ class DNSRecordsDiagnoser(Diagnoser):
             # If status is okay and there's actually no expected records
             # (e.g. XMPP disabled)
             # then let's not yield any diagnosis line
-            if not records and "status" == "SUCCESS":
+            if not records and status == "SUCCESS":
                 continue
 
             output = dict(
