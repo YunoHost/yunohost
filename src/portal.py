@@ -22,12 +22,14 @@
 # from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 
+from yunohost.authenticators.ldap_ynhuser import Authenticator as Auth
+from yunohost.utils.ldap import LDAPInterface
 from yunohost.utils.error import YunohostValidationError
 
 logger = getActionLogger("yunohostportal.user")
 
 
-def me():
+def portal_me():
     """
     Get user informations
 
@@ -36,11 +38,13 @@ def me():
 
     """
 
-    username = None  # FIXME : this info should come from the authentication layer
+    import pdb; pdb.set_trace()
 
-    from yunohost.utils.ldap import _get_ldap_interface
+    auth = Auth().get_session_cookie()
+    username = auth["user"]
+    password = auth["password"]
 
-    ldap = _get_ldap_interface()
+    ldap = LDAPInterface(username, password)
 
     user_attrs = ["cn", "mail", "uid", "maildrop", "givenName", "sn", "mailuserquota"]
 

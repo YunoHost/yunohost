@@ -1,9 +1,10 @@
 _global:
     namespace: yunohost
-    cookie_name: yunohost.portal
     authentication:
         api: ldap_ynhuser
         cli: null
+    lock: false
+    cache: false
 
 portal:
     category_help: Portal routes

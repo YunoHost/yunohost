@@ -42,7 +42,7 @@ def _get_ldap_interface():
     global _ldap_interface
 
     if _ldap_interface is None:
-        _ldap_interface = LDAPInterface()
+        _ldap_interface = LDAPInterface(user="root")
 
     return _ldap_interface
 
@@ -71,22 +71,34 @@ def _destroy_ldap_interface():
 
 atexit.register(_destroy_ldap_interface)
 
+URI = "ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi"
+BASEDN = "dc=yunohost,dc=org"
+ROOTDN = "gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth"
+USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
+
 
 class LDAPInterface:
-    def __init__(self):
-        logger.debug("initializing ldap interface")
 
-        self.uri = "ldapi://%2Fvar%2Frun%2Fslapd%2Fldapi"
-        self.basedn = "dc=yunohost,dc=org"
-        self.rootdn = "gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth"
+    def __init__(self, user="root", password=None):
+
+        if user == "root":
+            logger.debug("initializing root ldap interface")
+            self.userdn = ROOTDN
+            self._connect = lambda con: con.sasl_non_interactive_bind_s("EXTERNAL")
+        else:
+            logger.debug("initializing user ldap interface")
+            self.userdn = USERDN.format(username=user)
+            self._connect = lambda con: con.simple_bind_s(self.userdn, password)
+
         self.connect()
 
     def connect(self):
+
         def _reconnect():
             con = ldap.ldapobject.ReconnectLDAPObject(
-                self.uri, retry_max=10, retry_delay=0.5
+                URI, retry_max=10, retry_delay=0.5
             )
-            con.sasl_non_interactive_bind_s("EXTERNAL")
+            self._connect(con)
             return con
 
         try:
@@ -113,7 +125,7 @@ class LDAPInterface:
             logger.warning("Error during ldap authentication process: %s", e)
             raise
         else:
-            if who != self.rootdn:
+            if who != self.userdn:
                 raise MoulinetteError("Not logged in with the expected userdn ?!")
             else:
                 self.con = con
@@ -139,7 +151,7 @@ class LDAPInterface:
 
         """
         if not base:
-            base = self.basedn
+            base = BASEDN
 
         try:
             result = self.con.search_s(base, ldap.SCOPE_SUBTREE, filter, attrs)
@@ -184,7 +196,7 @@ class LDAPInterface:
             Boolean | MoulinetteError
 
         """
-        dn = rdn + "," + self.basedn
+        dn = f"{rdn},{BASEDN}"
         ldif = modlist.addModlist(attr_dict)
         for i, (k, v) in enumerate(ldif):
             if isinstance(v, list):
@@ -215,7 +227,7 @@ class LDAPInterface:
             Boolean | MoulinetteError
 
         """
-        dn = rdn + "," + self.basedn
+        dn = f"{rdn},{BASEDN}"
         try:
             self.con.delete_s(dn)
         except Exception as e:
@@ -240,7 +252,7 @@ class LDAPInterface:
             Boolean | MoulinetteError
 
         """
-        dn = rdn + "," + self.basedn
+        dn = f"{rdn},{BASEDN}"
         actual_entry = self.search(base=dn, attrs=None)
         ldif = modlist.modifyModlist(actual_entry[0], attr_dict, ignore_oldexistent=1)
 
