@@ -705,7 +705,7 @@ def _get_services():
         if os.system(f"dpkg --list | grep -q 'ii *{package}'") != 0:
             del services[name]
 
-    php_fpm_versions = check_output(r"dpkg --list | grep -P 'ii  php\d.\d-fpm' | awk '{print $2}' | grep -o -P '\d.\d'")
+    php_fpm_versions = check_output(r"dpkg --list | grep -P 'ii  php\d.\d-fpm' | awk '{print $2}' | grep -o -P '\d.\d' || true")
     php_fpm_versions = [v for v in php_fpm_versions.split('\n') if v.strip()]
     for version in php_fpm_versions:
         services[f"php{version}-fpm"] = {
