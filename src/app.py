@@ -1323,6 +1323,7 @@ def app_ssowatconf():
             "public": True,
             "uris": [domain + "/yunohost/admin" for domain in domains]
             + [domain + "/yunohost/api" for domain in domains]
+            + [domain + "/yunohost/portalapi" for domain in domains]
             + [
                 "re:^[^/]*/%.well%-known/ynh%-diagnosis/.*$",
                 "re:^[^/]*/%.well%-known/acme%-challenge/.*$",
@@ -1368,6 +1369,8 @@ def app_ssowatconf():
         }
 
     conf_dict = {
+        "cookie_secret_file": "/etc/yunohost/.ssowat_cookie_secret",
+        "cookie_name": "yunohost.portal",
         "portal_domain": main_domain,
         "portal_path": "/yunohost/sso/",
         "additional_headers": {

@@ -11,7 +11,9 @@ from moulinette.authentication import BaseAuthenticator
 from moulinette.utils.text import random_ascii
 from yunohost.utils.error import YunohostError, YunohostAuthenticationError
 
-session_secret = random_ascii()
+# FIXME : we shall generate this somewhere if it doesnt exists yet
+# FIXME : fix permissions
+session_secret = open("/etc/yunohost/.ssowat_cookie_secret").read()
 
 logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
 
