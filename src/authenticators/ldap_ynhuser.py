@@ -133,7 +133,6 @@ class Authenticator(BaseAuthenticator):
 
         return infos
 
-    @staticmethod
     def delete_session_cookie(self):
 
         from bottle import response
