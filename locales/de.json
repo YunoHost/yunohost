@@ -672,7 +672,7 @@
     "domain_dns_registrar_managed_in_parent_domain": "Diese Domäne ist eine Unterdomäne von {parent_domain_link}. Die Konfiguration des DNS-Registrars sollte auf der Konfigurationsseite von {parent_domain} verwaltet werden.",
     "domain_dns_registrar_not_supported": "YunoHost konnte den Registrar, der diese Domäne verwaltet, nicht automatisch erkennen. Du solltest die DNS-Einträge, wie unter https://yunohost.org/dns beschrieben, manuell konfigurieren.",
     "domain_dns_registrar_supported": "YunoHost hat automatisch erkannt, dass diese Domäne von dem Registrar **{registrar}** verwaltet wird. Wenn Du möchtest, konfiguriert YunoHost diese DNS-Zone automatisch, wenn Du die entsprechenden API-Zugangsdaten zur Verfügung stellst. Auf dieser Seite erfährst Du, wie Du deine API-Anmeldeinformationen erhältst: https://yunohost.org/registar_api_{registrar}. (Du kannst deine DNS-Einträge auch, wie unter https://yunohost.org/dns beschrieben, manuell konfigurieren)",
-    "service_not_reloading_because_conf_broken": "Der Dienst '{Name}' wird nicht neu geladen/gestartet, da seine Konfiguration fehlerhaft ist: {Fehler}",
+    "service_not_reloading_because_conf_broken": "Der Dienst '{name}' wird nicht neu geladen/gestartet, da seine Konfiguration fehlerhaft ist: {errors}",
     "user_import_failed": "Der Import von Benutzer:innen ist komplett fehlgeschlagen",
     "domain_dns_push_failed_to_list": "Auflistung der aktuellen Einträge über die API des Registrars fehlgeschlagen: {error}",
     "domain_dns_pushing": "DNS-Einträge übertragen…",
