@@ -184,6 +184,10 @@ do_post_regen() {
     chown ynh-portal:root /etc/yunohost/.ssowat_cookie_secret
     chmod 400 /etc/yunohost/.ssowat_cookie_secret
 
+    touch /var/log/yunohost-portalapi.log
+    chown ynh-portal:root /var/log/yunohost-portalapi.log
+    chmod 600 /var/log/yunohost-portalapi.log
+
     ######################
     # Enfore permissions #
     ######################
