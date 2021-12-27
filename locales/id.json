@@ -42,5 +42,17 @@
     "app_start_install": "Memasang {app}...",
     "app_start_remove": "Menghapus {app}...",
     "app_manifest_install_ask_password": "Pilih kata sandi administrasi untuk aplikasi ini",
-    "app_upgrade_several_apps": "Aplikasi-aplikasi berikut akan diperbarui: {apps}"
+    "app_upgrade_several_apps": "Aplikasi-aplikasi berikut akan diperbarui: {apps}",
+    "backup_app_failed": "Tidak dapat mencadangkan {app}",
+    "backup_archive_name_exists": "Arsip cadangan dengan nama ini sudah ada.",
+    "backup_created": "Cadangan dibuat",
+    "backup_creation_failed": "Tidak dapat membuat arsip cadangan",
+    "backup_delete_error": "Tidak dapat menghapus '{path}'",
+    "backup_deleted": "Cadangan dihapus",
+    "diagnosis_apps_issue": "Sebuah masalah ditemukan pada aplikasi {app}",
+    "backup_applying_method_tar": "Membuat arsip TAR cadangan...",
+    "backup_method_tar_finished": "Arsip TAR cadanagan dibuat",
+    "backup_nothings_done": "Tak ada yang harus disimpan",
+    "certmanager_cert_install_success": "Sertifikat Let's Encrypt sekarang sudah terpasang pada domain '{domain}'",
+    "backup_mount_archive_for_restore": "Menyiapkan arsip untuk pemulihan..."
 }
