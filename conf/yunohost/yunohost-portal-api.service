@@ -1,0 +1,14 @@
+[Unit]
+Description=YunoHost Portal API
+After=network.target
+
+[Service]
+User=ynh-portal
+Type=simple
+ExecStart=/usr/bin/yunohost-portal-api
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
