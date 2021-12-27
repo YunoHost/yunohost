@@ -382,7 +382,7 @@
     "global_settings_setting_security_password_user_strength": "User password strength",
     "global_settings_setting_security_postfix_compatibility": "Compatibility vs. security tradeoff for the Postfix server. Affects the ciphers (and other security-related aspects)",
     "global_settings_setting_security_ssh_compatibility": "Compatibility vs. security tradeoff for the SSH server. Affects the ciphers (and other security-related aspects)",
-    "global_settings_setting_security_ssh_password_authentication": "Password authentication allowed",
+    "global_settings_setting_security_ssh_password_authentication": "Allow password authentication for SSH",
     "global_settings_setting_security_ssh_port": "SSH port",
     "global_settings_setting_security_webadmin_allowlist": "IP adresses allowed to access the webadmin. Comma-separated.",
     "global_settings_setting_security_webadmin_allowlist_enabled": "Allow only some IPs to access the webadmin.",
