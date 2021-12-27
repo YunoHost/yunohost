@@ -166,7 +166,7 @@ def user_create(
             # On affiche les differents domaines possibles
             Moulinette.display(m18n.n("domains_available"))
             for domain in domain_list()["domains"]:
-                Moulinette.display("- {}".format(domain))
+                Moulinette.display(f"- {domain}")
 
             maindomain = _get_maindomain()
             domain = Moulinette.prompt(
@@ -215,7 +215,7 @@ def user_create(
         uid_guid_found = uid not in all_uid and uid not in all_gid
 
     # Adapt values for LDAP
-    fullname = "{} {}".format(firstname, lastname)
+    fullname = f"{firstname} {lastname}"
 
     attr_dict = {
         "objectClass": [
@@ -333,8 +333,8 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
     subprocess.call(["nscd", "-i", "passwd"])
 
     if purge:
-        subprocess.call(["rm", "-rf", "/home/{}".format(username)])
-        subprocess.call(["rm", "-rf", "/var/mail/{}".format(username)])
+        subprocess.call(["rm", "-rf", f"/home/{username}"])
+        subprocess.call(["rm", "-rf", f"/var/mail/{username}"])
 
     hook_callback("post_user_delete", args=[username, purge])
 

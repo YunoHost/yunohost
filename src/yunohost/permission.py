@@ -139,7 +139,8 @@ def user_permission_list(
                 continue
             main_perm_label = permissions[main_perm_name]["label"]
             infos["sublabel"] = infos["label"]
-            infos["label"] = "{} ({})".format(main_perm_label, infos["label"])
+            label_ = infos["label"]
+            infos["label"] = f"{main_perm_label} ({label_})"
 
     if short:
         permissions = list(permissions.keys())

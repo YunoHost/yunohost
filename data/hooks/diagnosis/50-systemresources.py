@@ -156,7 +156,7 @@ class SystemResourcesDiagnoser(Diagnoser):
         kills_count = self.recent_kills_by_oom_reaper()
         if kills_count:
             kills_summary = "\n".join(
-                ["{} (x{})".format(proc, count) for proc, count in kills_count]
+                [f"{proc} (x{count})" for proc, count in kills_count]
             )
 
             yield dict(
@@ -202,9 +202,11 @@ def human_size(bytes_):
     # Adapted from https://stackoverflow.com/a/1094933
     for unit in ["", "ki", "Mi", "Gi", "Ti", "Pi", "Ei", "Zi"]:
         if abs(bytes_) < 1024.0:
-            return "{} {}B".format(round_(bytes_), unit)
+            bytes_ = round_(bytes_)
+            return f"{bytes_} {unit}B"
         bytes_ /= 1024.0
-    return "{} {}B".format(round_(bytes_), "Yi")
+    bytes_ = round_(bytes_)
+    return f"{bytes_} YiB"
 
 
 def round_(n):

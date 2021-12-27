@@ -2420,7 +2420,7 @@ def backup_download(name):
         )
         return
 
-    archive_file = "{}/{}.tar".format(ARCHIVES_PATH, name)
+    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
 
     # Check file exist (even if it's a broken symlink)
     if not os.path.lexists(archive_file):
@@ -2462,7 +2462,7 @@ def backup_info(name, with_details=False, human_readable=False):
     elif name.endswith(".tar"):
         name = name[: -len(".tar")]
 
-    archive_file = "{}/{}.tar".format(ARCHIVES_PATH, name)
+    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
 
     # Check file exist (even if it's a broken symlink)
     if not os.path.lexists(archive_file):
@@ -2480,7 +2480,7 @@ def backup_info(name, with_details=False, human_readable=False):
                 "backup_archive_broken_link", path=archive_file
             )
 
-    info_file = "{}/{}.info.json".format(ARCHIVES_PATH, name)
+    info_file = f"{ARCHIVES_PATH}/{name}.info.json"
 
     if not os.path.exists(info_file):
         tar = tarfile.open(
@@ -2591,10 +2591,10 @@ def backup_delete(name):
 
     hook_callback("pre_backup_delete", args=[name])
 
-    archive_file = "{}/{}.tar".format(ARCHIVES_PATH, name)
+    archive_file = f"{ARCHIVES_PATH}/{name}.tar"
     if not os.path.exists(archive_file) and os.path.exists(archive_file + ".gz"):
         archive_file += ".gz"
-    info_file = "{}/{}.info.json".format(ARCHIVES_PATH, name)
+    info_file = f"{ARCHIVES_PATH}/{name}.info.json"
 
     files_to_delete = [archive_file, info_file]
 

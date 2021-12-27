@@ -44,7 +44,7 @@ def get_public_ip(protocol=4):
     ):
         ip = read_file(cache_file).strip()
         ip = ip if ip else None  # Empty file (empty string) means there's no IP
-        logger.debug("Reusing IPv{} from cache: {}".format(protocol, ip))
+        logger.debug(f"Reusing IPv{protocol} from cache: {ip}")
     else:
         ip = get_public_ip_from_remote_server(protocol)
         logger.debug("IP fetched: %s" % ip)
@@ -87,7 +87,7 @@ def get_public_ip_from_remote_server(protocol=4):
     try:
         return download_text(url, timeout=30).strip()
     except Exception as e:
-        logger.debug("Could not get public IPv{} : {}".format(str(protocol), str(e)))
+        logger.debug(f"Could not get public IPv{protocol} : {e}"))
         return None
 
 

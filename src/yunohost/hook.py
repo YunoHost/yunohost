@@ -197,7 +197,7 @@ def hook_list(action, list_by="name", show_info=False):
                 or (f.startswith("__") and f.endswith("__"))
             ):
                 continue
-            path = "{}{}/{}".format(folder, action, f)
+            path = f"{folder}{action}/{f}"
             priority, name = _extract_filename_parts(f)
             _append_hook(d, priority, name, path)
 
@@ -407,7 +407,7 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
     if not chdir:
         # use the script directory as current one
         chdir, cmd_script = os.path.split(path)
-        cmd_script = "./{}".format(cmd_script)
+        cmd_script = f"./{cmd_script}"
     else:
         cmd_script = path
 
