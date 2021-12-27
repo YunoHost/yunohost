@@ -87,7 +87,7 @@ def get_public_ip_from_remote_server(protocol=4):
     try:
         return download_text(url, timeout=30).strip()
     except Exception as e:
-        logger.debug(f"Could not get public IPv{protocol} : {e}"))
+        logger.debug(f"Could not get public IPv{protocol} : {e}")
         return None
 
 
