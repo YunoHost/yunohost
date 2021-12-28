@@ -133,7 +133,7 @@ class BaseSystemDiagnoser(Diagnoser):
                 summary="diagnosis_backports_in_sources_list",
             )
 
-        if self.number_of_recent_auth_failure() > 500:
+        if self.number_of_recent_auth_failure() > 750:
             yield dict(
                 meta={"test": "high_number_auth_failure"},
                 status="WARNING",
