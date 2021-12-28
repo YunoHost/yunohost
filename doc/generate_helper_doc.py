@@ -107,7 +107,7 @@ class Parser:
                 else:
                     # We're getting out of a comment bloc, we should find
                     # the name of the function
-                    assert len(line.split()) >= 1, "Malformed line %s in %s" % (
+                    assert len(line.split()) >= 1, "Malformed line {} in {}".format(
                         i,
                         self.filename,
                     )

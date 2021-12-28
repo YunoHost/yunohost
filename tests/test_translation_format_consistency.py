@@ -26,10 +26,10 @@ def find_inconsistencies(locale_file):
         # Then we check that every "{stuff}" (for python's .format())
         # should also be in the translated string, otherwise the .format
         # will trigger an exception!
-        subkeys_in_ref = set(k[0] for k in re.findall(r"{(\w+)(:\w)?}", string))
-        subkeys_in_this_locale = set(
+        subkeys_in_ref = {k[0] for k in re.findall(r"{(\w+)(:\w)?}", string)}
+        subkeys_in_this_locale = {
             k[0] for k in re.findall(r"{(\w+)(:\w)?}", this_locale[key])
-        )
+        }
 
         if any(k not in subkeys_in_ref for k in subkeys_in_this_locale):
             yield """\n

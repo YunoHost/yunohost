@@ -625,7 +625,7 @@ def _run_service_command(action, service):
             % (action, ", ".join(possible_actions))
         )
 
-    cmd = "systemctl %s %s" % (action, service)
+    cmd = f"systemctl {action} {service}"
 
     need_lock = services[service].get("need_lock", False) and action in [
         "start",
@@ -673,7 +673,7 @@ def _give_lock(action, service, p):
     else:
         systemctl_PID_name = "ControlPID"
 
-    cmd_get_son_PID = "systemctl show %s -p %s" % (service, systemctl_PID_name)
+    cmd_get_son_PID = f"systemctl show {service} -p {systemctl_PID_name}"
     son_PID = 0
     # As long as we did not found the PID and that the command is still running
     while son_PID == 0 and p.poll() is None:
@@ -686,9 +686,7 @@ def _give_lock(action, service, p):
     # If we found a PID
     if son_PID != 0:
         # Append the PID to the lock file
-        logger.debug(
-            "Giving a lock to PID %s for service %s !" % (str(son_PID), service)
-        )
+        logger.debug(f"Giving a lock to PID {son_PID} for service {service} !")
         append_to_file(MOULINETTE_LOCK, "\n%s" % str(son_PID))
 
     return son_PID
@@ -865,9 +863,7 @@ def _get_journalctl_logs(service, number="all"):
     systemd_service = services.get(service, {}).get("actual_systemd_service", service)
     try:
         return check_output(
-            "journalctl --no-hostname --no-pager -u {0} -n{1}".format(
-                systemd_service, number
-            )
+            f"journalctl --no-hostname --no-pager -u {systemd_service} -n{number}"
         )
     except Exception:
         import traceback

@@ -143,11 +143,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
         # Paths of files and folder we'll need
         date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
-        new_cert_folder = "%s/%s-history/%s-selfsigned" % (
-            CERT_FOLDER,
-            domain,
-            date_tag,
-        )
+        new_cert_folder = f"{CERT_FOLDER}/{domain}-history/{date_tag}-selfsigned"
 
         conf_template = os.path.join(SSL_DIR, "openssl.cnf")
 
@@ -300,10 +296,7 @@ def _certificate_install_letsencrypt(
         try:
             _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
         except Exception as e:
-            msg = "Certificate installation for %s failed !\nException: %s" % (
-                domain,
-                e,
-            )
+            msg = f"Certificate installation for {domain} failed !\nException: {e}"
             logger.error(msg)
             operation_logger.error(msg)
             if no_checks:
@@ -456,39 +449,25 @@ def _email_renewing_failed(domain, exception_message, stack=""):
     subject_ = "Certificate renewing attempt for %s failed!" % domain
 
     logs = _tail(50, "/var/log/yunohost/yunohost-cli.log")
-    text = """
-An attempt for renewing the certificate for domain %s failed with the following
+    message = f"""\
+From: {from_}
+To: {to_}
+Subject: {subject_}
+
+
+An attempt for renewing the certificate for domain {domain} failed with the following
 error :
 
-%s
-%s
+{exception_message}
+{stack}
 
 Here's the tail of /var/log/yunohost/yunohost-cli.log, which might help to
 investigate :
 
-%s
+{logs}
 
 -- Certificate Manager
-
-""" % (
-        domain,
-        exception_message,
-        stack,
-        logs,
-    )
-
-    message = """\
-From: %s
-To: %s
-Subject: %s
-
-%s
-""" % (
-        from_,
-        to_,
-        subject_,
-        text,
-    )
+"""
 
     import smtplib
 
@@ -532,7 +511,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
     # Prepare certificate signing request
     logger.debug("Prepare key and certificate signing request (CSR) for %s...", domain)
 
-    domain_key_file = "%s/%s.pem" % (TMP_FOLDER, domain)
+    domain_key_file = f"{TMP_FOLDER}/{domain}.pem"
     _generate_key(domain_key_file)
     _set_permissions(domain_key_file, "root", "ssl-cert", 0o640)
 
@@ -541,7 +520,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
     # Sign the certificate
     logger.debug("Now using ACME Tiny to sign the certificate...")
 
-    domain_csr_file = "%s/%s.csr" % (TMP_FOLDER, domain)
+    domain_csr_file = f"{TMP_FOLDER}/{domain}.csr"
 
     if staging:
         certification_authority = STAGING_CERTIFICATION_AUTHORITY
@@ -580,12 +559,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
     else:
         folder_flag = "letsencrypt"
 
-    new_cert_folder = "%s/%s-history/%s-%s" % (
-        CERT_FOLDER,
-        domain,
-        date_tag,
-        folder_flag,
-    )
+    new_cert_folder = f"{CERT_FOLDER}/{domain}-history/{date_tag}-{folder_flag}"
 
     os.makedirs(new_cert_folder)
 
@@ -642,7 +616,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
             csr.add_extensions(
                 [
                     crypto.X509Extension(
-                        "subjectAltName".encode("utf8"),
+                        b"subjectAltName",
                         False,
                         ("DNS:" + subdomain).encode("utf8"),
                     )
@@ -844,7 +818,7 @@ def _backup_current_cert(domain):
     cert_folder_domain = os.path.join(CERT_FOLDER, domain)
 
     date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
-    backup_folder = "%s-backups/%s" % (cert_folder_domain, date_tag)
+    backup_folder = f"{cert_folder_domain}-backups/{date_tag}"
 
     shutil.copytree(cert_folder_domain, backup_folder)
 

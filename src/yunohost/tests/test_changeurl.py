@@ -26,7 +26,7 @@ def teardown_function(function):
 def install_changeurl_app(path):
     app_install(
         os.path.join(get_test_apps_dir(), "change_url_app_ynh"),
-        args="domain=%s&path=%s" % (maindomain, path),
+        args="domain={}&path={}".format(maindomain, path),
         force=True,
     )
 

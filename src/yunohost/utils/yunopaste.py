@@ -49,7 +49,7 @@ def yunopaste(data):
             raw_msg=True,
         )
 
-    return "%s/raw/%s" % (paste_server, url)
+    return "{}/raw/{}".format(paste_server, url)
 
 
 def anonymize(data):

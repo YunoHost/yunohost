@@ -640,7 +640,7 @@ class Diagnoser:
         elif ipversion == 6:
             socket.getaddrinfo = getaddrinfo_ipv6_only
 
-        url = "https://%s/%s" % (DIAGNOSIS_SERVER, uri)
+        url = "https://{}/{}".format(DIAGNOSIS_SERVER, uri)
         try:
             r = requests.post(url, json=data, timeout=timeout)
         finally:
@@ -679,7 +679,7 @@ def _email_diagnosis_issues():
     from yunohost.domain import _get_maindomain
 
     maindomain = _get_maindomain()
-    from_ = "diagnosis@%s (Automatic diagnosis on %s)" % (maindomain, maindomain)
+    from_ = "diagnosis@{} (Automatic diagnosis on {})".format(maindomain, maindomain)
     to_ = "root"
     subject_ = "Issues found by automatic diagnosis on %s" % maindomain
 
@@ -692,16 +692,16 @@ def _email_diagnosis_issues():
     content = _dump_human_readable_reports(issues)
 
     message = """\
-From: %s
-To: %s
-Subject: %s
+From: {}
+To: {}
+Subject: {}
 
-%s
+{}
 
 ---
 
-%s
-""" % (
+{}
+""".format(
         from_,
         to_,
         subject_,

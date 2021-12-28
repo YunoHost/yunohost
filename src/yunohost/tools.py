@@ -224,7 +224,7 @@ def tools_postinstall(
     disk_partitions = sorted(psutil.disk_partitions(), key=lambda k: k.mountpoint)
     main_disk_partitions = [d for d in disk_partitions if d.mountpoint in ["/", "/var"]]
     main_space = sum(
-        [psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions]
+        psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions
     )
     GB = 1024 ** 3
     if not force_diskspace and main_space < 10 * GB:
@@ -1107,7 +1107,7 @@ def _tools_migrations_run_before_app_restore(backup_version, app_id):
                 raise
 
 
-class Migration(object):
+class Migration:
 
     # Those are to be implemented by daughter classes
 

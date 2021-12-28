@@ -151,7 +151,7 @@ def dyndns_subscribe(operation_logger, domain=None, key=None):
         try:
             error = json.loads(r.text)["error"]
         except Exception:
-            error = 'Server error, code: %s. (Message: "%s")' % (r.status_code, r.text)
+            error = f'Server error, code: {r.status_code}. (Message: "{r.text}")'
         raise YunohostError("dyndns_registration_failed", error=error)
 
     # Yunohost regen conf will add the dyndns cron job if a private key exists
@@ -196,7 +196,7 @@ def dyndns_update(
 
     # If key is not given, pick the first file we find with the domain given
     elif key is None:
-        keys = glob.glob("/etc/yunohost/dyndns/K{0}.+*.private".format(domain))
+        keys = glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*.private")
 
         if not keys:
             raise YunohostValidationError("dyndns_key_not_found")
@@ -263,14 +263,14 @@ def dyndns_update(
             return None
 
         raise YunohostError(
-            "Failed to resolve %s for %s" % (rdtype, domain), raw_msg=True
+            f"Failed to resolve {rdtype} for {domain}", raw_msg=True
         )
 
     old_ipv4 = resolve_domain(domain, "A")
     old_ipv6 = resolve_domain(domain, "AAAA")
 
-    logger.debug("Old IPv4/v6 are (%s, %s)" % (old_ipv4, old_ipv6))
-    logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
+    logger.debug(f"Old IPv4/v6 are ({old_ipv4}, {old_ipv6})")
+    logger.debug(f"Requested IPv4/v6 are ({ipv4}, {ipv6})")
 
     # no need to update
     if (not force and not dry_run) and (old_ipv4 == ipv4 and old_ipv6 == ipv6):

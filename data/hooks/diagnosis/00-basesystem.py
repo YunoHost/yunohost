@@ -42,10 +42,8 @@ class BaseSystemDiagnoser(Diagnoser):
         elif os.path.exists("/sys/devices/virtual/dmi/id/sys_vendor"):
             model = read_file("/sys/devices/virtual/dmi/id/sys_vendor").strip()
             if os.path.exists("/sys/devices/virtual/dmi/id/product_name"):
-                model = "%s %s" % (
-                    model,
-                    read_file("/sys/devices/virtual/dmi/id/product_name").strip(),
-                )
+                product_name = read_file("/sys/devices/virtual/dmi/id/product_name").strip()
+                model = f"{model} {product_name}"
             hardware["data"]["model"] = model
             hardware["details"] = ["diagnosis_basesystem_hardware_model"]
 
@@ -116,7 +114,7 @@ class BaseSystemDiagnoser(Diagnoser):
         bad_sury_packages = list(self.bad_sury_packages())
         if bad_sury_packages:
             cmd_to_fix = "apt install --allow-downgrades " + " ".join(
-                ["%s=%s" % (package, version) for package, version in bad_sury_packages]
+                [f"{package}={version}" for package, version in bad_sury_packages]
             )
             yield dict(
                 meta={"test": "packages_from_sury"},
