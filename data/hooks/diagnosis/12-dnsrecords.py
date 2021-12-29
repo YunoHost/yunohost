@@ -56,7 +56,6 @@ class DNSRecordsDiagnoser(Diagnoser):
     def check_domain(self, domain, is_main_domain):
 
         if is_special_use_tld(domain):
-            categories = []
             yield dict(
                 meta={"domain": domain},
                 data={},
