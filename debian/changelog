@@ -1,3 +1,19 @@
+yunohost (4.3.5) stable; urgency=low
+
+  - [fix] backup: bug in backup_delete when compress_tar_archives is True ([#1381](https://github.com/YunoHost/yunohost/pull/1381))
+  - [fix] helpers logrorate: remove permission tweak .. code was not working as expected. To be re-addressed some day ... (0fc209ac)
+  - [fix] i18n: consistency for deprecation for --apps in 'yunohost tools update/upgrade' ([#1392](https://github.com/YunoHost/yunohost/pull/1392))
+  - [fix] apps: typo when deleting superfluous question keys ([#1393](https://github.com/YunoHost/yunohost/pull/1393))
+  - [fix] diagnosis: typo in dns record diagnoser (a615528c)
+  - [fix] diagnosis: tweak treshold for suspiciously high number of auth failure because too many people getting report about it idk (76abbf03)
+  - [enh] quality: apply pyupgrade ([#1395](https://github.com/YunoHost/yunohost/pull/1395))
+  - [enh] quality: add lgtm/code quality badge ([#1396](https://github.com/YunoHost/yunohost/pull/1396))
+  - [i18n] Translations updated for Dutch, French, Galician, German, Indonesian, Russian, Spanish, Ukrainian
+
+  Thanks to all contributors <3 ! (Boudewijn, Bram, Christian Wehrli, Colin Wawrik, Éric Gaspar, Ilya, José M, Juan Alberto González, Kay0u, liimee, Moutonjr Geoff, tituspijean, Tymofii Lytvynenko, Valentin von Guttenberg)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 29 Dec 2021 01:01:33 +0100
+
 yunohost (4.3.4.2) stable; urgency=low
 
   - [fix] yunomdns: Ignore ipv4 link-local addresses (6854f23c)
