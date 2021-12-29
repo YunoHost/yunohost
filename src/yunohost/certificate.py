@@ -70,28 +70,28 @@ PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
 #
 
 
-def certificate_status(domain_list, full=False):
+def certificate_status(domains, full=False):
     """
     Print the status of certificate for given domains (all by default)
 
     Keyword argument:
-        domain_list -- Domains to be checked
+        domains     -- Domains to be checked
         full        -- Display more info about the certificates
     """
 
-    import yunohost.domain
+    from yunohost.domain import domain_list, _assert_domain_exists
 
     # If no domains given, consider all yunohost domains
-    if domain_list == []:
-        domain_list = yunohost.domain.domain_list()["domains"]
+    if domains == []:
+        domains = domain_list()["domains"]
     # Else, validate that yunohost knows the domains given
     else:
-        for domain in domain_list:
-            yunohost.domain._assert_domain_exists(domain)
+        for domain in domains:
+            _assert_domain_exists(domain)
 
     certificates = {}
 
-    for domain in domain_list:
+    for domain in domains:
         status = _get_status(domain)
 
         if not full:
@@ -239,28 +239,28 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
 
 def _certificate_install_letsencrypt(
-    domain_list, force=False, no_checks=False, staging=False
+    domains, force=False, no_checks=False, staging=False
 ):
-    import yunohost.domain
+    from yunohost.domain import domain_list, _assert_domain_exists
 
     if not os.path.exists(ACCOUNT_KEY_FILE):
         _generate_account_key()
 
     # If no domains given, consider all yunohost domains with self-signed
     # certificates
-    if domain_list == []:
-        for domain in yunohost.domain.domain_list()["domains"]:
+    if domains == []:
+        for domain in domain_list()["domains"]:
 
             status = _get_status(domain)
             if status["CA_type"]["code"] != "self-signed":
                 continue
 
-            domain_list.append(domain)
+            domains.append(domain)
 
     # Else, validate that yunohost knows the domains given
     else:
-        for domain in domain_list:
-            yunohost.domain._assert_domain_exists(domain)
+        for domain in domains:
+            _assert_domain_exists(domain)
 
             # Is it self-signed?
             status = _get_status(domain)
@@ -275,7 +275,7 @@ def _certificate_install_letsencrypt(
         )
 
     # Actual install steps
-    for domain in domain_list:
+    for domain in domains:
 
         if not no_checks:
             try:
@@ -311,25 +311,25 @@ def _certificate_install_letsencrypt(
 
 
 def certificate_renew(
-    domain_list, force=False, no_checks=False, email=False, staging=False
+    domains, force=False, no_checks=False, email=False, staging=False
 ):
     """
     Renew Let's Encrypt certificate for given domains (all by default)
 
     Keyword argument:
-        domain_list -- Domains for which to renew the certificates
+        domains    -- Domains for which to renew the certificates
         force      -- Ignore the validity threshold (15 days)
         no-check   -- Disable some checks about the reachability of web server
                       before attempting the renewing
         email      -- Emails root if some renewing failed
     """
 
-    import yunohost.domain
+    from yunohost.domain import domain_list, _assert_domain_exists
 
     # If no domains given, consider all yunohost domains with Let's Encrypt
     # certificates
-    if domain_list == []:
-        for domain in yunohost.domain.domain_list()["domains"]:
+    if domains == []:
+        for domain in domain_list()["domains"]:
 
             # Does it have a Let's Encrypt cert?
             status = _get_status(domain)
@@ -347,17 +347,17 @@ def certificate_renew(
                 )
                 continue
 
-            domain_list.append(domain)
+            domains.append(domain)
 
-        if len(domain_list) == 0 and not email:
+        if len(domains) == 0 and not email:
             logger.info("No certificate needs to be renewed.")
 
     # Else, validate the domain list given
     else:
-        for domain in domain_list:
+        for domain in domains:
 
             # Is it in Yunohost domain list?
-            yunohost.domain._assert_domain_exists(domain)
+            _assert_domain_exists(domain)
 
             status = _get_status(domain)
 
@@ -385,7 +385,7 @@ def certificate_renew(
         )
 
     # Actual renew steps
-    for domain in domain_list:
+    for domain in domains:
 
         if not no_checks:
             try:
