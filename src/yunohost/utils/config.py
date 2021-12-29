@@ -52,7 +52,10 @@ CONFIG_PANEL_VERSION_SUPPORTED = 1.0
 # Those js-like evaluate functions are used to eval safely visible attributes
 # The goal is to evaluate in the same way than js simple-evaluate
 # https://github.com/shepherdwind/simple-evaluate
-def evaluate_simple_ast(node, context={}):
+def evaluate_simple_ast(node, context=None):
+    if context is None:
+        context = {}
+
     operators = {
         ast.Not: op.not_,
         ast.Mult: op.mul,

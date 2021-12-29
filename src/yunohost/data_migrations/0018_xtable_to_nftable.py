@@ -41,7 +41,8 @@ class MyMigration(Migration):
             )  # For some reason if we don't do this, iptables-legacy-save is empty ?
             self.runcmd("iptables-legacy-save > %s" % self.backup_rules_ipv4)
             assert (
-                open(self.backup_rules_ipv4).read().strip()
+                os.path.exists(self.backup_rules_ipv4) and
+                os.stat(self.backup_rules_ipv4).st_size > 0
             ), "Uhoh backup of legacy ipv4 rules is empty !?"
         if self.do_ipv6 and not os.path.exists(self.backup_rules_ipv6):
             self.runcmd(
@@ -49,7 +50,8 @@ class MyMigration(Migration):
             )  # For some reason if we don't do this, iptables-legacy-save is empty ?
             self.runcmd("ip6tables-legacy-save > %s" % self.backup_rules_ipv6)
             assert (
-                open(self.backup_rules_ipv6).read().strip()
+                os.path.exists(self.backup_rules_ipv6) and 
+                os.stat(self.backup_rules_ipv6).st_size > 0
             ), "Uhoh backup of legacy ipv6 rules is empty !?"
 
         # We inject the legacy rules (iptables-legacy) into the new iptable (just "iptables")
