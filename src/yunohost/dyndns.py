@@ -262,9 +262,7 @@ def dyndns_update(
         else:
             return None
 
-        raise YunohostError(
-            f"Failed to resolve {rdtype} for {domain}", raw_msg=True
-        )
+        raise YunohostError(f"Failed to resolve {rdtype} for {domain}", raw_msg=True)
 
     old_ipv4 = resolve_domain(domain, "A")
     old_ipv6 = resolve_domain(domain, "AAAA")

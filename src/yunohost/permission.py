@@ -666,9 +666,9 @@ def permission_sync_to_user():
 
         # These are the users that should be allowed because they are member of a group that is allowed for this permission ...
         should_be_allowed_users = {
-                user
-                for group in permission_infos["allowed"]
-                for user in groups[group]["members"]
+            user
+            for group in permission_infos["allowed"]
+            for user in groups[group]["members"]
         }
 
         # Note that a LDAP operation with the same value that is in LDAP crash SLAP.
