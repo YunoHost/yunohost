@@ -1033,7 +1033,6 @@ def app_remove(operation_logger, app, purge=False):
     remove_script = f"{tmp_workdir_for_app}/scripts/remove"
 
     env_dict = {}
-    app_id, app_instance_nb = _parse_app_instance_name(app)
     env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app)
     env_dict["YNH_APP_PURGE"] = str(1 if purge else 0)
 
