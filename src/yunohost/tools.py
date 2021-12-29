@@ -236,28 +236,24 @@ def tools_postinstall(
 
     # If this is a nohost.me/noho.st, actually check for availability
     if not ignore_dyndns and is_yunohost_dyndns_domain(domain):
-        # (Except if the user explicitly said he/she doesn't care about dyndns)
-        if ignore_dyndns:
-            dyndns = False
         # Check if the domain is available...
-        else:
-            try:
-                available = _dyndns_available(domain)
-            # If an exception is thrown, most likely we don't have internet
-            # connectivity or something. Assume that this domain isn't manageable
-            # and inform the user that we could not contact the dyndns host server.
-            except Exception:
-                logger.warning(
-                    m18n.n(
-                        "dyndns_provider_unreachable", provider="dyndns.yunohost.org"
-                    )
+        try:
+            available = _dyndns_available(domain)
+        # If an exception is thrown, most likely we don't have internet
+        # connectivity or something. Assume that this domain isn't manageable
+        # and inform the user that we could not contact the dyndns host server.
+        except Exception:
+            logger.warning(
+                m18n.n(
+                    "dyndns_provider_unreachable", provider="dyndns.yunohost.org"
                 )
+            )
 
-            if available:
-                dyndns = True
-            # If not, abort the postinstall
-            else:
-                raise YunohostValidationError("dyndns_unavailable", domain=domain)
+        if available:
+            dyndns = True
+        # If not, abort the postinstall
+        else:
+            raise YunohostValidationError("dyndns_unavailable", domain=domain)
     else:
         dyndns = False
 
