@@ -507,17 +507,17 @@ def _set_domain_settings(domain: str, settings: dict) -> None:
 
 
 def domain_cert_status(domain_list, full=False):
-    import yunohost.certificate
+    from yunohost.certificate import certificate_status
 
-    return yunohost.certificate.certificate_status(domain_list, full)
+    return certificate_status(domain_list, full)
 
 
 def domain_cert_install(
     domain_list, force=False, no_checks=False, self_signed=False, staging=False
 ):
-    import yunohost.certificate
+    from yunohost.certificate import certificate_install
 
-    return yunohost.certificate.certificate_install(
+    return certificate_install(
         domain_list, force, no_checks, self_signed, staging
     )
 
@@ -525,9 +525,9 @@ def domain_cert_install(
 def domain_cert_renew(
     domain_list, force=False, no_checks=False, email=False, staging=False
 ):
-    import yunohost.certificate
+    from yunohost.certificate import certificate_renew
 
-    return yunohost.certificate.certificate_renew(
+    return certificate_renew(
         domain_list, force, no_checks, email, staging
     )
 
@@ -537,12 +537,12 @@ def domain_dns_conf(domain):
 
 
 def domain_dns_suggest(domain):
-    import yunohost.dns
+    from yunohost.dns import domain_dns_suggest
 
-    return yunohost.dns.domain_dns_suggest(domain)
+    return domain_dns_suggest(domain)
 
 
 def domain_dns_push(domain, dry_run, force, purge):
-    import yunohost.dns
+    from yunohost.dns import domain_dns_push
 
-    return yunohost.dns.domain_dns_push(domain, dry_run, force, purge)
+    return domain_dns_push(domain, dry_run, force, purge)

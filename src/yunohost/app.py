@@ -627,7 +627,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             if upgrade_failed or broke_the_system:
 
                 # display this if there are remaining apps
-                if apps[number + 1 :]:
+                if apps[number + 1:]:
                     not_upgraded_apps = apps[number:]
                     logger.error(
                         m18n.n(
@@ -1033,7 +1033,6 @@ def app_remove(operation_logger, app, purge=False):
     remove_script = f"{tmp_workdir_for_app}/scripts/remove"
 
     env_dict = {}
-    app_id, app_instance_nb = _parse_app_instance_name(app)
     env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app)
     env_dict["YNH_APP_PURGE"] = str(1 if purge else 0)
 
@@ -1627,8 +1626,11 @@ class AppConfigPanel(ConfigPanel):
                     error=message,
                 )
 
-    def _call_config_script(self, action, env={}):
+    def _call_config_script(self, action, env=None):
         from yunohost.hook import hook_exec
+
+        if env is None:
+            env = {}
 
         # Add default config script if needed
         config_script = os.path.join(

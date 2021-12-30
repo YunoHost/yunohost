@@ -587,7 +587,7 @@ def service_regen_conf(
         if name not in services.keys():
             raise YunohostValidationError("service_unknown", service=name)
 
-    if names is []:
+    if names == []:
         names = list(services.keys())
 
     logger.warning(m18n.n("service_regen_conf_is_deprecated"))

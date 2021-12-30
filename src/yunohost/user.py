@@ -1263,25 +1263,25 @@ def user_group_remove(groupname, usernames, force=False, sync_perm=True):
 
 
 def user_permission_list(short=False, full=False, apps=[]):
-    import yunohost.permission
+    from yunohost.permission import user_permission_list
 
-    return yunohost.permission.user_permission_list(
+    return user_permission_list(
         short, full, absolute_urls=True, apps=apps
     )
 
 
 def user_permission_update(permission, label=None, show_tile=None, sync_perm=True):
-    import yunohost.permission
+    from yunohost.permission import user_permission_update
 
-    return yunohost.permission.user_permission_update(
+    return user_permission_update(
         permission, label=label, show_tile=show_tile, sync_perm=sync_perm
     )
 
 
 def user_permission_add(permission, names, protected=None, force=False, sync_perm=True):
-    import yunohost.permission
+    from yunohost.permission import user_permission_update
 
-    return yunohost.permission.user_permission_update(
+    return user_permission_update(
         permission, add=names, protected=protected, force=force, sync_perm=sync_perm
     )
 
@@ -1289,23 +1289,23 @@ def user_permission_add(permission, names, protected=None, force=False, sync_per
 def user_permission_remove(
     permission, names, protected=None, force=False, sync_perm=True
 ):
-    import yunohost.permission
+    from yunohost.permission import user_permission_update
 
-    return yunohost.permission.user_permission_update(
+    return user_permission_update(
         permission, remove=names, protected=protected, force=force, sync_perm=sync_perm
     )
 
 
 def user_permission_reset(permission, sync_perm=True):
-    import yunohost.permission
+    from yunohost.permission import user_permission_reset
 
-    return yunohost.permission.user_permission_reset(permission, sync_perm=sync_perm)
+    return user_permission_reset(permission, sync_perm=sync_perm)
 
 
 def user_permission_info(permission):
-    import yunohost.permission
+    from yunohost.permission import user_permission_info
 
-    return yunohost.permission.user_permission_info(permission)
+    return user_permission_info(permission)
 
 
 #

@@ -48,7 +48,7 @@ logger = log.getActionLogger("yunohost.regenconf")
 @is_unit_operation([("names", "configuration")])
 def regen_conf(
     operation_logger,
-    names=[],
+    names=None,
     with_diff=False,
     force=False,
     dry_run=False,
@@ -65,6 +65,9 @@ def regen_conf(
         list_pending -- List pending configuration files and exit
 
     """
+
+    if names is None:
+        names = []
 
     result = {}
 

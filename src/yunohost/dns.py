@@ -857,7 +857,6 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
             ignored = ""
 
         if action == "create":
-            old_content = record.get("old_content", "(None)")[:30]
             new_content = record.get("content", "(None)")[:30]
             return f"{name:>20} [{t:^5}] {new_content:^30}  {ignored}"
         elif action == "update":
@@ -867,7 +866,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
                 f"{name:>20} [{t:^5}] {old_content:^30} -> {new_content:^30}  {ignored}"
             )
         elif action == "unchanged":
-            old_content = new_content = record.get("content", "(None)")[:30]
+            old_content = record.get("content", "(None)")[:30]
             return f"{name:>20} [{t:^5}] {old_content:^30}"
         else:
             old_content = record.get("content", "(None)")[:30]
