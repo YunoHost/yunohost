@@ -42,7 +42,9 @@ class BaseSystemDiagnoser(Diagnoser):
         elif os.path.exists("/sys/devices/virtual/dmi/id/sys_vendor"):
             model = read_file("/sys/devices/virtual/dmi/id/sys_vendor").strip()
             if os.path.exists("/sys/devices/virtual/dmi/id/product_name"):
-                product_name = read_file("/sys/devices/virtual/dmi/id/product_name").strip()
+                product_name = read_file(
+                    "/sys/devices/virtual/dmi/id/product_name"
+                ).strip()
                 model = f"{model} {product_name}"
             hardware["data"]["model"] = model
             hardware["details"] = ["diagnosis_basesystem_hardware_model"]

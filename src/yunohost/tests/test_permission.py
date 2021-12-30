@@ -1013,9 +1013,7 @@ def test_permission_app_install():
     assert res["permissions_app.dev"]["url"] == "/dev"
 
     assert res["permissions_app.main"]["allowed"] == ["all_users"]
-    assert set(res["permissions_app.main"]["corresponding_users"]) == {
-        "alice", "bob"
-    }
+    assert set(res["permissions_app.main"]["corresponding_users"]) == {"alice", "bob"}
 
     assert res["permissions_app.admin"]["allowed"] == ["alice"]
     assert res["permissions_app.admin"]["corresponding_users"] == ["alice"]
