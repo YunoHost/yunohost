@@ -59,7 +59,6 @@ class MyDiagnoser(Diagnoser):
     def check_domain(self, domain, is_main_domain):
 
         if is_special_use_tld(domain):
-            categories = []
             yield dict(
                 meta={"domain": domain},
                 data={},
@@ -139,7 +138,7 @@ class MyDiagnoser(Diagnoser):
             # If status is okay and there's actually no expected records
             # (e.g. XMPP disabled)
             # then let's not yield any diagnosis line
-            if not records and "status" == "SUCCESS":
+            if not records and status == "SUCCESS":
                 continue
 
             output = dict(

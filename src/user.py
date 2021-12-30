@@ -97,7 +97,7 @@ def user_list(fields=None):
         and values[0].strip() == "/bin/false",
     }
 
-    attrs = set(["uid"])
+    attrs = {"uid"}
     users = {}
 
     if not fields:
@@ -159,7 +159,7 @@ def user_create(
             # On affiche les differents domaines possibles
             Moulinette.display(m18n.n("domains_available"))
             for domain in domain_list()["domains"]:
-                Moulinette.display("- {}".format(domain))
+                Moulinette.display(f"- {domain}")
 
             maindomain = _get_maindomain()
             domain = Moulinette.prompt(
@@ -208,7 +208,7 @@ def user_create(
         uid_guid_found = uid not in all_uid and uid not in all_gid
 
     # Adapt values for LDAP
-    fullname = "%s %s" % (firstname, lastname)
+    fullname = f"{firstname} {lastname}"
 
     attr_dict = {
         "objectClass": [
@@ -326,8 +326,8 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
     subprocess.call(["nscd", "-i", "passwd"])
 
     if purge:
-        subprocess.call(["rm", "-rf", "/home/{0}".format(username)])
-        subprocess.call(["rm", "-rf", "/var/mail/{0}".format(username)])
+        subprocess.call(["rm", "-rf", f"/home/{username}"])
+        subprocess.call(["rm", "-rf", f"/var/mail/{username}"])
 
     hook_callback("post_user_delete", args=[username, purge])
 
@@ -1256,25 +1256,25 @@ def user_group_remove(groupname, usernames, force=False, sync_perm=True):
 
 
 def user_permission_list(short=False, full=False, apps=[]):
-    import yunohost.permission
+    from yunohost.permission import user_permission_list
 
-    return yunohost.permission.user_permission_list(
+    return user_permission_list(
         short, full, absolute_urls=True, apps=apps
     )
 
 
 def user_permission_update(permission, label=None, show_tile=None, sync_perm=True):
-    import yunohost.permission
+    from yunohost.permission import user_permission_update
 
-    return yunohost.permission.user_permission_update(
+    return user_permission_update(
         permission, label=label, show_tile=show_tile, sync_perm=sync_perm
     )
 
 
 def user_permission_add(permission, names, protected=None, force=False, sync_perm=True):
-    import yunohost.permission
+    from yunohost.permission import user_permission_update
 
-    return yunohost.permission.user_permission_update(
+    return user_permission_update(
         permission, add=names, protected=protected, force=force, sync_perm=sync_perm
     )
 
@@ -1282,23 +1282,23 @@ def user_permission_add(permission, names, protected=None, force=False, sync_per
 def user_permission_remove(
     permission, names, protected=None, force=False, sync_perm=True
 ):
-    import yunohost.permission
+    from yunohost.permission import user_permission_update
 
-    return yunohost.permission.user_permission_update(
+    return user_permission_update(
         permission, remove=names, protected=protected, force=force, sync_perm=sync_perm
     )
 
 
 def user_permission_reset(permission, sync_perm=True):
-    import yunohost.permission
+    from yunohost.permission import user_permission_reset
 
-    return yunohost.permission.user_permission_reset(permission, sync_perm=sync_perm)
+    return user_permission_reset(permission, sync_perm=sync_perm)
 
 
 def user_permission_info(permission):
-    import yunohost.permission
+    from yunohost.permission import user_permission_info
 
-    return yunohost.permission.user_permission_info(permission)
+    return user_permission_info(permission)
 
 
 #
@@ -1327,9 +1327,9 @@ def user_ssh_remove_key(username, key):
 def _convertSize(num, suffix=""):
     for unit in ["K", "M", "G", "T", "P", "E", "Z"]:
         if abs(num) < 1024.0:
-            return "%3.1f%s%s" % (num, unit, suffix)
+            return "{:3.1f}{}{}".format(num, unit, suffix)
         num /= 1024.0
-    return "%.1f%s%s" % (num, "Yi", suffix)
+    return "{:.1f}{}{}".format(num, "Yi", suffix)
 
 
 def _hash_user_password(password):

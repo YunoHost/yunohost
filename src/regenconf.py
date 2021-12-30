@@ -48,7 +48,7 @@ logger = log.getActionLogger("yunohost.regenconf")
 @is_unit_operation([("names", "configuration")])
 def regen_conf(
     operation_logger,
-    names=[],
+    names=None,
     with_diff=False,
     force=False,
     dry_run=False,
@@ -65,6 +65,9 @@ def regen_conf(
         list_pending -- List pending configuration files and exit
 
     """
+
+    if names is None:
+        names = []
 
     result = {}
 
@@ -617,12 +620,9 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
 
     """
     if save:
-        backup_path = os.path.join(
-            BACKUP_CONF_DIR,
-            "{0}-{1}".format(
-                system_conf.lstrip("/"), datetime.utcnow().strftime("%Y%m%d.%H%M%S")
-            ),
-        )
+        system_conf_ = system_conf.lstrip("/")
+        now_ = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
+        backup_path = os.path.join(BACKUP_CONF_DIR, f"{system_conf_}-{now_}")
         backup_dir = os.path.dirname(backup_path)
 
         if not os.path.isdir(backup_dir):

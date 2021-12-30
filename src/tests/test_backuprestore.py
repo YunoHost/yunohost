@@ -139,7 +139,7 @@ def app_is_installed(app):
 
     # These are files we know should be installed by the app
     app_files = []
-    app_files.append("/etc/nginx/conf.d/%s.d/%s.conf" % (maindomain, app))
+    app_files.append("/etc/nginx/conf.d/{}.d/{}.conf".format(maindomain, app))
     app_files.append("/var/www/%s/index.html" % app)
     app_files.append("/etc/importantfile")
 
@@ -214,7 +214,7 @@ def install_app(app, path, additionnal_args=""):
 
     app_install(
         os.path.join(get_test_apps_dir(), app),
-        args="domain=%s&path=%s%s" % (maindomain, path, additionnal_args),
+        args="domain={}&path={}{}".format(maindomain, path, additionnal_args),
         force=True,
     )
 

@@ -224,7 +224,7 @@ def settings_set(key, value):
     try:
         trigger_post_change_hook(key, old_value, value)
     except Exception as e:
-        logger.error("Post-change hook for setting %s failed : %s" % (key, e))
+        logger.error(f"Post-change hook for setting {key} failed : {e}")
         raise
 
 

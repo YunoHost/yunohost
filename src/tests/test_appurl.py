@@ -99,7 +99,7 @@ def test_registerurl():
 
     app_install(
         os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
-        args="domain=%s&path=%s" % (maindomain, "/urlregisterapp"),
+        args="domain={}&path={}".format(maindomain, "/urlregisterapp"),
         force=True,
     )
 
@@ -109,7 +109,7 @@ def test_registerurl():
     with pytest.raises(YunohostError):
         app_install(
             os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
-            args="domain=%s&path=%s" % (maindomain, "/urlregisterapp"),
+            args="domain={}&path={}".format(maindomain, "/urlregisterapp"),
             force=True,
         )
 
@@ -119,7 +119,7 @@ def test_registerurl_baddomain():
     with pytest.raises(YunohostError):
         app_install(
             os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
-            args="domain=%s&path=%s" % ("yolo.swag", "/urlregisterapp"),
+            args="domain={}&path={}".format("yolo.swag", "/urlregisterapp"),
             force=True,
         )
 
@@ -234,7 +234,7 @@ def test_normalize_permission_path_with_unknown_domain():
 def test_normalize_permission_path_conflicting_path():
     app_install(
         os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
-        args="domain=%s&path=%s" % (maindomain, "/url/registerapp"),
+        args="domain={}&path={}".format(maindomain, "/url/registerapp"),
         force=True,
     )
 

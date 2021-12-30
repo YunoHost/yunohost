@@ -104,7 +104,7 @@ def app_list(full=False):
         try:
             app_info_dict = app_info(app_id, full=full)
         except Exception as e:
-            logger.error("Failed to read info for %s : %s" % (app_id, e))
+            logger.error(f"Failed to read info for {app_id} : {e}")
             continue
         app_info_dict["id"] = app_id
         out.append(app_info_dict)
@@ -609,7 +609,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             if upgrade_failed or broke_the_system:
 
                 # display this if there are remaining apps
-                if apps[number + 1 :]:
+                if apps[number + 1:]:
                     not_upgraded_apps = apps[number:]
                     logger.error(
                         m18n.n(
@@ -1015,7 +1015,6 @@ def app_remove(operation_logger, app, purge=False):
     remove_script = f"{tmp_workdir_for_app}/scripts/remove"
 
     env_dict = {}
-    app_id, app_instance_nb = _parse_app_instance_name(app)
     env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app)
     env_dict["YNH_APP_PURGE"] = str(1 if purge else 0)
 
@@ -1143,7 +1142,8 @@ def app_setting(app, key, value=None, delete=False):
         )
 
         permissions = user_permission_list(full=True, apps=[app])["permissions"]
-        permission_name = "%s.legacy_%s_uris" % (app, key.split("_")[0])
+        key_ = key.split("_")[0]
+        permission_name = f"{app}.legacy_{key_}_uris"
         permission = permissions.get(permission_name)
 
         # GET
@@ -1482,11 +1482,7 @@ def app_action_run(operation_logger, app, action, args=None):
         shutil.rmtree(tmp_workdir_for_app)
 
     if retcode not in action_declaration.get("accepted_return_codes", [0]):
-        msg = "Error while executing action '%s' of app '%s': return code %s" % (
-            action,
-            app,
-            retcode,
-        )
+        msg = f"Error while executing action '{action}' of app '{app}': return code {retcode}"
         operation_logger.error(msg)
         raise YunohostError(msg, raw_msg=True)
 
@@ -1550,8 +1546,11 @@ class AppConfigPanel(ConfigPanel):
                     error=message,
                 )
 
-    def _call_config_script(self, action, env={}):
+    def _call_config_script(self, action, env=None):
         from yunohost.hook import hook_exec
+
+        if env is None:
+            env = {}
 
         # Add default config script if needed
         config_script = os.path.join(
@@ -1909,7 +1908,8 @@ def _set_default_ask_questions(arguments):
                 for question in questions_with_default
             ):
                 # The key is for example "app_manifest_install_ask_domain"
-                key = "app_manifest_%s_ask_%s" % (script_name, arg["name"])
+                arg_name = arg["name"]
+                key = f"app_manifest_{script_name}_ask_{arg_name}"
                 arg["ask"] = m18n.n(key)
 
             # Also it in fact doesn't make sense for any of those questions to have an example value nor a default value...
@@ -1917,7 +1917,7 @@ def _set_default_ask_questions(arguments):
                 if "example" in arg:
                     del arg["example"]
                 if "default" in arg:
-                    del arg["domain"]
+                    del arg["default"]
 
     return arguments
 
@@ -2317,7 +2317,8 @@ def _make_environment_for_app_script(
         env_dict["YNH_APP_BASEDIR"] = workdir
 
     for arg_name, arg_value in args.items():
-        env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = str(arg_value)
+        arg_name_upper = arg_name.upper()
+        env_dict[f"YNH_{args_prefix}{arg_name_upper}"] = str(arg_value)
 
     return env_dict
 

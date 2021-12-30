@@ -347,7 +347,7 @@ def check_permission_for_apps():
     # {"bar", "foo"}
     # and compare this to the list of installed apps ...
 
-    app_perms_prefix = set(p.split(".")[0] for p in app_perms)
+    app_perms_prefix = {p.split(".")[0] for p in app_perms}
 
     assert set(_installed_apps()) == app_perms_prefix
 
@@ -398,7 +398,7 @@ def test_permission_list():
     assert res["wiki.main"]["allowed"] == ["all_users"]
     assert res["blog.main"]["allowed"] == ["alice"]
     assert res["blog.api"]["allowed"] == ["visitors"]
-    assert set(res["wiki.main"]["corresponding_users"]) == set(["alice", "bob"])
+    assert set(res["wiki.main"]["corresponding_users"]) == {"alice", "bob"}
     assert res["blog.main"]["corresponding_users"] == ["alice"]
     assert res["blog.api"]["corresponding_users"] == []
     assert res["wiki.main"]["url"] == "/"
@@ -442,7 +442,7 @@ def test_permission_create_main(mocker):
     res = user_permission_list(full=True)["permissions"]
     assert "site.main" in res
     assert res["site.main"]["allowed"] == ["all_users"]
-    assert set(res["site.main"]["corresponding_users"]) == set(["alice", "bob"])
+    assert set(res["site.main"]["corresponding_users"]) == {"alice", "bob"}
     assert res["site.main"]["protected"] is False
 
 
@@ -630,8 +630,8 @@ def test_permission_add_group(mocker):
         user_permission_update("wiki.main", add="alice")
 
     res = user_permission_list(full=True)["permissions"]
-    assert set(res["wiki.main"]["allowed"]) == set(["all_users", "alice"])
-    assert set(res["wiki.main"]["corresponding_users"]) == set(["alice", "bob"])
+    assert set(res["wiki.main"]["allowed"]) == {"all_users", "alice"}
+    assert set(res["wiki.main"]["corresponding_users"]) == {"alice", "bob"}
 
 
 def test_permission_remove_group(mocker):
@@ -680,7 +680,7 @@ def test_permission_reset(mocker):
 
     res = user_permission_list(full=True)["permissions"]
     assert res["blog.main"]["allowed"] == ["all_users"]
-    assert set(res["blog.main"]["corresponding_users"]) == set(["alice", "bob"])
+    assert set(res["blog.main"]["corresponding_users"]) == {"alice", "bob"}
 
 
 def test_permission_reset_idempotency():
@@ -690,7 +690,7 @@ def test_permission_reset_idempotency():
 
     res = user_permission_list(full=True)["permissions"]
     assert res["blog.main"]["allowed"] == ["all_users"]
-    assert set(res["blog.main"]["corresponding_users"]) == set(["alice", "bob"])
+    assert set(res["blog.main"]["corresponding_users"]) == {"alice", "bob"}
 
 
 def test_permission_change_label(mocker):
@@ -1013,9 +1013,7 @@ def test_permission_app_install():
     assert res["permissions_app.dev"]["url"] == "/dev"
 
     assert res["permissions_app.main"]["allowed"] == ["all_users"]
-    assert set(res["permissions_app.main"]["corresponding_users"]) == set(
-        ["alice", "bob"]
-    )
+    assert set(res["permissions_app.main"]["corresponding_users"]) == {"alice", "bob"}
 
     assert res["permissions_app.admin"]["allowed"] == ["alice"]
     assert res["permissions_app.admin"]["corresponding_users"] == ["alice"]
