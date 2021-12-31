@@ -43,7 +43,7 @@
     "app_packaging_format_not_supported": "This app cannot be installed because its packaging format is not supported by your YunoHost version. You should probably consider upgrading your system.",
     "app_remove_after_failed_install": "Removing the app following the installation failure...",
     "app_removed": "{app} uninstalled",
-    "app_requirements_checking": "Checking required packages for {app}...",
+    "app_requirements_checking": "Checking requirements for {app}...",
     "app_requirements_unmeet": "Requirements are not met for {app}, the package {pkgname} ({version}) must be {spec}",
     "app_restore_failed": "Could not restore {app}: {error}",
     "app_restore_script_failed": "An error occured inside the app restore script",

@@ -765,12 +765,25 @@ ynh_read_manifest() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if [ ! -e "$manifest" ]; then
+    if [ ! -e "${manifest:-}" ]; then
         # If the manifest isn't found, try the common place for backup and restore script.
-        manifest="$YNH_APP_BASEDIR/manifest.json"
+        if [ -e "$YNH_APP_BASEDIR/manifest.json" ]
+        then
+            manifest="$YNH_APP_BASEDIR/manifest.json"
+        elif [ -e "$YNH_APP_BASEDIR/manifest.toml" ]
+        then
+            manifest="$YNH_APP_BASEDIR/manifest.toml"
+        else
+            ynh_die --message "No manifest found !?"
+        fi
     fi
 
-    jq ".$manifest_key" "$manifest" --raw-output
+    if echo "$manifest" | grep -q '\.json$'
+    then
+        jq ".$manifest_key" "$manifest" --raw-output
+    else
+        cat "$manifest" | python3 -c 'import json, toml, sys; print(json.dumps(toml.load(sys.stdin)))' | jq ".$manifest_key" --raw-output
+    fi
 }
 
 # Read the upstream version from the manifest or `$YNH_APP_MANIFEST_VERSION`
@@ -914,9 +927,7 @@ ynh_compare_current_package_version() {
 _ynh_apply_default_permissions() {
     local target=$1
 
-    local ynh_requirement=$(jq -r '.requirements.yunohost' $YNH_APP_BASEDIR/manifest.json | tr -d '>= ')
-
-    if [ -z "$ynh_requirement" ] || [ "$ynh_requirement" == "null" ] || dpkg --compare-versions $ynh_requirement ge 4.2; then
+    if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} ge 2 || [ -z "$ynh_requirement" ] || [ "$ynh_requirement" == "null" ] || dpkg --compare-versions $ynh_requirement ge 4.2; then
         chmod o-rwx $target
         chmod g-w $target
         chown -R root:root $target

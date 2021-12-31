@@ -20,10 +20,15 @@
 """
 import os
 import copy
+import shutil
 from typing import Dict, Any
 
+from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
+from moulinette.utils.filesystem import (
+    rm,
+)
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.hook import hook_exec
@@ -31,43 +36,57 @@ from yunohost.hook import hook_exec
 logger = getActionLogger("yunohost.app_resources")
 
 
-class AppResourceManager(object):
+class AppResourceManager:
 
-    def __init__(self, app: str, manifest: str):
+    def __init__(self, app: str, current: Dict, wanted: Dict):
 
         self.app = app
-        self.resources = {name: AppResourceClassesByType[name](infos, app)
-                          for name, infos in resources_dict.items()}
+        self.current = current
+        self.wanted = wanted
 
-    def apply(self):
+    def apply(self, **context):
+
+        for name, infos in self.wanted.items():
+            resource = AppResourceClassesByType[name](infos, self.app)
+            # FIXME: not a great place to check this because here
+            # we already started an operation
+            # We should find a way to validate this before actually starting
+            # the install procedure / theoperation log
+            if name not in self.current.keys():
+                resource.validate_availability(context=context)
+
+        for name, infos in reversed(self.current.items()):
+            if name not in self.wanted.keys():
+                resource = AppResourceClassesByType[name](infos, self.app)
+                # FIXME : i18n, better info strings
+                logger.info(f"Deprovisionning {name} ...")
+                resource.deprovision(context=context)
+
+        for name, infos in self.wanted.items():
+            resource = AppResourceClassesByType[name](infos, self.app)
+            if name not in self.current.keys():
+                # FIXME : i18n, better info strings
+                logger.info(f"Provisionning {name} ...")
+            else:
+                # FIXME : i18n, better info strings
+                logger.info(f"Updating {name} ...")
+            resource.provision_or_update(context=context)
 
 
-
-
-
-
-    def validate_resource_availability(self):
-
-        for name, resource in self.resources.items():
-            resource.validate_availability(context={})
-
-    def provision_or_update_resources(self):
-
-        for name, resource in self.resources.items():
-            logger.info("Running provision_or_upgrade for {self.type}")
-            resource.provision_or_update(context={})
-
-
-class AppResource(object):
+class AppResource:
 
     def __init__(self, properties: Dict[str, Any], app: str):
 
         self.app = app
 
         for key, value in self.default_properties.items():
+            if isinstance(value, str):
+                value = value.replace("__APP__", self.app)
             setattr(self, key, value)
 
         for key, value in properties.items():
+            if isinstance(value, str):
+                value = value.replace("__APP__", self.app)
             setattr(self, key, value)
 
     def get_setting(self, key):
@@ -78,7 +97,7 @@ class AppResource(object):
         from yunohost.app import app_setting
         app_setting(self.app, key, value=value)
 
-    def delete_setting(self, key, value):
+    def delete_setting(self, key):
         from yunohost.app import app_setting
         app_setting(self.app, key, delete=True)
 
@@ -104,11 +123,12 @@ ynh_abort_if_errors
 
         write_to_file(script_path, script)
 
-        print(env_)
+        #print(env_)
 
         # FIXME : use the hook_exec_with_debug_instructions_stuff
         ret, _ = hook_exec(script_path, env=env_)
-        print(ret)
+
+        #print(ret)
 
 
 class WebpathResource(AppResource):
@@ -137,20 +157,28 @@ class WebpathResource(AppResource):
     def validate_availability(self, context):
 
         from yunohost.app import _assert_no_conflicting_apps
-
         domain = self.get_setting("domain")
         path = self.get_setting("path") if not self.full_domain else "/"
         _assert_no_conflicting_apps(domain, path, ignore_app=self.app)
 
     def provision_or_update(self, context: Dict):
 
-        # Nothing to do ? Just setting the domain/path during install
-        # already provisions it ...
-        return  # FIXME
+        from yunohost.permission import (
+            permission_url,
+            user_permission_update,
+            permission_sync_to_user,
+        )
+
+        if context.get("action") == "install":
+            permission_url(f"{self.app}.main", url="/", sync_perm=False)
+            user_permission_update(f"{self.app}.main", show_tile=True, sync_perm=False)
+            permission_sync_to_user()
 
     def deprovision(self, context: Dict):
         self.delete_setting("domain")
         self.delete_setting("path")
+        # FIXME : theoretically here, should also remove the url in the main permission ?
+        # but is that worth the trouble ?
 
 
 class SystemuserAppResource(AppResource):
@@ -173,7 +201,7 @@ class SystemuserAppResource(AppResource):
     priority = 20
 
     default_properties = {
-        "allow_ssh": []
+        "allow_ssh": [],
         "allow_sftp": []
     }
 
@@ -190,37 +218,37 @@ class SystemuserAppResource(AppResource):
 
     def provision_or_update(self, context: Dict):
 
-        if os.system(f"getent passwd {self.app} &>/dev/null") != 0:
+        if not check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
+            # FIXME: improve error handling ?
             cmd = f"useradd --system --user-group {self.app}"
             os.system(cmd)
 
-        if os.system(f"getent passwd {self.app} &>/dev/null") == 0:
-            raise YunohostError(f"Failed to create system user for {self.app}")
+        if not check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
+            raise YunohostError(f"Failed to create system user for {self.app}", raw_msg=True)
 
-        groups = []
+        groups = set(check_output(f"groups {self.app}").strip().split()[2:])
+
         if self.allow_ssh:
-            groups.append("ssh.app")
+            groups.add("ssh.app")
         if self.allow_sftp:
-            groups.append("sftp.app")
-        groups =
+            groups.add("sftp.app")
 
-        cmd = f"usermod -a -G {groups} {self.app}"
-        # FIXME : handle case where group gets removed
-        os.system(cmd)
-
-#        useradd $user_home_dir --system --user-group $username $shell || ynh_die --message="Unable to create $username system account"
-#    for group in $groups; do
-#        usermod -a -G "$group" "$username"
-#    done
-
-
-# | arg: -g, --groups       - Add the user to system groups. Typically meant to add the user to the ssh.app / sftp.app group (e.g. for borgserver, my_webapp)
-
+        os.system(f"usermod -G {','.join(groups)} {self.app}")
 
     def deprovision(self, context: Dict):
 
-        self._run_script("deprovision",
-                         f'ynh_system_user_delete "{self.username}"')
+        if check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
+            os.system(f"deluser {self.app} >/dev/null")
+        if check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
+            raise YunohostError(f"Failed to delete system user for {self.app}")
+
+        if check_output(f"getent group {self.app} &>/dev/null || true").strip():
+            os.system(f"delgroup {self.app} >/dev/null")
+        if check_output(f"getent group {self.app} &>/dev/null || true").strip():
+            raise YunohostError(f"Failed to delete system user for {self.app}")
+
+        # FIXME : better logging and error handling, add stdout/stderr from the deluser/delgroup commands...
+
 
 #    # Check if the user exists on the system
 #if os.system(f"getent passwd {self.username} &>/dev/null") != 0:
@@ -288,7 +316,7 @@ class InstalldirAppResource(AppResource):
         group_perm_octal = (4 if "r" in group_perm else 0) + (2 if "w" in group_perm else 0) + (1 if "x" in group_perm else 0)
         perm_octal = str(owner_perm_octal) + str(group_perm_octal) + "0"
 
-        chmod(self.dir, oct(int(perm_octal)))
+        chmod(self.dir, int(perm_octal))
         chown(self.dir, owner, group)
 
         self.set_setting("install_dir", self.dir)
@@ -348,7 +376,7 @@ class DatadirAppResource(AppResource):
         group_perm_octal = (4 if "r" in group_perm else 0) + (2 if "w" in group_perm else 0) + (1 if "x" in group_perm else 0)
         perm_octal = str(owner_perm_octal) + str(group_perm_octal) + "0"
 
-        chmod(self.dir, oct(int(perm_octal)))
+        chmod(self.dir, int(perm_octal))
         chown(self.dir, owner, group)
 
         self.set_setting("data_dir", self.dir)

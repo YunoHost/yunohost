@@ -59,7 +59,6 @@ from yunohost.utils.config import (
     DomainQuestion,
     PathQuestion,
 )
-from yunohost.utils.resources import AppResourceSet
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import (
@@ -790,7 +789,7 @@ def app_install(
     if free_space_in_directory("/") <= 512 * 1000 * 1000:
         raise YunohostValidationError("disk_space_not_sufficient_install")
 
-    _confirm_app_install(app)
+    _confirm_app_install(app, force)
     manifest, extracted_app_folder = _extract_app(app)
     packaging_format = manifest["packaging_format"]
 
@@ -824,10 +823,11 @@ def app_install(
     }
 
     # Validate domain / path availability for webapps
-    if packaging_format < 2:
-        path_requirement = _guess_webapp_path_requirement(extracted_app_folder)
-        _validate_webpath_requirement(args, path_requirement)
+    # (ideally this should be handled by the resource system for manifest v >= 2
+    path_requirement = _guess_webapp_path_requirement(extracted_app_folder)
+    _validate_webpath_requirement(args, path_requirement)
 
+    if packaging_format < 2:
         # Attempt to patch legacy helpers ...
         _patch_legacy_helpers(extracted_app_folder)
 
@@ -881,9 +881,14 @@ def app_install(
     # Initialize the main permission for the app
     # The permission is initialized with no url associated, and with tile disabled
     # For web app, the root path of the app will be added as url and the tile
-    # will be enabled during the app install. C.f. 'app_register_url()' below.
+    # will be enabled during the app install. C.f. 'app_register_url()' below
+    # or the webpath resource
     if packaging_format >= 2:
-        init_main_perm_allowed = ["visitors"] if not args.get("is_public") else ["all_users"]
+        if args.get("init_permission_main"):
+            init_main_perm_allowed = args.get("init_permission_main")
+        else:
+            init_main_perm_allowed = ["visitors"] if not args.get("is_public") else ["all_users"]
+
     else:
         init_main_perm_allowed = ["all_users"]
 
@@ -896,13 +901,13 @@ def app_install(
     )
 
     if packaging_format >= 2:
+        from yunohost.utils.resources import AppResourceManager
         try:
-            from yunohost.utils.resources import AppResourceManager
-            resources = AppResourceManager(app_instance_name, current=app_setting_path, wanted=extracted_app_folder)
-            resources.apply()
-        except:
+            AppResourceManager(app_instance_name, wanted=manifest["resources"], current={}).apply()
+        except Exception:
+            # FIXME : improve error handling ....
+            AppResourceManager(app_instance_name, wanted={}, current=manifest["resources"]).apply()
             raise
-            # FIXME : error handling
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(
@@ -999,6 +1004,14 @@ def app_install(
                 logger.error(
                     m18n.n("unexpected_error", error="\n" + traceback.format_exc())
                 )
+
+            if packaging_format >= 2:
+                from yunohost.utils.resources import AppResourceManager
+                try:
+                    AppResourceManager(app_instance_name, wanted={}, current=manifest["resources"]).apply()
+                except Exception:
+                    # FIXME : improve error handling ....
+                    raise
 
             # Remove all permission in LDAP
             for permission_name in user_permission_list()["permissions"].keys():
@@ -1103,20 +1116,29 @@ def app_remove(operation_logger, app, purge=False):
     finally:
         shutil.rmtree(tmp_workdir_for_app)
 
-    if ret == 0:
-        logger.success(m18n.n("app_removed", app=app))
-        hook_callback("post_app_remove", env=env_dict)
-    else:
-        logger.warning(m18n.n("app_not_properly_removed", app=app))
-
     # Remove all permission in LDAP
     for permission_name in user_permission_list(apps=[app])["permissions"].keys():
         permission_delete(permission_name, force=True, sync_perm=False)
+
+    packaging_format = manifest["packaging_format"]
+    if packaging_format >= 2:
+        try:
+            from yunohost.utils.resources import AppResourceManager
+            AppResourceManager(app, wanted={}, current=manifest["resources"]).apply()
+        except Exception:
+            # FIXME : improve error handling ....
+            raise
 
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
 
     hook_remove(app)
+
+    if ret == 0:
+        logger.success(m18n.n("app_removed", app=app))
+        hook_callback("post_app_remove", env=env_dict)
+    else:
+        logger.warning(m18n.n("app_not_properly_removed", app=app))
 
     permission_sync_to_user()
     _assert_system_is_sane_for_app(manifest, "post")

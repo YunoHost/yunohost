@@ -227,9 +227,8 @@ ynh_install_app_dependencies() {
     # Add a comma for each space between packages. But not add a comma if the space separate a version specification. (See  below)
     dependencies="$(echo "$dependencies" | sed 's/\([^\<=\>]\)\ \([^(]\)/\1, \2/g')"
     local dependencies=${dependencies//|/ | }
-    local manifest_path="$YNH_APP_BASEDIR/manifest.json"
 
-    local version=$(jq -r '.version' "$manifest_path")
+    local version=$(ynh_read_manifest --manifest_key="version")
     if [ -z "${version}" ] || [ "$version" == "null" ]; then
         version="1.0"
     fi
