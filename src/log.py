@@ -469,7 +469,7 @@ class RedactingFormatter(Formatter):
             )
 
 
-class OperationLogger(object):
+class OperationLogger:
 
     """
     Instances of this class represents unit operation done on the ynh instance.
@@ -544,7 +544,7 @@ class OperationLogger(object):
             # We use proc.open_files() to list files opened / actively used by this proc
             # We only keep files matching a recent yunohost operation log
             active_logs = sorted(
-                [f.path for f in proc.open_files() if f.path in recent_operation_logs],
+                (f.path for f in proc.open_files() if f.path in recent_operation_logs),
                 key=os.path.getctime,
                 reverse=True,
             )

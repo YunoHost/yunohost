@@ -226,7 +226,7 @@ with open(sys.argv[1], 'r') as backup_file:
 #     ynh_restore_file -o "conf/nginx.conf"
 #
 # If `DEST_PATH` already exists and is lighter than 500 Mo, a backup will be made in
-# `/home/yunohost.conf/backup/`. Otherwise, the existing file is removed.
+# `/var/cache/yunohost/appconfbackup/`. Otherwise, the existing file is removed.
 #
 # if `apps/$app/etc/nginx/conf.d/$domain.d/$app.conf` exists, restore it into
 # `/etc/nginx/conf.d/$domain.d/$app.conf`
@@ -263,7 +263,7 @@ ynh_restore_file() {
     if [[ -e "${dest_path}" ]]; then
         # Check if the file/dir size is less than 500 Mo
         if [[ $(du --summarize --bytes ${dest_path} | cut --delimiter="/" --fields=1) -le "500000000" ]]; then
-            local backup_file="/home/yunohost.conf/backup/${dest_path}.backup.$(date '+%Y%m%d.%H%M%S')"
+            local backup_file="/var/cache/yunohost/appconfbackup/${dest_path}.backup.$(date '+%Y%m%d.%H%M%S')"
             mkdir --parents "$(dirname "$backup_file")"
             mv "${dest_path}" "$backup_file" # Move the current file or directory
         else
@@ -353,7 +353,7 @@ ynh_backup_if_checksum_is_different() {
     backup_file_checksum=""
     if [ -n "$checksum_value" ]; then                                                     # Proceed only if a value was stored into the app settings
         if [ -e $file ] && ! echo "$checksum_value $file" | md5sum --check --status; then # If the checksum is now different
-            backup_file_checksum="/home/yunohost.conf/backup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
+            backup_file_checksum="/var/cache/yunohost/appconfbackup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
             mkdir --parents "$(dirname "$backup_file_checksum")"
             cp --archive "$file" "$backup_file_checksum" # Backup the current file
             ynh_print_warn "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file_checksum"

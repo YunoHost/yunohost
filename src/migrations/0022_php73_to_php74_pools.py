@@ -38,11 +38,11 @@ class MyMigration(Migration):
         # Ignore the "www.conf" (default stuff, probably don't want to touch it ?)
         oldphp_pool_files = [f for f in oldphp_pool_files if f != "www.conf"]
 
-        for f in oldphp_pool_files:
+        for pf in oldphp_pool_files:
 
-            # Copy the files to the php7.4 pool
-            src = "{}/{}".format(OLDPHP_POOLS, f)
-            dest = "{}/{}".format(NEWPHP_POOLS, f)
+            # Copy the files to the php7.3 pool
+            src = "{}/{}".format(OLDPHP_POOLS, pf)
+            dest = "{}/{}".format(NEWPHP_POOLS, pf)
             copy2(src, dest)
 
             # Replace the socket prefix if it's found
@@ -56,17 +56,17 @@ class MyMigration(Migration):
             c = "sed -i '1i {}' {}".format(MIGRATION_COMMENT, dest)
             os.system(c)
 
-            app_id = os.path.basename(f)[: -len(".conf")]
+            app_id = os.path.basename(pf)[: -len(".conf")]
             if _is_installed(app_id):
                 _patch_legacy_php_versions_in_settings(
                     "/etc/yunohost/apps/%s/" % app_id
                 )
 
             nginx_conf_files = glob.glob("/etc/nginx/conf.d/*.d/%s.conf" % app_id)
-            for f in nginx_conf_files:
+            for nf in nginx_conf_files:
                 # Replace the socket prefix if it's found
                 c = "sed -i -e 's@{}@{}@g' {}".format(
-                    OLDPHP_SOCKETS_PREFIX, NEWPHP_SOCKETS_PREFIX, f
+                    OLDPHP_SOCKETS_PREFIX, NEWPHP_SOCKETS_PREFIX, nf
                 )
                 os.system(c)
 

@@ -670,5 +670,19 @@
     "domain_dns_push_managed_in_parent_domain": "A función de rexistro DNS automático está xestionada polo dominio nai {parent_domain}.",
     "ldap_attribute_already_exists": "Xa existe o atributo LDAP '{attribute}' con valor '{value}'",
     "log_domain_config_set": "Actualizar configuración para o dominio '{}'",
-    "domain_unknown": "Dominio '{domain}' descoñecido"
+    "domain_unknown": "Dominio '{domain}' descoñecido",
+    "migration_0021_start": "Comezando a migración a Bullseye",
+    "migration_0021_patching_sources_list": "Actualizando sources.list...",
+    "migration_0021_main_upgrade": "Iniciando a actualización principal...",
+    "migration_0021_still_on_buster_after_main_upgrade": "Algo fallou durante a actualización principal, o sistema semlla que aínda está en Debian Buster",
+    "migration_0021_yunohost_upgrade": "Iniciando actualización compoñente core de YunoHost...",
+    "migration_0021_not_buster": "A distribución Debian actual non é Buster!",
+    "migration_0021_not_enough_free_space": "Queda pouco espazo en /var/! Deberías ter polo menos 1GB libre para facer a migración.",
+    "migration_0021_problematic_apps_warning": "Detectamos que están instaladas estas app que poderían ser problemáticas. Semella que non foron instaladas desde o catálogo YunoHost, ou non están marcadas como que 'funcionan'. Así, non podemos garantir que seguiran funcionando ben tras a migración: {problematic_apps}",
+    "migration_0021_modified_files": "Ten en conta que os seguintes ficheiros semella que foron editados manualmente e poderían ser sobrescritos durante a migración: {manually_modified_files}",
+    "migration_0021_cleaning_up": "Limpando a caché e os paquetes que xa non son precisos...",
+    "migration_0021_patch_yunohost_conflicts": "Solucionando os problemas e conflitos...",
+    "migration_description_0021_migrate_to_bullseye": "Actualizar o sistema a Debian Bullseye e YunoHost 11.x",
+    "migration_0021_system_not_fully_up_to_date": "O teu sistema non está completamente actualizado. Fai unha actualización normal antes de executar a migración a Bullseye.",
+    "migration_0021_general_warning": "Ten en conta que a migración é unha operación delicada. O equipo de YunoHost fixo todo o que puido para revisalo e probalo, pero aínda así poderían acontecer fallos no sistema ou apps.\n\nAsí as cousas, é recomendable:\n   - Facer unha copia de apoio dos datos e apps importantes. Máis info en https://yunohost.org/backup;\n   - Ter paciencia unha vez inicias a migración: dependendo da túa conexión a internet e hardware, podería levarlle varias horas completar o proceso."
 }

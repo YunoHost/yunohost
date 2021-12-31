@@ -111,7 +111,7 @@ def secondary_domain(request):
 
 def app_expected_files(domain, app):
 
-    yield "/etc/nginx/conf.d/%s.d/%s.conf" % (domain, app)
+    yield "/etc/nginx/conf.d/{}.d/{}.conf".format(domain, app)
     if app.startswith("legacy_app"):
         yield "/var/www/%s/index.html" % app
     yield "/etc/yunohost/apps/%s/settings.yml" % app
@@ -152,7 +152,7 @@ def install_legacy_app(domain, path, public=True):
 
     app_install(
         os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
-        args="domain=%s&path=%s&is_public=%s" % (domain, path, 1 if public else 0),
+        args="domain={}&path={}&is_public={}".format(domain, path, 1 if public else 0),
         force=True,
     )
 
@@ -170,7 +170,7 @@ def install_break_yo_system(domain, breakwhat):
 
     app_install(
         os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
-        args="domain=%s&breakwhat=%s" % (domain, breakwhat),
+        args="domain={}&breakwhat={}".format(domain, breakwhat),
         force=True,
     )
 
@@ -338,7 +338,7 @@ def test_legacy_app_failed_remove(mocker, secondary_domain):
 
     # The remove script runs with set -eu and attempt to remove this
     # file without -f, so will fail if it's not there ;)
-    os.remove("/etc/nginx/conf.d/%s.d/%s.conf" % (secondary_domain, "legacy_app"))
+    os.remove("/etc/nginx/conf.d/{}.d/{}.conf".format(secondary_domain, "legacy_app"))
 
     # TODO / FIXME : can't easily validate that 'app_not_properly_removed'
     # is triggered for weird reasons ...

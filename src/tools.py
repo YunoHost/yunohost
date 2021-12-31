@@ -212,7 +212,7 @@ def tools_postinstall(
     disk_partitions = sorted(psutil.disk_partitions(), key=lambda k: k.mountpoint)
     main_disk_partitions = [d for d in disk_partitions if d.mountpoint in ["/", "/var"]]
     main_space = sum(
-        [psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions]
+        psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions
     )
     GB = 1024 ** 3
     if not force_diskspace and main_space < 10 * GB:
@@ -224,28 +224,24 @@ def tools_postinstall(
 
     # If this is a nohost.me/noho.st, actually check for availability
     if not ignore_dyndns and is_yunohost_dyndns_domain(domain):
-        # (Except if the user explicitly said he/she doesn't care about dyndns)
-        if ignore_dyndns:
-            dyndns = False
         # Check if the domain is available...
-        else:
-            try:
-                available = _dyndns_available(domain)
-            # If an exception is thrown, most likely we don't have internet
-            # connectivity or something. Assume that this domain isn't manageable
-            # and inform the user that we could not contact the dyndns host server.
-            except Exception:
-                logger.warning(
-                    m18n.n(
-                        "dyndns_provider_unreachable", provider="dyndns.yunohost.org"
-                    )
+        try:
+            available = _dyndns_available(domain)
+        # If an exception is thrown, most likely we don't have internet
+        # connectivity or something. Assume that this domain isn't manageable
+        # and inform the user that we could not contact the dyndns host server.
+        except Exception:
+            logger.warning(
+                m18n.n(
+                    "dyndns_provider_unreachable", provider="dyndns.yunohost.org"
                 )
+            )
 
-            if available:
-                dyndns = True
-            # If not, abort the postinstall
-            else:
-                raise YunohostValidationError("dyndns_unavailable", domain=domain)
+        if available:
+            dyndns = True
+        # If not, abort the postinstall
+        else:
+            raise YunohostValidationError("dyndns_unavailable", domain=domain)
     else:
         dyndns = False
 
@@ -965,7 +961,7 @@ def _tools_migrations_run_before_app_restore(backup_version, app_id):
                 raise
 
 
-class Migration(object):
+class Migration:
 
     # Those are to be implemented by daughter classes
 
@@ -992,7 +988,7 @@ class Migration(object):
     def description(self):
         return m18n.n("migration_description_%s" % self.id)
 
-    def ldap_migration(run):
+    def ldap_migration(self, run):
         def func(self):
 
             # Backup LDAP before the migration

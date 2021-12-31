@@ -35,7 +35,7 @@ from yunohost.utils.error import YunohostError
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback, hook_list
 
-BASE_CONF_PATH = "/home/yunohost.conf"
+BASE_CONF_PATH = "/var/cache/yunohost/regenconf"
 BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, "backup")
 PENDING_CONF_DIR = os.path.join(BASE_CONF_PATH, "pending")
 REGEN_CONF_FILE = "/etc/yunohost/regenconf.yml"
@@ -48,7 +48,7 @@ logger = log.getActionLogger("yunohost.regenconf")
 @is_unit_operation([("names", "configuration")])
 def regen_conf(
     operation_logger,
-    names=[],
+    names=None,
     with_diff=False,
     force=False,
     dry_run=False,
@@ -65,6 +65,9 @@ def regen_conf(
         list_pending -- List pending configuration files and exit
 
     """
+
+    if names is None:
+        names = []
 
     result = {}
 
@@ -617,12 +620,9 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
 
     """
     if save:
-        backup_path = os.path.join(
-            BACKUP_CONF_DIR,
-            "{0}-{1}".format(
-                system_conf.lstrip("/"), datetime.utcnow().strftime("%Y%m%d.%H%M%S")
-            ),
-        )
+        system_conf_ = system_conf.lstrip("/")
+        now_ = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
+        backup_path = os.path.join(BACKUP_CONF_DIR, f"{system_conf_}-{now_}")
         backup_dir = os.path.dirname(backup_path)
 
         if not os.path.isdir(backup_dir):

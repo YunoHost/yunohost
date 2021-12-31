@@ -302,6 +302,8 @@ EOF
 
         # Set the default php version back as the default version for php-cli.
         update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
+    elif grep --quiet 'php' <<< "$dependencies"; then
+        ynh_app_setting_set --app=$app --key=phpversion --value=$YNH_DEFAULT_PHP_VERSION
     fi
 
     # Trigger postgresql regenconf if we may have just installed postgresql

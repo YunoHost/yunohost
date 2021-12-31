@@ -1977,7 +1977,7 @@ def test_question_file_from_api():
 
     from base64 import b64encode
 
-    b64content = b64encode("helloworld".encode())
+    b64content = b64encode(b"helloworld")
     questions = [
         {
             "name": "some_file",

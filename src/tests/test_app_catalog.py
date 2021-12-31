@@ -132,7 +132,7 @@ def test_apps_catalog_update_nominal(mocker):
     catalog = app_catalog(with_categories=True)
 
     assert "apps" in catalog
-    assert set(catalog["apps"].keys()) == set(["foo", "bar"])
+    assert set(catalog["apps"].keys()) == {"foo", "bar"}
 
     assert "categories" in catalog
     assert [c["id"] for c in catalog["categories"]] == ["yolo", "swag"]
