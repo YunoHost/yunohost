@@ -41,29 +41,23 @@ class AppResourceManager:
     def __init__(self, app: str, current: Dict, wanted: Dict):
 
         self.app = app
-        self.current = current
-        self.wanted = wanted
+        self.current = current.get("resources", {})
+        self.wanted = wanted.get("resources", {})
+
+        # c.f. the permission ressources where we need the app label >_>
+        self.wanted_manifest = wanted
 
     def apply(self, **context):
 
-        for name, infos in self.wanted.items():
-            resource = AppResourceClassesByType[name](infos, self.app)
-            # FIXME: not a great place to check this because here
-            # we already started an operation
-            # We should find a way to validate this before actually starting
-            # the install procedure / theoperation log
-            if name not in self.current.keys():
-                resource.validate_availability(context=context)
-
         for name, infos in reversed(self.current.items()):
             if name not in self.wanted.keys():
-                resource = AppResourceClassesByType[name](infos, self.app)
+                resource = AppResourceClassesByType[name](infos, self.app, self)
                 # FIXME : i18n, better info strings
                 logger.info(f"Deprovisionning {name} ...")
                 resource.deprovision(context=context)
 
         for name, infos in self.wanted.items():
-            resource = AppResourceClassesByType[name](infos, self.app)
+            resource = AppResourceClassesByType[name](infos, self.app, self)
             if name not in self.current.keys():
                 # FIXME : i18n, better info strings
                 logger.info(f"Provisionning {name} ...")
@@ -75,9 +69,10 @@ class AppResourceManager:
 
 class AppResource:
 
-    def __init__(self, properties: Dict[str, Any], app: str):
+    def __init__(self, properties: Dict[str, Any], app: str, manager: str):
 
         self.app = app
+        self.manager = manager
 
         for key, value in self.default_properties.items():
             if isinstance(value, str):
@@ -100,9 +95,6 @@ class AppResource:
     def delete_setting(self, key):
         from yunohost.app import app_setting
         app_setting(self.app, key, delete=True)
-
-    def validate_availability(self, context: Dict):
-        pass
 
     def _run_script(self, action, script, env={}, user="root"):
 
@@ -131,7 +123,7 @@ ynh_abort_if_errors
         #print(ret)
 
 
-class WebpathResource(AppResource):
+class PermissionsResource(AppResource):
     """
         is_provisioned -> main perm exists
         is_available   -> perm urls do not conflict
@@ -147,38 +139,98 @@ class WebpathResource(AppResource):
         restore -> handled by the core, should be integrated in there (restore .ldif/yml?)
     """
 
-    type = "webpath"
+    type = "permissions"
     priority = 10
 
     default_properties = {
-        "full_domain": False,
     }
 
-    def validate_availability(self, context):
+    default_perm_properties = {
+        "url": None,
+        "additional_urls": [],
+        "auth_header": True,
+        "allowed": None,
+        "show_tile": None,  # To be automagically set to True by default if an url is defined and show_tile not provided
+        "protected": False,
+    }
 
-        from yunohost.app import _assert_no_conflicting_apps
-        domain = self.get_setting("domain")
-        path = self.get_setting("path") if not self.full_domain else "/"
-        _assert_no_conflicting_apps(domain, path, ignore_app=self.app)
+    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
+
+        for perm, infos in properties.items():
+            properties[perm] = copy.copy(self.default_perm_properties)
+            properties[perm].update(infos)
+            if properties[perm]["show_tile"] is None:
+                properties[perm]["show_tile"] = bool(properties[perm]["url"])
+
+        if isinstance(properties["main"]["url"], str) and properties["main"]["url"] != "/":
+            raise YunohostError("URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app")
+
+        super().__init__({"permissions": properties}, *args, **kwargs)
 
     def provision_or_update(self, context: Dict):
 
         from yunohost.permission import (
-            permission_url,
+            permission_create,
+            #permission_url,
+            permission_delete,
+            user_permission_list,
             user_permission_update,
             permission_sync_to_user,
         )
 
-        if context.get("action") == "install":
-            permission_url(f"{self.app}.main", url="/", sync_perm=False)
-            user_permission_update(f"{self.app}.main", show_tile=True, sync_perm=False)
-            permission_sync_to_user()
+        # Delete legacy is_public setting if not already done
+        self.delete_setting(f"is_public")
+
+        existing_perms = user_permission_list(short=True, apps=[self.app])["permissions"]
+        for perm in existing_perms:
+            if perm.split(".") not in self.permissions.keys():
+                permission_delete(perm, force=True, sync_perm=False)
+
+        for perm, infos in self.permissions.items():
+            if f"{self.app}.{perm}" not in existing_perms:
+                # Use the 'allowed' key from the manifest,
+                # or use the 'init_{perm}_permission' from the install questions
+                # which is temporarily saved as a setting as an ugly hack to pass the info to this piece of code...
+                init_allowed = infos["allowed"] or self.get_setting(f"init_{perm}_permission") or []
+                permission_create(
+                    f"{self.app}.{perm}",
+                    allowed=init_allowed,
+                    # This is why the ugly hack with self.manager and wanted_manifest exists >_>
+                    label=self.manager.wanted_manifest["name"] if perm == "main" else perm,
+                    url=infos["url"],
+                    additional_urls=infos["additional_urls"],
+                    auth_header=infos["auth_header"],
+                    sync_perm=False,
+                )
+                self.delete_setting(f"init_{perm}_permission")
+
+                user_permission_update(
+                    f"{self.app}.{perm}",
+                    show_tile=infos["show_tile"],
+                    protected=infos["protected"],
+                    sync_perm=False
+                )
+            else:
+                pass
+                # FIXME : current implementation of permission_url is hell for
+                # easy declarativeness of additional_urls >_> ...
+                #permission_url(f"{self.app}.{perm}", url=infos["url"], auth_header=infos["auth_header"], sync_perm=False)
+
+        permission_sync_to_user()
 
     def deprovision(self, context: Dict):
-        self.delete_setting("domain")
-        self.delete_setting("path")
-        # FIXME : theoretically here, should also remove the url in the main permission ?
-        # but is that worth the trouble ?
+
+        from yunohost.permission import (
+            permission_delete,
+            user_permission_list,
+            permission_sync_to_user,
+        )
+
+        existing_perms = user_permission_list(short=True, apps=[self.app])["permissions"]
+        for perm in existing_perms:
+            permission_delete(perm, force=True, sync_perm=False)
+
+        permission_sync_to_user()
 
 
 class SystemuserAppResource(AppResource):
@@ -205,18 +257,10 @@ class SystemuserAppResource(AppResource):
         "allow_sftp": []
     }
 
-    def validate_availability(self, context):
-        pass
-        # FIXME : do we care if user already exists ? shouldnt we assume that user $app corresponds to the app ...?
-
-        # FIXME : but maybe we should at least check that no corresponding yunohost user exists
-
-        #if os.system(f"getent passwd {self.username} &>/dev/null") != 0:
-        #    raise YunohostValidationError(f"User {self.username} already exists")
-        #if os.system(f"getent group {self.username} &>/dev/null") != 0:
-        #    raise YunohostValidationError(f"Group {self.username} already exists")
-
     def provision_or_update(self, context: Dict):
+
+        # FIXME : validate that no yunohost user exists with that name?
+        # and/or that no system user exists during install ?
 
         if not check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
             # FIXME: improve error handling ?
@@ -291,9 +335,6 @@ class InstalldirAppResource(AppResource):
     # FIXME: change default dir to /opt/stuff if app ain't a webapp ...
     # FIXME: what do in a scenario where the location changed
 
-    def validate_availability(self, context):
-        pass
-
     def provision_or_update(self, context: Dict):
 
         current_install_dir = self.get_setting("install_dir")
@@ -353,11 +394,6 @@ class DatadirAppResource(AppResource):
         "owner": "__APP__:rx",
         "group": "__APP__:rx",
     }
-
-    def validate_availability(self, context):
-        pass
-        # Nothing to do ? If datadir already exists then it may be legit data
-        # from a previous install
 
     def provision_or_update(self, context: Dict):
 

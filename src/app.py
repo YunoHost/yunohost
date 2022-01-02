@@ -859,13 +859,13 @@ def app_install(
 
     # If packaging_format v2+, save all install questions as settings
     if packaging_format >= 2:
-        for arg_name, arg_value in args.items():
+        for question in questions:
 
-            # ... except is_public ....
-            if arg_name == "is_public":
+            # Except user-provider passwords
+            if question.type == "password":
                 continue
 
-            app_settings[arg_name] = arg_value
+            app_settings[question.name] = question.value
 
     _set_app_settings(app_instance_name, app_settings)
 
@@ -878,36 +878,27 @@ def app_install(
                 recursive=True,
             )
 
-    # Initialize the main permission for the app
-    # The permission is initialized with no url associated, and with tile disabled
-    # For web app, the root path of the app will be added as url and the tile
-    # will be enabled during the app install. C.f. 'app_register_url()' below
-    # or the webpath resource
-    if packaging_format >= 2:
-        if args.get("init_permission_main"):
-            init_main_perm_allowed = args.get("init_permission_main")
-        else:
-            init_main_perm_allowed = ["visitors"] if not args.get("is_public") else ["all_users"]
-
-    else:
-        init_main_perm_allowed = ["all_users"]
-
-    permission_create(
-        app_instance_name + ".main",
-        allowed=init_main_perm_allowed,
-        label=label if label else manifest["name"],
-        show_tile=False,
-        protected=False,
-    )
-
     if packaging_format >= 2:
         from yunohost.utils.resources import AppResourceManager
         try:
-            AppResourceManager(app_instance_name, wanted=manifest["resources"], current={}).apply()
+            AppResourceManager(app_instance_name, wanted=manifest, current={}).apply()
         except Exception:
             # FIXME : improve error handling ....
-            AppResourceManager(app_instance_name, wanted={}, current=manifest["resources"]).apply()
+            AppResourceManager(app_instance_name, wanted={}, current=manifest).apply()
             raise
+    else:
+        # Initialize the main permission for the app
+        # The permission is initialized with no url associated, and with tile disabled
+        # For web app, the root path of the app will be added as url and the tile
+        # will be enabled during the app install. C.f. 'app_register_url()' below
+        # or the webpath resource
+        permission_create(
+            app_instance_name + ".main",
+            allowed=["all_users"],
+            label=label if label else manifest["name"],
+            show_tile=False,
+            protected=False,
+        )
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(
@@ -1008,15 +999,15 @@ def app_install(
             if packaging_format >= 2:
                 from yunohost.utils.resources import AppResourceManager
                 try:
-                    AppResourceManager(app_instance_name, wanted={}, current=manifest["resources"]).apply()
+                    AppResourceManager(app_instance_name, wanted={}, current=manifest).apply()
                 except Exception:
                     # FIXME : improve error handling ....
                     raise
-
-            # Remove all permission in LDAP
-            for permission_name in user_permission_list()["permissions"].keys():
-                if permission_name.startswith(app_instance_name + "."):
-                    permission_delete(permission_name, force=True, sync_perm=False)
+            else:
+                # Remove all permission in LDAP
+                for permission_name in user_permission_list()["permissions"].keys():
+                    if permission_name.startswith(app_instance_name + "."):
+                        permission_delete(permission_name, force=True, sync_perm=False)
 
             if remove_retcode != 0:
                 msg = m18n.n("app_not_properly_removed", app=app_instance_name)
@@ -1116,18 +1107,18 @@ def app_remove(operation_logger, app, purge=False):
     finally:
         shutil.rmtree(tmp_workdir_for_app)
 
-    # Remove all permission in LDAP
-    for permission_name in user_permission_list(apps=[app])["permissions"].keys():
-        permission_delete(permission_name, force=True, sync_perm=False)
-
     packaging_format = manifest["packaging_format"]
     if packaging_format >= 2:
         try:
             from yunohost.utils.resources import AppResourceManager
-            AppResourceManager(app, wanted={}, current=manifest["resources"]).apply()
+            AppResourceManager(app, wanted={}, current=manifest).apply()
         except Exception:
             # FIXME : improve error handling ....
             raise
+    else:
+        # Remove all permission in LDAP
+        for permission_name in user_permission_list(apps=[app])["permissions"].keys():
+            permission_delete(permission_name, force=True, sync_perm=False)
 
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
