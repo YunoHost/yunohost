@@ -517,9 +517,7 @@ def domain_cert_install(
 ):
     from yunohost.certificate import certificate_install
 
-    return certificate_install(
-        domain_list, force, no_checks, self_signed, staging
-    )
+    return certificate_install(domain_list, force, no_checks, self_signed, staging)
 
 
 def domain_cert_renew(
@@ -527,9 +525,7 @@ def domain_cert_renew(
 ):
     from yunohost.certificate import certificate_renew
 
-    return certificate_renew(
-        domain_list, force, no_checks, email, staging
-    )
+    return certificate_renew(domain_list, force, no_checks, email, staging)
 
 
 def domain_dns_conf(domain):
