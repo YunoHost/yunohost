@@ -82,6 +82,10 @@ DEFAULTS = OrderedDict(
             {"type": "int", "default": 22},
         ),
         (
+            "security.ssh.password_authentication",
+            {"type": "bool", "default": True},
+        ),
+        (
             "security.nginx.redirect_to_https",
             {
                 "type": "bool",
@@ -420,6 +424,7 @@ def reconfigure_nginx_and_yunohost(setting_name, old_value, new_value):
 
 
 @post_change_hook("security.ssh.compatibility")
+@post_change_hook("security.ssh.password_authentication")
 def reconfigure_ssh(setting_name, old_value, new_value):
     if old_value != new_value:
         regen_conf(names=["ssh"])
