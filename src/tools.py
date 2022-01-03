@@ -33,7 +33,7 @@ from typing import List
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.process import check_output, call_async_output
+from moulinette.utils.process import call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm
 
 from yunohost.app import (
