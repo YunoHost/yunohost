@@ -130,9 +130,37 @@ class MyMigration(Migration):
 
         os.system("apt update")
 
-        # Force explicit install of php7.4-fpm to make sure it's ll be there
-        # during 0022_php73_to_php74_pools migration
-        self.apt_install("php7.4-fpm -o Dpkg::Options::='--force-confmiss'")
+        # Force explicit install of php7.4-fpm and other old 'default' dependencies
+        # that are now only in Recommends
+        #
+        # Also, we need to install php7.4 equivalents of other php7.3 dependencies.
+        # For example, Nextcloud may depend on php7.3-zip, and after the php pool migration
+        # to autoupgrade Nextcloud to 7.4, it will need the php7.4-zip to work.
+        # The following list is based on an ad-hoc analysis of php deps found in the
+        # app ecosystem, with a known equivalent on php7.4.
+        #
+        # This is kinda a dirty hack as it doesnt properly update the *-ynh-deps virtual packages
+        # with the proper list of dependencies, and the dependencies install this way
+        # will get flagged as 'manually installed'.
+        #
+        # We'll probably want to do something during the Bullseye->Bookworm migration to re-flag
+        # these as 'auto' so they get autoremoved if not needed anymore.
+        # Also hopefully by then we'll have manifestv2 (maybe) and will be able to use
+        # the apt resource mecanism to regenerate the *-ynh-deps virtual packages ;)
+
+        php73packages_suffixes = ['apcu', 'bcmath', 'bz2', 'dom', 'gmp', 'igbinary', 'imagick', 'imap', 'mbstring', 'memcached', 'mysqli', 'mysqlnd', 'pgsql', 'redis', 'simplexml', 'soap', 'sqlite3', 'ssh2', 'tidy', 'xml', 'xmlrpc', 'xsl', 'zip']
+
+        cmd = f"""
+        apt show '*-ynh-deps' 2>/dev/null
+        | grep Depends
+        | grep -o -E "php7.3-({'|'.join(php73packages_suffixes)})";
+        | sort | uniq
+        | sed 's/php7.3/php7.4/g'
+        """
+        php74packages_to_install = ["php7.4-fpm", "php7.4-common", "php7.4-ldap", "php7.4-intl", "php7.4-mysql", "php7.4-gd", "php7.4-curl", "php-php-gettext"]
+        php74packages_to_install += [f.strip() for f in check_output(cmd).split("\n") if f.strip()]
+
+        self.apt_install("{' '.join(php74packages_to_install)} -o Dpkg::Options::='--force-confmiss'")
 
         # Remove legacy postgresql service record added by helpers,
         # will now be dynamically handled by the core in bullseye
