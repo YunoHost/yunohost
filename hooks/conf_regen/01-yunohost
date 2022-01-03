@@ -109,7 +109,7 @@ EOF
     # If we subscribed to a dyndns domain, add the corresponding cron
     # - delay between 0 and 60 secs to spread the check over a 1 min window
     # - do not run the command if some process already has the lock, to avoid queuing hundreds of commands...
-    if ls -l /etc/yunohost/dyndns/K*.private 2>/dev/null; then
+    if ls -l /etc/yunohost/dyndns/K*.key 2>/dev/null; then
         cat >$pending_dir/etc/cron.d/yunohost-dyndns <<EOF
 SHELL=/bin/bash
 # Every 10 minutes,
