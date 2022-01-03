@@ -1265,9 +1265,7 @@ def user_group_remove(groupname, usernames, force=False, sync_perm=True):
 def user_permission_list(short=False, full=False, apps=[]):
     from yunohost.permission import user_permission_list
 
-    return user_permission_list(
-        short, full, absolute_urls=True, apps=apps
-    )
+    return user_permission_list(short, full, absolute_urls=True, apps=apps)
 
 
 def user_permission_update(permission, label=None, show_tile=None, sync_perm=True):

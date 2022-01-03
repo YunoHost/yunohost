@@ -148,7 +148,31 @@ class MyMigration(Migration):
         # Also hopefully by then we'll have manifestv2 (maybe) and will be able to use
         # the apt resource mecanism to regenerate the *-ynh-deps virtual packages ;)
 
-        php73packages_suffixes = ['apcu', 'bcmath', 'bz2', 'dom', 'gmp', 'igbinary', 'imagick', 'imap', 'mbstring', 'memcached', 'mysqli', 'mysqlnd', 'pgsql', 'redis', 'simplexml', 'soap', 'sqlite3', 'ssh2', 'tidy', 'xml', 'xmlrpc', 'xsl', 'zip']
+        php73packages_suffixes = [
+            "apcu",
+            "bcmath",
+            "bz2",
+            "dom",
+            "gmp",
+            "igbinary",
+            "imagick",
+            "imap",
+            "mbstring",
+            "memcached",
+            "mysqli",
+            "mysqlnd",
+            "pgsql",
+            "redis",
+            "simplexml",
+            "soap",
+            "sqlite3",
+            "ssh2",
+            "tidy",
+            "xml",
+            "xmlrpc",
+            "xsl",
+            "zip",
+        ]
 
         cmd = f"""
         apt show '*-ynh-deps' 2>/dev/null
@@ -157,10 +181,23 @@ class MyMigration(Migration):
         | sort | uniq
         | sed 's/php7.3/php7.4/g'
         """
-        php74packages_to_install = ["php7.4-fpm", "php7.4-common", "php7.4-ldap", "php7.4-intl", "php7.4-mysql", "php7.4-gd", "php7.4-curl", "php-php-gettext"]
-        php74packages_to_install += [f.strip() for f in check_output(cmd).split("\n") if f.strip()]
+        php74packages_to_install = [
+            "php7.4-fpm",
+            "php7.4-common",
+            "php7.4-ldap",
+            "php7.4-intl",
+            "php7.4-mysql",
+            "php7.4-gd",
+            "php7.4-curl",
+            "php-php-gettext",
+        ]
+        php74packages_to_install += [
+            f.strip() for f in check_output(cmd).split("\n") if f.strip()
+        ]
 
-        self.apt_install("{' '.join(php74packages_to_install)} -o Dpkg::Options::='--force-confmiss'")
+        self.apt_install(
+            "{' '.join(php74packages_to_install)} -o Dpkg::Options::='--force-confmiss'"
+        )
 
         # Remove legacy postgresql service record added by helpers,
         # will now be dynamically handled by the core in bullseye
