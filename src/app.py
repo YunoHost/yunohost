@@ -546,6 +546,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
         if manifest["packaging_format"] >= 2:
             if no_safety_backup:
+                # FIXME: i18n
                 logger.warning("Skipping the creation of a backup prior to the upgrade.")
             else:
                 # FIXME: i18n
@@ -570,7 +571,16 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
         _assert_system_is_sane_for_app(manifest, "pre")
 
+        # We'll check that the app didn't brutally edit some system configuration
+        manually_modified_files_before_install = manually_modified_files()
+
         app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
+
+        # Attempt to patch legacy helpers ...
+        _patch_legacy_helpers(extracted_app_folder)
+
+        # Apply dirty patch to make php5 apps compatible with php7
+        _patch_legacy_php_versions(extracted_app_folder)
 
         # Prepare env. var. to pass to script
         env_dict = _make_environment_for_app_script(
@@ -582,19 +592,18 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         if manifest["packaging_format"] < 2:
             env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
 
-        # We'll check that the app didn't brutally edit some system configuration
-        manually_modified_files_before_install = manually_modified_files()
-
-        # Attempt to patch legacy helpers ...
-        _patch_legacy_helpers(extracted_app_folder)
-
-        # Apply dirty patch to make php5 apps compatible with php7
-        _patch_legacy_php_versions(extracted_app_folder)
-
         # Start register change on system
         related_to = [("app", app_instance_name)]
         operation_logger = OperationLogger("app_upgrade", related_to, env=env_dict)
         operation_logger.start()
+
+        if manifest["packaging_format"] >= 2:
+            from yunohost.utils.resources import AppResourceManager
+            try:
+                AppResourceManager(app_instance_name, wanted=manifest, current=app_dict["manifest"]).apply(rollback_if_failure=True)
+            except Exception:
+                # FIXME : improve error handling ....
+                raise
 
         # Execute the app upgrade script
         upgrade_failed = True
@@ -880,10 +889,9 @@ def app_install(
     if packaging_format >= 2:
         from yunohost.utils.resources import AppResourceManager
         try:
-            AppResourceManager(app_instance_name, wanted=manifest, current={}).apply()
+            AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(rollback_if_failure=True)
         except Exception:
             # FIXME : improve error handling ....
-            AppResourceManager(app_instance_name, wanted={}, current=manifest).apply()
             raise
     else:
         # Initialize the main permission for the app
@@ -997,7 +1005,7 @@ def app_install(
             if packaging_format >= 2:
                 from yunohost.utils.resources import AppResourceManager
                 try:
-                    AppResourceManager(app_instance_name, wanted={}, current=manifest).apply()
+                    AppResourceManager(app_instance_name, wanted={}, current=manifest).apply(rollback_if_failure=False)
                 except Exception:
                     # FIXME : improve error handling ....
                     raise
@@ -1109,7 +1117,7 @@ def app_remove(operation_logger, app, purge=False):
     if packaging_format >= 2:
         try:
             from yunohost.utils.resources import AppResourceManager
-            AppResourceManager(app, wanted={}, current=manifest).apply()
+            AppResourceManager(app, wanted={}, current=manifest).apply(rollback_if_failure=False)
         except Exception:
             # FIXME : improve error handling ....
             raise

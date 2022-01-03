@@ -41,30 +41,77 @@ class AppResourceManager:
     def __init__(self, app: str, current: Dict, wanted: Dict):
 
         self.app = app
-        self.current = current.get("resources", {})
-        self.wanted = wanted.get("resources", {})
+        self.current = current
+        self.wanted = wanted
 
-        # c.f. the permission ressources where we need the app label >_>
-        self.wanted_manifest = wanted
+    def apply(self, rollback_if_failure, **context):
 
-    def apply(self, **context):
+        todos = list(self.compute_todos())
+        completed = []
+        rollback = False
+        exception = None
 
-        for name, infos in reversed(self.current.items()):
-            if name not in self.wanted.keys():
-                resource = AppResourceClassesByType[name](infos, self.app, self)
-                # FIXME : i18n, better info strings
-                logger.info(f"Deprovisionning {name} ...")
-                resource.deprovision(context=context)
-
-        for name, infos in self.wanted.items():
-            resource = AppResourceClassesByType[name](infos, self.app, self)
-            if name not in self.current.keys():
-                # FIXME : i18n, better info strings
-                logger.info(f"Provisionning {name} ...")
+        for todo, name, old, new in todos:
+            try:
+                if todo == "deprovision":
+                    # FIXME : i18n, better info strings
+                    logger.info(f"Deprovisionning {name} ...")
+                    old.deprovision(context=context)
+                elif todo == "provision":
+                    logger.info(f"Provisionning {name} ...")
+                    new.provision_or_update(context=context)
+                elif todo == "update":
+                    logger.info(f"Updating {name} ...")
+                    new.provision_or_update(context=context)
+            except Exception as e:
+                exception = e
+                # FIXME: better error handling ? display stacktrace ?
+                logger.warning(f"Failed to {todo} for {name} : {e}")
+                if rollback_if_failure:
+                    rollback = True
+                    completed.append((todo, name, old, new))
+                    break
+                else:
+                    pass
             else:
-                # FIXME : i18n, better info strings
-                logger.info(f"Updating {name} ...")
-            resource.provision_or_update(context=context)
+                completed.append((todo, name, old, new))
+
+        if rollback:
+            for todo, name, old, new in completed:
+                try:
+                    # (NB. here we want to undo the todo)
+                    if todo == "deprovision":
+                        # FIXME : i18n, better info strings
+                        logger.info(f"Reprovisionning {name} ...")
+                        old.provision_or_update(context=context)
+                    elif todo == "provision":
+                        logger.info(f"Deprovisionning {name} ...")
+                        new.deprovision(context=context)
+                    elif todo == "update":
+                        logger.info(f"Reverting {name} ...")
+                        old.provision_or_update(context=context)
+                except Exception as e:
+                    # FIXME: better error handling ? display stacktrace ?
+                    logger.error(f"Failed to rollback {name} : {e}")
+
+        if exception:
+            raise exception
+
+    def compute_todos(self):
+
+        for name, infos in reversed(self.current["resources"].items()):
+            if name not in self.wanted["resources"].keys():
+                resource = AppResourceClassesByType[name](infos, self.app, self)
+                yield ("deprovision", name, resource, None)
+
+        for name, infos in self.wanted["resources"].items():
+            wanted_resource = AppResourceClassesByType[name](infos, self.app, self)
+            if name not in self.current["resources"].keys():
+                yield ("provision", name, None, wanted_resource)
+            else:
+                infos_ = self.current["resources"][name]
+                current_resource = AppResourceClassesByType[name](infos_, self.app, self)
+                yield ("update", name, current_resource, wanted_resource)
 
 
 class AppResource:
@@ -179,7 +226,7 @@ class PermissionsResource(AppResource):
         )
 
         # Delete legacy is_public setting if not already done
-        self.delete_setting(f"is_public")
+        self.delete_setting("is_public")
 
         existing_perms = user_permission_list(short=True, apps=[self.app])["permissions"]
         for perm in existing_perms:
@@ -195,8 +242,8 @@ class PermissionsResource(AppResource):
                 permission_create(
                     f"{self.app}.{perm}",
                     allowed=init_allowed,
-                    # This is why the ugly hack with self.manager and wanted_manifest exists >_>
-                    label=self.manager.wanted_manifest["name"] if perm == "main" else perm,
+                    # This is why the ugly hack with self.manager exists >_>
+                    label=self.manager.wanted["name"] if perm == "main" else perm,
                     url=infos["url"],
                     additional_urls=infos["additional_urls"],
                     auth_header=infos["auth_header"],
@@ -499,7 +546,7 @@ class AptDependenciesAppResource(AppResource):
                          "ynh_remove_app_dependencies")
 
 
-class PortAppResource(AppResource):
+class PortResource(AppResource):
     """
         is_provisioned -> port setting exists and is not the port used by another app (ie not in another app setting)
         is_available   -> true
@@ -520,7 +567,7 @@ class PortAppResource(AppResource):
 
     default_properties = {
         "default": 1000,
-        "type": "internal",    # FIXME : implement logic for exposed port (allow/disallow in firewall ?)
+        "expose": False,    # FIXME : implement logic for exposed port (allow/disallow in firewall ?)
     }
 
     def _port_is_used(self, port):

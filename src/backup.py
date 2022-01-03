@@ -49,6 +49,7 @@ from yunohost.app import (
     _is_installed,
     _make_environment_for_app_script,
     _make_tmp_workdir_for_app,
+    _get_manifest_of_app,
 )
 from yunohost.hook import (
     hook_list,
@@ -1511,6 +1512,15 @@ class RestoreManager:
 
         operation_logger.extra["env"] = env_dict
         operation_logger.flush()
+
+        manifest = _get_manifest_of_app(app_dir_in_archive)
+        if manifest["packaging_format"] >= 2:
+            from yunohost.utils.resources import AppResourceManager
+            try:
+                AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(rollback_if_failure=True)
+            except Exception:
+                # FIXME : improve error handling ....
+                raise
 
         # Execute the app install script
         restore_failed = True
