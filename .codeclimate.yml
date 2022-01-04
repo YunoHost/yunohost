@@ -11,6 +11,8 @@ plugins:
     enabled: true
   pep8:
     enabled: true
+  fixme:
+    enabled: true
   sonar-python:
     enabled: true
     config:
