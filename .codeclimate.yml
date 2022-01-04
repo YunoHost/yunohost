@@ -1,0 +1,22 @@
+---
+version: "2"
+plugins:
+  duplication:
+    enabled: true
+    config:
+      languages:
+        python:
+          python_version: 3
+  shellcheck:
+    enabled: true
+  pep8:
+    enabled: true
+  sonar-python:
+    enabled: true
+    config:
+      tests_patterns:
+        - bin/*
+        - data/**
+        - doc/*
+        - src/**
+        - tests/**
