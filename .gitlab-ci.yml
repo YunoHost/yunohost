@@ -2,7 +2,7 @@
 stages:
   - build
   - install
-  - tests
+  - test
   - lint
   - doc
   - translation
@@ -12,6 +12,17 @@ default:
     - yunohost-ci
   # All jobs are interruptible by default
   interruptible: true
+
+code_quality:
+  tags:
+    - docker
+
+code_quality_html:
+  extends: code_quality
+  variables:
+    REPORT_FORMAT: html
+  artifacts:
+    paths: [gl-code-quality-report.html]
 
 # see: https://docs.gitlab.com/ee/ci/yaml/#switch-between-branch-pipelines-and-merge-request-pipelines
 workflow:
@@ -29,4 +40,5 @@ variables:
   YNH_BUILD_DIR: "ynh-build"
 
 include:
+  - template: Code-Quality.gitlab-ci.yml
   - local: .gitlab/ci/*.gitlab-ci.yml
