@@ -97,23 +97,6 @@ class MyMigration(Migration):
             os.system("mv /home/yunohost.conf /var/cache/yunohost/regenconf")
             rm("/home/yunohost.conf", recursive=True, force=True)
 
-        #
-        # Main upgrade
-        #
-        logger.info(m18n.n("migration_0021_main_upgrade"))
-
-        apps_packages = self.get_apps_equivs_packages()
-        self.hold(apps_packages)
-        tools_upgrade(target="system", allow_yunohost_upgrade=False)
-
-        if self.debian_major_version() == N_CURRENT_DEBIAN:
-            raise YunohostError("migration_0021_still_on_buster_after_main_upgrade")
-
-        # Clean the mess
-        logger.info(m18n.n("migration_0021_cleaning_up"))
-        os.system("apt autoremove --assume-yes")
-        os.system("apt clean --assume-yes")
-
         # Force add sury if it's not there yet
         # This is to solve some weird issue with php-common breaking php7.3-common,
         # hence breaking many php7.3-deps
@@ -128,7 +111,24 @@ class MyMigration(Migration):
                 'wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"'
             )
 
-        os.system("apt update")
+        # Remove legacy postgresql service record added by helpers,
+        # will now be dynamically handled by the core in bullseye
+        services = _get_services()
+        if "postgresql" in services:
+            del services["postgresql"]
+            _save_services(services)
+
+        #
+        # Main upgrade
+        #
+        logger.info(m18n.n("migration_0021_main_upgrade"))
+
+        apps_packages = self.get_apps_equivs_packages()
+        self.hold(apps_packages)
+        tools_upgrade(target="system", allow_yunohost_upgrade=False)
+
+        if self.debian_major_version() == N_CURRENT_DEBIAN:
+            raise YunohostError("migration_0021_still_on_buster_after_main_upgrade")
 
         # Force explicit install of php7.4-fpm and other old 'default' dependencies
         # that are now only in Recommends
@@ -174,13 +174,13 @@ class MyMigration(Migration):
             "zip",
         ]
 
-        cmd = f"""
-        apt show '*-ynh-deps' 2>/dev/null
-        | grep Depends
-        | grep -o -E "php7.3-({'|'.join(php73packages_suffixes)})";
-        | sort | uniq
-        | sed 's/php7.3/php7.4/g'
-        """
+        cmd = "apt show '*-ynh-deps' 2>/dev/null" \
+              "  | grep Depends" \
+              f" | grep -o -E \"php7.3-({'|'.join(php73packages_suffixes)})\"" \
+              "  | sort | uniq" \
+              "  | sed 's/php7.3/php7.4/g'" \
+              "  || true"
+
         php74packages_to_install = [
             "php7.4-fpm",
             "php7.4-common",
@@ -191,20 +191,19 @@ class MyMigration(Migration):
             "php7.4-curl",
             "php-php-gettext",
         ]
+
         php74packages_to_install += [
             f.strip() for f in check_output(cmd).split("\n") if f.strip()
         ]
 
         self.apt_install(
-            "{' '.join(php74packages_to_install)} -o Dpkg::Options::='--force-confmiss'"
+            f"{' '.join(php74packages_to_install)} -o Dpkg::Options::='--force-confmiss'"
         )
 
-        # Remove legacy postgresql service record added by helpers,
-        # will now be dynamically handled by the core in bullseye
-        services = _get_services()
-        if "postgresql" in services:
-            del services["postgresql"]
-            _save_services(services)
+        # Clean the mess
+        logger.info(m18n.n("migration_0021_cleaning_up"))
+        os.system("apt autoremove --assume-yes")
+        os.system("apt clean --assume-yes")
 
         #
         # Yunohost upgrade
