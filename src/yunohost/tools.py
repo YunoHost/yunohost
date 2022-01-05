@@ -571,8 +571,18 @@ def tools_upgrade(
                 irrelevants = [
                     "service sudo-ldap already provided",
                     "Reading database ...",
+                    "Preparing to unpack",
+                    "Selecting previously unselected package",
+                    "Created symlink /etc/systemd",
+                    "Replacing config file",
+                    "Creating config file",
+                    "Installing new version of config file",
+                    "Installing new config file as you requested",
+                    ", does not exist on system.",
+                    "unable to delete old directory",
+                    "update-alternatives:",
                 ]
-                return all(i not in line.rstrip() for i in irrelevants)
+                return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
 
             callbacks = (
                 lambda l: logger.info("+ " + l.rstrip() + "\r")
