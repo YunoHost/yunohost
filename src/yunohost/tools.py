@@ -567,29 +567,12 @@ def tools_upgrade(
 
             logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
-            def is_relevant(line):
-                irrelevants = [
-                    "service sudo-ldap already provided",
-                    "Reading database ...",
-                    "Preparing to unpack",
-                    "Selecting previously unselected package",
-                    "Created symlink /etc/systemd",
-                    "Replacing config file",
-                    "Creating config file",
-                    "Installing new version of config file",
-                    "Installing new config file as you requested",
-                    ", does not exist on system.",
-                    "unable to delete old directory",
-                    "update-alternatives:",
-                ]
-                return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
-
             callbacks = (
                 lambda l: logger.info("+ " + l.rstrip() + "\r")
-                if is_relevant(l)
+                if _apt_log_line_is_relevant(l)
                 else logger.debug(l.rstrip() + "\r"),
                 lambda l: logger.warning(l.rstrip())
-                if is_relevant(l)
+                if _apt_log_line_is_relevant(l)
                 else logger.debug(l.rstrip()),
             )
             returncode = call_async_output(dist_upgrade, callbacks, shell=True)
@@ -687,6 +670,24 @@ def tools_upgrade(
         else:
             logger.success(m18n.n("system_upgraded"))
             operation_logger.success()
+
+
+def _apt_log_line_is_relevant(line):
+    irrelevants = [
+        "service sudo-ldap already provided",
+        "Reading database ...",
+        "Preparing to unpack",
+        "Selecting previously unselected package",
+        "Created symlink /etc/systemd",
+        "Replacing config file",
+        "Creating config file",
+        "Installing new version of config file",
+        "Installing new config file as you requested",
+        ", does not exist on system.",
+        "unable to delete old directory",
+        "update-alternatives:",
+    ]
+    return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
 
 
 @is_unit_operation()

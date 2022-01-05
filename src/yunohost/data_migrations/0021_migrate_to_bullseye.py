@@ -7,7 +7,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_file, rm
 
-from yunohost.tools import Migration, tools_update, tools_upgrade
+from yunohost.tools import Migration, tools_update, tools_upgrade, _apt_log_line_is_relevant
 from yunohost.app import unstable_apps
 from yunohost.regenconf import manually_modified_files, _force_clear_hashes
 from yunohost.utils.filesystem import free_space_in_directory
@@ -77,9 +77,12 @@ class MyMigration(Migration):
         _force_clear_hashes(["/etc/mysql/my.cnf"])
         rm("/etc/mysql/mariadb.cnf", force=True)
         rm("/etc/mysql/my.cnf", force=True)
-        self.apt_install(
+        ret = self.apt_install(
             "mariadb-common --reinstall -o Dpkg::Options::='--force-confmiss'"
         )
+        if ret != 0:
+            # FIXME: i18n once this is stable?
+            raise YunohostError("Failed to reinstall mariadb-common ?", raw_msg=True)
 
         #
         # /usr/share/yunohost/yunohost-config/ssl/yunoCA -> /usr/share/yunohost/ssl
@@ -196,9 +199,12 @@ class MyMigration(Migration):
             f.strip() for f in check_output(cmd).split("\n") if f.strip()
         ]
 
-        self.apt_install(
+        ret = self.apt_install(
             f"{' '.join(php74packages_to_install)} -o Dpkg::Options::='--force-confmiss'"
         )
+        if ret != 0:
+            # FIXME: i18n once this is stable?
+            raise YunohostError("Failed to force the install of php dependencies ?", raw_msg=True)
 
         # Clean the mess
         logger.info(m18n.n("migration_0021_cleaning_up"))
@@ -209,7 +215,21 @@ class MyMigration(Migration):
         # Yunohost upgrade
         #
         logger.info(m18n.n("migration_0021_yunohost_upgrade"))
+
         self.unhold(apps_packages)
+
+        cmd = "LC_ALL=C"
+        cmd += " DEBIAN_FRONTEND=noninteractive"
+        cmd += " APT_LISTCHANGES_FRONTEND=none"
+        cmd += " apt dist-upgrade "
+        cmd += " --quiet -o=Dpkg::Use-Pty=0 --fix-broken --dry-run"
+        cmd += " | grep -q '-ynh-deps'"
+
+        logger.info("Simulating upgrade...")
+        if os.system(cmd) == 0:
+            # FIXME: i18n once this is stable?
+            raise YunohostError("The upgrade cannot be completed, because some app dependencies would need to be removed?", raw_msg=True)
+
         tools_upgrade(target="system")
 
     def debian_major_version(self):
@@ -344,9 +364,11 @@ class MyMigration(Migration):
 
         callbacks = (
             lambda l: logger.info("+ " + l.rstrip() + "\r")
-            if is_relevant(l)
+            if _apt_log_line_is_relevant(l)
             else logger.debug(l.rstrip() + "\r"),
-            lambda l: logger.warning(l.rstrip()),
+            lambda l: logger.warning(l.rstrip())
+            if _apt_log_line_is_relevant(l)
+            else logger.debug(l.rstrip()),
         )
 
         cmd = (
@@ -356,7 +378,7 @@ class MyMigration(Migration):
 
         logger.debug("Running: %s" % cmd)
 
-        call_async_output(cmd, callbacks, shell=True)
+        return call_async_output(cmd, callbacks, shell=True)
 
     def patch_yunohost_conflicts(self):
         #
