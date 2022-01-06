@@ -659,6 +659,11 @@ class OperationLogger:
                 data["error"] = self._error
         # TODO: detect if 'extra' erase some key of 'data'
         data.update(self.extra)
+        # Remove the 'args' arg from args (yodawg). It corresponds to url-encoded args for app install, config panel set, etc
+        # Because the data are url encoded, it's hell to properly redact secrets inside it,
+        # and the useful info is usually already available in `env` too
+        if "args" in data and isinstance(data["args"], dict) and "args" in data["args"]:
+            data["args"].pop("args")
         return data
 
     def success(self):
