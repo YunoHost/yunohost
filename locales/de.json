@@ -590,7 +590,7 @@
     "service_description_dovecot": "Ermöglicht es E-Mail-Clients auf Konten zuzugreifen (IMAP und POP3)",
     "service_description_dnsmasq": "Verarbeitet die Auflösung des Domainnamens (DNS)",
     "restore_backup_too_old": "Dieses Backup kann nicht wieder hergestellt werden, weil es von einer zu alten YunoHost Version stammt.",
-    "service_description_slapd": "Speichert Benutzer:innen, Domains und verbundene Informationen",
+    "service_description_slapd": "Speichert Benutzer:innen, Domänen und verbundene Informationen",
     "service_description_rspamd": "Spamfilter und andere E-Mail-Merkmale",
     "service_description_redis-server": "Eine spezialisierte Datenbank für den schnellen Datenzugriff, die Aufgabenwarteschlange und die Kommunikation zwischen Programmen",
     "service_description_postfix": "Wird benutzt, um E-Mails zu senden und zu empfangen",
