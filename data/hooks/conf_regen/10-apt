@@ -7,7 +7,7 @@ do_pre_regen() {
 
     mkdir --parents "${pending_dir}/etc/apt/preferences.d"
 
-    packages_to_refuse_from_sury="php php-fpm php-mysql php-xml php-zip php-mbstring php-ldap php-gd php-curl php-bz2 php-json php-sqlite3 php-intl openssl libssl1.1 libssl-dev"
+    packages_to_refuse_from_sury="php php-* openssl libssl1.1 libssl-dev"
     for package in $packages_to_refuse_from_sury; do
         echo "
 Package: $package
