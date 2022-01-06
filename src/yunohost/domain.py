@@ -187,7 +187,7 @@ def domain_add(operation_logger, domain, dyndns=False):
         # Actually subscribe
         dyndns_subscribe(domain=domain)
 
-    _certificate_install_selfsigned([domain], False)
+    _certificate_install_selfsigned([domain], True)
 
     try:
         attr_dict = {
