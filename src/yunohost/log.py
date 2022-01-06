@@ -659,6 +659,8 @@ class OperationLogger:
                 data["error"] = self._error
         # TODO: detect if 'extra' erase some key of 'data'
         data.update(self.extra)
+        if "args" in data and isinstance(data["args"], dict) and "args" in data["args"]:
+            data["args"].pop("args")
         return data
 
     def success(self):
