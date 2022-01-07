@@ -918,4 +918,11 @@ _ynh_apply_default_permissions() {
             chown $app:$app $target
         fi
     fi
+
+    # Crons should be owned by root otherwise they probably don't run
+    if echo "$target" | grep -q '^/etc/cron'
+    then
+        chmod 400 $target
+        chown root:root $target
+    fi
 }

@@ -244,9 +244,7 @@ def tools_postinstall(
         # and inform the user that we could not contact the dyndns host server.
         except Exception:
             logger.warning(
-                m18n.n(
-                    "dyndns_provider_unreachable", provider="dyndns.yunohost.org"
-                )
+                m18n.n("dyndns_provider_unreachable", provider="dyndns.yunohost.org")
             )
 
         if available:
@@ -526,10 +524,10 @@ def tools_upgrade(
 
         callbacks = (
             lambda l: logger.info("+ " + l.rstrip() + "\r")
-            if is_relevant(l)
+            if _apt_log_line_is_relevant(l)
             else logger.debug(l.rstrip() + "\r"),
             lambda l: logger.warning(l.rstrip())
-            if is_relevant(l)
+            if _apt_log_line_is_relevant(l)
             else logger.debug(l.rstrip()),
         )
         returncode = call_async_output(dist_upgrade, callbacks, shell=True)
@@ -561,6 +559,24 @@ def tools_upgrade(
 
         logger.success(m18n.n("system_upgraded"))
         operation_logger.success()
+
+
+def _apt_log_line_is_relevant(line):
+    irrelevants = [
+        "service sudo-ldap already provided",
+        "Reading database ...",
+        "Preparing to unpack",
+        "Selecting previously unselected package",
+        "Created symlink /etc/systemd",
+        "Replacing config file",
+        "Creating config file",
+        "Installing new version of config file",
+        "Installing new config file as you requested",
+        ", does not exist on system.",
+        "unable to delete old directory",
+        "update-alternatives:",
+    ]
+    return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
 
 
 @is_unit_operation()
@@ -916,6 +932,10 @@ def _skip_all_migrations():
     all_migrations = _get_migrations_list()
     new_states = {"migrations": {}}
     for migration in all_migrations:
+        # Don't skip bullseye migration while we're
+        # still on buster
+        if "migrate_to_bullseye" in migration.id:
+            continue
         new_states["migrations"][migration.id] = "skipped"
     write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
 

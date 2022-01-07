@@ -609,7 +609,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             if upgrade_failed or broke_the_system:
 
                 # display this if there are remaining apps
-                if apps[number + 1:]:
+                if apps[number + 1 :]:
                     not_upgraded_apps = apps[number:]
                     logger.error(
                         m18n.n(
