@@ -50,6 +50,25 @@ class MyMigration(Migration):
         #
         logger.info(m18n.n("migration_0021_patching_sources_list"))
         self.patch_apt_sources_list()
+
+        # Force add sury if it's not there yet
+        # This is to solve some weird issue with php-common breaking php7.3-common,
+        # hence breaking many php7.3-deps
+        # hence triggering some dependency conflict (or foobar-ynh-deps uninstall)
+        # Adding it there shouldnt be a big deal - Yunohost 11.x does add it
+        # through its regen conf anyway.
+        if not os.path.exists("/etc/apt/sources.list.d/extra_php_version.list"):
+            open("/etc/apt/sources.list.d/extra_php_version.list", "w").write(
+                "deb https://packages.sury.org/php/ bullseye main"
+            )
+            os.system(
+                'wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"'
+            )
+
+        #
+        # Run apt update
+        #
+
         tools_update(target="system")
 
         # Tell libc6 it's okay to restart system stuff during the upgrade
@@ -99,20 +118,6 @@ class MyMigration(Migration):
         if os.path.exists("/home/yunohost.conf"):
             os.system("mv /home/yunohost.conf /var/cache/yunohost/regenconf")
             rm("/home/yunohost.conf", recursive=True, force=True)
-
-        # Force add sury if it's not there yet
-        # This is to solve some weird issue with php-common breaking php7.3-common,
-        # hence breaking many php7.3-deps
-        # hence triggering some dependency conflict (or foobar-ynh-deps uninstall)
-        # Adding it there shouldnt be a big deal - Yunohost 11.x does add it
-        # through its regen conf anyway.
-        if not os.path.exists("/etc/apt/sources.list.d/extra_php_version.list"):
-            open("/etc/apt/sources.list.d/extra_php_version.list", "w").write(
-                "deb https://packages.sury.org/php/ bullseye main"
-            )
-            os.system(
-                'wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"'
-            )
 
         # Remove legacy postgresql service record added by helpers,
         # will now be dynamically handled by the core in bullseye
