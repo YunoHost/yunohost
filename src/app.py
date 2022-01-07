@@ -117,6 +117,7 @@ def app_info(app, full=False):
     Get info for a specific app
     """
     from yunohost.permission import user_permission_list
+    from yunohost.domain import domain_config_get
 
     _assert_is_installed(app)
 
@@ -152,6 +153,9 @@ def app_info(app, full=False):
     ret["upgradable"] = _app_upgradable(ret)
 
     ret["is_webapp"] = "domain" in settings and "path" in settings
+
+    if ret["is_webapp"]:
+        ret["is_default"] = domain_config_get(settings["domain"], "feature.app.default_app") == app
 
     ret["supports_change_url"] = os.path.exists(
         os.path.join(setting_path, "scripts", "change_url")
@@ -989,6 +993,7 @@ def app_remove(operation_logger, app, purge=False):
         permission_delete,
         permission_sync_to_user,
     )
+    from yunohost.domain import domain_list, domain_config_get, domain_config_set
 
     if not _is_installed(app):
         raise YunohostValidationError(
@@ -1048,12 +1053,16 @@ def app_remove(operation_logger, app, purge=False):
 
     hook_remove(app)
 
+    for domain in domain_list()["domains"]:
+        if (domain_config_get(domain, "feature.app.default_app") == app):
+            domain_config_set(domain, "feature.app.default_app", "_none")
+
     permission_sync_to_user()
     _assert_system_is_sane_for_app(manifest, "post")
 
 
 @is_unit_operation()
-def app_makedefault(operation_logger, app, domain=None):
+def app_makedefault(operation_logger, app, domain=None, undo=False):
     """
     Redirect domain root to an app
 
@@ -1062,11 +1071,10 @@ def app_makedefault(operation_logger, app, domain=None):
         domain
 
     """
-    from yunohost.domain import _assert_domain_exists
+    from yunohost.domain import _assert_domain_exists, domain_config_set
 
     app_settings = _get_app_settings(app)
     app_domain = app_settings["domain"]
-    app_path = app_settings["path"]
 
     if domain is None:
         domain = app_domain
@@ -1075,36 +1083,12 @@ def app_makedefault(operation_logger, app, domain=None):
 
     operation_logger.related_to.append(("domain", domain))
 
-    if "/" in app_map(raw=True)[domain]:
-        raise YunohostValidationError(
-            "app_make_default_location_already_used",
-            app=app,
-            domain=app_domain,
-            other_app=app_map(raw=True)[domain]["/"]["id"],
-        )
-
     operation_logger.start()
 
-    # TODO / FIXME : current trick is to add this to conf.json.persisten
-    # This is really not robust and should be improved
-    # e.g. have a flag in /etc/yunohost/apps/$app/ to say that this is the
-    # default app or idk...
-    if not os.path.exists("/etc/ssowat/conf.json.persistent"):
-        ssowat_conf = {}
+    if undo:
+        domain_config_set(domain, 'feature.app.default_app', "_none")
     else:
-        ssowat_conf = read_json("/etc/ssowat/conf.json.persistent")
-
-    if "redirected_urls" not in ssowat_conf:
-        ssowat_conf["redirected_urls"] = {}
-
-    ssowat_conf["redirected_urls"][domain + "/"] = app_domain + app_path
-
-    write_to_json(
-        "/etc/ssowat/conf.json.persistent", ssowat_conf, sort_keys=True, indent=4
-    )
-    chmod("/etc/ssowat/conf.json.persistent", 0o644)
-
-    logger.success(m18n.n("ssowat_conf_updated"))
+        domain_config_set(domain, 'feature.app.default_app', app)
 
 
 def app_setting(app, key, value=None, delete=False):
@@ -1303,7 +1287,7 @@ def app_ssowatconf():
 
 
     """
-    from yunohost.domain import domain_list, _get_maindomain
+    from yunohost.domain import domain_list, _get_maindomain, domain_config_get
     from yunohost.permission import user_permission_list
 
     main_domain = _get_maindomain()
@@ -1340,6 +1324,21 @@ def app_ssowatconf():
         # Redirected
         redirected_urls.update(app_settings.get("redirected_urls", {}))
         redirected_regex.update(app_settings.get("redirected_regex", {}))
+
+    from .utils.legacy import translate_legacy_default_app_in_ssowant_conf_json_persistent
+    
+    translate_legacy_default_app_in_ssowant_conf_json_persistent()
+
+    for domain in domains:
+        default_app = domain_config_get(domain, "feature.app.default_app")
+        if default_app != "_none" and _is_installed(default_app):
+            app_settings = _get_app_settings(default_app)
+            app_domain = app_settings["domain"]
+            app_path = app_settings["path"]
+
+            # Prevent infinite redirect loop...
+            if domain + "/" != app_domain + app_path:
+                redirected_urls[domain + "/"] = app_domain + app_path
 
     # New permission system
     for perm_name, perm_info in all_permissions.items():
