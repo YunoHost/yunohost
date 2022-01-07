@@ -230,7 +230,7 @@ class MyMigration(Migration):
         cmd += " APT_LISTCHANGES_FRONTEND=none"
         cmd += " apt dist-upgrade "
         cmd += " --quiet -o=Dpkg::Use-Pty=0 --fix-broken --dry-run"
-        cmd += " | grep -q '-ynh-deps'"
+        cmd += " | grep -q 'ynh-deps'"
 
         logger.info("Simulating upgrade...")
         if os.system(cmd) == 0:
