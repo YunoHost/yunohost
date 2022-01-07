@@ -16,6 +16,11 @@ Pin-Priority: -1" >>"${pending_dir}/etc/apt/preferences.d/extra_php_version"
     done
 
     echo "
+Package: php-common
+Pin: origin \"packages.sury.org\"
+Pin-Priority: 500" >>"${pending_dir}/etc/apt/preferences.d/extra_php_version"
+
+    echo "
 
 # PLEASE READ THIS WARNING AND DON'T EDIT THIS FILE
 
