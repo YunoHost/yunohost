@@ -7,6 +7,11 @@ do_pre_regen() {
 
     mkdir --parents "${pending_dir}/etc/apt/preferences.d"
 
+    echo "
+Package: php-common
+Pin: origin \"packages.sury.org\"
+Pin-Priority: 500" >>"${pending_dir}/etc/apt/preferences.d/extra_php_version"
+
     packages_to_refuse_from_sury="php php-* openssl libssl1.1 libssl-dev"
     for package in $packages_to_refuse_from_sury; do
         echo "
@@ -14,11 +19,6 @@ Package: $package
 Pin: origin \"packages.sury.org\" 
 Pin-Priority: -1" >>"${pending_dir}/etc/apt/preferences.d/extra_php_version"
     done
-
-    echo "
-Package: php-common
-Pin: origin \"packages.sury.org\"
-Pin-Priority: 500" >>"${pending_dir}/etc/apt/preferences.d/extra_php_version"
 
     echo "
 
