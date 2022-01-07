@@ -200,7 +200,9 @@ class MyMigration(Migration):
         ]
 
         ret = self.apt_install(
-            f"{' '.join(php74packages_to_install)} -o Dpkg::Options::='--force-confmiss'"
+            f"{' '.join(php74packages_to_install)} "
+            "$(dpkg --list | grep ynh-deps | awk '{print $2}') "
+            "-o Dpkg::Options::='--force-confmiss'"
         )
         if ret != 0:
             # FIXME: i18n once this is stable?
