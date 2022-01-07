@@ -33,7 +33,7 @@ import subprocess
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import write_to_file, read_file, rm, chown, chmod
+from moulinette.utils.filesystem import write_to_file, rm, chown, chmod
 from moulinette.utils.network import download_json
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
