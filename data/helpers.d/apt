@@ -425,6 +425,12 @@ ynh_install_extra_app_dependencies() {
     # Install requested dependencies from this extra repository.
     ynh_install_app_dependencies "$package"
 
+    # Force to upgrade to the last version...
+    # Without doing apt install, an already installed dep is not upgraded
+    local apps_auto_installed="$(apt-mark showauto $package)"
+    ynh_package_install "$package"
+    apt-mark auto $apps_auto_installed
+
     # Remove this extra repository after packages are installed
     ynh_remove_extra_repo --name=$app
 }
