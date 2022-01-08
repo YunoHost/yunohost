@@ -113,7 +113,7 @@ ynh_backup() {
 
     # Transform the source path as an absolute path
     # If it's a dir remove the ending /
-    src_path=$(realpath "$src_path")
+    src_path=$(realpath --no-symlink "$src_path")
 
     # If there is no destination path, initialize it with the source path
     # relative to "/".
