@@ -7,7 +7,12 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_file, rm
 
-from yunohost.tools import Migration, tools_update, tools_upgrade, _apt_log_line_is_relevant
+from yunohost.tools import (
+    Migration,
+    tools_update,
+    tools_upgrade,
+    _apt_log_line_is_relevant,
+)
 from yunohost.app import unstable_apps
 from yunohost.regenconf import manually_modified_files, _force_clear_hashes
 from yunohost.utils.filesystem import free_space_in_directory
@@ -182,12 +187,14 @@ class MyMigration(Migration):
             "zip",
         ]
 
-        cmd = "apt show '*-ynh-deps' 2>/dev/null" \
-              "  | grep Depends" \
-              f" | grep -o -E \"php7.3-({'|'.join(php73packages_suffixes)})\"" \
-              "  | sort | uniq" \
-              "  | sed 's/php7.3/php7.4/g'" \
-              "  || true"
+        cmd = (
+            "apt show '*-ynh-deps' 2>/dev/null"
+            "  | grep Depends"
+            f" | grep -o -E \"php7.3-({'|'.join(php73packages_suffixes)})\""
+            "  | sort | uniq"
+            "  | sed 's/php7.3/php7.4/g'"
+            "  || true"
+        )
 
         php74packages_to_install = [
             "php7.4-fpm",
@@ -211,7 +218,9 @@ class MyMigration(Migration):
         )
         if ret != 0:
             # FIXME: i18n once this is stable?
-            raise YunohostError("Failed to force the install of php dependencies ?", raw_msg=True)
+            raise YunohostError(
+                "Failed to force the install of php dependencies ?", raw_msg=True
+            )
 
         # Clean the mess
         logger.info(m18n.n("migration_0021_cleaning_up"))
@@ -235,7 +244,10 @@ class MyMigration(Migration):
         logger.info("Simulating upgrade...")
         if os.system(cmd) == 0:
             # FIXME: i18n once this is stable?
-            raise YunohostError("The upgrade cannot be completed, because some app dependencies would need to be removed?", raw_msg=True)
+            raise YunohostError(
+                "The upgrade cannot be completed, because some app dependencies would need to be removed?",
+                raw_msg=True,
+            )
 
         tools_upgrade(target="system")
 
