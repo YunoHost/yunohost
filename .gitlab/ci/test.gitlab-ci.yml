@@ -3,7 +3,7 @@
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./$YNH_BUILD_DIR/*.deb
 
 .test-stage:
-  stage: tests
+  stage: test
   image: "after-install"
   variables:
     PYTEST_ADDOPTS: "--color=yes"
@@ -28,7 +28,7 @@
 ########################################
 
 full-tests:
-  stage: tests
+  stage: test
   image: "before-install"
   variables:
     PYTEST_ADDOPTS: "--color=yes"
