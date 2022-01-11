@@ -480,7 +480,7 @@
     "diagnosis_ports_forwarding_tip": "Pour résoudre ce problème, vous devez probablement configurer la redirection de port sur votre routeur Internet comme décrit dans <a href='https://yunohost.org/isp_box_config'>https://yunohost.org/isp_box_config</a>",
     "diagnosis_http_connection_error": "Erreur de connexion : impossible de se connecter au domaine demandé, il est probablement injoignable.",
     "diagnosis_no_cache": "Pas encore de cache de diagnostique pour la catégorie '{category}'",
-    "yunohost_postinstall_end_tip": "La post-installation terminée ! Pour finaliser votre configuration, il est recommandé de :\n- ajouter un premier utilisateur depuis la section \"Utilisateurs\" de l'interface web (ou 'yunohost user create <nom d'utilisateur>' en ligne de commande) ;\n- diagnostiquer les potentiels problèmes dans la section \"Diagnostic\" de l'interface web (ou 'yunohost diagnosis run' en ligne de commande) ;\n- lire les parties 'Finalisation de votre configuration' et 'Découverte de YunoHost' dans le guide de l'administrateur : https://yunohost.org/admindoc.",
+    "yunohost_postinstall_end_tip": "La post-installation est terminée ! Pour finaliser votre configuration, il est recommandé de :\n- ajouter un premier utilisateur depuis la section \"Utilisateurs\" de l'interface web (ou 'yunohost user create <nom d'utilisateur>' en ligne de commande) ;\n- diagnostiquer les potentiels problèmes dans la section \"Diagnostic\" de l'interface web (ou 'yunohost diagnosis run' en ligne de commande) ;\n- lire les parties 'Finalisation de votre configuration' et 'Découverte de YunoHost' dans le guide de l'administrateur : https://yunohost.org/admindoc.",
     "diagnosis_services_bad_status_tip": "Vous pouvez essayer de <a href='#/services/{service}'>redémarrer le service</a>, et si cela ne fonctionne pas, consultez <a href='#/services/{service}'>les journaux de service dans le webadmin</a> (à partir de la ligne de commande, vous pouvez le faire avec <cmd>yunohost service restart {service}</cmd> et <cmd>yunohost service log {service}</cmd> ).",
     "diagnosis_http_bad_status_code": "Le système de diagnostique n'a pas réussi à contacter votre serveur. Il se peut qu'une autre machine réponde à la place de votre serveur. Vérifiez que le port 80 est correctement redirigé, que votre configuration Nginx est à jour et qu'un reverse-proxy n'interfère pas.",
     "diagnosis_http_timeout": "Expiration du délai en essayant de contacter votre serveur de l'extérieur. Il semble être inaccessible. Vérifiez que vous transférez correctement le port 80, que Nginx est en cours d'exécution et qu'un pare-feu n'interfère pas.",
@@ -580,7 +580,7 @@
     "diagnosis_rootfstotalspace_critical": "Le système de fichiers racine ne fait que {space} ! Vous allez certainement le remplir très rapidement ! Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers.",
     "diagnosis_rootfstotalspace_warning": "Le système de fichiers racine n'est que de {space}. Cela peut suffire, mais faites attention car vous risquez de les remplir rapidement... Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers.",
     "app_restore_script_failed": "Une erreur s'est produite dans le script de restauration de l'application",
-    "restore_backup_too_old": "Cette sauvegarde ne peut pas être restaurée car elle provient d'une version trop ancienne de YunoHost.",
+    "restore_backup_too_old": "Cette sauvegarde ne peut pas être restaurée car elle provient d'une version de YunoHost trop ancienne.",
     "log_backup_create": "Créer une archive de sauvegarde",
     "global_settings_setting_ssowat_panel_overlay_enabled": "Activer la superposition de la vignette SSOwat",
     "migration_ldap_rollback_success": "Système rétabli dans son état initial.",
@@ -684,5 +684,6 @@
     "migration_0021_cleaning_up": "Nettoyage du cache et des paquets qui ne sont plus nécessaires...",
     "migration_0021_patch_yunohost_conflicts": "Application du correctif pour contourner le problème de conflit...",
     "migration_0021_not_buster": "La distribution Debian actuelle n'est pas Buster !",
-    "migration_description_0021_migrate_to_bullseye": "Mise à niveau du système vers Debian Bullseye et YunoHost 11.x"
+    "migration_description_0021_migrate_to_bullseye": "Mise à niveau du système vers Debian Bullseye et YunoHost 11.x",
+    "global_settings_setting_security_ssh_password_authentication": "Autoriser l'authentification par mot de passe pour SSH"
 }
