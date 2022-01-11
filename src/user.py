@@ -111,7 +111,7 @@ def user_list(fields=None):
 
     ldap = _get_ldap_interface()
     result = ldap.search(
-        "ou=users,dc=yunohost,dc=org",
+        "ou=users",
         "(&(objectclass=person)(!(uid=root))(!(uid=nobody)))",
         attrs,
     )
@@ -233,7 +233,7 @@ def user_create(
     }
 
     # If it is the first user, add some aliases
-    if not ldap.search(base="ou=users,dc=yunohost,dc=org", filter="uid=*"):
+    if not ldap.search(base="ou=users", filter="uid=*"):
         attr_dict["mail"] = [attr_dict["mail"]] + aliases
 
     try:
@@ -377,7 +377,7 @@ def user_update(
     ldap = _get_ldap_interface()
     attrs_to_fetch = ["givenName", "sn", "mail", "maildrop"]
     result = ldap.search(
-        base="ou=users,dc=yunohost,dc=org",
+        base="ou=users",
         filter="uid=" + username,
         attrs=attrs_to_fetch,
     )
@@ -538,7 +538,7 @@ def user_info(username):
     else:
         filter = "uid=" + username
 
-    result = ldap.search("ou=users,dc=yunohost,dc=org", filter, user_attrs)
+    result = ldap.search("ou=users", filter, user_attrs)
 
     if result:
         user = result[0]
@@ -938,7 +938,7 @@ def user_group_list(short=False, full=False, include_primary_groups=True):
 
     ldap = _get_ldap_interface()
     groups_infos = ldap.search(
-        "ou=groups,dc=yunohost,dc=org",
+        "ou=groups",
         "(objectclass=groupOfNamesYnh)",
         ["cn", "member", "permission"],
     )
@@ -989,7 +989,7 @@ def user_group_create(
 
     # Validate uniqueness of groupname in LDAP
     conflict = ldap.get_conflict(
-        {"cn": groupname}, base_dn="ou=groups,dc=yunohost,dc=org"
+        {"cn": groupname}, base_dn="ou=groups"
     )
     if conflict:
         raise YunohostValidationError("group_already_exist", group=groupname)
@@ -1204,7 +1204,7 @@ def user_group_info(groupname):
 
     # Fetch info for this group
     result = ldap.search(
-        "ou=groups,dc=yunohost,dc=org",
+        "ou=groups",
         "cn=" + groupname,
         ["cn", "member", "permission"],
     )

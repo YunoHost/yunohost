@@ -58,7 +58,7 @@ def user_permission_list(
 
     ldap = _get_ldap_interface()
     permissions_infos = ldap.search(
-        "ou=permission,dc=yunohost,dc=org",
+        "ou=permission",
         "(objectclass=permissionYnh)",
         [
             "cn",
@@ -408,7 +408,7 @@ def permission_create(
 
     # Validate uniqueness of permission in LDAP
     if ldap.get_conflict(
-        {"cn": permission}, base_dn="ou=permission,dc=yunohost,dc=org"
+        {"cn": permission}, base_dn="ou=permission"
     ):
         raise YunohostValidationError("permission_already_exist", permission=permission)
 

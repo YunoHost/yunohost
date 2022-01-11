@@ -172,7 +172,7 @@ def _get_user_for_ssh(username, attrs=None):
 
     ldap = _get_ldap_interface()
     user = ldap.search(
-        "ou=users,dc=yunohost,dc=org",
+        "ou=users",
         "(&(objectclass=person)(uid=%s))" % username,
         attrs,
     )
