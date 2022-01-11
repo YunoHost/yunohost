@@ -4,7 +4,7 @@
     - pip3 install -U mock pip pytest pytest-cov pytest-mock pytest-sugar requests-mock tox ansi2html black jinja2
 
 .test-stage:
-  stage: tests
+  stage: test
   image: "after-install"
   variables:
     PYTEST_ADDOPTS: "--color=yes"
@@ -28,7 +28,7 @@
 ########################################
 
 full-tests:
-  stage: tests
+  stage: test
   image: "before-install"
   variables:
     PYTEST_ADDOPTS: "--color=yes"

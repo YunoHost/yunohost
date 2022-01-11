@@ -684,5 +684,6 @@
     "migration_0021_patch_yunohost_conflicts": "Solucionando os problemas e conflitos...",
     "migration_description_0021_migrate_to_bullseye": "Actualizar o sistema a Debian Bullseye e YunoHost 11.x",
     "migration_0021_system_not_fully_up_to_date": "O teu sistema non está completamente actualizado. Fai unha actualización normal antes de executar a migración a Bullseye.",
-    "migration_0021_general_warning": "Ten en conta que a migración é unha operación delicada. O equipo de YunoHost fixo todo o que puido para revisalo e probalo, pero aínda así poderían acontecer fallos no sistema ou apps.\n\nAsí as cousas, é recomendable:\n   - Facer unha copia de apoio dos datos e apps importantes. Máis info en https://yunohost.org/backup;\n   - Ter paciencia unha vez inicias a migración: dependendo da túa conexión a internet e hardware, podería levarlle varias horas completar o proceso."
+    "migration_0021_general_warning": "Ten en conta que a migración é unha operación delicada. O equipo de YunoHost fixo todo o que puido para revisalo e probalo, pero aínda así poderían acontecer fallos no sistema ou apps.\n\nAsí as cousas, é recomendable:\n   - Facer unha copia de apoio dos datos e apps importantes. Máis info en https://yunohost.org/backup;\n   - Ter paciencia unha vez inicias a migración: dependendo da túa conexión a internet e hardware, podería levarlle varias horas completar o proceso.",
+    "global_settings_setting_security_ssh_password_authentication": "Permitir autenticación con contrasinal para SSH"
 }

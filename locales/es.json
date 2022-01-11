@@ -599,5 +599,9 @@
     "diagnosis_apps_bad_quality": "Esta aplicación está etiquetada como defectuosa en el catálogo de aplicaciones YunoHost. Podría ser un problema temporal mientras las personas responsables corrigen el asunto. Mientras tanto, la actualización de esta aplicación está desactivada.",
     "diagnosis_apps_broken": "Esta aplicación está etiquetada como defectuosa en el catálogo de aplicaciones YunoHost. Podría ser un problema temporal mientras las personas responsables corrigen el asunto. Mientras tanto, la actualización de esta aplicación está desactivada.",
     "diagnosis_apps_deprecated_practices": "La versión instalada de esta aplicación usa aún prácticas de empaquetado obsoletas. Deberías actualizarla.",
-    "diagnosis_apps_outdated_ynh_requirement": "La versión instalada de esta aplicación solo necesita YunoHost >= 2.x, lo que indica que no está al día con la buena praxis de ayudas y empaquetado recomendadas. Deberías actualizarla."
+    "diagnosis_apps_outdated_ynh_requirement": "La versión instalada de esta aplicación solo necesita YunoHost >= 2.x, lo que indica que no está al día con la buena praxis de ayudas y empaquetado recomendadas. Deberías actualizarla.",
+    "domain_dns_conf_special_use_tld": "Este dominio se basa en un dominio de primer nivel (TLD) de usos especiales como .local o .test y no debería tener entradas DNS reales.",
+    "diagnosis_sshd_config_insecure": "Parece que la configuración SSH ha sido modificada manualmente, y es insegura porque no tiene ninguna instrucción 'AllowGroups' o 'AllowUsers' para limitar el acceso a los usuarios autorizados.",
+    "domain_dns_push_not_applicable": "La configuración automática de los registros DNS no puede realizarse en el dominio {domain}. Deberìas configurar manualmente los registros DNS siguiendo la <a href='https://yunohost.org/dns'>documentación</a>.",
+    "domain_dns_push_managed_in_parent_domain": "La configuración automática de los registros DNS es administrada desde el dominio superior {parent_domain}."
 }

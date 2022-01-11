@@ -792,6 +792,9 @@ def _enable_certificate(domain, new_cert_folder):
     logger.debug("Restarting services...")
 
     for service in ("postfix", "dovecot", "metronome"):
+        # Ugly trick to not restart metronome if it's not installed
+        if service == "metronome" and os.system("dpkg --list | grep -q 'ii *metronome'") != 0:
+            continue
         _run_service_command("restart", service)
 
     if os.path.isfile("/etc/yunohost/installed"):
