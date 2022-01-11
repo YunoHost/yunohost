@@ -1081,7 +1081,7 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     #
     # We also can't delete "all_users" because that's a special group...
     existing_users = list(user_list()["users"].keys())
-    undeletable_groups = existing_users + ["all_users", "visitors"]
+    undeletable_groups = existing_users + ["all_users", "visitors", "admins"]
     if groupname in undeletable_groups and not force:
         raise YunohostValidationError("group_cannot_be_deleted", group=groupname)
 
