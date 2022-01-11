@@ -158,15 +158,6 @@ def _get_user_for_ssh(username, attrs=None):
             "home_path": root_unix.pw_dir,
         }
 
-    if username == "admin":
-        admin_unix = pwd.getpwnam("admin")
-        return {
-            "username": "admin",
-            "fullname": "",
-            "mail": "",
-            "home_path": admin_unix.pw_dir,
-        }
-
     # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
     from yunohost.utils.ldap import _get_ldap_interface
 

@@ -342,7 +342,7 @@ class BackupManager:
         # FIXME replace isdir by exists ? manage better the case where the path
         # exists
         if not os.path.isdir(self.work_dir):
-            filesystem.mkdir(self.work_dir, 0o750, parents=True, uid="admin")
+            filesystem.mkdir(self.work_dir, 0o750, parents=True)
         elif self.is_tmp_work_dir:
 
             logger.debug(
@@ -358,7 +358,7 @@ class BackupManager:
                 # we're in /home/yunohost.backup/tmp so that should be okay...
                 # c.f. method clean() which also does this)
                 filesystem.rm(self.work_dir, recursive=True, force=True)
-                filesystem.mkdir(self.work_dir, 0o750, parents=True, uid="admin")
+                filesystem.mkdir(self.work_dir, 0o750, parents=True)
 
     #
     # Backup target management                                              #
@@ -1886,7 +1886,7 @@ class CopyBackupMethod(BackupMethod):
 
             dest_parent = os.path.dirname(dest)
             if not os.path.exists(dest_parent):
-                filesystem.mkdir(dest_parent, 0o700, True, uid="admin")
+                filesystem.mkdir(dest_parent, 0o700, True)
 
             if os.path.isdir(source):
                 shutil.copytree(source, dest)
@@ -1948,7 +1948,7 @@ class TarBackupMethod(BackupMethod):
         """
 
         if not os.path.exists(self.repo):
-            filesystem.mkdir(self.repo, 0o750, parents=True, uid="admin")
+            filesystem.mkdir(self.repo, 0o750, parents=True)
 
         # Check free space in output
         self._check_is_enough_free_space()
@@ -2632,9 +2632,9 @@ def _create_archive_dir():
         if os.path.lexists(ARCHIVES_PATH):
             raise YunohostError("backup_output_symlink_dir_broken", path=ARCHIVES_PATH)
 
-        # Create the archive folder, with 'admin' as owner, such that
+        # Create the archive folder, with 'admins' as groupowner, such that
         # people can scp archives out of the server
-        mkdir(ARCHIVES_PATH, mode=0o750, parents=True, uid="admin", gid="root")
+        mkdir(ARCHIVES_PATH, mode=0o770, parents=True, gid="admins")
 
 
 def _call_for_each_path(self, callback, csv_path=None):

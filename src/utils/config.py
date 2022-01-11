@@ -1144,6 +1144,8 @@ class UserQuestion(Question):
             )
 
         if self.default is None:
+            # FIXME: this code is obsolete with the new admins group
+            # Should be replaced by something like "any first user we find in the admin group"
             root_mail = "root@%s" % _get_maindomain()
             for user in self.choices:
                 if root_mail in user_info(user).get("mail-aliases", []):

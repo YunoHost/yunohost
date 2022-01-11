@@ -19,10 +19,6 @@
 
 """
 
-""" yunohost_tools.py
-
-    Specific tools
-"""
 import re
 import os
 import subprocess
@@ -67,63 +63,40 @@ def tools_versions():
     return ynh_packages_version()
 
 
-def tools_adminpw(new_password, check_strength=True):
-    """
-    Change admin password
+def tools_rootpw(new_password):
 
-    Keyword argument:
-        new_password
-
-    """
     from yunohost.user import _hash_user_password
     from yunohost.utils.password import assert_password_is_strong_enough
     import spwd
 
-    if check_strength:
-        assert_password_is_strong_enough("admin", new_password)
+    assert_password_is_strong_enough("admin", new_password)
+
+    new_hash = _hash_user_password(new_password)
 
     # UNIX seems to not like password longer than 127 chars ...
     # e.g. SSH login gets broken (or even 'su admin' when entering the password)
     if len(new_password) >= 127:
-        raise YunohostValidationError("admin_password_too_long")
+        raise YunohostValidationError("password_too_long")
 
-    new_hash = _hash_user_password(new_password)
-
-    from yunohost.utils.ldap import _get_ldap_interface
-
-    ldap = _get_ldap_interface()
-
+    # Write as root password
     try:
-        ldap.update(
-            "cn=admin",
-            {"userPassword": [new_hash]},
-        )
-    except Exception as e:
-        logger.error("unable to change admin password : %s" % e)
-        raise YunohostError("admin_password_change_failed")
-    else:
-        # Write as root password
-        try:
-            hash_root = spwd.getspnam("root").sp_pwd
+        hash_root = spwd.getspnam("root").sp_pwd
 
-            with open("/etc/shadow", "r") as before_file:
-                before = before_file.read()
+        with open("/etc/shadow", "r") as before_file:
+            before = before_file.read()
 
-            with open("/etc/shadow", "w") as after_file:
-                after_file.write(
-                    before.replace(
-                        "root:" + hash_root, "root:" + new_hash.replace("{CRYPT}", "")
-                    )
+        with open("/etc/shadow", "w") as after_file:
+            after_file.write(
+                before.replace(
+                    "root:" + hash_root, "root:" + new_hash.replace("{CRYPT}", "")
                 )
-        # An IOError may be thrown if for some reason we can't read/write /etc/passwd
-        # A KeyError could also be thrown if 'root' is not in /etc/passwd in the first place (for example because no password defined ?)
-        # (c.f. the line about getspnam)
-        except (IOError, KeyError):
-            logger.warning(m18n.n("root_password_desynchronized"))
-            return
-
-        logger.info(m18n.n("root_password_replaced_by_admin_password"))
-        logger.success(m18n.n("admin_password_changed"))
+            )
+    # An IOError may be thrown if for some reason we can't read/write /etc/passwd
+    # A KeyError could also be thrown if 'root' is not in /etc/passwd in the first place (for example because no password defined ?)
+    # (c.f. the line about getspnam)
+    except (IOError, KeyError):
+        logger.warning(m18n.n("root_password_desynchronized"))
+        return
 
 
 def tools_maindomain(new_main_domain=None):
@@ -189,25 +162,18 @@ def _detect_virt():
 def tools_postinstall(
     operation_logger,
     domain,
+    username,
+    firstname,
+    lastname,
     password,
     ignore_dyndns=False,
-    force_password=False,
     force_diskspace=False,
 ):
-    """
-    YunoHost post-install
 
-    Keyword argument:
-        domain -- YunoHost main domain
-        ignore_dyndns -- Do not subscribe domain to a DynDNS service (only
-        needed for nohost.me, noho.st domains)
-        password -- YunoHost admin password
-
-    """
     from yunohost.dyndns import _dyndns_available
     from yunohost.utils.dns import is_yunohost_dyndns_domain
-    from yunohost.utils.password import assert_password_is_strong_enough
     from yunohost.domain import domain_main_domain
+    from yunohost.user import user_create
     import psutil
 
     # Do some checks at first
@@ -229,10 +195,6 @@ def tools_postinstall(
     GB = 1024 ** 3
     if not force_diskspace and main_space < 10 * GB:
         raise YunohostValidationError("postinstall_low_rootfsspace")
-
-    # Check password
-    if not force_password:
-        assert_password_is_strong_enough("admin", password)
 
     # If this is a nohost.me/noho.st, actually check for availability
     if not ignore_dyndns and is_yunohost_dyndns_domain(domain):
@@ -268,8 +230,10 @@ def tools_postinstall(
     domain_add(domain, dyndns)
     domain_main_domain(domain)
 
+    user_create(username, firstname, lastname, domain, password, admin=True)
+
     # Update LDAP admin and create home dir
-    tools_adminpw(password, check_strength=not force_password)
+    tools_rootpw(password)
 
     # Enable UPnP silently and reload firewall
     firewall_upnp("enable", no_refresh=True)

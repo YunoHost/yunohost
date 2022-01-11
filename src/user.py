@@ -55,7 +55,7 @@ FIELDS_FOR_IMPORT = {
     "groups": r"^|([a-z0-9_]+(,?[a-z0-9_]+)*)$",
 }
 
-FIRST_ALIASES = ["root@", "admin@", "webmaster@", "postmaster@", "abuse@"]
+ADMIN_ALIASES = ["root@", "admin@", "webmaster@", "postmaster@", "abuse@"]
 
 
 def user_list(fields=None):
@@ -138,6 +138,7 @@ def user_create(
     domain,
     password,
     mailbox_quota="0",
+    admin=False,
     from_import=False,
 ):
 
@@ -146,8 +147,13 @@ def user_create(
     from yunohost.utils.password import assert_password_is_strong_enough
     from yunohost.utils.ldap import _get_ldap_interface
 
+    # UNIX seems to not like password longer than 127 chars ...
+    # e.g. SSH login gets broken (or even 'su admin' when entering the password)
+    if len(password) >= 127:
+        raise YunohostValidationError("password_too_long")
+
     # Ensure sufficiently complex password
-    assert_password_is_strong_enough("user", password)
+    assert_password_is_strong_enough("admin" if admin else "user", password)
 
     # Validate domain used for email address/xmpp account
     if domain is None:
@@ -189,9 +195,10 @@ def user_create(
         raise YunohostValidationError("system_username_exists")
 
     main_domain = _get_maindomain()
-    aliases = [alias + main_domain for alias in FIRST_ALIASES]
+    # FIXME: should forbit root@any.domain, not just main domain?
+    admin_aliases = [alias + main_domain for alias in ADMIN_ALIASES]
 
-    if mail in aliases:
+    if mail in admin_aliases:
         raise YunohostValidationError("mail_unavailable")
 
     if not from_import:
@@ -232,10 +239,6 @@ def user_create(
         "loginShell": ["/bin/bash"],
     }
 
-    # If it is the first user, add some aliases
-    if not ldap.search(base="ou=users,dc=yunohost,dc=org", filter="uid=*"):
-        attr_dict["mail"] = [attr_dict["mail"]] + aliases
-
     try:
         ldap.add("uid=%s,ou=users" % username, attr_dict)
     except Exception as e:
@@ -263,6 +266,8 @@ def user_create(
     # Create group for user and add to group 'all_users'
     user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
     user_group_update(groupname="all_users", add=username, force=True, sync_perm=True)
+    if admin:
+        user_group_update(groupname="admins", add=username, sync_perm=True)
 
     # Trigger post_user_create hooks
     env_dict = {
@@ -416,6 +421,12 @@ def user_update(
             change_password = Moulinette.prompt(
                 m18n.n("ask_password"), is_password=True, confirm=True
             )
+
+        # UNIX seems to not like password longer than 127 chars ...
+        # e.g. SSH login gets broken (or even 'su admin' when entering the password)
+        if len(change_password) >= 127:
+            raise YunohostValidationError("password_too_long")
+
         # Ensure sufficiently complex password
         assert_password_is_strong_enough("user", change_password)
 
@@ -424,7 +435,6 @@ def user_update(
 
     if mail:
         main_domain = _get_maindomain()
-        aliases = [alias + main_domain for alias in FIRST_ALIASES]
 
         # If the requested mail address is already as main address or as an alias by this user
         if mail in user["mail"]:
@@ -439,6 +449,9 @@ def user_update(
             raise YunohostError(
                 "mail_domain_unknown", domain=mail[mail.find("@") + 1 :]
             )
+
+        # FIXME: should also forbid root@any.domain and not just the main domain
+        aliases = [alias + main_domain for alias in ADMIN_ALIASES]
         if mail in aliases:
             raise YunohostValidationError("mail_unavailable")
 

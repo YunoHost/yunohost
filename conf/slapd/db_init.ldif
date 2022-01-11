@@ -5,15 +5,6 @@ objectClass: organization
 o: yunohost.org
 dc: yunohost
 
-dn: cn=admin,ou=sudo,dc=yunohost,dc=org
-cn: admin
-objectClass: sudoRole
-objectClass: top
-sudoCommand: ALL
-sudoUser: admin
-sudoOption: !authenticate
-sudoHost: ALL
-
 dn: ou=users,dc=yunohost,dc=org
 objectClass: organizationalUnit
 objectClass: top
@@ -39,28 +30,30 @@ objectClass: organizationalUnit
 objectClass: top
 ou: groups
 
+dn: cn=admins,ou=sudo,dc=yunohost,dc=org
+cn: admins
+objectClass: sudoRole
+objectClass: top
+sudoCommand: ALL
+sudoUser: %admins
+sudoHost: ALL
+
 dn: ou=sudo,dc=yunohost,dc=org
 objectClass: organizationalUnit
 objectClass: top
 ou: sudo
 
-dn: cn=admin,dc=yunohost,dc=org
-objectClass: organizationalRole
-objectClass: posixAccount
-objectClass: simpleSecurityObject
-cn: admin
-uid: admin
-uidNumber: 1007
-gidNumber: 1007
-homeDirectory: /home/admin
-loginShell: /bin/bash
-userPassword: yunohost
-
 dn: cn=admins,ou=groups,dc=yunohost,dc=org
 objectClass: posixGroup
 objectClass: top
-memberUid: admin
+objectClass: groupOfNamesYnh
+objectClass: mailGroup
 gidNumber: 4001
+mail: root
+mail: admin
+mail: webmaster
+mail: postmaster
+mail: abuse
 cn: admins
 
 dn: cn=all_users,ou=groups,dc=yunohost,dc=org

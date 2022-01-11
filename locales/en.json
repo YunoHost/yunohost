@@ -6,7 +6,6 @@
     "admin_password": "Administration password",
     "admin_password_change_failed": "Unable to change password",
     "admin_password_changed": "The administration password was changed",
-    "admin_password_too_long": "Please choose a password shorter than 127 characters",
     "already_up_to_date": "Nothing to do. Everything is already up-to-date.",
     "app_action_broke_system": "This action seems to have broken these important services: {services}",
     "app_action_cannot_be_ran_because_required_services_down": "These required services should be running to run this action: {services}. Try restarting them to continue (and possibly investigate why they are down).",
@@ -534,6 +533,7 @@
     "password_too_simple_2": "The password needs to be at least 8 characters long and contain a digit, upper and lower characters",
     "password_too_simple_3": "The password needs to be at least 8 characters long and contain a digit, upper, lower and special characters",
     "password_too_simple_4": "The password needs to be at least 12 characters long and contain a digit, upper, lower and special characters",
+    "password_too_long": "Please choose a password shorter than 127 characters",
     "pattern_backup_archive_name": "Must be a valid filename with max 30 characters, alphanumeric and -_. characters only",
     "pattern_domain": "Must be a valid domain name (e.g. my-domain.org)",
     "pattern_email": "Must be a valid e-mail address, without '+' symbol (e.g. someone@example.com)",
@@ -685,5 +685,5 @@
     "yunohost_configured": "YunoHost is now configured",
     "yunohost_installing": "Installing YunoHost...",
     "yunohost_not_installed": "YunoHost is not correctly installed. Please run 'yunohost tools postinstall'",
-    "yunohost_postinstall_end_tip": "The post-install completed! To finalize your setup, please consider:\n    - adding a first user through the 'Users' section of the webadmin (or 'yunohost user create <username>' in command-line);\n    - diagnose potential issues through the 'Diagnosis' section of the webadmin (or 'yunohost diagnosis run' in command-line);\n    - reading the 'Finalizing your setup' and 'Getting to know YunoHost' parts in the admin documentation: https://yunohost.org/admindoc."
+    "yunohost_postinstall_end_tip": "The post-install completed! To finalize your setup, please consider:\n    - diagnose potential issues through the 'Diagnosis' section of the webadmin (or 'yunohost diagnosis run' in command-line);\n    - reading the 'Finalizing your setup' and 'Getting to know YunoHost' parts in the admin documentation: https://yunohost.org/admindoc."
 }
