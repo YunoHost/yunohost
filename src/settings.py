@@ -285,7 +285,7 @@ def settings_reset_all():
 
 
 def _get_setting_description(key):
-    return m18n.n("global_settings_setting_%s" % key.replace(".", "_"))
+    return m18n.n(f"global_settings_setting_{key}".replace(".", "_"))
 
 
 def _get_settings():
@@ -315,7 +315,7 @@ def _get_settings():
         try:
             unknown_settings = json.load(open(unknown_settings_path, "r"))
         except Exception as e:
-            logger.warning("Error while loading unknown settings %s" % e)
+            logger.warning(f"Error while loading unknown settings {e}")
 
     try:
         with open(SETTINGS_PATH) as settings_fd:
@@ -342,7 +342,7 @@ def _get_settings():
             _save_settings(settings)
         except Exception as e:
             logger.warning(
-                "Failed to save unknown settings (because %s), aborting." % e
+                f"Failed to save unknown settings (because {e}), aborting."
             )
 
     return settings
@@ -374,11 +374,10 @@ post_change_hooks = {}
 def post_change_hook(setting_name):
     def decorator(func):
         assert setting_name in DEFAULTS.keys(), (
-            "The setting %s does not exists" % setting_name
+            f"The setting {setting_name} does not exists"
         )
         assert setting_name not in post_change_hooks, (
-            "You can only register one post change hook per setting (in particular for %s)"
-            % setting_name
+            f"You can only register one post change hook per setting (in particular for {setting_name})"
         )
         post_change_hooks[setting_name] = func
         return func
@@ -388,7 +387,7 @@ def post_change_hook(setting_name):
 
 def trigger_post_change_hook(setting_name, old_value, new_value):
     if setting_name not in post_change_hooks:
-        logger.debug("Nothing to do after changing setting %s" % setting_name)
+        logger.debug(f"Nothing to do after changing setting {setting_name}")
         return
 
     f = post_change_hooks[setting_name]

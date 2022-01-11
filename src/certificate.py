@@ -228,10 +228,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
             )
             operation_logger.success()
         else:
-            msg = (
-                "Installation of self-signed certificate installation for %s failed !"
-                % (domain)
-            )
+            msg = f"Installation of self-signed certificate installation for {domain} failed !"
             logger.error(msg)
             operation_logger.error(msg)
 
@@ -299,8 +296,7 @@ def _certificate_install_letsencrypt(
             operation_logger.error(msg)
             if no_checks:
                 logger.error(
-                    "Please consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s."
-                    % domain
+                    f"Please consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain {domain}."
                 )
         else:
             logger.success(m18n.n("certmanager_cert_install_success", domain=domain))
@@ -417,11 +413,10 @@ def certificate_renew(
 
             stack = StringIO()
             traceback.print_exc(file=stack)
-            msg = "Certificate renewing for %s failed!" % (domain)
+            msg = f"Certificate renewing for {domain} failed!"
             if no_checks:
                 msg += (
-                    "\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s."
-                    % domain
+                    f"\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain {domain}."
                 )
             logger.error(msg)
             operation_logger.error(msg)
@@ -442,9 +437,9 @@ def certificate_renew(
 
 
 def _email_renewing_failed(domain, exception_message, stack=""):
-    from_ = "certmanager@%s (Certificate Manager)" % domain
+    from_ = f"certmanager@{domain} (Certificate Manager)"
     to_ = "root"
-    subject_ = "Certificate renewing attempt for %s failed!" % domain
+    subject_ = f"Certificate renewing attempt for {domain} failed!"
 
     logs = _tail(50, "/var/log/yunohost/yunohost-cli.log")
     message = f"""\
@@ -476,7 +471,7 @@ investigate :
 
 def _check_acme_challenge_configuration(domain):
 
-    domain_conf = "/etc/nginx/conf.d/%s.conf" % domain
+    domain_conf = f"/etc/nginx/conf.d/{domain}.conf"
     return "include /etc/nginx/conf.d/acme-challenge.conf.inc" in read_file(domain_conf)
 
 

@@ -99,7 +99,7 @@ def tools_adminpw(new_password, check_strength=True):
             {"userPassword": [new_hash]},
         )
     except Exception as e:
-        logger.error("unable to change admin password : %s" % e)
+        logger.error(f"unable to change admin password : {e}")
         raise YunohostError("admin_password_change_failed")
     else:
         # Write as root password
@@ -146,7 +146,7 @@ def _set_hostname(hostname, pretty_hostname=None):
     """
 
     if not pretty_hostname:
-        pretty_hostname = "(YunoHost/%s)" % hostname
+        pretty_hostname = f"(YunoHost/{hostname})"
 
     # First clear nsswitch cache for hosts to make sure hostname is resolved...
     subprocess.call(["nscd", "-i", "hosts"])
@@ -332,7 +332,7 @@ def tools_update(target=None):
 
     if target not in ["system", "apps", "all"]:
         raise YunohostError(
-            "Unknown target %s, should be 'system', 'apps' or 'all'" % target,
+            f"Unknown target {target}, should be 'system', 'apps' or 'all'",
             raw_msg=True,
         )
 
@@ -479,7 +479,7 @@ def tools_upgrade(
         try:
             app_upgrade(app=upgradable_apps)
         except Exception as e:
-            logger.warning("unable to upgrade apps: %s" % str(e))
+            logger.warning(f"unable to upgrade apps: {e}")
             logger.error(m18n.n("app_upgrade_some_app_failed"))
 
         return
@@ -885,7 +885,7 @@ def _get_migration_by_name(migration_name):
     try:
         from . import migrations
     except ImportError:
-        raise AssertionError("Unable to find migration with name %s" % migration_name)
+        raise AssertionError(f"Unable to find migration with name {migration_name}")
 
     migrations_path = migrations.__path__[0]
     migrations_found = [
@@ -895,7 +895,7 @@ def _get_migration_by_name(migration_name):
     ]
 
     assert len(migrations_found) == 1, (
-        "Unable to find migration with name %s" % migration_name
+        f"Unable to find migration with name {migration_name}"
     )
 
     return _load_migration(migrations_found[0])
@@ -1019,7 +1019,7 @@ class Migration:
 
     @property
     def description(self):
-        return m18n.n("migration_description_%s" % self.id)
+        return m18n.n(f"migration_description_{self.id}")
 
     def ldap_migration(self, run):
         def func(self):

@@ -117,7 +117,7 @@ def _patch_legacy_php_versions(app_folder):
         c = (
             "sed -i "
             + "".join(
-                "-e 's@{pattern}@{replace}@g' ".format(pattern=p, replace=r)
+                f"-e 's@{p}@{r}@g' "
                 for p, r in LEGACY_PHP_VERSION_REPLACEMENTS
             )
             + "%s" % filename

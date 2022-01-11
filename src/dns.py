@@ -338,7 +338,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
 
 
 def _get_DKIM(domain):
-    DKIM_file = "/etc/dkim/{domain}.mail.txt".format(domain=domain)
+    DKIM_file = f"/etc/dkim/{domain}.mail.txt"
 
     if not os.path.isfile(DKIM_file):
         return (None, None)
