@@ -140,6 +140,8 @@ class LDAPInterface:
         """
         if not base:
             base = self.basedn
+        else:
+            base = base + "," + self.basedn
 
         try:
             result = self.con.search_s(base, ldap.SCOPE_SUBTREE, filter, attrs)
@@ -241,7 +243,7 @@ class LDAPInterface:
 
         """
         dn = rdn + "," + self.basedn
-        actual_entry = self.search(base=dn, attrs=None)
+        actual_entry = self.search(rdn, attrs=None)
         ldif = modlist.modifyModlist(actual_entry[0], attr_dict, ignore_oldexistent=1)
 
         if ldif == []:

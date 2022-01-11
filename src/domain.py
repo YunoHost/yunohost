@@ -69,7 +69,7 @@ def domain_list(exclude_subdomains=False):
     result = [
         entry["virtualdomain"][0]
         for entry in ldap.search(
-            "ou=domains,dc=yunohost,dc=org", "virtualdomain=*", ["virtualdomain"]
+            "ou=domains", "virtualdomain=*", ["virtualdomain"]
         )
     ]
 
