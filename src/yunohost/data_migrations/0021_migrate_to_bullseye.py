@@ -196,7 +196,7 @@ class MyMigration(Migration):
             "  || true"
         )
 
-        php74packages_to_install = [
+        basephp74packages_to_install = [
             "php7.4-fpm",
             "php7.4-common",
             "php7.4-ldap",
@@ -207,7 +207,7 @@ class MyMigration(Migration):
             "php-php-gettext",
         ]
 
-        php74packages_to_install += [
+        php74packages_to_install = basephp74packages_to_install + [
             f.strip() for f in check_output(cmd).split("\n") if f.strip()
         ]
 
@@ -221,6 +221,8 @@ class MyMigration(Migration):
             raise YunohostError(
                 "Failed to force the install of php dependencies ?", raw_msg=True
             )
+
+        os.system(f"apt-mark auto {' '.join(basephp74packages_to_install)}")
 
         # Clean the mess
         logger.info(m18n.n("migration_0021_cleaning_up"))
@@ -371,11 +373,11 @@ class MyMigration(Migration):
 
     def hold(self, packages):
         for package in packages:
-            os.system("apt-mark hold {}".format(package))
+            os.system(f"apt-mark hold {package}")
 
     def unhold(self, packages):
         for package in packages:
-            os.system("apt-mark unhold {}".format(package))
+            os.system(f"apt-mark unhold {package}")
 
     def apt_install(self, cmd):
         def is_relevant(line):
