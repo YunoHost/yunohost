@@ -236,17 +236,17 @@ def check_LDAP_db_integrity():
     ldap = _get_ldap_interface()
 
     user_search = ldap.search(
-        "ou=users,dc=yunohost,dc=org",
+        "ou=users",
         "(&(objectclass=person)(!(uid=root))(!(uid=nobody)))",
         ["uid", "memberOf", "permission"],
     )
     group_search = ldap.search(
-        "ou=groups,dc=yunohost,dc=org",
+        "ou=groups",
         "(objectclass=groupOfNamesYnh)",
         ["cn", "member", "memberUid", "permission"],
     )
     permission_search = ldap.search(
-        "ou=permission,dc=yunohost,dc=org",
+        "ou=permission",
         "(objectclass=permissionYnh)",
         ["cn", "groupPermission", "inheritPermission", "memberUid"],
     )

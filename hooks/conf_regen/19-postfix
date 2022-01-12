@@ -42,7 +42,6 @@ do_pre_regen() {
         chown postfix ${pending_dir}/etc/postfix/sasl_passwd
 
         cat <<<"[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" >${postfix_dir}/sasl_passwd
-        postmap ${postfix_dir}/sasl_passwd
     fi
     export main_domain
     export domain_list="$YNH_DOMAINS"
@@ -71,6 +70,7 @@ do_post_regen() {
     if [ -e /etc/postfix/sasl_passwd ]; then
         chmod 750 /etc/postfix/sasl_passwd*
         chown postfix:root /etc/postfix/sasl_passwd*
+        postmap /etc/postfix/sasl_passwd
     fi
 
     [[ -z "$regen_conf_files" ]] \

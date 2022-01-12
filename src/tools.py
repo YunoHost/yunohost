@@ -33,7 +33,7 @@ from typing import List
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.process import check_output, call_async_output
+from moulinette.utils.process import call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm
 
 from yunohost.app import (
@@ -101,7 +101,7 @@ def tools_adminpw(new_password, check_strength=True):
             {"userPassword": [new_hash]},
         )
     except Exception as e:
-        logger.error("unable to change admin password : %s" % e)
+        logger.error(f"unable to change admin password : {e}")
         raise YunohostError("admin_password_change_failed")
     else:
         # Write as root password
@@ -148,7 +148,7 @@ def _set_hostname(hostname, pretty_hostname=None):
     """
 
     if not pretty_hostname:
-        pretty_hostname = "(YunoHost/%s)" % hostname
+        pretty_hostname = f"(YunoHost/{hostname})"
 
     # First clear nsswitch cache for hosts to make sure hostname is resolved...
     subprocess.call(["nscd", "-i", "hosts"])
@@ -232,9 +232,7 @@ def tools_postinstall(
         # and inform the user that we could not contact the dyndns host server.
         except Exception:
             logger.warning(
-                m18n.n(
-                    "dyndns_provider_unreachable", provider="dyndns.yunohost.org"
-                )
+                m18n.n("dyndns_provider_unreachable", provider="dyndns.yunohost.org")
             )
 
         if available:
@@ -322,7 +320,7 @@ def tools_update(target=None):
 
     if target not in ["system", "apps", "all"]:
         raise YunohostError(
-            "Unknown target %s, should be 'system', 'apps' or 'all'" % target,
+            f"Unknown target {target}, should be 'system', 'apps' or 'all'",
             raw_msg=True,
         )
 
@@ -468,7 +466,7 @@ def tools_upgrade(
         try:
             app_upgrade(app=upgradable_apps)
         except Exception as e:
-            logger.warning("unable to upgrade apps: %s" % str(e))
+            logger.warning(f"unable to upgrade apps: {e}")
             logger.error(m18n.n("app_upgrade_some_app_failed"))
 
         return
@@ -513,10 +511,10 @@ def tools_upgrade(
 
         callbacks = (
             lambda l: logger.info("+ " + l.rstrip() + "\r")
-            if is_relevant(l)
+            if _apt_log_line_is_relevant(l)
             else logger.debug(l.rstrip() + "\r"),
             lambda l: logger.warning(l.rstrip())
-            if is_relevant(l)
+            if _apt_log_line_is_relevant(l)
             else logger.debug(l.rstrip()),
         )
         returncode = call_async_output(dist_upgrade, callbacks, shell=True)
@@ -548,6 +546,24 @@ def tools_upgrade(
 
         logger.success(m18n.n("system_upgraded"))
         operation_logger.success()
+
+
+def _apt_log_line_is_relevant(line):
+    irrelevants = [
+        "service sudo-ldap already provided",
+        "Reading database ...",
+        "Preparing to unpack",
+        "Selecting previously unselected package",
+        "Created symlink /etc/systemd",
+        "Replacing config file",
+        "Creating config file",
+        "Installing new version of config file",
+        "Installing new config file as you requested",
+        ", does not exist on system.",
+        "unable to delete old directory",
+        "update-alternatives:",
+    ]
+    return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
 
 
 @is_unit_operation()
@@ -856,7 +872,7 @@ def _get_migration_by_name(migration_name):
     try:
         from . import migrations
     except ImportError:
-        raise AssertionError("Unable to find migration with name %s" % migration_name)
+        raise AssertionError(f"Unable to find migration with name {migration_name}")
 
     migrations_path = migrations.__path__[0]
     migrations_found = [
@@ -866,7 +882,7 @@ def _get_migration_by_name(migration_name):
     ]
 
     assert len(migrations_found) == 1, (
-        "Unable to find migration with name %s" % migration_name
+        f"Unable to find migration with name {migration_name}"
     )
 
     return _load_migration(migrations_found[0])
@@ -903,6 +919,10 @@ def _skip_all_migrations():
     all_migrations = _get_migrations_list()
     new_states = {"migrations": {}}
     for migration in all_migrations:
+        # Don't skip bullseye migration while we're
+        # still on buster
+        if "migrate_to_bullseye" in migration.id:
+            continue
         new_states["migrations"][migration.id] = "skipped"
     write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
 
@@ -986,7 +1006,7 @@ class Migration:
 
     @property
     def description(self):
-        return m18n.n("migration_description_%s" % self.id)
+        return m18n.n(f"migration_description_{self.id}")
 
     def ldap_migration(self, run):
         def func(self):

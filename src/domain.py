@@ -69,7 +69,7 @@ def domain_list(exclude_subdomains=False):
     result = [
         entry["virtualdomain"][0]
         for entry in ldap.search(
-            "ou=domains,dc=yunohost,dc=org", "virtualdomain=*", ["virtualdomain"]
+            "ou=domains", "virtualdomain=*", ["virtualdomain"]
         )
     ]
 
@@ -187,7 +187,7 @@ def domain_add(operation_logger, domain, dyndns=False):
         # Actually subscribe
         dyndns_subscribe(domain=domain)
 
-    _certificate_install_selfsigned([domain], False)
+    _certificate_install_selfsigned([domain], True)
 
     try:
         attr_dict = {
@@ -196,7 +196,7 @@ def domain_add(operation_logger, domain, dyndns=False):
         }
 
         try:
-            ldap.add("virtualdomain=%s,ou=domains" % domain, attr_dict)
+            ldap.add(f"virtualdomain={domain},ou=domains", attr_dict)
         except Exception as e:
             raise YunohostError("domain_creation_failed", domain=domain, error=e)
         finally:
@@ -215,7 +215,7 @@ def domain_add(operation_logger, domain, dyndns=False):
             # This is a pretty ad hoc solution and only applied to nginx
             # because it's one of the major service, but in the long term we
             # should identify the root of this bug...
-            _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
+            _force_clear_hashes([f"/etc/nginx/conf.d/{domain}.conf"])
             regen_conf(
                 names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd", "mdns"]
             )
@@ -282,8 +282,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
             apps_on_that_domain.append(
                 (
                     app,
-                    '    - %s "%s" on https://%s%s'
-                    % (app, label, domain, settings["path"])
+                    f"    - {app} \"{label}\" on https://{domain}{settings['path']}"
                     if "path" in settings
                     else app,
                 )
@@ -342,14 +341,14 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     # This is a pretty ad hoc solution and only applied to nginx
     # because it's one of the major service, but in the long term we
     # should identify the root of this bug...
-    _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
+    _force_clear_hashes([f"/etc/nginx/conf.d/{domain}.conf"])
     # And in addition we even force-delete the file Otherwise, if the file was
     # manually modified, it may not get removed by the regenconf which leads to
     # catastrophic consequences of nginx breaking because it can't load the
     # cert file which disappeared etc..
-    if os.path.exists("/etc/nginx/conf.d/%s.conf" % domain):
+    if os.path.exists(f"/etc/nginx/conf.d/{domain}.conf"):
         _process_regen_conf(
-            "/etc/nginx/conf.d/%s.conf" % domain, new_conf=None, save=True
+            f"/etc/nginx/conf.d/{domain}.conf", new_conf=None, save=True
         )
 
     regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd", "mdns"])
@@ -388,7 +387,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
         domain_list_cache = {}
         _set_hostname(new_main_domain)
     except Exception as e:
-        logger.warning("%s" % e, exc_info=1)
+        logger.warning(str(e), exc_info=1)
         raise YunohostError("main_domain_change_failed")
 
     # Generate SSOwat configuration file
@@ -517,9 +516,7 @@ def domain_cert_install(
 ):
     from yunohost.certificate import certificate_install
 
-    return certificate_install(
-        domain_list, force, no_checks, self_signed, staging
-    )
+    return certificate_install(domain_list, force, no_checks, self_signed, staging)
 
 
 def domain_cert_renew(
@@ -527,9 +524,7 @@ def domain_cert_renew(
 ):
     from yunohost.certificate import certificate_renew
 
-    return certificate_renew(
-        domain_list, force, no_checks, email, staging
-    )
+    return certificate_renew(domain_list, force, no_checks, email, staging)
 
 
 def domain_dns_conf(domain):

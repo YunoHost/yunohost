@@ -99,7 +99,7 @@ def user_ssh_remove_key(username, key):
 
     if not os.path.exists(authorized_keys_file):
         raise YunohostValidationError(
-            "this key doesn't exists ({} dosesn't exists)".format(authorized_keys_file),
+            f"this key doesn't exists ({authorized_keys_file} dosesn't exists)",
             raw_msg=True,
         )
 
@@ -107,7 +107,7 @@ def user_ssh_remove_key(username, key):
 
     if key not in authorized_keys_content:
         raise YunohostValidationError(
-            "Key '{}' is not present in authorized_keys".format(key), raw_msg=True
+            f"Key '{key}' is not present in authorized_keys", raw_msg=True
         )
 
     # don't delete the previous comment because we can't verify if it's legit
@@ -172,7 +172,7 @@ def _get_user_for_ssh(username, attrs=None):
 
     ldap = _get_ldap_interface()
     user = ldap.search(
-        "ou=users,dc=yunohost,dc=org",
+        "ou=users",
         "(&(objectclass=person)(uid=%s))" % username,
         attrs,
     )

@@ -19,7 +19,7 @@
 
 """
 
-from moulinette.core import MoulinetteError
+from moulinette.core import MoulinetteError, MoulinetteAuthenticationError
 from moulinette import m18n
 
 
@@ -60,3 +60,9 @@ class YunohostValidationError(YunohostError):
     def content(self):
 
         return {"error": self.strerror, "error_key": self.key, **self.kwargs}
+
+
+class YunohostAuthenticationError(MoulinetteAuthenticationError):
+
+    pass
+

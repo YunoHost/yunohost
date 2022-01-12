@@ -14,11 +14,11 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , python3-psutil, python3-requests, python3-dnspython, python3-openssl
  , python3-miniupnpc, python3-dbus, python3-jinja2
  , python3-toml, python3-packaging, python3-publicsuffix2
- , python3-ldap, python3-zeroconf, python3-lexicon,
+ , python3-ldap, python3-zeroconf (>= 0.36), python3-lexicon,
  , python-is-python3
  , nginx, nginx-extras (>=1.18)
  , apt, apt-transport-https, apt-utils, dirmngr
- , openssh-server, iptables, fail2ban, dnsutils, bind9utils
+ , openssh-server, iptables, fail2ban, bind9-dnsutils
  , openssl, ca-certificates, netcat-openbsd, iproute2
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
  , dnsmasq, resolvconf, libnss-myhostname

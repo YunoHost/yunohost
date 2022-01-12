@@ -103,9 +103,7 @@ def _initialize_apps_catalog_system():
         )
         write_to_yaml(APPS_CATALOG_CONF, default_apps_catalog_list)
     except Exception as e:
-        raise YunohostError(
-            "Could not initialize the apps catalog system... : %s" % str(e)
-        )
+        raise YunohostError(f"Could not initialize the apps catalog system... : {e}", raw_msg=True)
 
     logger.success(m18n.n("apps_catalog_init_success"))
 
@@ -121,14 +119,12 @@ def _read_apps_catalog_list():
         # by returning [] if list_ is None
         return list_ if list_ else []
     except Exception as e:
-        raise YunohostError("Could not read the apps_catalog list ... : %s" % str(e))
+        raise YunohostError(f"Could not read the apps_catalog list ... : {e}", raw_msg=True)
 
 
 def _actual_apps_catalog_api_url(base_url):
 
-    return "{base_url}/v{version}/apps.json".format(
-        base_url=base_url, version=APPS_CATALOG_API_VERSION
-    )
+    return f"{base_url}/v{APPS_CATALOG_API_VERSION}/apps.json"
 
 
 def _update_apps_catalog():
@@ -172,16 +168,11 @@ def _update_apps_catalog():
         apps_catalog_content["from_api_version"] = APPS_CATALOG_API_VERSION
 
         # Save the apps_catalog data in the cache
-        cache_file = "{cache_folder}/{list}.json".format(
-            cache_folder=APPS_CATALOG_CACHE, list=apps_catalog_id
-        )
+        cache_file = f"{APPS_CATALOG_CACHE}/{apps_catalog_id}.json"
         try:
             write_to_json(cache_file, apps_catalog_content)
         except Exception as e:
-            raise YunohostError(
-                "Unable to write cache data for %s apps_catalog : %s"
-                % (apps_catalog_id, str(e))
-            )
+            raise YunohostError(f"Unable to write cache data for {apps_catalog_id} apps_catalog : {e}", raw_msg=True)
 
     logger.success(m18n.n("apps_catalog_update_success"))
 
@@ -197,9 +188,7 @@ def _load_apps_catalog():
     for apps_catalog_id in [L["id"] for L in _read_apps_catalog_list()]:
 
         # Let's load the json from cache for this catalog
-        cache_file = "{cache_folder}/{list}.json".format(
-            cache_folder=APPS_CATALOG_CACHE, list=apps_catalog_id
-        )
+        cache_file = f"{APPS_CATALOG_CACHE}/{apps_catalog_id}.json"
 
         try:
             apps_catalog_content = (
@@ -230,10 +219,8 @@ def _load_apps_catalog():
             # (N.B. : there's a small edge case where multiple apps catalog could be listing the same apps ...
             #         in which case we keep only the first one found)
             if app in merged_catalog["apps"]:
-                logger.warning(
-                    "Duplicate app %s found between apps catalog %s and %s"
-                    % (app, apps_catalog_id, merged_catalog["apps"][app]["repository"])
-                )
+                other_catalog = merged_catalog["apps"][app]["repository"]
+                logger.warning(f"Duplicate app {app} found between apps catalog {apps_catalog_id} and {other_catalog}")
                 continue
 
             info["repository"] = apps_catalog_id

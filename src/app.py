@@ -177,7 +177,7 @@ def app_info(app, full=False):
     ret["label"] = permissions.get(app + ".main", {}).get("label")
 
     if not ret["label"]:
-        logger.warning("Failed to get label for app %s ?" % app)
+        logger.warning(f"Failed to get label for app {app} ?")
     return ret
 
 
@@ -291,8 +291,7 @@ def app_map(app=None, raw=False, user=None):
         if user:
             if not app_id + ".main" in permissions:
                 logger.warning(
-                    "Uhoh, no main permission was found for app %s ... sounds like an app was only partially removed due to another bug :/"
-                    % app_id
+                    f"Uhoh, no main permission was found for app {app_id} ... sounds like an app was only partially removed due to another bug :/"
                 )
                 continue
             main_perm = permissions[app_id + ".main"]
@@ -412,7 +411,7 @@ def app_change_url(operation_logger, app, domain, path):
     # Execute App change_url script
     ret = hook_exec(change_url_script, env=env_dict)[0]
     if ret != 0:
-        msg = "Failed to change '%s' url." % app
+        msg = f"Failed to change '{app}' url."
         logger.error(msg)
         operation_logger.error(msg)
 
@@ -651,7 +650,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             if upgrade_failed or broke_the_system:
 
                 # display this if there are remaining apps
-                if apps[number + 1:]:
+                if apps[number + 1 :]:
                     not_upgraded_apps = apps[number:]
                     logger.error(
                         m18n.n(
@@ -909,7 +908,7 @@ def app_install(
     for question in questions:
         # Or should it be more generally question.redact ?
         if question.type == "password":
-            del env_dict_for_logging["YNH_APP_ARG_%s" % question.name.upper()]
+            del env_dict_for_logging[f"YNH_APP_ARG_{question.name.upper()}"]
 
     operation_logger.extra.update({"env": env_dict_for_logging})
 
@@ -956,8 +955,7 @@ def app_install(
             # This option is meant for packagers to debug their apps more easily
             if no_remove_on_failure:
                 raise YunohostError(
-                    "The installation of %s failed, but was not cleaned up as requested by --no-remove-on-failure."
-                    % app_id,
+                    f"The installation of {app_id} failed, but was not cleaned up as requested by --no-remove-on-failure.",
                     raw_msg=True,
                 )
             else:
@@ -1508,9 +1506,9 @@ def app_action_run(operation_logger, app, action, args=None):
     actions = {x["id"]: x for x in actions}
 
     if action not in actions:
+        available_actions = ", ".join(actions.keys()),
         raise YunohostValidationError(
-            "action '%s' not available for app '%s', available actions are: %s"
-            % (action, app, ", ".join(actions.keys())),
+            f"action '{action}' not available for app '{app}', available actions are: {available_actions}",
             raw_msg=True,
         )
 
@@ -1910,8 +1908,7 @@ def _get_manifest_of_app(path):
         manifest = read_json(os.path.join(path, "manifest.json"))
     else:
         raise YunohostError(
-            "There doesn't seem to be any manifest file in %s ... It looks like an app was not correctly installed/removed."
-            % path,
+            f"There doesn't seem to be any manifest file in {path} ... It looks like an app was not correctly installed/removed.",
             raw_msg=True,
         )
 
@@ -2196,7 +2193,7 @@ def _extract_app_from_gitrepo(
             cmd = f"git ls-remote --exit-code {url} {branch} | awk '{{print $1}}'"
             manifest["remote"]["revision"] = check_output(cmd)
         except Exception as e:
-            logger.warning("cannot get last commit hash because: %s ", e)
+            logger.warning(f"cannot get last commit hash because: {e}")
     else:
         manifest["remote"]["revision"] = revision
         manifest["lastUpdate"] = app_info.get("lastUpdate")
@@ -2409,14 +2406,7 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
     if conflicts:
         apps = []
         for path, app_id, app_label in conflicts:
-            apps.append(
-                " * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
-                    domain=domain,
-                    path=path,
-                    app_id=app_id,
-                    app_label=app_label,
-                )
-            )
+            apps.append(f" * {domain}{path} → {app_label} ({app_id})")
 
         if full_domain:
             raise YunohostValidationError("app_full_domain_unavailable", domain=domain)

@@ -407,8 +407,7 @@ def _get_and_format_service_status(service, infos):
 
     if raw_status is None:
         logger.error(
-            "Failed to get status information via dbus for service %s, systemctl didn't recognize this service ('NoSuchUnit')."
-            % systemd_service
+            f"Failed to get status information via dbus for service {systemd_service}, systemctl didn't recognize this service ('NoSuchUnit')."
         )
         return {
             "status": "unknown",
@@ -424,7 +423,7 @@ def _get_and_format_service_status(service, infos):
     # If no description was there, try to get it from the .json locales
     if not description:
 
-        translation_key = "service_description_%s" % service
+        translation_key = f"service_description_{service}"
         if m18n.key_exists(translation_key):
             description = m18n.n(translation_key)
         else:
@@ -445,7 +444,7 @@ def _get_and_format_service_status(service, infos):
             "enabled" if glob("/etc/rc[S5].d/S??" + service) else "disabled"
         )
     elif os.path.exists(
-        "/etc/systemd/system/multi-user.target.wants/%s.service" % service
+        f"/etc/systemd/system/multi-user.target.wants/{service}.service"
     ):
         output["start_on_boot"] = "enabled"
 
@@ -585,8 +584,7 @@ def _run_service_command(action, service):
     ]
     if action not in possible_actions:
         raise ValueError(
-            "Unknown action '%s', available actions are: %s"
-            % (action, ", ".join(possible_actions))
+            f"Unknown action '{action}', available actions are: {', '.join(possible_actions)}"
         )
 
     cmd = f"systemctl {action} {service}"
@@ -604,7 +602,7 @@ def _run_service_command(action, service):
 
     try:
         # Launch the command
-        logger.debug("Running '%s'" % cmd)
+        logger.debug(f"Running '{cmd}'")
         p = subprocess.Popen(cmd.split(), stderr=subprocess.STDOUT)
         # If this command needs a lock (because the service uses yunohost
         # commands inside), find the PID and add a lock for it
@@ -651,7 +649,7 @@ def _give_lock(action, service, p):
     if son_PID != 0:
         # Append the PID to the lock file
         logger.debug(f"Giving a lock to PID {son_PID} for service {service} !")
-        append_to_file(MOULINETTE_LOCK, "\n%s" % str(son_PID))
+        append_to_file(MOULINETTE_LOCK, f"\n{son_PID}")
 
     return son_PID
 
@@ -815,7 +813,7 @@ def _find_previous_log_file(file):
     i = int(i[0]) + 1 if len(i) > 0 else 1
 
     previous_file = file if i == 1 else splitext[0]
-    previous_file = previous_file + ".%d" % (i)
+    previous_file = previous_file + f".{i}"
     if os.path.exists(previous_file):
         return previous_file
 
@@ -835,8 +833,7 @@ def _get_journalctl_logs(service, number="all"):
         )
     except Exception:
         import traceback
-
+        trace_ = traceback.format_exc()
         return (
-            "error while get services logs from journalctl:\n%s"
-            % traceback.format_exc()
+            f"error while get services logs from journalctl:\n{trace_}"
         )
