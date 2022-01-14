@@ -30,7 +30,7 @@ from moulinette.utils.filesystem import (
     rm,
 )
 
-from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.error import YunohostError
 from yunohost.hook import hook_exec
 
 logger = getActionLogger("yunohost.app_resources")
@@ -210,7 +210,7 @@ class PermissionsResource(AppResource):
                 properties[perm]["show_tile"] = bool(properties[perm]["url"])
 
         if isinstance(properties["main"]["url"], str) and properties["main"]["url"] != "/":
-            raise YunohostError("URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app")
+            raise YunohostValidationError("URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app")
 
         super().__init__({"permissions": properties}, *args, **kwargs)
 
@@ -523,17 +523,25 @@ class AptDependenciesAppResource(AppResource):
         "extras": {}
     }
 
+    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
+
+        for key, values in properties.get("extras", {}).items():
+            if not all(isinstance(values.get(k), str) for k in ["repo", "key", "packages"]):
+                raise YunohostError("In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' and 'packages' defined and be strings")
+
+        super().__init__(properties, *args, **kwargs)
+
     def provision_or_update(self, context: Dict):
 
-        # FIXME : implement 'extras' management
-        self._run_script("provision_or_update",
-                         "ynh_install_app_dependencies $apt_dependencies",
-                         {"apt_dependencies": self.packages})
+        script = [f"ynh_install_app_dependencies {self.packages}"]
+        for repo, values in self.extras.items():
+            script += [f"ynh_install_extra_app_dependencies --repo='{values['repo']}' --key='{values['key']}' --package='{values['packages']}'"]
+
+        self._run_script("provision_or_update", '\n'.join(script))
 
     def deprovision(self, context: Dict):
 
-        self._run_script("deprovision",
-                         "ynh_remove_app_dependencies")
+        self._run_script("deprovision", "ynh_remove_app_dependencies")
 
 
 class PortResource(AppResource):
