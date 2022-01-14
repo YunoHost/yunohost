@@ -374,17 +374,15 @@ class InstalldirAppResource(AppResource):
 
     default_properties = {
         "dir": "/var/www/__APP__",    # FIXME or choose to move this elsewhere nowadays idk...
-        "alias": None,
         "owner": "__APP__:rx",
         "group": "__APP__:rx",
     }
 
     # FIXME: change default dir to /opt/stuff if app ain't a webapp ...
-    # FIXME: what do in a scenario where the location changed
 
     def provision_or_update(self, context: Dict):
 
-        current_install_dir = self.get_setting("install_dir")
+        current_install_dir = self.get_setting("install_dir") or self.get_setting("final_path")
 
         # If during install, /var/www/$app already exists, assume that it's okay to remove and recreate it
         # FIXME : is this the right thing to do ?
@@ -393,6 +391,7 @@ class InstalldirAppResource(AppResource):
 
         if not os.path.isdir(self.dir):
             # Handle case where install location changed, in which case we shall move the existing install dir
+            # FIXME: confirm that's what we wanna do
             if current_install_dir and os.path.isdir(current_install_dir):
                 shutil.move(current_install_dir, self.dir)
             else:
@@ -406,10 +405,10 @@ class InstalldirAppResource(AppResource):
 
         chmod(self.dir, int(perm_octal))
         chown(self.dir, owner, group)
+        # FIXME: shall we apply permissions recursively ?
 
         self.set_setting("install_dir", self.dir)
-        if self.alias:
-            self.set_setting(self.alias, self.dir)
+        self.delete_setting("final_path")  # Legacy
 
     def deprovision(self, context: Dict):
         # FIXME : check that self.dir has a sensible value to prevent catastrophes
