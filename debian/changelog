@@ -1,3 +1,18 @@
+yunohost (4.3.6) stable; urgency=low
+
+  - [enh] ssh: add a new setting to manage PasswordAuthentication in sshd_config ([#1388](https://github.com/YunoHost/yunohost/pull/1388))
+  - [enh] upgrades: filter more boring apt messages (3cc1a0a5)
+  - [fix] ynh_add_config: crons should be owned by root, otherwise they probably don't run? (0973301b)
+  - [fix] domains: force cert install during domain_add ([#1404](https://github.com/YunoHost/yunohost/pull/1404))
+  - [fix] logs: remove 'args' for metadata, may contain unredacted secrets in edge cases
+  - [fix] helpers, apt: upgrade apt dependencies from extra repos ([#1407](https://github.com/YunoHost/yunohost/pull/1407))
+  - [fix] diagnosis: incorrect dns check (relative vs absolute) for CNAME on subdomain (d81b85a4)
+  - [i18n] Translations updated for Dutch, French, Galician, German, Spanish, Ukrainian
+
+  Thanks to all contributors <3 ! (Boudewijn, Christian Wehrli, Éric Gaspar, Germain Edy, José M, Kay0u, Kayou, ljf, Tagada, Tymofii-Lytvynenko)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 14 Jan 2022 01:29:58 +0100
+
 yunohost (4.3.5) stable; urgency=low
 
   - [fix] backup: bug in backup_delete when compress_tar_archives is True ([#1381](https://github.com/YunoHost/yunohost/pull/1381))
