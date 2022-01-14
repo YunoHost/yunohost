@@ -300,8 +300,8 @@ class SystemuserAppResource(AppResource):
     priority = 20
 
     default_properties = {
-        "allow_ssh": [],
-        "allow_sftp": []
+        "allow_ssh": False,
+        "allow_sftp": False
     }
 
     def provision_or_update(self, context: Dict):
@@ -494,11 +494,6 @@ class DatadirAppResource(AppResource):
 #        "main": {"url": "?", "sha256sum": "?", "predownload": True}
 #    }
 #
-#    def validate_availability(self, context):
-#        # ? FIXME
-#        # call request.head on the url idk
-#        pass
-#
 #    def provision_or_update(self, context: Dict):
 #        # FIXME
 #        return
@@ -527,11 +522,6 @@ class AptDependenciesAppResource(AppResource):
         "packages": [],
         "extras": {}
     }
-
-    def validate_availability(self, context):
-        # ? FIXME
-        # call helpers idk ...
-        pass
 
     def provision_or_update(self, context: Dict):
 
@@ -568,6 +558,7 @@ class PortResource(AppResource):
     default_properties = {
         "default": 1000,
         "expose": False,    # FIXME : implement logic for exposed port (allow/disallow in firewall ?)
+        # "protocol": "tcp",
     }
 
     def _port_is_used(self, port):
@@ -616,11 +607,6 @@ class PortResource(AppResource):
 #    default_properties = {
 #        "type": "mysql"
 #    }
-#
-#    def validate_availability(self, context):
-#        # FIXME : checking availability sort of imply that mysql / postgresql is installed
-#        # or we gotta make sure mariadb-server or postgresql is gonna be installed (apt resource)
-#        pass
 #
 #    def provision_or_update(self, context: str):
 #        raise NotImplementedError()
