@@ -593,33 +593,84 @@ class PortResource(AppResource):
         self.delete_setting("port")
 
 
-#class DBAppResource(AppResource):
-#    """
-#        is_provisioned -> setting db_user, db_name, db_pwd exists
-#        is_available   -> db doesn't already exists ( ... also gotta make sure that mysql / postgresql is indeed installed ... or will be after apt provisions it)
-#
-#        provision -> setup the db + init the setting
-#        update    -> ??
-#
-#        deprovision -> delete the db
-#
-#        deep_clean  -> ... idk look into any db name that would not be related to any app ...
-#
-#        backup -> dump db
-#        restore -> setup + inject db dump
-#    """
-#
-#    type = "db"
-#
-#    default_properties = {
-#        "type": "mysql"
-#    }
-#
-#    def provision_or_update(self, context: str):
-#        raise NotImplementedError()
-#
-#    def deprovision(self, context: Dict):
-#        raise NotImplementedError()
-#
+class DBAppResource(AppResource):
+    """
+        is_provisioned -> setting db_user, db_name, db_pwd exists
+        is_available   -> db doesn't already exists ( ... also gotta make sure that mysql / postgresql is indeed installed ... or will be after apt provisions it)
+
+        provision -> setup the db + init the setting
+        update    -> ??
+
+        deprovision -> delete the db
+
+        deep_clean  -> ... idk look into any db name that would not be related to any app ...
+
+        backup -> dump db
+        restore -> setup + inject db dump
+    """
+
+    type = "db"
+
+    default_properties = {
+        "type": None,
+    }
+
+    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
+
+        if "type" not in properties or properties["type"] not in ["mysql", "postgresql"]:
+            raise YunohostError("Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources")
+
+        super().__init__(properties, *args, **kwargs)
+
+    def db_exists(self, db_name):
+
+        if self.type == "mysql":
+            return os.system(f"mysqlshow '{db_name}' >/dev/null 2>/dev/null") == 0
+        elif self.type == "postgresql":
+            return os.system(f"sudo --login --user=postgres psql -c '' '{db_name}' >/dev/null 2>/dev/null") == 0
+        else:
+            return False
+
+    def provision_or_update(self, context: str):
+
+        # This is equivalent to ynh_sanitize_dbid
+        db_name = self.app.replace('-', '_').replace('.', '_')
+        db_user = db_name
+        self.set_setting("db_name", db_name)
+        self.set_setting("db_user", db_user)
+
+        db_pwd = None
+        if self.get_setting("db_pwd"):
+            db_pwd = self.get_setting("db_pwd")
+        else:
+            # Legacy setting migration
+            legacypasswordsetting = "psqlpwd" if self.type == "postgresql" else "mysqlpwd"
+            if self.get_setting(legacypasswordsetting):
+                db_pwd = self.get_setting(legacypasswordsetting)
+                self.delete_setting(legacypasswordsetting)
+                self.set_setting("db_pwd", db_pwd)
+
+        if not db_pwd:
+            from moulinette.utils.text import random_ascii
+            db_pwd = random_ascii(24)
+            self.set_setting("db_pwd", db_pwd)
+
+        if not self.db_exists(db_name):
+
+            if self.type == "mysql":
+                self._run_script("provision", f"ynh_mysql_create_db '{db_name}' '{db_user}' '{db_pwd}'")
+            elif self.type == "postgresql":
+                self._run_script("provision", f"ynh_psql_create_user '{db_user}' '{db_pwd}'; ynh_psql_create_db '{db_name}' '{db_user}'")
+
+    def deprovision(self, context: Dict):
+
+        db_name = self.app.replace('-', '_').replace('.', '_')
+        db_user = db_name
+
+        if self.type == "mysql":
+            self._run_script("deprovision", f"ynh_mysql_remove_db '{db_name}' '{db_user}'")
+        elif self.type == "postgresql":
+            self._run_script("deprovision", f"ynh_psql_remove_db '{db_name}' '{db_user}'")
+
 
 AppResourceClassesByType = {c.type: c for c in AppResource.__subclasses__()}
