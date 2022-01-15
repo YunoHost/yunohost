@@ -116,7 +116,7 @@ class AppResourceManager:
 
 class AppResource:
 
-    def __init__(self, properties: Dict[str, Any], app: str, manager: str):
+    def __init__(self, properties: Dict[str, Any], app: str, manager=None):
 
         self.app = app
         self.manager = manager
@@ -203,6 +203,8 @@ class PermissionsResource(AppResource):
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
 
+        # FIXME : if url != None, we should check that there's indeed a domain/path defined ? ie that app is a webapp
+
         for perm, infos in properties.items():
             properties[perm] = copy.copy(self.default_perm_properties)
             properties[perm].update(infos)
@@ -210,7 +212,7 @@ class PermissionsResource(AppResource):
                 properties[perm]["show_tile"] = bool(properties[perm]["url"])
 
         if isinstance(properties["main"]["url"], str) and properties["main"]["url"] != "/":
-            raise YunohostValidationError("URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app")
+            raise YunohostError("URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app")
 
         super().__init__({"permissions": properties}, *args, **kwargs)
 
@@ -414,6 +416,7 @@ class InstalldirAppResource(AppResource):
         # FIXME : check that self.dir has a sensible value to prevent catastrophes
         if os.path.isdir(self.dir):
             rm(self.dir, recursive=True)
+        # FIXME : in fact we should delete settings to be consistent
 
 
 class DatadirAppResource(AppResource):
@@ -468,6 +471,7 @@ class DatadirAppResource(AppResource):
         pass
         #if os.path.isdir(self.dir):
         #    rm(self.dir, recursive=True)
+        # FIXME : in fact we should delete settings to be consistent
 
 
 #
@@ -563,7 +567,7 @@ class PortResource(AppResource):
     priority = 70
 
     default_properties = {
-        "default": 1000,
+        "default": 5000,
         "expose": False,    # FIXME : implement logic for exposed port (allow/disallow in firewall ?)
         # "protocol": "tcp",
     }
@@ -593,7 +597,7 @@ class PortResource(AppResource):
         self.delete_setting("port")
 
 
-class DBAppResource(AppResource):
+class DatabaseAppResource(AppResource):
     """
         is_provisioned -> setting db_user, db_name, db_pwd exists
         is_available   -> db doesn't already exists ( ... also gotta make sure that mysql / postgresql is indeed installed ... or will be after apt provisions it)
@@ -609,7 +613,7 @@ class DBAppResource(AppResource):
         restore -> setup + inject db dump
     """
 
-    type = "db"
+    type = "database"
 
     default_properties = {
         "type": None,
@@ -671,6 +675,8 @@ class DBAppResource(AppResource):
             self._run_script("deprovision", f"ynh_mysql_remove_db '{db_name}' '{db_user}'")
         elif self.type == "postgresql":
             self._run_script("deprovision", f"ynh_psql_remove_db '{db_name}' '{db_user}'")
+
+        # FIXME : in fact we should delete settings to be consistent
 
 
 AppResourceClassesByType = {c.type: c for c in AppResource.__subclasses__()}

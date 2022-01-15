@@ -1,6 +1,9 @@
 import os
 import pytest
 
+from moulinette.utils.process import check_output
+
+from yunohost.app import app_setting
 from yunohost.utils.resources import AppResource, AppResourceManager, AppResourceClassesByType
 
 dummyfile = "/tmp/dummyappresource-testapp"
@@ -43,6 +46,7 @@ def teardown_function(function):
 def clean():
 
     os.system(f"rm -f {dummyfile}")
+    os.system("apt remove lolcat sl nyancat yarn")
 
 
 def test_provision_dummy():
@@ -113,3 +117,196 @@ def test_update_dummy_failwithrollback():
     with pytest.raises(Exception):
         AppResourceManager("testapp", current=current, wanted=wanted).apply(rollback_if_failure=True)
     assert open(dummyfile).read().strip() == "foo"
+
+
+def test_resource_system_user():
+
+    r = AppResourceClassesByType["system_user"]
+
+    conf = {}
+
+    assert os.system("getent passwd testapp &>/dev/null") != 0
+
+    r(conf, "testapp").provision_or_update()
+
+    assert os.system("getent passwd testapp &>/dev/null") == 0
+    assert os.system("getent group testapp | grep -q sftp.app") != 0
+
+    conf["allow_sftp"] = True
+    r(conf, "testapp").provision_or_update()
+
+    assert os.system("getent passwd testapp &>/dev/null") == 0
+    assert os.system("getent group testapp | grep -q sftp.app") == 0
+
+    r(conf, "testapp").deprovision()
+
+    assert os.system("getent passwd testapp &>/dev/null") != 0
+
+
+def test_resource_install_dir():
+
+    r = AppResourceClassesByType["install_dir"]
+    conf = {}
+
+    # FIXME: should also check settings ?
+    # FIXME: should also check automigrate from final_path
+    # FIXME: should also test changing the install folder location ?
+
+    assert not os.path.exists("/var/www/testapp")
+
+    r(conf, "testapp").provision_or_update()
+
+    assert os.path.exists("/var/www/testapp")
+    unixperms = check_output("ls -ld /var/www/testapp").split()
+    assert unixperms[0] == "dr-xr-x---"
+    assert unixperms[2] == "testapp"
+    assert unixperms[3] == "testapp"
+
+    conf["group"] = "__APP__:rwx"
+    conf["group"] = "www-data:x"
+
+    r(conf, "testapp").provision_or_update()
+
+    assert os.path.exists("/var/www/testapp")
+    unixperms = check_output("ls -ld /var/www/testapp").split()
+    assert unixperms[0] == "drwx--x---"
+    assert unixperms[2] == "testapp"
+    assert unixperms[3] == "www-data"
+
+    r(conf, "testapp").deprovision()
+
+    assert not os.path.exists("/var/www/testapp")
+
+
+def test_resource_data_dir():
+
+    r = AppResourceClassesByType["data_dir"]
+    conf = {}
+
+    assert not os.path.exists("/home/yunohost.app/testapp")
+
+    r(conf, "testapp").provision_or_update()
+
+    assert os.path.exists("/home/yunohost.app/testapp")
+    unixperms = check_output("ls -ld /home/yunohost.app/testapp").split()
+    assert unixperms[0] == "dr-xr-x---"
+    assert unixperms[2] == "testapp"
+    assert unixperms[3] == "testapp"
+
+    conf["group"] = "__APP__:rwx"
+    conf["group"] = "www-data:x"
+
+    r(conf, "testapp").provision_or_update()
+
+    assert os.path.exists("/home/yunohost.app/testapp")
+    unixperms = check_output("ls -ld /home/yunohost.app/testapp").split()
+    assert unixperms[0] == "drwx--x---"
+    assert unixperms[2] == "testapp"
+    assert unixperms[3] == "www-data"
+
+    r(conf, "testapp").deprovision()
+
+    assert not os.path.exists("/home/yunohost.app/testapp")
+
+
+def test_resource_port():
+
+    r = AppResourceClassesByType["port"]
+    conf = {}
+
+    assert not app_setting("testapp", "port")
+
+    r(conf, "testapp").provision_or_update()
+
+    assert app_setting("testapp", "port")
+
+    r(conf, "testapp").deprovision()
+
+    assert not app_setting("testapp", "port")
+
+
+def test_resource_database():
+
+    r = AppResourceClassesByType["database"]
+    conf = {"type": "mysql"}
+
+    assert os.system("mysqlshow 'testapp' >/dev/null 2>/dev/null") != 0
+    assert not app_setting("testapp", "db_name")
+    assert not app_setting("testapp", "db_user")
+    assert not app_setting("testapp", "db_pwd")
+
+    r(conf, "testapp").provision_or_update()
+
+    assert os.system("mysqlshow 'testapp' >/dev/null 2>/dev/null") == 0
+    assert app_setting("testapp", "db_name")
+    assert app_setting("testapp", "db_user")
+    assert app_setting("testapp", "db_pwd")
+
+    r(conf, "testapp").deprovision()
+
+    assert os.system("mysqlshow 'testapp' >/dev/null 2>/dev/null") != 0
+    assert not app_setting("testapp", "db_name")
+    assert not app_setting("testapp", "db_user")
+    assert not app_setting("testapp", "db_pwd")
+
+
+def test_resource_apt():
+
+    r = AppResourceClassesByType["apt"]
+    conf = {
+        "packages": "nyancat, sl",
+        "extras": {
+            "yarn": {
+                "repo": "deb https://dl.yarnpkg.com/debian/ stable main",
+                "key": "https://dl.yarnpkg.com/debian/pubkey.gpg",
+                "packages": "yarn",
+            }
+        }
+    }
+
+    assert os.system("dpkg --list | grep -q 'ii *nyancat'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *sl'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *yarn'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *lolcat'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps'") != 0
+
+    r(conf, "testapp").provision_or_update()
+
+    assert os.system("dpkg --list | grep -q 'ii *nyancat'") == 0
+    assert os.system("dpkg --list | grep -q 'ii *sl'") == 0
+    assert os.system("dpkg --list | grep -q 'ii *yarn'") == 0
+    assert os.system("dpkg --list | grep -q 'ii *lolcat'") != 0  # Lolcat shouldnt be installed yet
+    assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps'") == 0
+
+    conf["packages"] += ", lolcat"
+    r(conf, "testapp").provision_or_update()
+
+    assert os.system("dpkg --list | grep -q 'ii *nyancat'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *sl'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *yarn'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *lolcat'") == 0
+    assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps'") != 0
+
+    r(conf, "testapp").deprovision()
+
+    assert os.system("dpkg --list | grep -q 'ii *nyancat'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *sl'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *yarn'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *lolcat'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps'") != 0
+
+
+def test_resource_permissions():
+
+    r = AppResourceClassesByType["permissions"]
+    conf = {
+        "main": {
+            "url": "/",
+            "allowed": "visitors"
+            # protected?
+        }
+    }
+
+    pass
+
+
