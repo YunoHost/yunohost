@@ -216,7 +216,7 @@ class PermissionsResource(AppResource):
 
         super().__init__({"permissions": properties}, *args, **kwargs)
 
-    def provision_or_update(self, context: Dict):
+    def provision_or_update(self, context: Dict={}):
 
         from yunohost.permission import (
             permission_create,
@@ -267,7 +267,7 @@ class PermissionsResource(AppResource):
 
         permission_sync_to_user()
 
-    def deprovision(self, context: Dict):
+    def deprovision(self, context: Dict={}):
 
         from yunohost.permission import (
             permission_delete,
@@ -306,7 +306,7 @@ class SystemuserAppResource(AppResource):
         "allow_sftp": False
     }
 
-    def provision_or_update(self, context: Dict):
+    def provision_or_update(self, context: Dict={}):
 
         # FIXME : validate that no yunohost user exists with that name?
         # and/or that no system user exists during install ?
@@ -328,7 +328,7 @@ class SystemuserAppResource(AppResource):
 
         os.system(f"usermod -G {','.join(groups)} {self.app}")
 
-    def deprovision(self, context: Dict):
+    def deprovision(self, context: Dict={}):
 
         if check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
             os.system(f"deluser {self.app} >/dev/null")
@@ -382,7 +382,7 @@ class InstalldirAppResource(AppResource):
 
     # FIXME: change default dir to /opt/stuff if app ain't a webapp ...
 
-    def provision_or_update(self, context: Dict):
+    def provision_or_update(self, context: Dict={}):
 
         current_install_dir = self.get_setting("install_dir") or self.get_setting("final_path")
 
@@ -403,16 +403,17 @@ class InstalldirAppResource(AppResource):
         group, group_perm = self.group.split(":")
         owner_perm_octal = (4 if "r" in owner_perm else 0) + (2 if "w" in owner_perm else 0) + (1 if "x" in owner_perm else 0)
         group_perm_octal = (4 if "r" in group_perm else 0) + (2 if "w" in group_perm else 0) + (1 if "x" in group_perm else 0)
-        perm_octal = str(owner_perm_octal) + str(group_perm_octal) + "0"
 
-        chmod(self.dir, int(perm_octal))
+        perm_octal = 0o100 * owner_perm_octal + 0o010 * group_perm_octal
+
+        chmod(self.dir, perm_octal)
         chown(self.dir, owner, group)
         # FIXME: shall we apply permissions recursively ?
 
         self.set_setting("install_dir", self.dir)
         self.delete_setting("final_path")  # Legacy
 
-    def deprovision(self, context: Dict):
+    def deprovision(self, context: Dict={}):
         # FIXME : check that self.dir has a sensible value to prevent catastrophes
         if os.path.isdir(self.dir):
             rm(self.dir, recursive=True)
@@ -444,7 +445,7 @@ class DatadirAppResource(AppResource):
         "group": "__APP__:rx",
     }
 
-    def provision_or_update(self, context: Dict):
+    def provision_or_update(self, context: Dict={}):
 
         current_data_dir = self.get_setting("data_dir")
 
@@ -459,14 +460,14 @@ class DatadirAppResource(AppResource):
         group, group_perm = self.group.split(":")
         owner_perm_octal = (4 if "r" in owner_perm else 0) + (2 if "w" in owner_perm else 0) + (1 if "x" in owner_perm else 0)
         group_perm_octal = (4 if "r" in group_perm else 0) + (2 if "w" in group_perm else 0) + (1 if "x" in group_perm else 0)
-        perm_octal = str(owner_perm_octal) + str(group_perm_octal) + "0"
+        perm_octal = 0o100 * owner_perm_octal + 0o010 * group_perm_octal
 
-        chmod(self.dir, int(perm_octal))
+        chmod(self.dir, perm_octal)
         chown(self.dir, owner, group)
 
         self.set_setting("data_dir", self.dir)
 
-    def deprovision(self, context: Dict):
+    def deprovision(self, context: Dict={}):
         # FIXME: This should rm the datadir only if purge is enabled
         pass
         #if os.path.isdir(self.dir):
@@ -497,7 +498,7 @@ class DatadirAppResource(AppResource):
 #        "main": {"url": "?", "sha256sum": "?", "predownload": True}
 #    }
 #
-#    def provision_or_update(self, context: Dict):
+#    def provision_or_update(self, context: Dict={}):
 #        # FIXME
 #        return
 #
@@ -534,7 +535,7 @@ class AptDependenciesAppResource(AppResource):
 
         super().__init__(properties, *args, **kwargs)
 
-    def provision_or_update(self, context: Dict):
+    def provision_or_update(self, context: Dict={}):
 
         script = [f"ynh_install_app_dependencies {self.packages}"]
         for repo, values in self.extras.items():
@@ -542,7 +543,7 @@ class AptDependenciesAppResource(AppResource):
 
         self._run_script("provision_or_update", '\n'.join(script))
 
-    def deprovision(self, context: Dict):
+    def deprovision(self, context: Dict={}):
 
         self._run_script("deprovision", "ynh_remove_app_dependencies")
 
@@ -580,7 +581,7 @@ class PortResource(AppResource):
         cmd2 = f"grep --quiet \"port: '{port}'\" /etc/yunohost/apps/*/settings.yml"
         return os.system(cmd1) == 0 and os.system(cmd2) == 0
 
-    def provision_or_update(self, context: str):
+    def provision_or_update(self, context: Dict={}):
 
         # Don't do anything if port already defined ?
         if self.get_setting("port"):
@@ -592,7 +593,7 @@ class PortResource(AppResource):
 
         self.set_setting("port", port)
 
-    def deprovision(self, context: Dict):
+    def deprovision(self, context: Dict={}):
 
         self.delete_setting("port")
 
@@ -635,7 +636,7 @@ class DatabaseAppResource(AppResource):
         else:
             return False
 
-    def provision_or_update(self, context: str):
+    def provision_or_update(self, context: Dict={}):
 
         # This is equivalent to ynh_sanitize_dbid
         db_name = self.app.replace('-', '_').replace('.', '_')
@@ -666,7 +667,7 @@ class DatabaseAppResource(AppResource):
             elif self.type == "postgresql":
                 self._run_script("provision", f"ynh_psql_create_user '{db_user}' '{db_pwd}'; ynh_psql_create_db '{db_name}' '{db_user}'")
 
-    def deprovision(self, context: Dict):
+    def deprovision(self, context: Dict={}):
 
         db_name = self.app.replace('-', '_').replace('.', '_')
         db_user = db_name
@@ -676,7 +677,9 @@ class DatabaseAppResource(AppResource):
         elif self.type == "postgresql":
             self._run_script("deprovision", f"ynh_psql_remove_db '{db_name}' '{db_user}'")
 
-        # FIXME : in fact we should delete settings to be consistent
+        self.delete_setting("db_name")
+        self.delete_setting("db_user")
+        self.delete_setting("db_pwd")
 
 
 AppResourceClassesByType = {c.type: c for c in AppResource.__subclasses__()}

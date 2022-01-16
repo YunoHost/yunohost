@@ -37,6 +37,11 @@ def setup_function(function):
 
     clean()
 
+    os.system("mkdir /etc/yunohost/apps/testapp")
+    os.system("echo 'id: testapp' > /etc/yunohost/apps/testapp/settings.yml")
+    os.system("echo 'packaging_format = 2' > /etc/yunohost/apps/testapp/manifest.toml")
+    os.system("echo 'id = \"testapp\"' >> /etc/yunohost/apps/testapp/manifest.toml")
+
 
 def teardown_function(function):
 
@@ -46,7 +51,11 @@ def teardown_function(function):
 def clean():
 
     os.system(f"rm -f {dummyfile}")
-    os.system("apt remove lolcat sl nyancat yarn")
+    os.system("rm -rf /etc/yunohost/apps/testapp")
+    os.system("rm -rf /var/www/testapp")
+    os.system("rm -rf /home/yunohost.app/testapp")
+    os.system("apt remove lolcat sl nyancat yarn >/dev/null 2>/dev/null")
+    os.system("userdel testapp 2>/dev/null")
 
 
 def test_provision_dummy():
@@ -125,28 +134,28 @@ def test_resource_system_user():
 
     conf = {}
 
-    assert os.system("getent passwd testapp &>/dev/null") != 0
+    assert os.system("getent passwd testapp 2>/dev/null") != 0
 
     r(conf, "testapp").provision_or_update()
 
-    assert os.system("getent passwd testapp &>/dev/null") == 0
-    assert os.system("getent group testapp | grep -q sftp.app") != 0
+    assert os.system("getent passwd testapp >/dev/null") == 0
+    assert os.system("groups testapp | grep -q 'sftp.app'") != 0
 
     conf["allow_sftp"] = True
     r(conf, "testapp").provision_or_update()
 
-    assert os.system("getent passwd testapp &>/dev/null") == 0
-    assert os.system("getent group testapp | grep -q sftp.app") == 0
+    assert os.system("getent passwd testapp >/dev/null") == 0
+    assert os.system("groups testapp | grep -q 'sftp.app'") == 0
 
     r(conf, "testapp").deprovision()
 
-    assert os.system("getent passwd testapp &>/dev/null") != 0
+    assert os.system("getent passwd testapp 2>/dev/null") != 0
 
 
 def test_resource_install_dir():
 
     r = AppResourceClassesByType["install_dir"]
-    conf = {}
+    conf = {"owner": "nobody:rx", "group": "nogroup:rx"}
 
     # FIXME: should also check settings ?
     # FIXME: should also check automigrate from final_path
@@ -159,10 +168,10 @@ def test_resource_install_dir():
     assert os.path.exists("/var/www/testapp")
     unixperms = check_output("ls -ld /var/www/testapp").split()
     assert unixperms[0] == "dr-xr-x---"
-    assert unixperms[2] == "testapp"
-    assert unixperms[3] == "testapp"
+    assert unixperms[2] == "nobody"
+    assert unixperms[3] == "nogroup"
 
-    conf["group"] = "__APP__:rwx"
+    conf["owner"] = "nobody:rwx"
     conf["group"] = "www-data:x"
 
     r(conf, "testapp").provision_or_update()
@@ -170,7 +179,7 @@ def test_resource_install_dir():
     assert os.path.exists("/var/www/testapp")
     unixperms = check_output("ls -ld /var/www/testapp").split()
     assert unixperms[0] == "drwx--x---"
-    assert unixperms[2] == "testapp"
+    assert unixperms[2] == "nobody"
     assert unixperms[3] == "www-data"
 
     r(conf, "testapp").deprovision()
@@ -181,7 +190,7 @@ def test_resource_install_dir():
 def test_resource_data_dir():
 
     r = AppResourceClassesByType["data_dir"]
-    conf = {}
+    conf = {"owner": "nobody:rx", "group": "nogroup:rx"}
 
     assert not os.path.exists("/home/yunohost.app/testapp")
 
@@ -190,10 +199,10 @@ def test_resource_data_dir():
     assert os.path.exists("/home/yunohost.app/testapp")
     unixperms = check_output("ls -ld /home/yunohost.app/testapp").split()
     assert unixperms[0] == "dr-xr-x---"
-    assert unixperms[2] == "testapp"
-    assert unixperms[3] == "testapp"
+    assert unixperms[2] == "nobody"
+    assert unixperms[3] == "nogroup"
 
-    conf["group"] = "__APP__:rwx"
+    conf["owner"] = "nobody:rwx"
     conf["group"] = "www-data:x"
 
     r(conf, "testapp").provision_or_update()
@@ -201,12 +210,13 @@ def test_resource_data_dir():
     assert os.path.exists("/home/yunohost.app/testapp")
     unixperms = check_output("ls -ld /home/yunohost.app/testapp").split()
     assert unixperms[0] == "drwx--x---"
-    assert unixperms[2] == "testapp"
+    assert unixperms[2] == "nobody"
     assert unixperms[3] == "www-data"
 
     r(conf, "testapp").deprovision()
 
-    assert not os.path.exists("/home/yunohost.app/testapp")
+    # FIXME : implement and check purge option
+    #assert not os.path.exists("/home/yunohost.app/testapp")
 
 
 def test_resource_port():
@@ -264,39 +274,41 @@ def test_resource_apt():
         }
     }
 
-    assert os.system("dpkg --list | grep -q 'ii *nyancat'") != 0
-    assert os.system("dpkg --list | grep -q 'ii *sl'") != 0
-    assert os.system("dpkg --list | grep -q 'ii *yarn'") != 0
-    assert os.system("dpkg --list | grep -q 'ii *lolcat'") != 0
-    assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *nyancat '") != 0
+    assert os.system("dpkg --list | grep -q 'ii *sl '") != 0
+    assert os.system("dpkg --list | grep -q 'ii *yarn '") != 0
+    assert os.system("dpkg --list | grep -q 'ii *lolcat '") != 0
+    assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") != 0
 
     r(conf, "testapp").provision_or_update()
 
-    assert os.system("dpkg --list | grep -q 'ii *nyancat'") == 0
-    assert os.system("dpkg --list | grep -q 'ii *sl'") == 0
-    assert os.system("dpkg --list | grep -q 'ii *yarn'") == 0
-    assert os.system("dpkg --list | grep -q 'ii *lolcat'") != 0  # Lolcat shouldnt be installed yet
-    assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps'") == 0
+    assert os.system("dpkg --list | grep -q 'ii *nyancat '") == 0
+    assert os.system("dpkg --list | grep -q 'ii *sl '") == 0
+    assert os.system("dpkg --list | grep -q 'ii *yarn '") == 0
+    assert os.system("dpkg --list | grep -q 'ii *lolcat '") != 0  # Lolcat shouldnt be installed yet
+    assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") == 0
 
     conf["packages"] += ", lolcat"
     r(conf, "testapp").provision_or_update()
 
-    assert os.system("dpkg --list | grep -q 'ii *nyancat'") != 0
-    assert os.system("dpkg --list | grep -q 'ii *sl'") != 0
-    assert os.system("dpkg --list | grep -q 'ii *yarn'") != 0
-    assert os.system("dpkg --list | grep -q 'ii *lolcat'") == 0
-    assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *nyancat '") == 0
+    assert os.system("dpkg --list | grep -q 'ii *sl '") == 0
+    assert os.system("dpkg --list | grep -q 'ii *yarn '") == 0
+    assert os.system("dpkg --list | grep -q 'ii *lolcat '") == 0
+    assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") == 0
 
     r(conf, "testapp").deprovision()
 
-    assert os.system("dpkg --list | grep -q 'ii *nyancat'") != 0
-    assert os.system("dpkg --list | grep -q 'ii *sl'") != 0
-    assert os.system("dpkg --list | grep -q 'ii *yarn'") != 0
-    assert os.system("dpkg --list | grep -q 'ii *lolcat'") != 0
-    assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps'") != 0
+    assert os.system("dpkg --list | grep -q 'ii *nyancat '") != 0
+    assert os.system("dpkg --list | grep -q 'ii *sl '") != 0
+    assert os.system("dpkg --list | grep -q 'ii *yarn '") != 0
+    assert os.system("dpkg --list | grep -q 'ii *lolcat '") != 0
+    assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") != 0
 
 
 def test_resource_permissions():
+
+    raise NotImplementedError()
 
     r = AppResourceClassesByType["permissions"]
     conf = {
