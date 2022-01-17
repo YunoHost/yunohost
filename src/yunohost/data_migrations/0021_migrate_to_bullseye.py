@@ -81,12 +81,14 @@ class MyMigration(Migration):
             "echo 'libc6 libraries/restart-without-asking boolean true' | debconf-set-selections"
         )
 
-        # Do not restart nginx during the upgrade of nginx-common ...
+        # Do not restart nginx during the upgrade of nginx-common and nginx-extras ...
         # c.f. https://manpages.debian.org/bullseye/init-system-helpers/deb-systemd-invoke.1p.en.html
+        # and zcat /usr/share/doc/init-system-helpers/README.policy-rc.d.gz
         # and the code inside /usr/bin/deb-systemd-invoke to see how it calls /usr/sbin/policy-rc.d ...
+        # and also invoke-rc.d ...
         write_to_file(
             '/usr/sbin/policy-rc.d',
-            '#!/bin/bash\n[[ "$1" == "nginx" ]] && exit 101 || exit 0'
+            '#!/bin/bash\n[[ "$1" =~ "nginx" ]] && [[ "$2" == "restart" ]] && exit 101 || exit 0'
         )
         os.system("chmod +x /usr/sbin/policy-rc.d")
         # FIXME: we still need to explicitly restart nginx somewhere ...
