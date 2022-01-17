@@ -321,6 +321,20 @@ EOF
         # Set the default php version back as the default version for php-cli.
         update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
 
+        local old_phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+
+        # If the PHP version changed, remove the old fpm conf
+        if [ -n "$old_phpversion" ] && [ "$old_phpversion" != "$specific_php_version" ]; then
+            local old_php_fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
+            local old_php_finalphpconf="$old_php_fpm_config_dir/pool.d/$app.conf"
+
+            if [[ -f "$old_php_finalphpconf" ]]
+            then
+                ynh_backup_if_checksum_is_different --file="$old_php_finalphpconf"
+                ynh_remove_fpm_config
+            fi
+        fi
+        
         # Store phpversion into the config of this app
         ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
 
