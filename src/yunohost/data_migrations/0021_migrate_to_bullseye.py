@@ -266,7 +266,7 @@ class MyMigration(Migration):
         postupgradecmds += "echo 'Restarting nginx...' >&2\n"
         postupgradecmds += "systemctl restart nginx\n"
 
-        tools_upgrade(target="system")
+        tools_upgrade(target="system", postupgradecmds=postupgradecmds)
 
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
