@@ -86,7 +86,7 @@ class MyMigration(Migration):
         # and the code inside /usr/bin/deb-systemd-invoke to see how it calls /usr/sbin/policy-rc.d ...
         write_to_file(
             '/usr/sbin/policy-rc.d',
-            '#!/bin/bash\n[[ "$1" == "nginx" ]] && return 101 || return 0'
+            '#!/bin/bash\n[[ "$1" == "nginx" ]] && exit 101 || exit 0'
         )
         os.system("chmod +x /usr/sbin/policy-rc.d")
         # FIXME: we still need to explicitly restart nginx somewhere ...
