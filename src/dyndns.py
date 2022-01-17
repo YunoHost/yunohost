@@ -219,8 +219,8 @@ def dyndns_update(
         return
 
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
-    host = domain.split(".")[1:]
-    host = ".".join(host)
+    zone = domain.split(".")[1:]
+    zone = ".".join(zone)
 
     logger.debug("Building zone update ...")
 
@@ -229,7 +229,7 @@ def dyndns_update(
 
     keyring = dns.tsigkeyring.from_text({f'{domain}.': key})
     # Python's dns.update is similar to the old nsupdate cli tool
-    update = dns.update.Update(domain, keyring=keyring, keyalgorithm=dns.tsig.HMAC_SHA512)
+    update = dns.update.Update(zone, keyring=keyring, keyalgorithm=dns.tsig.HMAC_SHA512)
 
     auth_resolvers = []
 
@@ -322,9 +322,13 @@ def dyndns_update(
 
     if not dry_run:
         try:
-            dns.query.tcp(update, auth_resolvers[0])
+            r = dns.query.tcp(update, auth_resolvers[0])
         except Exception as e:
             logger.error(e)
+            raise YunohostError("dyndns_ip_update_failed")
+
+        if "rcode NOERROR" not in str(r):
+            logger.error(str(r))
             raise YunohostError("dyndns_ip_update_failed")
 
         logger.success(m18n.n("dyndns_ip_updated"))
