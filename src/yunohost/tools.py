@@ -448,7 +448,7 @@ def _list_upgradable_apps():
 
 @is_unit_operation()
 def tools_upgrade(
-    operation_logger, target=None, apps=False, system=False, allow_yunohost_upgrade=True
+    operation_logger, target=None, apps=False, system=False, allow_yunohost_upgrade=True, postupgradecmds=""
 ):
     """
     Update apps & package cache, then display changelog
@@ -646,19 +646,20 @@ def tools_upgrade(
             upgrade_completed = "\n" + m18n.n(
                 "tools_upgrade_special_packages_completed"
             )
-            command = "({wait} && {dist_upgrade}) && {mark_success} || {mark_failure}; {update_metadata}; echo '{done}'".format(
-                wait=wait_until_end_of_yunohost_command,
-                dist_upgrade=dist_upgrade,
-                mark_success=mark_success,
-                mark_failure=mark_failure,
-                update_metadata=update_log_metadata,
-                done=upgrade_completed,
-            )
+            script = f"""
+({wait_until_end_of_yunohost_command} && {dist_upgrade}) \\
+&& {mark_success} \\
+|| {mark_failure}
+
+{update_log_metadata}
+{postupgradecmds}
+echo '{upgrade_completed}'
+"""
 
             logger.warning(m18n.n("tools_upgrade_special_packages_explanation"))
-            logger.debug("Running command :\n{}".format(command))
+            logger.debug("Running script :\n{}".format(script))
             open("/tmp/yunohost-selfupgrade", "w").write(
-                "rm /tmp/yunohost-selfupgrade; " + command
+                "rm /tmp/yunohost-selfupgrade\n " + script
             )
             # Using systemd-run --scope is like nohup/disown and &, but more robust somehow
             # (despite using nohup/disown and &, the self-upgrade process was still getting killed...)

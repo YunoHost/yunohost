@@ -91,7 +91,6 @@ class MyMigration(Migration):
             '#!/bin/bash\n[[ "$1" =~ "nginx" ]] && [[ "$2" == "restart" ]] && exit 101 || exit 0'
         )
         os.system("chmod +x /usr/sbin/policy-rc.d")
-        # FIXME: we still need to explicitly restart nginx somewhere ...
 
         # Don't send an email to root about the postgresql migration. It should be handled automatically after.
         os.system(
@@ -234,8 +233,6 @@ class MyMigration(Migration):
                 "Failed to force the install of php dependencies ?", raw_msg=True
             )
 
-        os.system(f"apt-mark auto {' '.join(basephp74packages_to_install)}")
-
         # Clean the mess
         logger.info(m18n.n("migration_0021_cleaning_up"))
         os.system("apt autoremove --assume-yes")
@@ -262,6 +259,12 @@ class MyMigration(Migration):
                 "The upgrade cannot be completed, because some app dependencies would need to be removed?",
                 raw_msg=True,
             )
+
+
+        postupgradecmds = f"apt-mark auto {' '.join(basephp74packages_to_install)}\n"
+        postupgradecmds += "rm -f /usr/sbin/policy-rc.d\n"
+        postupgradecmds += "echo 'Restarting nginx...' >&2\n"
+        postupgradecmds += "systemctl restart nginx\n"
 
         tools_upgrade(target="system")
 
