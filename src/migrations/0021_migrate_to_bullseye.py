@@ -5,7 +5,7 @@ from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
-from moulinette.utils.filesystem import read_file, rm
+from moulinette.utils.filesystem import read_file, rm, write_to_file
 
 from yunohost.tools import (
     Migration,
@@ -80,6 +80,17 @@ class MyMigration(Migration):
         os.system(
             "echo 'libc6 libraries/restart-without-asking boolean true' | debconf-set-selections"
         )
+
+        # Do not restart nginx during the upgrade of nginx-common and nginx-extras ...
+        # c.f. https://manpages.debian.org/bullseye/init-system-helpers/deb-systemd-invoke.1p.en.html
+        # and zcat /usr/share/doc/init-system-helpers/README.policy-rc.d.gz
+        # and the code inside /usr/bin/deb-systemd-invoke to see how it calls /usr/sbin/policy-rc.d ...
+        # and also invoke-rc.d ...
+        write_to_file(
+            '/usr/sbin/policy-rc.d',
+            '#!/bin/bash\n[[ "$1" =~ "nginx" ]] && [[ "$2" == "restart" ]] && exit 101 || exit 0'
+        )
+        os.system("chmod +x /usr/sbin/policy-rc.d")
 
         # Don't send an email to root about the postgresql migration. It should be handled automatically after.
         os.system(
@@ -222,8 +233,6 @@ class MyMigration(Migration):
                 "Failed to force the install of php dependencies ?", raw_msg=True
             )
 
-        os.system(f"apt-mark auto {' '.join(basephp74packages_to_install)}")
-
         # Clean the mess
         logger.info(m18n.n("migration_0021_cleaning_up"))
         os.system("apt autoremove --assume-yes")
@@ -251,7 +260,13 @@ class MyMigration(Migration):
                 raw_msg=True,
             )
 
-        tools_upgrade(target="system")
+
+        postupgradecmds = f"apt-mark auto {' '.join(basephp74packages_to_install)}\n"
+        postupgradecmds += "rm -f /usr/sbin/policy-rc.d\n"
+        postupgradecmds += "echo 'Restarting nginx...' >&2\n"
+        postupgradecmds += "systemctl restart nginx\n"
+
+        tools_upgrade(target="system", postupgradecmds=postupgradecmds)
 
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because

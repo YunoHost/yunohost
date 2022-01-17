@@ -852,14 +852,14 @@ def _check_domain_is_ready_for_ACME(domain):
     if is_yunohost_dyndns_domain(parent_domain):
         record_name = "@"
 
-    A_record_status = dnsrecords.get("data").get(f"A:{record_name}")
-    AAAA_record_status = dnsrecords.get("data").get(f"AAAA:{record_name}")
+    A_record_status = dnsrecords.get("data", {}).get(f"A:{record_name}")
+    AAAA_record_status = dnsrecords.get("data", {}).get(f"AAAA:{record_name}")
 
     # Fallback to wildcard in case no result yet for the DNS name?
     if not A_record_status:
-        A_record_status = dnsrecords.get("data").get("A:*")
+        A_record_status = dnsrecords.get("data", {}).get("A:*")
     if not AAAA_record_status:
-        AAAA_record_status = dnsrecords.get("data").get("AAAA:*")
+        AAAA_record_status = dnsrecords.get("data", {}).get("AAAA:*")
 
     if (
         not httpreachable
