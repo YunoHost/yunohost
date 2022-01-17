@@ -686,6 +686,12 @@ def _apt_log_line_is_relevant(line):
         ", does not exist on system.",
         "unable to delete old directory",
         "update-alternatives:",
+        "Configuration file '/etc",
+        "==> Modified (by you or by a script) since installation.",
+        "==> Package distributor has shipped an updated version.",
+        "==> Keeping old config file as default.",
+        "is a disabled or a static unit",
+        " update-rc.d: warning: start and stop actions are no longer supported; falling back to defaults",
     ]
     return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
 
