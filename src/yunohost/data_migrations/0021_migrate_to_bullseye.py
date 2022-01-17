@@ -87,8 +87,8 @@ class MyMigration(Migration):
         # and the code inside /usr/bin/deb-systemd-invoke to see how it calls /usr/sbin/policy-rc.d ...
         # and also invoke-rc.d ...
         write_to_file(
-            '/usr/sbin/policy-rc.d',
-            '#!/bin/bash\n[[ "$1" =~ "nginx" ]] && [[ "$2" == "restart" ]] && exit 101 || exit 0'
+            "/usr/sbin/policy-rc.d",
+            '#!/bin/bash\n[[ "$1" =~ "nginx" ]] && [[ "$2" == "restart" ]] && exit 101 || exit 0',
         )
         os.system("chmod +x /usr/sbin/policy-rc.d")
 
@@ -259,7 +259,6 @@ class MyMigration(Migration):
                 "The upgrade cannot be completed, because some app dependencies would need to be removed?",
                 raw_msg=True,
             )
-
 
         postupgradecmds = f"apt-mark auto {' '.join(basephp74packages_to_install)}\n"
         postupgradecmds += "rm -f /usr/sbin/policy-rc.d\n"
