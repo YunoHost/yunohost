@@ -448,7 +448,12 @@ def _list_upgradable_apps():
 
 @is_unit_operation()
 def tools_upgrade(
-    operation_logger, target=None, apps=False, system=False, allow_yunohost_upgrade=True, postupgradecmds=""
+    operation_logger,
+    target=None,
+    apps=False,
+    system=False,
+    allow_yunohost_upgrade=True,
+    postupgradecmds="",
 ):
     """
     Update apps & package cache, then display changelog
