@@ -1,3 +1,14 @@
+yunohost (4.3.6.1) stable; urgency=low
+
+  - [fix] dnsmasq: ensure interface is up ([#1410](https://github.com/YunoHost/yunohost/pull/1410))
+  - [fix] apt helpers: fix ynh_install_app_dependencies when an app change his default phpversion (6ea32728)
+  - [fix] certificates: fix edge case where None is returned, triggering 'NoneType has no attribute get' (019839db)
+  - [i18n] Translations updated for German
+
+  Thanks to all contributors <3 ! (Gregor, Kay0u)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:05:13 +0100
+
 yunohost (4.3.6) stable; urgency=low
 
   - [enh] ssh: add a new setting to manage PasswordAuthentication in sshd_config ([#1388](https://github.com/YunoHost/yunohost/pull/1388))
