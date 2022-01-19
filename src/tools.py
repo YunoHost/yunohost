@@ -435,9 +435,7 @@ def _list_upgradable_apps():
 
 
 @is_unit_operation()
-def tools_upgrade(
-    operation_logger, target=None, allow_yunohost_upgrade=True
-):
+def tools_upgrade(operation_logger, target=None):
     """
     Update apps & package cache, then display changelog
 
