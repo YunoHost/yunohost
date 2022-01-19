@@ -1,0 +1,2 @@
+{% for domain in domain_list.split() %}{{ domain }} /etc/yunohost/certs/{{ domain }}/key.pem /etc/yunohost/certs/{{ domain }}/crt.pem
+{% endfor %}
