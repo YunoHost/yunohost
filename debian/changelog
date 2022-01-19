@@ -1,3 +1,9 @@
+yunohost (4.4.0) testing; urgency=low
+
+  - [enh] Add buster->bullseye migration
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:45:22 +0100
+
 yunohost (4.3.6.2) stable; urgency=low
 
   - [fix] apt helpers: fix bug when var is empty... (7920cc62)
