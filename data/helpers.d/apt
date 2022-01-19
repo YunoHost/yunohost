@@ -443,7 +443,7 @@ ynh_install_extra_app_dependencies() {
     # Without doing apt install, an already installed dep is not upgraded
     local apps_auto_installed="$(apt-mark showauto $package)"
     ynh_package_install "$package"
-    apt-mark auto $apps_auto_installed
+    [ -z "$apps_auto_installed" ] || apt-mark auto $apps_auto_installed
 
     # Remove this extra repository after packages are installed
     ynh_remove_extra_repo --name=$app
