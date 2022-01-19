@@ -1,3 +1,9 @@
+yunohost (4.3.6.2) stable; urgency=low
+
+  - [fix] apt helpers: fix bug when var is empty... (7920cc62)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:30:25 +0100
+
 yunohost (4.3.6.1) stable; urgency=low
 
   - [fix] dnsmasq: ensure interface is up ([#1410](https://github.com/YunoHost/yunohost/pull/1410))
