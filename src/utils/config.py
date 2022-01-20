@@ -1137,7 +1137,6 @@ class AppQuestion(Question):
 
         apps = app_list(full=True)["apps"]
         for _filter in self.filters:
-            print(_filter)
             apps = [ app for app in apps if _filter in app and app[_filter] ]
 
         self.choices = ["_none"] + [app['id'] for app in apps]

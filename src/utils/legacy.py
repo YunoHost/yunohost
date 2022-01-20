@@ -7,6 +7,7 @@ from moulinette.utils.filesystem import (
     read_file,
     write_to_file,
     write_to_yaml,
+    write_to_json,
     read_yaml,
 )
 
@@ -92,17 +93,17 @@ def translate_legacy_default_app_in_ssowant_conf_json_persistent():
 
     apps = app_list()['apps']
 
-    if not any('domain_path' in app and app['domain_path'] in redirected_urls.values() for app in apps):
+    if not any(app.get('domain_path') in redirected_urls.values() for app in apps):
         return
 
-    for from_url, dest_url in redirected_urls.items():
+    for from_url, dest_url in redirected_urls.copy().items():
         # Not a root domain, skip
         if from_url.count('/') != 1 or not from_url.endswith('/'):
             continue
         for app in apps:
-            if 'domain_path' not in app or app['domain_path'] is not dest_url:
+            if app.get('domain_path') != dest_url:
                 continue
-            domain_config_set(from_url.strip('/'), "feature.app.default", app['id'])
+            domain_config_set(from_url.strip('/'), "feature.app.default_app", app['id'])
             del redirected_urls[from_url]
     
     persistent["redirected_urls"] = redirected_urls
