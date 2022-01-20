@@ -89,11 +89,11 @@ def autofix_orthotypography_and_standardized_words():
 
     def reformat(lang, transformations):
 
-        locale = open(f"../locales/{lang}.json").read()
+        locale = open(f"{LOCALE_FOLDER}{lang}.json").read()
         for pattern, replace in transformations.items():
             locale = re.compile(pattern).sub(replace, locale)
 
-        open(f"../locales/{lang}.json", "w").write(locale)
+        open(f"{LOCALE_FOLDER}{lang}.json", "w").write(locale)
 
     ######################################################
 
