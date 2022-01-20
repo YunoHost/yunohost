@@ -695,19 +695,25 @@ def _get_services():
         if "log" not in services["ynh-vpnclient"]:
             services["ynh-vpnclient"]["log"] = ["/var/log/ynh-vpnclient.log"]
 
-    services_with_package_condition = [name for name, infos in services.items() if infos.get("ignore_if_package_is_not_installed")]
+    services_with_package_condition = [
+        name
+        for name, infos in services.items()
+        if infos.get("ignore_if_package_is_not_installed")
+    ]
     for name in services_with_package_condition:
         package = services[name]["ignore_if_package_is_not_installed"]
         if os.system(f"dpkg --list | grep -q 'ii *{package}'") != 0:
             del services[name]
 
-    php_fpm_versions = check_output(r"dpkg --list | grep -P 'ii  php\d.\d-fpm' | awk '{print $2}' | grep -o -P '\d.\d' || true")
-    php_fpm_versions = [v for v in php_fpm_versions.split('\n') if v.strip()]
+    php_fpm_versions = check_output(
+        r"dpkg --list | grep -P 'ii  php\d.\d-fpm' | awk '{print $2}' | grep -o -P '\d.\d' || true"
+    )
+    php_fpm_versions = [v for v in php_fpm_versions.split("\n") if v.strip()]
     for version in php_fpm_versions:
         services[f"php{version}-fpm"] = {
             "log": f"/var/log/php{version}-fpm.log",
             "test_conf": f"php-fpm{version} --test",  # ofc the service is phpx.y-fpm but the program is php-fpmx.y because why not ...
-            "category": "web"
+            "category": "web",
         }
 
     # Remove legacy /var/log/daemon.log and /var/log/syslog from log entries
@@ -833,7 +839,6 @@ def _get_journalctl_logs(service, number="all"):
         )
     except Exception:
         import traceback
+
         trace_ = traceback.format_exc()
-        return (
-            f"error while get services logs from journalctl:\n{trace_}"
-        )
+        return f"error while get services logs from journalctl:\n{trace_}"
