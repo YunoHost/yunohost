@@ -8,7 +8,7 @@ Group=mdns
 Type=simple
 Environment=PYTHONUNBUFFERED=1
 ExecStart=/usr/bin/yunomdns
-StandardOutput=syslog
+StandardOutput=journal
 
 [Install]
 WantedBy=default.target
