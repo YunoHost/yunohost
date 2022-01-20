@@ -29,7 +29,7 @@ autofix-translated-strings:
     - '[ $(git diff | wc -l) != 0 ] || exit 0'  # stop if there is nothing to commit
     - git commit -am "[CI] Reformat / remove stale translated strings" || true
     - git push -f origin "ci-autofix-translated-strings-${CI_COMMIT_REF_NAME}":"ci-remove-stale-translated-strings-${CI_COMMIT_REF_NAME}"
-    - hub pull-request -m "[CI] Reformat / remove stale translated strings" -b Yunohost:dev -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
+    - hub pull-request -m "[CI] Reformat / remove stale translated strings" -b Yunohost:$CI_COMMIT_REF_NAME -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
   only:
     variables:
       - $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
