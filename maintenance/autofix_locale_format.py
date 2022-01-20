@@ -60,18 +60,20 @@ def autofix_i18n_placeholders():
                 k[0] for k in re.findall(r"{(\w+)(:\w)?}", this_locale[key])
             ]
             if any(k not in subkeys_in_ref for k in subkeys_in_this_locale):
-                raise Exception("""\n
+                raise Exception(
+                    """\n
 ==========================
 Format inconsistency for string {key} in {locale_file}:"
 en.json   -> {string}
 {locale_file}   -> {translated_string}
 Please fix it manually !
     """.format(
-                    key=key,
-                    string=string.encode("utf-8"),
-                    locale_file=locale_file,
-                    translated_string=this_locale[key].encode("utf-8"),
-                ))
+                        key=key,
+                        string=string.encode("utf-8"),
+                        locale_file=locale_file,
+                        translated_string=this_locale[key].encode("utf-8"),
+                    )
+                )
 
         if fixed_stuff:
             json.dump(
@@ -86,7 +88,6 @@ Please fix it manually !
 
 
 def autofix_orthotypography_and_standardized_words():
-
     def reformat(lang, transformations):
 
         locale = open(f"{LOCALE_FOLDER}{lang}.json").read()

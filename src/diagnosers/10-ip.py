@@ -155,9 +155,7 @@ class MyDiagnoser(Diagnoser):
             return None
 
         # We use the resolver file as a list of well-known, trustable (ie not google ;)) IPs that we can ping
-        resolver_file = (
-            "/usr/share/yunohost/conf/dnsmasq/plain/resolv.dnsmasq.conf"
-        )
+        resolver_file = "/usr/share/yunohost/conf/dnsmasq/plain/resolv.dnsmasq.conf"
         resolvers = [
             r.split(" ")[1]
             for r in read_file(resolver_file).split("\n")

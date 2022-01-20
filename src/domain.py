@@ -68,9 +68,7 @@ def domain_list(exclude_subdomains=False):
     ldap = _get_ldap_interface()
     result = [
         entry["virtualdomain"][0]
-        for entry in ldap.search(
-            "ou=domains", "virtualdomain=*", ["virtualdomain"]
-        )
+        for entry in ldap.search("ou=domains", "virtualdomain=*", ["virtualdomain"])
     ]
 
     result_list = []

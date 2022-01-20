@@ -190,7 +190,6 @@ def dyndns_update(
     import dns.tsigkeyring
     import dns.update
 
-
     # If domain is not given, try to guess it from keys available...
     key = None
     if domain is None:
@@ -227,7 +226,7 @@ def dyndns_update(
     with open(key) as f:
         key = f.readline().strip().split(" ", 6)[-1]
 
-    keyring = dns.tsigkeyring.from_text({f'{domain}.': key})
+    keyring = dns.tsigkeyring.from_text({f"{domain}.": key})
     # Python's dns.update is similar to the old nsupdate cli tool
     update = dns.update.Update(zone, keyring=keyring, keyalgorithm=dns.tsig.HMAC_SHA512)
 
@@ -300,7 +299,9 @@ def dyndns_update(
     # [{"name": "...", "ttl": "...", "type": "...", "value": "..."}]
     for records in dns_conf.values():
         for record in records:
-            name = f"{record['name']}.{domain}." if record['name'] != "@" else f"{domain}."
+            name = (
+                f"{record['name']}.{domain}." if record["name"] != "@" else f"{domain}."
+            )
             update.delete(name)
 
     # Add the new records for all domain/subdomains
@@ -313,9 +314,11 @@ def dyndns_update(
             if record["value"] == "@":
                 record["value"] = domain
             record["value"] = record["value"].replace(";", r"\;")
-            name = f"{record['name']}.{domain}." if record['name'] != "@" else f"{domain}."
+            name = (
+                f"{record['name']}.{domain}." if record["name"] != "@" else f"{domain}."
+            )
 
-            update.add(name, record['ttl'], record['type'], record['value'])
+            update.add(name, record["ttl"], record["type"], record["value"])
 
     logger.debug("Now pushing new conf to DynDNS host...")
     logger.debug(update)
@@ -347,9 +350,7 @@ def _guess_current_dyndns_domain():
     dynette...)
     """
 
-    DYNDNS_KEY_REGEX = re.compile(
-        r".*/K(?P<domain>[^\s\+]+)\.\+165.+\.key$"
-    )
+    DYNDNS_KEY_REGEX = re.compile(r".*/K(?P<domain>[^\s\+]+)\.\+165.+\.key$")
 
     # Retrieve the first registered domain
     paths = list(glob.iglob("/etc/yunohost/dyndns/K*.key"))

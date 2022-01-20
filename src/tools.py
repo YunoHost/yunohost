@@ -536,9 +536,7 @@ def tools_upgrade(operation_logger, target=None):
             # Restart the API after 10 sec (at now doesn't support sub-minute times...)
             # We do this so that the API / webadmin still gets the proper HTTP response
             # It's then up to the webadmin to implement a proper UX process to wait 10 sec and then auto-fresh the webadmin
-            cmd = (
-                "at -M now >/dev/null 2>&1 <<< \"sleep 10; systemctl restart yunohost-api\""
-            )
+            cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart yunohost-api"'
             # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
             subprocess.check_call(["bash", "-c", cmd])
 
@@ -894,9 +892,9 @@ def _get_migration_by_name(migration_name):
         if re.match(r"^\d+_%s\.py$" % migration_name, x)
     ]
 
-    assert len(migrations_found) == 1, (
-        f"Unable to find migration with name {migration_name}"
-    )
+    assert (
+        len(migrations_found) == 1
+    ), f"Unable to find migration with name {migration_name}"
 
     return _load_migration(migrations_found[0])
 
