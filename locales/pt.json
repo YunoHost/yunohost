@@ -48,7 +48,6 @@
     "mail_forward_remove_failed": "Não foi possível remover o reencaminhamento de correio '{mail}'",
     "main_domain_change_failed": "Incapaz alterar o domínio raiz",
     "main_domain_changed": "Domínio raiz alterado com êxito",
-    "packages_upgrade_failed": "Não foi possível atualizar todos os pacotes",
     "pattern_domain": "Deve ser um nome de domínio válido (p.e. meu-dominio.org)",
     "pattern_email": "Deve ser um endereço de correio válido (p.e. alguem@dominio.org)",
     "pattern_firstname": "Deve ser um primeiro nome válido",
