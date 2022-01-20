@@ -136,7 +136,6 @@
     "pattern_email_forward": "Het moet een geldig e-mailadres zijn, '+' symbool is toegestaan (ikzelf@mijndomein.nl bijvoorbeeld, of ikzelf+yunohost@mijndomein.nl)",
     "password_too_simple_2": "Het wachtwoord moet minimaal 8 tekens lang zijn en moet cijfers, hoofdletters en kleine letters bevatten",
     "operation_interrupted": "Werd de bewerking handmatig onderbroken?",
-    "packages_upgrade_failed": "Niet alle pakketten konden bijgewerkt worden",
     "pattern_backup_archive_name": "Moet een geldige bestandsnaam zijn van maximaal 30 tekens; alleen alfanumerieke tekens en -_. zijn toegestaan",
     "pattern_domain": "Moet een geldige domeinnaam zijn (mijneigendomein.nl, bijvoorbeeld)",
     "pattern_firstname": "Het moet een geldige voornaam zijn",
