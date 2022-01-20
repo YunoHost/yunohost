@@ -406,9 +406,7 @@ def permission_create(
         permission = permission + ".main"
 
     # Validate uniqueness of permission in LDAP
-    if ldap.get_conflict(
-        {"cn": permission}, base_dn="ou=permission"
-    ):
+    if ldap.get_conflict({"cn": permission}, base_dn="ou=permission"):
         raise YunohostValidationError("permission_already_exist", permission=permission)
 
     # Get random GID
@@ -678,8 +676,7 @@ def permission_sync_to_user():
 
         new_inherited_perms = {
             "inheritPermission": [
-                f"uid={u},ou=users,dc=yunohost,dc=org"
-                for u in should_be_allowed_users
+                f"uid={u},ou=users,dc=yunohost,dc=org" for u in should_be_allowed_users
             ],
             "memberUid": should_be_allowed_users,
         }

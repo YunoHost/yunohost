@@ -415,9 +415,7 @@ def certificate_renew(
             traceback.print_exc(file=stack)
             msg = f"Certificate renewing for {domain} failed!"
             if no_checks:
-                msg += (
-                    f"\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain {domain}."
-                )
+                msg += f"\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain {domain}."
             logger.error(msg)
             operation_logger.error(msg)
             logger.error(stack.getvalue())
@@ -788,7 +786,10 @@ def _enable_certificate(domain, new_cert_folder):
 
     for service in ("postfix", "dovecot", "metronome"):
         # Ugly trick to not restart metronome if it's not installed
-        if service == "metronome" and os.system("dpkg --list | grep -q 'ii *metronome'") != 0:
+        if (
+            service == "metronome"
+            and os.system("dpkg --list | grep -q 'ii *metronome'") != 0
+        ):
             continue
         _run_service_command("restart", service)
 
