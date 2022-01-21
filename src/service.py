@@ -751,7 +751,9 @@ def _save_services(services):
             if service_conf_base.get(key) != value:
                 diff[service_name][key] = value
 
-    diff = {name: infos for name, infos in diff.items() if infos or name not in conf_base}
+    diff = {
+        name: infos for name, infos in diff.items() if infos or name not in conf_base
+    }
 
     write_to_yaml(SERVICES_CONF, diff)
 
