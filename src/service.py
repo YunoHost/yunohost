@@ -744,6 +744,12 @@ def _save_services(services):
     diff = {}
 
     for service_name, service_infos in services.items():
+
+        # Ignore php-fpm services, they are to be added dynamically by the core,
+        # but not actually saved
+        if service_name.startswith("php") and service_name.endswith("-fpm"):
+            continue
+
         service_conf_base = conf_base.get(service_name, {}) or {}
         diff[service_name] = {}
 
