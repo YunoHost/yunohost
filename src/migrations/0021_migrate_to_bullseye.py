@@ -15,8 +15,8 @@ from yunohost.tools import (
 )
 from yunohost.app import unstable_apps
 from yunohost.regenconf import manually_modified_files, _force_clear_hashes
-from yunohost.utils.filesystem import free_space_in_directory
-from yunohost.utils.packages import (
+from yunohost.utils.system import (
+    free_space_in_directory,
     get_ynh_package_version,
     _list_upgradable_apt_packages,
 )
