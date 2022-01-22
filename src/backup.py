@@ -870,7 +870,7 @@ class RestoreManager:
         from_version = self.info.get("from_yunohost_version", "")
         # Remove any '~foobar' in the version ... c.f ~alpha, ~beta version during
         # early dev for next debian version
-        from_version = re.sub(r'~\w+', '', from_version)
+        from_version = re.sub(r"~\w+", "", from_version)
 
         if not from_version or version.parse(from_version) < version.parse("4.2.0"):
             raise YunohostValidationError("restore_backup_too_old")
@@ -2416,10 +2416,9 @@ def backup_list(with_info=False, human_readable=False):
                 logger.warning(str(e))
             except Exception:
                 import traceback
+
                 trace_ = "\n" + traceback.format_exc()
-                logger.warning(
-                    f"Could not check infos for archive {archive}: {trace_}"
-                )
+                logger.warning(f"Could not check infos for archive {archive}: {trace_}")
 
         archives = d
 

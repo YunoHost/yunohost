@@ -423,9 +423,7 @@ def _list_upgradable_apps():
 
 
 @is_unit_operation()
-def tools_upgrade(
-    operation_logger, target=None, allow_yunohost_upgrade=True
-):
+def tools_upgrade(operation_logger, target=None):
     """
     Update apps & package cache, then display changelog
 
@@ -525,9 +523,7 @@ def tools_upgrade(
             # Restart the API after 10 sec (at now doesn't support sub-minute times...)
             # We do this so that the API / webadmin still gets the proper HTTP response
             # It's then up to the webadmin to implement a proper UX process to wait 10 sec and then auto-fresh the webadmin
-            cmd = (
-                "at -M now >/dev/null 2>&1 <<< \"sleep 10; systemctl restart yunohost-api\""
-            )
+            cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart yunohost-api"'
             # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
             subprocess.check_call(["bash", "-c", cmd])
 
@@ -539,10 +535,6 @@ def tools_upgrade(
                     packages_list=", ".join(upgradables),
                 )
             )
-            operation_logger.error(m18n.n("packages_upgrade_failed"))
-            raise YunohostError(m18n.n("packages_upgrade_failed"))
-
-        # FIXME : add a dpkg --audit / check dpkg is broken here ?
 
         logger.success(m18n.n("system_upgraded"))
         operation_logger.success()
@@ -562,6 +554,12 @@ def _apt_log_line_is_relevant(line):
         ", does not exist on system.",
         "unable to delete old directory",
         "update-alternatives:",
+        "Configuration file '/etc",
+        "==> Modified (by you or by a script) since installation.",
+        "==> Package distributor has shipped an updated version.",
+        "==> Keeping old config file as default.",
+        "is a disabled or a static unit",
+        " update-rc.d: warning: start and stop actions are no longer supported; falling back to defaults",
     ]
     return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
 
@@ -881,9 +879,9 @@ def _get_migration_by_name(migration_name):
         if re.match(r"^\d+_%s\.py$" % migration_name, x)
     ]
 
-    assert len(migrations_found) == 1, (
-        f"Unable to find migration with name {migration_name}"
-    )
+    assert (
+        len(migrations_found) == 1
+    ), f"Unable to find migration with name {migration_name}"
 
     return _load_migration(migrations_found[0])
 

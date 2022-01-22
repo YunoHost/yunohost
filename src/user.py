@@ -255,9 +255,7 @@ def user_create(
             logger.warning(m18n.n("user_home_creation_failed", home=home), exc_info=1)
 
     try:
-        subprocess.check_call(
-            ["setfacl", "-m", "g:all_users:---", f"/home/{username}"]
-        )
+        subprocess.check_call(["setfacl", "-m", "g:all_users:---", f"/home/{username}"])
     except subprocess.CalledProcessError:
         logger.warning(f"Failed to protect /home/{username}", exc_info=1)
 
@@ -987,9 +985,7 @@ def user_group_create(
     ldap = _get_ldap_interface()
 
     # Validate uniqueness of groupname in LDAP
-    conflict = ldap.get_conflict(
-        {"cn": groupname}, base_dn="ou=groups"
-    )
+    conflict = ldap.get_conflict({"cn": groupname}, base_dn="ou=groups")
     if conflict:
         raise YunohostValidationError("group_already_exist", group=groupname)
 

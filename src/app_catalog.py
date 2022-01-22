@@ -103,7 +103,9 @@ def _initialize_apps_catalog_system():
         )
         write_to_yaml(APPS_CATALOG_CONF, default_apps_catalog_list)
     except Exception as e:
-        raise YunohostError(f"Could not initialize the apps catalog system... : {e}", raw_msg=True)
+        raise YunohostError(
+            f"Could not initialize the apps catalog system... : {e}", raw_msg=True
+        )
 
     logger.success(m18n.n("apps_catalog_init_success"))
 
@@ -119,7 +121,9 @@ def _read_apps_catalog_list():
         # by returning [] if list_ is None
         return list_ if list_ else []
     except Exception as e:
-        raise YunohostError(f"Could not read the apps_catalog list ... : {e}", raw_msg=True)
+        raise YunohostError(
+            f"Could not read the apps_catalog list ... : {e}", raw_msg=True
+        )
 
 
 def _actual_apps_catalog_api_url(base_url):
@@ -172,7 +176,10 @@ def _update_apps_catalog():
         try:
             write_to_json(cache_file, apps_catalog_content)
         except Exception as e:
-            raise YunohostError(f"Unable to write cache data for {apps_catalog_id} apps_catalog : {e}", raw_msg=True)
+            raise YunohostError(
+                f"Unable to write cache data for {apps_catalog_id} apps_catalog : {e}",
+                raw_msg=True,
+            )
 
     logger.success(m18n.n("apps_catalog_update_success"))
 
@@ -220,7 +227,9 @@ def _load_apps_catalog():
             #         in which case we keep only the first one found)
             if app in merged_catalog["apps"]:
                 other_catalog = merged_catalog["apps"][app]["repository"]
-                logger.warning(f"Duplicate app {app} found between apps catalog {apps_catalog_id} and {other_catalog}")
+                logger.warning(
+                    f"Duplicate app {app} found between apps catalog {apps_catalog_id} and {other_catalog}"
+                )
                 continue
 
             info["repository"] = apps_catalog_id

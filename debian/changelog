@@ -1,16 +1,17 @@
-yunohost (11.0.1~alpha) unstable; urgency=low
+yunohost (11.0.2) testing; urgency=low
 
-  - [mod] Various tweaks for Python 3.9, PHP 7.4, and other changes related to Buster->Bullseye ecosystem
-  - [mod] quality: Rework repository code architecture ([#1377](https://github.com/YunoHost/yunohost/pull/1377))
-  - [mod] quality: Rework where yunohost files are deployed (yunohost now a proper python lib with files in /usr/lib/python3/dist-packages/yunohost/, and other files are in /usr/share/yunohost) ([#1377](https://github.com/YunoHost/yunohost/pull/1377))
+  - [mod] Various tweaks for Python 3.9, PHP 7.4, PostgreSQL 13, and other changes related to Buster->Bullseye ecosystem
   - [mod] debian: Moved mysql, php, and metronome from Depends to Recommends ([#1369](https://github.com/YunoHost/yunohost/pull/1369))
-  - [mod] apt: Add sury by default ([#1369](https://github.com/YunoHost/yunohost/pull/1369))
+  - [mod] apt: **Add sury by default** ([#1369](https://github.com/YunoHost/yunohost/pull/1369))
+  - [enh] mysql: **Drop super old mysql config, now rely on Debian default** ([44c972f...144126f](https://github.com/YunoHost/yunohost/compare/44c972f2dd65...144126f56a3d))
   - [enh] regenconf/helpers: Better integration for postgresql ([#1369](https://github.com/YunoHost/yunohost/pull/1369))
-  - [enh] regenconf: Store regenconf cache in /var/cache/yunohost/regenconf instead of /home/yunohost.conf (00d535a6)
-  - [enh] mysql: Drop super old mysql config, now rely on Debian default's one ([44c972f...144126f](https://github.com/YunoHost/yunohost/compare/44c972f2dd65...144126f56a3d))
-  - [enh] upgrade: Try to implement a smarter self-upgrade mechanism to prevent/limit API downtime and related UX issues ([#1374](https://github.com/YunoHost/yunohost/pull/1374))
+  - [mod] quality: **Rework repository code architecture** ([#1377](https://github.com/YunoHost/yunohost/pull/1377))
+  - [mod] quality: **Rework where yunohost files are deployed** (yunohost now a much closer to a python lib with files in /usr/lib/python3/dist-packages/yunohost/, and other "common" files are in /usr/share/yunohost) ([#1377](https://github.com/YunoHost/yunohost/pull/1377))
+  - [enh] upgrade: Try to implement **a smarter self-upgrade mechanism to prevent/limit API downtime and related UX issues** ([#1374](https://github.com/YunoHost/yunohost/pull/1374))
+  - [mod] regenconf: store tmp files in /var/cache/yunohost/ instead of the misleading /home/yunohost.conf folder (00d535a6)
+  - [mod] dyndns: rewrite tsig keygen + nsupdate using full python, now that dnssec-keygen doesnt support hmacsha512 anymore (63a84f53)
   - [mod] app: During app scripts (and all stuff run in hook_exec), do not inject the HOME variable if it exists. This aims to prevent inconsistencies between CLI (where HOME usually is defined) and API (where HOME doesnt exists) (f43e567b)
-  - [mod] quality: Cleanup legacy stuff
+  - [mod] quality: **Drop legacy commands or arguments** listed below
         - Drop `--other_vars` options in ynh_add_fail2ban_config and systemd_config helpers
         - Drop deprecated/superold `ynh_bind_or_cp`, `ynh_mkdir_tmp`, `ynh_get_plain_key` helpers
         - Drop obsolete `yunohost-reset-ldap-password` command
@@ -18,12 +19,50 @@ yunohost (11.0.1~alpha) unstable; urgency=low
         - Drop deprecated `yunohost service regen-conf` command (see `tools regen-conf` instead)
         - Drop deprecated `yunohost app fetchlist` command
         - Drop obsolete `yunohost app add/remove/clearaccess` commands
-        - Drop depcreated `--list` and `--filter` options in `yunohost app list`
+        - Drop deprecated `--installed` and `--filter` options in `yunohost app list`
         - Drop deprecated `--apps` and `--system` options in `yunohost tools update/upgrade` (no double dashes anymore)
         - Drop deprecated `--status` and `--log_type` options in `yunohost service add`
         - Drop deprecated `--mail` option in `yunohost user create`
 
- -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 05 Feb 2021 00:02:38 +0100
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:52:39 +0100
+
+yunohost (4.4.0) testing; urgency=low
+
+  - [enh] Add buster->bullseye migration
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:45:22 +0100
+
+yunohost (4.3.6.2) stable; urgency=low
+
+  - [fix] apt helpers: fix bug when var is empty... (7920cc62)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:30:25 +0100
+
+yunohost (4.3.6.1) stable; urgency=low
+
+  - [fix] dnsmasq: ensure interface is up ([#1410](https://github.com/YunoHost/yunohost/pull/1410))
+  - [fix] apt helpers: fix ynh_install_app_dependencies when an app change his default phpversion (6ea32728)
+  - [fix] certificates: fix edge case where None is returned, triggering 'NoneType has no attribute get' (019839db)
+  - [i18n] Translations updated for German
+
+  Thanks to all contributors <3 ! (Gregor, Kay0u)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:05:13 +0100
+
+yunohost (4.3.6) stable; urgency=low
+
+  - [enh] ssh: add a new setting to manage PasswordAuthentication in sshd_config ([#1388](https://github.com/YunoHost/yunohost/pull/1388))
+  - [enh] upgrades: filter more boring apt messages (3cc1a0a5)
+  - [fix] ynh_add_config: crons should be owned by root, otherwise they probably don't run? (0973301b)
+  - [fix] domains: force cert install during domain_add ([#1404](https://github.com/YunoHost/yunohost/pull/1404))
+  - [fix] logs: remove 'args' for metadata, may contain unredacted secrets in edge cases
+  - [fix] helpers, apt: upgrade apt dependencies from extra repos ([#1407](https://github.com/YunoHost/yunohost/pull/1407))
+  - [fix] diagnosis: incorrect dns check (relative vs absolute) for CNAME on subdomain (d81b85a4)
+  - [i18n] Translations updated for Dutch, French, Galician, German, Spanish, Ukrainian
+
+  Thanks to all contributors <3 ! (Boudewijn, Christian Wehrli, Éric Gaspar, Germain Edy, José M, Kay0u, Kayou, ljf, Tagada, Tymofii-Lytvynenko)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 14 Jan 2022 01:29:58 +0100
 
 yunohost (4.3.5) stable; urgency=low
 

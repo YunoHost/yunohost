@@ -297,6 +297,24 @@ EOF
 
     if [[ -n "$specific_php_version" ]]
     then
+        # Set the default php version back as the default version for php-cli.
+        update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
+
+        local old_phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+
+        # If the PHP version changed, remove the old fpm conf
+        if [ -n "$old_phpversion" ] && [ "$old_phpversion" != "$specific_php_version" ]; then
+            local old_php_fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
+            local old_php_finalphpconf="$old_php_fpm_config_dir/pool.d/$app.conf"
+
+            if [[ -f "$old_php_finalphpconf" ]]
+            then
+                ynh_backup_if_checksum_is_different --file="$old_php_finalphpconf"
+                ynh_remove_fpm_config
+            fi
+        fi
+        
+        # Store phpversion into the config of this app
         ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
 
         # Set the default php version back as the default version for php-cli.
@@ -397,7 +415,7 @@ ynh_install_extra_app_dependencies() {
     # Without doing apt install, an already installed dep is not upgraded
     local apps_auto_installed="$(apt-mark showauto $package)"
     ynh_package_install "$package"
-    apt-mark auto $apps_auto_installed
+    [ -z "$apps_auto_installed" ] || apt-mark auto $apps_auto_installed
 
     # Remove this extra repository after packages are installed
     ynh_remove_extra_repo --name=$app
@@ -496,8 +514,14 @@ ynh_remove_extra_repo() {
     ynh_secure_remove --file="/etc/apt/sources.list.d/$name.list"
     # Sury pinning is managed by the regenconf in the core...
     [[ "$name" == "extra_php_version" ]] || ynh_secure_remove "/etc/apt/preferences.d/$name"
-    ynh_secure_remove --file="/etc/apt/trusted.gpg.d/$name.gpg" >/dev/null
-    ynh_secure_remove --file="/etc/apt/trusted.gpg.d/$name.asc" >/dev/null
+    if [ -e /etc/apt/trusted.gpg.d/$name.gpg ]; then
+        ynh_secure_remove --file="/etc/apt/trusted.gpg.d/$name.gpg"
+    fi
+
+    # (Do we even create a .asc file anywhere ...?)
+    if [ -e /etc/apt/trusted.gpg.d/$name.asc ]; then
+        ynh_secure_remove --file="/etc/apt/trusted.gpg.d/$name.asc"
+    fi
 
     # Update the list of package to exclude the old repo
     ynh_package_update

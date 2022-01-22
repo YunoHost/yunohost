@@ -505,9 +505,7 @@ def _calculate_hash(path):
         return hasher.hexdigest()
 
     except IOError as e:
-        logger.warning(
-            f"Error while calculating file '{path}' hash: {e}", exc_info=1
-        )
+        logger.warning(f"Error while calculating file '{path}' hash: {e}", exc_info=1)
         return None
 
 

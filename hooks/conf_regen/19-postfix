@@ -46,6 +46,7 @@ do_pre_regen() {
     export main_domain
     export domain_list="$YNH_DOMAINS"
     ynh_render_template "main.cf" "${postfix_dir}/main.cf"
+    ynh_render_template "sni" "${postfix_dir}/sni"
 
     cat postsrsd \
         | sed "s/{{ main_domain }}/${main_domain}/g" \
@@ -72,6 +73,8 @@ do_post_regen() {
         chown postfix:root /etc/postfix/sasl_passwd*
         postmap /etc/postfix/sasl_passwd
     fi
+
+    postmap -F hash:/etc/postfix/sni
 
     [[ -z "$regen_conf_files" ]] \
         || { systemctl restart postfix && systemctl restart postsrsd; }

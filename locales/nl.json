@@ -40,7 +40,7 @@
     "extracting": "Uitpakken...",
     "installation_complete": "Installatie voltooid",
     "mail_alias_remove_failed": "Kan mail-alias '{mail}' niet verwijderen",
-    "pattern_email": "Moet een geldig emailadres bevatten (bv. abc@example.org)",
+    "pattern_email": "Moet een geldig e-mailadres bevatten, zonder '+' symbool er in (bv. abc@example.org)",
     "pattern_mailbox_quota": "Mailbox quota moet een waarde bevatten met b/k/M/G/T erachter of 0 om geen quota in te stellen",
     "pattern_password": "Wachtwoord moet tenminste 3 karakters lang zijn",
     "port_already_closed": "Poort {port} is al gesloten voor {ip_version} verbindingen",
@@ -129,5 +129,16 @@
     "additional_urls_already_removed": "Extra URL '{url}' is al verwijderd in de extra URL voor privilege '{permission}'",
     "app_label_deprecated": "Dit commando is vervallen. Gebruik alsjeblieft het nieuwe commando 'yunohost user permission update' om het label van de app te beheren.",
     "app_change_url_no_script": "De app '{app_name}' ondersteunt nog geen URL-aanpassingen. Misschien wel na een upgrade.",
-    "app_upgrade_some_app_failed": "Sommige apps konden niet worden bijgewerkt"
+    "app_upgrade_some_app_failed": "Sommige apps konden niet worden bijgewerkt",
+    "other_available_options": "... en {n} andere beschikbare opties die niet getoond worden",
+    "password_listed": "Dit wachtwoord is een van de meest gebruikte wachtwoorden ter wereld. Kies alstublieft iets wat minder voor de hand ligt.",
+    "password_too_simple_4": "Het wachtwoord moet minimaal 12 tekens lang zijn en moet cijfers, hoofdletters, kleine letters en speciale tekens bevatten",
+    "pattern_email_forward": "Het moet een geldig e-mailadres zijn, '+' symbool is toegestaan (ikzelf@mijndomein.nl bijvoorbeeld, of ikzelf+yunohost@mijndomein.nl)",
+    "password_too_simple_2": "Het wachtwoord moet minimaal 8 tekens lang zijn en moet cijfers, hoofdletters en kleine letters bevatten",
+    "operation_interrupted": "Werd de bewerking handmatig onderbroken?",
+    "pattern_backup_archive_name": "Moet een geldige bestandsnaam zijn van maximaal 30 tekens; alleen alfanumerieke tekens en -_. zijn toegestaan",
+    "pattern_domain": "Moet een geldige domeinnaam zijn (mijneigendomein.nl, bijvoorbeeld)",
+    "pattern_firstname": "Het moet een geldige voornaam zijn",
+    "pattern_lastname": "Het moet een geldige achternaam zijn",
+    "password_too_simple_3": "Het wachtwoord moet minimaal 8 tekens lang zijn en moet cijfers, hoofdletters, kleine letters en speciale tekens bevatten"
 }

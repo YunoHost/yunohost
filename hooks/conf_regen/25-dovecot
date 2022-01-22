@@ -18,6 +18,7 @@ do_pre_regen() {
 
     export pop3_enabled="$(yunohost settings get 'pop3.enabled')"
     export main_domain=$(cat /etc/yunohost/current_host)
+    export domain_list="$YNH_DOMAINS"
 
     ynh_render_template "dovecot.conf" "${dovecot_dir}/dovecot.conf"
 

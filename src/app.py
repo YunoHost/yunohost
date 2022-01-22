@@ -1514,7 +1514,7 @@ def app_action_run(operation_logger, app, action, args=None):
     actions = {x["id"]: x for x in actions}
 
     if action not in actions:
-        available_actions = ", ".join(actions.keys()),
+        available_actions = (", ".join(actions.keys()),)
         raise YunohostValidationError(
             f"action '{action}' not available for app '{app}', available actions are: {available_actions}",
             raw_msg=True,
@@ -2555,13 +2555,19 @@ def _make_tmp_workdir_for_app(app=None):
 def unstable_apps():
 
     output = []
+    deprecated_apps = ["mailman"]
 
     for infos in app_list(full=True)["apps"]:
 
-        if not infos.get("from_catalog") or infos.get("from_catalog").get("state") in [
-            "inprogress",
-            "notworking",
-        ]:
+        if (
+            not infos.get("from_catalog")
+            or infos.get("from_catalog").get("state")
+            in [
+                "inprogress",
+                "notworking",
+            ]
+            or infos["id"] in deprecated_apps
+        ):
             output.append(infos["id"])
 
     return output

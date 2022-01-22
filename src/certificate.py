@@ -415,9 +415,7 @@ def certificate_renew(
             traceback.print_exc(file=stack)
             msg = f"Certificate renewing for {domain} failed!"
             if no_checks:
-                msg += (
-                    f"\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain {domain}."
-                )
+                msg += f"\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain {domain}."
             logger.error(msg)
             operation_logger.error(msg)
             logger.error(stack.getvalue())
@@ -788,7 +786,10 @@ def _enable_certificate(domain, new_cert_folder):
 
     for service in ("postfix", "dovecot", "metronome"):
         # Ugly trick to not restart metronome if it's not installed
-        if service == "metronome" and os.system("dpkg --list | grep -q 'ii *metronome'") != 0:
+        if (
+            service == "metronome"
+            and os.system("dpkg --list | grep -q 'ii *metronome'") != 0
+        ):
             continue
         _run_service_command("restart", service)
 
@@ -852,14 +853,14 @@ def _check_domain_is_ready_for_ACME(domain):
     if is_yunohost_dyndns_domain(parent_domain):
         record_name = "@"
 
-    A_record_status = dnsrecords.get("data").get(f"A:{record_name}")
-    AAAA_record_status = dnsrecords.get("data").get(f"AAAA:{record_name}")
+    A_record_status = dnsrecords.get("data", {}).get(f"A:{record_name}")
+    AAAA_record_status = dnsrecords.get("data", {}).get(f"AAAA:{record_name}")
 
     # Fallback to wildcard in case no result yet for the DNS name?
     if not A_record_status:
-        A_record_status = dnsrecords.get("data").get("A:*")
+        A_record_status = dnsrecords.get("data", {}).get("A:*")
     if not AAAA_record_status:
-        AAAA_record_status = dnsrecords.get("data").get("AAAA:*")
+        AAAA_record_status = dnsrecords.get("data", {}).get("AAAA:*")
 
     if (
         not httpreachable

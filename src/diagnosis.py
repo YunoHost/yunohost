@@ -419,10 +419,7 @@ class Diagnoser:
 
     def diagnose(self, force=False):
 
-        if (
-            not force
-            and self.cached_time_ago() < self.cache_duration
-        ):
+        if not force and self.cached_time_ago() < self.cache_duration:
             logger.debug(f"Cache still valid : {self.cache_file}")
             logger.info(
                 m18n.n("diagnosis_cache_still_valid", category=self.description)
@@ -659,7 +656,9 @@ class Diagnoser:
 def _list_diagnosis_categories():
 
     paths = glob.glob(os.path.dirname(__file__) + "/diagnosers/??-*.py")
-    names = sorted([os.path.basename(path)[: -len(".py")].split("-")[-1] for path in paths])
+    names = [name.split("-")[-1] for name in sorted(
+        [os.path.basename(path)[: -len(".py")] for path in paths]
+    )]
 
     return names
 
@@ -671,7 +670,10 @@ def _load_diagnoser(diagnoser_name):
     paths = glob.glob(os.path.dirname(__file__) + f"/diagnosers/??-{diagnoser_name}.py")
 
     if len(paths) != 1:
-        raise YunohostError(f"Uhoh, found several matches (or none?) for diagnoser {diagnoser_name} : {paths}", raw_msg=True)
+        raise YunohostError(
+            f"Uhoh, found several matches (or none?) for diagnoser {diagnoser_name} : {paths}",
+            raw_msg=True,
+        )
 
     module_id = os.path.basename(paths[0][: -len(".py")])
 
@@ -686,7 +688,9 @@ def _load_diagnoser(diagnoser_name):
 
         traceback.print_exc()
 
-        raise YunohostError(f"Failed to load diagnoser {diagnoser_name} : {e}", raw_msg=True)
+        raise YunohostError(
+            f"Failed to load diagnoser {diagnoser_name} : {e}", raw_msg=True
+        )
 
 
 def _email_diagnosis_issues():

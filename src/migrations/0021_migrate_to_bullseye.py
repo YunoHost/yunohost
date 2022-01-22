@@ -5,7 +5,7 @@ from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
-from moulinette.utils.filesystem import read_file, rm
+from moulinette.utils.filesystem import read_file, rm, write_to_file
 
 from yunohost.tools import (
     Migration,
@@ -81,6 +81,17 @@ class MyMigration(Migration):
             "echo 'libc6 libraries/restart-without-asking boolean true' | debconf-set-selections"
         )
 
+        # Do not restart nginx during the upgrade of nginx-common and nginx-extras ...
+        # c.f. https://manpages.debian.org/bullseye/init-system-helpers/deb-systemd-invoke.1p.en.html
+        # and zcat /usr/share/doc/init-system-helpers/README.policy-rc.d.gz
+        # and the code inside /usr/bin/deb-systemd-invoke to see how it calls /usr/sbin/policy-rc.d ...
+        # and also invoke-rc.d ...
+        write_to_file(
+            "/usr/sbin/policy-rc.d",
+            '#!/bin/bash\n[[ "$1" =~ "nginx" ]] && [[ "$2" == "restart" ]] && exit 101 || exit 0',
+        )
+        os.system("chmod +x /usr/sbin/policy-rc.d")
+
         # Don't send an email to root about the postgresql migration. It should be handled automatically after.
         os.system(
             "echo 'postgresql-common postgresql-common/obsolete-major seen true' | debconf-set-selections"
@@ -105,7 +116,6 @@ class MyMigration(Migration):
             "mariadb-common --reinstall -o Dpkg::Options::='--force-confmiss'"
         )
         if ret != 0:
-            # FIXME: i18n once this is stable?
             raise YunohostError("Failed to reinstall mariadb-common ?", raw_msg=True)
 
         #
@@ -217,12 +227,9 @@ class MyMigration(Migration):
             "-o Dpkg::Options::='--force-confmiss'"
         )
         if ret != 0:
-            # FIXME: i18n once this is stable?
             raise YunohostError(
                 "Failed to force the install of php dependencies ?", raw_msg=True
             )
-
-        os.system(f"apt-mark auto {' '.join(basephp74packages_to_install)}")
 
         # Clean the mess
         logger.info(m18n.n("migration_0021_cleaning_up"))
@@ -245,13 +252,17 @@ class MyMigration(Migration):
 
         logger.info("Simulating upgrade...")
         if os.system(cmd) == 0:
-            # FIXME: i18n once this is stable?
             raise YunohostError(
                 "The upgrade cannot be completed, because some app dependencies would need to be removed?",
                 raw_msg=True,
             )
 
-        tools_upgrade(target="system")
+        postupgradecmds = f"apt-mark auto {' '.join(basephp74packages_to_install)}\n"
+        postupgradecmds += "rm -f /usr/sbin/policy-rc.d\n"
+        postupgradecmds += "echo 'Restarting nginx...' >&2\n"
+        postupgradecmds += "systemctl restart nginx\n"
+
+        tools_upgrade(target="system", postupgradecmds=postupgradecmds)
 
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
@@ -318,7 +329,11 @@ class MyMigration(Migration):
 
         message = m18n.n("migration_0021_general_warning")
 
-        # FIXME: re-enable this message with updated topic link once we release the migration as stable
+        # FIXME: update this message with updated topic link once we release the migration as stable
+        message = (
+            "N.B.: **THIS MIGRATION IS STILL IN BETA-STAGE** ! If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration ;)! You can read and share feedbacks on this forum thread: https://forum.yunohost.org/t/18531\n\n"
+            + message
+        )
         # message = (
         #    "N.B.: This migration has been tested by the community over the last few months but has only been declared stable recently. If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration ;)! You can read about remaining known issues and feedback from the community here: https://forum.yunohost.org/t/12195\n\n"
         #    + message

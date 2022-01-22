@@ -28,7 +28,7 @@ do_pre_regen() {
     interfaces="$(ip -j addr show | jq -r '[.[].ifname]|join(" ")')"
     wireless_interfaces="lo"
     for dev in $(ls /sys/class/net); do
-        if [ -d "/sys/class/net/$dev/wireless" ]; then
+        if [ -d "/sys/class/net/$dev/wireless" ] && grep -q "up" "/sys/class/net/$dev/operstate"; then
             wireless_interfaces+=" $dev"
         fi
     done
