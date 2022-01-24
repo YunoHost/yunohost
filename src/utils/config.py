@@ -285,8 +285,10 @@ class ConfigPanel:
                 ask = m18n.n(self.config["i18n"] + "_" + option["id"])
 
             if mode == "full":
-                # edit self.config directly
                 option["ask"] = ask
+                question_class = ARGUMENTS_TYPE_PARSERS[option.get("type", "string")]
+                # FIXME : maybe other properties should be taken from the question, not just choices ?.
+                option["choices"] = question_class(option).choices
             else:
                 result[key] = {"ask": ask}
                 if "current_value" in option:
@@ -1109,7 +1111,7 @@ class DomainQuestion(Question):
         if self.default is None:
             self.default = _get_maindomain()
 
-        self.choices = domain_list()["domains"]
+        self.choices = {domain: domain + ' ★' if domain == self.default else '' for domain in domain_list()['domains']}
 
     @staticmethod
     def normalize(value, option={}):
@@ -1134,7 +1136,9 @@ class UserQuestion(Question):
         from yunohost.domain import _get_maindomain
 
         super().__init__(question, context, hooks)
-        self.choices = list(user_list()["users"].keys())
+
+        self.choices = {username: f"{infos['fullname']} ({infos['mail']})"
+                        for username, infos in user_list()["users"].items()}
 
         if not self.choices:
             raise YunohostValidationError(
