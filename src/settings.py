@@ -341,9 +341,7 @@ def _get_settings():
             _save_settings(unknown_settings, location=unknown_settings_path)
             _save_settings(settings)
         except Exception as e:
-            logger.warning(
-                f"Failed to save unknown settings (because {e}), aborting."
-            )
+            logger.warning(f"Failed to save unknown settings (because {e}), aborting.")
 
     return settings
 
@@ -373,12 +371,12 @@ post_change_hooks = {}
 
 def post_change_hook(setting_name):
     def decorator(func):
-        assert setting_name in DEFAULTS.keys(), (
-            f"The setting {setting_name} does not exists"
-        )
-        assert setting_name not in post_change_hooks, (
-            f"You can only register one post change hook per setting (in particular for {setting_name})"
-        )
+        assert (
+            setting_name in DEFAULTS.keys()
+        ), f"The setting {setting_name} does not exists"
+        assert (
+            setting_name not in post_change_hooks
+        ), f"You can only register one post change hook per setting (in particular for {setting_name})"
         post_change_hooks[setting_name] = func
         return func
 

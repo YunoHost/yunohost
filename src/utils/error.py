@@ -65,4 +65,3 @@ class YunohostValidationError(YunohostError):
 class YunohostAuthenticationError(MoulinetteAuthenticationError):
 
     pass
-

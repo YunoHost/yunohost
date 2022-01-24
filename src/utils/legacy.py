@@ -163,10 +163,7 @@ def _patch_legacy_php_versions(app_folder):
 
         c = (
             "sed -i "
-            + "".join(
-                f"-e 's@{p}@{r}@g' "
-                for p, r in LEGACY_PHP_VERSION_REPLACEMENTS
-            )
+            + "".join(f"-e 's@{p}@{r}@g' " for p, r in LEGACY_PHP_VERSION_REPLACEMENTS)
             + "%s" % filename
         )
         os.system(c)
@@ -184,7 +181,11 @@ def _patch_legacy_php_versions_in_settings(app_folder):
         settings["phpversion"] = "7.4"
 
     # We delete these checksums otherwise the file will appear as manually modified
-    list_to_remove = ["checksum__etc_php_7.3_fpm_pool", "checksum__etc_php_7.0_fpm_pool", "checksum__etc_nginx_conf.d"]
+    list_to_remove = [
+        "checksum__etc_php_7.3_fpm_pool",
+        "checksum__etc_php_7.0_fpm_pool",
+        "checksum__etc_nginx_conf.d",
+    ]
     settings = {
         k: v
         for k, v in settings.items()
@@ -215,9 +216,15 @@ def _patch_legacy_helpers(app_folder):
             "important": False,
         },
         # Old $1, $2 in backup/restore scripts...
-        "app=$2": {"only_for": ["scripts/backup", "scripts/restore"], "important": True},
+        "app=$2": {
+            "only_for": ["scripts/backup", "scripts/restore"],
+            "important": True,
+        },
         # Old $1, $2 in backup/restore scripts...
-        "backup_dir=$1": {"only_for": ["scripts/backup", "scripts/restore"], "important": True},
+        "backup_dir=$1": {
+            "only_for": ["scripts/backup", "scripts/restore"],
+            "important": True,
+        },
         # Old $1, $2 in backup/restore scripts...
         "restore_dir=$1": {"only_for": ["scripts/restore"], "important": True},
         # Old $1, $2 in install scripts...
