@@ -454,6 +454,21 @@ class DomainConfigPanel(ConfigPanel):
     save_path_tpl = f"{DOMAIN_SETTINGS_DIR}/{{entity}}.yml"
     save_mode = "diff"
 
+    def _apply(self):
+        if ("default_app" in self.future_values and self.future_values["default_app"] != self.values["default_app"]):
+            from yunohost.app import app_ssowatconf, app_map
+
+            if "/" in app_map(raw=True)[self.entity]:
+                raise YunohostValidationError(
+                    "app_make_default_location_already_used",
+                    app=self.future_values["default_app"],
+                    domain=self.entity,
+                    other_app=app_map(raw=True)[self.entity]["/"]["id"],
+                )
+
+            super()._apply()
+            app_ssowatconf()
+    
     def _get_toml(self):
         from yunohost.dns import _get_registrar_config_section
 

@@ -440,6 +440,7 @@ class ConfigPanel:
                     "step",
                     "accept",
                     "redact",
+                    "filters",
                 ],
                 "defaults": {},
             },
@@ -705,6 +706,7 @@ class Question:
         self.ask = question.get("ask", {"en": self.name})
         self.help = question.get("help")
         self.redact = question.get("redact", False)
+        self.filters = question.get("filters", [])
         # .current_value is the currently stored value
         self.current_value = question.get("current_value")
         # .value is the "proposed" value which we got from the user
@@ -1126,6 +1128,28 @@ class DomainQuestion(Question):
         return value
 
 
+class AppQuestion(Question):
+    argument_type = "app"
+
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
+        from yunohost.app import app_list
+
+        super().__init__(question, context, hooks)
+
+        apps = app_list(full=True)["apps"]
+        for _filter in self.filters:
+            apps = [app for app in apps if _filter in app and app[_filter]]
+
+        def _app_display(app):
+            domain_path = f" ({app['domain_path']})" if 'domain_path' in app else ""
+            return app["label"] + domain_path
+
+        self.choices = {"_none": "---"}
+        self.choices.update({app['id']: _app_display(app) for app in apps})
+
+
 class UserQuestion(Question):
     argument_type = "user"
 
@@ -1319,6 +1343,7 @@ ARGUMENTS_TYPE_PARSERS = {
     "alert": DisplayTextQuestion,
     "markdown": DisplayTextQuestion,
     "file": FileQuestion,
+    "app": AppQuestion,
 }
 
 

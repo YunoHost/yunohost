@@ -896,6 +896,10 @@ app:
                 -d:
                     full: --domain
                     help: Specific domain to put app on (the app domain by default)
+                -u:
+                    full: --undo
+                    help: Undo redirection
+                    action: store_true
 
         ### app_ssowatconf()
         ssowatconf:
