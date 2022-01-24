@@ -1127,6 +1127,7 @@ class DomainQuestion(Question):
 
         return value
 
+
 class AppQuestion(Question):
     argument_type = "app"
 
@@ -1139,9 +1140,15 @@ class AppQuestion(Question):
 
         apps = app_list(full=True)["apps"]
         for _filter in self.filters:
-            apps = [ app for app in apps if _filter in app and app[_filter] ]
+            apps = [app for app in apps if _filter in app and app[_filter]]
 
-        self.choices = ["_none"] + [app['id'] for app in apps]
+        def _app_display(app):
+            domain_path = f" ({app['domain_path']})" if 'domain_path' in app else ""
+            return app["label"] + domain_path
+
+        self.choices = {"_none": "---"}
+        self.choices.update({app['id']: _app_display(app) for app in apps})
+
 
 class UserQuestion(Question):
     argument_type = "user"
