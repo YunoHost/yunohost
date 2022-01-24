@@ -455,7 +455,10 @@ class DomainConfigPanel(ConfigPanel):
     save_mode = "diff"
 
     def _apply(self):
-        if ("default_app" in self.future_values and self.future_values["default_app"] != self.values["default_app"]):
+        if (
+            "default_app" in self.future_values
+            and self.future_values["default_app"] != self.values["default_app"]
+        ):
             from yunohost.app import app_ssowatconf, app_map
 
             if "/" in app_map(raw=True)[self.entity]:
@@ -468,7 +471,7 @@ class DomainConfigPanel(ConfigPanel):
 
             super()._apply()
             app_ssowatconf()
-    
+
     def _get_toml(self):
         from yunohost.dns import _get_registrar_config_section
 

@@ -155,7 +155,9 @@ def app_info(app, full=False):
     ret["is_webapp"] = "domain" in settings and "path" in settings
 
     if ret["is_webapp"]:
-        ret["is_default"] = domain_config_get(settings["domain"], "feature.app.default_app") == app
+        ret["is_default"] = (
+            domain_config_get(settings["domain"], "feature.app.default_app") == app
+        )
 
     ret["supports_change_url"] = os.path.exists(
         os.path.join(setting_path, "scripts", "change_url")
@@ -1054,7 +1056,7 @@ def app_remove(operation_logger, app, purge=False):
     hook_remove(app)
 
     for domain in domain_list()["domains"]:
-        if (domain_config_get(domain, "feature.app.default_app") == app):
+        if domain_config_get(domain, "feature.app.default_app") == app:
             domain_config_set(domain, "feature.app.default_app", "_none")
 
     permission_sync_to_user()
@@ -1086,9 +1088,9 @@ def app_makedefault(operation_logger, app, domain=None, undo=False):
     operation_logger.start()
 
     if undo:
-        domain_config_set(domain, 'feature.app.default_app', "_none")
+        domain_config_set(domain, "feature.app.default_app", "_none")
     else:
-        domain_config_set(domain, 'feature.app.default_app', app)
+        domain_config_set(domain, "feature.app.default_app", app)
 
 
 def app_setting(app, key, value=None, delete=False):
@@ -1325,8 +1327,10 @@ def app_ssowatconf():
         redirected_urls.update(app_settings.get("redirected_urls", {}))
         redirected_regex.update(app_settings.get("redirected_regex", {}))
 
-    from .utils.legacy import translate_legacy_default_app_in_ssowant_conf_json_persistent
-    
+    from .utils.legacy import (
+        translate_legacy_default_app_in_ssowant_conf_json_persistent,
+    )
+
     translate_legacy_default_app_in_ssowant_conf_json_persistent()
 
     for domain in domains:

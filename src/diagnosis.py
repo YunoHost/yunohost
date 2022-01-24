@@ -656,9 +656,10 @@ class Diagnoser:
 def _list_diagnosis_categories():
 
     paths = glob.glob(os.path.dirname(__file__) + "/diagnosers/??-*.py")
-    names = [name.split("-")[-1] for name in sorted(
-        [os.path.basename(path)[: -len(".py")] for path in paths]
-    )]
+    names = [
+        name.split("-")[-1]
+        for name in sorted([os.path.basename(path)[: -len(".py")] for path in paths])
+    ]
 
     return names
 

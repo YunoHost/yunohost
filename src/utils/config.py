@@ -1113,7 +1113,10 @@ class DomainQuestion(Question):
         if self.default is None:
             self.default = _get_maindomain()
 
-        self.choices = {domain: domain + ' ★' if domain == self.default else '' for domain in domain_list()['domains']}
+        self.choices = {
+            domain: domain + " ★" if domain == self.default else ""
+            for domain in domain_list()["domains"]
+        }
 
     @staticmethod
     def normalize(value, option={}):
@@ -1143,11 +1146,11 @@ class AppQuestion(Question):
             apps = [app for app in apps if _filter in app and app[_filter]]
 
         def _app_display(app):
-            domain_path = f" ({app['domain_path']})" if 'domain_path' in app else ""
+            domain_path = f" ({app['domain_path']})" if "domain_path" in app else ""
             return app["label"] + domain_path
 
         self.choices = {"_none": "---"}
-        self.choices.update({app['id']: _app_display(app) for app in apps})
+        self.choices.update({app["id"]: _app_display(app) for app in apps})
 
 
 class UserQuestion(Question):
@@ -1161,8 +1164,10 @@ class UserQuestion(Question):
 
         super().__init__(question, context, hooks)
 
-        self.choices = {username: f"{infos['fullname']} ({infos['mail']})"
-                        for username, infos in user_list()["users"].items()}
+        self.choices = {
+            username: f"{infos['fullname']} ({infos['mail']})"
+            for username, infos in user_list()["users"].items()
+        }
 
         if not self.choices:
             raise YunohostValidationError(
