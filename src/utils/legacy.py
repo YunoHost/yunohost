@@ -88,24 +88,27 @@ def translate_legacy_default_app_in_ssowant_conf_json_persistent():
 
     redirected_urls = persistent["redirected_urls"]
 
-    if not any(from_url.count('/') == 1 and from_url.endswith('/') for from_url in redirected_urls):
+    if not any(
+        from_url.count("/") == 1 and from_url.endswith("/")
+        for from_url in redirected_urls
+    ):
         return
 
-    apps = app_list()['apps']
+    apps = app_list()["apps"]
 
-    if not any(app.get('domain_path') in redirected_urls.values() for app in apps):
+    if not any(app.get("domain_path") in redirected_urls.values() for app in apps):
         return
 
     for from_url, dest_url in redirected_urls.copy().items():
         # Not a root domain, skip
-        if from_url.count('/') != 1 or not from_url.endswith('/'):
+        if from_url.count("/") != 1 or not from_url.endswith("/"):
             continue
         for app in apps:
-            if app.get('domain_path') != dest_url:
+            if app.get("domain_path") != dest_url:
                 continue
-            domain_config_set(from_url.strip('/'), "feature.app.default_app", app['id'])
+            domain_config_set(from_url.strip("/"), "feature.app.default_app", app["id"])
             del redirected_urls[from_url]
-    
+
     persistent["redirected_urls"] = redirected_urls
 
     write_to_json(persistent_file_name, persistent, sort_keys=True, indent=4)
