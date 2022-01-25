@@ -1,3 +1,18 @@
+yunohost (11.0.3) testing; urgency=low
+
+  - [enh] mail: Add SNI support for postfix and dovecot ([#1413](https://github.com/YunoHost/yunohost/pull/1413))
+  - [fix] services: fix a couple edge cases (4571c5b2)
+  - [fix] services: Do not save php-fpm services in services.yml (5d0f8021)
+  - [fix] diagnosis: diagnosers were run in a funky order ([#1418](https://github.com/YunoHost/yunohost/pull/1418))
+  - [fix] configpanels: config_get should return possible choices for domain, user questions (and other dynamic-choices questions) ([#1420](https://github.com/YunoHost/yunohost/pull/1420))
+  - [enh] apps/domain: Clarify the default app mecanism, handle it fron domain config panel ([#1406](https://github.com/YunoHost/yunohost/pull/1406))
+  - [fix] apps: When no main app permission found, fallback to default label instead of having a 'None' label to prevent the webadmin from displaying an empty app list (07396b8b)
+  - [i18n] Translations updated for Galician
+
+  Thanks to all contributors <3 ! (José M, Kay0u, Tagadda, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 25 Jan 2022 13:06:10 +0100
+
 yunohost (11.0.2) testing; urgency=low
 
   - [mod] Various tweaks for Python 3.9, PHP 7.4, PostgreSQL 13, and other changes related to Buster->Bullseye ecosystem
