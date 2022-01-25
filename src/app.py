@@ -177,6 +177,7 @@ def app_info(app, full=False):
 
     if not ret["label"]:
         logger.warning(f"Failed to get label for app {app} ?")
+        ret["label"] = local_manifest["name"]
     return ret
 
 
