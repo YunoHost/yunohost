@@ -528,19 +528,19 @@ def domain_cert_status(domain_list, full=False):
 
 
 def domain_cert_install(
-    domain_list, force=False, no_checks=False, self_signed=False, staging=False
+    domain_list, force=False, no_checks=False, self_signed=False
 ):
     from yunohost.certificate import certificate_install
 
-    return certificate_install(domain_list, force, no_checks, self_signed, staging)
+    return certificate_install(domain_list, force, no_checks, self_signed)
 
 
 def domain_cert_renew(
-    domain_list, force=False, no_checks=False, email=False, staging=False
+    domain_list, force=False, no_checks=False, email=False
 ):
     from yunohost.certificate import certificate_renew
 
-    return certificate_renew(domain_list, force, no_checks, email, staging)
+    return certificate_renew(domain_list, force, no_checks, email)
 
 
 def domain_dns_conf(domain):

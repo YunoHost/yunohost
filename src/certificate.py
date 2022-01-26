@@ -60,8 +60,6 @@ KEY_SIZE = 3072
 
 VALIDITY_LIMIT = 15  # days
 
-# For tests
-STAGING_CERTIFICATION_AUTHORITY = "https://acme-staging-v02.api.letsencrypt.org"
 # For prod
 PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
 
@@ -114,7 +112,7 @@ def certificate_status(domains, full=False):
 
 
 def certificate_install(
-    domain_list, force=False, no_checks=False, self_signed=False, staging=False
+    domain_list, force=False, no_checks=False, self_signed=False
 ):
     """
     Install a Let's Encrypt certificate for given domains (all by default)
@@ -130,7 +128,7 @@ def certificate_install(
     if self_signed:
         _certificate_install_selfsigned(domain_list, force)
     else:
-        _certificate_install_letsencrypt(domain_list, force, no_checks, staging)
+        _certificate_install_letsencrypt(domain_list, force, no_checks)
 
 
 def _certificate_install_selfsigned(domain_list, force=False):
@@ -234,7 +232,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
 
 def _certificate_install_letsencrypt(
-    domains, force=False, no_checks=False, staging=False
+    domains, force=False, no_checks=False
 ):
     from yunohost.domain import domain_list, _assert_domain_exists
 
@@ -264,11 +262,6 @@ def _certificate_install_letsencrypt(
                     "certmanager_domain_cert_not_selfsigned", domain=domain
                 )
 
-    if staging:
-        logger.warning(
-            "Please note that you used the --staging option, and that no new certificate will actually be enabled !"
-        )
-
     # Actual install steps
     for domain in domains:
 
@@ -284,12 +277,12 @@ def _certificate_install_letsencrypt(
         operation_logger = OperationLogger(
             "letsencrypt_cert_install",
             [("domain", domain)],
-            args={"force": force, "no_checks": no_checks, "staging": staging},
+            args={"force": force, "no_checks": no_checks},
         )
         operation_logger.start()
 
         try:
-            _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
+            _fetch_and_enable_new_certificate(domain, no_checks=no_checks)
         except Exception as e:
             msg = f"Certificate installation for {domain} failed !\nException: {e}"
             logger.error(msg)
@@ -305,7 +298,7 @@ def _certificate_install_letsencrypt(
 
 
 def certificate_renew(
-    domains, force=False, no_checks=False, email=False, staging=False
+    domains, force=False, no_checks=False, email=False
 ):
     """
     Renew Let's Encrypt certificate for given domains (all by default)
@@ -373,11 +366,6 @@ def certificate_renew(
                     "certmanager_acme_not_configured_for_domain", domain=domain
                 )
 
-    if staging:
-        logger.warning(
-            "Please note that you used the --staging option, and that no new certificate will actually be enabled !"
-        )
-
     # Actual renew steps
     for domain in domains:
 
@@ -399,14 +387,13 @@ def certificate_renew(
             args={
                 "force": force,
                 "no_checks": no_checks,
-                "staging": staging,
                 "email": email,
             },
         )
         operation_logger.start()
 
         try:
-            _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
+            _fetch_and_enable_new_certificate(domain, no_checks=no_checks)
         except Exception as e:
             import traceback
             from io import StringIO
@@ -473,7 +460,7 @@ def _check_acme_challenge_configuration(domain):
     return "include /etc/nginx/conf.d/acme-challenge.conf.inc" in read_file(domain_conf)
 
 
-def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
+def _fetch_and_enable_new_certificate(domain, no_checks=False):
 
     if not os.path.exists(ACCOUNT_KEY_FILE):
         _generate_account_key()
@@ -507,11 +494,6 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
 
     domain_csr_file = f"{TMP_FOLDER}/{domain}.csr"
 
-    if staging:
-        certification_authority = STAGING_CERTIFICATION_AUTHORITY
-    else:
-        certification_authority = PRODUCTION_CERTIFICATION_AUTHORITY
-
     try:
         signed_certificate = sign_certificate(
             ACCOUNT_KEY_FILE,
@@ -519,7 +501,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
             WEBROOT_FOLDER,
             log=logger,
             disable_check=no_checks,
-            CA=certification_authority,
+            CA=PRODUCTION_CERTIFICATION_AUTHORITY,
         )
     except ValueError as e:
         if "urn:acme:error:rateLimited" in str(e):
@@ -539,12 +521,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
     # Create corresponding directory
     date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
 
-    if staging:
-        folder_flag = "staging"
-    else:
-        folder_flag = "letsencrypt"
-
-    new_cert_folder = f"{CERT_FOLDER}/{domain}-history/{date_tag}-{folder_flag}"
+    new_cert_folder = f"{CERT_FOLDER}/{domain}-history/{date_tag}-letsencrypt"
 
     os.makedirs(new_cert_folder)
 
@@ -562,9 +539,6 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
         f.write(signed_certificate)
 
     _set_permissions(domain_cert_file, "root", "ssl-cert", 0o640)
-
-    if staging:
-        return
 
     _enable_certificate(domain, new_cert_folder)
 
@@ -675,12 +649,6 @@ def _get_status(domain):
         CA_type = {
             "code": "lets-encrypt",
             "verbose": "Let's Encrypt",
-        }
-
-    elif cert_issuer.startswith("Fake LE"):
-        CA_type = {
-            "code": "fake-lets-encrypt",
-            "verbose": "Fake Let's Encrypt",
         }
 
     else:
