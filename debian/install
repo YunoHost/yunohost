@@ -5,6 +5,6 @@ helpers/* /usr/share/yunohost/helpers.d/
 conf/* /usr/share/yunohost/conf/
 locales/* /usr/share/yunohost/locales/
 doc/yunohost.8.gz /usr/share/man/man8/
-doc/bash-completion.sh /etc/bash_completion.d/yunohost
+doc/bash_completion.d/* /etc/bash_completion.d/
 conf/metronome/modules/* /usr/lib/metronome/modules/
 src/* /usr/lib/python3/dist-packages/yunohost/
