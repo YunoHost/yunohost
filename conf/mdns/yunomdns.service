@@ -1,6 +1,7 @@
 [Unit]
 Description=YunoHost mDNS service
-After=network.target
+Wants=network-online.target
+After=network-online.target
 
 [Service]
 User=mdns
