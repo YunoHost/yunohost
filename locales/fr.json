@@ -676,5 +676,14 @@
     "migration_0021_patch_yunohost_conflicts": "Application du correctif pour contourner le problème de conflit...",
     "migration_0021_not_buster": "La distribution Debian actuelle n'est pas Buster !",
     "migration_description_0021_migrate_to_bullseye": "Mise à niveau du système vers Debian Bullseye et YunoHost 11.x",
-    "global_settings_setting_security_ssh_password_authentication": "Autoriser l'authentification par mot de passe pour SSH"
+    "global_settings_setting_security_ssh_password_authentication": "Autoriser l'authentification par mot de passe pour SSH",
+    "domain_config_default_app": "Application par défaut",
+    "migration_description_0022_php73_to_php74_pools": "Migration des fichiers de configuration php7.3-fpm 'pool' vers php7.4",
+    "migration_description_0023_postgresql_11_to_13": "Migration des bases de données de PostgreSQL 11 vers 13",
+    "service_description_postgresql": "Stocke les données d'application (base de données SQL)",
+    "tools_upgrade": "Mise à niveau des packages système",
+    "migration_0023_postgresql_13_not_installed": "PostgreSQL 11 est installé, mais pas PostgreSQL 13 ! ? Quelque chose d'anormal s'est peut-être produit sur votre système :(...",
+    "tools_upgrade_failed": "Impossible de mettre à jour les paquets : {packages_list}",
+    "migration_0023_not_enough_space": "Prévoyez suffisamment d'espace disponible dans {path} pour exécuter la migration.",
+    "migration_0023_postgresql_11_not_installed": "PostgreSQL n'a pas été installé sur votre système. Il n'y a rien à faire."
 }
