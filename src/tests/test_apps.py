@@ -45,6 +45,7 @@ def clean():
         "break_yo_system",
         "legacy_app",
         "legacy_app__2",
+        "manifestv2_app",
         "full_domain_app",
         "my_webapp",
     ]
@@ -115,7 +116,10 @@ def app_expected_files(domain, app):
     if app.startswith("legacy_app"):
         yield "/var/www/%s/index.html" % app
     yield "/etc/yunohost/apps/%s/settings.yml" % app
-    yield "/etc/yunohost/apps/%s/manifest.json" % app
+    if "manifestv2" in app:
+        yield "/etc/yunohost/apps/%s/manifest.toml" % app
+    else:
+        yield "/etc/yunohost/apps/%s/manifest.json" % app
     yield "/etc/yunohost/apps/%s/scripts/install" % app
     yield "/etc/yunohost/apps/%s/scripts/remove" % app
 
@@ -157,6 +161,15 @@ def install_legacy_app(domain, path, public=True):
     )
 
 
+def install_manifestv2_app(domain, path, public=True):
+
+    app_install(
+        os.path.join(get_test_apps_dir(), "manivestv2_app_ynh"),
+        args="domain={}&path={}&init_main_permission={}".format(domain, path, "visitors" if public else "all_users"),
+        force=True,
+    )
+
+
 def install_full_domain_app(domain):
 
     app_install(
@@ -193,6 +206,26 @@ def test_legacy_app_install_main_domain():
     app_remove("legacy_app")
 
     assert app_is_not_installed(main_domain, "legacy_app")
+
+
+def test_manifestv2_app_install_main_domain():
+
+    main_domain = _get_maindomain()
+
+    install_manifestv2_app(main_domain, "/manifestv2")
+
+    app_map_ = app_map(raw=True)
+    assert main_domain in app_map_
+    assert "/manifestv2" in app_map_[main_domain]
+    assert "id" in app_map_[main_domain]["/manifestv2"]
+    assert app_map_[main_domain]["/manifestv2"]["id"] == "manifestv2_app"
+
+    assert app_is_installed(main_domain, "manifestv2_app")
+    assert app_is_exposed_on_http(main_domain, "/manifestv2", "Hextris")
+
+    app_remove("manifestv2_app")
+
+    assert app_is_not_installed(main_domain, "manifestv2_app")
 
 
 def test_app_from_catalog():

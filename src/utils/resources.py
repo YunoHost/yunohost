@@ -45,6 +45,11 @@ class AppResourceManager:
         self.current = current
         self.wanted = wanted
 
+        if "resources" not in self.current:
+            self.current["resources"] = {}
+        if "resources" not in self.wanted:
+            self.wanted["resources"] = {}
+
     def apply(self, rollback_if_failure, **context):
 
         todos = list(self.compute_todos())
@@ -233,7 +238,7 @@ class PermissionsResource(AppResource):
 
         existing_perms = user_permission_list(short=True, apps=[self.app])["permissions"]
         for perm in existing_perms:
-            if perm.split(".") not in self.permissions.keys():
+            if perm.split(".")[0] not in self.permissions.keys():
                 permission_delete(perm, force=True, sync_perm=False)
 
         for perm, infos in self.permissions.items():

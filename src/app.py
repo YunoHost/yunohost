@@ -1949,7 +1949,7 @@ def _convert_v1_manifest_to_v2(manifest):
         "ldap": "?",
         "sso": "?",
         "disk": "50M",
-        "ram": {"build": "50M", "runtime": "10M", "include_swap": False}
+        "ram": {"build": "50M", "runtime": "10M"}
     }
 
     maintainer = manifest.get("maintainer", {}).get("name")
@@ -2301,7 +2301,8 @@ def _check_manifest_requirements(manifest: Dict, action: str):
 
     # Ram for build
     ram_build_requirement = manifest["integration"]["ram"]["build"]
-    ram_include_swap = manifest["integration"]["ram"]["include_swap"]
+    # Is "include_swap" really useful ? We should probably decide wether to always include it or not instead
+    ram_include_swap = manifest["integration"]["ram"].get("include_swap", False)
 
     ram, swap = ram_available()
     if ram_include_swap:
