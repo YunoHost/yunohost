@@ -1396,3 +1396,15 @@ def ask_questions_and_parse_answers(
         out.append(question)
 
     return out
+
+def hydrate_questions_with_choices(raw_questions: List) -> List:
+    out = []
+
+    for raw_question in raw_questions:
+        question = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")](raw_question)
+        if question.choices:
+            raw_question["choices"] = question.choices
+            raw_question["default"] = question.default
+        out.append(raw_question)
+
+    return out
