@@ -219,9 +219,9 @@ def test_resource_data_dir():
     #assert not os.path.exists("/home/yunohost.app/testapp")
 
 
-def test_resource_port():
+def test_resource_ports():
 
-    r = AppResourceClassesByType["port"]
+    r = AppResourceClassesByType["ports"]
     conf = {}
 
     assert not app_setting("testapp", "port")
@@ -233,6 +233,25 @@ def test_resource_port():
     r(conf, "testapp").deprovision()
 
     assert not app_setting("testapp", "port")
+
+
+def test_resource_ports_several():
+
+    r = AppResourceClassesByType["ports"]
+    conf = {"main.default": 12345, "foobar.default": 23456}
+
+    assert not app_setting("testapp", "port")
+    assert not app_setting("testapp", "port_foobar")
+
+    r(conf, "testapp").provision_or_update()
+
+    assert app_setting("testapp", "port")
+    assert app_setting("testapp", "port_foobar")
+
+    r(conf, "testapp").deprovision()
+
+    assert not app_setting("testapp", "port")
+    assert not app_setting("testapp", "port_foobar")
 
 
 def test_resource_database():

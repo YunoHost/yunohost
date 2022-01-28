@@ -21,6 +21,7 @@
 import os
 import copy
 import shutil
+import random
 from typing import Dict, Any
 
 from moulinette.utils.process import check_output
@@ -548,7 +549,7 @@ class AptDependenciesAppResource(AppResource):
         self._run_script("deprovision", "ynh_remove_app_dependencies")
 
 
-class PortResource(AppResource):
+class PortsResource(AppResource):
     """
         is_provisioned -> port setting exists and is not the port used by another app (ie not in another app setting)
         is_available   -> true
@@ -564,14 +565,31 @@ class PortResource(AppResource):
         restore -> nothing (restore port setting)
     """
 
-    type = "port"
+    type = "ports"
     priority = 70
 
     default_properties = {
-        "default": 5000,
-        "expose": False,    # FIXME : implement logic for exposed port (allow/disallow in firewall ?)
-        # "protocol": "tcp",
     }
+
+    default_port_properties = {
+        "default": None,
+        "exposed": False,   # or True(="Both"), "TCP", "UDP"   # FIXME : implement logic for exposed port (allow/disallow in firewall ?)
+        "fixed": False,     # FIXME: implement logic. Corresponding to wether or not the port is "fixed" or any random port is ok
+    }
+
+    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
+
+        if "main" not in properties:
+            properties["main"] = {}
+
+        for port, infos in properties.items():
+            properties[port] = copy.copy(self.default_port_properties)
+            properties[port].update(infos)
+
+            if properties[port]["default"] is None:
+                properties[port]["default"] = random.randint(10000, 60000)
+
+        super().__init__({"ports": properties}, *args, **kwargs)
 
     def _port_is_used(self, port):
 
@@ -583,19 +601,30 @@ class PortResource(AppResource):
 
     def provision_or_update(self, context: Dict={}):
 
-        # Don't do anything if port already defined ?
-        if self.get_setting("port"):
-            return
+        for name, infos in self.ports.items():
 
-        port = self.default
-        while self._port_is_used(port):
-            port += 1
+            setting_name = f"port_{name}" if name != "main" else "port"
+            port_value = self.get_setting(setting_name)
+            if not port_value and name != "main":
+                # Automigrate from legacy setting foobar_port (instead of port_foobar)
+                legacy_setting_name = "{name}_port"
+                port_value = self.get_setting(legacy_setting_name)
+                self.set_setting(setting_name, port_value)
+                self.delete_setting(legacy_setting_name)
+                continue
 
-        self.set_setting("port", port)
+            if not port_value:
+                port_value = self.infos["default"]
+                while self._port_is_used(port_value):
+                    port_value += 1
+
+            self.set_setting(setting_name, port_value)
 
     def deprovision(self, context: Dict={}):
 
-        self.delete_setting("port")
+        for name, infos in self.ports.items():
+            setting_name = f"port_{name}" if name != "main" else "port"
+            self.delete_setting(setting_name)
 
 
 class DatabaseAppResource(AppResource):
