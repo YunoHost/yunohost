@@ -1114,7 +1114,7 @@ class DomainQuestion(Question):
             self.default = _get_maindomain()
 
         self.choices = {
-            domain: domain + " ★" if domain == self.default else ""
+            domain: domain + " ★" if domain == self.default else domain
             for domain in domain_list()["domains"]
         }
 
@@ -1178,7 +1178,7 @@ class UserQuestion(Question):
 
         if self.default is None:
             root_mail = "root@%s" % _get_maindomain()
-            for user in self.choices:
+            for user in self.choices.keys():
                 if root_mail in user_info(user).get("mail-aliases", []):
                     self.default = user
                     break
