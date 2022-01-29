@@ -1,0 +1,125 @@
+version = "1.0"
+i18n = "global_settings"
+
+[security]
+name = "Security"
+    [security.password]
+    name = "Passwords"
+        [security.password.admin_strength]
+        type = "number"
+        default = 1
+
+        [security.password.user_strength]
+        type = "number"
+        default = 1
+    
+    [security.ssh]
+    name = "SSH"
+        [security.ssh.ssh_compatibility]
+        type = "select"
+        default = "modern"
+        choices = ["intermediate", "modern"]
+
+        [security.ssh.ssh_port]
+        type = "number"
+        default = 22
+
+        [security.ssh.ssh_password_authentication]
+        type = "boolean"
+        default = "false"
+
+        [security.ssh.ssh_allow_deprecated_dsa_hostkey]
+        type = "boolean"
+        default = "false"
+
+    [security.nginx]
+    name = "NGINX"
+        [security.nginx.nginx_redirect_to_https]
+        type = "boolean"
+        default = "true"
+
+        [security.nginx.nginx_compatibility]
+        type = "select"
+        default = "intermediate"
+        choices = ["intermediate", "modern"]
+
+    [security.postfix]
+    name = "Postfix"
+        [security.postfix.postfix_compatibility]
+        type = "select"
+        default = "intermediate"
+        choices = ["intermediate", "modern"]
+
+    [security.webadmin]
+    name = "Webadmin"
+        [security.webadmin.webadmin_allowlist_enabled]
+        type = "boolean"
+        default = "false"
+
+        [security.webadmin.webadmin_allowlist]
+        type = "tags"
+        visible = "webadmin_allowlist_enabled"
+        optional = true
+        default = ""
+
+    [security.experimental]
+    name = "Experimental"
+        [security.experimental.security_experimental_enabled]
+        type = "boolean"
+        default = "false"
+
+
+[email]
+name = "Email"
+    [email.pop3]
+    name = "POP3"
+        [email.pop3.pop3_enabled]
+        type = "boolean"
+        default = "false"
+    
+    [email.smtp]
+    name = "SMTP"
+        [email.smtp.smtp_allow_ipv6]
+        type = "boolean"
+        default = "true"
+
+        [email.smtp.smtp_relay_enabled]
+        type = "boolean"
+        default = "false"
+        
+        [email.smtp.smtp_relay_host]
+        type = "string"
+        default = ""
+        optional = true
+        visible="smtp_relay_enabled"
+
+        [email.smtp.smtp_relay_port]
+        type = "number"
+        default = 587
+        visible="smtp_relay_enabled"
+
+        [email.smtp.smtp_relay_user]
+        type = "string"
+        default = ""
+        optional = true
+        visible="smtp_relay_enabled"
+        
+        [email.smtp.smtp_relay_password]
+        type = "password"
+        default = ""
+        optional = true
+        visible="smtp_relay_enabled"
+
+[misc]
+name = "Other"
+    [misc.ssowat]
+    name = "SSOwat"
+        [misc.ssowat.ssowat_panel_overlay_enabled]
+        type = "boolean"
+        default = "true"
+    
+    [misc.backup]
+    name = "Backup"
+        [misc.backup.backup_compress_tar_archives]
+        type = "boolean"
+        default = "false"
