@@ -389,11 +389,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
         raise YunohostError("main_domain_change_failed")
 
     # Generate SSOwat configuration file
-    try:
-        app_ssowatconf()
-    except Exception as e:
-        logger.warning(str(e), exc_info=1)
-        raise YunohostError("main_domain_change_failed")
+    app_ssowatconf()
 
     # Regen configurations
     if os.path.exists("/etc/yunohost/installed"):
