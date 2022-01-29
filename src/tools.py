@@ -453,7 +453,7 @@ def tools_upgrade(operation_logger, target=None):
         raise YunohostValidationError("dpkg_lock_not_available")
 
     if target not in ["apps", "system"]:
-        raise Exception(
+        raise YunohostValidationError(
             "Uhoh ?! tools_upgrade should have 'apps' or 'system' value for argument target"
         )
 
