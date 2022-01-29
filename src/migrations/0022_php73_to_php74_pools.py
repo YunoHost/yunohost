@@ -87,10 +87,10 @@ class MyMigration(Migration):
         )  # We remove this otherwise the logrotate cron will be unhappy
 
         # Reload/restart the php pools
-        _run_service_command("restart", "php7.4-fpm")
-        _run_service_command("enable", "php7.4-fpm")
         os.system("systemctl stop php7.3-fpm")
         os.system("systemctl disable php7.3-fpm")
+        _run_service_command("restart", "php7.4-fpm")
+        _run_service_command("enable", "php7.4-fpm")
 
         # Reload nginx
         _run_service_command("reload", "nginx")
