@@ -385,8 +385,6 @@ def domain_main_domain(operation_logger, new_main_domain=None):
         domain_list_cache = {}
         _set_hostname(new_main_domain)
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         logger.warning(str(e), exc_info=1)
         raise YunohostError("main_domain_change_failed")
 
@@ -394,8 +392,6 @@ def domain_main_domain(operation_logger, new_main_domain=None):
     try:
         app_ssowatconf()
     except Exception as e:
-        import traceback
-        traceback.print_exc()
         logger.warning(str(e), exc_info=1)
         raise YunohostError("main_domain_change_failed")
 
