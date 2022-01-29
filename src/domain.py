@@ -481,18 +481,24 @@ class DomainConfigPanel(ConfigPanel):
             app_ssowatconf()
 
     def _get_toml(self):
-        from yunohost.dns import _get_registrar_config_section
 
         toml = super()._get_toml()
 
         toml["feature"]["xmpp"]["xmpp"]["default"] = (
             1 if self.entity == _get_maindomain() else 0
         )
-        toml["dns"]["registrar"] = _get_registrar_config_section(self.entity)
 
-        # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
-        self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
-        del toml["dns"]["registrar"]["registrar"]["value"]
+        # Optimize wether or not to load the DNS section,
+        # e.g. we don't want to trigger the whole _get_registary_config_section
+        # when just getting the current value from the feature section
+        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
+        if not filter_key or filter_key[0] == "dns":
+            from yunohost.dns import _get_registrar_config_section
+            toml["dns"]["registrar"] = _get_registrar_config_section(self.entity)
+
+            # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
+            self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
+            del toml["dns"]["registrar"]["registrar"]["value"]
 
         return toml
 
@@ -502,7 +508,8 @@ class DomainConfigPanel(ConfigPanel):
         super()._load_current_values()
 
         # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
-        self.values["registrar"] = self.registar_id
+        if self.hasattr("registrar_id"):
+            self.values["registrar"] = self.registar_id
 
 
 def _get_domain_settings(domain: str) -> dict:
