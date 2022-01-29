@@ -1114,7 +1114,7 @@ class DomainQuestion(Question):
             self.default = _get_maindomain()
 
         self.choices = {
-            domain: domain + " ★" if domain == self.default else ""
+            domain: domain + " ★" if domain == self.default else domain
             for domain in domain_list()["domains"]
         }
 
@@ -1178,7 +1178,7 @@ class UserQuestion(Question):
 
         if self.default is None:
             root_mail = "root@%s" % _get_maindomain()
-            for user in self.choices:
+            for user in self.choices.keys():
                 if root_mail in user_info(user).get("mail-aliases", []):
                     self.default = user
                     break
@@ -1394,5 +1394,17 @@ def ask_questions_and_parse_answers(
         answers.update(new_values)
         context.update(new_values)
         out.append(question)
+
+    return out
+
+def hydrate_questions_with_choices(raw_questions: List) -> List:
+    out = []
+
+    for raw_question in raw_questions:
+        question = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")](raw_question)
+        if question.choices:
+            raw_question["choices"] = question.choices
+            raw_question["default"] = question.default
+        out.append(raw_question)
 
     return out

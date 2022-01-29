@@ -57,6 +57,7 @@ from yunohost.utils.config import (
     ask_questions_and_parse_answers,
     DomainQuestion,
     PathQuestion,
+    hydrate_questions_with_choices,
 )
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -677,6 +678,9 @@ def app_manifest(app):
     manifest, extracted_app_folder = _extract_app(app)
 
     shutil.rmtree(extracted_app_folder)
+
+    raw_questions = manifest.get("arguments", {}).get("install", [])
+    manifest['arguments']['install'] = hydrate_questions_with_choices(raw_questions)
 
     return manifest
 
