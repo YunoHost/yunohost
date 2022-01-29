@@ -501,7 +501,7 @@
     "migration_0021_yunohost_upgrade": "Starting YunoHost core upgrade...",
     "migration_0023_not_enough_space": "Make sufficient space available in {path} to run the migration.",
     "migration_0023_postgresql_11_not_installed": "PostgreSQL was not installed on your system. Nothing to do.",
-    "migration_0023_postgresql_13_not_installed": "PostgreSQL 11 is installed, but not postgresql 13!? Something weird might have happened on your system :(...",
+    "migration_0023_postgresql_13_not_installed": "PostgreSQL 11 is installed, but not PostgreSQL 13!? Something weird might have happened on your system :(...",
     "migration_description_0021_migrate_to_bullseye": "Upgrade the system to Debian Bullseye and YunoHost 11.x",
     "migration_description_0022_php73_to_php74_pools": "Migrate php7.3-fpm 'pool' conf files to php7.4",
     "migration_description_0023_postgresql_11_to_13": "Migrate databases from PostgreSQL 11 to 13",
