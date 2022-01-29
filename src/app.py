@@ -680,7 +680,7 @@ def app_manifest(app):
     shutil.rmtree(extracted_app_folder)
 
     raw_questions = manifest.get("arguments", {}).get("install", [])
-    manifest['arguments']['install'] = hydrate_questions_with_choices(raw_questions)
+    manifest["arguments"]["install"] = hydrate_questions_with_choices(raw_questions)
 
     return manifest
 
