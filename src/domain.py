@@ -492,6 +492,7 @@ class DomainConfigPanel(ConfigPanel):
         filter_key = self.filter_key.split(".") if self.filter_key != "" else []
         if not filter_key or filter_key[0] == "dns":
             from yunohost.dns import _get_registrar_config_section
+
             toml["dns"]["registrar"] = _get_registrar_config_section(self.entity)
 
             # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
@@ -541,17 +542,13 @@ def domain_cert_status(domain_list, full=False):
     return certificate_status(domain_list, full)
 
 
-def domain_cert_install(
-    domain_list, force=False, no_checks=False, self_signed=False
-):
+def domain_cert_install(domain_list, force=False, no_checks=False, self_signed=False):
     from yunohost.certificate import certificate_install
 
     return certificate_install(domain_list, force, no_checks, self_signed)
 
 
-def domain_cert_renew(
-    domain_list, force=False, no_checks=False, email=False
-):
+def domain_cert_renew(domain_list, force=False, no_checks=False, email=False):
     from yunohost.certificate import certificate_renew
 
     return certificate_renew(domain_list, force, no_checks, email)

@@ -111,9 +111,7 @@ def certificate_status(domains, full=False):
     return {"certificates": certificates}
 
 
-def certificate_install(
-    domain_list, force=False, no_checks=False, self_signed=False
-):
+def certificate_install(domain_list, force=False, no_checks=False, self_signed=False):
     """
     Install a Let's Encrypt certificate for given domains (all by default)
 
@@ -231,9 +229,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
             operation_logger.error(msg)
 
 
-def _certificate_install_letsencrypt(
-    domains, force=False, no_checks=False
-):
+def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
     from yunohost.domain import domain_list, _assert_domain_exists
 
     if not os.path.exists(ACCOUNT_KEY_FILE):
@@ -297,9 +293,7 @@ def _certificate_install_letsencrypt(
             operation_logger.success()
 
 
-def certificate_renew(
-    domains, force=False, no_checks=False, email=False
-):
+def certificate_renew(domains, force=False, no_checks=False, email=False):
     """
     Renew Let's Encrypt certificate for given domains (all by default)
 
