@@ -62,7 +62,7 @@ do_init_regen() {
 
     systemctl daemon-reload
 
-    systemctl enable yunohost-api.service
+    systemctl enable yunohost-api.service --quiet
     systemctl start yunohost-api.service
     # Yunohost-firewall is enabled only during postinstall, not init, not 100% sure why
 
