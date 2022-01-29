@@ -17,6 +17,10 @@ NEWPHP_POOLS = "/etc/php/7.4/fpm/pool.d"
 OLDPHP_SOCKETS_PREFIX = "/run/php/php7.3-fpm"
 NEWPHP_SOCKETS_PREFIX = "/run/php/php7.4-fpm"
 
+# Because of synapse é_è
+OLDPHP_SOCKETS_PREFIX2 = "/run/php7.3-fpm"
+NEWPHP_SOCKETS_PREFIX2 = "/run/php7.4-fpm"
+
 MIGRATION_COMMENT = (
     "; YunoHost note : this file was automatically moved from {}".format(OLDPHP_POOLS)
 )
@@ -50,6 +54,10 @@ class MyMigration(Migration):
                 OLDPHP_SOCKETS_PREFIX, NEWPHP_SOCKETS_PREFIX, dest
             )
             os.system(c)
+            c = "sed -i -e 's@{}@{}@g' {}".format(
+                OLDPHP_SOCKETS_PREFIX2, NEWPHP_SOCKETS_PREFIX2, dest
+            )
+            os.system(c)
 
             # Also add a comment that it was automatically moved from php7.3
             # (for human traceability and backward migration)
@@ -67,6 +75,10 @@ class MyMigration(Migration):
                 # Replace the socket prefix if it's found
                 c = "sed -i -e 's@{}@{}@g' {}".format(
                     OLDPHP_SOCKETS_PREFIX, NEWPHP_SOCKETS_PREFIX, nf
+                )
+                os.system(c)
+                c = "sed -i -e 's@{}@{}@g' {}".format(
+                    OLDPHP_SOCKETS_PREFIX2, NEWPHP_SOCKETS_PREFIX2, nf
                 )
                 os.system(c)
 
