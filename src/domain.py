@@ -469,7 +469,13 @@ class DomainConfigPanel(ConfigPanel):
                     other_app=app_map(raw=True)[self.entity]["/"]["id"],
                 )
 
-            super()._apply()
+        super()._apply()
+
+        # Reload ssowat if default app changed
+        if (
+            "default_app" in self.future_values
+            and self.future_values["default_app"] != self.values["default_app"]
+        ):
             app_ssowatconf()
 
     def _get_toml(self):
