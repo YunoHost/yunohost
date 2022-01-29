@@ -500,7 +500,8 @@ class DomainConfigPanel(ConfigPanel):
         super()._load_current_values()
 
         # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
-        if hasattr(self, "registrar_id"):
+        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
+        if not filter_key or filter_key[0] == "dns":
             self.values["registrar"] = self.registar_id
 
 
