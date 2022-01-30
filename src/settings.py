@@ -148,10 +148,6 @@ def settings_reset_all(operation_logger):
     return settings.reset(operation_logger=operation_logger)
 
 
-def _get_setting_description(key):
-    return m18n.n(f"global_settings_setting_{key.split('.')[-1]}")
-
-
 class SettingsConfigPanel(ConfigPanel):
     entity_type = "settings"
     save_path_tpl = SETTINGS_PATH
@@ -172,6 +168,17 @@ class SettingsConfigPanel(ConfigPanel):
             except Exception as e:
                 logger.error(f"Post-change hook for setting failed : {e}")
                 raise
+
+    def get(self, key="", mode="classic"):
+        result = super().get(key=key, mode=mode)
+
+        if mode == "full":
+            for panel, section, option in self._iterate():
+                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
+                    option["help"] = m18n.n(self.config["i18n"] + "_" + option["id"] + "_help")
+            return self.config
+
+        return result
 
     def reset(self, key = "", operation_logger=None):
         self.filter_key = key

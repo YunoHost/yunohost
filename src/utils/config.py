@@ -799,11 +799,6 @@ class Question:
 
     def _prevalidate(self):
         if self.value in [None, ""] and not self.optional:
-            import traceback
-            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-            msg = m18n.n("unexpected_error", app=app_instance_name, error=error)
-            logger.error(msg)
-            operation_logger.error(msg)
             raise YunohostValidationError("app_argument_required", name=self.name)
 
         # we have an answer, do some post checks
