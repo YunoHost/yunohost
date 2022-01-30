@@ -215,7 +215,7 @@ class SettingsConfigPanel(ConfigPanel):
             logger.error(m18n.n("config_apply_failed", error=error))
             raise
 
-        logger.success("Config updated as expected")
+        logger.success(m18n.("global_settings_reset_success"))
         operation_logger.success()
 
 
