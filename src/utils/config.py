@@ -706,7 +706,7 @@ class Question:
         self.ask = question.get("ask", {"en": self.name})
         self.help = question.get("help")
         self.redact = question.get("redact", False)
-        self.filter = question.get("filter", [])
+        self.filter = question.get("filter", "true")
         # .current_value is the currently stored value
         self.current_value = question.get("current_value")
         # .value is the "proposed" value which we got from the user
@@ -1142,8 +1142,9 @@ class AppQuestion(Question):
         super().__init__(question, context, hooks)
 
         apps = app_list(full=True)["apps"]
-        
-        apps = [app for app in apps if evaluate_simple_js_expression(self.filter, context=app)]
+
+        if self.filter:
+            apps = [app for app in apps if evaluate_simple_js_expression(self.filter, context=app)]
 
         def _app_display(app):
             domain_path_or_id = f" ({app.get('domain_path', app['id'])})"
