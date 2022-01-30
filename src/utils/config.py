@@ -440,7 +440,7 @@ class ConfigPanel:
                     "step",
                     "accept",
                     "redact",
-                    "filters",
+                    "filter",
                 ],
                 "defaults": {},
             },
@@ -706,7 +706,7 @@ class Question:
         self.ask = question.get("ask", {"en": self.name})
         self.help = question.get("help")
         self.redact = question.get("redact", False)
-        self.filters = question.get("filters", [])
+        self.filter = question.get("filter", [])
         # .current_value is the currently stored value
         self.current_value = question.get("current_value")
         # .value is the "proposed" value which we got from the user
@@ -1142,12 +1142,12 @@ class AppQuestion(Question):
         super().__init__(question, context, hooks)
 
         apps = app_list(full=True)["apps"]
-        for _filter in self.filters:
-            apps = [app for app in apps if _filter in app and app[_filter]]
+        
+        apps = [app for app in apps if evaluate_simple_js_expression(self.filter, context=app)]
 
         def _app_display(app):
-            domain_path = f" ({app['domain_path']})" if "domain_path" in app else ""
-            return app["label"] + domain_path
+            domain_path_or_id = f" ({app.get('domain_path', app['id'])})"
+            return app["label"] + domain_path_or_id
 
         self.choices = {"_none": "---"}
         self.choices.update({app["id"]: _app_display(app) for app in apps})

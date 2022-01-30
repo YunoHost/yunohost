@@ -14,7 +14,7 @@ i18n = "domain_config"
     [feature.app]
         [feature.app.default_app]
         type = "app"
-        filters = ["is_webapp"]
+        filter = "is_webapp"
         default = "_none"
     
     [feature.mail]
