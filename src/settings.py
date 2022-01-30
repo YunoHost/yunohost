@@ -2,9 +2,6 @@ import os
 import json
 import subprocess
 
-from datetime import datetime
-from collections import OrderedDict
-
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.config import ConfigPanel, Question
@@ -17,50 +14,7 @@ from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_setti
 logger = getActionLogger("yunohost.settings")
 
 SETTINGS_PATH = "/etc/yunohost/settings.yaml"
-SETTINGS_PATH_OTHER_LOCATION = "/etc/yunohost/settings-%s.yaml"
 
-
-def is_boolean(value):
-    TRUE = ["true", "on", "yes", "y", "1"]
-    FALSE = ["false", "off", "no", "n", "0"]
-
-    """
-    Ensure a string value is intended as a boolean
-
-    Keyword arguments:
-        arg -- The string to check
-
-    Returns:
-        (is_boolean, boolean_value)
-
-    """
-    if isinstance(value, bool):
-        return True, value
-    if value in [0, 1]:
-        return True, bool(value)
-    elif isinstance(value, str):
-        if str(value).lower() in TRUE + FALSE:
-            return True, str(value).lower() in TRUE
-        else:
-            return False, None
-    else:
-        return False, None
-
-
-# a settings entry is in the form of:
-# namespace.subnamespace.name: {type, value, default, description, [choices]}
-# choices is only for enum
-# the keyname can have as many subnamespace as needed but should have at least
-# one level of namespace
-
-# description is implied from the translated strings
-# the key is "global_settings_setting_%s" % key.replace(".", "_")
-
-# type can be:
-# * bool
-# * int
-# * string
-# * enum (in the form of a python list)
 
 def settings_get(key="", full=False, export=False):
     """
@@ -215,7 +169,7 @@ class SettingsConfigPanel(ConfigPanel):
             logger.error(m18n.n("config_apply_failed", error=error))
             raise
 
-        logger.success(m18n.("global_settings_reset_success"))
+        logger.success(m18n.n("global_settings_reset_success"))
         operation_logger.success()
 
 
