@@ -1144,7 +1144,11 @@ class AppQuestion(Question):
         apps = app_list(full=True)["apps"]
 
         if self.filter:
-            apps = [app for app in apps if evaluate_simple_js_expression(self.filter, context=app)]
+            apps = [
+                app
+                for app in apps
+                if evaluate_simple_js_expression(self.filter, context=app)
+            ]
 
         def _app_display(app):
             domain_path_or_id = f" ({app.get('domain_path', app['id'])})"

@@ -226,7 +226,7 @@ def tools_postinstall(
     main_space = sum(
         psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions
     )
-    GB = 1024 ** 3
+    GB = 1024**3
     if not force_diskspace and main_space < 10 * GB:
         raise YunohostValidationError("postinstall_low_rootfsspace")
 
