@@ -293,7 +293,7 @@ class MyMigration(Migration):
             raise YunohostError("migration_0021_not_buster")
 
         # Have > 1 Go free space on /var/ ?
-        if free_space_in_directory("/var/") / (1024 ** 3) < 1.0:
+        if free_space_in_directory("/var/") / (1024**3) < 1.0:
             raise YunohostError("migration_0021_not_enough_free_space")
 
         # Check system is up to date
