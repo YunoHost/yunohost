@@ -684,5 +684,6 @@
     "migration_description_0022_php73_to_php74_pools": "Migrar ficheiros de configuración de php7.3-fpm 'pool' a php7.4",
     "migration_description_0023_postgresql_11_to_13": "Migrar bases de datos de PostgreSQL 11 a 13",
     "service_description_postgresql": "Almacena datos da app (Base datos SQL)",
-    "tools_upgrade": "Actualizando paquetes do sistema"
+    "tools_upgrade": "Actualizando paquetes do sistema",
+    "domain_config_default_app": "App por defecto"
 }
