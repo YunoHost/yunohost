@@ -125,6 +125,15 @@ test-app-config:
       - src/app.py
       - src/utils/config.py
 
+test-app-resources:
+  extends: .test-stage
+  script:
+    - python3 -m pytest src/tests/test_app_resources.py
+  only:
+    changes:
+      - src/app.py
+      - src/utils/resources.py
+
 test-changeurl:
   extends: .test-stage
   script:
