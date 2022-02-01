@@ -164,7 +164,7 @@ def install_legacy_app(domain, path, public=True):
 def install_manifestv2_app(domain, path, public=True):
 
     app_install(
-        os.path.join(get_test_apps_dir(), "manivestv2_app_ynh"),
+        os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"),
         args="domain={}&path={}&init_main_permission={}".format(domain, path, "visitors" if public else "all_users"),
         force=True,
     )
