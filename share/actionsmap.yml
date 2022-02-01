@@ -443,6 +443,9 @@ domain:
                 --exclude-subdomains:
                     help: Filter out domains that are obviously subdomains of other declared domains
                     action: store_true
+                --tree:
+                    help: Display domains as a tree
+                    action: store_true
 
         ### domain_add()
         add:

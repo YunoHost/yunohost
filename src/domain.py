@@ -90,15 +90,42 @@ def _get_domains(exclude_subdomains=False, no_cache=False):
     return domain_list_cache
 
 
-def domain_list(exclude_subdomains=False):
+def domain_list(exclude_subdomains=False, tree=False):
     """
     List domains
 
     Keyword argument:
         exclude_subdomains -- Filter out domains that are subdomains of other declared domains
+        tree -- Display domains as a hierarchy tree
 
     """
-    return {"domains": _get_domains(exclude_subdomains), "main": _get_maindomain()}
+    from collections import OrderedDict
+
+    domains = _get_domains(exclude_subdomains)
+    main = _get_maindomain()
+
+    if not tree:
+        return {"domains": domains, "main": main}
+
+    if tree and exclude_subdomains:
+        return {
+            "domains": OrderedDict({domain: {} for domain in domains}),
+            "main": main,
+        }
+
+    def get_parent_dict(tree, child):
+        # If parent exists it should be the last added (see `_get_domains` ordering)
+        possible_parent = next(reversed(tree)) if tree else None
+        if possible_parent and child.endswith(f".{possible_parent}"):
+            return get_parent_dict(tree[possible_parent], child)
+        return tree
+
+    result = OrderedDict()
+    for domain in domains:
+        parent = get_parent_dict(result, domain)
+        parent[domain] = OrderedDict()
+
+    return {"domains": result, "main": main}
 
 
 def _assert_domain_exists(domain):
@@ -116,6 +143,21 @@ def _list_subdomains_of(parent_domain):
             out.append(domain)
 
     return out
+
+
+# def _get_parent_domain_of(domain):
+#
+#     _assert_domain_exists(domain)
+#
+#     if "." not in domain:
+#         return domain
+#
+#     parent_domain = domain.split(".", 1)[-1]
+#     if parent_domain not in _get_domains():
+#         return domain  # Domain is its own parent
+#
+#     else:
+#         return _get_parent_domain_of(parent_domain)
 
 
 def _get_parent_domain_of(domain, return_self=True):
