@@ -221,21 +221,6 @@ def _list_subdomains_of(parent_domain):
     return out
 
 
-# def _get_parent_domain_of(domain):
-#
-#     _assert_domain_exists(domain)
-#
-#     if "." not in domain:
-#         return domain
-#
-#     parent_domain = domain.split(".", 1)[-1]
-#     if parent_domain not in _get_domains():
-#         return domain  # Domain is its own parent
-#
-#     else:
-#         return _get_parent_domain_of(parent_domain)
-
-
 def _get_parent_domain_of(domain, return_self=True):
 
     _assert_domain_exists(domain)
