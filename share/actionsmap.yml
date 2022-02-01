@@ -447,6 +447,15 @@ domain:
                     help: Display domains as a tree
                     action: store_true
 
+        ### domain_info()
+        info:
+            action_help: Get domains aggredated data
+            api: GET /domains/<domains>
+            arguments:
+                domains:
+                    help: Domains to check
+                    nargs: "*"
+
         ### domain_add()
         add:
             action_help: Create a custom domain

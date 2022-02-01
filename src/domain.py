@@ -128,6 +128,82 @@ def domain_list(exclude_subdomains=False, tree=False):
     return {"domains": result, "main": main}
 
 
+def domain_info(domains):
+    """
+    Print aggregate data about domains (all by default)
+
+    Keyword argument:
+        domains     -- Domains to be checked
+
+    """
+
+    from collections import OrderedDict
+    from yunohost.app import app_info
+    from yunohost.dns import _get_registar_settings
+    from yunohost.utils.dns import is_special_use_tld
+
+    # If no domains given, consider all yunohost domains
+    if domains == []:
+        domains = _get_domains()
+    # Else, validate that yunohost knows the domains given
+    else:
+        for domain in domains:
+            _assert_domain_exists(domain)
+
+    def get_dns_config(domain):
+        if is_special_use_tld(domain):
+            return {"method": "none"}
+
+        registrar, registrar_credentials = _get_registar_settings(domain)
+
+        if not registrar or registrar == "None":  # yes it's None as a string
+            return {"method": "manual", "semi_auto_status": "unavailable"}
+        if registrar == "parent_domain":
+            return {"method": "handled_in_parent"}
+        if registrar == "yunohost":
+            return {"method": "auto", "registrar": registrar}
+        if not all(registrar_credentials.values()):
+            return {
+                "method": "manual",
+                "semi_auto_status": "activable",
+                "registrar": registrar,
+            }
+
+        return {
+            "method": "semi_auto",
+            "registrar": registrar,
+            "semi_auto_status": "activated",
+        }
+
+    certs = domain_cert_status(domains, full=True)["certificates"]
+    apps = {domain: [] for domain in domains}
+
+    for app in _installed_apps():
+        settings = _get_app_settings(app)
+        if settings["domain"] in domains:
+            apps[settings["domain"]].append(
+                {"name": app_info(app)["name"], "id": app, "path": settings["path"]}
+            )
+
+    result = OrderedDict()
+    for domain in domains:
+        result[domain] = OrderedDict(
+            {
+                "certificate": {
+                    "authority": certs[domain]["CA_type"]["code"],
+                    "validity": certs[domain]["validity"],
+                    "ACME_eligible": certs[domain]["ACME_eligible"],
+                },
+                "dns": get_dns_config(domain),
+            }
+        )
+
+        if apps[domain]:
+            result[domain]["apps"] = apps[domain]
+
+    return {"domains": result}
+
+
 def _assert_domain_exists(domain):
     if domain not in _get_domains():
         raise YunohostValidationError("domain_unknown", domain=domain)
