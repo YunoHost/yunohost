@@ -580,7 +580,7 @@ class ConfigPanel:
             prefilled_answers.update(self.new_values)
 
             questions = ask_questions_and_parse_answers(
-                section["options"],
+                {question["name"]: question for question in section["options"]},
                 prefilled_answers=prefilled_answers,
                 current_values=self.values,
                 hooks=self.hooks,
