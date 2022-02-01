@@ -192,7 +192,7 @@ def domain_info(domains):
                 "certificate": {
                     "authority": certs[domain]["CA_type"]["code"],
                     "validity": certs[domain]["validity"],
-                    "ACME_eligible": certs[domain]["ACME_eligible"],
+                    "acme_status": certs[domain]["acme_status"],
                 },
                 "dns": get_dns_config(domain),
             }
