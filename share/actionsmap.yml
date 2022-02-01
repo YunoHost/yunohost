@@ -531,9 +531,6 @@ domain:
                 --self-signed:
                     help: Install self-signed certificate instead of Let's Encrypt
                     action: store_true
-                --staging:
-                    help: Use the fake/staging Let's Encrypt certification authority. The new certificate won't actually be enabled - it is only intended to test the main steps of the procedure.
-                    action: store_true
 
         ### certificate_renew()
         cert-renew:
@@ -551,9 +548,6 @@ domain:
                     action: store_true
                 --no-checks:
                     help: Does not perform any check that your domain seems correctly configured (DNS, reachability) before attempting to renew. (Not recommended)
-                    action: store_true
-                --staging:
-                    help: Use the fake/staging Let's Encrypt certification authority. The new certificate won't actually be enabled - it is only intended to test the main steps of the procedure.
                     action: store_true
 
         ### domain_url_available()
@@ -677,9 +671,6 @@ domain:
                         --self-signed:
                             help: Install self-signed certificate instead of Let's Encrypt
                             action: store_true
-                        --staging:
-                            help: Use the fake/staging Let's Encrypt certification authority. The new certificate won't actually be enabled - it is only intended to test the main steps of the procedure.
-                            action: store_true
 
                 ### certificate_renew()
                 renew:
@@ -697,9 +688,6 @@ domain:
                             action: store_true
                         --no-checks:
                             help: Does not perform any check that your domain seems correctly configured (DNS, reachability) before attempting to renew. (Not recommended)
-                            action: store_true
-                        --staging:
-                            help: Use the fake/staging Let's Encrypt certification authority. The new certificate won't actually be enabled - it is only intended to test the main steps of the procedure.
                             action: store_true
 
 
@@ -896,6 +884,10 @@ app:
                 -d:
                     full: --domain
                     help: Specific domain to put app on (the app domain by default)
+                -u:
+                    full: --undo
+                    help: Undo redirection
+                    action: store_true
 
         ### app_ssowatconf()
         ssowatconf:

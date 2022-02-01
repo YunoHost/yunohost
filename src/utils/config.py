@@ -285,8 +285,10 @@ class ConfigPanel:
                 ask = m18n.n(self.config["i18n"] + "_" + option["id"])
 
             if mode == "full":
-                # edit self.config directly
                 option["ask"] = ask
+                question_class = ARGUMENTS_TYPE_PARSERS[option.get("type", "string")]
+                # FIXME : maybe other properties should be taken from the question, not just choices ?.
+                option["choices"] = question_class(option).choices
             else:
                 result[key] = {"ask": ask}
                 if "current_value" in option:
@@ -438,6 +440,7 @@ class ConfigPanel:
                     "step",
                     "accept",
                     "redact",
+                    "filter",
                 ],
                 "defaults": {},
             },
@@ -703,6 +706,7 @@ class Question:
         self.ask = question.get("ask", {"en": self.name})
         self.help = question.get("help")
         self.redact = question.get("redact", False)
+        self.filter = question.get("filter", "true")
         # .current_value is the currently stored value
         self.current_value = question.get("current_value")
         # .value is the "proposed" value which we got from the user
@@ -1109,7 +1113,10 @@ class DomainQuestion(Question):
         if self.default is None:
             self.default = _get_maindomain()
 
-        self.choices = domain_list()["domains"]
+        self.choices = {
+            domain: domain + " ★" if domain == self.default else domain
+            for domain in domain_list()["domains"]
+        }
 
     @staticmethod
     def normalize(value, option={}):
@@ -1124,6 +1131,33 @@ class DomainQuestion(Question):
         return value
 
 
+class AppQuestion(Question):
+    argument_type = "app"
+
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
+        from yunohost.app import app_list
+
+        super().__init__(question, context, hooks)
+
+        apps = app_list(full=True)["apps"]
+
+        if self.filter:
+            apps = [
+                app
+                for app in apps
+                if evaluate_simple_js_expression(self.filter, context=app)
+            ]
+
+        def _app_display(app):
+            domain_path_or_id = f" ({app.get('domain_path', app['id'])})"
+            return app["label"] + domain_path_or_id
+
+        self.choices = {"_none": "---"}
+        self.choices.update({app["id"]: _app_display(app) for app in apps})
+
+
 class UserQuestion(Question):
     argument_type = "user"
 
@@ -1134,7 +1168,11 @@ class UserQuestion(Question):
         from yunohost.domain import _get_maindomain
 
         super().__init__(question, context, hooks)
-        self.choices = list(user_list()["users"].keys())
+
+        self.choices = {
+            username: f"{infos['fullname']} ({infos['mail']})"
+            for username, infos in user_list()["users"].items()
+        }
 
         if not self.choices:
             raise YunohostValidationError(
@@ -1145,7 +1183,7 @@ class UserQuestion(Question):
 
         if self.default is None:
             root_mail = "root@%s" % _get_maindomain()
-            for user in self.choices:
+            for user in self.choices.keys():
                 if root_mail in user_info(user).get("mail-aliases", []):
                     self.default = user
                     break
@@ -1331,6 +1369,7 @@ ARGUMENTS_TYPE_PARSERS = {
     "alert": DisplayTextQuestion,
     "markdown": DisplayTextQuestion,
     "file": FileQuestion,
+    "app": AppQuestion,
 }
 
 
@@ -1376,5 +1415,20 @@ def ask_questions_and_parse_answers(
         answers.update(new_values)
         context.update(new_values)
         out.append(question)
+
+    return out
+
+
+def hydrate_questions_with_choices(raw_questions: List) -> List:
+    out = []
+
+    for raw_question in raw_questions:
+        question = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")](
+            raw_question
+        )
+        if question.choices:
+            raw_question["choices"] = question.choices
+            raw_question["default"] = question.default
+        out.append(raw_question)
 
     return out

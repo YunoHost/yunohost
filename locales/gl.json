@@ -676,5 +676,13 @@
     "migration_description_0021_migrate_to_bullseye": "Actualizar o sistema a Debian Bullseye e YunoHost 11.x",
     "migration_0021_system_not_fully_up_to_date": "O teu sistema non está completamente actualizado. Fai unha actualización normal antes de executar a migración a Bullseye.",
     "migration_0021_general_warning": "Ten en conta que a migración é unha operación delicada. O equipo de YunoHost fixo todo o que puido para revisalo e probalo, pero aínda así poderían acontecer fallos no sistema ou apps.\n\nAsí as cousas, é recomendable:\n   - Facer unha copia de apoio dos datos e apps importantes. Máis info en https://yunohost.org/backup;\n   - Ter paciencia unha vez inicias a migración: dependendo da túa conexión a internet e hardware, podería levarlle varias horas completar o proceso.",
-    "global_settings_setting_security_ssh_password_authentication": "Permitir autenticación con contrasinal para SSH"
+    "global_settings_setting_security_ssh_password_authentication": "Permitir autenticación con contrasinal para SSH",
+    "tools_upgrade_failed": "Non se actualizaron os paquetes: {packages_list}",
+    "migration_0023_not_enough_space": "Crear espazo suficiente en {path} para realizar a migración.",
+    "migration_0023_postgresql_11_not_installed": "PostgreSQL non estaba instalado no sistema. Nada que facer.",
+    "migration_0023_postgresql_13_not_installed": "PostgreSQL 11 está instalado, pero PostgreSQL 13 non!? Algo raro debeu pasarlle ao teu sistema :(...",
+    "migration_description_0022_php73_to_php74_pools": "Migrar ficheiros de configuración de php7.3-fpm 'pool' a php7.4",
+    "migration_description_0023_postgresql_11_to_13": "Migrar bases de datos de PostgreSQL 11 a 13",
+    "service_description_postgresql": "Almacena datos da app (Base datos SQL)",
+    "tools_upgrade": "Actualizando paquetes do sistema"
 }

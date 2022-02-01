@@ -18,7 +18,7 @@ class MyDiagnoser(Diagnoser):
 
     def run(self):
 
-        MB = 1024 ** 2
+        MB = 1024**2
         GB = MB * 1024
 
         #
