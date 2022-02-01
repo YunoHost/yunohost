@@ -930,10 +930,6 @@ def _skip_all_migrations():
     all_migrations = _get_migrations_list()
     new_states = {"migrations": {}}
     for migration in all_migrations:
-        # Don't skip bullseye migration while we're
-        # still on buster
-        if "migrate_to_bullseye" in migration.id:
-            continue
         new_states["migrations"][migration.id] = "skipped"
     write_to_yaml(MIGRATIONS_STATE_PATH, new_states)
 
