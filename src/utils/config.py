@@ -1408,6 +1408,7 @@ def ask_questions_and_parse_answers(
     out = []
 
     for name, raw_question in raw_questions.items():
+        raw_question['name'] = name
         question_class = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")]
         raw_question["value"] = answers.get(name)
         question = question_class(raw_question, context=context, hooks=hooks)
