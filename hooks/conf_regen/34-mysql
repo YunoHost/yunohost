@@ -1,0 +1,53 @@
+#!/bin/bash
+
+set -e
+. /usr/share/yunohost/helpers
+
+if ! dpkg --list | grep -q 'ii *mariadb-server '
+then
+    echo 'mysql/mariadb is not installed, skipping'
+    exit 0
+fi
+
+do_pre_regen() {
+    pending_dir=$1
+
+    #cd /usr/share/yunohost/conf/mysql
+
+    # Nothing to do
+}
+
+do_post_regen() {
+    regen_conf_files=$1
+
+    if [[ ! -d /var/lib/mysql/mysql ]]; then
+        # dpkg-reconfigure will initialize mysql (if it ain't already)
+        # It enabled auth_socket for root, so no need to define any root password...
+        # c.f. : cat /var/lib/dpkg/info/mariadb-server-10.3.postinst | grep install_db -C3
+        MYSQL_PKG="$(dpkg --list | sed -ne 's/^ii  \(mariadb-server-[[:digit:].]\+\) .*$/\1/p')"
+        dpkg-reconfigure -freadline -u "$MYSQL_PKG" 2>&1
+
+        systemctl -q is-active mariadb.service \
+            || systemctl start mariadb
+
+        sleep 5
+
+        echo "" | mysql && echo "Can't connect to mysql using unix_socket auth ... something went wrong during initial configuration of mysql !?" >&2
+    fi
+
+    # mysql is supposed to be an alias to mariadb... but in some weird case is not
+    # c.f. https://forum.yunohost.org/t/mysql-ne-fonctionne-pas/11661
+    # Playing with enable/disable allows to recreate the proper symlinks.
+    if [ ! -e /etc/systemd/system/mysql.service ]; then
+        systemctl stop mysql -q
+        systemctl disable mysql -q
+        systemctl disable mariadb -q
+        systemctl enable mariadb -q
+        systemctl is-active mariadb -q || systemctl start mariadb
+    fi
+
+    [[ -z "$regen_conf_files" ]] \
+        || systemctl restart mysql
+}
+
+do_$1_regen ${@:2}

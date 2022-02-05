@@ -6,8 +6,11 @@
 
 <div align="center">
 
-[![Build status](https://travis-ci.org/YunoHost/yunohost.svg?branch=stretch-unstable)](https://travis-ci.org/YunoHost/yunohost)
-[![GitHub license](https://img.shields.io/github/license/YunoHost/yunohost)](https://github.com/YunoHost/yunohost/blob/stretch-unstable/LICENSE)
+![Version](https://img.shields.io/github/v/tag/yunohost/yunohost?label=version&sort=semver)
+[![Build status](https://shields.io/gitlab/pipeline/yunohost/yunohost/dev)](https://gitlab.com/yunohost/yunohost/-/pipelines)
+![Test coverage](https://img.shields.io/gitlab/coverage/yunohost/yunohost/dev)
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/YunoHost/yunohost.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/YunoHost/yunohost/context:python)
+[![GitHub license](https://img.shields.io/github/license/YunoHost/yunohost)](https://github.com/YunoHost/yunohost/blob/dev/LICENSE)
 [![Mastodon Follow](https://img.shields.io/mastodon/follow/28084)](https://mastodon.social/@yunohost)
 
 </div>
@@ -35,7 +38,7 @@ Webadmin ([Yunohost-Admin](https://github.com/YunoHost/yunohost-admin)) | Single
 - You can help translate YunoHost on our [translation platform](https://translate.yunohost.org/engage/yunohost/?utm_source=widget)
 
 <p align="center">
-<img src="https://translate.yunohost.org/widgets/yunohost/-/multi-auto.svg" alt="Translation status" />
+<img src="https://translate.yunohost.org/widgets/yunohost/-/core/horizontal-auto.svg" alt="Translation status" />
 </p>
 
 ## License

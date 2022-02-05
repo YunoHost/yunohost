@@ -1,8 +1,17 @@
 ########################################
 # TRANSLATION
 ########################################
+test-i18n-keys:
+  stage: translation
+  script:
+    - python3 maintenance/missing_i18n_keys.py --check
+  only:
+    changes:
+      - locales/en.json
+      - src/*.py
+      - src/diagnosers/*.py
 
-remove-stale-translated-strings:
+autofix-translated-strings:
   stage: translation
   image: "before-install"
   needs: []
@@ -10,15 +19,19 @@ remove-stale-translated-strings:
     - apt-get update -y && apt-get install git hub -y
     - git config --global user.email "yunohost@yunohost.org"
     - git config --global user.name "$GITHUB_USER"
+    - hub clone --branch ${CI_COMMIT_REF_NAME} "https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/yunohost.git" github_repo
+    - cd github_repo
   script:
-    - cd tests # Maybe move this script location to another folder?
     # create a local branch that will overwrite distant one
-    - git checkout -b "ci-remove-stale-translated-strings-${CI_COMMIT_REF_NAME}" --no-track
-    - python3 remove_stale_translated_strings.py
+    - git checkout -b "ci-autofix-translated-strings-${CI_COMMIT_REF_NAME}" --no-track
+    - python3 maintenance/missing_i18n_keys.py --fix
+    - python3 maintenance/autofix_locale_format.py
     - '[ $(git diff | wc -l) != 0 ] || exit 0'  # stop if there is nothing to commit
-    - git commit -am "[CI] Remove stale translated strings" || true
-    - git push -f origin "ci-remove-stale-translated-strings-${CI_COMMIT_REF_NAME}":"ci-remove-stale-translated-strings-${CI_COMMIT_REF_NAME}"
-    - hub pull-request -m "[CI] Remove stale translated strings" -b Yunohost:dev -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
+    - git commit -am "[CI] Reformat / remove stale translated strings" || true
+    - git push -f origin "ci-autofix-translated-strings-${CI_COMMIT_REF_NAME}":"ci-remove-stale-translated-strings-${CI_COMMIT_REF_NAME}"
+    - hub pull-request -m "[CI] Reformat / remove stale translated strings" -b Yunohost:$CI_COMMIT_REF_NAME -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
   only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
     changes:
       - locales/*

@@ -22,11 +22,11 @@ template = Template(open(os.path.join(base_path, "manpage.template")).read())
 
 
 THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-ACTIONSMAP_FILE = os.path.join(THIS_SCRIPT_DIR, "../data/actionsmap/yunohost.yml")
+ACTIONSMAP_FILE = os.path.join(THIS_SCRIPT_DIR, "../share/actionsmap.yml")
 
 
 def ordered_yaml_load(stream):
-    class OrderedLoader(yaml.Loader):
+    class OrderedLoader(yaml.SafeLoader):
         pass
 
     OrderedLoader.add_constructor(

@@ -1,0 +1,236 @@
+# OpenLDAP server configuration for YunoHost
+# ------------------------------------------
+#
+# Because of the YunoHost's regen-conf mechanism, it is NOT POSSIBLE to
+# edit the config database using an LDAP request.
+#
+# If you wish to edit the config database, you should edit THIS file
+# and update the config database based on this file.
+#
+# Config database customization:
+# 1. Edit this file as you want.
+# 2. Apply your modifications. For this just run this following command in a shell:
+#    $ /usr/share/yunohost/hooks/conf_regen/06-slapd apply_config
+#
+# Note that if you customize this file, YunoHost's regen-conf will NOT
+# overwrite this file. But that also means that you should be careful about
+# upgrades, because they may ship important/necessary changes to this
+# configuration that you will have to propagate yourself.
+
+#
+# Main configuration
+#
+dn: cn=config
+objectClass: olcGlobal
+cn: config
+olcConfigFile: /etc/ldap/slapd.conf
+olcConfigDir: /etc/ldap/slapd.d/
+# List of arguments that were passed to the server
+olcArgsFile: /var/run/slapd/slapd.args
+#
+olcAttributeOptions: lang-
+olcAuthzPolicy: none
+olcConcurrency: 0
+olcConnMaxPending: 100
+olcConnMaxPendingAuth: 1000
+olcSizeLimit: 50000
+olcIdleTimeout: 0
+olcIndexSubstrIfMaxLen: 4
+olcIndexSubstrIfMinLen: 2
+olcIndexSubstrAnyLen: 4
+olcIndexSubstrAnyStep: 2
+olcIndexIntLen: 4
+olcListenerThreads: 1
+olcLocalSSF: 71
+# Read slapd.conf(5) for possible values
+olcLogLevel: None
+# Where the pid file is put. The init.d script
+# will not stop the server if you change this.
+olcPidFile: /var/run/slapd/slapd.pid
+olcReverseLookup: FALSE
+olcThreads: 16
+# TLS Support
+olcTLSCertificateFile: /etc/yunohost/certs/yunohost.org/crt.pem
+olcTLSCertificateKeyFile: /etc/yunohost/certs/yunohost.org/key.pem
+olcTLSVerifyClient: never
+olcTLSProtocolMin: 0.0
+# The tool-threads parameter sets the actual amount of cpu's that is used
+# for indexing.
+olcToolThreads: 1
+structuralObjectClass: olcGlobal
+
+#
+# Schema and objectClass definitions
+#
+dn: cn=schema,cn=config
+objectClass: olcSchemaConfig
+cn: schema
+
+include: file:///etc/ldap/schema/core.ldif
+include: file:///etc/ldap/schema/cosine.ldif
+include: file:///etc/ldap/schema/nis.ldif
+include: file:///etc/ldap/schema/inetorgperson.ldif
+include: file:///etc/ldap/schema/mailserver.ldif
+include: file:///etc/ldap/schema/sudo.ldif
+include: file:///etc/ldap/schema/permission.ldif
+
+#
+# Module management
+#
+dn: cn=module{0},cn=config
+objectClass: olcModuleList
+cn: module{0}
+# Where the dynamically loaded modules are stored
+olcModulePath: /usr/lib/ldap
+olcModuleLoad: {0}back_mdb
+olcModuleLoad: {1}memberof
+structuralObjectClass: olcModuleList
+
+#
+# Frontend database
+#
+dn: olcDatabase={-1}frontend,cn=config
+objectClass: olcDatabaseConfig
+objectClass: olcFrontendConfig
+olcDatabase: {-1}frontend
+olcAddContentAcl: FALSE
+olcLastMod: TRUE
+olcSchemaDN: cn=Subschema
+# Hashes to be used in generation of user passwords
+olcPasswordHash: {SSHA}
+structuralObjectClass: olcDatabaseConfig
+
+#
+# Config database Configuration (#0)
+#
+dn: olcDatabase={0}config,cn=config
+objectClass: olcDatabaseConfig
+olcDatabase: {0}config
+# Give access to root user.
+# This give the possiblity to the admin to customize the LDAP configuration
+olcAccess: {0}to *  by * none
+olcAddContentAcl: TRUE
+olcLastMod: TRUE
+olcRootDN: cn=config
+structuralObjectClass: olcDatabaseConfig
+
+#
+# Main database Configuration (#1)
+#
+dn: olcDatabase={1}mdb,cn=config
+objectClass: olcDatabaseConfig
+objectClass: olcMdbConfig
+olcDatabase: {1}mdb
+# The base of your directory in database #1
+olcSuffix: dc=yunohost,dc=org
+#
+# The userPassword by default can be changed
+# by the entry owning it if they are authenticated.
+# Others should not be able to see it, except the
+# admin entry below
+# These access lines apply to database #1 only
+olcAccess: {0}to attrs=userPassword,shadowLastChange
+    by dn.base="cn=admin,dc=yunohost,dc=org" write
+    by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" write
+    by anonymous auth
+    by self write
+    by * none
+#
+# Personnal information can be changed by the entry
+# owning it if they are authenticated.
+# Others should be able to see it.
+olcAccess: {1}to attrs=cn,gecos,givenName,mail,maildrop,displayName,sn
+    by dn.base="cn=admin,dc=yunohost,dc=org" write
+    by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" write
+    by self write
+    by * read
+#
+# Ensure read access to the base for things like
+# supportedSASLMechanisms.  Without this you may
+# have problems with SASL not knowing what
+# mechanisms are available and the like.
+# Note that this is covered by the 'access to *'
+# ACL below too but if you change that as people
+# are wont to do you'll still need this if you
+# want SASL (and possible other things) to work
+# happily.
+olcAccess: {2}to dn.base=""
+    by * read
+#
+# The admin dn has full write access, everyone else
+# can read everything.
+olcAccess: {3}to *
+    by dn.base="cn=admin,dc=yunohost,dc=org" write
+    by dn.base="gidNumber=0+uidNumber=0,cn=peercred,cn=external,cn=auth" write
+    by group/groupOfNames/member.exact="cn=admin,ou=groups,dc=yunohost,dc=org" write
+    by * read
+#
+olcAddContentAcl: FALSE
+# Save the time that the entry gets modified, for database #1
+olcLastMod: TRUE
+# Where the database file are physically stored for database #1
+olcDbDirectory: /var/lib/ldap
+# Checkpoint the BerkeleyDB database periodically in case of system
+# failure and to speed slapd shutdown.
+olcDbCheckpoint: 512 30
+olcDbNoSync: FALSE
+# Indexing options for database #1
+olcDbIndex: objectClass eq
+olcDbIndex: entryUUID eq
+olcDbIndex: entryCSN eq
+olcDbIndex: cn eq
+olcDbIndex: uid eq,sub
+olcDbIndex: uidNumber eq
+olcDbIndex: gidNumber eq
+olcDbIndex: sudoUser eq,sub
+olcDbIndex: member eq
+olcDbIndex: mail eq
+olcDbIndex: memberUid eq
+olcDbIndex: uniqueMember eq
+olcDbIndex: virtualdomain eq
+olcDbIndex: permission eq
+olcDbMaxSize: 104857600
+structuralObjectClass: olcMdbConfig
+
+#
+# Configure Memberof Overlay (used for YunoHost permission)
+#
+
+# Link user <-> group
+dn: olcOverlay={0}memberof,olcDatabase={1}mdb,cn=config
+objectClass: olcOverlayConfig
+objectClass: olcMemberOf
+olcOverlay: {0}memberof
+olcMemberOfDangling: error
+olcMemberOfDanglingError: constraintViolation
+olcMemberOfRefInt: TRUE
+olcMemberOfGroupOC: groupOfNamesYnh
+olcMemberOfMemberAD: member
+olcMemberOfMemberOfAD: memberOf
+structuralObjectClass: olcMemberOf
+
+# Link permission <-> groupes
+dn: olcOverlay={1}memberof,olcDatabase={1}mdb,cn=config
+objectClass: olcOverlayConfig
+objectClass: olcMemberOf
+olcOverlay: {1}memberof
+olcMemberOfDangling: error
+olcMemberOfDanglingError: constraintViolation
+olcMemberOfRefInt: TRUE
+olcMemberOfGroupOC: permissionYnh
+olcMemberOfMemberAD: groupPermission
+olcMemberOfMemberOfAD: permission
+structuralObjectClass: olcMemberOf
+
+# Link permission <-> user
+dn: olcOverlay={2}memberof,olcDatabase={1}mdb,cn=config
+objectClass: olcOverlayConfig
+objectClass: olcMemberOf
+olcOverlay: {2}memberof
+olcMemberOfDangling: error
+olcMemberOfDanglingError: constraintViolation
+olcMemberOfRefInt: TRUE
+olcMemberOfGroupOC: permissionYnh
+olcMemberOfMemberAD: inheritPermission
+olcMemberOfMemberOfAD: permission
+structuralObjectClass: olcMemberOf
