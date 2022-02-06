@@ -235,7 +235,7 @@ def firewall_reload(skip_upnp=False):
 
     # Retrieve firewall rules and UPnP status
     firewall = firewall_list(raw=True)
-    upnp = firewall_upnp()["enabled"] if not skip_upnp else False
+    upnp = firewall_upnp(no_refresh=True)["enabled"] if not skip_upnp else False
 
     # IPv4
     try:
