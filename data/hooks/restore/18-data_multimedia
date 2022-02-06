@@ -1,9 +1,0 @@
-#!/bin/bash
-
-# Exit hook on subcommand error or unset variable
-set -eu
-
-# Source YNH helpers
-source /usr/share/yunohost/helpers
-
-ynh_restore_file --origin_path="/home/yunohost.multimedia" --not_mandatory

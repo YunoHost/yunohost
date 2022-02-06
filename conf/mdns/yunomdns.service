@@ -1,0 +1,15 @@
+[Unit]
+Description=YunoHost mDNS service
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+User=mdns
+Group=mdns
+Type=simple
+Environment=PYTHONUNBUFFERED=1
+ExecStart=/usr/bin/yunomdns
+StandardOutput=journal
+
+[Install]
+WantedBy=default.target

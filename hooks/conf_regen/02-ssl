@@ -1,0 +1,134 @@
+#!/bin/bash
+
+set -e
+
+ssl_dir="/usr/share/yunohost/ssl"
+template_dir="/usr/share/yunohost/conf/ssl/"
+ynh_ca="/etc/yunohost/certs/yunohost.org/ca.pem"
+ynh_crt="/etc/yunohost/certs/yunohost.org/crt.pem"
+ynh_key="/etc/yunohost/certs/yunohost.org/key.pem"
+
+regen_local_ca() {
+
+    domain="$1"
+
+    echo -e "\n# Creating local certification authority with domain=$domain\n"
+
+    # create certs and SSL directories
+    mkdir -p "/etc/yunohost/certs/yunohost.org"
+    mkdir -p "${ssl_dir}/"{ca,certs,crl,newcerts}
+
+    pushd ${ssl_dir}
+
+    # (Update the serial so that it's specific to this very instance)
+    # N.B. : the weird RANDFILE thing comes from:
+    # https://stackoverflow.com/questions/94445/using-openssl-what-does-unable-to-write-random-state-mean
+    RANDFILE=.rnd openssl rand -hex 19 >serial
+    rm -f index.txt
+    touch index.txt
+    cp ${template_dir}/openssl.cnf openssl.ca.cnf
+    sed -i "s/yunohost.org/${domain}/g" openssl.ca.cnf
+    openssl req -x509 \
+        -new \
+        -config openssl.ca.cnf \
+        -days 3650 \
+        -out ca/cacert.pem \
+        -keyout ca/cakey.pem \
+        -nodes \
+        -batch \
+        -subj /CN=${domain}/O=${domain%.*} 2>&1
+
+    chmod 640 ca/cacert.pem
+    chmod 640 ca/cakey.pem
+
+    cp ca/cacert.pem $ynh_ca
+    ln -sf "$ynh_ca" /etc/ssl/certs/ca-yunohost_crt.pem
+    update-ca-certificates
+
+    popd
+}
+
+do_init_regen() {
+
+    LOGFILE=/tmp/yunohost-ssl-init
+    echo "" >$LOGFILE
+    chown root:root $LOGFILE
+    chmod 640 $LOGFILE
+
+    # Make sure this conf exists
+    mkdir -p ${ssl_dir}/{ca,certs,crl,newcerts}
+    install -D -m 644 ${template_dir}/openssl.cnf "${ssl_dir}/openssl.cnf"
+
+    # create default certificates
+    if [[ ! -f "$ynh_ca" ]]; then
+        regen_local_ca yunohost.org >>$LOGFILE
+    fi
+
+    if [[ ! -f "$ynh_crt" ]]; then
+        echo -e "\n# Creating initial key and certificate \n" >>$LOGFILE
+
+        openssl req -new \
+            -config "${ssl_dir}/openssl.cnf" \
+            -out "${ssl_dir}/certs/yunohost_csr.pem" \
+            -keyout "${ssl_dir}/certs/yunohost_key.pem" \
+            -nodes -batch &>>$LOGFILE
+
+        openssl ca \
+            -config "${ssl_dir}/openssl.cnf" \
+            -days 730 \
+            -in "${ssl_dir}/certs/yunohost_csr.pem" \
+            -out "${ssl_dir}/certs/yunohost_crt.pem" \
+            -batch &>>$LOGFILE
+
+        chmod 640 "${ssl_dir}/certs/yunohost_key.pem"
+        chmod 640 "${ssl_dir}/certs/yunohost_crt.pem"
+
+        cp "${ssl_dir}/certs/yunohost_key.pem" "$ynh_key"
+        cp "${ssl_dir}/certs/yunohost_crt.pem" "$ynh_crt"
+        ln -sf "$ynh_crt" /etc/ssl/certs/yunohost_crt.pem
+        ln -sf "$ynh_key" /etc/ssl/private/yunohost_key.pem
+    fi
+
+    chown -R root:ssl-cert /etc/yunohost/certs/yunohost.org/
+    chmod o-rwx /etc/yunohost/certs/yunohost.org/
+}
+
+do_pre_regen() {
+    pending_dir=$1
+
+    install -D -m 644 $template_dir/openssl.cnf "${pending_dir}/${ssl_dir}/openssl.cnf"
+}
+
+do_post_regen() {
+    regen_conf_files=$1
+
+    current_local_ca_domain=$(openssl x509 -in $ynh_ca -text | tr ',' '\n' | grep Issuer | awk '{print $4}')
+    main_domain=$(cat /etc/yunohost/current_host)
+   
+    # Automigrate legacy folder
+    if [ -e /usr/share/yunohost/yunohost-config/ssl/yunoCA ]
+    then
+        mv /usr/share/yunohost/yunohost-config/ssl/yunoCA/* ${ssl_dir}
+        rm -rf /usr/share/yunohost/yunohost-config
+        # Overwrite openssl.cnf because it may still contain references to the old yunoCA dir
+        install -D -m 644 ${template_dir}/openssl.cnf "${ssl_dir}/openssl.cnf"
+        install -D -m 644 ${template_dir}/openssl.cnf "${ssl_dir}/openssl.ca.cnf"
+        sed -i "s/yunohost.org/${main_domain}/g" openssl.ca.cnf
+    fi
+
+    mkdir -p ${ssl_dir}/{ca,certs,crl,newcerts}
+    chown root:root ${ssl_dir}
+    chmod 750 ${ssl_dir}
+    chmod -R o-rwx ${ssl_dir}
+    chmod o+x ${ssl_dir}/certs 
+    chmod o+r ${ssl_dir}/certs/yunohost_crt.pem
+
+    if [[ "$current_local_ca_domain" != "$main_domain" ]]; then
+        regen_local_ca $main_domain
+        # Idk how useful this is, but this was in the previous python code (domain.main_domain())
+        ln -sf /etc/yunohost/certs/$main_domain/crt.pem /etc/ssl/certs/yunohost_crt.pem
+        ln -sf /etc/yunohost/certs/$main_domain/key.pem /etc/ssl/private/yunohost_key.pem
+    fi
+}
+
+do_$1_regen ${@:2}

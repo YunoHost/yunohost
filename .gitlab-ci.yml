@@ -2,7 +2,7 @@
 stages:
   - build
   - install
-  - tests
+  - test
   - lint
   - doc
   - translation
@@ -13,12 +13,25 @@ default:
   # All jobs are interruptible by default
   interruptible: true
 
+code_quality:
+  tags:
+    - docker
+
+code_quality_html:
+  extends: code_quality
+  variables:
+    REPORT_FORMAT: html
+  artifacts:
+    paths: [gl-code-quality-report.html]
+
 # see: https://docs.gitlab.com/ee/ci/yaml/#switch-between-branch-pipelines-and-merge-request-pipelines
 workflow:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event" # If we move to gitlab one day
     - if: $CI_PIPELINE_SOURCE == "external_pull_request_event" # For github PR
     - if: $CI_COMMIT_TAG # For tags
+    - if: $CI_COMMIT_REF_NAME == "ci-format-$CI_DEFAULT_BRANCH"  # Ignore black formatting branch created by the CI
+      when: never
     - if: $CI_COMMIT_REF_NAME != $CI_DEFAULT_BRANCH  && $CI_PIPELINE_SOURCE == "push" # If it's not the default branch and if it's a push, then do not trigger a build
       when: never
     - when: always
@@ -27,4 +40,5 @@ variables:
   YNH_BUILD_DIR: "ynh-build"
 
 include:
+  - template: Code-Quality.gitlab-ci.yml
   - local: .gitlab/ci/*.gitlab-ci.yml

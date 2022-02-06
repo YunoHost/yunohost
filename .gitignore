@@ -31,7 +31,7 @@ pip-log.txt
 .mr.developer.cfg
 
 # moulinette lib
-src/yunohost/locales
+src/locales
 
 # Test
-src/yunohost/tests/apps
+src/tests/apps

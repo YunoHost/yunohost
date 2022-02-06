@@ -6,12 +6,12 @@
 set -e
 
 if [ "$1" = "purge" ]; then
-   update-rc.d yunohost-firewall remove >/dev/null
-   rm -f /etc/yunohost/installed
+    update-rc.d yunohost-firewall remove >/dev/null
+    rm -f /etc/yunohost/installed
 fi
 
 if [ "$1" = "remove" ]; then
-   rm -f /etc/yunohost/installed
+    rm -f /etc/yunohost/installed
 fi
 
 # Reset dpkg vendor to debian
