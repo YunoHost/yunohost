@@ -273,6 +273,10 @@ class ConfigPanel:
         logger.debug(f"Formating result in '{mode}' mode")
         result = {}
         for panel, section, option in self._iterate():
+
+            if section["is_action_section"] and mode != "full":
+                continue
+
             key = f"{panel['id']}.{section['id']}.{option['id']}"
             if mode == "export":
                 result[option["id"]] = option.get("current_value")
@@ -310,6 +314,82 @@ class ConfigPanel:
             return self.config
         else:
             return result
+
+    def list_actions(self):
+
+        actions = {}
+
+        # FIXME : meh, loading the entire config panel is again going to cause
+        # stupid issues for domain (e.g loading registrar stuff when willing to just list available actions ...)
+        self.filter_key = ""
+        self._get_config_panel()
+        for panel, section, option in self._iterate():
+            if option["type"] == "button":
+                key = f"{panel['id']}.{section['id']}.{option['id']}"
+                actions[key] = _value_for_locale(option["ask"])
+
+        return actions
+
+    def run_action(
+        self, action=None, args=None, args_file=None, operation_logger=None
+    ):
+        #
+        # FIXME : this stuff looks a lot like set() ...
+        #
+
+        self.filter_key = ".".join(action.split(".")[:2])
+        action_id = action.split(".")[2]
+
+        # Read config panel toml
+        self._get_config_panel()
+
+        # FIXME: should also check that there's indeed a key called action
+        if not self.config:
+            raise YunohostValidationError("config_no_such_action", action=action)
+
+        # Import and parse pre-answered options
+        logger.debug("Import and parse pre-answered options")
+        self._parse_pre_answered(args, None, args_file)
+
+        # Read or get values and hydrate the config
+        self._load_current_values()
+        self._hydrate()
+        Question.operation_logger = operation_logger
+        self._ask(for_action=True)
+
+        # FIXME: here, we could want to check constrains on
+        # the action's visibility / requirements wrt to the answer to questions ...
+
+        if operation_logger:
+            operation_logger.start()
+
+        try:
+            self._run_action(action_id)
+        except YunohostError:
+            raise
+        # Script got manually interrupted ...
+        # N.B. : KeyboardInterrupt does not inherit from Exception
+        except (KeyboardInterrupt, EOFError):
+            error = m18n.n("operation_interrupted")
+            logger.error(m18n.n("config_action_failed", action=action, error=error))
+            raise
+        # Something wrong happened in Yunohost's code (most probably hook_exec)
+        except Exception:
+            import traceback
+
+            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+            logger.error(m18n.n("config_action_failed", action=action, error=error))
+            raise
+        finally:
+            # Delete files uploaded from API
+            # FIXME : this is currently done in the context of config panels,
+            # but could also happen in the context of app install ... (or anywhere else
+            # where we may parse args etc...)
+            FileQuestion.clean_upload_dirs()
+
+        # FIXME: i18n
+        logger.success(f"Action {action_id} successful")
+        operation_logger.success()
 
     def set(
         self, key=None, value=None, args=None, args_file=None, operation_logger=None
@@ -417,6 +497,7 @@ class ConfigPanel:
                     "name": "",
                     "services": [],
                     "optional": True,
+                    "is_action_section": False,
                 },
             },
             "options": {
@@ -485,6 +566,9 @@ class ConfigPanel:
                     elif level == "sections":
                         subnode["name"] = key  # legacy
                         subnode.setdefault("optional", raw_infos.get("optional", True))
+                        # If this section contains at least one button, it becomes an "action" section
+                        if subnode["type"] == "button":
+                            out["is_action_section"] = True
                     out.setdefault(sublevel, []).append(subnode)
                 # Key/value are a property
                 else:
@@ -533,10 +617,14 @@ class ConfigPanel:
 
     def _hydrate(self):
         # Hydrating config panel with current value
-        for _, _, option in self._iterate():
+        for _, section, option in self._iterate():
             if option["id"] not in self.values:
-                allowed_empty_types = ["alert", "display_text", "markdown", "file"]
-                if (
+
+                allowed_empty_types = ["alert", "display_text", "markdown", "file", "button"]
+
+                if section["is_action_section"] and option.get("default") is not None:
+                    self.values[option["id"]] = option["default"]
+                elif (
                     option["type"] in allowed_empty_types
                     or option.get("bind") == "null"
                 ):
@@ -554,7 +642,7 @@ class ConfigPanel:
 
         return self.values
 
-    def _ask(self):
+    def _ask(self, for_action=False):
         logger.debug("Ask unanswered question and prevalidate data")
 
         if "i18n" in self.config:
@@ -568,13 +656,22 @@ class ConfigPanel:
                 Moulinette.display(colorize(message, "purple"))
 
         for panel, section, obj in self._iterate(["panel", "section"]):
+
+            # Ugly hack to skip action section ... except when when explicitly running actions
+            if not for_action:
+                if section and section["is_action_section"]:
+                    continue
+
+                if panel == obj:
+                    name = _value_for_locale(panel["name"])
+                    display_header(f"\n{'='*40}\n>>>> {name}\n{'='*40}")
+                else:
+                    name = _value_for_locale(section["name"])
+                    if name:
+                        display_header(f"\n# {name}")
+
             if panel == obj:
-                name = _value_for_locale(panel["name"])
-                display_header(f"\n{'='*40}\n>>>> {name}\n{'='*40}")
                 continue
-            name = _value_for_locale(section["name"])
-            if name:
-                display_header(f"\n# {name}")
 
             # Check and ask unanswered questions
             prefilled_answers = self.args.copy()
@@ -593,8 +690,6 @@ class ConfigPanel:
                     if question.value is not None
                 }
             )
-
-        self.errors = None
 
     def _get_default_values(self):
         return {
@@ -1334,6 +1429,17 @@ class FileQuestion(Question):
         return self.value
 
 
+class ButtonQuestion(Question):
+    argument_type = "button"
+
+    #def __init__(
+    #    self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    #):
+    #    super().__init__(question, context, hooks)
+
+
+
+
 ARGUMENTS_TYPE_PARSERS = {
     "string": StringQuestion,
     "text": StringQuestion,
@@ -1356,6 +1462,7 @@ ARGUMENTS_TYPE_PARSERS = {
     "markdown": DisplayTextQuestion,
     "file": FileQuestion,
     "app": AppQuestion,
+    "button": ButtonQuestion,
 }
 
 
@@ -1395,6 +1502,8 @@ def ask_questions_and_parse_answers(
 
     for raw_question in raw_questions:
         question_class = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")]
+        if question_class.argument_type == "button":
+            continue
         raw_question["value"] = answers.get(raw_question["name"])
         question = question_class(raw_question, context=context, hooks=hooks)
         new_values = question.ask_if_needed()

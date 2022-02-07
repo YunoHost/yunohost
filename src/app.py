@@ -1429,90 +1429,16 @@ def app_change_label(app, new_label):
 
 
 def app_action_list(app):
-    logger.warning(m18n.n("experimental_feature"))
 
-    # this will take care of checking if the app is installed
-    app_info_dict = app_info(app)
-
-    return {
-        "app": app,
-        "app_name": app_info_dict["name"],
-        "actions": _get_app_actions(app),
-    }
+    return AppConfigPanel(app).list_actions()
 
 
 @is_unit_operation()
-def app_action_run(operation_logger, app, action, args=None):
-    logger.warning(m18n.n("experimental_feature"))
+def app_action_run(
+    operation_logger, app, action, args=None, args_file=None
+):
 
-    from yunohost.hook import hook_exec
-
-    # will raise if action doesn't exist
-    actions = app_action_list(app)["actions"]
-    actions = {x["id"]: x for x in actions}
-
-    if action not in actions:
-        available_actions = (", ".join(actions.keys()),)
-        raise YunohostValidationError(
-            f"action '{action}' not available for app '{app}', available actions are: {available_actions}",
-            raw_msg=True,
-        )
-
-    operation_logger.start()
-
-    action_declaration = actions[action]
-
-    # Retrieve arguments list for install script
-    raw_questions = actions[action].get("arguments", {})
-    questions = ask_questions_and_parse_answers(raw_questions, prefilled_answers=args)
-    args = {
-        question.name: question.value
-        for question in questions
-        if question.value is not None
-    }
-
-    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
-
-    env_dict = _make_environment_for_app_script(
-        app, args=args, args_prefix="ACTION_", workdir=tmp_workdir_for_app
-    )
-    env_dict["YNH_ACTION"] = action
-
-    _, action_script = tempfile.mkstemp(dir=tmp_workdir_for_app)
-
-    with open(action_script, "w") as script:
-        script.write(action_declaration["command"])
-
-    if action_declaration.get("cwd"):
-        cwd = action_declaration["cwd"].replace("$app", app)
-    else:
-        cwd = tmp_workdir_for_app
-
-    try:
-        retcode = hook_exec(
-            action_script,
-            env=env_dict,
-            chdir=cwd,
-            user=action_declaration.get("user", "root"),
-        )[0]
-    # Calling hook_exec could fail miserably, or get
-    # manually interrupted (by mistake or because script was stuck)
-    # In that case we still want to delete the tmp work dir
-    except (KeyboardInterrupt, EOFError, Exception):
-        retcode = -1
-        import traceback
-
-        logger.error(m18n.n("unexpected_error", error="\n" + traceback.format_exc()))
-    finally:
-        shutil.rmtree(tmp_workdir_for_app)
-
-    if retcode not in action_declaration.get("accepted_return_codes", [0]):
-        msg = f"Error while executing action '{action}' of app '{app}': return code {retcode}"
-        operation_logger.error(msg)
-        raise YunohostError(msg, raw_msg=True)
-
-    operation_logger.success()
-    return logger.success("Action successed!")
+    return AppConfigPanel(app).run_action(action, args=args, args_file=args_file, operation_logger=operation_logger)
 
 
 def app_config_get(app, key="", full=False, export=False):
@@ -1555,6 +1481,10 @@ class AppConfigPanel(ConfigPanel):
 
     def _load_current_values(self):
         self.values = self._call_config_script("show")
+
+    def _run_action(self, action):
+        env = {key: str(value) for key, value in self.new_values.items()}
+        self._call_config_script(action, env=env)
 
     def _apply(self):
         env = {key: str(value) for key, value in self.new_values.items()}
@@ -1609,8 +1539,10 @@ ynh_app_config_run $1
         if ret != 0:
             if action == "show":
                 raise YunohostError("app_config_unable_to_read")
-            else:
+            elif action == "show":
                 raise YunohostError("app_config_unable_to_apply")
+            else:
+                raise YunohostError("app_action_failed", action=action)
         return values
 
 
@@ -1618,58 +1550,6 @@ def _get_app_actions(app_id):
     "Get app config panel stored in json or in toml"
     actions_toml_path = os.path.join(APPS_SETTING_PATH, app_id, "actions.toml")
     actions_json_path = os.path.join(APPS_SETTING_PATH, app_id, "actions.json")
-
-    # sample data to get an idea of what is going on
-    # this toml extract:
-    #
-
-    # [restart_service]
-    # name = "Restart service"
-    # command = "echo pouet $YNH_ACTION_SERVICE"
-    # user = "root"  # optional
-    # cwd = "/" # optional
-    # accepted_return_codes = [0, 1, 2, 3]  # optional
-    # description.en = "a dummy stupid exemple or restarting a service"
-    #
-    #     [restart_service.arguments.service]
-    #     type = "string",
-    #     ask.en = "service to restart"
-    #     example = "nginx"
-    #
-    # will be parsed into this:
-    #
-    # OrderedDict([(u'restart_service',
-    #               OrderedDict([(u'name', u'Restart service'),
-    #                            (u'command', u'echo pouet $YNH_ACTION_SERVICE'),
-    #                            (u'user', u'root'),
-    #                            (u'cwd', u'/'),
-    #                            (u'accepted_return_codes', [0, 1, 2, 3]),
-    #                            (u'description',
-    #                             OrderedDict([(u'en',
-    #                                           u'a dummy stupid exemple or restarting a service')])),
-    #                            (u'arguments',
-    #                             OrderedDict([(u'service',
-    #                                           OrderedDict([(u'type', u'string'),
-    #                                                        (u'ask',
-    #                                                         OrderedDict([(u'en',
-    #                                                                       u'service to restart')])),
-    #                                                        (u'example',
-    #                                                         u'nginx')]))]))])),
-    #
-    #
-    # and needs to be converted into this:
-    #
-    # [{u'accepted_return_codes': [0, 1, 2, 3],
-    #   u'arguments': [{u'ask': {u'en': u'service to restart'},
-    #     u'example': u'nginx',
-    #     u'name': u'service',
-    #     u'type': u'string'}],
-    #   u'command': u'echo pouet $YNH_ACTION_SERVICE',
-    #   u'cwd': u'/',
-    #   u'description': {u'en': u'a dummy stupid exemple or restarting a service'},
-    #   u'id': u'restart_service',
-    #   u'name': u'Restart service',
-    #   u'user': u'root'}]
 
     if os.path.exists(actions_toml_path):
         toml_actions = toml.load(open(actions_toml_path, "r"), _dict=OrderedDict)

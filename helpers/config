@@ -285,6 +285,18 @@ ynh_app_config_apply() {
     _ynh_app_config_apply
 }
 
+ynh_app_action_run() {
+    local runner="run__$1"
+    # Get value from getter if exists
+    if type -t "$runner" 2>/dev/null | grep -q '^function$' 2>/dev/null; then
+        $runner
+        #ynh_return "result:"
+        #ynh_return "$(echo "${result}" | sed 's/^/  /g')"
+    else
+        ynh_die "No handler defined in app's script for action $1. If you are the maintainer of this app, you should define '$runner'"
+    fi
+}
+
 ynh_app_config_run() {
     declare -Ag old=()
     declare -Ag changed=()
@@ -309,5 +321,7 @@ ynh_app_config_run() {
         ynh_app_config_apply
         ynh_script_progression --message="Configuration of $app completed" --last
         ;;
+    *)
+        ynh_app_action_run $1
     esac
 }
