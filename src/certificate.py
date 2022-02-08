@@ -95,8 +95,6 @@ def certificate_status(domains, full=False):
         if not full:
             del status["subject"]
             del status["CA_name"]
-            status["CA_type"] = status["CA_type"]["verbose"]
-            status["summary"] = status["summary"]["verbose"]
 
         if full:
             try:
@@ -154,7 +152,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
         if not force and os.path.isfile(current_cert_file):
             status = _get_status(domain)
 
-            if status["summary"]["code"] in ("good", "great"):
+            if status["summary"] == "success":
                 raise YunohostValidationError(
                     "certmanager_attempt_to_replace_valid_cert", domain=domain
                 )
@@ -216,7 +214,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
         if (
             status
-            and status["CA_type"]["code"] == "self-signed"
+            and status["CA_type"] == "selfsigned"
             and status["validity"] > 3648
         ):
             logger.success(
@@ -241,7 +239,7 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
         for domain in domain_list()["domains"]:
 
             status = _get_status(domain)
-            if status["CA_type"]["code"] != "self-signed":
+            if status["CA_type"] != "selfsigned":
                 continue
 
             domains.append(domain)
@@ -253,7 +251,7 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
 
             # Is it self-signed?
             status = _get_status(domain)
-            if not force and status["CA_type"]["code"] != "self-signed":
+            if not force and status["CA_type"] != "selfsigned":
                 raise YunohostValidationError(
                     "certmanager_domain_cert_not_selfsigned", domain=domain
                 )
@@ -314,7 +312,7 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
 
             # Does it have a Let's Encrypt cert?
             status = _get_status(domain)
-            if status["CA_type"]["code"] != "lets-encrypt":
+            if status["CA_type"] != "letsencrypt":
                 continue
 
             # Does it expire soon?
@@ -349,7 +347,7 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
                 )
 
             # Does it have a Let's Encrypt cert?
-            if status["CA_type"]["code"] != "lets-encrypt":
+            if status["CA_type"] != "letsencrypt":
                 raise YunohostValidationError(
                     "certmanager_attempt_to_renew_nonLE_cert", domain=domain
                 )
@@ -539,7 +537,7 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
     # Check the status of the certificate is now good
     status_summary = _get_status(domain)["summary"]
 
-    if status_summary["code"] != "great":
+    if status_summary != "success":
         raise YunohostError(
             "certmanager_certificate_fetching_or_enabling_failed", domain=domain
         )
@@ -634,58 +632,25 @@ def _get_status(domain):
     days_remaining = (valid_up_to - datetime.utcnow()).days
 
     if cert_issuer in ["yunohost.org"] + yunohost.domain.domain_list()["domains"]:
-        CA_type = {
-            "code": "self-signed",
-            "verbose": "Self-signed",
-        }
-
+        CA_type = "selfsigned"
     elif organization_name == "Let's Encrypt":
-        CA_type = {
-            "code": "lets-encrypt",
-            "verbose": "Let's Encrypt",
-        }
-
+        CA_type = "letsencrypt"
     else:
-        CA_type = {
-            "code": "other-unknown",
-            "verbose": "Other / Unknown",
-        }
+        CA_type = "other"
 
     if days_remaining <= 0:
-        status_summary = {
-            "code": "critical",
-            "verbose": "CRITICAL",
-        }
-
-    elif CA_type["code"] in ("self-signed", "fake-lets-encrypt"):
-        status_summary = {
-            "code": "warning",
-            "verbose": "WARNING",
-        }
-
+        summary = "danger"
+    elif CA_type == "selfsigned":
+        summary = "warning"
     elif days_remaining < VALIDITY_LIMIT:
-        status_summary = {
-            "code": "attention",
-            "verbose": "About to expire",
-        }
-
-    elif CA_type["code"] == "other-unknown":
-        status_summary = {
-            "code": "good",
-            "verbose": "Good",
-        }
-
-    elif CA_type["code"] == "lets-encrypt":
-        status_summary = {
-            "code": "great",
-            "verbose": "Great!",
-        }
-
+        summary = "warning"
+    elif CA_type == "other":
+        summary = "success"
+    elif CA_type == "letsencrypt":
+        summary = "success"
     else:
-        status_summary = {
-            "code": "unknown",
-            "verbose": "Unknown?",
-        }
+        # shouldnt happen, because CA_type can be only selfsigned, letsencrypt, or other
+        summary = ""
 
     return {
         "domain": domain,
@@ -693,7 +658,7 @@ def _get_status(domain):
         "CA_name": cert_issuer,
         "CA_type": CA_type,
         "validity": days_remaining,
-        "summary": status_summary,
+        "summary": summary,
     }
 
 

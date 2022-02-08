@@ -499,6 +499,19 @@ class DomainConfigPanel(ConfigPanel):
             self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
             del toml["dns"]["registrar"]["registrar"]["value"]
 
+        # Cert stuff
+        if not filter_key or filter_key[0] == "cert":
+
+            from yunohost.certificate import certificate_status
+            status = certificate_status([self.entity], full=True)["certificates"][self.entity]
+
+            toml["cert"]["status"]["cert_summary"]["style"] = status["summary"]
+            # FIXME: improve message
+            toml["cert"]["status"]["cert_summary"]["ask"] = f"Status is {status['summary']} ! (FIXME: improve message depending on summary / issuer / validity ..."
+
+            # FIXME: Ugly hack to save the cert status and reinject it in _load_current_values ...
+            self.cert_status = status
+
         return toml
 
     def _load_current_values(self):
@@ -510,6 +523,21 @@ class DomainConfigPanel(ConfigPanel):
         filter_key = self.filter_key.split(".") if self.filter_key != "" else []
         if not filter_key or filter_key[0] == "dns":
             self.values["registrar"] = self.registar_id
+
+        # FIXME: Ugly hack to save the cert status and reinject it in _load_current_values ...
+        if not filter_key or filter_key[0] == "cert":
+            self.values["cert_validity"] = self.cert_status["validity"]
+            self.values["cert_issuer"] = self.cert_status["CA_type"]
+            self.values["acme_eligible"] = self.cert_status["ACME_eligible"]
+
+    def _run_action(self, action):
+
+        if action == "cert_install":
+            from yunohost.certificate import certificate_install as action_func
+        elif action == "cert_renew":
+            from yunohost.certificate import certificate_renew as action_func
+
+        action_func([self.entity], force=True, no_checks=self.new_values["cert_no_checks"])
 
 
 def _get_domain_settings(domain: str) -> dict:
