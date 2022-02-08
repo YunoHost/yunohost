@@ -563,6 +563,20 @@ domain:
                 path:
                     help: The path to check (e.g. /coffee)
 
+        ### domain_action_run()
+        action-run:
+            hide_in_help: True
+            action_help: Run domain action
+            api: PUT /domain/<domain>/actions/<action>
+            arguments:
+              domain:
+                  help: Domain name
+              action:
+                  help: action id
+              -a:
+                  full: --args
+                  help: Serialized arguments for action (i.e. "foo=bar&lorem=ipsum")
+
     subcategories:
 
         config:

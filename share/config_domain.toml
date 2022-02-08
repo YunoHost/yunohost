@@ -106,7 +106,6 @@ i18n = "domain_config"
         style = "success"
         visible = "issuer != 'letsencrypt'"
         enabled = "acme_eligible or cert_no_checks"
-        # ??? api = "PUT /domains/{domain}/cert?force&"
 
         [cert.cert.cert_renew]
         ask = "Renew Let's Encrypt certificate"

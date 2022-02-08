@@ -530,14 +530,23 @@ class DomainConfigPanel(ConfigPanel):
             self.values["cert_issuer"] = self.cert_status["CA_type"]
             self.values["acme_eligible"] = self.cert_status["ACME_eligible"]
 
-    def _run_action(self, action):
 
-        if action == "cert_install":
-            from yunohost.certificate import certificate_install as action_func
-        elif action == "cert_renew":
-            from yunohost.certificate import certificate_renew as action_func
+@is_unit_operation()
+def domain_action_run(
+    operation_logger, domain, action, args=None
+):
 
-        action_func([self.entity], force=True, no_checks=self.new_values["cert_no_checks"])
+    import urllib.parse
+
+    if action == "cert.cert.cert_install":
+        from yunohost.certificate import certificate_install as action_func
+    elif action == "cert.cert.cert_renew":
+        from yunohost.certificate import certificate_renew as action_func
+
+    args = dict(urllib.parse.parse_qsl(args or "", keep_blank_values=True))
+    no_checks = bool(args["cert_no_checks"])
+
+    action_func([domain], force=True, no_checks=no_checks)
 
 
 def _get_domain_settings(domain: str) -> dict:
