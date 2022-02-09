@@ -14,4 +14,7 @@ if [ -e "/home/yunohost.multimedia/.nobackup" ]; then
 fi
 
 # Backup multimedia directory
-ynh_backup --src_path="/home/yunohost.multimedia" --dest_path="${backup_dir}" --is_big --not_mandatory
+ynh_backup --src_path="/home/yunohost.multimedia/Music" --dest_path="${backup_dir}/Music" --is_big --not_mandatory
+ynh_backup --src_path="/home/yunohost.multimedia/Picture" --dest_path="${backup_dir}/Picture" --is_big --not_mandatory
+ynh_backup --src_path="/home/yunohost.multimedia/Video" --dest_path="${backup_dir}/Video" --is_big --not_mandatory
+ynh_backup --src_path="/home/yunohost.multimedia/eBook" --dest_path="${backup_dir}/eBook" --is_big --not_mandatory

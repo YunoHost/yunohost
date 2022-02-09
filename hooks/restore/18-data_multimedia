@@ -8,4 +8,7 @@ source /usr/share/yunohost/helpers
 
 backup_dir="data/multimedia"
 
-ynh_restore_file --origin_path="${backup_dir}" --dest_path="/home/yunohost.multimedia" --not_mandatory
+ynh_restore_file --origin_path="${backup_dir}/Music" --dest_path="/home/yunohost.multimedia/Music" --not_mandatory
+ynh_restore_file --origin_path="${backup_dir}/Picture" --dest_path="/home/yunohost.multimedia/Picture" --not_mandatory
+ynh_restore_file --origin_path="${backup_dir}/Video" --dest_path="/home/yunohost.multimedia/Video" --not_mandatory
+ynh_restore_file --origin_path="${backup_dir}/eBook" --dest_path="/home/yunohost.multimedia/eBook" --not_mandatory
