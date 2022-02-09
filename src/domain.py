@@ -544,7 +544,7 @@ def domain_action_run(
         from yunohost.certificate import certificate_renew as action_func
 
     args = dict(urllib.parse.parse_qsl(args or "", keep_blank_values=True))
-    no_checks = bool(args["cert_no_checks"])
+    no_checks = args["cert_no_checks"] in ("y", "yes", "on", "1")
 
     action_func([domain], force=True, no_checks=no_checks)
 

@@ -71,6 +71,7 @@ i18n = "domain_config"
         [cert.status.cert_validity]
         type = "number"
         readonly = true
+        visible = "false"
         # Automatically filled by DomainConfigPanel
 
     [cert.cert]
@@ -89,6 +90,7 @@ i18n = "domain_config"
 
         [cert.cert.acme_eligible_explain]
         type = "alert"
+        style = "warning"
         visible = "acme_eligible == false"
         # FIXME: improve messaging ...
         ask = "Uhoh, domain isnt ready for ACME challenge according to the diagnosis"
