@@ -13,7 +13,7 @@ from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_setti
 
 logger = getActionLogger("yunohost.settings")
 
-SETTINGS_PATH = "/etc/yunohost/settings.yaml"
+SETTINGS_PATH = "/etc/yunohost/settings.yml"
 
 
 def settings_get(key="", full=False, export=False):
