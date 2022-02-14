@@ -81,7 +81,7 @@ alias_maps = hash:/etc/aliases
 alias_database = hash:/etc/aliases
 mydomain = {{ main_domain }}
 mydestination = localhost
-{% if relay_host == "" %}
+{% if relay_enabled != "True" %}
 relayhost =
 {% else %}
 relayhost = [{{ relay_host }}]:{{ relay_port }}
@@ -198,7 +198,7 @@ smtpd_client_recipient_rate_limit=150
 # and after to send spam
 disable_vrfy_command = yes
 
-{% if relay_user != "" %}
+{% if relay_enabled == "True" %}
 # Relay email through an other smtp account
 # enable SASL authentication
 smtp_sasl_auth_enable = yes

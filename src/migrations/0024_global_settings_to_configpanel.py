@@ -28,7 +28,9 @@ class MyMigration(Migration):
             raise YunohostError("global_settings_cant_open_settings", reason=e)
 
         settings = { k: v['values'] for k,v in old_settings.items() }
-        
+
+        if settings.get('smtp.relay.host') != "":
+            settings['email.smtp.smtp_relay_enabled'] == "True"
+
         args = urllib.parse.urlencode(settings)
         settings_set(args=args)
-
