@@ -26,16 +26,22 @@ name = "Security"
 
         [security.ssh.ssh_password_authentication]
         type = "boolean"
+        yes = "True"
+        no = "False"
         default = "false"
 
         [security.ssh.ssh_allow_deprecated_dsa_hostkey]
         type = "boolean"
+        yes = "True"
+        no = "False"
         default = "false"
 
     [security.nginx]
     name = "NGINX"
         [security.nginx.nginx_redirect_to_https]
         type = "boolean"
+        yes = "True"
+        no = "False"
         default = "true"
 
         [security.nginx.nginx_compatibility]
@@ -54,6 +60,8 @@ name = "Security"
     name = "Webadmin"
         [security.webadmin.webadmin_allowlist_enabled]
         type = "boolean"
+        yes = "True"
+        no = "False"
         default = "false"
 
         [security.webadmin.webadmin_allowlist]
@@ -66,6 +74,8 @@ name = "Security"
     name = "Experimental"
         [security.experimental.security_experimental_enabled]
         type = "boolean"
+        yes = "True"
+        no = "False"
         default = "false"
 
 
@@ -75,16 +85,22 @@ name = "Email"
     name = "POP3"
         [email.pop3.pop3_enabled]
         type = "boolean"
+        yes = "True"
+        no = "False"
         default = "false"
     
     [email.smtp]
     name = "SMTP"
         [email.smtp.smtp_allow_ipv6]
         type = "boolean"
+        yes = "True"
+        no = "False"
         default = "true"
 
         [email.smtp.smtp_relay_enabled]
         type = "boolean"
+        yes = "True"
+        no = "False"
         default = "false"
         
         [email.smtp.smtp_relay_host]
@@ -116,10 +132,14 @@ name = "Other"
     name = "SSOwat"
         [misc.ssowat.ssowat_panel_overlay_enabled]
         type = "boolean"
+        yes = "True"
+        no = "False"
         default = "true"
     
     [misc.backup]
     name = "Backup"
         [misc.backup.backup_compress_tar_archives]
         type = "boolean"
+        yes = "True"
+        no = "False"
         default = "false"
