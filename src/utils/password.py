@@ -25,6 +25,8 @@ import json
 import string
 import subprocess
 
+from yunohost.settings import settings_get
+
 SMALL_PWD_LIST = [
     "yunohost",
     "olinuxino",
@@ -58,7 +60,7 @@ class PasswordValidator:
 
         The profile shall be either "user" or "admin"
         and will correspond to a validation strength
-        defined via the setting "security.password.<profile>.strength"
+        defined via the setting "security.password.<profile>_strength"
         """
 
         self.profile = profile
@@ -67,9 +69,10 @@ class PasswordValidator:
             # from settings.py because this file is also meant to be
             # use as a script by ssowat.
             # (or at least that's my understanding -- Alex)
-            settings = json.load(open("/etc/yunohost/settings.json", "r"))
-            setting_key = "security.password." + profile + ".strength"
-            self.validation_strength = int(settings[setting_key]["value"])
+            # Meh... I'll try to use settings_get() anyway... What could go
+            # wrong ? And who even change password from SSOwat ? -- Tagada
+            setting_key = "security.password." + profile + "_strength"
+            self.validation_strength = settings_get(setting_key)
         except Exception:
             # Fallback to default value if we can't fetch settings for some reason
             self.validation_strength = 1
