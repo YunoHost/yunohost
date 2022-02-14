@@ -100,7 +100,7 @@ def find_expected_string_keys():
             yield m
 
     # Global settings descriptions
-    # Will be on a line like : ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", ...
+    # Will be on a line like : ("security.ssh.ssh_allow_deprecated_dsa_hostkey", {"type": "bool", ...
     p5 = re.compile(r" \(\n*\s*[\"\'](\w[\w\.]+)[\"\'],")
     content = open(ROOT + "src/settings.py").read()
     for m in (

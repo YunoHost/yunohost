@@ -291,7 +291,7 @@ class MyDiagnoser(Diagnoser):
             if global_ipv4:
                 outgoing_ips.append(global_ipv4)
 
-        if settings_get("smtp.allow_ipv6"):
+        if settings_get("email.smtp.smtp_allow_ipv6"):
             ipv6 = Diagnoser.get_cached_report("ip", {"test": "ipv6"}) or {}
             if ipv6.get("status") == "SUCCESS":
                 outgoing_ipversions.append(6)

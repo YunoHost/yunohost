@@ -1928,7 +1928,7 @@ class TarBackupMethod(BackupMethod):
     def _archive_file(self):
 
         if isinstance(self.manager, BackupManager) and settings_get(
-            "backup.compress_tar_archives"
+            "misc.backup.backup_compress_tar_archives"
         ):
             return os.path.join(self.repo, self.name + ".tar.gz")
 
