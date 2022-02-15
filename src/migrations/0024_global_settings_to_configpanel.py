@@ -1,12 +1,15 @@
 import subprocess
 import time
 import urllib
+import os
+import json
 
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
 from yunohost.settings import settings_set
+from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_settings
 
 logger = getActionLogger("yunohost.migration")
 
@@ -27,10 +30,10 @@ class MyMigration(Migration):
         except Exception as e:
             raise YunohostError("global_settings_cant_open_settings", reason=e)
 
-        settings = { k: v['values'] for k,v in old_settings.items() }
+        settings = { translate_legacy_settings_to_configpanel_settings(k): v['value'] for k,v in old_settings.items() }
 
-        if settings.get('smtp.relay.host') != "":
-            settings['email.smtp.smtp_relay_enabled'] == "True"
+        if settings.get('email.smtp.smtp_relay_host') != "":
+            settings['email.smtp.smtp_relay_enabled'] = "True"
 
         args = urllib.parse.urlencode(settings)
         settings_set(args=args)
