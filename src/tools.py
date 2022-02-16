@@ -37,8 +37,8 @@ from moulinette.utils.process import call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm
 
 from yunohost.app import (
-    app_info,
     app_upgrade,
+    app_list
 )
 from yunohost.app_catalog import (
     _initialize_apps_catalog_system,
@@ -56,8 +56,6 @@ from yunohost.utils.packages import (
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation, OperationLogger
 
-# FIXME this is a duplicate from apps.py
-APPS_SETTING_PATH = "/etc/yunohost/apps/"
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
 logger = getActionLogger("yunohost.tools")
@@ -391,47 +389,12 @@ def tools_update(target=None):
         except YunohostError as e:
             logger.error(str(e))
 
-        upgradable_apps = list(_list_upgradable_apps())
+        upgradable_apps = list(app_list(upgradable=True)["apps"])
 
     if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
         logger.info(m18n.n("already_up_to_date"))
 
     return {"system": upgradable_system_packages, "apps": upgradable_apps}
-
-
-def _list_upgradable_apps():
-
-    app_list_installed = os.listdir(APPS_SETTING_PATH)
-    for app_id in app_list_installed:
-
-        app_dict = app_info(app_id, full=True)
-
-        if app_dict["upgradable"] == "yes":
-
-            # FIXME : would make more sense for these infos to be computed
-            # directly in app_info and used to check the upgradability of
-            # the app...
-            current_version = app_dict.get("manifest", {}).get("version", "?")
-            current_commit = app_dict.get("settings", {}).get("current_revision", "?")[
-                :7
-            ]
-            new_version = (
-                app_dict.get("from_catalog", {}).get("manifest", {}).get("version", "?")
-            )
-            new_commit = (
-                app_dict.get("from_catalog", {}).get("git", {}).get("revision", "?")[:7]
-            )
-
-            if current_version == new_version:
-                current_version += " (" + current_commit + ")"
-                new_version += " (" + new_commit + ")"
-
-            yield {
-                "id": app_id,
-                "label": app_dict["label"],
-                "current_version": current_version,
-                "new_version": new_version,
-            }
 
 
 @is_unit_operation()
@@ -466,7 +429,7 @@ def tools_upgrade(operation_logger, target=None):
 
         # Make sure there's actually something to upgrade
 
-        upgradable_apps = [app["id"] for app in _list_upgradable_apps()]
+        upgradable_apps = [app["id"] for app in app_list(upgradable=True)["apps"]]
 
         if not upgradable_apps:
             logger.info(m18n.n("apps_already_up_to_date"))
