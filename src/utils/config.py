@@ -706,7 +706,7 @@ class Question:
         self.ask = question.get("ask", {"en": self.name})
         self.help = question.get("help")
         self.redact = question.get("redact", False)
-        self.filter = question.get("filter", "true")
+        self.filter = question.get("filter", None)
         # .current_value is the currently stored value
         self.current_value = question.get("current_value")
         # .value is the "proposed" value which we got from the user
