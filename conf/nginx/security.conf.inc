@@ -45,7 +45,6 @@ header_filter_by_lua_block {
     ngx.header["Content-Security-Policy"] = "upgrade-insecure-requests"
   end
 }
-more_set_headers "Content-Security-Policy-Report-Only : default-src https: data: blob: ; object-src https: data: 'unsafe-inline'; style-src https: data: 'unsafe-inline' ; script-src https: data: 'unsafe-inline' 'unsafe-eval'";
 {% endif %}
 
 # Disable the disaster privacy thing that is FLoC
