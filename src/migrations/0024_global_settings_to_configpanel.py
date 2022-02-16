@@ -2,10 +2,13 @@ import subprocess
 import time
 import urllib
 import os
-import json
 
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import (
+    read_json,
+    write_to_yaml
+)
 
 from yunohost.tools import Migration
 from yunohost.settings import settings_set
@@ -13,6 +16,7 @@ from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_setti
 
 logger = getActionLogger("yunohost.migration")
 
+SETTINGS_PATH = "/etc/yunohost/settings.yml"
 OLD_SETTINGS_PATH = "/etc/yunohost/settings.json"
 
 class MyMigration(Migration):
@@ -26,7 +30,7 @@ class MyMigration(Migration):
             return
 
         try:
-            old_settings = json.load(open(OLD_SETTINGS_PATH))
+            old_settings = read_json(OLD_SETTINGS_PATH)
         except Exception as e:
             raise YunohostError("global_settings_cant_open_settings", reason=e)
 
@@ -35,5 +39,6 @@ class MyMigration(Migration):
         if settings.get('email.smtp.smtp_relay_host') != "":
             settings['email.smtp.smtp_relay_enabled'] = "True"
 
-        args = urllib.parse.urlencode(settings)
-        settings_set(args=args)
+        # Here we don't use settings_set() from settings.py to prevent 
+        # Questions to be asked when one run the migration from CLI.
+        write_to_yaml(SETTINGS_PATH, settings)
