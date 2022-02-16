@@ -31,6 +31,23 @@ more_set_headers "X-Download-Options : noopen";
 more_set_headers "X-Permitted-Cross-Domain-Policies : none";
 more_set_headers "X-Frame-Options : SAMEORIGIN";
 
+# Here we add a generic CSP headers only if the app doesn't define it.
+# NB: if the <meta tag is used the most restrictive rules will be used
+{% if experimental == "True" %}
+header_filter_by_lua_block {
+  if ngx.header["Content-Security-Policy"] == nil or ngx.header["Content-Security-Policy"] == "" then
+    ngx.header["Content-Security-Policy"] = "upgrade-insecure-requests; default-src https: data: blob: ; object-src https: data: 'unsafe-inline'; style-src https: data: 'unsafe-inline' ; script-src https: data: 'unsafe-inline' 'unsafe-eval'"
+  end
+}
+{% else %}
+header_filter_by_lua_block {
+  if ngx.header["Content-Security-Policy"] == nil or ngx.header["Content-Security-Policy"] == "" then
+    ngx.header["Content-Security-Policy"] = "upgrade-insecure-requests"
+  end
+}
+more_set_headers "Content-Security-Policy-Report-Only : default-src https: data: blob: ; object-src https: data: 'unsafe-inline'; style-src https: data: 'unsafe-inline' ; script-src https: data: 'unsafe-inline' 'unsafe-eval'";
+{% endif %}
+
 # Disable the disaster privacy thing that is FLoC
 {% if experimental == "True" %}
 more_set_headers "Permissions-Policy : fullscreen=(), geolocation=(), payment=(), accelerometer=(), battery=(), magnetometer=(), usb=(), interest-cohort=()";
