@@ -10,66 +10,94 @@ import yunohost.settings as settings
 from yunohost.settings import (
     settings_get,
     settings_list,
-    _get_settings,
     settings_set,
     settings_reset,
     settings_reset_all,
-    SETTINGS_PATH_OTHER_LOCATION,
-    SETTINGS_PATH,
-    DEFAULTS,
+    SETTINGS_PATH
 )
 
-DEFAULTS["example.bool"] = {"type": "bool", "default": True}
-DEFAULTS["example.int"] = {"type": "int", "default": 42}
-DEFAULTS["example.string"] = {"type": "string", "default": "yolo swag"}
-DEFAULTS["example.enum"] = {"type": "enum", "default": "a", "choices": ["a", "b", "c"]}
+EXAMPLE_SETTINGS = """
+[example]
+    [example.example]
+        [example.example.boolean]
+        type = "boolean"
+        yes = "True"
+        no = "False"
+        default = "True"
 
+        [example.example.number]
+        type = "number"
+        default = "42"
+
+        [example.example.string]
+        type = "string"
+        default = "yolo swag"
+
+        [example.example.select]
+        type = "select"
+        choices = ["a", "b", "c"]
+        default = "a"
+"""
 
 def setup_function(function):
-    os.system("mv /etc/yunohost/settings.json /etc/yunohost/settings.json.saved")
+    os.system("mv /etc/yunohost/settings.yml /etc/yunohost/settings.yml.saved")
+    os.system("cp /usr/share/yunohost/config_settings.toml /usr/share/yunohost/config_settings.toml.saved")
+    with open("/usr/share/yunohost/config_settings.py", "a") as file:
+        file.write(EXAMPLE_SETTINGS)
 
 
 def teardown_function(function):
-    os.system("mv /etc/yunohost/settings.json.saved /etc/yunohost/settings.json")
-    for filename in glob.glob("/etc/yunohost/settings-*.json"):
-        os.remove(filename)
+    os.system("mv /etc/yunohost/settings.yml.saved /etc/yunohost/settings.yml")
+    os.system("mv /usr/share/yunohost/config_settings.toml.saved /usr/share/yunohost/config_settings.toml")
 
 
-def monkey_get_setting_description(key):
-    return "Dummy %s setting" % key.split(".")[-1]
-
-
-settings._get_setting_description = monkey_get_setting_description
+def _get_settings():
+    return yaml.load(open(SETTINGS_PATH, "r"))
 
 
 def test_settings_get_bool():
-    assert settings_get("example.bool")
+    assert settings_get("example.example.boolean")
 
 
-def test_settings_get_full_bool():
-    assert settings_get("example.bool", True) == {
-        "type": "bool",
-        "value": True,
-        "default": True,
-        "description": "Dummy bool setting",
-    }
+# FIXME : Testing this doesn't make sense ? This should be tested in a test_config.py ?
+#def test_settings_get_full_bool():
+#    assert settings_get("example.example.boolean", True) == {'version': '1.0',
+#        'i18n': 'global_settings_setting',
+#        'panels': [{'services': [],
+#        'actions': {'apply': {'en': 'Apply'}},
+#        'sections': [{'name': '',
+#            'services': [],
+#            'optional': True,
+#            'options': [{'type': 'boolean',
+#            'yes': 'True',
+#            'no': 'False',
+#            'default': 'True',
+#            'id': 'boolean',
+#            'name': 'boolean',
+#            'optional': True,
+#            'current_value': 'True',
+#            'ask': 'global_settings_setting_boolean',
+#            'choices': []}],
+#            'id': 'example'}],
+#        'id': 'example',
+#        'name': {'en': 'Example'}}]}
 
 
 def test_settings_get_int():
-    assert settings_get("example.int") == 42
+    assert settings_get("example.example.number") == 42
 
 
-def test_settings_get_full_int():
-    assert settings_get("example.int", True) == {
-        "type": "int",
-        "value": 42,
-        "default": 42,
-        "description": "Dummy int setting",
-    }
+#def test_settings_get_full_int():
+#    assert settings_get("example.int", True) == {
+#        "type": "int",
+#        "value": 42,
+#        "default": 42,
+#        "description": "Dummy int setting",
+#    }
 
 
 def test_settings_get_string():
-    assert settings_get("example.string") == "yolo swag"
+    assert settings_get("example.example.string") == "yolo swag"
 
 
 def test_settings_get_full_string():
@@ -86,94 +114,85 @@ def test_settings_get_enum():
 
 
 def test_settings_get_full_enum():
-    assert settings_get("example.enum", True) == {
-        "type": "enum",
-        "value": "a",
-        "default": "a",
-        "description": "Dummy enum setting",
-        "choices": ["a", "b", "c"],
-    }
+    option = settings_get("example.enum", full=True).get('panels')[0].get('sections')[0].get('options')[0]
+    assert option.get('choices') == ["a", "b", "c"]
 
 
 def test_settings_get_doesnt_exists():
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostValidationError):
         settings_get("doesnt.exists")
 
 
-def test_settings_list():
-    assert settings_list() == _get_settings()
+#def test_settings_list():
+#    assert settings_list() == _get_settings()
 
 
 def test_settings_set():
-    settings_set("example.bool", False)
-    assert settings_get("example.bool") is False
+    settings_set("example.example.boolean", False)
+    assert settings_get("example.example.boolean") is False
 
-    settings_set("example.bool", "on")
-    assert settings_get("example.bool") is True
+    settings_set("example.example.boolean", "on")
+    assert settings_get("example.example.boolean") is True
 
 
 def test_settings_set_int():
-    settings_set("example.int", 21)
-    assert settings_get("example.int") == 21
+    settings_set("example.example.number", 21)
+    assert settings_get("example.example.number") == 21
 
 
 def test_settings_set_enum():
-    settings_set("example.enum", "c")
-    assert settings_get("example.enum") == "c"
+    settings_set("example.example.select", "c")
+    assert settings_get("example.example.select") == "c"
 
 
 def test_settings_set_doesexit():
-    with pytest.raises(YunohostError):
+    with pytest.raises(YunohostValidationError):
         settings_set("doesnt.exist", True)
 
 
 def test_settings_set_bad_type_bool():
     with pytest.raises(YunohostError):
-        settings_set("example.bool", 42)
+        settings_set("example.example.boolean", 42)
     with pytest.raises(YunohostError):
-        settings_set("example.bool", "pouet")
+        settings_set("example.example.boolean", "pouet")
 
 
 def test_settings_set_bad_type_int():
     with pytest.raises(YunohostError):
-        settings_set("example.int", True)
+        settings_set("example.example.number", True)
     with pytest.raises(YunohostError):
-        settings_set("example.int", "pouet")
+        settings_set("example.example.number", "pouet")
 
 
 def test_settings_set_bad_type_string():
     with pytest.raises(YunohostError):
-        settings_set("example.string", True)
+        settings_set("example.example.string", True)
     with pytest.raises(YunohostError):
-        settings_set("example.string", 42)
+        settings_set("example.example.string", 42)
 
 
 def test_settings_set_bad_value_enum():
     with pytest.raises(YunohostError):
-        settings_set("example.enum", True)
+        settings_set("example.example.select", True)
     with pytest.raises(YunohostError):
-        settings_set("example.enum", "e")
+        settings_set("example.example.select", "e")
     with pytest.raises(YunohostError):
-        settings_set("example.enum", 42)
+        settings_set("example.example.select", 42)
     with pytest.raises(YunohostError):
-        settings_set("example.enum", "pouet")
+        settings_set("example.example.select", "pouet")
 
 
 def test_settings_list_modified():
-    settings_set("example.int", 21)
-    assert settings_list()["example.int"] == {
-        "default": 42,
-        "description": "Dummy int setting",
-        "type": "int",
-        "value": 21,
-    }
+    settings_set("example.example.number", 21)
+    assert settings_list()["number"] == 42
 
 
 def test_reset():
-    settings_set("example.int", 21)
-    assert settings_get("example.int") == 21
-    settings_reset("example.int")
-    assert settings_get("example.int") == settings_get("example.int", True)["default"]
+    option = settings_get("example.example.number", full=True).get('panels')[0].get('sections')[0].get('options')[0]
+    settings_set("example.example.number", 21)
+    assert settings_get("number") == 21
+    settings_reset("example.example.number")
+    assert settings_get("example.example.number") == option["default"]
 
 
 def test_settings_reset_doesexit():
@@ -183,10 +202,10 @@ def test_settings_reset_doesexit():
 
 def test_reset_all():
     settings_before = settings_list()
-    settings_set("example.bool", False)
-    settings_set("example.int", 21)
-    settings_set("example.string", "pif paf pouf")
-    settings_set("example.enum", "c")
+    settings_set("example.example.boolean", False)
+    settings_set("example.example.number", 21)
+    settings_set("example.example.string", "pif paf pouf")
+    settings_set("example.example.select", "c")
     assert settings_before != settings_list()
     settings_reset_all()
     if settings_before != settings_list():
@@ -194,30 +213,30 @@ def test_reset_all():
             assert settings_before[i] == settings_list()[i]
 
 
-def test_reset_all_backup():
-    settings_before = settings_list()
-    settings_set("example.bool", False)
-    settings_set("example.int", 21)
-    settings_set("example.string", "pif paf pouf")
-    settings_set("example.enum", "c")
-    settings_after_modification = settings_list()
-    assert settings_before != settings_after_modification
-    old_settings_backup_path = settings_reset_all()["old_settings_backup_path"]
+#def test_reset_all_backup():
+#    settings_before = settings_list()
+#    settings_set("example.bool", False)
+#    settings_set("example.int", 21)
+#    settings_set("example.string", "pif paf pouf")
+#    settings_set("example.enum", "c")
+#    settings_after_modification = settings_list()
+#    assert settings_before != settings_after_modification
+#    old_settings_backup_path = settings_reset_all()["old_settings_backup_path"]
+#
+#    for i in settings_after_modification:
+#        del settings_after_modification[i]["description"]
+#
+#    assert settings_after_modification == json.load(open(old_settings_backup_path, "r"))
 
-    for i in settings_after_modification:
-        del settings_after_modification[i]["description"]
 
-    assert settings_after_modification == json.load(open(old_settings_backup_path, "r"))
-
-
-def test_unknown_keys():
-    unknown_settings_path = SETTINGS_PATH_OTHER_LOCATION % "unknown"
-    unknown_setting = {
-        "unkown_key": {"value": 42, "default": 31, "type": "int"},
-    }
-    open(SETTINGS_PATH, "w").write(json.dumps(unknown_setting))
-
-    # stimulate a write
-    settings_reset_all()
-
-    assert unknown_setting == json.load(open(unknown_settings_path, "r"))
+#def test_unknown_keys():
+#    unknown_settings_path = SETTINGS_PATH_OTHER_LOCATION % "unknown"
+#    unknown_setting = {
+#        "unkown_key": {"value": 42, "default": 31, "type": "int"},
+#    }
+#    open(SETTINGS_PATH, "w").write(json.dumps(unknown_setting))
+#
+#    # stimulate a write
+#    settings_reset_all()
+#
+#    assert unknown_setting == json.load(open(unknown_settings_path, "r"))
