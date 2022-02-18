@@ -95,10 +95,10 @@ ynh_exec_err() {
     # we detect this by checking that there's no 2nd arg, and $1 contains a space
     if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
     then
-        ynh_print_err "$(eval $@)"
+        ynh_print_err --message="$(eval $@)"
     else
         # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
-        ynh_print_err "$("$@")"
+        ynh_print_err --message="$("$@")"
     fi
 }
 
@@ -116,10 +116,10 @@ ynh_exec_warn() {
     # we detect this by checking that there's no 2nd arg, and $1 contains a space
     if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
     then
-        ynh_print_warn "$(eval $@)"
+        ynh_print_warn --message="$(eval $@)"
     else
         # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
-        ynh_print_warn "$("$@")"
+        ynh_print_warn --message="$("$@")"
     fi
 }
 
