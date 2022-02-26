@@ -3,7 +3,8 @@ import json
 import glob
 import pytest
 
-from yunohost.utils.error import YunohostError
+import moulinette
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 import yunohost.settings as settings
 
@@ -27,7 +28,7 @@ EXAMPLE_SETTINGS = """
 
         [example.example.number]
         type = "number"
-        default = "42"
+        default = 42
 
         [example.example.string]
         type = "string"
@@ -40,15 +41,33 @@ EXAMPLE_SETTINGS = """
 """
 
 def setup_function(function):
-    os.system("mv /etc/yunohost/settings.yml /etc/yunohost/settings.yml.saved")
+    # Backup settings
+    if os.path.exists(SETTINGS_PATH):
+        os.system(f"mv {SETTINGS_PATH} {SETTINGS_PATH}.saved")
+    # Add example settings to config panel
     os.system("cp /usr/share/yunohost/config_settings.toml /usr/share/yunohost/config_settings.toml.saved")
-    with open("/usr/share/yunohost/config_settings.py", "a") as file:
+    with open("/usr/share/yunohost/config_settings.toml", "a") as file:
         file.write(EXAMPLE_SETTINGS)
 
 
 def teardown_function(function):
-    os.system("mv /etc/yunohost/settings.yml.saved /etc/yunohost/settings.yml")
+    if os.path.exists("/etc/yunohost/settings.yml.saved"):
+        os.system(f"mv {SETTINGS_PATH}.saved {SETTINGS_PATH}")
+    elif os.path.exists(SETTINGS_PATH):
+        os.remove(SETTINGS_PATH)
     os.system("mv /usr/share/yunohost/config_settings.toml.saved /usr/share/yunohost/config_settings.toml")
+
+
+old_translate = moulinette.core.Translator.translate
+
+def _monkeypatch_translator(self, key, *args, **kwargs):
+
+    if key.startswith("global_settings_setting_"):
+        return f"Dummy translation for {key}"
+
+    return old_translate(self, key, *args, **kwargs)
+
+moulinette.core.Translator.translate = _monkeypatch_translator
 
 
 def _get_settings():
@@ -59,7 +78,7 @@ def test_settings_get_bool():
     assert settings_get("example.example.boolean")
 
 
-# FIXME : Testing this doesn't make sense ? This should be tested in a test_config.py ?
+# FIXME : Testing this doesn't make sense ? This should be tested in test_config.py ?
 #def test_settings_get_full_bool():
 #    assert settings_get("example.example.boolean", True) == {'version': '1.0',
 #        'i18n': 'global_settings_setting',
@@ -100,22 +119,22 @@ def test_settings_get_string():
     assert settings_get("example.example.string") == "yolo swag"
 
 
-def test_settings_get_full_string():
-    assert settings_get("example.string", True) == {
-        "type": "string",
-        "value": "yolo swag",
-        "default": "yolo swag",
-        "description": "Dummy string setting",
-    }
+#def test_settings_get_full_string():
+#    assert settings_get("example.example.string", True) == {
+#        "type": "string",
+#        "value": "yolo swag",
+#        "default": "yolo swag",
+#        "description": "Dummy string setting",
+#    }
 
 
-def test_settings_get_enum():
-    assert settings_get("example.enum") == "a"
+def test_settings_get_select():
+    assert settings_get("example.example.select") == "a"
 
 
-def test_settings_get_full_enum():
-    option = settings_get("example.enum", full=True).get('panels')[0].get('sections')[0].get('options')[0]
-    assert option.get('choices') == ["a", "b", "c"]
+#def test_settings_get_full_select():
+#    option = settings_get("example.example.select", full=True).get('panels')[0].get('sections')[0].get('options')[0]
+#    assert option.get('choices') == ["a", "b", "c"]
 
 
 def test_settings_get_doesnt_exists():
@@ -140,7 +159,7 @@ def test_settings_set_int():
     assert settings_get("example.example.number") == 21
 
 
-def test_settings_set_enum():
+def test_settings_set_select():
     settings_set("example.example.select", "c")
     assert settings_get("example.example.select") == "c"
 
@@ -171,7 +190,7 @@ def test_settings_set_bad_type_string():
         settings_set("example.example.string", 42)
 
 
-def test_settings_set_bad_value_enum():
+def test_settings_set_bad_value_select():
     with pytest.raises(YunohostError):
         settings_set("example.example.select", True)
     with pytest.raises(YunohostError):
@@ -184,7 +203,7 @@ def test_settings_set_bad_value_enum():
 
 def test_settings_list_modified():
     settings_set("example.example.number", 21)
-    assert settings_list()["number"] == 42
+    assert settings_list()["number"] == 21
 
 
 def test_reset():
@@ -218,7 +237,7 @@ def test_reset_all():
 #    settings_set("example.bool", False)
 #    settings_set("example.int", 21)
 #    settings_set("example.string", "pif paf pouf")
-#    settings_set("example.enum", "c")
+#    settings_set("example.select", "c")
 #    settings_after_modification = settings_list()
 #    assert settings_before != settings_after_modification
 #    old_settings_backup_path = settings_reset_all()["old_settings_backup_path"]

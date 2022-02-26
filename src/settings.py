@@ -15,6 +15,11 @@ logger = getActionLogger("yunohost.settings")
 
 SETTINGS_PATH = "/etc/yunohost/settings.yml"
 
+BOOLEANS = {
+    "True": True,
+    "False": False,
+}
+
 
 def settings_get(key="", full=False, export=False):
     """
@@ -37,9 +42,7 @@ def settings_get(key="", full=False, export=False):
         mode = "classic"
 
     if mode == "classic" and key == "":
-        raise YunohostValidationError(
-            "Missing key"
-        )
+        raise YunohostValidationError("Missing key", raw_msg=True)
 
     settings = SettingsConfigPanel()
     key = translate_legacy_settings_to_configpanel_settings(key)
@@ -131,6 +134,10 @@ class SettingsConfigPanel(ConfigPanel):
                 if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
                     option["help"] = m18n.n(self.config["i18n"] + "_" + option["id"] + "_help")
             return self.config
+
+        # Dirty hack to let settings_get() to work from a python script
+        if isinstance(result, str) and result in BOOLEANS:
+            result = BOOLEANS[result]
 
         return result
 
