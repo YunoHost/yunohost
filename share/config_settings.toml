@@ -28,13 +28,13 @@ name = "Security"
         type = "boolean"
         yes = "True"
         no = "False"
-        default = "false"
+        default = "False"
 
         [security.ssh.ssh_allow_deprecated_dsa_hostkey]
         type = "boolean"
         yes = "True"
         no = "False"
-        default = "false"
+        default = "False"
 
     [security.nginx]
     name = "NGINX"
@@ -42,7 +42,7 @@ name = "Security"
         type = "boolean"
         yes = "True"
         no = "False"
-        default = "true"
+        default = "True"
 
         [security.nginx.nginx_compatibility]
         type = "select"
@@ -62,7 +62,7 @@ name = "Security"
         type = "boolean"
         yes = "True"
         no = "False"
-        default = "false"
+        default = "False"
 
         [security.webadmin.webadmin_allowlist]
         type = "tags"
@@ -76,7 +76,7 @@ name = "Security"
         type = "boolean"
         yes = "True"
         no = "False"
-        default = "false"
+        default = "False"
 
 
 [email]
@@ -87,7 +87,7 @@ name = "Email"
         type = "boolean"
         yes = "True"
         no = "False"
-        default = "false"
+        default = "False"
     
     [email.smtp]
     name = "SMTP"
@@ -95,13 +95,13 @@ name = "Email"
         type = "boolean"
         yes = "True"
         no = "False"
-        default = "true"
+        default = "True"
 
         [email.smtp.smtp_relay_enabled]
         type = "boolean"
         yes = "True"
         no = "False"
-        default = "false"
+        default = "False"
         
         [email.smtp.smtp_relay_host]
         type = "string"
@@ -134,7 +134,7 @@ name = "Other"
         type = "boolean"
         yes = "True"
         no = "False"
-        default = "true"
+        default = "True"
     
     [misc.backup]
     name = "Backup"
@@ -142,4 +142,4 @@ name = "Other"
         type = "boolean"
         yes = "True"
         no = "False"
-        default = "false"
+        default = "False"
