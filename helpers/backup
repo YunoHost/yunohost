@@ -463,7 +463,7 @@ ynh_restore_upgradebackup() {
         # Check if an existing backup can be found before removing and restoring the application.
         if ynh_backup_archive_exists "$app_bck-pre-upgrade$backup_number"; then
             # Remove the application then restore it
-            yunohost app remove $app
+            REMOVE_CORE_ONLY=1 yunohost app remove $app
             # Restore the backup
             yunohost backup restore $app_bck-pre-upgrade$backup_number --apps $app --force --debug
             if [[ -d /etc/yunohost/apps/$app ]]
