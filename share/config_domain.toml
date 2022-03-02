@@ -63,6 +63,7 @@ i18n = "domain_config"
 [cert]
 
     [cert.status]
+    name = "Status"
 
         [cert.status.cert_summary]
         type = "alert"
@@ -71,21 +72,19 @@ i18n = "domain_config"
         [cert.status.cert_validity]
         type = "number"
         readonly = true
-        visible = "false"
         # Automatically filled by DomainConfigPanel
 
     [cert.cert]
+    name = "Manage"
 
         [cert.cert.cert_issuer]
         type = "string"
-        readonly = true
-        visible = "false"
+        visible = false
         # Automatically filled by DomainConfigPanel
 
         [cert.cert.acme_eligible]
         type = "boolean"
-        readonly = true
-        visible = "false"
+        visible = false
         # Automatically filled by DomainConfigPanel
 
         [cert.cert.acme_eligible_explain]
@@ -107,7 +106,8 @@ i18n = "domain_config"
         icon = "star"
         style = "success"
         visible = "issuer != 'letsencrypt'"
-        enabled = "acme_eligible or cert_no_checks"
+        enabled = "acme_eligible || cert_no_checks"
+        args = ["cert_no_checks"]
 
         [cert.cert.cert_renew]
         ask = "Renew Let's Encrypt certificate"
@@ -116,4 +116,4 @@ i18n = "domain_config"
         icon = "refresh"
         style = "warning"
         visible = "issuer == 'letsencrypt'"
-        enabled = "acme_eligible or cert_no_checks"
+        enabled = "acme_eligible || cert_no_checks"
