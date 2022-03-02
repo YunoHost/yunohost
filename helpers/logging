@@ -250,7 +250,7 @@ ynh_script_progression() {
     weight=${weight:-1}
     
     # Always activate time when running inside CI tests
-    if [$PACKAGE_CHECK_EXEC -eq 1]; then
+    if [ $PACKAGE_CHECK_EXEC -eq 1 ]; then
     	time=${time:-1}
     else
     	time=${time:-0}
