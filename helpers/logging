@@ -248,7 +248,14 @@ ynh_script_progression() {
     # Re-disable xtrace, ynh_handle_getopts_args set it back
     set +o xtrace # set +x
     weight=${weight:-1}
-    time=${time:-0}
+    
+    # Always activate time when running inside CI tests
+    if [ $PACKAGE_CHECK_EXEC -eq 1 ]; then
+    	time=${time:-1}
+    else
+    	time=${time:-0}
+    fi
+
     last=${last:-0}
 
     # Get execution time since the last $base_time
