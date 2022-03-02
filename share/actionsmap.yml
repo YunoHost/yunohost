@@ -586,7 +586,9 @@ domain:
                 ### domain_config_get()
                 get:
                     action_help: Display a domain configuration
-                    api: GET /domains/<domain>/config
+                    api:
+                      - GET /domains/<domain>/config
+                      - GET /domains/<domain>/config/<key>
                     arguments:
                       domain:
                           help: Domain name
@@ -605,7 +607,7 @@ domain:
                 ### domain_config_set()
                 set:
                     action_help: Apply a new configuration
-                    api: PUT /domains/<domain>/config
+                    api: PUT /domains/<domain>/config/<key>
                     arguments:
                       domain:
                           help: Domain name
@@ -958,7 +960,9 @@ app:
               ### app_config_get()
               get:
                   action_help: Display an app configuration
-                  api: GET /apps/<app>/config-panel
+                  api:
+                    - GET /apps/<app>/config
+                    - GET /apps/<app>/config/<key>
                   arguments:
                     app:
                         help: App name
@@ -977,7 +981,7 @@ app:
               ### app_config_set()
               set:
                   action_help: Apply a new configuration
-                  api: PUT /apps/<app>/config
+                  api: PUT /apps/<app>/config/<key>
                   arguments:
                     app:
                         help: App name
