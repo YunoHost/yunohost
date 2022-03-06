@@ -21,11 +21,11 @@ ynh_install_apps() {
 	for i in "${apps_list[@]}"
 	do
 		# Retrieve the name of the app (part before _ynh)
-		local oneapp=$(echo "$i" | awk -F'[_ynh]' '{print $1}')
+		local oneapp=$(echo "$i" | awk -F'_ynh' '{print $1}')
 		[ -z "$oneapp" ] && ynh_die --message="You didn't provided a YunoHost app to install"
 
 		# Retrieve the arguments of the app (part after ?)
-		local oneargument=$(echo "$i" | awk -F'[?]' '{print $2}')
+		local oneargument=$(echo "$i" | awk -F'?' '{print $2}')
 		[ ! -z "$oneargument" ] && oneargument="--args \"$oneargument\""
 
 		if ! yunohost app list | grep -q "$oneapp"
@@ -63,7 +63,7 @@ ynh_remove_apps() {
 	for i in "${apps_list[@]}"
 	do
 		# Retrieve the name of the app (part before _ynh)
-		local oneapp=$(echo "$i" | awk -F'[_ynh]' '{print $1}')
+		local oneapp=$(echo "$i" | awk -F'_ynh' '{print $1}')
 		[ -z "$oneapp" ] && ynh_die --message="You didn't provided a YunoHost app to remove"
 
 		ynh_app_setting_delete --app=$app --key=require_$oneapp
