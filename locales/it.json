@@ -125,7 +125,6 @@
     "service_stopped": "Servizio '{service}' fermato",
     "service_unknown": "Servizio '{service}' sconosciuto",
     "ssowat_conf_generated": "La configurazione SSOwat rigenerata",
-    "ssowat_conf_updated": "Configurazione SSOwat aggiornata",
     "system_upgraded": "Sistema aggiornato",
     "unbackup_app": "{app} non verrà salvata",
     "unexpected_error": "È successo qualcosa di inatteso: {error}",

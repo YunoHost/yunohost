@@ -645,7 +645,6 @@
     "show_tile_cant_be_enabled_for_regex": "You cannot enable 'show_tile' right now, because the URL for the permission '{permission}' is a regex",
     "show_tile_cant_be_enabled_for_url_not_defined": "You cannot enable 'show_tile' right now, because you must first define an URL for the permission '{permission}'",
     "ssowat_conf_generated": "SSOwat configuration regenerated",
-    "ssowat_conf_updated": "SSOwat configuration updated",
     "system_upgraded": "System upgraded",
     "system_username_exists": "Username already exists in the list of system users",
     "this_action_broke_dpkg": "This action broke dpkg/APT (the system package managers)... You can try to solve this issue by connecting through SSH and running `sudo apt install --fix-broken` and/or `sudo dpkg --configure -a`.",

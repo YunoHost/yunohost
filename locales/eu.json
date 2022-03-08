@@ -517,7 +517,6 @@
     "service_restart_failed": "Ezin izan da '{service}' zerbitzua berrabiarazi\n\nZerbitzuen azken erregistroak: {logs}",
     "service_restarted": "'{service}' zerbitzua berrabiarazi da",
     "service_start_failed": "Ezin izan da '{service}' zerbitzua abiarazi\n\nZerbitzuen azken erregistroak: {logs}",
-    "ssowat_conf_updated": "SSOwat ezarpenak eguneratu dira",
     "update_apt_cache_failed": "Ezin da APT Debian-en pakete kudeatzailearen cachea eguneratu. Hemen dituzu sources.list fitxategiaren lerroak, arazoa identifikatzeko baliagarria izan dezakezuna:\n{sourceslist}",
     "update_apt_cache_warning": "Zerbaitek huts egin du APT Debian-en pakete kudeatzailearen cachea eguneratzean. Hemen dituzu sources.list fitxategiaren lerroak, arazoa identifikatzeko baliagarria izan dezakezuna:\n{sourceslist}",
     "user_created": "Erabiltzailea sortu da",

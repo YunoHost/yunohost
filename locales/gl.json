@@ -573,7 +573,6 @@
     "this_action_broke_dpkg": "Esta acción rachou dpkg/APT (xestores de paquetes do sistema)... Podes intentar resolver o problema conectando a través de SSH e executando `sudo apt install --fix-broken`e/ou `sudo dpkg --configure -a`.",
     "system_username_exists": "Xa existe este nome de usuaria na lista de usuarias do sistema",
     "system_upgraded": "Sistema actualizado",
-    "ssowat_conf_updated": "Actualizada a configuración SSOwat",
     "ssowat_conf_generated": "Rexenerada a configuración para SSOwat",
     "show_tile_cant_be_enabled_for_regex": "Non podes activar 'show_tile' neste intre, porque o URL para o permiso '{permission}' é un regex",
     "show_tile_cant_be_enabled_for_url_not_defined": "Non podes activar 'show_tile' neste intre, primeiro tes que definir un URL para o permiso '{permission}'",

@@ -499,7 +499,6 @@
     "this_action_broke_dpkg": "این اقدام dpkg/APT (مدیران بسته های سیستم) را خراب کرد... می توانید با اتصال از طریق SSH و اجرای فرمان `sudo apt install --fix -break` و/یا` sudo dpkg --configure -a` این مشکل را حل کنید.",
     "system_username_exists": "نام کاربری قبلاً در لیست کاربران سیستم وجود دارد",
     "system_upgraded": "سیستم ارتقا یافت",
-    "ssowat_conf_updated": "پیکربندی SSOwat به روزرسانی شد",
     "ssowat_conf_generated": "پیکربندی SSOwat بازسازی شد",
     "show_tile_cant_be_enabled_for_regex": "شما نمی توانید \"show_tile\" را درست فعال کنید ، چرا که آدرس اینترنتی مجوز '{permission}' یک عبارت منظم است",
     "show_tile_cant_be_enabled_for_url_not_defined": "شما نمی توانید \"show_tile\" را در حال حاضر فعال کنید ، زیرا ابتدا باید یک آدرس اینترنتی برای مجوز '{permission}' تعریف کنید",

@@ -269,7 +269,6 @@
     "regenconf_file_remove_failed": "Ne povis forigi la agordodosieron '{conf}'",
     "not_enough_disk_space": "Ne sufiĉe libera spaco sur '{path}'",
     "dyndns_ip_update_failed": "Ne povis ĝisdatigi IP-adreson al DynDNS",
-    "ssowat_conf_updated": "SSOwat-agordo ĝisdatigita",
     "log_link_to_failed_log": "Ne povis plenumi la operacion '{desc}'. Bonvolu provizi la plenan protokolon de ĉi tiu operacio per <a href=\"#/tools/logs/{name}\">alklakante ĉi tie </a> por akiri helpon",
     "user_home_creation_failed": "Ne povis krei dosierujon \"home\" por uzanto",
     "pattern_backup_archive_name": "Devas esti valida dosiernomo kun maksimume 30 signoj, alfanombraj kaj -_. signoj nur",

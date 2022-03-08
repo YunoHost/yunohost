@@ -118,7 +118,6 @@
     "service_stopped": "Servicio '{service}' detenido",
     "service_unknown": "Servicio desconocido '{service}'",
     "ssowat_conf_generated": "Generada la configuración de SSOwat",
-    "ssowat_conf_updated": "Actualizada la configuración de SSOwat",
     "system_upgraded": "Sistema actualizado",
     "system_username_exists": "El nombre de usuario ya existe en la lista de usuarios del sistema",
     "unbackup_app": "La aplicación '{app}' no se guardará",
