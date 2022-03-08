@@ -1,0 +1,11 @@
+#!/bin/bash
+
+set -e
+
+if [ -e /etc/bash_completion.d/yunohost ] && [ ! -d /etc/bash_completion.d/yunohost ]; then
+    rm /etc/bash_completion.d/yunohost
+fi
+
+#DEBHELPER#
+
+exit 0
