@@ -5,7 +5,7 @@ REPO_URL=$(git remote get-url origin)
 ME=$(git config --global --get user.name)
 EMAIL=$(git config --global --get user.email)
 
-LAST_RELEASE=$(git tag --list | grep debian | tail -n 1)
+LAST_RELEASE=$(git tag --list 'debian/11.*' | tail -n 1)
 
 echo "$REPO ($VERSION) $RELEASE; urgency=low"
 echo ""
