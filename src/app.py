@@ -95,7 +95,7 @@ APP_FILES_TO_COPY = [
 ]
 
 
-def app_list(full=False):
+def app_list(full=False, upgradable=False):
     """
     List installed apps
     """
@@ -103,17 +103,19 @@ def app_list(full=False):
     out = []
     for app_id in sorted(_installed_apps()):
         try:
-            app_info_dict = app_info(app_id, full=full)
+            app_info_dict = app_info(app_id, full=full, upgradable=upgradable)
         except Exception as e:
             logger.error(f"Failed to read info for {app_id} : {e}")
             continue
         app_info_dict["id"] = app_id
+        if upgradable and app_info_dict.get("upgradable") != "yes":
+            continue
         out.append(app_info_dict)
 
     return {"apps": out}
 
 
-def app_info(app, full=False):
+def app_info(app, full=False, upgradable=False):
     """
     Get info for a specific app
     """
@@ -139,6 +141,25 @@ def app_info(app, full=False):
     if "domain" in settings and "path" in settings:
         ret["domain_path"] = settings["domain"] + settings["path"]
 
+    if not upgradable and not full:
+        return ret
+
+    absolute_app_name, _ = _parse_app_instance_name(app)
+    from_catalog = _load_apps_catalog()["apps"].get(absolute_app_name, {})
+
+    ret["upgradable"] = _app_upgradable({** ret, "from_catalog": from_catalog})
+
+    if ret["upgradable"] == "yes":
+        ret["current_version"] = ret.get("version", "?")
+        ret["new_version"] = from_catalog.get("manifest", {}).get("version", "?")
+
+        if ret["current_version"] == ret["new_version"]:
+            current_revision = settings.get("current_revision", "?")[:7]
+            new_revision = from_catalog.get("git", {}).get("revision", "?")[:7]
+
+            ret["current_version"] = " ({current_revision})"
+            ret["new_version"] = " ({new_revision})"
+
     if not full:
         return ret
 
@@ -149,9 +170,7 @@ def app_info(app, full=False):
     )
     ret["settings"] = settings
 
-    absolute_app_name, _ = _parse_app_instance_name(app)
-    ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
-    ret["upgradable"] = _app_upgradable(ret)
+    ret["from_catalog"] = from_catalog
 
     ret["is_webapp"] = "domain" in settings and "path" in settings
 

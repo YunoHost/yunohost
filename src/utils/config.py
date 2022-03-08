@@ -289,6 +289,8 @@ class ConfigPanel:
                 question_class = ARGUMENTS_TYPE_PARSERS[option.get("type", "string")]
                 # FIXME : maybe other properties should be taken from the question, not just choices ?.
                 option["choices"] = question_class(option).choices
+                option["default"] = question_class(option).default
+                option["pattern"] = question_class(option).pattern
             else:
                 result[key] = {"ask": ask}
                 if "current_value" in option:
@@ -603,7 +605,7 @@ class ConfigPanel:
         }
 
     @property
-    def future_values(self):  # TODO put this in ConfigPanel ?
+    def future_values(self):
         return {**self.values, **self.new_values}
 
     def __getattr__(self, name):
@@ -706,7 +708,7 @@ class Question:
         self.ask = question.get("ask", {"en": self.name})
         self.help = question.get("help")
         self.redact = question.get("redact", False)
-        self.filter = question.get("filter", "true")
+        self.filter = question.get("filter", None)
         # .current_value is the currently stored value
         self.current_value = question.get("current_value")
         # .value is the "proposed" value which we got from the user
