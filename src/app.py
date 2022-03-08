@@ -157,8 +157,8 @@ def app_info(app, full=False, upgradable=False):
             current_revision = settings.get("current_revision", "?")[:7]
             new_revision = from_catalog.get("git", {}).get("revision", "?")[:7]
 
-            ret["current_version"] = " ({current_revision})"
-            ret["new_version"] = " ({new_revision})"
+            ret["current_version"] = f" ({current_revision})"
+            ret["new_version"] = f" ({new_revision})"
 
     if not full:
         return ret
