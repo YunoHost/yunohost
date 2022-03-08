@@ -147,7 +147,7 @@ def app_info(app, full=False, upgradable=False):
     absolute_app_name, _ = _parse_app_instance_name(app)
     from_catalog = _load_apps_catalog()["apps"].get(absolute_app_name, {})
 
-    ret["upgradable"] = _app_upgradable({** ret, "from_catalog": from_catalog})
+    ret["upgradable"] = _app_upgradable({**ret, "from_catalog": from_catalog})
 
     if ret["upgradable"] == "yes":
         ret["current_version"] = ret.get("version", "?")
