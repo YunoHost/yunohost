@@ -176,7 +176,7 @@ class MyDiagnoser(Diagnoser):
         def ping(protocol, target):
             return (
                 os.system(
-                    "ping%s -c1 %s >/dev/null 2>/dev/null"
+                    "ping%s -c1 -W 3 %s >/dev/null 2>/dev/null"
                     % ("" if protocol == 4 else "6", target)
                 )
                 == 0
