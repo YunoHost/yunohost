@@ -405,7 +405,6 @@
     "this_action_broke_dpkg": "Ця дія порушила dpkg/APT (системні менеджери пакетів)... Ви можете спробувати вирішити цю проблему, під'єднавшись по SSH і запустивши `sudo apt install --fix-broken` та/або `sudo dpkg --configure -a`.",
     "system_username_exists": "Ім'я користувача вже існує в списку користувачів системи",
     "system_upgraded": "Систему оновлено",
-    "ssowat_conf_updated": "Конфігурацію SSOwat оновлено",
     "ssowat_conf_generated": "Конфігурацію SSOwat перестворено",
     "show_tile_cant_be_enabled_for_regex": "Ви не можете увімкнути 'show_tile' прямо зараз, тому що URL для дозволу '{permission}' являє собою регулярний вираз",
     "show_tile_cant_be_enabled_for_url_not_defined": "Ви не можете увімкнути 'show_tile' прямо зараз, тому що спочатку ви повинні визначити URL для дозволу '{permission}'",

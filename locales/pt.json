@@ -72,7 +72,6 @@
     "service_stopped": "O serviço '{service}' foi parado com êxito",
     "service_unknown": "Serviço desconhecido '{service}'",
     "ssowat_conf_generated": "Configuração SSOwat gerada com êxito",
-    "ssowat_conf_updated": "Configuração persistente SSOwat atualizada com êxito",
     "system_upgraded": "Sistema atualizado com êxito",
     "system_username_exists": "O utilizador já existe no registo do sistema",
     "unexpected_error": "Ocorreu um erro inesperado",

@@ -307,7 +307,6 @@
     "service_stopped": "S'ha aturat el servei «{service}»",
     "service_unknown": "Servei «{service}» desconegut",
     "ssowat_conf_generated": "S'ha regenerat la configuració SSOwat",
-    "ssowat_conf_updated": "S'ha actualitzat la configuració SSOwat",
     "system_upgraded": "S'ha actualitzat el sistema",
     "system_username_exists": "El nom d'usuari ja existeix en la llista d'usuaris de sistema",
     "this_action_broke_dpkg": "Aquesta acció a trencat dpkg/APT (els gestors de paquets del sistema)... Podeu intentar resoldre el problema connectant-vos amb SSH i executant «sudo apt install --fix-broken» i/o «sudo dpkg --configure -a».",

@@ -240,7 +240,6 @@
     "this_action_broke_dpkg": "此操作破坏了dpkg / APT（系统软件包管理器）...您可以尝试通过SSH连接并运行`sudo apt install --fix-broken`和/或`sudo dpkg --configure -a`来解决此问题。",
     "system_username_exists": "用户名已存在于系统用户列表中",
     "system_upgraded": "系统升级",
-    "ssowat_conf_updated": "SSOwat配置已更新",
     "ssowat_conf_generated": "SSOwat配置已重新生成",
     "show_tile_cant_be_enabled_for_regex": "你不能启用'show_tile'，因为权限'{permission}'的URL是一个重合词",
     "show_tile_cant_be_enabled_for_url_not_defined": "您现在无法启用 'show_tile' ，因为您必须先为权限'{permission}'定义一个URL",
