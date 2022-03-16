@@ -44,7 +44,7 @@ ynh_install_apps() {
 #
 # apps will be removed only if no other apps need them.
 #
-# usage: ynh_remove_apps --apps="a_ynh b_ynh?domain=DOMAIN&path=PATH&admin=USER&language=fr&is_public=1&password=pass&port=666"
+# usage: ynh_remove_apps --apps="appfoo appbar?domain=DOMAIN&path=PATH&admin=USER&language=fr&is_public=1&password=pass&port=666"
 # | arg: -a, --apps=     - apps to install
 #
 # Requires YunoHost version *.*.* or higher.
