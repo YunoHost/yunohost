@@ -28,12 +28,12 @@ ynh_install_apps() {
 		local oneargument=$(echo "$oneapp_and_its_args" | awk -F'?' '{print $2}')
 		[ ! -z "$oneargument" ] && oneargument="--args \"$oneargument\""
 
+		# Installing or upgrading the app
+		yunohost tools update apps
 		if ! yunohost app list --output-as json --quiet | jq -e --arg id $oneapp '.apps[] | select(.id == $id)' >/dev/null
 		then
-			yunohost tools update
 			yunohost app install $oneapp $oneargument
 		else
-			yunohost tools update
 			yunohost app upgrade $oneapp $oneargument
 		fi
 		ynh_app_setting_set --app=$app --key=require_$oneapp --value="1"
