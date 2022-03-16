@@ -83,7 +83,7 @@ ynh_remove_apps() {
 		done
 
 		# If $oneapp is no more required
-		if [[ ! $required_by ]]
+		if [[ -z "$required_by" ]]
 		then
 			# Remove $oneapp
 			ynh_print_info --message="Removing of $oneapp"
