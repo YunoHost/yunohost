@@ -75,7 +75,7 @@ ynh_remove_apps() {
 		for installed_app in $installed_apps
 		do
 			local installed_app_required_by=$(ynh_app_setting_get --app=$installed_app --key="require_$oneapp")
-			if [[ $installed_app_required_by ]]
+			if [[ -n "$installed_app_required_by" ]]
 			then
 				required_by="${installed_app_required_by}"
 			fi
