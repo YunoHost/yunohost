@@ -2,7 +2,7 @@
 
 # Install other YunoHost apps
 #
-# usage: ynh_install_apps --apps="a_ynh b_ynh?domain=DOMAIN&path=PATH&admin=USER&language=fr&is_public=1&password=pass&port=666"
+# usage: ynh_install_apps --apps="appfoo appbar?domain=DOMAIN&path=PATH&admin=USER&language=fr&is_public=1&password=pass&port=666"
 # | arg: -a, --apps=     - apps to install
 #
 # Requires YunoHost version *.*.* or higher.
