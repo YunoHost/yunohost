@@ -2,6 +2,7 @@
 
 import os
 import re
+import tldextract
 from typing import List
 from datetime import datetime, timedelta
 from publicsuffix2 import PublicSuffixList
@@ -68,7 +69,9 @@ class MyDiagnoser(Diagnoser):
             return
 
         base_dns_zone = _get_dns_zone_for_domain(domain)
-        basename = domain.replace(base_dns_zone, "").rstrip(".") or "@"
+        basename = tldextract.extract(domain).domain
+        if len(basename) == 0:
+            basename = "@"
 
         expected_configuration = _build_dns_conf(
             domain, include_empty_AAAA_if_no_ipv6=True
