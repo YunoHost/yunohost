@@ -293,8 +293,8 @@ def app_map(app=None, raw=False, user=None):
     permissions = user_permission_list(full=True, absolute_urls=True, apps=apps)[
         "permissions"
     ]
-    for app in apps:
-        app_settings = _get_app_settings(app)
+    for app_id in apps:
+        app_settings = _get_app_settings(app_id)
         if not app_settings:
             continue
         if "domain" not in app_settings:
@@ -310,19 +310,19 @@ def app_map(app=None, raw=False, user=None):
             continue
         # Users must at least have access to the main permission to have access to extra permissions
         if user:
-            if not app + ".main" in permissions:
+            if not app_id + ".main" in permissions:
                 logger.warning(
-                    f"Uhoh, no main permission was found for app {app} ... sounds like an app was only partially removed due to another bug :/"
+                    f"Uhoh, no main permission was found for app {app_id} ... sounds like an app was only partially removed due to another bug :/"
                 )
                 continue
-            main_perm = permissions[app + ".main"]
+            main_perm = permissions[app_id + ".main"]
             if user not in main_perm["corresponding_users"]:
                 continue
 
         this_app_perms = {
             p: i
             for p, i in permissions.items()
-            if p.startswith(app + ".") and (i["url"] or i["additional_urls"])
+            if p.startswith(app_id + ".") and (i["url"] or i["additional_urls"])
         }
 
         for perm_name, perm_info in this_app_perms.items():
@@ -362,7 +362,7 @@ def app_map(app=None, raw=False, user=None):
                         perm_path = "/"
                     if perm_domain not in result:
                         result[perm_domain] = {}
-                    result[perm_domain][perm_path] = {"label": perm_label, "id": app}
+                    result[perm_domain][perm_path] = {"label": perm_label, "id": app_id}
 
     return result
 
@@ -1592,16 +1592,15 @@ ynh_app_config_run $1
 
         # Call config script to extract current values
         logger.debug(f"Calling '{action}' action from config script")
-        app = self.entity
-        app_id, app_instance_nb = _parse_app_instance_name(app)
-        settings = _get_app_settings(app)
+        app_id, app_instance_nb = _parse_app_instance_name(self.entity)
+        settings = _get_app_settings(app_id)
         env.update(
             {
                 "app_id": app_id,
-                "app": app,
+                "app": self.entity,
                 "app_instance_nb": str(app_instance_nb),
                 "final_path": settings.get("final_path", ""),
-                "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, app),
+                "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, self.entity),
             }
         )
 
@@ -1699,20 +1698,20 @@ def _get_app_actions(app_id):
     return None
 
 
-def _get_app_settings(app):
+def _get_app_settings(app_id):
     """
     Get settings of an installed app
 
     Keyword arguments:
-        app -- The app id (like nextcloud__2)
+        app_id -- The app id
 
     """
-    if not _is_installed(app):
+    if not _is_installed(app_id):
         raise YunohostValidationError(
-            "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
+            "app_not_installed", app=app_id, all_apps=_get_all_installed_apps_id()
         )
     try:
-        with open(os.path.join(APPS_SETTING_PATH, app, "settings.yml")) as f:
+        with open(os.path.join(APPS_SETTING_PATH, app_id, "settings.yml")) as f:
             settings = yaml.safe_load(f)
         # If label contains unicode char, this may later trigger issues when building strings...
         # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
@@ -1730,25 +1729,25 @@ def _get_app_settings(app):
             or not settings.get("path", "/").startswith("/")
         ):
             settings["path"] = "/" + settings["path"].strip("/")
-            _set_app_settings(app, settings)
+            _set_app_settings(app_id, settings)
 
-        if app == settings["id"]:
+        if app_id == settings["id"]:
             return settings
     except (IOError, TypeError, KeyError):
-        logger.error(m18n.n("app_not_correctly_installed", app=app))
+        logger.error(m18n.n("app_not_correctly_installed", app=app_id))
     return {}
 
 
-def _set_app_settings(app, settings):
+def _set_app_settings(app_id, settings):
     """
     Set settings of an app
 
     Keyword arguments:
-        app_id -- The app id (like nextcloud__2)
+        app_id -- The app id
         settings -- Dict with app settings
 
     """
-    with open(os.path.join(APPS_SETTING_PATH, app, "settings.yml"), "w") as f:
+    with open(os.path.join(APPS_SETTING_PATH, app_id, "settings.yml"), "w") as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
 
 
