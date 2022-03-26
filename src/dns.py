@@ -38,6 +38,7 @@ from yunohost.domain import (
 from yunohost.utils.dns import dig, is_yunohost_dyndns_domain, is_special_use_tld
 from yunohost.utils.error import YunohostValidationError, YunohostError
 from yunohost.utils.network import get_public_ip
+from yunohost.settings import settings_get
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
 
@@ -185,7 +186,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
         ###########################
         # Basic ipv4/ipv6 records #
         ###########################
-        if ipv4:
+        if ipv4 and not settings_get("network_ipv6_only"):
             basic.append([basename, ttl, "A", ipv4])
 
         if ipv6:
@@ -240,7 +241,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
 
         # Only recommend wildcard and CAA for the top level
         if domain == base_domain:
-            if ipv4:
+            if ipv4 and not settings_get("network_ipv6_only"):
                 extra.append([f"*{suffix}", ttl, "A", ipv4])
 
             if ipv6:

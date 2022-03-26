@@ -21,6 +21,7 @@ from typing import List
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.service import _get_services
+from yunohost.settings import settings_get
 
 
 class MyDiagnoser(Diagnoser):
@@ -46,7 +47,7 @@ class MyDiagnoser(Diagnoser):
 
         ipversions = []
         ipv4 = Diagnoser.get_cached_report("ip", item={"test": "ipv4"}) or {}
-        if ipv4.get("status") == "SUCCESS":
+        if ipv4.get("status") == "SUCCESS" and not settings_get("network_ipv6_only"):
             ipversions.append(4)
 
         # To be discussed: we could also make this check dependent on the
@@ -120,7 +121,7 @@ class MyDiagnoser(Diagnoser):
                         for record in dnsrecords.get("items", [])
                     )
 
-                if failed == 4 or ipv6_is_important():
+                if failed == 4 and not settings_get("network_ipv6_only") or ipv6_is_important():
                     yield dict(
                         meta={"port": port},
                         data={

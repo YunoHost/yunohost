@@ -160,3 +160,9 @@ name = "Other"
         [misc.backup.backup_compress_tar_archives]
         type = "boolean"
         default = false
+
+    [misc.network]
+    name = "Network"
+        [misc.network.network_ipv6_only]
+        type = "boolean"
+        default = false
