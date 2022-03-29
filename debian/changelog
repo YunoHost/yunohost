@@ -1,3 +1,11 @@
+yunohost (4.3.6.3) stable; urgency=low
+
+  - backport fix for openssl conflict (1693c831)
+
+  Thanks to all contributors <3 ! (Kay0u)
+
+ -- Kay0u <pierre@kayou.io>  Tue, 29 Mar 2022 13:52:58 +0200
+
 yunohost (4.3.6.2) stable; urgency=low
 
   - [fix] apt helpers: fix bug when var is empty... (7920cc62)
