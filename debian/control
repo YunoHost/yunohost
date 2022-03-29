@@ -43,7 +43,7 @@ Conflicts: iptables-persistent
  , apache2
  , bind9
  , nginx-extras (>= 1.19)
- , openssl (>= 1.1.1m-0)
+ , openssl (>= 1.1.1o-0)
  , slapd (>= 2.4.58)
  , dovecot-core (>= 1:2.3.14)
  , redis-server (>= 5:6.1)
