@@ -1,3 +1,13 @@
+yunohost (11.0.6) testing; urgency=low
+
+  - [fix] configpanel: the config panel was not modifying the configuration of the correct app in certain situations ([#1449](http://github.com/YunoHost/yunohost/pull/1449))
+  - [fix] debian package: fix for openssl conflict (ec41b697)
+  - [i18n] Translations updated for Arabic, Basque, Finnish, French, Galician, German, Kabyle, Polish
+
+  Thanks to all contributors <3 ! (3ole, Alexandre Aubin, Baloo, Bartłomiej Garbiec, José M, Kayou, ljf, Mico Hauataluoma, punkrockgirl, Selyan Slimane Amiri, Tagada)
+
+ -- Kay0u <pierre@kayou.io>  Tue, 29 Mar 2022 14:13:40 +0200
+
 yunohost (11.0.5) testing; urgency=low
 
   - [mod] configpanel: improve 'filter' mechanism in AppQuestion ([#1429](https://github.com/YunoHost/yunohost/pull/1429))
