@@ -301,8 +301,18 @@ class MyMigration(Migration):
         # which means maybe a previous upgrade crashed and we're re-running it)
         if " bullseye " not in read_file("/etc/apt/sources.list"):
             tools_update(target="system")
-            upgradable_system_packages = list(_list_upgradable_apt_packages())
-            if upgradable_system_packages:
+            upgradable_system_packages = set(list(_list_upgradable_apt_packages()))
+            # Lime2 have hold packages to avoid ethernet instability
+            # See https://github.com/YunoHost/arm-images/commit/b4ef8c99554fd1a122a306db7abacc4e2f2942df
+            lime2_hold_packages = set([
+                "armbian-firmware", 
+                "armbian-bsp-cli-lime2", 
+                "linux-dtb-current-sunxi", 
+                "linux-image-current-sunxi", 
+                "linux-u-boot-lime2-current", 
+                "linux-image-next-sunxi"
+            ])
+            if upgradable_system_packages - lime2_hold_packages:
                 raise YunohostError("migration_0021_system_not_fully_up_to_date")
 
     @property
