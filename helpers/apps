@@ -22,7 +22,7 @@ ynh_install_apps() {
 	for one_app_and_its_args in "${apps_list[@]}"
 	do
 		# Retrieve the name of the app (part before ?)
-		local one_app=$(cut -d "?" -f1 <<< "$str")
+		local one_app=$(cut -d "?" -f1 <<< "$one_app_and_its_args")
 		[ -z "$one_app" ] && ynh_die --message="You didn't provided a YunoHost app to install"
 
 		yunohost tools update apps
