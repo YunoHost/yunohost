@@ -7,6 +7,6 @@
     "admin_password_changed": "Hasło administratora zostało zmienione",
     "admin_password_change_failed": "Nie można zmienić hasła",
     "admin_password": "Hasło administratora",
-    "action_invalid": "Nieprawidłowa operacja '{action}'",
+    "action_invalid": "Nieprawidłowe działanie '{action:s}'",
     "aborting": "Przerywanie."
 }

@@ -1,0 +1,199 @@
+# Used by GAFAM
+- name: Spamhaus ZEN
+  dns_server: zen.spamhaus.org
+  website: https://www.spamhaus.org/zen/
+  ipv4: true
+  ipv6: true
+  domain: false
+  non_blacklisted_return_code: []
+- name: Barracuda Reputation Block List
+  dns_server: b.barracudacentral.org
+  website: https://barracudacentral.org/rbl/
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: Hostkarma
+  dns_server: hostkarma.junkemailfilter.com
+  website: https://ipadmin.junkemailfilter.com/remove.php
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: ['127.0.0.1', '127.0.0.5']
+- name: ImproWare IP based spamlist
+  dns_server: spamrbl.imp.ch
+  website: https://antispam.imp.ch/
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: ImproWare IP based wormlist
+  dns_server: wormrbl.imp.ch
+  website: https://antispam.imp.ch/
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: Backscatterer.org 
+  dns_server: ips.backscatterer.org 
+  website: http://www.backscatterer.org/ 
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: inps.de
+  dns_server: dnsbl.inps.de
+  website: http://dnsbl.inps.de/ 
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: LASHBACK 
+  dns_server: ubl.unsubscore.com
+  website: https://blacklist.lashback.com/
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: Mailspike.org
+  dns_server: bl.mailspike.net 
+  website: http://www.mailspike.net/
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: NiX Spam 
+  dns_server: ix.dnsbl.manitu.net
+  website: http://www.dnsbl.manitu.net/ 
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: REDHAWK 
+  dns_server: access.redhawk.org
+  website: https://www.redhawk.org/SpamHawk/query.php 
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: SORBS Open SMTP relays 
+  dns_server: smtp.dnsbl.sorbs.net
+  website: http://www.sorbs.net/ 
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: SORBS Spamhost (last 28 days) 
+  dns_server: recent.spam.dnsbl.sorbs.net
+  website: http://www.sorbs.net/ 
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: SORBS Spamhost (last 48 hours) 
+  dns_server: new.spam.dnsbl.sorbs.net 
+  website: http://www.sorbs.net/
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: SpamCop Blocking List 
+  dns_server: bl.spamcop.net 
+  website: https://www.spamcop.net/bl.shtml 
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: Spam Eating Monkey SEM-BACKSCATTER 
+  dns_server: backscatter.spameatingmonkey.net
+  website: https://spameatingmonkey.com/services 
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: Spam Eating Monkey SEM-BLACK
+  dns_server: bl.spameatingmonkey.net
+  website: https://spameatingmonkey.com/services
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: Spam Eating Monkey SEM-IPV6BL 
+  dns_server: bl.ipv6.spameatingmonkey.net 
+  website: https://spameatingmonkey.com/services 
+  ipv4: false
+  ipv6: true
+  domain: false
+  non_blacklisted_return_code: []
+- name: SpamRATS! all 
+  dns_server: all.spamrats.com 
+  website: http://www.spamrats.com/ 
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: PSBL (Passive Spam Block List) 
+  dns_server: psbl.surriel.com
+  website: http://psbl.surriel.com/
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: SWINOG 
+  dns_server: dnsrbl.swinog.ch
+  website: https://antispam.imp.ch/ 
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: GBUdb Truncate
+  dns_server: truncate.gbudb.net
+  website: http://www.gbudb.com/truncate/index.jsp
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+- name: Weighted Private Block List 
+  dns_server: db.wpbl.info 
+  website: http://www.wpbl.info/ 
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+# Used by GAFAM
+- name: Composite Blocking List 
+  dns_server: cbl.abuseat.org
+  website: cbl.abuseat.org 
+  ipv4: true
+  ipv6: false
+  domain: false
+  non_blacklisted_return_code: []
+# Used by GAFAM
+- name: SenderScore Blacklist 
+  dns_server: bl.score.senderscore.com
+  website: https://senderscore.com 
+  ipv4: true
+  ipv6: false
+  domain: false
+# Added cause it supports IPv6
+  non_blacklisted_return_code: []
+- name: AntiCaptcha.NET IPv6
+  dns_server: dnsbl6.anticaptcha.net
+  website: http://anticaptcha.net/ 
+  ipv4: false
+  ipv6: true
+  domain: false
+  non_blacklisted_return_code: []
+- name: Suomispam Blacklist 
+  dns_server: bl.suomispam.net 
+  website: http://suomispam.net/ 
+  ipv4: true
+  ipv6: true
+  domain: false
+  non_blacklisted_return_code: []
+- name: NordSpam 
+  dns_server: bl.nordspam.com
+  website: https://www.nordspam.com/ 
+  ipv4: true
+  ipv6: true
+  domain: false

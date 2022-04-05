@@ -2,7 +2,7 @@ Source: yunohost
 Section: utils
 Priority: extra
 Maintainer: YunoHost Contributors <contrib@yunohost.org>
-Build-Depends: debhelper (>=9), dh-systemd, dh-python, python3-all (>= 3.7), python3-yaml, python3-jinja2
+Build-Depends: debhelper (>=9), debhelper-compat (= 13), dh-python, python3-all (>= 3.7), python3-yaml, python3-jinja2
 Standards-Version: 3.9.6
 Homepage: https://yunohost.org/
 
@@ -10,15 +10,15 @@ Package: yunohost
 Essential: yes
 Architecture: all
 Depends: ${python3:Depends}, ${misc:Depends}
- , moulinette (>= 4.2), ssowat (>= 4.0)
+ , moulinette (>= 11.0), ssowat (>= 11.0)
  , python3-psutil, python3-requests, python3-dnspython, python3-openssl
  , python3-miniupnpc, python3-dbus, python3-jinja2
- , python3-toml, python3-packaging, python3-publicsuffix,
- , python3-ldap, python3-zeroconf,
+ , python3-toml, python3-packaging, python3-publicsuffix2
+ , python3-ldap, python3-zeroconf (>= 0.36), python3-lexicon,
+ , python-is-python3
+ , nginx, nginx-extras (>=1.18)
  , apt, apt-transport-https, apt-utils, dirmngr
- , php7.3-common, php7.3-fpm, php7.3-ldap, php7.3-intl
- , mariadb-server, php7.3-mysql
- , openssh-server, iptables, fail2ban, dnsutils, bind9utils
+ , openssh-server, iptables, fail2ban, bind9-dnsutils
  , openssl, ca-certificates, netcat-openbsd, iproute2
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
  , dnsmasq, resolvconf, libnss-myhostname
@@ -26,28 +26,29 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved, dovecot-antispam
  , rspamd, opendkim-tools, postsrsd, procmail, mailutils
  , redis-server
- , metronome (>=3.14.0)
  , acl
  , git, curl, wget, cron, unzip, jq, bc, at
  , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog
- , php7.3-gd, php7.3-curl, php-gettext
+ , php7.4-common, php7.4-fpm, php7.4-ldap, php7.4-intl
+ , mariadb-server, php7.4-mysql
+ , php7.4-gd, php7.4-curl, php-php-gettext
  , python3-pip
  , unattended-upgrades
  , libdbd-ldap-perl, libnet-dns-perl
-Suggests: htop, vim, rsync, acpi-support-base, udisks2
+ , metronome (>=3.14.0)
 Conflicts: iptables-persistent
  , apache2
  , bind9
- , nginx-extras (>= 1.16)
- , openssl (>= 1.1.1g)
- , slapd (>= 2.4.49)
- , dovecot-core (>= 1:2.3.7)
- , redis-server (>= 5:5.0.7)
- , fail2ban (>= 0.11)
- , iptables (>= 1.8.3)
+ , nginx-extras (>= 1.19)
+ , openssl (>= 1.1.1o-0)
+ , slapd (>= 2.4.58)
+ , dovecot-core (>= 1:2.3.14)
+ , redis-server (>= 5:6.1)
+ , fail2ban (>= 0.11.3)
+ , iptables (>= 1.8.8)
 Description: manageable and configured self-hosting server
  YunoHost aims to make self-hosting accessible to everyone. It configures
  an email, Web and IM server alongside a LDAP base. It also provides
