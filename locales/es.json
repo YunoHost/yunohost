@@ -613,5 +613,9 @@
     "domain_config_auth_secret": "Secreto de autenticación",
     "domain_config_api_protocol": "Protocolo de API",
     "domain_config_auth_entrypoint": "Punto de entrada de la API",
-    "domain_config_auth_application_key": "LLave de Aplicación"
+    "domain_config_auth_application_key": "LLave de Aplicación",
+    "domain_dns_registrar_supported": "YunoHost detectó automáticamente que este dominio es manejado por el registrador **{registrar}**. Si lo desea, YunoHost configurará automáticamente esta zona DNS, si le proporciona las credenciales de API adecuadas. Puede encontrar documentación sobre cómo obtener sus credenciales de API en esta página: https://yunohost.org/registar_api_{registrar}. (También puede configurar manualmente sus registros DNS siguiendo la documentación en https://yunohost.org/dns)",
+    "domain_dns_registrar_managed_in_parent_domain": "Este dominio es un subdominio de {parent_domain_link}. La configuración del registrador de DNS debe administrarse en el panel de configuración de {parent_domain}.",
+    "domain_dns_registrar_yunohost": "Este dominio es un nohost.me / nohost.st / ynh.fr y, por lo tanto, YunoHost maneja automáticamente su configuración de DNS sin ninguna configuración adicional. (vea el comando 'yunohost dyndns update')",
+    "domain_dns_registrar_not_supported": "YunoHost no pudo detectar automáticamente el registrador que maneja este dominio. Debe configurar manualmente sus registros DNS siguiendo la documentación en https://yunohost.org/dns."
 }
