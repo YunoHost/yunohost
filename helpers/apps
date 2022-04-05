@@ -62,8 +62,8 @@ ynh_install_apps() {
 ynh_remove_apps() {
 
 	# Retrieve the apps dependencies of the app
-	local apps_dependencies=$(ynh_app_setting_get --app=$app --key=apps_dependencies) || true
-	ynh_app_setting_delete --app=$app --key=apps_dependencies || true
+	local apps_dependencies=$(ynh_app_setting_get --app=$app --key=apps_dependencies)
+	ynh_app_setting_delete --app=$app --key=apps_dependencies
 
 	if [ ! -z "$apps_dependencies" ]
 	then
