@@ -90,6 +90,7 @@ $logfile {
 EOF
     # Create the log directory, if not exist
     mkdir --parents $(dirname "$logfile")
+    chmod 644 $(dirname "$logfile")
     # Append this config to the existing config file, or replace the whole config file (depending on $customtee)
     cat ${app}-logrotate | $customtee /etc/logrotate.d/$app >/dev/null
     chmod 644 /etc/logrotate.d/$app
