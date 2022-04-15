@@ -88,8 +88,10 @@ $logfile {
     $su_directive
 }
 EOF
-    mkdir --parents $(dirname "$logfile")                              # Create the log directory, if not exist
-    cat ${app}-logrotate | $customtee /etc/logrotate.d/$app >/dev/null # Append this config to the existing config file, or replace the whole config file (depending on $customtee)
+    # Create the log directory, if not exist
+    mkdir --parents $(dirname "$logfile")
+    # Append this config to the existing config file, or replace the whole config file (depending on $customtee)
+    cat ${app}-logrotate | $customtee /etc/logrotate.d/$app >/dev/null
     chmod 644 /etc/logrotate.d/$app
 }
 
