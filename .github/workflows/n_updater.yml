@@ -1,0 +1,46 @@
+# This workflow allows GitHub Actions to automagically update YunoHost NodeJS helper whenever a new release of n is detected.
+name: Check for new n releases
+on:
+  # Allow to manually trigger the workflow
+  workflow_dispatch:
+  # Run it every day at 5:00 UTC
+  schedule:
+    - cron:  '0 5 * * *'
+jobs:
+  updater:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fetch the source code
+        uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run the updater script
+        id: run_updater
+        run: |
+          # Setting up Git user
+          git config --global user.name 'yunohost-bot'
+          git config --global user.email 'yunohost-bot@users.noreply.github.com'
+          # Run the updater script
+          /bin/bash .github/workflows/updater.sh
+      - name: Commit changes
+        id: commit
+        if: ${{ env.PROCEED == 'true' }}
+        run: |
+          git commit -am "Upgrade n to v$VERSION"
+      - name: Create Pull Request
+        id: cpr
+        if: ${{ env.PROCEED == 'true' }}
+        uses: peter-evans/create-pull-request@v3
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Update n to version ${{ env.VERSION }}
+          committer: 'yunohost-bot <yunohost-bot@users.noreply.github.com>'
+          author: 'yunohost-bot <yunohost-bot@users.noreply.github.com>'
+          signoff: false
+          base: testing
+          branch: ci-auto-update-n-v${{ env.VERSION }}
+          delete-branch: true
+          title: 'Upgrade n to version ${{ env.VERSION }}'
+          body: |
+            Upgrade `n` to v${{ env.VERSION }}
+          draft: false
