@@ -37,7 +37,7 @@ jobs:
           committer: 'yunohost-bot <yunohost-bot@users.noreply.github.com>'
           author: 'yunohost-bot <yunohost-bot@users.noreply.github.com>'
           signoff: false
-          base: testing
+          base: dev
           branch: ci-auto-update-n-v${{ env.VERSION }}
           delete-branch: true
           title: 'Upgrade n to version ${{ env.VERSION }}'
