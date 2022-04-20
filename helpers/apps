@@ -32,7 +32,7 @@ ynh_install_apps() {
 		then
 			# Retrieve the arguments of the app (part after ?)
 			local one_argument=$(cut -d "?" -f2- <<< "$one_app_and_its_args")
-			[ ! -z "$one_argument" ] && one_argument="--args \"$one_argument\""
+			[ ! -z "$one_argument" ] && one_argument="--args $one_argument"
 			
 			# Install the app with its arguments
 			yunohost app install $one_app $one_argument
