@@ -327,6 +327,59 @@ EOF
 
 }
 
+# Define and install dependencies with a equivs control file, for the app build
+#
+# This helper can/should only be called once per app
+#
+# example : ynh_install_app_build_dependencies dep1 dep2 "dep3|dep4|dep5"
+#
+# usage: ynh_install_app_build_dependencies dep [dep [...]]
+# | arg: dep - the package name to install in dependence.
+# | arg: "dep1|dep2|…" - You can specify alternatives. It will require to install (dep1 or dep2, etc).
+#
+# Requires YunoHost version 4.3.6.4 or higher.
+ynh_install_app_build_dependencies() {
+    local dependencies=$@
+    # Add a comma for each space between packages. But not add a comma if the space separate a version specification. (See  below)
+    dependencies="$(echo "$dependencies" | sed 's/\([^\<=\>]\)\ \([^(]\)/\1, \2/g')"
+    local dependencies=${dependencies//|/ | }
+    local manifest_path="$YNH_APP_BASEDIR/manifest.json"
+
+    local version=$(jq -r '.version' "$manifest_path")
+    if [ -z "${version}" ] || [ "$version" == "null" ]; then
+        version="1.0"
+    fi
+    local dep_app=${app//_/-} # Replace all '_' by '-'
+
+    # Handle specific versions
+    if [[ "$dependencies" =~ [\<=\>] ]]; then
+        # Replace version specifications by relationships syntax
+        # https://www.debian.org/doc/debian-policy/ch-relationships.html
+        # Sed clarification
+        # [^(\<=\>] ignore if it begins by ( or < = >. To not apply twice.
+        # [\<=\>] matches < = or >
+        # \+ matches one or more occurence of the previous characters, for >= or >>.
+        # [^,]\+ matches all characters except ','
+        # Ex: 'package>=1.0' will be replaced by 'package (>= 1.0)'
+        dependencies="$(echo "$dependencies" | sed 's/\([^(\<=\>]\)\([\<=\>]\+\)\([^,]\+\)/\1 (\2 \3)/g')"
+    fi
+
+    cat >/tmp/${dep_app}-ynh-build-deps.control <<EOF # Make a control file for equivs-build
+Section: misc
+Priority: optional
+Package: ${dep_app}-ynh-build-deps
+Version: ${version}
+Depends: ${dependencies}
+Architecture: all
+Description: Fake package for ${app} (YunoHost app) dependencies
+ This meta-package is only responsible of installing its dependencies.
+EOF
+
+    ynh_package_install_from_equivs /tmp/${dep_app}-ynh-build-deps.control \
+        || ynh_die --message="Unable to install dependencies" # Install the fake package and its dependencies
+    rm /tmp/${dep_app}-ynh-build-deps.control
+}
+
 # Add dependencies to install with ynh_install_app_dependencies
 #
 # usage: ynh_add_app_dependencies --package=phpversion [--replace]
@@ -372,6 +425,25 @@ ynh_remove_app_dependencies() {
     if [[ -n "$specific_php_version" ]] && ! ynh_package_is_installed --package="php${specific_php_version}-fpm"; then
         yunohost service remove php${specific_php_version}-fpm
     fi
+}
+
+# Remove fake package and its dependencies, for the app build
+#
+# Dependencies will removed only if no other package need them.
+#
+# usage: ynh_remove_app_build_dependencies
+#
+# Requires YunoHost version 4.3.6.4 or higher.
+ynh_remove_app_build_dependencies() {
+    local dep_app=${app//_/-}	# Replace all '_' by '-'
+
+    local current_dependencies=""
+    if ynh_package_is_installed --package="${dep_app}-ynh-build(deps"; then
+        current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${dep_app}-ynh-build-deps) "
+        current_dependencies=${current_dependencies// | /|}
+    fi
+
+    ynh_package_autopurge ${dep_app}-ynh-build-deps	# Remove the fake package and its dependencies if they not still used.
 }
 
 # Install packages from an extra repository properly.
