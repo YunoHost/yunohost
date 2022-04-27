@@ -1513,7 +1513,7 @@ class RestoreManager:
         operation_logger.extra["env"] = env_dict
         operation_logger.flush()
 
-        manifest = _get_manifest_of_app(app_dir_in_archive)
+        manifest = _get_manifest_of_app(app_settings_in_archive)
         if manifest["packaging_format"] >= 2:
             from yunohost.utils.resources import AppResourceManager
             try:
