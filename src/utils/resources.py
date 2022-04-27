@@ -619,7 +619,7 @@ class PortsResource(AppResource):
                 continue
 
             if not port_value:
-                port_value = self.infos["default"]
+                port_value = infos["default"]
                 while self._port_is_used(port_value):
                     port_value += 1
 

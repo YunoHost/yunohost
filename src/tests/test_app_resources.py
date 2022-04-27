@@ -238,7 +238,7 @@ def test_resource_ports():
 def test_resource_ports_several():
 
     r = AppResourceClassesByType["ports"]
-    conf = {"main.default": 12345, "foobar.default": 23456}
+    conf = {"main": {"default": 12345}, "foobar": {"default": 23456}}
 
     assert not app_setting("testapp", "port")
     assert not app_setting("testapp", "port_foobar")
