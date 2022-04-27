@@ -509,7 +509,7 @@
     "service_disable_failed": "Non se puido iniciar o servizo '{service}' ao inicio.\n\nRexistro recente do servizo: {logs}",
     "service_description_yunohost-firewall": "Xestiona, abre e pecha a conexións dos portos aos servizos",
     "service_description_yunohost-api": "Xestiona as interaccións entre a interface web de YunoHost e o sistema",
-    "service_description_ssh": "Permíteche conectar de xeito remoto co teu servidor a través dun terminal (protocolo SSH)",
+    "service_description_ssh": "Permíteche acceder de xeito remoto ao teu servidor a través dun terminal (protocolo SSH)",
     "service_description_slapd": "Almacena usuarias, dominios e info relacionada",
     "service_description_rspamd": "Filtra spam e outras características relacionadas co email",
     "service_description_redis-server": "Unha base de datos especial utilizada para o acceso rápido a datos, cola de tarefas e comunicación entre programas",
@@ -573,7 +573,6 @@
     "this_action_broke_dpkg": "Esta acción rachou dpkg/APT (xestores de paquetes do sistema)... Podes intentar resolver o problema conectando a través de SSH e executando `sudo apt install --fix-broken`e/ou `sudo dpkg --configure -a`.",
     "system_username_exists": "Xa existe este nome de usuaria na lista de usuarias do sistema",
     "system_upgraded": "Sistema actualizado",
-    "ssowat_conf_updated": "Actualizada a configuración SSOwat",
     "ssowat_conf_generated": "Rexenerada a configuración para SSOwat",
     "show_tile_cant_be_enabled_for_regex": "Non podes activar 'show_tile' neste intre, porque o URL para o permiso '{permission}' é un regex",
     "show_tile_cant_be_enabled_for_url_not_defined": "Non podes activar 'show_tile' neste intre, primeiro tes que definir un URL para o permiso '{permission}'",
@@ -684,5 +683,6 @@
     "migration_description_0022_php73_to_php74_pools": "Migrar ficheiros de configuración de php7.3-fpm 'pool' a php7.4",
     "migration_description_0023_postgresql_11_to_13": "Migrar bases de datos de PostgreSQL 11 a 13",
     "service_description_postgresql": "Almacena datos da app (Base datos SQL)",
-    "tools_upgrade": "Actualizando paquetes do sistema"
+    "tools_upgrade": "Actualizando paquetes do sistema",
+    "domain_config_default_app": "App por defecto"
 }

@@ -27,7 +27,7 @@ smtpd_tls_chain_files =
     /etc/yunohost/certs/{{ main_domain }}/key.pem,
     /etc/yunohost/certs/{{ main_domain }}/crt.pem
 
-tls_server_chain_sni_maps = hash:/etc/postfix/sni
+tls_server_sni_maps = hash:/etc/postfix/sni
 
 {% if compatibility == "intermediate" %}
 # generated 2020-08-18, Mozilla Guideline v5.6, Postfix 3.4.14, OpenSSL 1.1.1d, intermediate configuration

@@ -172,7 +172,6 @@
     "service_started": "Lo servici « {service} » es aviat",
     "service_stop_failed": "Impossible d’arrestar lo servici « {service} »↵\n\nJornals recents : {logs}",
     "ssowat_conf_generated": "La configuracion SSowat es generada",
-    "ssowat_conf_updated": "La configuracion SSOwat es estada actualizada",
     "system_upgraded": "Lo sistèma es estat actualizat",
     "system_username_exists": "Lo nom d’utilizaire existís ja dins los utilizaires sistèma",
     "unexpected_error": "Una error inesperada s’es producha",

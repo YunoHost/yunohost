@@ -1,3 +1,30 @@
+yunohost (11.0.6) testing; urgency=low
+
+  - [fix] configpanel: the config panel was not modifying the configuration of the correct app in certain situations ([#1449](http://github.com/YunoHost/yunohost/pull/1449))
+  - [fix] debian package: fix for openssl conflict (ec41b697)
+  - [i18n] Translations updated for Arabic, Basque, Finnish, French, Galician, German, Kabyle, Polish
+
+  Thanks to all contributors <3 ! (3ole, Alexandre Aubin, Baloo, Bartłomiej Garbiec, José M, Kayou, ljf, Mico Hauataluoma, punkrockgirl, Selyan Slimane Amiri, Tagada)
+
+ -- Kay0u <pierre@kayou.io>  Tue, 29 Mar 2022 14:13:40 +0200
+
+yunohost (11.0.5) testing; urgency=low
+
+  - [mod] configpanel: improve 'filter' mechanism in AppQuestion ([#1429](https://github.com/YunoHost/yunohost/pull/1429))
+  - [fix] postinstall: migrate_to_bullseye should be skipped on bullseye (de684425)
+  - [enh] security: Enable proc-hidepid by default ([#1433](https://github.com/YunoHost/yunohost/pull/1433))
+  - [enh] nodejs: Update n to 8.0.2 ([#1435](https://github.com/YunoHost/yunohost/pull/1435))
+  - [fix] postfix: sni tls_server_chain_sni_maps -> tls_server_sni_maps ([#1438](https://github.com/YunoHost/yunohost/pull/1438))
+  - [fix] ynh_get_ram: Avoid grep issue with vmstat command ([#1440](https://github.com/YunoHost/yunohost/pull/1440))
+  - [fix] ynh_exec_*: ensure the arg message is used ([#1442](https://github.com/YunoHost/yunohost/pull/1442))
+  - [enh] helpers: Always activate --time when running inside CI tests ([#1444](https://github.com/YunoHost/yunohost/pull/1444))
+  - [fix] helpers: unbound variable in ynh_script_progression (676973a1)
+  - [mod] quality: Several FIXME fix ([#1441](https://github.com/YunoHost/yunohost/pull/1441))
+
+  Thanks to all contributors <3 ! (ericgaspar, ewilly, Kayou, Melchisedech, Tagadda)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 08 Mar 2022 13:01:06 +0100
+
 yunohost (11.0.4) testing; urgency=low
 
   - [mod] certificate: drop unused 'staging' LE mode (4b78e8e3)
@@ -58,11 +85,27 @@ yunohost (11.0.2) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:52:39 +0100
 
+yunohost (4.4.1) testing; urgency=low
+
+  - [fix] php helpers: prevent epic catastrophies when the app changes php version (31d3719b)
+
+  Thanks to all contributors <3 ! (Alexandre Aubin)
+
+ -- Kay0u <pierre@kayou.io>  Tue, 29 Mar 2022 14:03:52 +0200
+
 yunohost (4.4.0) testing; urgency=low
 
   - [enh] Add buster->bullseye migration
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:45:22 +0100
+
+yunohost (4.3.6.3) stable; urgency=low
+
+  - [fix] debian package: backport fix for openssl conflict (1693c831)
+
+  Thanks to all contributors <3 ! (Kay0u)
+
+ -- Kay0u <pierre@kayou.io>  Tue, 29 Mar 2022 13:52:58 +0200
 
 yunohost (4.3.6.2) stable; urgency=low
 

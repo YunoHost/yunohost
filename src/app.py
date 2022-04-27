@@ -104,7 +104,7 @@ APP_FILES_TO_COPY = [
 ]
 
 
-def app_list(full=False):
+def app_list(full=False, upgradable=False):
     """
     List installed apps
     """
@@ -112,17 +112,19 @@ def app_list(full=False):
     out = []
     for app_id in sorted(_installed_apps()):
         try:
-            app_info_dict = app_info(app_id, full=full)
+            app_info_dict = app_info(app_id, full=full, upgradable=upgradable)
         except Exception as e:
             logger.error(f"Failed to read info for {app_id} : {e}")
             continue
         app_info_dict["id"] = app_id
+        if upgradable and app_info_dict.get("upgradable") != "yes":
+            continue
         out.append(app_info_dict)
 
     return {"apps": out}
 
 
-def app_info(app, full=False):
+def app_info(app, full=False, upgradable=False):
     """
     Get info for a specific app
     """
@@ -148,6 +150,25 @@ def app_info(app, full=False):
     if "domain" in settings and "path" in settings:
         ret["domain_path"] = settings["domain"] + settings["path"]
 
+    if not upgradable and not full:
+        return ret
+
+    absolute_app_name, _ = _parse_app_instance_name(app)
+    from_catalog = _load_apps_catalog()["apps"].get(absolute_app_name, {})
+
+    ret["upgradable"] = _app_upgradable({**ret, "from_catalog": from_catalog})
+
+    if ret["upgradable"] == "yes":
+        ret["current_version"] = ret.get("version", "?")
+        ret["new_version"] = from_catalog.get("manifest", {}).get("version", "?")
+
+        if ret["current_version"] == ret["new_version"]:
+            current_revision = settings.get("current_revision", "?")[:7]
+            new_revision = from_catalog.get("git", {}).get("revision", "?")[:7]
+
+            ret["current_version"] = f" ({current_revision})"
+            ret["new_version"] = f" ({new_revision})"
+
     if not full:
         return ret
 
@@ -158,9 +179,7 @@ def app_info(app, full=False):
     )
     ret["settings"] = settings
 
-    absolute_app_name, _ = _parse_app_instance_name(app)
-    ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
-    ret["upgradable"] = _app_upgradable(ret)
+    ret["from_catalog"] = from_catalog
 
     ret["is_webapp"] = "domain" in settings and "path" in settings
 
@@ -280,8 +299,8 @@ def app_map(app=None, raw=False, user=None):
     permissions = user_permission_list(full=True, absolute_urls=True, apps=apps)[
         "permissions"
     ]
-    for app_id in apps:
-        app_settings = _get_app_settings(app_id)
+    for app in apps:
+        app_settings = _get_app_settings(app)
         if not app_settings:
             continue
         if "domain" not in app_settings:
@@ -297,19 +316,19 @@ def app_map(app=None, raw=False, user=None):
             continue
         # Users must at least have access to the main permission to have access to extra permissions
         if user:
-            if not app_id + ".main" in permissions:
+            if not app + ".main" in permissions:
                 logger.warning(
-                    f"Uhoh, no main permission was found for app {app_id} ... sounds like an app was only partially removed due to another bug :/"
+                    f"Uhoh, no main permission was found for app {app} ... sounds like an app was only partially removed due to another bug :/"
                 )
                 continue
-            main_perm = permissions[app_id + ".main"]
+            main_perm = permissions[app + ".main"]
             if user not in main_perm["corresponding_users"]:
                 continue
 
         this_app_perms = {
             p: i
             for p, i in permissions.items()
-            if p.startswith(app_id + ".") and (i["url"] or i["additional_urls"])
+            if p.startswith(app + ".") and (i["url"] or i["additional_urls"])
         }
 
         for perm_name, perm_info in this_app_perms.items():
@@ -349,7 +368,7 @@ def app_map(app=None, raw=False, user=None):
                         perm_path = "/"
                     if perm_domain not in result:
                         result[perm_domain] = {}
-                    result[perm_domain][perm_path] = {"label": perm_label, "id": app_id}
+                    result[perm_domain][perm_path] = {"label": perm_label, "id": app}
 
     return result
 
@@ -1661,15 +1680,16 @@ ynh_app_config_run $1
 
         # Call config script to extract current values
         logger.debug(f"Calling '{action}' action from config script")
-        app_id, app_instance_nb = _parse_app_instance_name(self.entity)
-        settings = _get_app_settings(app_id)
+        app = self.entity
+        app_id, app_instance_nb = _parse_app_instance_name(app)
+        settings = _get_app_settings(app)
         env.update(
             {
                 "app_id": app_id,
-                "app": self.entity,
+                "app": app,
                 "app_instance_nb": str(app_instance_nb),
                 "final_path": settings.get("final_path", ""),
-                "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, self.entity),
+                "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, app),
             }
         )
 
@@ -1759,20 +1779,20 @@ def _get_app_actions(app_id):
     return None
 
 
-def _get_app_settings(app_id):
+def _get_app_settings(app):
     """
     Get settings of an installed app
 
     Keyword arguments:
-        app_id -- The app id
+        app -- The app id (like nextcloud__2)
 
     """
-    if not _is_installed(app_id):
+    if not _is_installed(app):
         raise YunohostValidationError(
-            "app_not_installed", app=app_id, all_apps=_get_all_installed_apps_id()
+            "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
         )
     try:
-        with open(os.path.join(APPS_SETTING_PATH, app_id, "settings.yml")) as f:
+        with open(os.path.join(APPS_SETTING_PATH, app, "settings.yml")) as f:
             settings = yaml.safe_load(f)
         # If label contains unicode char, this may later trigger issues when building strings...
         # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
@@ -1790,25 +1810,25 @@ def _get_app_settings(app_id):
             or not settings.get("path", "/").startswith("/")
         ):
             settings["path"] = "/" + settings["path"].strip("/")
-            _set_app_settings(app_id, settings)
+            _set_app_settings(app, settings)
 
-        if app_id == settings["id"]:
+        if app == settings["id"]:
             return settings
     except (IOError, TypeError, KeyError):
-        logger.error(m18n.n("app_not_correctly_installed", app=app_id))
+        logger.error(m18n.n("app_not_correctly_installed", app=app))
     return {}
 
 
-def _set_app_settings(app_id, settings):
+def _set_app_settings(app, settings):
     """
     Set settings of an app
 
     Keyword arguments:
-        app_id -- The app id
+        app_id -- The app id (like nextcloud__2)
         settings -- Dict with app settings
 
     """
-    with open(os.path.join(APPS_SETTING_PATH, app_id, "settings.yml"), "w") as f:
+    with open(os.path.join(APPS_SETTING_PATH, app, "settings.yml"), "w") as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
 
 

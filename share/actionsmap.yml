@@ -735,6 +735,10 @@ app:
                     full: --full
                     help: Display all details, including the app manifest and various other infos
                     action: store_true
+                -u:
+                    full: --upgradable
+                    help: List only apps that can upgrade to a newer version
+                    action: store_true
 
         ### app_info()
         info:

@@ -90,6 +90,7 @@ def domain_dns_suggest(domain):
             result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     if dns_conf["extra"]:
+        result += "\n\n"
         result += "; Extra"
         for record in dns_conf["extra"]:
             result += "\n{name} {ttl} IN {type} {value}".format(**record)
