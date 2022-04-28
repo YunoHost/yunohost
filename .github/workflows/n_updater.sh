@@ -70,6 +70,9 @@ echo "Calculated checksum for n v${version} is $checksum"
 # Replace new version in helper
 sed -i -E "s/^n_version=.*$/n_version=$version/" helpers/nodejs
 
+# Replace checksum in helper
+sed -i -E "s/^n_checksum=.*$/n_checksum=$checksum/" helpers/nodejs
+
 # The Action will proceed only if the PROCEED environment variable is set to true
 echo "PROCEED=true" >> $GITHUB_ENV
 exit 0
