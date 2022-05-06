@@ -57,7 +57,7 @@ def space_used_by_directory(dirpath, follow_symlinks=True):
         return int(du_output.split()[0])
 
     stat = os.statvfs(dirpath)
-    return stat.f_frsize * stat.f_blocks
+    return stat.f_frsize * stat.f_blocks  # FIXME : this doesnt do what the function name suggest this does ...
 
 
 def human_to_binary(size: str) -> int:

@@ -23,6 +23,7 @@
 
     Manage apps
 """
+import glob
 import os
 import toml
 import json
@@ -174,12 +175,22 @@ def app_info(app, full=False, upgradable=False):
 
     ret["setting_path"] = setting_path
     ret["manifest"] = local_manifest
+
+    # FIXME: maybe this is not needed ? default ask questions are
+    # already set during the _get_manifest_of_app earlier ?
     ret["manifest"]["install"] = _set_default_ask_questions(
         ret["manifest"].get("install", {})
     )
     ret["settings"] = settings
 
     ret["from_catalog"] = from_catalog
+
+    # Hydrate app notifications and doc
+    for pagename, pagecontent in ret["manifest"]["doc"].items():
+        ret["manifest"]["doc"][pagename] = _hydrate_app_template(pagecontent, settings)
+    for step, notifications in ret["manifest"]["notifications"].items():
+        for name, notification in notifications.items():
+            notifications[name] = _hydrate_app_template(notification, settings)
 
     ret["is_webapp"] = "domain" in settings and "path" in settings
 
@@ -1954,7 +1965,47 @@ def _get_manifest_of_app(path):
         manifest = _convert_v1_manifest_to_v2(manifest)
 
     manifest["install"] = _set_default_ask_questions(manifest.get("install", {}))
+    manifest["doc"], manifest["notifications"] = _parse_app_doc_and_notifications(path)
+
     return manifest
+
+
+def _parse_app_doc_and_notifications(path):
+
+    # FIXME: need to find a way to handle i18n in there (file named FOOBAR_fr.md etc.)
+
+    doc = {}
+
+    for pagename in glob.glob(os.path.join(path, "doc") + "/*.md"):
+        name = os.path.basename(pagename)[:-len('.md')]
+        doc[name] = read_file(pagename)
+
+    notifications = {}
+
+    for step in ["pre_install", "post_install", "pre_upgrade", "post_upgrade"]:
+        notifications[step] = {}
+        if os.path.exists(os.path.join(path, "doc", "notifications", f"{step}.md")):
+            notifications[step]["main"] = read_file(os.path.join(path, "doc", "notifications", f"{step}.md"))
+        else:
+            for notification in glob.glob(os.path.join(path, "doc", "notifications", f"{step}.d") + "/*.md"):
+                name = os.path.basename(notification)[:-len('.md')]
+                notifications[step][name].append(read_file(notification))
+
+    return doc, notifications
+
+
+def _hydrate_app_template(template, data):
+
+    stuff_to_replace = set(re.findall(r'__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__', template))
+
+    for stuff in stuff_to_replace:
+
+        varname = stuff.strip("_").lower()
+
+        if varname in data:
+            template = template.replace(stuff, data[varname])
+
+    return template
 
 
 def _convert_v1_manifest_to_v2(manifest):
