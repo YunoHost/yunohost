@@ -500,7 +500,7 @@ def _get_relative_name_for_dns_zone(domain, base_dns_zone):
     #    foo.example.tld -> foo
     #    .foo.example.tld -> foo
     #    bar.foo.example.tld -> bar.foo
-    return re.sub("\.?" + base_dns_zone.replace(".", "\.") + "$", "", domain.strip(".")) or "@"
+    return re.sub(r"\.?" + base_dns_zone.replace(".", r"\.") + "$", "", domain.strip(".")) or "@"
 
 
 def _get_registrar_config_section(domain):
