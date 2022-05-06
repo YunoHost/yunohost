@@ -494,6 +494,12 @@ def _get_dns_zone_for_domain(domain):
 
 
 def _get_relative_name_for_dns_zone(domain, base_dns_zone):
+    # Strip the base dns zone name from a domain such that it's suitable for DNS manipulation relative to a defined zone
+    # For example, assuming base_dns_zone is "example.tld":
+    #    example.tld -> @
+    #    foo.example.tld -> foo
+    #    .foo.example.tld -> foo
+    #    bar.foo.example.tld -> bar.foo
     return re.sub("\.?" + base_dns_zone.replace(".", "\.") + "$", "", domain.strip(".")) or "@"
 
 
