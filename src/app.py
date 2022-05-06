@@ -1984,6 +1984,7 @@ def _convert_v1_manifest_to_v2(manifest):
     manifest["maintainers"] = [maintainer] if maintainer else []
 
     install_questions = manifest["arguments"]["install"]
+
     manifest["install"] = {}
     for question in install_questions:
         name = question.pop("name")
