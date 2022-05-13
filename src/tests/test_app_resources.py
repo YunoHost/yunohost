@@ -4,7 +4,9 @@ import pytest
 from moulinette.utils.process import check_output
 
 from yunohost.app import app_setting
+from yunohost.domain import _get_maindomain
 from yunohost.utils.resources import AppResource, AppResourceManager, AppResourceClassesByType
+from yunohost.permission import user_permission_list, permission_delete
 
 dummyfile = "/tmp/dummyappresource-testapp"
 
@@ -56,6 +58,10 @@ def clean():
     os.system("rm -rf /home/yunohost.app/testapp")
     os.system("apt remove lolcat sl nyancat yarn >/dev/null 2>/dev/null")
     os.system("userdel testapp 2>/dev/null")
+
+    for p in user_permission_list()["permissions"]:
+        if p.startswith("testapp."):
+            permission_delete(p, force=True, sync_perm=False)
 
 
 def test_provision_dummy():
@@ -327,17 +333,35 @@ def test_resource_apt():
 
 def test_resource_permissions():
 
-    raise NotImplementedError()
+    maindomain = _get_maindomain()
+    os.system(f"echo 'domain: {maindomain}' >> /etc/yunohost/apps/testapp/settings.yml")
+    os.system("echo 'path: /testapp' >> /etc/yunohost/apps/testapp/settings.yml")
 
+    # A manager object is required to set the label of the app...
+    manager = AppResourceManager("testapp", current={}, wanted={"name": "Test App"})
     r = AppResourceClassesByType["permissions"]
     conf = {
         "main": {
             "url": "/",
             "allowed": "visitors"
             # protected?
+        },
+        "admin": {
+            "url": "/admin",
+            "allowed": ""
         }
     }
 
-    pass
+    res = user_permission_list(full=True)["permissions"]
+    assert not any(key.startswith("testapp.") for key in res)
 
+    r(conf, "testapp", manager).provision_or_update()
 
+    res = user_permission_list(full=True)["permissions"]
+    assert "testapp.main" in res
+    assert "visitors" in res["testapp.main"]["allowed"]
+    assert res["testapp.main"]["url"] == "/"
+
+    assert "testapp.admin" in res
+    assert not res["testapp.admin"]["allowed"]
+    assert res["testapp.admin"]["url"] == "/admin"
