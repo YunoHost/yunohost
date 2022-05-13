@@ -238,7 +238,7 @@ class PermissionsResource(AppResource):
 
         existing_perms = user_permission_list(short=True, apps=[self.app])["permissions"]
         for perm in existing_perms:
-            if perm.split(".")[0] not in self.permissions.keys():
+            if perm.split(".")[1] not in self.permissions.keys():
                 permission_delete(perm, force=True, sync_perm=False)
 
         for perm, infos in self.permissions.items():

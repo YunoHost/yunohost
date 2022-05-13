@@ -344,12 +344,8 @@ def test_resource_permissions():
         "main": {
             "url": "/",
             "allowed": "visitors"
-            # protected?
+            # TODO: test protected?
         },
-        "admin": {
-            "url": "/admin",
-            "allowed": ""
-        }
     }
 
     res = user_permission_list(full=True)["permissions"]
@@ -361,7 +357,36 @@ def test_resource_permissions():
     assert "testapp.main" in res
     assert "visitors" in res["testapp.main"]["allowed"]
     assert res["testapp.main"]["url"] == "/"
+    assert "testapp.admin" not in res
+
+    conf["admin"] = {
+        "url": "/admin",
+        "allowed": ""
+    }
+
+    r(conf, "testapp", manager).provision_or_update()
+
+    res = user_permission_list(full=True)["permissions"]
+
+    assert "testapp.main" in list(res.keys())
+    assert "visitors" in res["testapp.main"]["allowed"]
+    assert res["testapp.main"]["url"] == "/"
 
     assert "testapp.admin" in res
     assert not res["testapp.admin"]["allowed"]
     assert res["testapp.admin"]["url"] == "/admin"
+
+    conf["admin"]["url"] = "/adminpanel"
+
+    r(conf, "testapp", manager).provision_or_update()
+
+    res = user_permission_list(full=True)["permissions"]
+
+    # FIXME FIXME FIXME : this is the current behavior but
+    # it is NOT okay. c.f. comment in the code
+    assert res["testapp.admin"]["url"] == "/admin"  # should be '/adminpanel'
+
+    r(conf, "testapp").deprovision()
+
+    res = user_permission_list(full=True)["permissions"]
+    assert "testapp.main" not in res
