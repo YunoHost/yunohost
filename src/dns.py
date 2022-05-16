@@ -475,7 +475,9 @@ def _get_dns_zone_for_domain(domain):
         if answer[0] != "ok":
             # Some domains have a SOA configured but NO NS record !!!
             # See https://github.com/YunoHost/issues/issues/1980
-            answer = dig(parent, rdtype="SOA", full_answers=True, resolvers="force_external")
+            answer = dig(
+                parent, rdtype="SOA", full_answers=True, resolvers="force_external"
+            )
 
         if answer[0] == "ok":
             mkdir(cache_folder, parents=True, force=True)
@@ -500,7 +502,10 @@ def _get_relative_name_for_dns_zone(domain, base_dns_zone):
     #    foo.example.tld -> foo
     #    .foo.example.tld -> foo
     #    bar.foo.example.tld -> bar.foo
-    return re.sub(r"\.?" + base_dns_zone.replace(".", r"\.") + "$", "", domain.strip(".")) or "@"
+    return (
+        re.sub(r"\.?" + base_dns_zone.replace(".", r"\.") + "$", "", domain.strip("."))
+        or "@"
+    )
 
 
 def _get_registrar_config_section(domain):
@@ -853,10 +858,9 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         for record in current:
             changes["delete"].append(record)
 
-
     def human_readable_record(action, record):
-        name = (record["name"])
-        name = _get_relative_name_for_dns_zone(record['name'], base_dns_zone)
+        name = record["name"]
+        name = _get_relative_name_for_dns_zone(record["name"], base_dns_zone)
         name = name[:20]
         t = record["type"]
 
@@ -889,7 +893,9 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         if Moulinette.interface.type == "api":
             for records in changes.values():
                 for record in records:
-                    record["name"] = _get_relative_name_for_dns_zone(record["name"], base_dns_zone)
+                    record["name"] = _get_relative_name_for_dns_zone(
+                        record["name"], base_dns_zone
+                    )
             return changes
         else:
             out = {"delete": [], "create": [], "update": [], "unchanged": []}
@@ -938,7 +944,9 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
         for record in changes[action]:
 
-            relative_name = _get_relative_name_for_dns_zone(record['name'], base_dns_zone)
+            relative_name = _get_relative_name_for_dns_zone(
+                record["name"], base_dns_zone
+            )
             progress(
                 f"{action} {record['type']:^5} / {relative_name}"
             )  # FIXME: i18n but meh

@@ -20,7 +20,7 @@ from yunohost.domain import domain_list, _get_maindomain
 from yunohost.dns import (
     _build_dns_conf,
     _get_dns_zone_for_domain,
-    _get_relative_name_for_dns_zone
+    _get_relative_name_for_dns_zone,
 )
 
 logger = log.getActionLogger("yunohost.diagnosis")
