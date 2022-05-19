@@ -90,6 +90,7 @@ _ynh_app_config_apply_one() {
 
         # Save value in app settings
         elif [[ "$bind" == "settings" ]]; then
+            declare -g "old_$short_setting"=$(ynh_app_setting_get --app=$app --key=$short_setting)
             ynh_app_setting_set --app=$app --key=$short_setting --value="${!short_setting}"
             ynh_print_info --message="Configuration key '$short_setting' edited in app settings"
 
