@@ -219,8 +219,8 @@ def test_legacy_app_manifest_preinstall():
     assert "description" in m
     assert "integration" in m
     assert "install" in m
-    assert "doc" in m and not m["doc"]
-    assert "notifications" in m and not m["notifications"]
+    assert m.get("doc") == {}
+    assert m.get("notifications") == {}
 
 
 def test_manifestv2_app_manifest_preinstall():
@@ -231,9 +231,11 @@ def test_manifestv2_app_manifest_preinstall():
     assert "install" in m
     assert "description" in m
     assert "doc" in m
-    assert "This is a dummy description of this app features" in m["doc"]["DESCRIPTION"]
+    assert "This is a dummy description of this app features" in m["doc"]["DESCRIPTION"]["en"]
+    assert "Ceci est une fausse description des fonctionalités de l'app" in m["doc"]["DESCRIPTION"]["fr"]
     assert "notifications" in m
-    assert "This is a dummy disclaimer to display prior to the install" in m["notifications"]["pre_install"]
+    assert "This is a dummy disclaimer to display prior to the install" in m["notifications"]["pre_install"]["en"]
+    assert "Ceci est un faux disclaimer à présenter avant l'installation" in m["notifications"]["pre_install"]["fr"]
 
 
 def test_manifestv2_app_install_main_domain():
@@ -266,11 +268,12 @@ def test_manifestv2_app_info_postinstall():
     assert "install" in m
     assert "description" in m
     assert "doc" in m
-    assert "The app install dir is /var/www/manifestv2_app" in m["doc"]["ADMIN"]
+    assert "The app install dir is /var/www/manifestv2_app" in m["doc"]["ADMIN"]["en"]
+    assert "Le dossier d'install de l'app est /var/www/manifestv2_app" in m["doc"]["ADMIN"]["fr"]
     assert "notifications" in m
-    assert "The app install dir is /var/www/manifestv2_app" in m["notifications"]["post_install"]
-    assert "The app id is manifestv2_app" in m["notifications"]["post_install"]
-    assert f"The app url is {main_domain}/manifestv2" in m["notifications"]["post_install"]
+    assert "The app install dir is /var/www/manifestv2_app" in m["notifications"]["post_install"]["en"]
+    assert "The app id is manifestv2_app" in m["notifications"]["post_install"]["en"]
+    assert f"The app url is {main_domain}/manifestv2" in m["notifications"]["post_install"]["en"]
 
 
 def test_manifestv2_app_info_preupgrade(monkeypatch):

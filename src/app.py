@@ -1972,24 +1972,47 @@ def _get_manifest_of_app(path):
 
 def _parse_app_doc_and_notifications(path):
 
-    # FIXME: need to find a way to handle i18n in there (file named FOOBAR_fr.md etc.)
-
     doc = {}
 
-    for pagename in glob.glob(os.path.join(path, "doc") + "/*.md"):
-        name = os.path.basename(pagename)[:-len('.md')]
-        doc[name] = read_file(pagename).strip()
+    for filepath in glob.glob(os.path.join(path, "doc") + "/*.md"):
+
+        # to be improved : [a-z]{2,3} is a clumsy way of parsing the
+        # lang code ... some lang code are more complex that this é_è
+        m = re.match("([A-Z]*)(_[a-z]{2,3})?.md", filepath.split("/")[-1])
+
+        if not m:
+            # FIXME: shall we display a warning ? idk
+            continue
+        pagename, lang = m.groups()
+        lang = lang.strip("_") if lang else "en"
+
+        if pagename not in doc:
+            doc[pagename] = {}
+        doc[pagename][lang] = read_file(filepath).strip()
 
     notifications = {}
 
     for step in ["pre_install", "post_install", "pre_upgrade", "post_upgrade"]:
         notifications[step] = {}
-        if os.path.exists(os.path.join(path, "doc", "notifications", f"{step}.md")):
-            notifications[step]["main"] = read_file(os.path.join(path, "doc", "notifications", f"{step}.md")).strip()
-        else:
-            for notification in glob.glob(os.path.join(path, "doc", "notifications", f"{step}.d") + "/*.md"):
-                name = os.path.basename(notification)[:-len('.md')]
-                notifications[step][name].append(read_file(notification).strip())
+        for filepath in glob.glob(os.path.join(path, "doc", "notifications", f"{step}*.md")):
+            m = re.match(step + "(_[a-z]{2,3})?.md", filepath.split("/")[-1])
+            if not m:
+                continue
+            pagename = "main"
+            lang = m.groups()[0].strip("_") if m.groups()[0] else "en"
+            if pagename not in notifications[step]:
+                notifications[step][pagename] = {}
+            notifications[step][pagename][lang] = read_file(filepath).strip()
+
+        for filepath in glob.glob(os.path.join(path, "doc", "notifications", f"{step}.d") + "/*.md"):
+            m = re.match(r"([A-Za-z0-9\.\~]*)(_[a-z]{2,3})?.md", filepath.split("/")[-1])
+            if not m:
+                continue
+            pagename, lang = m.groups()
+            lang = lang.strip("_") if lang else "en"
+            if pagename not in notifications[step]:
+                notifications[step][pagename] = {}
+            notifications[step][pagename][lang] = read_file(filepath).strip()
 
     return doc, notifications
 
