@@ -186,11 +186,13 @@ def app_info(app, full=False, upgradable=False):
     ret["from_catalog"] = from_catalog
 
     # Hydrate app notifications and doc
-    for pagename, pagecontent in ret["manifest"]["doc"].items():
-        ret["manifest"]["doc"][pagename] = _hydrate_app_template(pagecontent, settings)
+    for pagename, content_per_lang in ret["manifest"]["doc"].items():
+        for lang, content in content_per_lang.items():
+            ret["manifest"]["doc"][pagename][lang] = _hydrate_app_template(content, settings)
     for step, notifications in ret["manifest"]["notifications"].items():
-        for name, notification in notifications.items():
-            notifications[name] = _hydrate_app_template(notification, settings)
+        for name, content_per_lang in notifications.items():
+            for lang, content in content_per_lang.items():
+                notifications[name][lang] = _hydrate_app_template(content, settings)
 
     ret["is_webapp"] = "domain" in settings and "path" in settings
 
@@ -840,6 +842,15 @@ def app_install(
 
     _confirm_app_install(app, force)
     manifest, extracted_app_folder = _extract_app(app)
+
+    # Display pre_install notices in cli mode
+    if manifest["notifications"]["pre_install"] and Moulinette.interface.type == "cli":
+        for notice in manifest["notifications"]["pre_install"].values():
+            # Should we render the markdown maybe? idk
+            print("==========")
+            print(_value_for_locale(notice))
+            print("==========")
+
     packaging_format = manifest["packaging_format"]
 
     # Check ID
@@ -1090,6 +1101,17 @@ def app_install(
 
     logger.success(m18n.n("installation_complete"))
 
+    # Display post_install notices in cli mode
+    if manifest["notifications"]["post_install"] and Moulinette.interface.type == "cli":
+        # (Call app_info to get the version hydrated with settings)
+        infos = app_info(app_instance_name, full=True)
+        for notice in infos["manifest"]["notifications"]["post_install"].values():
+            # Should we render the markdown maybe? idk
+            print("==========")
+            print(_value_for_locale(notice))
+            print("==========")
+
+    # Call postinstall hook
     hook_callback("post_app_install", env=env_dict)
 
 
