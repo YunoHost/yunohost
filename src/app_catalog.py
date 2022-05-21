@@ -232,6 +232,8 @@ def _load_apps_catalog():
                 )
                 continue
 
+            # FIXME: we may want to autoconvert all v0/v1 manifest to v2 here
+            # so that everything is consistent in terms of APIs, datastructure format etc
             info["repository"] = apps_catalog_id
             merged_catalog["apps"][app] = info
 

@@ -15,6 +15,8 @@ from yunohost.app import (
     _is_installed,
     app_upgrade,
     app_map,
+    app_manifest,
+    app_info,
 )
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
 from yunohost.utils.error import YunohostError
@@ -208,6 +210,32 @@ def test_legacy_app_install_main_domain():
     assert app_is_not_installed(main_domain, "legacy_app")
 
 
+def test_legacy_app_manifest_preinstall():
+
+    m = app_manifest(os.path.join(get_test_apps_dir(), "legacy_app_ynh"))
+    # v1 manifesto are expected to have been autoconverted to v2
+
+    assert "id" in m
+    assert "description" in m
+    assert "integration" in m
+    assert "install" in m
+    assert "doc" in m and not m["doc"]
+    assert "notifications" in m and not m["notifications"]
+
+
+def test_manifestv2_app_manifest_preinstall():
+
+    m = app_manifest(os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"))
+
+    assert "id" in m
+    assert "install" in m
+    assert "description" in m
+    assert "doc" in m
+    assert "This is a dummy description of this app features" in m["doc"]["DESCRIPTION"]
+    assert "notifications" in m
+    assert "This is a dummy disclaimer to display prior to the install" in m["notifications"]["pre_install"]
+
+
 def test_manifestv2_app_install_main_domain():
 
     main_domain = _get_maindomain()
@@ -227,6 +255,53 @@ def test_manifestv2_app_install_main_domain():
 
     assert app_is_not_installed(main_domain, "manifestv2_app")
 
+
+def test_manifestv2_app_info_postinstall():
+
+    main_domain = _get_maindomain()
+    install_manifestv2_app(main_domain, "/manifestv2")
+    m = app_info("manifestv2_app", full=True)["manifest"]
+
+    assert "id" in m
+    assert "install" in m
+    assert "description" in m
+    assert "doc" in m
+    assert "The app install dir is /var/www/manifestv2_app" in m["doc"]["ADMIN"]
+    assert "notifications" in m
+    assert "The app install dir is /var/www/manifestv2_app" in m["notifications"]["post_install"]
+    assert "The app id is manifestv2_app" in m["notifications"]["post_install"]
+    assert f"The app url is {main_domain}/manifestv2" in m["notifications"]["post_install"]
+
+
+def test_manifestv2_app_info_preupgrade(monkeypatch):
+
+    from yunohost.app_catalog import _load_apps_catalog as original_load_apps_catalog
+    def custom_load_apps_catalog(*args, **kwargs):
+
+        res = original_load_apps_catalog(*args, **kwargs)
+        res["apps"]["manifestv2_app"] = {
+            "id": "manifestv2_app",
+            "level": 10,
+            "lastUpdate": 999999999,
+            "maintained": True,
+            "manifest": app_manifest(os.path.join(get_test_apps_dir(), "manifestv2_app_ynh")),
+        }
+        res["apps"]["manifestv2_app"]["manifest"]["version"] = "99999~ynh1"
+
+        return res
+    monkeypatch.setattr("yunohost.app._load_apps_catalog", custom_load_apps_catalog)
+
+    main_domain = _get_maindomain()
+    install_manifestv2_app(main_domain, "/manifestv2")
+    i = app_info("manifestv2_app", full=True)
+
+    assert i["upgradable"] == "yes"
+    assert i["new_version"] == "99999~ynh1"
+    # FIXME : as I write this test, I realize that this implies the catalog API
+    # does provide the notifications, which means the list builder script
+    # should parse the files in the original app repo, possibly with proper i18n etc
+    assert "This is a dummy disclaimer to display prior to any upgrade" \
+            in i["from_catalog"]["manifest"]["notifications"]["pre_upgrade"]
 
 def test_app_from_catalog():
     main_domain = _get_maindomain()

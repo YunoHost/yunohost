@@ -69,6 +69,7 @@ class AppResourceManager:
                 elif todo == "update":
                     logger.info(f"Updating {name} ...")
                     new.provision_or_update(context=context)
+            # FIXME FIXME FIXME : this exception doesnt catch Ctrl+C ?!?!
             except Exception as e:
                 exception = e
                 # FIXME: better error handling ? display stacktrace ?
