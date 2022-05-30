@@ -27,7 +27,7 @@ ynh_user_exists() {
 # | arg: -k, --key=         - the key to retrieve
 # | ret: the value associate to that key
 #
-# example: mail=$(ynh_user_get_info 'toto' 'mail')
+# example: mail=$(ynh_user_get_info --username="toto" --key=mail)
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_user_get_info() {
