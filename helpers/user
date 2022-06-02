@@ -17,7 +17,7 @@ ynh_user_exists() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    yunohost user list --output-as json --quiet | jq -e ".users.${username}" >/dev/null
+    yunohost user list --output-as json --quiet | jq -e ".users.\"${username}\"" >/dev/null
 }
 
 # Retrieve a YunoHost user information
