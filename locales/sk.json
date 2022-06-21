@@ -1,1 +1,22 @@
-{}
+{
+    "additional_urls_already_removed": "Dodatočná URL adresa '{url}' už bola odstránená pre oprávnenie '{permission}'",
+    "admin_password": "Heslo pre správu",
+    "admin_password_change_failed": "Nebolo možné zmeniť heslo",
+    "admin_password_changed": "Heslo pre správu bolo zmenené",
+    "app_action_broke_system": "Vyzerá, že táto akcia spôsobila nefunkčnosť nasledovných dôležitých služieb: {services}",
+    "app_already_installed": "{app} je už nainštalovaný/á",
+    "app_already_installed_cant_change_url": "Táto aplikácia je už nainštalovaná. Adresa URL nemôže byť touto akciou zmenená. Skontrolujte `app changeurl`, ak je dostupné.",
+    "app_already_up_to_date": "{app} aplikácia je/sú aktuálna/e",
+    "app_argument_choice_invalid": "Vyberte platnú hodnotu pre argument '{name}': '{value}' nie je medzi dostupnými možnosťami ({choices})",
+    "app_argument_invalid": "Vyberte platnú hodnotu pre argument '{name}': {error}",
+    "app_argument_required": "Argument '{name}' je vyžadovaný",
+    "app_change_url_identical_domains": "Stará a nová doména/url_cesta sú identické ('{domain}{path}'), nebudú vykonané žiadne zmeny.",
+    "password_too_simple_1": "Heslo sa musí skladať z aspoň 8 znakov",
+    "aborting": "Zrušené.",
+    "action_invalid": "Nesprávna akcia '{action}'",
+    "additional_urls_already_added": "Dodatočná URL adresa '{url}' už bola pridaná pre oprávnenie '{permission}'",
+    "admin_password_too_long": "Prosím, vyberte heslo kratšie ako 127 znakov",
+    "already_up_to_date": "Nič netreba robiť. Všetko je už aktuálne.",
+    "app_action_cannot_be_ran_because_required_services_down": "Pre vykonanie tejto akcie by mali byť spustené nasledovné služby: {services}. Skúste ich reštartovať, prípadne zistite, prečo nebežia.",
+    "app_argument_password_no_default": "Chyba pri spracovaní obsahu hesla '{name}': z bezpečnostných dôvodov nemôže obsahovať predvolenú hodnotu"
+}
