@@ -80,5 +80,6 @@
     "backup_app_failed": "Nepodarilo sa zálohovať {app}",
     "backup_applying_method_copy": "Kopírujem všetky súbory do zálohy…",
     "backup_applying_method_custom": "Volám vlastnú metódu zálohovania '{method}'…",
-    "backup_applying_method_tar": "Vytváram TAR archív so zálohou…"
+    "backup_applying_method_tar": "Vytváram TAR archív so zálohou…",
+    "backup_archive_app_not_found": "Nepodarilo sa nájsť {app} v archíve so zálohou"
 }
