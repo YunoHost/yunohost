@@ -65,5 +65,20 @@
     "app_not_upgraded": "Aplikáciu '{failed_app}' sa nepodarilo aktualizovať v dôsledku čoho boli aktualizácie nasledovných aplikácií zrušené: {apps}",
     "app_requirements_unmeet": "Požiadavky aplikácie {app} neboli splnené, balíček {pkgname} ({version}) musí byť {spec}",
     "app_unsupported_remote_type": "Nepodporovaný vzdialený typ použitý pre aplikáciu",
-    "app_upgrade_several_apps": "Nasledovné aplikácie budú aktualizované: {apps}"
+    "app_upgrade_several_apps": "Nasledovné aplikácie budú aktualizované: {apps}",
+    "apps_catalog_updating": "Aktualizujem repozitár aplikácií…",
+    "ask_firstname": "Krstné meno",
+    "ask_lastname": "Priezvisko",
+    "ask_main_domain": "Hlavná doména",
+    "ask_new_admin_password": "Nové heslo pre správu",
+    "ask_new_domain": "Nová doména",
+    "ask_new_path": "Nová cesta",
+    "ask_password": "Heslo",
+    "ask_user_domain": "Doména, ktorá bude použitá pre e-mailové adresy používateľov a ich XMPP účet",
+    "backup_abstract_method": "Táto metóda zálohovania ešte nebola implementovaná",
+    "backup_actually_backuping": "Vytváram archív so zálohou vyzbieraných súborov…",
+    "backup_app_failed": "Nepodarilo sa zálohovať {app}",
+    "backup_applying_method_copy": "Kopírujem všetky súbory do zálohy…",
+    "backup_applying_method_custom": "Volám vlastnú metódu zálohovania '{method}'…",
+    "backup_applying_method_tar": "Vytváram TAR archív so zálohou…"
 }
