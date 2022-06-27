@@ -133,5 +133,13 @@
     "backup_output_directory_forbidden": "Vyberte si iný adresár pre výstup. Zálohy nie je možné vytvoriť v /bin, /boot, /dev, /etc, /lib, /root, /run, /sbin, /sys, /usr, /var alebo v podadresároch /home/yunohost.backup/archives",
     "backup_unable_to_organize_files": "Nie je možné použiť rýchlu metódu na organizáciu súborov v archíve",
     "certmanager_certificate_fetching_or_enabling_failed": "Pokus o použitie nového certifikátu pre {domain} skončil s chybou…",
-    "certmanager_domain_dns_ip_differs_from_public_ip": "DNS záznamy pre doménu '{domain}' sa líšia od IP adresy tohto servera. Pre získanie viac informácií skontrolujte, prosím, kategóriu 'DNS záznamy' (základné) v režime diagnostiky. Ak ste nedávno upravovali Váš A záznam, počkajte nejaký čas, kým sa vypropaguje (niektoré služby kontroly DNS propagovania sú dostupné online). (Ak viete, čo robíte, použite '--no-checks' na vypnutie týchto kontrol.)"
+    "certmanager_domain_dns_ip_differs_from_public_ip": "DNS záznamy pre doménu '{domain}' sa líšia od IP adresy tohto servera. Pre získanie viac informácií skontrolujte, prosím, kategóriu 'DNS záznamy' (základné) v režime diagnostiky. Ak ste nedávno upravovali Váš A záznam, počkajte nejaký čas, kým sa vypropaguje (niektoré služby kontroly DNS propagovania sú dostupné online). (Ak viete, čo robíte, použite '--no-checks' na vypnutie týchto kontrol.)",
+    "certmanager_domain_not_diagnosed_yet": "Pre doménu {domain} zatiaľ neexistujú výsledky diagnostiky. Prosím, opätovne spustite diagnostiku pre kategórie 'DNS záznamy' a 'Web' a skontrolujte, či je doména pripravená na Let's Encrypt. (Alebo ak viete, čo robíte, použite '--no-checks' na vypnutie týchto kontrol.)",
+    "certmanager_hit_rate_limit": "V poslednom čase bolo pre sadu domén {domain} vydaných príliš mnoho certifikátov. Skúste to, prosím, neskôr. Viac podrobností nájdete na https://letsencrypt.org/docs/rate-limits/",
+    "certmanager_no_cert_file": "Nepodarilo sa prečítať súbor s certifikátom pre doménu {domain} (súbor: {file})",
+    "certmanager_unable_to_parse_self_CA_name": "Nepodarilo sa prečítať názov autority na podpisovanie certifikátov (súbor: {file})",
+    "config_apply_failed": "Pri nasadzovaní novej konfigurácie došlo k chybe: {error}",
+    "config_cant_set_value_on_section": "Nemôžete použiť jednoduchú hodnotu na celú časť konfigurácie.",
+    "certmanager_self_ca_conf_file_not_found": "Nepodarilo sa nájsť súbor s konfiguráciou pre autoritu na podpisovanie certifikátov (súbor: {file})",
+    "certmanager_warning_subdomain_dns_record": "Poddoména '{subdomain}' nevracia rovnakú IP adresu ako '{domain}'. Niektoré funkcie nebudú dostupné, kým to neopravíte a nevygenerujete nový certifikát."
 }
