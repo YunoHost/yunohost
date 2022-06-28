@@ -6,8 +6,10 @@ set -e
 do_pre_regen() {
     pending_dir=$1
 
-	declare -a ip_yuno=(ip.yunohost.org api.ipify.org)
-	declare -a ip_yuno6=(ip6.yunohost.org 0-ip6.yunohost.org)
+	# split the mirrors URLs
+	IFS=','
+	read -raip_yuno<<<$(yunohost settings get security.ipmirrors.v4)
+	read -raip_yuno6<<<$(yunohost settings get security.ipmirrors.v6)
 
     cd /usr/share/yunohost/conf/dnsmasq
 
@@ -28,9 +30,9 @@ do_pre_regen() {
 	###### IPV4 #######
 
 	trouve=0
-	for i in "${!ip_yuno[@]}" ; do
-		if [ $(curl --connect-timeout 5 -o -I -L -s -w "%{http_code}" "${ip_yuno[$i]}" 2> /dev/null) -eq 200 ] && [ $trouve -ne 0 ]; then
-			ipv4=$(curl -s -4 "${ip_yuno[$i]}" 2>/dev/null || true)
+	for link in "${ip_yuno[@]}" ; do
+		if [ $(curl --connect-timeout 5 -o -I -L -s -w "%{http_code}" "$link" 2> /dev/null) -eq 200 ] && [ $trouve -ne 1 ]; then
+			ipv4=$(curl -s -4 "$link" 2>/dev/null || true)
 			ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
 			trouve=1
 		fi
@@ -41,7 +43,7 @@ do_pre_regen() {
 	trouve=0
 
 	for i in "${!ip_yuno6[@]}" ; do
-		if [ $(curl --connect-timeout 5 -o -I -L -s -w "%{http_code}" "${ip6_yuno[$i]}" 2> /dev/null) -eq 200 ] && [ $trouve -ne 0 ]; then
+		if [ $(curl --connect-timeout 5 -o -I -L -s -w "%{http_code}" "${ip6_yuno[$i]}" 2> /dev/null) -eq 200 ] && [ $trouve -ne 1 ]; then
 			ipv6=$(curl -s -6 "${ip_yuno6[$i]}" 2>/dev/null || true)
 			ynh_validate_ip6 "$ipv6" || ipv6=''
 			trouve=1

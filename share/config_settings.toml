@@ -3,6 +3,14 @@ i18n = "global_settings_setting"
 
 [security]
 name = "Security"
+	[security.ipmirrors]
+	name = "IPmirrors"
+		[security.ipmirrors.v4]
+		type = "string"
+		default = "https://ip.yunohost.org,https://api.ipify.net"
+		[security.ipmirrors.v6]
+		type = "string"
+		default = "https://ip6.yunohost.org"
     [security.password]
     name = "Passwords"
         [security.password.admin_strength]

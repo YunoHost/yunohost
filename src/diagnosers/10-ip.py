@@ -12,6 +12,7 @@ from moulinette.utils.filesystem import read_file
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.utils.network import get_network_interfaces
+from yunohost.settings import settings_get
 
 logger = log.getActionLogger("yunohost.diagnosis")
 
@@ -214,9 +215,7 @@ class MyDiagnoser(Diagnoser):
             protocol
         )
 
-        ip4_tab = ["https://ip.yunohost.org","https://api.ipify.net"]
-        ip6_tab = ["https://ip6.yunohost.org"]
-        ip_url_yunohost_tab = ip4_tab if protocol==4 else ip6_tab
+        ip_url_yunohost_tab = settings_get("security.ipmirrors.v"+str(protocol)).split(",")
 
         # Check URLS
         for url in ip_url_yunohost_tab:
