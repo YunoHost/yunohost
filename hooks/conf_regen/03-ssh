@@ -15,14 +15,14 @@ do_pre_regen() {
     ssh_keys=$(ls /etc/ssh/ssh_host_{ed25519,rsa,ecdsa}_key 2>/dev/null || true)
 
     # Support legacy setting (this setting might be disabled by a user during a migration)
-    if [[ "$(yunohost settings get 'service.ssh.allow_deprecated_dsa_hostkey')" == "True" ]]; then
+    if [[ "$(yunohost settings get 'security.ssh.ssh_allow_deprecated_dsa_hostkey')" == "True" ]]; then
         ssh_keys="$ssh_keys $(ls /etc/ssh/ssh_host_dsa_key 2>/dev/null || true)"
     fi
 
     # Support different strategy for security configurations
-    export compatibility="$(yunohost settings get 'security.ssh.compatibility')"
-    export port="$(yunohost settings get 'security.ssh.port')"
-    export password_authentication="$(yunohost settings get 'security.ssh.password_authentication')"
+    export compatibility="$(yunohost settings get 'security.ssh.ssh_compatibility')"
+    export port="$(yunohost settings get 'security.ssh.ssh_port')"
+    export password_authentication="$(yunohost settings get 'security.ssh.ssh_password_authentication')"
     export ssh_keys
     export ipv6_enabled
     ynh_render_template "sshd_config" "${pending_dir}/etc/ssh/sshd_config"
