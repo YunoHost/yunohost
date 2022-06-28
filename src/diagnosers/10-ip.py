@@ -214,14 +214,16 @@ class MyDiagnoser(Diagnoser):
             protocol
         )
 
-        ip_url_yunohost_tab = ["https://ip%s.yunohost.org" % (protocol if protocol != 4 else ""), "https://0-ip%s.yunohost.org" % (protocol if protocol != 4 else "")]
+        ip4_tab = ["https://ip.yunohost.org","https://api.ipify.net"]
+        ip6_tab = ["https://ip6.yunohost.org"]
+        ip_url_yunohost_tab = ip4_tab if protocol==4 else ip6_tab
 
         # Check URLS
         for url in ip_url_yunohost_tab:
             try:
                 return download_text(url, timeout=10).strip()
             except Exception as e:
-                self.logger_debug(
+                logger.debug(
                     "Could not get public IPv%s from %s : %s" % (str(protocol), url, str(e))
                 )
 
