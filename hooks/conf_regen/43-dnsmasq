@@ -6,6 +6,9 @@ set -e
 do_pre_regen() {
     pending_dir=$1
 
+	declare -a ip_yuno=(ip.yunohost.org api.ipify.org)
+	declare -a ip_yuno6=(ip6.yunohost.org 0-ip6.yunohost.org)
+
     cd /usr/share/yunohost/conf/dnsmasq
 
     # create directory for pending conf
@@ -20,11 +23,32 @@ do_pre_regen() {
     # add resolver file
     cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf >${pending_dir}/etc/resolv.dnsmasq.conf
 
-    # retrieve variables
-    ipv4=$(curl -s -4 https://ip.yunohost.org 2>/dev/null || true)
-    ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
-    ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
-    ynh_validate_ip6 "$ipv6" || ipv6=''
+	# Retrieve status first and then connect
+
+	###### IPV4 #######
+
+	trouve=0
+	for i in "${!ip_yuno[@]}" ; do
+		if [ $(curl --connect-timeout 5 -o -I -L -s -w "%{http_code}" "${ip_yuno[$i]}" 2> /dev/null) -eq 200 ] && [ $trouve -ne 0 ]; then
+			ipv4=$(curl -s -4 "${ip_yuno[$i]}" 2>/dev/null || true)
+			ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
+			trouve=1
+		fi
+	done
+
+	###### IPV6 #######
+
+	trouve=0
+
+	for i in "${!ip_yuno6[@]}" ; do
+		if [ $(curl --connect-timeout 5 -o -I -L -s -w "%{http_code}" "${ip6_yuno[$i]}" 2> /dev/null) -eq 200 ] && [ $trouve -ne 0 ]; then
+			ipv6=$(curl -s -6 "${ip_yuno6[$i]}" 2>/dev/null || true)
+			ynh_validate_ip6 "$ipv6" || ipv6=''
+			trouve=1
+		fi
+	done
+
+
     interfaces="$(ip -j addr show | jq -r '[.[].ifname]|join(" ")')"
     wireless_interfaces="lo"
     for dev in $(ls /sys/class/net); do
