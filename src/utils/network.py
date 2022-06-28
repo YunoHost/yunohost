@@ -53,7 +53,7 @@ def get_public_ip(protocol=4):
 
 
 def get_public_ip_from_remote_server(protocol=4):
-    """Retrieve the public IP address from ip.yunohost.org"""
+    """Retrieve the public IP address from ip.yunohost.org or another Server"""
 
     # We can know that ipv6 is not available directly if this file does not exists
     if protocol == 6 and not os.path.exists("/proc/net/if_inet6"):
@@ -81,14 +81,19 @@ def get_public_ip_from_remote_server(protocol=4):
         )
         return None
 
-    url = "https://ip%s.yunohost.org" % (protocol if protocol != 4 else "")
-    logger.debug("Fetching IP from %s " % url)
+    ip_url_yunohost_tab = ["https://ip%s.yunohost.org" % (protocol if protocol != 4 else ""), "https://0-ip%s.yunohost.org" % (protocol if protocol != 4 else "")]
 
-    try:
-        return download_text(url, timeout=30).strip()
-    except Exception as e:
-        logger.debug(f"Could not get public IPv{protocol} : {e}")
-        return None
+    # Check URLS
+    for url in ip_url_yunohost_tab:
+        logger.debug("Fetching IP from %s " % url)
+        try:
+            return download_text(url, timeout=30).strip()
+        except Exception as e:
+            logger.debug(
+                "Could not get public IPv%s from %s : %s" % (str(protocol), url, str(e))
+            )
+
+    return None
 
 
 def get_network_interfaces():

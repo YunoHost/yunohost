@@ -203,7 +203,7 @@ class MyDiagnoser(Diagnoser):
 
     def get_public_ip(self, protocol=4):
 
-        # FIXME - TODO : here we assume that DNS resolution for ip.yunohost.org is working
+        # FIXME - TODO : The best would be to make it configurable
         # but if we want to be able to diagnose DNS resolution issues independently from
         # internet connectivity, we gotta rely on fixed IPs first....
 
@@ -214,12 +214,20 @@ class MyDiagnoser(Diagnoser):
             protocol
         )
 
-        url = "https://ip%s.yunohost.org" % ("6" if protocol == 6 else "")
+        ip_url_yunohost_tab = ["https://ip%s.yunohost.org" % (protocol if protocol != 4 else ""), "https://0-ip%s.yunohost.org" % (protocol if protocol != 4 else "")]
 
-        try:
-            return download_text(url, timeout=30).strip()
-        except Exception as e:
-            protocol = str(protocol)
-            e = str(e)
-            self.logger_debug(f"Could not get public IPv{protocol} : {e}")
-            return None
+        # Check URLS
+        for url in ip_url_yunohost_tab:
+            try:
+                return download_text(url, timeout=10).strip()
+            except Exception as e:
+                self.logger_debug(
+                    "Could not get public IPv%s from %s : %s" % (str(protocol), url, str(e))
+                )
+
+        return None
+
+
+
+def main(args, env, loggers):
+    return MyDiagnoser(args, env, loggers).diagnose()
