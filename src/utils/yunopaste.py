@@ -3,9 +3,9 @@
 import requests
 import json
 import logging
+import re
 
 from yunohost.domain import _get_maindomain, domain_list
-from yunohost.utils.network import get_public_ips
 from yunohost.utils.error import YunohostError
 
 logger = logging.getLogger("yunohost.utils.yunopaste")
@@ -82,8 +82,25 @@ def anonymize(data):
         count += 1
 
     # We also want to anonymize the ips
-    ipsv4 = get_public_ips(4)
-    ipsv6 = get_public_ips(6)
+
+    ipv4regex = r"[12]?\d{1,2}\.[12]?\d{1,2}\.[12]?\d{1,2}\.[12]?\d{1,2}"
+    ipv6regex = r"(?:(?:[0-9a-fA-F]{1,4}:){7,7}[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,7}:|(?:[0-9a-fA-F]{1,4}:){1,6}:[0-9a-fA-F]{1,4}|(?:[0-9a-fA-F]{1,4}:){1,5}(?::[0-9a-fA-F]{1,4}){1,2}|(?:[0-9a-fA-F]{1,4}:){1,4}(?::[0-9a-fA-F]{1,4}){1,3}|(?:[0-9a-fA-F]{1,4}:){1,3}(?::[0-9a-fA-F]{1,4}){1,4}|(?:[0-9a-fA-F]{1,4}:){1,2}(?::[0-9a-fA-F]{1,4}){1,5}|[0-9a-fA-F]{1,4}:(?:(?::[0-9a-fA-F]{1,4}){1,6})|:(?:(?::[0-9a-fA-F]{1,4}){1,7}|:)|fe80:(?::[0-9a-fA-F]{0,4}){0,4}%[0-9a-zA-Z]{1,}|::(?:ffff(?::0{1,4}){0,1}:){0,1}(?:(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])|(?:[0-9a-fA-F]{1,4}:){1,4}:(?:(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9])\\.){3,3}(?:25[0-5]|(?:2[0-4]|1{0,1}[0-9]){0,1}[0-9]))"
+    ipsv4 = re.findall(ipv4regex, data) 
+    ipsv6 = re.findall(ipv6regex, data)
+
+    # Filter local IPs
+    filters = ["192.168", "172.16.", "10."]
+    i = 0
+    while i<len(ipsv4):
+        matched = False
+        for filter in filters:
+            if ipsv4[i].startswith(filter):
+                matched = True
+                break
+        if matched:
+            del(ipsv4[i])
+        else:
+            i+=1
 
     def gen_anonymized_ip(length,counter,sep='.'):
         # Generate anonymized IPs like "xx.xx.xx.yy"
