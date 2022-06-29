@@ -6,10 +6,10 @@ name = "Security"
 	[security.ipmirrors]
 	name = "IPmirrors"
 		[security.ipmirrors.v4]
-		type = "string"
+		type = "tags"
 		default = "https://ip.yunohost.org,https://api.ipify.net"
 		[security.ipmirrors.v6]
-		type = "string"
+		type = "tags"
 		default = "https://ip6.yunohost.org"
     [security.password]
     name = "Passwords"
