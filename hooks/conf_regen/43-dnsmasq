@@ -29,24 +29,24 @@ do_pre_regen() {
 
 	###### IPV4 #######
 
-	trouve=0
+	foundip=0
 	for link in "${ip_yuno[@]}" ; do
-		if [ $(curl --connect-timeout 5 -o -I -L -s -w "%{http_code}" "$link" 2> /dev/null) -eq 200 ] && [ $trouve -ne 1 ]; then
+		if [ $(curl --connect-timeout 5 -o -I -L -s -w "%{http_code}" "$link" 2> /dev/null) -eq 200 ] && [ $foundip -ne 1 ]; then
 			ipv4=$(curl -s -4 "$link" 2>/dev/null || true)
 			ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
-			trouve=1
+			foundip=1
 		fi
 	done
 
 	###### IPV6 #######
 
-	trouve=0
+	foundip=0
 
 	for i in "${!ip_yuno6[@]}" ; do
-		if [ $(curl --connect-timeout 5 -o -I -L -s -w "%{http_code}" "${ip6_yuno[$i]}" 2> /dev/null) -eq 200 ] && [ $trouve -ne 1 ]; then
+		if [ $(curl --connect-timeout 5 -o -I -L -s -w "%{http_code}" "${ip6_yuno[$i]}" 2> /dev/null) -eq 200 ] && [ $foundip -ne 1 ]; then
 			ipv6=$(curl -s -6 "${ip_yuno6[$i]}" 2>/dev/null || true)
 			ynh_validate_ip6 "$ipv6" || ipv6=''
-			trouve=1
+			foundip=1
 		fi
 	done
 
