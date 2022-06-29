@@ -27,6 +27,8 @@ from moulinette.utils.filesystem import read_file, write_to_file
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
 
+from yunohost.settings import settings_get
+
 logger = logging.getLogger("yunohost.utils.network")
 
 
@@ -81,7 +83,7 @@ def get_public_ip_from_remote_server(protocol=4):
         )
         return None
 
-    ip_url_yunohost_tab = ["https://ip%s.yunohost.org" % (protocol if protocol != 4 else ""), "https://0-ip%s.yunohost.org" % (protocol if protocol != 4 else "")]
+    ip_url_yunohost_tab = settings_get("security.ipmirrors.v"+str(protocol)).split(",")
 
     # Check URLS
     for url in ip_url_yunohost_tab:
