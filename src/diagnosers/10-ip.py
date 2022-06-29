@@ -12,6 +12,7 @@ from moulinette.utils.filesystem import read_file
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.utils.network import get_network_interfaces
+from yunohost.utils.network import get_public_ip
 from yunohost.settings import settings_get
 
 logger = log.getActionLogger("yunohost.diagnosis")
@@ -85,8 +86,8 @@ class MyDiagnoser(Diagnoser):
         # to a web server to fetch current IPv4 and v6          #
         # ##################################################### #
 
-        ipv4 = self.get_public_ip(4) if can_ping_ipv4 else None
-        ipv6 = self.get_public_ip(6) if can_ping_ipv6 else None
+        ipv4 = get_public_ip(4) if can_ping_ipv4 else None
+        ipv6 = get_public_ip(6) if can_ping_ipv6 else None
 
         network_interfaces = get_network_interfaces()
 

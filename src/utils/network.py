@@ -83,19 +83,36 @@ def get_public_ip_from_remote_server(protocol=4):
         )
         return None
 
+    # Check URLS
+    ip_list = get_public_ips(protocol)
+    if len(ip_list)>0:
+        return ip_list[0]
+
+    return None
+
+def get_public_ips(protocol=4):
+    """Retrieve a list (sorted by frequency) of different public IP addresses from the IPmirrors"""
+
     ip_url_yunohost_tab = settings_get("security.ipmirrors.v"+str(protocol)).split(",")
+    ip_count = {} # Count the number of times an IP has appeared
 
     # Check URLS
     for url in ip_url_yunohost_tab:
         logger.debug("Fetching IP from %s " % url)
         try:
-            return download_text(url, timeout=30).strip()
+            ip = download_text(url, timeout=30).strip()
+            if ip in ip_count.keys():
+                ip_count[ip]+=1
+            else:
+                ip_count[ip]=1
         except Exception as e:
             logger.debug(
                 "Could not get public IPv%s from %s : %s" % (str(protocol), url, str(e))
             )
 
-    return None
+    ip_list_with_count = [ (ip,ip_count[ip]) for ip in ip_count ]
+    ip_list_with_count.sort(key=lambda x: x[1]) # Sort by frequency
+    return [ x[0] for x in ip_list_with_count ]
 
 
 def get_network_interfaces():
