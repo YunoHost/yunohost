@@ -5,7 +5,7 @@ import json
 import logging
 
 from yunohost.domain import _get_maindomain, domain_list
-from yunohost.utils.network import get_public_ip
+from yunohost.utils.network import get_public_ips
 from yunohost.utils.error import YunohostError
 
 logger = logging.getLogger("yunohost.utils.yunopaste")
@@ -82,13 +82,26 @@ def anonymize(data):
         count += 1
 
     # We also want to anonymize the ips
-    ipv4 = get_public_ip()
-    ipv6 = get_public_ip(6)
+    ipsv4 = get_public_ips(4)
+    ipsv6 = get_public_ips(6)
 
-    if ipv4:
-        data = data.replace(str(ipv4), "xx.xx.xx.xx")
+    def gen_anonymized_ip(length,counter,sep='.'):
+        # Generate anonymized IPs like "xx.xx.xx.yy"
+        chars = "xy"
+        binary_str = format(counter, 'b')
+        indexes = [int(x) for x in binary_str]
+        if len(indexes)<length:
+            indexes = [0 for x in range(length-len(indexes))] + indexes
+        return sep.join([ chars[x]*2 for x in indexes ])
 
-    if ipv6:
-        data = data.replace(str(ipv6), "xx:xx:xx:xx:xx:xx")
+    counter = 0
+    for ip in ipsv4:
+        data = data.replace(str(ip),gen_anonymized_ip(4,counter))
+        counter +=1
+
+    counter = 0
+    for ip in ipsv6:
+        data = data.replace(str(ip),gen_anonymized_ip(6,counter,sep=":"))
+        counter +=1
 
     return data
