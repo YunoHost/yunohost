@@ -14,7 +14,6 @@ from yunohost.diagnosis import Diagnoser
 from yunohost.utils.network import get_network_interfaces
 from yunohost.utils.network import get_public_ip
 from yunohost.utils.network import get_public_ips
-from yunohost.settings import settings_get
 
 logger = log.getActionLogger("yunohost.diagnosis")
 
@@ -109,38 +108,42 @@ class MyDiagnoser(Diagnoser):
 
         ipv4_status = "ERROR"
         ipv4_summary = "diagnosis_ip_no_ipv4"
+        ipv4_details = None
         if ipv4:
             ipv4_status = "SUCCESS"
             ipv4_summary = "diagnosis_ip_connected_ipv4"
+            ipv4_details = ["diagnosis_ip_global", "diagnosis_ip_local"]
         if len(ipsv4)>1:
             ipv4_status = "WARNING"
             ipv4_summary = "diagnosis_ip_multiple_ipv4"
+            ipv4_details = ["diagnosis_ip_global", "diagnosis_ip_multiple_ipv4_details", "diagnosis_ip_local"]
 
         yield dict(
             meta={"test": "ipv4"},
             data={"global": ' '.join(ipsv4), "local": get_local_ip("ipv4")},
             status=ipv4_status,
             summary=ipv4_summary,
-            details=["diagnosis_ip_global", "diagnosis_ip_local"] if ipv4 else None,
+            details=ipv4_details,
         )
         
         ipv6_status = "ERROR"
         ipv6_summary = "diagnosis_ip_no_ipv6"
+        ipv6_details = ["diagnosis_ip_no_ipv6_tip"]
         if ipv6:
             ipv6_status = "SUCCESS"
             ipv6_summary = "diagnosis_ip_connected_ipv6"
+            ipv6_details = ["diagnosis_ip_global", "diagnosis_ip_local"]
         if len(ipsv6)>1:
             ipv6_status = "WARNING"
             ipv6_summary = "diagnosis_ip_multiple_ipv6"
+            ipv6_details = ["diagnosis_ip_global", "diagnosis_ip_multiple_ipv6_details", "diagnosis_ip_local"]
 
         yield dict(
             meta={"test": "ipv6"},
             data={"global": ' '.join(ipsv6) , "local": get_local_ip("ipv6")},
             status=ipv6_status,
             summary=ipv6_summary,
-            details=["diagnosis_ip_global", "diagnosis_ip_local"]
-            if ipv6
-            else ["diagnosis_ip_no_ipv6_tip"],
+            details=ipv6_details,
         )
 
         # TODO / FIXME : add some attempt to detect ISP (using whois ?) ?
