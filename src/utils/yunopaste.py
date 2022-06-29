@@ -101,14 +101,10 @@ def anonymize(data):
             indexes = [0 for x in range(length-len(indexes))] + indexes
         return sep.join([ chars[x]*2 for x in indexes ])
 
-    counter = 0
-    for ip in ipsv4:
-        data = data.replace(str(ip),gen_anonymized_ip(4,counter))
-        counter +=1
+    for i,ip in enumerate(ipsv4):
+        data = data.replace(str(ip),gen_anonymized_ip(4,i))
 
-    counter = 0
-    for ip in ipsv6:
-        data = data.replace(str(ip),gen_anonymized_ip(6,counter,sep=":"))
-        counter +=1
+    for i,ip in enumerate(ipsv6):
+        data = data.replace(str(ip),gen_anonymized_ip(6,i,sep=":"))
 
     return data
