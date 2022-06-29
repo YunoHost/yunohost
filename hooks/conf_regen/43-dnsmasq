@@ -24,7 +24,7 @@ do_pre_regen() {
 
 	###### IPV4 #######
 
-	ipv4=$(yunohost tools shell -c "from yunohost.utils.network import get_public_ips;print(get_public_ips(4)[0])")
+	ipv4=$(yunohost tools shell -c "from yunohost.utils.network import get_public_ips;ips=get_public_ips(4);print(ips[0] if len(ips)>0 else '127.0.0.1')")
 
 	###### IPV6 #######
 	
