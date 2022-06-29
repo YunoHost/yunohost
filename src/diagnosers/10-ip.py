@@ -13,6 +13,7 @@ from moulinette.utils.filesystem import read_file
 from yunohost.diagnosis import Diagnoser
 from yunohost.utils.network import get_network_interfaces
 from yunohost.utils.network import get_public_ip
+from yunohost.utils.network import get_public_ips
 from yunohost.settings import settings_get
 
 logger = log.getActionLogger("yunohost.diagnosis")
@@ -88,6 +89,8 @@ class MyDiagnoser(Diagnoser):
 
         ipv4 = get_public_ip(4) if can_ping_ipv4 else None
         ipv6 = get_public_ip(6) if can_ping_ipv6 else None
+        ipsv4 = get_public_ips(4)
+        ipsv6 = get_public_ips(6)
 
         network_interfaces = get_network_interfaces()
 
@@ -104,19 +107,37 @@ class MyDiagnoser(Diagnoser):
             else:
                 return local_ip
 
+        ipv4_status = "ERROR"
+        ipv4_summary = "diagnosis_ip_no_ipv4"
+        if ipv4:
+            ipv4_status = "SUCCESS"
+            ipv4_summary = "diagnosis_ip_connected_ipv4"
+        if len(ipsv4)>1:
+            ipv4_status = "WARNING"
+            ipv4_summary = "diagnosis_ip_multiple_ipv4"
+
         yield dict(
             meta={"test": "ipv4"},
-            data={"global": ipv4, "local": get_local_ip("ipv4")},
-            status="SUCCESS" if ipv4 else "ERROR",
-            summary="diagnosis_ip_connected_ipv4" if ipv4 else "diagnosis_ip_no_ipv4",
+            data={"global": ' '.join(ipsv4), "local": get_local_ip("ipv4")},
+            status=ipv4_status,
+            summary=ipv4_summary,
             details=["diagnosis_ip_global", "diagnosis_ip_local"] if ipv4 else None,
         )
+        
+        ipv6_status = "ERROR"
+        ipv6_summary = "diagnosis_ip_no_ipv6"
+        if ipv6:
+            ipv6_status = "SUCCESS"
+            ipv6_summary = "diagnosis_ip_connected_ipv6"
+        if len(ipsv6)>1:
+            ipv6_status = "WARNING"
+            ipv6_summary = "diagnosis_ip_multiple_ipv6"
 
         yield dict(
             meta={"test": "ipv6"},
-            data={"global": ipv6, "local": get_local_ip("ipv6")},
-            status="SUCCESS" if ipv6 else "WARNING",
-            summary="diagnosis_ip_connected_ipv6" if ipv6 else "diagnosis_ip_no_ipv6",
+            data={"global": ' '.join(ipsv6) , "local": get_local_ip("ipv6")},
+            status=ipv6_status,
+            summary=ipv6_summary,
             details=["diagnosis_ip_global", "diagnosis_ip_local"]
             if ipv6
             else ["diagnosis_ip_no_ipv6_tip"],
@@ -202,33 +223,6 @@ class MyDiagnoser(Diagnoser):
         ]
         # We should only find a "nameserver 127.0.0.1"
         return len(content) == 1 and content[0].split() == ["nameserver", "127.0.0.1"]
-
-    def get_public_ip(self, protocol=4):
-
-        # FIXME - TODO : The best would be to make it configurable
-        # but if we want to be able to diagnose DNS resolution issues independently from
-        # internet connectivity, we gotta rely on fixed IPs first....
-
-        assert protocol in [
-            4,
-            6,
-        ], "Invalid protocol version, it should be either 4 or 6 and was '%s'" % repr(
-            protocol
-        )
-
-        ip_url_yunohost_tab = settings_get("security.ipmirrors.v"+str(protocol)).split(",")
-
-        # Check URLS
-        for url in ip_url_yunohost_tab:
-            try:
-                return download_text(url, timeout=10).strip()
-            except Exception as e:
-                logger.debug(
-                    "Could not get public IPv%s from %s : %s" % (str(protocol), url, str(e))
-                )
-
-        return None
-
 
 
 def main(args, env, loggers):
