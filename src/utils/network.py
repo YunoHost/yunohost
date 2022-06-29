@@ -30,6 +30,13 @@ from moulinette.utils.process import check_output
 from yunohost.settings import settings_get
 
 logger = logging.getLogger("yunohost.utils.network")
+    
+def is_ip_local(ip):
+    """Returns True if the provided Ip is local"""
+    filters = ["192.168", "172.16.", "10."]
+    for filter in filters:
+        if ip.startswith(filter):
+            return True
 
 
 def get_public_ip(protocol=4):

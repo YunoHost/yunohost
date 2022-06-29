@@ -7,6 +7,7 @@ import re
 
 from yunohost.domain import _get_maindomain, domain_list
 from yunohost.utils.error import YunohostError
+from yunohost.utils.network import is_ip_local
 
 logger = logging.getLogger("yunohost.utils.yunopaste")
 
@@ -89,18 +90,7 @@ def anonymize(data):
     ipsv6 = re.findall(ipv6regex, data)
 
     # Filter local IPs
-    filters = ["192.168", "172.16.", "10."]
-    i = 0
-    while i<len(ipsv4):
-        matched = False
-        for filter in filters:
-            if ipsv4[i].startswith(filter):
-                matched = True
-                break
-        if matched:
-            del(ipsv4[i])
-        else:
-            i+=1
+    ipsv4 = filter(lambda x: not is_ip_local(x), ipsv4)
 
     def gen_anonymized_ip(length,counter,sep='.'):
         # Generate anonymized IPs like "xx.xx.xx.yy"
