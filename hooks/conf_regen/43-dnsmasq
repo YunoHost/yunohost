@@ -6,11 +6,6 @@ set -e
 do_pre_regen() {
     pending_dir=$1
 
-	# split the mirrors URLs
-	IFS=','
-	read -raip_yuno<<<$(yunohost settings get security.ipmirrors.v4)
-	read -raip_yuno6<<<$(yunohost settings get security.ipmirrors.v6)
-
     cd /usr/share/yunohost/conf/dnsmasq
 
     # create directory for pending conf
@@ -29,27 +24,11 @@ do_pre_regen() {
 
 	###### IPV4 #######
 
-	foundip=0
-	for link in "${ip_yuno[@]}" ; do
-		if [ $(curl --connect-timeout 5 -o -I -L -s -w "%{http_code}" "$link" 2> /dev/null) -eq 200 ] && [ $foundip -ne 1 ]; then
-			ipv4=$(curl -s -4 "$link" 2>/dev/null || true)
-			ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
-			foundip=1
-		fi
-	done
+	ipv4=$(yunohost tools shell -c "from yunohost.utils.network import get_public_ips;print(get_public_ips(4)[0])")
 
 	###### IPV6 #######
-
-	foundip=0
-
-	for i in "${!ip_yuno6[@]}" ; do
-		if [ $(curl --connect-timeout 5 -o -I -L -s -w "%{http_code}" "${ip6_yuno[$i]}" 2> /dev/null) -eq 200 ] && [ $foundip -ne 1 ]; then
-			ipv6=$(curl -s -6 "${ip_yuno6[$i]}" 2>/dev/null || true)
-			ynh_validate_ip6 "$ipv6" || ipv6=''
-			foundip=1
-		fi
-	done
-
+	
+	ipv6=$(yunohost tools shell -c "from yunohost.utils.network import get_public_ips;print(get_public_ips(6)[0])")
 
     interfaces="$(ip -j addr show | jq -r '[.[].ifname]|join(" ")')"
     wireless_interfaces="lo"
