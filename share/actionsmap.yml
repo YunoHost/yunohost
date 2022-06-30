@@ -1419,7 +1419,7 @@ dyndns:
             arguments:
                 -d:
                     full: --domain
-                    help: Full domain to subscribe with
+                    help: Full domain to unsubscribe with
                     extra:
                         pattern: *pattern_domain
                         required: True
