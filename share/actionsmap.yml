@@ -1412,6 +1412,23 @@ dyndns:
                     extra:
                         pattern: *pattern_password
                         comment: dyndns_added_password
+        
+        ### dyndns_unsubscribe()
+        unsubscribe:
+            action_help: Unsubscribe to a DynDNS service
+            arguments:
+                -d:
+                    full: --domain
+                    help: Full domain to subscribe with
+                    extra:
+                        pattern: *pattern_domain
+                        required: True
+                -p:
+                    full: --password
+                    help: Password used to delete the domain
+                    extra:
+                        required: True
+                        pattern: *pattern_password
 
         ### dyndns_update()
         update:

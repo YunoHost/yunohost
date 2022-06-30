@@ -179,6 +179,56 @@ def dyndns_subscribe(operation_logger, domain=None, key=None, password=None):
 
 
 @is_unit_operation()
+def dyndns_unsubscribe(operation_logger, domain, password):
+    """
+    Unsubscribe from a DynDNS service
+
+    Keyword argument:
+        domain -- Full domain to unsubscribe with
+        password -- Password that is used to delete the domain ( defined when subscribing )
+    """
+
+    operation_logger.start()
+
+    # '165' is the convention identifier for hmac-sha512 algorithm
+    # '1234' is idk? doesnt matter, but the old format contained a number here...
+    key_file = f"/etc/yunohost/dyndns/K{domain}.+165+1234.key"
+
+    import requests  # lazy loading this module for performance reasons
+
+    # Send delete request 
+    try:
+        r = requests.delete(
+            f"https://{DYNDNS_PROVIDER}/domains/{domain}",
+            data={"recovery_password":hashlib.sha256((str(domain)+":"+str(password).strip()).encode('utf-8')).hexdigest()},
+            timeout=30,
+        )
+    except Exception as e:
+        raise YunohostError("dyndns_unregistration_failed", error=str(e))
+
+    if r.status_code == 200: # Deletion was successful
+        rm(key_file, force=True)
+        # Yunohost regen conf will add the dyndns cron job if a key exists
+        # in /etc/yunohost/dyndns
+        regen_conf(["yunohost"])
+
+        # Add some dyndns update in 2 and 4 minutes from now such that user should
+        # not have to wait 10ish minutes for the conf to propagate
+        cmd = (
+            "at -M now + {t} >/dev/null 2>&1 <<< \"/bin/bash -c 'yunohost dyndns update'\""
+        )
+        # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
+        subprocess.check_call(["bash", "-c", cmd.format(t="2 min")])
+        subprocess.check_call(["bash", "-c", cmd.format(t="4 min")])
+
+        logger.success(m18n.n("dyndns_unregistered"))
+    elif r.status_code == 403: # Wrong password
+        raise YunohostError("dyndns_unsubscribe_wrong_password")
+    elif r.status_code == 404: # Invalid domain
+        raise YunohostError("dyndns_unsubscribe_wrong_domain")
+
+
+@is_unit_operation()
 def dyndns_update(
     operation_logger,
     domain=None,
