@@ -1406,6 +1406,12 @@ dyndns:
                 -k:
                     full: --key
                     help: Public DNS key
+                -p:
+                    full: --password
+                    help: Password used to later delete the domain
+                    extra:
+                        pattern: *pattern_password
+                        comment: dyndns_added_password
 
         ### dyndns_update()
         update:

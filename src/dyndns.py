@@ -29,6 +29,7 @@ import json
 import glob
 import base64
 import subprocess
+import hashlib
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
@@ -75,14 +76,18 @@ def _dyndns_available(domain):
 
 
 @is_unit_operation()
-def dyndns_subscribe(operation_logger, domain=None, key=None):
+def dyndns_subscribe(operation_logger, domain=None, key=None, password=None):
     """
     Subscribe to a DynDNS service
 
     Keyword argument:
         domain -- Full domain to subscribe with
         key -- Public DNS key
+        password -- Password that will be used to delete the domain
     """
+
+    if password is None:
+        logger.warning(m18n.n('dyndns_no_recovery_password'))
 
     if _guess_current_dyndns_domain() != (None, None):
         raise YunohostValidationError("domain_dyndns_already_subscribed")
@@ -138,9 +143,12 @@ def dyndns_subscribe(operation_logger, domain=None, key=None):
     try:
         # Yeah the secret is already a base64-encoded but we double-bas64-encode it, whatever...
         b64encoded_key = base64.b64encode(secret.encode()).decode()
+        data = {"subdomain": domain}
+        if password:
+            data["recovery_password"]=hashlib.sha256((domain+":"+password.strip()).encode('utf-8')).hexdigest()
         r = requests.post(
             f"https://{DYNDNS_PROVIDER}/key/{b64encoded_key}?key_algo=hmac-sha512",
-            data={"subdomain": domain},
+            data=data,
             timeout=30,
         )
     except Exception as e:
