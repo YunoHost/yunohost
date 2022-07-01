@@ -455,11 +455,11 @@ domain:
                         pattern: *pattern_domain
                 -d:
                     full: --dyndns
-                    help: Subscribe to the DynDNS service
+                    help: (Deprecated, using the -p option in order to set a password is recommended) Subscribe to the DynDNS service
                     action: store_true
                 -p:
                     full: --password
-                    help: Password used to later delete the domain ( if subscribing to the DynDNS service )
+                    help: Subscribe to the DynDNS service with a password, used to later delete the domain
                     extra:
                         pattern: *pattern_password
                         comment: dyndns_added_password

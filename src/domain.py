@@ -163,6 +163,7 @@ def domain_add(operation_logger, domain, dyndns=False,password=None):
     domain = domain.encode("idna").decode("utf-8")
 
     # DynDNS domain
+    dyndns = dyndns or (password!=None) # If a password is specified, then it is obviously a dyndns domain, no need for the extra option
     if dyndns:
 
         from yunohost.utils.dns import is_yunohost_dyndns_domain
@@ -184,8 +185,6 @@ def domain_add(operation_logger, domain, dyndns=False,password=None):
 
         # Actually subscribe
         dyndns_subscribe(domain=domain,password=password)
-    elif password: # If a password is provided, while not subscribing to a DynDNS service
-        logger.warning(m18n.n("domain_password_no_dyndns"))
 
     _certificate_install_selfsigned([domain], True)
 
