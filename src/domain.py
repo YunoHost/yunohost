@@ -235,7 +235,7 @@ def domain_add(operation_logger, domain, dyndns=False,password=None):
 
 
 @is_unit_operation()
-def domain_remove(operation_logger, domain, remove_apps=False, force=False):
+def domain_remove(operation_logger, domain, remove_apps=False, force=False, password=None):
     """
     Delete domains
 
@@ -244,7 +244,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
         remove_apps -- Remove applications installed on the domain
         force -- Force the domain removal and don't not ask confirmation to
                  remove apps if remove_apps is specified
-
+        password -- Recovery password used at the creation of the DynDNS domain
     """
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf, app_info, app_remove
@@ -355,6 +355,13 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     app_ssowatconf()
 
     hook_callback("post_domain_remove", args=[domain])
+
+    # If a password is provided, delete the DynDNS record
+    if password:
+        from yunohost.dyndns import dyndns_unsubscribe
+
+        # Actually unsubscribe
+        dyndns_unsubscribe(domain=domain,password=password)
 
     logger.success(m18n.n("domain_deleted"))
 

@@ -481,6 +481,11 @@ domain:
                     full: --force
                     help: Do not ask confirmation to remove apps
                     action: store_true
+                -p:
+                    full: --password
+                    help: Password used to delete the domain from DynDNS
+                    extra:
+                        pattern: *pattern_password
 
 
         ### domain_dns_conf()
