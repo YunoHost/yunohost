@@ -131,14 +131,14 @@ def _get_parent_domain_of(domain):
 
 
 @is_unit_operation()
-def domain_add(operation_logger, domain, dyndns=False):
+def domain_add(operation_logger, domain, dyndns=False,password=None):
     """
     Create a custom domain
 
     Keyword argument:
         domain -- Domain name to add
         dyndns -- Subscribe to DynDNS
-
+        password -- Password used to later unsubscribe from DynDNS
     """
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
@@ -183,7 +183,9 @@ def domain_add(operation_logger, domain, dyndns=False):
         from yunohost.dyndns import dyndns_subscribe
 
         # Actually subscribe
-        dyndns_subscribe(domain=domain)
+        dyndns_subscribe(domain=domain,password=password)
+    elif password: # If a password is provided, while not subscribing to a DynDNS service
+        logger.warning(m18n.n("domain_password_no_dyndns"))
 
     _certificate_install_selfsigned([domain], True)
 

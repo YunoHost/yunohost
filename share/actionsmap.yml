@@ -457,6 +457,12 @@ domain:
                     full: --dyndns
                     help: Subscribe to the DynDNS service
                     action: store_true
+                -p:
+                    full: --password
+                    help: Password used to later delete the domain ( if subscribing to the DynDNS service )
+                    extra:
+                        pattern: *pattern_password
+                        comment: dyndns_added_password
 
         ### domain_remove()
         remove:

@@ -338,6 +338,7 @@
     "domain_dns_registrar_yunohost": "This domain is a nohost.me / nohost.st / ynh.fr and its DNS configuration is therefore automatically handled by YunoHost without any further configuration. (see the 'yunohost dyndns update' command)",
     "domain_dyndns_already_subscribed": "You have already subscribed to a DynDNS domain",
     "domain_dyndns_root_unknown": "Unknown DynDNS root domain",
+	"domain_password_no_dyndns": "The password is only used for subscribing to (and maybe later unsubscribing from) the DynDNS service",
     "domain_exists": "The domain already exists",
     "domain_hostname_failed": "Unable to set new hostname. This might cause an issue later (it might be fine).",
     "domain_registrar_is_not_configured": "The registrar is not yet configured for domain {domain}.",
