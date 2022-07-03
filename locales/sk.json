@@ -184,5 +184,20 @@
     "diagnosis_cant_run_because_of_dep": "Nie je možné spustiť diagnostiku pre {category}, kým existujú významné chyby súvisiace s {dep}.",
     "diagnosis_diskusage_low": "Na úložisku <code>{mountpoint}</code> (na zariadení <code>{device}</code>) ostáva iba {free} ({free_percent} %) voľného miesta (z celkovej veľkosti {total}). Dávajte pozor.",
     "diagnosis_diskusage_verylow": "Na úložisku <code>{mountpoint}</code> (na zariadení <code>{device}</code>) ostáva iba {free} ({free_percent} %) voľného miesta (z celkovej veľkosti {total}). Dobre zvážte vyčistenie úložiska!",
-    "diagnosis_apps_not_in_app_catalog": "Táto aplikácia sa nenachádza v katalógu aplikácií YunoHost. Ak sa tam v minulosti nachádzala a bola odstránená, mali by ste zvážiť jej odinštalovanie, pretože nebude dostávať žiadne aktualizácie a môže ohroziť integritu a bezpečnosť Vášho systému."
+    "diagnosis_apps_not_in_app_catalog": "Táto aplikácia sa nenachádza v katalógu aplikácií YunoHost. Ak sa tam v minulosti nachádzala a bola odstránená, mali by ste zvážiť jej odinštalovanie, pretože nebude dostávať žiadne aktualizácie a môže ohroziť integritu a bezpečnosť Vášho systému.",
+    "diagnosis_backports_in_sources_list": "Vyzerá, že apt (správca balíkov) je nastavený na používanie backports repozitára. Inštalovaním balíkov z backports môžete spôsobiť nestabilitu systému a vznik konfliktov, preto - ak naozaj neviete, čo robíte - Vás chceme od ich používania odradiť.",
+    "diagnosis_basesystem_ynh_inconsistent_versions": "Používate nekonzistentné verzie balíkov YunoHost… s najväčšou pravdepodobnosťou kvôli nedokončenej/chybnej aktualizácii.",
+    "diagnosis_basesystem_ynh_main_version": "Na serveri beží YunoHost {main_version} ({repo})",
+    "diagnosis_dns_discrepancy": "Nasledujúci DNS záznam nezodpovedá odporúčanej konfigurácii:<br>Typ:<code>{type}</code><br>Názov:<code>{name}</code><br>Aktuálna hodnota: <code>{current}</code><br>Očakávaná hodnota: <code>{value}</code>",
+    "diagnosis_dns_good_conf": "DNS záznamy sú správne nastavené pre doménu {domain} (kategória {category})",
+    "diagnosis_dns_missing_record": "Podľa odporúčaného nastavenia DNS by ste mali pridať DNS záznam s nasledujúcimi informáciami.<br>Typ: <code>{type}</code><br>Názov: <code>{name}</code><br>Hodnota: <code>{value}</code>",
+    "diagnosis_dns_point_to_doc": "Prosím, pozrite si dokumentáciu na <a href='https://yunohost.org/dns_config'>https://yunohost.org/dns_config</a>, ak potrebujete pomôcť s nastavením DNS záznamov.",
+    "diagnosis_dns_specialusedomain": "Doména {domain} je založená na top-level doméne (TLD) pre zvláštne použitie ako napríklad .local alebo .test a preto sa neočakáva, že bude obsahovať vlastné DNS záznamy.",
+    "diagnosis_domain_expiration_error": "Platnosť niektorých domén expiruje VEĽMI SKORO!",
+    "diagnosis_domain_expiration_not_found": "Pri niektorých doménach nebolo možné skontrolovať dátum ich vypršania",
+    "diagnosis_domain_expiration_not_found_details": "WHOIS informácie pre doménu {domain} neobsahujú informáciu o dátume jej vypršania?",
+    "diagnosis_domain_expiration_success": "Vaše domény sú zaregistrované a tak skoro nevyprší ich platnosť.",
+    "diagnosis_domain_expiration_warning": "Niektoré z domén čoskoro vypršia!",
+    "diagnosis_domain_expires_in": "{domain} vyprší o {days} dní.",
+    "diagnosis_dns_try_dyndns_update_force": "Nastavenie DNS tejto domény by mala byť automaticky spravované YunoHost-om. Ak tomu tak nie je, môžete skúsiť vynútiť jej aktualizáciu pomocou príkazu <cmd>yunohost dyndns update --force</cmd>."
 }
