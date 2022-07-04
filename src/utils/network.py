@@ -110,7 +110,7 @@ def get_public_ips(protocol=4):
     ip_count = {} # Count the number of times an IP has appeared
 
     # Check URLS
-    for url in ip_url_yunohost_tab[0:3]:
+    for url in ip_url_yunohost_tab[:3]:
         logger.debug("Fetching IP from %s " % url)
         try:
             ip = download_text(url, timeout=15).strip()
