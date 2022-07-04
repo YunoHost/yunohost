@@ -40,28 +40,6 @@ def is_ip_local(ip):
 
 
 def get_public_ip(protocol=4):
-
-    assert protocol in [4, 6], (
-        f"Invalid protocol version for get_public_ip: {protocol}, expected 4 or 6"
-    )
-
-    cache_file = f"/var/cache/yunohost/ipv{protocol}"
-    cache_duration = 120  # 2 min
-    if (
-        os.path.exists(cache_file)
-        and abs(os.path.getctime(cache_file) - time.time()) < cache_duration
-    ):
-        ip = read_file(cache_file).strip()
-        ip = ip if ip else None  # Empty file (empty string) means there's no IP
-        logger.debug(f"Reusing IPv{protocol} from cache: {ip}")
-    else:
-        ip = get_public_ip_from_remote_server(protocol)
-        logger.debug(f"IP fetched: {protocol}")
-        write_to_file(cache_file, ip or "")
-    return ip
-
-
-def get_public_ip_from_remote_server(protocol=4):
     """Retrieve the public IP address from ip.yunohost.org or another Server"""
 
     # We can know that ipv6 is not available directly if this file does not exists
@@ -104,27 +82,48 @@ def get_public_ips(protocol=4):
     
     Note: this function doesn't guarantee to return all public IPs in use by the server.
     """
+    
+    assert protocol in [4, 6], (
+        f"Invalid protocol version for get_public_ip: {protocol}, expected 4 or 6"
+    )
 
-    ip_url_yunohost_tab = settings_get("security.ipmirrors.v"+str(protocol)).split(",")
-    ip_count = {} # Count the number of times an IP has appeared
+    cache_file = f"/var/cache/yunohost/ipv{protocol}"
+    cache_duration = 120  # 2 min
+    if (
+        os.path.exists(cache_file)
+        and abs(os.path.getctime(cache_file) - time.time()) < cache_duration
+    ):
+        ips = read_file(cache_file).strip()
+        ips = ips if ips else None  # Empty file (empty string) means there's no IP
+        logger.debug(f"Reusing IPv{protocol} from cache: {ips}")
+        if ips:
+            ips = ips.split(",") # If there's multiple
+    else:
+        ip_url_yunohost_tab = settings_get("security.ipmirrors.v"+str(protocol)).split(",")
+        ip_count = {} # Count the number of times an IP has appeared
 
-    # Check URLS
-    for url in ip_url_yunohost_tab[:3]:
-        logger.debug(f"Fetching IP from {url}")
-        try:
-            ip = download_text(url, timeout=15).strip()
-            if ip in ip_count.keys():
-                ip_count[ip]+=1
-            else:
-                ip_count[ip]=1
-        except Exception as e:
-            logger.debug(
-                f"Could not get public IPv{protocol} from {url} : {e}"
-            )
+        # Check URLS
+        for url in ip_url_yunohost_tab[:3]:
+            logger.debug(f"Fetching IP from {url}")
+            try:
+                ip = download_text(url, timeout=15).strip()
+                if ip in ip_count.keys():
+                    ip_count[ip]+=1
+                else:
+                    ip_count[ip]=1
+            except Exception as e:
+                logger.debug(
+                    f"Could not get public IPv{protocol} from {url} : {e}"
+                )
 
-    ip_list_with_count = [ (ip,ip_count[ip]) for ip in ip_count ]
-    ip_list_with_count.sort(key=lambda x: x[1]) # Sort by frequency
-    return [ x[0] for x in ip_list_with_count ]
+        ip_list_with_count = [ (ip,ip_count[ip]) for ip in ip_count ]
+        ip_list_with_count.sort(key=lambda x: x[1]) # Sort by frequency
+        ips = [ x[0] for x in ip_list_with_count ]
+
+        logger.debug(f"IP fetched: {protocol}")
+        write_to_file(cache_file, ",".join(ips) or "")
+
+    return ips
 
 
 def get_network_interfaces():
