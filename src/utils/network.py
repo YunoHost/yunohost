@@ -42,10 +42,10 @@ def is_ip_local(ip):
 def get_public_ip(protocol=4):
 
     assert protocol in [4, 6], (
-        "Invalid protocol version for get_public_ip: %s, expected 4 or 6" % protocol
+        f"Invalid protocol version for get_public_ip: {protocol}, expected 4 or 6"
     )
 
-    cache_file = "/var/cache/yunohost/ipv%s" % protocol
+    cache_file = f"/var/cache/yunohost/ipv{protocol}"
     cache_duration = 120  # 2 min
     if (
         os.path.exists(cache_file)
@@ -56,7 +56,7 @@ def get_public_ip(protocol=4):
         logger.debug(f"Reusing IPv{protocol} from cache: {ip}")
     else:
         ip = get_public_ip_from_remote_server(protocol)
-        logger.debug("IP fetched: %s" % ip)
+        logger.debug(f"IP fetched: {protocol}")
         write_to_file(cache_file, ip or "")
     return ip
 
@@ -72,7 +72,7 @@ def get_public_ip_from_remote_server(protocol=4):
         return None
 
     # If we are indeed connected in ipv4 or ipv6, we should find a default route
-    routes = check_output("ip -%s route show table all" % protocol).split("\n")
+    routes = check_output(f"ip -{protocol} route show table all").split("\n")
 
     def is_default_route(r):
         # Typically the default route starts with "default"
@@ -85,8 +85,7 @@ def get_public_ip_from_remote_server(protocol=4):
 
     if not any(is_default_route(r) for r in routes):
         logger.debug(
-            "No default route for IPv%s, so assuming there's no IP address for that version"
-            % protocol
+            f"No default route for IPv{protocol}, so assuming there's no IP address for that version"
         )
         return None
 
@@ -111,7 +110,7 @@ def get_public_ips(protocol=4):
 
     # Check URLS
     for url in ip_url_yunohost_tab[:3]:
-        logger.debug("Fetching IP from %s " % url)
+        logger.debug(f"Fetching IP from {url}")
         try:
             ip = download_text(url, timeout=15).strip()
             if ip in ip_count.keys():
@@ -120,7 +119,7 @@ def get_public_ips(protocol=4):
                 ip_count[ip]=1
         except Exception as e:
             logger.debug(
-                "Could not get public IPv%s from %s : %s" % (str(protocol), url, str(e))
+                f"Could not get public IPv{protocol} from {url} : {e}"
             )
 
     ip_list_with_count = [ (ip,ip_count[ip]) for ip in ip_count ]
