@@ -113,7 +113,7 @@ def get_public_ips(protocol=4):
     for url in ip_url_yunohost_tab:
         logger.debug("Fetching IP from %s " % url)
         try:
-            ip = download_text(url, timeout=30).strip()
+            ip = download_text(url, timeout=15).strip()
             if ip in ip_count.keys():
                 ip_count[ip]+=1
             else:
