@@ -22,6 +22,7 @@ import os
 import re
 import logging
 import time
+import threading
 
 from moulinette.utils.filesystem import read_file, write_to_file
 from moulinette.utils.network import download_text
@@ -102,8 +103,7 @@ def get_public_ips(protocol=4):
         ip_url_yunohost_tab = settings_get("security.ipmirrors.v"+str(protocol)).split(",")
         ip_count = {} # Count the number of times an IP has appeared
 
-        # Check URLS
-        for url in ip_url_yunohost_tab[:3]:
+        def thread_fun(ip_count,url):
             logger.debug(f"Fetching IP from {url}")
             try:
                 ip = download_text(url, timeout=15).strip()
@@ -115,6 +115,15 @@ def get_public_ips(protocol=4):
                 logger.debug(
                     f"Could not get public IPv{protocol} from {url} : {e}"
                 )
+
+        # Check URLS
+        threads = []
+        for url in ip_url_yunohost_tab[:3]: # Launch threads
+            thread = threading.Thread(target=thread_fun, args=(ip_count,url))
+            thread.start()
+            threads.append(thread)
+        for thread in threads: # Wait for the threads to finish
+            thread.join()
 
         ip_list_with_count = [ (ip,ip_count[ip]) for ip in ip_count ]
         ip_list_with_count.sort(key=lambda x: x[1]) # Sort by frequency
