@@ -13,6 +13,8 @@ name = "Security"
 		[security.ipmirrors.v6]
 		type = "tags"
 		default = "https://ip6.yunohost.org"
+		pattern.regexp = '^https://.*$'
+		pattern.error = "Provide a secured https URL"
     [security.password]
     name = "Passwords"
         [security.password.admin_strength]
