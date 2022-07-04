@@ -7,7 +7,9 @@ name = "Security"
 	name = "IPmirrors"
 		[security.ipmirrors.v4]
 		type = "tags"
-		default = "https://ip.yunohost.org,https://api.ipify.net"
+		default = "https://ip.yunohost.org,https://api.ipify.org"
+		pattern.regexp = '^https://.*$'
+		pattern.error = "Provide a secured https URL"
 		[security.ipmirrors.v6]
 		type = "tags"
 		default = "https://ip6.yunohost.org"
