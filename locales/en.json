@@ -362,7 +362,7 @@
     "dyndns_registered": "DynDNS domain registered",
     "dyndns_registration_failed": "Could not register DynDNS domain: {error}",
     "dyndns_unregistration_failed": "Could not unregister DynDNS domain: {error}",
-    "dyndns_unregistered": "Domain successfully deleted!",
+    "dyndns_unregistered": "DynDNS domain successfully unregistered",
 	"dyndns_unsubscribe_wrong_password": "Invalid password",
 	"dyndns_unsubscribe_wrong_domain": "Domain is not registered",
     "dyndns_unavailable": "The domain '{domain}' is unavailable.",
