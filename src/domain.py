@@ -356,7 +356,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, pass
     hook_callback("post_domain_remove", args=[domain])
 
     # If a password is provided, delete the DynDNS record
-    if password:
+    if password!=None:
         from yunohost.dyndns import dyndns_unsubscribe
 
         # Actually unsubscribe

@@ -459,6 +459,8 @@ domain:
                     action: store_true
                 -p:
                     full: --password
+                    nargs: "?"
+                    const: 0
                     help: Subscribe to the DynDNS service with a password, used to later delete the domain
                     extra:
                         pattern: *pattern_password
@@ -483,6 +485,8 @@ domain:
                     action: store_true
                 -p:
                     full: --password
+                    nargs: "?"
+                    const: 0
                     help: Password used to delete the domain from DynDNS
                     extra:
                         pattern: *pattern_password
@@ -1419,6 +1423,8 @@ dyndns:
                     help: Public DNS key
                 -p:
                     full: --password
+                    nargs: "?"
+                    const: 0
                     help: Password used to later delete the domain
                     extra:
                         pattern: *pattern_password
@@ -1436,9 +1442,10 @@ dyndns:
                         required: True
                 -p:
                     full: --password
+                    nargs: "?"
+                    const: 0
                     help: Password used to delete the domain
                     extra:
-                        required: True
                         pattern: *pattern_password
 
         ### dyndns_update()

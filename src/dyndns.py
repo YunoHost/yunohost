@@ -31,7 +31,7 @@ import base64
 import subprocess
 import hashlib
 
-from moulinette import m18n
+from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import write_to_file, rm, chown, chmod
@@ -144,7 +144,14 @@ def dyndns_subscribe(operation_logger, domain=None, key=None, password=None):
         # Yeah the secret is already a base64-encoded but we double-bas64-encode it, whatever...
         b64encoded_key = base64.b64encode(secret.encode()).decode()
         data = {"subdomain": domain}
-        if password:
+        if password!=None:
+            from yunohost.utils.password import assert_password_is_strong_enough
+            # Ensure sufficiently complex password
+            if Moulinette.interface.type == "cli" and password==0:
+                password = Moulinette.prompt(
+                m18n.n("ask_password"), is_password=True, confirm=True
+            )
+            assert_password_is_strong_enough("admin", password)
             data["recovery_password"]=hashlib.sha256((domain+":"+password.strip()).encode('utf-8')).hexdigest()
         r = requests.post(
             f"https://{DYNDNS_PROVIDER}/key/{b64encoded_key}?key_algo=hmac-sha512",
@@ -179,7 +186,7 @@ def dyndns_subscribe(operation_logger, domain=None, key=None, password=None):
 
 
 @is_unit_operation()
-def dyndns_unsubscribe(operation_logger, domain, password):
+def dyndns_unsubscribe(operation_logger, domain, password=None):
     """
     Unsubscribe from a DynDNS service
 
@@ -189,6 +196,15 @@ def dyndns_unsubscribe(operation_logger, domain, password):
     """
 
     operation_logger.start()
+    
+    from yunohost.utils.password import assert_password_is_strong_enough
+
+    # Ensure sufficiently complex password
+    if Moulinette.interface.type == "cli" and not password:
+        password = Moulinette.prompt(
+        m18n.n("ask_password"), is_password=True, confirm=True
+    )
+    assert_password_is_strong_enough("admin", password)
 
     # '165' is the convention identifier for hmac-sha512 algorithm
     # '1234' is idk? doesnt matter, but the old format contained a number here...
