@@ -98,7 +98,13 @@ def get_public_ip_from_remote_server(protocol=4):
     return None
 
 def get_public_ips(protocol=4):
-    """Retrieve a list (sorted by frequency) of different public IP addresses from the IPmirrors"""
+    """Retrieve a list (sorted by frequency) of public IP addresses from the IPmirrors. 
+    We request the IP on several IPmirrors to avoid resilience issues and some attacks.
+    In a classic way, those IPs are the same on the same protocol. However, in some cases 
+    those public IPs could be different (attacks, several IPs on the server).
+    
+    Note: this function doesn't guarantee to return all public IPs in use by the server.
+    """
 
     ip_url_yunohost_tab = settings_get("security.ipmirrors.v"+str(protocol)).split(",")
     ip_count = {} # Count the number of times an IP has appeared
