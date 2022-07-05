@@ -624,7 +624,8 @@ def _get_registar_settings(domain):
 
 @is_unit_operation()
 def domain_dns_push(operation_logger, domains, dry_run=False, force=False, purge=False):
-    if type(domains).__name__!="list": # If we provide only a domain as an argument
+    # If we provide only a domain as an argument
+    if isinstance(domains, str): 
         domains = [domains]
     for domain in domains:
         try:
