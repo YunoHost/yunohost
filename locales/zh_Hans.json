@@ -477,7 +477,7 @@
     "diagnosis_diskusage_low": "存储器<code>{mountpoint}</code>（在设备<code>{device}</code>上）只有{free} ({free_percent}%) 的空间。({free_percent}%)的剩余空间（在{total}中）。要小心。",
     "diagnosis_diskusage_verylow": "存储器<code>{mountpoint}</code>（在设备<code>{device}</code>上）仅剩余{free} ({free_percent}%) （剩余{total})个空间。您应该真正考虑清理一些空间！",
     "diagnosis_services_bad_status_tip": "你可以尝试<a href='#/services/{service}'>重新启动服务</a>，如果没有效果，可以看看webadmin中的<a href='#/services/{service}'>服务日志</a>（从命令行，你可以用<cmd>yunohost service restart {service}</cmd>和<cmd>yunohost service log {service}</cmd>）来做。",
-    "diagnosis_dns_try_dyndns_update_force": "该域的DNS配置应由YunoHost自动管理，如果不是这种情况，您可以尝试使用 <cmd>yunohost dyndns update --force</cmd>强制进行更新。",
+    "diagnosis_dns_try_dyndns_update_force": "该域的DNS配置应由YunoHost自动管理，如果不是这种情况，您可以尝试使用 <cmd>yunohost domain dns push DOMAIN --force</cmd>强制进行更新。",
     "diagnosis_dns_point_to_doc": "如果您需要有关配置DNS记录的帮助，请查看<a href='https://yunohost.org/dns_config'> https://yunohost.org/dns_config </a>上的文档。",
     "diagnosis_dns_discrepancy": "以下DNS记录似乎未遵循建议的配置:<br>类型: <code>{type}</code><br>名称: <code>{name}</code><br>代码> 当前值: <code>{current}期望值: <code>{value}</code>",
     "log_backup_create": "创建备份档案",

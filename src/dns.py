@@ -656,7 +656,7 @@ def domain_dns_push_unique(operation_logger, domain, dry_run=False, force=False,
     if registrar == "yunohost":
         #logger.info(m18n.n("domain_dns_registrar_yunohost"))
         from yunohost.dyndns import dyndns_update
-        dyndns_update(domain=domain)
+        dyndns_update(domain=domain,force=force)
         return {}
 
     if registrar == "parent_domain":
