@@ -201,7 +201,7 @@ def dyndns_unsubscribe(operation_logger, domain, password=None):
     # Ensure sufficiently complex password
     if Moulinette.interface.type == "cli" and not password:
         password = Moulinette.prompt(
-        m18n.n("ask_password"), is_password=True, confirm=True
+        m18n.n("ask_password"), is_password=True
         )
     assert_password_is_strong_enough("admin", password)
 
