@@ -324,6 +324,7 @@
     "domain_dns_push_already_up_to_date": "Records already up to date, nothing to do.",
     "domain_dns_push_failed": "Updating the DNS records failed miserably.",
     "domain_dns_push_failed_domain": "Updating the DNS records for {domain} failed : {error}",
+    "domain_dns_push_failed_domains": "Updating the DNS records for {domains} failed.",
     "domain_dns_push_failed_to_authenticate": "Failed to authenticate on registrar's API for domain '{domain}'. Most probably the credentials are incorrect? (Error: {error})",
     "domain_dns_push_failed_to_list": "Failed to list current records using the registrar's API: {error}",
     "domain_dns_push_managed_in_parent_domain": "The automatic DNS configuration feature is managed in the parent domain {parent_domain}.",
