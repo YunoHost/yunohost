@@ -214,9 +214,9 @@ def dyndns_unsubscribe(operation_logger, domain, password=None):
 
     # Send delete request 
     try:
+        secret = str(domain) + ":" + str(password).strip()
         r = requests.delete(
             f"https://{DYNDNS_PROVIDER}/domains/{domain}",
-            secret = str(domain) + ":" + str(password).strip()
             data = {"recovery_password": hashlib.sha256(secret.encode('utf-8')).hexdigest()},
             timeout=30,
         )
