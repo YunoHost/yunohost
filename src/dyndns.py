@@ -229,15 +229,6 @@ def dyndns_unsubscribe(operation_logger, domain, password=None):
         # in /etc/yunohost/dyndns
         regen_conf(["yunohost"])
 
-        # Add some dyndns update in 2 and 4 minutes from now such that user should
-        # not have to wait 10ish minutes for the conf to propagate
-        cmd = (
-            f"at -M now + {{t}} >/dev/null 2>&1 <<< \"/bin/bash -c 'yunohost domain dns push {domain}'\""
-        )
-        # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
-        subprocess.check_call(["bash", "-c", cmd.format(t="2 min")])
-        subprocess.check_call(["bash", "-c", cmd.format(t="4 min")])
-
         logger.success(m18n.n("dyndns_unregistered"))
     elif r.status_code == 403: # Wrong password
         raise YunohostError("dyndns_unsubscribe_wrong_password")
