@@ -453,15 +453,16 @@ domain:
                     help: Domain name to add
                     extra:
                         pattern: *pattern_domain
-                -d:
-                    full: --dyndns
-                    help: (Deprecated, using the -p option in order to set a password is recommended) Subscribe to the DynDNS service
+                -n:
+                    full: --no-subscribe
+                    help: If adding a DynDNS domain, only add the domain, without subscribing to the DynDNS service
                     action: store_true
-                -p:
-                    full: --password
+                -s:
+                    full: --subscribe
+                    metavar: PASSWORD
                     nargs: "?"
                     const: 0
-                    help: Subscribe to the DynDNS service with a password, used to later delete the domain
+                    help: If adding a DynDNS domain, subscribe to the DynDNS service with a password, used to later delete the domain
                     extra:
                         pattern: *pattern_password
                         comment: dyndns_added_password

@@ -40,6 +40,7 @@ from yunohost.app import (
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.config import ConfigPanel, Question
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.dns import is_yunohost_dyndns_domain
 from yunohost.log import is_unit_operation
 
 logger = getActionLogger("yunohost.domain")
@@ -131,7 +132,7 @@ def _get_parent_domain_of(domain):
 
 
 @is_unit_operation()
-def domain_add(operation_logger, domain, dyndns=False,password=None):
+def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
     """
     Create a custom domain
 
@@ -163,10 +164,12 @@ def domain_add(operation_logger, domain, dyndns=False,password=None):
     domain = domain.encode("idna").decode("utf-8")
 
     # DynDNS domain
-    dyndns = dyndns or (password!=None) # If a password is specified, then it is obviously a dyndns domain, no need for the extra option
+    dyndns = is_yunohost_dyndns_domain(domain)
     if dyndns:
+        print(subscribe,no_subscribe)
+        if ((subscribe==None) == (no_subscribe==False)):
+            raise YunohostValidationError("domain_dyndns_instruction_unclear")
 
-        from yunohost.utils.dns import is_yunohost_dyndns_domain
         from yunohost.dyndns import _guess_current_dyndns_domain
 
         # Do not allow to subscribe to multiple dyndns domains...
@@ -178,11 +181,14 @@ def domain_add(operation_logger, domain, dyndns=False,password=None):
         if not is_yunohost_dyndns_domain(domain):
             raise YunohostValidationError("domain_dyndns_root_unknown")
 
-    operation_logger.start()
 
-    if dyndns:
+    operation_logger.start()
+    if not dyndns and (subscribe is not None or no_subscribe):
+        logger.warning("This domain is not a DynDNS one, no need for the --subscribe or --no-subscribe option")
+
+    if dyndns and not no_subscribe:
         # Actually subscribe
-        domain_dyndns_subscribe(domain=domain,password=password)
+        domain_dyndns_subscribe(domain=domain,password=subscribe)
 
     _certificate_install_selfsigned([domain], True)
 
