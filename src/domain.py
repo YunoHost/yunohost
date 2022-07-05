@@ -139,7 +139,8 @@ def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
     Keyword argument:
         domain -- Domain name to add
         dyndns -- Subscribe to DynDNS
-        password -- Password used to later unsubscribe from DynDNS
+        subscribe -- Password used to later unsubscribe from DynDNS
+        no_unsubscribe -- If we want to just add the DynDNS domain to the list, without subscribing
     """
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
@@ -166,7 +167,6 @@ def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
     # DynDNS domain
     dyndns = is_yunohost_dyndns_domain(domain)
     if dyndns:
-        print(subscribe,no_subscribe)
         if ((subscribe==None) == (no_subscribe==False)):
             raise YunohostValidationError("domain_dyndns_instruction_unclear")
 
@@ -238,7 +238,7 @@ def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
 
 
 @is_unit_operation()
-def domain_remove(operation_logger, domain, remove_apps=False, force=False, password=None):
+def domain_remove(operation_logger, domain, remove_apps=False, force=False, unsubscribe=None,no_unsubscribe=False):
     """
     Delete domains
 
@@ -247,7 +247,8 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, pass
         remove_apps -- Remove applications installed on the domain
         force -- Force the domain removal and don't not ask confirmation to
                  remove apps if remove_apps is specified
-        password -- Recovery password used at the creation of the DynDNS domain
+        unsubscribe -- Recovery password used at the creation of the DynDNS domain
+        no_unsubscribe -- If we just remove the DynDNS domain, without unsubscribing
     """
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf, app_info, app_remove
@@ -312,8 +313,17 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, pass
                 "domain_uninstall_app_first",
                 apps="\n".join([x[1] for x in apps_on_that_domain]),
             )
+    
+    # DynDNS domain
+    dyndns = is_yunohost_dyndns_domain(domain)
+    if dyndns:
+        if ((unsubscribe==None) == (no_unsubscribe==False)):
+            raise YunohostValidationError("domain_dyndns_instruction_unclear")
 
     operation_logger.start()
+
+    if not dyndns and (unsubscribe!=None or no_unsubscribe!=False):
+        logger.warning("This domain is not a DynDNS one, no need for the --unsubscribe or --no-unsubscribe option")
 
     ldap = _get_ldap_interface()
     try:
@@ -360,9 +370,9 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, pass
     hook_callback("post_domain_remove", args=[domain])
 
     # If a password is provided, delete the DynDNS record
-    if password!=None:
+    if dyndns and not no_unsubscribe:
         # Actually unsubscribe
-        domain_dyndns_unsubscribe(domain=domain,password=password)
+        domain_dyndns_unsubscribe(domain=domain,password=unsubscribe)
 
     logger.success(m18n.n("domain_deleted"))
 
