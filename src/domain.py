@@ -176,12 +176,6 @@ def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
         if _guess_current_dyndns_domain() != (None, None):
             raise YunohostValidationError("domain_dyndns_already_subscribed")
 
-        # Check that this domain can effectively be provided by
-        # dyndns.yunohost.org. (i.e. is it a nohost.me / noho.st)
-        if not is_yunohost_dyndns_domain(domain):
-            raise YunohostValidationError("domain_dyndns_root_unknown")
-
-
     operation_logger.start()
     if not dyndns and (subscribe is not None or no_subscribe):
         logger.warning("This domain is not a DynDNS one, no need for the --subscribe or --no-subscribe option")
