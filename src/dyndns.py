@@ -176,7 +176,7 @@ def dyndns_subscribe(operation_logger, domain=None, key=None, password=None):
     # Add some dyndns update in 2 and 4 minutes from now such that user should
     # not have to wait 10ish minutes for the conf to propagate
     cmd = (
-        "at -M now + {t} >/dev/null 2>&1 <<< \"/bin/bash -c 'yunohost dyndns update'\""
+        f"at -M now + {{t}} >/dev/null 2>&1 <<< \"/bin/bash -c 'yunohost domain dns push {domain}'\""
     )
     # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
     subprocess.check_call(["bash", "-c", cmd.format(t="2 min")])
@@ -231,7 +231,7 @@ def dyndns_unsubscribe(operation_logger, domain, password=None):
         # Add some dyndns update in 2 and 4 minutes from now such that user should
         # not have to wait 10ish minutes for the conf to propagate
         cmd = (
-            "at -M now + {t} >/dev/null 2>&1 <<< \"/bin/bash -c 'yunohost dyndns update'\""
+            f"at -M now + {{t}} >/dev/null 2>&1 <<< \"/bin/bash -c 'yunohost domain dns push {domain}'\""
         )
         # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
         subprocess.check_call(["bash", "-c", cmd.format(t="2 min")])

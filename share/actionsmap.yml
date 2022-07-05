@@ -578,10 +578,69 @@ domain:
                     help: The path to check (e.g. /coffee)
 
     subcategories:
+        dyndns:
+            subcategory_help: Subscribe and Update DynDNS Hosts
+            actions:
+                ### domain_dyndns_subscribe()
+                subscribe:
+                    action_help: Subscribe to a DynDNS service
+                    arguments:
+                        -d:
+                            full: --domain
+                            help: Full domain to subscribe with
+                            extra:
+                                pattern: *pattern_domain
+                        -k:
+                            full: --key
+                            help: Public DNS key
+                        -p:
+                            full: --password
+                            nargs: "?"
+                            const: 0
+                            help: Password used to later delete the domain
+                            extra:
+                                pattern: *pattern_password
+                                comment: dyndns_added_password
+                
+                ### domain_dyndns_unsubscribe()
+                unsubscribe:
+                    action_help: Unsubscribe from a DynDNS service
+                    arguments:
+                        -d:
+                            full: --domain
+                            help: Full domain to unsubscribe with
+                            extra:
+                                pattern: *pattern_domain
+                                required: True
+                        -p:
+                            full: --password
+                            nargs: "?"
+                            const: 0
+                            help: Password used to delete the domain
+                            extra:
+                                pattern: *pattern_password
 
         config:
             subcategory_help: Domain settings
             actions:
+                ### domain_config_get()
+                get:
+                    action_help: Display a domain configuration
+                    api: GET /domains/<domain>/config
+                    arguments:
+                      domain:
+                          help: Domain name
+                      key:
+                          help: A specific panel, section or a question identifier
+                          nargs: '?'
+                      -f:
+                          full: --full
+                          help: Display all details (meant to be used by the API)
+                          action: store_true
+                      -e:
+                          full: --export
+                          help: Only export key/values, meant to be reimported using "config set --args-file"
+                          action: store_true
 
                 ### domain_config_get()
                 get:
@@ -641,6 +700,7 @@ domain:
                     arguments:
                         domain:
                             help: Domain name to push DNS conf for
+                            nargs: "*"
                             extra:
                                 pattern: *pattern_domain
                         -d:
@@ -1406,16 +1466,17 @@ firewall:
 #          DynDNS           #
 #############################
 dyndns:
-    category_help: Subscribe and Update DynDNS Hosts
+    category_help: Subscribe and Update DynDNS Hosts ( deprecated, use 'yunohost domain dyndns' instead )
     actions:
 
         ### dyndns_subscribe()
         subscribe:
             action_help: Subscribe to a DynDNS service
+            deprecated: true
             arguments:
                 -d:
                     full: --domain
-                    help: Full domain to subscribe with
+                    help: Full domain to subscribe with ( deprecated, use 'yunohost domain dyndns subscribe' instead )
                     extra:
                         pattern: *pattern_domain
                 -k:
@@ -1432,7 +1493,8 @@ dyndns:
         
         ### dyndns_unsubscribe()
         unsubscribe:
-            action_help: Unsubscribe to a DynDNS service
+            action_help: Unsubscribe to a DynDNS service ( deprecated, use 'yunohost domain dyndns unsubscribe' instead )
+            deprecated: true
             arguments:
                 -d:
                     full: --domain
@@ -1450,7 +1512,8 @@ dyndns:
 
         ### dyndns_update()
         update:
-            action_help: Update IP on DynDNS platform
+            action_help: Update IP on DynDNS platform ( deprecated, use 'yunohost domain dns push DOMAIN' instead )
+            deprecated: true
             arguments:
                 -d:
                     full: --domain

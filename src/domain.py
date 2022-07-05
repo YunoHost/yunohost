@@ -181,10 +181,8 @@ def domain_add(operation_logger, domain, dyndns=False,password=None):
     operation_logger.start()
 
     if dyndns:
-        from yunohost.dyndns import dyndns_subscribe
-
         # Actually subscribe
-        dyndns_subscribe(domain=domain,password=password)
+        domain_dyndns_subscribe(domain=domain,password=password)
 
     _certificate_install_selfsigned([domain], True)
 
@@ -357,12 +355,35 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, pass
 
     # If a password is provided, delete the DynDNS record
     if password!=None:
-        from yunohost.dyndns import dyndns_unsubscribe
-
         # Actually unsubscribe
-        dyndns_unsubscribe(domain=domain,password=password)
+        domain_dyndns_unsubscribe(domain=domain,password=password)
 
     logger.success(m18n.n("domain_deleted"))
+
+
+def domain_dyndns_subscribe(**kwargs):
+    """
+    Subscribe to a DynDNS domain
+    """
+    from yunohost.dyndns import dyndns_subscribe
+
+    dyndns_subscribe(**kwargs)
+
+def domain_dyndns_unsubscribe(**kwargs):
+    """
+    Unsubscribe from a DynDNS domain
+    """
+    from yunohost.dyndns import dyndns_unsubscribe
+
+    dyndns_unsubscribe(**kwargs)
+
+def domain_dyndns_update(**kwargs):
+    """
+    Update a DynDNS domain
+    """
+    from yunohost.dyndns import dyndns_update
+
+    dyndns_update(**kwargs)
 
 
 @is_unit_operation()
@@ -572,7 +593,7 @@ def domain_dns_suggest(domain):
     return domain_dns_suggest(domain)
 
 
-def domain_dns_push(domain, dry_run, force, purge):
+def domain_dns_push(domain, dry_run=None, force=None, purge=None):
     from yunohost.dns import domain_dns_push
 
-    return domain_dns_push(domain, dry_run, force, purge)
+    return domain_dns_push(domain, dry_run=dry_run, force=force, purge=purge)

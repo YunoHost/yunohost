@@ -47,6 +47,7 @@ from yunohost.utils.error import YunohostValidationError, YunohostError
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
+from yunohost.dyndns import dyndns_update
 
 logger = getActionLogger("yunohost.domain")
 
@@ -622,7 +623,17 @@ def _get_registar_settings(domain):
 
 
 @is_unit_operation()
-def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=False):
+def domain_dns_push(operation_logger, domains, dry_run=False, force=False, purge=False):
+    if type(domains).__name__!="list": # If we provide only a domain as an argument
+        domains = [domains]
+    for domain in domains:
+        try:
+            domain_dns_push_unique(domain,dry_run=dry_run,force=force,purge=purge)
+        except YunohostError as e:
+            logger.error(m18n.n("domain_dns_push_failed_domain",domain=domain,error=str(e)))
+
+@is_unit_operation()
+def domain_dns_push_unique(operation_logger, domain, dry_run=False, force=False, purge=False):
     """
     Send DNS records to the previously-configured registrar of the domain.
     """
@@ -643,12 +654,14 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
     # FIXME: in the future, properly unify this with yunohost dyndns update
     if registrar == "yunohost":
-        logger.info(m18n.n("domain_dns_registrar_yunohost"))
+        #logger.info(m18n.n("domain_dns_registrar_yunohost"))
+        from yunohost.dyndns import dyndns_update
+        dyndns_update(domain=domain)
         return {}
 
     if registrar == "parent_domain":
         parent_domain = domain.split(".", 1)[1]
-        registar, registrar_credentials = _get_registar_settings(parent_domain)
+        registrar, registrar_credentials = _get_registar_settings(parent_domain)
         if any(registrar_credentials.values()):
             raise YunohostValidationError(
                 "domain_dns_push_managed_in_parent_domain",
@@ -656,9 +669,18 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
                 parent_domain=parent_domain,
             )
         else:
-            raise YunohostValidationError(
-                "domain_registrar_is_not_configured", domain=parent_domain
-            )
+            new_parent_domain = ".".join(parent_domain.split(".")[-3:])
+            registrar, registrar_credentials = _get_registar_settings(new_parent_domain)
+            if registrar == "yunohost":
+                raise YunohostValidationError(
+                    "domain_dns_push_managed_in_parent_domain",
+                    domain=domain,
+                    parent_domain=new_parent_domain,
+                )
+            else:
+                raise YunohostValidationError(
+                    "domain_registrar_is_not_configured", domain=parent_domain
+                )
 
     if not all(registrar_credentials.values()):
         raise YunohostValidationError(
