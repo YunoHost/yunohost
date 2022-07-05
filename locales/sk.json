@@ -185,7 +185,7 @@
     "diagnosis_diskusage_low": "Na úložisku <code>{mountpoint}</code> (na zariadení <code>{device}</code>) ostáva iba {free} ({free_percent} %) voľného miesta (z celkovej veľkosti {total}). Dávajte pozor.",
     "diagnosis_diskusage_verylow": "Na úložisku <code>{mountpoint}</code> (na zariadení <code>{device}</code>) ostáva iba {free} ({free_percent} %) voľného miesta (z celkovej veľkosti {total}). Dobre zvážte vyčistenie úložiska!",
     "diagnosis_apps_not_in_app_catalog": "Táto aplikácia sa nenachádza v katalógu aplikácií YunoHost. Ak sa tam v minulosti nachádzala a bola odstránená, mali by ste zvážiť jej odinštalovanie, pretože nebude dostávať žiadne aktualizácie a môže ohroziť integritu a bezpečnosť Vášho systému.",
-    "diagnosis_backports_in_sources_list": "Vyzerá, že apt (správca balíkov) je nastavený na používanie backports repozitára. Inštalovaním balíkov z backports môžete spôsobiť nestabilitu systému a vznik konfliktov, preto - ak naozaj neviete, čo robíte - Vás chceme od ich používania odradiť.",
+    "diagnosis_backports_in_sources_list": "Vyzerá, že apt (správca balíkov) je nastavený na používanie repozitára backports. Inštalovaním balíkov z backports môžete spôsobiť nestabilitu systému a vznik konfliktov, preto - ak naozaj neviete, čo robíte - Vás chceme pred ich používaním dôrazne vystríhať.",
     "diagnosis_basesystem_ynh_inconsistent_versions": "Používate nekonzistentné verzie balíkov YunoHost… s najväčšou pravdepodobnosťou kvôli nedokončenej/chybnej aktualizácii.",
     "diagnosis_basesystem_ynh_main_version": "Na serveri beží YunoHost {main_version} ({repo})",
     "diagnosis_dns_discrepancy": "Nasledujúci DNS záznam nezodpovedá odporúčanej konfigurácii:<br>Typ:<code>{type}</code><br>Názov:<code>{name}</code><br>Aktuálna hodnota: <code>{current}</code><br>Očakávaná hodnota: <code>{value}</code>",
@@ -199,5 +199,17 @@
     "diagnosis_domain_expiration_success": "Vaše domény sú zaregistrované a tak skoro nevyprší ich platnosť.",
     "diagnosis_domain_expiration_warning": "Niektoré z domén čoskoro vypršia!",
     "diagnosis_domain_expires_in": "{domain} vyprší o {days} dní.",
-    "diagnosis_dns_try_dyndns_update_force": "Nastavenie DNS tejto domény by mala byť automaticky spravované YunoHost-om. Ak tomu tak nie je, môžete skúsiť vynútiť jej aktualizáciu pomocou príkazu <cmd>yunohost dyndns update --force</cmd>."
+    "diagnosis_dns_try_dyndns_update_force": "Nastavenie DNS tejto domény by mala byť automaticky spravované YunoHost-om. Ak tomu tak nie je, môžete skúsiť vynútiť jej aktualizáciu pomocou príkazu <cmd>yunohost dyndns update --force</cmd>.",
+    "diagnosis_domain_not_found_details": "Doména {domain} neexistuje v databáze WHOIS alebo vypršala jej platnosť!",
+    "diagnosis_everything_ok": "V kategórii {category} vyzerá byť všetko v poriadku!",
+    "diagnosis_failed": "Nepodarilo sa získať výsledok diagnostiky pre kategóriu '{category}': {error}",
+    "diagnosis_failed_for_category": "Diagnostika pre kategóriu '{category}' skončila s chybou: {error}",
+    "diagnosis_found_errors": "Bolo nájdených {error} závažných chýb týkajúcich sa {category}!",
+    "diagnosis_found_errors_and_warnings": "Bolo nájdených {error} závažných chýb (a {warnings} varovaní) týkajúcich sa {category}!",
+    "diagnosis_found_warnings": "V kategórii {category} bolo nájdených {warnings} položiek, ktoré je možné opraviť.",
+    "diagnosis_http_connection_error": "Chyba pripojenia: nepodarilo sa pripojiť k požadovanej doméne, podľa všetkého je nedostupná.",
+    "diagnosis_http_could_not_diagnose": "Nepodarilo sa zistiť, či sú domény dostupné zvonka pomocou IPv{ipversion}.",
+    "diagnosis_http_could_not_diagnose_details": "Chyba: {error}",
+    "diagnosis_http_hairpinning_issue": "Zdá sa, že Vaša miestna sieť nemá zapnutý NAT hairpinning.",
+    "diagnosis_high_number_auth_failures": "V poslednom čase bol zistený neobvykle vysoký počet neúspešných prihlásení. Uistite sa, či je služba fail2ban spustená a správne nastavená alebo použite vlastný port pre SSH ako je popísané na https://yunohost.org/security."
 }
