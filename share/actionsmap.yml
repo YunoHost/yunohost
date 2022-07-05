@@ -620,6 +620,10 @@ domain:
                             extra:
                                 pattern: *pattern_password
 
+                ### domain_dyndns_list()
+                list:
+                    action_help: List all subscribed DynDNS domains
+
         config:
             subcategory_help: Domain settings
             actions:

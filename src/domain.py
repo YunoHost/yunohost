@@ -377,6 +377,14 @@ def domain_dyndns_unsubscribe(**kwargs):
 
     dyndns_unsubscribe(**kwargs)
 
+def domain_dyndns_list():
+    """
+    Returns all currently subscribed DynDNS domains
+    """
+    from yunohost.dyndns import dyndns_list
+
+    return dyndns_list()
+
 def domain_dyndns_update(**kwargs):
     """
     Update a DynDNS domain

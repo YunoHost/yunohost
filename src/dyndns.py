@@ -236,6 +236,18 @@ def dyndns_unsubscribe(operation_logger, domain, password=None):
     elif r.status_code == 404: # Invalid domain
         raise YunohostError("dyndns_unsubscribe_wrong_domain")
 
+def dyndns_list():
+    """
+    Returns all currently subscribed DynDNS domains ( deduced from the key files )
+    """
+
+    files = glob.glob("/etc/yunohost/dyndns/K*key")
+    # Get the domain names
+    for i in range(len(files)):
+        files[i] = files[i].split(".+",1)[0]
+        files[i] = files[i].split("/etc/yunohost/dyndns/K")[1]
+
+    return {"domains":files}
 
 @is_unit_operation()
 def dyndns_update(
