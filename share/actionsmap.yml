@@ -642,25 +642,6 @@ domain:
                           help: Only export key/values, meant to be reimported using "config set --args-file"
                           action: store_true
 
-                ### domain_config_get()
-                get:
-                    action_help: Display a domain configuration
-                    api: GET /domains/<domain>/config
-                    arguments:
-                      domain:
-                          help: Domain name
-                      key:
-                          help: A specific panel, section or a question identifier
-                          nargs: '?'
-                      -f:
-                          full: --full
-                          help: Display all details (meant to be used by the API)
-                          action: store_true
-                      -e:
-                          full: --export
-                          help: Only export key/values, meant to be reimported using "config set --args-file"
-                          action: store_true
-
                 ### domain_config_set()
                 set:
                     action_help: Apply a new configuration
