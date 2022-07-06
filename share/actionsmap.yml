@@ -1574,9 +1574,19 @@ tools:
                         pattern: *pattern_password
                         required: True
                         comment: good_practices_about_admin_password
-                --ignore-dyndns:
-                    help: Do not subscribe domain to a DynDNS service
+                -n:
+                    full: --no-subscribe
+                    help: If adding a DynDNS domain, only add the domain, without subscribing to the DynDNS service
                     action: store_true
+                -s:
+                    full: --subscribe
+                    metavar: PASSWORD
+                    nargs: "?"
+                    const: 0
+                    help: If adding a DynDNS domain, subscribe to the DynDNS service with a password, used to later delete the domain
+                    extra:
+                        pattern: *pattern_password
+                        comment: dyndns_added_password
                 --force-password:
                     help: Use this if you really want to set a weak password
                     action: store_true

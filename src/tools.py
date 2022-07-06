@@ -186,6 +186,8 @@ def tools_postinstall(
     domain,
     password,
     ignore_dyndns=False,
+    subscribe=None,
+    no_subscribe=False,
     force_password=False,
     force_diskspace=False,
 ):
@@ -230,10 +232,13 @@ def tools_postinstall(
         assert_password_is_strong_enough("admin", password)
 
     # If this is a nohost.me/noho.st, actually check for availability
-    if not ignore_dyndns and is_yunohost_dyndns_domain(domain):
+    if is_yunohost_dyndns_domain(domain):
+        if ((subscribe==None) == (no_subscribe==False)):
+            raise YunohostValidationError("domain_dyndns_instruction_unclear")
+
         # Check if the domain is available...
         try:
-            available = _dyndns_available(domain)
+            _dyndns_available(domain)
         # If an exception is thrown, most likely we don't have internet
         # connectivity or something. Assume that this domain isn't manageable
         # and inform the user that we could not contact the dyndns host server.
@@ -241,14 +246,7 @@ def tools_postinstall(
             logger.warning(
                 m18n.n("dyndns_provider_unreachable", provider="dyndns.yunohost.org")
             )
-
-        if available:
-            dyndns = True
-        # If not, abort the postinstall
-        else:
             raise YunohostValidationError("dyndns_unavailable", domain=domain)
-    else:
-        dyndns = False
 
     if os.system("iptables -V >/dev/null 2>/dev/null") != 0:
         raise YunohostValidationError(
@@ -260,7 +258,7 @@ def tools_postinstall(
     logger.info(m18n.n("yunohost_installing"))
 
     # New domain config
-    domain_add(domain, dyndns)
+    domain_add(domain, subscribe=subscribe,no_subscribe=no_subscribe)
     domain_main_domain(domain)
 
     # Update LDAP admin and create home dir
