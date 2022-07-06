@@ -339,6 +339,7 @@
     "domain_dns_registrar_supported": "YunoHost automatically detected that this domain is handled by the registrar **{registrar}**. If you want, YunoHost will automatically configure this DNS zone, if you provide it with the appropriate API credentials. You can find documentation on how to obtain your API credentials on this page: https://yunohost.org/registar_api_{registrar}. (You can also manually configure your DNS records following the documentation at https://yunohost.org/dns )",
     "domain_dns_registrar_yunohost": "This domain is a nohost.me / nohost.st / ynh.fr and its DNS configuration is therefore automatically handled by YunoHost without any further configuration. (see the 'yunohost domain dns push DOMAIN' command)",
     "domain_dyndns_already_subscribed": "You have already subscribed to a DynDNS domain",
+	"domain_dyndns_instruction_unclear": "The --subscribe and --no-subscribe options are not compatible",
     "domain_exists": "The domain already exists",
     "domain_hostname_failed": "Unable to set new hostname. This might cause an issue later (it might be fine).",
     "domain_registrar_is_not_configured": "The registrar is not yet configured for domain {domain}.",
