@@ -82,7 +82,7 @@ def dyndns_subscribe(operation_logger, domain=None, key=None, password=None):
 
     Keyword argument:
         domain -- Full domain to subscribe with
-        key -- Public DNS key
+        key -- TSIG Shared DNS key
         password -- Password that will be used to delete the domain
     """
 
