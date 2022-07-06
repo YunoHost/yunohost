@@ -46,6 +46,13 @@ i18n = "domain_config"
         default = 0
 
 [dns]
+
+	[dns.zone]
+
+		[dns.zone.autopush]
+		type = "boolean"
+		default = 0
+		help = ""
     
     [dns.registrar]
     optional = true

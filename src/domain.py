@@ -52,7 +52,7 @@ DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 domain_list_cache: Dict[str, Any] = {}
 
 
-def domain_list(exclude_subdomains=False):
+def domain_list(exclude_subdomains=False,auto_push=False):
     """
     List domains
 
@@ -78,6 +78,8 @@ def domain_list(exclude_subdomains=False):
             parent_domain = domain.split(".", 1)[1]
             if parent_domain in result:
                 continue
+        if auto_push and not domain_config_get(domain, key="dns.zone.autopush"):
+            continue
 
         result_list.append(domain)
 
@@ -611,7 +613,7 @@ def domain_dns_suggest(domain):
     return domain_dns_suggest(domain)
 
 
-def domain_dns_push(domain, dry_run=None, force=None, purge=None):
+def domain_dns_push(domains, dry_run=None, force=None, purge=None, auto=False):
     from yunohost.dns import domain_dns_push
 
-    return domain_dns_push(domain, dry_run=dry_run, force=force, purge=purge)
+    return domain_dns_push(domains, dry_run=dry_run, force=force, purge=purge, auto=auto)

@@ -623,10 +623,11 @@ def _get_registar_settings(domain):
 
 
 @is_unit_operation()
-def domain_dns_push(operation_logger, domains, dry_run=False, force=False, purge=False):
-    # If we provide only a domain as an argument
-    if isinstance(domains, str): 
-        domains = [domains]
+def domain_dns_push(operation_logger, domains, dry_run=False, force=False, purge=False, auto=False):
+    if auto:
+            domains = domain_list(exclude_subdomains=True,auto_push=True)["domains"]
+    elif len(domains)==0:
+            domains = domain_list(exclude_subdomains=True)["domains"]
     error_domains = []
     for domain in domains:
         try:

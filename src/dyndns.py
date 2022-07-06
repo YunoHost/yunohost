@@ -170,6 +170,10 @@ def dyndns_subscribe(operation_logger, domain=None, key=None, password=None):
             error = f'Server error, code: {r.status_code}. (Message: "{r.text}")'
         raise YunohostError("dyndns_registration_failed", error=error)
 
+    # Set the domain's config to autopush
+    from yunohost.domain import domain_config_set
+    domain_config_set(domain,key="dns.zone.autopush",value=1)
+
     # Yunohost regen conf will add the dyndns cron job if a key exists
     # in /etc/yunohost/dyndns
     regen_conf(["yunohost"])

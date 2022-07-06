@@ -443,6 +443,9 @@ domain:
                 --exclude-subdomains:
                     help: Filter out domains that are obviously subdomains of other declared domains
                     action: store_true
+                --auto-push:
+                    help: Only display domains that are pushed automatically
+                    action: store_true
 
         ### domain_add()
         add:
@@ -689,8 +692,8 @@ domain:
                     action_help: Push DNS records to registrar
                     api: POST /domains/<domain>/dns/push
                     arguments:
-                        domain:
-                            help: Domain name to push DNS conf for
+                        domains:
+                            help: Domain names to push DNS conf for
                             nargs: "*"
                             extra:
                                 pattern: *pattern_domain
@@ -704,6 +707,9 @@ domain:
                         --purge:
                             help: Delete all records
                             action: store_true
+                        --auto:
+                          help: Push only domains that should be pushed automatically
+                          action: store_true
 
         cert:
             subcategory_help: Manage domain certificates

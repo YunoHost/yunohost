@@ -312,6 +312,8 @@
     "domain_config_auth_token": "Authentication token",
     "domain_config_default_app": "Default app",
     "domain_config_features_disclaimer": "So far, enabling/disabling mail or XMPP features only impact the recommended and automatic DNS configuration, not system configurations!",
+	"domain_config_autopush": "Auto-push",
+	"domain_config_autopush_help": "Automatically update the domain's record",
     "domain_config_mail_in": "Incoming emails",
     "domain_config_mail_out": "Outgoing emails",
     "domain_config_xmpp": "Instant messaging (XMPP)",
