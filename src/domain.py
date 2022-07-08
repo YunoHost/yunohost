@@ -314,7 +314,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, unsu
     dyndns = is_yunohost_dyndns_domain(domain)
     if dyndns:
         if ((unsubscribe==None) == (no_unsubscribe==False)):
-            raise YunohostValidationError("domain_dyndns_instruction_unclear")
+            raise YunohostValidationError("domain_dyndns_instruction_unclear_unsubscribe")
 
     operation_logger.start()
 
