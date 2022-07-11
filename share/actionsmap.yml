@@ -446,8 +446,7 @@ domain:
                 --auto-push:
                     help: Only display domains that are pushed automatically
                     action: store_true
-                -f:
-                  full: --full
+                --full:
                   action: store_true
                   help: Display more information
 
