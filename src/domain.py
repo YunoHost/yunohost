@@ -52,7 +52,7 @@ DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 domain_list_cache: Dict[str, Any] = {}
 
 
-def domain_list(exclude_subdomains=False,auto_push=False):
+def domain_list(exclude_subdomains=False,auto_push=False,full=False):
     """
     List domains
 
@@ -96,6 +96,11 @@ def domain_list(exclude_subdomains=False,auto_push=False):
     # Don't cache answer if using exclude_subdomains
     if exclude_subdomains:
         return {"domains": result_list, "main": _get_maindomain()}
+
+    if full:
+        for i in range(len(result_list)):
+            domain = result_list[i]
+            result_list[i] = {'name':domain,'isdyndns': is_yunohost_dyndns_domain(domain)}
 
     domain_list_cache = {"domains": result_list, "main": _get_maindomain()}
     return domain_list_cache
@@ -457,15 +462,6 @@ def domain_url_available(domain, path):
     """
 
     return len(_get_conflicting_apps(domain, path)) == 0
-
-def domain_isdyndns(domain):
-    """
-    Returns if a domain is a DynDNS one ( used via the web API )
-
-    Arguments:
-        domain -- the domain to check
-    """
-    return is_yunohost_dyndns_domain(domain)
 
 def _get_maindomain():
     with open("/etc/yunohost/current_host", "r") as f:
