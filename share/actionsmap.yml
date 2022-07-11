@@ -585,6 +585,16 @@ domain:
                         pattern: *pattern_domain
                 path:
                     help: The path to check (e.g. /coffee)
+        
+        ### domain_isdyndns()
+        isdyndns:
+            action_help: Check if a domain is a dyndns one
+            api: GET /domain/<domain>/isdyndns
+            arguments:
+                domain:
+                    help: The domain to test (e.g. your.domain.tld)
+                    extra:
+                        pattern: *pattern_domain
 
     subcategories:
         dyndns:

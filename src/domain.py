@@ -458,6 +458,14 @@ def domain_url_available(domain, path):
 
     return len(_get_conflicting_apps(domain, path)) == 0
 
+def domain_isdyndns(domain):
+    """
+    Returns if a domain is a DynDNS one ( used via the web API )
+
+    Arguments:
+        domain -- the domain to check
+    """
+    return is_yunohost_dyndns_domain(domain)
 
 def _get_maindomain():
     with open("/etc/yunohost/current_host", "r") as f:
