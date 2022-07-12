@@ -61,7 +61,7 @@ def domain_list(exclude_subdomains=False,auto_push=False,full=False):
 
     """
     global domain_list_cache
-    if not exclude_subdomains and domain_list_cache:
+    if not (exclude_subdomains or full) and domain_list_cache:
         return domain_list_cache
 
     from yunohost.utils.ldap import _get_ldap_interface
@@ -93,7 +93,6 @@ def domain_list(exclude_subdomains=False,auto_push=False,full=False):
 
     result_list = sorted(result_list, key=cmp_domain)
 
-    # Don't cache answer if using exclude_subdomains
     if exclude_subdomains:
         return {"domains": result_list, "main": _get_maindomain()}
 
@@ -102,8 +101,13 @@ def domain_list(exclude_subdomains=False,auto_push=False,full=False):
             domain = result_list[i]
             result_list[i] = {'name':domain,'isdyndns': is_yunohost_dyndns_domain(domain)}
 
-    domain_list_cache = {"domains": result_list, "main": _get_maindomain()}
-    return domain_list_cache
+    result = {"domains": result_list, "main": _get_maindomain()}
+    
+    # Cache answer only if not using exclude_subdomains or full
+    if not (full or exclude_subdomains):
+        domain_list_cache = result
+
+    return result
 
 
 def _assert_domain_exists(domain):
