@@ -95,6 +95,7 @@ def dyndns_subscribe(operation_logger, domain=None, key=None, password=None):
             password = Moulinette.prompt(
             m18n.n("ask_password"), is_password=True, confirm=True
             )
+        operation_logger.data_to_redact.append(password)
         assert_password_is_strong_enough("admin", password)
 
     if _guess_current_dyndns_domain() != (None, None):
@@ -207,6 +208,7 @@ def dyndns_unsubscribe(operation_logger, domain, password=None):
         password = Moulinette.prompt(
         m18n.n("ask_password"), is_password=True
         )
+    operation_logger.data_to_redact.append(password)
     assert_password_is_strong_enough("admin", password)
 
     operation_logger.start()

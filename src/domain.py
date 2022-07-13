@@ -158,6 +158,9 @@ def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.certificate import _certificate_install_selfsigned
 
+    if subscribe!=0 and subscribe!=None:
+        operation_logger.data_to_redact.append(subscribe)
+
     if domain.startswith("xmpp-upload."):
         raise YunohostValidationError("domain_cannot_add_xmpp_upload")
 
@@ -258,6 +261,9 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, unsu
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf, app_info, app_remove
     from yunohost.utils.ldap import _get_ldap_interface
+    
+    if unsubscribe!=0 and unsubscribe!=None:
+        operation_logger.data_to_redact.append(unsubscribe)
 
     # the 'force' here is related to the exception happening in domain_add ...
     # we don't want to check the domain exists because the ldap add may have
