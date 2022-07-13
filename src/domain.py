@@ -96,7 +96,8 @@ def domain_list(exclude_subdomains=False,auto_push=False,full=False):
     if full:
         for i in range(len(result_list)):
             domain = result_list[i]
-            result_list[i] = {'name':domain,'isdyndns': is_yunohost_dyndns_domain(domain)}
+            dyndns = is_yunohost_dyndns_domain(domain) and len(domain.split("."))==3
+            result_list[i] = {'name':domain,'isdyndns': dyndns}
 
     result = {"domains": result_list, "main": _get_maindomain()}
     
