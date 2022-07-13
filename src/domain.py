@@ -93,9 +93,6 @@ def domain_list(exclude_subdomains=False,auto_push=False,full=False):
 
     result_list = sorted(result_list, key=cmp_domain)
 
-    if exclude_subdomains:
-        return {"domains": result_list, "main": _get_maindomain()}
-
     if full:
         for i in range(len(result_list)):
             domain = result_list[i]
@@ -178,8 +175,8 @@ def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
     # Non-latin characters (e.g. café.com => xn--caf-dma.com)
     domain = domain.encode("idna").decode("utf-8")
 
-    # DynDNS domain
-    dyndns = is_yunohost_dyndns_domain(domain)
+    # Detect if this is a DynDNS domain ( and not a subdomain of a DynDNS domain )
+    dyndns = is_yunohost_dyndns_domain(domain) and len(domain.split("."))==3
     if dyndns:
         if ((subscribe==None) == (no_subscribe==False)):
             raise YunohostValidationError("domain_dyndns_instruction_unclear")
@@ -325,8 +322,8 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, unsu
                 apps="\n".join([x[1] for x in apps_on_that_domain]),
             )
     
-    # DynDNS domain
-    dyndns = is_yunohost_dyndns_domain(domain)
+    # Detect if this is a DynDNS domain ( and not a subdomain of a DynDNS domain )
+    dyndns = is_yunohost_dyndns_domain(domain) and len(domain.split("."))==3
     if dyndns:
         if ((unsubscribe==None) == (no_unsubscribe==False)):
             raise YunohostValidationError("domain_dyndns_instruction_unclear_unsubscribe")
