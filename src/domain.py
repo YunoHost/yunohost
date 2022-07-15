@@ -52,7 +52,7 @@ DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 domain_list_cache: Dict[str, Any] = {}
 
 
-def domain_list(exclude_subdomains=False,auto_push=False,full=False):
+def domain_list(exclude_subdomains=False, auto_push=False, full=False):
     """
     List domains
 
@@ -96,11 +96,11 @@ def domain_list(exclude_subdomains=False,auto_push=False,full=False):
     if full:
         for i in range(len(result_list)):
             domain = result_list[i]
-            dyndns = is_yunohost_dyndns_domain(domain) and len(domain.split("."))==3
-            result_list[i] = {'name':domain,'isdyndns': dyndns}
+            dyndns = is_yunohost_dyndns_domain(domain) and len(domain.split(".")) == 3
+            result_list[i] = {'name': domain, 'isdyndns': dyndns}
 
     result = {"domains": result_list, "main": _get_maindomain()}
-    
+
     # Cache answer only if not using exclude_subdomains or full
     if not (full or exclude_subdomains):
         domain_list_cache = result
@@ -156,7 +156,7 @@ def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.certificate import _certificate_install_selfsigned
 
-    if subscribe!=0 and subscribe!=None:
+    if subscribe != 0 and subscribe is not None:
         operation_logger.data_to_redact.append(subscribe)
 
     if domain.startswith("xmpp-upload."):
@@ -177,9 +177,9 @@ def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
     domain = domain.encode("idna").decode("utf-8")
 
     # Detect if this is a DynDNS domain ( and not a subdomain of a DynDNS domain )
-    dyndns = is_yunohost_dyndns_domain(domain) and len(domain.split("."))==3
+    dyndns = is_yunohost_dyndns_domain(domain) and len(domain.split(".")) == 3
     if dyndns:
-        if ((subscribe==None) == (no_subscribe==False)):
+        if ((subscribe is None) == (no_subscribe is False)):
             raise YunohostValidationError("domain_dyndns_instruction_unclear")
 
         from yunohost.dyndns import is_subscribing_allowed
@@ -194,7 +194,7 @@ def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
 
     if dyndns and not no_subscribe:
         # Actually subscribe
-        domain_dyndns_subscribe(domain=domain,password=subscribe)
+        domain_dyndns_subscribe(domain=domain, password=subscribe)
 
     _certificate_install_selfsigned([domain], True)
 
@@ -244,7 +244,7 @@ def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
 
 
 @is_unit_operation()
-def domain_remove(operation_logger, domain, remove_apps=False, force=False, unsubscribe=None,no_unsubscribe=False):
+def domain_remove(operation_logger, domain, remove_apps=False, force=False, unsubscribe=None, no_unsubscribe=False):
     """
     Delete domains
 
@@ -259,8 +259,8 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, unsu
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf, app_info, app_remove
     from yunohost.utils.ldap import _get_ldap_interface
-    
-    if unsubscribe!=0 and unsubscribe!=None:
+
+    if unsubscribe != 0 and unsubscribe is not None:
         operation_logger.data_to_redact.append(unsubscribe)
 
     # the 'force' here is related to the exception happening in domain_add ...
@@ -322,16 +322,16 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, unsu
                 "domain_uninstall_app_first",
                 apps="\n".join([x[1] for x in apps_on_that_domain]),
             )
-    
+
     # Detect if this is a DynDNS domain ( and not a subdomain of a DynDNS domain )
-    dyndns = is_yunohost_dyndns_domain(domain) and len(domain.split("."))==3
+    dyndns = is_yunohost_dyndns_domain(domain) and len(domain.split(".")) == 3
     if dyndns:
-        if ((unsubscribe==None) == (no_unsubscribe==False)):
+        if ((unsubscribe is None) == (no_unsubscribe is False)):
             raise YunohostValidationError("domain_dyndns_instruction_unclear_unsubscribe")
 
     operation_logger.start()
 
-    if not dyndns and (unsubscribe!=None or no_unsubscribe!=False):
+    if not dyndns and ((unsubscribe is not None) or (no_unsubscribe is not False)):
         logger.warning("This domain is not a DynDNS one, no need for the --unsubscribe or --no-unsubscribe option")
 
     ldap = _get_ldap_interface()
@@ -381,7 +381,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, unsu
     # If a password is provided, delete the DynDNS record
     if dyndns and not no_unsubscribe:
         # Actually unsubscribe
-        domain_dyndns_unsubscribe(domain=domain,password=unsubscribe)
+        domain_dyndns_unsubscribe(domain=domain, password=unsubscribe)
 
     logger.success(m18n.n("domain_deleted"))
 
@@ -394,6 +394,7 @@ def domain_dyndns_subscribe(**kwargs):
 
     dyndns_subscribe(**kwargs)
 
+
 def domain_dyndns_unsubscribe(**kwargs):
     """
     Unsubscribe from a DynDNS domain
@@ -402,6 +403,7 @@ def domain_dyndns_unsubscribe(**kwargs):
 
     dyndns_unsubscribe(**kwargs)
 
+
 def domain_dyndns_list():
     """
     Returns all currently subscribed DynDNS domains
@@ -409,6 +411,7 @@ def domain_dyndns_list():
     from yunohost.dyndns import dyndns_list
 
     return dyndns_list()
+
 
 def domain_dyndns_update(**kwargs):
     """
@@ -470,6 +473,7 @@ def domain_url_available(domain, path):
     """
 
     return len(_get_conflicting_apps(domain, path)) == 0
+
 
 def _get_maindomain():
     with open("/etc/yunohost/current_host", "r") as f:

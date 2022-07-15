@@ -49,6 +49,7 @@ from yunohost.log import OperationLogger
 logger = getActionLogger("yunohost.config")
 CONFIG_PANEL_VERSION_SUPPORTED = 1.0
 
+
 # Those js-like evaluate functions are used to eval safely visible attributes
 # The goal is to evaluate in the same way than js simple-evaluate
 # https://github.com/shepherdwind/simple-evaluate

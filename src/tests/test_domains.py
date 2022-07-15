@@ -18,7 +18,7 @@ from yunohost.domain import (
 )
 
 TEST_DOMAINS = ["example.tld", "sub.example.tld", "other-example.com"]
-TEST_DYNDNS_DOMAIN = "".join(chr(random.randint(ord("a"),ord("z"))) for x in range(15))+random.choice([".noho.st",".ynh.fr",".nohost.me"])
+TEST_DYNDNS_DOMAIN = "".join(chr(random.randint(ord("a"), ord("z"))) for x in range(15)) + random.choice([".noho.st", ".ynh.fr", ".nohost.me"])
 TEST_DYNDNS_PASSWORD = "astrongandcomplicatedpassphrasethatisverysecure"
 
 
@@ -41,7 +41,7 @@ def setup_function(function):
     for domain in domains:
         if (domain not in TEST_DOMAINS or domain == TEST_DOMAINS[2]) and domain != TEST_DYNDNS_DOMAIN:
             # Clean domains not used for testing
-            domain_remove(domain,no_unsubscribe=is_yunohost_dyndns_domain(domain))
+            domain_remove(domain, no_unsubscribe=is_yunohost_dyndns_domain(domain))
         elif domain in TEST_DOMAINS:
             # Reset settings if any
             os.system(f"rm -rf {DOMAIN_SETTINGS_DIR}/{domain}.yml")
@@ -73,7 +73,7 @@ def test_domain_add():
 
 def test_domain_add_subscribe():
     assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
-    domain_add(TEST_DYNDNS_DOMAIN,subscribe=TEST_DYNDNS_PASSWORD)
+    domain_add(TEST_DYNDNS_DOMAIN, subscribe=TEST_DYNDNS_PASSWORD)
     assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
 
 
@@ -91,7 +91,7 @@ def test_domain_remove():
 
 def test_domain_remove_unsubscribe():
     assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
-    domain_remove(TEST_DYNDNS_DOMAIN,unsubscribe=TEST_DYNDNS_PASSWORD)
+    domain_remove(TEST_DYNDNS_DOMAIN, unsubscribe=TEST_DYNDNS_PASSWORD)
     assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
 
 

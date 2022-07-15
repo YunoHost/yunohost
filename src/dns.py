@@ -47,7 +47,6 @@ from yunohost.utils.error import YunohostValidationError, YunohostError
 from yunohost.utils.network import get_public_ip
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
-from yunohost.dyndns import dyndns_update
 
 logger = getActionLogger("yunohost.domain")
 
@@ -625,18 +624,19 @@ def _get_registar_settings(domain):
 @is_unit_operation()
 def domain_dns_push(operation_logger, domains, dry_run=False, force=False, purge=False, auto=False):
     if auto:
-            domains = domain_list(exclude_subdomains=True,auto_push=True)["domains"]
-    elif len(domains)==0:
-            domains = domain_list(exclude_subdomains=True)["domains"]
+        domains = domain_list(exclude_subdomains=True, auto_push=True)["domains"]
+    elif len(domains) == 0:
+        domains = domain_list(exclude_subdomains=True)["domains"]
     error_domains = []
     for domain in domains:
         try:
-            domain_dns_push_unique(domain,dry_run=dry_run,force=force,purge=purge)
+            domain_dns_push_unique(domain, dry_run=dry_run, force=force, purge=purge)
         except YunohostError as e:
-            logger.error(m18n.n("domain_dns_push_failed_domain",domain=domain,error=str(e)))
+            logger.error(m18n.n("domain_dns_push_failed_domain", domain=domain, error=str(e)))
             error_domains.append(domain)
-    if len(error_domains)>0:
-        raise YunohostError("domain_dns_push_failed_domains",domains=', '.join(error_domains))
+    if len(error_domains) > 0:
+        raise YunohostError("domain_dns_push_failed_domains", domains=', '.join(error_domains))
+
 
 @is_unit_operation()
 def domain_dns_push_unique(operation_logger, domain, dry_run=False, force=False, purge=False):
@@ -660,9 +660,8 @@ def domain_dns_push_unique(operation_logger, domain, dry_run=False, force=False,
 
     # FIXME: in the future, properly unify this with yunohost dyndns update
     if registrar == "yunohost":
-        #logger.info(m18n.n("domain_dns_registrar_yunohost"))
         from yunohost.dyndns import dyndns_update
-        dyndns_update(domain=domain,force=force)
+        dyndns_update(domain=domain, force=force)
         return {}
 
     if registrar == "parent_domain":
