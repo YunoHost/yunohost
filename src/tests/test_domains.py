@@ -73,8 +73,8 @@ def test_domain_add():
 
 
 def test_domain_add_subscribe():
-    
-    time.sleep(35) # Dynette blocks requests that happen too frequently
+
+    time.sleep(35)  # Dynette blocks requests that happen too frequently
     assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
     domain_add(TEST_DYNDNS_DOMAIN, subscribe=TEST_DYNDNS_PASSWORD)
     assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
@@ -94,7 +94,7 @@ def test_domain_remove():
 
 def test_domain_remove_unsubscribe():
 
-    time.sleep(35) # Dynette blocks requests that happen too frequently
+    time.sleep(35)  # Dynette blocks requests that happen too frequently
     assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
     domain_remove(TEST_DYNDNS_DOMAIN, unsubscribe=TEST_DYNDNS_PASSWORD)
     assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
