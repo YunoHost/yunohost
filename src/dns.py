@@ -621,8 +621,7 @@ def _get_registar_settings(domain):
     return registrar, settings
 
 
-@is_unit_operation()
-def domain_dns_push(operation_logger, domains, dry_run=False, force=False, purge=False, auto=False):
+def domain_dns_push(domains, dry_run=False, force=False, purge=False, auto=False):
     if auto:
         domains = domain_list(exclude_subdomains=True, auto_push=True)["domains"]
     elif len(domains) == 0:
