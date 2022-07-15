@@ -140,7 +140,7 @@ def _get_parent_domain_of(domain):
         return _get_parent_domain_of(parent_domain)
 
 
-@is_unit_operation()
+@is_unit_operation(exclude=["subscribe"])
 def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
     """
     Create a custom domain
@@ -243,7 +243,7 @@ def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
     logger.success(m18n.n("domain_created"))
 
 
-@is_unit_operation()
+@is_unit_operation(exclude=["unsubscribe"])
 def domain_remove(operation_logger, domain, remove_apps=False, force=False, unsubscribe=None, no_unsubscribe=False):
     """
     Delete domains

@@ -180,12 +180,11 @@ def _detect_virt():
     return out.split()[0]
 
 
-@is_unit_operation()
+@is_unit_operation(exclude=["subscribe","password"])
 def tools_postinstall(
     operation_logger,
     domain,
     password,
-    ignore_dyndns=False,
     subscribe=None,
     no_subscribe=False,
     force_password=False,
