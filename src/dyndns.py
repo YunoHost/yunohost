@@ -86,13 +86,12 @@ def _dyndns_available(domain):
 
 
 @is_unit_operation()
-def dyndns_subscribe(operation_logger, domain=None, key=None, password=None):
+def dyndns_subscribe(operation_logger, domain=None, password=None):
     """
     Subscribe to a DynDNS service
 
     Keyword argument:
         domain -- Full domain to subscribe with
-        key -- TSIG Shared DNS key
         password -- Password that will be used to delete the domain
     """
 
@@ -133,29 +132,28 @@ def dyndns_subscribe(operation_logger, domain=None, key=None, password=None):
     # '1234' is idk? doesnt matter, but the old format contained a number here...
     key_file = f"/etc/yunohost/dyndns/K{domain}.+165+1234.key"
 
-    if key is None:
-        if not os.path.exists("/etc/yunohost/dyndns"):
-            os.makedirs("/etc/yunohost/dyndns")
+    if not os.path.exists("/etc/yunohost/dyndns"):
+        os.makedirs("/etc/yunohost/dyndns")
 
-        logger.debug(m18n.n("dyndns_key_generating"))
+    logger.debug(m18n.n("dyndns_key_generating"))
 
-        # Here, we emulate the behavior of the old 'dnssec-keygen' utility
-        # which since bullseye was replaced by ddns-keygen which is now
-        # in the bind9 package ... but installing bind9 will conflict with dnsmasq
-        # and is just madness just to have access to a tsig keygen utility -.-
+    # Here, we emulate the behavior of the old 'dnssec-keygen' utility
+    # which since bullseye was replaced by ddns-keygen which is now
+    # in the bind9 package ... but installing bind9 will conflict with dnsmasq
+    # and is just madness just to have access to a tsig keygen utility -.-
 
-        # Use 512 // 8 = 64 bytes for hmac-sha512 (c.f. https://git.hactrn.net/sra/tsig-keygen/src/master/tsig-keygen.py)
-        secret = base64.b64encode(os.urandom(512 // 8)).decode("ascii")
+    # Use 512 // 8 = 64 bytes for hmac-sha512 (c.f. https://git.hactrn.net/sra/tsig-keygen/src/master/tsig-keygen.py)
+    secret = base64.b64encode(os.urandom(512 // 8)).decode("ascii")
 
-        # Idk why but the secret is split in two parts, with the first one
-        # being 57-long char ... probably some DNS format
-        secret = f"{secret[:56]} {secret[56:]}"
+    # Idk why but the secret is split in two parts, with the first one
+    # being 57-long char ... probably some DNS format
+    secret = f"{secret[:56]} {secret[56:]}"
 
-        key_content = f"{domain}. IN KEY 0 3 165 {secret}"
-        write_to_file(key_file, key_content)
+    key_content = f"{domain}. IN KEY 0 3 165 {secret}"
+    write_to_file(key_file, key_content)
 
-        chmod("/etc/yunohost/dyndns", 0o600, recursive=True)
-        chown("/etc/yunohost/dyndns", "root", recursive=True)
+    chmod("/etc/yunohost/dyndns", 0o600, recursive=True)
+    chown("/etc/yunohost/dyndns", "root", recursive=True)
 
     import requests  # lazy loading this module for performance reasons
 

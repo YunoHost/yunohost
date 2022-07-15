@@ -603,9 +603,6 @@ domain:
                             help: Full domain to subscribe with
                             extra:
                                 pattern: *pattern_domain
-                        -k:
-                            full: --key
-                            help: Public DNS key
                         -p:
                             full: --password
                             nargs: "?"
@@ -1480,9 +1477,6 @@ dyndns:
                     help: Full domain to subscribe with ( deprecated, use 'yunohost domain dyndns subscribe' instead )
                     extra:
                         pattern: *pattern_domain
-                -k:
-                    full: --key
-                    help: Public DNS key
                 -p:
                     full: --password
                     nargs: "?"
