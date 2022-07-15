@@ -48,6 +48,16 @@ logger = getActionLogger("yunohost.dyndns")
 
 DYNDNS_PROVIDER = "dyndns.yunohost.org"
 DYNDNS_DNS_AUTH = ["ns0.yunohost.org", "ns1.yunohost.org"]
+MAX_DYNDNS_DOMAINS = 1
+
+def is_subscribing_allowed():
+    """
+    Check if the limit of subscribed DynDNS domains has been reached
+
+    Returns:
+        True if the limit is not reached, False otherwise
+    """
+    return len(glob.glob("/etc/yunohost/dyndns/*.key"))<MAX_DYNDNS_DOMAINS
 
 
 def _dyndns_available(domain):
@@ -98,7 +108,7 @@ def dyndns_subscribe(operation_logger, domain=None, key=None, password=None):
         operation_logger.data_to_redact.append(password)
         assert_password_is_strong_enough("admin", password)
 
-    if _guess_current_dyndns_domain() != (None, None):
+    if not is_subscribing_allowed():
         raise YunohostValidationError("domain_dyndns_already_subscribed")
 
     if domain is None:
@@ -122,29 +132,28 @@ def dyndns_subscribe(operation_logger, domain=None, key=None, password=None):
     key_file = f"/etc/yunohost/dyndns/K{domain}.+165+1234.key"
 
     if key is None:
-        if len(glob.glob("/etc/yunohost/dyndns/*.key")) == 0:
-            if not os.path.exists("/etc/yunohost/dyndns"):
-                os.makedirs("/etc/yunohost/dyndns")
+        if not os.path.exists("/etc/yunohost/dyndns"):
+            os.makedirs("/etc/yunohost/dyndns")
 
-            logger.debug(m18n.n("dyndns_key_generating"))
+        logger.debug(m18n.n("dyndns_key_generating"))
 
-            # Here, we emulate the behavior of the old 'dnssec-keygen' utility
-            # which since bullseye was replaced by ddns-keygen which is now
-            # in the bind9 package ... but installing bind9 will conflict with dnsmasq
-            # and is just madness just to have access to a tsig keygen utility -.-
+        # Here, we emulate the behavior of the old 'dnssec-keygen' utility
+        # which since bullseye was replaced by ddns-keygen which is now
+        # in the bind9 package ... but installing bind9 will conflict with dnsmasq
+        # and is just madness just to have access to a tsig keygen utility -.-
 
-            # Use 512 // 8 = 64 bytes for hmac-sha512 (c.f. https://git.hactrn.net/sra/tsig-keygen/src/master/tsig-keygen.py)
-            secret = base64.b64encode(os.urandom(512 // 8)).decode("ascii")
+        # Use 512 // 8 = 64 bytes for hmac-sha512 (c.f. https://git.hactrn.net/sra/tsig-keygen/src/master/tsig-keygen.py)
+        secret = base64.b64encode(os.urandom(512 // 8)).decode("ascii")
 
-            # Idk why but the secret is split in two parts, with the first one
-            # being 57-long char ... probably some DNS format
-            secret = f"{secret[:56]} {secret[56:]}"
+        # Idk why but the secret is split in two parts, with the first one
+        # being 57-long char ... probably some DNS format
+        secret = f"{secret[:56]} {secret[56:]}"
 
-            key_content = f"{domain}. IN KEY 0 3 165 {secret}"
-            write_to_file(key_file, key_content)
+        key_content = f"{domain}. IN KEY 0 3 165 {secret}"
+        write_to_file(key_file, key_content)
 
-            chmod("/etc/yunohost/dyndns", 0o600, recursive=True)
-            chown("/etc/yunohost/dyndns", "root", recursive=True)
+        chmod("/etc/yunohost/dyndns", 0o600, recursive=True)
+        chown("/etc/yunohost/dyndns", "root", recursive=True)
 
     import requests  # lazy loading this module for performance reasons
 
@@ -275,22 +284,33 @@ def dyndns_update(
     import dns.tsigkeyring
     import dns.update
 
-    # If domain is not given, try to guess it from keys available...
-    key = None
+    # If domain is not given, update all DynDNS domains
     if domain is None:
-        (domain, key) = _guess_current_dyndns_domain()
 
-    if domain is None:
-        raise YunohostValidationError("dyndns_no_domain_registered")
+        from yunohost.domain import domain_list
+
+        domains = domain_list(exclude_subdomains=True,auto_push=True)["domains"]
+        pushed = 0
+        for d in domains:
+            if is_yunohost_dyndns_domain(d):
+                dyndns_update(d, force=force, dry_run=dry_run)
+                pushed+=1
+        if pushed==0:
+            raise YunohostValidationError("dyndns_no_domain_registered")
+        return
+
+    elif type(domain).__name__ in ["list","tuple"]:
+        for d in domain:
+            dyndns_update(d, force=force, dry_run=dry_run)
+        return
 
     # If key is not given, pick the first file we find with the domain given
-    elif key is None:
-        keys = glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*.key")
+    keys = glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*.key")
 
-        if not keys:
-            raise YunohostValidationError("dyndns_key_not_found")
+    if not keys:
+        raise YunohostValidationError("dyndns_key_not_found")
 
-        key = keys[0]
+    key = keys[0]
 
     # Get current IPv4 and IPv6
     ipv4 = get_public_ip()
@@ -424,34 +444,3 @@ def dyndns_update(
         print(
             "Warning: dry run, this is only the generated config, it won't be applied"
         )
-
-
-def _guess_current_dyndns_domain():
-    """
-    This function tries to guess which domain should be updated by
-    "dyndns_update()" because there's not proper management of the current
-    dyndns domain :/ (and at the moment the code doesn't support having several
-    dyndns domain, which is sort of a feature so that people don't abuse the
-    dynette...)
-    """
-
-    DYNDNS_KEY_REGEX = re.compile(r".*/K(?P<domain>[^\s\+]+)\.\+165.+\.key$")
-
-    # Retrieve the first registered domain
-    paths = list(glob.iglob("/etc/yunohost/dyndns/K*.key"))
-    for path in paths:
-        match = DYNDNS_KEY_REGEX.match(path)
-        if not match:
-            continue
-        _domain = match.group("domain")
-
-        # Verify if domain is registered (i.e., if it's available, skip
-        # current domain beause that's not the one we want to update..)
-        # If there's only 1 such key found, then avoid doing the request
-        # for nothing (that's very probably the one we want to find ...)
-        if len(paths) > 1 and _dyndns_available(_domain):
-            continue
-        else:
-            return (_domain, path)
-
-    return (None, None)

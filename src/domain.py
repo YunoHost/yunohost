@@ -182,10 +182,10 @@ def domain_add(operation_logger, domain, subscribe=None, no_subscribe=False):
         if ((subscribe==None) == (no_subscribe==False)):
             raise YunohostValidationError("domain_dyndns_instruction_unclear")
 
-        from yunohost.dyndns import _guess_current_dyndns_domain
+        from yunohost.dyndns import is_subscribing_allowed
 
         # Do not allow to subscribe to multiple dyndns domains...
-        if _guess_current_dyndns_domain() != (None, None):
+        if not is_subscribing_allowed():
             raise YunohostValidationError("domain_dyndns_already_subscribed")
 
     operation_logger.start()
