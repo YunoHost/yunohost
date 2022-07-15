@@ -50,7 +50,7 @@ from yunohost.utils.packages import (
     _list_upgradable_apt_packages,
     ynh_packages_version,
 )
-from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.error import yunohosterror, yunohostvalidationerror
 from yunohost.log import is_unit_operation, OperationLogger
 
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
@@ -77,10 +77,7 @@ def tools_adminpw(new_password, check_strength=True):
     if check_strength:
         assert_password_is_strong_enough("admin", new_password)
 
-    # UNIX seems to not like password longer than 127 chars ...
-    # e.g. SSH login gets broken (or even 'su admin' when entering the password)
-    if len(new_password) >= 127:
-        raise YunohostValidationError("admin_password_too_long")
+    assert_password_is_compatible(new_password)
 
     new_hash = _hash_user_password(new_password)
 
@@ -226,6 +223,8 @@ def tools_postinstall(
         raise YunohostValidationError("postinstall_low_rootfsspace")
 
     # Check password
+    assert_password_is_compatible(password)
+
     if not force_password:
         assert_password_is_strong_enough("admin", password)
 
