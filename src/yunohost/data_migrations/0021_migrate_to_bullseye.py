@@ -30,22 +30,30 @@ N_CURRENT_YUNOHOST = 4
 N_NEXT_DEBAN = 11
 N_NEXT_YUNOHOST = 11
 
-VENV_BACKUP_PREFIX= "BACKUP_VENV_"
-VENV_REQUIREMENTS_SUFFIX= "_req.txt"
+VENV_BACKUP_SUFFIX = "_BACKUP_VENV"
+VENV_REQUIREMENTS_SUFFIX = "_req.txt"
+VENV_IGNORE = "VENVNOREGEN"
 
-def _get_all_venvs():
+def _get_all_venvs(dir,level=0,maxlevel=2):
     result = []
-    exclude = glob.glob(f"/opt/{VENV_BACKUP_PREFIX}*")
-    for x in glob.glob('/opt/*'):
-        if x not in exclude and os.path.isdir(x) and os.path.isfile(f"{x}/bin/activate"):
-            content = read_file(f"{x}/bin/activate")
-            if "VIRTUAL_ENV" and "PYTHONHOME" in content:
-                result.append(x)
+    for file in os.listdir(dir):
+        path = os.path.join(dir,file)
+        if os.path.isdir(path):
+            if os.path.isfile(os.path.join(path,VENV_IGNORE)):
+                continue
+            activatepath = os.path.join(path,"bin","activate")
+            if os.path.isfile(activatepath):
+                content = read_file(activatepath)
+                if "VIRTUAL_ENV" and "PYTHONHOME" in content:
+                    result.append(path)
+                    continue
+            if level<maxlevel:
+                result+=_get_all_venvs(path,level=level+1)
     return result
 
 def _generate_requirements():
 
-    venvs = _get_all_venvs()
+    venvs = _get_all_venvs("/opt/")+_get_all_venvs("/var/www/")
     for venv in venvs:
         # Generate a requirements file from venv
         os.system(f"bash -c 'source {venv}/bin/activate && pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX} && deactivate'")
@@ -53,15 +61,14 @@ def _generate_requirements():
 
 def _rebuild_venvs():
 
-    venvs = _get_all_venvs()
+    venvs = _get_all_venvs("/opt/")+_get_all_venvs("/var/www/")
     for venv in venvs:
-        venvdirname = venv.split("/")[-1]
         # Create a backup of the venv, in case there's a problem
-        if os.path.isdir(f"/opt/{VENV_BACKUP_PREFIX}{venvdirname}"):
-            rm(f"/opt/{VENV_BACKUP_PREFIX}{venvdirname}", recursive=True)
+        if os.path.isdir(venv+VENV_BACKUP_SUFFIX):
+            rm(venv+VENV_BACKUP_SUFFIX, recursive=True)
         backup = True
         try:
-            cp(venv, f"/opt/{VENV_BACKUP_PREFIX}{venvdirname}", recursive=True)
+            cp(venv, venv+VENV_BACKUP_SUFFIX, recursive=True)
         except:
             backup = False
         if backup and os.path.isfile(venv+VENV_REQUIREMENTS_SUFFIX):
