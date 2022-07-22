@@ -85,11 +85,11 @@ def _rebuild_venvs():
             os.system(f"python -m venv {venv}")
             status = os.system(f"bash -c 'source {venv}/bin/activate && pip install -r {venv}{VENV_REQUIREMENTS_SUFFIX} && deactivate'")
             if status != 0:
-                logger.warning(m18n.n("venv_regen_failed", venv=venv))
+                logger.warning(m18n.n("migration_0021_venv_regen_failed", venv=venv))
             else:
                 rm(venv + VENV_REQUIREMENTS_SUFFIX)
         else:
-            logger.warning(m18n.n("venv_regen_failed", venv=venv))
+            logger.warning(m18n.n("migration_0021_venv_regen_failed", venv=venv))
 
 
 class MyMigration(Migration):

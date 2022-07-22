@@ -507,6 +507,7 @@
     "migration_0018_failed_to_reset_legacy_rules": "Failed to reset legacy iptables rules: {error}",
     "migration_0019_add_new_attributes_in_ldap": "Add new attributes for permissions in LDAP database",
     "migration_0019_slapd_config_will_be_overwritten": "It looks like you manually edited the slapd configuration. For this critical migration, YunoHost needs to force the update of the slapd configuration. The original files will be backuped in {conf_backup_folder}.",
+	"migration_0021_venv_regen_failed": "The virtual environment '{venv}' failed to regenerate, you probably need to run the command `yunohost app upgrade --force`",
     "migration_0021_start" : "Starting migration to Bullseye",
     "migration_0021_patching_sources_list": "Patching the sources.lists...",
     "migration_0021_main_upgrade": "Starting main upgrade...",
