@@ -5,7 +5,7 @@ from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
-from moulinette.utils.filesystem import read_file, rm, write_to_file
+from moulinette.utils.filesystem import read_file, rm, write_to_file, cp
 
 from yunohost.tools import (
     Migration,
@@ -29,6 +29,52 @@ N_CURRENT_YUNOHOST = 4
 
 N_NEXT_DEBAN = 11
 N_NEXT_YUNOHOST = 11
+
+VENV_BACKUP_PREFIX= "BACKUP_VENV_"
+VENV_REQUIREMENTS_SUFFIX= "_req.txt"
+
+def _get_all_venvs():
+    result = []
+    exclude = glob.glob(f"/opt/{VENV_BACKUP_PREFIX}*")
+    for x in glob.glob('/opt/*'):
+        if x not in exclude and os.path.isdir(x) and os.path.isfile(f"{x}/bin/activate"):
+            content = read_file(f"{x}/bin/activate")
+            if "VIRTUAL_ENV" and "PYTHONHOME" in content:
+                result.append(x)
+    return result
+
+def _generate_requirements():
+
+    venvs = _get_all_venvs()
+    for venv in venvs:
+        # Generate a requirements file from venv
+        os.system(f"bash -c 'source {venv}/bin/activate && pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX} && deactivate'")
+
+
+def _rebuild_venvs():
+
+    venvs = _get_all_venvs()
+    for venv in venvs:
+        venvdirname = venv.split("/")[-1]
+        # Create a backup of the venv, in case there's a problem
+        if os.path.isdir(f"/opt/{VENV_BACKUP_PREFIX}{venvdirname}"):
+            rm(f"/opt/{VENV_BACKUP_PREFIX}{venvdirname}", recursive=True)
+        backup = True
+        try:
+            cp(venv, f"/opt/{VENV_BACKUP_PREFIX}{venvdirname}", recursive=True)
+        except:
+            backup = False
+        if backup and os.path.isfile(venv+VENV_REQUIREMENTS_SUFFIX):
+            # Recreate the venv
+            rm(venv, recursive=True)
+            os.system(f"python -m venv {venv}")
+            status = os.system(f"bash -c 'source {venv}/bin/activate && pip install -r {venv}{VENV_REQUIREMENTS_SUFFIX} && deactivate'")
+            if status!=0:
+                logger.warning(m18n.n("venv_regen_failed", venv=venv))
+            else:
+                rm(venv+VENV_REQUIREMENTS_SUFFIX, recursive=True)
+        else:
+            logger.warning(m18n.n("venv_regen_failed", venv=venv))
 
 
 class MyMigration(Migration):
@@ -69,6 +115,12 @@ class MyMigration(Migration):
             os.system(
                 'wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"'
             )
+
+        #
+        # Get requirements of the different venvs from python apps
+        #
+
+        _generate_requirements()
 
         #
         # Run apt update
@@ -263,6 +315,12 @@ class MyMigration(Migration):
         postupgradecmds += "systemctl restart nginx\n"
 
         tools_upgrade(target="system", postupgradecmds=postupgradecmds)
+
+        #
+        # Recreate the venvs
+        #
+
+        _rebuild_venvs()
 
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
