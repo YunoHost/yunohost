@@ -32,7 +32,7 @@ N_NEXT_YUNOHOST = 11
 
 VENV_BACKUP_SUFFIX = "_BACKUP_VENV"
 VENV_REQUIREMENTS_SUFFIX = "_req.txt"
-VENV_IGNORE = "VENVNOREGEN"
+VENV_IGNORE = "ynh_migration_no_regen"
 
 def _get_all_venvs(dir,level=0,maxlevel=2):
     result = []
