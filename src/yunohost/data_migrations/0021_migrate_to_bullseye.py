@@ -44,7 +44,7 @@ def _get_all_venvs(dir,level=0,maxlevel=3):
             activatepath = os.path.join(path,"bin","activate")
             if os.path.isfile(activatepath):
                 content = read_file(activatepath)
-                if "VIRTUAL_ENV" and "PYTHONHOME" in content:
+                if ("VIRTUAL_ENV" in content) and ("PYTHONHOME" in content):
                     result.append(path)
                     continue
             if level<maxlevel:
