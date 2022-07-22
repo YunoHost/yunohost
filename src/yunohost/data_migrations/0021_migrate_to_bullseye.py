@@ -33,7 +33,7 @@ N_NEXT_YUNOHOST = 11
 VENV_REQUIREMENTS_SUFFIX = "_req.txt"
 VENV_IGNORE = "ynh_migration_no_regen"
 
-def _get_all_venvs(dir,level=0,maxlevel=2):
+def _get_all_venvs(dir,level=0,maxlevel=3):
     # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
     result = []
     for file in os.listdir(dir):
