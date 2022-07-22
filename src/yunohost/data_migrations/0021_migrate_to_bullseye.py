@@ -71,7 +71,7 @@ def _rebuild_venvs():
             if status!=0:
                 logger.warning(m18n.n("venv_regen_failed", venv=venv))
             else:
-                rm(venv+VENV_REQUIREMENTS_SUFFIX, recursive=True)
+                rm(venv+VENV_REQUIREMENTS_SUFFIX)
         else:
             logger.warning(m18n.n("venv_regen_failed", venv=venv))
 
