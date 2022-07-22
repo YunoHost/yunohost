@@ -35,6 +35,7 @@ VENV_REQUIREMENTS_SUFFIX = "_req.txt"
 VENV_IGNORE = "VENVNOREGEN"
 
 def _get_all_venvs(dir,level=0,maxlevel=2):
+    # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
     result = []
     for file in os.listdir(dir):
         path = os.path.join(dir,file)
