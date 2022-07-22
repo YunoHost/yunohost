@@ -33,45 +33,61 @@ N_NEXT_YUNOHOST = 11
 VENV_REQUIREMENTS_SUFFIX = "_req.txt"
 VENV_IGNORE = "ynh_migration_no_regen"
 
-def _get_all_venvs(dir,level=0,maxlevel=3):
+
+def _get_all_venvs(dir, level=0, maxlevel=3):
+    """
+        Returns the list of all python virtual env directories recursively
+
+        Arguments:
+            dir - the directory to scan in
+            maxlevel - the depth of the recursion
+            level - do not edit this, used as an iterator
+    """
     # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
     result = []
     for file in os.listdir(dir):
-        path = os.path.join(dir,file)
+        path = os.path.join(dir, file)
         if os.path.isdir(path):
-            if os.path.isfile(os.path.join(path,VENV_IGNORE)):
+            if os.path.isfile(os.path.join(path, VENV_IGNORE)):
                 continue
-            activatepath = os.path.join(path,"bin","activate")
+            activatepath = os.path.join(path,"bin", "activate")
             if os.path.isfile(activatepath):
                 content = read_file(activatepath)
                 if ("VIRTUAL_ENV" in content) and ("PYTHONHOME" in content):
                     result.append(path)
                     continue
-            if level<maxlevel:
-                result+=_get_all_venvs(path,level=level+1)
+            if level < maxlevel:
+                result += _get_all_venvs(path, level=level + 1)
     return result
 
-def _generate_requirements():
 
-    venvs = _get_all_venvs("/opt/")+_get_all_venvs("/var/www/")
+def _generate_requirements():
+    """
+        Generate a requirements file for all python virtual env located inside /opt/ and /var/www/
+    """
+
+    venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
     for venv in venvs:
         # Generate a requirements file from venv
         os.system(f"bash -c 'source {venv}/bin/activate && pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX} && deactivate'")
 
 
 def _rebuild_venvs():
+    """
+        After the update, recreate a python virtual env based on the previously generated requirements file
+    """
 
-    venvs = _get_all_venvs("/opt/")+_get_all_venvs("/var/www/")
+    venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
     for venv in venvs:
-        if os.path.isfile(venv+VENV_REQUIREMENTS_SUFFIX):
+        if os.path.isfile(venv + VENV_REQUIREMENTS_SUFFIX):
             # Recreate the venv
             rm(venv, recursive=True)
             os.system(f"python -m venv {venv}")
             status = os.system(f"bash -c 'source {venv}/bin/activate && pip install -r {venv}{VENV_REQUIREMENTS_SUFFIX} && deactivate'")
-            if status!=0:
+            if status != 0:
                 logger.warning(m18n.n("venv_regen_failed", venv=venv))
             else:
-                rm(venv+VENV_REQUIREMENTS_SUFFIX)
+                rm(venv + VENV_REQUIREMENTS_SUFFIX)
         else:
             logger.warning(m18n.n("venv_regen_failed", venv=venv))
 
