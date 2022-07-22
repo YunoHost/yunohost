@@ -30,7 +30,6 @@ N_CURRENT_YUNOHOST = 4
 N_NEXT_DEBAN = 11
 N_NEXT_YUNOHOST = 11
 
-VENV_BACKUP_SUFFIX = "_BACKUP_VENV"
 VENV_REQUIREMENTS_SUFFIX = "_req.txt"
 VENV_IGNORE = "ynh_migration_no_regen"
 
@@ -64,15 +63,7 @@ def _rebuild_venvs():
 
     venvs = _get_all_venvs("/opt/")+_get_all_venvs("/var/www/")
     for venv in venvs:
-        # Create a backup of the venv, in case there's a problem
-        if os.path.isdir(venv+VENV_BACKUP_SUFFIX):
-            rm(venv+VENV_BACKUP_SUFFIX, recursive=True)
-        backup = True
-        try:
-            cp(venv, venv+VENV_BACKUP_SUFFIX, recursive=True)
-        except:
-            backup = False
-        if backup and os.path.isfile(venv+VENV_REQUIREMENTS_SUFFIX):
+        if os.path.isfile(venv+VENV_REQUIREMENTS_SUFFIX):
             # Recreate the venv
             rm(venv, recursive=True)
             os.system(f"python -m venv {venv}")
