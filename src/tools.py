@@ -71,7 +71,10 @@ def tools_adminpw(new_password, check_strength=True):
 
     """
     from yunohost.user import _hash_user_password
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.password import (
+        assert_password_is_strong_enough,
+        assert_password_is_compatible
+    )
     import spwd
 
     if check_strength:
