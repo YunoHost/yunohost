@@ -19,7 +19,7 @@ logger = getActionLogger("yunohost.app_catalog")
 
 APPS_CATALOG_CACHE = "/var/cache/yunohost/repo"
 APPS_CATALOG_CONF = "/etc/yunohost/apps_catalog.yml"
-APPS_CATALOG_API_VERSION = 2
+APPS_CATALOG_API_VERSION = 3
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 
 
