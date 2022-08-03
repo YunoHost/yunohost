@@ -2076,8 +2076,13 @@ def _convert_v1_manifest_to_v2(manifest):
         "ram": {"build": "50M", "runtime": "10M"}
     }
 
-    maintainer = manifest.get("maintainer", {}).get("name")
-    manifest["maintainers"] = [maintainer] if maintainer else []
+    maintainers = manifest.get("maintainer", {})
+    if isinstance(maintainers, list):
+        maintainers = [m['name'] for m in maintainers]
+    else:
+        maintainers = [maintainers["name"]] if maintainers.get("name") else []
+
+    manifest["maintainers"] = maintainers
 
     install_questions = manifest["arguments"]["install"]
 
