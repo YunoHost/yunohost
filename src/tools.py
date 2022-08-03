@@ -50,7 +50,7 @@ from yunohost.utils.packages import (
     _list_upgradable_apt_packages,
     ynh_packages_version,
 )
-from yunohost.utils.error import yunohosterror, yunohostvalidationerror
+from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation, OperationLogger
 
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
