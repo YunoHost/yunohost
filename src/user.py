@@ -369,7 +369,10 @@ def user_update(
     """
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.app import app_ssowatconf
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.password import (
+        assert_password_is_strong_enough,
+        assert_password_is_compatible
+    )
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_callback
 
