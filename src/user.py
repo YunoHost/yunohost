@@ -143,7 +143,10 @@ def user_create(
 
     from yunohost.domain import domain_list, _get_maindomain, _assert_domain_exists
     from yunohost.hook import hook_callback
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.password import (
+        assert_password_is_strong_enough,
+        assert_password_is_compatible
+    )
     from yunohost.utils.ldap import _get_ldap_interface
 
     # Ensure compatibility and sufficiently complex password
