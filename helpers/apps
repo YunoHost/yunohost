@@ -31,8 +31,11 @@ ynh_install_apps() {
 		if ! yunohost app list --output-as json --quiet | jq -e --arg id $one_app '.apps[] | select(.id == $id)' >/dev/null
 		then
 			# Retrieve the arguments of the app (part after ?)
-			local one_argument=$(cut -d "?" -f2- <<< "$one_app_and_its_args")
-			[ ! -z "$one_argument" ] && one_argument="--args $one_argument"
+			local one_argument=""
+			if [[ "$one_app_and_its_args" == *"?"* ]]; then
+				one_argument=$(cut -d "?" -f2- <<< "$one_app_and_its_args")
+				one_argument="--args $one_argument"
+			fi
 			
 			# Install the app with its arguments
 			yunohost app install $one_app $one_argument
