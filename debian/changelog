@@ -1,3 +1,20 @@
+yunohost (11.0.7) testing; urgency=low
+
+  - [fix] Allow lime2 to upgrade even if kernel is hold ([#1452](https://github.com/YunoHost/yunohost/pull/1452))
+  - [fix] Some DNS suggestions for specific domains are incorrect  ([#1460](https://github.com/YunoHost/yunohost/pull/1460))
+  - [enh] Reorganize PHP-specific code in apt helper (5ca18c5)
+  - [enh] Implement install and removal of YunoHost apps ([#1445](https://github.com/YunoHost/yunohost/pull/1445))
+  - [enh] Add n auto-updater ([#1437](https://github.com/YunoHost/yunohost/pull/1437))
+  - [enh] nodejs: Upgrade n to v8.2.0 ([#1456](https://github.com/YunoHost/yunohost/pull/1456))
+  - [enh] Improve ynh_string_random to output various ranges of characters ([#1455](https://github.com/YunoHost/yunohost/pull/1455))
+  - [enh] Avoid alert for Content Security Policies Report-Only and Websockets ((#1464)[https://github.com/YunoHost/yunohost/pull/1464])
+  - [doc] Improve ynh_add_config template doc ([#1463](https://github.com/YunoHost/yunohost/pull/1463))
+  - [i18n] Translations updated for Russian and French
+
+  Thanks to all contributors <3 ! (DiesDasJenes, ljf, kayou, yalh, aleks, tituspijean, keomabrun, pp-r, cheredin)
+
+ -- tituspijean <titus+yunohost@pijean.ovh>  Tue, 17 May 2022 23:20:00 +0200
+
 yunohost (11.0.6) testing; urgency=low
 
   - [fix] configpanel: the config panel was not modifying the configuration of the correct app in certain situations ([#1449](http://github.com/YunoHost/yunohost/pull/1449))

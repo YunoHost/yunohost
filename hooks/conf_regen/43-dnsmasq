@@ -73,7 +73,7 @@ do_post_regen() {
 
         grep -q '^supersede domain-name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-name "";' >>/etc/dhcp/dhclient.conf
         grep -q '^supersede domain-search "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-search "";' >>/etc/dhcp/dhclient.conf
-        grep -q '^supersede name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede name "";' >>/etc/dhcp/dhclient.conf
+        grep -q '^supersede search "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede search "";' >>/etc/dhcp/dhclient.conf
         systemctl restart resolvconf
     fi
 
