@@ -102,7 +102,7 @@ def settings_reset_all(operation_logger):
 
 
 class SettingsConfigPanel(ConfigPanel):
-    entity_type = "settings"
+    entity_type = "global"
     save_path_tpl = SETTINGS_PATH
     save_mode = "diff"
 
