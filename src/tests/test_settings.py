@@ -207,7 +207,7 @@ def test_settings_list_modified():
 def test_reset():
     option = settings_get("example.example.number", full=True).get('panels')[0].get('sections')[0].get('options')[0]
     settings_set("example.example.number", 21)
-    assert settings_get("number") == 21
+    assert settings_get("example.example.number") == 21
     settings_reset("example.example.number")
     assert settings_get("example.example.number") == option["default"]
 
