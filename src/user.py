@@ -423,7 +423,7 @@ def user_update(
                 m18n.n("ask_password"), is_password=True, confirm=True
             )
         # Ensure compatibility and sufficiently complex password
-        assert_password_is_compatible(password)
+        assert_password_is_compatible(change_password)
         assert_password_is_strong_enough("user", change_password)
 
         new_attr_dict["userPassword"] = [_hash_user_password(change_password)]
