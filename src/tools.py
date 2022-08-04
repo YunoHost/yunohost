@@ -189,7 +189,10 @@ def tools_postinstall(
     """
     from yunohost.dyndns import _dyndns_available
     from yunohost.utils.dns import is_yunohost_dyndns_domain
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.password import (
+        assert_password_is_strong_enough,
+        assert_password_is_compatible
+    )
     from yunohost.domain import domain_main_domain
     import psutil
 
