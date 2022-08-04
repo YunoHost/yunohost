@@ -143,10 +143,14 @@ def user_create(
 
     from yunohost.domain import domain_list, _get_maindomain, _assert_domain_exists
     from yunohost.hook import hook_callback
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.password import (
+        assert_password_is_strong_enough,
+        assert_password_is_compatible
+    )
     from yunohost.utils.ldap import _get_ldap_interface
 
-    # Ensure sufficiently complex password
+    # Ensure compatibility and sufficiently complex password
+    assert_password_is_compatible(password)
     assert_password_is_strong_enough("user", password)
 
     # Validate domain used for email address/xmpp account
@@ -365,7 +369,10 @@ def user_update(
     """
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.app import app_ssowatconf
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.password import (
+        assert_password_is_strong_enough,
+        assert_password_is_compatible
+    )
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_callback
 
@@ -414,7 +421,8 @@ def user_update(
             change_password = Moulinette.prompt(
                 m18n.n("ask_password"), is_password=True, confirm=True
             )
-        # Ensure sufficiently complex password
+        # Ensure compatibility and sufficiently complex password
+        assert_password_is_compatible(change_password)
         assert_password_is_strong_enough("user", change_password)
 
         new_attr_dict["userPassword"] = [_hash_user_password(change_password)]

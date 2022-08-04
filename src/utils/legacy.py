@@ -327,5 +327,5 @@ def _patch_legacy_helpers(app_folder):
         if show_warning:
             # And complain about those damn deprecated helpers
             logger.error(
-                r"/!\ Packagers ! This app uses a very old deprecated helpers ... Yunohost automatically patched the helpers to use the new recommended practice, but please do consider fixing the upstream code right now ..."
+                r"/!\ Packagers! This app uses very old deprecated helpers... YunoHost automatically patched the helpers to use the new recommended practice, but please do consider fixing the upstream code right now..."
             )

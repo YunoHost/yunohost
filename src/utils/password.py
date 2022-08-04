@@ -47,7 +47,25 @@ STRENGTH_LEVELS = [
 ]
 
 
+def assert_password_is_compatible(password):
+    """
+    UNIX seems to not like password longer than 127 chars ...
+    e.g. SSH login gets broken (or even 'su admin' when entering the password)
+    """
+
+    if len(password) >= 127:
+
+        # Note that those imports are made here and can't be put
+        # on top (at least not the moulinette ones)
+        # because the moulinette needs to be correctly initialized
+        # as well as modules available in python's path.
+        from yunohost.utils.error import YunohostValidationError
+
+        raise YunohostValidationError("admin_password_too_long")
+
+
 def assert_password_is_strong_enough(profile, password):
+
     PasswordValidator(profile).validate(password)
 
 

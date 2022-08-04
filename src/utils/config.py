@@ -533,7 +533,6 @@ class ConfigPanel:
 
     def _hydrate(self):
         # Hydrating config panel with current value
-        logger.debug("Hydrating config with current values")
         for _, _, option in self._iterate():
             if option["id"] not in self.values:
                 allowed_empty_types = ["alert", "display_text", "markdown", "file"]
