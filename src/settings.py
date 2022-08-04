@@ -15,10 +15,6 @@ logger = getActionLogger("yunohost.settings")
 
 SETTINGS_PATH = "/etc/yunohost/settings.yml"
 
-BOOLEANS = {
-    "True": True,
-    "False": False,
-}
 
 
 def settings_get(key="", full=False, export=False):
@@ -136,8 +132,8 @@ class SettingsConfigPanel(ConfigPanel):
             return self.config
 
         # Dirty hack to let settings_get() to work from a python script
-        if isinstance(result, str) and result in BOOLEANS:
-            result = BOOLEANS[result]
+        if isinstance(result, str) and result in ["True", "False"]:
+            result = bool(result)
 
         return result
 
