@@ -16,7 +16,6 @@ logger = getActionLogger("yunohost.settings")
 SETTINGS_PATH = "/etc/yunohost/settings.yml"
 
 
-
 def settings_get(key="", full=False, export=False):
     """
     Get an entry value in the settings
@@ -50,7 +49,7 @@ def settings_list(full=False, export=True):
     List all entries of the settings
 
     """
-    
+
     if full:
         export = False
 
@@ -106,18 +105,20 @@ class SettingsConfigPanel(ConfigPanel):
     save_path_tpl = SETTINGS_PATH
     save_mode = "diff"
 
-    def __init__(
-        self, config_path=None, save_path=None, creation=False
-    ):
+    def __init__(self, config_path=None, save_path=None, creation=False):
         super().__init__("settings")
 
     def _apply(self):
         super()._apply()
 
-        settings = { k: v for k, v in self.future_values.items() if self.values.get(k) != v }
+        settings = {
+            k: v for k, v in self.future_values.items() if self.values.get(k) != v
+        }
         for setting_name, value in settings.items():
             try:
-                trigger_post_change_hook(setting_name, self.values.get(setting_name), value)
+                trigger_post_change_hook(
+                    setting_name, self.values.get(setting_name), value
+                )
             except Exception as e:
                 logger.error(f"Post-change hook for setting failed : {e}")
                 raise
@@ -128,7 +129,9 @@ class SettingsConfigPanel(ConfigPanel):
         if mode == "full":
             for panel, section, option in self._iterate():
                 if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
-                    option["help"] = m18n.n(self.config["i18n"] + "_" + option["id"] + "_help")
+                    option["help"] = m18n.n(
+                        self.config["i18n"] + "_" + option["id"] + "_help"
+                    )
             return self.config
 
         # Dirty hack to let settings_get() to work from a python script
@@ -137,7 +140,7 @@ class SettingsConfigPanel(ConfigPanel):
 
         return result
 
-    def reset(self, key = "", operation_logger=None):
+    def reset(self, key="", operation_logger=None):
         self.filter_key = key
 
         # Read config panel toml
