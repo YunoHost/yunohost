@@ -6,8 +6,6 @@ import pytest
 import moulinette
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
-import yunohost.settings as settings
-
 from yunohost.settings import (
     settings_get,
     settings_list,
@@ -45,8 +43,8 @@ def setup_function(function):
     if os.path.exists(SETTINGS_PATH):
         os.system(f"mv {SETTINGS_PATH} {SETTINGS_PATH}.saved")
     # Add example settings to config panel
-    os.system("cp /usr/share/yunohost/config_settings.toml /usr/share/yunohost/config_settings.toml.saved")
-    with open("/usr/share/yunohost/config_settings.toml", "a") as file:
+    os.system("cp /usr/share/yunohost/config_global.toml /usr/share/yunohost/config_global.toml.saved")
+    with open("/usr/share/yunohost/config_global.toml", "a") as file:
         file.write(EXAMPLE_SETTINGS)
 
 
@@ -55,7 +53,7 @@ def teardown_function(function):
         os.system(f"mv {SETTINGS_PATH}.saved {SETTINGS_PATH}")
     elif os.path.exists(SETTINGS_PATH):
         os.remove(SETTINGS_PATH)
-    os.system("mv /usr/share/yunohost/config_settings.toml.saved /usr/share/yunohost/config_settings.toml")
+    os.system("mv /usr/share/yunohost/config_global.toml.saved /usr/share/yunohost/config_global.toml")
 
 
 old_translate = moulinette.core.Translator.translate
