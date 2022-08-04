@@ -136,7 +136,7 @@ class SettingsConfigPanel(ConfigPanel):
 
         # Dirty hack to let settings_get() to work from a python script
         if isinstance(result, str) and result in ["True", "False"]:
-            result = bool(result)
+            result = bool(result == "True")
 
         return result
 
