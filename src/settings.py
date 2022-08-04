@@ -1,5 +1,4 @@
 import os
-import json
 import subprocess
 
 from moulinette import m18n

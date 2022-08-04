@@ -25,8 +25,6 @@
 import os
 import sys
 import shutil
-import pwd
-import grp
 import subprocess
 import glob
 
