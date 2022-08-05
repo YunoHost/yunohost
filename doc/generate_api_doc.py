@@ -48,11 +48,58 @@ def main():
 
         },
         'servers': [
-            {'url': 'https://demo.yunohost.org'},
-            {'url': 'https://'+ domain}
+            {'url': 'https://demo.yunohost.org/yunohost/api'},
+            {'url': f"https://{domain}/yunohost/api"}
         ],
-        'tags': [],
-        'paths': {}
+        'tags': [
+            {
+                'name': 'public',
+                'description': 'Public route'
+            }
+        ],
+        'paths': {
+            '/login': {
+                'post': {
+                    'tags': ['public'],
+                    'summary': 'Logs in and returns the authentication cookie',
+                    'requestBody': {
+                        'required': True,
+                        'content': {
+                            'multipart/form-data': {
+                                'schema': {
+                                    'type': 'object',
+                                    'properties': {
+                                        'password': {
+                                            'type': 'string',
+                                            'format': 'password'
+                                        }
+                                    },
+                                    'required': [
+                                        'password'
+                                    ]
+                                }
+                            }
+                        }
+                    },
+                    'security': [],
+                    'responses': {
+                        '200': {
+                            'description': 'Successfully login'
+                        }
+                    }
+                }
+            }
+        },
+        'components': {
+            'securitySchemes': {
+                'cookieAuth': {
+                    'type': 'apiKey',
+                    'in': 'cookie',
+                    'name': 'session.yunohost.admin'
+                }
+            }
+        },
+        'security': {'cookieAuth': [] }
     }
 
 
@@ -82,6 +129,7 @@ def main():
                 for i, api in enumerate(action_params['api']):
                     print(api)
                     method, path = api.split(' ')
+                    method = method.lower()
                     key_param = ''
                     if '{' in path:
                         key_param = path[path.find("{")+1:path.find("}")]
@@ -105,7 +153,22 @@ def main():
                     }
 
                     if 'arguments' in action_params:
-                        operation['parameters'] = []
+                        if method in ['put', 'post', 'patch']:
+                            operation['requestBody'] = {
+                                'required': True,
+                                'content': {
+                                    'multipart/form-data': {
+                                        'schema': {
+                                            'type': 'object',
+                                            'properties': {
+                                            },
+                                            'required': []
+                                        }
+                                    }
+                                }
+                            }
+                        else:
+                            operation['parameters'] = []
                         for arg_name, arg_params in action_params['arguments'].items():
                             if 'help' not in arg_params:
                                 arg_params['help'] = ''
@@ -132,10 +195,7 @@ def main():
                             else:
                                 allow_multiple = False
                             if 'choices' in arg_params:
-                                allowable_values = {
-                                    'valueType': 'LIST',
-                                    'values': arg_params['choices']
-                                }
+                                allowable_values = arg_params['choices']
                             if 'action' in arg_params and arg_params['action'] == 'store_true':
                                 allowable_values = {
                                     'valueType': 'LIST',
@@ -147,20 +207,31 @@ def main():
                                 required = True
                                 allow_multiple = False
 
-                            parameters = {
-                                'name': name,
-                                'in': param_type,
-                                'description': arg_params['help'],
-                                'required': required,
-                                'schema': {
+                            if method in ['put', 'post', 'patch']:
+                                schema = operation['requestBody']['content']['multipart/form-data']['schema']
+                                schema['properties'][name] = {
                                     'type': 'string',
-                                },
-                                'explode': allow_multiple
-                            }
-                            #if allowable_values is not None:
-                            #    parameters['allowableValues'] = allowable_values
+                                    'description': arg_params['help']
+                                }
+                                if required:
+                                    schema['required'].append(name)
+                                if allowable_values is not None:
+                                    schema['properties'][name]['enum'] = allowable_values
+                            else:
+                                parameters = {
+                                    'name': name,
+                                    'in': param_type,
+                                    'description': arg_params['help'],
+                                    'required': required,
+                                    'schema': {
+                                        'type': 'string',
+                                    },
+                                    'explode': allow_multiple
+                                }
+                                if allowable_values is not None:
+                                    parameters['schema']['enum'] = allowable_values
 
-                            operation['parameters'].append(parameters)
+                                operation['parameters'].append(parameters)
 
                     resource_list['paths'][path][method.lower()] = operation
 
