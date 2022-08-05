@@ -26,7 +26,7 @@ class MyMigration(Migration):
         try:
             old_settings = read_json(OLD_SETTINGS_PATH)
         except Exception as e:
-            raise YunohostError("global_settings_cant_open_settings", reason=e)
+            raise YunohostError(f"Can't open setting file : {e}", raw_msg=True)
 
         settings = {
             translate_legacy_settings_to_configpanel_settings(k): v["value"]
