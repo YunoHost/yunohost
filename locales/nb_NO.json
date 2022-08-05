@@ -86,9 +86,7 @@
     "dyndns_key_generating": "Oppretter DNS-nøkkel… Dette kan ta en stund.",
     "dyndns_no_domain_registered": "Inget domene registrert med DynDNS",
     "dyndns_registered": "DynDNS-domene registrert",
-    "global_settings_setting_security_password_admin_strength": "Admin-passordets styrke",
     "dyndns_registration_failed": "Kunne ikke registrere DynDNS-domene: {error}",
-    "global_settings_setting_security_password_user_strength": "Brukerpassordets styrke",
     "log_backup_restore_app": "Gjenopprett '{}' fra sikkerhetskopiarkiv",
     "log_remove_on_failed_install": "Fjern '{}' etter mislykket installasjon",
     "log_selfsigned_cert_install": "Installer selvsignert sertifikat på '{}'-domenet",
@@ -115,5 +113,7 @@
     "log_help_to_get_log": "For å vise loggen for operasjonen '{desc}', bruk kommandoen 'yunohost log show {name}'",
     "log_user_create": "Legg til '{}' bruker",
     "app_change_url_success": "{app} nettadressen er nå {domain}{path}",
-    "app_install_failed": "Kunne ikke installere {app}: {error}"
+    "app_install_failed": "Kunne ikke installere {app}: {error}",
+    "global_settings_setting_admin_strength": "Admin-passordets styrke",
+    "global_settings_setting_user_strength": "Brukerpassordets styrke"
 }
