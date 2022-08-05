@@ -29,12 +29,12 @@ class MyMigration(Migration):
             raise YunohostError(f"Can't open setting file : {e}", raw_msg=True)
 
         settings = {
-            translate_legacy_settings_to_configpanel_settings(k): v["value"]
+            translate_legacy_settings_to_configpanel_settings(k).split('.')[-1]: v["value"]
             for k, v in old_settings.items()
         }
 
-        if settings.get("email.smtp.smtp_relay_host") != "":
-            settings["email.smtp.smtp_relay_enabled"] = "True"
+        if settings.get("smtp_relay_host"):
+            settings["smtp_relay_enabled"] = True
 
         # Here we don't use settings_set() from settings.py to prevent
         # Questions to be asked when one run the migration from CLI.

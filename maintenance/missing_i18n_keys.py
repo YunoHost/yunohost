@@ -150,7 +150,7 @@ def find_expected_string_keys():
     # Global settings
     global_config = toml.load(open(ROOT + "share/config_global.toml"))
     # Boring hard-coding because there's no simple other way idk
-    settings_without_help_key = ["admin_strength", "smtp_relay_host", "smtp_relay_password", "smtp_relay_port", "smtp_relay_user", "ssh_port", "ssowat_panel_overlay_enabled", "user_strength"]
+    settings_without_help_key = ["smtp_relay_host", "smtp_relay_password", "smtp_relay_port", "smtp_relay_user", "ssh_port", "ssowat_panel_overlay_enabled"]
 
     for panel in global_config.values():
         if not isinstance(panel, dict):

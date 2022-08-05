@@ -5,20 +5,30 @@ i18n = "global_settings_setting"
 name = "Security"
     [security.password]
     name = "Passwords"
+
         [security.password.admin_strength]
-        type = "number"
+        type = "select"
+        choices.1 = "Require at least 8 chars"
+        choices.2 = "ditto, but also require at least one digit, one lower and one upper char"
+        choices.3 = "ditto, but also require at least one special char"
+        choices.4 = "ditto, but also require at least 12 chars"
         default = 1
 
         [security.password.user_strength]
-        type = "number"
+        type = "select"
+        choices.1 = "Require at least 8 chars"
+        choices.2 = "ditto, but also require at least one digit, one lower and one upper char"
+        choices.3 = "ditto, but also require at least one special char"
+        choices.4 = "ditto, but also require at least 12 chars"
         default = 1
-    
+
     [security.ssh]
     name = "SSH"
         [security.ssh.ssh_compatibility]
         type = "select"
+        choices.intermediate = "Intermediate (compatible with older softwares)"
+        choices.modern = "Modern (recommended)"
         default = "modern"
-        choices = ["intermediate", "modern"]
 
         [security.ssh.ssh_port]
         type = "number"
@@ -26,43 +36,37 @@ name = "Security"
 
         [security.ssh.ssh_password_authentication]
         type = "boolean"
-        yes = "True"
-        no = "False"
-        default = "False"
+        default = true
 
         [security.ssh.ssh_allow_deprecated_dsa_hostkey]
         type = "boolean"
-        yes = "True"
-        no = "False"
-        default = "False"
+        default = false
 
     [security.nginx]
     name = "NGINX"
         [security.nginx.nginx_redirect_to_https]
         type = "boolean"
-        yes = "True"
-        no = "False"
-        default = "True"
+        default = true
 
         [security.nginx.nginx_compatibility]
         type = "select"
+        choices.intermediate = "Intermediate (compatible with Firefox 27, Android 4.4.2, Chrome 31, Edge, IE 11, Opera 20, and Safari 9)"
+        choices.modern = "Modern (compatible with Firefox 63, Android 10.0, Chrome 70, Edge 75, Opera 57, and Safari 12.1)"
         default = "intermediate"
-        choices = ["intermediate", "modern"]
 
     [security.postfix]
     name = "Postfix"
         [security.postfix.postfix_compatibility]
         type = "select"
+        choices.intermediate = "Intermediate (allows TLS 1.2)"
+        choices.modern = "Modern (TLS 1.3 only)"
         default = "intermediate"
-        choices = ["intermediate", "modern"]
 
     [security.webadmin]
     name = "Webadmin"
         [security.webadmin.webadmin_allowlist_enabled]
         type = "boolean"
-        yes = "True"
-        no = "False"
-        default = "False"
+        default = false
 
         [security.webadmin.webadmin_allowlist]
         type = "tags"
@@ -74,9 +78,7 @@ name = "Security"
     name = "Experimental"
         [security.experimental.security_experimental_enabled]
         type = "boolean"
-        yes = "True"
-        no = "False"
-        default = "False"
+        default = false
 
 
 [email]
@@ -85,23 +87,17 @@ name = "Email"
     name = "POP3"
         [email.pop3.pop3_enabled]
         type = "boolean"
-        yes = "True"
-        no = "False"
-        default = "False"
+        default = false
     
     [email.smtp]
     name = "SMTP"
         [email.smtp.smtp_allow_ipv6]
         type = "boolean"
-        yes = "True"
-        no = "False"
-        default = "True"
+        default = true
 
         [email.smtp.smtp_relay_enabled]
         type = "boolean"
-        yes = "True"
-        no = "False"
-        default = "False"
+        default = false
         
         [email.smtp.smtp_relay_host]
         type = "string"
@@ -132,14 +128,10 @@ name = "Other"
     name = "SSOwat"
         [misc.ssowat.ssowat_panel_overlay_enabled]
         type = "boolean"
-        yes = "True"
-        no = "False"
-        default = "True"
+        default = true
     
     [misc.backup]
     name = "Backup"
         [misc.backup.backup_compress_tar_archives]
         type = "boolean"
-        yes = "True"
-        no = "False"
-        default = "False"
+        default = false
