@@ -9,8 +9,11 @@ location /yunohost/api/ {
     # Rewrite CORS headers due to bug inside moulinette
     # cause it's very difficult to add them with bottle 
     # framework 0.12.
+    # Important: to make with credentials working and be
+    # able to transfer cookies from JS. We need to specify
+    # an accurate origin and not just *
     # https://github.com/YunoHost/moulinette/pull/324
-    more_set_headers "Access-Control-Allow-Origin : *";
+    more_set_headers "Access-Control-Allow-Origin : https://yunohost.org";
     more_set_headers "Access-Control-Allow-Headers: x-requested-with";
     more_set_headers "Allow: GET, POST, PUT, DELETE, OPTIONS";
     more_set_headers "Access-Control-Allow-Credentials: true";
