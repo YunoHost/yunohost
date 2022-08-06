@@ -94,7 +94,7 @@ def main():
                                         }
                                     },
                                     'required': [
-                                        'password'
+                                        'credentials'
                                     ]
                                 }
                             }
@@ -115,7 +115,7 @@ def main():
                     }
                 }
             },
-            '/install': {
+            '/installed': {
                 'get': {
                     'tags': ['public'],
                     'summary': 'Test if the API is working',
@@ -129,16 +129,6 @@ def main():
                 }
             }
         },
-        'components': {
-            'securitySchemes': {
-                'cookieAuth': {
-                    'type': 'apiKey',
-                    'in': 'cookie',
-                    'name': 'session.yunohost.admin'
-                }
-            }
-        },
-        'security': {'cookieAuth': [] }
     }
 
 
