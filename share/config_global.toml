@@ -38,10 +38,6 @@ name = "Security"
         type = "boolean"
         default = true
 
-        [security.ssh.ssh_allow_deprecated_dsa_hostkey]
-        type = "boolean"
-        default = false
-
     [security.nginx]
     name = "NGINX (web server)"
         [security.nginx.nginx_redirect_to_https]

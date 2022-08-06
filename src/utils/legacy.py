@@ -68,7 +68,6 @@ LEGACY_SETTINGS = {
     "security.ssh.compatibility": "security.ssh.ssh_compatibility",
     "security.ssh.port": "security.ssh.ssh_port",
     "security.ssh.password_authentication": "security.ssh.ssh_password_authentication",
-    "service.ssh.allow_deprecated_dsa_hostkey": "security.ssh.ssh_allow_deprecated_dsa_hostkey",
     "security.nginx.redirect_to_https": "security.nginx.nginx_redirect_to_https",
     "security.nginx.compatibility": "security.nginx.nginx_compatibility",
     "security.postfix.compatibility": "security.postfix.postfix_compatibility",

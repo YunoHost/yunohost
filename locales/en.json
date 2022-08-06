@@ -390,8 +390,6 @@
     "global_settings_setting_smtp_relay_password": "SMTP relay password",
     "global_settings_setting_smtp_relay_port": "SMTP relay port",
     "global_settings_setting_smtp_relay_user": "SMTP relay user",
-    "global_settings_setting_ssh_allow_deprecated_dsa_hostkey": "Allow DSA hostkey",
-    "global_settings_setting_ssh_allow_deprecated_dsa_hostkey_help": "Allow the use of (deprecated) DSA hostkey for the SSH daemon configuration",
     "global_settings_setting_ssh_compatibility": "SSH Compatibility",
     "global_settings_setting_ssh_compatibility_help": "Compatibility vs. security tradeoff for the SSH server. Affects the ciphers (and other security-related aspects). See https://infosec.mozilla.org/guidelines/openssh for more info.",
     "global_settings_setting_ssh_password_authentication": "Password authentication",
