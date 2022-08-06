@@ -43,7 +43,7 @@ name = "Security"
         default = false
 
     [security.nginx]
-    name = "NGINX"
+    name = "NGINX (web server)"
         [security.nginx.nginx_redirect_to_https]
         type = "boolean"
         default = true
@@ -55,7 +55,7 @@ name = "Security"
         default = "intermediate"
 
     [security.postfix]
-    name = "Postfix"
+    name = "Postfix (SMTP email server)"
         [security.postfix.postfix_compatibility]
         type = "select"
         choices.intermediate = "Intermediate (allows TLS 1.2)"
@@ -121,12 +121,13 @@ name = "Email"
         default = ""
         optional = true
         visible="smtp_relay_enabled"
+        help = ""  # This is empty string on purpose, otherwise the core automatically set the 'good_practice_admin_password' string here which is not relevant, because the admin is not actually "choosing" the password ...
 
 [misc]
 name = "Other"
-    [misc.ssowat]
-    name = "SSOwat"
-        [misc.ssowat.ssowat_panel_overlay_enabled]
+    [misc.portal]
+    name = "User portal"
+        [misc.portal.ssowat_panel_overlay_enabled]
         type = "boolean"
         default = true
     

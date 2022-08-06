@@ -79,7 +79,7 @@ LEGACY_SETTINGS = {
     "smtp.relay.user": "email.smtp.smtp_relay_user",
     "smtp.relay.password": "email.smtp.smtp_relay_password",
     "backup.compress_tar_archives": "misc.backup.backup_compress_tar_archives",
-    "ssowat.panel_overlay.enabled": "misc.ssowat.ssowat_panel_overlay_enabled",
+    "ssowat.panel_overlay.enabled": "misc.portal.ssowat_panel_overlay_enabled",
     "security.webadmin.allowlist.enabled": "security.webadmin.webadmin_allowlist_enabled",
     "security.webadmin.allowlist": "security.webadmin.webadmin_allowlist",
     "security.experimental.enabled": "security.experimental.security_experimental_enabled"
