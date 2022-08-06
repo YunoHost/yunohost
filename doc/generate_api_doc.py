@@ -39,6 +39,17 @@ def main():
         top_changelog = f.readline()
     api_version = top_changelog[top_changelog.find("(")+1:top_changelog.find(")")]
 
+    csrf = {
+        'name': 'X-Requested-With',
+        'in': 'header',
+        'required': True,
+        'schema': {
+            'type': 'string',
+            'default': 'Swagger API'
+        }
+
+    }
+
     resource_list = {
         'openapi': '3.0.3',
         'info': {
@@ -48,8 +59,15 @@ def main():
 
         },
         'servers': [
-            {'url': 'https://demo.yunohost.org/yunohost/api'},
-            {'url': f"https://{domain}/yunohost/api"}
+            {
+                'url': "https://{domain}/yunohost/api",
+                'variables': {
+                    'domain': {
+                        'default': 'demo.yunohost.org',
+                        'description': 'Your yunohost domain'
+                    }
+                }
+            }
         ],
         'tags': [
             {
@@ -62,6 +80,7 @@ def main():
                 'post': {
                     'tags': ['public'],
                     'summary': 'Logs in and returns the authentication cookie',
+                    'parameters': [csrf],
                     'requestBody': {
                         'required': True,
                         'content': {
@@ -69,7 +88,7 @@ def main():
                                 'schema': {
                                     'type': 'object',
                                     'properties': {
-                                        'password': {
+                                        'credentials': {
                                             'type': 'string',
                                             'format': 'password'
                                         }
@@ -84,7 +103,27 @@ def main():
                     'security': [],
                     'responses': {
                         '200': {
-                            'description': 'Successfully login'
+                            'description': 'Successfully login',
+                            'headers': {
+                                'Set-Cookie': {
+                                    'schema': {
+                                        'type': 'string'
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            },
+            '/install': {
+                'get': {
+                    'tags': ['public'],
+                    'summary': 'Test if the API is working',
+                    'parameters': [],
+                    'security': [],
+                    'responses': {
+                        '200': {
+                            'description': 'Successfully working',
                         }
                     }
                 }
@@ -151,6 +190,12 @@ def main():
                             }
                         }
                     }
+                    if action_params.get('deprecated'):
+                        operation['deprecated'] = True
+
+                    operation['parameters'] = []
+                    if method == 'post':
+                        operation['parameters'] = [csrf]
 
                     if 'arguments' in action_params:
                         if method in ['put', 'post', 'patch']:
@@ -167,8 +212,6 @@ def main():
                                     }
                                 }
                             }
-                        else:
-                            operation['parameters'] = []
                         for arg_name, arg_params in action_params['arguments'].items():
                             if 'help' not in arg_params:
                                 arg_params['help'] = ''
@@ -185,22 +228,33 @@ def main():
                                     name = name[2:]
                                 name = name.replace('-', '_')
 
+                            if 'choices' in arg_params:
+                                allowable_values = arg_params['choices']
+                            _type = 'string'
+                            if 'type' in arg_params:
+                                types = {
+                                    'open': 'file',
+                                    'int': 'int'
+                                }
+                                _type = types[arg_params['type']]
+                            if 'action' in arg_params and arg_params['action'] == 'store_true':
+                                _type = 'boolean'
+
                             if 'nargs' in arg_params:
                                 if arg_params['nargs'] == '*':
                                     allow_multiple = True
                                     required = False
+                                    _type = 'array'
                                 if arg_params['nargs'] == '+':
                                     allow_multiple = True
                                     required = True
+                                    _type = 'array'
+                                if arg_params['nargs'] == '?':
+                                    allow_multiple = False
+                                    required = False
                             else:
                                 allow_multiple = False
-                            if 'choices' in arg_params:
-                                allowable_values = arg_params['choices']
-                            if 'action' in arg_params and arg_params['action'] == 'store_true':
-                                allowable_values = {
-                                    'valueType': 'LIST',
-                                    'values': ['true', 'false']
-                                }
+
 
                             if name == key_param:
                                 param_type = 'path'
@@ -210,13 +264,12 @@ def main():
                             if method in ['put', 'post', 'patch']:
                                 schema = operation['requestBody']['content']['multipart/form-data']['schema']
                                 schema['properties'][name] = {
-                                    'type': 'string',
+                                    'type': _type,
                                     'description': arg_params['help']
                                 }
                                 if required:
                                     schema['required'].append(name)
-                                if allowable_values is not None:
-                                    schema['properties'][name]['enum'] = allowable_values
+                                prop_schema = schema['properties'][name]
                             else:
                                 parameters = {
                                     'name': name,
@@ -224,14 +277,26 @@ def main():
                                     'description': arg_params['help'],
                                     'required': required,
                                     'schema': {
-                                        'type': 'string',
+                                        'type': _type,
                                     },
                                     'explode': allow_multiple
                                 }
-                                if allowable_values is not None:
-                                    parameters['schema']['enum'] = allowable_values
-
+                                prop_schema = parameters['schema']
                                 operation['parameters'].append(parameters)
+
+                            if allowable_values is not None:
+                                prop_schema['enum'] = allowable_values
+                            if 'default' in arg_params:
+                                prop_schema['default'] = arg_params['default']
+                            if arg_params.get('metavar') == 'PASSWORD':
+                                prop_schema['format'] = 'password'
+                            if arg_params.get('metavar') == 'MAIL':
+                                prop_schema['format'] = 'mail'
+                            # Those lines seems to slow swagger ui too much
+                            #if 'pattern' in arg_params.get('extra', {}):
+                            #    prop_schema['pattern'] = arg_params['extra']['pattern'][0]
+
+
 
                     resource_list['paths'][path][method.lower()] = operation
 
