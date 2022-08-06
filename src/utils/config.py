@@ -702,7 +702,8 @@ class Question:
         self.default = question.get("default", None)
         self.optional = question.get("optional", False)
         self.visible = question.get("visible", None)
-        self.choices = question.get("choices", [])
+        # Don't restrict choices if there's none specified
+        self.choices = question.get("choices", None)
         self.pattern = question.get("pattern", self.pattern)
         self.ask = question.get("ask", {"en": self.name})
         self.help = question.get("help")
