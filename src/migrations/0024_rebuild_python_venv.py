@@ -11,7 +11,14 @@ from moulinette.utils.filesystem import rm, read_file
 logger = getActionLogger("yunohost.migration")
 
 VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bullseye_upgrade.txt"
-VENV_IGNORE = "ynh_migration_no_regen"
+
+
+def extract_app_from_venv_path(venv_path):
+
+    venv_path = venv_path.replace("/var/www/", "")
+    venv_path = venv_path.replace("/opt/yunohost/", "")
+    venv_path = venv_path.replace("/opt/", "")
+    return venv_path.split("/")[0]
 
 
 def _get_all_venvs(dir, level=0, maxlevel=3):
@@ -29,8 +36,6 @@ def _get_all_venvs(dir, level=0, maxlevel=3):
     for file in os.listdir(dir):
         path = os.path.join(dir, file)
         if os.path.isdir(path):
-            if os.path.isfile(os.path.join(path, VENV_IGNORE)):
-                continue
             activatepath = os.path.join(path, "bin", "activate")
             if os.path.isfile(activatepath):
                 content = read_file(activatepath)
@@ -87,19 +92,31 @@ class MyMigration(Migration):
         if not self.is_pending():
             return None
 
-        apps = []
+        ignored_apps = []
+        rebuild_apps = []
+
         venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
         for venv in venvs:
             if not os.path.isfile(venv + VENV_REQUIREMENTS_SUFFIX):
                 continue
 
-            # Search for ignore apps
-            for app in self.ignored_python_apps:
-                if app in venv:
-                    apps.append(app)
+            app_corresponding_to_venv = extract_app_from_venv_path(venv)
 
-        return m18n.n("migration_0024_rebuild_python_venv_disclaimer",
-                      apps=", ".join(apps))
+            # Search for ignore apps
+            if any(app_corresponding_to_venv.startswith(app) for app in self.ignored_python_apps):
+                ignored_apps.append(app_corresponding_to_venv)
+            else:
+                rebuild_apps.append(app_corresponding_to_venv)
+
+        msg = m18n.n("migration_0024_rebuild_python_venv_disclaimer_base",
+        if rebuild_apps:
+            msg += "\n\n" + m18n.n("migration_0024_rebuild_python_venv_disclaimer_rebuild",
+                                   rebuild_apps="\n    - " + "\n    - ".join(rebuild_apps))
+        if ignored_apps:
+            msg += "\n\n" + m18n.n("migration_0024_rebuild_python_venv_disclaimer_ignored",
+                                   ignored_apps="\n    - " + "\n    - ".join(ignored_apps))
+
+        return msg
 
     def run(self):
 
@@ -108,18 +125,15 @@ class MyMigration(Migration):
             if not os.path.isfile(venv + VENV_REQUIREMENTS_SUFFIX):
                 continue
 
-            # Search for ignore apps
-            ignored_app = None
-            for app in self.ignored_python_apps:
-                if app in venv:
-                    ignored_app = app
+            app_corresponding_to_venv = extract_app_from_venv_path(venv)
 
-            if ignored_app:
+            # Search for ignore apps
+            if any(app_corresponding_to_venv.startswith(app) for app in self.ignored_python_apps):
                 rm(venv + VENV_REQUIREMENTS_SUFFIX)
-                logger.info(m18n.n("migration_0024_rebuild_python_venv_broken_app", app=ignored_app))
+                logger.info(m18n.n("migration_0024_rebuild_python_venv_broken_app", app=app_corresponding_to_venv))
                 continue
 
-            logger.info(m18n.n("migration_0024_rebuild_python_venv_in_progress", venv=venv))
+            logger.info(m18n.n("migration_0024_rebuild_python_venv_in_progress", app=app_corresponding_to_venv))
 
             # Recreate the venv
             rm(venv, recursive=True)
@@ -132,7 +146,7 @@ class MyMigration(Migration):
                 f"{venv}/bin/pip", "install", "-r",
                 venv + VENV_REQUIREMENTS_SUFFIX], callbacks)
             if status != 0:
-                logger.warning(m18n.n("migration_0024_rebuild_python_venv",
-                                      venv=venv))
+                logger.error(m18n.n("migration_0024_rebuild_python_venv_failed",
+                                    app=app_corresponding_to_venv))
             else:
                 rm(venv + VENV_REQUIREMENTS_SUFFIX)
