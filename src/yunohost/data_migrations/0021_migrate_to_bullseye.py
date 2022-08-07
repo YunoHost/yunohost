@@ -69,7 +69,7 @@ def _generate_requirements():
     venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
     for venv in venvs:
         # Generate a requirements file from venv
-        os.system(f"bash -c 'source {venv}/bin/activate && pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX} && deactivate'")
+        os.system(f"{venv}/bin/pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX}")
 
 
 def _rebuild_venvs():
