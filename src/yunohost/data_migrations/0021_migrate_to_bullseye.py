@@ -83,7 +83,7 @@ def _rebuild_venvs():
             # Recreate the venv
             rm(venv, recursive=True)
             os.system(f"python -m venv {venv}")
-            status = os.system(f"bash -c 'source {venv}/bin/activate && pip install -r {venv}{VENV_REQUIREMENTS_SUFFIX} && deactivate'")
+            status = os.system(f"{venv}/bin/pip install -r {venv}{VENV_REQUIREMENTS_SUFFIX}")
             if status != 0:
                 logger.warning(m18n.n("migration_0021_venv_regen_failed", venv=venv))
             else:
