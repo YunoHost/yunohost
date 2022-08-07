@@ -58,7 +58,7 @@ def _get_all_venvs(dir, level=0, maxlevel=3):
     return result
 
 
-def _generate_requirements():
+def _backup_pip_freeze_for_python_app_venvs():
     """
         Generate a requirements file for all python virtual env located inside /opt/ and /var/www/
     """
@@ -112,7 +112,7 @@ class MyMigration(Migration):
         # Get requirements of the different venvs from python apps
         #
 
-        _generate_requirements()
+        _backup_pip_freeze_for_python_app_venvs()
 
         #
         # Run apt update
