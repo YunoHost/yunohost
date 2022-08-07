@@ -31,7 +31,6 @@ N_NEXT_DEBAN = 11
 N_NEXT_YUNOHOST = 11
 
 VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bullseye_upgrade.txt"
-VENV_IGNORE = "ynh_migration_no_regen"
 
 
 def _get_all_venvs(dir, level=0, maxlevel=3):
@@ -48,8 +47,6 @@ def _get_all_venvs(dir, level=0, maxlevel=3):
     for file in os.listdir(dir):
         path = os.path.join(dir, file)
         if os.path.isdir(path):
-            if os.path.isfile(os.path.join(path, VENV_IGNORE)):
-                continue
             activatepath = os.path.join(path,"bin", "activate")
             if os.path.isfile(activatepath):
                 content = read_file(activatepath)
