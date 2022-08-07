@@ -1,3 +1,9 @@
+yunohost (11.0.8.1) testing; urgency=low
+
+  - Fix tests é_è (7fa67b2b)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 07 Aug 2022 12:41:28 +0200
+
 yunohost (11.0.8) testing; urgency=low
 
   - [fix] helpers: escape username in ynh_user_exists ([#1469](https://github.com/YunoHost/yunohost/pull/1469))
