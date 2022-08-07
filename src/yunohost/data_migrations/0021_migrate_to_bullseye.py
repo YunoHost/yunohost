@@ -5,7 +5,7 @@ from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
-from moulinette.utils.filesystem import read_file, rm, write_to_file, cp
+from moulinette.utils.filesystem import read_file, rm, write_to_file
 
 from yunohost.tools import (
     Migration,
@@ -30,7 +30,7 @@ N_CURRENT_YUNOHOST = 4
 N_NEXT_DEBAN = 11
 N_NEXT_YUNOHOST = 11
 
-VENV_REQUIREMENTS_SUFFIX = "_req.txt"
+VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bullseye_upgrade.txt"
 VENV_IGNORE = "ynh_migration_no_regen"
 
 
@@ -70,26 +70,6 @@ def _generate_requirements():
     for venv in venvs:
         # Generate a requirements file from venv
         os.system(f"{venv}/bin/pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX}")
-
-
-def _rebuild_venvs():
-    """
-        After the update, recreate a python virtual env based on the previously generated requirements file
-    """
-
-    venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
-    for venv in venvs:
-        if os.path.isfile(venv + VENV_REQUIREMENTS_SUFFIX):
-            # Recreate the venv
-            rm(venv, recursive=True)
-            os.system(f"python -m venv {venv}")
-            status = os.system(f"{venv}/bin/pip install -r {venv}{VENV_REQUIREMENTS_SUFFIX}")
-            if status != 0:
-                logger.warning(m18n.n("migration_0021_venv_regen_failed", venv=venv))
-            else:
-                rm(venv + VENV_REQUIREMENTS_SUFFIX)
-        else:
-            logger.warning(m18n.n("migration_0021_venv_regen_failed", venv=venv))
 
 
 class MyMigration(Migration):
@@ -331,11 +311,6 @@ class MyMigration(Migration):
 
         tools_upgrade(target="system", postupgradecmds=postupgradecmds)
 
-        #
-        # Recreate the venvs
-        #
-
-        _rebuild_venvs()
 
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
@@ -380,11 +355,11 @@ class MyMigration(Migration):
             # Lime2 have hold packages to avoid ethernet instability
             # See https://github.com/YunoHost/arm-images/commit/b4ef8c99554fd1a122a306db7abacc4e2f2942df
             lime2_hold_packages = set([
-                "armbian-firmware", 
-                "armbian-bsp-cli-lime2", 
-                "linux-dtb-current-sunxi", 
-                "linux-image-current-sunxi", 
-                "linux-u-boot-lime2-current", 
+                "armbian-firmware",
+                "armbian-bsp-cli-lime2",
+                "linux-dtb-current-sunxi",
+                "linux-image-current-sunxi",
+                "linux-u-boot-lime2-current",
                 "linux-image-next-sunxi"
             ])
             if upgradable_system_packages - lime2_hold_packages:
