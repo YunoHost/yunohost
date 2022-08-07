@@ -30,6 +30,44 @@ N_CURRENT_YUNOHOST = 4
 N_NEXT_DEBAN = 11
 N_NEXT_YUNOHOST = 11
 
+VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bullseye_upgrade.txt"
+
+
+def _get_all_venvs(dir, level=0, maxlevel=3):
+    """
+        Returns the list of all python virtual env directories recursively
+
+        Arguments:
+            dir - the directory to scan in
+            maxlevel - the depth of the recursion
+            level - do not edit this, used as an iterator
+    """
+    # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
+    result = []
+    for file in os.listdir(dir):
+        path = os.path.join(dir, file)
+        if os.path.isdir(path):
+            activatepath = os.path.join(path,"bin", "activate")
+            if os.path.isfile(activatepath):
+                content = read_file(activatepath)
+                if ("VIRTUAL_ENV" in content) and ("PYTHONHOME" in content):
+                    result.append(path)
+                    continue
+            if level < maxlevel:
+                result += _get_all_venvs(path, level=level + 1)
+    return result
+
+
+def _backup_pip_freeze_for_python_app_venvs():
+    """
+        Generate a requirements file for all python virtual env located inside /opt/ and /var/www/
+    """
+
+    venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
+    for venv in venvs:
+        # Generate a requirements file from venv
+        os.system(f"{venv}/bin/pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX}")
+
 
 class MyMigration(Migration):
 
@@ -69,6 +107,12 @@ class MyMigration(Migration):
             os.system(
                 'wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"'
             )
+
+        #
+        # Get requirements of the different venvs from python apps
+        #
+
+        _backup_pip_freeze_for_python_app_venvs()
 
         #
         # Run apt update
@@ -264,6 +308,7 @@ class MyMigration(Migration):
 
         tools_upgrade(target="system", postupgradecmds=postupgradecmds)
 
+
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
         # on some setup, they may still return Release=9 even after upgrading to
@@ -307,11 +352,11 @@ class MyMigration(Migration):
             # Lime2 have hold packages to avoid ethernet instability
             # See https://github.com/YunoHost/arm-images/commit/b4ef8c99554fd1a122a306db7abacc4e2f2942df
             lime2_hold_packages = set([
-                "armbian-firmware", 
-                "armbian-bsp-cli-lime2", 
-                "linux-dtb-current-sunxi", 
-                "linux-image-current-sunxi", 
-                "linux-u-boot-lime2-current", 
+                "armbian-firmware",
+                "armbian-bsp-cli-lime2",
+                "linux-dtb-current-sunxi",
+                "linux-image-current-sunxi",
+                "linux-u-boot-lime2-current",
                 "linux-image-next-sunxi"
             ])
             if upgradable_system_packages - lime2_hold_packages:
