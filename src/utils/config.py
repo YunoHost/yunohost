@@ -742,7 +742,7 @@ class Question:
             confirm=False,
             prefill=prefill,
             is_multiline=(self.type == "text"),
-            autocomplete=self.choices,
+            autocomplete=self.choices or [],
             help=_value_for_locale(self.help),
         )
 
