@@ -299,7 +299,7 @@ class MyMigration(Migration):
         # Check system is up to date
         # (but we don't if 'bullseye' is already in the sources.list ...
         # which means maybe a previous upgrade crashed and we're re-running it)
-        if " bullseye " not in read_file("/etc/apt/sources.list"):
+        if os.path.exists("/etc/apt/sources.list") and " bullseye " not in read_file("/etc/apt/sources.list"):
             tools_update(target="system")
             upgradable_system_packages = list(_list_upgradable_apt_packages())
             upgradable_system_packages = [
@@ -371,7 +371,8 @@ class MyMigration(Migration):
     def patch_apt_sources_list(self):
 
         sources_list = glob.glob("/etc/apt/sources.list.d/*.list")
-        sources_list.append("/etc/apt/sources.list")
+        if os.path.exists("/etc/apt/sources.list"):
+            sources_list.append("/etc/apt/sources.list")
 
         # This :
         # - replace single 'buster' occurence by 'bulleye'
