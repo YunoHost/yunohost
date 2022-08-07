@@ -108,7 +108,7 @@ class MyMigration(Migration):
             else:
                 rebuild_apps.append(app_corresponding_to_venv)
 
-        msg = m18n.n("migration_0024_rebuild_python_venv_disclaimer_base",
+        msg = m18n.n("migration_0024_rebuild_python_venv_disclaimer_base")
         if rebuild_apps:
             msg += "\n\n" + m18n.n("migration_0024_rebuild_python_venv_disclaimer_rebuild",
                                    rebuild_apps="\n    - " + "\n    - ".join(rebuild_apps))
