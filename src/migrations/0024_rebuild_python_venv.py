@@ -37,11 +37,9 @@ def _get_all_venvs(dir, level=0, maxlevel=3):
         path = os.path.join(dir, file)
         if os.path.isdir(path):
             activatepath = os.path.join(path, "bin", "activate")
-            if os.path.isfile(activatepath):
-                content = read_file(activatepath)
-                if ("VIRTUAL_ENV" in content) and ("PYTHONHOME" in content):
-                    result.append(path)
-                    continue
+            if os.path.isfile(activatepath) and os.path.isfile(path + VENV_REQUIREMENTS_SUFFIX):
+                result.append(path)
+                continue
             if level < maxlevel:
                 result += _get_all_venvs(path, level=level + 1)
     return result
@@ -122,8 +120,6 @@ class MyMigration(Migration):
 
         venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
         for venv in venvs:
-            if not os.path.isfile(venv + VENV_REQUIREMENTS_SUFFIX):
-                continue
 
             app_corresponding_to_venv = extract_app_from_venv_path(venv)
 
