@@ -1,3 +1,13 @@
+yunohost (11.0.9) stable; urgency=low
+
+  - [fix] services: Skip php 7.3 which is most likely dead after buster->bullseye migration because users get spooked (51804925)
+  - [enh] bullseye: add a migration process to automatically attempt to rebuild venvs (3b8e49dc)
+  - [i18n] Translations updated for French
+
+  Thanks to all contributors <3 ! (Éric Gaspar, Kayou, ljf, theo-is-taken)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 07 Aug 2022 23:27:41 +0200
+
 yunohost (11.0.8.1) testing; urgency=low
 
   - Fix tests é_è (7fa67b2b)
