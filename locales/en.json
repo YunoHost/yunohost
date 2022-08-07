@@ -487,6 +487,7 @@
     "main_domain_change_failed": "Unable to change the main domain",
     "main_domain_changed": "The main domain has been changed",
     "migration_0021_cleaning_up": "Cleaning up cache and packages not useful anymore...",
+    "migration_0021_venv_regen_failed": "The virtual environment '{venv}' failed to regenerate, you probably need to run the command `yunohost app upgrade --force`",
     "migration_0021_general_warning": "Please note that this migration is a delicate operation. The YunoHost team did its best to review and test it, but the migration might still break parts of the system or its apps.\n\nTherefore, it is recommended to:\n    - Perform a backup of any critical data or app. More info on https://yunohost.org/backup;\n    - Be patient after launching the migration: Depending on your Internet connection and hardware, it might take up to a few hours for everything to upgrade.",
     "migration_0021_main_upgrade": "Starting main upgrade...",
     "migration_0021_modified_files": "Please note that the following files were found to be manually modified and might be overwritten following the upgrade: {manually_modified_files}",
