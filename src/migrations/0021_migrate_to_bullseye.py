@@ -35,19 +35,19 @@ VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bullseye_upgrade.txt"
 
 def _get_all_venvs(dir, level=0, maxlevel=3):
     """
-        Returns the list of all python virtual env directories recursively
+    Returns the list of all python virtual env directories recursively
 
-        Arguments:
-            dir - the directory to scan in
-            maxlevel - the depth of the recursion
-            level - do not edit this, used as an iterator
+    Arguments:
+        dir - the directory to scan in
+        maxlevel - the depth of the recursion
+        level - do not edit this, used as an iterator
     """
     # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
     result = []
     for file in os.listdir(dir):
         path = os.path.join(dir, file)
         if os.path.isdir(path):
-            activatepath = os.path.join(path,"bin", "activate")
+            activatepath = os.path.join(path, "bin", "activate")
             if os.path.isfile(activatepath):
                 content = read_file(activatepath)
                 if ("VIRTUAL_ENV" in content) and ("PYTHONHOME" in content):
@@ -60,7 +60,7 @@ def _get_all_venvs(dir, level=0, maxlevel=3):
 
 def _backup_pip_freeze_for_python_app_venvs():
     """
-        Generate a requirements file for all python virtual env located inside /opt/ and /var/www/
+    Generate a requirements file for all python virtual env located inside /opt/ and /var/www/
     """
 
     venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
@@ -308,7 +308,6 @@ class MyMigration(Migration):
 
         tools_upgrade(target="system", postupgradecmds=postupgradecmds)
 
-
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
         # on some setup, they may still return Release=9 even after upgrading to
@@ -344,7 +343,9 @@ class MyMigration(Migration):
         # Check system is up to date
         # (but we don't if 'bullseye' is already in the sources.list ...
         # which means maybe a previous upgrade crashed and we're re-running it)
-        if os.path.exists("/etc/apt/sources.list") and " bullseye " not in read_file("/etc/apt/sources.list"):
+        if os.path.exists("/etc/apt/sources.list") and " bullseye " not in read_file(
+            "/etc/apt/sources.list"
+        ):
             tools_update(target="system")
             upgradable_system_packages = list(_list_upgradable_apt_packages())
             upgradable_system_packages = [
@@ -391,8 +392,8 @@ class MyMigration(Migration):
         message = m18n.n("migration_0021_general_warning")
 
         message = (
-           "N.B.: This migration has been tested by the community over the last few months but has only been declared stable recently. If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration ;)! You can read about remaining known issues and feedback from the community here: https://forum.yunohost.org/t/20590\n\n"
-           + message
+            "N.B.: This migration has been tested by the community over the last few months but has only been declared stable recently. If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration ;)! You can read about remaining known issues and feedback from the community here: https://forum.yunohost.org/t/20590\n\n"
+            + message
         )
 
         if problematic_apps:
