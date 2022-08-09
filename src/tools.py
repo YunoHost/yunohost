@@ -73,7 +73,7 @@ def tools_adminpw(new_password, check_strength=True):
     from yunohost.user import _hash_user_password
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
-        assert_password_is_compatible
+        assert_password_is_compatible,
     )
     import spwd
 
@@ -203,7 +203,7 @@ def tools_postinstall(
     from yunohost.utils.dns import is_yunohost_dyndns_domain
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
-        assert_password_is_compatible
+        assert_password_is_compatible,
     )
     from yunohost.domain import domain_main_domain
     import psutil
