@@ -17,6 +17,10 @@ NEWPHP_POOLS = "/etc/php/7.4/fpm/pool.d"
 OLDPHP_SOCKETS_PREFIX = "/run/php/php7.3-fpm"
 NEWPHP_SOCKETS_PREFIX = "/run/php/php7.4-fpm"
 
+# Because of synapse é_è
+OLDPHP_SOCKETS_PREFIX2 = "/run/php7.3-fpm"
+NEWPHP_SOCKETS_PREFIX2 = "/run/php7.4-fpm"
+
 MIGRATION_COMMENT = (
     "; YunoHost note : this file was automatically moved from {}".format(OLDPHP_POOLS)
 )
@@ -50,6 +54,10 @@ class MyMigration(Migration):
                 OLDPHP_SOCKETS_PREFIX, NEWPHP_SOCKETS_PREFIX, dest
             )
             os.system(c)
+            c = "sed -i -e 's@{}@{}@g' {}".format(
+                OLDPHP_SOCKETS_PREFIX2, NEWPHP_SOCKETS_PREFIX2, dest
+            )
+            os.system(c)
 
             # Also add a comment that it was automatically moved from php7.3
             # (for human traceability and backward migration)
@@ -69,16 +77,20 @@ class MyMigration(Migration):
                     OLDPHP_SOCKETS_PREFIX, NEWPHP_SOCKETS_PREFIX, nf
                 )
                 os.system(c)
+                c = "sed -i -e 's@{}@{}@g' {}".format(
+                    OLDPHP_SOCKETS_PREFIX2, NEWPHP_SOCKETS_PREFIX2, nf
+                )
+                os.system(c)
 
         os.system(
             "rm /etc/logrotate.d/php7.3-fpm"
         )  # We remove this otherwise the logrotate cron will be unhappy
 
         # Reload/restart the php pools
-        _run_service_command("restart", "php7.4-fpm")
-        _run_service_command("enable", "php7.4-fpm")
         os.system("systemctl stop php7.3-fpm")
         os.system("systemctl disable php7.3-fpm")
+        _run_service_command("restart", "php7.4-fpm")
+        _run_service_command("enable", "php7.4-fpm")
 
         # Reload nginx
         _run_service_command("reload", "nginx")

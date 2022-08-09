@@ -140,6 +140,9 @@ def regen_conf(
     # though kinda tight-coupled to the postinstall logic :s
     if os.path.exists("/etc/yunohost/installed"):
         env["YNH_DOMAINS"] = " ".join(domain_list()["domains"])
+        env["YNH_MAIN_DOMAINS"] = " ".join(
+            domain_list(exclude_subdomains=True)["domains"]
+        )
 
     pre_result = hook_callback("conf_regen", names, pre_callback=_pre_call, env=env)
 
@@ -449,7 +452,7 @@ def _save_regenconf_infos(infos):
             yaml.safe_dump(infos, f, default_flow_style=False)
     except Exception as e:
         logger.warning(
-            "Error while saving regenconf infos, exception: %s", e, exc_info=1
+            f"Error while saving regenconf infos, exception: {e}", exc_info=1
         )
         raise
 
@@ -505,9 +508,7 @@ def _calculate_hash(path):
         return hasher.hexdigest()
 
     except IOError as e:
-        logger.warning(
-            "Error while calculating file '%s' hash: %s", path, e, exc_info=1
-        )
+        logger.warning(f"Error while calculating file '{path}' hash: {e}", exc_info=1)
         return None
 
 
@@ -559,11 +560,11 @@ def _get_conf_hashes(category):
     categories = _get_regenconf_infos()
 
     if category not in categories:
-        logger.debug("category %s is not in categories.yml yet.", category)
+        logger.debug(f"category {category} is not in categories.yml yet.")
         return {}
 
     elif categories[category] is None or "conffiles" not in categories[category]:
-        logger.debug("No configuration files for category %s.", category)
+        logger.debug(f"No configuration files for category {category}.")
         return {}
 
     else:
@@ -572,7 +573,7 @@ def _get_conf_hashes(category):
 
 def _update_conf_hashes(category, hashes):
     """Update the registered conf hashes for a category"""
-    logger.debug("updating conf hashes for '%s' with: %s", category, hashes)
+    logger.debug(f"updating conf hashes for '{category}' with: {hashes}")
 
     categories = _get_regenconf_infos()
     category_conf = categories.get(category, {})
@@ -603,8 +604,7 @@ def _force_clear_hashes(paths):
         for category in categories.keys():
             if path in categories[category]["conffiles"]:
                 logger.debug(
-                    "force-clearing old conf hash for %s in category %s"
-                    % (path, category)
+                    f"force-clearing old conf hash for {path} in category {category}"
                 )
                 del categories[category]["conffiles"][path]
 
@@ -647,9 +647,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
             logger.debug(m18n.n("regenconf_file_updated", conf=system_conf))
     except Exception as e:
         logger.warning(
-            "Exception while trying to regenerate conf '%s': %s",
-            system_conf,
-            e,
+            f"Exception while trying to regenerate conf '{system_conf}': {e}",
             exc_info=1,
         )
         if not new_conf and os.path.exists(system_conf):

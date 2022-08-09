@@ -60,8 +60,6 @@ KEY_SIZE = 3072
 
 VALIDITY_LIMIT = 15  # days
 
-# For tests
-STAGING_CERTIFICATION_AUTHORITY = "https://acme-staging-v02.api.letsencrypt.org"
 # For prod
 PRODUCTION_CERTIFICATION_AUTHORITY = "https://acme-v02.api.letsencrypt.org"
 
@@ -113,9 +111,7 @@ def certificate_status(domains, full=False):
     return {"certificates": certificates}
 
 
-def certificate_install(
-    domain_list, force=False, no_checks=False, self_signed=False, staging=False
-):
+def certificate_install(domain_list, force=False, no_checks=False, self_signed=False):
     """
     Install a Let's Encrypt certificate for given domains (all by default)
 
@@ -130,7 +126,7 @@ def certificate_install(
     if self_signed:
         _certificate_install_selfsigned(domain_list, force)
     else:
-        _certificate_install_letsencrypt(domain_list, force, no_checks, staging)
+        _certificate_install_letsencrypt(domain_list, force, no_checks)
 
 
 def _certificate_install_selfsigned(domain_list, force=False):
@@ -228,17 +224,12 @@ def _certificate_install_selfsigned(domain_list, force=False):
             )
             operation_logger.success()
         else:
-            msg = (
-                "Installation of self-signed certificate installation for %s failed !"
-                % (domain)
-            )
+            msg = f"Installation of self-signed certificate installation for {domain} failed !"
             logger.error(msg)
             operation_logger.error(msg)
 
 
-def _certificate_install_letsencrypt(
-    domains, force=False, no_checks=False, staging=False
-):
+def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
     from yunohost.domain import domain_list, _assert_domain_exists
 
     if not os.path.exists(ACCOUNT_KEY_FILE):
@@ -267,11 +258,6 @@ def _certificate_install_letsencrypt(
                     "certmanager_domain_cert_not_selfsigned", domain=domain
                 )
 
-    if staging:
-        logger.warning(
-            "Please note that you used the --staging option, and that no new certificate will actually be enabled !"
-        )
-
     # Actual install steps
     for domain in domains:
 
@@ -287,20 +273,19 @@ def _certificate_install_letsencrypt(
         operation_logger = OperationLogger(
             "letsencrypt_cert_install",
             [("domain", domain)],
-            args={"force": force, "no_checks": no_checks, "staging": staging},
+            args={"force": force, "no_checks": no_checks},
         )
         operation_logger.start()
 
         try:
-            _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
+            _fetch_and_enable_new_certificate(domain, no_checks=no_checks)
         except Exception as e:
             msg = f"Certificate installation for {domain} failed !\nException: {e}"
             logger.error(msg)
             operation_logger.error(msg)
             if no_checks:
                 logger.error(
-                    "Please consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s."
-                    % domain
+                    f"Please consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain {domain}."
                 )
         else:
             logger.success(m18n.n("certmanager_cert_install_success", domain=domain))
@@ -308,9 +293,7 @@ def _certificate_install_letsencrypt(
             operation_logger.success()
 
 
-def certificate_renew(
-    domains, force=False, no_checks=False, email=False, staging=False
-):
+def certificate_renew(domains, force=False, no_checks=False, email=False):
     """
     Renew Let's Encrypt certificate for given domains (all by default)
 
@@ -377,11 +360,6 @@ def certificate_renew(
                     "certmanager_acme_not_configured_for_domain", domain=domain
                 )
 
-    if staging:
-        logger.warning(
-            "Please note that you used the --staging option, and that no new certificate will actually be enabled !"
-        )
-
     # Actual renew steps
     for domain in domains:
 
@@ -403,26 +381,22 @@ def certificate_renew(
             args={
                 "force": force,
                 "no_checks": no_checks,
-                "staging": staging,
                 "email": email,
             },
         )
         operation_logger.start()
 
         try:
-            _fetch_and_enable_new_certificate(domain, staging, no_checks=no_checks)
+            _fetch_and_enable_new_certificate(domain, no_checks=no_checks)
         except Exception as e:
             import traceback
             from io import StringIO
 
             stack = StringIO()
             traceback.print_exc(file=stack)
-            msg = "Certificate renewing for %s failed!" % (domain)
+            msg = f"Certificate renewing for {domain} failed!"
             if no_checks:
-                msg += (
-                    "\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain %s."
-                    % domain
-                )
+                msg += f"\nPlease consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain {domain}."
             logger.error(msg)
             operation_logger.error(msg)
             logger.error(stack.getvalue())
@@ -442,9 +416,9 @@ def certificate_renew(
 
 
 def _email_renewing_failed(domain, exception_message, stack=""):
-    from_ = "certmanager@%s (Certificate Manager)" % domain
+    from_ = f"certmanager@{domain} (Certificate Manager)"
     to_ = "root"
-    subject_ = "Certificate renewing attempt for %s failed!" % domain
+    subject_ = f"Certificate renewing attempt for {domain} failed!"
 
     logs = _tail(50, "/var/log/yunohost/yunohost-cli.log")
     message = f"""\
@@ -476,11 +450,11 @@ investigate :
 
 def _check_acme_challenge_configuration(domain):
 
-    domain_conf = "/etc/nginx/conf.d/%s.conf" % domain
+    domain_conf = f"/etc/nginx/conf.d/{domain}.conf"
     return "include /etc/nginx/conf.d/acme-challenge.conf.inc" in read_file(domain_conf)
 
 
-def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
+def _fetch_and_enable_new_certificate(domain, no_checks=False):
 
     if not os.path.exists(ACCOUNT_KEY_FILE):
         _generate_account_key()
@@ -514,11 +488,6 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
 
     domain_csr_file = f"{TMP_FOLDER}/{domain}.csr"
 
-    if staging:
-        certification_authority = STAGING_CERTIFICATION_AUTHORITY
-    else:
-        certification_authority = PRODUCTION_CERTIFICATION_AUTHORITY
-
     try:
         signed_certificate = sign_certificate(
             ACCOUNT_KEY_FILE,
@@ -526,7 +495,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
             WEBROOT_FOLDER,
             log=logger,
             disable_check=no_checks,
-            CA=certification_authority,
+            CA=PRODUCTION_CERTIFICATION_AUTHORITY,
         )
     except ValueError as e:
         if "urn:acme:error:rateLimited" in str(e):
@@ -546,12 +515,7 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
     # Create corresponding directory
     date_tag = datetime.utcnow().strftime("%Y%m%d.%H%M%S")
 
-    if staging:
-        folder_flag = "staging"
-    else:
-        folder_flag = "letsencrypt"
-
-    new_cert_folder = f"{CERT_FOLDER}/{domain}-history/{date_tag}-{folder_flag}"
+    new_cert_folder = f"{CERT_FOLDER}/{domain}-history/{date_tag}-letsencrypt"
 
     os.makedirs(new_cert_folder)
 
@@ -569,9 +533,6 @@ def _fetch_and_enable_new_certificate(domain, staging=False, no_checks=False):
         f.write(signed_certificate)
 
     _set_permissions(domain_cert_file, "root", "ssl-cert", 0o640)
-
-    if staging:
-        return
 
     _enable_certificate(domain, new_cert_folder)
 
@@ -684,12 +645,6 @@ def _get_status(domain):
             "verbose": "Let's Encrypt",
         }
 
-    elif cert_issuer.startswith("Fake LE"):
-        CA_type = {
-            "code": "fake-lets-encrypt",
-            "verbose": "Fake Let's Encrypt",
-        }
-
     else:
         CA_type = {
             "code": "other-unknown",
@@ -793,7 +748,10 @@ def _enable_certificate(domain, new_cert_folder):
 
     for service in ("postfix", "dovecot", "metronome"):
         # Ugly trick to not restart metronome if it's not installed
-        if service == "metronome" and os.system("dpkg --list | grep -q 'ii *metronome'") != 0:
+        if (
+            service == "metronome"
+            and os.system("dpkg --list | grep -q 'ii *metronome'") != 0
+        ):
             continue
         _run_service_command("restart", service)
 
@@ -857,14 +815,14 @@ def _check_domain_is_ready_for_ACME(domain):
     if is_yunohost_dyndns_domain(parent_domain):
         record_name = "@"
 
-    A_record_status = dnsrecords.get("data").get(f"A:{record_name}")
-    AAAA_record_status = dnsrecords.get("data").get(f"AAAA:{record_name}")
+    A_record_status = dnsrecords.get("data", {}).get(f"A:{record_name}")
+    AAAA_record_status = dnsrecords.get("data", {}).get(f"AAAA:{record_name}")
 
     # Fallback to wildcard in case no result yet for the DNS name?
     if not A_record_status:
-        A_record_status = dnsrecords.get("data").get("A:*")
+        A_record_status = dnsrecords.get("data", {}).get("A:*")
     if not AAAA_record_status:
-        AAAA_record_status = dnsrecords.get("data").get("AAAA:*")
+        AAAA_record_status = dnsrecords.get("data", {}).get("AAAA:*")
 
     if (
         not httpreachable

@@ -5,7 +5,7 @@ from moulinette import m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
-from moulinette.utils.filesystem import read_file, rm
+from moulinette.utils.filesystem import read_file, rm, write_to_file
 
 from yunohost.tools import (
     Migration,
@@ -29,6 +29,44 @@ N_CURRENT_YUNOHOST = 4
 
 N_NEXT_DEBAN = 11
 N_NEXT_YUNOHOST = 11
+
+VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bullseye_upgrade.txt"
+
+
+def _get_all_venvs(dir, level=0, maxlevel=3):
+    """
+    Returns the list of all python virtual env directories recursively
+
+    Arguments:
+        dir - the directory to scan in
+        maxlevel - the depth of the recursion
+        level - do not edit this, used as an iterator
+    """
+    # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
+    result = []
+    for file in os.listdir(dir):
+        path = os.path.join(dir, file)
+        if os.path.isdir(path):
+            activatepath = os.path.join(path, "bin", "activate")
+            if os.path.isfile(activatepath):
+                content = read_file(activatepath)
+                if ("VIRTUAL_ENV" in content) and ("PYTHONHOME" in content):
+                    result.append(path)
+                    continue
+            if level < maxlevel:
+                result += _get_all_venvs(path, level=level + 1)
+    return result
+
+
+def _backup_pip_freeze_for_python_app_venvs():
+    """
+    Generate a requirements file for all python virtual env located inside /opt/ and /var/www/
+    """
+
+    venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
+    for venv in venvs:
+        # Generate a requirements file from venv
+        os.system(f"{venv}/bin/pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX}")
 
 
 class MyMigration(Migration):
@@ -71,6 +109,12 @@ class MyMigration(Migration):
             )
 
         #
+        # Get requirements of the different venvs from python apps
+        #
+
+        _backup_pip_freeze_for_python_app_venvs()
+
+        #
         # Run apt update
         #
 
@@ -80,6 +124,17 @@ class MyMigration(Migration):
         os.system(
             "echo 'libc6 libraries/restart-without-asking boolean true' | debconf-set-selections"
         )
+
+        # Do not restart nginx during the upgrade of nginx-common and nginx-extras ...
+        # c.f. https://manpages.debian.org/bullseye/init-system-helpers/deb-systemd-invoke.1p.en.html
+        # and zcat /usr/share/doc/init-system-helpers/README.policy-rc.d.gz
+        # and the code inside /usr/bin/deb-systemd-invoke to see how it calls /usr/sbin/policy-rc.d ...
+        # and also invoke-rc.d ...
+        write_to_file(
+            "/usr/sbin/policy-rc.d",
+            '#!/bin/bash\n[[ "$1" =~ "nginx" ]] && [[ "$2" == "restart" ]] && exit 101 || exit 0',
+        )
+        os.system("chmod +x /usr/sbin/policy-rc.d")
 
         # Don't send an email to root about the postgresql migration. It should be handled automatically after.
         os.system(
@@ -105,7 +160,6 @@ class MyMigration(Migration):
             "mariadb-common --reinstall -o Dpkg::Options::='--force-confmiss'"
         )
         if ret != 0:
-            # FIXME: i18n once this is stable?
             raise YunohostError("Failed to reinstall mariadb-common ?", raw_msg=True)
 
         #
@@ -217,12 +271,9 @@ class MyMigration(Migration):
             "-o Dpkg::Options::='--force-confmiss'"
         )
         if ret != 0:
-            # FIXME: i18n once this is stable?
             raise YunohostError(
                 "Failed to force the install of php dependencies ?", raw_msg=True
             )
-
-        os.system(f"apt-mark auto {' '.join(basephp74packages_to_install)}")
 
         # Clean the mess
         logger.info(m18n.n("migration_0021_cleaning_up"))
@@ -245,13 +296,17 @@ class MyMigration(Migration):
 
         logger.info("Simulating upgrade...")
         if os.system(cmd) == 0:
-            # FIXME: i18n once this is stable?
             raise YunohostError(
                 "The upgrade cannot be completed, because some app dependencies would need to be removed?",
                 raw_msg=True,
             )
 
-        tools_upgrade(target="system")
+        postupgradecmds = f"apt-mark auto {' '.join(basephp74packages_to_install)}\n"
+        postupgradecmds += "rm -f /usr/sbin/policy-rc.d\n"
+        postupgradecmds += "echo 'Restarting nginx...' >&2\n"
+        postupgradecmds += "systemctl restart nginx\n"
+
+        tools_upgrade(target="system", postupgradecmds=postupgradecmds)
 
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
@@ -282,16 +337,34 @@ class MyMigration(Migration):
             raise YunohostError("migration_0021_not_buster")
 
         # Have > 1 Go free space on /var/ ?
-        if free_space_in_directory("/var/") / (1024 ** 3) < 1.0:
+        if free_space_in_directory("/var/") / (1024**3) < 1.0:
             raise YunohostError("migration_0021_not_enough_free_space")
 
         # Check system is up to date
         # (but we don't if 'bullseye' is already in the sources.list ...
         # which means maybe a previous upgrade crashed and we're re-running it)
-        if " bullseye " not in read_file("/etc/apt/sources.list"):
+        if os.path.exists("/etc/apt/sources.list") and " bullseye " not in read_file(
+            "/etc/apt/sources.list"
+        ):
             tools_update(target="system")
             upgradable_system_packages = list(_list_upgradable_apt_packages())
-            if upgradable_system_packages:
+            upgradable_system_packages = [
+                package["name"] for package in upgradable_system_packages
+            ]
+            upgradable_system_packages = set(upgradable_system_packages)
+            # Lime2 have hold packages to avoid ethernet instability
+            # See https://github.com/YunoHost/arm-images/commit/b4ef8c99554fd1a122a306db7abacc4e2f2942df
+            lime2_hold_packages = set(
+                [
+                    "armbian-firmware",
+                    "armbian-bsp-cli-lime2",
+                    "linux-dtb-current-sunxi",
+                    "linux-image-current-sunxi",
+                    "linux-u-boot-lime2-current",
+                    "linux-image-next-sunxi",
+                ]
+            )
+            if upgradable_system_packages - lime2_hold_packages:
                 raise YunohostError("migration_0021_system_not_fully_up_to_date")
 
     @property
@@ -318,11 +391,10 @@ class MyMigration(Migration):
 
         message = m18n.n("migration_0021_general_warning")
 
-        # FIXME: re-enable this message with updated topic link once we release the migration as stable
-        # message = (
-        #    "N.B.: This migration has been tested by the community over the last few months but has only been declared stable recently. If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration ;)! You can read about remaining known issues and feedback from the community here: https://forum.yunohost.org/t/12195\n\n"
-        #    + message
-        # )
+        message = (
+            "N.B.: This migration has been tested by the community over the last few months but has only been declared stable recently. If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration ;)! You can read about remaining known issues and feedback from the community here: https://forum.yunohost.org/t/20590\n\n"
+            + message
+        )
 
         if problematic_apps:
             message += "\n\n" + m18n.n(
@@ -340,7 +412,8 @@ class MyMigration(Migration):
     def patch_apt_sources_list(self):
 
         sources_list = glob.glob("/etc/apt/sources.list.d/*.list")
-        sources_list.append("/etc/apt/sources.list")
+        if os.path.exists("/etc/apt/sources.list"):
+            sources_list.append("/etc/apt/sources.list")
 
         # This :
         # - replace single 'buster' occurence by 'bulleye'

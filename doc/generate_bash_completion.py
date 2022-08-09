@@ -13,7 +13,8 @@ import yaml
 
 THIS_SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
 ACTIONSMAP_FILE = THIS_SCRIPT_DIR + "/../share/actionsmap.yml"
-BASH_COMPLETION_FILE = THIS_SCRIPT_DIR + "/bash-completion.sh"
+BASH_COMPLETION_FOLDER = THIS_SCRIPT_DIR + "/bash_completion.d"
+BASH_COMPLETION_FILE = BASH_COMPLETION_FOLDER + "/yunohost"
 
 
 def get_dict_actions(OPTION_SUBTREE, category):
@@ -60,6 +61,8 @@ with open(ACTIONSMAP_FILE, "r") as stream:
                 ACTIONS_DICT[category]["subcategories"][subcategory] = get_dict_actions(
                     OPTION_TREE[category]["subcategories"], subcategory
                 )
+
+    os.makedirs(BASH_COMPLETION_FOLDER, exist_ok=True)
 
     with open(BASH_COMPLETION_FILE, "w") as generated_file:
 

@@ -72,7 +72,7 @@ from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.settings import settings_get
 
 BACKUP_PATH = "/home/yunohost.backup"
-ARCHIVES_PATH = "%s/archives" % BACKUP_PATH
+ARCHIVES_PATH = f"{BACKUP_PATH}/archives"
 APP_MARGIN_SPACE_SIZE = 100  # In MB
 CONF_MARGIN_SPACE_SIZE = 10  # IN MB
 POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
@@ -402,7 +402,7 @@ class BackupManager:
         # backup and restore scripts
 
         for app in target_list:
-            app_script_folder = "/etc/yunohost/apps/%s/scripts" % app
+            app_script_folder = f"/etc/yunohost/apps/{app}/scripts"
             backup_script_path = os.path.join(app_script_folder, "backup")
             restore_script_path = os.path.join(app_script_folder, "restore")
 
@@ -555,7 +555,7 @@ class BackupManager:
         self._compute_backup_size()
 
         # Create backup info file
-        with open("%s/info.json" % self.work_dir, "w") as f:
+        with open(f"{self.work_dir}/info.json", "w") as f:
             f.write(json.dumps(self.info))
 
     def _get_env_var(self, app=None):
@@ -732,7 +732,7 @@ class BackupManager:
             logger.debug(m18n.n("backup_permission", app=app))
             permissions = user_permission_list(full=True, apps=[app])["permissions"]
             this_app_permissions = {name: infos for name, infos in permissions.items()}
-            write_to_yaml("%s/permissions.yml" % settings_dir, this_app_permissions)
+            write_to_yaml(f"{settings_dir}/permissions.yml", this_app_permissions)
 
         except Exception as e:
             logger.debug(e)
@@ -866,7 +866,7 @@ class RestoreManager:
         from_version = self.info.get("from_yunohost_version", "")
         # Remove any '~foobar' in the version ... c.f ~alpha, ~beta version during
         # early dev for next debian version
-        from_version = re.sub(r'~\w+', '', from_version)
+        from_version = re.sub(r"~\w+", "", from_version)
 
         if not from_version or version.parse(from_version) < version.parse("4.2.0"):
             raise YunohostValidationError("restore_backup_too_old")
@@ -921,7 +921,7 @@ class RestoreManager:
         if not os.path.isfile("/etc/yunohost/installed"):
             # Retrieve the domain from the backup
             try:
-                with open("%s/conf/ynh/current_host" % self.work_dir, "r") as f:
+                with open(f"{self.work_dir}/conf/ynh/current_host", "r") as f:
                     domain = f.readline().rstrip()
             except IOError:
                 logger.debug(
@@ -1004,7 +1004,7 @@ class RestoreManager:
                 continue
 
             hook_paths = self.info["system"][system_part]["paths"]
-            hook_paths = ["hooks/restore/%s" % os.path.basename(p) for p in hook_paths]
+            hook_paths = [f"hooks/restore/{os.path.basename(p)}" for p in hook_paths]
 
             # Otherwise, add it from the archive to the system
             # FIXME: Refactor hook_add and use it instead
@@ -1071,7 +1071,7 @@ class RestoreManager:
             ret = subprocess.call(["umount", self.work_dir])
             if ret == 0:
                 subprocess.call(["rmdir", self.work_dir])
-                logger.debug("Unmount dir: {}".format(self.work_dir))
+                logger.debug(f"Unmount dir: {self.work_dir}")
             else:
                 raise YunohostError("restore_removing_tmp_dir_failed")
         elif os.path.isdir(self.work_dir):
@@ -1080,7 +1080,7 @@ class RestoreManager:
             )
             ret = subprocess.call(["rm", "-Rf", self.work_dir])
             if ret == 0:
-                logger.debug("Delete dir: {}".format(self.work_dir))
+                logger.debug(f"Delete dir: {self.work_dir}")
             else:
                 raise YunohostError("restore_removing_tmp_dir_failed")
 
@@ -1182,7 +1182,7 @@ class RestoreManager:
             self._restore_apps()
         except Exception as e:
             raise YunohostError(
-                "The following critical error happened during restoration: %s" % e
+                f"The following critical error happened during restoration: {e}"
             )
         finally:
             self.clean()
@@ -1429,20 +1429,19 @@ class RestoreManager:
             restore_script = os.path.join(tmp_workdir_for_app, "restore")
 
             # Restore permissions
-            if not os.path.isfile("%s/permissions.yml" % app_settings_new_path):
+            if not os.path.isfile(f"{app_settings_new_path}/permissions.yml"):
                 raise YunohostError(
                     "Didnt find a permssions.yml for the app !?", raw_msg=True
                 )
 
-            permissions = read_yaml("%s/permissions.yml" % app_settings_new_path)
+            permissions = read_yaml(f"{app_settings_new_path}/permissions.yml")
             existing_groups = user_group_list()["groups"]
 
             for permission_name, permission_infos in permissions.items():
 
                 if "allowed" not in permission_infos:
                     logger.warning(
-                        "'allowed' key corresponding to allowed groups for permission %s not found when restoring app %s … You might have to reconfigure permissions yourself."
-                        % (permission_name, app_instance_name)
+                        f"'allowed' key corresponding to allowed groups for permission {permission_name} not found when restoring app {app_instance_name} … You might have to reconfigure permissions yourself."
                     )
                     should_be_allowed = ["all_users"]
                 else:
@@ -1467,7 +1466,7 @@ class RestoreManager:
 
             permission_sync_to_user()
 
-            os.remove("%s/permissions.yml" % app_settings_new_path)
+            os.remove(f"{app_settings_new_path}/permissions.yml")
 
             _tools_migrations_run_before_app_restore(
                 backup_version=self.info["from_yunohost_version"],
@@ -1816,8 +1815,7 @@ class BackupMethod:
                             # where everything is mapped to /dev/mapper/some-stuff
                             # yet there are different devices behind it or idk ...
                             logger.warning(
-                                "Could not link %s to %s (%s) ... falling back to regular copy."
-                                % (src, dest, str(e))
+                                f"Could not link {src} to {dest} ({e}) ... falling back to regular copy."
                             )
                         else:
                             # Success, go to next file to organize
@@ -2383,7 +2381,7 @@ def backup_list(with_info=False, human_readable=False):
     """
     # Get local archives sorted according to last modification time
     # (we do a realpath() to resolve symlinks)
-    archives = glob("%s/*.tar.gz" % ARCHIVES_PATH) + glob("%s/*.tar" % ARCHIVES_PATH)
+    archives = glob(f"{ARCHIVES_PATH}/*.tar.gz") + glob(f"{ARCHIVES_PATH}/*.tar")
     archives = {os.path.realpath(archive) for archive in archives}
     archives = sorted(archives, key=lambda x: os.path.getctime(x))
     # Extract only filename without the extension
@@ -2406,10 +2404,8 @@ def backup_list(with_info=False, human_readable=False):
             except Exception:
                 import traceback
 
-                logger.warning(
-                    "Could not check infos for archive %s: %s"
-                    % (archive, "\n" + traceback.format_exc())
-                )
+                trace_ = "\n" + traceback.format_exc()
+                logger.warning(f"Could not check infos for archive {archive}: {trace_}")
 
         archives = d
 

@@ -144,15 +144,14 @@ def user_create(
 
     from yunohost.domain import domain_list, _get_maindomain, _assert_domain_exists
     from yunohost.hook import hook_callback
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.password import (
+        assert_password_is_strong_enough,
+        assert_password_is_compatible,
+    )
     from yunohost.utils.ldap import _get_ldap_interface
 
-    # UNIX seems to not like password longer than 127 chars ...
-    # e.g. SSH login gets broken (or even 'su admin' when entering the password)
-    if len(password) >= 127:
-        raise YunohostValidationError("password_too_long")
-
-    # Ensure sufficiently complex password
+    # Ensure compatibility and sufficiently complex password
+    assert_password_is_compatible(password)
     assert_password_is_strong_enough("admin" if admin else "user", password)
 
     # Validate domain used for email address/xmpp account
@@ -169,7 +168,7 @@ def user_create(
 
             maindomain = _get_maindomain()
             domain = Moulinette.prompt(
-                m18n.n("ask_user_domain") + " (default: %s)" % maindomain
+                m18n.n("ask_user_domain") + f" (default: {maindomain})"
             )
             if not domain:
                 domain = maindomain
@@ -240,7 +239,7 @@ def user_create(
     }
 
     try:
-        ldap.add("uid=%s,ou=users" % username, attr_dict)
+        ldap.add(f"uid={username},ou=users", attr_dict)
     except Exception as e:
         raise YunohostError("user_creation_failed", user=username, error=e)
 
@@ -257,11 +256,9 @@ def user_create(
             logger.warning(m18n.n("user_home_creation_failed", home=home), exc_info=1)
 
     try:
-        subprocess.check_call(
-            ["setfacl", "-m", "g:all_users:---", "/home/%s" % username]
-        )
+        subprocess.check_call(["setfacl", "-m", "g:all_users:---", f"/home/{username}"])
     except subprocess.CalledProcessError:
-        logger.warning("Failed to protect /home/%s" % username, exc_info=1)
+        logger.warning(f"Failed to protect /home/{username}", exc_info=1)
 
     # Create group for user and add to group 'all_users'
     user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
@@ -323,7 +320,7 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
 
     ldap = _get_ldap_interface()
     try:
-        ldap.remove("uid=%s,ou=users" % username)
+        ldap.remove(f"uid={username},ou=users")
     except Exception as e:
         raise YunohostError("user_deletion_failed", user=username, error=e)
 
@@ -372,7 +369,10 @@ def user_update(
     """
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.app import app_ssowatconf
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.password import (
+        assert_password_is_strong_enough,
+        assert_password_is_compatible,
+    )
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_callback
 
@@ -422,13 +422,9 @@ def user_update(
                 m18n.n("ask_password"), is_password=True, confirm=True
             )
 
-        # UNIX seems to not like password longer than 127 chars ...
-        # e.g. SSH login gets broken (or even 'su admin' when entering the password)
-        if len(change_password) >= 127:
-            raise YunohostValidationError("password_too_long")
-
-        # Ensure sufficiently complex password
-        assert_password_is_strong_enough("user", change_password)
+        # Ensure compatibility and sufficiently complex password
+        assert_password_is_compatible(change_password)
+        assert_password_is_strong_enough("user", change_password)    # FIXME FIXME FIXME : gotta use admin profile if user is admin
 
         new_attr_dict["userPassword"] = [_hash_user_password(change_password)]
         env_dict["YNH_USER_PASSWORD"] = change_password
@@ -519,7 +515,7 @@ def user_update(
         operation_logger.start()
 
     try:
-        ldap.update("uid=%s,ou=users" % username, new_attr_dict)
+        ldap.update(f"uid={username},ou=users", new_attr_dict)
     except Exception as e:
         raise YunohostError("user_update_failed", user=username, error=e)
 
@@ -590,11 +586,11 @@ def user_info(username):
             logger.warning(m18n.n("mailbox_disabled", user=username))
         else:
             try:
-                cmd = "doveadm -f flow quota get -u %s" % user["uid"][0]
-                cmd_result = check_output(cmd)
+                uid_ = user["uid"][0]
+                cmd_result = check_output(f"doveadm -f flow quota get -u {uid_}")
             except Exception as e:
                 cmd_result = ""
-                logger.warning("Failed to fetch quota info ... : %s " % str(e))
+                logger.warning(f"Failed to fetch quota info ... : {e}")
 
             # Exemple of return value for cmd:
             # """Quota name=User quota Type=STORAGE Value=0 Limit=- %=0
@@ -720,8 +716,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         unknown_groups = [g for g in user["groups"] if g not in existing_groups]
         if unknown_groups:
             format_errors.append(
-                f"username '{user['username']}': unknown groups %s"
-                % ", ".join(unknown_groups)
+                f"username '{user['username']}': unknown groups {', '.join(unknown_groups)}"
             )
 
         # Validate that domains exist
@@ -742,8 +737,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
 
         if unknown_domains:
             format_errors.append(
-                f"username '{user['username']}': unknown domains %s"
-                % ", ".join(unknown_domains)
+                f"username '{user['username']}': unknown domains {', '.join(unknown_domains)}"
             )
 
         if format_errors:
@@ -1001,9 +995,7 @@ def user_group_create(
     ldap = _get_ldap_interface()
 
     # Validate uniqueness of groupname in LDAP
-    conflict = ldap.get_conflict(
-        {"cn": groupname}, base_dn="ou=groups"
-    )
+    conflict = ldap.get_conflict({"cn": groupname}, base_dn="ou=groups")
     if conflict:
         raise YunohostValidationError("group_already_exist", group=groupname)
 
@@ -1015,7 +1007,7 @@ def user_group_create(
                 m18n.n("group_already_exist_on_system_but_removing_it", group=groupname)
             )
             subprocess.check_call(
-                "sed --in-place '/^%s:/d' /etc/group" % groupname, shell=True
+                f"sed --in-place '/^{groupname}:/d' /etc/group", shell=True
             )
         else:
             raise YunohostValidationError(
@@ -1045,7 +1037,7 @@ def user_group_create(
 
     operation_logger.start()
     try:
-        ldap.add("cn=%s,ou=groups" % groupname, attr_dict)
+        ldap.add(f"cn={groupname},ou=groups", attr_dict)
     except Exception as e:
         raise YunohostError("group_creation_failed", group=groupname, error=e)
 
@@ -1088,7 +1080,7 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     operation_logger.start()
     ldap = _get_ldap_interface()
     try:
-        ldap.remove("cn=%s,ou=groups" % groupname)
+        ldap.remove(f"cn={groupname},ou=groups")
     except Exception as e:
         raise YunohostError("group_deletion_failed", group=groupname, error=e)
 
@@ -1184,7 +1176,7 @@ def user_group_update(
         ldap = _get_ldap_interface()
         try:
             ldap.update(
-                "cn=%s,ou=groups" % groupname,
+                f"cn={groupname},ou=groups",
                 {"member": set(new_group_dns), "memberUid": set(new_group)},
             )
         except Exception as e:

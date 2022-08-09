@@ -190,7 +190,6 @@ def dyndns_update(
     import dns.tsigkeyring
     import dns.update
 
-
     # If domain is not given, try to guess it from keys available...
     key = None
     if domain is None:
@@ -219,17 +218,17 @@ def dyndns_update(
         return
 
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
-    host = domain.split(".")[1:]
-    host = ".".join(host)
+    zone = domain.split(".")[1:]
+    zone = ".".join(zone)
 
     logger.debug("Building zone update ...")
 
     with open(key) as f:
         key = f.readline().strip().split(" ", 6)[-1]
 
-    keyring = dns.tsigkeyring.from_text({f'{domain}.': key})
+    keyring = dns.tsigkeyring.from_text({f"{domain}.": key})
     # Python's dns.update is similar to the old nsupdate cli tool
-    update = dns.update.Update(domain, keyring=keyring, keyalgorithm=dns.tsig.HMAC_SHA512)
+    update = dns.update.Update(zone, keyring=keyring, keyalgorithm=dns.tsig.HMAC_SHA512)
 
     auth_resolvers = []
 
@@ -300,7 +299,9 @@ def dyndns_update(
     # [{"name": "...", "ttl": "...", "type": "...", "value": "..."}]
     for records in dns_conf.values():
         for record in records:
-            name = f"{record['name']}.{domain}." if record['name'] != "@" else f"{domain}."
+            name = (
+                f"{record['name']}.{domain}." if record["name"] != "@" else f"{domain}."
+            )
             update.delete(name)
 
     # Add the new records for all domain/subdomains
@@ -313,18 +314,24 @@ def dyndns_update(
             if record["value"] == "@":
                 record["value"] = domain
             record["value"] = record["value"].replace(";", r"\;")
-            name = f"{record['name']}.{domain}." if record['name'] != "@" else f"{domain}."
+            name = (
+                f"{record['name']}.{domain}." if record["name"] != "@" else f"{domain}."
+            )
 
-            update.add(name, record['ttl'], record['type'], record['value'])
+            update.add(name, record["ttl"], record["type"], record["value"])
 
     logger.debug("Now pushing new conf to DynDNS host...")
     logger.debug(update)
 
     if not dry_run:
         try:
-            dns.query.tcp(update, auth_resolvers[0])
+            r = dns.query.tcp(update, auth_resolvers[0])
         except Exception as e:
             logger.error(e)
+            raise YunohostError("dyndns_ip_update_failed")
+
+        if "rcode NOERROR" not in str(r):
+            logger.error(str(r))
             raise YunohostError("dyndns_ip_update_failed")
 
         logger.success(m18n.n("dyndns_ip_updated"))
@@ -343,9 +350,7 @@ def _guess_current_dyndns_domain():
     dynette...)
     """
 
-    DYNDNS_KEY_REGEX = re.compile(
-        r".*/K(?P<domain>[^\s\+]+)\.\+165.+\.key$"
-    )
+    DYNDNS_KEY_REGEX = re.compile(r".*/K(?P<domain>[^\s\+]+)\.\+165.+\.key$")
 
     # Retrieve the first registered domain
     paths = list(glob.iglob("/etc/yunohost/dyndns/K*.key"))
