@@ -38,7 +38,7 @@ def get_crt(
         )
         out, err = proc.communicate(cmd_input)
         if proc.returncode != 0:
-            raise IOError("{0}\n{1}".format(err_msg, err))
+            raise IOError("{}\n{}".format(err_msg, err))
         return out
 
     # helper function - make request and automatically parse json response
@@ -74,7 +74,7 @@ def get_crt(
             raise IndexError(resp_data)  # allow 100 retrys for bad nonces
         if code not in [200, 201, 204]:
             raise ValueError(
-                "{0}:\nUrl: {1}\nData: {2}\nResponse Code: {3}\nResponse: {4}".format(
+                "{}:\nUrl: {}\nData: {}\nResponse Code: {}\nResponse: {}".format(
                     err_msg, url, data, code, resp_data
                 )
             )
@@ -89,7 +89,7 @@ def get_crt(
             {"jwk": jwk} if acct_headers is None else {"kid": acct_headers["Location"]}
         )
         protected64 = _b64(json.dumps(protected).encode("utf8"))
-        protected_input = "{0}.{1}".format(protected64, payload64).encode("utf8")
+        protected_input = "{}.{}".format(protected64, payload64).encode("utf8")
         out = _cmd(
             ["openssl", "dgst", "-sha256", "-sign", account_key],
             stdin=subprocess.PIPE,
@@ -125,8 +125,8 @@ def get_crt(
     pub_hex, pub_exp = re.search(
         pub_pattern, out.decode("utf8"), re.MULTILINE | re.DOTALL
     ).groups()
-    pub_exp = "{0:x}".format(int(pub_exp))
-    pub_exp = "0{0}".format(pub_exp) if len(pub_exp) % 2 else pub_exp
+    pub_exp = "{:x}".format(int(pub_exp))
+    pub_exp = "0{}".format(pub_exp) if len(pub_exp) % 2 else pub_exp
     alg = "RS256"
     jwk = {
         "e": _b64(binascii.unhexlify(pub_exp.encode("utf-8"))),
@@ -140,9 +140,9 @@ def get_crt(
     log.info("Parsing CSR...")
     out = _cmd(
         ["openssl", "req", "-in", csr, "-noout", "-text"],
-        err_msg="Error loading {0}".format(csr),
+        err_msg="Error loading {}".format(csr),
     )
-    domains = set([])
+    domains = set()
     common_name = re.search(r"Subject:.*? CN\s?=\s?([^\s,;/]+)", out.decode("utf8"))
     if common_name is not None:
         domains.add(common_name.group(1))
@@ -155,7 +155,7 @@ def get_crt(
         for san in subject_alt_names.group(1).split(", "):
             if san.startswith("DNS:"):
                 domains.add(san[4:])
-    log.info("Found domains: {0}".format(", ".join(domains)))
+    log.info("Found domains: {}".format(", ".join(domains)))
 
     # get the ACME directory of urls
     log.info("Getting directory...")
@@ -178,7 +178,7 @@ def get_crt(
             {"contact": contact},
             "Error updating contact details",
         )
-        log.info("Updated contact details:\n{0}".format("\n".join(account["contact"])))
+        log.info("Updated contact details:\n{}".format("\n".join(account["contact"])))
 
     # create a new order
     log.info("Creating new order...")
@@ -194,46 +194,46 @@ def get_crt(
             auth_url, None, "Error getting challenges"
         )
         domain = authorization["identifier"]["value"]
-        log.info("Verifying {0}...".format(domain))
+        log.info("Verifying {}...".format(domain))
 
         # find the http-01 challenge and write the challenge file
         challenge = [c for c in authorization["challenges"] if c["type"] == "http-01"][
             0
         ]
         token = re.sub(r"[^A-Za-z0-9_\-]", "_", challenge["token"])
-        keyauthorization = "{0}.{1}".format(token, thumbprint)
+        keyauthorization = "{}.{}".format(token, thumbprint)
         wellknown_path = os.path.join(acme_dir, token)
         with open(wellknown_path, "w") as wellknown_file:
             wellknown_file.write(keyauthorization)
 
         # check that the file is in place
         try:
-            wellknown_url = "http://{0}/.well-known/acme-challenge/{1}".format(
+            wellknown_url = "http://{}/.well-known/acme-challenge/{}".format(
                 domain, token
             )
             assert disable_check or _do_request(wellknown_url)[0] == keyauthorization
         except (AssertionError, ValueError) as e:
             raise ValueError(
-                "Wrote file to {0}, but couldn't download {1}: {2}".format(
+                "Wrote file to {}, but couldn't download {}: {}".format(
                     wellknown_path, wellknown_url, e
                 )
             )
 
         # say the challenge is done
         _send_signed_request(
-            challenge["url"], {}, "Error submitting challenges: {0}".format(domain)
+            challenge["url"], {}, "Error submitting challenges: {}".format(domain)
         )
         authorization = _poll_until_not(
             auth_url,
             ["pending"],
-            "Error checking challenge status for {0}".format(domain),
+            "Error checking challenge status for {}".format(domain),
         )
         if authorization["status"] != "valid":
             raise ValueError(
-                "Challenge did not pass for {0}: {1}".format(domain, authorization)
+                "Challenge did not pass for {}: {}".format(domain, authorization)
             )
         os.remove(wellknown_path)
-        log.info("{0} verified!".format(domain))
+        log.info("{} verified!".format(domain))
 
     # finalize the order with the csr
     log.info("Signing certificate...")
@@ -251,7 +251,7 @@ def get_crt(
         "Error checking order status",
     )
     if order["status"] != "valid":
-        raise ValueError("Order failed: {0}".format(order))
+        raise ValueError("Order failed: {}".format(order))
 
     # download the certificate
     certificate_pem, _, _ = _send_signed_request(

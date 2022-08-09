@@ -28,7 +28,7 @@ def cli(debug, quiet, output_as, timeout, args, parser):
         locales_dir="/usr/share/yunohost/locales/",
         output_as=output_as,
         timeout=timeout,
-        top_parser=parser
+        top_parser=parser,
     )
     sys.exit(ret)
 

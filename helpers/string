@@ -4,6 +4,7 @@
 #
 # usage: ynh_string_random [--length=string_length]
 # | arg: -l, --length=  - the string length to generate (default: 24)
+# | arg: -f, --filter=  - the kind of characters accepted in the output (default: 'A-Za-z0-9')
 # | ret: the generated string
 #
 # example: pwd=$(ynh_string_random --length=8)
@@ -11,15 +12,17 @@
 # Requires YunoHost version 2.2.4 or higher.
 ynh_string_random() {
     # Declare an array to define the options of this helper.
-    local legacy_args=l
-    local -A args_array=([l]=length=)
+    local legacy_args=lf
+    local -A args_array=([l]=length= [f]=filter=)
     local length
+    local filter
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     length=${length:-24}
+    filter=${filter:-'A-Za-z0-9'}
 
     dd if=/dev/urandom bs=1 count=1000 2>/dev/null \
-        | tr --complement --delete 'A-Za-z0-9' \
+        | tr --complement --delete "$filter" \
         | sed --quiet 's/\(.\{'"$length"'\}\).*/\1/p'
 }
 

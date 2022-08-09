@@ -33,7 +33,7 @@ import subprocess
 from moulinette import m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import write_to_file, read_file, rm, chown, chmod
+from moulinette.utils.filesystem import write_to_file, rm, chown, chmod
 from moulinette.utils.network import download_json
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -44,14 +44,6 @@ from yunohost.log import is_unit_operation
 from yunohost.regenconf import regen_conf
 
 logger = getActionLogger("yunohost.dyndns")
-
-DYNDNS_ZONE = "/etc/yunohost/dyndns/zone"
-
-RE_DYNDNS_PRIVATE_KEY_MD5 = re.compile(r".*/K(?P<domain>[^\s\+]+)\.\+157.+\.private$")
-
-RE_DYNDNS_PRIVATE_KEY_SHA512 = re.compile(
-    r".*/K(?P<domain>[^\s\+]+)\.\+165.+\.private$"
-)
 
 DYNDNS_PROVIDER = "dyndns.yunohost.org"
 DYNDNS_DNS_AUTH = ["ns0.yunohost.org", "ns1.yunohost.org"]
@@ -111,6 +103,10 @@ def dyndns_subscribe(operation_logger, domain=None, key=None):
 
     operation_logger.start()
 
+    # '165' is the convention identifier for hmac-sha512 algorithm
+    # '1234' is idk? doesnt matter, but the old format contained a number here...
+    key_file = f"/etc/yunohost/dyndns/K{domain}.+165+1234.key"
+
     if key is None:
         if len(glob.glob("/etc/yunohost/dyndns/*.key")) == 0:
             if not os.path.exists("/etc/yunohost/dyndns"):
@@ -118,43 +114,47 @@ def dyndns_subscribe(operation_logger, domain=None, key=None):
 
             logger.debug(m18n.n("dyndns_key_generating"))
 
-            os.system(
-                "cd /etc/yunohost/dyndns && "
-                f"dnssec-keygen -a hmac-sha512 -b 512 -r /dev/urandom -n USER {domain}"
-            )
+            # Here, we emulate the behavior of the old 'dnssec-keygen' utility
+            # which since bullseye was replaced by ddns-keygen which is now
+            # in the bind9 package ... but installing bind9 will conflict with dnsmasq
+            # and is just madness just to have access to a tsig keygen utility -.-
+
+            # Use 512 // 8 = 64 bytes for hmac-sha512 (c.f. https://git.hactrn.net/sra/tsig-keygen/src/master/tsig-keygen.py)
+            secret = base64.b64encode(os.urandom(512 // 8)).decode("ascii")
+
+            # Idk why but the secret is split in two parts, with the first one
+            # being 57-long char ... probably some DNS format
+            secret = f"{secret[:56]} {secret[56:]}"
+
+            key_content = f"{domain}. IN KEY 0 3 165 {secret}"
+            write_to_file(key_file, key_content)
 
             chmod("/etc/yunohost/dyndns", 0o600, recursive=True)
             chown("/etc/yunohost/dyndns", "root", recursive=True)
-
-        private_file = glob.glob("/etc/yunohost/dyndns/*%s*.private" % domain)[0]
-        key_file = glob.glob("/etc/yunohost/dyndns/*%s*.key" % domain)[0]
-        with open(key_file) as f:
-            key = f.readline().strip().split(" ", 6)[-1]
 
     import requests  # lazy loading this module for performance reasons
 
     # Send subscription
     try:
-        b64encoded_key = base64.b64encode(key.encode()).decode()
+        # Yeah the secret is already a base64-encoded but we double-bas64-encode it, whatever...
+        b64encoded_key = base64.b64encode(secret.encode()).decode()
         r = requests.post(
             f"https://{DYNDNS_PROVIDER}/key/{b64encoded_key}?key_algo=hmac-sha512",
             data={"subdomain": domain},
             timeout=30,
         )
     except Exception as e:
-        rm(private_file, force=True)
         rm(key_file, force=True)
         raise YunohostError("dyndns_registration_failed", error=str(e))
     if r.status_code != 201:
-        rm(private_file, force=True)
         rm(key_file, force=True)
         try:
             error = json.loads(r.text)["error"]
         except Exception:
-            error = 'Server error, code: %s. (Message: "%s")' % (r.status_code, r.text)
+            error = f'Server error, code: {r.status_code}. (Message: "{r.text}")'
         raise YunohostError("dyndns_registration_failed", error=error)
 
-    # Yunohost regen conf will add the dyndns cron job if a private key exists
+    # Yunohost regen conf will add the dyndns cron job if a key exists
     # in /etc/yunohost/dyndns
     regen_conf(["yunohost"])
 
@@ -185,6 +185,10 @@ def dyndns_update(
     """
 
     from yunohost.dns import _build_dns_conf
+    import dns.query
+    import dns.tsig
+    import dns.tsigkeyring
+    import dns.update
 
     # If domain is not given, try to guess it from keys available...
     key = None
@@ -196,7 +200,7 @@ def dyndns_update(
 
     # If key is not given, pick the first file we find with the domain given
     elif key is None:
-        keys = glob.glob("/etc/yunohost/dyndns/K{0}.+*.private".format(domain))
+        keys = glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*.key")
 
         if not keys:
             raise YunohostValidationError("dyndns_key_not_found")
@@ -214,15 +218,17 @@ def dyndns_update(
         return
 
     # Extract 'host', e.g. 'nohost.me' from 'foo.nohost.me'
-    host = domain.split(".")[1:]
-    host = ".".join(host)
+    zone = domain.split(".")[1:]
+    zone = ".".join(zone)
 
-    logger.debug("Building zone update file ...")
+    logger.debug("Building zone update ...")
 
-    lines = [
-        f"server {DYNDNS_PROVIDER}",
-        f"zone {host}",
-    ]
+    with open(key) as f:
+        key = f.readline().strip().split(" ", 6)[-1]
+
+    keyring = dns.tsigkeyring.from_text({f"{domain}.": key})
+    # Python's dns.update is similar to the old nsupdate cli tool
+    update = dns.update.Update(zone, keyring=keyring, keyalgorithm=dns.tsig.HMAC_SHA512)
 
     auth_resolvers = []
 
@@ -262,15 +268,13 @@ def dyndns_update(
         else:
             return None
 
-        raise YunohostError(
-            "Failed to resolve %s for %s" % (rdtype, domain), raw_msg=True
-        )
+        raise YunohostError(f"Failed to resolve {rdtype} for {domain}", raw_msg=True)
 
     old_ipv4 = resolve_domain(domain, "A")
     old_ipv6 = resolve_domain(domain, "AAAA")
 
-    logger.debug("Old IPv4/v6 are (%s, %s)" % (old_ipv4, old_ipv6))
-    logger.debug("Requested IPv4/v6 are (%s, %s)" % (ipv4, ipv6))
+    logger.debug(f"Old IPv4/v6 are ({old_ipv4}, {old_ipv6})")
+    logger.debug(f"Requested IPv4/v6 are ({ipv4}, {ipv6})")
 
     # no need to update
     if (not force and not dry_run) and (old_ipv4 == ipv4 and old_ipv6 == ipv6):
@@ -295,9 +299,10 @@ def dyndns_update(
     # [{"name": "...", "ttl": "...", "type": "...", "value": "..."}]
     for records in dns_conf.values():
         for record in records:
-            action = "update delete {name}.{domain}.".format(domain=domain, **record)
-            action = action.replace(" @.", " ")
-            lines.append(action)
+            name = (
+                f"{record['name']}.{domain}." if record["name"] != "@" else f"{domain}."
+            )
+            update.delete(name)
 
     # Add the new records for all domain/subdomains
 
@@ -309,32 +314,28 @@ def dyndns_update(
             if record["value"] == "@":
                 record["value"] = domain
             record["value"] = record["value"].replace(";", r"\;")
-
-            action = "update add {name}.{domain}. {ttl} {type} {value}".format(
-                domain=domain, **record
+            name = (
+                f"{record['name']}.{domain}." if record["name"] != "@" else f"{domain}."
             )
-            action = action.replace(" @.", " ")
-            lines.append(action)
 
-    lines += ["show", "send"]
-
-    # Write the actions to do to update to a file, to be able to pass it
-    # to nsupdate as argument
-    write_to_file(DYNDNS_ZONE, "\n".join(lines))
+            update.add(name, record["ttl"], record["type"], record["value"])
 
     logger.debug("Now pushing new conf to DynDNS host...")
+    logger.debug(update)
 
     if not dry_run:
         try:
-            command = ["/usr/bin/nsupdate", "-k", key, DYNDNS_ZONE]
-            subprocess.check_call(command)
-        except subprocess.CalledProcessError:
+            r = dns.query.tcp(update, auth_resolvers[0])
+        except Exception as e:
+            logger.error(e)
+            raise YunohostError("dyndns_ip_update_failed")
+
+        if "rcode NOERROR" not in str(r):
+            logger.error(str(r))
             raise YunohostError("dyndns_ip_update_failed")
 
         logger.success(m18n.n("dyndns_ip_updated"))
     else:
-        print(read_file(DYNDNS_ZONE))
-        print("")
         print(
             "Warning: dry run, this is only the generated config, it won't be applied"
         )
@@ -349,15 +350,14 @@ def _guess_current_dyndns_domain():
     dynette...)
     """
 
+    DYNDNS_KEY_REGEX = re.compile(r".*/K(?P<domain>[^\s\+]+)\.\+165.+\.key$")
+
     # Retrieve the first registered domain
-    paths = list(glob.iglob("/etc/yunohost/dyndns/K*.private"))
+    paths = list(glob.iglob("/etc/yunohost/dyndns/K*.key"))
     for path in paths:
-        # MD5 is legacy ugh
-        match = RE_DYNDNS_PRIVATE_KEY_MD5.match(path)
+        match = DYNDNS_KEY_REGEX.match(path)
         if not match:
-            match = RE_DYNDNS_PRIVATE_KEY_SHA512.match(path)
-            if not match:
-                continue
+            continue
         _domain = match.group("domain")
 
         # Verify if domain is registered (i.e., if it's available, skip

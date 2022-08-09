@@ -260,6 +260,27 @@ ynh_install_app_dependencies() {
             || ynh_die --message="Inconsistent php versions in dependencies ... found : $specific_php_version"
 
         dependencies+=", php${specific_php_version}, php${specific_php_version}-fpm, php${specific_php_version}-common"
+
+        local old_phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+
+        # If the PHP version changed, remove the old fpm conf
+        if [ -n "$old_phpversion" ] && [ "$old_phpversion" != "$specific_php_version" ]; then
+            local old_php_fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
+            local old_php_finalphpconf="$old_php_fpm_config_dir/pool.d/$app.conf"
+
+            if [[ -f "$old_php_finalphpconf" ]]
+            then
+                ynh_backup_if_checksum_is_different --file="$old_php_finalphpconf"
+                ynh_remove_fpm_config
+            fi
+        fi
+        # Store phpversion into the config of this app
+        ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
+
+        # Set the default php version back as the default version for php-cli.
+        update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
+    elif grep --quiet 'php' <<< "$dependencies"; then
+        ynh_app_setting_set --app=$app --key=phpversion --value=$YNH_DEFAULT_PHP_VERSION
     fi
 
     local psql_installed="$(ynh_package_is_installed "postgresql-$PSQL_VERSION" && echo yes || echo no)"
@@ -292,19 +313,10 @@ Architecture: all
 Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
+
     ynh_package_install_from_equivs /tmp/${dep_app}-ynh-deps.control \
         || ynh_die --message="Unable to install dependencies" # Install the fake package and its dependencies
     rm /tmp/${dep_app}-ynh-deps.control
-
-    if [[ -n "$specific_php_version" ]]
-    then
-        ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
-
-        # Set the default php version back as the default version for php-cli.
-        update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
-    elif grep --quiet 'php' <<< "$dependencies"; then
-        ynh_app_setting_set --app=$app --key=phpversion --value=$YNH_DEFAULT_PHP_VERSION
-    fi
 
     # Trigger postgresql regenconf if we may have just installed postgresql
     local psql_installed2="$(ynh_package_is_installed "postgresql-$PSQL_VERSION" && echo yes || echo no)"
@@ -393,6 +405,12 @@ ynh_install_extra_app_dependencies() {
 
     # Install requested dependencies from this extra repository.
     ynh_install_app_dependencies "$package"
+
+    # Force to upgrade to the last version...
+    # Without doing apt install, an already installed dep is not upgraded
+    local apps_auto_installed="$(apt-mark showauto $package)"
+    ynh_package_install "$package"
+    [ -z "$apps_auto_installed" ] || apt-mark auto $apps_auto_installed
 
     # Remove this extra repository after packages are installed
     ynh_remove_extra_repo --name=$app
@@ -491,8 +509,14 @@ ynh_remove_extra_repo() {
     ynh_secure_remove --file="/etc/apt/sources.list.d/$name.list"
     # Sury pinning is managed by the regenconf in the core...
     [[ "$name" == "extra_php_version" ]] || ynh_secure_remove "/etc/apt/preferences.d/$name"
-    ynh_secure_remove --file="/etc/apt/trusted.gpg.d/$name.gpg" >/dev/null
-    ynh_secure_remove --file="/etc/apt/trusted.gpg.d/$name.asc" >/dev/null
+    if [ -e /etc/apt/trusted.gpg.d/$name.gpg ]; then
+        ynh_secure_remove --file="/etc/apt/trusted.gpg.d/$name.gpg"
+    fi
+
+    # (Do we even create a .asc file anywhere ...?)
+    if [ -e /etc/apt/trusted.gpg.d/$name.asc ]; then
+        ynh_secure_remove --file="/etc/apt/trusted.gpg.d/$name.asc"
+    fi
 
     # Update the list of package to exclude the old repo
     ynh_package_update

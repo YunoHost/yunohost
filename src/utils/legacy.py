@@ -7,6 +7,7 @@ from moulinette.utils.filesystem import (
     read_file,
     write_to_file,
     write_to_yaml,
+    write_to_json,
     read_yaml,
 )
 
@@ -68,6 +69,55 @@ def legacy_permission_label(app, permission_type):
     )
 
 
+def translate_legacy_default_app_in_ssowant_conf_json_persistent():
+    from yunohost.app import app_list
+    from yunohost.domain import domain_config_set
+
+    persistent_file_name = "/etc/ssowat/conf.json.persistent"
+    if not os.path.exists(persistent_file_name):
+        return
+
+    # Ugly hack because for some reason so many people have tabs in their conf.json.persistent ...
+    os.system(r"sed -i 's/\t/    /g' /etc/ssowat/conf.json.persistent")
+
+    # Ugly hack to try not to misarably fail migration
+    persistent = read_yaml(persistent_file_name)
+
+    if "redirected_urls" not in persistent:
+        return
+
+    redirected_urls = persistent["redirected_urls"]
+
+    if not any(
+        from_url.count("/") == 1 and from_url.endswith("/")
+        for from_url in redirected_urls
+    ):
+        return
+
+    apps = app_list()["apps"]
+
+    if not any(app.get("domain_path") in redirected_urls.values() for app in apps):
+        return
+
+    for from_url, dest_url in redirected_urls.copy().items():
+        # Not a root domain, skip
+        if from_url.count("/") != 1 or not from_url.endswith("/"):
+            continue
+        for app in apps:
+            if app.get("domain_path") != dest_url:
+                continue
+            domain_config_set(from_url.strip("/"), "feature.app.default_app", app["id"])
+            del redirected_urls[from_url]
+
+    persistent["redirected_urls"] = redirected_urls
+
+    write_to_json(persistent_file_name, persistent, sort_keys=True, indent=4)
+
+    logger.warning(
+        "YunoHost automatically translated some legacy redirections in /etc/ssowat/conf.json.persistent to match the new default application using domain configuration"
+    )
+
+
 LEGACY_PHP_VERSION_REPLACEMENTS = [
     ("/etc/php5", "/etc/php/7.4"),
     ("/etc/php/7.0", "/etc/php/7.4"),
@@ -116,10 +166,7 @@ def _patch_legacy_php_versions(app_folder):
 
         c = (
             "sed -i "
-            + "".join(
-                "-e 's@{pattern}@{replace}@g' ".format(pattern=p, replace=r)
-                for p, r in LEGACY_PHP_VERSION_REPLACEMENTS
-            )
+            + "".join(f"-e 's@{p}@{r}@g' " for p, r in LEGACY_PHP_VERSION_REPLACEMENTS)
             + "%s" % filename
         )
         os.system(c)
@@ -137,7 +184,11 @@ def _patch_legacy_php_versions_in_settings(app_folder):
         settings["phpversion"] = "7.4"
 
     # We delete these checksums otherwise the file will appear as manually modified
-    list_to_remove = ["checksum__etc_php_7.3_fpm_pool", "checksum__etc_php_7.0_fpm_pool", "checksum__etc_nginx_conf.d"]
+    list_to_remove = [
+        "checksum__etc_php_7.3_fpm_pool",
+        "checksum__etc_php_7.0_fpm_pool",
+        "checksum__etc_nginx_conf.d",
+    ]
     settings = {
         k: v
         for k, v in settings.items()
@@ -168,9 +219,15 @@ def _patch_legacy_helpers(app_folder):
             "important": False,
         },
         # Old $1, $2 in backup/restore scripts...
-        "app=$2": {"only_for": ["scripts/backup", "scripts/restore"], "important": True},
+        "app=$2": {
+            "only_for": ["scripts/backup", "scripts/restore"],
+            "important": True,
+        },
         # Old $1, $2 in backup/restore scripts...
-        "backup_dir=$1": {"only_for": ["scripts/backup", "scripts/restore"], "important": True},
+        "backup_dir=$1": {
+            "only_for": ["scripts/backup", "scripts/restore"],
+            "important": True,
+        },
         # Old $1, $2 in backup/restore scripts...
         "restore_dir=$1": {"only_for": ["scripts/restore"], "important": True},
         # Old $1, $2 in install scripts...
@@ -245,5 +302,5 @@ def _patch_legacy_helpers(app_folder):
         if show_warning:
             # And complain about those damn deprecated helpers
             logger.error(
-                r"/!\ Packagers ! This app uses a very old deprecated helpers ... Yunohost automatically patched the helpers to use the new recommended practice, but please do consider fixing the upstream code right now ..."
+                r"/!\ Packagers! This app uses very old deprecated helpers... YunoHost automatically patched the helpers to use the new recommended practice, but please do consider fixing the upstream code right now..."
             )

@@ -36,10 +36,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm
 
-from yunohost.app import (
-    app_info,
-    app_upgrade,
-)
+from yunohost.app import app_upgrade, app_list
 from yunohost.app_catalog import (
     _initialize_apps_catalog_system,
     _update_apps_catalog,
@@ -56,8 +53,6 @@ from yunohost.utils.packages import (
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation, OperationLogger
 
-# FIXME this is a duplicate from apps.py
-APPS_SETTING_PATH = "/etc/yunohost/apps/"
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
 logger = getActionLogger("yunohost.tools")
@@ -76,16 +71,16 @@ def tools_adminpw(new_password, check_strength=True):
 
     """
     from yunohost.user import _hash_user_password
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.password import (
+        assert_password_is_strong_enough,
+        assert_password_is_compatible,
+    )
     import spwd
 
     if check_strength:
         assert_password_is_strong_enough("admin", new_password)
 
-    # UNIX seems to not like password longer than 127 chars ...
-    # e.g. SSH login gets broken (or even 'su admin' when entering the password)
-    if len(new_password) >= 127:
-        raise YunohostValidationError("admin_password_too_long")
+    assert_password_is_compatible(new_password)
 
     new_hash = _hash_user_password(new_password)
 
@@ -99,7 +94,7 @@ def tools_adminpw(new_password, check_strength=True):
             {"userPassword": [new_hash]},
         )
     except Exception as e:
-        logger.error("unable to change admin password : %s" % e)
+        logger.error(f"unable to change admin password : {e}")
         raise YunohostError("admin_password_change_failed")
     else:
         # Write as root password
@@ -146,7 +141,7 @@ def _set_hostname(hostname, pretty_hostname=None):
     """
 
     if not pretty_hostname:
-        pretty_hostname = "(YunoHost/%s)" % hostname
+        pretty_hostname = f"(YunoHost/{hostname})"
 
     # First clear nsswitch cache for hosts to make sure hostname is resolved...
     subprocess.call(["nscd", "-i", "hosts"])
@@ -206,7 +201,10 @@ def tools_postinstall(
     """
     from yunohost.dyndns import _dyndns_available
     from yunohost.utils.dns import is_yunohost_dyndns_domain
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.password import (
+        assert_password_is_strong_enough,
+        assert_password_is_compatible,
+    )
     from yunohost.domain import domain_main_domain
     import psutil
 
@@ -224,40 +222,36 @@ def tools_postinstall(
     disk_partitions = sorted(psutil.disk_partitions(), key=lambda k: k.mountpoint)
     main_disk_partitions = [d for d in disk_partitions if d.mountpoint in ["/", "/var"]]
     main_space = sum(
-        [psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions]
+        psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions
     )
-    GB = 1024 ** 3
+    GB = 1024**3
     if not force_diskspace and main_space < 10 * GB:
         raise YunohostValidationError("postinstall_low_rootfsspace")
 
     # Check password
+    assert_password_is_compatible(password)
+
     if not force_password:
         assert_password_is_strong_enough("admin", password)
 
     # If this is a nohost.me/noho.st, actually check for availability
     if not ignore_dyndns and is_yunohost_dyndns_domain(domain):
-        # (Except if the user explicitly said he/she doesn't care about dyndns)
-        if ignore_dyndns:
-            dyndns = False
         # Check if the domain is available...
-        else:
-            try:
-                available = _dyndns_available(domain)
-            # If an exception is thrown, most likely we don't have internet
-            # connectivity or something. Assume that this domain isn't manageable
-            # and inform the user that we could not contact the dyndns host server.
-            except Exception:
-                logger.warning(
-                    m18n.n(
-                        "dyndns_provider_unreachable", provider="dyndns.yunohost.org"
-                    )
-                )
+        try:
+            available = _dyndns_available(domain)
+        # If an exception is thrown, most likely we don't have internet
+        # connectivity or something. Assume that this domain isn't manageable
+        # and inform the user that we could not contact the dyndns host server.
+        except Exception:
+            logger.warning(
+                m18n.n("dyndns_provider_unreachable", provider="dyndns.yunohost.org")
+            )
 
-            if available:
-                dyndns = True
-            # If not, abort the postinstall
-            else:
-                raise YunohostValidationError("dyndns_unavailable", domain=domain)
+        if available:
+            dyndns = True
+        # If not, abort the postinstall
+        else:
+            raise YunohostValidationError("dyndns_unavailable", domain=domain)
     else:
         dyndns = False
 
@@ -338,7 +332,7 @@ def tools_update(target=None):
 
     if target not in ["system", "apps", "all"]:
         raise YunohostError(
-            "Unknown target %s, should be 'system', 'apps' or 'all'" % target,
+            f"Unknown target {target}, should be 'system', 'apps' or 'all'",
             raw_msg=True,
         )
 
@@ -397,7 +391,7 @@ def tools_update(target=None):
         except YunohostError as e:
             logger.error(str(e))
 
-        upgradable_apps = list(_list_upgradable_apps())
+        upgradable_apps = list(app_list(upgradable=True)["apps"])
 
     if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
         logger.info(m18n.n("already_up_to_date"))
@@ -405,45 +399,8 @@ def tools_update(target=None):
     return {"system": upgradable_system_packages, "apps": upgradable_apps}
 
 
-def _list_upgradable_apps():
-
-    app_list_installed = os.listdir(APPS_SETTING_PATH)
-    for app_id in app_list_installed:
-
-        app_dict = app_info(app_id, full=True)
-
-        if app_dict["upgradable"] == "yes":
-
-            # FIXME : would make more sense for these infos to be computed
-            # directly in app_info and used to check the upgradability of
-            # the app...
-            current_version = app_dict.get("manifest", {}).get("version", "?")
-            current_commit = app_dict.get("settings", {}).get("current_revision", "?")[
-                :7
-            ]
-            new_version = (
-                app_dict.get("from_catalog", {}).get("manifest", {}).get("version", "?")
-            )
-            new_commit = (
-                app_dict.get("from_catalog", {}).get("git", {}).get("revision", "?")[:7]
-            )
-
-            if current_version == new_version:
-                current_version += " (" + current_commit + ")"
-                new_version += " (" + new_commit + ")"
-
-            yield {
-                "id": app_id,
-                "label": app_dict["label"],
-                "current_version": current_version,
-                "new_version": new_version,
-            }
-
-
 @is_unit_operation()
-def tools_upgrade(
-    operation_logger, target=None, allow_yunohost_upgrade=True
-):
+def tools_upgrade(operation_logger, target=None):
     """
     Update apps & package cache, then display changelog
 
@@ -461,7 +418,7 @@ def tools_upgrade(
         raise YunohostValidationError("dpkg_lock_not_available")
 
     if target not in ["apps", "system"]:
-        raise Exception(
+        raise YunohostValidationError(
             "Uhoh ?! tools_upgrade should have 'apps' or 'system' value for argument target"
         )
 
@@ -474,7 +431,7 @@ def tools_upgrade(
 
         # Make sure there's actually something to upgrade
 
-        upgradable_apps = [app["id"] for app in _list_upgradable_apps()]
+        upgradable_apps = [app["id"] for app in app_list(upgradable=True)["apps"]]
 
         if not upgradable_apps:
             logger.info(m18n.n("apps_already_up_to_date"))
@@ -485,7 +442,7 @@ def tools_upgrade(
         try:
             app_upgrade(app=upgradable_apps)
         except Exception as e:
-            logger.warning("unable to upgrade apps: %s" % str(e))
+            logger.warning(f"unable to upgrade apps: {e}")
             logger.error(m18n.n("app_upgrade_some_app_failed"))
 
         return
@@ -530,10 +487,10 @@ def tools_upgrade(
 
         callbacks = (
             lambda l: logger.info("+ " + l.rstrip() + "\r")
-            if is_relevant(l)
+            if _apt_log_line_is_relevant(l)
             else logger.debug(l.rstrip() + "\r"),
             lambda l: logger.warning(l.rstrip())
-            if is_relevant(l)
+            if _apt_log_line_is_relevant(l)
             else logger.debug(l.rstrip()),
         )
         returncode = call_async_output(dist_upgrade, callbacks, shell=True)
@@ -544,9 +501,7 @@ def tools_upgrade(
             # Restart the API after 10 sec (at now doesn't support sub-minute times...)
             # We do this so that the API / webadmin still gets the proper HTTP response
             # It's then up to the webadmin to implement a proper UX process to wait 10 sec and then auto-fresh the webadmin
-            cmd = (
-                "at -M now >/dev/null 2>&1 <<< \"sleep 10; systemctl restart yunohost-api\""
-            )
+            cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart yunohost-api"'
             # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
             subprocess.check_call(["bash", "-c", cmd])
 
@@ -558,13 +513,33 @@ def tools_upgrade(
                     packages_list=", ".join(upgradables),
                 )
             )
-            operation_logger.error(m18n.n("packages_upgrade_failed"))
-            raise YunohostError(m18n.n("packages_upgrade_failed"))
-
-        # FIXME : add a dpkg --audit / check dpkg is broken here ?
 
         logger.success(m18n.n("system_upgraded"))
         operation_logger.success()
+
+
+def _apt_log_line_is_relevant(line):
+    irrelevants = [
+        "service sudo-ldap already provided",
+        "Reading database ...",
+        "Preparing to unpack",
+        "Selecting previously unselected package",
+        "Created symlink /etc/systemd",
+        "Replacing config file",
+        "Creating config file",
+        "Installing new version of config file",
+        "Installing new config file as you requested",
+        ", does not exist on system.",
+        "unable to delete old directory",
+        "update-alternatives:",
+        "Configuration file '/etc",
+        "==> Modified (by you or by a script) since installation.",
+        "==> Package distributor has shipped an updated version.",
+        "==> Keeping old config file as default.",
+        "is a disabled or a static unit",
+        " update-rc.d: warning: start and stop actions are no longer supported; falling back to defaults",
+    ]
+    return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
 
 
 @is_unit_operation()
@@ -873,7 +848,7 @@ def _get_migration_by_name(migration_name):
     try:
         from . import migrations
     except ImportError:
-        raise AssertionError("Unable to find migration with name %s" % migration_name)
+        raise AssertionError(f"Unable to find migration with name {migration_name}")
 
     migrations_path = migrations.__path__[0]
     migrations_found = [
@@ -882,9 +857,9 @@ def _get_migration_by_name(migration_name):
         if re.match(r"^\d+_%s\.py$" % migration_name, x)
     ]
 
-    assert len(migrations_found) == 1, (
-        "Unable to find migration with name %s" % migration_name
-    )
+    assert (
+        len(migrations_found) == 1
+    ), f"Unable to find migration with name {migration_name}"
 
     return _load_migration(migrations_found[0])
 
@@ -978,7 +953,7 @@ def _tools_migrations_run_before_app_restore(backup_version, app_id):
                 raise
 
 
-class Migration(object):
+class Migration:
 
     # Those are to be implemented by daughter classes
 
@@ -1003,9 +978,9 @@ class Migration(object):
 
     @property
     def description(self):
-        return m18n.n("migration_description_%s" % self.id)
+        return m18n.n(f"migration_description_{self.id}")
 
-    def ldap_migration(run):
+    def ldap_migration(self, run):
         def func(self):
 
             # Backup LDAP before the migration

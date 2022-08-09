@@ -281,7 +281,9 @@ ynh_remove_fpm_config() {
     fi
 
     # If the PHP version used is not the default version for YunoHost
-    if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ]; then
+    # The second part with YNH_APP_PURGE is an ugly hack to guess that we're inside the remove script
+    # (we don't actually care about its value, we just check its not empty hence it exists)
+    if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ] && [ -n "${YNH_APP_PURGE:-}" ]; then
         # Remove app dependencies ... but ideally should happen via an explicit call from packager
         ynh_remove_app_dependencies
     fi

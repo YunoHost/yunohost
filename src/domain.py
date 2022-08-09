@@ -68,9 +68,7 @@ def domain_list(exclude_subdomains=False):
     ldap = _get_ldap_interface()
     result = [
         entry["virtualdomain"][0]
-        for entry in ldap.search(
-            "ou=domains,dc=yunohost,dc=org", "virtualdomain=*", ["virtualdomain"]
-        )
+        for entry in ldap.search("ou=domains", "virtualdomain=*", ["virtualdomain"])
     ]
 
     result_list = []
@@ -187,7 +185,7 @@ def domain_add(operation_logger, domain, dyndns=False):
         # Actually subscribe
         dyndns_subscribe(domain=domain)
 
-    _certificate_install_selfsigned([domain], False)
+    _certificate_install_selfsigned([domain], True)
 
     try:
         attr_dict = {
@@ -196,7 +194,7 @@ def domain_add(operation_logger, domain, dyndns=False):
         }
 
         try:
-            ldap.add("virtualdomain=%s,ou=domains" % domain, attr_dict)
+            ldap.add(f"virtualdomain={domain},ou=domains", attr_dict)
         except Exception as e:
             raise YunohostError("domain_creation_failed", domain=domain, error=e)
         finally:
@@ -215,7 +213,7 @@ def domain_add(operation_logger, domain, dyndns=False):
             # This is a pretty ad hoc solution and only applied to nginx
             # because it's one of the major service, but in the long term we
             # should identify the root of this bug...
-            _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
+            _force_clear_hashes([f"/etc/nginx/conf.d/{domain}.conf"])
             regen_conf(
                 names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd", "mdns"]
             )
@@ -282,8 +280,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
             apps_on_that_domain.append(
                 (
                     app,
-                    '    - %s "%s" on https://%s%s'
-                    % (app, label, domain, settings["path"])
+                    f"    - {app} \"{label}\" on https://{domain}{settings['path']}"
                     if "path" in settings
                     else app,
                 )
@@ -342,14 +339,14 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
     # This is a pretty ad hoc solution and only applied to nginx
     # because it's one of the major service, but in the long term we
     # should identify the root of this bug...
-    _force_clear_hashes(["/etc/nginx/conf.d/%s.conf" % domain])
+    _force_clear_hashes([f"/etc/nginx/conf.d/{domain}.conf"])
     # And in addition we even force-delete the file Otherwise, if the file was
     # manually modified, it may not get removed by the regenconf which leads to
     # catastrophic consequences of nginx breaking because it can't load the
     # cert file which disappeared etc..
-    if os.path.exists("/etc/nginx/conf.d/%s.conf" % domain):
+    if os.path.exists(f"/etc/nginx/conf.d/{domain}.conf"):
         _process_regen_conf(
-            "/etc/nginx/conf.d/%s.conf" % domain, new_conf=None, save=True
+            f"/etc/nginx/conf.d/{domain}.conf", new_conf=None, save=True
         )
 
     regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd", "mdns"])
@@ -388,7 +385,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
         domain_list_cache = {}
         _set_hostname(new_main_domain)
     except Exception as e:
-        logger.warning("%s" % e, exc_info=1)
+        logger.warning(str(e), exc_info=1)
         raise YunohostError("main_domain_change_failed")
 
     # Generate SSOwat configuration file
@@ -457,19 +454,50 @@ class DomainConfigPanel(ConfigPanel):
     save_path_tpl = f"{DOMAIN_SETTINGS_DIR}/{{entity}}.yml"
     save_mode = "diff"
 
+    def _apply(self):
+        if (
+            "default_app" in self.future_values
+            and self.future_values["default_app"] != self.values["default_app"]
+        ):
+            from yunohost.app import app_ssowatconf, app_map
+
+            if "/" in app_map(raw=True)[self.entity]:
+                raise YunohostValidationError(
+                    "app_make_default_location_already_used",
+                    app=self.future_values["default_app"],
+                    domain=self.entity,
+                    other_app=app_map(raw=True)[self.entity]["/"]["id"],
+                )
+
+        super()._apply()
+
+        # Reload ssowat if default app changed
+        if (
+            "default_app" in self.future_values
+            and self.future_values["default_app"] != self.values["default_app"]
+        ):
+            app_ssowatconf()
+
     def _get_toml(self):
-        from yunohost.dns import _get_registrar_config_section
 
         toml = super()._get_toml()
 
         toml["feature"]["xmpp"]["xmpp"]["default"] = (
             1 if self.entity == _get_maindomain() else 0
         )
-        toml["dns"]["registrar"] = _get_registrar_config_section(self.entity)
 
-        # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
-        self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
-        del toml["dns"]["registrar"]["registrar"]["value"]
+        # Optimize wether or not to load the DNS section,
+        # e.g. we don't want to trigger the whole _get_registary_config_section
+        # when just getting the current value from the feature section
+        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
+        if not filter_key or filter_key[0] == "dns":
+            from yunohost.dns import _get_registrar_config_section
+
+            toml["dns"]["registrar"] = _get_registrar_config_section(self.entity)
+
+            # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
+            self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
+            del toml["dns"]["registrar"]["registrar"]["value"]
 
         return toml
 
@@ -479,7 +507,9 @@ class DomainConfigPanel(ConfigPanel):
         super()._load_current_values()
 
         # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
-        self.values["registrar"] = self.registar_id
+        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
+        if not filter_key or filter_key[0] == "dns":
+            self.values["registrar"] = self.registar_id
 
 
 def _get_domain_settings(domain: str) -> dict:
@@ -507,29 +537,21 @@ def _set_domain_settings(domain: str, settings: dict) -> None:
 
 
 def domain_cert_status(domain_list, full=False):
-    import yunohost.certificate
+    from yunohost.certificate import certificate_status
 
-    return yunohost.certificate.certificate_status(domain_list, full)
-
-
-def domain_cert_install(
-    domain_list, force=False, no_checks=False, self_signed=False, staging=False
-):
-    import yunohost.certificate
-
-    return yunohost.certificate.certificate_install(
-        domain_list, force, no_checks, self_signed, staging
-    )
+    return certificate_status(domain_list, full)
 
 
-def domain_cert_renew(
-    domain_list, force=False, no_checks=False, email=False, staging=False
-):
-    import yunohost.certificate
+def domain_cert_install(domain_list, force=False, no_checks=False, self_signed=False):
+    from yunohost.certificate import certificate_install
 
-    return yunohost.certificate.certificate_renew(
-        domain_list, force, no_checks, email, staging
-    )
+    return certificate_install(domain_list, force, no_checks, self_signed)
+
+
+def domain_cert_renew(domain_list, force=False, no_checks=False, email=False):
+    from yunohost.certificate import certificate_renew
+
+    return certificate_renew(domain_list, force, no_checks, email)
 
 
 def domain_dns_conf(domain):
@@ -537,12 +559,12 @@ def domain_dns_conf(domain):
 
 
 def domain_dns_suggest(domain):
-    import yunohost.dns
+    from yunohost.dns import domain_dns_suggest
 
-    return yunohost.dns.domain_dns_suggest(domain)
+    return domain_dns_suggest(domain)
 
 
 def domain_dns_push(domain, dry_run, force, purge):
-    import yunohost.dns
+    from yunohost.dns import domain_dns_push
 
-    return yunohost.dns.domain_dns_push(domain, dry_run, force, purge)
+    return domain_dns_push(domain, dry_run, force, purge)

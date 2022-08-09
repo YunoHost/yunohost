@@ -155,9 +155,7 @@ class MyDiagnoser(Diagnoser):
             return None
 
         # We use the resolver file as a list of well-known, trustable (ie not google ;)) IPs that we can ping
-        resolver_file = (
-            "/usr/share/yunohost/conf/dnsmasq/plain/resolv.dnsmasq.conf"
-        )
+        resolver_file = "/usr/share/yunohost/conf/dnsmasq/plain/resolv.dnsmasq.conf"
         resolvers = [
             r.split(" ")[1]
             for r in read_file(resolver_file).split("\n")
@@ -171,10 +169,7 @@ class MyDiagnoser(Diagnoser):
 
         assert (
             resolvers != []
-        ), "Uhoh, need at least one IPv%s DNS resolver in %s ..." % (
-            protocol,
-            resolver_file,
-        )
+        ), f"Uhoh, need at least one IPv{protocol} DNS resolver in {resolver_file} ..."
 
         # So let's try to ping the first 4~5 resolvers (shuffled)
         # If we succesfully ping any of them, we conclude that we are indeed connected
@@ -224,7 +219,7 @@ class MyDiagnoser(Diagnoser):
         try:
             return download_text(url, timeout=30).strip()
         except Exception as e:
-            logger.debug(
-                "Could not get public IPv%s : %s" % (str(protocol), str(e))
-            )
+            protocol = str(protocol)
+            e = str(e)
+            self.logger_debug(f"Could not get public IPv{protocol} : {e}")
             return None

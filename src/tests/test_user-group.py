@@ -281,7 +281,7 @@ def test_update_group_add_user(mocker):
         user_group_update("dev", add=["bob"])
 
     group_res = user_group_list()["groups"]
-    assert set(group_res["dev"]["members"]) == set(["alice", "bob"])
+    assert set(group_res["dev"]["members"]) == {"alice", "bob"}
 
 
 def test_update_group_add_user_already_in(mocker):

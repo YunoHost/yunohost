@@ -469,7 +469,7 @@ class RedactingFormatter(Formatter):
             )
 
 
-class OperationLogger(object):
+class OperationLogger:
 
     """
     Instances of this class represents unit operation done on the ynh instance.
@@ -544,7 +544,7 @@ class OperationLogger(object):
             # We use proc.open_files() to list files opened / actively used by this proc
             # We only keep files matching a recent yunohost operation log
             active_logs = sorted(
-                [f.path for f in proc.open_files() if f.path in recent_operation_logs],
+                (f.path for f in proc.open_files() if f.path in recent_operation_logs),
                 key=os.path.getctime,
                 reverse=True,
             )
@@ -659,6 +659,11 @@ class OperationLogger(object):
                 data["error"] = self._error
         # TODO: detect if 'extra' erase some key of 'data'
         data.update(self.extra)
+        # Remove the 'args' arg from args (yodawg). It corresponds to url-encoded args for app install, config panel set, etc
+        # Because the data are url encoded, it's hell to properly redact secrets inside it,
+        # and the useful info is usually already available in `env` too
+        if "args" in data and isinstance(data["args"], dict) and "args" in data["args"]:
+            data["args"].pop("args")
         return data
 
     def success(self):

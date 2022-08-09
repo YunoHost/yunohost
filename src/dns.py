@@ -90,6 +90,7 @@ def domain_dns_suggest(domain):
             result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     if dns_conf["extra"]:
+        result += "\n\n"
         result += "; Extra"
         for record in dns_conf["extra"]:
             result += "\n{name} {ttl} IN {type} {value}".format(**record)
@@ -182,8 +183,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
         # foo.sub.domain.tld #       domain.tld  #  foo.sub  # .foo.sub #
         #     sub.domain.tld #   sub.domain.tld  #        @  #          #
         # foo.sub.domain.tld #   sub.domain.tld  #      foo  # .foo     #
-
-        basename = domain.replace(base_dns_zone, "").rstrip(".") or "@"
+        basename = _get_relative_name_for_dns_zone(domain, base_dns_zone)
         suffix = f".{basename}" if basename != "@" else ""
 
         # ttl = settings["ttl"]
@@ -338,7 +338,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
 
 
 def _get_DKIM(domain):
-    DKIM_file = "/etc/dkim/{domain}.mail.txt".format(domain=domain)
+    DKIM_file = f"/etc/dkim/{domain}.mail.txt"
 
     if not os.path.isfile(DKIM_file):
         return (None, None)
@@ -466,10 +466,19 @@ def _get_dns_zone_for_domain(domain):
     # Until we find the first one that has a NS record
     parent_list = [domain.split(".", i)[-1] for i, _ in enumerate(domain.split("."))]
 
-    for parent in parent_list:
+    # We don't wan't to do A NS request on the tld
+    for parent in parent_list[0:-1]:
 
         # Check if there's a NS record for that domain
         answer = dig(parent, rdtype="NS", full_answers=True, resolvers="force_external")
+
+        if answer[0] != "ok":
+            # Some domains have a SOA configured but NO NS record !!!
+            # See https://github.com/YunoHost/issues/issues/1980
+            answer = dig(
+                parent, rdtype="SOA", full_answers=True, resolvers="force_external"
+            )
+
         if answer[0] == "ok":
             mkdir(cache_folder, parents=True, force=True)
             write_to_file(cache_file, parent)
@@ -481,9 +490,22 @@ def _get_dns_zone_for_domain(domain):
         zone = parent_list[-1]
 
     logger.warning(
-        f"Could not identify the dns zone for domain {domain}, returning {zone}"
+        f"Could not identify correctly the dns zone for domain {domain}, returning {zone}"
     )
     return zone
+
+
+def _get_relative_name_for_dns_zone(domain, base_dns_zone):
+    # Strip the base dns zone name from a domain such that it's suitable for DNS manipulation relative to a defined zone
+    # For example, assuming base_dns_zone is "example.tld":
+    #    example.tld -> @
+    #    foo.example.tld -> foo
+    #    .foo.example.tld -> foo
+    #    bar.foo.example.tld -> bar.foo
+    return (
+        re.sub(r"\.?" + base_dns_zone.replace(".", r"\.") + "$", "", domain.strip("."))
+        or "@"
+    )
 
 
 def _get_registrar_config_section(domain):
@@ -762,7 +784,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     changes = {"delete": [], "update": [], "create": [], "unchanged": []}
 
     type_and_names = sorted(
-        set([(r["type"], r["name"]) for r in current_records + wanted_records])
+        {(r["type"], r["name"]) for r in current_records + wanted_records}
     )
     comparison = {
         type_and_name: {"current": [], "wanted": []} for type_and_name in type_and_names
@@ -836,14 +858,9 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         for record in current:
             changes["delete"].append(record)
 
-    def relative_name(name):
-        name = name.strip(".")
-        name = name.replace("." + base_dns_zone, "")
-        name = name.replace(base_dns_zone, "@")
-        return name
-
     def human_readable_record(action, record):
-        name = relative_name(record["name"])
+        name = record["name"]
+        name = _get_relative_name_for_dns_zone(record["name"], base_dns_zone)
         name = name[:20]
         t = record["type"]
 
@@ -857,7 +874,6 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
             ignored = ""
 
         if action == "create":
-            old_content = record.get("old_content", "(None)")[:30]
             new_content = record.get("content", "(None)")[:30]
             return f"{name:>20} [{t:^5}] {new_content:^30}  {ignored}"
         elif action == "update":
@@ -867,7 +883,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
                 f"{name:>20} [{t:^5}] {old_content:^30} -> {new_content:^30}  {ignored}"
             )
         elif action == "unchanged":
-            old_content = new_content = record.get("content", "(None)")[:30]
+            old_content = record.get("content", "(None)")[:30]
             return f"{name:>20} [{t:^5}] {old_content:^30}"
         else:
             old_content = record.get("content", "(None)")[:30]
@@ -877,7 +893,9 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         if Moulinette.interface.type == "api":
             for records in changes.values():
                 for record in records:
-                    record["name"] = relative_name(record["name"])
+                    record["name"] = _get_relative_name_for_dns_zone(
+                        record["name"], base_dns_zone
+                    )
             return changes
         else:
             out = {"delete": [], "create": [], "update": [], "unchanged": []}
@@ -926,7 +944,9 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
         for record in changes[action]:
 
-            relative_name = record["name"].replace(base_dns_zone, "").rstrip(".") or "@"
+            relative_name = _get_relative_name_for_dns_zone(
+                record["name"], base_dns_zone
+            )
             progress(
                 f"{action} {record['type']:^5} / {relative_name}"
             )  # FIXME: i18n but meh

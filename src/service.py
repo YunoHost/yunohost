@@ -407,8 +407,7 @@ def _get_and_format_service_status(service, infos):
 
     if raw_status is None:
         logger.error(
-            "Failed to get status information via dbus for service %s, systemctl didn't recognize this service ('NoSuchUnit')."
-            % systemd_service
+            f"Failed to get status information via dbus for service {systemd_service}, systemctl didn't recognize this service ('NoSuchUnit')."
         )
         return {
             "status": "unknown",
@@ -424,7 +423,7 @@ def _get_and_format_service_status(service, infos):
     # If no description was there, try to get it from the .json locales
     if not description:
 
-        translation_key = "service_description_%s" % service
+        translation_key = f"service_description_{service}"
         if m18n.key_exists(translation_key):
             description = m18n.n(translation_key)
         else:
@@ -445,7 +444,7 @@ def _get_and_format_service_status(service, infos):
             "enabled" if glob("/etc/rc[S5].d/S??" + service) else "disabled"
         )
     elif os.path.exists(
-        "/etc/systemd/system/multi-user.target.wants/%s.service" % service
+        f"/etc/systemd/system/multi-user.target.wants/{service}.service"
     ):
         output["start_on_boot"] = "enabled"
 
@@ -585,11 +584,10 @@ def _run_service_command(action, service):
     ]
     if action not in possible_actions:
         raise ValueError(
-            "Unknown action '%s', available actions are: %s"
-            % (action, ", ".join(possible_actions))
+            f"Unknown action '{action}', available actions are: {', '.join(possible_actions)}"
         )
 
-    cmd = "systemctl %s %s" % (action, service)
+    cmd = f"systemctl {action} {service}"
 
     need_lock = services[service].get("need_lock", False) and action in [
         "start",
@@ -604,7 +602,7 @@ def _run_service_command(action, service):
 
     try:
         # Launch the command
-        logger.debug("Running '%s'" % cmd)
+        logger.debug(f"Running '{cmd}'")
         p = subprocess.Popen(cmd.split(), stderr=subprocess.STDOUT)
         # If this command needs a lock (because the service uses yunohost
         # commands inside), find the PID and add a lock for it
@@ -637,7 +635,7 @@ def _give_lock(action, service, p):
     else:
         systemctl_PID_name = "ControlPID"
 
-    cmd_get_son_PID = "systemctl show %s -p %s" % (service, systemctl_PID_name)
+    cmd_get_son_PID = f"systemctl show {service} -p {systemctl_PID_name}"
     son_PID = 0
     # As long as we did not found the PID and that the command is still running
     while son_PID == 0 and p.poll() is None:
@@ -650,10 +648,8 @@ def _give_lock(action, service, p):
     # If we found a PID
     if son_PID != 0:
         # Append the PID to the lock file
-        logger.debug(
-            "Giving a lock to PID %s for service %s !" % (str(son_PID), service)
-        )
-        append_to_file(MOULINETTE_LOCK, "\n%s" % str(son_PID))
+        logger.debug(f"Giving a lock to PID {son_PID} for service {service} !")
+        append_to_file(MOULINETTE_LOCK, f"\n{son_PID}")
 
     return son_PID
 
@@ -699,19 +695,29 @@ def _get_services():
         if "log" not in services["ynh-vpnclient"]:
             services["ynh-vpnclient"]["log"] = ["/var/log/ynh-vpnclient.log"]
 
-    services_with_package_condition = [name for name, infos in services.items() if infos.get("ignore_if_package_is_not_installed")]
+    services_with_package_condition = [
+        name
+        for name, infos in services.items()
+        if infos.get("ignore_if_package_is_not_installed")
+    ]
     for name in services_with_package_condition:
         package = services[name]["ignore_if_package_is_not_installed"]
         if os.system(f"dpkg --list | grep -q 'ii *{package}'") != 0:
             del services[name]
 
-    php_fpm_versions = check_output(r"dpkg --list | grep -P 'ii  php\d.\d-fpm' | awk '{print $2}' | grep -o -P '\d.\d' || true")
-    php_fpm_versions = [v for v in php_fpm_versions.split('\n') if v.strip()]
+    php_fpm_versions = check_output(
+        r"dpkg --list | grep -P 'ii  php\d.\d-fpm' | awk '{print $2}' | grep -o -P '\d.\d' || true"
+    )
+    php_fpm_versions = [v for v in php_fpm_versions.split("\n") if v.strip()]
     for version in php_fpm_versions:
+        # Skip php 7.3 which is most likely dead after buster->bullseye migration
+        # because users get spooked
+        if version == "7.3":
+            continue
         services[f"php{version}-fpm"] = {
             "log": f"/var/log/php{version}-fpm.log",
             "test_conf": f"php-fpm{version} --test",  # ofc the service is phpx.y-fpm but the program is php-fpmx.y because why not ...
-            "category": "web"
+            "category": "web",
         }
 
     # Remove legacy /var/log/daemon.log and /var/log/syslog from log entries
@@ -742,14 +748,22 @@ def _save_services(services):
     diff = {}
 
     for service_name, service_infos in services.items():
-        service_conf_base = conf_base.get(service_name, {})
+
+        # Ignore php-fpm services, they are to be added dynamically by the core,
+        # but not actually saved
+        if service_name.startswith("php") and service_name.endswith("-fpm"):
+            continue
+
+        service_conf_base = conf_base.get(service_name, {}) or {}
         diff[service_name] = {}
 
         for key, value in service_infos.items():
             if service_conf_base.get(key) != value:
                 diff[service_name][key] = value
 
-    diff = {name: infos for name, infos in diff.items() if infos}
+    diff = {
+        name: infos for name, infos in diff.items() if infos or name not in conf_base
+    }
 
     write_to_yaml(SERVICES_CONF, diff)
 
@@ -817,7 +831,7 @@ def _find_previous_log_file(file):
     i = int(i[0]) + 1 if len(i) > 0 else 1
 
     previous_file = file if i == 1 else splitext[0]
-    previous_file = previous_file + ".%d" % (i)
+    previous_file = previous_file + f".{i}"
     if os.path.exists(previous_file):
         return previous_file
 
@@ -832,11 +846,11 @@ def _get_journalctl_logs(service, number="all"):
     services = _get_services()
     systemd_service = services.get(service, {}).get("actual_systemd_service", service)
     try:
-        return check_output(f"journalctl --no-hostname --no-pager -u {systemd_service} -n{number}")
+        return check_output(
+            f"journalctl --no-hostname --no-pager -u {systemd_service} -n{number}"
+        )
     except Exception:
         import traceback
 
-        return (
-            "error while get services logs from journalctl:\n%s"
-            % traceback.format_exc()
-        )
+        trace_ = traceback.format_exc()
+        return f"error while get services logs from journalctl:\n{trace_}"

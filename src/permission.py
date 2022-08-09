@@ -58,7 +58,7 @@ def user_permission_list(
 
     ldap = _get_ldap_interface()
     permissions_infos = ldap.search(
-        "ou=permission,dc=yunohost,dc=org",
+        "ou=permission",
         "(objectclass=permissionYnh)",
         [
             "cn",
@@ -133,13 +133,13 @@ def user_permission_list(
             main_perm_name = name.split(".")[0] + ".main"
             if main_perm_name not in permissions:
                 logger.debug(
-                    "Uhoh, unknown permission %s ? (Maybe we're in the process or deleting the perm for this app...)"
-                    % main_perm_name
+                    f"Uhoh, unknown permission {main_perm_name} ? (Maybe we're in the process or deleting the perm for this app...)"
                 )
                 continue
             main_perm_label = permissions[main_perm_name]["label"]
             infos["sublabel"] = infos["label"]
-            infos["label"] = "%s (%s)" % (main_perm_label, infos["label"])
+            label_ = infos["label"]
+            infos["label"] = f"{main_perm_label} ({label_})"
 
     if short:
         permissions = list(permissions.keys())
@@ -406,9 +406,7 @@ def permission_create(
         permission = permission + ".main"
 
     # Validate uniqueness of permission in LDAP
-    if ldap.get_conflict(
-        {"cn": permission}, base_dn="ou=permission,dc=yunohost,dc=org"
-    ):
+    if ldap.get_conflict({"cn": permission}, base_dn="ou=permission"):
         raise YunohostValidationError("permission_already_exist", permission=permission)
 
     # Get random GID
@@ -451,7 +449,7 @@ def permission_create(
     operation_logger.start()
 
     try:
-        ldap.add("cn=%s,ou=permission" % permission, attr_dict)
+        ldap.add(f"cn={permission},ou=permission", attr_dict)
     except Exception as e:
         raise YunohostError(
             "permission_creation_failed", permission=permission, error=e
@@ -584,7 +582,7 @@ def permission_url(
 
     try:
         ldap.update(
-            "cn=%s,ou=permission" % permission,
+            f"cn={permission},ou=permission",
             {
                 "URL": [url] if url is not None else [],
                 "additionalUrls": new_additional_urls,
@@ -632,7 +630,7 @@ def permission_delete(operation_logger, permission, force=False, sync_perm=True)
     operation_logger.start()
 
     try:
-        ldap.remove("cn=%s,ou=permission" % permission)
+        ldap.remove(f"cn={permission},ou=permission")
     except Exception as e:
         raise YunohostError(
             "permission_deletion_failed", permission=permission, error=e
@@ -664,13 +662,11 @@ def permission_sync_to_user():
         currently_allowed_users = set(permission_infos["corresponding_users"])
 
         # These are the users that should be allowed because they are member of a group that is allowed for this permission ...
-        should_be_allowed_users = set(
-            [
-                user
-                for group in permission_infos["allowed"]
-                for user in groups[group]["members"]
-            ]
-        )
+        should_be_allowed_users = {
+            user
+            for group in permission_infos["allowed"]
+            for user in groups[group]["members"]
+        }
 
         # Note that a LDAP operation with the same value that is in LDAP crash SLAP.
         # So we need to check before each ldap operation that we really change something in LDAP
@@ -680,15 +676,14 @@ def permission_sync_to_user():
 
         new_inherited_perms = {
             "inheritPermission": [
-                "uid=%s,ou=users,dc=yunohost,dc=org" % u
-                for u in should_be_allowed_users
+                f"uid={u},ou=users,dc=yunohost,dc=org" for u in should_be_allowed_users
             ],
             "memberUid": should_be_allowed_users,
         }
 
         # Commit the change with the new inherited stuff
         try:
-            ldap.update("cn=%s,ou=permission" % permission_name, new_inherited_perms)
+            ldap.update(f"cn={permission_name},ou=permission", new_inherited_perms)
         except Exception as e:
             raise YunohostError(
                 "permission_update_failed", permission=permission_name, error=e
@@ -766,7 +761,7 @@ def _update_ldap_group_permission(
         update["showTile"] = [str(show_tile).upper()]
 
     try:
-        ldap.update("cn=%s,ou=permission" % permission, update)
+        ldap.update(f"cn={permission},ou=permission", update)
     except Exception as e:
         raise YunohostError("permission_update_failed", permission=permission, error=e)
 

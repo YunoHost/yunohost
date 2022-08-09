@@ -97,7 +97,7 @@ def user_list(fields=None):
         and values[0].strip() == "/bin/false",
     }
 
-    attrs = set(["uid"])
+    attrs = {"uid"}
     users = {}
 
     if not fields:
@@ -111,7 +111,7 @@ def user_list(fields=None):
 
     ldap = _get_ldap_interface()
     result = ldap.search(
-        "ou=users,dc=yunohost,dc=org",
+        "ou=users",
         "(&(objectclass=person)(!(uid=root))(!(uid=nobody)))",
         attrs,
     )
@@ -143,10 +143,14 @@ def user_create(
 
     from yunohost.domain import domain_list, _get_maindomain, _assert_domain_exists
     from yunohost.hook import hook_callback
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.password import (
+        assert_password_is_strong_enough,
+        assert_password_is_compatible,
+    )
     from yunohost.utils.ldap import _get_ldap_interface
 
-    # Ensure sufficiently complex password
+    # Ensure compatibility and sufficiently complex password
+    assert_password_is_compatible(password)
     assert_password_is_strong_enough("user", password)
 
     # Validate domain used for email address/xmpp account
@@ -159,11 +163,11 @@ def user_create(
             # On affiche les differents domaines possibles
             Moulinette.display(m18n.n("domains_available"))
             for domain in domain_list()["domains"]:
-                Moulinette.display("- {}".format(domain))
+                Moulinette.display(f"- {domain}")
 
             maindomain = _get_maindomain()
             domain = Moulinette.prompt(
-                m18n.n("ask_user_domain") + " (default: %s)" % maindomain
+                m18n.n("ask_user_domain") + f" (default: {maindomain})"
             )
             if not domain:
                 domain = maindomain
@@ -208,7 +212,7 @@ def user_create(
         uid_guid_found = uid not in all_uid and uid not in all_gid
 
     # Adapt values for LDAP
-    fullname = "%s %s" % (firstname, lastname)
+    fullname = f"{firstname} {lastname}"
 
     attr_dict = {
         "objectClass": [
@@ -233,11 +237,11 @@ def user_create(
     }
 
     # If it is the first user, add some aliases
-    if not ldap.search(base="ou=users,dc=yunohost,dc=org", filter="uid=*"):
+    if not ldap.search(base="ou=users", filter="uid=*"):
         attr_dict["mail"] = [attr_dict["mail"]] + aliases
 
     try:
-        ldap.add("uid=%s,ou=users" % username, attr_dict)
+        ldap.add(f"uid={username},ou=users", attr_dict)
     except Exception as e:
         raise YunohostError("user_creation_failed", user=username, error=e)
 
@@ -254,11 +258,9 @@ def user_create(
             logger.warning(m18n.n("user_home_creation_failed", home=home), exc_info=1)
 
     try:
-        subprocess.check_call(
-            ["setfacl", "-m", "g:all_users:---", "/home/%s" % username]
-        )
+        subprocess.check_call(["setfacl", "-m", "g:all_users:---", f"/home/{username}"])
     except subprocess.CalledProcessError:
-        logger.warning("Failed to protect /home/%s" % username, exc_info=1)
+        logger.warning(f"Failed to protect /home/{username}", exc_info=1)
 
     # Create group for user and add to group 'all_users'
     user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
@@ -318,7 +320,7 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
 
     ldap = _get_ldap_interface()
     try:
-        ldap.remove("uid=%s,ou=users" % username)
+        ldap.remove(f"uid={username},ou=users")
     except Exception as e:
         raise YunohostError("user_deletion_failed", user=username, error=e)
 
@@ -326,8 +328,8 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
     subprocess.call(["nscd", "-i", "passwd"])
 
     if purge:
-        subprocess.call(["rm", "-rf", "/home/{0}".format(username)])
-        subprocess.call(["rm", "-rf", "/var/mail/{0}".format(username)])
+        subprocess.call(["rm", "-rf", f"/home/{username}"])
+        subprocess.call(["rm", "-rf", f"/var/mail/{username}"])
 
     hook_callback("post_user_delete", args=[username, purge])
 
@@ -367,7 +369,10 @@ def user_update(
     """
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.app import app_ssowatconf
-    from yunohost.utils.password import assert_password_is_strong_enough
+    from yunohost.utils.password import (
+        assert_password_is_strong_enough,
+        assert_password_is_compatible,
+    )
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_callback
 
@@ -377,7 +382,7 @@ def user_update(
     ldap = _get_ldap_interface()
     attrs_to_fetch = ["givenName", "sn", "mail", "maildrop"]
     result = ldap.search(
-        base="ou=users,dc=yunohost,dc=org",
+        base="ou=users",
         filter="uid=" + username,
         attrs=attrs_to_fetch,
     )
@@ -416,7 +421,8 @@ def user_update(
             change_password = Moulinette.prompt(
                 m18n.n("ask_password"), is_password=True, confirm=True
             )
-        # Ensure sufficiently complex password
+        # Ensure compatibility and sufficiently complex password
+        assert_password_is_compatible(change_password)
         assert_password_is_strong_enough("user", change_password)
 
         new_attr_dict["userPassword"] = [_hash_user_password(change_password)]
@@ -506,7 +512,7 @@ def user_update(
         operation_logger.start()
 
     try:
-        ldap.update("uid=%s,ou=users" % username, new_attr_dict)
+        ldap.update(f"uid={username},ou=users", new_attr_dict)
     except Exception as e:
         raise YunohostError("user_update_failed", user=username, error=e)
 
@@ -538,7 +544,7 @@ def user_info(username):
     else:
         filter = "uid=" + username
 
-    result = ldap.search("ou=users,dc=yunohost,dc=org", filter, user_attrs)
+    result = ldap.search("ou=users", filter, user_attrs)
 
     if result:
         user = result[0]
@@ -577,11 +583,11 @@ def user_info(username):
             logger.warning(m18n.n("mailbox_disabled", user=username))
         else:
             try:
-                cmd = "doveadm -f flow quota get -u %s" % user["uid"][0]
-                cmd_result = check_output(cmd)
+                uid_ = user["uid"][0]
+                cmd_result = check_output(f"doveadm -f flow quota get -u {uid_}")
             except Exception as e:
                 cmd_result = ""
-                logger.warning("Failed to fetch quota info ... : %s " % str(e))
+                logger.warning(f"Failed to fetch quota info ... : {e}")
 
             # Exemple of return value for cmd:
             # """Quota name=User quota Type=STORAGE Value=0 Limit=- %=0
@@ -707,8 +713,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         unknown_groups = [g for g in user["groups"] if g not in existing_groups]
         if unknown_groups:
             format_errors.append(
-                f"username '{user['username']}': unknown groups %s"
-                % ", ".join(unknown_groups)
+                f"username '{user['username']}': unknown groups {', '.join(unknown_groups)}"
             )
 
         # Validate that domains exist
@@ -729,8 +734,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
 
         if unknown_domains:
             format_errors.append(
-                f"username '{user['username']}': unknown domains %s"
-                % ", ".join(unknown_domains)
+                f"username '{user['username']}': unknown domains {', '.join(unknown_domains)}"
             )
 
         if format_errors:
@@ -938,7 +942,7 @@ def user_group_list(short=False, full=False, include_primary_groups=True):
 
     ldap = _get_ldap_interface()
     groups_infos = ldap.search(
-        "ou=groups,dc=yunohost,dc=org",
+        "ou=groups",
         "(objectclass=groupOfNamesYnh)",
         ["cn", "member", "permission"],
     )
@@ -988,9 +992,7 @@ def user_group_create(
     ldap = _get_ldap_interface()
 
     # Validate uniqueness of groupname in LDAP
-    conflict = ldap.get_conflict(
-        {"cn": groupname}, base_dn="ou=groups,dc=yunohost,dc=org"
-    )
+    conflict = ldap.get_conflict({"cn": groupname}, base_dn="ou=groups")
     if conflict:
         raise YunohostValidationError("group_already_exist", group=groupname)
 
@@ -1002,7 +1004,7 @@ def user_group_create(
                 m18n.n("group_already_exist_on_system_but_removing_it", group=groupname)
             )
             subprocess.check_call(
-                "sed --in-place '/^%s:/d' /etc/group" % groupname, shell=True
+                f"sed --in-place '/^{groupname}:/d' /etc/group", shell=True
             )
         else:
             raise YunohostValidationError(
@@ -1032,7 +1034,7 @@ def user_group_create(
 
     operation_logger.start()
     try:
-        ldap.add("cn=%s,ou=groups" % groupname, attr_dict)
+        ldap.add(f"cn={groupname},ou=groups", attr_dict)
     except Exception as e:
         raise YunohostError("group_creation_failed", group=groupname, error=e)
 
@@ -1075,7 +1077,7 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     operation_logger.start()
     ldap = _get_ldap_interface()
     try:
-        ldap.remove("cn=%s,ou=groups" % groupname)
+        ldap.remove(f"cn={groupname},ou=groups")
     except Exception as e:
         raise YunohostError("group_deletion_failed", group=groupname, error=e)
 
@@ -1171,7 +1173,7 @@ def user_group_update(
         ldap = _get_ldap_interface()
         try:
             ldap.update(
-                "cn=%s,ou=groups" % groupname,
+                f"cn={groupname},ou=groups",
                 {"member": set(new_group_dns), "memberUid": set(new_group)},
             )
         except Exception as e:
@@ -1204,7 +1206,7 @@ def user_group_info(groupname):
 
     # Fetch info for this group
     result = ldap.search(
-        "ou=groups,dc=yunohost,dc=org",
+        "ou=groups",
         "cn=" + groupname,
         ["cn", "member", "permission"],
     )
@@ -1256,25 +1258,23 @@ def user_group_remove(groupname, usernames, force=False, sync_perm=True):
 
 
 def user_permission_list(short=False, full=False, apps=[]):
-    import yunohost.permission
+    from yunohost.permission import user_permission_list
 
-    return yunohost.permission.user_permission_list(
-        short, full, absolute_urls=True, apps=apps
-    )
+    return user_permission_list(short, full, absolute_urls=True, apps=apps)
 
 
 def user_permission_update(permission, label=None, show_tile=None, sync_perm=True):
-    import yunohost.permission
+    from yunohost.permission import user_permission_update
 
-    return yunohost.permission.user_permission_update(
+    return user_permission_update(
         permission, label=label, show_tile=show_tile, sync_perm=sync_perm
     )
 
 
 def user_permission_add(permission, names, protected=None, force=False, sync_perm=True):
-    import yunohost.permission
+    from yunohost.permission import user_permission_update
 
-    return yunohost.permission.user_permission_update(
+    return user_permission_update(
         permission, add=names, protected=protected, force=force, sync_perm=sync_perm
     )
 
@@ -1282,23 +1282,23 @@ def user_permission_add(permission, names, protected=None, force=False, sync_per
 def user_permission_remove(
     permission, names, protected=None, force=False, sync_perm=True
 ):
-    import yunohost.permission
+    from yunohost.permission import user_permission_update
 
-    return yunohost.permission.user_permission_update(
+    return user_permission_update(
         permission, remove=names, protected=protected, force=force, sync_perm=sync_perm
     )
 
 
 def user_permission_reset(permission, sync_perm=True):
-    import yunohost.permission
+    from yunohost.permission import user_permission_reset
 
-    return yunohost.permission.user_permission_reset(permission, sync_perm=sync_perm)
+    return user_permission_reset(permission, sync_perm=sync_perm)
 
 
 def user_permission_info(permission):
-    import yunohost.permission
+    from yunohost.permission import user_permission_info
 
-    return yunohost.permission.user_permission_info(permission)
+    return user_permission_info(permission)
 
 
 #
@@ -1327,9 +1327,9 @@ def user_ssh_remove_key(username, key):
 def _convertSize(num, suffix=""):
     for unit in ["K", "M", "G", "T", "P", "E", "Z"]:
         if abs(num) < 1024.0:
-            return "%3.1f%s%s" % (num, unit, suffix)
+            return "{:3.1f}{}{}".format(num, unit, suffix)
         num /= 1024.0
-    return "%.1f%s%s" % (num, "Yi", suffix)
+    return "{:.1f}{}{}".format(num, "Yi", suffix)
 
 
 def _hash_user_password(password):

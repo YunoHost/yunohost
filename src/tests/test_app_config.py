@@ -19,6 +19,7 @@ from yunohost.app import (
     app_config_set,
     app_ssowatconf,
 )
+from yunohost.user import user_create, user_delete
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
@@ -70,7 +71,7 @@ def legacy_app(request):
 
     app_install(
         os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
-        args="domain=%s&path=%s&is_public=%s" % (main_domain, "/", 1),
+        args="domain={}&path={}&is_public={}".format(main_domain, "/", 1),
         force=True,
     )
 
@@ -101,12 +102,16 @@ def config_app(request):
 
 def test_app_config_get(config_app):
 
+    user_create("alice", "Alice", "White", _get_maindomain(), "test123Ynh")
+
     assert isinstance(app_config_get(config_app), dict)
     assert isinstance(app_config_get(config_app, full=True), dict)
     assert isinstance(app_config_get(config_app, export=True), dict)
     assert isinstance(app_config_get(config_app, "main"), dict)
     assert isinstance(app_config_get(config_app, "main.components"), dict)
     assert app_config_get(config_app, "main.components.boolean") == "0"
+
+    user_delete("alice")
 
 
 def test_app_config_nopanel(legacy_app):

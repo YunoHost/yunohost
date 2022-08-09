@@ -57,6 +57,7 @@ from yunohost.utils.config import (
     ask_questions_and_parse_answers,
     DomainQuestion,
     PathQuestion,
+    hydrate_questions_with_choices,
 )
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -94,7 +95,7 @@ APP_FILES_TO_COPY = [
 ]
 
 
-def app_list(full=False):
+def app_list(full=False, upgradable=False):
     """
     List installed apps
     """
@@ -102,21 +103,24 @@ def app_list(full=False):
     out = []
     for app_id in sorted(_installed_apps()):
         try:
-            app_info_dict = app_info(app_id, full=full)
+            app_info_dict = app_info(app_id, full=full, upgradable=upgradable)
         except Exception as e:
-            logger.error("Failed to read info for %s : %s" % (app_id, e))
+            logger.error(f"Failed to read info for {app_id} : {e}")
             continue
         app_info_dict["id"] = app_id
+        if upgradable and app_info_dict.get("upgradable") != "yes":
+            continue
         out.append(app_info_dict)
 
     return {"apps": out}
 
 
-def app_info(app, full=False):
+def app_info(app, full=False, upgradable=False):
     """
     Get info for a specific app
     """
     from yunohost.permission import user_permission_list
+    from yunohost.domain import domain_config_get
 
     _assert_is_installed(app)
 
@@ -137,6 +141,25 @@ def app_info(app, full=False):
     if "domain" in settings and "path" in settings:
         ret["domain_path"] = settings["domain"] + settings["path"]
 
+    if not upgradable and not full:
+        return ret
+
+    absolute_app_name, _ = _parse_app_instance_name(app)
+    from_catalog = _load_apps_catalog()["apps"].get(absolute_app_name, {})
+
+    ret["upgradable"] = _app_upgradable({**ret, "from_catalog": from_catalog})
+
+    if ret["upgradable"] == "yes":
+        ret["current_version"] = ret.get("version", "?")
+        ret["new_version"] = from_catalog.get("manifest", {}).get("version", "?")
+
+        if ret["current_version"] == ret["new_version"]:
+            current_revision = settings.get("current_revision", "?")[:7]
+            new_revision = from_catalog.get("git", {}).get("revision", "?")[:7]
+
+            ret["current_version"] = f" ({current_revision})"
+            ret["new_version"] = f" ({new_revision})"
+
     if not full:
         return ret
 
@@ -147,11 +170,14 @@ def app_info(app, full=False):
     )
     ret["settings"] = settings
 
-    absolute_app_name, _ = _parse_app_instance_name(app)
-    ret["from_catalog"] = _load_apps_catalog()["apps"].get(absolute_app_name, {})
-    ret["upgradable"] = _app_upgradable(ret)
+    ret["from_catalog"] = from_catalog
 
     ret["is_webapp"] = "domain" in settings and "path" in settings
+
+    if ret["is_webapp"]:
+        ret["is_default"] = (
+            domain_config_get(settings["domain"], "feature.app.default_app") == app
+        )
 
     ret["supports_change_url"] = os.path.exists(
         os.path.join(setting_path, "scripts", "change_url")
@@ -170,7 +196,8 @@ def app_info(app, full=False):
     ret["label"] = permissions.get(app + ".main", {}).get("label")
 
     if not ret["label"]:
-        logger.warning("Failed to get label for app %s ?" % app)
+        logger.warning(f"Failed to get label for app {app} ?")
+        ret["label"] = local_manifest["name"]
     return ret
 
 
@@ -266,8 +293,8 @@ def app_map(app=None, raw=False, user=None):
     permissions = user_permission_list(full=True, absolute_urls=True, apps=apps)[
         "permissions"
     ]
-    for app_id in apps:
-        app_settings = _get_app_settings(app_id)
+    for app in apps:
+        app_settings = _get_app_settings(app)
         if not app_settings:
             continue
         if "domain" not in app_settings:
@@ -283,20 +310,19 @@ def app_map(app=None, raw=False, user=None):
             continue
         # Users must at least have access to the main permission to have access to extra permissions
         if user:
-            if not app_id + ".main" in permissions:
+            if not app + ".main" in permissions:
                 logger.warning(
-                    "Uhoh, no main permission was found for app %s ... sounds like an app was only partially removed due to another bug :/"
-                    % app_id
+                    f"Uhoh, no main permission was found for app {app} ... sounds like an app was only partially removed due to another bug :/"
                 )
                 continue
-            main_perm = permissions[app_id + ".main"]
+            main_perm = permissions[app + ".main"]
             if user not in main_perm["corresponding_users"]:
                 continue
 
         this_app_perms = {
             p: i
             for p, i in permissions.items()
-            if p.startswith(app_id + ".") and (i["url"] or i["additional_urls"])
+            if p.startswith(app + ".") and (i["url"] or i["additional_urls"])
         }
 
         for perm_name, perm_info in this_app_perms.items():
@@ -336,7 +362,7 @@ def app_map(app=None, raw=False, user=None):
                         perm_path = "/"
                     if perm_domain not in result:
                         result[perm_domain] = {}
-                    result[perm_domain][perm_path] = {"label": perm_label, "id": app_id}
+                    result[perm_domain][perm_path] = {"label": perm_label, "id": app}
 
     return result
 
@@ -406,7 +432,7 @@ def app_change_url(operation_logger, app, domain, path):
     # Execute App change_url script
     ret = hook_exec(change_url_script, env=env_dict)[0]
     if ret != 0:
-        msg = "Failed to change '%s' url." % app
+        msg = f"Failed to change '{app}' url."
         logger.error(msg)
         operation_logger.error(msg)
 
@@ -672,6 +698,9 @@ def app_manifest(app):
 
     shutil.rmtree(extracted_app_folder)
 
+    raw_questions = manifest.get("arguments", {}).get("install", [])
+    manifest["arguments"]["install"] = hydrate_questions_with_choices(raw_questions)
+
     return manifest
 
 
@@ -845,7 +874,7 @@ def app_install(
     for question in questions:
         # Or should it be more generally question.redact ?
         if question.type == "password":
-            del env_dict_for_logging["YNH_APP_ARG_%s" % question.name.upper()]
+            del env_dict_for_logging[f"YNH_APP_ARG_{question.name.upper()}"]
 
     operation_logger.extra.update({"env": env_dict_for_logging})
 
@@ -892,8 +921,7 @@ def app_install(
             # This option is meant for packagers to debug their apps more easily
             if no_remove_on_failure:
                 raise YunohostError(
-                    "The installation of %s failed, but was not cleaned up as requested by --no-remove-on-failure."
-                    % app_id,
+                    f"The installation of {app_id} failed, but was not cleaned up as requested by --no-remove-on-failure.",
                     raw_msg=True,
                 )
             else:
@@ -991,6 +1019,7 @@ def app_remove(operation_logger, app, purge=False):
         permission_delete,
         permission_sync_to_user,
     )
+    from yunohost.domain import domain_list, domain_config_get, domain_config_set
 
     if not _is_installed(app):
         raise YunohostValidationError(
@@ -1015,7 +1044,6 @@ def app_remove(operation_logger, app, purge=False):
     remove_script = f"{tmp_workdir_for_app}/scripts/remove"
 
     env_dict = {}
-    app_id, app_instance_nb = _parse_app_instance_name(app)
     env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app)
     env_dict["YNH_APP_PURGE"] = str(1 if purge else 0)
 
@@ -1051,12 +1079,16 @@ def app_remove(operation_logger, app, purge=False):
 
     hook_remove(app)
 
+    for domain in domain_list()["domains"]:
+        if domain_config_get(domain, "feature.app.default_app") == app:
+            domain_config_set(domain, "feature.app.default_app", "_none")
+
     permission_sync_to_user()
     _assert_system_is_sane_for_app(manifest, "post")
 
 
 @is_unit_operation()
-def app_makedefault(operation_logger, app, domain=None):
+def app_makedefault(operation_logger, app, domain=None, undo=False):
     """
     Redirect domain root to an app
 
@@ -1065,11 +1097,10 @@ def app_makedefault(operation_logger, app, domain=None):
         domain
 
     """
-    from yunohost.domain import _assert_domain_exists
+    from yunohost.domain import _assert_domain_exists, domain_config_set
 
     app_settings = _get_app_settings(app)
     app_domain = app_settings["domain"]
-    app_path = app_settings["path"]
 
     if domain is None:
         domain = app_domain
@@ -1078,36 +1109,12 @@ def app_makedefault(operation_logger, app, domain=None):
 
     operation_logger.related_to.append(("domain", domain))
 
-    if "/" in app_map(raw=True)[domain]:
-        raise YunohostValidationError(
-            "app_make_default_location_already_used",
-            app=app,
-            domain=app_domain,
-            other_app=app_map(raw=True)[domain]["/"]["id"],
-        )
-
     operation_logger.start()
 
-    # TODO / FIXME : current trick is to add this to conf.json.persisten
-    # This is really not robust and should be improved
-    # e.g. have a flag in /etc/yunohost/apps/$app/ to say that this is the
-    # default app or idk...
-    if not os.path.exists("/etc/ssowat/conf.json.persistent"):
-        ssowat_conf = {}
+    if undo:
+        domain_config_set(domain, "feature.app.default_app", "_none")
     else:
-        ssowat_conf = read_json("/etc/ssowat/conf.json.persistent")
-
-    if "redirected_urls" not in ssowat_conf:
-        ssowat_conf["redirected_urls"] = {}
-
-    ssowat_conf["redirected_urls"][domain + "/"] = app_domain + app_path
-
-    write_to_json(
-        "/etc/ssowat/conf.json.persistent", ssowat_conf, sort_keys=True, indent=4
-    )
-    chmod("/etc/ssowat/conf.json.persistent", 0o644)
-
-    logger.success(m18n.n("ssowat_conf_updated"))
+        domain_config_set(domain, "feature.app.default_app", app)
 
 
 def app_setting(app, key, value=None, delete=False):
@@ -1143,7 +1150,8 @@ def app_setting(app, key, value=None, delete=False):
         )
 
         permissions = user_permission_list(full=True, apps=[app])["permissions"]
-        permission_name = "%s.legacy_%s_uris" % (app, key.split("_")[0])
+        key_ = key.split("_")[0]
+        permission_name = f"{app}.legacy_{key_}_uris"
         permission = permissions.get(permission_name)
 
         # GET
@@ -1305,7 +1313,7 @@ def app_ssowatconf():
 
 
     """
-    from yunohost.domain import domain_list, _get_maindomain
+    from yunohost.domain import domain_list, _get_maindomain, domain_config_get
     from yunohost.permission import user_permission_list
 
     main_domain = _get_maindomain()
@@ -1343,6 +1351,23 @@ def app_ssowatconf():
         # Redirected
         redirected_urls.update(app_settings.get("redirected_urls", {}))
         redirected_regex.update(app_settings.get("redirected_regex", {}))
+
+    from .utils.legacy import (
+        translate_legacy_default_app_in_ssowant_conf_json_persistent,
+    )
+
+    translate_legacy_default_app_in_ssowant_conf_json_persistent()
+
+    for domain in domains:
+        default_app = domain_config_get(domain, "feature.app.default_app")
+        if default_app != "_none" and _is_installed(default_app):
+            app_settings = _get_app_settings(default_app)
+            app_domain = app_settings["domain"]
+            app_path = app_settings["path"]
+
+            # Prevent infinite redirect loop...
+            if domain + "/" != app_domain + app_path:
+                redirected_urls[domain + "/"] = app_domain + app_path
 
     # New permission system
     for perm_name, perm_info in all_permissions.items():
@@ -1430,9 +1455,9 @@ def app_action_run(operation_logger, app, action, args=None):
     actions = {x["id"]: x for x in actions}
 
     if action not in actions:
+        available_actions = (", ".join(actions.keys()),)
         raise YunohostValidationError(
-            "action '%s' not available for app '%s', available actions are: %s"
-            % (action, app, ", ".join(actions.keys())),
+            f"action '{action}' not available for app '{app}', available actions are: {available_actions}",
             raw_msg=True,
         )
 
@@ -1485,11 +1510,7 @@ def app_action_run(operation_logger, app, action, args=None):
         shutil.rmtree(tmp_workdir_for_app)
 
     if retcode not in action_declaration.get("accepted_return_codes", [0]):
-        msg = "Error while executing action '%s' of app '%s': return code %s" % (
-            action,
-            app,
-            retcode,
-        )
+        msg = f"Error while executing action '{action}' of app '{app}': return code {retcode}"
         operation_logger.error(msg)
         raise YunohostError(msg, raw_msg=True)
 
@@ -1553,8 +1574,11 @@ class AppConfigPanel(ConfigPanel):
                     error=message,
                 )
 
-    def _call_config_script(self, action, env={}):
+    def _call_config_script(self, action, env=None):
         from yunohost.hook import hook_exec
+
+        if env is None:
+            env = {}
 
         # Add default config script if needed
         config_script = os.path.join(
@@ -1571,15 +1595,16 @@ ynh_app_config_run $1
 
         # Call config script to extract current values
         logger.debug(f"Calling '{action}' action from config script")
-        app_id, app_instance_nb = _parse_app_instance_name(self.entity)
-        settings = _get_app_settings(app_id)
+        app = self.entity
+        app_id, app_instance_nb = _parse_app_instance_name(app)
+        settings = _get_app_settings(app)
         env.update(
             {
                 "app_id": app_id,
-                "app": self.entity,
+                "app": app,
                 "app_instance_nb": str(app_instance_nb),
                 "final_path": settings.get("final_path", ""),
-                "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, self.entity),
+                "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, app),
             }
         )
 
@@ -1677,20 +1702,20 @@ def _get_app_actions(app_id):
     return None
 
 
-def _get_app_settings(app_id):
+def _get_app_settings(app):
     """
     Get settings of an installed app
 
     Keyword arguments:
-        app_id -- The app id
+        app -- The app id (like nextcloud__2)
 
     """
-    if not _is_installed(app_id):
+    if not _is_installed(app):
         raise YunohostValidationError(
-            "app_not_installed", app=app_id, all_apps=_get_all_installed_apps_id()
+            "app_not_installed", app=app, all_apps=_get_all_installed_apps_id()
         )
     try:
-        with open(os.path.join(APPS_SETTING_PATH, app_id, "settings.yml")) as f:
+        with open(os.path.join(APPS_SETTING_PATH, app, "settings.yml")) as f:
             settings = yaml.safe_load(f)
         # If label contains unicode char, this may later trigger issues when building strings...
         # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
@@ -1708,25 +1733,25 @@ def _get_app_settings(app_id):
             or not settings.get("path", "/").startswith("/")
         ):
             settings["path"] = "/" + settings["path"].strip("/")
-            _set_app_settings(app_id, settings)
+            _set_app_settings(app, settings)
 
-        if app_id == settings["id"]:
+        if app == settings["id"]:
             return settings
     except (IOError, TypeError, KeyError):
-        logger.error(m18n.n("app_not_correctly_installed", app=app_id))
+        logger.error(m18n.n("app_not_correctly_installed", app=app))
     return {}
 
 
-def _set_app_settings(app_id, settings):
+def _set_app_settings(app, settings):
     """
     Set settings of an app
 
     Keyword arguments:
-        app_id -- The app id
+        app_id -- The app id (like nextcloud__2)
         settings -- Dict with app settings
 
     """
-    with open(os.path.join(APPS_SETTING_PATH, app_id, "settings.yml"), "w") as f:
+    with open(os.path.join(APPS_SETTING_PATH, app, "settings.yml"), "w") as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
 
 
@@ -1856,8 +1881,7 @@ def _get_manifest_of_app(path):
         manifest = read_json(os.path.join(path, "manifest.json"))
     else:
         raise YunohostError(
-            "There doesn't seem to be any manifest file in %s ... It looks like an app was not correctly installed/removed."
-            % path,
+            f"There doesn't seem to be any manifest file in {path} ... It looks like an app was not correctly installed/removed.",
             raw_msg=True,
         )
 
@@ -1912,7 +1936,8 @@ def _set_default_ask_questions(arguments):
                 for question in questions_with_default
             ):
                 # The key is for example "app_manifest_install_ask_domain"
-                key = "app_manifest_%s_ask_%s" % (script_name, arg["name"])
+                arg_name = arg["name"]
+                key = f"app_manifest_{script_name}_ask_{arg_name}"
                 arg["ask"] = m18n.n(key)
 
             # Also it in fact doesn't make sense for any of those questions to have an example value nor a default value...
@@ -1920,7 +1945,7 @@ def _set_default_ask_questions(arguments):
                 if "example" in arg:
                     del arg["example"]
                 if "default" in arg:
-                    del arg["domain"]
+                    del arg["default"]
 
     return arguments
 
@@ -2096,7 +2121,7 @@ def _extract_app_from_gitrepo(
             cmd = f"git ls-remote --exit-code {url} {branch} | awk '{{print $1}}'"
             manifest["remote"]["revision"] = check_output(cmd)
         except Exception as e:
-            logger.warning("cannot get last commit hash because: %s ", e)
+            logger.warning(f"cannot get last commit hash because: {e}")
     else:
         manifest["remote"]["revision"] = revision
         manifest["lastUpdate"] = app_info.get("lastUpdate")
@@ -2282,14 +2307,7 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
     if conflicts:
         apps = []
         for path, app_id, app_label in conflicts:
-            apps.append(
-                " * {domain:s}{path:s} → {app_label:s} ({app_id:s})".format(
-                    domain=domain,
-                    path=path,
-                    app_id=app_id,
-                    app_label=app_label,
-                )
-            )
+            apps.append(f" * {domain}{path} → {app_label} ({app_id})")
 
         if full_domain:
             raise YunohostValidationError("app_full_domain_unavailable", domain=domain)
@@ -2320,7 +2338,8 @@ def _make_environment_for_app_script(
         env_dict["YNH_APP_BASEDIR"] = workdir
 
     for arg_name, arg_value in args.items():
-        env_dict["YNH_%s%s" % (args_prefix, arg_name.upper())] = str(arg_value)
+        arg_name_upper = arg_name.upper()
+        env_dict[f"YNH_{args_prefix}{arg_name_upper}"] = str(arg_value)
 
     return env_dict
 
@@ -2417,20 +2436,26 @@ def is_true(arg):
     elif isinstance(arg, str):
         return arg.lower() in ["yes", "true", "on"]
     else:
-        logger.debug("arg should be a boolean or a string, got %r", arg)
+        logger.debug(f"arg should be a boolean or a string, got {arg}")
         return True if arg else False
 
 
 def unstable_apps():
 
     output = []
+    deprecated_apps = ["mailman"]
 
     for infos in app_list(full=True)["apps"]:
 
-        if not infos.get("from_catalog") or infos.get("from_catalog").get("state") in [
-            "inprogress",
-            "notworking",
-        ]:
+        if (
+            not infos.get("from_catalog")
+            or infos.get("from_catalog").get("state")
+            in [
+                "inprogress",
+                "notworking",
+            ]
+            or infos["id"] in deprecated_apps
+        ):
             output.append(infos["id"])
 
     return output

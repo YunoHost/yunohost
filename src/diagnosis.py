@@ -188,7 +188,7 @@ def diagnosis_run(
     # Call the hook ...
     diagnosed_categories = []
     for category in categories:
-        logger.debug("Running diagnosis for %s ..." % category)
+        logger.debug(f"Running diagnosis for {category} ...")
 
         diagnoser = _load_diagnoser(category)
 
@@ -282,7 +282,7 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             )
         category = filter_[0]
         if category not in all_categories_names:
-            raise YunohostValidationError("%s is not a diagnosis category" % category)
+            raise YunohostValidationError(f"{category} is not a diagnosis category")
         if any("=" not in criteria for criteria in filter_[1:]):
             raise YunohostValidationError(
                 "Criterias should be of the form key=value (e.g. domain=yolo.test)"
@@ -419,11 +419,8 @@ class Diagnoser:
 
     def diagnose(self, force=False):
 
-        if (
-            not force
-            and self.cached_time_ago() < self.cache_duration
-        ):
-            logger.debug("Cache still valid : %s" % self.cache_file)
+        if not force and self.cached_time_ago() < self.cache_duration:
+            logger.debug(f"Cache still valid : {self.cache_file}")
             logger.info(
                 m18n.n("diagnosis_cache_still_valid", category=self.description)
             )
@@ -457,7 +454,7 @@ class Diagnoser:
 
         new_report = {"id": self.id_, "cached_for": self.cache_duration, "items": items}
 
-        logger.debug("Updating cache %s" % self.cache_file)
+        logger.debug(f"Updating cache {self.cache_file}")
         self.write_cache(new_report)
         Diagnoser.i18n(new_report)
         add_ignore_flag_to_issues(new_report)
@@ -530,7 +527,7 @@ class Diagnoser:
 
     @staticmethod
     def cache_file(id_):
-        return os.path.join(DIAGNOSIS_CACHE, "%s.json" % id_)
+        return os.path.join(DIAGNOSIS_CACHE, f"{id_}.json")
 
     @staticmethod
     def get_cached_report(id_, item=None, warn_if_no_cache=True):
@@ -633,7 +630,7 @@ class Diagnoser:
         elif ipversion == 6:
             socket.getaddrinfo = getaddrinfo_ipv6_only
 
-        url = "https://%s/%s" % (DIAGNOSIS_SERVER, uri)
+        url = f"https://{DIAGNOSIS_SERVER}/{uri}"
         try:
             r = requests.post(url, json=data, timeout=timeout)
         finally:
@@ -641,18 +638,16 @@ class Diagnoser:
 
         if r.status_code not in [200, 400]:
             raise Exception(
-                "The remote diagnosis server failed miserably while trying to diagnose your server. This is most likely an error on Yunohost's infrastructure and not on your side. Please contact the YunoHost team an provide them with the following information.<br>URL: <code>%s</code><br>Status code: <code>%s</code>"
-                % (url, r.status_code)
+                f"The remote diagnosis server failed miserably while trying to diagnose your server. This is most likely an error on Yunohost's infrastructure and not on your side. Please contact the YunoHost team an provide them with the following information.<br>URL: <code>{url}</code><br>Status code: <code>{r.status_code}</code>"
             )
         if r.status_code == 400:
-            raise Exception("Diagnosis request was refused: %s" % r.content)
+            raise Exception(f"Diagnosis request was refused: {r.content}")
 
         try:
             r = r.json()
         except Exception as e:
             raise Exception(
-                "Failed to parse json from diagnosis server response.\nError: %s\nOriginal content: %s"
-                % (e, r.content)
+                f"Failed to parse json from diagnosis server response.\nError: {e}\nOriginal content: {r.content}"
             )
 
         return r
@@ -661,7 +656,10 @@ class Diagnoser:
 def _list_diagnosis_categories():
 
     paths = glob.glob(os.path.dirname(__file__) + "/diagnosers/??-*.py")
-    names = sorted([os.path.basename(path)[: -len(".py")].split("-")[-1] for path in paths])
+    names = [
+        name.split("-")[-1]
+        for name in sorted([os.path.basename(path)[: -len(".py")] for path in paths])
+    ]
 
     return names
 
@@ -673,7 +671,10 @@ def _load_diagnoser(diagnoser_name):
     paths = glob.glob(os.path.dirname(__file__) + f"/diagnosers/??-{diagnoser_name}.py")
 
     if len(paths) != 1:
-        raise YunohostError(f"Uhoh, found several matches (or none?) for diagnoser {diagnoser_name} : {paths}", raw_msg=True)
+        raise YunohostError(
+            f"Uhoh, found several matches (or none?) for diagnoser {diagnoser_name} : {paths}",
+            raw_msg=True,
+        )
 
     module_id = os.path.basename(paths[0][: -len(".py")])
 
@@ -681,23 +682,25 @@ def _load_diagnoser(diagnoser_name):
         # this is python builtin method to import a module using a name, we
         # use that to import the migration as a python object so we'll be
         # able to run it in the next loop
-        module = import_module("yunohost.diagnosers.{}".format(module_id))
+        module = import_module(f"yunohost.diagnosers.{module_id}")
         return module.MyDiagnoser()
     except Exception as e:
         import traceback
 
         traceback.print_exc()
 
-        raise YunohostError(f"Failed to load diagnoser {diagnoser_name} : {e}", raw_msg=True)
+        raise YunohostError(
+            f"Failed to load diagnoser {diagnoser_name} : {e}", raw_msg=True
+        )
 
 
 def _email_diagnosis_issues():
     from yunohost.domain import _get_maindomain
 
     maindomain = _get_maindomain()
-    from_ = "diagnosis@%s (Automatic diagnosis on %s)" % (maindomain, maindomain)
+    from_ = f"diagnosis@{maindomain} (Automatic diagnosis on {maindomain})"
     to_ = "root"
-    subject_ = "Issues found by automatic diagnosis on %s" % maindomain
+    subject_ = f"Issues found by automatic diagnosis on {maindomain}"
 
     disclaimer = "The automatic diagnosis on your YunoHost server identified some issues on your server. You will find a description of the issues below. You can manage those issues in the 'Diagnosis' section in your webadmin."
 
@@ -707,23 +710,17 @@ def _email_diagnosis_issues():
 
     content = _dump_human_readable_reports(issues)
 
-    message = """\
-From: %s
-To: %s
-Subject: %s
+    message = f"""\
+From: {from_}
+To: {to_}
+Subject: {subject_}
 
-%s
+{disclaimer}
 
 ---
 
-%s
-""" % (
-        from_,
-        to_,
-        subject_,
-        disclaimer,
-        content,
-    )
+{content}
+"""
 
     import smtplib
 

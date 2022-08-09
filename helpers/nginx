@@ -20,13 +20,15 @@ ynh_add_nginx_config() {
 
     local finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
 
+    ynh_add_config --template="$YNH_APP_BASEDIR/conf/nginx.conf" --destination="$finalnginxconf"
+
     if [ "${path_url:-}" != "/" ]; then
-        ynh_replace_string --match_string="^#sub_path_only" --replace_string="" --target_file="$YNH_APP_BASEDIR/conf/nginx.conf"
+        ynh_replace_string --match_string="^#sub_path_only" --replace_string="" --target_file="$finalnginxconf"
     else
-        ynh_replace_string --match_string="^#root_path_only" --replace_string="" --target_file="$YNH_APP_BASEDIR/conf/nginx.conf"
+        ynh_replace_string --match_string="^#root_path_only" --replace_string="" --target_file="$finalnginxconf"
     fi
 
-    ynh_add_config --template="$YNH_APP_BASEDIR/conf/nginx.conf" --destination="$finalnginxconf"
+    ynh_store_file_checksum --file="$finalnginxconf"
 
     ynh_systemd_action --service_name=nginx --action=reload
 }

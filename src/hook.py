@@ -95,7 +95,7 @@ def hook_info(action, name):
     priorities = set()
 
     # Search in custom folder first
-    for h in iglob("{:s}{:s}/*-{:s}".format(CUSTOM_HOOK_FOLDER, action, name)):
+    for h in iglob(f"{CUSTOM_HOOK_FOLDER}{action}/*-{name}"):
         priority, _ = _extract_filename_parts(os.path.basename(h))
         priorities.add(priority)
         hooks.append(
@@ -105,7 +105,7 @@ def hook_info(action, name):
             }
         )
     # Append non-overwritten system hooks
-    for h in iglob("{:s}{:s}/*-{:s}".format(HOOK_FOLDER, action, name)):
+    for h in iglob(f"{HOOK_FOLDER}{action}/*-{name}"):
         priority, _ = _extract_filename_parts(os.path.basename(h))
         if priority not in priorities:
             hooks.append(
@@ -156,7 +156,7 @@ def hook_list(action, list_by="name", show_info=False):
                 try:
                     d[priority].add(name)
                 except KeyError:
-                    d[priority] = set([name])
+                    d[priority] = {name}
 
     elif list_by == "name" or list_by == "folder":
         if show_info:
@@ -197,7 +197,7 @@ def hook_list(action, list_by="name", show_info=False):
                 or (f.startswith("__") and f.endswith("__"))
             ):
                 continue
-            path = "%s%s/%s" % (folder, action, f)
+            path = f"{folder}{action}/{f}"
             priority, name = _extract_filename_parts(f)
             _append_hook(d, priority, name, path)
 
@@ -407,7 +407,7 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
     if not chdir:
         # use the script directory as current one
         chdir, cmd_script = os.path.split(path)
-        cmd_script = "./{0}".format(cmd_script)
+        cmd_script = f"./{cmd_script}"
     else:
         cmd_script = path
 
@@ -431,8 +431,7 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
 
     # use xtrace on fd 7 which is redirected to stdout
     env["BASH_XTRACEFD"] = "7"
-    cmd = '/bin/bash -x "{script}" {args} 7>&1'
-    command.append(cmd.format(script=cmd_script, args=cmd_args))
+    command.append(f'/bin/bash -x "{cmd_script}" {cmd_args} 7>&1')
 
     logger.debug("Executing command '%s'" % command)
 

@@ -311,8 +311,7 @@ ynh_local_curl() {
 # | arg: -d, --destination=    - Destination of the config file
 #
 # examples:
-#    ynh_add_config --template=".env" --destination="$final_path/.env"
-#    ynh_add_config --template="../conf/.env" --destination="$final_path/.env"
+#    ynh_add_config --template=".env" --destination="$final_path/.env" use the template file "../conf/.env"
 #    ynh_add_config --template="/etc/nginx/sites-available/default" --destination="etc/nginx/sites-available/mydomain.conf"
 #
 # The template can be by default the name of a file in the conf directory
@@ -917,5 +916,12 @@ _ynh_apply_default_permissions() {
         if ynh_system_user_exists $app; then
             chown $app:$app $target
         fi
+    fi
+
+    # Crons should be owned by root otherwise they probably don't run
+    if echo "$target" | grep -q '^/etc/cron'
+    then
+        chmod 400 $target
+        chown root:root $target
     fi
 }

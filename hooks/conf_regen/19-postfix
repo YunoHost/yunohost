@@ -42,11 +42,11 @@ do_pre_regen() {
         chown postfix ${pending_dir}/etc/postfix/sasl_passwd
 
         cat <<<"[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" >${postfix_dir}/sasl_passwd
-        postmap ${postfix_dir}/sasl_passwd
     fi
     export main_domain
     export domain_list="$YNH_DOMAINS"
     ynh_render_template "main.cf" "${postfix_dir}/main.cf"
+    ynh_render_template "sni" "${postfix_dir}/sni"
 
     cat postsrsd \
         | sed "s/{{ main_domain }}/${main_domain}/g" \
@@ -71,7 +71,10 @@ do_post_regen() {
     if [ -e /etc/postfix/sasl_passwd ]; then
         chmod 750 /etc/postfix/sasl_passwd*
         chown postfix:root /etc/postfix/sasl_passwd*
+        postmap /etc/postfix/sasl_passwd
     fi
+
+    postmap -F hash:/etc/postfix/sni
 
     [[ -z "$regen_conf_files" ]] \
         || { systemctl restart postfix && systemctl restart postsrsd; }

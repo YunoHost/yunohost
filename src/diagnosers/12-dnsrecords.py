@@ -17,7 +17,11 @@ from yunohost.utils.dns import (
 )
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list, _get_maindomain
-from yunohost.dns import _build_dns_conf, _get_dns_zone_for_domain
+from yunohost.dns import (
+    _build_dns_conf,
+    _get_dns_zone_for_domain,
+    _get_relative_name_for_dns_zone,
+)
 
 logger = log.getActionLogger("yunohost.diagnosis")
 
@@ -59,7 +63,6 @@ class MyDiagnoser(Diagnoser):
     def check_domain(self, domain, is_main_domain):
 
         if is_special_use_tld(domain):
-            categories = []
             yield dict(
                 meta={"domain": domain},
                 data={},
@@ -69,7 +72,7 @@ class MyDiagnoser(Diagnoser):
             return
 
         base_dns_zone = _get_dns_zone_for_domain(domain)
-        basename = domain.replace(base_dns_zone, "").rstrip(".") or "@"
+        basename = _get_relative_name_for_dns_zone(domain, base_dns_zone)
 
         expected_configuration = _build_dns_conf(
             domain, include_empty_AAAA_if_no_ipv6=True
@@ -101,6 +104,8 @@ class MyDiagnoser(Diagnoser):
                 r["current"] = self.get_current_record(fqdn, r["type"])
                 if r["value"] == "@":
                     r["value"] = domain + "."
+                elif r["type"] == "CNAME":
+                    r["value"] = r["value"] + f".{base_dns_zone}."
 
                 if self.current_record_match_expected(r):
                     results[id_] = "OK"
@@ -139,7 +144,7 @@ class MyDiagnoser(Diagnoser):
             # If status is okay and there's actually no expected records
             # (e.g. XMPP disabled)
             # then let's not yield any diagnosis line
-            if not records and "status" == "SUCCESS":
+            if not records and status == "SUCCESS":
                 continue
 
             output = dict(
