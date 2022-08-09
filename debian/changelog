@@ -134,6 +134,18 @@ yunohost (11.0.2) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:52:39 +0100
 
+yunohost (4.4.2) stable; urgency=low
+
+  - Release as stable
+  - [fix] bullseye migration: /etc/apt/sources.list may not exist (b928dd12)
+  - [fix] bullseye migration: Allow lime2 to upgrade even if kernel is hold (#1452)
+  - [fix] bullseye migration: Save python apps venv in a requirements file, in order to regenerate it in a follow-up migration ([#1479](https://github.com/YunoHost/yunohost/pull/1479))
+  - [fix] bullseye migration: tweak message to prepare for stable release (80015a72)
+
+  Thanks to all contributors <3 ! (ljf, theo-is-taken)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 09 Aug 2022 16:59:15 +0200
+
 yunohost (4.4.1) testing; urgency=low
 
   - [fix] php helpers: prevent epic catastrophies when the app changes php version (31d3719b)
