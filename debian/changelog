@@ -1,3 +1,35 @@
+yunohost (11.0.9) stable; urgency=low
+
+  - [fix] services: Skip php 7.3 which is most likely dead after buster->bullseye migration because users get spooked (51804925)
+  - [enh] bullseye: add a migration process to automatically attempt to rebuild venvs (3b8e49dc)
+  - [i18n] Translations updated for French
+
+  Thanks to all contributors <3 ! (Éric Gaspar, Kayou, ljf, theo-is-taken)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 07 Aug 2022 23:27:41 +0200
+
+yunohost (11.0.8.1) testing; urgency=low
+
+  - Fix tests é_è (7fa67b2b)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 07 Aug 2022 12:41:28 +0200
+
+yunohost (11.0.8) testing; urgency=low
+
+  - [fix] helpers: escape username in ynh_user_exists ([#1469](https://github.com/YunoHost/yunohost/pull/1469))
+  - [fix] helpers: in nginx helpers, do not change the nginx template conf, replace #sub_path_only and #root_path_only after ynh_add_config, otherwise it breaks the change_url script (30e926f9)
+  - [fix] helpers: fix arg parsing in ynh_install_apps ([#1480](https://github.com/YunoHost/yunohost/pull/1480))
+  - [fix] postinstall: be able to redo postinstall when the 128+ chars
+  password error is raised ([#1476](https://github.com/YunoHost/yunohost/pull/1476))
+  - [fix] regenconf dhclient/resolvconf: fix weird typo, probably meant 'search' (like in our rpi-image tweaking) (9d39a2c0)
+  - [fix] configpanels: remove debug message because it floods the regenconf logs (f6cd35d9)
+  - [fix] configpanels: don't restrict choices if there's no choices specified ([#1478](https://github.com/YunoHost/yunohost/pull/1478)
+  - [i18n] Translations updated for Arabic, German, Slovak, Telugu
+
+  Thanks to all contributors <3 ! (Alice Kile, ButterflyOfFire, Éric Gaspar, Gregor, Jose Riha, Kay0u, ljf, Meta Meta, tituspijean, Valentin von Guttenberg, yalh76)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 07 Aug 2022 11:26:54 +0200
+
 yunohost (11.0.7) testing; urgency=low
 
   - [fix] Allow lime2 to upgrade even if kernel is hold ([#1452](https://github.com/YunoHost/yunohost/pull/1452))

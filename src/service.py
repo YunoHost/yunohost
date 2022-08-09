@@ -710,6 +710,10 @@ def _get_services():
     )
     php_fpm_versions = [v for v in php_fpm_versions.split("\n") if v.strip()]
     for version in php_fpm_versions:
+        # Skip php 7.3 which is most likely dead after buster->bullseye migration
+        # because users get spooked
+        if version == "7.3":
+            continue
         services[f"php{version}-fpm"] = {
             "log": f"/var/log/php{version}-fpm.log",
             "test_conf": f"php-fpm{version} --test",  # ofc the service is phpx.y-fpm but the program is php-fpmx.y because why not ...
