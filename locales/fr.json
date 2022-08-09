@@ -151,7 +151,7 @@
     "certmanager_attempt_to_renew_nonLE_cert": "Le certificat pour le domaine {domain} n'est pas émis par Let's Encrypt. Impossible de le renouveler automatiquement !",
     "certmanager_attempt_to_renew_valid_cert": "Le certificat pour le domaine {domain} n'est pas sur le point d'expirer ! (Vous pouvez utiliser --force si vous savez ce que vous faites)",
     "certmanager_domain_http_not_working": "Le domaine {domain} ne semble pas être accessible via HTTP. Merci de vérifier la catégorie 'Web' dans le diagnostic pour plus d'informations. (Ou si vous savez ce que vous faites, utilisez '--no-checks' pour désactiver la vérification.)",
-    "certmanager_domain_dns_ip_differs_from_public_ip": "Les enregistrements DNS du domaine '{domain}' sont différents de l'adresse IP de ce serveur. Pour plus d'informations, veuillez consulter la catégorie \"Enregistrements DNS\" dans la section diagnostic. Si vous avez récemment modifié votre enregistrement A, veuillez attendre sa propagation (des vérificateurs de propagation DNS sont disponibles en ligne). (Si vous savez ce que vous faites, utilisez '--no-checks' pour désactiver ces contrôles)",
+    "certmanager_domain_dns_ip_differs_from_public_ip": "Les enregistrements DNS du domaine '{domain}' sont différents de l'adresse IP de ce serveur. Pour plus d'informations, veuillez consulter la catégorie \"Enregistrements DNS\" dans la section Diagnostic. Si vous avez récemment modifié votre enregistrement A, veuillez attendre sa propagation (des vérificateurs de propagation DNS sont disponibles en ligne). (Si vous savez ce que vous faites, utilisez '--no-checks' pour désactiver ces contrôles)",
     "certmanager_cannot_read_cert": "Quelque chose s'est mal passé lors de la tentative d'ouverture du certificat actuel pour le domaine {domain} (fichier : {file}), la cause est : {reason}",
     "certmanager_cert_install_success_selfsigned": "Le certificat auto-signé est maintenant installé pour le domaine '{domain}'",
     "certmanager_cert_install_success": "Le certificat Let's Encrypt est maintenant installé pour le domaine '{domain}'",
@@ -562,7 +562,7 @@
     "diagnosis_rootfstotalspace_warning": "Le système de fichiers racine n'est que de {space}. Cela peut suffire, mais faites attention car vous risquez de les remplir rapidement... Il est recommandé d'avoir au moins 16 GB pour ce système de fichiers.",
     "app_restore_script_failed": "Une erreur s'est produite dans le script de restauration de l'application",
     "restore_backup_too_old": "Cette sauvegarde ne peut pas être restaurée car elle provient d'une version de YunoHost trop ancienne.",
-    "log_backup_create": "Création d'une archive de sauvegarde",
+    "log_backup_create": "Créer une archive de sauvegarde",
     "global_settings_setting_ssowat_panel_overlay_enabled": "Activer la vignette 'YunoHost' (raccourci vers le portail) sur les apps",
     "migration_ldap_rollback_success": "Système rétabli dans son état initial.",
     "permission_cant_add_to_all_users": "L'autorisation {permission} ne peut pas être ajoutée à tous les utilisateurs.",
@@ -684,5 +684,5 @@
     "global_settings_setting_webadmin_allowlist_enabled_help": "Autoriser seulement certaines IP à accéder à la webadmin.",
     "global_settings_setting_ssh_allow_deprecated_dsa_hostkey_help": "Autoriser l'utilisation de la clé hôte DSA (obsolète) pour la configuration du service SSH",
     "global_settings_setting_smtp_allow_ipv6_help": "Autoriser l'utilisation d'IPv6 pour recevoir et envoyer du courrier",
-    "global_settings_setting_smtp_relay_enabled_help": "Un relais SMTP permet d'envoyer du courrier à la place de cette instance YunoHost. Cela est utile si vous êtes dans l'une de ces situations : le port 25 est bloqué par votre FAI ou par votre fournisseur VPS, vous avez une IP résidentielle répertoriée sur DUHL, vous ne pouvez pas configurer de reverse DNS ou le serveur n'est pas directement accessible depuis Internet et que vous voulez en utiliser un autre pour envoyer des mails."
+    "global_settings_setting_smtp_relay_enabled_help": "Un relais SMTP permet d'envoyer du courrier à la place de cette instance YunoHost. Cela est utile si vous êtes dans l'une de ces situations : le port 25 est bloqué par votre FAI ou par votre fournisseur VPS ; vous avez une IP résidentielle répertoriée sur DUHL ; vous ne pouvez pas configurer le DNS inversé ; ou le serveur n'est pas directement accessible depuis Internet et vous voulez en utiliser un autre pour envoyer des mails."
 }
