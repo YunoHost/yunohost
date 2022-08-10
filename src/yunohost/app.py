@@ -2506,10 +2506,10 @@ def unstable_apps():
 
     for infos in app_list(full=True)["apps"]:
 
-        if not infos.get("from_catalog") or infos.get("from_catalog").get("state") in [
+        if not infos.get("from_catalog") or infos.get("from_catalog", {}).get("state") in [
             "inprogress",
             "notworking",
-        ] or infos["id"] in deprecated_apps or infos.get("from_catalog").get("level") == 0:
+        ] or infos["id"] in deprecated_apps or infos.get("from_catalog", {}).get("level") == 0:
             output.append(infos["id"])
 
     return output
