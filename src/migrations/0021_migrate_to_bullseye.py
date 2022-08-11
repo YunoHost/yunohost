@@ -27,9 +27,6 @@ logger = getActionLogger("yunohost.migration")
 N_CURRENT_DEBIAN = 10
 N_CURRENT_YUNOHOST = 4
 
-N_NEXT_DEBAN = 11
-N_NEXT_YUNOHOST = 11
-
 VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bullseye_upgrade.txt"
 
 
@@ -42,8 +39,11 @@ def _get_all_venvs(dir, level=0, maxlevel=3):
         maxlevel - the depth of the recursion
         level - do not edit this, used as an iterator
     """
-    # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
+    if not os.path.exists(dir):
+        return []
+
     result = []
+    # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
     for file in os.listdir(dir):
         path = os.path.join(dir, file)
         if os.path.isdir(path):
