@@ -30,6 +30,9 @@ def _get_all_venvs(dir, level=0, maxlevel=3):
         maxlevel - the depth of the recursion
         level - do not edit this, used as an iterator
     """
+    if not os.path.exists(dir):
+        return []
+
     # Using os functions instead of glob, because glob doesn't support hidden
     # folders, and we need recursion with a fixed depth
     result = []
