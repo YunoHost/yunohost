@@ -1,3 +1,9 @@
+yunohost (11.0.9.1) stable; urgency=low
+
+  - [fix] venv rebuild: /opt may not exist ...
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 11 Aug 2022 16:00:40 +0200
+
 yunohost (11.0.9) stable; urgency=low
 
   - [fix] services: Skip php 7.3 which is most likely dead after buster->bullseye migration because users get spooked (51804925)
