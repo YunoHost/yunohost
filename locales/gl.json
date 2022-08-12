@@ -684,5 +684,7 @@
     "migration_description_0023_postgresql_11_to_13": "Migrar bases de datos de PostgreSQL 11 a 13",
     "service_description_postgresql": "Almacena datos da app (Base datos SQL)",
     "tools_upgrade": "Actualizando paquetes do sistema",
-    "domain_config_default_app": "App por defecto"
+    "domain_config_default_app": "App por defecto",
+    "migration_0021_venv_regen_failed": "Fallou a rexeneración do entorno virtual '{venv}', probablemente teñas que executar o comando `yunohost app upgrade --force`",
+    "migration_0024_rebuild_python_venv_broken_app": "Omitimos a app {app} porque virtualenv non se pode reconstruir para esta app. Deberías intentar resolver o problema forzando a actualización da app usando `yunohost app upgrade --force {app}`."
 }
