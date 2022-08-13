@@ -2502,7 +2502,7 @@ def is_true(arg):
 def unstable_apps():
 
     output = []
-    deprecated_apps = ["mailman"]
+    deprecated_apps = ["mailman", "ffsync"]
 
     for infos in app_list(full=True)["apps"]:
 
