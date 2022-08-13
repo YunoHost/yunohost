@@ -186,6 +186,17 @@ class MyMigration(Migration):
             _save_services(services)
 
         #
+        # Critical fix for RPI otherwise network is down after rebooting
+        # https://forum.yunohost.org/t/20652
+        #
+        if os.system("systemctl | grep -q dhcpcd") == 0:
+            os.system("mkdir -p /etc/systemd/system/dhcpcd.service.d")
+            write_to_file(
+                "/etc/systemd/system/dhcpcd.service.d/wait.conf",
+                '[Service]\nExecStart=\nExecStart=/usr/sbin/dhcpcd -w'
+            )
+
+        #
         # Main upgrade
         #
         logger.info(m18n.n("migration_0021_main_upgrade"))
