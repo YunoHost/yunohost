@@ -684,5 +684,13 @@
     "migration_0023_postgresql_11_not_installed": "PostgreSQL ez zegoen zure isteman instalatuta. Ez dago egitekorik.",
     "migration_0023_postgresql_13_not_installed": "PostgreSQL 11 dago instalatuta baina PostgreSQL 13 ez!? Zerbait arraroa gertatu omen zaio zure sistemari :( …",
     "migration_description_0022_php73_to_php74_pools": "Migratu php7.3-fpm 'pool' ezarpen-fitxategiak php7.4ra",
-    "migration_description_0023_postgresql_11_to_13": "Migratu datubaseak PostgreSQL 11tik 13ra"
+    "migration_description_0023_postgresql_11_to_13": "Migratu datubaseak PostgreSQL 11tik 13ra",
+    "migration_0021_venv_regen_failed": "'{venv}' ingurune birtuala ezin izan da birsortu, ziurrenik `yunohost app upgrade --force` komandoa exekutatu behar duzu",
+    "migration_0024_rebuild_python_venv_broken_app": "{app} aplikazioari ez ikusiarena egin zaio ezin delako ingurune birtuala modu errazean birsortu. Horren ordez, aplikazioaren eguneraketa behartzen saia zaitezke `yunohost app upgrade --force {app}` arazoa konpontzeko.",
+    "migration_0024_rebuild_python_venv_disclaimer_rebuild": "Ondorengo aplikazioen virtualenv-a birsortzeko saiakera egingo da (eragiketak luze jo dezake!): {rebuild_apps}",
+    "migration_0024_rebuild_python_venv_disclaimer_ignored": "Virtualenv-ak ezin dira birsortu aplikazio horientzat. Eguneraketa behartu behar duzu horientzat, ondorengo komandoa exekutatuz egin daiteke: `yunohost app upgrade --force APP`: {ignored_apps}",
+    "migration_0024_rebuild_python_venv_in_progress": "`{app}` aplikazioaren Python virtualenv-a birsortzeko lanetan",
+    "migration_0024_rebuild_python_venv_failed": "Kale egin du {app} aplikazioaren Python virtualenv-aren birsorkuntza saiakerak. Litekeena da aplikazioak ez funtzionatzea arazoa konpondu arte. Aplikazioaren eguneraketa behartu beharko zenuke ondorengo komandoarekin: `yunohost app upgrade --force {app}`.",
+    "migration_description_0024_rebuild_python_venv": "Konpondu Python aplikazioa Bullseye eguneraketa eta gero",
+    "migration_0024_rebuild_python_venv_disclaimer_base": "Debian Bullseye eguneraketa dela-eta, Python aplikazio batzuk birsortu behar dira Debianekin datorren Pythonen bertsiora egokitzeko (teknikoki 'virtualenv' deritzaiona birsortu behar da). Egin artean, litekeena da Python aplikazio horiek ez funtzionatzea. YunoHost saia daiteke beherago ageri diren aplikazioen virtualenv edo ingurune birtualak birsortzen. Beste aplikazio batzuen kasuan, edo birsortze saiakerak kale egingo balu, aplikazio horien eguneraketa behartu beharko duzu."
 }
