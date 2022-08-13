@@ -306,6 +306,14 @@ class MyMigration(Migration):
         os.system("apt clean --assume-yes")
 
         #
+        # Stupid hack for stupid dnsmasq not picking up its new init.d script then breaking everything ...
+        # https://forum.yunohost.org/t/20676
+        #
+        if os.path.exists("/etc/init.d/dnsmasq.dpkg-dist"):
+            logger.info("Copying new version for /etc/init.d/dnsmasq ...")
+            os.system("cp /etc/init.d/dnsmasq.dpkg-dist /etc/init.d/dnsmasq")
+
+        #
         # Yunohost upgrade
         #
         logger.info(m18n.n("migration_0021_yunohost_upgrade"))
