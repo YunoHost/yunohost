@@ -140,6 +140,15 @@ yunohost (11.0.2) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:52:39 +0100
 
+yunohost (4.4.2.3) stable; urgency=low
+
+  - [fix] bullseye migration: add fix for stupid dnsmasq not picking new init script  (origin/dev, origin/HEAD, dev)
+  - [fix] bullseye migration: add the patch for the build-essential / libc6-dev / libgcc-8-dev hell ...
+  - [fix] bullseye migration: add critical fix for RPi failing to get network on reboot
+  - [fix] bullseye migration: add ffsync to deprecated apps (77c2f5dc)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 13 Aug 2022 20:06:00 +0200
+
 yunohost (4.4.2.1) stable; urgency=low
 
   - [fix] bullseye migration: /opt may not exist ... (5fd74577)
