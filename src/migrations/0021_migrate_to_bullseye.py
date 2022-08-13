@@ -190,11 +190,25 @@ class MyMigration(Migration):
         # https://forum.yunohost.org/t/20652
         #
         if os.system("systemctl | grep -q dhcpcd") == 0:
+            logger.info("Applying fix for DHCPCD ...")
             os.system("mkdir -p /etc/systemd/system/dhcpcd.service.d")
             write_to_file(
                 "/etc/systemd/system/dhcpcd.service.d/wait.conf",
                 '[Service]\nExecStart=\nExecStart=/usr/sbin/dhcpcd -w'
             )
+
+        #
+        # Another boring fix for the super annoying libc6-dev: Breaks libgcc-8-dev
+        # https://forum.yunohost.org/t/20617
+        #
+        if os.system("grep -A10 'ynh-deps' /var/lib/dpkg/status | grep -q 'Depends:.*build-essential'") == 0:
+            logger.info("Attempting to fix the build-essential / libc6-dev / libgcc-8-dev hell ...")
+            os.system("cp /var/lib/dpkg/status /root/dpkg_status.bkp")
+            # This removes the dependency to build-essential from $app-ynh-deps
+            os.system("perl -i~ -0777 -pe 's/(Package: .*-ynh-deps\\n(.+:.+\\n)+Depends:.*)(build-essential, ?)(.*)/$1$4/g' /var/lib/dpkg/status")
+            self.apt("build-essential", verb="remove")
+            os.system("LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt autoremove --assume-yes")
+            self.apt("gcc-8 libgcc-8-dev", verb="remove")
 
         #
         # Main upgrade
@@ -288,7 +302,7 @@ class MyMigration(Migration):
 
         # Clean the mess
         logger.info(m18n.n("migration_0021_cleaning_up"))
-        os.system("apt autoremove --assume-yes")
+        os.system("LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt autoremove --assume-yes")
         os.system("apt clean --assume-yes")
 
         #
@@ -464,6 +478,9 @@ class MyMigration(Migration):
             os.system(f"apt-mark unhold {package}")
 
     def apt_install(self, cmd):
+        return self.apt(cmd, verb="install")
+
+    def apt(self, cmd, verb="install"):
         def is_relevant(line):
             return "Reading database ..." not in line.rstrip()
 
@@ -477,7 +494,7 @@ class MyMigration(Migration):
         )
 
         cmd = (
-            "LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt install --quiet -o=Dpkg::Use-Pty=0 --fix-broken --assume-yes "
+            f"LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt {verb} --quiet -o=Dpkg::Use-Pty=0 --fix-broken --assume-yes "
             + cmd
         )
 
