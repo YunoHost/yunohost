@@ -1,3 +1,12 @@
+yunohost (11.0.9.3) stable; urgency=low
+
+  - [fix] postgresql 11->13: Epic typo / missing import (3cb1a41a)
+  - [i18n] Translations updated for Basque, French, Galician
+
+  Thanks to all contributors <3 ! (Éric Gaspar, José M, Kay0u, punkrockgirl)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 13 Aug 2022 22:37:05 +0200
+
 yunohost (11.0.9.2) stable; urgency=low
 
   - [fix] venv rebuild: fix yunohost app force upgrade command (5d90971b)
