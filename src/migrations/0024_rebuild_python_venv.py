@@ -98,6 +98,10 @@ class MyMigration(Migration):
         if not self.is_pending():
             return None
 
+        # Disclaimer should be empty if in auto, otherwise it excepts the --accept-disclaimer option during debian postinst
+        if self.mode == "auto":
+            return None
+
         ignored_apps = []
         rebuild_apps = []
 
@@ -132,6 +136,9 @@ class MyMigration(Migration):
         return msg
 
     def run(self):
+
+        if self.mode == "auto":
+            return
 
         venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
         for venv in venvs:
