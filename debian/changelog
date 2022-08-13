@@ -1,3 +1,15 @@
+yunohost (11.0.9.2) stable; urgency=low
+
+  - [fix] venv rebuild: fix yunohost app force upgrade command (5d90971b)
+  - [fix] apt helpers: simplify ynh_remove_app_dependencies, we don't need to care about removing php-fpm services from yunohost, because 'yunohost service' now dynamically check what relevant phpX.Y-fpm service exist on the system (64e35815)
+  - [enh] diagnosis: add complains if some app installed are still requiring only yunohost 3.x (31aacb33)
+  - [fix] venv rebuild: migration should have an empty disclaimer when in auto mode (d2a6dcd4)
+  - [fix] postgresql 11->13 migration: skip if no yunohost app depend on postgresql (d161da03)
+
+  Thanks to all contributors <3 ! (Éric Gaspar, ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 13 Aug 2022 20:08:27 +0200
+
 yunohost (11.0.9.1) stable; urgency=low
 
   - [fix] venv rebuild: /opt may not exist ...
