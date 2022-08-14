@@ -1,4 +1,4 @@
-yunohost (11.0.9.4) stable; urgency=low
+yunohost (11.0.9.5) stable; urgency=low
 
   - Propagate fixes in buster->bullseye migration
   - [fix] venv rebuild: synapse's folder is named matrix-synapse (c8031ace)
