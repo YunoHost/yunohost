@@ -201,7 +201,7 @@ class MyMigration(Migration):
         # Another boring fix for the super annoying libc6-dev: Breaks libgcc-8-dev
         # https://forum.yunohost.org/t/20617
         #
-        if os.system("grep -A10 'ynh-deps' /var/lib/dpkg/status | grep -q 'Depends:.*build-essential'") == 0:
+        if os.sytem("dpkg --list | grep '^ii' | grep -q ' libgcc-8-dev '") == 0 and os.system("LC_ALL=C apt policy libgcc-8-dev | grep Candidate | grep -q rpi"):
             logger.info("Attempting to fix the build-essential / libc6-dev / libgcc-8-dev hell ...")
             os.system("cp /var/lib/dpkg/status /root/dpkg_status.bkp")
             # This removes the dependency to build-essential from $app-ynh-deps
