@@ -66,7 +66,7 @@ def _backup_pip_freeze_for_python_app_venvs():
     venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
     for venv in venvs:
         # Generate a requirements file from venv
-        os.system(f"{venv}/bin/pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX}")
+        os.system(f"{venv}/bin/pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX} 2>/dev/null")
 
 
 class MyMigration(Migration):
