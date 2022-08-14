@@ -1,3 +1,10 @@
+yunohost (11.0.9.4) stable; urgency=low
+
+  - Propagate fixes in buster->bullseye migration
+  - [fix] venv rebuild: synapse's folder is named matrix-synapse (c8031ace)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 14 Aug 2022 18:22:30 +0200
+
 yunohost (11.0.9.3) stable; urgency=low
 
   - [fix] postgresql 11->13: Epic typo / missing import (3cb1a41a)
