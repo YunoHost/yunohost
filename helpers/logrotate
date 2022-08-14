@@ -16,10 +16,27 @@
 # Requires YunoHost version 2.6.4 or higher.
 # Requires YunoHost version 3.2.0 or higher for the argument `--specific_user`
 ynh_use_logrotate() {
+
+    # Stupid patch to remplace --non-append by --nonappend
+    # Because for some reason --non-append was supposed to be legacy
+    # (why is it legacy ? Idk maybe because getopts cant parse args with - in their names..)
+    # but there was no good communication about this, and now --non-append
+    # is still the most-used option, yet it was parsed with batshit stupid code
+    # So instead this loops over the positional args, and replace --non-append
+    # with --nonappend so it's transperent for the rest of the function...
+    local all_args=( ${@} )
+    for I in $(seq 0 $#)
+    do
+        if [[ "${all_args[$I]}" == "--non-append" ]]
+        then
+            all_args[$I]="--nonappend"
+        fi
+    done
+    set -- "${all_args[@]}"
+
     # Declare an array to define the options of this helper.
     local legacy_args=lnuya
-    local -A args_array=([l]=logfile= [n]=nonappend [u]=specific_user= [y]=non [a]=append)
-    # [y]=non [a]=append are only for legacy purpose, to not fail on the old option '--non-append'
+    local -A args_array=([l]=logfile= [n]=nonappend [u]=specific_user=)
     local logfile
     local nonappend
     local specific_user
@@ -30,14 +47,6 @@ ynh_use_logrotate() {
     specific_user="${specific_user:-}"
 
     # LEGACY CODE - PRE GETOPTS
-    if [ $# -gt 0 ] && [ "$1" == "--non-append" ]; then
-        nonappend=1
-        # Destroy this argument for the next command.
-        shift
-    elif [ $# -gt 1 ] && [ "$2" == "--non-append" ]; then
-        nonappend=1
-    fi
-
     if [ $# -gt 0 ] && [ "$(echo ${1:0:1})" != "-" ]; then
         # If the given logfile parameter already exists as a file, or if it ends up with ".log",
         # we just want to manage a single file
