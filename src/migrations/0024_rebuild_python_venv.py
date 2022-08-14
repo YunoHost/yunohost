@@ -68,6 +68,7 @@ class MyMigration(Migration):
         "pgadmin",
         "tracim",
         "synapse",
+        "matrix-synapse",
         "weblate",
     ]
 
