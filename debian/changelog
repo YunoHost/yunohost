@@ -1,4 +1,4 @@
-yunohost (4.4.2.5) stable; urgency=low
+yunohost (4.4.2.6) stable; urgency=low
 
   - [fix] bullseye migration: trash pip freeze stderr because it's confusing users ... (e68fc821)
   - [fix] bullseye migration: add a check that there's at least 70MB available in /boot ... (02fcbd97)
