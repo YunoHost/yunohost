@@ -698,6 +698,8 @@ def _apt_log_line_is_relevant(line):
         "==> Keeping old config file as default.",
         "is a disabled or a static unit",
         " update-rc.d: warning: start and stop actions are no longer supported; falling back to defaults",
+        "insserv: warning: current stop runlevel",
+        "insserv: warning: current start runlevel",
     ]
     return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
 
