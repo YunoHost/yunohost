@@ -206,9 +206,9 @@ class MyMigration(Migration):
             os.system("cp /var/lib/dpkg/status /root/dpkg_status.bkp")
             # This removes the dependency to build-essential from $app-ynh-deps
             os.system("perl -i~ -0777 -pe 's/(Package: .*-ynh-deps\\n(.+:.+\\n)+Depends:.*)(build-essential, ?)(.*)/$1$4/g' /var/lib/dpkg/status")
-            self.apt("build-essential", verb="remove")
+            self.apt_install("build-essential-")  # Note the '-' suffix to mean that we actually want to remove the packages
             os.system("LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt autoremove --assume-yes")
-            self.apt("gcc-8 libgcc-8-dev", verb="remove")
+            self.apt_install("gcc-8- libgcc-8-dev-")  # Note the '-' suffix to mean that we actually want to remove the packages
 
         #
         # Main upgrade
@@ -489,9 +489,6 @@ class MyMigration(Migration):
             os.system(f"apt-mark unhold {package}")
 
     def apt_install(self, cmd):
-        return self.apt(cmd, verb="install")
-
-    def apt(self, cmd, verb="install"):
         def is_relevant(line):
             return "Reading database ..." not in line.rstrip()
 
@@ -505,7 +502,7 @@ class MyMigration(Migration):
         )
 
         cmd = (
-            f"LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt {verb} --quiet -o=Dpkg::Use-Pty=0 --fix-broken --assume-yes "
+            f"LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt install --quiet -o=Dpkg::Use-Pty=0 --fix-broken --assume-yes "
             + cmd
         )
 
