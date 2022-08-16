@@ -1,3 +1,11 @@
+yunohost (11.0.9.6) stable; urgency=low
+
+  - Sync with Buster branch
+  - [fix] helpers: logrotate shitty inconsistent handling of 'supposedly legacy' --non-append option ... (8d1c75e7)
+  - [fix] apps: Better handling of super shitty edge case where an app settings.yml is empty for some unexpected mystic reason ... (9eb123f8)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 17 Aug 2022 01:26:28 +0200
+
 yunohost (11.0.9.5) stable; urgency=low
 
   - Propagate fixes in buster->bullseye migration
