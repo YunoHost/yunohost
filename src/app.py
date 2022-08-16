@@ -1345,7 +1345,7 @@ def app_ssowatconf():
 
     for app in _installed_apps():
 
-        app_settings = read_yaml(APPS_SETTING_PATH + app + "/settings.yml")
+        app_settings = read_yaml(APPS_SETTING_PATH + app + "/settings.yml") or {}
 
         # Redirected
         redirected_urls.update(app_settings.get("redirected_urls", {}))
@@ -1713,10 +1713,17 @@ def _get_app_settings(app):
         )
     try:
         with open(os.path.join(APPS_SETTING_PATH, app, "settings.yml")) as f:
-            settings = yaml.safe_load(f)
+            settings = yaml.safe_load(f) or {}
         # If label contains unicode char, this may later trigger issues when building strings...
         # FIXME: this should be propagated to read_yaml so that this fix applies everywhere I think...
         settings = {k: v for k, v in settings.items()}
+
+        # App settings should never be empty, there should always be at least some standard, internal keys like id, install_time etc.
+        # Otherwise, this probably means that the app settings disappeared somehow...
+        if not settings:
+            logger.error(f"It looks like settings.yml for {app} is empty ... This should not happen ...")
+            logger.error(m18n.n("app_not_correctly_installed", app=app))
+            return {}
 
         # Stupid fix for legacy bullshit
         # In the past, some setups did not have proper normalization for app domain/path
