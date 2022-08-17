@@ -1,3 +1,12 @@
+yunohost (11.0.9.7) stable; urgency=low
+
+  - [fix] logorate helper: was broken because wrong index é_è (efa80304)
+  - [i18n] Translations updated for French, Galician, Ukrainian
+
+  Thanks to all contributors <3 ! (Éric Gaspar, José M, Tymofii-Lytvynenko)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 17 Aug 2022 19:24:11 +0200
+
 yunohost (11.0.9.6) stable; urgency=low
 
   - Sync with Buster branch
