@@ -66,7 +66,9 @@ def _backup_pip_freeze_for_python_app_venvs():
     venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
     for venv in venvs:
         # Generate a requirements file from venv
-        os.system(f"{venv}/bin/pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX} 2>/dev/null")
+        os.system(
+            f"{venv}/bin/pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX} 2>/dev/null"
+        )
 
 
 class MyMigration(Migration):
@@ -201,18 +203,30 @@ class MyMigration(Migration):
         # Another boring fix for the super annoying libc6-dev: Breaks libgcc-8-dev
         # https://forum.yunohost.org/t/20617
         #
-        if os.system("dpkg --list | grep '^ii' | grep -q ' libgcc-8-dev'") == 0 and os.system("LC_ALL=C apt policy libgcc-8-dev | grep Candidate | grep -q rpi") == 0:
-            logger.info("Attempting to fix the build-essential / libc6-dev / libgcc-8-dev hell ...")
+        if (
+            os.system("dpkg --list | grep '^ii' | grep -q ' libgcc-8-dev'") == 0
+            and os.system(
+                "LC_ALL=C apt policy libgcc-8-dev | grep Candidate | grep -q rpi"
+            )
+            == 0
+        ):
+            logger.info(
+                "Attempting to fix the build-essential / libc6-dev / libgcc-8-dev hell ..."
+            )
             os.system("cp /var/lib/dpkg/status /root/dpkg_status.bkp")
             # This removes the dependency to build-essential from $app-ynh-deps
             os.system(
                 "perl -i~ -0777 -pe 's/(Package: .*-ynh-deps\\n(.+:.+\\n)+Depends:.*)(build-essential, ?)(.*)/$1$4/g' /var/lib/dpkg/status"
             )
-            self.apt_install("build-essential-")  # Note the '-' suffix to mean that we actually want to remove the packages
+            self.apt_install(
+                "build-essential-"
+            )  # Note the '-' suffix to mean that we actually want to remove the packages
             os.system(
                 "LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt autoremove --assume-yes"
             )
-            self.apt_install("gcc-8- libgcc-8-dev-")  # Note the '-' suffix to mean that we actually want to remove the packages
+            self.apt_install(
+                "gcc-8- libgcc-8-dev-"
+            )  # Note the '-' suffix to mean that we actually want to remove the packages
 
         #
         # Main upgrade
@@ -380,7 +394,10 @@ class MyMigration(Migration):
             raise YunohostError("migration_0021_not_enough_free_space")
 
         if free_space_in_directory("/boot/") / (120**3) < 1.0:
-            raise YunohostError("/boot/ has less than 120MB available. This will probably trigger a crash during the upgrade because a new kernel needs to be installed. Please look for advice on the forum on how to remove old, unused kernels to free up some space in /boot/.", raw_msg=True)
+            raise YunohostError(
+                "/boot/ has less than 120MB available. This will probably trigger a crash during the upgrade because a new kernel needs to be installed. Please look for advice on the forum on how to remove old, unused kernels to free up some space in /boot/.",
+                raw_msg=True,
+            )
 
         # Check system is up to date
         # (but we don't if 'bullseye' is already in the sources.list ...

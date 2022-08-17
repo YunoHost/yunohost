@@ -1721,7 +1721,9 @@ def _get_app_settings(app):
         # App settings should never be empty, there should always be at least some standard, internal keys like id, install_time etc.
         # Otherwise, this probably means that the app settings disappeared somehow...
         if not settings:
-            logger.error(f"It looks like settings.yml for {app} is empty ... This should not happen ...")
+            logger.error(
+                f"It looks like settings.yml for {app} is empty ... This should not happen ..."
+            )
             logger.error(m18n.n("app_not_correctly_installed", app=app))
             return {}
 
