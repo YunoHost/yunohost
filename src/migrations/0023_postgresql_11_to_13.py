@@ -20,7 +20,12 @@ class MyMigration(Migration):
 
     def run(self):
 
-        if os.system('grep -A10 "ynh-deps" /var/lib/dpkg/status | grep -E "Package:|Depends:" | grep -B1 postgresql') != 0:
+        if (
+            os.system(
+                'grep -A10 "ynh-deps" /var/lib/dpkg/status | grep -E "Package:|Depends:" | grep -B1 postgresql'
+            )
+            != 0
+        ):
             logger.info("No YunoHost app seem to require postgresql... Skipping!")
             return
 
