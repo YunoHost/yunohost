@@ -25,7 +25,7 @@ ynh_use_logrotate() {
     # So instead this loops over the positional args, and replace --non-append
     # with --nonappend so it's transperent for the rest of the function...
     local all_args=( ${@} )
-    for I in $(seq 0 $#)
+    for I in $(seq 0 $(($# - 1)))
     do
         if [[ "${all_args[$I]}" == "--non-append" ]]
         then
