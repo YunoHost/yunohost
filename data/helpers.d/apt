@@ -394,6 +394,13 @@ ynh_remove_app_dependencies() {
         current_dependencies=${current_dependencies// | /|}
     fi
 
+    # Edge case where the app dep may be on hold,
+    # cf https://forum.yunohost.org/t/migration-error-cause-of-ffsync/20675/4
+    if apt-mark showhold | grep -q -w ${dep_app}-ynh-deps
+    do
+        apt-mark unhold ${dep_app}-ynh-deps
+    done
+
     ynh_package_autopurge ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
 
     # Check if this app used a specific php version ... in which case we check
