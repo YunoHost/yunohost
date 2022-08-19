@@ -185,6 +185,13 @@ yunohost (11.0.2) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:52:39 +0100
 
+yunohost (4.4.2.9) stable; urgency=low
+
+  - apt helper: fix edge case with equivs package being flagged hold because of buster->bullseye migration (b306df2c)
+  - bullseye migration: fix check about free space in /boot/ ... (a2d4abc1)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Aug 2022 19:24:47 +0200
+
 yunohost (4.4.2.7) stable; urgency=low
 
   - upgrades: ignore boring insserv warnings during apt commands (87f0eff9)

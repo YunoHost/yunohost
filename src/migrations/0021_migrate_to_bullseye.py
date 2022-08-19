@@ -393,9 +393,10 @@ class MyMigration(Migration):
         if free_space_in_directory("/var/") / (1024**3) < 1.0:
             raise YunohostError("migration_0021_not_enough_free_space")
 
-        if free_space_in_directory("/boot/") / (120**3) < 1.0:
+        # Have > 70 MB free space on /var/ ?
+        if free_space_in_directory("/boot/") / (1024**2) < 70.0:
             raise YunohostError(
-                "/boot/ has less than 120MB available. This will probably trigger a crash during the upgrade because a new kernel needs to be installed. Please look for advice on the forum on how to remove old, unused kernels to free up some space in /boot/.",
+                "/boot/ has less than 70MB available. This will probably trigger a crash during the upgrade because a new kernel needs to be installed. Please look for advice on the forum on how to remove old, unused kernels to free up some space in /boot/.",
                 raw_msg=True,
             )
 
