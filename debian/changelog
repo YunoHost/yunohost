@@ -1,4 +1,4 @@
-yunohost (4.4.2.8) stable; urgency=low
+yunohost (4.4.2.9) stable; urgency=low
 
   - apt helper: fix edge case with equivs package being flagged hold because of buster->bullseye migration (b306df2c)
   - bullseye migration: fix check about free space in /boot/ ... (a2d4abc1)
