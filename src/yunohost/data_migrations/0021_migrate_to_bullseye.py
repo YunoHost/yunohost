@@ -367,7 +367,7 @@ class MyMigration(Migration):
             not self.debian_major_version() == N_CURRENT_DEBIAN
             and not self.yunohost_major_version() == N_CURRENT_YUNOHOST
         ):
-            raise YunohostError("migration_0021_not_buster")
+            raise YunohostError("migration_0021_not_buster2")
 
         # Have > 1 Go free space on /var/ ?
         if free_space_in_directory("/var/") / (1024**3) < 1.0:

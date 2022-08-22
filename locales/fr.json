@@ -716,7 +716,7 @@
     "migration_0021_modified_files": "Veuillez noter que les fichiers suivants ont été modifiés manuellement et pourraient être écrasés à la suite de la mise à niveau : {manually_modified_files}",
     "migration_0021_cleaning_up": "Nettoyage du cache et des paquets qui ne sont plus nécessaires...",
     "migration_0021_patch_yunohost_conflicts": "Application du correctif pour contourner le problème de conflit...",
-    "migration_0021_not_buster": "La distribution Debian actuelle n'est pas Buster !",
+    "migration_0021_not_buster2": "La distribution Debian actuelle n'est pas Buster ! Si vous avez déjà effectué la migration Buster->Bullseye, alors cette erreur est symptomatique du fait que la migration n'a pas été terminée correctement à 100% (sinon YunoHost aurait marqué la migration comme terminée). Il est recommandé d'étudier ce qu'il s'est passé avec l'équipe de support, qui aura besoin du log **complet** de la migration, qui peut être retrouvé dans Outils > Journaux dans la webadmin.",
     "migration_description_0021_migrate_to_bullseye": "Mise à niveau du système vers Debian Bullseye et YunoHost 11.x",
     "global_settings_setting_security_ssh_password_authentication": "Autoriser l'authentification par mot de passe pour SSH"
 }
