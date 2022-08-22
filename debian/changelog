@@ -1,4 +1,4 @@
-yunohost (11.0.9.8) stable; urgency=low
+yunohost (11.0.9.9) stable; urgency=low
 
   - Sync with Buster branch
   - [fix] php7.3->7.4: autopatch nginx configs during restore (18e041c4)
