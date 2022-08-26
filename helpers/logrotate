@@ -35,7 +35,7 @@ ynh_use_logrotate() {
     set -- "${all_args[@]}"
 
     # Declare an array to define the options of this helper.
-    local legacy_args=lnuya
+    local legacy_args=lnu
     local -A args_array=([l]=logfile= [n]=nonappend [u]=specific_user=)
     local logfile
     local nonappend
