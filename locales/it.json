@@ -659,5 +659,6 @@
     "user_import_bad_line": "Linea errata {line}: {details}",
     "config_validate_url": "È necessario inserire un URL web valido",
     "ldap_server_down": "Impossibile raggiungere il server LDAP",
-    "ldap_server_is_down_restart_it": "Il servizio LDAP è down, prova a riavviarlo…"
+    "ldap_server_is_down_restart_it": "Il servizio LDAP è down, prova a riavviarlo…",
+    "domain_config_default_app": "Applicazione di default"
 }
