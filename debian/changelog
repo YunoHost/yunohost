@@ -202,6 +202,12 @@ yunohost (11.0.2) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:52:39 +0100
 
+yunohost (4.4.2.11) stable; urgency=low
+
+  - bullseye migration: add trick to automagically find the likely log of a previously failed migration to ease support (f5d94509)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 26 Aug 2022 19:22:30 +0200
+
 yunohost (4.4.2.10) stable; urgency=low
 
   - bullseye migration: add proper explanations and advices after the damn 'The distribution is not Buster' message ... (6a594d0e)
