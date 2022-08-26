@@ -367,6 +367,16 @@ class MyMigration(Migration):
             not self.debian_major_version() == N_CURRENT_DEBIAN
             and not self.yunohost_major_version() == N_CURRENT_YUNOHOST
         ):
+            try:
+                # Here we try to find the previous migration log, which should be somewhat recent and be at least 10k (we keep the biggest one)
+                maybe_previous_migration_log_id = check_output("cd /var/log/yunohost/categories/operation && find -name '*migrate*.log -size +10k -mtime -100 -exec ls -s {} \\; | sort -n | tr './' ' ' | awk '{print $2}' | tail -n 1")
+                if maybe_previous_migration_log_id:
+                    logger.info(f"NB: the previous migration log id seems to be {maybe_previous_migration_log_id}. You can share it with the support team with : sudo yunohost log share {maybe_previous_migration_log_id}")
+            except Exception:
+                # Yeah it's not that important ... it's to simplify support ...
+                pass
+
+
             raise YunohostError("migration_0021_not_buster2")
 
         # Have > 1 Go free space on /var/ ?
