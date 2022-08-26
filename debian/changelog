@@ -1,5 +1,6 @@
-yunohost (11.0.9.10) stable; urgency=low
+yunohost (11.0.9.11) stable; urgency=low
 
+  = Merge with Buster branch
   - [fix] diagnosis: fix inaccurate message (ae92a0b8)
   - [fix] logrotate helpers: getopts miserably explodes if 'legacy_args' is inconsistent with 'args_array' ... (530bf04a)
   - [i18n] Translations updated for Basque, French, Indonesian, Italian, Slovak
