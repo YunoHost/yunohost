@@ -1,3 +1,13 @@
+yunohost (11.0.9.10) stable; urgency=low
+
+  - [fix] diagnosis: fix inaccurate message (ae92a0b8)
+  - [fix] logrotate helpers: getopts miserably explodes if 'legacy_args' is inconsistent with 'args_array' ... (530bf04a)
+  - [i18n] Translations updated for Basque, French, Indonesian, Italian, Slovak
+
+  Thanks to all contributors <3 ! (Jose Riha, Leandro Noferini, liimee, Stephan Klein, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 26 Aug 2022 16:32:19 +0200
+
 yunohost (11.0.9.9) stable; urgency=low
 
   - Sync with Buster branch
