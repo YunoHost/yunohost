@@ -219,7 +219,7 @@ def tools_postinstall(
         )
 
     # Check there's at least 10 GB on the rootfs...
-    disk_partitions = sorted(psutil.disk_partitions(), key=lambda k: k.mountpoint)
+    disk_partitions = sorted(psutil.disk_partitions(all=True), key=lambda k: k.mountpoint)
     main_disk_partitions = [d for d in disk_partitions if d.mountpoint in ["/", "/var"]]
     main_space = sum(
         psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions
