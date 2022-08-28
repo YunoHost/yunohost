@@ -1,3 +1,12 @@
+yunohost (11.0.9.12) stable; urgency=low
+
+  - [fix] postinstall: check all partitions (not only physical ones) ([#1497](https://github.com/YunoHost/yunohost/pull/1497))
+  - [i18n] Translations updated for Basque, French, Indonesian, Italian, Slovak
+
+  Thanks to all contributors <3 ! (Salamandar)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 28 Aug 2022 14:50:38 +0200
+
 yunohost (11.0.9.11) stable; urgency=low
 
   = Merge with Buster branch
