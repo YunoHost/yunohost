@@ -1,4 +1,4 @@
-yunohost (4.4.2.11) stable; urgency=low
+yunohost (4.4.2.12) stable; urgency=low
 
   - bullseye migration: add trick to automagically find the likely log of a previously failed migration to ease support (f5d94509)
 
