@@ -203,7 +203,7 @@ yunohost (11.0.2) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:52:39 +0100
 
-yunohost (4.4.2.11) stable; urgency=low
+yunohost (4.4.2.12) stable; urgency=low
 
   - bullseye migration: add trick to automagically find the likely log of a previously failed migration to ease support (f5d94509)
 
