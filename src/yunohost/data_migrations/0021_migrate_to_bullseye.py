@@ -104,9 +104,17 @@ class MyMigration(Migration):
             open("/etc/apt/sources.list.d/extra_php_version.list", "w").write(
                 "deb https://packages.sury.org/php/ bullseye main"
             )
-            os.system(
-                'wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"'
-            )
+
+        # Add Sury key even if extra_php_version.list was already there,
+        # because some old system may be using an outdated key not valid for Bullseye
+        # and that'll block the migration
+        os.system(
+            'wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"'
+        )
+
+        # Remove legacy, duplicated sury entry if it exists
+        if os.path.exists("/etc/apt/sources.list.d/sury.list"):
+            os.system("rm -rf /etc/apt/sources.list.d/sury.list")
 
         #
         # Get requirements of the different venvs from python apps
