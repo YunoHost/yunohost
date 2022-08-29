@@ -1,3 +1,9 @@
+yunohost (4.4.2.13) stable; urgency=low
+
+  - [fix] bullseye migration: a few annoying issues related to Sury (b5fabc87)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 29 Aug 2022 15:40:03 +0200
+
 yunohost (4.4.2.12) stable; urgency=low
 
   - bullseye migration: add trick to automagically find the likely log of a previously failed migration to ease support (f5d94509)
