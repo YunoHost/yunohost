@@ -94,6 +94,9 @@ class MyMigration(Migration):
         logger.info(m18n.n("migration_0021_patching_sources_list"))
         self.patch_apt_sources_list()
 
+        # Stupid OVH has some repo configured which dont work with bullseye and break apt ...
+        os.system("sudo rm -f /etc/apt/sources.list.d/ovh-*.list")
+
         # Force add sury if it's not there yet
         # This is to solve some weird issue with php-common breaking php7.3-common,
         # hence breaking many php7.3-deps
