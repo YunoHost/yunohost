@@ -221,5 +221,17 @@
     "diagnosis_http_partially_unreachable": "Doména {domain} sa zdá byť nedostupná prostredníctvom HTTP mimo miestnej siete pri použití IPv{failed}, hoci funguje pri IPv{passed}.",
     "diagnosis_http_special_use_tld": "Doména {domain} je založená na top-level doméne (TLD) pre zvláštne určenie ako je .local alebo .test a preto sa neočakáva, aby bola dostupná mimo miestnej siete.",
     "diagnosis_http_unreachable": "Doména {domain} sa zdá byť nedostupná prostredníctvom HTTP mimo miestnej siete.",
-    "diagnosis_ignored_issues": "(+ {nb_ignored} ignorovaný(ch) problém(ov))"
+    "diagnosis_ignored_issues": "(+ {nb_ignored} ignorovaný(ch) problém(ov))",
+    "diagnosis_ip_no_ipv6_tip": "Váš server bude fungovať aj bez IPv6, no pre celkové zdravie internetu je lepšie ho nastaviť. V prípade, že je IPv6 dostupné, systém alebo váš poskytovateľ by ho mal automaticky nakonfigurovať. V opačnom prípade budete možno musieť nastaviť zopár vecí ručne tak, ako je vysvetlené v dokumentácii na <a href='https://yunohost.org/#/ipv6'>https://yunohost.org/#/ipv6</a>. Ak nemôžete povoliť IPv6 alebo je to na vás príliš technicky náročné, môžete pokojne toto upozornenie ignorovať.",
+    "diagnosis_ip_broken_dnsresolution": "Zdá sa, že z nejakého dôvodu nefunguje prekladanie názvov domén… Blokuje vaša brána firewall DNS požiadavky?",
+    "diagnosis_ip_broken_resolvconf": "Zdá sa, že na vašom serveri nefunguje prekladanie názvov domén, čo môže súvisieť s tým, že <code>/etc/resolv.conf</code> neukazuje na <code>127.0.0.1</code>.",
+    "diagnosis_ip_connected_ipv4": "Server nie je pripojený k internetu prostredníctvom IPv4!",
+    "diagnosis_ip_connected_ipv6": "Server nie je pripojený k internetu prostredníctvom IPv6!",
+    "diagnosis_ip_dnsresolution_working": "Preklad názvov domén nefunguje!",
+    "diagnosis_ip_global": "Globálna IP adresa: <code>{global}</code>",
+    "diagnosis_ip_local": "Miestna IP adresa: <code>{local}</code>",
+    "diagnosis_ip_no_ipv4": "Na serveri nefunguje spojenie cez protokol IPv4.",
+    "diagnosis_ip_no_ipv6": "Na serveri nefunguje spojenie cez protokol IPv6.",
+    "diagnosis_ip_not_connected_at_all": "Zdá sa, že tento server nie je vôbec pripojený k internetu!?",
+    "diagnosis_ip_weird_resolvconf": "Zdá sa, že preklad názvov domén funguje, ale podľa všetkého používate vlastný súbor <code>/etc/resolv.conf</code>."
 }
