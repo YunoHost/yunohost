@@ -231,8 +231,8 @@ def test_manifestv2_app_manifest_preinstall():
     assert "install" in m
     assert "description" in m
     assert "doc" in m
-    assert "This is a dummy description of this app features" in m["doc"]["DESCRIPTION"]["main"]["en"]
-    assert "Ceci est une fausse description des fonctionalités de l'app" in m["doc"]["DESCRIPTION"]["main"]["fr"]
+    assert "This is a dummy description of this app features" in m["doc"]["DESCRIPTION"]["en"]
+    assert "Ceci est une fausse description des fonctionalités de l'app" in m["doc"]["DESCRIPTION"]["fr"]
     assert "notifications" in m
     assert "This is a dummy disclaimer to display prior to the install" in m["notifications"]["pre_install"]["main"]["en"]
     assert "Ceci est un faux disclaimer à présenter avant l'installation" in m["notifications"]["pre_install"]["main"]["fr"]
