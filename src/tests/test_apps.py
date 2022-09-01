@@ -220,7 +220,7 @@ def test_legacy_app_manifest_preinstall():
     assert "integration" in m
     assert "install" in m
     assert m.get("doc") == {}
-    assert m.get("notifications") == {}
+    assert m.get["notifications"] == {"pre_install": {}, "pre_upgrade": {}, "post_install": {}, "post_upgrade": {}}
 
 
 def test_manifestv2_app_manifest_preinstall():
@@ -231,11 +231,11 @@ def test_manifestv2_app_manifest_preinstall():
     assert "install" in m
     assert "description" in m
     assert "doc" in m
-    assert "This is a dummy description of this app features" in m["doc"]["DESCRIPTION"]["en"]
-    assert "Ceci est une fausse description des fonctionalités de l'app" in m["doc"]["DESCRIPTION"]["fr"]
+    assert "This is a dummy description of this app features" in m["doc"]["DESCRIPTION"]["main"]["en"]
+    assert "Ceci est une fausse description des fonctionalités de l'app" in m["doc"]["DESCRIPTION"]["main"]["fr"]
     assert "notifications" in m
-    assert "This is a dummy disclaimer to display prior to the install" in m["notifications"]["pre_install"]["en"]
-    assert "Ceci est un faux disclaimer à présenter avant l'installation" in m["notifications"]["pre_install"]["fr"]
+    assert "This is a dummy disclaimer to display prior to the install" in m["notifications"]["pre_install"]["main"]["en"]
+    assert "Ceci est un faux disclaimer à présenter avant l'installation" in m["notifications"]["pre_install"]["main"]["fr"]
 
 
 def test_manifestv2_app_install_main_domain():
@@ -278,6 +278,8 @@ def test_manifestv2_app_info_postinstall():
 
 def test_manifestv2_app_info_preupgrade(monkeypatch):
 
+    manifest = app_manifest(os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"))
+
     from yunohost.app_catalog import _load_apps_catalog as original_load_apps_catalog
     def custom_load_apps_catalog(*args, **kwargs):
 
@@ -287,7 +289,7 @@ def test_manifestv2_app_info_preupgrade(monkeypatch):
             "level": 10,
             "lastUpdate": 999999999,
             "maintained": True,
-            "manifest": app_manifest(os.path.join(get_test_apps_dir(), "manifestv2_app_ynh")),
+            "manifest": manifest,
         }
         res["apps"]["manifestv2_app"]["manifest"]["version"] = "99999~ynh1"
 
