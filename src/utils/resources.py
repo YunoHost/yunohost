@@ -615,9 +615,10 @@ class PortsResource(AppResource):
                 # Automigrate from legacy setting foobar_port (instead of port_foobar)
                 legacy_setting_name = "{name}_port"
                 port_value = self.get_setting(legacy_setting_name)
-                self.set_setting(setting_name, port_value)
-                self.delete_setting(legacy_setting_name)
-                continue
+                if port_value:
+                    self.set_setting(setting_name, port_value)
+                    self.delete_setting(legacy_setting_name)
+                    continue
 
             if not port_value:
                 port_value = infos["default"]

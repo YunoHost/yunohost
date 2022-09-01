@@ -219,8 +219,8 @@ def test_legacy_app_manifest_preinstall():
     assert "description" in m
     assert "integration" in m
     assert "install" in m
-    assert m.get("doc") == {}
-    assert m.get["notifications"] == {"pre_install": {}, "pre_upgrade": {}, "post_install": {}, "post_upgrade": {}}
+    assert m["doc"] == {}
+    assert m["notifications"] == {"pre_install": {}, "pre_upgrade": {}, "post_install": {}, "post_upgrade": {}}
 
 
 def test_manifestv2_app_manifest_preinstall():
@@ -271,9 +271,9 @@ def test_manifestv2_app_info_postinstall():
     assert "The app install dir is /var/www/manifestv2_app" in m["doc"]["ADMIN"]["en"]
     assert "Le dossier d'install de l'app est /var/www/manifestv2_app" in m["doc"]["ADMIN"]["fr"]
     assert "notifications" in m
-    assert "The app install dir is /var/www/manifestv2_app" in m["notifications"]["post_install"]["en"]
-    assert "The app id is manifestv2_app" in m["notifications"]["post_install"]["en"]
-    assert f"The app url is {main_domain}/manifestv2" in m["notifications"]["post_install"]["en"]
+    assert "The app install dir is /var/www/manifestv2_app" in m["notifications"]["post_install"]["main"]["en"]
+    assert "The app id is manifestv2_app" in m["notifications"]["post_install"]["main"]["en"]
+    assert f"The app url is {main_domain}/manifestv2" in m["notifications"]["post_install"]["main"]["en"]
 
 
 def test_manifestv2_app_info_preupgrade(monkeypatch):
@@ -290,6 +290,7 @@ def test_manifestv2_app_info_preupgrade(monkeypatch):
             "lastUpdate": 999999999,
             "maintained": True,
             "manifest": manifest,
+            "state": "working",
         }
         res["apps"]["manifestv2_app"]["manifest"]["version"] = "99999~ynh1"
 
@@ -306,7 +307,7 @@ def test_manifestv2_app_info_preupgrade(monkeypatch):
     # does provide the notifications, which means the list builder script
     # should parse the files in the original app repo, possibly with proper i18n etc
     assert "This is a dummy disclaimer to display prior to any upgrade" \
-            in i["from_catalog"]["manifest"]["notifications"]["pre_upgrade"]
+            in i["from_catalog"]["manifest"]["notifications"]["pre_upgrade"]["main"]["en"]
 
 def test_app_from_catalog():
     main_domain = _get_maindomain()
