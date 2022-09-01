@@ -665,7 +665,6 @@
     "migration_0021_patching_sources_list": "Виправлення sources.lists...",
     "migration_0021_main_upgrade": "Початок основного оновлення...",
     "migration_0021_yunohost_upgrade": "Початок оновлення ядра YunoHost...",
-    "migration_0021_not_buster": "Поточний дистрибутив Debian не є Buster!",
     "migration_0021_problematic_apps_warning": "Зверніть увагу, що були виявлені наступні, ймовірно проблемні встановлені застосунки. Схоже, що вони не були встановлені з каталогу застосунків YunoHost або не зазначені як «робочі». Отже, не можна гарантувати, що вони будуть працювати після оновлення: {problematic_apps}",
     "migration_0021_modified_files": "Зверніть увагу, що такі файли були змінені вручну і можуть бути перезаписані після оновлення: {manually_modified_files}",
     "migration_0021_cleaning_up": "Очищення кеш-пам'яті і пакетів, які більше не потрібні...",
