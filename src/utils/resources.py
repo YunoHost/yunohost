@@ -22,7 +22,8 @@ import os
 import copy
 import shutil
 import random
-from typing import Dict, Any
+from typing import Optional, Dict, List, Union, Any, Mapping, Callable, no_type_check
+
 
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
@@ -123,6 +124,8 @@ class AppResourceManager:
 
 class AppResource:
 
+    default_properties: Dict[str, Any] = None
+
     def __init__(self, properties: Dict[str, Any], app: str, manager=None):
 
         self.app = app
@@ -199,7 +202,7 @@ class PermissionsResource(AppResource):
     default_properties = {
     }
 
-    default_perm_properties = {
+    default_perm_properties: Dict[str, Any] = {
         "url": None,
         "additional_urls": [],
         "auth_header": True,
@@ -207,6 +210,8 @@ class PermissionsResource(AppResource):
         "show_tile": None,  # To be automagically set to True by default if an url is defined and show_tile not provided
         "protected": False,
     }
+
+    permissions: Dict[str, Dict[str, Any]] = {}
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
 
@@ -362,6 +367,7 @@ class SystemuserAppResource(AppResource):
 #    fi
 #
 
+@no_type_check
 class InstalldirAppResource(AppResource):
     """
         is_provisioned -> setting install_dir exists + /dir/ exists
@@ -427,6 +433,7 @@ class InstalldirAppResource(AppResource):
         # FIXME : in fact we should delete settings to be consistent
 
 
+@no_type_check
 class DatadirAppResource(AppResource):
     """
         is_provisioned -> setting data_dir exists + /dir/ exists
@@ -510,6 +517,7 @@ class DatadirAppResource(AppResource):
 #        return
 #
 
+@no_type_check
 class AptDependenciesAppResource(AppResource):
     """
         is_provisioned -> package __APP__-ynh-deps exists  (ideally should check the Depends: but hmgn)
@@ -582,6 +590,8 @@ class PortsResource(AppResource):
         "exposed": False,   # or True(="Both"), "TCP", "UDP"   # FIXME : implement logic for exposed port (allow/disallow in firewall ?)
         "fixed": False,     # FIXME: implement logic. Corresponding to wether or not the port is "fixed" or any random port is ok
     }
+
+    ports: Dict[str, Dict[str, Any]]
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
 

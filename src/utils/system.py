@@ -21,6 +21,7 @@
 import re
 import os
 import logging
+from typing import Union
 
 from moulinette.utils.process import check_output
 from yunohost.utils.error import YunohostError
@@ -74,11 +75,11 @@ def human_to_binary(size: str) -> int:
         raise YunohostError(f"Invalid size suffix '{suffix}', expected one of {symbols}")
 
     try:
-        size = float(size)
+        size_ = float(size)
     except Exception:
         raise YunohostError(f"Failed to convert size {size} to float")
 
-    return size * factor[suffix]
+    return int(size_ * factor[suffix])
 
 
 def binary_to_human(n: int) -> str:
