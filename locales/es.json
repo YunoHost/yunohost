@@ -637,7 +637,6 @@
     "migration_0021_main_upgrade": "Iniciando actualización principal...",
     "migration_0021_still_on_buster_after_main_upgrade": "Algo salió mal durante la actualización principal, el sistema parece estar todavía en Debian Buster",
     "migration_0021_yunohost_upgrade": "Iniciando la actualización principal de YunoHost...",
-    "migration_0021_not_buster": "¡La distribución actual de Debian no es Buster!",
     "migration_0021_not_enough_free_space": "¡El espacio libre es bastante bajo en /var/! Debe tener al menos 1 GB libre para ejecutar esta migración.",
     "migration_0021_system_not_fully_up_to_date": "Su sistema no está completamente actualizado. Realice una actualización regular antes de ejecutar la migración a Bullseye.",
     "migration_0021_general_warning": "Tenga en cuenta que esta migración es una operación delicada. El equipo de YunoHost hizo todo lo posible para revisarlo y probarlo, pero la migración aún podría romper partes del sistema o sus aplicaciones.\n\nPor lo tanto, se recomienda:\n    - Realice una copia de seguridad de cualquier dato o aplicación crítica. Más información en https://yunohost.org/backup;\n    - Sea paciente después de iniciar la migración: dependiendo de su conexión a Internet y hardware, puede tomar algunas horas para que todo se actualice.",

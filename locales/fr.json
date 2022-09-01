@@ -685,7 +685,6 @@
     "tools_upgrade_failed": "Impossible de mettre à jour les paquets : {packages_list}",
     "migration_0023_not_enough_space": "Prévoyez suffisamment d'espace disponible dans {path} pour exécuter la migration.",
     "migration_0023_postgresql_11_not_installed": "PostgreSQL n'a pas été installé sur votre système. Il n'y a rien à faire.",
-    "migration_0021_venv_regen_failed": "L'environnement virtuel '{venv}' n'a pas pu se régénérer, vous devez probablement exécuter la commande `yunohost app upgrade --force`",
     "migration_0024_rebuild_python_venv_disclaimer_rebuild": "La reconstruction du virtualenv sera tentée pour les applications suivantes (NB : l'opération peut prendre un certain temps !) : {rebuild_apps}",
     "migration_0024_rebuild_python_venv_in_progress": "Tentative de reconstruction du virtualenv Python pour `{app}`",
     "migration_0024_rebuild_python_venv_failed": "Échec de la reconstruction de l'environnement virtuel Python pour {app}. L'application peut ne pas fonctionner tant que ce problème n'est pas résolu. Vous devriez corriger la situation en forçant la mise à jour de cette application en utilisant `yunohost app upgrade --force {app}`.",
