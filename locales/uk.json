@@ -684,5 +684,12 @@
     "tools_upgrade_failed": "Не вдалося оновити наступні пакети: {packages_list}",
     "migration_0023_not_enough_space": "Звільніть достатньо місця в {path} для виконання міграції.",
     "migration_0023_postgresql_11_not_installed": "PostgreSQL не було встановлено у вашій системі. Нічого робити.",
-    "migration_description_0022_php73_to_php74_pools": "Перенесення конфігураційних файлів php7.3-fpm 'pool' на php7.4"
+    "migration_description_0022_php73_to_php74_pools": "Перенесення конфігураційних файлів php7.3-fpm 'pool' на php7.4",
+    "migration_0024_rebuild_python_venv_disclaimer_base": "Після оновлення до Debian Bullseye деякі застосунки Python потрібно частково перебудувати, щоб їх було перетворено на нову версію Python, яка постачається в Debian (з технічної точки зору: те, що називається «virtualenv», потрібно створити заново). Тим часом ці застосунки Python можуть не працювати. YunoHost може спробувати перебудувати virtualenv для деяких із них, як описано нижче. Для інших застосунків або якщо спроба відновлення не вдається, вам потрібно буде вручну примусово оновити їх.",
+    "migration_0024_rebuild_python_venv_broken_app": "Пропущено {app}, бо virtualenv не можна легко перебудувати для цього застосунку. Натомість вам слід виправити ситуацію, примусово оновивши застосунок за допомогою `yunohost app upgrade --force {app}`.",
+    "migration_0024_rebuild_python_venv_disclaimer_rebuild": "Буде зроблена спроба перебудувати virtualenv для таких застосунків (Примітка: операція може зайняти деякий час!): {rebuild_apps}",
+    "migration_0024_rebuild_python_venv_in_progress": "Намагаємося перебудувати Python virtualenv для `{app}`",
+    "migration_description_0024_rebuild_python_venv": "Відновлення застосунку Python після міграції до bullseye",
+    "migration_0024_rebuild_python_venv_disclaimer_ignored": "Virtualenvs не можна автоматично перебудувати для цих застосунків. Вам потрібно примусово оновити його для них, що можна зробити з командного рядка за допомогою: `yunohost app upgrade --force APP`: {ignored_apps}",
+    "migration_0024_rebuild_python_venv_failed": "Не вдалося перебудувати Python virtualenv для {app}. Застосунок може не працювати, доки це не вирішено. Ви повинні виправити ситуацію, примусово оновивши його за допомогою `yunohost app upgrade --force {app}`."
 }

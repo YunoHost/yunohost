@@ -11,8 +11,8 @@ echo "$REPO ($VERSION) $RELEASE; urgency=low"
 echo ""
 
 git log $LAST_RELEASE.. -n 10000 --first-parent --pretty=tformat:'  - %b%s (%h)' \
-| sed -E "s@Merge .*#([0-9]+).*\$@ \([#\1]\($REPO_URL/pull/\1\)\)@g" \
-| grep -v "Update from Weblate" \
+| sed -E "s&Merge .*#([0-9]+).*\$& \([#\1]\($REPO_URL/pull/\1\)\)&g" \
+| grep -v "Translations update from Weblate" \
 | tac
 
 TRANSLATIONS=$(git log $LAST_RELEASE... -n 10000 --pretty=format:"%s"  \
