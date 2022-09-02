@@ -183,7 +183,7 @@ ynh_abort_if_errors
                 call_failed,
                 failure_message_with_debug_instructions,
             ) = hook_exec_with_script_debug_if_failure(
-                script_path
+                script_path,
                 env=env_,
                 operation_logger=operation_logger,
                 error_message_if_script_failed="An error occured inside the script snippet",
