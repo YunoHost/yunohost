@@ -22,8 +22,7 @@ import os
 import copy
 import shutil
 import random
-from typing import Optional, Dict, List, Union, Any, Mapping, Callable, no_type_check
-
+from typing import Optional, Dict, List, Union, Any, Mapping, Callable
 
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
@@ -124,6 +123,7 @@ class AppResourceManager:
 
 class AppResource:
 
+    type: str = ""
     default_properties: Dict[str, Any] = None
 
     def __init__(self, properties: Dict[str, Any], app: str, manager=None):
@@ -318,6 +318,9 @@ class SystemuserAppResource(AppResource):
         "allow_sftp": False
     }
 
+    allow_ssh: bool = False
+    allow_sftp: bool = False
+
     def provision_or_update(self, context: Dict={}):
 
         # FIXME : validate that no yunohost user exists with that name?
@@ -367,7 +370,6 @@ class SystemuserAppResource(AppResource):
 #    fi
 #
 
-@no_type_check
 class InstalldirAppResource(AppResource):
     """
         is_provisioned -> setting install_dir exists + /dir/ exists
@@ -393,9 +395,17 @@ class InstalldirAppResource(AppResource):
         "group": "__APP__:rx",
     }
 
+    dir: str = ""
+    owner: str = ""
+    group: str = ""
+
     # FIXME: change default dir to /opt/stuff if app ain't a webapp ...
 
     def provision_or_update(self, context: Dict={}):
+
+        assert self.dir.strip() # Be paranoid about self.dir being empty...
+        assert self.owner.strip()
+        assert self.group.strip()
 
         current_install_dir = self.get_setting("install_dir") or self.get_setting("final_path")
 
@@ -427,13 +437,17 @@ class InstalldirAppResource(AppResource):
         self.delete_setting("final_path")  # Legacy
 
     def deprovision(self, context: Dict={}):
+
+        assert self.dir.strip() # Be paranoid about self.dir being empty...
+        assert self.owner.strip()
+        assert self.group.strip()
+
         # FIXME : check that self.dir has a sensible value to prevent catastrophes
         if os.path.isdir(self.dir):
             rm(self.dir, recursive=True)
         # FIXME : in fact we should delete settings to be consistent
 
 
-@no_type_check
 class DatadirAppResource(AppResource):
     """
         is_provisioned -> setting data_dir exists + /dir/ exists
@@ -459,7 +473,15 @@ class DatadirAppResource(AppResource):
         "group": "__APP__:rx",
     }
 
+    dir: str = ""
+    owner: str = ""
+    group: str = ""
+
     def provision_or_update(self, context: Dict={}):
+
+        assert self.dir.strip() # Be paranoid about self.dir being empty...
+        assert self.owner.strip()
+        assert self.group.strip()
 
         current_data_dir = self.get_setting("data_dir")
 
@@ -482,6 +504,11 @@ class DatadirAppResource(AppResource):
         self.set_setting("data_dir", self.dir)
 
     def deprovision(self, context: Dict={}):
+
+        assert self.dir.strip() # Be paranoid about self.dir being empty...
+        assert self.owner.strip()
+        assert self.group.strip()
+
         # FIXME: This should rm the datadir only if purge is enabled
         pass
         #if os.path.isdir(self.dir):
@@ -517,7 +544,6 @@ class DatadirAppResource(AppResource):
 #        return
 #
 
-@no_type_check
 class AptDependenciesAppResource(AppResource):
     """
         is_provisioned -> package __APP__-ynh-deps exists  (ideally should check the Depends: but hmgn)
@@ -541,6 +567,9 @@ class AptDependenciesAppResource(AppResource):
         "packages": [],
         "extras": {}
     }
+
+    packages: List = []
+    extras: Dict[str: Any] = {}
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
 
