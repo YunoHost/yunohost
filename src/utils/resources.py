@@ -39,6 +39,9 @@ logger = getActionLogger("yunohost.app_resources")
 
 class AppResourceManager:
 
+    # FIXME : add some sort of documentation mechanism
+    # to create a have a detailed description of each resource behavior
+
     def __init__(self, app: str, current: Dict, wanted: Dict):
 
         self.app = app
@@ -156,6 +159,7 @@ class AppResource:
     def _run_script(self, action, script, env={}, user="root"):
 
         from yunohost.app import _make_tmp_workdir_for_app, _make_environment_for_app_script
+        from yunohost.hook import hook_exec_with_script_debug_if_failure
 
         tmpdir = _make_tmp_workdir_for_app(app=self.app)
 
@@ -172,10 +176,29 @@ ynh_abort_if_errors
 
         write_to_file(script_path, script)
 
-        #print(env_)
-
-        # FIXME : use the hook_exec_with_debug_instructions_stuff
-        ret, _ = hook_exec(script_path, env=env_)
+        from yunohost.log import OperationLogger
+        operation_logger = OperationLogger._instances[-1],  # FIXME : this is an ugly hack :(
+        try:
+            (
+                call_failed,
+                failure_message_with_debug_instructions,
+            ) = hook_exec_with_script_debug_if_failure(
+                script_path
+                env=env_,
+                operation_logger=operation_logger,
+                error_message_if_script_failed="An error occured inside the script snippet",
+                error_message_if_failed=lambda e: f"{action} failed for {self.type} : {e}"
+            )
+        finally:
+            if call_failed:
+                raise YunohostError(
+                    failure_message_with_debug_instructions, raw_msg=True
+                )
+            else:
+                # FIXME: currently in app install code, we have
+                # more sophisticated code checking if this broke something on the system etc ...
+                # dunno if we want to do this here or manage it elsewhere
+                pass
 
         #print(ret)
 
@@ -327,9 +350,10 @@ class SystemuserAppResource(AppResource):
         # and/or that no system user exists during install ?
 
         if not check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
-            # FIXME: improve error handling ?
+            # FIXME: improve logging ? os.system wont log stdout / stderr
             cmd = f"useradd --system --user-group {self.app}"
-            os.system(cmd)
+            ret = os.system(cmd)
+            assert ret == 0, f"useradd command failed with exit code {ret}"
 
         if not check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
             raise YunohostError(f"Failed to create system user for {self.app}", raw_msg=True)
@@ -390,7 +414,7 @@ class InstalldirAppResource(AppResource):
     priority = 30
 
     default_properties = {
-        "dir": "/var/www/__APP__",    # FIXME or choose to move this elsewhere nowadays idk...
+        "dir": "/var/www/__APP__",
         "owner": "__APP__:rx",
         "group": "__APP__:rx",
     }
@@ -417,7 +441,10 @@ class InstalldirAppResource(AppResource):
         if not os.path.isdir(self.dir):
             # Handle case where install location changed, in which case we shall move the existing install dir
             # FIXME: confirm that's what we wanna do
+            # Maybe a middle ground could be to compute the size, check that it's not too crazy (eg > 1G idk),
+            # and check for available space on the destination
             if current_install_dir and os.path.isdir(current_install_dir):
+                logger.warning(f"Moving {current_install_dir} to {self.dir} ... (this may take a while)")
                 shutil.move(current_install_dir, self.dir)
             else:
                 mkdir(self.dir)
@@ -468,7 +495,7 @@ class DatadirAppResource(AppResource):
     priority = 40
 
     default_properties = {
-        "dir": "/home/yunohost.app/__APP__",    # FIXME or choose to move this elsewhere nowadays idk...
+        "dir": "/home/yunohost.app/__APP__",
         "owner": "__APP__:rx",
         "group": "__APP__:rx",
     }
