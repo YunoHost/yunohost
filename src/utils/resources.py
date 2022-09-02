@@ -205,22 +205,49 @@ ynh_abort_if_errors
 
 class PermissionsResource(AppResource):
     """
-        is_provisioned -> main perm exists
-        is_available   -> perm urls do not conflict
+    Configure the SSO permissions/tiles. Typically, webapps are expected to have a 'main' permission mapped to '/', meaning that a tile pointing to the `$domain/$path` will be available in the SSO for users allowed to access that app.
 
-        update    -> refresh/update values for url/additional_urls/show_tile/auth/protected/... create new perms / delete any perm not listed
-        provision -> same as update?
+    Additional permissions can be created, typically to have a specific tile and/or access rules for the admin part of a webapp.
 
-        deprovision -> delete permissions
+    The list of allowed user/groups may be initialized using the content of the `init_{perm}_permission` question from the manifest, hence `init_main_permission` replaces the `is_public` question and shall contain a group name (typically, `all_users` or `visitors`).
 
-        deep_clean  -> delete permissions for any __APP__.foobar where app not in app list...
+    ##### Example:
+    ```toml
+    [resources.permissions]
+    main.url = "/"
+    # (these two previous lines should be enough in the majority of cases)
 
-        backup -> handled elsewhere by the core, should be integrated in there (dump .ldif/yml?)
-        restore -> handled by the core, should be integrated in there (restore .ldif/yml?)
+    admin.url = "/admin"
+    admin.show_tile = false
+    admin.allowed = "admins"   # Assuming the "admins" group exists (cf future developments ;))
+    ```
+
+    ##### Properties (for each perm name):
+    - `url`: The relative URI corresponding to this permission. Typically `/` or `/something`. This property may be omitted for non-web permissions.
+    - `show_tile`: (default: `true` if `url` is defined) Wether or not a tile should be displayed for that permission in the user portal
+    - `allowed`: (default: nobody) The group initially allowed to access this perm, if `init_{perm}_permission` is not defined in the manifest questions. Note that the admin may tweak who is allowed/unallowed on that permission later on, this is only meant to **initialize** the permission.
+    - `auth_header`: (default: `true`) Define for the URL of this permission, if SSOwat pass the authentication header to the application. Default is true
+    - `protected`: (default: `false`) Define if this permission is protected. If it is protected the administrator won't be able to add or remove the visitors group of this permission. Defaults to 'false'.
+    - `additional_urls`: (default: none) List of additional URL for which access will be allowed/forbidden
+
+    ##### Provision/Update:
+    - Delete any permissions that may exist and be related to this app yet is not declared anymore
+    - Loop over the declared permissions and create them if needed or update them with the new values (FIXME : update ain't implemented yet >_>)
+
+    ##### Deprovision:
+    - Delete all permission related to this app
+
+    ##### Legacy management:
+    - Legacy `is_public` setting will be deleted if it exists
     """
 
+    # Notes for future ?
+    # deep_clean  -> delete permissions for any __APP__.foobar where app not in app list...
+    # backup -> handled elsewhere by the core, should be integrated in there (dump .ldif/yml?)
+    # restore -> handled by the core, should be integrated in there (restore .ldif/yml?)
+
     type = "permissions"
-    priority = 10
+    priority = 80
 
     default_properties = {
     }
@@ -319,19 +346,32 @@ class PermissionsResource(AppResource):
 
 class SystemuserAppResource(AppResource):
     """
-        is_provisioned -> user __APP__ exists
-        is_available   -> user and group __APP__ doesn't exists
+    Provision a system user to be used by the app. The username is exactly equal to the app id
 
-        provision -> create user
-        update    -> update values for home / shell / groups
+    ##### Example:
+    ```toml
+    [resources.system_user]
+    # (empty - defaults are usually okay)
+    ```
 
-        deprovision -> delete user
+    ##### Properties:
+    - `allow_ssh`: (default: False) Adds the user to the ssh.app group, allowing SSH connection via this user
+    - `allow_sftp`: (defalt: False) Adds the user to the sftp.app group, allowing SFTP connection via this user
 
-        deep_clean  -> uuuuh ? delete any user that could correspond to an app x_x ?
+    ##### Provision/Update:
+    - will create the system user if it doesn't exists yet
+    - will add/remove the ssh/sftp.app groups
 
-        backup -> nothing
-        restore -> provision
+    ##### Deprovision:
+    - deletes the user and group
     """
+
+    # Notes for future?
+    #
+    # deep_clean  -> uuuuh ? delete any user that could correspond to an app x_x ?
+    #
+    # backup -> nothing
+    # restore -> provision
 
     type = "system_user"
     priority = 20
@@ -340,6 +380,9 @@ class SystemuserAppResource(AppResource):
         "allow_ssh": False,
         "allow_sftp": False
     }
+
+    # FIXME : wat do regarding ssl-cert, multimedia
+    # FIXME : wat do about home dir
 
     allow_ssh: bool = False
     allow_sftp: bool = False
@@ -362,8 +405,13 @@ class SystemuserAppResource(AppResource):
 
         if self.allow_ssh:
             groups.add("ssh.app")
+        elif "ssh.app" in groups:
+            groups.remove("ssh.app")
+
         if self.allow_sftp:
             groups.add("sftp.app")
+        elif "sftp.app" in groups:
+            groups.remove("sftp.app")
 
         os.system(f"usermod -G {','.join(groups)} {self.app}")
 
@@ -382,33 +430,41 @@ class SystemuserAppResource(AppResource):
         # FIXME : better logging and error handling, add stdout/stderr from the deluser/delgroup commands...
 
 
-#    # Check if the user exists on the system
-#if os.system(f"getent passwd {self.username} &>/dev/null") != 0:
-#    if ynh_system_user_exists "$username"; then
-#        deluser $username
-#    fi
-#    # Check if the group exists on the system
-#if os.system(f"getent group {self.username} &>/dev/null") != 0:
-#    if ynh_system_group_exists "$username"; then
-#        delgroup $username
-#    fi
-#
-
 class InstalldirAppResource(AppResource):
     """
-        is_provisioned -> setting install_dir exists + /dir/ exists
-        is_available   -> /dir/ doesn't exists
+    Creates a directory to be used by the app as the installation directory, typically where the app sources and assets are located. The corresponding path is stored in the settings as `install_dir`
 
-        provision -> create setting + create dir
-        update    -> update perms ?
+    ##### Example:
+    ```toml
+    [resources.install_dir]
+    # (empty - defaults are usually okay)
+    ```
 
-        deprovision -> delete dir + delete setting
+    ##### Properties:
+    - `dir`: (default: `/var/www/__APP__`) The full path of the install dir
+    - `owner`: (default: `__APP__:rx`) The owner (and owner permissions) for the install dir
+    - `group`: (default: `__APP__:rx`) The group (and group permissions) for the install dir
 
-        deep_clean  -> uuuuh ? delete any dir in /var/www/ that would not correspond to an app x_x ?
+    ##### Provision/Update:
+    - during install, the folder will be deleted if it already exists (FIXME: is this what we want?)
+    - if the dir path changed and a folder exists at the old location, the folder will be `mv`'ed to the new location
+    - otherwise, creates the directory if it doesn't exists yet
+    - (re-)apply permissions (only on the folder itself, not recursively)
+    - save the value of `dir` as `install_dir` in the app's settings, which can be then used by the app scripts (`$install_dir`) and conf templates (`__INSTALL_DIR__`)
 
-        backup -> cp install dir
-        restore -> cp install dir
+    ##### Deprovision:
+    - recursively deletes the directory if it exists
+
+    ##### Legacy management:
+    - In the past, the setting was called `final_path`. The code will automatically rename it as `install_dir`.
+    - As explained in the 'Provision/Update' section, the folder will also be moved if the location changed
+
     """
+
+    # Notes for future?
+    # deep_clean  -> uuuuh ? delete any dir in /var/www/ that would not correspond to an app x_x ?
+    # backup -> cp install dir
+    # restore -> cp install dir
 
     type = "install_dir"
     priority = 30
@@ -477,19 +533,40 @@ class InstalldirAppResource(AppResource):
 
 class DatadirAppResource(AppResource):
     """
-        is_provisioned -> setting data_dir exists + /dir/ exists
-        is_available   -> /dir/ doesn't exists
+    Creates a directory to be used by the app as the data store directory, typically where the app multimedia or large assets added by users are located. The corresponding path is stored in the settings as `data_dir`. This resource behaves very similarly to install_dir.
 
-        provision -> create setting + create dir
-        update    -> update perms ?
+    ##### Example:
+    ```toml
+    [resources.data_dir]
+    # (empty - defaults are usually okay)
+    ```
 
-        deprovision -> (only if purge enabled...) delete dir + delete setting
+    ##### Properties:
+    - `dir`: (default: `/home/yunohost.app/__APP__`) The full path of the data dir
+    - `owner`: (default: `__APP__:rx`) The owner (and owner permissions) for the data dir
+    - `group`: (default: `__APP__:rx`) The group (and group permissions) for the data dir
 
-        deep_clean  -> zblerg idk nothing
+    ##### Provision/Update:
+    - if the dir path changed and a folder exists at the old location, the folder will be `mv`'ed to the new location
+    - otherwise, creates the directory if it doesn't exists yet
+    - (re-)apply permissions (only on the folder itself, not recursively)
+    - save the value of `dir` as `data_dir` in the app's settings, which can be then used by the app scripts (`$data_dir`) and conf templates (`__DATA_DIR__`)
 
-        backup -> cp data dir ? (if not backup_core_only)
-        restore -> cp data dir ? (if in backup)
+    ##### Deprovision:
+    - recursively deletes the directory if it exists
+    - FIXME: this should only be done if the PURGE option is set
+    - FIXME: this should also delete the corresponding setting
+
+    ##### Legacy management:
+    - In the past, the setting may have been called `datadir`. The code will automatically rename it as `data_dir`.
+    - As explained in the 'Provision/Update' section, the folder will also be moved if the location changed
+
     """
+
+    # notes for future ?
+    # deep_clean  -> zblerg idk nothing
+    # backup -> cp data dir ? (if not backup_core_only)
+    # restore -> cp data dir ? (if in backup)
 
     type = "data_dir"
     priority = 40
@@ -510,10 +587,12 @@ class DatadirAppResource(AppResource):
         assert self.owner.strip()
         assert self.group.strip()
 
-        current_data_dir = self.get_setting("data_dir")
+        current_data_dir = self.get_setting("data_dir") or self.get_setting("datadir")
 
         if not os.path.isdir(self.dir):
             # Handle case where install location changed, in which case we shall move the existing install dir
+            # FIXME: same as install_dir, is this what we want ?
+            # FIXME: What if people manually mved the data dir and changed the setting value and dont want the folder to be moved ? x_x
             if current_data_dir and os.path.isdir(current_data_dir):
                 shutil.move(current_data_dir, self.dir)
             else:
@@ -529,6 +608,7 @@ class DatadirAppResource(AppResource):
         chown(self.dir, owner, group)
 
         self.set_setting("data_dir", self.dir)
+        self.delete_setting("datadir")  # Legacy
 
     def deprovision(self, context: Dict={}):
 
@@ -543,49 +623,36 @@ class DatadirAppResource(AppResource):
         # FIXME : in fact we should delete settings to be consistent
 
 
-#
-#class SourcesAppResource(AppResource):
-#    """
-#        is_provisioned -> (if pre_download,) cache exists with appropriate checksum
-#        is_available   -> curl HEAD returns 200
-#
-#        update    -> none?
-#        provision ->  full download + check checksum
-#
-#        deprovision -> remove cache for __APP__ ?
-#
-#        deep_clean  -> remove all cache
-#
-#        backup -> nothing
-#        restore -> nothing
-#    """
-#
-#    type = "sources"
-#
-#    default_properties = {
-#        "main": {"url": "?", "sha256sum": "?", "predownload": True}
-#    }
-#
-#    def provision_or_update(self, context: Dict={}):
-#        # FIXME
-#        return
-#
-
 class AptDependenciesAppResource(AppResource):
     """
-        is_provisioned -> package __APP__-ynh-deps exists  (ideally should check the Depends: but hmgn)
-        is_available   -> True? idk
+    Create a virtual package in apt, depending on the list of specified packages that the app needs. The virtual packages is called `$app-ynh-deps` (with `_` being replaced by `-` in the app name, see `ynh_install_app_dependencies`)
 
-        update -> update deps on __APP__-ynh-deps
-        provision -> create/update deps on __APP__-ynh-deps
+    ##### Example:
+    ```toml
+    [resources.apt]
+    packages = "nyancat, lolcat, sl"
 
-        deprovision -> remove __APP__-ynh-deps (+autoremove?)
+    # (this part is optional and corresponds to the legacy ynh_install_extra_app_dependencies helper)
+    extras.yarn.repo = "deb https://dl.yarnpkg.com/debian/ stable main"
+    extras.yarn.key = "https://dl.yarnpkg.com/debian/pubkey.gpg"
+    extras.yarn.packages = "yarn"
+    ```
 
-        deep_clean  -> remove any __APP__-ynh-deps for app not in app list
+    ##### Properties:
+    - `packages`: Comma-separated list of packages to be installed via `apt`
+    - `extras`: A dict of (repo, key, packages) corresponding to "extra" repositories to fetch dependencies from
 
-        backup -> nothing
-        restore = provision
+    ##### Provision/Update:
+    - The code literally calls the bash helpers `ynh_install_app_dependencies` and `ynh_install_extra_app_dependencies`, similar to what happens in v1.
+
+    ##### Deprovision:
+    - The code literally calls the bash helper `ynh_remove_app_dependencies`
     """
+
+    # Notes for future?
+    # deep_clean  -> remove any __APP__-ynh-deps for app not in app list
+    # backup -> nothing
+    # restore = provision
 
     type = "apt"
     priority = 50
@@ -596,7 +663,7 @@ class AptDependenciesAppResource(AppResource):
     }
 
     packages: List = []
-    extras: Dict[str: Any] = {}
+    extras: Dict[str, Dict[str, str]] = {}
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
 
@@ -611,6 +678,7 @@ class AptDependenciesAppResource(AppResource):
         script = [f"ynh_install_app_dependencies {self.packages}"]
         for repo, values in self.extras.items():
             script += [f"ynh_install_extra_app_dependencies --repo='{values['repo']}' --key='{values['key']}' --package='{values['packages']}'"]
+            # FIXME : we're feeding the raw value of values['packages'] to the helper .. if we want to be consistent, may they should be comma-separated, though in the majority of cases, only a single package is installed from an extra repo..
 
         self._run_script("provision_or_update", '\n'.join(script))
 
@@ -621,19 +689,43 @@ class AptDependenciesAppResource(AppResource):
 
 class PortsResource(AppResource):
     """
-        is_provisioned -> port setting exists and is not the port used by another app (ie not in another app setting)
-        is_available   -> true
+    Book port(s) to be used by the app, typically to be used to the internal reverse-proxy between nginx and the app process.
 
-        update    -> true
-        provision -> find a port not used by any app
+    Note that because multiple ports can be booked, each properties is prefixed by the name of the port. `main` is a special name and will correspond to the setting `$port`, whereas for example `xmpp_client` will correspond to the setting `$port_xmpp_client`.
 
-        deprovision -> delete the port setting
+    ##### Example:
+    ```toml
+    [resources.port]
+    # (empty should be fine for most apps ... though you can customize stuff if absolutely needed)
 
-        deep_clean  -> ?
+    main.default = 12345    # if you really want to specify a prefered value .. but shouldnt matter in the majority of cases
 
-        backup -> nothing (backup port setting)
-        restore -> nothing (restore port setting)
+    xmpp_client.default = 5222  # if you need another port, pick a name for it (here, "xmpp_client")
+    xmpp_client.exposed = "TCP" # here, we're telling that the port needs to be publicly exposed on TCP on the firewall
+    ```
+
+    ##### Properties (for every port name):
+    - `default`: The prefered value for the port. If this port is already being used by another process right now, or is booked in another app's setting, the code will increment the value until it finds a free port and store that value as the setting. If no value is specified, a random value between 10000 and 60000 is used.
+    - `exposed`: (default: `false`) Wether this port should be opened on the firewall and be publicly reachable. This should be kept to `false` for the majority of apps than only need a port for internal reverse-proxying! Possible values: `false`, `true`(=`Both`), `Both`, `TCP`, `UDP`. This will result in the port being opened on the firewall, and the diagnosis checking that a program answers on that port.  (FIXME: this is not implemented yet)
+    - `fixed`: (default: `false`) Tells that the app absolutely needs the specific value provided in `default`, typically because it's needed for a specific protocol (FIXME: this is not implemented yet)
+
+    ##### Provision/Update (for every port name):
+    - If not already booked, look for a free port, starting with the `default` value (or a random value between 10000 and 60000 if no `default` set)
+    - (FIXME) If `exposed` is not `false`, open the port in the firewall accordingly - otherwise make sure it's closed.
+    - The value of the port is stored in the `$port` setting for the `main` port, or `$port_NAME` for other `NAME`s
+
+    ##### Deprovision:
+    - (FIXME) Close the ports on the firewall
+    - Deletes all the port settings
+
+    ##### Legacy management:
+    - In the past, some settings may have been named `NAME_port` instead of `port_NAME`, in which case the code will automatically rename the old setting.
     """
+
+    # Notes for future?
+    #deep_clean  -> ?
+    #backup -> nothing (backup port setting)
+    #restore -> nothing (restore port setting)
 
     type = "ports"
     priority = 70
@@ -702,24 +794,44 @@ class PortsResource(AppResource):
 
 class DatabaseAppResource(AppResource):
     """
-        is_provisioned -> setting db_user, db_name, db_pwd exists
-        is_available   -> db doesn't already exists ( ... also gotta make sure that mysql / postgresql is indeed installed ... or will be after apt provisions it)
+    Initialize a database, either using MySQL or Postgresql. Relevant DB infos are stored in settings `$db_name`, `$db_user` and `$db_pwd`.
 
-        provision -> setup the db + init the setting
-        update    -> ??
+    NB: only one DB can be handled in such a way (is there really an app that would need two completely different DB ?...)
 
-        deprovision -> delete the db
+    NB2: no automagic migration will happen in an suddenly change `type` from `mysql` to `postgresql` or viceversa in its life
 
-        deep_clean  -> ... idk look into any db name that would not be related to any app ...
+    ##### Example:
+    ```toml
+    [resources.database]
+    type = "mysql"   # or : "postgresql". Only these two values are supported
+    ```
 
-        backup -> dump db
-        restore -> setup + inject db dump
+    ##### Properties:
+    - `type`: The database type, either `mysql` or `postgresql`
+
+    ##### Provision/Update:
+    - (Re)set the `$db_name` and `$db_user` settings with the sanitized app name (replacing `-` and `.` with `_`)
+    - If `$db_pwd` doesn't already exists, pick a random database password and store it in that setting
+    - If the database doesn't exists yet, create the SQL user and DB using `ynh_mysql_create_db` or `ynh_psql_create_db`.
+
+    ##### Deprovision:
+    - Drop the DB using `ynh_mysql_remove_db` or `ynh_psql_remove_db`
+    - Deletes the `db_name`, `db_user` and `db_pwd` settings
+
+    ##### Legacy management:
+    - In the past, the sql passwords may have been named `mysqlpwd` or `psqlpwd`, in which case it will automatically be renamed as `db_pwd`
     """
 
+    # Notes for future?
+    # deep_clean  -> ... idk look into any db name that would not be related to any app ...
+    # backup -> dump db
+    # restore -> setup + inject db dump
+
     type = "database"
+    priority = 90
 
     default_properties = {
-        "type": None,
+        "type": None,   # FIXME: eeeeeeeh is this really a good idea considering 'type' is supposed to be the resource type x_x
     }
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
