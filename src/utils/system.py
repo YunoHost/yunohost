@@ -21,7 +21,6 @@
 import re
 import os
 import logging
-from typing import Union
 
 from moulinette.utils.process import check_output
 from yunohost.utils.error import YunohostError
