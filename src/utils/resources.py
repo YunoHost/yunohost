@@ -22,7 +22,7 @@ import os
 import copy
 import shutil
 import random
-from typing import Optional, Dict, List, Union, Any, Mapping, Callable
+from typing import Dict, Any
 
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
