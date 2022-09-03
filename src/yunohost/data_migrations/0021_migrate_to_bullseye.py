@@ -219,7 +219,7 @@ class MyMigration(Migration):
             os.system("perl -i~ -0777 -pe 's/(Package: .*-ynh-deps\\n(.+:.+\\n)+Depends:.*)(build-essential, ?)(.*)/$1$4/g' /var/lib/dpkg/status")
             self.apt_install("build-essential-")  # Note the '-' suffix to mean that we actually want to remove the packages
             os.system("LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt autoremove --assume-yes")
-            self.apt_install("gcc-8- libgcc-8-dev-")  # Note the '-' suffix to mean that we actually want to remove the packages
+            self.apt_install("gcc-8- libgcc-8-dev- equivs")  # Note the '-' suffix to mean that we actually want to remove the packages .. we also explicitly add 'equivs' to the list because sometimes apt is dumb and will derp about it
 
         #
         # Main upgrade
