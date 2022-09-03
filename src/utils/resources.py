@@ -32,7 +32,6 @@ from moulinette.utils.filesystem import (
 )
 
 from yunohost.utils.error import YunohostError
-from yunohost.hook import hook_exec
 
 logger = getActionLogger("yunohost.app_resources")
 
@@ -127,7 +126,7 @@ class AppResourceManager:
 class AppResource:
 
     type: str = ""
-    default_properties: Dict[str, Any] = None
+    default_properties: Dict[str, Any] = {}
 
     def __init__(self, properties: Dict[str, Any], app: str, manager=None):
 
@@ -177,7 +176,14 @@ ynh_abort_if_errors
         write_to_file(script_path, script)
 
         from yunohost.log import OperationLogger
-        operation_logger = OperationLogger._instances[-1],  # FIXME : this is an ugly hack :(
+
+        if OperationLogger._instances:
+            # FIXME ? : this is an ugly hack :(
+            operation_logger = OperationLogger._instances[-1]
+        else:
+            operation_logger = OperationLogger("resource_snippet", [("app", self.app)], env=env_)
+            operation_logger.start()
+
         try:
             (
                 call_failed,
@@ -249,7 +255,7 @@ class PermissionsResource(AppResource):
     type = "permissions"
     priority = 80
 
-    default_properties = {
+    default_properties: Dict[str, Any] = {
     }
 
     default_perm_properties: Dict[str, Any] = {
@@ -376,7 +382,7 @@ class SystemuserAppResource(AppResource):
     type = "system_user"
     priority = 20
 
-    default_properties = {
+    default_properties: Dict[str, Any] = {
         "allow_ssh": False,
         "allow_sftp": False
     }
@@ -469,7 +475,7 @@ class InstalldirAppResource(AppResource):
     type = "install_dir"
     priority = 30
 
-    default_properties = {
+    default_properties: Dict[str, Any] = {
         "dir": "/var/www/__APP__",
         "owner": "__APP__:rx",
         "group": "__APP__:rx",
@@ -571,7 +577,7 @@ class DatadirAppResource(AppResource):
     type = "data_dir"
     priority = 40
 
-    default_properties = {
+    default_properties: Dict[str, Any] = {
         "dir": "/home/yunohost.app/__APP__",
         "owner": "__APP__:rx",
         "group": "__APP__:rx",
@@ -657,7 +663,7 @@ class AptDependenciesAppResource(AppResource):
     type = "apt"
     priority = 50
 
-    default_properties = {
+    default_properties: Dict[str, Any] = {
         "packages": [],
         "extras": {}
     }
@@ -730,7 +736,7 @@ class PortsResource(AppResource):
     type = "ports"
     priority = 70
 
-    default_properties = {
+    default_properties: Dict[str, Any] = {
     }
 
     default_port_properties = {
@@ -830,7 +836,7 @@ class DatabaseAppResource(AppResource):
     type = "database"
     priority = 90
 
-    default_properties = {
+    default_properties: Dict[str, Any] = {
         "type": None,   # FIXME: eeeeeeeh is this really a good idea considering 'type' is supposed to be the resource type x_x
     }
 
