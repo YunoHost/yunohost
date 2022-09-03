@@ -96,6 +96,9 @@ class MyMigration(Migration):
         logger.info(m18n.n("migration_0021_patching_sources_list"))
         self.patch_apt_sources_list()
 
+        # Stupid OVH has some repo configured which dont work with bullseye and break apt ...
+        os.system("sudo rm -f /etc/apt/sources.list.d/ovh-*.list")
+
         # Force add sury if it's not there yet
         # This is to solve some weird issue with php-common breaking php7.3-common,
         # hence breaking many php7.3-deps
@@ -106,9 +109,17 @@ class MyMigration(Migration):
             open("/etc/apt/sources.list.d/extra_php_version.list", "w").write(
                 "deb https://packages.sury.org/php/ bullseye main"
             )
-            os.system(
-                'wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"'
-            )
+
+        # Add Sury key even if extra_php_version.list was already there,
+        # because some old system may be using an outdated key not valid for Bullseye
+        # and that'll block the migration
+        os.system(
+            'wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"'
+        )
+
+        # Remove legacy, duplicated sury entry if it exists
+        if os.path.exists("/etc/apt/sources.list.d/sury.list"):
+            os.system("rm -rf /etc/apt/sources.list.d/sury.list")
 
         #
         # Get requirements of the different venvs from python apps
@@ -225,8 +236,8 @@ class MyMigration(Migration):
                 "LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt autoremove --assume-yes"
             )
             self.apt_install(
-                "gcc-8- libgcc-8-dev-"
-            )  # Note the '-' suffix to mean that we actually want to remove the packages
+                "gcc-8- libgcc-8-dev- equivs"
+            )  # Note the '-' suffix to mean that we actually want to remove the packages .. we also explicitly add 'equivs' to the list because sometimes apt is dumb and will derp about it
 
         #
         # Main upgrade
