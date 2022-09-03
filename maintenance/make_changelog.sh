@@ -5,7 +5,9 @@ REPO_URL=$(git remote get-url origin)
 ME=$(git config --global --get user.name)
 EMAIL=$(git config --global --get user.email)
 
-LAST_RELEASE=$(git tag --list 'debian/11.*' | tail -n 1)
+LAST_RELEASE=$(git tag --list 'debian/11.*'  --sort="v:refname" | tail -n 1)
+
+echo $LAST_RELEASE
 
 echo "$REPO ($VERSION) $RELEASE; urgency=low"
 echo ""
@@ -23,7 +25,7 @@ TRANSLATIONS=$(git log $LAST_RELEASE... -n 10000 --pretty=format:"%s"  \
 
 echo ""
 CONTRIBUTORS=$(git logc $LAST_RELEASE... -n 10000 --pretty=format:"%an" \
-               | sort | uniq  | grep -v "$ME" \
+               | sort | uniq  | grep -v "$ME" | grep -v 'yunohost-bot' | grep -vi 'weblate' \
                | tr '\n' ', ' | sed -e 's/,$//g' -e 's/,/, /g')
 [[ -z "$CONTRIBUTORS" ]] || echo "  Thanks to all contributors <3 ! ($CONTRIBUTORS)"
 echo ""

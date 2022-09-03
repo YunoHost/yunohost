@@ -1,3 +1,16 @@
+yunohost (11.0.9.13) stable; urgency=low
+
+  - [fix] defaultapp: domain may not exist in app_map dict output (efe0e601)
+  - [fix] regenconf: fix a stupid issue with slapcat displaying an error message because grep -q breaks the pipe (503b9031)
+  - [fix] regenconf: add a timeout to curl inside dnsmasq regenconf to prevent being stuck too long when no network on the machine (b77e8114)
+  - [fix] ynh_delete_file_checksum with non-existing option in helpers/config ([#1501](https://github.com/YunoHost/yunohost/pull/1501))
+  - [i18n] Translations updated for Basque, Galician, Slovak
+
+  Thanks to all contributors <3 ! (José M, Jose Riha, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 03 Sep 2022 23:27:56 +0200
+
+
 yunohost (11.0.9.12) stable; urgency=low
 
   - [fix] postinstall: check all partitions (not only physical ones) ([#1497](https://github.com/YunoHost/yunohost/pull/1497))
