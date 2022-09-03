@@ -1,3 +1,10 @@
+yunohost (4.4.2.14) stable; urgency=low
+
+  - bullseye migration: remove derpy OVH repo... (76014920)
+  - bullseye migration: improve autofix procedure for the libc6 hell (02b3a138)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 03 Sep 2022 23:19:08 +0200
+
 yunohost (4.4.2.13) stable; urgency=low
 
   - [fix] bullseye migration: a few annoying issues related to Sury (b5fabc87)
