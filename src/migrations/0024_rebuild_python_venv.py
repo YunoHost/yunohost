@@ -23,13 +23,16 @@ def extract_app_from_venv_path(venv_path):
 
 def _get_all_venvs(dir, level=0, maxlevel=3):
     """
-        Returns the list of all python virtual env directories recursively
+    Returns the list of all python virtual env directories recursively
 
-        Arguments:
-            dir - the directory to scan in
-            maxlevel - the depth of the recursion
-            level - do not edit this, used as an iterator
+    Arguments:
+        dir - the directory to scan in
+        maxlevel - the depth of the recursion
+        level - do not edit this, used as an iterator
     """
+    if not os.path.exists(dir):
+        return []
+
     # Using os functions instead of glob, because glob doesn't support hidden
     # folders, and we need recursion with a fixed depth
     result = []
@@ -37,7 +40,9 @@ def _get_all_venvs(dir, level=0, maxlevel=3):
         path = os.path.join(dir, file)
         if os.path.isdir(path):
             activatepath = os.path.join(path, "bin", "activate")
-            if os.path.isfile(activatepath) and os.path.isfile(path + VENV_REQUIREMENTS_SUFFIX):
+            if os.path.isfile(activatepath) and os.path.isfile(
+                path + VENV_REQUIREMENTS_SUFFIX
+            ):
                 result.append(path)
                 continue
             if level < maxlevel:
@@ -50,6 +55,7 @@ class MyMigration(Migration):
     After the update, recreate a python virtual env based on the previously
     generated requirements file
     """
+
     ignored_python_apps = [
         "calibreweb",
         "django-for-runners",
@@ -62,7 +68,8 @@ class MyMigration(Migration):
         "pgadmin",
         "tracim",
         "synapse",
-        "weblate"
+        "matrix-synapse",
+        "weblate",
     ]
 
     dependencies = ["migrate_to_bullseye"]
@@ -70,7 +77,9 @@ class MyMigration(Migration):
 
     def is_pending(self):
         if not self.state:
-            self.state = tools_migrations_state()["migrations"].get("0024_rebuild_python_venv", "pending")
+            self.state = tools_migrations_state()["migrations"].get(
+                "0024_rebuild_python_venv", "pending"
+            )
         return self.state == "pending"
 
     @property
@@ -90,6 +99,10 @@ class MyMigration(Migration):
         if not self.is_pending():
             return None
 
+        # Disclaimer should be empty if in auto, otherwise it excepts the --accept-disclaimer option during debian postinst
+        if self.mode == "auto":
+            return None
+
         ignored_apps = []
         rebuild_apps = []
 
@@ -101,22 +114,32 @@ class MyMigration(Migration):
             app_corresponding_to_venv = extract_app_from_venv_path(venv)
 
             # Search for ignore apps
-            if any(app_corresponding_to_venv.startswith(app) for app in self.ignored_python_apps):
+            if any(
+                app_corresponding_to_venv.startswith(app)
+                for app in self.ignored_python_apps
+            ):
                 ignored_apps.append(app_corresponding_to_venv)
             else:
                 rebuild_apps.append(app_corresponding_to_venv)
 
         msg = m18n.n("migration_0024_rebuild_python_venv_disclaimer_base")
         if rebuild_apps:
-            msg += "\n\n" + m18n.n("migration_0024_rebuild_python_venv_disclaimer_rebuild",
-                                   rebuild_apps="\n    - " + "\n    - ".join(rebuild_apps))
+            msg += "\n\n" + m18n.n(
+                "migration_0024_rebuild_python_venv_disclaimer_rebuild",
+                rebuild_apps="\n    - " + "\n    - ".join(rebuild_apps),
+            )
         if ignored_apps:
-            msg += "\n\n" + m18n.n("migration_0024_rebuild_python_venv_disclaimer_ignored",
-                                   ignored_apps="\n    - " + "\n    - ".join(ignored_apps))
+            msg += "\n\n" + m18n.n(
+                "migration_0024_rebuild_python_venv_disclaimer_ignored",
+                ignored_apps="\n    - " + "\n    - ".join(ignored_apps),
+            )
 
         return msg
 
     def run(self):
+
+        if self.mode == "auto":
+            return
 
         venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
         for venv in venvs:
@@ -124,25 +147,43 @@ class MyMigration(Migration):
             app_corresponding_to_venv = extract_app_from_venv_path(venv)
 
             # Search for ignore apps
-            if any(app_corresponding_to_venv.startswith(app) for app in self.ignored_python_apps):
+            if any(
+                app_corresponding_to_venv.startswith(app)
+                for app in self.ignored_python_apps
+            ):
                 rm(venv + VENV_REQUIREMENTS_SUFFIX)
-                logger.info(m18n.n("migration_0024_rebuild_python_venv_broken_app", app=app_corresponding_to_venv))
+                logger.info(
+                    m18n.n(
+                        "migration_0024_rebuild_python_venv_broken_app",
+                        app=app_corresponding_to_venv,
+                    )
+                )
                 continue
 
-            logger.info(m18n.n("migration_0024_rebuild_python_venv_in_progress", app=app_corresponding_to_venv))
+            logger.info(
+                m18n.n(
+                    "migration_0024_rebuild_python_venv_in_progress",
+                    app=app_corresponding_to_venv,
+                )
+            )
 
             # Recreate the venv
             rm(venv, recursive=True)
             callbacks = (
                 lambda l: logger.debug("+ " + l.rstrip() + "\r"),
-                lambda l: logger.warning(l.rstrip())
+                lambda l: logger.warning(l.rstrip()),
             )
             call_async_output(["python", "-m", "venv", venv], callbacks)
-            status = call_async_output([
-                f"{venv}/bin/pip", "install", "-r",
-                venv + VENV_REQUIREMENTS_SUFFIX], callbacks)
+            status = call_async_output(
+                [f"{venv}/bin/pip", "install", "-r", venv + VENV_REQUIREMENTS_SUFFIX],
+                callbacks,
+            )
             if status != 0:
-                logger.error(m18n.n("migration_0024_rebuild_python_venv_failed",
-                                    app=app_corresponding_to_venv))
+                logger.error(
+                    m18n.n(
+                        "migration_0024_rebuild_python_venv_failed",
+                        app=app_corresponding_to_venv,
+                    )
+                )
             else:
                 rm(venv + VENV_REQUIREMENTS_SUFFIX)

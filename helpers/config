@@ -77,7 +77,7 @@ _ynh_app_config_apply_one() {
             if [[ "${!short_setting}" == "" ]]; then
                 ynh_backup_if_checksum_is_different --file="$bind_file"
                 ynh_secure_remove --file="$bind_file"
-                ynh_delete_file_checksum --file="$bind_file" --update_only
+                ynh_delete_file_checksum --file="$bind_file"
                 ynh_print_info --message="File '$bind_file' removed"
             else
                 ynh_backup_if_checksum_is_different --file="$bind_file"

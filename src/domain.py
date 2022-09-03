@@ -460,7 +460,7 @@ class DomainConfigPanel(ConfigPanel):
         ):
             from yunohost.app import app_ssowatconf, app_map
 
-            if "/" in app_map(raw=True)[self.entity]:
+            if "/" in app_map(raw=True).get(self.entity, {}):
                 raise YunohostValidationError(
                     "app_make_default_location_already_used",
                     app=self.future_values["default_app"],

@@ -73,7 +73,7 @@ def tools_adminpw(new_password, check_strength=True):
     from yunohost.user import _hash_user_password
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
-        assert_password_is_compatible
+        assert_password_is_compatible,
     )
     import spwd
 
@@ -203,7 +203,7 @@ def tools_postinstall(
     from yunohost.utils.dns import is_yunohost_dyndns_domain
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
-        assert_password_is_compatible
+        assert_password_is_compatible,
     )
     from yunohost.domain import domain_main_domain
     import psutil
@@ -219,7 +219,9 @@ def tools_postinstall(
         )
 
     # Check there's at least 10 GB on the rootfs...
-    disk_partitions = sorted(psutil.disk_partitions(), key=lambda k: k.mountpoint)
+    disk_partitions = sorted(
+        psutil.disk_partitions(all=True), key=lambda k: k.mountpoint
+    )
     main_disk_partitions = [d for d in disk_partitions if d.mountpoint in ["/", "/var"]]
     main_space = sum(
         psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions
@@ -538,6 +540,8 @@ def _apt_log_line_is_relevant(line):
         "==> Keeping old config file as default.",
         "is a disabled or a static unit",
         " update-rc.d: warning: start and stop actions are no longer supported; falling back to defaults",
+        "insserv: warning: current stop runlevel",
+        "insserv: warning: current start runlevel",
     ]
     return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
 

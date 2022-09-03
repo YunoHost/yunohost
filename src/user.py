@@ -145,7 +145,7 @@ def user_create(
     from yunohost.hook import hook_callback
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
-        assert_password_is_compatible
+        assert_password_is_compatible,
     )
     from yunohost.utils.ldap import _get_ldap_interface
 
@@ -371,7 +371,7 @@ def user_update(
     from yunohost.app import app_ssowatconf
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
-        assert_password_is_compatible
+        assert_password_is_compatible,
     )
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_callback

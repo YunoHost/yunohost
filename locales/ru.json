@@ -327,12 +327,13 @@
     "permission_already_up_to_date": "Разрешение не было обновлено, потому что запросы на добавление/удаление уже соответствуют текущему состоянию.",
     "group_cannot_edit_primary_group": "Группа '{group}' не может быть отредактирована вручную. Это основная группа, предназначенная для содержания только одного конкретного пользователя.",
     "log_app_remove": "Удалите приложение '{}'",
-    "not_enough_disk_space": "Недостаточно свободного места в '{путь}'",
+    "not_enough_disk_space": "Недостаточно свободного места в '{path}'",
     "pattern_email_forward": "Должен быть корректный адрес электронной почты, символ '+' допустим (например, someone+tag@example.com)",
     "permission_deletion_failed": "Не удалось удалить разрешение '{permission}': {error}",
     "global_settings_setting_ssh_port": "SSH порт",
     "global_settings_setting_webadmin_allowlist_help": "IP-адреса, разрешенные для доступа к веб-интерфейсу администратора. Разделенные запятыми.",
     "global_settings_setting_webadmin_allowlist_enabled_help": "Разрешите доступ к веб-интерфейсу администратора только некоторым IP-адресам.",
     "global_settings_setting_ssh_allow_deprecated_dsa_hostkey_help": "Разрешить использование (устаревшего) ключа хоста DSA для конфигурации демона SSH",
-    "global_settings_setting_smtp_allow_ipv6_help": "Разрешить использование IPv6 для получения и отправки почты"
+    "global_settings_setting_smtp_allow_ipv6_help": "Разрешить использование IPv6 для получения и отправки почты",
+    "permission_deletion_failed": "Не удалось удалить разрешение '{permission}': {error}"
 }

@@ -584,7 +584,7 @@
     "user_import_nothing_to_do": "Ningunha usuaria precisa ser importada",
     "user_import_partial_failed": "A operación de importación de usuarias fallou parcialmente",
     "diagnosis_apps_deprecated_practices": "A versión instalada desta app aínda utiliza algunha das antigas prácticas de empaquetado xa abandonadas. Deberías considerar actualizala.",
-    "diagnosis_apps_outdated_ynh_requirement": "A versión instalada desta app só require yunohost >= 2.x, que normalmente indica que non está ao día coas prácticas recomendadas de empaquetado e asistentes. Deberías considerar actualizala.",
+    "diagnosis_apps_outdated_ynh_requirement": "A versión instalada desta app só require yunohost >= 2.x ou 3.x, esto normalmente indica que non está ao día coas prácticas recomendadas de empaquetado e asistentes. Deberías considerar actualizala.",
     "user_import_success": "Usuarias importadas correctamente",
     "diagnosis_high_number_auth_failures": "Hai un alto número sospeitoso de intentos fallidos de autenticación. Deberías comprobar que fail2ban está a executarse e que está correctamente configurado, ou utiliza un porto personalizado para SSH tal como se explica en https://yunohost.org/security.",
     "user_import_bad_file": "O ficheiro CSV non ten o formato correcto e será ignorado para evitar unha potencial perda de datos",
@@ -651,7 +651,6 @@
     "migration_0021_main_upgrade": "Iniciando a actualización principal...",
     "migration_0021_still_on_buster_after_main_upgrade": "Algo fallou durante a actualización principal, o sistema semlla que aínda está en Debian Buster",
     "migration_0021_yunohost_upgrade": "Iniciando actualización compoñente core de YunoHost...",
-    "migration_0021_not_buster": "A distribución Debian actual non é Buster!",
     "migration_0021_not_enough_free_space": "Queda pouco espazo en /var/! Deberías ter polo menos 1GB libre para facer a migración.",
     "migration_0021_problematic_apps_warning": "Detectamos que están instaladas estas app que poderían ser problemáticas. Semella que non foron instaladas desde o catálogo YunoHost, ou non están marcadas como que 'funcionan'. Así, non podemos garantir que seguiran funcionando ben tras a migración: {problematic_apps}",
     "migration_0021_modified_files": "Ten en conta que os seguintes ficheiros semella que foron editados manualmente e poderían ser sobrescritos durante a migración: {manually_modified_files}",
@@ -683,5 +682,13 @@
     "global_settings_setting_webadmin_allowlist_enabled_help": "Permitir que só algúns IPs accedan á webadmin.",
     "global_settings_setting_ssh_allow_deprecated_dsa_hostkey_help": "Permitir o uso de DSA hostkey (en desuso) para a configuración do demoño SSH",
     "global_settings_setting_smtp_allow_ipv6_help": "Permitir o uso de IPv6 para recibir e enviar emais",
-    "global_settings_setting_smtp_relay_enabled_help": "Servidor repetidor SMTP para enviar emails no lugar da túa instancia yunohost. É útil se estás nunha destas situacións: o teu porto 25 está bloqueado polo teu provedor ISP u VPN, se tes unha IP residencial nunha lista DUHL, se non podes configurar DNS inversa ou se este servidor non ten conexión directa a internet e queres utilizar outro para enviar os emails."
+    "global_settings_setting_smtp_relay_enabled_help": "Servidor repetidor SMTP para enviar emails no lugar da túa instancia yunohost. É útil se estás nunha destas situacións: o teu porto 25 está bloqueado polo teu provedor ISP u VPN, se tes unha IP residencial nunha lista DUHL, se non podes configurar DNS inversa ou se este servidor non ten conexión directa a internet e queres utilizar outro para enviar os emails.",
+    "migration_0024_rebuild_python_venv_broken_app": "Omitimos a app {app} porque virtualenv non se pode reconstruir para esta app. Deberías intentar resolver o problema forzando a actualización da app usando `yunohost app upgrade --force {app}`.",
+    "migration_0024_rebuild_python_venv_disclaimer_base": "Após a actualización a Debian Bullseye, algunhas aplicacións de Python precisan ser reconstruídas para usar a nova versión de Python que inclúe Debian (técnicamente: recrear o `virtualenv`). Mentras tanto, algunhas aplicacións de Python poderían non funcionar. YunoHost pode intentar reconstruir o virtualenv para algunhas, como se indica abaixo. Para outras, ou se falla a reconstrución, pode que teñas que forzar a actualización desas apps.",
+    "migration_0024_rebuild_python_venv_disclaimer_rebuild": "Vaise intentar a reconstrución de virtualenv para as seguintes apps (Nota: a operación podería tomar algún tempo!): {rebuild_apps}",
+    "migration_0024_rebuild_python_venv_disclaimer_ignored": "Non se puido reconstruir virtualenv para estas apps. Precisas forzar a súa actualización, pódelo facer desde a liña de comandos con: `yunohost app upgrade --force APP`: {ignored_apps}",
+    "migration_0024_rebuild_python_venv_in_progress": "Intentando reconstruir o Python virtualenv para `{app}`",
+    "migration_description_0024_rebuild_python_venv": "Reparar app Python após a migración a bullseye",
+    "migration_0024_rebuild_python_venv_failed": "Fallou a reconstrución de Python virtualenv para {app}. A app podería non funcionar mentras non se resolve. Deberías intentar arranxar a situación forzando a actualización desta app usando `yunohost app upgrade --force {app}`.",
+    "migration_0021_not_buster2": "A distribución actual Debian non é Buster! Se xa realizaches a migración Buster->Bullseye entón este erro indica que o proceso de migración non se realizou de xeito correcto ao 100% (se non YunoHost debería telo marcado como completado). É recomendable comprobar xunto co equipo de axuda o que aconteceu, necesitarán o rexistro **completo** da `migración`, que podes atopar na webadmin en Ferramentas > Rexistros."
 }

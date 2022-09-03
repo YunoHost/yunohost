@@ -658,5 +658,6 @@
     "global_settings_setting_webadmin_allowlist_enabled_help": "Permetti solo ad alcuni IP di accedere al webadmin.",
     "global_settings_setting_ssh_allow_deprecated_dsa_hostkey_help": "Consenti l'uso del hostkey DSA (deprecato) per la configurazione del demone SSH",
     "global_settings_setting_smtp_allow_ipv6_help": "Permetti l'utilizzo di IPv6 per ricevere e inviare mail",
-    "global_settings_setting_smtp_relay_enabled_help": "Utilizza SMTP relay per inviare mail al posto di questa instanza yunohost. Utile se sei in una di queste situazioni: la tua porta 25 è bloccata dal tuo provider ISP o VPS; hai un IP residenziale listato su DUHL; non sei puoi configurare il DNS inverso; oppure questo server non è direttamente esposto a Internet e vuoi usarne un'altro per spedire email."
+    "global_settings_setting_smtp_relay_enabled_help": "Utilizza SMTP relay per inviare mail al posto di questa instanza yunohost. Utile se sei in una di queste situazioni: la tua porta 25 è bloccata dal tuo provider ISP o VPS; hai un IP residenziale listato su DUHL; non sei puoi configurare il DNS inverso; oppure questo server non è direttamente esposto a Internet e vuoi usarne un'altro per spedire email.",
+    "domain_config_default_app": "Applicazione di default"
 }
