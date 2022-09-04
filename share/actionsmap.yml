@@ -43,7 +43,7 @@ _global:
             help: Display YunoHost packages versions
             action: callback
             callback:
-                method: yunohost.utils.packages.ynh_packages_version
+                method: yunohost.utils.system.ynh_packages_version
                 return: true
 
 #############################
@@ -1093,6 +1093,11 @@ settings:
         list:
             action_help: list all entries of the settings
             api: GET /settings
+            arguments:
+                -f:
+                    full: --full
+                    help: Display all details (meant to be used by the API)
+                    action: store_true
 
         ### settings_get()
         get:
@@ -1101,22 +1106,29 @@ settings:
             arguments:
                 key:
                     help: Settings key
-                --full:
-                    help: Show more details
+                -f:
+                    full: --full
+                    help: Display all details (meant to be used by the API)
+                    action: store_true
+                -e:
+                    full: --export
+                    help: Only export key/values, meant to be reimported using "config set --args-file"
                     action: store_true
 
         ### settings_set()
         set:
             action_help: set an entry value in the settings
-            api: POST /settings/<key>
+            api: PUT /settings
             arguments:
                 key:
-                    help: Settings key
+                    help: The question or form key 
+                    nargs: '?'
                 -v:
                     full: --value
                     help: new value
-                    extra:
-                        required: True
+                -a:
+                    full: --args
+                    help: Serialized arguments for new configuration (i.e. "mail_in=0&mail_out=0")
 
         ### settings_reset_all()
         reset-all:

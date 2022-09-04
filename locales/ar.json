@@ -120,8 +120,6 @@
     "app_upgrade_several_apps": "سوف يتم تحديث التطبيقات التالية: {apps}",
     "ask_new_domain": "نطاق جديد",
     "ask_new_path": "مسار جديد",
-    "global_settings_setting_security_password_admin_strength": "قوة الكلمة السرية الإدارية",
-    "global_settings_setting_security_password_user_strength": "قوة الكلمة السرية للمستخدم",
     "password_too_simple_1": "يجب أن يكون طول الكلمة السرية على الأقل 8 حروف",
     "already_up_to_date": "كل شيء على ما يرام. ليس هناك ما يتطلّب تحديثًا.",
     "service_description_slapd": "يخزّن المستخدمين والنطاقات والمعلومات المتعلقة بها",
@@ -159,5 +157,7 @@
     "diagnosis_description_dnsrecords": "تسجيلات خدمة DNS",
     "diagnosis_description_ip": "الإتصال بالإنترنت",
     "diagnosis_description_basesystem": "النظام الأساسي",
+    "global_settings_setting_admin_strength": "قوة الكلمة السرية الإدارية",
+    "global_settings_setting_user_strength": "قوة الكلمة السرية للمستخدم",
     "field_invalid": "الحقل غير صحيح : '{}'"
 }

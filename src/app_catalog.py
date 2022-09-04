@@ -19,7 +19,7 @@ logger = getActionLogger("yunohost.app_catalog")
 
 APPS_CATALOG_CACHE = "/var/cache/yunohost/repo"
 APPS_CATALOG_CONF = "/etc/yunohost/apps_catalog.yml"
-APPS_CATALOG_API_VERSION = 2
+APPS_CATALOG_API_VERSION = 3
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 
 
@@ -48,8 +48,8 @@ def app_catalog(full=False, with_categories=False):
                 "level": infos["level"],
             }
         else:
-            infos["manifest"]["arguments"] = _set_default_ask_questions(
-                infos["manifest"].get("arguments", {})
+            infos["manifest"]["install"] = _set_default_ask_questions(
+                infos["manifest"].get("install", {})
             )
 
     # Trim info for categories if not using --full
@@ -232,6 +232,8 @@ def _load_apps_catalog():
                 )
                 continue
 
+            # FIXME: we may want to autoconvert all v0/v1 manifest to v2 here
+            # so that everything is consistent in terms of APIs, datastructure format etc
             info["repository"] = apps_catalog_id
             merged_catalog["apps"][app] = info
 

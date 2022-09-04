@@ -40,6 +40,7 @@ from moulinette.utils.process import check_output
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.service import service_status
 from yunohost.log import is_unit_operation
+from yunohost.utils.system import binary_to_human
 
 logger = getActionLogger("yunohost.user")
 
@@ -599,7 +600,7 @@ def user_info(username):
 
             if has_value:
                 storage_use = int(has_value.group(1))
-                storage_use = _convertSize(storage_use)
+                storage_use = binary_to_human(storage_use)
 
                 if is_limited:
                     has_percent = re.search(r"%=(\d+)", cmd_result)
@@ -1325,15 +1326,6 @@ def user_ssh_remove_key(username, key):
 #
 # End SSH subcategory
 #
-
-
-def _convertSize(num, suffix=""):
-    for unit in ["K", "M", "G", "T", "P", "E", "Z"]:
-        if abs(num) < 1024.0:
-            return "{:3.1f}{}{}".format(num, unit, suffix)
-        num /= 1024.0
-    return "{:.1f}{}{}".format(num, "Yi", suffix)
-
 
 def _hash_user_password(password):
     """

@@ -61,6 +61,12 @@ ynh_abort_if_errors() {
     trap ynh_exit_properly EXIT # Capturing exit signals on shell script
 }
 
+# When running an app script with packaging format >= 2, auto-enable ynh_abort_if_errors except for remove script
+if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} ge 2 && [[ ${YNH_APP_ACTION} != "remove" ]]
+then
+    ynh_abort_if_errors
+fi
+
 # Download, check integrity, uncompress and patch the source from app.src
 #
 # usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"]
@@ -758,12 +764,25 @@ ynh_read_manifest() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if [ ! -e "$manifest" ]; then
+    if [ ! -e "${manifest:-}" ]; then
         # If the manifest isn't found, try the common place for backup and restore script.
-        manifest="$YNH_APP_BASEDIR/manifest.json"
+        if [ -e "$YNH_APP_BASEDIR/manifest.json" ]
+        then
+            manifest="$YNH_APP_BASEDIR/manifest.json"
+        elif [ -e "$YNH_APP_BASEDIR/manifest.toml" ]
+        then
+            manifest="$YNH_APP_BASEDIR/manifest.toml"
+        else
+            ynh_die --message "No manifest found !?"
+        fi
     fi
 
-    jq ".$manifest_key" "$manifest" --raw-output
+    if echo "$manifest" | grep -q '\.json$'
+    then
+        jq ".$manifest_key" "$manifest" --raw-output
+    else
+        cat "$manifest" | python3 -c 'import json, toml, sys; print(json.dumps(toml.load(sys.stdin)))' | jq ".$manifest_key" --raw-output
+    fi
 }
 
 # Read the upstream version from the manifest or `$YNH_APP_MANIFEST_VERSION`
@@ -907,9 +926,9 @@ ynh_compare_current_package_version() {
 _ynh_apply_default_permissions() {
     local target=$1
 
-    local ynh_requirement=$(jq -r '.requirements.yunohost' $YNH_APP_BASEDIR/manifest.json | tr -d '>= ')
+    local ynh_requirement=$(ynh_read_manifest --manifest_key="requirements.yunohost")
 
-    if [ -z "$ynh_requirement" ] || [ "$ynh_requirement" == "null" ] || dpkg --compare-versions $ynh_requirement ge 4.2; then
+    if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} ge 2 || [ -z "$ynh_requirement" ] || [ "$ynh_requirement" == "null" ] || dpkg --compare-versions $ynh_requirement ge 4.2; then
         chmod o-rwx $target
         chmod g-w $target
         chown -R root:root $target

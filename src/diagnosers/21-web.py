@@ -5,7 +5,7 @@ import random
 import requests
 from typing import List
 
-from moulinette.utils.filesystem import read_file
+from moulinette.utils.filesystem import read_file, mkdir, rm
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list
@@ -46,8 +46,8 @@ class MyDiagnoser(Diagnoser):
                 domains_to_check.append(domain)
 
         self.nonce = "".join(random.choice("0123456789abcedf") for i in range(16))
-        os.system("rm -rf /tmp/.well-known/ynh-diagnosis/")
-        os.system("mkdir -p /tmp/.well-known/ynh-diagnosis/")
+        rm("/tmp/.well-known/ynh-diagnosis/", recursive=True, force=True)
+        mkdir("/tmp/.well-known/ynh-diagnosis/", parents=True)
         os.system("touch /tmp/.well-known/ynh-diagnosis/%s" % self.nonce)
 
         if not domains_to_check:
