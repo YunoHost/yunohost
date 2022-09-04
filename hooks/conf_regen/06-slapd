@@ -131,7 +131,7 @@ do_post_regen() {
     fi
 
     # For some reason, old setups don't have the admins group defined...
-    if ! slapcat | grep -q 'cn=admins,ou=groups,dc=yunohost,dc=org'; then
+    if ! slapcat -H "ldap:///cn=admins,ou=groups,dc=yunohost,dc=org" | grep -q 'cn=admins,ou=groups,dc=yunohost,dc=org'; then
         slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org <<< \
             "dn: cn=admins,ou=groups,dc=yunohost,dc=org
 cn: admins

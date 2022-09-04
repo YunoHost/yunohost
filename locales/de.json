@@ -666,7 +666,6 @@
     "migration_0021_main_upgrade": "Starte Hauptupdate...",
     "migration_0021_still_on_buster_after_main_upgrade": "Irgendetwas ist während des Haupt-Upgrades schief gelaufen, das System scheint immer noch auf Debian Buster zu laufen",
     "migration_0021_yunohost_upgrade": "Start des YunoHost Kern-Upgrades...",
-    "migration_0021_not_buster": "Die aktuelle Debian-Distribution ist nicht Buster!",
     "migration_0021_not_enough_free_space": "Der freie Speicherplatz in /var/ ist ziemlich gering! Du solltest mindestens 1 GB frei haben, um diese Migration durchzuführen.",
     "migration_0021_system_not_fully_up_to_date": "Dein System ist nicht ganz aktuell. Bitte führe ein reguläres Upgrade durch, bevor du die Migration zu Bullseye durchführst.",
     "migration_0021_problematic_apps_warning": "Bitte beachte, dass die folgenden, möglicherweise problematischen installierten Anwendungen erkannt wurden. Es sieht so aus, als ob diese nicht aus dem YunoHost-Applikations-Katalog installiert wurden oder nicht als \"funktionierend\" gekennzeichnet sind. Es kann daher nicht garantiert werden, dass sie nach dem Upgrade noch funktionieren werden: {problematic_apps}",

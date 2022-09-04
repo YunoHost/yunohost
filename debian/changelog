@@ -1,3 +1,94 @@
+yunohost (11.0.9.13) stable; urgency=low
+
+  - [fix] defaultapp: domain may not exist in app_map dict output (efe0e601)
+  - [fix] regenconf: fix a stupid issue with slapcat displaying an error message because grep -q breaks the pipe (503b9031)
+  - [fix] regenconf: add a timeout to curl inside dnsmasq regenconf to prevent being stuck too long when no network on the machine (b77e8114)
+  - [fix] ynh_delete_file_checksum with non-existing option in helpers/config ([#1501](https://github.com/YunoHost/yunohost/pull/1501))
+  - [i18n] Translations updated for Basque, Galician, Slovak
+
+  Thanks to all contributors <3 ! (José M, Jose Riha, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 03 Sep 2022 23:27:56 +0200
+
+
+yunohost (11.0.9.12) stable; urgency=low
+
+  - [fix] postinstall: check all partitions (not only physical ones) ([#1497](https://github.com/YunoHost/yunohost/pull/1497))
+  - [i18n] Translations updated for Basque, French, Indonesian, Italian, Slovak
+
+  Thanks to all contributors <3 ! (Salamandar)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 28 Aug 2022 14:50:38 +0200
+
+yunohost (11.0.9.11) stable; urgency=low
+
+  = Merge with Buster branch
+  - [fix] diagnosis: fix inaccurate message (ae92a0b8)
+  - [fix] logrotate helpers: getopts miserably explodes if 'legacy_args' is inconsistent with 'args_array' ... (530bf04a)
+  - [i18n] Translations updated for Basque, French, Indonesian, Italian, Slovak
+
+  Thanks to all contributors <3 ! (Jose Riha, Leandro Noferini, liimee, Stephan Klein, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 26 Aug 2022 16:32:19 +0200
+
+yunohost (11.0.9.9) stable; urgency=low
+
+  - Sync with Buster branch
+  - [fix] php7.3->7.4: autopatch nginx configs during restore (18e041c4)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 19 Aug 2022 20:50:52 +0200
+
+yunohost (11.0.9.7) stable; urgency=low
+
+  - [fix] logorate helper: was broken because wrong index é_è (efa80304)
+  - [i18n] Translations updated for French, Galician, Ukrainian
+
+  Thanks to all contributors <3 ! (Éric Gaspar, José M, Tymofii-Lytvynenko)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 17 Aug 2022 19:24:11 +0200
+
+yunohost (11.0.9.6) stable; urgency=low
+
+  - Sync with Buster branch
+  - [fix] helpers: logrotate shitty inconsistent handling of 'supposedly legacy' --non-append option ... (8d1c75e7)
+  - [fix] apps: Better handling of super shitty edge case where an app settings.yml is empty for some unexpected mystic reason ... (9eb123f8)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 17 Aug 2022 01:26:28 +0200
+
+yunohost (11.0.9.5) stable; urgency=low
+
+  - Propagate fixes in buster->bullseye migration
+  - [fix] venv rebuild: synapse's folder is named matrix-synapse (c8031ace)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 14 Aug 2022 18:22:30 +0200
+
+yunohost (11.0.9.3) stable; urgency=low
+
+  - [fix] postgresql 11->13: Epic typo / missing import (3cb1a41a)
+  - [i18n] Translations updated for Basque, French, Galician
+
+  Thanks to all contributors <3 ! (Éric Gaspar, José M, Kay0u, punkrockgirl)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 13 Aug 2022 22:37:05 +0200
+
+yunohost (11.0.9.2) stable; urgency=low
+
+  - [fix] venv rebuild: fix yunohost app force upgrade command (5d90971b)
+  - [fix] apt helpers: simplify ynh_remove_app_dependencies, we don't need to care about removing php-fpm services from yunohost, because 'yunohost service' now dynamically check what relevant phpX.Y-fpm service exist on the system (64e35815)
+  - [enh] diagnosis: add complains if some app installed are still requiring only yunohost 3.x (31aacb33)
+  - [fix] venv rebuild: migration should have an empty disclaimer when in auto mode (d2a6dcd4)
+  - [fix] postgresql 11->13 migration: skip if no yunohost app depend on postgresql (d161da03)
+
+  Thanks to all contributors <3 ! (Éric Gaspar, ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 13 Aug 2022 20:08:27 +0200
+
+yunohost (11.0.9.1) stable; urgency=low
+
+  - [fix] venv rebuild: /opt may not exist ...
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 11 Aug 2022 16:00:40 +0200
+
 yunohost (11.0.9) stable; urgency=low
 
   - [fix] services: Skip php 7.3 which is most likely dead after buster->bullseye migration because users get spooked (51804925)
@@ -133,6 +224,80 @@ yunohost (11.0.2) testing; urgency=low
         - Drop deprecated `--mail` option in `yunohost user create`
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jan 2022 20:52:39 +0100
+
+yunohost (4.4.2.14) stable; urgency=low
+
+  - bullseye migration: remove derpy OVH repo... (76014920)
+  - bullseye migration: improve autofix procedure for the libc6 hell (02b3a138)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 03 Sep 2022 23:19:08 +0200
+
+yunohost (4.4.2.13) stable; urgency=low
+
+  - [fix] bullseye migration: a few annoying issues related to Sury (b5fabc87)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 29 Aug 2022 15:40:03 +0200
+
+yunohost (4.4.2.12) stable; urgency=low
+
+  - bullseye migration: add trick to automagically find the likely log of a previously failed migration to ease support (f5d94509)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 26 Aug 2022 19:22:30 +0200
+
+yunohost (4.4.2.10) stable; urgency=low
+
+  - bullseye migration: add proper explanations and advices after the damn 'The distribution is not Buster' message ... (6a594d0e)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 22 Aug 2022 10:28:50 +0200
+
+yunohost (4.4.2.9) stable; urgency=low
+
+  - apt helper: fix edge case with equivs package being flagged hold because of buster->bullseye migration (b306df2c)
+  - bullseye migration: fix check about free space in /boot/ ... (a2d4abc1)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 18 Aug 2022 19:24:47 +0200
+
+yunohost (4.4.2.7) stable; urgency=low
+
+  - upgrades: ignore boring insserv warnings during apt commands (87f0eff9)
+  - bullseye migration: higher treshold for low space detection in /boot/ because some people still experience the issue on 4.4.2.6 (d283c900)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 17 Aug 2022 01:21:36 +0200
+
+yunohost (4.4.2.6) stable; urgency=low
+
+  - [fix] bullseye migration: trash pip freeze stderr because it's confusing users ... (e68fc821)
+  - [fix] bullseye migration: add a check that there's at least 70MB available in /boot ... (02fcbd97)
+  - [fix] bullseye migration: better detection mechanism for the libc6 / libgcc hell issue (633a1fbf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 14 Aug 2022 18:18:13 +0200
+
+yunohost (4.4.2.3) stable; urgency=low
+
+  - [fix] bullseye migration: add fix for stupid dnsmasq not picking new init script  (origin/dev, origin/HEAD, dev)
+  - [fix] bullseye migration: add the patch for the build-essential / libc6-dev / libgcc-8-dev hell ...
+  - [fix] bullseye migration: add critical fix for RPi failing to get network on reboot
+  - [fix] bullseye migration: add ffsync to deprecated apps (77c2f5dc)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 13 Aug 2022 20:06:00 +0200
+
+yunohost (4.4.2.1) stable; urgency=low
+
+  - [fix] bullseye migration: /opt may not exist ... (5fd74577)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 11 Aug 2022 15:56:16 +0200
+
+yunohost (4.4.2) stable; urgency=low
+
+  - Release as stable
+  - [fix] bullseye migration: /etc/apt/sources.list may not exist (b928dd12)
+  - [fix] bullseye migration: Allow lime2 to upgrade even if kernel is hold (#1452)
+  - [fix] bullseye migration: Save python apps venv in a requirements file, in order to regenerate it in a follow-up migration ([#1479](https://github.com/YunoHost/yunohost/pull/1479))
+  - [fix] bullseye migration: tweak message to prepare for stable release (80015a72)
+
+  Thanks to all contributors <3 ! (ljf, theo-is-taken)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 09 Aug 2022 16:59:15 +0200
 
 yunohost (4.4.1) testing; urgency=low
 
