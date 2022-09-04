@@ -45,10 +45,12 @@ from yunohost.domain import domain_add
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_start, service_enable
 from yunohost.regenconf import regen_conf
-from yunohost.utils.packages import (
+from yunohost.utils.system import (
     _dump_sources_list,
     _list_upgradable_apt_packages,
     ynh_packages_version,
+    dpkg_is_broken,
+    dpkg_lock_available,
 )
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation, OperationLogger
@@ -164,20 +166,6 @@ def _set_hostname(hostname, pretty_hostname=None):
             logger.error(m18n.n("domain_hostname_failed"))
         else:
             logger.debug(out)
-
-
-def _detect_virt():
-    """
-    Returns the output of systemd-detect-virt (so e.g. 'none' or 'lxc' or ...)
-    You can check the man of the command to have a list of possible outputs...
-    """
-
-    p = subprocess.Popen(
-        "systemd-detect-virt".split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-    )
-
-    out, _ = p.communicate()
-    return out.split()[0]
 
 
 @is_unit_operation()
@@ -410,13 +398,12 @@ def tools_upgrade(operation_logger, target=None):
        apps -- List of apps to upgrade (or [] to update all apps)
        system -- True to upgrade system
     """
-    from yunohost.utils import packages
 
-    if packages.dpkg_is_broken():
+    if dpkg_is_broken():
         raise YunohostValidationError("dpkg_is_broken")
 
     # Check for obvious conflict with other dpkg/apt commands already running in parallel
-    if not packages.dpkg_lock_available():
+    if not dpkg_lock_available():
         raise YunohostValidationError("dpkg_lock_not_available")
 
     if target not in ["apps", "system"]:

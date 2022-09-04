@@ -23,6 +23,7 @@
 
     Manage apps
 """
+import glob
 import os
 import toml
 import json
@@ -32,8 +33,10 @@ import time
 import re
 import subprocess
 import tempfile
+import copy
 from collections import OrderedDict
 from typing import List, Tuple, Dict, Any
+from packaging import version
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
@@ -51,7 +54,6 @@ from moulinette.utils.filesystem import (
     chmod,
 )
 
-from yunohost.utils import packages
 from yunohost.utils.config import (
     ConfigPanel,
     ask_questions_and_parse_answers,
@@ -61,7 +63,15 @@ from yunohost.utils.config import (
 )
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.filesystem import free_space_in_directory
+from yunohost.utils.system import (
+    free_space_in_directory,
+    dpkg_is_broken,
+    get_ynh_package_version,
+    system_arch,
+    human_to_binary,
+    binary_to_human,
+    ram_available,
+)
 from yunohost.log import is_unit_operation, OperationLogger
 from yunohost.app_catalog import (  # noqa
     app_catalog,
@@ -165,12 +175,24 @@ def app_info(app, full=False, upgradable=False):
 
     ret["setting_path"] = setting_path
     ret["manifest"] = local_manifest
-    ret["manifest"]["arguments"] = _set_default_ask_questions(
-        ret["manifest"].get("arguments", {})
+
+    # FIXME: maybe this is not needed ? default ask questions are
+    # already set during the _get_manifest_of_app earlier ?
+    ret["manifest"]["install"] = _set_default_ask_questions(
+        ret["manifest"].get("install", {})
     )
     ret["settings"] = settings
 
     ret["from_catalog"] = from_catalog
+
+    # Hydrate app notifications and doc
+    for pagename, content_per_lang in ret["manifest"]["doc"].items():
+        for lang, content in content_per_lang.items():
+            ret["manifest"]["doc"][pagename][lang] = _hydrate_app_template(content, settings)
+    for step, notifications in ret["manifest"]["notifications"].items():
+        for name, content_per_lang in notifications.items():
+            for lang, content in content_per_lang.items():
+                notifications[name][lang] = _hydrate_app_template(content, settings)
 
     ret["is_webapp"] = "domain" in settings and "path" in settings
 
@@ -185,9 +207,7 @@ def app_info(app, full=False, upgradable=False):
     ret["supports_backup_restore"] = os.path.exists(
         os.path.join(setting_path, "scripts", "backup")
     ) and os.path.exists(os.path.join(setting_path, "scripts", "restore"))
-    ret["supports_multi_instance"] = is_true(
-        local_manifest.get("multi_instance", False)
-    )
+    ret["supports_multi_instance"] = local_manifest.get("integration", {}).get("multi_instance", False)
     ret["supports_config_panel"] = os.path.exists(
         os.path.join(setting_path, "config_panel.toml")
     )
@@ -202,7 +222,6 @@ def app_info(app, full=False, upgradable=False):
 
 
 def _app_upgradable(app_infos):
-    from packaging import version
 
     # Determine upgradability
 
@@ -416,7 +435,7 @@ def app_change_url(operation_logger, app, domain, path):
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
     # Prepare env. var. to pass to script
-    env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app)
+    env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app, action="change_url")
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
     env_dict["YNH_APP_OLD_PATH"] = old_path
     env_dict["YNH_APP_NEW_DOMAIN"] = domain
@@ -467,7 +486,6 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         no_safety_backup -- Disable the safety backup during upgrade
 
     """
-    from packaging import version
     from yunohost.hook import (
         hook_add,
         hook_remove,
@@ -477,6 +495,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
     from yunohost.permission import permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
     from yunohost.utils.legacy import _patch_legacy_php_versions, _patch_legacy_helpers
+    from yunohost.backup import backup_list, backup_create, backup_delete, backup_restore
 
     apps = app
     # Check if disk space available
@@ -563,22 +582,39 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     upgrade_type = "UPGRADE_FULL"
 
         # Check requirements
-        _check_manifest_requirements(manifest)
+        _check_manifest_requirements(manifest, action="upgrade")
+
+        if manifest["packaging_format"] >= 2:
+            if no_safety_backup:
+                # FIXME: i18n
+                logger.warning("Skipping the creation of a backup prior to the upgrade.")
+            else:
+                # FIXME: i18n
+                logger.info("Creating a safety backup prior to the upgrade")
+
+                # Switch between pre-upgrade1 or pre-upgrade2
+                safety_backup_name = f"{app_instance_name}-pre-upgrade1"
+                other_safety_backup_name = f"{app_instance_name}-pre-upgrade2"
+                if safety_backup_name in backup_list()["archives"]:
+                    safety_backup_name = f"{app_instance_name}-pre-upgrade2"
+                    other_safety_backup_name = f"{app_instance_name}-pre-upgrade1"
+
+                backup_create(name=safety_backup_name, apps=[app_instance_name])
+
+                if safety_backup_name in backup_list()["archives"]:
+                    # if the backup suceeded, delete old safety backup to save space
+                    if other_safety_backup_name in backup_list()["archives"]:
+                        backup_delete(other_safety_backup_name)
+                else:
+                    # Is this needed ? Shouldn't backup_create report an expcetion if backup failed ?
+                    raise YunohostError("Uhoh the safety backup failed ?! Aborting the upgrade process.", raw_msg=True)
+
         _assert_system_is_sane_for_app(manifest, "pre")
-
-        app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
-
-        # Prepare env. var. to pass to script
-        env_dict = _make_environment_for_app_script(
-            app_instance_name, workdir=extracted_app_folder
-        )
-        env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
-        env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
-        env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
-        env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
 
         # We'll check that the app didn't brutally edit some system configuration
         manually_modified_files_before_install = manually_modified_files()
+
+        app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
 
         # Attempt to patch legacy helpers ...
         _patch_legacy_helpers(extracted_app_folder)
@@ -586,10 +622,28 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         # Apply dirty patch to make php5 apps compatible with php7
         _patch_legacy_php_versions(extracted_app_folder)
 
+        # Prepare env. var. to pass to script
+        env_dict = _make_environment_for_app_script(
+            app_instance_name, workdir=extracted_app_folder, action="upgrade"
+        )
+        env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
+        env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
+        env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
+        if manifest["packaging_format"] < 2:
+            env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
+
         # Start register change on system
         related_to = [("app", app_instance_name)]
         operation_logger = OperationLogger("app_upgrade", related_to, env=env_dict)
         operation_logger.start()
+
+        if manifest["packaging_format"] >= 2:
+            from yunohost.utils.resources import AppResourceManager
+            try:
+                AppResourceManager(app_instance_name, wanted=manifest, current=app_dict["manifest"]).apply(rollback_if_failure=True)
+            except Exception:
+                # FIXME : improve error handling ....
+                raise
 
         # Execute the app upgrade script
         upgrade_failed = True
@@ -607,6 +661,16 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                 ),
             )
         finally:
+
+            # If upgrade failed, try to restore the safety backup
+            if upgrade_failed and manifest["packaging_format"] >= 2 and not no_safety_backup:
+                logger.warning("Upgrade failed ... attempting to restore the satefy backup (Yunohost first need to remove the app for this) ...")
+
+                app_remove(app_instance_name)
+                backup_restore(name=safety_backup_name, apps=[app_instance_name], force=True)
+                if not _is_installed(app_instance_name):
+                    logger.error("Uhoh ... Yunohost failed to restore the app to the way it was before the failed upgrade :|")
+
             # Whatever happened (install success or failure) we check if it broke the system
             # and warn the user about it
             try:
@@ -698,10 +762,41 @@ def app_manifest(app):
 
     shutil.rmtree(extracted_app_folder)
 
-    raw_questions = manifest.get("arguments", {}).get("install", [])
-    manifest["arguments"]["install"] = hydrate_questions_with_choices(raw_questions)
+    raw_questions = manifest.get("install", {}).values()
+    manifest["install"] = hydrate_questions_with_choices(raw_questions)
 
     return manifest
+
+
+def _confirm_app_install(app, force=False):
+
+    # Ignore if there's nothing for confirm (good quality app), if --force is used
+    # or if request on the API (confirm already implemented on the API side)
+    if force or Moulinette.interface.type == "api":
+        return
+
+    quality = _app_quality(app)
+    if quality == "success":
+        return
+
+    # i18n: confirm_app_install_warning
+    # i18n: confirm_app_install_danger
+    # i18n: confirm_app_install_thirdparty
+
+    if quality in ["danger", "thirdparty"]:
+        answer = Moulinette.prompt(
+            m18n.n("confirm_app_install_" + quality, answers="Yes, I understand"),
+            color="red",
+        )
+        if answer != "Yes, I understand":
+            raise YunohostError("aborting")
+
+    else:
+        answer = Moulinette.prompt(
+            m18n.n("confirm_app_install_" + quality, answers="Y/N"), color="yellow"
+        )
+        if answer.upper() != "Y":
+            raise YunohostError("aborting")
 
 
 @is_unit_operation()
@@ -745,63 +840,41 @@ def app_install(
     if free_space_in_directory("/") <= 512 * 1000 * 1000:
         raise YunohostValidationError("disk_space_not_sufficient_install")
 
-    def confirm_install(app):
-
-        # Ignore if there's nothing for confirm (good quality app), if --force is used
-        # or if request on the API (confirm already implemented on the API side)
-        if force or Moulinette.interface.type == "api":
-            return
-
-        quality = _app_quality(app)
-        if quality == "success":
-            return
-
-        # i18n: confirm_app_install_warning
-        # i18n: confirm_app_install_danger
-        # i18n: confirm_app_install_thirdparty
-
-        if quality in ["danger", "thirdparty"]:
-            answer = Moulinette.prompt(
-                m18n.n("confirm_app_install_" + quality, answers="Yes, I understand"),
-                color="red",
-            )
-            if answer != "Yes, I understand":
-                raise YunohostError("aborting")
-
-        else:
-            answer = Moulinette.prompt(
-                m18n.n("confirm_app_install_" + quality, answers="Y/N"), color="yellow"
-            )
-            if answer.upper() != "Y":
-                raise YunohostError("aborting")
-
-    confirm_install(app)
+    _confirm_app_install(app, force)
     manifest, extracted_app_folder = _extract_app(app)
+
+    # Display pre_install notices in cli mode
+    if manifest["notifications"]["pre_install"] and Moulinette.interface.type == "cli":
+        for notice in manifest["notifications"]["pre_install"].values():
+            # Should we render the markdown maybe? idk
+            print("==========")
+            print(_value_for_locale(notice))
+            print("==========")
+
+    packaging_format = manifest["packaging_format"]
 
     # Check ID
     if "id" not in manifest or "__" in manifest["id"] or "." in manifest["id"]:
         raise YunohostValidationError("app_id_invalid")
 
     app_id = manifest["id"]
-    label = label if label else manifest["name"]
 
     # Check requirements
-    _check_manifest_requirements(manifest)
+    _check_manifest_requirements(manifest, action="install")
     _assert_system_is_sane_for_app(manifest, "pre")
 
     # Check if app can be forked
     instance_number = _next_instance_number_for_app(app_id)
     if instance_number > 1:
-        if "multi_instance" not in manifest or not is_true(manifest["multi_instance"]):
-            raise YunohostValidationError("app_already_installed", app=app_id)
-
         # Change app_id to the forked app id
         app_instance_name = app_id + "__" + str(instance_number)
     else:
         app_instance_name = app_id
 
+    app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
+
     # Retrieve arguments list for install script
-    raw_questions = manifest.get("arguments", {}).get("install", {})
+    raw_questions = manifest["install"]
     questions = ask_questions_and_parse_answers(raw_questions, prefilled_answers=args)
     args = {
         question.name: question.value
@@ -810,11 +883,13 @@ def app_install(
     }
 
     # Validate domain / path availability for webapps
+    # (ideally this should be handled by the resource system for manifest v >= 2
     path_requirement = _guess_webapp_path_requirement(extracted_app_folder)
     _validate_webpath_requirement(args, path_requirement)
 
-    # Attempt to patch legacy helpers ...
-    _patch_legacy_helpers(extracted_app_folder)
+    if packaging_format < 2:
+        # Attempt to patch legacy helpers ...
+        _patch_legacy_helpers(extracted_app_folder)
 
     # Apply dirty patch to make php5 apps compatible with php7
     _patch_legacy_php_versions(extracted_app_folder)
@@ -831,7 +906,6 @@ def app_install(
     logger.info(m18n.n("app_start_install", app=app_id))
 
     # Create app directory
-    app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
     os.makedirs(app_setting_path)
@@ -842,6 +916,17 @@ def app_install(
         "install_time": int(time.time()),
         "current_revision": manifest.get("remote", {}).get("revision", "?"),
     }
+
+    # If packaging_format v2+, save all install questions as settings
+    if packaging_format >= 2:
+        for question in questions:
+
+            # Except user-provider passwords
+            if question.type == "password":
+                continue
+
+            app_settings[question.name] = question.value
+
     _set_app_settings(app_instance_name, app_settings)
 
     # Move scripts and manifest to the right place
@@ -853,21 +938,30 @@ def app_install(
                 recursive=True,
             )
 
-    # Initialize the main permission for the app
-    # The permission is initialized with no url associated, and with tile disabled
-    # For web app, the root path of the app will be added as url and the tile
-    # will be enabled during the app install. C.f. 'app_register_url()' below.
-    permission_create(
-        app_instance_name + ".main",
-        allowed=["all_users"],
-        label=label,
-        show_tile=False,
-        protected=False,
-    )
+    if packaging_format >= 2:
+        from yunohost.utils.resources import AppResourceManager
+        try:
+            AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(rollback_if_failure=True)
+        except Exception:
+            # FIXME : improve error handling ....
+            raise
+    else:
+        # Initialize the main permission for the app
+        # The permission is initialized with no url associated, and with tile disabled
+        # For web app, the root path of the app will be added as url and the tile
+        # will be enabled during the app install. C.f. 'app_register_url()' below
+        # or the webpath resource
+        permission_create(
+            app_instance_name + ".main",
+            allowed=["all_users"],
+            label=label if label else manifest["name"],
+            show_tile=False,
+            protected=False,
+        )
 
     # Prepare env. var. to pass to script
     env_dict = _make_environment_for_app_script(
-        app_instance_name, args=args, workdir=extracted_app_folder
+        app_instance_name, args=args, workdir=extracted_app_folder, action="install"
     )
 
     env_dict_for_logging = env_dict.copy()
@@ -929,7 +1023,7 @@ def app_install(
 
             # Setup environment for remove script
             env_dict_remove = _make_environment_for_app_script(
-                app_instance_name, workdir=extracted_app_folder
+                app_instance_name, workdir=extracted_app_folder, action="remove"
             )
 
             # Execute remove script
@@ -960,10 +1054,18 @@ def app_install(
                     m18n.n("unexpected_error", error="\n" + traceback.format_exc())
                 )
 
-            # Remove all permission in LDAP
-            for permission_name in user_permission_list()["permissions"].keys():
-                if permission_name.startswith(app_instance_name + "."):
-                    permission_delete(permission_name, force=True, sync_perm=False)
+            if packaging_format >= 2:
+                from yunohost.utils.resources import AppResourceManager
+                try:
+                    AppResourceManager(app_instance_name, wanted={}, current=manifest).apply(rollback_if_failure=False)
+                except Exception:
+                    # FIXME : improve error handling ....
+                    raise
+            else:
+                # Remove all permission in LDAP
+                for permission_name in user_permission_list()["permissions"].keys():
+                    if permission_name.startswith(app_instance_name + "."):
+                        permission_delete(permission_name, force=True, sync_perm=False)
 
             if remove_retcode != 0:
                 msg = m18n.n("app_not_properly_removed", app=app_instance_name)
@@ -999,6 +1101,17 @@ def app_install(
 
     logger.success(m18n.n("installation_complete"))
 
+    # Display post_install notices in cli mode
+    if manifest["notifications"]["post_install"] and Moulinette.interface.type == "cli":
+        # (Call app_info to get the version hydrated with settings)
+        infos = app_info(app_instance_name, full=True)
+        for notice in infos["manifest"]["notifications"]["post_install"].values():
+            # Should we render the markdown maybe? idk
+            print("==========")
+            print(_value_for_locale(notice))
+            print("==========")
+
+    # Call postinstall hook
     hook_callback("post_app_install", env=env_dict)
 
 
@@ -1044,7 +1157,7 @@ def app_remove(operation_logger, app, purge=False):
     remove_script = f"{tmp_workdir_for_app}/scripts/remove"
 
     env_dict = {}
-    env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app)
+    env_dict = _make_environment_for_app_script(app, workdir=tmp_workdir_for_app, action="remove")
     env_dict["YNH_APP_PURGE"] = str(1 if purge else 0)
 
     operation_logger.extra.update({"env": env_dict})
@@ -1064,15 +1177,18 @@ def app_remove(operation_logger, app, purge=False):
     finally:
         shutil.rmtree(tmp_workdir_for_app)
 
-    if ret == 0:
-        logger.success(m18n.n("app_removed", app=app))
-        hook_callback("post_app_remove", env=env_dict)
+    packaging_format = manifest["packaging_format"]
+    if packaging_format >= 2:
+        try:
+            from yunohost.utils.resources import AppResourceManager
+            AppResourceManager(app, wanted={}, current=manifest).apply(rollback_if_failure=False)
+        except Exception:
+            # FIXME : improve error handling ....
+            raise
     else:
-        logger.warning(m18n.n("app_not_properly_removed", app=app))
-
-    # Remove all permission in LDAP
-    for permission_name in user_permission_list(apps=[app])["permissions"].keys():
-        permission_delete(permission_name, force=True, sync_perm=False)
+        # Remove all permission in LDAP
+        for permission_name in user_permission_list(apps=[app])["permissions"].keys():
+            permission_delete(permission_name, force=True, sync_perm=False)
 
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
@@ -1082,6 +1198,12 @@ def app_remove(operation_logger, app, purge=False):
     for domain in domain_list()["domains"]:
         if domain_config_get(domain, "feature.app.default_app") == app:
             domain_config_set(domain, "feature.app.default_app", "_none")
+
+    if ret == 0:
+        logger.success(m18n.n("app_removed", app=app))
+        hook_callback("post_app_remove", env=env_dict)
+    else:
+        logger.warning(m18n.n("app_not_properly_removed", app=app))
 
     permission_sync_to_user()
     _assert_system_is_sane_for_app(manifest, "post")
@@ -1291,7 +1413,7 @@ def app_register_url(app, domain, path):
             raise YunohostValidationError("app_already_installed_cant_change_url")
 
     # Check the url is available
-    _assert_no_conflicting_apps(domain, path)
+    _assert_no_conflicting_apps(domain, path, ignore_app=app)
 
     app_setting(app, "domain", value=domain)
     app_setting(app, "path", value=path)
@@ -1474,9 +1596,8 @@ def app_action_run(operation_logger, app, action, args=None):
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
     env_dict = _make_environment_for_app_script(
-        app, args=args, args_prefix="ACTION_", workdir=tmp_workdir_for_app
+        app, args=args, args_prefix="ACTION_", workdir=tmp_workdir_for_app, action=action
     )
-    env_dict["YNH_ACTION"] = action
 
     _, action_script = tempfile.mkstemp(dir=tmp_workdir_for_app)
 
@@ -1680,15 +1801,7 @@ def _get_app_actions(app_id):
         for key, value in toml_actions.items():
             action = dict(**value)
             action["id"] = key
-
-            arguments = []
-            for argument_name, argument in value.get("arguments", {}).items():
-                argument = dict(**argument)
-                argument["name"] = argument_name
-
-                arguments.append(argument)
-
-            action["arguments"] = arguments
+            action["arguments"] = value.get("arguments", {})
             actions.append(action)
 
         return actions
@@ -1868,21 +1981,7 @@ def _get_manifest_of_app(path):
     #     ¦   ¦   },
 
     if os.path.exists(os.path.join(path, "manifest.toml")):
-        manifest_toml = read_toml(os.path.join(path, "manifest.toml"))
-
-        manifest = manifest_toml.copy()
-
-        install_arguments = []
-        for name, values in (
-            manifest_toml.get("arguments", {}).get("install", {}).items()
-        ):
-            args = values.copy()
-            args["name"] = name
-
-            install_arguments.append(args)
-
-        manifest["arguments"]["install"] = install_arguments
-
+        manifest = read_toml(os.path.join(path, "manifest.toml"))
     elif os.path.exists(os.path.join(path, "manifest.json")):
         manifest = read_json(os.path.join(path, "manifest.json"))
     else:
@@ -1891,25 +1990,150 @@ def _get_manifest_of_app(path):
             raw_msg=True,
         )
 
-    manifest["arguments"] = _set_default_ask_questions(manifest.get("arguments", {}))
+    manifest["packaging_format"] = float(str(manifest.get("packaging_format", "")).strip() or "0")
+
+    if manifest["packaging_format"] < 2:
+        manifest = _convert_v1_manifest_to_v2(manifest)
+
+    manifest["install"] = _set_default_ask_questions(manifest.get("install", {}))
+    manifest["doc"], manifest["notifications"] = _parse_app_doc_and_notifications(path)
+
     return manifest
 
 
-def _set_default_ask_questions(arguments):
+def _parse_app_doc_and_notifications(path):
+
+    doc = {}
+
+    for filepath in glob.glob(os.path.join(path, "doc") + "/*.md"):
+
+        # to be improved : [a-z]{2,3} is a clumsy way of parsing the
+        # lang code ... some lang code are more complex that this é_è
+        m = re.match("([A-Z]*)(_[a-z]{2,3})?.md", filepath.split("/")[-1])
+
+        if not m:
+            # FIXME: shall we display a warning ? idk
+            continue
+        pagename, lang = m.groups()
+        lang = lang.strip("_") if lang else "en"
+
+        if pagename not in doc:
+            doc[pagename] = {}
+        doc[pagename][lang] = read_file(filepath).strip()
+
+    notifications = {}
+
+    for step in ["pre_install", "post_install", "pre_upgrade", "post_upgrade"]:
+        notifications[step] = {}
+        for filepath in glob.glob(os.path.join(path, "doc", "notifications", f"{step}*.md")):
+            m = re.match(step + "(_[a-z]{2,3})?.md", filepath.split("/")[-1])
+            if not m:
+                continue
+            pagename = "main"
+            lang = m.groups()[0].strip("_") if m.groups()[0] else "en"
+            if pagename not in notifications[step]:
+                notifications[step][pagename] = {}
+            notifications[step][pagename][lang] = read_file(filepath).strip()
+
+        for filepath in glob.glob(os.path.join(path, "doc", "notifications", f"{step}.d") + "/*.md"):
+            m = re.match(r"([A-Za-z0-9\.\~]*)(_[a-z]{2,3})?.md", filepath.split("/")[-1])
+            if not m:
+                continue
+            pagename, lang = m.groups()
+            lang = lang.strip("_") if lang else "en"
+            if pagename not in notifications[step]:
+                notifications[step][pagename] = {}
+            notifications[step][pagename][lang] = read_file(filepath).strip()
+
+    return doc, notifications
+
+
+def _hydrate_app_template(template, data):
+
+    stuff_to_replace = set(re.findall(r'__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__', template))
+
+    for stuff in stuff_to_replace:
+
+        varname = stuff.strip("_").lower()
+
+        if varname in data:
+            template = template.replace(stuff, data[varname])
+
+    return template
+
+
+def _convert_v1_manifest_to_v2(manifest):
+
+    manifest = copy.deepcopy(manifest)
+
+    if "upstream" not in manifest:
+        manifest["upstream"] = {}
+
+    if "license" in manifest and "license" not in manifest["upstream"]:
+        manifest["upstream"]["license"] = manifest["license"]
+
+    if "url" in manifest and "website" not in manifest["upstream"]:
+        manifest["upstream"]["website"] = manifest["url"]
+
+    manifest["integration"] = {
+        "yunohost": manifest.get("requirements", {}).get("yunohost", "").replace(">", "").replace("=", "").replace(" ", ""),
+        "architectures": "all",
+        "multi_instance": manifest.get("multi_instance", False),
+        "ldap": "?",
+        "sso": "?",
+        "disk": "50M",
+        "ram": {"build": "50M", "runtime": "10M"}
+    }
+
+    maintainers = manifest.get("maintainer", {})
+    if isinstance(maintainers, list):
+        maintainers = [m['name'] for m in maintainers]
+    else:
+        maintainers = [maintainers["name"]] if maintainers.get("name") else []
+
+    manifest["maintainers"] = maintainers
+
+    install_questions = manifest["arguments"]["install"]
+
+    manifest["install"] = {}
+    for question in install_questions:
+        name = question.pop("name")
+        if "ask" in question and name in ["domain", "path", "admin", "is_public", "password"]:
+            question.pop("ask")
+        if question.get("example") and question.get("type") in ["domain", "path", "user", "boolean", "password"]:
+            question.pop("example")
+
+        manifest["install"][name] = question
+
+    manifest["resources"] = {
+        "system_user": {},
+        "install_dir": {
+            "alias": "final_path"
+        }
+    }
+
+    keys_to_keep = ["packaging_format", "id", "name", "description", "version", "maintainers", "upstream", "integration", "install", "resources"]
+
+    keys_to_del = [key for key in manifest.keys() if key not in keys_to_keep]
+    for key in keys_to_del:
+        del manifest[key]
+
+    return manifest
+
+
+def _set_default_ask_questions(questions, script_name="install"):
 
     # arguments is something like
-    # { "install": [
-    #       { "name": "domain",
+    # { "domain":
+    #       {
     #         "type": "domain",
     #         ....
     #       },
-    #       { "name": "path",
-    #         "type": "path"
+    #    "path": {
+    #         "type": "path",
     #         ...
     #       },
     #       ...
-    #   ],
-    #  "upgrade": [ ... ]
     # }
 
     # We set a default for any question with these matching (type, name)
@@ -1921,39 +2145,28 @@ def _set_default_ask_questions(arguments):
         ("path", "path"),  # i18n: app_manifest_install_ask_path
         ("password", "password"),  # i18n: app_manifest_install_ask_password
         ("user", "admin"),  # i18n: app_manifest_install_ask_admin
-        ("boolean", "is_public"),
-    ]  # i18n: app_manifest_install_ask_is_public
+        ("boolean", "is_public"),  # i18n: app_manifest_install_ask_is_public
+    ]
 
-    for script_name, arg_list in arguments.items():
+    for question_name, question in questions.items():
+        question["name"] = question_name
 
-        # We only support questions for install so far, and for other
-        if script_name != "install":
-            continue
-
-        for arg in arg_list:
-
-            # Do not override 'ask' field if provided by app ?... Or shall we ?
-            # if "ask" in arg:
-            #    continue
-
-            # If this arg corresponds to a question with default ask message...
-            if any(
-                (arg.get("type"), arg["name"]) == question
-                for question in questions_with_default
-            ):
-                # The key is for example "app_manifest_install_ask_domain"
-                arg_name = arg["name"]
-                key = f"app_manifest_{script_name}_ask_{arg_name}"
-                arg["ask"] = m18n.n(key)
+        # If this question corresponds to a question with default ask message...
+        if any(
+            (question.get("type"), question["name"]) == question_with_default
+            for question_with_default in questions_with_default
+        ):
+            # The key is for example "app_manifest_install_ask_domain"
+            question["ask"] = m18n.n(f"app_manifest_{script_name}_ask_{question['name']}")
 
             # Also it in fact doesn't make sense for any of those questions to have an example value nor a default value...
-            if arg.get("type") in ["domain", "user", "password"]:
-                if "example" in arg:
-                    del arg["example"]
-                if "default" in arg:
-                    del arg["default"]
+            if question.get("type") in ["domain", "user", "password"]:
+                if "example" in question:
+                    del question["example"]
+                if "default" in question:
+                    del question["default"]
 
-    return arguments
+    return questions
 
 
 def _is_app_repo_url(string: str) -> bool:
@@ -2183,33 +2396,61 @@ def _get_all_installed_apps_id():
     return all_apps_ids_formatted
 
 
-def _check_manifest_requirements(manifest: Dict):
+def _check_manifest_requirements(manifest: Dict, action: str):
     """Check if required packages are met from the manifest"""
 
-    packaging_format = int(manifest.get("packaging_format", 0))
-    if packaging_format not in [0, 1]:
+    if manifest["packaging_format"] not in [1, 2]:
         raise YunohostValidationError("app_packaging_format_not_supported")
 
-    requirements = manifest.get("requirements", dict())
+    app_id = manifest["id"]
 
-    if not requirements:
-        return
+    logger.debug(m18n.n("app_requirements_checking", app=app_id))
 
-    app = manifest.get("id", "?")
+    # Yunohost version requirement
 
-    logger.debug(m18n.n("app_requirements_checking", app=app))
+    yunohost_requirement = version.parse(manifest["integration"]["yunohost"] or "4.3")
+    yunohost_installed_version = version.parse(get_ynh_package_version("yunohost")["version"])
+    if yunohost_requirement > yunohost_installed_version:
+        # FIXME : i18n
+        raise YunohostValidationError(f"This app requires Yunohost >= {yunohost_requirement} but current installed version is {yunohost_installed_version}")
 
-    # Iterate over requirements
-    for pkgname, spec in requirements.items():
-        if not packages.meets_version_specifier(pkgname, spec):
-            version = packages.ynh_packages_version()[pkgname]["version"]
-            raise YunohostValidationError(
-                "app_requirements_unmeet",
-                pkgname=pkgname,
-                version=version,
-                spec=spec,
-                app=app,
-            )
+    # Architectures
+    arch_requirement = manifest["integration"]["architectures"]
+    if arch_requirement != "all":
+        arch = system_arch()
+        if arch not in arch_requirement:
+            # FIXME: i18n
+            raise YunohostValidationError(f"This app can only be installed on architectures {', '.join(arch_requirement)} but your server architecture is {arch}")
+
+    # Multi-instance
+    if action == "install" and manifest["integration"]["multi_instance"] == False:
+        apps = _installed_apps()
+        sibling_apps = [a for a in apps if a == app_id or a.startswith(f"{app_id}__")]
+        if len(sibling_apps) > 0:
+            raise YunohostValidationError("app_already_installed", app=app_id)
+
+    # Disk
+    if action == "install":
+        disk_requirement = manifest["integration"]["disk"]
+
+        if free_space_in_directory("/") <= human_to_binary(disk_requirement) \
+        or free_space_in_directory("/var") <= human_to_binary(disk_requirement):
+            # FIXME : i18m
+            raise YunohostValidationError(f"This app requires {disk_requirement} free space.")
+
+    # Ram for build
+    ram_build_requirement = manifest["integration"]["ram"]["build"]
+    # Is "include_swap" really useful ? We should probably decide wether to always include it or not instead
+    ram_include_swap = manifest["integration"]["ram"].get("include_swap", False)
+
+    ram, swap = ram_available()
+    if ram_include_swap:
+        ram += swap
+
+    if ram < human_to_binary(ram_build_requirement):
+        # FIXME : i18n
+        ram_human = binary_to_human(ram)
+        raise YunohostValidationError(f"This app requires {ram_build_requirement} RAM to install/upgrade but only {ram_human} is available right now.")
 
 
 def _guess_webapp_path_requirement(app_folder: str) -> str:
@@ -2218,13 +2459,13 @@ def _guess_webapp_path_requirement(app_folder: str) -> str:
     # is an available url and normalize the path.
 
     manifest = _get_manifest_of_app(app_folder)
-    raw_questions = manifest.get("arguments", {}).get("install", {})
+    raw_questions = manifest["install"]
 
     domain_questions = [
-        question for question in raw_questions if question.get("type") == "domain"
+        question for question in raw_questions.values() if question.get("type") == "domain"
     ]
     path_questions = [
-        question for question in raw_questions if question.get("type") == "path"
+        question for question in raw_questions.values() if question.get("type") == "path"
     ]
 
     if len(domain_questions) == 0 and len(path_questions) == 0:
@@ -2324,7 +2565,11 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
 
 
 def _make_environment_for_app_script(
-    app, args={}, args_prefix="APP_ARG_", workdir=None
+    app,
+    args={},
+    args_prefix="APP_ARG_",
+    workdir=None,
+    action=None
 ):
 
     app_setting_path = os.path.join(APPS_SETTING_PATH, app)
@@ -2337,15 +2582,36 @@ def _make_environment_for_app_script(
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
         "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?"),
-        "YNH_ARCH": check_output("dpkg --print-architecture"),
+        "YNH_APP_PACKAGING_FORMAT": str(manifest["packaging_format"]),
+        "YNH_ARCH": system_arch(),
     }
 
     if workdir:
         env_dict["YNH_APP_BASEDIR"] = workdir
 
+    if action:
+        env_dict["YNH_APP_ACTION"] = action
+
     for arg_name, arg_value in args.items():
         arg_name_upper = arg_name.upper()
         env_dict[f"YNH_{args_prefix}{arg_name_upper}"] = str(arg_value)
+
+    # If packaging format v2, load all settings
+    if manifest["packaging_format"] >= 2:
+        env_dict["app"] = app
+        for setting_name, setting_value in _get_app_settings(app).items():
+
+            # Ignore special internal settings like checksum__
+            # (not a huge deal to load them but idk...)
+            if setting_name.startswith("checksum__"):
+                continue
+
+            env_dict[setting_name] = str(setting_value)
+
+        # Special weird case for backward compatibility...
+        # 'path' was loaded into 'path_url' .....
+        if 'path' in env_dict:
+            env_dict["path_url"] = env_dict["path"]
 
     return env_dict
 
@@ -2426,26 +2692,6 @@ def _make_tmp_workdir_for_app(app=None):
     return tmpdir
 
 
-def is_true(arg):
-    """
-    Convert a string into a boolean
-
-    Keyword arguments:
-        arg -- The string to convert
-
-    Returns:
-        Boolean
-
-    """
-    if isinstance(arg, bool):
-        return arg
-    elif isinstance(arg, str):
-        return arg.lower() in ["yes", "true", "on"]
-    else:
-        logger.debug(f"arg should be a boolean or a string, got {arg}")
-        return True if arg else False
-
-
 def unstable_apps():
 
     output = []
@@ -2523,8 +2769,9 @@ def _assert_system_is_sane_for_app(manifest, when):
                 "app_action_broke_system", services=", ".join(faulty_services)
             )
 
-    if packages.dpkg_is_broken():
+    if dpkg_is_broken():
         if when == "pre":
             raise YunohostValidationError("dpkg_is_broken")
         elif when == "post":
             raise YunohostError("this_action_broke_dpkg")
+

@@ -581,7 +581,7 @@ class ConfigPanel:
             prefilled_answers.update(self.new_values)
 
             questions = ask_questions_and_parse_answers(
-                section["options"],
+                {question["name"]: question for question in section["options"]},
                 prefilled_answers=prefilled_answers,
                 current_values=self.values,
                 hooks=self.hooks,
@@ -1191,6 +1191,21 @@ class UserQuestion(Question):
                     break
 
 
+class GroupQuestion(Question):
+    argument_type = "group"
+
+    def __init__(self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}):
+
+        from yunohost.user import user_group_list
+
+        super().__init__(question, context)
+
+        self.choices = list(user_group_list(short=True)["groups"])
+
+        if self.default is None:
+            self.default = "all_users"
+
+
 class NumberQuestion(Question):
     argument_type = "number"
     default_value = None
@@ -1349,6 +1364,7 @@ ARGUMENTS_TYPE_PARSERS = {
     "boolean": BooleanQuestion,
     "domain": DomainQuestion,
     "user": UserQuestion,
+    "group": GroupQuestion,
     "number": NumberQuestion,
     "range": NumberQuestion,
     "display_text": DisplayTextQuestion,
@@ -1393,9 +1409,10 @@ def ask_questions_and_parse_answers(
     context = {**current_values, **answers}
     out = []
 
-    for raw_question in raw_questions:
+    for name, raw_question in raw_questions.items():
+        raw_question['name'] = name
         question_class = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")]
-        raw_question["value"] = answers.get(raw_question["name"])
+        raw_question["value"] = answers.get(name)
         question = question_class(raw_question, context=context, hooks=hooks)
         new_values = question.ask_if_needed()
         answers.update(new_values)

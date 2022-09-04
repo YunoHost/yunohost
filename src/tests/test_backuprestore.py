@@ -355,13 +355,13 @@ def test_backup_script_failure_handling(monkeypatch, mocker):
 
 @pytest.mark.with_backup_recommended_app_installed
 def test_backup_not_enough_free_space(monkeypatch, mocker):
-    def custom_disk_usage(path):
+    def custom_space_used_by_directory(path, *args, **kwargs):
         return 99999999999999999
 
     def custom_free_space_in_directory(dirpath):
         return 0
 
-    monkeypatch.setattr("yunohost.backup.disk_usage", custom_disk_usage)
+    monkeypatch.setattr("yunohost.backup.space_used_by_directory", custom_space_used_by_directory)
     monkeypatch.setattr(
         "yunohost.backup.free_space_in_directory", custom_free_space_in_directory
     )
