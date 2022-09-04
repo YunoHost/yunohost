@@ -937,7 +937,7 @@ class Migration:
     def description(self):
         return m18n.n(f"migration_description_{self.id}")
 
-    def ldap_migration(self, run):
+    def ldap_migration(run):
         def func(self):
 
             # Backup LDAP before the migration
