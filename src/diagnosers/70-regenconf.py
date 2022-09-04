@@ -53,7 +53,7 @@ class MyDiagnoser(Diagnoser):
             )
 
         # Check consistency between actual ssh port in sshd_config vs. setting
-        ssh_port_setting = settings_get("security.ssh.port")
+        ssh_port_setting = settings_get("security.ssh.ssh_port")
         ssh_port_line = re.findall(
             r"\bPort *([0-9]{2,5})\b", read_file("/etc/ssh/sshd_config")
         )

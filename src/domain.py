@@ -44,7 +44,6 @@ from yunohost.log import is_unit_operation
 
 logger = getActionLogger("yunohost.domain")
 
-DOMAIN_CONFIG_PATH = "/usr/share/yunohost/config_domain.toml"
 DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 
 # Lazy dev caching to avoid re-query ldap every time we need the domain list

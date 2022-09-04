@@ -3,7 +3,7 @@
 
 Protocol 2
 # PLEASE: if you wish to change the ssh port properly in YunoHost, use this command:
-# yunohost settings set security.ssh.port -v <port>
+# yunohost settings set security.ssh.ssh_port -v <port>
 Port {{ port }}
 
 {% if ipv6_enabled == "true" %}ListenAddress ::{% endif %}
@@ -56,7 +56,7 @@ ChallengeResponseAuthentication no
 UsePAM yes
 
 # PLEASE: if you wish to force everybody to authenticate using ssh keys, run this command:
-# yunohost settings set security.ssh.password_authentication -v no
+# yunohost settings set security.ssh.ssh_password_authentication -v no
 {% if password_authentication == "False" %}
 PasswordAuthentication no
 {% else %}

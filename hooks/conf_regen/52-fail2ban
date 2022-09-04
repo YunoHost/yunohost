@@ -16,7 +16,7 @@ do_pre_regen() {
     cp yunohost.conf "${fail2ban_dir}/filter.d/yunohost.conf"
     cp jail.conf "${fail2ban_dir}/jail.conf"
 
-    export ssh_port="$(yunohost settings get 'security.ssh.port')"
+    export ssh_port="$(yunohost settings get 'security.ssh.ssh_port')"
     ynh_render_template "yunohost-jails.conf" "${fail2ban_dir}/jail.d/yunohost-jails.conf"
 }
 

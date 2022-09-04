@@ -25,8 +25,6 @@
 import os
 import sys
 import shutil
-import pwd
-import grp
 import subprocess
 import glob
 
@@ -34,7 +32,7 @@ from datetime import datetime
 
 from moulinette import m18n
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file
+from moulinette.utils.filesystem import read_file, chown, chmod
 
 from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -719,11 +717,8 @@ def _generate_key(destination_path):
 
 
 def _set_permissions(path, user, group, permissions):
-    uid = pwd.getpwnam(user).pw_uid
-    gid = grp.getgrnam(group).gr_gid
-
-    os.chown(path, uid, gid)
-    os.chmod(path, permissions)
+    chown(path, user, group)
+    chmod(path, permissions)
 
 
 def _enable_certificate(domain, new_cert_folder):
