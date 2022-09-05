@@ -60,7 +60,7 @@ def tools_versions():
     return ynh_packages_version()
 
 
-def tools_rootpw(new_password):
+def tools_rootpw(new_password, check_strength=True):
 
     from yunohost.user import _hash_user_password
     from yunohost.utils.password import (
@@ -70,7 +70,8 @@ def tools_rootpw(new_password):
     import spwd
 
     assert_password_is_compatible(new_password)
-    assert_password_is_strong_enough("admin", new_password)
+    if check_strength:
+        assert_password_is_strong_enough("admin", new_password)
 
     new_hash = _hash_user_password(new_password)
 

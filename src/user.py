@@ -381,7 +381,7 @@ def user_update(
 
     # Populate user informations
     ldap = _get_ldap_interface()
-    attrs_to_fetch = ["givenName", "sn", "mail", "maildrop"]
+    attrs_to_fetch = ["givenName", "sn", "mail", "maildrop", "memberOf"]
     result = ldap.search(
         base="ou=users",
         filter="uid=" + username,
@@ -425,7 +425,8 @@ def user_update(
 
         # Ensure compatibility and sufficiently complex password
         assert_password_is_compatible(change_password)
-        assert_password_is_strong_enough("user", change_password)    # FIXME FIXME FIXME : gotta use admin profile if user is admin
+        is_admin = "cn=admins,ou=groups,dc=yunohost,dc=org" in result["memberOf"]
+        assert_password_is_strong_enough("admin" if is_admin else "user", change_password)
 
         new_attr_dict["userPassword"] = [_hash_user_password(change_password)]
         env_dict["YNH_USER_PASSWORD"] = change_password

@@ -52,6 +52,11 @@ yunohost tools migrations run""",
 
         self.ldap_migration_started = True
 
+        aliases = user_info(new_admin_user).get("mail-aliases", [])
+        old_admin_aliases_to_remove = [alias for alias in aliases if any(alias.startswith(a) for a in ["root@", "admin@", "admins@", "webmaster@", "postmaster@", "abuse@"])]
+
+        user_update(new_admin_user, remove_mailalias=old_admin_aliases_to_remove)
+
         stuff_to_delete = [
             "cn=admin,ou=sudo",
             "cn=admin",
