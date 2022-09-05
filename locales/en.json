@@ -429,6 +429,7 @@
     "invalid_number_min": "Must be greater than {min}",
     "invalid_password": "Invalid password",
     "invalid_regex": "Invalid regex:'{regex}'",
+    "invalid_credentials": "Invalid password or username",
     "ip6tables_unavailable": "You cannot play with ip6tables here. You are either in a container or your kernel does not support it",
     "iptables_unavailable": "You cannot play with iptables here. You are either in a container or your kernel does not support it",
     "ldap_attribute_already_exists": "LDAP attribute '{attribute}' already exists with value '{value}'",

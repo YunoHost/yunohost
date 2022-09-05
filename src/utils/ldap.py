@@ -145,6 +145,8 @@ class LDAPInterface:
 
         try:
             result = self.con.search_s(base, ldap.SCOPE_SUBTREE, filter, attrs)
+        except ldap.SERVER_DOWN as e:
+            raise e
         except Exception as e:
             raise MoulinetteError(
                 "error during LDAP search operation with: base='%s', "

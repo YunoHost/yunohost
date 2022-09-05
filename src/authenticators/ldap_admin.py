@@ -17,7 +17,7 @@ session_secret = random_ascii()
 logger = logging.getLogger("yunohost.authenticators.ldap_admin")
 
 LDAP_URI = "ldap://localhost:389"
-ADMIN_GROUP = "cn=admins,ou=groups,dc=yunohost,dc=org"
+ADMIN_GROUP = "cn=admins,ou=groups"
 AUTH_DN = "uid={uid},ou=users,dc=yunohost,dc=org"
 
 class Authenticator(BaseAuthenticator):
@@ -29,11 +29,27 @@ class Authenticator(BaseAuthenticator):
 
     def _authenticate_credentials(self, credentials=None):
 
-        admins = _get_ldap_interface().search(ADMIN_GROUP, attrs=["memberUid"])[0]["memberUid"]
+        try:
+            admins = _get_ldap_interface().search(ADMIN_GROUP, attrs=["memberUid"])[0].get("memberUid", [])
+        except ldap.SERVER_DOWN:
+            # ldap is down, attempt to restart it before really failing
+            logger.warning(m18n.n("ldap_server_is_down_restart_it"))
+            os.system("systemctl restart slapd")
+            time.sleep(10)  # waits 10 secondes so we are sure that slapd has restarted
 
-        uid, password = credentials.split(":", 1)
+            try:
+                admins = _get_ldap_interface().search(ADMIN_GROUP, attrs=["memberUid"])[0].get("memberUid", [])
+            except ldap.SERVER_DOWN:
+                raise YunohostError("ldap_server_down")
 
-        if uid not in admins:
+        try:
+            uid, password = credentials.split(":", 1)
+        except ValueError:
+            raise YunohostError("invalid_credentials")
+
+        # Here we're explicitly using set() which are handled as hash tables
+        # and should prevent timing attacks to find out the admin usernames?
+        if uid not in set(admins):
             raise YunohostError("invalid_credentials")
 
         dn = AUTH_DN.format(uid=uid)
