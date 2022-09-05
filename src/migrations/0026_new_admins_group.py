@@ -19,6 +19,8 @@ class MyMigration(Migration):
     introduced_in_version = "11.1"  # FIXME?
     dependencies = []
 
+    ldap_migration_started = False
+
     @Migration.ldap_migration
     def run(self, *args):
 
@@ -48,9 +50,10 @@ yunohost tools migrations run""",
                     raw_msg=True
                 )
 
+        self.ldap_migration_started = True
+
         stuff_to_delete = [
             "cn=admin,ou=sudo",
-            "cn=admins,ou=sudo"
             "cn=admin",
             "cn=admins,ou=groups",
         ]
@@ -75,7 +78,7 @@ yunohost tools migrations run""",
             {
                 "cn": ["admins"],
                 "objectClass": ["top", "posixGroup", "groupOfNamesYnh", "mailGroup"],
-                "gidNumber": [4001],
+                "gidNumber": ["4001"],
                 "mail": ["root", "admin", "admins", "webmaster", "postmaster", "abuse"],
             }
         )

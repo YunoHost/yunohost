@@ -2,7 +2,7 @@ import pytest
 import os
 
 from yunohost.authenticators.ldap_admin import Authenticator as LDAPAuth
-from yunohost.tools import tools_adminpw
+from yunohost.tools import tools_rootpw
 
 from moulinette import m18n
 from moulinette.core import MoulinetteError
@@ -13,7 +13,7 @@ def setup_function(function):
     if os.system("systemctl is-active slapd") != 0:
         os.system("systemctl start slapd && sleep 3")
 
-    tools_adminpw("yunohost", check_strength=False)
+    tools_rootpw("yunohost", check_strength=False)
 
 
 def test_authenticate():
@@ -47,7 +47,7 @@ def test_authenticate_change_password():
 
     LDAPAuth().authenticate_credentials(credentials="yunohost")
 
-    tools_adminpw("plopette", check_strength=False)
+    tools_rootpw("plopette", check_strength=False)
 
     with pytest.raises(MoulinetteError) as exception:
         LDAPAuth().authenticate_credentials(credentials="yunohost")

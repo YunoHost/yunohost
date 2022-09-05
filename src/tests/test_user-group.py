@@ -11,7 +11,6 @@ from yunohost.user import (
     user_import,
     user_export,
     FIELDS_FOR_IMPORT,
-    FIRST_ALIASES,
     user_group_list,
     user_group_create,
     user_group_delete,
@@ -175,7 +174,6 @@ def test_import_user(mocker):
 
 def test_export_user(mocker):
     result = user_export()
-    aliases = ",".join([alias + maindomain for alias in FIRST_ALIASES])
     should_be = (
         "username;firstname;lastname;password;mail;mail-alias;mail-forward;mailbox-quota;groups\r\n"
         f"alice;Alice;White;;alice@{maindomain};{aliases};;0;dev\r\n"

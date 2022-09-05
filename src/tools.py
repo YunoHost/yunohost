@@ -30,7 +30,7 @@ from typing import List
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import call_async_output
-from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm
+from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm, chown
 
 from yunohost.app import app_upgrade, app_list
 from yunohost.app_catalog import (
@@ -965,22 +965,28 @@ class Migration:
             try:
                 run(self, backup_folder)
             except Exception:
-                logger.warning(
-                    m18n.n("migration_ldap_migration_failed_trying_to_rollback")
-                )
-                os.system("systemctl stop slapd")
-                # To be sure that we don't keep some part of the old config
-                rm("/etc/ldap/slapd.d", force=True, recursive=True)
-                cp(f"{backup_folder}/ldap_config", "/etc/ldap", recursive=True)
-                cp(f"{backup_folder}/ldap_db", "/var/lib/ldap", recursive=True)
-                cp(
-                    f"{backup_folder}/apps_settings",
-                    "/etc/yunohost/apps",
-                    recursive=True,
-                )
-                os.system("systemctl start slapd")
-                rm(backup_folder, force=True, recursive=True)
-                logger.info(m18n.n("migration_ldap_rollback_success"))
+                if self.ldap_migration_started:
+                    logger.warning(
+                        m18n.n("migration_ldap_migration_failed_trying_to_rollback")
+                    )
+                    os.system("systemctl stop slapd")
+                    # To be sure that we don't keep some part of the old config
+                    rm("/etc/ldap", force=True, recursive=True)
+                    cp(f"{backup_folder}/ldap_config", "/etc/ldap", recursive=True)
+                    chown("/etc/ldap/schema/", "openldap", "openldap", recursive=True)
+                    chown("/etc/ldap/slapd.d/", "openldap", "openldap", recursive=True)
+                    rm("/var/lib/ldap", force=True, recursive=True)
+                    cp(f"{backup_folder}/ldap_db", "/var/lib/ldap", recursive=True)
+                    rm("/etc/yunohost/apps", force=True, recursive=True)
+                    chown("/var/lib/ldap/", "openldap", recursive=True)
+                    cp(
+                        f"{backup_folder}/apps_settings",
+                        "/etc/yunohost/apps",
+                        recursive=True,
+                    )
+                    os.system("systemctl start slapd")
+                    rm(backup_folder, force=True, recursive=True)
+                    logger.info(m18n.n("migration_ldap_rollback_success"))
                 raise
             else:
                 rm(backup_folder, force=True, recursive=True)
