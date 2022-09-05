@@ -24,7 +24,7 @@ class MyMigration(Migration):
     @Migration.ldap_migration
     def run(self, *args):
 
-        from yunohost.user import user_list, user_info, user_group_update
+        from yunohost.user import user_list, user_info, user_group_update, user_update
         from yunohost.utils.ldap import _get_ldap_interface
 
         ldap = _get_ldap_interface()
@@ -36,7 +36,9 @@ class MyMigration(Migration):
                 new_admin_user = user
                 break
 
-        if not new_admin_user:
+        # NB: we handle the edge-case where no user exist at all
+        # which is useful for the CI etc.
+        if all_users and not new_admin_user:
             new_admin_user = os.environ.get("YNH_NEW_ADMIN_USER")
             if new_admin_user:
                 assert new_admin_user in all_users, f"{new_admin_user} is not an existing yunohost user"
@@ -52,10 +54,11 @@ yunohost tools migrations run""",
 
         self.ldap_migration_started = True
 
-        aliases = user_info(new_admin_user).get("mail-aliases", [])
-        old_admin_aliases_to_remove = [alias for alias in aliases if any(alias.startswith(a) for a in ["root@", "admin@", "admins@", "webmaster@", "postmaster@", "abuse@"])]
+        if new_admin_user:
+            aliases = user_info(new_admin_user).get("mail-aliases", [])
+            old_admin_aliases_to_remove = [alias for alias in aliases if any(alias.startswith(a) for a in ["root@", "admin@", "admins@", "webmaster@", "postmaster@", "abuse@"])]
 
-        user_update(new_admin_user, remove_mailalias=old_admin_aliases_to_remove)
+            user_update(new_admin_user, remove_mailalias=old_admin_aliases_to_remove)
 
         stuff_to_delete = [
             "cn=admin,ou=sudo",
@@ -88,7 +91,8 @@ yunohost tools migrations run""",
             }
         )
 
-        user_group_update(groupname="admins", add=new_admin_user, sync_perm=True)
+        if new_admin_user:
+            user_group_update(groupname="admins", add=new_admin_user, sync_perm=True)
 
     def run_after_system_restore(self):
         self.run()

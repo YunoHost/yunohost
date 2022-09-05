@@ -425,7 +425,7 @@ def user_update(
 
         # Ensure compatibility and sufficiently complex password
         assert_password_is_compatible(change_password)
-        is_admin = "cn=admins,ou=groups,dc=yunohost,dc=org" in result["memberOf"]
+        is_admin = "cn=admins,ou=groups,dc=yunohost,dc=org" in user["memberOf"]
         assert_password_is_strong_enough("admin" if is_admin else "user", change_password)
 
         new_attr_dict["userPassword"] = [_hash_user_password(change_password)]
