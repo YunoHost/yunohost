@@ -1,3 +1,10 @@
+yunohost (11.0.9.14) stable; urgency=low
+
+  - [fix] dns: confusion on XMPP CNAME records for nohost.me & co domains (f6057d25)
+  - [fix] helper ynh_get_ram: LANG= isn't enough to get en_US output, gotta use LC_ALL (e51cdd98)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 07 Sep 2022 13:08:31 +0200
+
 yunohost (11.0.9.13) stable; urgency=low
 
   - [fix] defaultapp: domain may not exist in app_map dict output (efe0e601)
@@ -9,7 +16,6 @@ yunohost (11.0.9.13) stable; urgency=low
   Thanks to all contributors <3 ! (José M, Jose Riha, tituspijean, xabirequejo)
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 03 Sep 2022 23:27:56 +0200
-
 
 yunohost (11.0.9.12) stable; urgency=low
 
