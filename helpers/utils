@@ -132,7 +132,7 @@ ynh_setup_source() {
     src_format=${src_format:-tar.gz}
     src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
     src_extract=${src_extract:-true}
-    if [[ "$src_filename" = "" && "$src_format" != "docker" ]]; then
+    if [ "$src_filename" = "" ]; then
         src_filename="${source_id}.${src_format}"
     fi
 
@@ -144,21 +144,18 @@ ynh_setup_source() {
 
     if [ "$src_format" = "docker" ]; then
         src_plateform="${src_plateform:-"linux/$YNH_ARCH"}"
+    elif test -e "$local_src"; then
+        cp $local_src $src_filename
     else
-        if test -e "$local_src"; then
-            cp $local_src $src_filename
-        else
-            [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
-    
-            # NB. we have to declare the var as local first,
-            # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
-            # because local always return 0 ...
-            local out
-            # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-            out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$src_filename $src_url 2>&1) \
-                || ynh_die --message="$out"
-        fi
-    
+        [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
+
+        # NB. we have to declare the var as local first,
+        # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
+        # because local always return 0 ...
+        local out
+        # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
+        out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$src_filename $src_url 2>&1) \
+            || ynh_die --message="$out"
         # Check the control sum
         echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status \
             || ynh_die --message="Corrupt source"
