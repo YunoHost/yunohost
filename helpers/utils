@@ -132,7 +132,7 @@ ynh_setup_source() {
     src_format=${src_format:-tar.gz}
     src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
     src_extract=${src_extract:-true}
-    if [ "$src_filename" = "" ]; then
+    if [[ "$src_filename" = "" && "$src_format" != "docker" ]]; then
         src_filename="${source_id}.${src_format}"
     fi
 
@@ -189,9 +189,7 @@ ynh_setup_source() {
     if ! "$src_extract"; then
         mv $src_filename $dest_dir
     elif [ "$src_format" = "docker" ]; then
-        /usr/share/yunohost/helpers.d/vendor/docker-image-extract -p $src_plateform -o $src_filename $src_url 2>&1
-        mv $src_filename $dest_dir
-        ynh_secure_remove --file="$src_filename"
+        /usr/share/yunohost/helpers.d/vendor/docker-image-extract -p $src_plateform -o $dest_dir $src_url 2>&1
     elif [ "$src_format" = "zip" ]; then
         # Zip format
         # Using of a temp directory, because unzip doesn't manage --strip-components

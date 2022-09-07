@@ -1,5 +1,4 @@
 #!/bin/sh
-
 #
 # This script pulls and extracts all files from an image in Docker Hub.
 #
