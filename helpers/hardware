@@ -30,8 +30,8 @@ ynh_get_ram() {
         ram=0
     # Use the total amount of ram
     elif [ $free -eq 1 ]; then
-        local free_ram=$(LANG=C vmstat --stats --unit M | grep "free memory" | awk '{print $1}')
-        local free_swap=$(LANG=C vmstat --stats --unit M | grep "free swap" | awk '{print $1}')
+        local free_ram=$(LC_ALL=C vmstat --stats --unit M | grep "free memory" | awk '{print $1}')
+        local free_swap=$(LC_ALL=C vmstat --stats --unit M | grep "free swap" | awk '{print $1}')
         local free_ram_swap=$((free_ram + free_swap))
 
         # Use the total amount of free ram
@@ -44,8 +44,8 @@ ynh_get_ram() {
             ram=$free_swap
         fi
     elif [ $total -eq 1 ]; then
-        local total_ram=$(LANG=C vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
-        local total_swap=$(LANG=C vmstat --stats --unit M | grep "total swap" | awk '{print $1}')
+        local total_ram=$(LC_ALL=C vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
+        local total_swap=$(LC_ALL=C vmstat --stats --unit M | grep "total swap" | awk '{print $1}')
         local total_ram_swap=$((total_ram + total_swap))
 
         local ram=$total_ram_swap
