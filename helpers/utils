@@ -87,7 +87,7 @@ ynh_abort_if_errors() {
 # # (Useful to get a debian package or a python wheel.)
 # SOURCE_EXTRACT=(true|false)
 # # (Optionnal) Name of the plateform. Default: "linux/$YNH_ARCH"
-# SOURCE_FILENAME=linux/arm64/v8
+# SOURCE_PLATFORM=linux/arm64/v8
 # ```
 #
 # The helper will:
