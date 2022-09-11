@@ -1,3 +1,11 @@
 {
-    "password_too_simple_1": "Şifre en az 8 karakter uzunluğunda olmalı"
+    "password_too_simple_1": "Şifre en az 8 karakter uzunluğunda olmalı",
+    "action_invalid": "Geçersiz işlem '{action}'",
+    "admin_password": "Yönetici şifresi",
+    "admin_password_change_failed": "Şifre değiştirme başarısız oldu",
+    "admin_password_changed": "Yönetici şifresi değişti",
+    "admin_password_too_long": "Lütfen 127 karakterden kısa bir şifre seçin",
+    "already_up_to_date": "Yapılacak yeni bir şey yok. Her şey zaten güncel.",
+    "app_action_broke_system": "Bu işlem bazı hizmetleri bozmuş olabilir: {services}",
+    "good_practices_about_user_password": "Şimdi yeni bir kullanıcı şifresi tanımlamak üzeresiniz. Parola en az 8 karakter uzunluğunda olmalıdır - ancak daha uzun bir parola (yani bir parola) ve/veya çeşitli karakterler (büyük harf, küçük harf, rakamlar ve özel karakterler) daha iyidir."
 }
