@@ -221,7 +221,10 @@ do_post_regen() {
         systemctl restart ntp
     }
     [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || systemctl daemon-reload
-    [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] || systemctl daemon-reload
+    [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] ||  {
+        systemctl daemon-reload
+        systemctl restart systemd-logind
+    }
     [[ ! "$regen_conf_files" =~ "yunohost-firewall.service" ]] || systemctl daemon-reload
     [[ ! "$regen_conf_files" =~ "yunohost-api.service" ]] || systemctl daemon-reload
 
