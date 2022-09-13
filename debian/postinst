@@ -3,10 +3,6 @@
 set -e
 
 do_configure() {
-    rm -rf /var/cache/moulinette/*
-
-    mkdir -p /usr/share/moulinette/actionsmap/
-    ln -sf /usr/share/yunohost/actionsmap/yunohost.yml /usr/share/moulinette/actionsmap/yunohost.yml
 
     if [ ! -f /etc/yunohost/installed ]; then
         # If apps/ is not empty, we're probably already installed in the past and
@@ -33,6 +29,17 @@ do_configure() {
         yunohost diagnosis run --force
     fi
 
+    # Trick to let yunohost handle the restart of the API,
+    # to prevent the webadmin from cutting the branch it's sitting on
+    if systemctl is-enabled yunohost-api --quiet
+    then
+        if [[ "${YUNOHOST_API_RESTART_WILL_BE_HANDLED_BY_YUNOHOST:-}" != "yes" ]];
+        then
+            systemctl restart yunohost-api
+        else
+            echo "(Delaying the restart of yunohost-api, this should automatically happen after the end of this upgrade)"
+        fi
+    fi
 }
 
 # summary of how this script can be called:

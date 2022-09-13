@@ -1,0 +1,101 @@
+#!/bin/bash
+
+# Get the total or free amount of RAM+swap on the system
+#
+# usage: ynh_get_ram [--free|--total] [--ignore_swap|--only_swap]
+# | arg: -f, --free         - Count free RAM+swap
+# | arg: -t, --total        - Count total RAM+swap
+# | arg: -s, --ignore_swap  - Ignore swap, consider only real RAM
+# | arg: -o, --only_swap    - Ignore real RAM, consider only swap
+# | ret: the amount of free ram, in MB (MegaBytes)
+#
+# Requires YunoHost version 3.8.1 or higher.
+ynh_get_ram() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=ftso
+    local -A args_array=([f]=free [t]=total [s]=ignore_swap [o]=only_swap)
+    local free
+    local total
+    local ignore_swap
+    local only_swap
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    ignore_swap=${ignore_swap:-0}
+    only_swap=${only_swap:-0}
+    free=${free:-0}
+    total=${total:-0}
+
+    if [ $free -eq $total ]; then
+        ynh_print_warn --message="You have to choose --free or --total when using ynh_get_ram"
+        ram=0
+    # Use the total amount of ram
+    elif [ $free -eq 1 ]; then
+        local free_ram=$(LC_ALL=C vmstat --stats --unit M | grep "free memory" | awk '{print $1}')
+        local free_swap=$(LC_ALL=C vmstat --stats --unit M | grep "free swap" | awk '{print $1}')
+        local free_ram_swap=$((free_ram + free_swap))
+
+        # Use the total amount of free ram
+        local ram=$free_ram_swap
+        if [ $ignore_swap -eq 1 ]; then
+            # Use only the amount of free ram
+            ram=$free_ram
+        elif [ $only_swap -eq 1 ]; then
+            # Use only the amount of free swap
+            ram=$free_swap
+        fi
+    elif [ $total -eq 1 ]; then
+        local total_ram=$(LC_ALL=C vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
+        local total_swap=$(LC_ALL=C vmstat --stats --unit M | grep "total swap" | awk '{print $1}')
+        local total_ram_swap=$((total_ram + total_swap))
+
+        local ram=$total_ram_swap
+        if [ $ignore_swap -eq 1 ]; then
+            # Use only the amount of free ram
+            ram=$total_ram
+        elif [ $only_swap -eq 1 ]; then
+            # Use only the amount of free swap
+            ram=$total_swap
+        fi
+    fi
+
+    echo $ram
+}
+
+# Return 0 or 1 depending if the system has a given amount of RAM+swap free or total
+#
+# usage: ynh_require_ram --required=RAM [--free|--total] [--ignore_swap|--only_swap]
+# | arg: -r, --required=    - The amount to require, in MB
+# | arg: -f, --free         - Count free RAM+swap
+# | arg: -t, --total        - Count total RAM+swap
+# | arg: -s, --ignore_swap  - Ignore swap, consider only real RAM
+# | arg: -o, --only_swap    - Ignore real RAM, consider only swap
+# | ret: 1 if the ram is under the requirement, 0 otherwise.
+#
+# Requires YunoHost version 3.8.1 or higher.
+ynh_require_ram() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=rftso
+    local -A args_array=([r]=required= [f]=free [t]=total [s]=ignore_swap [o]=only_swap)
+    local required
+    local free
+    local total
+    local ignore_swap
+    local only_swap
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    # Dunno if that's the right way to do, but that's some black magic to be able to
+    # forward the bool args to ynh_get_ram easily?
+    # If the variable $free is not empty, set it to '--free'
+    free=${free:+--free}
+    total=${total:+--total}
+    ignore_swap=${ignore_swap:+--ignore_swap}
+    only_swap=${only_swap:+--only_swap}
+
+    local ram=$(ynh_get_ram $free $total $ignore_swap $only_swap)
+
+    if [ $ram -lt $required ]; then
+        return 1
+    else
+        return 0
+    fi
+}

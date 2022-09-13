@@ -1,0 +1,193 @@
+#!/bin/bash
+
+set -e
+
+tmp_backup_dir_file="/root/slapd-backup-dir.txt"
+
+config="/usr/share/yunohost/conf/slapd/config.ldif"
+db_init="/usr/share/yunohost/conf/slapd/db_init.ldif"
+
+do_init_regen() {
+    if [[ $EUID -ne 0 ]]; then
+        echo "You must be root to run this script" 1>&2
+        exit 1
+    fi
+
+    do_pre_regen ""
+
+    # Drop current existing slapd data
+
+    rm -rf /var/backups/*.ldapdb
+    rm -rf /var/backups/slapd-*
+
+    debconf-set-selections <<EOF
+slapd slapd/password1 password yunohost
+slapd slapd/password2 password yunohost
+slapd slapd/domain string yunohost.org
+slapd shared/organization  string yunohost.org
+slapd slapd/allow_ldap_v2 boolean false
+slapd slapd/invalid_config boolean true
+slapd slapd/backend select MDB
+slapd slapd/move_old_database boolean true
+slapd slapd/no_configuration boolean false
+slapd slapd/purge_database boolean false
+EOF
+
+    DEBIAN_FRONTEND=noninteractive dpkg-reconfigure slapd -u
+
+    # Enforce permissions
+    chown -R openldap:openldap /etc/ldap/schema/
+    usermod -aG ssl-cert openldap
+
+    # (Re-)init data according to default ldap entries
+    echo '  Initializing LDAP with YunoHost DB structure'
+
+    rm -rf /etc/ldap/slapd.d
+    mkdir -p /etc/ldap/slapd.d
+    slapadd -F /etc/ldap/slapd.d -b cn=config -l "$config" 2>&1 \
+        | grep -v "none elapsed\|Closing DB" || true
+    chown -R openldap: /etc/ldap/slapd.d
+
+    rm -rf /var/lib/ldap
+    mkdir -p /var/lib/ldap
+    slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org -l "$db_init" 2>&1 \
+        | grep -v "none elapsed\|Closing DB" || true
+    chown -R openldap: /var/lib/ldap
+
+    nscd -i group || true
+    nscd -i passwd || true
+
+    systemctl restart slapd
+
+    # We don't use mkhomedir_helper because 'admin' may not be recognized
+    # when this script is ran in a chroot (e.g. ISO install)
+    # We also refer to admin as uid 1007 for the same reason
+    if [ ! -d /home/admin ]; then
+        cp -r /etc/skel /home/admin
+        chown -R 1007:1007 /home/admin
+    fi
+}
+
+_regenerate_slapd_conf() {
+
+    # Validate the new slapd config
+    # To do so, we have to use the .ldif to generate the config directory
+    # so we use a temporary directory slapd_new.d
+    rm -Rf /etc/ldap/slapd_new.d
+    mkdir /etc/ldap/slapd_new.d
+    slapadd -b cn=config -l "$config" -F /etc/ldap/slapd_new.d/ 2>&1 \
+        | grep -v "none elapsed\|Closing DB" || true
+    # Actual validation (-Q is for quiet, -u is for dry-run)
+    slaptest -Q -u -F /etc/ldap/slapd_new.d
+
+    # "Commit" / apply the new config (meaning we delete the old one and replace
+    # it with the new one)
+    rm -Rf /etc/ldap/slapd.d
+    mv /etc/ldap/slapd_new.d /etc/ldap/slapd.d
+
+    chown -R openldap:openldap /etc/ldap/slapd.d/
+}
+
+do_pre_regen() {
+    pending_dir=$1
+
+    # remove temporary backup file
+    rm -f "$tmp_backup_dir_file"
+
+    # Define if we need to migrate from hdb to mdb
+    curr_backend=$(grep '^database' /etc/ldap/slapd.conf 2>/dev/null | awk '{print $2}')
+    if [ -e /etc/ldap/slapd.conf ] && [ -n "$curr_backend" ] \
+        && [ $curr_backend != 'mdb' ]; then
+        backup_dir="/var/backups/dc=yunohost,dc=org-${curr_backend}-$(date +%s)"
+        mkdir -p "$backup_dir"
+        slapcat -b dc=yunohost,dc=org -l "${backup_dir}/dc=yunohost-dc=org.ldif"
+        echo "$backup_dir" >"$tmp_backup_dir_file"
+    fi
+
+    # create needed directories
+    ldap_dir="${pending_dir}/etc/ldap"
+    schema_dir="${ldap_dir}/schema"
+    mkdir -p "$ldap_dir" "$schema_dir"
+
+    cd /usr/share/yunohost/conf/slapd
+
+    # copy configuration files
+    cp -a ldap.conf "$ldap_dir"
+    cp -a sudo.ldif mailserver.ldif permission.ldif "$schema_dir"
+
+    mkdir -p ${pending_dir}/etc/systemd/system/slapd.service.d/
+    cp systemd-override.conf ${pending_dir}/etc/systemd/system/slapd.service.d/ynh-override.conf
+
+    install -D -m 644 slapd.default "${pending_dir}/etc/default/slapd"
+}
+
+do_post_regen() {
+    regen_conf_files=$1
+
+    # fix some permissions
+    echo "Enforce permissions on ldap/slapd directories and certs ..."
+    # penldap user should be in the ssl-cert group to let it access the certificate for TLS
+    usermod -aG ssl-cert openldap
+    chown -R openldap:openldap /etc/ldap/schema/
+    chown -R openldap:openldap /etc/ldap/slapd.d/
+
+    # If we changed the systemd ynh-override conf
+    if echo "$regen_conf_files" | sed 's/,/\n/g' | grep -q "^/etc/systemd/system/slapd.service.d/ynh-override.conf$"; then
+        systemctl daemon-reload
+        systemctl restart slapd
+        sleep 3
+    fi
+
+    # For some reason, old setups don't have the admins group defined...
+    if ! slapcat -H "ldap:///cn=admins,ou=groups,dc=yunohost,dc=org" | grep -q 'cn=admins,ou=groups,dc=yunohost,dc=org'; then
+        slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org <<< \
+            "dn: cn=admins,ou=groups,dc=yunohost,dc=org
+cn: admins
+gidNumber: 4001
+memberUid: admin
+objectClass: posixGroup
+objectClass: top"
+        chown -R openldap: /var/lib/ldap
+        systemctl restart slapd
+        nscd -i group
+    fi
+
+    [ -z "$regen_conf_files" ] && exit 0
+
+    # regenerate LDAP config directory from slapd.conf
+    echo "Regenerate LDAP config directory from config.ldif"
+    _regenerate_slapd_conf
+
+    # If there's a backup, re-import its data
+    backup_dir=$(cat "$tmp_backup_dir_file" 2>/dev/null || true)
+    if [[ -n "$backup_dir" && -f "${backup_dir}/dc=yunohost-dc=org.ldif" ]]; then
+        # regenerate LDAP config directory and import database as root
+        echo "Import the database using slapadd"
+        slapadd -F /etc/ldap/slapd.d -b dc=yunohost,dc=org -l "${backup_dir}/dc=yunohost-dc=org.ldif"
+        chown -R openldap:openldap /var/lib/ldap 2>&1
+    fi
+
+    echo "Running slapdindex"
+    su openldap -s "/bin/bash" -c "/usr/sbin/slapindex"
+
+    echo "Reloading slapd"
+    systemctl force-reload slapd
+
+    # on slow hardware/vm this regen conf would exit before the admin user that
+    # is stored in ldap is available because ldap seems to slow to restart
+    # so we'll wait either until we are able to log as admin or until a timeout
+    # is reached
+    # we need to do this because the next hooks executed after this one during
+    # postinstall requires to run as admin thus breaking postinstall on slow
+    # hardware which mean yunohost can't be correctly installed on those hardware
+    # and this sucks
+    # wait a maximum time of 5 minutes
+    # yes, force-reload behave like a restart
+    number_of_wait=0
+    while ! su admin -c '' && ((number_of_wait < 60)); do
+        sleep 5
+        ((number_of_wait += 1))
+    done
+}
+
+do_$1_regen ${@:2}

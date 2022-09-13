@@ -1,0 +1,69 @@
+#!/bin/bash
+
+set -e
+
+_generate_config() {
+    echo "domains:"
+    # Add yunohost.local (only if yunohost.local ain't already in ynh_domains)
+    if ! echo "$YNH_DOMAINS"  | tr ' ' '\n' | grep -q --line-regexp 'yunohost.local'
+    then
+        echo "    - yunohost.local"
+    fi
+    for domain in $YNH_DOMAINS; do
+        # Only keep .local domains (don't keep
+        [[ "$domain" =~ [^.]+\.[^.]+\.local$ ]] && echo "Subdomain $domain cannot be handled by Bonjour/Zeroconf/mDNS" >&2
+        [[ "$domain" =~ ^[^.]+\.local$ ]] || continue
+        echo "    - $domain"
+    done
+    if [[ -e /etc/yunohost/mdns.aliases ]]
+    then
+        for localalias in $(cat /etc/yunohost/mdns.aliases | grep -v "^ *$")
+        do
+            echo "    - $localalias.local"
+        done
+    fi
+}
+
+do_init_regen() {
+    do_pre_regen
+    do_post_regen /etc/systemd/system/yunomdns.service
+    systemctl enable yunomdns --quiet
+}
+
+do_pre_regen() {
+    pending_dir="$1"
+
+    cd /usr/share/yunohost/conf/mdns
+    mkdir -p ${pending_dir}/etc/systemd/system/
+    cp yunomdns.service ${pending_dir}/etc/systemd/system/
+
+    getent passwd mdns &>/dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group mdns
+
+    mkdir -p ${pending_dir}/etc/yunohost
+    _generate_config >${pending_dir}/etc/yunohost/mdns.yml
+}
+
+do_post_regen() {
+    regen_conf_files="$1"
+
+    chown mdns:mdns /etc/yunohost/mdns.yml
+
+    # If we changed the systemd ynh-override conf
+    if echo "$regen_conf_files" | sed 's/,/\n/g' | grep -q "^/etc/systemd/system/yunomdns.service$"; then
+        systemctl daemon-reload
+    fi
+
+    systemctl disable avahi-daemon.socket --quiet --now 2>/dev/null || true
+    systemctl disable avahi-daemon --quiet --now 2>/dev/null || true
+
+    # Legacy stuff to enable the new yunomdns service on legacy systems
+    if [[ -e /etc/avahi/avahi-daemon.conf ]] && grep -q 'yunohost' /etc/avahi/avahi-daemon.conf; then
+        systemctl enable yunomdns --now --quiet
+        sleep 2
+    fi
+
+    [[ -z "$regen_conf_files" ]] \
+        || systemctl restart yunomdns
+}
+
+do_$1_regen ${@:2}

@@ -1,0 +1,13 @@
+[Unit]
+Description=YunoHost API Server
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/yunohost-api
+Restart=always
+RestartSec=5
+TimeoutStopSec=30
+
+[Install]
+WantedBy=multi-user.target
