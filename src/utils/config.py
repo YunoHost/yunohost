@@ -49,10 +49,13 @@ from yunohost.log import OperationLogger
 logger = getActionLogger("yunohost.config")
 CONFIG_PANEL_VERSION_SUPPORTED = 1.0
 
-# Those js-like evaluate functions are used to eval safely visible attributes
-# The goal is to evaluate in the same way than js simple-evaluate
-# https://github.com/shepherdwind/simple-evaluate
+
 def evaluate_simple_ast(node, context=None):
+    """
+    Those js-like evaluate functions are used to eval safely visible attributes
+    The goal is to evaluate in the same way than js simple-evaluate
+    https://github.com/shepherdwind/simple-evaluate
+    """
     if context is None:
         context = {}
 
@@ -1130,9 +1133,9 @@ class DomainQuestion(Question):
     @staticmethod
     def normalize(value, option={}):
         if value.startswith("https://"):
-            value = value[len("https://") :]
+            value = value[len("https://"):]
         elif value.startswith("http://"):
-            value = value[len("http://") :]
+            value = value[len("http://"):]
 
         # Remove trailing slashes
         value = value.rstrip("/").lower()

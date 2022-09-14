@@ -23,25 +23,26 @@
 
     Manage backup repositories
 """
+import json
 import os
 import re
-import time
+import shutil
 import subprocess
-import re
-import urllib.parse
+import tarfile
+import tempfile
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, read_yaml, write_to_json, rm, mkdir, chmod, chown
-from moulinette.utils.network import download_text, download_json
+from moulinette.utils.filesystem import read_file, rm, mkdir
+from moulinette.utils.network import download_text
+from datetime import timedelta, datetime
 
 
-from yunohost.utils.config import ConfigPanel, Question
-from yunohost.utils.error import YunohostError
-from yunohost.utils.filesystem import space_used_in_directory, disk_usage, binary_to_human
-from yunohost.utils.network import get_ssh_public_key, shf_request, SHF_BASE_URL
-from yunohost.log import OperationLogger, is_unit_operation
+from yunohost.utils.config import ConfigPanel
+from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.filesystem import disk_usage, binary_to_human, free_space_in_directory
+from yunohost.utils.network import get_ssh_public_key, SHF_BASE_URL
 
 logger = getActionLogger('yunohost.repository')
 REPOSITORIES_DIR = '/etc/yunohost/repositories'
@@ -104,11 +105,10 @@ class BackupRepository(ConfigPanel):
         for repo in repositories:
             try:
                 repositories[repo] = BackupRepository(repo).info(space_used)
-            except Exception as e:
+            except Exception:
                 logger.error(f"Unable to open repository {repo}")
 
         return repositories
-
 
     # =================================================
     # Config Panel Hooks
@@ -117,19 +117,18 @@ class BackupRepository(ConfigPanel):
     def post_ask__domain(self, question):
         """ Detect if the domain support Self-Hosting Federation protocol
         """
-        #import requests
+        # import requests
         # FIXME What if remote server is self-signed ?
         # FIXME What if remote server is unreachable temporarily ?
         url = SHF_BASE_URL.format(domain=question.value) + "/"
         try:
-            #r = requests.get(url, timeout=10)
+            # r = requests.get(url, timeout=10)
             download_text(url, timeout=10)
-        except MoulinetteError as e:
+        except MoulinetteError:
             logger.debug("SHF not running")
-            return { 'is_shf': False }
+            return {'is_shf': False}
         logger.debug("SHF running")
-        return { 'is_shf': True }
-
+        return {'is_shf': True}
 
     # =================================================
     # Config Panel Override
@@ -156,7 +155,7 @@ class BackupRepository(ConfigPanel):
 
     def _parse_pre_answered(self, *args):
         super()._parse_pre_answered(*args)
-        if 'location'  in self.args:
+        if 'location' in self.args:
             self.args.update(BackupRepository.split_location(self.args['location']))
         if 'domain' in self.args:
             self.args['is_remote'] = bool(self.args['domain'])
@@ -178,7 +177,6 @@ class BackupRepository(ConfigPanel):
             self.values.pop(prop, None)
             self.new_values.pop(prop, None)
         super()._apply()
-
 
     # =================================================
     # BackupMethod encapsulation
@@ -237,7 +235,7 @@ class BackupRepository(ConfigPanel):
     def info(self, space_used=False):
         result = super().get(mode="export")
 
-        if self.__class__ == BackupRepository and space_used == True:
+        if self.__class__ == BackupRepository and space_used is True:
             result["space_used"] = self.compute_space_used()
 
         return {self.shortname: result}
@@ -245,7 +243,7 @@ class BackupRepository(ConfigPanel):
     def list(self, with_info):
         archives = self.list_archive_name()
         if with_info:
-            d = OrderedDict()
+            d = {}
             for archive in archives:
                 try:
                     d[archive] = BackupArchive(repo=self, name=archive).info()
@@ -289,7 +287,7 @@ class BackupRepository(ConfigPanel):
                 continue
             period = timedelta(**{unit: 1})
             periods += set([(now - period * i, now - period * (i - 1))
-                        for i in range(qty)])
+                           for i in range(qty)])
 
         # Delete unneeded archive
         for created_at in sorted(archives, reverse=True):
@@ -412,7 +410,7 @@ class BackupArchive:
             raise YunohostError(
                 "backup_archive_cant_retrieve_info_json", archive=self.archive_path
             )
-        extract_paths = []
+
         if f"{leading_dot}backup.csv" in files_in_archive:
             yield f"{leading_dot}backup.csv"
         else:
@@ -447,7 +445,7 @@ class BackupArchive:
         if not os.path.lexists(archive_file):
             archive_file += ".gz"
             if not os.path.lexists(archive_file):
-                raise YunohostValidationError("backup_archive_name_unknown", name=name)
+                raise YunohostValidationError("backup_archive_name_unknown", name=self.name)
 
         # If symlink, retrieve the real path
         if os.path.islink(archive_file):
@@ -491,7 +489,7 @@ class BackupArchive:
             raise YunohostError('backup_info_json_not_implemented')
         try:
             info = json.load(info_json)
-        except:
+        except Exception:
             logger.debug("unable to load info json", exc_info=1)
             raise YunohostError('backup_invalid_archive')
 
@@ -558,7 +556,8 @@ class BackupArchive:
                 raise YunohostError("backup_cleaning_failed")
 
         if self.manager.is_tmp_work_dir:
-            filesystem.rm(self.work_dir, True, True)
+            rm(self.work_dir, True, True)
+
     def _organize_files(self):
         """
         Mount all csv src in their related path
@@ -587,11 +586,11 @@ class BackupArchive:
 
             # Be sure the parent dir of destination exists
             if not os.path.isdir(dest_dir):
-                filesystem.mkdir(dest_dir, parents=True)
+                mkdir(dest_dir, parents=True)
 
             # For directory, attempt to mount bind
             if os.path.isdir(src):
-                filesystem.mkdir(dest, parents=True, force=True)
+                mkdir(dest, parents=True, force=True)
 
                 try:
                     subprocess.check_call(["mount", "--rbind", src, dest])
@@ -688,7 +687,6 @@ class BackupArchive:
         if self.__class__ == BackupArchive:
             raise NotImplementedError()
 
-
     def download(self):
         if self.__class__ == BackupArchive:
             raise NotImplementedError()
@@ -712,9 +710,3 @@ class BackupArchive:
     def mount(self):
         if self.__class__ == BackupArchive:
             raise NotImplementedError()
-
-
-
-
-
-

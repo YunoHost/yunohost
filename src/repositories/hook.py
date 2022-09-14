@@ -1,3 +1,32 @@
+# -*- coding: utf-8 -*-
+
+""" License
+
+    Copyright (C) 2013 Yunohost
+
+    This program is free software; you can redistribute it and/or modify
+    it under the terms of the GNU Affero General Public License as published
+    by the Free Software Foundation, either version 3 of the License, or
+    (at your option) any later version.
+
+    This program is distributed in the hope that it will be useful,
+    but WITHOUT ANY WARRANTY; without even the implied warranty of
+    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+    GNU Affero General Public License for more details.
+
+    You should have received a copy of the GNU Affero General Public License
+    along with this program; if not, see http://www.gnu.org/licenses
+
+"""
+from moulinette import m18n
+from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import rm
+
+from yunohost.hook import hook_callback
+from yunohost.utils.error import YunohostError
+from yunohost.repository import BackupRepository, BackupArchive
+logger = getActionLogger("yunohost.repository")
+
 
 class HookBackupRepository(BackupRepository):
     method_name = "hook"
@@ -13,7 +42,7 @@ class HookBackupRepository(BackupRepository):
 
     def remove(self, purge=False):
         if self.__class__ == BackupRepository:
-            raise NotImplementedError() # purge
+            raise NotImplementedError()  # purge
 
         rm(self.save_path, force=True)
         logger.success(m18n.n("repository_removed", repository=self.shortname))
@@ -24,8 +53,8 @@ class HookBackupRepository(BackupRepository):
     def info(self, space_used=False):
         result = super().get(mode="export")
 
-        if self.__class__ == BackupRepository and space_used == True:
-            raise NotImplementedError() # purge
+        if self.__class__ == BackupRepository and space_used is True:
+            raise NotImplementedError()  # purge
 
         return {self.shortname: result}
 
@@ -44,7 +73,7 @@ class HookBackupArchive(BackupArchive):
         """
 
         self._call('backup', self.work_dir, self.name, self.repo.location, self.manager.size,
-                self.manager.description)
+                   self.manager.description)
 
     def restore(self):
         raise NotImplementedError()
@@ -64,7 +93,7 @@ class HookBackupArchive(BackupArchive):
         return result
 
     def info(self):
-        raise NotImplementedError() #compute_space_used
+        raise NotImplementedError()  # compute_space_used
         """ Return json string of the info.json file
 
         Exceptions:
@@ -82,7 +111,7 @@ class HookBackupArchive(BackupArchive):
         """
         super().mount()
         self._call('mount', self.work_dir, self.name, self.repo.location, self.manager.size,
-                self.manager.description)
+                   self.manager.description)
 
     def extract(self):
         raise NotImplementedError()
@@ -97,6 +126,7 @@ class HookBackupArchive(BackupArchive):
         except YunohostError:
             return False
         return True
+
     def _call(self, *args):
         """ Call a submethod of backup method hook
 

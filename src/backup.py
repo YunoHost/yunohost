@@ -31,7 +31,7 @@ import subprocess
 import csv
 import tempfile
 import re
-import urllib
+import urllib.parse
 from datetime import datetime
 from packaging import version
 

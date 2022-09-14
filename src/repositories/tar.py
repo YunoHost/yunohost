@@ -235,4 +235,3 @@ class TarBackupArchive:
             if not os.path.exists(archive_file):
                 raise YunohostError('backup_archive_broken_link',
                                     path=archive_file)
-

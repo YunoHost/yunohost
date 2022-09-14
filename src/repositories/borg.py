@@ -22,13 +22,13 @@ import os
 import subprocess
 import json
 
-from datetime import datetime
+from datetime import datetime, timedelta
 
 from moulinette.utils.log import getActionLogger
-from moulinette import m18n
 
 from yunohost.utils.error import YunohostError
-from yunohost.repository import LocalBackupRepository
+from yunohost.utils.network import shf_request
+from yunohost.repository import LocalBackupRepository, BackupArchive
 logger = getActionLogger("yunohost.repository")
 
 
@@ -90,14 +90,14 @@ class BorgBackupRepository(LocalBackupRepository):
                 response = shf_request(
                     domain=self.domain,
                     service=services[self.method],
-                    shf_id=values.pop('shf_id', None),
+                    shf_id=self.values.pop('shf_id', None),
                     data={
                         'origin': self.domain,
                         'public_key': self.public_key,
                         'quota': self.quota,
                         'alert': self.alert,
                         'alert_delay': self.alert_delay,
-                        #password: "XXXXXXXX",
+                        # password: "XXXXXXXX",
                     }
                 )
                 self.new_values['shf_id'] = response['id']
@@ -123,13 +123,13 @@ class BorgBackupRepository(LocalBackupRepository):
 
     def purge(self):
         if self.is_shf:
-            response = shf_request(
+            shf_request(
                 domain=self.domain,
                 service="borgbackup",
-                shf_id=values.pop('shf_id', None),
+                shf_id=self.values.pop('shf_id', None),
                 data={
                     'origin': self.domain,
-                    #password: "XXXXXXXX",
+                    # password: "XXXXXXXX",
                 }
             )
         else:
@@ -179,7 +179,7 @@ class BorgBackupRepository(LocalBackupRepository):
                 continue
             period = timedelta(**{unit: 1})
             periods += set([(now - period * i, now - period * (i - 1))
-                        for i in range(qty)])
+                           for i in range(qty)])
 
         # Delete unneeded archive
         for created_at in sorted(archives, reverse=True):
@@ -194,7 +194,7 @@ class BorgBackupRepository(LocalBackupRepository):
 
 
 class BorgBackupArchive(BackupArchive):
-        """ Backup prepared files with borg """
+    """ Backup prepared files with borg """
 
     def backup(self):
         cmd = ['borg', 'create', self.archive_path, './']
@@ -244,5 +244,3 @@ class BorgBackupArchive(BackupArchive):
         # FIXME How to be sure the place where we mount is secure ?
         cmd = ['borg', 'mount', self.archive_path, path]
         self.repo._call('mount_archive', cmd)
-
-
