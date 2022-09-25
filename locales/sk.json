@@ -233,5 +233,8 @@
     "diagnosis_ip_no_ipv4": "Na serveri nefunguje spojenie cez protokol IPv4.",
     "diagnosis_ip_no_ipv6": "Na serveri nefunguje spojenie cez protokol IPv6.",
     "diagnosis_ip_not_connected_at_all": "Zdá sa, že tento server nie je vôbec pripojený k internetu!?",
-    "diagnosis_ip_weird_resolvconf": "Zdá sa, že preklad názvov domén funguje, ale podľa všetkého používate vlastný súbor <code>/etc/resolv.conf</code>."
+    "diagnosis_ip_weird_resolvconf": "Zdá sa, že preklad názvov domén funguje, ale podľa všetkého používate vlastný súbor <code>/etc/resolv.conf</code>.",
+    "root_password_desynchronized": "Heslo pre správu bolo zmenené, ale YunoHost nedokázal túto zmenu premietnuť do hesla používateľa root!",
+    "main_domain_changed": "Hlavná doména bola zmenená",
+    "user_updated": "Informácie o používateľovi boli zmenené"
 }
