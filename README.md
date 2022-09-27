@@ -10,6 +10,7 @@
 [![Build status](https://shields.io/gitlab/pipeline/yunohost/yunohost/dev)](https://gitlab.com/yunohost/yunohost/-/pipelines)
 ![Test coverage](https://img.shields.io/gitlab/coverage/yunohost/yunohost/dev)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/YunoHost/yunohost.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/YunoHost/yunohost/context:python)
+[![kandi X-Ray](https://kandi.openweaver.com/badges/xray.svg)](https://kandi.openweaver.com/python/YunoHost/yunohost)
 [![GitHub license](https://img.shields.io/github/license/YunoHost/yunohost)](https://github.com/YunoHost/yunohost/blob/dev/LICENSE)
 [![Mastodon Follow](https://img.shields.io/mastodon/follow/28084)](https://mastodon.social/@yunohost)
 
