@@ -30,7 +30,7 @@
     "backup_method_copy_finished": "إنتهت عملية النسخ الإحتياطي",
     "backup_nothings_done": "ليس هناك أي شيء للحفظ",
     "backup_output_directory_required": "يتوجب عليك تحديد مجلد لتلقي النسخ الإحتياطية",
-    "certmanager_cert_install_success": "تمت عملية تنصيب شهادة Let's Encrypt  بنجاح على النطاق  {domain}",
+    "certmanager_cert_install_success": "تمت عملية تنصيب شهادة Let's Encrypt بنجاح على النطاق '{domain}'",
     "certmanager_cert_install_success_selfsigned": "نجحت عملية تثبيت الشهادة الموقعة ذاتيا الخاصة بالنطاق '{domain}'",
     "certmanager_cert_renew_success": "نجحت عملية تجديد شهادة Let's Encrypt الخاصة باسم النطاق '{domain}'",
     "certmanager_cert_signing_failed": "فشل إجراء توقيع الشهادة الجديدة",
@@ -63,7 +63,7 @@
     "service_disabled": "لن يتم إطلاق خدمة '{service}' أثناء بداية تشغيل النظام.",
     "service_enabled": "تم تنشيط خدمة '{service}'",
     "service_removed": "تمت إزالة خدمة '{service}'",
-    "service_started": "تم إطلاق تشغيل خدمة  '{service}'",
+    "service_started": "تم إطلاق تشغيل خدمة '{service}'",
     "service_stopped": "تمّ إيقاف خدمة '{service}'",
     "system_upgraded": "تمت عملية ترقية النظام",
     "unlimit": "دون تحديد الحصة",
@@ -159,5 +159,6 @@
     "diagnosis_description_dnsrecords": "تسجيلات خدمة DNS",
     "diagnosis_description_ip": "الإتصال بالإنترنت",
     "diagnosis_description_basesystem": "النظام الأساسي",
-    "field_invalid": "الحقل غير صحيح : '{}'"
+    "field_invalid": "الحقل غير صحيح : '{}'",
+    "diagnosis_ignored_issues": "(+ {nb_ignored} مشاكل تم تجاهلها)"
 }
