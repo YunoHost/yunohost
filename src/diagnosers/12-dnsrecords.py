@@ -105,7 +105,7 @@ class MyDiagnoser(Diagnoser):
                 if r["value"] == "@":
                     r["value"] = domain + "."
                 elif r["type"] == "CNAME":
-                    r["value"] = r["value"] + f".{base_dns_zone}."
+                    r["value"] = r["value"]  # + f".{base_dns_zone}."
 
                 if self.current_record_match_expected(r):
                     results[id_] = "OK"

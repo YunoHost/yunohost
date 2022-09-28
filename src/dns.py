@@ -235,10 +235,10 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
                     "SRV",
                     f"0 5 5269 {domain}.",
                 ],
-                [f"muc{suffix}", ttl, "CNAME", basename],
-                [f"pubsub{suffix}", ttl, "CNAME", basename],
-                [f"vjud{suffix}", ttl, "CNAME", basename],
-                [f"xmpp-upload{suffix}", ttl, "CNAME", basename],
+                [f"muc{suffix}", ttl, "CNAME", f"{domain}."],
+                [f"pubsub{suffix}", ttl, "CNAME", f"{domain}."],
+                [f"vjud{suffix}", ttl, "CNAME", f"{domain}."],
+                [f"xmpp-upload{suffix}", ttl, "CNAME", f"{domain}."],
             ]
 
         #########

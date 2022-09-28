@@ -92,6 +92,8 @@ fi
 # # (Optional) If it set as false don't extract the source. Default: true
 # # (Useful to get a debian package or a python wheel.)
 # SOURCE_EXTRACT=(true|false)
+# # (Optionnal) Name of the plateform. Default: "linux/$YNH_ARCH"
+# SOURCE_PLATFORM=linux/arm64/v8
 # ```
 #
 # The helper will:
@@ -125,9 +127,10 @@ ynh_setup_source() {
     local src_sum=$(grep 'SOURCE_SUM=' "$src_file_path" | cut --delimiter='=' --fields=2-)
     local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$src_file_path" | cut --delimiter='=' --fields=2-)
     local src_format=$(grep 'SOURCE_FORMAT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_extract=$(grep 'SOURCE_EXTRACT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
     local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$src_file_path" | cut --delimiter='=' --fields=2-)
     local src_filename=$(grep 'SOURCE_FILENAME=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+    local src_extract=$(grep 'SOURCE_EXTRACT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+    local src_plateform=$(grep 'SOURCE_PLATFORM=' "$src_file_path" | cut --delimiter='=' --fields=2-)
 
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
@@ -145,7 +148,9 @@ ynh_setup_source() {
     mkdir -p /var/cache/yunohost/download/${YNH_APP_ID}/
     src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${src_filename}"
 
-    if test -e "$local_src"; then
+    if [ "$src_format" = "docker" ]; then
+        src_plateform="${src_plateform:-"linux/$YNH_ARCH"}"
+    elif test -e "$local_src"; then
         cp $local_src $src_filename
     else
         [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
@@ -157,11 +162,10 @@ ynh_setup_source() {
         # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
         out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$src_filename $src_url 2>&1) \
             || ynh_die --message="$out"
+        # Check the control sum
+        echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status \
+            || ynh_die --message="Corrupt source"
     fi
-
-    # Check the control sum
-    echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status \
-        || ynh_die --message="Corrupt source"
 
     # Keep files to be backup/restored at the end of the helper
     # Assuming $dest_dir already exists
@@ -187,6 +191,8 @@ ynh_setup_source() {
 
     if ! "$src_extract"; then
         mv $src_filename $dest_dir
+    elif [ "$src_format" = "docker" ]; then
+        /usr/share/yunohost/helpers.d/vendor/docker-image-extract/docker-image-extract -p $src_plateform -o $dest_dir $src_url 2>&1
     elif [ "$src_format" = "zip" ]; then
         # Zip format
         # Using of a temp directory, because unzip doesn't manage --strip-components
