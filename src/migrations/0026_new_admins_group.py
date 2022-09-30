@@ -25,7 +25,7 @@ class MyMigration(Migration):
     @Migration.ldap_migration
     def run(self, *args):
 
-        from yunohost.user import user_list, user_info, user_group_update, user_update, user_create
+        from yunohost.user import user_list, user_info, user_group_update, user_update
         from yunohost.utils.ldap import _get_ldap_interface
 
         ldap = _get_ldap_interface()
