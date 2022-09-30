@@ -238,6 +238,9 @@ def tools_postinstall(
 
     # If this is a nohost.me/noho.st, actually check for availability
     if not ignore_dyndns and is_yunohost_dyndns_domain(domain):
+
+        available = None
+
         # Check if the domain is available...
         try:
             available = _dyndns_available(domain)
