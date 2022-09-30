@@ -78,7 +78,7 @@ def test_authenticate_server_down(mocker):
 
 def test_authenticate_change_password():
 
-    LDAPAuth().authenticate_credentials(credentials="yunohost")
+    LDAPAuth().authenticate_credentials(credentials="alice:Yunohost")
 
     tools_rootpw("plopette", check_strength=False)
 
