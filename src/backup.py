@@ -902,7 +902,7 @@ class RestoreManager:
         self.targets = BackupRestoreTargetsManager()
 
     #
-    # Misc helpers                                                          #
+    # Misc helpers
     #
 
     @property
@@ -1982,7 +1982,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/yunohost backup create -n '{name}' -r '{repo}' --system --apps ; /usr/bin/yunohost backup prune -n '{name}'
+ExecStart=/usr/bin/yunohost backup create -n '{self.entity}' -r '{repo}' --system --apps ; /usr/bin/yunohost backup prune -n '{self.entity}'
 User=root
 Group=root
 """)
