@@ -1,4 +1,5 @@
 import os
+import subprocess
 from moulinette.utils.log import getActionLogger
 
 from yunohost.utils.error import YunohostError
@@ -24,7 +25,7 @@ class MyMigration(Migration):
     @Migration.ldap_migration
     def run(self, *args):
 
-        from yunohost.user import user_list, user_info, user_group_update, user_update
+        from yunohost.user import user_list, user_info, user_group_update, user_update, user_create
         from yunohost.utils.ldap import _get_ldap_interface
 
         ldap = _get_ldap_interface()
@@ -60,6 +61,8 @@ yunohost tools migrations run""",
 
             user_update(new_admin_user, remove_mailalias=old_admin_aliases_to_remove)
 
+        admin_hashs = ldap.search("cn=admin", "", {"userPassword"})[0]["userPassword"]
+
         stuff_to_delete = [
             "cn=admin,ou=sudo",
             "cn=admin",
@@ -93,6 +96,35 @@ yunohost tools migrations run""",
 
         if new_admin_user:
             user_group_update(groupname="admins", add=new_admin_user, sync_perm=True)
+
+        # Re-add admin as a regular user
+        attr_dict = {
+            "objectClass": [
+                "mailAccount",
+                "inetOrgPerson",
+                "posixAccount",
+                "userPermissionYnh",
+            ],
+            "givenName": ["Admin"],
+            "sn": ["Admin"],
+            "displayName": ["Admin"],
+            "cn": ["Admin"],
+            "uid": ["admin"],
+            "mail": "",
+            "maildrop": ["admin"],
+            "mailuserquota": ["0"],
+            "userPassword": admin_hashs,
+            "gidNumber": ["1007"],
+            "uidNumber": ["1007"],
+            "homeDirectory": ["/home/admin"],
+            "loginShell": ["/bin/bash"],
+        }
+        ldap.add("uid=admin,ou=users", attr_dict)
+        user_group_update(groupname="admins", add="admin", sync_perm=True)
+
+        subprocess.call(["nscd", "-i", "passwd"])
+        subprocess.call(["nscd", "-i", "group"])
+
 
     def run_after_system_restore(self):
         self.run()
