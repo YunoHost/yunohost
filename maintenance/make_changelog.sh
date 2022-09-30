@@ -1,7 +1,7 @@
 VERSION="?"
 RELEASE="testing"
 REPO=$(basename $(git rev-parse --show-toplevel))
-REPO_URL=$(git remote get-url origin)
+REPO_URL="https://github.com/yunohost/yunohost"
 ME=$(git config --global --get user.name)
 EMAIL=$(git config --global --get user.email)
 
