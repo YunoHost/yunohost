@@ -524,6 +524,7 @@ class ConfigPanel:
                     "accept",
                     "redact",
                     "filter",
+                    "readonly",
                 ],
                 "defaults": {},
             },
@@ -609,10 +610,27 @@ class ConfigPanel:
             "max_progression",
         ]
         forbidden_keywords += format_description["sections"]
+        forbidden_readonly_types = [
+            "password",
+            "app",
+            "domain",
+            "user",
+            "file"
+        ]
 
         for _, _, option in self._iterate():
             if option["id"] in forbidden_keywords:
                 raise YunohostError("config_forbidden_keyword", keyword=option["id"])
+            if (
+                option.get("readonly", False) and
+                option.get("type", "string") in forbidden_readonly_types
+            ):
+                raise YunohostError(
+                    "config_forbidden_readonly_type",
+                    type=option["type"],
+                    id=option["id"]
+                )
+
         return self.config
 
     def _hydrate(self):
@@ -797,6 +815,7 @@ class Question:
         self.default = question.get("default", None)
         self.optional = question.get("optional", False)
         self.visible = question.get("visible", None)
+        self.readonly = question.get("readonly", False)
         # Don't restrict choices if there's none specified
         self.choices = question.get("choices", None)
         self.pattern = question.get("pattern", self.pattern)
@@ -857,8 +876,9 @@ class Question:
             # Display question if no value filled or if it's a readonly message
             if Moulinette.interface.type == "cli" and os.isatty(1):
                 text_for_user_input_in_cli = self._format_text_for_user_input_in_cli()
-                if getattr(self, "readonly", False):
+                if self.readonly:
                     Moulinette.display(text_for_user_input_in_cli)
+                    return {}
                 elif self.value is None:
                     self._prompt(text_for_user_input_in_cli)
 
@@ -918,7 +938,12 @@ class Question:
 
         text_for_user_input_in_cli = _value_for_locale(self.ask)
 
-        if self.choices:
+        if self.readonly:
+            text_for_user_input_in_cli = colorize(text_for_user_input_in_cli, "purple")
+            if self.choices:
+                return text_for_user_input_in_cli + f" {self.choices[self.current_value]}"
+            return text_for_user_input_in_cli + f" {self.humanize(self.current_value)}"
+        elif self.choices:
 
             # Prevent displaying a shitload of choices
             # (e.g. 100+ available users when choosing an app admin...)
@@ -1018,6 +1043,7 @@ class ColorQuestion(StringQuestion):
 
 class TagsQuestion(Question):
     argument_type = "tags"
+    default_value = ""
 
     @staticmethod
     def humanize(value, option={}):
@@ -1189,7 +1215,8 @@ class BooleanQuestion(Question):
     def _format_text_for_user_input_in_cli(self):
         text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli()
 
-        text_for_user_input_in_cli += " [yes | no]"
+        if not self.readonly:
+            text_for_user_input_in_cli += " [yes | no]"
 
         return text_for_user_input_in_cli
 
@@ -1342,7 +1369,6 @@ class NumberQuestion(Question):
 
 class DisplayTextQuestion(Question):
     argument_type = "display_text"
-    readonly = True
 
     def __init__(
         self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
@@ -1350,6 +1376,7 @@ class DisplayTextQuestion(Question):
         super().__init__(question, context, hooks)
 
         self.optional = True
+        self.readonly = True
         self.style = question.get(
             "style", "info" if question["type"] == "alert" else ""
         )
