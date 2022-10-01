@@ -1029,7 +1029,7 @@ class DateQuestion(StringQuestion):
 
 class TimeQuestion(StringQuestion):
     pattern = {
-        "regexp": r"^(1[12]|0?\d):[0-5]\d$",
+        "regexp": r"^(?:\d|[01]\d|2[0-3]):[0-5]\d$",
         "error": "config_validate_time",  # i18n: config_validate_time
     }
 
