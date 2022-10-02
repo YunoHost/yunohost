@@ -107,7 +107,6 @@ i18n = "domain_config"
         style = "success"
         visible = "issuer != 'letsencrypt'"
         enabled = "acme_eligible || cert_no_checks"
-        args = ["cert_no_checks"]
 
         [cert.cert.cert_renew]
         ask = "Renew Let's Encrypt certificate"

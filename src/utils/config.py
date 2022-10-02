@@ -49,6 +49,7 @@ from yunohost.log import OperationLogger
 logger = getActionLogger("yunohost.config")
 CONFIG_PANEL_VERSION_SUPPORTED = 1.0
 
+
 # Those js-like evaluate functions are used to eval safely visible attributes
 # The goal is to evaluate in the same way than js simple-evaluate
 # https://github.com/shepherdwind/simple-evaluate
@@ -675,6 +676,11 @@ class ConfigPanel:
 
         for panel, section, obj in self._iterate(["panel", "section"]):
 
+            if section and section.get("visible") and not evaluate_simple_js_expression(
+                section["visible"], context=self.new_values
+            ):
+                continue
+
             # Ugly hack to skip action section ... except when when explicitly running actions
             if not for_action:
                 if section and section["is_action_section"]:
@@ -878,7 +884,8 @@ class Question:
                 text_for_user_input_in_cli = self._format_text_for_user_input_in_cli()
                 if self.readonly:
                     Moulinette.display(text_for_user_input_in_cli)
-                    return {}
+                    self.value = self.values[self.name] = self.current_value
+                    return self.values
                 elif self.value is None:
                     self._prompt(text_for_user_input_in_cli)
 
@@ -1458,13 +1465,6 @@ class FileQuestion(Question):
 
 class ButtonQuestion(Question):
     argument_type = "button"
-
-    #def __init__(
-    #    self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    #):
-    #    super().__init__(question, context, hooks)
-
-
 
 
 ARGUMENTS_TYPE_PARSERS = {

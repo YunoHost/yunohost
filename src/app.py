@@ -1539,7 +1539,7 @@ ynh_app_config_run $1
         if ret != 0:
             if action == "show":
                 raise YunohostError("app_config_unable_to_read")
-            elif action == "show":
+            elif action == "apply":
                 raise YunohostError("app_config_unable_to_apply")
             else:
                 raise YunohostError("app_action_failed", action=action)
