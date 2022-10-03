@@ -356,7 +356,7 @@ class ConfigPanel:
         self._load_current_values()
         self._hydrate()
         Question.operation_logger = operation_logger
-        self._ask(for_action=True)
+        self._ask(action=action_id)
 
         # FIXME: here, we could want to check constrains on
         # the action's visibility / requirements wrt to the answer to questions ...
@@ -526,6 +526,7 @@ class ConfigPanel:
                     "redact",
                     "filter",
                     "readonly",
+                    "enabled",
                 ],
                 "defaults": {},
             },
@@ -661,7 +662,7 @@ class ConfigPanel:
 
         return self.values
 
-    def _ask(self, for_action=False):
+    def _ask(self, action=None):
         logger.debug("Ask unanswered question and prevalidate data")
 
         if "i18n" in self.config:
@@ -682,7 +683,7 @@ class ConfigPanel:
                 continue
 
             # Ugly hack to skip action section ... except when when explicitly running actions
-            if not for_action:
+            if not action:
                 if section and section["is_action_section"]:
                     continue
 
@@ -693,6 +694,12 @@ class ConfigPanel:
                     name = _value_for_locale(section["name"])
                     if name:
                         display_header(f"\n# {name}")
+            elif section:
+                # filter action section options in case of multiple buttons
+                section["options"] = [
+                    option for option in section["options"]
+                    if option.get("type", "string") != "button" or option["id"] == action
+                ]
 
             if panel == obj:
                 continue
@@ -1465,6 +1472,13 @@ class FileQuestion(Question):
 
 class ButtonQuestion(Question):
     argument_type = "button"
+    enabled = None
+
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
+        super().__init__(question, context, hooks)
+        self.enabled = question.get("enabled", None)
 
 
 ARGUMENTS_TYPE_PARSERS = {
@@ -1529,10 +1543,21 @@ def ask_questions_and_parse_answers(
 
     for raw_question in raw_questions:
         question_class = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")]
-        if question_class.argument_type == "button":
-            continue
         raw_question["value"] = answers.get(raw_question["name"])
         question = question_class(raw_question, context=context, hooks=hooks)
+        if question.type == "button":
+            if (
+                not question.enabled
+                or evaluate_simple_js_expression(question.enabled, context=context)
+            ):
+                continue
+            else:
+                raise YunohostValidationError(
+                    "config_action_disabled",
+                    action=question.name,
+                    help=_value_for_locale(question.help)
+                )
+
         new_values = question.ask_if_needed()
         answers.update(new_values)
         context.update(new_values)

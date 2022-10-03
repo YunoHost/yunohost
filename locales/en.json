@@ -139,6 +139,7 @@
     "certmanager_self_ca_conf_file_not_found": "Could not find configuration file for self-signing authority (file: {file})",
     "certmanager_unable_to_parse_self_CA_name": "Could not parse name of self-signing authority (file: {file})",
     "certmanager_warning_subdomain_dns_record": "Subdomain '{subdomain}' does not resolve to the same IP address as '{domain}'. Some features will not be available until you fix this and regenerate the certificate.",
+    "config_action_disabled": "Could not run action '{action}' since it is disabled, make sure to meet its constraints. help: {help}",
     "config_apply_failed": "Applying the new configuration failed: {error}",
     "config_cant_set_value_on_section": "You can't set a single value on an entire config section.",
     "config_forbidden_keyword": "The keyword '{keyword}' is reserved, you can't create or use a config panel with a question with this id.",
