@@ -61,7 +61,7 @@ yunohost tools migrations run""",
 
             user_update(new_admin_user, remove_mailalias=old_admin_aliases_to_remove)
 
-        admin_hashs = ldap.search("cn=admin", "", {"userPassword"})[0]["userPassword"]
+        admin_hashs = ldap.search("cn=admin", attrs={"userPassword"})[0]["userPassword"]
 
         stuff_to_delete = [
             "cn=admin,ou=sudo",
@@ -112,7 +112,7 @@ yunohost tools migrations run""",
             "displayName": ["Admin"],
             "cn": ["Admin"],
             "uid": ["admin"],
-            "mail": "",
+            "mail": "admin_legacy",
             "maildrop": ["admin"],
             "mailuserquota": ["0"],
             "userPassword": admin_hashs,
