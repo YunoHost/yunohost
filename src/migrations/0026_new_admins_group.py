@@ -1,5 +1,4 @@
 import os
-import subprocess
 from moulinette.utils.log import getActionLogger
 
 from yunohost.utils.error import YunohostError
@@ -27,6 +26,7 @@ class MyMigration(Migration):
 
         from yunohost.user import user_list, user_info, user_group_update, user_update
         from yunohost.utils.ldap import _get_ldap_interface
+        from yunohost.permission import permission_sync_to_user
 
         ldap = _get_ldap_interface()
 
@@ -94,6 +94,8 @@ yunohost tools migrations run""",
             }
         )
 
+        permission_sync_to_user()
+
         if new_admin_user:
             user_group_update(groupname="admins", add=new_admin_user, sync_perm=True)
 
@@ -121,9 +123,6 @@ yunohost tools migrations run""",
         }
         ldap.add("uid=admin,ou=users", attr_dict)
         user_group_update(groupname="admins", add="admin", sync_perm=True)
-
-        subprocess.call(["nscd", "-i", "passwd"])
-        subprocess.call(["nscd", "-i", "group"])
 
 
     def run_after_system_restore(self):

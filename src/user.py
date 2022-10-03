@@ -208,6 +208,11 @@ def user_create(
     all_uid = {str(x.pw_uid) for x in pwd.getpwall()}
     all_gid = {str(x.gr_gid) for x in grp.getgrall()}
 
+    # Prevent users from obtaining uid 1007 which is the uid of the legacy admin,
+    # and there could be a edge case where a new user becomes owner of an old, removed admin user
+    all_uid.add("1007")
+    all_gid.add("1007")
+
     uid_guid_found = False
     while not uid_guid_found:
         # LXC uid number is limited to 65536 by default
