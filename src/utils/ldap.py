@@ -84,7 +84,7 @@ class LDAPInterface:
     def connect(self):
         def _reconnect():
             con = ldap.ldapobject.ReconnectLDAPObject(
-                self.uri, retry_max=10, retry_delay=0.5
+                self.uri, retry_max=10, retry_delay=2
             )
             con.sasl_non_interactive_bind_s("EXTERNAL")
             return con
@@ -145,6 +145,8 @@ class LDAPInterface:
 
         try:
             result = self.con.search_s(base, ldap.SCOPE_SUBTREE, filter, attrs)
+        except ldap.SERVER_DOWN as e:
+            raise e
         except Exception as e:
             raise MoulinetteError(
                 "error during LDAP search operation with: base='%s', "

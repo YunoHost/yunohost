@@ -89,4 +89,7 @@ olcObjectClasses: ( 1.3.6.1.4.1.40328.1.1.2.3
         NAME 'mailGroup' SUP top AUXILIARY
         DESC 'Mail Group'
         MUST ( mail )
+        MAY (
+            mailalias $ maildrop 
+            )
         )

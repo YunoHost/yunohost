@@ -109,7 +109,7 @@ def clean_user_groups_permission():
         user_delete(u)
 
     for g in user_group_list()["groups"]:
-        if g not in ["all_users", "visitors"]:
+        if g not in ["all_users", "visitors", "admins"]:
             user_group_delete(g)
 
     for p in user_permission_list()["permissions"]:

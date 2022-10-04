@@ -19,10 +19,6 @@
 
 """
 
-""" yunohost_tools.py
-
-    Specific tools
-"""
 import re
 import os
 import subprocess
@@ -34,7 +30,7 @@ from typing import List
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import call_async_output
-from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm
+from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm, chown
 
 from yunohost.app import app_upgrade, app_list
 from yunohost.app_catalog import (
@@ -64,14 +60,8 @@ def tools_versions():
     return ynh_packages_version()
 
 
-def tools_adminpw(new_password, check_strength=True):
-    """
-    Change admin password
+def tools_rootpw(new_password, check_strength=True):
 
-    Keyword argument:
-        new_password
-
-    """
     from yunohost.user import _hash_user_password
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
@@ -79,48 +69,31 @@ def tools_adminpw(new_password, check_strength=True):
     )
     import spwd
 
+    assert_password_is_compatible(new_password)
     if check_strength:
         assert_password_is_strong_enough("admin", new_password)
 
-    assert_password_is_compatible(new_password)
-
     new_hash = _hash_user_password(new_password)
 
-    from yunohost.utils.ldap import _get_ldap_interface
-
-    ldap = _get_ldap_interface()
-
+    # Write as root password
     try:
-        ldap.update(
-            "cn=admin",
-            {"userPassword": [new_hash]},
-        )
-    except Exception as e:
-        logger.error(f"unable to change admin password : {e}")
-        raise YunohostError("admin_password_change_failed")
-    else:
-        # Write as root password
-        try:
-            hash_root = spwd.getspnam("root").sp_pwd
+        hash_root = spwd.getspnam("root").sp_pwd
 
-            with open("/etc/shadow", "r") as before_file:
-                before = before_file.read()
+        with open("/etc/shadow", "r") as before_file:
+            before = before_file.read()
 
-            with open("/etc/shadow", "w") as after_file:
-                after_file.write(
-                    before.replace(
-                        "root:" + hash_root, "root:" + new_hash.replace("{CRYPT}", "")
-                    )
+        with open("/etc/shadow", "w") as after_file:
+            after_file.write(
+                before.replace(
+                    "root:" + hash_root, "root:" + new_hash.replace("{CRYPT}", "")
                 )
-        # An IOError may be thrown if for some reason we can't read/write /etc/passwd
-        # A KeyError could also be thrown if 'root' is not in /etc/passwd in the first place (for example because no password defined ?)
-        # (c.f. the line about getspnam)
-        except (IOError, KeyError):
-            logger.warning(m18n.n("root_password_desynchronized"))
-            return
-
-        logger.info(m18n.n("root_password_replaced_by_admin_password"))
-        logger.success(m18n.n("admin_password_changed"))
+            )
+    # An IOError may be thrown if for some reason we can't read/write /etc/passwd
+    # A KeyError could also be thrown if 'root' is not in /etc/passwd in the first place (for example because no password defined ?)
+    # (c.f. the line about getspnam)
+    except (IOError, KeyError):
+        logger.warning(m18n.n("root_password_desynchronized"))
+        return
 
 
 def tools_maindomain(new_main_domain=None):
@@ -172,21 +145,14 @@ def _set_hostname(hostname, pretty_hostname=None):
 def tools_postinstall(
     operation_logger,
     domain,
+    username,
+    firstname,
+    lastname,
     password,
     ignore_dyndns=False,
-    force_password=False,
     force_diskspace=False,
 ):
-    """
-    YunoHost post-install
 
-    Keyword argument:
-        domain -- YunoHost main domain
-        ignore_dyndns -- Do not subscribe domain to a DynDNS service (only
-        needed for nohost.me, noho.st domains)
-        password -- YunoHost admin password
-
-    """
     from yunohost.dyndns import _dyndns_available
     from yunohost.utils.dns import is_yunohost_dyndns_domain
     from yunohost.utils.password import (
@@ -194,6 +160,7 @@ def tools_postinstall(
         assert_password_is_compatible,
     )
     from yunohost.domain import domain_main_domain
+    from yunohost.user import user_create
     import psutil
 
     # Do some checks at first
@@ -220,9 +187,7 @@ def tools_postinstall(
 
     # Check password
     assert_password_is_compatible(password)
-
-    if not force_password:
-        assert_password_is_strong_enough("admin", password)
+    assert_password_is_strong_enough("admin", password)
 
     # If this is a nohost.me/noho.st, actually check for availability
     if not ignore_dyndns and is_yunohost_dyndns_domain(domain):
@@ -258,8 +223,10 @@ def tools_postinstall(
     domain_add(domain, dyndns)
     domain_main_domain(domain)
 
+    user_create(username, firstname, lastname, domain, password, admin=True)
+
     # Update LDAP admin and create home dir
-    tools_adminpw(password, check_strength=not force_password)
+    tools_rootpw(password)
 
     # Enable UPnP silently and reload firewall
     firewall_upnp("enable", no_refresh=True)
@@ -971,7 +938,7 @@ class Migration:
     def description(self):
         return m18n.n(f"migration_description_{self.id}")
 
-    def ldap_migration(self, run):
+    def ldap_migration(run):
         def func(self):
 
             # Backup LDAP before the migration
@@ -999,22 +966,28 @@ class Migration:
             try:
                 run(self, backup_folder)
             except Exception:
-                logger.warning(
-                    m18n.n("migration_ldap_migration_failed_trying_to_rollback")
-                )
-                os.system("systemctl stop slapd")
-                # To be sure that we don't keep some part of the old config
-                rm("/etc/ldap/slapd.d", force=True, recursive=True)
-                cp(f"{backup_folder}/ldap_config", "/etc/ldap", recursive=True)
-                cp(f"{backup_folder}/ldap_db", "/var/lib/ldap", recursive=True)
-                cp(
-                    f"{backup_folder}/apps_settings",
-                    "/etc/yunohost/apps",
-                    recursive=True,
-                )
-                os.system("systemctl start slapd")
-                rm(backup_folder, force=True, recursive=True)
-                logger.info(m18n.n("migration_ldap_rollback_success"))
+                if self.ldap_migration_started:
+                    logger.warning(
+                        m18n.n("migration_ldap_migration_failed_trying_to_rollback")
+                    )
+                    os.system("systemctl stop slapd")
+                    # To be sure that we don't keep some part of the old config
+                    rm("/etc/ldap", force=True, recursive=True)
+                    cp(f"{backup_folder}/ldap_config", "/etc/ldap", recursive=True)
+                    chown("/etc/ldap/schema/", "openldap", "openldap", recursive=True)
+                    chown("/etc/ldap/slapd.d/", "openldap", "openldap", recursive=True)
+                    rm("/var/lib/ldap", force=True, recursive=True)
+                    cp(f"{backup_folder}/ldap_db", "/var/lib/ldap", recursive=True)
+                    rm("/etc/yunohost/apps", force=True, recursive=True)
+                    chown("/var/lib/ldap/", "openldap", recursive=True)
+                    cp(
+                        f"{backup_folder}/apps_settings",
+                        "/etc/yunohost/apps",
+                        recursive=True,
+                    )
+                    os.system("systemctl start slapd")
+                    rm(backup_folder, force=True, recursive=True)
+                    logger.info(m18n.n("migration_ldap_rollback_success"))
                 raise
             else:
                 rm(backup_folder, force=True, recursive=True)

@@ -1445,10 +1445,10 @@ tools:
     category_help: Specific tools
     actions:
 
-        ### tools_adminpw()
-        adminpw:
-            action_help: Change password of admin and root users
-            api: PUT /adminpw
+        ### tools_rootpw()
+        rootpw:
+            action_help: Change root password
+            api: PUT /rootpw
             arguments:
                 -n:
                     full: --new-password
@@ -1483,6 +1483,25 @@ tools:
                         ask: ask_main_domain
                         pattern: *pattern_domain
                         required: True
+                -u:
+                    full: --username
+                    help: Username for the first (admin) user
+                    extra:
+                        ask: ask_username
+                        pattern: *pattern_username
+                        required: True
+                -f:
+                    full: --firstname
+                    extra:
+                        ask: ask_firstname
+                        required: True
+                        pattern: *pattern_firstname
+                -l:
+                    full: --lastname
+                    extra:
+                        ask: ask_lastname
+                        required: True
+                        pattern: *pattern_lastname
                 -p:
                     full: --password
                     help: YunoHost admin password
@@ -1494,13 +1513,9 @@ tools:
                 --ignore-dyndns:
                     help: Do not subscribe domain to a DynDNS service
                     action: store_true
-                --force-password:
-                    help: Use this if you really want to set a weak password
-                    action: store_true
                 --force-diskspace:
                     help: Use this if you really want to install YunoHost on a setup with less than 10 GB on the root filesystem
                     action: store_true
-
 
         ### tools_update()
         update:
