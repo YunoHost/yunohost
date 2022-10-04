@@ -505,9 +505,14 @@ class DomainConfigPanel(ConfigPanel):
             from yunohost.certificate import certificate_status
             status = certificate_status([self.entity], full=True)["certificates"][self.entity]
 
-            toml["cert"]["status"]["cert_summary"]["style"] = status["summary"]
-            # FIXME: improve message
-            toml["cert"]["status"]["cert_summary"]["ask"] = f"Status is {status['summary']} ! (FIXME: improve message depending on summary / issuer / validity ..."
+            toml["cert"]["status"]["cert_summary"]["style"] = status["style"]
+
+            # i18n: domain_config_cert_summary_expired
+            # i18n: domain_config_cert_summary_selfsigned
+            # i18n: domain_config_cert_summary_abouttoexpire
+            # i18n: domain_config_cert_summary_ok
+            # i18n: domain_config_cert_summary_letsencrypt
+            toml["cert"]["status"]["cert_summary"]["ask"] = m18n.n(f"domain_config_cert_summary_{status['summary']}")
 
             # FIXME: Ugly hack to save the cert status and reinject it in _load_current_values ...
             self.cert_status = status
@@ -529,6 +534,7 @@ class DomainConfigPanel(ConfigPanel):
             self.values["cert_validity"] = self.cert_status["validity"]
             self.values["cert_issuer"] = self.cert_status["CA_type"]
             self.values["acme_eligible"] = self.cert_status["ACME_eligible"]
+            self.values["summary"] = self.cert_status["summary"]
 
 
 def domain_action_run(domain, action, args=None):

@@ -153,7 +153,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
         if not force and os.path.isfile(current_cert_file):
             status = _get_status(domain)
 
-            if status["summary"] == "success":
+            if status["style"] == "success":
                 raise YunohostValidationError(
                     "certmanager_attempt_to_replace_valid_cert", domain=domain
                 )
@@ -559,9 +559,9 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
     _enable_certificate(domain, new_cert_folder)
 
     # Check the status of the certificate is now good
-    status_summary = _get_status(domain)["summary"]
+    status_style = _get_status(domain)["style"]
 
-    if status_summary != "success":
+    if status_style != "success":
         raise YunohostError(
             "certmanager_certificate_fetching_or_enabling_failed", domain=domain
         )
@@ -663,18 +663,24 @@ def _get_status(domain):
         CA_type = "other"
 
     if days_remaining <= 0:
-        summary = "danger"
+        style = "danger"
+        summary = "expired"
     elif CA_type == "selfsigned":
-        summary = "warning"
+        style = "warning"
+        summary = "selfsigned"
     elif days_remaining < VALIDITY_LIMIT:
-        summary = "warning"
+        style = "warning"
+        summary = "abouttoexpire"
     elif CA_type == "other":
-        summary = "success"
+        style = "success"
+        summary = "ok"
     elif CA_type == "letsencrypt":
-        summary = "success"
+        style = "success"
+        summary = "letsencrypt"
     else:
         # shouldnt happen, because CA_type can be only selfsigned, letsencrypt, or other
-        summary = ""
+        style = ""
+        summary = "wat"
 
     return {
         "domain": domain,
@@ -682,6 +688,7 @@ def _get_status(domain):
         "CA_name": cert_issuer,
         "CA_type": CA_type,
         "validity": days_remaining,
+        "style": style,
         "summary": summary,
     }
 

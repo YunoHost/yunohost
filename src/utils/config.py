@@ -346,7 +346,7 @@ class ConfigPanel:
 
         # FIXME: should also check that there's indeed a key called action
         if not self.config:
-            raise YunohostValidationError("config_no_such_action", action=action)
+            raise YunohostValidationError(f"No action named {action}", raw_msg=True)
 
         # Import and parse pre-answered options
         logger.debug("Import and parse pre-answered options")

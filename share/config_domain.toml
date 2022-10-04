@@ -91,8 +91,6 @@ i18n = "domain_config"
         type = "alert"
         style = "warning"
         visible = "acme_eligible == false"
-        # FIXME: improve messaging ...
-        ask = "Uhoh, domain isnt ready for ACME challenge according to the diagnosis"
 
         [cert.cert.cert_no_checks]
         ask = "Ignore diagnosis checks"
@@ -101,7 +99,6 @@ i18n = "domain_config"
         visible = "acme_eligible == false"
 
         [cert.cert.cert_install]
-        ask = "Install Let's Encrypt certificate"
         type = "button"
         icon = "star"
         style = "success"
@@ -109,8 +106,6 @@ i18n = "domain_config"
         enabled = "acme_eligible || cert_no_checks"
 
         [cert.cert.cert_renew]
-        ask = "Renew Let's Encrypt certificate"
-        help = "The certificate should be automatically renewed by YunoHost a few days before it expires."
         type = "button"
         icon = "refresh"
         style = "warning"
