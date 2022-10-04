@@ -16,7 +16,7 @@ i18n = "domain_config"
         type = "app"
         filter = "is_webapp"
         default = "_none"
-    
+
     [feature.mail]
     #services = ['postfix', 'dovecot']
 
@@ -28,17 +28,17 @@ i18n = "domain_config"
         [feature.mail.mail_out]
         type = "boolean"
         default = 1
-        
+
         [feature.mail.mail_in]
         type = "boolean"
         default = 1
-        
+
         #[feature.mail.backup_mx]
         #type = "tags"
         #default = []
         #pattern.regexp = '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
         #pattern.error = "pattern_error"
-    
+
     [feature.xmpp]
 
         [feature.xmpp.xmpp]
@@ -46,7 +46,7 @@ i18n = "domain_config"
         default = 0
 
 [dns]
-    
+
     [dns.registrar]
     optional = true
 
@@ -58,3 +58,56 @@ i18n = "domain_config"
 #        type = "number"
 #        min = 0
 #        default = 3600
+
+
+[cert]
+
+    [cert.status]
+    name = "Status"
+
+        [cert.status.cert_summary]
+        type = "alert"
+        # Automatically filled by DomainConfigPanel
+
+        [cert.status.cert_validity]
+        type = "number"
+        readonly = true
+        # Automatically filled by DomainConfigPanel
+
+    [cert.cert]
+    name = "Manage"
+
+        [cert.cert.cert_issuer]
+        type = "string"
+        visible = false
+        # Automatically filled by DomainConfigPanel
+
+        [cert.cert.acme_eligible]
+        type = "boolean"
+        visible = false
+        # Automatically filled by DomainConfigPanel
+
+        [cert.cert.acme_eligible_explain]
+        type = "alert"
+        style = "warning"
+        visible = "acme_eligible == false"
+
+        [cert.cert.cert_no_checks]
+        ask = "Ignore diagnosis checks"
+        type = "boolean"
+        default = false
+        visible = "acme_eligible == false"
+
+        [cert.cert.cert_install]
+        type = "button"
+        icon = "star"
+        style = "success"
+        visible = "issuer != 'letsencrypt'"
+        enabled = "acme_eligible || cert_no_checks"
+
+        [cert.cert.cert_renew]
+        type = "button"
+        icon = "refresh"
+        style = "warning"
+        visible = "issuer == 'letsencrypt'"
+        enabled = "acme_eligible || cert_no_checks"

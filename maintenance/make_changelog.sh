@@ -7,8 +7,6 @@ EMAIL=$(git config --global --get user.email)
 
 LAST_RELEASE=$(git tag --list 'debian/11.*'  --sort="v:refname" | tail -n 1)
 
-echo $LAST_RELEASE
-
 echo "$REPO ($VERSION) $RELEASE; urgency=low"
 echo ""
 

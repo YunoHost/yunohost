@@ -552,6 +552,7 @@ domain:
 
         ### domain_url_available()
         url-available:
+            hide_in_help: True
             action_help: Check availability of a web path
             api: GET /domain/<domain>/urlavailable
             arguments:
@@ -562,6 +563,20 @@ domain:
                 path:
                     help: The path to check (e.g. /coffee)
 
+        ### domain_action_run()
+        action-run:
+            hide_in_help: True
+            action_help: Run domain action
+            api: PUT /domain/<domain>/actions/<action>
+            arguments:
+              domain:
+                  help: Domain name
+              action:
+                  help: action id
+              -a:
+                  full: --args
+                  help: Serialized arguments for action (i.e. "foo=bar&lorem=ipsum")
+
     subcategories:
 
         config:
@@ -571,7 +586,9 @@ domain:
                 ### domain_config_get()
                 get:
                     action_help: Display a domain configuration
-                    api: GET /domains/<domain>/config
+                    api:
+                      - GET /domains/<domain>/config
+                      - GET /domains/<domain>/config/<key>
                     arguments:
                       domain:
                           help: Domain name
@@ -590,7 +607,7 @@ domain:
                 ### domain_config_set()
                 set:
                     action_help: Apply a new configuration
-                    api: PUT /domains/<domain>/config
+                    api: PUT /domains/<domain>/config/<key>
                     arguments:
                       domain:
                           help: Domain name
@@ -868,6 +885,7 @@ app:
 
         ### app_register_url()
         register-url:
+            hide_in_help: True
             action_help: Book/register a web path for a given app
             arguments:
                 app:
@@ -880,6 +898,7 @@ app:
 
         ### app_makedefault()
         makedefault:
+            hide_in_help: True
             action_help: Redirect domain root to an app
             api: PUT /apps/<app>/default
             arguments:
@@ -941,7 +960,9 @@ app:
               ### app_config_get()
               get:
                   action_help: Display an app configuration
-                  api: GET /apps/<app>/config-panel
+                  api:
+                    - GET /apps/<app>/config
+                    - GET /apps/<app>/config/<key>
                   arguments:
                     app:
                         help: App name
@@ -960,7 +981,7 @@ app:
               ### app_config_set()
               set:
                   action_help: Apply a new configuration
-                  api: PUT /apps/<app>/config
+                  api: PUT /apps/<app>/config/<key>
                   arguments:
                     app:
                         help: App name
@@ -1065,6 +1086,7 @@ backup:
 
         ### backup_download()
         download:
+            hide_in_help: True
             action_help: (API only) Request to download the file
             api: GET /backups/<name>/download
             arguments:
@@ -1678,6 +1700,7 @@ hook:
 
         ### hook_info()
         info:
+            hide_in_help: True
             action_help: Get information about a given hook
             arguments:
                 action:
@@ -1707,6 +1730,7 @@ hook:
 
         ### hook_callback()
         callback:
+            hide_in_help: True
             action_help: Execute all scripts binded to an action
             arguments:
                 action:
@@ -1729,6 +1753,7 @@ hook:
 
         ### hook_exec()
         exec:
+            hide_in_help: True
             action_help: Execute hook from a file with arguments
             arguments:
                 path:

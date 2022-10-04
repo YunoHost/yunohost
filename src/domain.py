@@ -498,6 +498,24 @@ class DomainConfigPanel(ConfigPanel):
             self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
             del toml["dns"]["registrar"]["registrar"]["value"]
 
+        # Cert stuff
+        if not filter_key or filter_key[0] == "cert":
+
+            from yunohost.certificate import certificate_status
+            status = certificate_status([self.entity], full=True)["certificates"][self.entity]
+
+            toml["cert"]["status"]["cert_summary"]["style"] = status["style"]
+
+            # i18n: domain_config_cert_summary_expired
+            # i18n: domain_config_cert_summary_selfsigned
+            # i18n: domain_config_cert_summary_abouttoexpire
+            # i18n: domain_config_cert_summary_ok
+            # i18n: domain_config_cert_summary_letsencrypt
+            toml["cert"]["status"]["cert_summary"]["ask"] = m18n.n(f"domain_config_cert_summary_{status['summary']}")
+
+            # FIXME: Ugly hack to save the cert status and reinject it in _load_current_values ...
+            self.cert_status = status
+
         return toml
 
     def _load_current_values(self):
@@ -509,6 +527,28 @@ class DomainConfigPanel(ConfigPanel):
         filter_key = self.filter_key.split(".") if self.filter_key != "" else []
         if not filter_key or filter_key[0] == "dns":
             self.values["registrar"] = self.registar_id
+
+        # FIXME: Ugly hack to save the cert status and reinject it in _load_current_values ...
+        if not filter_key or filter_key[0] == "cert":
+            self.values["cert_validity"] = self.cert_status["validity"]
+            self.values["cert_issuer"] = self.cert_status["CA_type"]
+            self.values["acme_eligible"] = self.cert_status["ACME_eligible"]
+            self.values["summary"] = self.cert_status["summary"]
+
+
+def domain_action_run(domain, action, args=None):
+
+    import urllib.parse
+
+    if action == "cert.cert.cert_install":
+        from yunohost.certificate import certificate_install as action_func
+    elif action == "cert.cert.cert_renew":
+        from yunohost.certificate import certificate_renew as action_func
+
+    args = dict(urllib.parse.parse_qsl(args or "", keep_blank_values=True))
+    no_checks = args["cert_no_checks"] in ("y", "yes", "on", "1")
+
+    action_func([domain], force=True, no_checks=no_checks)
 
 
 def _get_domain_settings(domain: str) -> dict:
