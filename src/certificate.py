@@ -129,6 +129,7 @@ def certificate_install(domain_list, force=False, no_checks=False, self_signed=F
 
 def _certificate_install_selfsigned(domain_list, force=False):
 
+    failed_cert_install = []
     for domain in domain_list:
 
         operation_logger = OperationLogger(
@@ -223,8 +224,15 @@ def _certificate_install_selfsigned(domain_list, force=False):
             operation_logger.success()
         else:
             msg = f"Installation of self-signed certificate installation for {domain} failed !"
+            failed_cert_install.append(domain)
             logger.error(msg)
             operation_logger.error(msg)
+
+    if failed_cert_install:
+        raise YunohostError(
+            "certmanager_cert_install_failed_selfsigned",
+            domains=",".join(failed_cert_install)
+        )
 
 
 def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
@@ -257,6 +265,7 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
                 )
 
     # Actual install steps
+    failed_cert_install = []
     for domain in domains:
 
         if not no_checks:
@@ -285,10 +294,17 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
                 logger.error(
                     f"Please consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain {domain}."
                 )
+            failed_cert_install.append(domain)
         else:
             logger.success(m18n.n("certmanager_cert_install_success", domain=domain))
 
             operation_logger.success()
+
+    if failed_cert_install:
+        raise YunohostError(
+            "certmanager_cert_install_failed",
+            domains=",".join(failed_cert_install)
+        )
 
 
 def certificate_renew(domains, force=False, no_checks=False, email=False):
@@ -359,6 +375,7 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
                 )
 
     # Actual renew steps
+    failed_cert_install = []
     for domain in domains:
 
         if not no_checks:
@@ -400,6 +417,8 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
             logger.error(stack.getvalue())
             logger.error(str(e))
 
+            failed_cert_install.append(domain)
+
             if email:
                 logger.error("Sending email with details to root ...")
                 _email_renewing_failed(domain, msg + "\n" + str(e), stack.getvalue())
@@ -407,6 +426,11 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
             logger.success(m18n.n("certmanager_cert_renew_success", domain=domain))
             operation_logger.success()
 
+    if failed_cert_install:
+        raise YunohostError(
+            "certmanager_cert_renew_failed",
+            domains=",".join(failed_cert_install)
+        )
 
 #
 # Back-end stuff                                                            #
