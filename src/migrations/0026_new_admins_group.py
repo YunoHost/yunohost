@@ -37,22 +37,6 @@ class MyMigration(Migration):
                 new_admin_user = user
                 break
 
-        # NB: we handle the edge-case where no user exist at all
-        # which is useful for the CI etc.
-        if all_users and not new_admin_user:
-            new_admin_user = os.environ.get("YNH_NEW_ADMIN_USER")
-            if new_admin_user:
-                assert new_admin_user in all_users, f"{new_admin_user} is not an existing yunohost user"
-            else:
-                raise YunohostError(
-                    # FIXME: i18n
-                    """The very first user created on this Yunohost instance could not be found, and therefore this migration can not be ran. You should re-run this migration as soon as possible from the command line with, after choosing which user should become the admin:
-
-export YNH_NEW_ADMIN_USER=some_existing_username
-yunohost tools migrations run""",
-                    raw_msg=True
-                )
-
         self.ldap_migration_started = True
 
         if new_admin_user:

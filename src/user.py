@@ -56,7 +56,7 @@ FIELDS_FOR_IMPORT = {
     "groups": r"^|([a-z0-9_]+(,?[a-z0-9_]+)*)$",
 }
 
-ADMIN_ALIASES = ["root@", "admin@", "webmaster@", "postmaster@", "abuse@"]
+ADMIN_ALIASES = ["root@", "admin@", "admins", "webmaster@", "postmaster@", "abuse@"]
 
 
 def user_list(fields=None):
