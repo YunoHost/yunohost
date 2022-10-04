@@ -35,6 +35,7 @@ from datetime import datetime
 from moulinette import m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file
+from moulinette.utils.process import check_output
 
 from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -656,7 +657,17 @@ def _get_status(domain):
     )
     days_remaining = (valid_up_to - datetime.utcnow()).days
 
-    if cert_issuer in ["yunohost.org"] + yunohost.domain.domain_list()["domains"]:
+    self_signed_issuers = ["yunohost.org"] + yunohost.domain.domain_list()["domains"]
+
+    # FIXME: is the .ca.cnf one actually used anywhere ? x_x
+    conf = os.path.join(SSL_DIR, "openssl.ca.cnf")
+    if os.path.exists(conf):
+        self_signed_issuers.append(check_output(f"grep commonName_default {conf}").split()[-1])
+    conf = os.path.join(SSL_DIR, "openssl.cnf")
+    if os.path.exists(conf):
+        self_signed_issuers.append(check_output(f"grep commonName_default {conf}").split()[-1])
+
+    if cert_issuer in self_signed_issuers:
         CA_type = "selfsigned"
     elif organization_name == "Let's Encrypt":
         CA_type = "letsencrypt"
@@ -905,6 +916,4 @@ def _name_self_CA():
 
 
 def _tail(n, file_path):
-    from moulinette.utils.process import check_output
-
     return check_output(f"tail -n {n} '{file_path}'")
