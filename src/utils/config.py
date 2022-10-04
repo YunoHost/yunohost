@@ -527,6 +527,7 @@ class ConfigPanel:
                     "filter",
                     "readonly",
                     "enabled",
+                    # "confirm", # TODO: to ask confirmation before running an action
                 ],
                 "defaults": {},
             },
@@ -669,6 +670,9 @@ class ConfigPanel:
             for panel, section, option in self._iterate():
                 if "ask" not in option:
                     option["ask"] = m18n.n(self.config["i18n"] + "_" + option["id"])
+                # auto add i18n help text if present in locales
+                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + '_help'):
+                    option["help"] = m18n.n(self.config["i18n"] + "_" + option["id"] + '_help')
 
         def display_header(message):
             """CLI panel/section header display"""
