@@ -1,7 +1,5 @@
-import os
 from moulinette.utils.log import getActionLogger
 
-from yunohost.utils.error import YunohostError
 from yunohost.tools import Migration
 
 logger = getActionLogger("yunohost.migration")
