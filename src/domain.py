@@ -531,10 +531,7 @@ class DomainConfigPanel(ConfigPanel):
             self.values["acme_eligible"] = self.cert_status["ACME_eligible"]
 
 
-@is_unit_operation()
-def domain_action_run(
-    operation_logger, domain, action, args=None
-):
+def domain_action_run(domain, action, args=None):
 
     import urllib.parse
 
