@@ -226,6 +226,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
             msg = f"Installation of self-signed certificate installation for {domain} failed !"
             failed_cert_install.append(domain)
             logger.error(msg)
+            logger.error(status)
             operation_logger.error(msg)
 
     if failed_cert_install:
