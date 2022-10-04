@@ -37,6 +37,10 @@ class Authenticator(BaseAuthenticator):
             os.system("systemctl restart slapd")
             time.sleep(10)  # waits 10 secondes so we are sure that slapd has restarted
 
+            # Force-reset existing LDAP interface
+            from yunohost.utils import ldap as ldaputils
+            ldaputils._ldap_interface = None
+
             try:
                 admins = _get_ldap_interface().search(ADMIN_GROUP, attrs=["memberUid"])[0].get("memberUid", [])
             except ldap.SERVER_DOWN:
