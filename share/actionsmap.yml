@@ -449,12 +449,13 @@ domain:
 
         ### domain_info()
         info:
-            action_help: Get domains aggredated data
+            action_help: Get domain aggredated data
             api: GET /domains/<domains>
             arguments:
-                domains:
-                    help: Domains to check
-                    nargs: "*"
+                domain:
+                    help: Domain to check
+                    extra:
+                        pattern: *pattern_domain
 
         ### domain_add()
         add:
