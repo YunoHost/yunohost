@@ -61,7 +61,7 @@ def assert_password_is_compatible(password):
         # as well as modules available in python's path.
         from yunohost.utils.error import YunohostValidationError
 
-        raise YunohostValidationError("admin_password_too_long")
+        raise YunohostValidationError("password_too_long")
 
 
 def assert_password_is_strong_enough(profile, password):

@@ -513,6 +513,9 @@ class DomainConfigPanel(ConfigPanel):
             # i18n: domain_config_cert_summary_letsencrypt
             toml["cert"]["status"]["cert_summary"]["ask"] = m18n.n(f"domain_config_cert_summary_{status['summary']}")
 
+            # Other specific strings used in config panels
+            # i18n: domain_config_cert_renew_help
+
             # FIXME: Ugly hack to save the cert status and reinject it in _load_current_values ...
             self.cert_status = status
 

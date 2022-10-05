@@ -1664,7 +1664,7 @@ ynh_app_config_run $1
             elif action == "apply":
                 raise YunohostError("app_config_unable_to_apply")
             else:
-                raise YunohostError("app_action_failed", action=action)
+                raise YunohostError("app_action_failed", action=action, app=app)
         return values
 
 

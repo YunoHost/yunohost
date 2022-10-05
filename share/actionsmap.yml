@@ -1514,12 +1514,14 @@ tools:
                         required: True
                 -f:
                     full: --firstname
+                    help: Firstname for the first (admin) user
                     extra:
                         ask: ask_firstname
                         required: True
                         pattern: *pattern_firstname
                 -l:
                     full: --lastname
+                    help: Lastname for the first (admin) user
                     extra:
                         ask: ask_lastname
                         required: True
