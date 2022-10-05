@@ -90,13 +90,13 @@ i18n = "domain_config"
         [cert.cert.acme_eligible_explain]
         type = "alert"
         style = "warning"
-        visible = "acme_eligible == false"
+        visible = "acme_eligible == false || acme_elligible == null"
 
         [cert.cert.cert_no_checks]
         ask = "Ignore diagnosis checks"
         type = "boolean"
         default = false
-        visible = "acme_eligible == false"
+        visible = "acme_eligible == false || acme_elligible == null"
 
         [cert.cert.cert_install]
         type = "button"

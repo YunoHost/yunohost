@@ -98,12 +98,12 @@ def certificate_status(domains, full=False):
         if full:
             try:
                 _check_domain_is_ready_for_ACME(domain)
-                status["acme_status"] = 'eligible'
+                status["ACME_eligible"] = True
             except Exception as e:
                 if e.key == 'certmanager_domain_not_diagnosed_yet':
-                    status["acme_status"] = 'unknown'
+                    status["ACME_eligible"] = None   # = unknown status
                 else:
-                    status["acme_status"] = 'ineligible'
+                    status["ACME_eligible"] = False
 
 
         del status["domain"]
