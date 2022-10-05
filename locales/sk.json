@@ -236,5 +236,15 @@
     "diagnosis_ip_weird_resolvconf": "Zdá sa, že preklad názvov domén funguje, ale podľa všetkého používate vlastný súbor <code>/etc/resolv.conf</code>.",
     "root_password_desynchronized": "Heslo pre správu bolo zmenené, ale YunoHost nedokázal túto zmenu premietnuť do hesla používateľa root!",
     "main_domain_changed": "Hlavná doména bola zmenená",
-    "user_updated": "Informácie o používateľovi boli zmenené"
+    "user_updated": "Informácie o používateľovi boli zmenené",
+    "diagnosis_ram_verylow": "Systém má iba {available} ({available_percent} %) dostupnej pamäte RAM (z celkovej pamäte {total})!",
+    "diagnosis_mail_queue_unavailable_details": "Chyba: {error}",
+    "diagnosis_ram_ok": "Systém má ešte {available} ({available_percent} %) dostupnej pamäte RAM (z celkovej pamäte {total}).",
+    "diagnosis_ram_low": "Systém má {available} ({available_percent} %) dostupnej pamäte RAM (z celkovej pamäte {total}). Buďte opatrný.",
+    "diagnosis_sshd_config_inconsistent": "Zdá sa, že port SSH bol manuálne upravený v /etc/ssh/sshd_config. Od YunoHost 4.2 je dostupné nové globálne nastavenie 'security.ssh.port', aby ste nemuseli konfiguráciu editovať ručne.",
+    "domains_available": "Dostupné domény:",
+    "dyndns_could_not_check_available": "Nepodarilo sa zistiť, či je {domain} dostupná na {provider}.",
+    "dyndns_unavailable": "Doména '{domain}' nie je dostupná.",
+    "log_available_on_yunopaste": "Tento záznam je teraz dostupný na {url}",
+    "updating_apt_cache": "Získavam dostupné aktualizácie pre systémové balíčky…"
 }
