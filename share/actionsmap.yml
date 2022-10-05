@@ -450,7 +450,7 @@ domain:
         ### domain_info()
         info:
             action_help: Get domain aggredated data
-            api: GET /domains/<domains>
+            api: GET /domains/<domain>
             arguments:
                 domain:
                     help: Domain to check
