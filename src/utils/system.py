@@ -112,7 +112,7 @@ def get_ynh_package_version(package):
     # may handle changelog differently !
 
     changelog = "/usr/share/doc/%s/changelog.gz" % package
-    cmd = "gzip -cd %s 2>/dev/null | head -n1" % changelog
+    cmd = "gzip -cd %s 2>/dev/null | grep -v 'BASH_XTRACEFD' | head -n1" % changelog
     if not os.path.exists(changelog):
         return {"version": "?", "repo": "?"}
     out = check_output(cmd).split()
