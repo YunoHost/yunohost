@@ -63,10 +63,11 @@ ynh_abort_if_errors() {
 
 # Download, check integrity, uncompress and patch the source from app.src
 #
-# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"]
-# | arg: -d, --dest_dir=    - Directory where to setup sources
-# | arg: -s, --source_id=   - Name of the source, defaults to `app`
-# | arg: -k, --keep=        - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs/'
+# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"] [--full_replace]
+# | arg: -d, --dest_dir=     - Directory where to setup sources
+# | arg: -s, --source_id=    - Name of the source, defaults to `app`
+# | arg: -k, --keep=         - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs/'
+# | arg: -r, --full_replace= - Remove previous sources before installing new sources
 #
 # This helper will read `conf/${source_id}.src`, download and install the sources.
 #
@@ -102,14 +103,16 @@ ynh_abort_if_errors() {
 ynh_setup_source() {
     # Declare an array to define the options of this helper.
     local legacy_args=dsk
-    local -A args_array=([d]=dest_dir= [s]=source_id= [k]=keep=)
+    local -A args_array=([d]=dest_dir= [s]=source_id= [k]=keep= [r]=full_replace=)
     local dest_dir
     local source_id
     local keep
+    local full_replace
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     source_id="${source_id:-app}"
     keep="${keep:-}"
+    full_replace="${full_replace:-0}"
 
     local src_file_path="$YNH_APP_BASEDIR/conf/${source_id}.src"
 
@@ -170,6 +173,10 @@ ynh_setup_source() {
                 cp --archive "$dest_dir/$stuff_to_keep" "$keep_dir/$stuff_to_keep"
             fi
         done
+    fi
+
+    if [ "$full_replace" -eq 1 ]; then
+        ynh_secure_remove --file="$dest_dir"
     fi
 
     # Extract source into the app dir
