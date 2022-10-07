@@ -529,7 +529,7 @@
     "regenconf_need_to_explicitly_specify_ssh": "La configuration de ssh a été modifiée manuellement. Vous devez explicitement indiquer la mention --force à \"ssh\" pour appliquer les changements.",
     "diagnosis_dns_try_dyndns_update_force": "La configuration DNS de ce domaine devrait être automatiquement gérée par YunoHost. Si ce n'est pas le cas, vous pouvez essayer de forcer une mise à jour en utilisant <cmd>yunohost dyndns update --force</cmd>.",
     "app_packaging_format_not_supported": "Cette application ne peut pas être installée car son format n'est pas pris en charge par votre version de YunoHost. Vous devriez probablement envisager de mettre à jour votre système.",
-    "global_settings_setting_backup_compress_tar_archives": "Lors de la création de nouvelles sauvegardes, compresser automatiquement les archives (.tar.gz) au lieu des archives non compressées (.tar). N.B. : activer cette option permet de créer des archives plus légères, mais la procédure de sauvegarde initiale sera significativement plus longues et plus gourmandes en CPU.",
+    "global_settings_setting_backup_compress_tar_archives": "Compresser les archives de backup",
     "diagnosis_processes_killed_by_oom_reaper": "Certains processus ont été récemment arrêtés par le système car il manquait de mémoire. Ceci est typiquement symptomatique d'un manque de mémoire sur le système ou d'un processus consommant trop de mémoire. Liste des processus arrêtés :\n{kills_summary}",
     "ask_user_domain": "Domaine à utiliser pour l'adresse email de l'utilisateur et le compte XMPP",
     "app_manifest_install_ask_is_public": "Cette application devrait-elle être visible par les visiteurs anonymes ?",
