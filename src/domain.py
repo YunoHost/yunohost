@@ -24,6 +24,7 @@
     Manage domains
 """
 import os
+import time
 from typing import List
 from collections import OrderedDict
 
@@ -48,22 +49,30 @@ logger = getActionLogger("yunohost.domain")
 DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 
 # Lazy dev caching to avoid re-query ldap every time we need the domain list
+# The cache automatically expire every 15 seconds, to prevent desync between
+#  yunohost CLI and API which run in different processes
 domain_list_cache: List[str] = []
+domain_list_cache_timestamp = 0
 main_domain_cache: str = None
+main_domain_cache_timestamp = 0
+DOMAIN_CACHE_DURATION = 15
 
 
-def _get_maindomain(no_cache=False):
+def _get_maindomain():
     global main_domain_cache
-    if not main_domain_cache or no_cache:
+    global main_domain_cache_timestamp
+    if not main_domain_cache or abs(main_domain_cache_timestamp - time.time()) > DOMAIN_CACHE_DURATION:
         with open("/etc/yunohost/current_host", "r") as f:
             main_domain_cache = f.readline().rstrip()
+        main_domain_cache_timestamp = time.time()
 
     return main_domain_cache
 
 
-def _get_domains(exclude_subdomains=False, no_cache=False):
+def _get_domains(exclude_subdomains=False):
     global domain_list_cache
-    if not domain_list_cache or no_cache:
+    global domain_list_cache_timestamp
+    if not domain_list_cache or abs(domain_list_cache_timestamp - time.time()) > DOMAIN_CACHE_DURATION:
         from yunohost.utils.ldap import _get_ldap_interface
 
         ldap = _get_ldap_interface()
@@ -80,6 +89,7 @@ def _get_domains(exclude_subdomains=False, no_cache=False):
             return list(reversed(domain))
 
         domain_list_cache = sorted(result, key=cmp_domain)
+        domain_list_cache_timestamp = time.time()
 
     if exclude_subdomains:
         return [
@@ -443,7 +453,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
     try:
         write_to_file("/etc/yunohost/current_host", new_main_domain)
         global main_domain_cache
-        main_domain_cache = None
+        main_domain_cache = new_main_domain
         _set_hostname(new_main_domain)
     except Exception as e:
         logger.warning(str(e), exc_info=1)
