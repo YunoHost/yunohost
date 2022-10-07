@@ -443,6 +443,19 @@ domain:
                 --exclude-subdomains:
                     help: Filter out domains that are obviously subdomains of other declared domains
                     action: store_true
+                --tree:
+                    help: Display domains as a tree
+                    action: store_true
+
+        ### domain_info()
+        info:
+            action_help: Get domain aggredated data
+            api: GET /domains/<domain>
+            arguments:
+                domain:
+                    help: Domain to check
+                    extra:
+                        pattern: *pattern_domain
 
         ### domain_add()
         add:

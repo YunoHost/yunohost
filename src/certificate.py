@@ -99,8 +99,12 @@ def certificate_status(domains, full=False):
             try:
                 _check_domain_is_ready_for_ACME(domain)
                 status["ACME_eligible"] = True
-            except Exception:
-                status["ACME_eligible"] = False
+            except Exception as e:
+                if e.key == 'certmanager_domain_not_diagnosed_yet':
+                    status["ACME_eligible"] = None   # = unknown status
+                else:
+                    status["ACME_eligible"] = False
+
 
         del status["domain"]
         certificates[domain] = status
@@ -794,7 +798,7 @@ def _check_domain_is_ready_for_ACME(domain):
         or {}
     )
 
-    parent_domain = _get_parent_domain_of(domain)
+    parent_domain = _get_parent_domain_of(domain, return_self=True)
 
     dnsrecords = (
         Diagnoser.get_cached_report(

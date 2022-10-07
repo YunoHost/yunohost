@@ -5,12 +5,13 @@ i18n = "domain_config"
 # Other things we may want to implement in the future:
 #
 # - maindomain handling
-# - default app
 # - autoredirect www in nginx conf
 # - ?
 #
 
 [feature]
+name = "Features"
+
     [feature.app]
         [feature.app.default_app]
         type = "app"
@@ -46,6 +47,7 @@ i18n = "domain_config"
         default = 0
 
 [dns]
+name = "DNS"
 
     [dns.registrar]
     optional = true
@@ -61,6 +63,7 @@ i18n = "domain_config"
 
 
 [cert]
+name = "Certificate"
 
     [cert.status]
     name = "Status"
@@ -90,13 +93,13 @@ i18n = "domain_config"
         [cert.cert.acme_eligible_explain]
         type = "alert"
         style = "warning"
-        visible = "acme_eligible == false"
+        visible = "acme_eligible == false || acme_elligible == null"
 
         [cert.cert.cert_no_checks]
         ask = "Ignore diagnosis checks"
         type = "boolean"
         default = false
-        visible = "acme_eligible == false"
+        visible = "acme_eligible == false || acme_elligible == null"
 
         [cert.cert.cert_install]
         type = "button"
