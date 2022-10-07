@@ -619,6 +619,7 @@
     "regenconf_would_be_updated": "The configuration would have been updated for category '{category}'",
     "regex_incompatible_with_tile": "/!\\ Packagers! Permission '{permission}' has show_tile set to 'true' and you therefore cannot define a regex URL as the main URL",
     "regex_with_only_domain": "You can't use a regex for domain, only for path",
+    "registrar_infos": "Registrar infos",
     "restore_already_installed_app": "An app with the ID '{app}' is already installed",
     "restore_already_installed_apps": "The following apps can't be restored because they are already installed: {apps}",
     "restore_backup_too_old": "This backup archive can not be restored because it comes from a too-old YunoHost version.",
