@@ -41,6 +41,7 @@ from yunohost.domain import (
     _get_domain_settings,
     _set_domain_settings,
     _list_subdomains_of,
+    _get_parent_domain_of,
 )
 from yunohost.utils.dns import dig, is_yunohost_dyndns_domain, is_special_use_tld
 from yunohost.utils.error import YunohostValidationError, YunohostError
@@ -446,8 +447,8 @@ def _get_dns_zone_for_domain(domain):
     # This is another strick to try to prevent this function from being
     # a bottleneck on system with 1 main domain + 10ish subdomains
     # when building the dns conf for the main domain (which will call domain_config_get, etc...)
-    parent_domain = domain.split(".", 1)[1]
-    if parent_domain in domain_list()["domains"]:
+    parent_domain = _get_parent_domain_of(domain)
+    if parent_domain:
         parent_cache_file = f"{cache_folder}/{parent_domain}"
         if (
             os.path.exists(parent_cache_file)
@@ -519,12 +520,12 @@ def _get_registrar_config_section(domain):
     dns_zone = _get_dns_zone_for_domain(domain)
 
     # If parent domain exists in yunohost
-    parent_domain = domain.split(".", 1)[1]
-    if parent_domain in domain_list()["domains"]:
+    parent_domain = _get_parent_domain_of(domain, topest=True)
+    if parent_domain:
 
         # Dirty hack to have a link on the webadmin
         if Moulinette.interface.type == "api":
-            parent_domain_link = f"[{parent_domain}](#/domains/{parent_domain}/config)"
+            parent_domain_link = f"[{parent_domain}](#/domains/{parent_domain}/dns)"
         else:
             parent_domain_link = parent_domain
 
@@ -534,7 +535,7 @@ def _get_registrar_config_section(domain):
                 "style": "info",
                 "ask": m18n.n(
                     "domain_dns_registrar_managed_in_parent_domain",
-                    parent_domain=domain,
+                    parent_domain=parent_domain,
                     parent_domain_link=parent_domain_link,
                 ),
                 "value": "parent_domain",
@@ -649,7 +650,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         return {}
 
     if registrar == "parent_domain":
-        parent_domain = domain.split(".", 1)[1]
+        parent_domain = _get_parent_domain_of(domain, topest=True)
         registar, registrar_credentials = _get_registar_settings(parent_domain)
         if any(registrar_credentials.values()):
             raise YunohostValidationError(
