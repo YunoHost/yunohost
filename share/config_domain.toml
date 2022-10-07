@@ -50,9 +50,7 @@ name = "Features"
 name = "DNS"
 
     [dns.registrar]
-    optional = true
-
-        # This part is automatically generated in DomainConfigPanel
+    # This part is automatically generated in DomainConfigPanel
 
 #   [dns.advanced]
 #
