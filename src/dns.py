@@ -512,7 +512,9 @@ def _get_registrar_config_section(domain):
 
     from lexicon.providers.auto import _relevant_provider_for_domain
 
-    registrar_infos = {}
+    registrar_infos = {
+        "name": "Registrar infos",
+    }
 
     dns_zone = _get_dns_zone_for_domain(domain)
 
