@@ -1153,7 +1153,7 @@ settings:
         ### settings_set()
         set:
             action_help: set an entry value in the settings
-            api: PUT /settings
+            api: PUT /settings/<key>
             arguments:
                 key:
                     help: The question or form key 
