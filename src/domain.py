@@ -167,6 +167,7 @@ def domain_info(domain):
         "registrar": registrar,
         "apps": apps,
         "main": _get_maindomain() == domain,
+        "topest_parent": _get_parent_domain_of(domain, return_self=True, topest=True),
         # TODO : add parent / child domains ?
     }
 
@@ -188,15 +189,17 @@ def _list_subdomains_of(parent_domain):
     return out
 
 
-def _get_parent_domain_of(domain, return_self=True):
+def _get_parent_domain_of(domain, return_self=True, topest=False):
 
     _assert_domain_exists(domain)
 
-    domains = _get_domains()
-    while "." in domain:
-        domain = domain.split(".", 1)[1]
-        if domain in domains:
-            return domain
+    domains = _get_domains(exclude_subdomains=topest)
+
+    domain_ = domain
+    while "." in domain_:
+        domain_ = domain_.split(".", 1)[1]
+        if domain_ in domains:
+            return domain_
 
     return domain if return_self else None
 
