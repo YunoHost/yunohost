@@ -24,7 +24,7 @@
     Manage domains
 """
 import os
-from typing import List, Any
+from typing import List
 from collections import OrderedDict
 
 from moulinette import m18n, Moulinette
