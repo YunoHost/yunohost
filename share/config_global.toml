@@ -12,7 +12,7 @@ name = "Security"
         choices.2 = "ditto, but also require at least one digit, one lower and one upper char"
         choices.3 = "ditto, but also require at least one special char"
         choices.4 = "ditto, but also require at least 12 chars"
-        default = 1
+        default = "1"
 
         [security.password.user_strength]
         type = "select"
@@ -20,7 +20,7 @@ name = "Security"
         choices.2 = "ditto, but also require at least one digit, one lower and one upper char"
         choices.3 = "ditto, but also require at least one special char"
         choices.4 = "ditto, but also require at least 12 chars"
-        default = 1
+        default = "1"
 
     [security.ssh]
     name = "SSH"
@@ -67,6 +67,24 @@ name = "Security"
         [security.webadmin.webadmin_allowlist]
         type = "tags"
         visible = "webadmin_allowlist_enabled"
+        optional = true
+        default = ""
+
+    [security.root_access]
+    name = "Change root password"
+
+        [security.root_access.root_access_explain]
+        type = "alert"
+        style = "info"
+        icon = "info"
+
+        [security.root_access.root_password]
+        type = "password"
+        optional = true
+        default = ""
+
+        [security.root_access.root_password_confirm]
+        type = "password"
         optional = true
         default = ""
 

@@ -85,7 +85,7 @@ class PasswordValidator:
             # from settings.py because this file is also meant to be
             # use as a script by ssowat.
             # (or at least that's my understanding -- Alex)
-            settings = yaml.load(open("/etc/yunohost/settings.yml", "r"))
+            settings = yaml.safe_load(open("/etc/yunohost/settings.yml", "r"))
             setting_key = profile + "_strength"
             self.validation_strength = int(settings[setting_key])
         except Exception:
