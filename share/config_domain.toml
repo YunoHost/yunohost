@@ -63,20 +63,17 @@ name = "DNS"
 [cert]
 name = "Certificate"
 
-    [cert.status]
-    name = "Status"
+    [cert.cert]
 
-        [cert.status.cert_summary]
+        [cert.cert.cert_summary]
         type = "alert"
         # Automatically filled by DomainConfigPanel
 
-        [cert.status.cert_validity]
+        [cert.cert.cert_validity]
         type = "number"
         readonly = true
+        visible = "false"
         # Automatically filled by DomainConfigPanel
-
-    [cert.cert]
-    name = "Manage"
 
         [cert.cert.cert_issuer]
         type = "string"

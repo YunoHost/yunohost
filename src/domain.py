@@ -573,14 +573,14 @@ class DomainConfigPanel(ConfigPanel):
             from yunohost.certificate import certificate_status
             status = certificate_status([self.entity], full=True)["certificates"][self.entity]
 
-            toml["cert"]["status"]["cert_summary"]["style"] = status["style"]
+            toml["cert"]["cert"]["cert_summary"]["style"] = status["style"]
 
             # i18n: domain_config_cert_summary_expired
             # i18n: domain_config_cert_summary_selfsigned
             # i18n: domain_config_cert_summary_abouttoexpire
             # i18n: domain_config_cert_summary_ok
             # i18n: domain_config_cert_summary_letsencrypt
-            toml["cert"]["status"]["cert_summary"]["ask"] = m18n.n(f"domain_config_cert_summary_{status['summary']}")
+            toml["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(f"domain_config_cert_summary_{status['summary']}")
 
             # Other specific strings used in config panels
             # i18n: domain_config_cert_renew_help
