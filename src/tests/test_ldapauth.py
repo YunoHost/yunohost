@@ -19,8 +19,8 @@ def setup_function(function):
     if os.system("systemctl is-active slapd >/dev/null") != 0:
         os.system("systemctl start slapd && sleep 3")
 
-    user_create("alice", "Alice", "White", maindomain, "Yunohost", admin=True)
-    user_create("bob", "Bob", "Snow", maindomain, "test123Ynh")
+    user_create("alice", maindomain, "Yunohost", admin=True, fullname="Alice White")
+    user_create("bob", maindomain, "test123Ynh", fullname="Bob Snow")
 
 
 def teardown_function():

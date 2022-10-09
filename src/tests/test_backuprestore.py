@@ -77,7 +77,7 @@ def setup_function(function):
 
     if "with_permission_app_installed" in markers:
         assert not app_is_installed("permissions_app")
-        user_create("alice", "Alice", "White", maindomain, "test123Ynh")
+        user_create("alice", maindomain, "test123Ynh", fullname="Alice White")
         with patch.object(os, "isatty", return_value=False):
             install_app("permissions_app_ynh", "/urlpermissionapp" "&admin=alice")
         assert app_is_installed("permissions_app")

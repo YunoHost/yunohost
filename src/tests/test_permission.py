@@ -158,8 +158,8 @@ def setup_function(function):
 
     socket.getaddrinfo = new_getaddrinfo
 
-    user_create("alice", "Alice", "White", maindomain, dummy_password)
-    user_create("bob", "Bob", "Snow", maindomain, dummy_password)
+    user_create("alice", maindomain, dummy_password, fullname="Alice White")
+    user_create("bob", maindomain, dummy_password, fullname="Bob Snow")
     _permission_create_with_dummy_app(
         permission="wiki.main",
         url="/",
