@@ -255,7 +255,6 @@ def test_del_group_all_users(mocker):
     with raiseYunohostError(mocker, "group_cannot_be_deleted"):
         user_group_delete("all_users")
 
-/
 def test_del_group_that_does_not_exist(mocker):
     with raiseYunohostError(mocker, "group_unknown"):
         user_group_delete("doesnt_exist")
