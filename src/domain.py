@@ -1,31 +1,24 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2013 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
-""" yunohost_domain.py
-
-    Manage domains
-"""
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import time
-from typing import List
+from typing import List, Optional
 from collections import OrderedDict
 
 from moulinette import m18n, Moulinette
@@ -53,7 +46,7 @@ DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 #  yunohost CLI and API which run in different processes
 domain_list_cache: List[str] = []
 domain_list_cache_timestamp = 0
-main_domain_cache: str = None
+main_domain_cache: Optional[str] = None
 main_domain_cache_timestamp = 0
 DOMAIN_CACHE_DURATION = 15
 
@@ -573,14 +566,14 @@ class DomainConfigPanel(ConfigPanel):
             from yunohost.certificate import certificate_status
             status = certificate_status([self.entity], full=True)["certificates"][self.entity]
 
-            toml["cert"]["status"]["cert_summary"]["style"] = status["style"]
+            toml["cert"]["cert"]["cert_summary"]["style"] = status["style"]
 
             # i18n: domain_config_cert_summary_expired
             # i18n: domain_config_cert_summary_selfsigned
             # i18n: domain_config_cert_summary_abouttoexpire
             # i18n: domain_config_cert_summary_ok
             # i18n: domain_config_cert_summary_letsencrypt
-            toml["cert"]["status"]["cert_summary"]["ask"] = m18n.n(f"domain_config_cert_summary_{status['summary']}")
+            toml["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(f"domain_config_cert_summary_{status['summary']}")
 
             # Other specific strings used in config panels
             # i18n: domain_config_cert_renew_help
