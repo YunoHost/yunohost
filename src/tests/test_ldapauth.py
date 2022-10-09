@@ -49,7 +49,7 @@ def test_authenticate_with_user_who_is_not_admin():
     with pytest.raises(MoulinetteError) as exception:
         LDAPAuth().authenticate_credentials(credentials="bob:test123Ynh")
 
-    translation = m18n.n("invalid_password")
+    translation = m18n.n("invalid_credentials")
     expected_msg = translation.format()
     assert expected_msg in str(exception)
 
@@ -58,7 +58,7 @@ def test_authenticate_with_wrong_password():
     with pytest.raises(MoulinetteError) as exception:
         LDAPAuth().authenticate_credentials(credentials="alice:bad_password_lul")
 
-    translation = m18n.n("invalid_password")
+    translation = m18n.n("invalid_credentials")
     expected_msg = translation.format()
     assert expected_msg in str(exception)
 
@@ -78,7 +78,7 @@ def test_authenticate_change_password():
     with pytest.raises(MoulinetteError) as exception:
         LDAPAuth().authenticate_credentials(credentials="alice:Yunohost")
 
-    translation = m18n.n("invalid_password")
+    translation = m18n.n("invalid_credentials")
     expected_msg = translation.format()
     assert expected_msg in str(exception)
 
