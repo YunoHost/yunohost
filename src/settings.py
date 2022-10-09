@@ -109,8 +109,8 @@ class SettingsConfigPanel(ConfigPanel):
 
     def _apply(self):
 
-        root_password = self.new_values.pop("root_password")
-        root_password_confirm = self.new_values.pop("root_password_confirm")
+        root_password = self.new_values.pop("root_password", None)
+        root_password_confirm = self.new_values.pop("root_password_confirm", None)
 
         if "root_password" in self.values:
             del self.values["root_password"]
@@ -153,7 +153,6 @@ class SettingsConfigPanel(ConfigPanel):
         # and only meant to have a custom setter mapped to tools_rootpw
         self.values["root_password"] = ""
         self.values["root_password_confirm"] = ""
-
 
     def get(self, key="", mode="classic"):
 
