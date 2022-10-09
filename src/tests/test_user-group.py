@@ -38,9 +38,9 @@ def setup_function(function):
     global maindomain
     maindomain = _get_maindomain()
 
-    user_create("alice", "Alice", "White", maindomain, "test123Ynh", admin=True)
-    user_create("bob", "Bob", "Snow", maindomain, "test123Ynh")
-    user_create("jack", "Jack", "Black", maindomain, "test123Ynh")
+    user_create("alice", maindomain, "test123Ynh", admin=True, fullname="Alice White")
+    user_create("bob", maindomain, "test123Ynh", fullname="Bob Snow")
+    user_create("jack", maindomain, "test123Ynh", fullname="Jack Black")
 
     user_group_create("dev")
     user_group_create("apps")
@@ -94,7 +94,7 @@ def test_list_groups():
 def test_create_user(mocker):
 
     with message(mocker, "user_created"):
-        user_create("albert", "Albert", "Good", maindomain, "test123Ynh")
+        user_create("albert", maindomain, "test123Ynh", fullname="Albert Good")
 
     group_res = user_group_list()["groups"]
     assert "albert" in user_list()["users"]
@@ -211,17 +211,17 @@ def test_del_group(mocker):
 
 def test_create_user_with_password_too_simple(mocker):
     with raiseYunohostError(mocker, "password_listed"):
-        user_create("other", "Alice", "White", maindomain, "12")
+        user_create("other", maindomain, "12", fullname="Alice White")
 
 
 def test_create_user_already_exists(mocker):
     with raiseYunohostError(mocker, "user_already_exists"):
-        user_create("alice", "Alice", "White", maindomain, "test123Ynh")
+        user_create("alice", maindomain, "test123Ynh", fullname="Alice White")
 
 
 def test_create_user_with_domain_that_doesnt_exists(mocker):
     with raiseYunohostError(mocker, "domain_unknown"):
-        user_create("alice", "Alice", "White", "doesnt.exists", "test123Ynh")
+        user_create("alice", "doesnt.exists", "test123Ynh", fullname="Alice White")
 
 
 def test_update_user_with_mail_address_already_taken(mocker):
@@ -255,7 +255,7 @@ def test_del_group_all_users(mocker):
     with raiseYunohostError(mocker, "group_cannot_be_deleted"):
         user_group_delete("all_users")
 
-
+/
 def test_del_group_that_does_not_exist(mocker):
     with raiseYunohostError(mocker, "group_unknown"):
         user_group_delete("doesnt_exist")
@@ -271,8 +271,13 @@ def test_update_user(mocker):
         user_update("alice", firstname="NewName", lastname="NewLast")
 
     info = user_info("alice")
-    assert info["firstname"] == "NewName"
-    assert info["lastname"] == "NewLast"
+    assert info["fullname"] == "NewName NewLast"
+
+    with message(mocker, "user_updated"):
+        user_update("alice", fullname="New2Name New2Last")
+
+    info = user_info("alice")
+    assert info["fullname"] == "New2Name New2Last"
 
 
 def test_update_group_add_user(mocker):

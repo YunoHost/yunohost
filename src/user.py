@@ -134,14 +134,28 @@ def user_list(fields=None):
 def user_create(
     operation_logger,
     username,
-    firstname,
-    lastname,
     domain,
     password,
+    fullname=None,
+    firstname=None,
+    lastname=None,
     mailbox_quota="0",
     admin=False,
     from_import=False,
 ):
+
+    if firstname or lastname:
+        logger.warning("Options --firstname / --lastname of 'yunohost user create' are deprecated. We recommend using --fullname instead.")
+
+    if not fullname.strip():
+        if not firstname.strip():
+            raise YunohostValidationError("You should specify the fullname of the user using option -F")
+        lastname = lastname or " "  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
+        fullname = f"{firstname} {lastname}".strip()
+    else:
+        fullname = fullname.strip()
+        firstname = fullname.split()[0]
+        lastname = ' '.join(fullname.split()[1:]) or " "  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
 
     from yunohost.domain import domain_list, _get_maindomain, _assert_domain_exists
     from yunohost.hook import hook_callback
@@ -219,9 +233,6 @@ def user_create(
         uid = str(random.randint(1001, 65000))
         uid_guid_found = uid not in all_uid and uid not in all_gid
 
-    # Adapt values for LDAP
-    fullname = f"{firstname} {lastname}"
-
     attr_dict = {
         "objectClass": [
             "mailAccount",
@@ -292,14 +303,7 @@ def user_create(
 
 @is_unit_operation([("username", "user")])
 def user_delete(operation_logger, username, purge=False, from_import=False):
-    """
-    Delete user
 
-    Keyword argument:
-        username -- Username to delete
-        purge
-
-    """
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
 
@@ -357,22 +361,14 @@ def user_update(
     remove_mailalias=None,
     mailbox_quota=None,
     from_import=False,
+    fullname=None,
 ):
-    """
-    Update user informations
 
-    Keyword argument:
-        lastname
-        mail
-        firstname
-        add_mailalias -- Mail aliases to add
-        remove_mailforward -- Mailforward addresses to remove
-        username -- Username of user to update
-        add_mailforward -- Mailforward addresses to add
-        change_password -- New password to set
-        remove_mailalias -- Mail aliases to remove
+    if fullname.strip():
+        fullname = fullname.strip()
+        firstname = fullname.split()[0]
+        lastname = ' '.join(fullname.split()[1:]) or " "  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
 
-    """
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.app import app_ssowatconf
     from yunohost.utils.password import (
@@ -402,20 +398,20 @@ def user_update(
     if firstname:
         new_attr_dict["givenName"] = [firstname]  # TODO: Validate
         new_attr_dict["cn"] = new_attr_dict["displayName"] = [
-            firstname + " " + user["sn"][0]
+            (firstname + " " + user["sn"][0]).strip()
         ]
         env_dict["YNH_USER_FIRSTNAME"] = firstname
 
     if lastname:
         new_attr_dict["sn"] = [lastname]  # TODO: Validate
         new_attr_dict["cn"] = new_attr_dict["displayName"] = [
-            user["givenName"][0] + " " + lastname
+            (user["givenName"][0] + " " + lastname).strip()
         ]
         env_dict["YNH_USER_LASTNAME"] = lastname
 
     if lastname and firstname:
         new_attr_dict["cn"] = new_attr_dict["displayName"] = [
-            firstname + " " + lastname
+            (firstname + " " + lastname).strip()
         ]
 
     # change_password is None if user_update is not called to change the password
@@ -547,7 +543,7 @@ def user_info(username):
 
     ldap = _get_ldap_interface()
 
-    user_attrs = ["cn", "mail", "uid", "maildrop", "givenName", "sn", "mailuserquota"]
+    user_attrs = ["cn", "mail", "uid", "maildrop", "mailuserquota"]
 
     if len(username.split("@")) == 2:
         filter = "mail=" + username
@@ -564,8 +560,6 @@ def user_info(username):
     result_dict = {
         "username": user["uid"][0],
         "fullname": user["cn"][0],
-        "firstname": user["givenName"][0],
-        "lastname": user["sn"][0],
         "mail": user["mail"][0],
         "mail-aliases": [],
         "mail-forward": [],
@@ -859,10 +853,9 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
 
         user_update(
             new_infos["username"],
-            new_infos["firstname"],
-            new_infos["lastname"],
-            new_infos["mail"],
-            new_infos["password"],
+            firstname=new_infos["firstname"],
+            lastname=new_infos["lastname"],
+            password=new_infos["password"],
             mailbox_quota=new_infos["mailbox-quota"],
             mail=new_infos["mail"],
             add_mailalias=new_infos["mail-alias"],
@@ -902,12 +895,12 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         try:
             user_create(
                 user["username"],
-                user["firstname"],
-                user["lastname"],
                 user["domain"],
                 user["password"],
                 user["mailbox-quota"],
                 from_import=True,
+                firstname=user["firstname"],
+                lastname=user["lastname"],
             )
             update(user)
             result["created"] += 1

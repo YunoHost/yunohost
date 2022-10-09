@@ -146,8 +146,7 @@ def tools_postinstall(
     operation_logger,
     domain,
     username,
-    firstname,
-    lastname,
+    fullname,
     password,
     ignore_dyndns=False,
     force_diskspace=False,
@@ -226,7 +225,7 @@ def tools_postinstall(
     domain_add(domain, dyndns)
     domain_main_domain(domain)
 
-    user_create(username, firstname, lastname, domain, password, admin=True)
+    user_create(username, domain, password, admin=True, fullname=fullname)
 
     # Update LDAP admin and create home dir
     tools_rootpw(password)

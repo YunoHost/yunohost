@@ -73,19 +73,28 @@ user:
                         pattern: &pattern_username
                             - !!str ^[a-z0-9_]+$
                             - "pattern_username"
+                -F:
+                    full: --fullname
+                    help: The full name of the user. For example 'Camille Dupont'
+                    extra:
+                        ask: ask_fullname
+                        required: False
+                        pattern: &pattern_fullname
+                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
+                            - "pattern_fullname"
                 -f:
                     full: --firstname
+                    help: Deprecated. Use --fullname instead.
                     extra:
-                        ask: ask_firstname
-                        required: True
+                        required: False
                         pattern: &pattern_firstname
                             - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_firstname"
                 -l:
                     full: --lastname
+                    help: Deprecated. Use --fullname instead.
                     extra:
-                        ask: ask_lastname
-                        required: True
+                        required: False
                         pattern: &pattern_lastname
                             - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_lastname"
@@ -136,12 +145,19 @@ user:
             arguments:
                 username:
                     help: Username to update
+                -F:
+                    full: --fullname
+                    help: The full name of the user. For example 'Camille Dupont'
+                    extra:
+                        pattern: *pattern_fullname
                 -f:
                     full: --firstname
+                    help: Deprecated. Use --fullname instead.
                     extra:
                         pattern: *pattern_firstname
                 -l:
                     full: --lastname
+                    help: Deprecated. Use --fullname instead.
                     extra:
                         pattern: *pattern_lastname
                 -m:
@@ -1520,25 +1536,18 @@ tools:
                         required: True
                 -u:
                     full: --username
-                    help: Username for the first (admin) user
+                    help: Username for the first (admin) user. For example 'camille'
                     extra:
-                        ask: ask_username
+                        ask: ask_admin_username
                         pattern: *pattern_username
                         required: True
-                -f:
-                    full: --firstname
-                    help: Firstname for the first (admin) user
+                -F:
+                    full: --fullname
+                    help: The full name for the first (admin) user. For example 'Camille Dupont'
                     extra:
-                        ask: ask_firstname
+                        ask: ask_admin_fullname
                         required: True
-                        pattern: *pattern_firstname
-                -l:
-                    full: --lastname
-                    help: Lastname for the first (admin) user
-                    extra:
-                        ask: ask_lastname
-                        required: True
-                        pattern: *pattern_lastname
+                        pattern: *pattern_fullname
                 -p:
                     full: --password
                     help: YunoHost admin password
