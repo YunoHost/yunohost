@@ -35,7 +35,6 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, write_to_file, read_toml, mkdir
 
 from yunohost.domain import (
-    domain_list,
     _assert_domain_exists,
     domain_config_get,
     _get_domain_settings,

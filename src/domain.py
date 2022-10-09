@@ -25,7 +25,7 @@
 """
 import os
 import time
-from typing import List
+from typing import List, Optional
 from collections import OrderedDict
 
 from moulinette import m18n, Moulinette
@@ -53,7 +53,7 @@ DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 #  yunohost CLI and API which run in different processes
 domain_list_cache: List[str] = []
 domain_list_cache_timestamp = 0
-main_domain_cache: str = None
+main_domain_cache: Optional[str] = None
 main_domain_cache_timestamp = 0
 DOMAIN_CACHE_DURATION = 15
 
