@@ -112,10 +112,12 @@ class BorgBackupRepository(LocalBackupRepository):
             super().install()
 
         # Initialize borg repo
-        cmd = ["borg", "init", "--encryption", "repokey", self.location]
+        encryption_mode = "repokey" if "passphrase" in self.future_values and self.future_values["passphrase"] else "none"
+        cmd = ["borg", "init", "--encryption", encryption_mode, self.location]
 
-        if "quota" in self.future_values:
+        if "quota" in self.future_values and self.future_values["quota"]:
             cmd += ['--storage-quota', self.quota]
+
         self._call('init', cmd)
 
     def update(self):
