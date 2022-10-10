@@ -184,8 +184,6 @@ def _list_subdomains_of(parent_domain):
 
 def _get_parent_domain_of(domain, return_self=False, topest=False):
 
-    _assert_domain_exists(domain)
-
     domains = _get_domains(exclude_subdomains=topest)
 
     domain_ = domain
