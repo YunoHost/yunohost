@@ -67,7 +67,7 @@ class BackupRepository(ConfigPanel):
     BackupRepository manage all repository the admin added to the instance
     """
     entity_type = "backup_repository"
-    save_path_tpl = "/etc/yunohost/backup/repositories/{entity}.yml"
+    save_path_tpl = REPOSITORIES_DIR + "/{entity}.yml"
     save_mode = "full"
     need_organized_files = True
     method_name = ""
