@@ -1,3 +1,15 @@
+yunohost (11.0.9.15) stable; urgency=low
+
+  - [fix] Lidswitch if no reboot ([#1506](https://github.com/yunohost/yunohost/pull/1506))
+  - [fix] postinstall: edge case where var would get undefined.. (b7bea608)
+  - [fix] backup: Try to fix again the infamous issue where from_yunohost_version gets filled with 'BASH_XTRACEFD' (14fb1cfd)
+  - [fix] Various english wording improvements ([#1507](https://github.com/yunohost/yunohost/pull/1507))
+  - [i18n] Translations updated for Arabic, Slovak, Telugu, Turkish
+
+  Thanks to all contributors <3 ! (Alice Kile, ButterflyOfFire, Jose Riha, ljf (zamentur), marty hiatt, Sedat Albayrak)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 30 Sep 2022 16:24:59 +0200
+
 yunohost (11.0.9.14) stable; urgency=low
 
   - [fix] dns: confusion on XMPP CNAME records for nohost.me & co domains (f6057d25)
