@@ -33,7 +33,14 @@ SMALL_PWD_LIST = [
     "rpi",
 ]
 
-MOST_USED_PASSWORDS = "/usr/share/yunohost/100000-most-used-passwords.txt"
+#
+# 100k firsts "most used password" with length 8+
+#
+# List obtained with:
+# curl -L https://github.com/danielmiessler/SecLists/raw/master/Passwords/Common-Credentials/10-million-password-list-top-1000000.txt \
+# | grep -v -E "^[a-zA-Z0-9]{1,7}$" | head -n 100000 | gzip > 100000-most-used-passwords-length8plus.txt.gz
+#
+MOST_USED_PASSWORDS = "/usr/share/yunohost/100000-most-used-passwords-length8plus.txt.gz"
 
 # Length, digits, lowers, uppers, others
 STRENGTH_LEVELS = [
