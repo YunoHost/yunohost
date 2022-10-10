@@ -209,7 +209,7 @@ class ConfigPanel:
         try:
             entities = [
                 re.match(
-                    "^" + cls.save_path_tpl.format(entity="(?p<entity>)") + "$", f
+                    "^" + cls.save_path_tpl.format(entity="(?P<entity>[^/]*)") + "$", f
                 ).group("entity")
                 for f in glob.glob(cls.save_path_tpl.format(entity="*"))
                 if os.path.isfile(f)
@@ -650,7 +650,7 @@ class ConfigPanel:
         logger.info("Saving the new configuration...")
         dir_path = os.path.dirname(os.path.realpath(self.save_path))
         if not os.path.exists(dir_path):
-            mkdir(dir_path, mode=0o700)
+            mkdir(dir_path, mode=0o700, parents=True)
 
         values_to_save = self.future_values
         if self.save_mode == "diff":
