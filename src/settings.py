@@ -126,6 +126,29 @@ class SettingsConfigPanel(ConfigPanel):
         super().__init__("settings")
 
     def _apply(self):
+
+        root_password = self.new_values.pop("root_password", None)
+        root_password_confirm = self.new_values.pop("root_password_confirm", None)
+
+        if "root_password" in self.values:
+            del self.values["root_password"]
+        if "root_password_confirm" in self.values:
+            del self.values["root_password_confirm"]
+        if "root_password" in self.new_values:
+            del self.new_values["root_password"]
+        if "root_password_confirm" in self.new_values:
+            del self.new_values["root_password_confirm"]
+
+        assert "root_password" not in self.future_values
+
+        if root_password and root_password.strip():
+
+            if root_password != root_password_confirm:
+                raise YunohostValidationError("password_confirmation_not_the_same")
+
+            from yunohost.tools import tools_rootpw
+            tools_rootpw(root_password, check_strength=True)
+
         super()._apply()
 
         settings = {
@@ -140,7 +163,17 @@ class SettingsConfigPanel(ConfigPanel):
                 logger.error(f"Post-change hook for setting failed : {e}")
                 raise
 
+    def _load_current_values(self):
+
+        super()._load_current_values()
+
+        # Specific logic for those settings who are "virtual" settings
+        # and only meant to have a custom setter mapped to tools_rootpw
+        self.values["root_password"] = ""
+        self.values["root_password_confirm"] = ""
+
     def get(self, key="", mode="classic"):
+
         result = super().get(key=key, mode=mode)
 
         if mode == "full":

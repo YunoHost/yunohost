@@ -91,6 +91,8 @@ def tools_rootpw(new_password, check_strength=True):
     except (IOError, KeyError):
         logger.warning(m18n.n("root_password_desynchronized"))
         return
+    else:
+        logger.info(m18n.n("root_password_changed"))
 
 
 def tools_maindomain(new_main_domain=None):
