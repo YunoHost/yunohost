@@ -32,13 +32,12 @@ import csv
 import tempfile
 import re
 import urllib.parse
-from datetime import datetime
 from packaging import version
 
 from moulinette import Moulinette, m18n
 from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import mkdir, write_to_yaml, read_yaml, write_to_file
+from moulinette.utils.filesystem import mkdir, write_to_yaml, read_yaml, write_to_file, rm
 from moulinette.utils.process import check_output
 
 import yunohost.domain
@@ -64,7 +63,7 @@ from yunohost.tools import (
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger, is_unit_operation
 from yunohost.repository import BackupRepository, BackupArchive
-from yunohost.config import ConfigPanel
+from yunohost.utils.config import ConfigPanel
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.utils.filesystem import free_space_in_directory, disk_usage, binary_to_human
@@ -74,7 +73,6 @@ ARCHIVES_PATH = f"{BACKUP_PATH}/archives"
 APP_MARGIN_SPACE_SIZE = 100  # In MB
 CONF_MARGIN_SPACE_SIZE = 10  # IN MB
 POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
-MB_ALLOWED_TO_ORGANIZE = 10
 logger = getActionLogger("yunohost.backup")
 
 
@@ -366,6 +364,14 @@ class BackupManager:
                 # c.f. method clean() which also does this)
                 filesystem.rm(self.work_dir, recursive=True, force=True)
                 filesystem.mkdir(self.work_dir, 0o750, parents=True, uid="admin")
+
+    def clean_work_dir(self, umount=True):
+
+        if umount and not _recursive_umount(self.work_dir):
+            raise YunohostError("backup_cleaning_failed")
+
+        if self.is_tmp_work_dir:
+            rm(self.work_dir, True, True)
 
     #
     # Backup target management                                              #
@@ -875,18 +881,19 @@ class RestoreManager:
         return restore_manager.result
     """
 
-    def __init__(self, name, method="tar"):
+    def __init__(self, archive):
         """
         RestoreManager constructor
 
         Args:
-        name -- (string) Archive name
-        method -- (string) Method name to use to mount the archive
+        archive -- (BackupArchive) The archive to restore
         """
         # Retrieve and open the archive
         # FIXME this way to get the info is not compatible with copy or custom
+        self.archive = archive
+
         # backup methods
-        self.info = backup_info(name, with_details=True)
+        self.info = archive.info()  # FIXME with_details=True
 
         from_version = self.info.get("from_yunohost_version", "")
         # Remove any '~foobar' in the version ... c.f ~alpha, ~beta version during
@@ -896,9 +903,6 @@ class RestoreManager:
         if not from_version or version.parse(from_version) < version.parse("4.2.0"):
             raise YunohostValidationError("restore_backup_too_old")
 
-        self.archive_path = self.info["path"]
-        self.name = name
-        self.method = BackupMethod.create(method, self)
         self.targets = BackupRestoreTargetsManager()
 
     #
@@ -912,32 +916,6 @@ class RestoreManager:
         successful_system = self.targets.list("system", include=["Success", "Warning"])
 
         return len(successful_apps) != 0 or len(successful_system) != 0
-
-    def _read_info_files(self):
-        """
-        Read the info file from inside an archive
-        """
-        # Retrieve backup info
-        info_file = os.path.join(self.work_dir, "info.json")
-        try:
-            with open(info_file, "r") as f:
-                self.info = json.load(f)
-
-            # Historically, "system" was "hooks"
-
-            if "system" not in self.info.keys():
-                self.info["system"] = self.info["hooks"]
-        except IOError:
-            logger.debug("unable to load '%s'", info_file, exc_info=1)
-            raise YunohostError(
-                "backup_archive_cant_retrieve_info_json", archive=self.archive_path
-            )
-        else:
-            logger.debug(
-                "restoring from backup '%s' created on %s",
-                self.name,
-                datetime.utcfromtimestamp(self.info["created_at"]),
-            )
 
     def _postinstall_if_needed(self):
         """
@@ -1041,10 +1019,8 @@ class RestoreManager:
 
             for hook_path in hook_paths:
                 logger.debug(
-                    "Adding restoration script '%s' to the system "
-                    "from the backup archive '%s'",
-                    hook_path,
-                    self.archive_path,
+                    f"Adding restoration script '{hook_path}' to the system "
+                    f"from the backup archive '{self.archive.archive_path}'"
                 )
                 self.method.copy(hook_path, custom_restore_hook_folder)
 
@@ -1096,7 +1072,7 @@ class RestoreManager:
         this archive
         """
 
-        self.work_dir = os.path.join(BACKUP_PATH, "tmp", self.name)
+        self.work_dir = os.path.join(BACKUP_PATH, "tmp", self.archive.name)
 
         if os.path.ismount(self.work_dir):
             logger.debug("An already mounting point '%s' already exists", self.work_dir)
@@ -1120,9 +1096,7 @@ class RestoreManager:
 
         filesystem.mkdir(self.work_dir, parents=True)
 
-        self.method.extract()
-
-        self._read_info_files()
+        self.archive.extract()
 
     #
     # Space computation / checks                                            #
@@ -1736,7 +1710,7 @@ def backup_create(
     }
 
 
-def backup_restore(name, system=[], apps=[], force=False):
+def backup_restore(name, repository, system=[], apps=[], force=False):
     """
     Restore from a local backup archive
 
@@ -1757,6 +1731,9 @@ def backup_restore(name, system=[], apps=[], force=False):
         system = []
         apps = []
 
+    if not repository:
+        repository = "local-borg"
+
     #
     # Initialize                                                            #
     #
@@ -1766,7 +1743,10 @@ def backup_restore(name, system=[], apps=[], force=False):
     elif name.endswith(".tar"):
         name = name[: -len(".tar")]
 
-    restore_manager = RestoreManager(name)
+    repo = BackupRepository(repository)
+    archive = BackupArchive(name, repo)
+
+    restore_manager = RestoreManager(archive)
 
     restore_manager.set_system_targets(system)
     restore_manager.set_apps_targets(apps)
@@ -1827,7 +1807,7 @@ def backup_list(repositories=[], with_info=False, human_readable=False):
     """
 
     return {
-        name: BackupRepository(name).list(with_info)
+        name: BackupRepository(name).list_archives(with_info)
 
         for name in repositories or BackupRepository.list(full=False)
     }
@@ -1862,7 +1842,7 @@ def backup_info(name, repository=None, with_details=False, human_readable=False)
     repo = BackupRepository(repository)
     archive = BackupArchive(name, repo)
 
-    return archive.info()
+    return archive.info(with_details=with_details, human_readable=human_readable)
 
 
 def backup_delete(name, repository):
@@ -1969,7 +1949,7 @@ class BackupTimer(ConfigPanel):
 Description=Run backup {self.entity} regularly
 
 [Timer]
-OnCalendar={values['schedule']}
+OnCalendar={self.values['schedule']}
 
 [Install]
 WantedBy=timers.target
@@ -1982,7 +1962,7 @@ After=network.target
 
 [Service]
 Type=oneshot
-ExecStart=/usr/bin/yunohost backup create -n '{self.entity}' -r '{repo}' --system --apps ; /usr/bin/yunohost backup prune -n '{self.entity}'
+ExecStart=/usr/bin/yunohost backup create -n '{self.entity}' -r '{self.repositories}' --system --apps ; /usr/bin/yunohost backup prune -n '{self.entity}'
 User=root
 Group=root
 """)

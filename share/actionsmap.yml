@@ -1021,6 +1021,9 @@ backup:
             arguments:
                 name:
                     help: Name of the local backup archive
+                -r:
+                    full: --repository
+                    help: The archive repository (local borg repo use by default)
                 --system:
                     help: List of system parts to restore (or all if none is given)
                     nargs: "*"

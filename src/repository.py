@@ -30,6 +30,7 @@ import shutil
 import subprocess
 import tarfile
 import tempfile
+from functools import reduce
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
@@ -38,7 +39,7 @@ from moulinette.utils.filesystem import read_file, rm, mkdir
 from moulinette.utils.network import download_text
 from datetime import timedelta, datetime
 
-
+import yunohost.repositories
 from yunohost.utils.config import ConfigPanel
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.filesystem import disk_usage, binary_to_human, free_space_in_directory
@@ -48,6 +49,7 @@ logger = getActionLogger('yunohost.repository')
 REPOSITORIES_DIR = '/etc/yunohost/repositories'
 CACHE_INFO_DIR = "/var/cache/yunohost/{repository}"
 REPOSITORY_CONFIG_PATH = "/usr/share/yunohost/other/config_repository.toml"
+MB_ALLOWED_TO_ORGANIZE = 10
 # TODO split ConfigPanel.get to extract "Format result" part and be able to override it
 # TODO Migration
 # TODO Remove BackupRepository.get_or_create()
@@ -240,7 +242,7 @@ class BackupRepository(ConfigPanel):
 
         return {self.shortname: result}
 
-    def list(self, with_info):
+    def list_archives(self, with_info):
         archives = self.list_archive_name()
         if with_info:
             d = {}
@@ -343,14 +345,14 @@ class BackupArchive:
 
         # Cast
         if self.repo.method_name == 'tar':
-            self.__class__ = TarBackupArchive
+            self.__class__ = yunohost.repositories.tar.TarBackupArchive
         elif self.repo.method_name == 'borg':
-            self.__class__ = BorgBackupArchive
+            self.__class__ = yunohost.repositories.borg.BorgBackupArchive
         else:
-            self.__class__ = HookBackupArchive
+            self.__class__ = yunohost.repositories.hook.HookBackupArchive
 
         # Assert archive exists
-        if not isinstance(self.manager, BackupManager) and self.name not in self.repo.list():
+        if self.manager.__class__.__name__ != "BackupManager" and self.name not in self.repo.list_archives():
             raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     @property
@@ -439,17 +441,17 @@ class BackupArchive:
             yield f"{leading_dot}apps/{app}"
 
     def _get_info_string(self):
-        archive_file = "%s/%s.tar" % (self.repo.path, self.name)
+        self.archive_file = "%s/%s.tar" % (self.repo.path, self.name)
 
         # Check file exist (even if it's a broken symlink)
-        if not os.path.lexists(archive_file):
-            archive_file += ".gz"
-            if not os.path.lexists(archive_file):
+        if not os.path.lexists(self.archive_file):
+            self.archive_file += ".gz"
+            if not os.path.lexists(self.archive_file):
                 raise YunohostValidationError("backup_archive_name_unknown", name=self.name)
 
         # If symlink, retrieve the real path
-        if os.path.islink(archive_file):
-            archive_file = os.path.realpath(archive_file)
+        if os.path.islink(self.archive_file):
+            archive_file = os.path.realpath(self.archive_file)
 
             # Raise exception if link is broken (e.g. on unmounted external storage)
             if not os.path.exists(archive_file):
@@ -470,7 +472,7 @@ class BackupArchive:
                     self.extract("./info.json")
                 else:
                     raise YunohostError(
-                        "backup_archive_cant_retrieve_info_json", archive=archive_file
+                        "backup_archive_cant_retrieve_info_json", archive=self.archive_file
                     )
                 shutil.move(os.path.join(info_dir, "info.json"), info_file)
             finally:
@@ -482,7 +484,7 @@ class BackupArchive:
             logger.debug("unable to load '%s'", info_file, exc_info=1)
             raise YunohostError('backup_invalid_archive')
 
-    def info(self):
+    def info(self, with_details, human_readable):
 
         info_json = self._get_info_string()
         if not self._info_json:
@@ -498,14 +500,14 @@ class BackupArchive:
         size = info.get("size", 0)
         if not size:
             tar = tarfile.open(
-                archive_file, "r:gz" if archive_file.endswith(".gz") else "r"
+                self.archive_file, "r:gz" if self.archive_file.endswith(".gz") else "r"
             )
             size = reduce(
                 lambda x, y: getattr(x, "size", x) + getattr(y, "size", y), tar.getmembers()
             )
             tar.close()
         result = {
-            "path": repo.archive_path,
+            "path": self.repo.archive_path,
             "created_at": datetime.utcfromtimestamp(info["created_at"]),
             "description": info["description"],
             "size": size,
@@ -546,17 +548,11 @@ class BackupArchive:
 
         return info
 
-# TODO move this in BackupManager ?????
     def clean(self):
         """
         Umount sub directories of working dirextories and delete it if temporary
         """
-        if self.need_organized_files():
-            if not _recursive_umount(self.work_dir):
-                raise YunohostError("backup_cleaning_failed")
-
-        if self.manager.is_tmp_work_dir:
-            rm(self.work_dir, True, True)
+        self.manager.clean_work_dir(self.need_organized_files())
 
     def _organize_files(self):
         """
@@ -573,7 +569,7 @@ class BackupArchive:
         for path in self.manager.paths_to_backup:
             src = path["source"]
 
-            if self.manager is RestoreManager:
+            if self.manager.__class__.__name__ != "RestoreManager":
                 # TODO Support to run this before a restore (and not only before
                 # backup). To do that RestoreManager.unorganized_work_dir should
                 # be implemented
