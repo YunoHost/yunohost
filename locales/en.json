@@ -90,6 +90,7 @@
     "backup_archive_system_part_not_available": "System part '{part}' unavailable in this backup",
     "backup_archive_writing_error": "Could not add the files '{source}' (named in the archive '{dest}') to be backed up into the compressed archive '{archive}'",
     "backup_ask_for_copying_if_needed": "Do you want to perform the backup using {size}MB temporarily? (This way is used since some files could not be prepared using a more efficient method.)",
+    "backup_borg_init_error": "Unable initialize the borg repository",
     "backup_cant_mount_uncompress_archive": "Could not mount the uncompressed archive as write protected",
     "backup_cleaning_failed": "Could not clean up the temporary backup folder",
     "backup_copying_to_organize_the_archive": "Copying {size}MB to organize the archive",
