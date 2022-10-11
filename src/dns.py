@@ -186,7 +186,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
         ###########################
         # Basic ipv4/ipv6 records #
         ###########################
-        if ipv4 and not settings_get("dns_exposure") == "ipv6":
+        if ipv4 and settings_get("dns_exposure") != "ipv6":
             basic.append([basename, ttl, "A", ipv4])
 
         if ipv6:

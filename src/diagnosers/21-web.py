@@ -77,7 +77,7 @@ class MyDiagnoser(Diagnoser):
 
         ipversions = []
         ipv4 = Diagnoser.get_cached_report("ip", item={"test": "ipv4"}) or {}
-        if ipv4.get("status") == "SUCCESS" and not settings_get("dns_exposure") == "ipv6":
+        if ipv4.get("status") == "SUCCESS" and settings_get("dns_exposure") != "ipv6":
             ipversions.append(4)
 
         # To be discussed: we could also make this check dependent on the
