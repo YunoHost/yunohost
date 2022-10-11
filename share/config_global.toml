@@ -163,6 +163,9 @@ name = "Other"
 
     [misc.network]
     name = "Network"
-        [misc.network.network_ipv6_only]
-        type = "boolean"
-        default = false
+        [misc.network.dns_exposure]
+        type = "select"
+        choices.both = "Both"
+        choices.ipv4 = "IPv4 Only"
+        choices.ipv6 = "IPv6 Only"
+        default = "both"
