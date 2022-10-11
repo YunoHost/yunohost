@@ -1099,6 +1099,9 @@ backup:
                         --full:
                             help: Show more details
                             action: store_true
+                        --space-used:
+                            help: Display size used
+                            action: store_true
                 
                 ### backup_repository_info()
                 info:
@@ -1111,13 +1114,9 @@ backup:
                                 pattern: &pattern_backup_repository_shortname
                                     - !!str ^[a-zA-Z0-9-_\.]+$
                                     - "pattern_backup_repository_shortname"
-                        -H:
-                            full: --human-readable
-                            help: Print sizes in human readable format
-                            action: store_true
                         --space-used:
                             help: Display size used
-                            action: store_false
+                            action: store_true
                 
                 ### backup_repository_add()
                 add:

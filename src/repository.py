@@ -104,13 +104,14 @@ class BackupRepository(ConfigPanel):
         if not full:
             return repositories
 
+        full_repositories = {}
         for repo in repositories:
             try:
-                repositories[repo] = BackupRepository(repo).info(space_used)
-            except Exception:
-                logger.error(f"Unable to open repository {repo}")
+                full_repositories.update(BackupRepository(repo).info(space_used))
+            except Exception as e:
+                logger.error(f"Unable to open repository {repo}: {e}")
 
-        return repositories
+        return full_repositories
 
     # =================================================
     # Config Panel Hooks
@@ -232,18 +233,19 @@ class BackupRepository(ConfigPanel):
             self.purge()
 
         rm(self.save_path, force=True)
-        logger.success(m18n.n("repository_removed", repository=self.shortname))
+        logger.success(m18n.n("repository_removed", repository=self.entity))
 
     def info(self, space_used=False):
         result = super().get(mode="export")
 
-        if self.__class__ == BackupRepository and space_used is True:
+        if space_used is True:
             result["space_used"] = self.compute_space_used()
 
-        return {self.shortname: result}
+        return {self.entity: result}
 
     def list_archives(self, with_info):
-        archives = self.list_archive_name()
+        self._cast_by_method()
+        archives = self.list_archives_names()
         if with_info:
             d = {}
             for archive in archives:
@@ -267,7 +269,7 @@ class BackupRepository(ConfigPanel):
 
         # List archives with creation date
         archives = {}
-        for archive_name in self.list_archive_name(prefix):
+        for archive_name in self.list_archives_names(prefix):
             archive = BackupArchive(repo=self, name=archive_name)
             created_at = archive.info()["created_at"]
             archives[created_at] = archive
@@ -314,7 +316,7 @@ class BackupRepository(ConfigPanel):
     def purge(self):
         raise NotImplementedError()
 
-    def list_archives_names(self):
+    def list_archives_names(self, prefix=None):
         raise NotImplementedError()
 
     def compute_space_used(self):

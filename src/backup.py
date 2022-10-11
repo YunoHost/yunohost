@@ -1871,12 +1871,12 @@ def backup_delete(name, repository):
 #
 
 
-def backup_repository_list(full=False):
+def backup_repository_list(space_used=False, full=False):
     """
     List available repositories where put archives
     """
 
-    return {"repositories": BackupRepository.list(full)}
+    return {"repositories": BackupRepository.list(space_used, full)}
 
 
 def backup_repository_info(shortname, space_used=False):

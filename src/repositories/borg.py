@@ -24,6 +24,7 @@ import json
 
 from datetime import datetime, timedelta
 
+from moulinette import m18n
 from moulinette.utils.log import getActionLogger
 
 from yunohost.utils.error import YunohostError
@@ -37,7 +38,7 @@ class BorgBackupRepository(LocalBackupRepository):
     method_name = "borg"
 
     # TODO logs
-    def _run_borg_command(self, cmd, stdout=None):
+    def _run_borg_command(self, cmd, stdout=None, stderr=None):
         """ Call a submethod of borg with the good context
         """
         env = dict(os.environ)
@@ -59,15 +60,16 @@ class BorgBackupRepository(LocalBackupRepository):
         # Authorize to move the repository (borgbase do this)
         env["BORG_RELOCATED_REPO_ACCESS_IS_OK"] = "yes"
 
-        return subprocess.Popen(cmd, env=env, stdout=stdout)
+        return subprocess.Popen(cmd, env=env,
+                                stdout=stdout, stderr=stderr)
 
     def _call(self, action, cmd, json_output=False):
-        borg = self._run_borg_command(cmd)
-        return_code = borg.wait()
-        if return_code:
-            raise YunohostError(f"backup_borg_{action}_error")
+        borg = self._run_borg_command(cmd, stdout=subprocess.PIPE,
+                                      stderr=subprocess.PIPE)
+        out, err = borg.communicate()
+        if borg.returncode:
+            raise YunohostError(f"backup_borg_{action}_error", error=err)
 
-        out, _ = borg.communicate()
         if json_output:
             try:
                 return json.loads(out)
@@ -117,8 +119,20 @@ class BorgBackupRepository(LocalBackupRepository):
 
         if "quota" in self.future_values and self.future_values["quota"]:
             cmd += ['--storage-quota', self.quota]
+        try:
+            self._call('init', cmd)
+        except YunohostError as e:
+            if e.key != "backup_borg_init_error":
+                raise
+            else:
+                # Check if it's possible to read the borg repo with current settings
+                try:
+                    cmd = ["borg", "info", self.location]
+                    self._call('info', cmd)
+                except YunohostError:
+                    raise e
 
-        self._call('init', cmd)
+                logger.info(m18n.n("backup_borg_already_initialized", repository=self.location))
 
     def update(self):
         raise NotImplementedError()
@@ -148,12 +162,11 @@ class BorgBackupRepository(LocalBackupRepository):
         return [archive["name"] for archive in response['archives']]
 
     def compute_space_used(self):
-        if not self.is_remote:
-            return super().purge()
-        else:
-            cmd = ["borg", "info", "--json", self.location]
-            response = self._call('info', cmd)
-            return response["cache"]["stats"]["unique_size"]
+        """ Return the size of this repo on the disk"""
+        # FIXME this size could be unrelevant, comparison between du and borg sizes doesn't match !
+        cmd = ["borg", "info", "--json", self.location]
+        response = self._call('info', cmd, json_output=True)
+        return response["cache"]["stats"]["unique_size"]
 
     def prune(self, prefix=None, **kwargs):
 
