@@ -192,7 +192,7 @@ pm.process_idle_timeout = 10s
 
     if [ -e "$YNH_APP_BASEDIR/conf/php-fpm.ini" ]; then
         ynh_print_warn --message="Packagers ! Please do not use a separate php ini file, merge your directives in the pool file instead."
-        ynh_add_config --template="$YNH_APP_BASEDIR/conf/php-fpm.ini" --destination="$fpm_config_dir/conf.d/20-$app.ini"
+        ynh_add_config --template="php-fpm.ini" --destination="$fpm_config_dir/conf.d/20-$app.ini"
     fi
 
     if [ $dedicated_service -eq 1 ]; then
@@ -206,7 +206,7 @@ syslog.ident = php-fpm-__APP__
 include = __FINALPHPCONF__
 " >$YNH_APP_BASEDIR/conf/php-fpm-$app.conf
 
-        ynh_add_config --template="$YNH_APP_BASEDIR/conf/php-fpm-$app.conf" --destination="$globalphpconf"
+        ynh_add_config --template="php-fpm-$app.conf" --destination="$globalphpconf"
 
         # Create a config for a dedicated PHP-FPM service for the app
         echo "[Unit]
