@@ -23,7 +23,7 @@ ynh_add_systemd_config() {
     service="${service:-$app}"
     template="${template:-systemd.service}"
 
-    ynh_add_config --template="$YNH_APP_BASEDIR/conf/$template" --destination="/etc/systemd/system/$service.service"
+    ynh_add_config --template="$template" --destination="/etc/systemd/system/$service.service"
 
     systemctl enable $service --quiet
     systemctl daemon-reload

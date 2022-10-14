@@ -99,8 +99,8 @@ ignoreregex =
 " >$YNH_APP_BASEDIR/conf/f2b_filter.conf
     fi
 
-    ynh_add_config --template="$YNH_APP_BASEDIR/conf/f2b_jail.conf" --destination="/etc/fail2ban/jail.d/$app.conf"
-    ynh_add_config --template="$YNH_APP_BASEDIR/conf/f2b_filter.conf" --destination="/etc/fail2ban/filter.d/$app.conf"
+    ynh_add_config --template="f2b_jail.conf" --destination="/etc/fail2ban/jail.d/$app.conf"
+    ynh_add_config --template="f2b_filter.conf" --destination="/etc/fail2ban/filter.d/$app.conf"
 
     ynh_systemd_action --service_name=fail2ban --action=reload --line_match="(Started|Reloaded) Fail2Ban Service" --log_path=systemd
 
