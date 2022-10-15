@@ -38,7 +38,7 @@ class BorgBackupRepository(LocalBackupRepository):
     method_name = "borg"
 
     # TODO logs
-    def _run_borg_command(self, cmd, stdout=None, stderr=None):
+    def _run_borg_command(self, cmd, stdout=None, stderr=None, cwd=None):
         """ Call a submethod of borg with the good context
         """
         env = dict(os.environ)
@@ -59,13 +59,15 @@ class BorgBackupRepository(LocalBackupRepository):
 
         # Authorize to move the repository (borgbase do this)
         env["BORG_RELOCATED_REPO_ACCESS_IS_OK"] = "yes"
-
+        kwargs = {}
+        if cwd:
+            kwargs["cwd"] = cwd
         return subprocess.Popen(cmd, env=env,
-                                stdout=stdout, stderr=stderr)
+                                stdout=stdout, stderr=stderr, **kwargs)
 
-    def _call(self, action, cmd, json_output=False):
+    def _call(self, action, cmd, json_output=False, cwd=None):
         borg = self._run_borg_command(cmd, stdout=subprocess.PIPE,
-                                      stderr=subprocess.PIPE)
+                                      stderr=subprocess.PIPE, cwd=cwd)
         out, err = borg.communicate()
         if borg.returncode:
             raise YunohostError(f"backup_borg_{action}_error", error=err)
@@ -108,7 +110,7 @@ class BorgBackupRepository(LocalBackupRepository):
                 self.new_values['location'] = self.location
 
             if not self.future_values.get('user'):
-                raise YunohostError("")
+                raise YunohostError("")  # TODO
         # Local
         else:
             super().install()
@@ -132,7 +134,7 @@ class BorgBackupRepository(LocalBackupRepository):
                 except YunohostError:
                     raise e
 
-                logger.info(m18n.n("backup_borg_already_initialized", repository=self.location))
+                logger.debug("The borg repository '{self.location}' already exists.")
 
     def update(self):
         raise NotImplementedError()
@@ -213,21 +215,30 @@ class BorgBackupArchive(BackupArchive):
 
     def backup(self):
         cmd = ['borg', 'create', self.archive_path, './']
-        self.repo._call('backup', cmd)
+        self.repo._call('backup', cmd, cwd=self.work_dir)
 
     def delete(self):
         cmd = ['borg', 'delete', '--force', self.archive_path]
         self.repo._call('delete_archive', cmd)
 
-    def list(self):
+    def list(self, with_info=False):
         """ Return a list of archives names
 
         Exceptions:
         backup_borg_list_error -- Raised if the borg script failed
         """
-        cmd = ["borg", "list", "--json-lines", self.archive_path]
+        cmd = ["borg", "list", "--json-lines" if with_info else "--short",
+               self.archive_path]
         out = self.repo._call('list_archive', cmd)
-        result = [json.loads(out) for line in out.splitlines()]
+
+        if not with_info:
+            return out.decode()
+
+        result = {}
+        for line in out.splitlines():
+            _file = json.loads(line)
+            filename = _file.pop("path")
+            result[filename] = _file
         return result
 
     def download(self, exclude_paths=[]):
@@ -248,12 +259,12 @@ class BorgBackupArchive(BackupArchive):
         response.content_type = "application/x-tar"
         return HTTPResponse(reader, 200)
 
-    def extract(self, paths=None, exclude_paths=[]):
-        paths, exclude_paths = super().extract(paths, exclude_paths)
+    def extract(self, paths=None, destination=None, exclude_paths=[]):
+        paths, destination, exclude_paths = super().extract(paths, destination, exclude_paths)
         cmd = ['borg', 'extract', self.archive_path] + paths
         for path in exclude_paths:
             cmd += ['--exclude', path]
-        return self.repo._call('extract_archive', cmd)
+        return self.repo._call('extract_archive', cmd, cwd=destination)
 
     def mount(self, path):
         # FIXME How to be sure the place where we mount is secure ?

@@ -27,6 +27,7 @@ from moulinette.utils.log import getActionLogger
 from moulinette import m18n
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.filesystem import free_space_in_directory
 from yunohost.repository import LocalBackupRepository
 from yunohost.backup import BackupManager
 from yunohost.utils.filesystem import space_used_in_directory
@@ -43,7 +44,13 @@ class TarBackupRepository(LocalBackupRepository):
         # (we do a realpath() to resolve symlinks)
         archives = glob(f"{self.location}/*.tar.gz") + glob(f"{self.location}/*.tar")
         archives = set([os.path.realpath(archive) for archive in archives])
-        archives = sorted(archives, key=lambda x: os.path.getctime(x))
+        broken_archives = set()
+        for archive in archives:
+            if not os.path.exists(archive):
+                broken_archives.add(archive)
+                logger.warning(m18n.n("backup_archive_broken_link", path=archive))
+
+        archives = sorted(archives - broken_archives, key=lambda x: os.path.getctime(x))
 
         # Extract only filename without the extension
         def remove_extension(f):
@@ -56,6 +63,9 @@ class TarBackupRepository(LocalBackupRepository):
 
     def compute_space_used(self):
         return space_used_in_directory(self.location)
+
+    def compute_free_space(self):
+        return free_space_in_directory(self.location)
 
     def prune(self):
         raise NotImplementedError()

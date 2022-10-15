@@ -20,6 +20,8 @@
 """
 import os
 
+from moulinette.utils.process import check_output
+
 
 def free_space_in_directory(dirpath):
     stat = os.statvfs(dirpath)

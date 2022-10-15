@@ -42,12 +42,12 @@ from datetime import timedelta, datetime
 import yunohost.repositories
 from yunohost.utils.config import ConfigPanel
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.filesystem import disk_usage, binary_to_human, free_space_in_directory
+from yunohost.utils.filesystem import disk_usage, binary_to_human
 from yunohost.utils.network import get_ssh_public_key, SHF_BASE_URL
 
 logger = getActionLogger('yunohost.repository')
 REPOSITORIES_DIR = '/etc/yunohost/repositories'
-CACHE_INFO_DIR = "/var/cache/yunohost/{repository}"
+CACHE_INFO_DIR = "/var/cache/yunohost/repositories/{repository}"
 REPOSITORY_CONFIG_PATH = "/usr/share/yunohost/other/config_repository.toml"
 MB_ALLOWED_TO_ORGANIZE = 10
 # TODO split ConfigPanel.get to extract "Format result" part and be able to override it
@@ -113,6 +113,23 @@ class BackupRepository(ConfigPanel):
 
         return full_repositories
 
+    def __init__(self, entity, config_path=None, save_path=None, creation=False):
+
+        super().__init__(entity, config_path, save_path, creation)
+
+        self._load_current_values()
+
+        if self.__class__ == BackupRepository:
+            if self.method == 'tar':
+                from yunohost.repositories.tar import TarBackupRepository
+                self.__class__ = TarBackupRepository
+            elif self.method == 'borg':
+                from yunohost.repositories.borg import BorgBackupRepository
+                self.__class__ = BorgBackupRepository
+            else:
+                from yunohost.repositories.hook import HookBackupRepository
+                self.__class__ = HookBackupRepository
+
     # =================================================
     # Config Panel Hooks
     # =================================================
@@ -154,7 +171,6 @@ class BackupRepository(ConfigPanel):
 
         if 'shf_id' in self.values:
             self.values['is_shf'] = bool(self.values['shf_id'])
-        self._cast_by_method()
 
     def _parse_pre_answered(self, *args):
         super()._parse_pre_answered(*args)
@@ -165,7 +181,6 @@ class BackupRepository(ConfigPanel):
             self.args['method'] = "borg"
         elif self.args.get('method') == 'tar':
             self.args['is_remote'] = False
-        self._cast_by_method()
 
     def _apply(self):
         # Activate / update services
@@ -194,44 +209,34 @@ class BackupRepository(ConfigPanel):
 
         return f"ssh://{self.user}@{self.domain}:{self.port}/{self.path}"
 
-    def _cast_by_method(self):
-        if not self.future_values:
-            return
+    @property
+    def is_deduplicated(self):
+        return True
 
-        if self.__class__ == BackupRepository:
-            if self.method == 'tar':
-                from yunohost.repositories.tar import TarBackupRepository
-                self.__class__ = TarBackupRepository
-            elif self.method == 'borg':
-                from yunohost.repositories.borg import BorgBackupRepository
-                self.__class__ = BorgBackupRepository
-            else:
-                from yunohost.repositories.hook import HookBackupRepository
-                self.__class__ = HookBackupRepository
-
-    def _check_is_enough_free_space(self):
+    def check_is_enough_free_space(self, backup_size):
         """
         Check free space in repository or output directory before to backup
         """
-        # TODO How to do with distant repo or with deduplicated backup ?
-        backup_size = self.manager.size
+        if self.is_deduplicated:
+            return
 
-        free_space = free_space_in_directory(self.repo)
+        free_space = self.compute_free_space(self)
 
         if free_space < backup_size:
             logger.debug(
                 "Not enough space at %s (free: %s / needed: %d)",
-                self.repo,
+                self.entity,
                 free_space,
                 backup_size,
             )
-            raise YunohostValidationError("not_enough_disk_space", path=self.repo)
+            raise YunohostValidationError("not_enough_disk_space", path=self.entity)
 
     def remove(self, purge=False):
         if purge:
             self._load_current_values()
             self.purge()
 
+        rm(CACHE_INFO_DIR.format(repository=self.entity), recursive=True, force=True)
         rm(self.save_path, force=True)
         logger.success(m18n.n("repository_removed", repository=self.entity))
 
@@ -243,14 +248,13 @@ class BackupRepository(ConfigPanel):
 
         return {self.entity: result}
 
-    def list_archives(self, with_info):
-        self._cast_by_method()
+    def list_archives(self, with_info=False):
         archives = self.list_archives_names()
         if with_info:
             d = {}
             for archive in archives:
                 try:
-                    d[archive] = BackupArchive(repo=self, name=archive).info()
+                    d[archive] = BackupArchive(repo=self, name=archive).info(with_details=with_info)
                 except YunohostError as e:
                     logger.warning(str(e))
                 except Exception:
@@ -322,6 +326,9 @@ class BackupRepository(ConfigPanel):
     def compute_space_used(self):
         raise NotImplementedError()
 
+    def compute_free_space(self):
+        raise NotImplementedError()
+
 
 class LocalBackupRepository(BackupRepository):
     def install(self):
@@ -354,7 +361,7 @@ class BackupArchive:
             self.__class__ = yunohost.repositories.hook.HookBackupArchive
 
         # Assert archive exists
-        if self.manager.__class__.__name__ != "BackupManager" and self.name not in self.repo.list_archives():
+        if self.manager.__class__.__name__ != "BackupManager" and self.name not in self.repo.list_archives(False):
             raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     @property
@@ -377,7 +384,7 @@ class BackupArchive:
 
     # This is not a property cause it could be managed in a hook
     def need_organized_files(self):
-        return self.repo.need_organised_files
+        return self.repo.need_organized_files
 
     def organize_and_backup(self):
         """
@@ -392,7 +399,7 @@ class BackupArchive:
         self.repo.install()
 
         # Check free space in output
-        self._check_is_enough_free_space()
+        self.repo.check_is_enough_free_space(self.manager.size)
         try:
             self.backup()
         finally:
@@ -443,59 +450,45 @@ class BackupArchive:
             yield f"{leading_dot}apps/{app}"
 
     def _get_info_string(self):
-        self.archive_file = "%s/%s.tar" % (self.repo.path, self.name)
+        """Extract info file from archive if needed and read it"""
 
-        # Check file exist (even if it's a broken symlink)
-        if not os.path.lexists(self.archive_file):
-            self.archive_file += ".gz"
-            if not os.path.lexists(self.archive_file):
-                raise YunohostValidationError("backup_archive_name_unknown", name=self.name)
-
-        # If symlink, retrieve the real path
-        if os.path.islink(self.archive_file):
-            archive_file = os.path.realpath(self.archive_file)
-
-            # Raise exception if link is broken (e.g. on unmounted external storage)
-            if not os.path.exists(archive_file):
-                raise YunohostValidationError(
-                    "backup_archive_broken_link", path=archive_file
-                )
-        info_file = CACHE_INFO_DIR.format(repository=self.repo.name)
-        mkdir(info_file, mode=0o0700, parents=True, force=True)
-        info_file += f"/{self.name}.info.json"
+        cache_info_dir = CACHE_INFO_DIR.format(repository=self.repo.entity)
+        mkdir(cache_info_dir, mode=0o0700, parents=True, force=True)
+        info_file = f"{cache_info_dir}/{self.name}.info.json"
 
         if not os.path.exists(info_file):
-            info_dir = tempfile.mkdtemp()
+            tmp_dir = tempfile.mkdtemp()
             try:
                 files_in_archive = self.list()
                 if "info.json" in files_in_archive:
-                    self.extract("info.json")
+                    self.extract("info.json", destination=tmp_dir)
                 elif "./info.json" in files_in_archive:
-                    self.extract("./info.json")
+                    self.extract("./info.json", destination=tmp_dir)
                 else:
                     raise YunohostError(
-                        "backup_archive_cant_retrieve_info_json", archive=self.archive_file
+                        "backup_archive_cant_retrieve_info_json", archive=self.archive_path
                     )
-                shutil.move(os.path.join(info_dir, "info.json"), info_file)
+                    # FIXME should we cache there is no info.json ?
+                shutil.move(os.path.join(tmp_dir, "info.json"), info_file)
             finally:
-                os.rmdir(info_dir)
+                os.rmdir(tmp_dir)
 
         try:
             return read_file(info_file)
-        except MoulinetteError:
+        except MoulinetteError as e:
             logger.debug("unable to load '%s'", info_file, exc_info=1)
-            raise YunohostError('backup_invalid_archive')
+            raise YunohostError('backup_invalid_archive', error=e)
 
-    def info(self, with_details, human_readable):
+    def info(self, with_details=False, human_readable=False):
 
         info_json = self._get_info_string()
-        if not self._info_json:
+        if not info_json:
             raise YunohostError('backup_info_json_not_implemented')
         try:
-            info = json.load(info_json)
-        except Exception:
+            info = json.loads(info_json)
+        except Exception as e:
             logger.debug("unable to load info json", exc_info=1)
-            raise YunohostError('backup_invalid_archive')
+            raise YunohostError('backup_invalid_archive', error=e)
 
         # (legacy) Retrieve backup size
         # FIXME
@@ -509,7 +502,7 @@ class BackupArchive:
             )
             tar.close()
         result = {
-            "path": self.repo.archive_path,
+            "path": self.archive_path,
             "created_at": datetime.utcfromtimestamp(info["created_at"]),
             "description": info["description"],
             "size": size,
@@ -571,7 +564,7 @@ class BackupArchive:
         for path in self.manager.paths_to_backup:
             src = path["source"]
 
-            if self.manager.__class__.__name__ != "RestoreManager":
+            if self.manager.__class__.__name__ == "RestoreManager":
                 # TODO Support to run this before a restore (and not only before
                 # backup). To do that RestoreManager.unorganized_work_dir should
                 # be implemented
@@ -694,16 +687,16 @@ class BackupArchive:
             )
             return
 
-    def extract(self, paths=None, exclude_paths=[]):
+    def extract(self, paths=None, destination=None, exclude_paths=[]):
         if self.__class__ == BackupArchive:
             raise NotImplementedError()
-        if isinstance(exclude_paths, str):
+        if isinstance(paths, str):
             paths = [paths]
         elif paths is None:
             paths = self.select_files()
         if isinstance(exclude_paths, str):
             exclude_paths = [exclude_paths]
-        return paths, exclude_paths
+        return paths, destination, exclude_paths
 
     def mount(self):
         if self.__class__ == BackupArchive:

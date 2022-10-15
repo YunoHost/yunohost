@@ -1019,11 +1019,10 @@ backup:
             action_help: Restore from a local backup archive. If neither --apps or --system are given, this will restore all apps and all system parts in the archive. If only --apps if given, this will only restore apps and no system parts. Similarly, if only --system is given, this will only restore system parts and no apps.
             api: PUT /backups/<name>/restore
             arguments:
+                repository:
+                    help: Repository of the backup archive
                 name:
                     help: Name of the local backup archive
-                -r:
-                    full: --repository
-                    help: The archive repository (local borg repo use by default)
                 --system:
                     help: List of system parts to restore (or all if none is given)
                     nargs: "*"
@@ -1036,9 +1035,15 @@ backup:
 
         ### backup_list()
         list:
-            action_help: List available local backup archives
+            action_help: List available local backup archives or list files in an archive
             api: GET /backups
             arguments:
+                repository:
+                    help: Repository of a backup archive
+                    nargs: "?"
+                name:
+                    help: Name of a backup archive
+                    nargs: "?"
                 -r:
                     full: --repositories
                     help: List archives in these repositories
@@ -1057,8 +1062,10 @@ backup:
             action_help: Show info about a local backup archive
             api: GET /backups/<name>
             arguments:
+                repository:
+                    help: Repository of the backup archive
                 name:
-                    help: Name of the local backup archive
+                    help: Name of the backup archive
                 -d:
                     full: --with-details
                     help: Show additional backup information
@@ -1073,6 +1080,8 @@ backup:
             action_help: (API only) Request to download the file
             api: GET /backups/<name>/download
             arguments:
+                repository:
+                    help: Repository of the backup archive
                 name:
                     help: Name of the local backup archive
         
@@ -1081,6 +1090,8 @@ backup:
             action_help: Delete a backup archive
             api: DELETE /backups/<name>
             arguments:
+                repository:
+                    help: Repository of the backup archive
                 name:
                     help: Name of the archive to delete
                     extra:

@@ -273,6 +273,8 @@ class BackupManager:
         description -- (string) A description for this future backup archive
                         (default: '')
 
+        repositories-- (List<BackupRepository>) A list of repositories
+
         work_dir    -- (None|string) A path where prepare the archive. If None,
                         temporary work_dir will be created (default: None)
         """
@@ -785,13 +787,22 @@ class BackupManager:
     #
 
     def backup(self):
-        """Apply backup methods"""
-
+        """Backup files in each repository"""
+        result = {}
         for repo in self.repositories:
-            logger.debug(m18n.n("backup_applying_method_" + repo.method_name))
-            archive = BackupArchive(repo, name=self.name, manager=self)
-            archive.organize_and_backup()
-            logger.debug(m18n.n("backup_method_" + repo.method_name + "_finished"))
+            logger.debug(m18n.n("backuping_in_repository", repository=repo.entity))
+            try:
+                archive = BackupArchive(repo, name=self.name, manager=self)
+                archive.organize_and_backup()
+            except Exception:
+                import traceback
+                result[repo.entity] = "Error"
+                logger.error(m18n.n("backup_in_repository_error", repository=repo.entity, error=traceback.format_exc()))
+            else:
+                result[repo.entity] = "Sent"
+                logger.debug(m18n.n("backup_in_repository_finished", repository=repo.entity))
+
+        return result
 
     def _compute_backup_size(self):
         """
@@ -1626,9 +1637,9 @@ def backup_create(
         name -- Name of the backup archive
         description -- Short description of the backup
         repositories -- Repositories in which we want to save the backup
-        output_directory -- Output directory for the backup
         system -- List of system elements to backup
         apps -- List of application names to backup
+        dry_run -- Run ynh backup script without send the files into a repo
     """
 
     # TODO: Add a 'clean' argument to clean output directory
@@ -1637,9 +1648,19 @@ def backup_create(
     # Validate / parse arguments                                            #
     #
 
-    # Validate there is no archive with the same name
+    # Add backup repositories
 
-    if name and name in backup_list(repositories)["archives"]:
+    if not repositories:
+        repositories = ["local-borg"]
+
+    # Validate there is no archive with the same name
+    archives = backup_list(repositories=repositories)
+    for repository in archives:
+        if name and name in archives[repository]:
+            repositories.pop(repository)
+            logger.error(m18n.n("backup_archive_name_exists", repository=repository))
+
+    if not repositories:
         raise YunohostValidationError("backup_archive_name_exists")
 
     # If no --system or --apps given, backup everything
@@ -1654,14 +1675,6 @@ def backup_create(
 
     operation_logger.start()
 
-    # Create yunohost archives directory if it does not exists
-    _create_archive_dir()  # FIXME
-
-    # Add backup repositories
-
-    if not repositories:
-        repositories = ["local-borg"]
-
     repositories = [BackupRepository(repo) for repo in repositories]
 
     # Prepare files to backup
@@ -1669,7 +1682,6 @@ def backup_create(
                                    repositories=repositories)
 
     # Add backup targets (system and apps)
-
     backup_manager.set_system_targets(system)
     backup_manager.set_apps_targets(apps)
 
@@ -1683,6 +1695,12 @@ def backup_create(
 
     # Collect files to be backup (by calling app backup script / system hooks)
     backup_manager.collect_files()
+
+    parts_results = backup_manager.targets.results
+    parts_results = list(parts_results["apps"].values()) + list(parts_results["system"].values())
+    parts_states = [v in ["Success", "Skipped"] for v in parts_results]
+    if not any(parts_states):
+        raise YunohostError("backup_nothings_done")
 
     if dry_run:
         return {
@@ -1698,19 +1716,36 @@ def backup_create(
             size=binary_to_human(backup_manager.size) + "B",
         )
     )
-    backup_manager.backup()
+    repo_results = backup_manager.backup()
+    repo_states = [repo_result == "Success" for repository, repo_result in repo_results.items()]
 
-    logger.success(m18n.n("backup_created"))
-    operation_logger.success()
+    if all(repo_states) and all(parts_states):
+        logger.success(m18n.n("backup_created"))
+        operation_logger.success()
+    else:
+        if not any(repo_states):
+            error = m18n.n("backup_not_sent")
+        elif not all(repo_states):
+            error = m18n.n("backup_partially_sent")
+
+        if not all(parts_states):
+            error += "\n" + m18n.n("backup_files_not_fully_collected")
+            for repository, repo_result in repo_results.items():
+                if repo_result == "Sent":
+                    repo_results[repository] = "Incomplete"
+
+        logger.error(error)
+        operation_logger.error(error)
 
     return {
         "name": backup_manager.name,
         "size": backup_manager.size,
         "results": backup_manager.targets.results,
+        "states": repo_results
     }
 
 
-def backup_restore(name, repository, system=[], apps=[], force=False):
+def backup_restore(repository, name, system=[], apps=[], force=False):
     """
     Restore from a local backup archive
 
@@ -1744,7 +1779,7 @@ def backup_restore(name, repository, system=[], apps=[], force=False):
         name = name[: -len(".tar")]
 
     repo = BackupRepository(repository)
-    archive = BackupArchive(name, repo)
+    archive = BackupArchive(repo, name)
 
     restore_manager = RestoreManager(archive)
 
@@ -1795,7 +1830,7 @@ def backup_restore(name, repository, system=[], apps=[], force=False):
     return restore_manager.targets.results
 
 
-def backup_list(repositories=[], with_info=False, human_readable=False):
+def backup_list(repository=None, name=None, repositories=[], with_info=False, human_readable=False):
     """
     List available local backup archives
 
@@ -1805,6 +1840,12 @@ def backup_list(repositories=[], with_info=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
+    if bool(repository) != bool(name):
+        raise YunohostError("backup_list_bad_arguments")
+    elif repository:
+        repo = BackupRepository(repository)
+        archive = BackupArchive(repo, name)
+        return archive.list(with_info)
 
     return {
         name: BackupRepository(name).list_archives(with_info)
@@ -1813,10 +1854,10 @@ def backup_list(repositories=[], with_info=False, human_readable=False):
     }
 
 
-def backup_download(name, repository):
+def backup_download(repository, name):
 
     repo = BackupRepository(repository)
-    archive = BackupArchive(name, repo)
+    archive = BackupArchive(repo, name)
 
     return archive.download()
 
@@ -1824,12 +1865,12 @@ def backup_download(name, repository):
 def backup_mount(name, repository, path):
 
     repo = BackupRepository(repository)
-    archive = BackupArchive(name, repo)
+    archive = BackupArchive(repo, name)
 
     return archive.mount(path)
 
 
-def backup_info(name, repository=None, with_details=False, human_readable=False):
+def backup_info(repository, name, with_details=False, human_readable=False):
     """
     Get info about a local backup archive
 
@@ -1840,12 +1881,12 @@ def backup_info(name, repository=None, with_details=False, human_readable=False)
 
     """
     repo = BackupRepository(repository)
-    archive = BackupArchive(name, repo)
+    archive = BackupArchive(repo, name)
 
     return archive.info(with_details=with_details, human_readable=human_readable)
 
 
-def backup_delete(name, repository):
+def backup_delete(repository, name):
     """
     Delete a backup
 
@@ -1854,7 +1895,7 @@ def backup_delete(name, repository):
 
     """
     repo = BackupRepository(repository)
-    archive = BackupArchive(name, repo)
+    archive = BackupArchive(repo, name)
 
     # FIXME Those are really usefull ?
     hook_callback("pre_backup_delete", args=[name])
