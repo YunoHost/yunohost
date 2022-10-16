@@ -1879,12 +1879,12 @@ def backup_download(repository, name):
     return archive.download()
 
 
-def backup_mount(name, repository, path):
+def backup_mount(repository, name, path):
 
     repo = BackupRepository(repository)
     archive = BackupArchive(repo, name)
 
-    return archive.mount(path)
+    archive.mount(path)
 
 
 def backup_info(repository, name, with_details=False, human_readable=False):

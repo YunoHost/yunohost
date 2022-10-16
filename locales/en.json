@@ -92,6 +92,7 @@
     "backup_ask_for_copying_if_needed": "Do you want to perform the backup using {size}MB temporarily? (This way is used since some files could not be prepared using a more efficient method.)",
     "backup_borg_init_error": "Unable initialize the borg repository: {error}",
     "backup_borg_list_archive_error": "Unable to list files in the archive",
+    "backup_borg_mount_archive_error": "Unable to mount the archive here: {error}",
     "backup_cant_mount_uncompress_archive": "Could not mount the uncompressed archive as write protected",
     "backup_cleaning_failed": "Could not clean up the temporary backup folder",
     "backup_copying_to_organize_the_archive": "Copying {size}MB to organize the archive",

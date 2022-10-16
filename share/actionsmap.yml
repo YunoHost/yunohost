@@ -1085,6 +1085,18 @@ backup:
                 name:
                     help: Name of the local backup archive
         
+        ### backup_mount()
+        mount:
+            action_help: Mount a backup archive if possible
+            api: DELETE /backups/<name>
+            arguments:
+                repository:
+                    help: Repository of the backup archive
+                name:
+                    help: Name of the backup archive
+                path:
+                    help: Path where mount the archive
+        
         ### backup_delete()
         delete:
             action_help: Delete a backup archive
