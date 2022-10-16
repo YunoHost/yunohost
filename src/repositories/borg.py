@@ -259,7 +259,7 @@ class BorgBackupArchive(BackupArchive):
         response.content_type = "application/x-tar"
         return HTTPResponse(reader, 200)
 
-    def extract(self, paths=None, destination=None, exclude_paths=[]):
+    def extract(self, paths=[], destination=None, exclude_paths=[]):
         paths, destination, exclude_paths = super().extract(paths, destination, exclude_paths)
         cmd = ['borg', 'extract', self.archive_path] + paths
         for path in exclude_paths:

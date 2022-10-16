@@ -1092,10 +1092,11 @@ backup:
             arguments:
                 repository:
                     help: Repository of the backup archive
-                name:
+                archive_name:
                     help: Name of the archive to delete
                     extra:
                         pattern: *pattern_backup_archive_name
+                    nargs: "*"
 
     subcategories:
         repository:

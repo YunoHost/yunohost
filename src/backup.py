@@ -1107,7 +1107,24 @@ class RestoreManager:
 
         filesystem.mkdir(self.work_dir, parents=True)
 
-        self.archive.extract()
+        # Select paths to extract
+        paths = ["backup.csv", "info.json", "hooks"]
+        paths += [f"apps/{app}" for app in self.targets.list("apps", exclude=["Skipped"])]
+        for system in self.targets.list("system", exclude=["Skipped"]):
+            if system.startswith("data"):
+                paths.append(f"data/{system}")
+            elif system.startswith("conf_ynh"):
+                if "conf/ynh" not in paths:
+                    paths.append("conf/ynh")
+            else:
+                paths.append(system.replace("_", "/", 1))
+
+        if not self.targets.list("system", exclude=["Skipped"]):
+            paths.remove("hooks")
+
+        logger.debug(f"List of paths to extract: {paths}")
+
+        self.archive.extract(paths=paths, destination=self.work_dir)
 
     #
     # Space computation / checks                                            #
@@ -1717,7 +1734,7 @@ def backup_create(
         )
     )
     repo_results = backup_manager.backup()
-    repo_states = [repo_result == "Success" for repository, repo_result in repo_results.items()]
+    repo_states = [repo_result == "Sent" for repository, repo_result in repo_results.items()]
 
     if all(repo_states) and all(parts_states):
         logger.success(m18n.n("backup_created"))
@@ -1886,7 +1903,7 @@ def backup_info(repository, name, with_details=False, human_readable=False):
     return archive.info(with_details=with_details, human_readable=human_readable)
 
 
-def backup_delete(repository, name):
+def backup_delete(repository, archive_name):
     """
     Delete a backup
 
@@ -1894,15 +1911,9 @@ def backup_delete(repository, name):
         name -- Name of the local backup archive
 
     """
-    repo = BackupRepository(repository)
-    archive = BackupArchive(repo, name)
-
-    # FIXME Those are really usefull ?
-    hook_callback("pre_backup_delete", args=[name])
-
-    archive.delete()
-
-    hook_callback("post_backup_delete", args=[name])
+    for name in archive_name:
+        repo = BackupRepository(repository)
+        BackupArchive(repo, name).delete()
 
     logger.success(m18n.n("backup_deleted"))
 
