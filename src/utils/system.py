@@ -58,6 +58,14 @@ def space_used_by_directory(dirpath, follow_symlinks=True):
     return stat.f_frsize * stat.f_blocks  # FIXME : this doesnt do what the function name suggest this does ...
 
 
+def disk_usage(path):
+    # We don't do this in python with os.stat because we don't want
+    # to follow symlinks
+
+    du_output = check_output(["du", "-sb", path], shell=False)
+    return int(du_output.split()[0])
+
+
 def human_to_binary(size: str) -> int:
 
     symbols = ("K", "M", "G", "T", "P", "E", "Z", "Y")

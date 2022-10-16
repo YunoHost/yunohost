@@ -29,7 +29,7 @@ from packaging import version
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml, rm, chown, chmod, write_to_file
+from moulinette.utils.filesystem import mkdir, write_to_yaml, read_yaml, rm, chown, chmod, write_to_file
 from moulinette.utils.process import check_output
 
 import yunohost.domain
@@ -58,8 +58,6 @@ from yunohost.log import OperationLogger, is_unit_operation
 from yunohost.repository import BackupRepository, BackupArchive
 from yunohost.utils.config import ConfigPanel
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.packages import ynh_packages_version
-from yunohost.utils.filesystem import free_space_in_directory, disk_usage, binary_to_human
 from yunohost.utils.system import (
     free_space_in_directory,
     get_ynh_package_version,

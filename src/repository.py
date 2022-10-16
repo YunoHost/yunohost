@@ -42,7 +42,7 @@ from datetime import timedelta, datetime
 import yunohost.repositories
 from yunohost.utils.config import ConfigPanel
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.filesystem import disk_usage, binary_to_human
+from yunohost.utils.system import disk_usage, binary_to_human
 from yunohost.utils.network import get_ssh_public_key, SHF_BASE_URL
 
 logger = getActionLogger('yunohost.repository')
@@ -184,8 +184,7 @@ class BackupRepository(ConfigPanel):
         if self.values.get('method') == 'tar' and self.values['is_remote']:
             raise YunohostError("repository_tar_only_local")
 
-        if 'shf_id' in self.values:
-            self.values['is_shf'] = bool(self.values['shf_id'])
+        self.values['is_shf'] = bool(self.values['shf_id']) if 'shf_id' in self.values else False
 
     def _parse_pre_answered(self, *args):
         super()._parse_pre_answered(*args)
