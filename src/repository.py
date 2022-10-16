@@ -119,7 +119,10 @@ class BackupRepository(ConfigPanel):
 
         self._load_current_values()
 
-        if self.__class__ == BackupRepository:
+        self._cast_by_backup_method()
+
+    def _cast_by_backup_method(self):
+        try:
             if self.method == 'tar':
                 from yunohost.repositories.tar import TarBackupRepository
                 self.__class__ = TarBackupRepository
@@ -129,6 +132,8 @@ class BackupRepository(ConfigPanel):
             else:
                 from yunohost.repositories.hook import HookBackupRepository
                 self.__class__ = HookBackupRepository
+        except KeyError:
+            pass
 
     # =================================================
     # Config Panel Hooks
@@ -149,6 +154,16 @@ class BackupRepository(ConfigPanel):
             return {'is_shf': False}
         logger.debug("SHF running")
         return {'is_shf': True}
+
+    def post_ask__is_remote(self, question):
+        if question.value:
+            self.method = 'borg'
+        self._cast_by_backup_method()
+        return {}
+
+    def post_ask__method(self, question):
+        self._cast_by_backup_method()
+        return {}
 
     # =================================================
     # Config Panel Override

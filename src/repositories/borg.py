@@ -45,11 +45,15 @@ class BorgBackupRepository(LocalBackupRepository):
 
         if self.domain:
             # TODO Use the best/good key
-            private_key = "/root/.ssh/ssh_host_ed25519_key"
+            private_key = "/etc/ssh/ssh_host_ed25519_key"
 
             # Don't check ssh fingerprint strictly the first time
             # TODO improve this by publishing and checking this with DNS
-            strict = 'yes' if self.domain in open('/root/.ssh/known_hosts').read() else 'no'
+            # FIXME known_host are hashed now
+            try:
+                strict = 'yes' if self.domain in open('/root/.ssh/known_hosts').read() else 'no'
+            except FileNotFoundError:
+                strict = 'no'
             env['BORG_RSH'] = "ssh -i %s -oStrictHostKeyChecking=%s"
             env['BORG_RSH'] = env['BORG_RSH'] % (private_key, strict)
 
@@ -121,6 +125,8 @@ class BorgBackupRepository(LocalBackupRepository):
 
         if "quota" in self.future_values and self.future_values["quota"]:
             cmd += ['--storage-quota', self.quota]
+
+        logger.debug(cmd)
         try:
             self._call('init', cmd)
         except YunohostError as e:
@@ -260,6 +266,7 @@ class BorgBackupArchive(BackupArchive):
         return HTTPResponse(reader, 200)
 
     def extract(self, paths=[], destination=None, exclude_paths=[]):
+        # TODO exclude_paths not available in actions map
         paths, destination, exclude_paths = super().extract(paths, destination, exclude_paths)
         cmd = ['borg', 'extract', self.archive_path] + paths
         for path in exclude_paths:
