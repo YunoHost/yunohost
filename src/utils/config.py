@@ -1017,8 +1017,10 @@ class PathQuestion(Question):
                     name=option.get("name"),
                     error="Question is mandatory",
                 )
-
-        return "/" + value.strip().strip(" /")
+        value = value.strip().strip(" /")
+        if not value.startswith("~"):
+            value = "/" + value
+        return value
 
 
 class BooleanQuestion(Question):
