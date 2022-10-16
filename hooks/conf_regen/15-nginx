@@ -56,7 +56,7 @@ do_pre_regen() {
     # install / update plain conf files
     cp plain/* "$nginx_conf_dir"
     # remove the panel overlay if this is specified in settings
-    panel_overlay=$(yunohost settings get 'ssowat.panel_overlay.enabled')
+    panel_overlay=$(yunohost settings get 'misc.portal.ssowat_panel_overlay_enabled')
     if [ "$panel_overlay" == "false" ] || [ "$panel_overlay" == "False" ]; then
         echo "#" >"${nginx_conf_dir}/yunohost_panel.conf.inc"
     fi
@@ -65,9 +65,9 @@ do_pre_regen() {
     main_domain=$(cat /etc/yunohost/current_host)
 
     # Support different strategy for security configurations
-    export redirect_to_https="$(yunohost settings get 'security.nginx.redirect_to_https')"
-    export compatibility="$(yunohost settings get 'security.nginx.compatibility')"
-    export experimental="$(yunohost settings get 'security.experimental.enabled')"
+    export redirect_to_https="$(yunohost settings get 'security.nginx.nginx_redirect_to_https')"
+    export compatibility="$(yunohost settings get 'security.nginx.nginx_compatibility')"
+    export experimental="$(yunohost settings get 'security.experimental.security_experimental_enabled')"
     ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
 
     cert_status=$(yunohost domain cert status --json)
@@ -92,9 +92,9 @@ do_pre_regen() {
 
     done
 
-    export webadmin_allowlist_enabled=$(yunohost settings get security.webadmin.allowlist.enabled)
+    export webadmin_allowlist_enabled=$(yunohost settings get security.webadmin.webadmin_allowlist_enabled)
     if [ "$webadmin_allowlist_enabled" == "True" ]; then
-        export webadmin_allowlist=$(yunohost settings get security.webadmin.allowlist)
+        export webadmin_allowlist=$(yunohost settings get security.webadmin.webadmin_allowlist)
     fi
     ynh_render_template "yunohost_admin.conf.inc" "${nginx_conf_dir}/yunohost_admin.conf.inc"
     ynh_render_template "yunohost_api.conf.inc" "${nginx_conf_dir}/yunohost_api.conf.inc"

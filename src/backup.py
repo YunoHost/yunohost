@@ -1,28 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2013 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
-""" yunohost_backup.py
-
-    Manage backups
-"""
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import json
 import time
@@ -35,9 +28,8 @@ import urllib.parse
 from packaging import version
 
 from moulinette import Moulinette, m18n
-from moulinette.utils import filesystem
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import mkdir, write_to_yaml, read_yaml, write_to_file, rm
+from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml, rm, chown, chmod, write_to_file
 from moulinette.utils.process import check_output
 
 import yunohost.domain
@@ -46,6 +38,7 @@ from yunohost.app import (
     _is_installed,
     _make_environment_for_app_script,
     _make_tmp_workdir_for_app,
+    _get_manifest_of_app,
 )
 from yunohost.hook import (
     hook_list,
@@ -67,6 +60,13 @@ from yunohost.utils.config import ConfigPanel
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.packages import ynh_packages_version
 from yunohost.utils.filesystem import free_space_in_directory, disk_usage, binary_to_human
+from yunohost.utils.system import (
+    free_space_in_directory,
+    get_ynh_package_version,
+    binary_to_human,
+    space_used_by_directory
+)
+from yunohost.settings import settings_get
 
 BACKUP_PATH = "/home/yunohost.backup"
 ARCHIVES_PATH = f"{BACKUP_PATH}/archives"
@@ -315,7 +315,7 @@ class BackupManager:
             "size_details": self.size_details,
             "apps": self.apps_return,
             "system": self.system_return,
-            "from_yunohost_version": ynh_packages_version()["yunohost"]["version"],
+            "from_yunohost_version": get_ynh_package_version("yunohost")["version"],
         }
 
     @property
@@ -348,7 +348,7 @@ class BackupManager:
         # exists
 
         if not os.path.isdir(self.work_dir):
-            filesystem.mkdir(self.work_dir, 0o750, parents=True, uid="admin")
+            mkdir(self.work_dir, 0o750, parents=True)
         elif self.is_tmp_work_dir:
 
             logger.debug(
@@ -364,8 +364,8 @@ class BackupManager:
                 # If umount succeeded, remove the directory (we checked that
                 # we're in /home/yunohost.backup/tmp so that should be okay...
                 # c.f. method clean() which also does this)
-                filesystem.rm(self.work_dir, recursive=True, force=True)
-                filesystem.mkdir(self.work_dir, 0o750, parents=True, uid="admin")
+                rm(self.work_dir, recursive=True, force=True)
+                mkdir(self.work_dir, 0o750, parents=True)
 
     def clean_work_dir(self, umount=True):
 
@@ -552,7 +552,7 @@ class BackupManager:
         successfull_system = self.targets.list("system", include=["Success", "Warning"])
 
         if not successfull_apps and not successfull_system:
-            filesystem.rm(self.work_dir, True, True)
+            rm(self.work_dir, True, True)
             raise YunohostError("backup_nothings_done")
 
         # Add unlisted files from backup tmp dir
@@ -597,7 +597,7 @@ class BackupManager:
         env_var["YNH_BACKUP_CSV"] = tmp_csv
 
         if app is not None:
-            env_var.update(_make_environment_for_app_script(app))
+            env_var.update(_make_environment_for_app_script(app, action="backup"))
             env_var["YNH_APP_BACKUP_DIR"] = os.path.join(
                 self.work_dir, "apps", app, "backup"
             )
@@ -673,7 +673,7 @@ class BackupManager:
         restore_hooks_dir = os.path.join(self.work_dir, "hooks", "restore")
 
         if not os.path.exists(restore_hooks_dir):
-            filesystem.mkdir(restore_hooks_dir, mode=0o700, parents=True, uid="root")
+            mkdir(restore_hooks_dir, mode=0o700, parents=True, uid="root")
 
         restore_hooks = hook_list("restore")["hooks"]
 
@@ -741,7 +741,7 @@ class BackupManager:
         tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
         try:
             # Prepare backup directory for the app
-            filesystem.mkdir(tmp_app_bkp_dir, 0o700, True, uid="root")
+            mkdir(tmp_app_bkp_dir, 0o700, True, uid="root")
 
             # Copy the app settings to be able to call _common.sh
             shutil.copytree(app_setting_path, settings_dir)
@@ -780,7 +780,7 @@ class BackupManager:
         # Remove tmp files in all situations
         finally:
             shutil.rmtree(tmp_workdir_for_app)
-            filesystem.rm(env_dict["YNH_BACKUP_CSV"], force=True)
+            rm(env_dict["YNH_BACKUP_CSV"], force=True)
 
     #
     # Actual backup archive creation / method management                    #
@@ -835,7 +835,7 @@ class BackupManager:
             if row["dest"] == "info.json":
                 continue
 
-            size = disk_usage(row["source"])
+            size = space_used_by_directory(row["source"], follow_symlinks=False)
 
             # Add size to apps details
             splitted_dest = row["dest"].split("/")
@@ -966,7 +966,7 @@ class RestoreManager:
 
             if ret != 0:
                 logger.warning(m18n.n("restore_cleaning_failed"))
-        filesystem.rm(self.work_dir, recursive=True, force=True)
+        rm(self.work_dir, recursive=True, force=True)
 
     #
     # Restore target manangement                                            #
@@ -996,7 +996,7 @@ class RestoreManager:
         available_restore_system_hooks = hook_list("restore")["hooks"]
 
         custom_restore_hook_folder = os.path.join(CUSTOM_HOOK_FOLDER, "restore")
-        filesystem.mkdir(custom_restore_hook_folder, 755, parents=True, force=True)
+        mkdir(custom_restore_hook_folder, 755, parents=True, force=True)
 
         for system_part in target_list:
             # By default, we'll use the restore hooks on the current install
@@ -1105,7 +1105,7 @@ class RestoreManager:
             else:
                 raise YunohostError("restore_removing_tmp_dir_failed")
 
-        filesystem.mkdir(self.work_dir, parents=True)
+        mkdir(self.work_dir, parents=True)
 
         # Select paths to extract
         paths = ["backup.csv", "info.json", "hooks"]
@@ -1459,7 +1459,7 @@ class RestoreManager:
 
         # Delete _common.sh file in backup
         common_file = os.path.join(app_backup_in_archive, "_common.sh")
-        filesystem.rm(common_file, force=True)
+        rm(common_file, force=True)
 
         # Check if the app has a restore script
         app_restore_script_in_archive = os.path.join(app_scripts_in_archive, "restore")
@@ -1477,14 +1477,14 @@ class RestoreManager:
             )
             app_scripts_new_path = os.path.join(app_settings_new_path, "scripts")
             shutil.copytree(app_settings_in_archive, app_settings_new_path)
-            filesystem.chmod(app_settings_new_path, 0o400, 0o400, True)
-            filesystem.chown(app_scripts_new_path, "root", None, True)
+            chmod(app_settings_new_path, 0o400, 0o400, True)
+            chown(app_scripts_new_path, "root", None, True)
 
             # Copy the app scripts to a writable temporary folder
             tmp_workdir_for_app = _make_tmp_workdir_for_app()
             copytree(app_scripts_in_archive, tmp_workdir_for_app)
-            filesystem.chmod(tmp_workdir_for_app, 0o700, 0o700, True)
-            filesystem.chown(tmp_workdir_for_app, "root", None, True)
+            chmod(tmp_workdir_for_app, 0o700, 0o700, True)
+            chown(tmp_workdir_for_app, "root", None, True)
             restore_script = os.path.join(tmp_workdir_for_app, "restore")
 
             # Restore permissions
@@ -1555,7 +1555,7 @@ class RestoreManager:
         # FIXME : workdir should be a tmp workdir
         app_workdir = os.path.join(self.work_dir, "apps", app_instance_name, "settings")
         env_dict = _make_environment_for_app_script(
-            app_instance_name, workdir=app_workdir
+            app_instance_name, workdir=app_workdir, action="restore"
         )
         env_dict.update(
             {
@@ -1569,6 +1569,15 @@ class RestoreManager:
 
         operation_logger.extra["env"] = env_dict
         operation_logger.flush()
+
+        manifest = _get_manifest_of_app(app_settings_in_archive)
+        if manifest["packaging_format"] >= 2:
+            from yunohost.utils.resources import AppResourceManager
+            try:
+                AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(rollback_if_failure=True)
+            except Exception:
+                # FIXME : improve error handling ....
+                raise
 
         # Execute the app install script
         restore_failed = True
@@ -2088,9 +2097,9 @@ def _create_archive_dir():
         if os.path.lexists(ARCHIVES_PATH):
             raise YunohostError("backup_output_symlink_dir_broken", path=ARCHIVES_PATH)
 
-        # Create the archive folder, with 'admin' as owner, such that
+        # Create the archive folder, with 'admins' as groupowner, such that
         # people can scp archives out of the server
-        mkdir(ARCHIVES_PATH, mode=0o750, parents=True, uid="admin", gid="root")
+        mkdir(ARCHIVES_PATH, mode=0o770, parents=True, gid="admins")
 
 
 def _call_for_each_path(self, callback, csv_path=None):

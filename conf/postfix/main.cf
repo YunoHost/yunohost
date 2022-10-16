@@ -81,7 +81,7 @@ alias_maps = hash:/etc/aliases
 alias_database = hash:/etc/aliases
 mydomain = {{ main_domain }}
 mydestination = localhost
-{% if relay_host == "" %}
+{% if relay_enabled != "True" %}
 relayhost =
 {% else %}
 relayhost = [{{ relay_host }}]:{{ relay_port }}
@@ -102,7 +102,7 @@ message_size_limit = 35914708
 virtual_mailbox_domains = ldap:/etc/postfix/ldap-domains.cf
 virtual_mailbox_maps = ldap:/etc/postfix/ldap-accounts.cf
 virtual_mailbox_base =
-virtual_alias_maps = ldap:/etc/postfix/ldap-aliases.cf
+virtual_alias_maps = ldap:/etc/postfix/ldap-aliases.cf,ldap:/etc/postfix/ldap-groups.cf
 virtual_alias_domains =
 virtual_minimum_uid = 100
 virtual_uid_maps = static:vmail
@@ -198,7 +198,7 @@ smtpd_client_recipient_rate_limit=150
 # and after to send spam
 disable_vrfy_command = yes
 
-{% if relay_user != "" %}
+{% if relay_enabled == "True" %}
 # Relay email through an other smtp account
 # enable SASL authentication
 smtp_sasl_auth_enable = yes

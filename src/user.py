@@ -1,28 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2014 YUNOHOST.ORG
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
-""" yunohost_user.py
-
-    Manage users
-"""
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import re
 import pwd
@@ -40,6 +33,7 @@ from moulinette.utils.process import check_output
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.service import service_status
 from yunohost.log import is_unit_operation
+from yunohost.utils.system import binary_to_human
 
 logger = getActionLogger("yunohost.user")
 
@@ -55,7 +49,7 @@ FIELDS_FOR_IMPORT = {
     "groups": r"^|([a-z0-9_]+(,?[a-z0-9_]+)*)$",
 }
 
-FIRST_ALIASES = ["root@", "admin@", "webmaster@", "postmaster@", "abuse@"]
+ADMIN_ALIASES = ["root@", "admin@", "admins", "webmaster@", "postmaster@", "abuse@"]
 
 
 def user_list(fields=None):
@@ -133,13 +127,28 @@ def user_list(fields=None):
 def user_create(
     operation_logger,
     username,
-    firstname,
-    lastname,
     domain,
     password,
+    fullname=None,
+    firstname=None,
+    lastname=None,
     mailbox_quota="0",
+    admin=False,
     from_import=False,
 ):
+
+    if firstname or lastname:
+        logger.warning("Options --firstname / --lastname of 'yunohost user create' are deprecated. We recommend using --fullname instead.")
+
+    if not fullname or not fullname.strip():
+        if not firstname.strip():
+            raise YunohostValidationError("You should specify the fullname of the user using option -F")
+        lastname = lastname or " "  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
+        fullname = f"{firstname} {lastname}".strip()
+    else:
+        fullname = fullname.strip()
+        firstname = fullname.split()[0]
+        lastname = ' '.join(fullname.split()[1:]) or " "  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
 
     from yunohost.domain import domain_list, _get_maindomain, _assert_domain_exists
     from yunohost.hook import hook_callback
@@ -151,7 +160,7 @@ def user_create(
 
     # Ensure compatibility and sufficiently complex password
     assert_password_is_compatible(password)
-    assert_password_is_strong_enough("user", password)
+    assert_password_is_strong_enough("admin" if admin else "user", password)
 
     # Validate domain used for email address/xmpp account
     if domain is None:
@@ -193,9 +202,10 @@ def user_create(
         raise YunohostValidationError("system_username_exists")
 
     main_domain = _get_maindomain()
-    aliases = [alias + main_domain for alias in FIRST_ALIASES]
+    # FIXME: should forbit root@any.domain, not just main domain?
+    admin_aliases = [alias + main_domain for alias in ADMIN_ALIASES]
 
-    if mail in aliases:
+    if mail in admin_aliases:
         raise YunohostValidationError("mail_unavailable")
 
     if not from_import:
@@ -205,14 +215,16 @@ def user_create(
     all_uid = {str(x.pw_uid) for x in pwd.getpwall()}
     all_gid = {str(x.gr_gid) for x in grp.getgrall()}
 
+    # Prevent users from obtaining uid 1007 which is the uid of the legacy admin,
+    # and there could be a edge case where a new user becomes owner of an old, removed admin user
+    all_uid.add("1007")
+    all_gid.add("1007")
+
     uid_guid_found = False
     while not uid_guid_found:
         # LXC uid number is limited to 65536 by default
         uid = str(random.randint(1001, 65000))
         uid_guid_found = uid not in all_uid and uid not in all_gid
-
-    # Adapt values for LDAP
-    fullname = f"{firstname} {lastname}"
 
     attr_dict = {
         "objectClass": [
@@ -235,10 +247,6 @@ def user_create(
         "homeDirectory": ["/home/" + username],
         "loginShell": ["/bin/bash"],
     }
-
-    # If it is the first user, add some aliases
-    if not ldap.search(base="ou=users", filter="uid=*"):
-        attr_dict["mail"] = [attr_dict["mail"]] + aliases
 
     try:
         ldap.add(f"uid={username},ou=users", attr_dict)
@@ -265,6 +273,8 @@ def user_create(
     # Create group for user and add to group 'all_users'
     user_group_create(groupname=username, gid=uid, primary_group=True, sync_perm=False)
     user_group_update(groupname="all_users", add=username, force=True, sync_perm=True)
+    if admin:
+        user_group_update(groupname="admins", add=username, sync_perm=True)
 
     # Trigger post_user_create hooks
     env_dict = {
@@ -286,14 +296,7 @@ def user_create(
 
 @is_unit_operation([("username", "user")])
 def user_delete(operation_logger, username, purge=False, from_import=False):
-    """
-    Delete user
 
-    Keyword argument:
-        username -- Username to delete
-        purge
-
-    """
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
 
@@ -351,22 +354,17 @@ def user_update(
     remove_mailalias=None,
     mailbox_quota=None,
     from_import=False,
+    fullname=None,
 ):
-    """
-    Update user informations
 
-    Keyword argument:
-        lastname
-        mail
-        firstname
-        add_mailalias -- Mail aliases to add
-        remove_mailforward -- Mailforward addresses to remove
-        username -- Username of user to update
-        add_mailforward -- Mailforward addresses to add
-        change_password -- New password to set
-        remove_mailalias -- Mail aliases to remove
+    if firstname or lastname:
+        logger.warning("Options --firstname / --lastname of 'yunohost user create' are deprecated. We recommend using --fullname instead.")
 
-    """
+    if fullname and fullname.strip():
+        fullname = fullname.strip()
+        firstname = fullname.split()[0]
+        lastname = ' '.join(fullname.split()[1:]) or " "  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
+
     from yunohost.domain import domain_list, _get_maindomain
     from yunohost.app import app_ssowatconf
     from yunohost.utils.password import (
@@ -380,7 +378,7 @@ def user_update(
 
     # Populate user informations
     ldap = _get_ldap_interface()
-    attrs_to_fetch = ["givenName", "sn", "mail", "maildrop"]
+    attrs_to_fetch = ["givenName", "sn", "mail", "maildrop", "memberOf"]
     result = ldap.search(
         base="ou=users",
         filter="uid=" + username,
@@ -396,20 +394,20 @@ def user_update(
     if firstname:
         new_attr_dict["givenName"] = [firstname]  # TODO: Validate
         new_attr_dict["cn"] = new_attr_dict["displayName"] = [
-            firstname + " " + user["sn"][0]
+            (firstname + " " + user["sn"][0]).strip()
         ]
         env_dict["YNH_USER_FIRSTNAME"] = firstname
 
     if lastname:
         new_attr_dict["sn"] = [lastname]  # TODO: Validate
         new_attr_dict["cn"] = new_attr_dict["displayName"] = [
-            user["givenName"][0] + " " + lastname
+            (user["givenName"][0] + " " + lastname).strip()
         ]
         env_dict["YNH_USER_LASTNAME"] = lastname
 
     if lastname and firstname:
         new_attr_dict["cn"] = new_attr_dict["displayName"] = [
-            firstname + " " + lastname
+            (firstname + " " + lastname).strip()
         ]
 
     # change_password is None if user_update is not called to change the password
@@ -421,16 +419,17 @@ def user_update(
             change_password = Moulinette.prompt(
                 m18n.n("ask_password"), is_password=True, confirm=True
             )
+
         # Ensure compatibility and sufficiently complex password
         assert_password_is_compatible(change_password)
-        assert_password_is_strong_enough("user", change_password)
+        is_admin = "cn=admins,ou=groups,dc=yunohost,dc=org" in user["memberOf"]
+        assert_password_is_strong_enough("admin" if is_admin else "user", change_password)
 
         new_attr_dict["userPassword"] = [_hash_user_password(change_password)]
         env_dict["YNH_USER_PASSWORD"] = change_password
 
     if mail:
         main_domain = _get_maindomain()
-        aliases = [alias + main_domain for alias in FIRST_ALIASES]
 
         # If the requested mail address is already as main address or as an alias by this user
         if mail in user["mail"]:
@@ -445,6 +444,9 @@ def user_update(
             raise YunohostError(
                 "mail_domain_unknown", domain=mail[mail.find("@") + 1 :]
             )
+
+        # FIXME: should also forbid root@any.domain and not just the main domain
+        aliases = [alias + main_domain for alias in ADMIN_ALIASES]
         if mail in aliases:
             raise YunohostValidationError("mail_unavailable")
 
@@ -537,7 +539,7 @@ def user_info(username):
 
     ldap = _get_ldap_interface()
 
-    user_attrs = ["cn", "mail", "uid", "maildrop", "givenName", "sn", "mailuserquota"]
+    user_attrs = ["cn", "mail", "uid", "maildrop", "mailuserquota"]
 
     if len(username.split("@")) == 2:
         filter = "mail=" + username
@@ -554,8 +556,6 @@ def user_info(username):
     result_dict = {
         "username": user["uid"][0],
         "fullname": user["cn"][0],
-        "firstname": user["givenName"][0],
-        "lastname": user["sn"][0],
         "mail": user["mail"][0],
         "mail-aliases": [],
         "mail-forward": [],
@@ -596,7 +596,7 @@ def user_info(username):
 
             if has_value:
                 storage_use = int(has_value.group(1))
-                storage_use = _convertSize(storage_use)
+                storage_use = binary_to_human(storage_use)
 
                 if is_limited:
                     has_percent = re.search(r"%=(\d+)", cmd_result)
@@ -849,10 +849,9 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
 
         user_update(
             new_infos["username"],
-            new_infos["firstname"],
-            new_infos["lastname"],
-            new_infos["mail"],
-            new_infos["password"],
+            firstname=new_infos["firstname"],
+            lastname=new_infos["lastname"],
+            change_password=new_infos["password"],
             mailbox_quota=new_infos["mailbox-quota"],
             mail=new_infos["mail"],
             add_mailalias=new_infos["mail-alias"],
@@ -892,12 +891,12 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         try:
             user_create(
                 user["username"],
-                user["firstname"],
-                user["lastname"],
                 user["domain"],
                 user["password"],
                 user["mailbox-quota"],
                 from_import=True,
+                firstname=user["firstname"],
+                lastname=user["lastname"],
             )
             update(user)
             result["created"] += 1
@@ -1070,7 +1069,7 @@ def user_group_delete(operation_logger, groupname, force=False, sync_perm=True):
     #
     # We also can't delete "all_users" because that's a special group...
     existing_users = list(user_list()["users"].keys())
-    undeletable_groups = existing_users + ["all_users", "visitors"]
+    undeletable_groups = existing_users + ["all_users", "visitors", "admins"]
     if groupname in undeletable_groups and not force:
         raise YunohostValidationError("group_cannot_be_deleted", group=groupname)
 
@@ -1322,15 +1321,6 @@ def user_ssh_remove_key(username, key):
 #
 # End SSH subcategory
 #
-
-
-def _convertSize(num, suffix=""):
-    for unit in ["K", "M", "G", "T", "P", "E", "Z"]:
-        if abs(num) < 1024.0:
-            return "{:3.1f}{}{}".format(num, unit, suffix)
-        num /= 1024.0
-    return "{:.1f}{}{}".format(num, "Yi", suffix)
-
 
 def _hash_user_password(password):
     """

@@ -1,29 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2018 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
-""" yunohost_log.py
-
-    Manage debug logs
-"""
-
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import re
 import yaml
@@ -38,7 +30,7 @@ from io import IOBase
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.packages import get_ynh_package_version
+from yunohost.utils.system import get_ynh_package_version
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml
 
