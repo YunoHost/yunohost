@@ -137,6 +137,27 @@ class MyDiagnoser(Diagnoser):
                 summary="diagnosis_backports_in_sources_list",
             )
 
+        # Using yunohost testing channel
+        if os.system("grep -q '^\\s*deb\\s*.*yunohost.org.*\\stesting' /etc/apt/sources.list /etc/apt/sources.list.d/*") == 0:
+            yield dict(
+                meta={"test": "apt_yunohost_channel"},
+                status="WARNING",
+                summary="diagnosis_using_yunohost_testing",
+                details=["diagnosis_using_yunohost_testing_details"],
+            )
+
+        # Apt being mapped to 'stable' (instead of 'buster/bullseye/bookworm/trixie/...')
+        # will cause the machine to spontaenously upgrade everything as soon as next debian is released ...
+        # Note that we grep this from the policy for libc6, because it's hard to know exactly which apt repo
+        # is configured (it may not be simply debian.org)
+        if os.system("apt policy libc6 2>/dev/null | grep '^\\s*500' | awk '{print $3}' | tr '/' ' ' | awk '{print $1}' | grep -q 'stable'") == 0:
+            yield dict(
+                meta={"test": "apt_debian_codename"},
+                status="WARNING",
+                summary="diagnosis_using_stable_codename",
+                details=["diagnosis_using_stable_codename_details"],
+            )
+
         if self.number_of_recent_auth_failure() > 750:
             yield dict(
                 meta={"test": "high_number_auth_failure"},
