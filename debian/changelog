@@ -1,3 +1,9 @@
+yunohost (11.0.10.1) stable; urgency=low
+
+  - self-upgrade: fix yunohost-api restart which was not triggered @_@ (472e9250)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 17 Oct 2022 23:56:37 +0200
+
 yunohost (11.0.10) stable; urgency=low
 
   - configpanels: fix nested bind statements (0252a6fd)
