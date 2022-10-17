@@ -401,7 +401,27 @@ def tools_update(target=None):
     if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
         logger.info(m18n.n("already_up_to_date"))
 
-    return {"system": upgradable_system_packages, "apps": upgradable_apps}
+    important_yunohost_upgrade = False
+    if upgradable_system_packages and any(p["name"] == "yunohost" for p in upgradable_system_packages):
+        yunohost = [p for p in upgradable_system_packages if p["name"] == "yunohost"][0]
+        current_version = yunohost["current_version"].split(".")[:2]
+        new_version = yunohost["new_version"].split(".")[:2]
+        important_yunohost_upgrade = (current_version != new_version)
+
+    # Wrapping this in a try/except just in case for some reason we can't load
+    # the migrations, which would result in the update/upgrade process being blocked...
+    try:
+        pending_migrations = tools_migrations_list(pending=True)["migrations"]
+    except Exception as e:
+        logger.error(e)
+        pending_migrations = []
+
+    return {
+        "system": upgradable_system_packages,
+        "apps": upgradable_apps,
+        "important_yunohost_upgrade": important_yunohost_upgrade,
+        "pending_migrations": pending_migrations,
+    }
 
 
 @is_unit_operation()
