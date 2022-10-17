@@ -1,3 +1,15 @@
+yunohost (11.0.10) stable; urgency=low
+
+  - configpanels: fix nested bind statements (0252a6fd)
+  - ynh_setup_source: Add option to fully replace the destination dir ([#1509](https://github.com/yunohost/yunohost/pull/1509))
+  - tools_update: also yield a boolean to easily know if there's a major yunohost upgrade pending + list of pending migrations (cf change in webadmin to encourage people to check the release note on the forum before yoloupgrading) (86e45f9c)
+  - diagnosis: add reports when apt is configured with the 'testing' channel for yunohost, or with the 'stable' codename for debian (0adff31d)
+  - [i18n] Translations updated for French, Slovak
+
+  Thanks to all contributors <3 ! (Dante, Jose Riha, ppr, yalh76)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 17 Oct 2022 16:56:47 +0200
+
 yunohost (11.0.9.15) stable; urgency=low
 
   - [fix] Lidswitch if no reboot ([#1506](https://github.com/yunohost/yunohost/pull/1506))
