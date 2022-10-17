@@ -521,7 +521,7 @@ def tools_upgrade(operation_logger, target=None):
         returncode = call_async_output(dist_upgrade, callbacks, shell=True)
 
         # If yunohost is being upgraded from the webadmin
-        if "yunohost" in upgradables and Moulinette.interface.type == "api":
+        if any(p["name"] == "yunohost" for p in upgradables) and Moulinette.interface.type == "api":
 
             # Restart the API after 10 sec (at now doesn't support sub-minute times...)
             # We do this so that the API / webadmin still gets the proper HTTP response
