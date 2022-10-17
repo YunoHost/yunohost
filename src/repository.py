@@ -46,7 +46,7 @@ from yunohost.utils.system import disk_usage, binary_to_human
 from yunohost.utils.network import get_ssh_public_key, SHF_BASE_URL
 
 logger = getActionLogger('yunohost.repository')
-REPOSITORIES_DIR = '/etc/yunohost/repositories'
+REPOSITORIES_DIR = '/etc/yunohost/backup/repositories'
 CACHE_INFO_DIR = "/var/cache/yunohost/repositories/{repository}"
 REPOSITORY_CONFIG_PATH = "/usr/share/yunohost/other/config_repository.toml"
 MB_ALLOWED_TO_ORGANIZE = 10

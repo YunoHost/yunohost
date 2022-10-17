@@ -1954,7 +1954,7 @@ def backup_repository_add(operation_logger, shortname, name=None, location=None,
 
     return repository.set(
         operation_logger=args.pop('operation_logger'),
-        args=urllib.parse.urlencode(args)
+        args=urllib.parse.urlencode(args, doseq=True)
     )
 
 
@@ -1977,6 +1977,20 @@ def backup_repository_remove(operation_logger, shortname, purge=False):
     BackupRepository(shortname).remove(purge)
 
 
+@is_unit_operation()
+def backup_repository_prune(operation_logger, shortname, prefix=None, keep_hourly=0, keep_daily=10, keep_weekly=8, keep_monthly=8):
+    """
+    Remove a backup repository
+    """
+    BackupRepository(shortname).prune(
+        prefix=prefix,
+        keep_hourly=keep_hourly,
+        keep_daily=keep_daily,
+        keep_weekly=keep_weekly,
+        keep_monthly=keep_monthly,
+    )
+
+
 #
 # Timer subcategory
 #
@@ -1986,45 +2000,15 @@ class BackupTimer(ConfigPanel):
     BackupRepository manage all repository the admin added to the instance
     """
     entity_type = "backup_timer"
-    save_path_tpl = "/etc/systemd/system/backup_timer_{entity}.timer"
+    timer_name_tpl = "backup_{entity}"
+    save_path_tpl = "/etc/yunohost/backup/timer/{entity}.yml"
+    timer_path_tpl = "/etc/systemd/system/{timer_name}.timer"
+    service_path_tpl = "/etc/systemd/system/{timer_name}.service"
     save_mode = "full"
 
-    @property
-    def service_path(self):
-        return self.save_path[:-len(".timer")] + ".service"
+    # TODO prefill apps and system question with good values
+    # TODO validate calendar entry
 
-    def _load_current_values(self):
-        # Inject defaults if needed (using the magic .update() ;))
-        self.values = self._get_default_values()
-
-        if os.path.exists(self.save_path) and os.path.isfile(self.save_path):
-            raise NotImplementedError()  # TODO
-
-        if os.path.exists(self.service_path) and os.path.isfile(self.service_path):
-            raise NotImplementedError()  # TODO
-
-    def _apply(self):
-        write_to_file(self.save_path, f"""[Unit]
-Description=Run backup {self.entity} regularly
-
-[Timer]
-OnCalendar={self.values['schedule']}
-
-[Install]
-WantedBy=timers.target
-""")
-        # TODO --system and --apps params
-        # TODO prune params
-        write_to_file(self.service_path, f"""[Unit]
-Description=Run backup {self.entity}
-After=network.target
-
-[Service]
-Type=oneshot
-ExecStart=/usr/bin/yunohost backup create -n '{self.entity}' -r '{self.repositories}' --system --apps ; /usr/bin/yunohost backup prune -n '{self.entity}'
-User=root
-Group=root
-""")
     @classmethod
     def list(cls, full=False):
         """
@@ -2038,11 +2022,120 @@ Group=root
         full_timers = {}
         for timer in timers:
             try:
-                full_timers.update(BackupTimer(timer).info())
+                full_timers[timer] = BackupTimer(timer).info()
             except Exception as e:
                 logger.error(f"Unable to open timer {timer}: {e}")
 
         return full_timers
+
+    @property
+    def timer_name(self):
+        return self.timer_name_tpl.format(entity=self.entity)
+
+    @property
+    def service_path(self):
+        return self.service_path_tpl.format(timer_name=self.timer_name)
+
+    @property
+    def timer_path(self):
+        return self.timer_path_tpl.format(timer_name=self.timer_name)
+
+    def _reload_systemd(self):
+        try:
+            check_output("systemctl daemon-reload")
+        except Exception as e:
+            logger.warning(f"Failed to reload daemon : {e}")
+
+    def _run_service_command(self, action, *args):
+        # TODO improve services to support timers
+        # See https://github.com/YunoHost/issues/issues/1519
+        try:
+            check_output(f"systemctl {action} {self.timer_name}.timer")
+        except Exception as e:
+            logger.warning(f"Failed to {action} {self.timer_name}.timer : {e}")
+
+    def _load_current_values(self):
+        super()._load_current_values()
+
+        # Search OnCalendar schedule property
+        if os.path.exists(self.timer_path) and os.path.isfile(self.timer_path):
+            with open(self.timer_path, 'r') as f:
+                for index, line in enumerate(f):
+                    if line.startswith("OnCalendar="):
+                        self.values["schedule"] = line[11:].strip()
+                        break
+                else:
+                    logger.debug(f"No OnCalendar property found in {self.timer_path}")
+
+    def _apply(self):
+
+        super()._apply()
+
+        # TODO Add RandomizedDelaySec for daily and other special event
+        write_to_file(self.timer_path, f"""[Unit]
+Description=Run backup {self.entity} regularly
+
+[Timer]
+OnCalendar={self.values['schedule']}
+
+[Install]
+WantedBy=timers.target
+""")
+        write_to_file(self.service_path, f"""[Unit]
+Description=Run backup {self.entity}
+After=network.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/yunohost backup timer run '{self.entity}'
+User=root
+Group=root
+""")
+        self._reload_systemd()
+        self._run_service_command("reset-failed")
+        self.start()
+
+    def info(self):
+        return self.get(mode="export")
+
+    def remove(self):
+
+        self.stop()
+        rm(self.save_path, force=True)
+        rm(self.service_path, force=True)
+        rm(self.timer_path, force=True)
+        self._reload_systemd()
+        self._run_service_command("reset-failed")
+        logger.success(m18n.n("backup_timer_removed", timer=self.entity))
+
+    def start(self):
+        self._run_service_command("enable")
+        self._run_service_command("start")
+
+    def stop(self):
+        self._run_service_command("stop")
+        self._run_service_command("disable")
+
+    def run(self, operation_logger):
+        self._load_current_values()
+        backup_create(
+            operation_logger,
+            name=self.entity,
+            description=self.description,
+            repositories=self.repositories,
+            system=self.system,
+            apps=self.apps
+        )
+        for repository in self.repositories:
+            backup_repository_prune(
+                operation_logger,
+                shortname=repository,
+                prefix=self.entity,
+                keep_hourly=self.keep_hourly,
+                keep_daily=self.keep_daily,
+                keep_weekly=self.keep_weekly,
+                keep_monthly=self.keep_monthly,
+            )
 
 
 def backup_timer_list(full=False):
@@ -2053,7 +2146,7 @@ def backup_timer_list(full=False):
 
 
 def backup_timer_info(name):
-    return BackupTimer(name).get()
+    return BackupTimer(name).info()
 
 
 @is_unit_operation()
@@ -2079,7 +2172,7 @@ def backup_timer_add(
     timer = BackupTimer(name, creation=True)
     return timer.set(
         operation_logger=args.pop('operation_logger'),
-        args=urllib.parse.urlencode(args)
+        args=urllib.parse.urlencode(args, doseq=True)
     )
 
 
@@ -2095,11 +2188,19 @@ def backup_timer_update(operation_logger, shortname, name=None,
 
 
 @is_unit_operation()
-def backup_timer_remove(operation_logger, shortname, purge=False):
+def backup_timer_remove(operation_logger, name):
     """
     Remove a backup timer
     """
-    BackupTimer(shortname).remove(purge)
+    BackupTimer(name).remove()
+
+
+@is_unit_operation()
+def backup_timer_run(operation_logger, name):
+    """
+    Run a backup timer
+    """
+    BackupTimer(name).run(operation_logger)
 
 
 #

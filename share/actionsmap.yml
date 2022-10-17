@@ -1264,6 +1264,19 @@ backup:
                         --purge:
                             help: Remove all archives and data inside repository
                             action: store_true
+                
+                ### backup_repository_prune()
+                prune:
+                    action_help: Prune archives in a backup repository
+                    api: POST /backups/repository/<shortname>/prune
+                    arguments:
+                        shortname:
+                            help: Name of the backup repository to prune
+                            extra:
+                                pattern: *pattern_backup_repository_shortname
+                        --prefix:
+                            help: Prefix on which we prune
+                            nargs: "?"
         timer:
             subcategory_help: Manage backup timer
             actions:
@@ -1272,6 +1285,10 @@ backup:
                 list:
                     action_help: List backup timer
                     api: GET /backup/timer
+                    arguments:
+                        --full:
+                            help: Show more details
+                            action: store_true
 
                 ### backup_timer_add()
                 add:
@@ -1362,6 +1379,16 @@ backup:
                     arguments:
                         name:
                             help: Short prefix of the backup archives
+                            extra:
+                                pattern: *pattern_backup_timer_name
+
+                ### backup_timer_run()
+                run:
+                    action_help: Run a backup timer
+                    api: POST /backup/timer/<name>/run
+                    arguments:
+                        name:
+                            help: Backup timer to run
                             extra:
                                 pattern: *pattern_backup_timer_name
 
