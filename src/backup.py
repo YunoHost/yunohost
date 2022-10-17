@@ -2003,7 +2003,7 @@ class BackupTimer(ConfigPanel):
         if os.path.exists(self.service_path) and os.path.isfile(self.service_path):
             raise NotImplementedError()  # TODO
 
-    def _apply(self, values):
+    def _apply(self):
         write_to_file(self.save_path, f"""[Unit]
 Description=Run backup {self.entity} regularly
 
@@ -2025,6 +2025,24 @@ ExecStart=/usr/bin/yunohost backup create -n '{self.entity}' -r '{self.repositor
 User=root
 Group=root
 """)
+    @classmethod
+    def list(cls, full=False):
+        """
+        List backup timer
+        """
+        timers = super().list()
+
+        if not full:
+            return timers
+
+        full_timers = {}
+        for timer in timers:
+            try:
+                full_timers.update(BackupTimer(timer).info())
+            except Exception as e:
+                logger.error(f"Unable to open timer {timer}: {e}")
+
+        return full_timers
 
 
 def backup_timer_list(full=False):
@@ -2034,19 +2052,20 @@ def backup_timer_list(full=False):
     return {"backup_timer": BackupTimer.list(full)}
 
 
-def backup_timer_info(shortname, space_used=False):
-    return BackupTimer(shortname).info(space_used)
+def backup_timer_info(name):
+    return BackupTimer(name).get()
 
 
 @is_unit_operation()
 def backup_timer_add(
     operation_logger,
-    shortname=None,
+    name=None,
     description=None,
-    repos=[],
+    repositories=[],
     system=[],
     apps=[],
     schedule=None,
+    alert=[],
     keep_hourly=None,
     keep_daily=None,
     keep_weekly=None,
@@ -2057,7 +2076,7 @@ def backup_timer_add(
     Add a backup timer
     """
     args = {k: v for k, v in locals().items() if v is not None}
-    timer = BackupTimer(shortname, creation=True)
+    timer = BackupTimer(name, creation=True)
     return timer.set(
         operation_logger=args.pop('operation_logger'),
         args=urllib.parse.urlencode(args)

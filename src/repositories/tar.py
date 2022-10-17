@@ -39,6 +39,10 @@ class TarBackupRepository(LocalBackupRepository):
     need_organized_files = False
     method_name = "tar"
 
+    # =================================================
+    # Repository actions
+    # =================================================
+
     def list_archives_names(self):
         # Get local archives sorted according to last modification time
         # (we do a realpath() to resolve symlinks)

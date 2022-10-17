@@ -1272,11 +1272,6 @@ backup:
                 list:
                     action_help: List backup timer
                     api: GET /backup/timer
-                    arguments:
-                        -r:
-                            full: --repositories
-                            help: List archives in these repositories
-                            nargs: "*"
 
                 ### backup_timer_add()
                 add:
@@ -1307,13 +1302,13 @@ backup:
                         --alert:
                             help: Email to alert
                         --keep-hourly:
-                            default: 2
+                            default: 0
                         --keep-daily:
                             default: 7
                         --keep-weekly:
                             default: 8
                         --keep-monthly:
-                            default: 12
+                            default: 8
 
                 ### backup_timer_update()
                 update:
