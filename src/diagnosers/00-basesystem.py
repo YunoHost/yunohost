@@ -138,7 +138,12 @@ class MyDiagnoser(Diagnoser):
             )
 
         # Using yunohost testing channel
-        if os.system("grep -q '^\\s*deb\\s*.*yunohost.org.*\\stesting' /etc/apt/sources.list /etc/apt/sources.list.d/*") == 0:
+        if (
+            os.system(
+                "grep -q '^\\s*deb\\s*.*yunohost.org.*\\stesting' /etc/apt/sources.list /etc/apt/sources.list.d/*"
+            )
+            == 0
+        ):
             yield dict(
                 meta={"test": "apt_yunohost_channel"},
                 status="WARNING",
@@ -150,7 +155,12 @@ class MyDiagnoser(Diagnoser):
         # will cause the machine to spontaenously upgrade everything as soon as next debian is released ...
         # Note that we grep this from the policy for libc6, because it's hard to know exactly which apt repo
         # is configured (it may not be simply debian.org)
-        if os.system("apt policy libc6 2>/dev/null | grep '^\\s*500' | awk '{print $3}' | tr '/' ' ' | awk '{print $1}' | grep -q 'stable'") == 0:
+        if (
+            os.system(
+                "apt policy libc6 2>/dev/null | grep '^\\s*500' | awk '{print $3}' | tr '/' ' ' | awk '{print $1}' | grep -q 'stable'"
+            )
+            == 0
+        ):
             yield dict(
                 meta={"test": "apt_debian_codename"},
                 status="WARNING",
