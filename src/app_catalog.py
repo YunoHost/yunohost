@@ -250,6 +250,9 @@ def _load_apps_catalog():
                 )
                 continue
 
+            if info.get("level") == "?":
+                info["level"] = -1
+
             # FIXME: we may want to autoconvert all v0/v1 manifest to v2 here
             # so that everything is consistent in terms of APIs, datastructure format etc
             info["repository"] = apps_catalog_id
