@@ -1341,6 +1341,14 @@ class GroupQuestion(Question):
 
         self.choices = list(user_group_list(short=True)["groups"])
 
+        def _human_readable_group(g):
+            # i18n: visitors
+            # i18n: all_users
+            # i18n: admins
+            return m18n.n(g) if g in ["visitors", "all_users", "admins"] else g
+
+        self.choices = {g:_human_readable_group(g) for g in self.choices}
+
         if self.default is None:
             self.default = "all_users"
 

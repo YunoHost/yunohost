@@ -2021,6 +2021,8 @@ def _set_default_ask_questions(questions, script_name="install"):
         ("password", "password"),  # i18n: app_manifest_install_ask_password
         ("user", "admin"),  # i18n: app_manifest_install_ask_admin
         ("boolean", "is_public"),  # i18n: app_manifest_install_ask_is_public
+        ("group", "init_main_permission"),  # i18n: app_manifest_install_ask_init_main_permission
+        ("group", "init_admin_permission"),  # i18n: app_manifest_install_ask_init_admin_permission
     ]
 
     for question_name, question in questions.items():
