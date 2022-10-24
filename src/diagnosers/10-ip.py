@@ -120,7 +120,7 @@ class MyDiagnoser(Diagnoser):
                 return local_ip
 
         def is_ipvx_important(x):
-            return settings_get("misc.network.dns_exposure") == "both" or "ipv"+str(x)
+            return settings_get("misc.network.dns_exposure") in ["both", "ipv"+str(x)]
 
         yield dict(
             meta={"test": "ipv4"},
