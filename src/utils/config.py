@@ -1080,10 +1080,17 @@ class TagsQuestion(Question):
 
     @staticmethod
     def normalize(value, option={}):
-        if isinstance(value, list):
+        option = option.__dict__ if isinstance(option, Question) else option
+
+        list_mode = "default" in option and isinstance(option["default"], list)
+
+        if isinstance(value, list) and not list_mode:
             return ",".join(value)
+
         if isinstance(value, str):
             value = value.strip()
+            if list_mode:
+                value = value.split(",")
         return value
 
     def _prevalidate(self):
@@ -1098,7 +1105,7 @@ class TagsQuestion(Question):
         self.value = values
 
     def _post_parse_value(self):
-        if isinstance(self.value, list):
+        if isinstance(self.value, list) and not isinstance(self.default, list):
             self.value = ",".join(self.value)
         return super()._post_parse_value()
 
