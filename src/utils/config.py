@@ -51,6 +51,11 @@ CONFIG_PANEL_VERSION_SUPPORTED = 1.0
 # The goal is to evaluate in the same way than js simple-evaluate
 # https://github.com/shepherdwind/simple-evaluate
 def evaluate_simple_ast(node, context=None):
+    """
+    Those js-like evaluate functions are used to eval safely visible attributes
+    The goal is to evaluate in the same way than js simple-evaluate
+    https://github.com/shepherdwind/simple-evaluate
+    """
     if context is None:
         context = {}
 
@@ -204,7 +209,7 @@ class ConfigPanel:
         try:
             entities = [
                 re.match(
-                    "^" + cls.save_path_tpl.format(entity="(?p<entity>)") + "$", f
+                    "^" + cls.save_path_tpl.format(entity="(?P<entity>[^/]*)") + "$", f
                 ).group("entity")
                 for f in glob.glob(cls.save_path_tpl.format(entity="*"))
                 if os.path.isfile(f)
@@ -284,7 +289,7 @@ class ConfigPanel:
             if "ask" in option:
                 ask = _value_for_locale(option["ask"])
             elif "i18n" in self.config:
-                ask = m18n.n(self.config["i18n"] + "_" + option["id"])
+                ask = m18n.n(self.config["i18n"] + "_" + option["id"], **self.values)
 
             if mode == "full":
                 option["ask"] = ask
@@ -577,7 +582,9 @@ class ConfigPanel:
                         logger.warning(f"Unknown key '{key}' found in config panel")
                     # Todo search all i18n keys
                     out[key] = (
-                        value if key not in ["ask", "help", "name"] else {"en": value}
+                        value
+                        if key not in ["ask", "help", "name"] or isinstance(value, (dict, OrderedDict))
+                        else {"en": value}
                     )
             return out
 
@@ -666,10 +673,10 @@ class ConfigPanel:
         if "i18n" in self.config:
             for panel, section, option in self._iterate():
                 if "ask" not in option:
-                    option["ask"] = m18n.n(self.config["i18n"] + "_" + option["id"])
+                    option["ask"] = m18n.n(self.config["i18n"] + "_" + option["id"], **self.values)
                 # auto add i18n help text if present in locales
                 if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + '_help'):
-                    option["help"] = m18n.n(self.config["i18n"] + "_" + option["id"] + '_help')
+                    option["help"] = m18n.n(self.config["i18n"] + "_" + option["id"] + '_help', **self.values)
 
         def display_header(message):
             """CLI panel/section header display"""
@@ -690,7 +697,8 @@ class ConfigPanel:
 
                 if panel == obj:
                     name = _value_for_locale(panel["name"])
-                    display_header(f"\n{'='*40}\n>>>> {name}\n{'='*40}")
+                    if name:
+                        display_header(f"\n{'='*40}\n>>>> {name}\n{'='*40}")
                 else:
                     name = _value_for_locale(section["name"])
                     if name:
@@ -771,7 +779,7 @@ class ConfigPanel:
         logger.info("Saving the new configuration...")
         dir_path = os.path.dirname(os.path.realpath(self.save_path))
         if not os.path.exists(dir_path):
-            mkdir(dir_path, mode=0o700)
+            mkdir(dir_path, mode=0o700, parents=True)
 
         values_to_save = self.future_values
         if self.save_mode == "diff":
@@ -908,6 +916,10 @@ class Question:
                 # Normalize and validate
                 self.value = self.normalize(self.value, self)
                 self._prevalidate()
+                # Search for validator in hooks
+                validator = f"validate__{self.name}"
+                if validator in self.hooks:
+                    self.hooks[validator](self)
             except YunohostValidationError as e:
                 # If in interactive cli, re-ask the current question
                 if i < 4 and Moulinette.interface.type == "cli" and os.isatty(1):
@@ -951,7 +963,7 @@ class Question:
 
     def _format_text_for_user_input_in_cli(self):
 
-        text_for_user_input_in_cli = _value_for_locale(self.ask)
+        text_for_user_input_in_cli = _value_for_locale(self.ask).format(**self.context)
 
         if self.readonly:
             text_for_user_input_in_cli = colorize(text_for_user_input_in_cli, "purple")
@@ -1068,10 +1080,17 @@ class TagsQuestion(Question):
 
     @staticmethod
     def normalize(value, option={}):
-        if isinstance(value, list):
+        option = option.__dict__ if isinstance(option, Question) else option
+
+        list_mode = "default" in option and isinstance(option["default"], list)
+
+        if isinstance(value, list) and not list_mode:
             return ",".join(value)
+
         if isinstance(value, str):
             value = value.strip()
+            if list_mode:
+                value = value.split(",")
         return value
 
     def _prevalidate(self):
@@ -1086,7 +1105,7 @@ class TagsQuestion(Question):
         self.value = values
 
     def _post_parse_value(self):
-        if isinstance(self.value, list):
+        if isinstance(self.value, list) and not isinstance(self.default, list):
             self.value = ",".join(self.value)
         return super()._post_parse_value()
 
@@ -1143,8 +1162,10 @@ class PathQuestion(Question):
                     name=option.get("name"),
                     error="Question is mandatory",
                 )
-
-        return "/" + value.strip().strip(" /")
+        value = value.strip().strip(" /")
+        if not value.startswith("~"):
+            value = "/" + value
+        return value
 
 
 class BooleanQuestion(Question):
@@ -1260,9 +1281,9 @@ class DomainQuestion(Question):
     @staticmethod
     def normalize(value, option={}):
         if value.startswith("https://"):
-            value = value[len("https://") :]
+            value = value[len("https://"):]
         elif value.startswith("http://"):
-            value = value[len("http://") :]
+            value = value[len("http://"):]
 
         # Remove trailing slashes
         value = value.rstrip("/").lower()

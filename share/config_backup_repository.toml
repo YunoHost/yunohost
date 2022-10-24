@@ -1,0 +1,89 @@
+
+version = "1.0"
+i18n = "repository_config"
+[main]
+name.en = ""
+    [main.main]
+    name.en = ""
+    optional = false
+        # if method == "tar": question["value"] = False
+        [main.main.description]
+        type = "string"
+        default = ""
+
+        [main.main.is_remote]
+        type = "boolean"
+        yes = true
+        no = false
+        visible = "creation"
+        default = "no"
+
+        [main.main.domain]
+        type = "string"
+        visible = "creation && is_remote"
+        pattern.regexp = '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
+        pattern.error = 'domain_error' # TODO "Please provide a valid domain"
+        default = ""
+        # FIXME: can't be a domain of this instances ?
+
+        [main.main.is_shf]
+        help = ""
+        type = "boolean"
+        yes = true
+        no = false
+        visible = "creation && is_remote"
+        default = false
+
+        [main.main.public_key]
+        type = "alert"
+        style = "info"
+        visible = "creation && is_remote && ! is_shf"
+
+        [main.main.alert]
+        help = ''
+        type = "tags"
+        visible = "is_remote && is_shf"
+        pattern.regexp = '^[\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
+        pattern.error = "alert_error"
+        default = []
+        # "value": alert,
+
+        [main.main.alert_delay]
+        help = ''
+        type = "number"
+        visible = "is_remote && is_shf"
+        min = 1
+        default = 7
+
+        [main.main.quota]
+        type = "string"
+        visible = "is_remote && is_shf"
+        pattern.regexp = '^\d+[MGT]$'
+        pattern.error = '' # TODO ""
+        default = ""
+
+        [main.main.port]
+        type = "number"
+        visible = "is_remote && !is_shf"
+        min = 1
+        max = 65535
+        default = 22
+
+        [main.main.user]
+        type = "string"
+        visible = "is_remote && !is_shf"
+        default = ""
+
+        [main.main.method]
+        type = "select"
+        # "value": method,
+        choices.borg = "BorgBackup (recommended)"
+        choices.tar = "Legacy tar archive mechanism"
+        default = "borg"
+        visible = "!is_remote"
+        
+        [main.main.path]
+        type = "path"
+        visible = "!is_remote or (is_remote and !is_shf)"
+        default = "/home/yunohost.backup/archives"
+

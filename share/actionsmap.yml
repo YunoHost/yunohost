@@ -1045,16 +1045,21 @@ backup:
                     help: Name of the backup archive
                     extra:
                         pattern: &pattern_backup_archive_name
-                            - !!str ^[\w\-\._]{1,50}(?<!\.)$
+                            - !!str ^[\w\-\._]{1,50}$
                             - "pattern_backup_archive_name"
+                -p:
+                    full: --prefix
+                    help: Prefix of the backup archive
+                    extra:
+                        pattern: &pattern_backup_archive_prefix
+                            - !!str ^[\w\-\._]{1,35}$
+                            - "pattern_backup_archive_prefix"
                 -d:
                     full: --description
                     help: Short description of the backup
-                -o:
-                    full: --output-directory
-                    help: Output directory for the backup
-                --methods:
-                    help: List of backup methods to apply (copy or tar by default)
+                -r:
+                    full: --repositories
+                    help: List of repositories where send backup files (local borg repo use by default)
                     nargs: "*"
                 --system:
                     help: List of system parts to backup (or all if none given).
@@ -1071,6 +1076,8 @@ backup:
             action_help: Restore from a local backup archive. If neither --apps or --system are given, this will restore all apps and all system parts in the archive. If only --apps if given, this will only restore apps and no system parts. Similarly, if only --system is given, this will only restore system parts and no apps.
             api: PUT /backups/<name>/restore
             arguments:
+                repository:
+                    help: Repository of the backup archive
                 name:
                     help: Name of the local backup archive
                 --system:
@@ -1085,9 +1092,19 @@ backup:
 
         ### backup_list()
         list:
-            action_help: List available local backup archives
+            action_help: List available local backup archives or list files in an archive
             api: GET /backups
             arguments:
+                repository:
+                    help: Repository of a backup archive
+                    nargs: "?"
+                name:
+                    help: Name of a backup archive
+                    nargs: "?"
+                -r:
+                    full: --repositories
+                    help: List archives in these repositories
+                    nargs: "*"
                 -i:
                     full: --with-info
                     help: Show backup information for each archive
@@ -1102,8 +1119,10 @@ backup:
             action_help: Show info about a local backup archive
             api: GET /backups/<name>
             arguments:
+                repository:
+                    help: Repository of the backup archive
                 name:
-                    help: Name of the local backup archive
+                    help: Name of the backup archive
                 -d:
                     full: --with-details
                     help: Show additional backup information
@@ -1119,19 +1138,306 @@ backup:
             action_help: (API only) Request to download the file
             api: GET /backups/<name>/download
             arguments:
+                repository:
+                    help: Repository of the backup archive
                 name:
                     help: Name of the local backup archive
-
+        
+        ### backup_mount()
+        mount:
+            action_help: Mount a backup archive if possible
+            api: DELETE /backups/<name>
+            arguments:
+                repository:
+                    help: Repository of the backup archive
+                name:
+                    help: Name of the backup archive
+                path:
+                    help: Path where mount the archive
+        
         ### backup_delete()
         delete:
             action_help: Delete a backup archive
             api: DELETE /backups/<name>
             arguments:
-                name:
+                repository:
+                    help: Repository of the backup archive
+                archive_name:
                     help: Name of the archive to delete
                     extra:
                         pattern: *pattern_backup_archive_name
+                    nargs: "*"
 
+    subcategories:
+        repository:
+            subcategory_help: Manage backup repositories
+            actions:
+                
+                ### backup_repository_list()
+                list:
+                    action_help: List available repositories where put archives
+                    api: GET /backups/repositories
+                    arguments:
+                        --full:
+                            help: Show more details
+                            action: store_true
+                        --space-used:
+                            help: Display size used
+                            action: store_true
+                
+                ### backup_repository_info()
+                info:
+                    action_help: Show info about a repository
+                    api: GET /backups/repository/<shortname>
+                    arguments:
+                        shortname:
+                            help: ID of the repository
+                            extra:
+                                pattern: &pattern_backup_repository_shortname
+                                    - !!str ^[a-zA-Z0-9-_\.]+$
+                                    - "pattern_backup_repository_shortname"
+                        --space-used:
+                            help: Display size used
+                            action: store_true
+                
+                ### backup_repository_add()
+                add:
+                    action_help: Add a backup repository
+                    api: POST /backups/repository/<shortname>
+                    arguments:
+                        shortname:
+                            help: ID of the repository
+                            extra:
+                                pattern: *pattern_backup_repository_shortname
+                        -n:
+                            full: --name
+                            help: Short description of the repository
+                        -l:
+                            full: --location
+                            help: Location on this server or on an other
+                            extra:
+                                pattern: &pattern_backup_repository_location
+                                    - !!str ^((ssh://)?[a-z_]\w*@\[\w\-\.]+:)?(~?/)?[\w/]*$
+                                    - "pattern_backup_repository_location"
+                        -m:
+                            full: --method
+                            help: By default 'borg' method is used, could be 'tar' or a custom method
+                        -q:
+                            full: --quota
+                            help: Quota to configure with this repository
+                        -p:
+                            full: --passphrase
+                            help: A strong passphrase to encrypt/decrypt your backup (keep it preciously)
+                            action: store_true
+                        -a:
+                            full: --alert
+                            help: List of mails to which sent inactivity alert
+                            nargs: "*"
+                        -d:
+                            full: --alert-delay
+                            help: Inactivity delay in days after which we sent alerts mails
+
+                ### backup_repository_update()
+                update:
+                    action_help: Update a backup repository
+                    api: PUT /backups/repository/<shortname>
+                    arguments:
+                        shortname:
+                            help: Name of the backup repository to update
+                            extra:
+                                pattern: *pattern_backup_repository_shortname
+                        -d:
+                            full: --description
+                            help: Short description of the repository
+                        -q:
+                            full: --quota
+                            help: Quota to configure with this repository
+                        -p:
+                            full: --password
+                            help: Change password
+                            extra:
+                                password: ask__password
+                                pattern: *pattern_password
+                
+                ### backup_repository_remove()
+                remove:
+                    action_help: Remove a backup repository
+                    api: DELETE /backups/repository/<shortname>
+                    arguments:
+                        shortname:
+                            help: Name of the backup repository to remove
+                            extra:
+                                pattern: *pattern_backup_repository_shortname
+                        --purge:
+                            help: Remove all archives and data inside repository
+                            action: store_true
+                
+                ### backup_repository_prune()
+                prune:
+                    action_help: Prune archives in a backup repository
+                    api: POST /backups/repository/<shortname>/prune
+                    arguments:
+                        shortname:
+                            help: Name of the backup repository to prune
+                            extra:
+                                pattern: *pattern_backup_repository_shortname
+                        --prefix:
+                            help: Prefix on which we prune
+                            nargs: "?"
+                        -H:
+                            full: --keep-hourly
+                            help: Number of hourly archives to keep
+                            type: int
+                        -d:
+                            full: --keep-daily
+                            help: Number of daily archives to keep
+                            type: int
+                        -w:
+                            full: --keep-weekly
+                            help: Number of weekly archives to keep
+                            type: int
+                        -m:
+                            full: --keep-monthly
+                            help: Number of monthly archives to keep
+                            type: int
+                        --keep-last:
+                            help: Number of last archives to keep
+                            type: int
+                        --keep-within:
+                            help: Keep all archives within this time interval
+                            extra:
+                                pattern: &pattern_interval
+                                    - !!str ^\d+[Hdwmy]$
+                                    - "pattern_interval"
+
+
+        timer:
+            subcategory_help: Manage backup timer
+            actions:
+                
+                ### backup_timer_list()
+                list:
+                    action_help: List backup timer
+                    api: GET /backup/timer
+                    arguments:
+                        --full:
+                            help: Show more details
+                            action: store_true
+
+                ### backup_timer_create()
+                create:
+                    action_help: Add a backup timer
+                    api: POST /backup/timer/<name>
+                    arguments:
+                        name:
+                            help: Short prefix of the backup archives
+                            extra:
+                                pattern: &pattern_backup_timer_name
+                                    - !!str ^[\w\-\._]{1,50}$
+                                    - "pattern_backup_timer_name"
+                        -d:
+                            full: --description
+                            help: Short description of the backup
+                        -r:
+                            full: --repositories
+                            help: List of repositories where send backup files (local borg repo use by default)
+                            nargs: "*"
+                        --system:
+                            help: List of system parts to backup (or all if none given).
+                            nargs: "*"
+                        --apps:
+                            help: List of application names to backup (or all if none given)
+                            nargs: "*"
+                        --schedule:
+                            help: Regular backup frequency (see systemd OnCalendar format)
+                        --alert:
+                            help: Email to alert
+                        --keep-hourly:
+                            default: 0
+                        --keep-daily:
+                            default: 7
+                        --keep-weekly:
+                            default: 8
+                        --keep-monthly:
+                            default: 8
+
+                ### backup_timer_update()
+                update:
+                    action_help: Update a backup timer
+                    api: PUT /backup/timer/<name>
+                    arguments:
+                        name:
+                            help: Short prefix of the backup archives
+                            extra:
+                                pattern: *pattern_backup_timer_name
+                        -d:
+                            full: --description
+                            help: Short description of the backup
+                        -r:
+                            full: --repositories
+                            help: List of repositories where send backup files (local borg repo use by default)
+                            nargs: "*"
+                        --system:
+                            help: List of system parts to backup (or all if none given).
+                            nargs: "*"
+                        --apps:
+                            help: List of application names to backup (or all if none given)
+                            nargs: "*"
+                        --schedule:
+                            help: Regular backup frequency (see systemd OnCalendar format)
+                        --alert:
+                            help: Email to alert
+                        --keep-hourly:
+                            default: 2
+                        --keep-daily:
+                            default: 7
+                        --keep-weekly:
+                            default: 8
+                        --keep-monthly:
+                            default: 12
+
+                ### backup_timer_remove()
+                remove:
+                    action_help: Remove a backup timer
+                    api: DELETE /backup/timer/<name>
+                    arguments:
+                        name:
+                            help: Short prefix of the backup archives
+                            extra:
+                                pattern: *pattern_backup_timer_name
+
+                ### backup_timer_info()
+                info:
+                    action_help: Get info about a backup timer
+                    api: GET /backup/timer/<name>
+                    arguments:
+                        name:
+                            help: Short prefix of the backup archives
+                            extra:
+                                pattern: *pattern_backup_timer_name
+
+                ### backup_timer_start()
+                start:
+                    action_help: Start a backup timer
+                    api: POST /backup/timer/<name>/start
+                    arguments:
+                        name:
+                            help: Backup timer to start
+                            extra:
+                                pattern: *pattern_backup_timer_name
+                        --now:
+                            help: Trigger a backup immediately
+                            action: store_true
+
+                ### backup_timer_pause()
+                pause:
+                    action_help: Pause a backup timer
+                    api: POST /backup/timer/<name>/pause
+                    arguments:
+                        name:
+                            help: Backup timer to pause
+                            extra:
+                                pattern: *pattern_backup_timer_name
 
 #############################
 #         Settings          #

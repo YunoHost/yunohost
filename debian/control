@@ -29,6 +29,7 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , acl
  , git, curl, wget, cron, unzip, jq, bc, at
  , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
+ , borgbackup
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog

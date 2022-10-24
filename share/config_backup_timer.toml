@@ -1,0 +1,63 @@
+
+version = "1.0"
+i18n = "backup_timer_config"
+[main]
+name.en = ""
+    [main.main]
+    name.en = ""
+    optional = false
+        # if method == "tar": question["value"] = False
+        [main.main.description]
+        type = "string"
+        default = ""
+
+        [main.main.repositories]
+        type = "tags"
+        visible = "creation"
+        default = []
+        
+        [main.main.system]
+        type = "tags"
+        default = []
+        
+        [main.main.apps]
+        type = "tags"
+        default = []
+        
+        [main.main.schedule]
+        type = "string"
+        default = "Daily"
+
+        [main.main.alert]
+        help = ''
+        type = "tags"
+        pattern.regexp = '^[\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
+        pattern.error = "alert_error"
+        default = []
+        # "value": alert,
+
+        [main.main.keep_hourly]
+        help = ''
+        type = "number"
+        min = 0
+        default = 0
+        
+        [main.main.keep_daily]
+        help = ''
+        type = "number"
+        min = 0
+        default = 10
+        
+        [main.main.keep_weekly]
+        help = ''
+        type = "number"
+        min = 0
+        default = 8
+        
+        [main.main.keep_monthly]
+        help = ''
+        type = "number"
+        min = 0
+        default = 8
+
+

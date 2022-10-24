@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+from collections import OrderedDict
 from moulinette import m18n
 
 
@@ -30,7 +31,7 @@ def _value_for_locale(values):
         An utf-8 encoded string
 
     """
-    if not isinstance(values, dict):
+    if not isinstance(values, (dict, OrderedDict)):
         return values
 
     for lang in [m18n.locale, m18n.default_locale]:
