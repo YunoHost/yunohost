@@ -18,19 +18,21 @@
     along with this program; if not, see http://www.gnu.org/licenses
 
 """
-import glob
 import os
 import tarfile
 import shutil
+
+from glob import glob
+from datetime import datetime
 
 from moulinette.utils.log import getActionLogger
 from moulinette import m18n
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.filesystem import free_space_in_directory
-from yunohost.repository import LocalBackupRepository
+from yunohost.repository import LocalBackupRepository, BackupArchive
 from yunohost.backup import BackupManager
-from yunohost.utils.filesystem import space_used_in_directory
+from yunohost.utils.system import space_used_by_directory, free_space_in_directory
+
 from yunohost.settings import settings_get
 logger = getActionLogger("yunohost.repository")
 
@@ -66,16 +68,13 @@ class TarBackupRepository(LocalBackupRepository):
         return [remove_extension(f) for f in archives]
 
     def compute_space_used(self):
-        return space_used_in_directory(self.location)
+        return space_used_by_directory(self.location)
 
     def compute_free_space(self):
         return free_space_in_directory(self.location)
 
-    def prune(self):
-        raise NotImplementedError()
 
-
-class TarBackupArchive:
+class TarBackupArchive(BackupArchive):
     @property
     def archive_path(self):
 
@@ -166,7 +165,7 @@ class TarBackupArchive:
                 logger.debug("unable to delete '%s'", backup_file, exc_info=1)
                 logger.warning(m18n.n("backup_delete_error", path=backup_file))
 
-    def list(self):
+    def list(self, with_info=False):
         try:
             tar = tarfile.open(
                 self.archive_path,
@@ -179,14 +178,28 @@ class TarBackupArchive:
             raise YunohostError("backup_archive_open_failed")
 
         try:
-            return tar.getnames()
+            if not with_info:
+                return "\n".join(tar.getnames())
+            else:
+                return {f.name: {
+                                    "mode": f.mode, # FIXME Numeric or letter mode
+                                    "type": int(f.type),
+                                    "uid": f.uid,
+                                    "gid": f.gid,
+                                    "user": f.uname,
+                                    "group": f.gname,
+                                    "size": f.size,
+                                    "mtime": datetime.fromtimestamp(f.mtime).isoformat(),
+                                    "linktarget": f.linkname,
+                                }
+                        for f in tar.getmembers()}
         except (IOError, EOFError, tarfile.ReadError) as e:
             tar.close()
             raise YunohostError(
                 "backup_archive_corrupted", archive=self.archive_path, error=str(e)
             )
 
-    def download(self):
+    def download(self, exclude_paths=[]):
         super().download()
         # If symlink, retrieve the real path
         archive_file = self.archive_path
@@ -206,9 +219,9 @@ class TarBackupArchive:
         archive_folder, archive_file_name = archive_file.rsplit("/", 1)
         return static_file(archive_file_name, archive_folder, download=archive_file_name)
 
-    def extract(self, paths=None, exclude_paths=[]):
-        paths, exclude_paths = super().extract(paths, exclude_paths)
-        # Mount the tarball
+    def extract(self, paths=[], destination=None, exclude_paths=[]):
+        paths, destination, exclude_paths = super().extract(paths, destination, exclude_paths)
+        # Open the tarball
         try:
             tar = tarfile.open(
                 self.archive_path,
@@ -228,10 +241,10 @@ class TarBackupArchive:
                and all([not tarinfo.name.startswith(path) for path in exclude_paths])
             )
         ]
-        tar.extractall(members=subdir_and_files, path=self.work_dir)
+        tar.extractall(members=subdir_and_files, path=destination)
         tar.close()
 
-    def mount(self):
+    def mount(self, path):
         raise NotImplementedError()
 
     def _archive_exists(self):

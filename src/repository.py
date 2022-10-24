@@ -162,6 +162,8 @@ class BackupRepository(ConfigPanel):
         return {}
 
     def post_ask__method(self, question):
+        if question.value:
+            self.method = question.value
         self._cast_by_backup_method()
         return {}
 
@@ -351,6 +353,8 @@ class BackupRepository(ConfigPanel):
                 keep_last -= 1
                 continue
 
+            # TODO Improve performances by creating a BackupRepository.delete_archives()
+            # method to delete several archives in one command
             archives[created_at].delete()
 
     # =================================================
@@ -384,6 +388,7 @@ class LocalBackupRepository(BackupRepository):
         self.install()
 
     def purge(self):
+        # FIXME Manage the case where a repository is inside this repository...
         rm(self.location, recursive=True, force=True)
 
 

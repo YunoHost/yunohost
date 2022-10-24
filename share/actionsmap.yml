@@ -1050,6 +1050,7 @@ backup:
                 -p:
                     full: --prefix
                     help: Prefix of the backup archive
+                    default: ""
                     extra:
                         pattern: &pattern_backup_archive_prefix
                             - !!str ^[\w\-\._]{1,35}$
@@ -1307,7 +1308,7 @@ backup:
                             help: Keep all archives within this time interval
                             extra:
                                 pattern: &pattern_interval
-                                    - !!str ^\d+[Hdwmy]$
+                                    - !!str ^\d+[Hdw]$
                                     - "pattern_interval"
 
 

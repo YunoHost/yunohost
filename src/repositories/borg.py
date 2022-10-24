@@ -156,11 +156,11 @@ class BorgBackupRepository(LocalBackupRepository):
                     # password: "XXXXXXXX",
                 }
             )
-        else:
+        elif self.is_remote:
             cmd = ["borg", "delete", self.location]
             self._call('purge', cmd)
-            if not self.is_remote:
-                super().purge()
+        else:
+            super().purge()
 
     def list_archives_names(self, prefix=None):
         cmd = ["borg", "list", "--json", self.location]
