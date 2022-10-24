@@ -361,7 +361,9 @@ def test_backup_not_enough_free_space(monkeypatch, mocker):
     def custom_free_space_in_directory(dirpath):
         return 0
 
-    monkeypatch.setattr("yunohost.backup.space_used_by_directory", custom_space_used_by_directory)
+    monkeypatch.setattr(
+        "yunohost.backup.space_used_by_directory", custom_space_used_by_directory
+    )
     monkeypatch.setattr(
         "yunohost.backup.free_space_in_directory", custom_free_space_in_directory
     )

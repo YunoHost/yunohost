@@ -328,9 +328,7 @@ class ConfigPanel:
 
         return actions
 
-    def run_action(
-        self, action=None, args=None, args_file=None, operation_logger=None
-    ):
+    def run_action(self, action=None, args=None, args_file=None, operation_logger=None):
         #
         # FIXME : this stuff looks a lot like set() ...
         #
@@ -610,25 +608,19 @@ class ConfigPanel:
             "max_progression",
         ]
         forbidden_keywords += format_description["sections"]
-        forbidden_readonly_types = [
-            "password",
-            "app",
-            "domain",
-            "user",
-            "file"
-        ]
+        forbidden_readonly_types = ["password", "app", "domain", "user", "file"]
 
         for _, _, option in self._iterate():
             if option["id"] in forbidden_keywords:
                 raise YunohostError("config_forbidden_keyword", keyword=option["id"])
             if (
-                option.get("readonly", False) and
-                option.get("type", "string") in forbidden_readonly_types
+                option.get("readonly", False)
+                and option.get("type", "string") in forbidden_readonly_types
             ):
                 raise YunohostError(
                     "config_forbidden_readonly_type",
                     type=option["type"],
-                    id=option["id"]
+                    id=option["id"],
                 )
 
         return self.config
@@ -638,7 +630,13 @@ class ConfigPanel:
         for _, section, option in self._iterate():
             if option["id"] not in self.values:
 
-                allowed_empty_types = ["alert", "display_text", "markdown", "file", "button"]
+                allowed_empty_types = [
+                    "alert",
+                    "display_text",
+                    "markdown",
+                    "file",
+                    "button",
+                ]
 
                 if section["is_action_section"] and option.get("default") is not None:
                     self.values[option["id"]] = option["default"]
@@ -668,8 +666,10 @@ class ConfigPanel:
                 if "ask" not in option:
                     option["ask"] = m18n.n(self.config["i18n"] + "_" + option["id"])
                 # auto add i18n help text if present in locales
-                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + '_help'):
-                    option["help"] = m18n.n(self.config["i18n"] + "_" + option["id"] + '_help')
+                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
+                    option["help"] = m18n.n(
+                        self.config["i18n"] + "_" + option["id"] + "_help"
+                    )
 
         def display_header(message):
             """CLI panel/section header display"""
@@ -678,8 +678,12 @@ class ConfigPanel:
 
         for panel, section, obj in self._iterate(["panel", "section"]):
 
-            if section and section.get("visible") and not evaluate_simple_js_expression(
-                section["visible"], context=self.new_values
+            if (
+                section
+                and section.get("visible")
+                and not evaluate_simple_js_expression(
+                    section["visible"], context=self.new_values
+                )
             ):
                 continue
 
@@ -698,8 +702,10 @@ class ConfigPanel:
             elif section:
                 # filter action section options in case of multiple buttons
                 section["options"] = [
-                    option for option in section["options"]
-                    if option.get("type", "string") != "button" or option["id"] == action
+                    option
+                    for option in section["options"]
+                    if option.get("type", "string") != "button"
+                    or option["id"] == action
                 ]
 
             if panel == obj:
@@ -956,7 +962,9 @@ class Question:
         if self.readonly:
             text_for_user_input_in_cli = colorize(text_for_user_input_in_cli, "purple")
             if self.choices:
-                return text_for_user_input_in_cli + f" {self.choices[self.current_value]}"
+                return (
+                    text_for_user_input_in_cli + f" {self.choices[self.current_value]}"
+                )
             return text_for_user_input_in_cli + f" {self.humanize(self.current_value)}"
         elif self.choices:
 
@@ -1333,7 +1341,9 @@ class UserQuestion(Question):
 class GroupQuestion(Question):
     argument_type = "group"
 
-    def __init__(self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}):
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
 
         from yunohost.user import user_group_list
 
@@ -1347,7 +1357,7 @@ class GroupQuestion(Question):
             # i18n: admins
             return m18n.n(g) if g in ["visitors", "all_users", "admins"] else g
 
-        self.choices = {g:_human_readable_group(g) for g in self.choices}
+        self.choices = {g: _human_readable_group(g) for g in self.choices}
 
         if self.default is None:
             self.default = "all_users"
@@ -1569,21 +1579,20 @@ def ask_questions_and_parse_answers(
     out = []
 
     for name, raw_question in raw_questions.items():
-        raw_question['name'] = name
+        raw_question["name"] = name
         question_class = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")]
         raw_question["value"] = answers.get(name)
         question = question_class(raw_question, context=context, hooks=hooks)
         if question.type == "button":
-            if (
-                question.enabled is None  # type: ignore
-                or evaluate_simple_js_expression(question.enabled, context=context)  # type: ignore
-            ):
+            if question.enabled is None or evaluate_simple_js_expression(  # type: ignore
+                question.enabled, context=context
+            ):  # type: ignore
                 continue
             else:
                 raise YunohostValidationError(
                     "config_action_disabled",
                     action=question.name,
-                    help=_value_for_locale(question.help)
+                    help=_value_for_locale(question.help),
                 )
 
         new_values = question.ask_if_needed()

@@ -12,7 +12,7 @@ from yunohost.settings import (
     settings_set,
     settings_reset,
     settings_reset_all,
-    SETTINGS_PATH
+    SETTINGS_PATH,
 )
 
 EXAMPLE_SETTINGS = """
@@ -38,12 +38,15 @@ EXAMPLE_SETTINGS = """
         default = "a"
 """
 
+
 def setup_function(function):
     # Backup settings
     if os.path.exists(SETTINGS_PATH):
         os.system(f"mv {SETTINGS_PATH} {SETTINGS_PATH}.saved")
     # Add example settings to config panel
-    os.system("cp /usr/share/yunohost/config_global.toml /usr/share/yunohost/config_global.toml.saved")
+    os.system(
+        "cp /usr/share/yunohost/config_global.toml /usr/share/yunohost/config_global.toml.saved"
+    )
     with open("/usr/share/yunohost/config_global.toml", "a") as file:
         file.write(EXAMPLE_SETTINGS)
 
@@ -53,10 +56,13 @@ def teardown_function(function):
         os.system(f"mv {SETTINGS_PATH}.saved {SETTINGS_PATH}")
     elif os.path.exists(SETTINGS_PATH):
         os.remove(SETTINGS_PATH)
-    os.system("mv /usr/share/yunohost/config_global.toml.saved /usr/share/yunohost/config_global.toml")
+    os.system(
+        "mv /usr/share/yunohost/config_global.toml.saved /usr/share/yunohost/config_global.toml"
+    )
 
 
 old_translate = moulinette.core.Translator.translate
+
 
 def _monkeypatch_translator(self, key, *args, **kwargs):
 
@@ -64,6 +70,7 @@ def _monkeypatch_translator(self, key, *args, **kwargs):
         return f"Dummy translation for {key}"
 
     return old_translate(self, key, *args, **kwargs)
+
 
 moulinette.core.Translator.translate = _monkeypatch_translator
 
@@ -77,7 +84,7 @@ def test_settings_get_bool():
 
 
 # FIXME : Testing this doesn't make sense ? This should be tested in test_config.py ?
-#def test_settings_get_full_bool():
+# def test_settings_get_full_bool():
 #    assert settings_get("example.example.boolean", True) == {'version': '1.0',
 #        'i18n': 'global_settings_setting',
 #        'panels': [{'services': [],
@@ -104,7 +111,7 @@ def test_settings_get_int():
     assert settings_get("example.example.number") == 42
 
 
-#def test_settings_get_full_int():
+# def test_settings_get_full_int():
 #    assert settings_get("example.int", True) == {
 #        "type": "int",
 #        "value": 42,
@@ -117,7 +124,7 @@ def test_settings_get_string():
     assert settings_get("example.example.string") == "yolo swag"
 
 
-#def test_settings_get_full_string():
+# def test_settings_get_full_string():
 #    assert settings_get("example.example.string", True) == {
 #        "type": "string",
 #        "value": "yolo swag",
@@ -130,7 +137,7 @@ def test_settings_get_select():
     assert settings_get("example.example.select") == "a"
 
 
-#def test_settings_get_full_select():
+# def test_settings_get_full_select():
 #    option = settings_get("example.example.select", full=True).get('panels')[0].get('sections')[0].get('options')[0]
 #    assert option.get('choices') == ["a", "b", "c"]
 
@@ -140,7 +147,7 @@ def test_settings_get_doesnt_exists():
         settings_get("doesnt.exists")
 
 
-#def test_settings_list():
+# def test_settings_list():
 #    assert settings_list() == _get_settings()
 
 
@@ -175,13 +182,13 @@ def test_settings_set_bad_type_bool():
 
 
 def test_settings_set_bad_type_int():
-#    with pytest.raises(YunohostError):
-#        settings_set("example.example.number", True)
+    #    with pytest.raises(YunohostError):
+    #        settings_set("example.example.number", True)
     with pytest.raises(YunohostError):
         settings_set("example.example.number", "pouet")
 
 
-#def test_settings_set_bad_type_string():
+# def test_settings_set_bad_type_string():
 #    with pytest.raises(YunohostError):
 #        settings_set("example.example.string", True)
 #    with pytest.raises(YunohostError):
@@ -205,7 +212,12 @@ def test_settings_list_modified():
 
 
 def test_reset():
-    option = settings_get("example.example.number", full=True).get('panels')[0].get('sections')[0].get('options')[0]
+    option = (
+        settings_get("example.example.number", full=True)
+        .get("panels")[0]
+        .get("sections")[0]
+        .get("options")[0]
+    )
     settings_set("example.example.number", 21)
     assert settings_get("example.example.number") == 21
     settings_reset("example.example.number")
@@ -230,7 +242,7 @@ def test_reset_all():
             assert settings_before[i] == settings_list()[i]
 
 
-#def test_reset_all_backup():
+# def test_reset_all_backup():
 #    settings_before = settings_list()
 #    settings_set("example.bool", False)
 #    settings_set("example.int", 21)
@@ -246,7 +258,7 @@ def test_reset_all():
 #    assert settings_after_modification == json.load(open(old_settings_backup_path, "r"))
 
 
-#def test_unknown_keys():
+# def test_unknown_keys():
 #    unknown_settings_path = SETTINGS_PATH_OTHER_LOCATION % "unknown"
 #    unknown_setting = {
 #        "unkown_key": {"value": 42, "default": 31, "type": "int"},

@@ -29,7 +29,9 @@ class MyMigration(Migration):
             raise YunohostError(f"Can't open setting file : {e}", raw_msg=True)
 
         settings = {
-            translate_legacy_settings_to_configpanel_settings(k).split('.')[-1]: v["value"]
+            translate_legacy_settings_to_configpanel_settings(k).split(".")[-1]: v[
+                "value"
+            ]
             for k, v in old_settings.items()
         }
 

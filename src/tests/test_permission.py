@@ -78,7 +78,7 @@ def _permission_create_with_dummy_app(
                     "name": app,
                     "id": app,
                     "description": {"en": "Dummy app to test permissions"},
-                    "arguments": {"install": []}
+                    "arguments": {"install": []},
                 },
                 f,
             )

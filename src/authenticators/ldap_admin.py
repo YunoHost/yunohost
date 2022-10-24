@@ -36,6 +36,7 @@ LDAP_URI = "ldap://localhost:389"
 ADMIN_GROUP = "cn=admins,ou=groups"
 AUTH_DN = "uid={uid},ou=users,dc=yunohost,dc=org"
 
+
 class Authenticator(BaseAuthenticator):
 
     name = "ldap_admin"
@@ -46,7 +47,11 @@ class Authenticator(BaseAuthenticator):
     def _authenticate_credentials(self, credentials=None):
 
         try:
-            admins = _get_ldap_interface().search(ADMIN_GROUP, attrs=["memberUid"])[0].get("memberUid", [])
+            admins = (
+                _get_ldap_interface()
+                .search(ADMIN_GROUP, attrs=["memberUid"])[0]
+                .get("memberUid", [])
+            )
         except ldap.SERVER_DOWN:
             # ldap is down, attempt to restart it before really failing
             logger.warning(m18n.n("ldap_server_is_down_restart_it"))
@@ -55,10 +60,15 @@ class Authenticator(BaseAuthenticator):
 
             # Force-reset existing LDAP interface
             from yunohost.utils import ldap as ldaputils
+
             ldaputils._ldap_interface = None
 
             try:
-                admins = _get_ldap_interface().search(ADMIN_GROUP, attrs=["memberUid"])[0].get("memberUid", [])
+                admins = (
+                    _get_ldap_interface()
+                    .search(ADMIN_GROUP, attrs=["memberUid"])[0]
+                    .get("memberUid", [])
+                )
             except ldap.SERVER_DOWN:
                 raise YunohostError("ldap_server_down")
 
@@ -105,7 +115,10 @@ class Authenticator(BaseAuthenticator):
             raise
         else:
             if who != dn:
-                raise YunohostError(f"Not logged with the appropriate identity ? Found {who}, expected {dn} !?", raw_msg=True)
+                raise YunohostError(
+                    f"Not logged with the appropriate identity ? Found {who}, expected {dn} !?",
+                    raw_msg=True,
+                )
         finally:
             # Free the connection, we don't really need it to keep it open as the point is only to check authentication...
             if con:

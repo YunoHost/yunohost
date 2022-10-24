@@ -31,7 +31,10 @@ class MyMigration(Migration):
         all_users = user_list()["users"].keys()
         new_admin_user = None
         for user in all_users:
-            if any(alias.startswith("root@") for alias in user_info(user).get("mail-aliases", [])):
+            if any(
+                alias.startswith("root@")
+                for alias in user_info(user).get("mail-aliases", [])
+            ):
                 new_admin_user = user
                 break
 
@@ -39,7 +42,21 @@ class MyMigration(Migration):
 
         if new_admin_user:
             aliases = user_info(new_admin_user).get("mail-aliases", [])
-            old_admin_aliases_to_remove = [alias for alias in aliases if any(alias.startswith(a) for a in ["root@", "admin@", "admins@", "webmaster@", "postmaster@", "abuse@"])]
+            old_admin_aliases_to_remove = [
+                alias
+                for alias in aliases
+                if any(
+                    alias.startswith(a)
+                    for a in [
+                        "root@",
+                        "admin@",
+                        "admins@",
+                        "webmaster@",
+                        "postmaster@",
+                        "abuse@",
+                    ]
+                )
+            ]
 
             user_update(new_admin_user, remove_mailalias=old_admin_aliases_to_remove)
 
@@ -63,7 +80,7 @@ class MyMigration(Migration):
                 "sudoCommand": ["ALL"],
                 "sudoUser": ["%admins"],
                 "sudoHost": ["ALL"],
-            }
+            },
         )
 
         ldap.add(
@@ -73,7 +90,7 @@ class MyMigration(Migration):
                 "objectClass": ["top", "posixGroup", "groupOfNamesYnh", "mailGroup"],
                 "gidNumber": ["4001"],
                 "mail": ["root", "admin", "admins", "webmaster", "postmaster", "abuse"],
-            }
+            },
         )
 
         permission_sync_to_user()
@@ -105,7 +122,6 @@ class MyMigration(Migration):
         }
         ldap.add("uid=admin,ou=users", attr_dict)
         user_group_update(groupname="admins", add="admin", sync_perm=True)
-
 
     def run_after_system_restore(self):
         self.run()
