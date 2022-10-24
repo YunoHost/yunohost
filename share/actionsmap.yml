@@ -1290,8 +1290,8 @@ backup:
                             help: Show more details
                             action: store_true
 
-                ### backup_timer_add()
-                add:
+                ### backup_timer_create()
+                create:
                     action_help: Add a backup timer
                     api: POST /backup/timer/<name>
                     arguments:
@@ -1382,13 +1382,26 @@ backup:
                             extra:
                                 pattern: *pattern_backup_timer_name
 
-                ### backup_timer_run()
-                run:
-                    action_help: Run a backup timer
-                    api: POST /backup/timer/<name>/run
+                ### backup_timer_start()
+                start:
+                    action_help: Start a backup timer
+                    api: POST /backup/timer/<name>/start
                     arguments:
                         name:
-                            help: Backup timer to run
+                            help: Backup timer to start
+                            extra:
+                                pattern: *pattern_backup_timer_name
+                        --now:
+                            help: Trigger a backup immediately
+                            action: store_true
+
+                ### backup_timer_pause()
+                pause:
+                    action_help: Pause a backup timer
+                    api: POST /backup/timer/<name>/pause
+                    arguments:
+                        name:
+                            help: Backup timer to pause
                             extra:
                                 pattern: *pattern_backup_timer_name
 

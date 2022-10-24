@@ -2116,10 +2116,9 @@ Group=root
         self._run_service_command("stop")
         self._run_service_command("disable")
 
-    def run(self, operation_logger):
+    def run(self):
         self._load_current_values()
         backup_create(
-            operation_logger,
             name=self.entity,
             description=self.description,
             repositories=self.repositories,
@@ -2128,7 +2127,6 @@ Group=root
         )
         for repository in self.repositories:
             backup_repository_prune(
-                operation_logger,
                 shortname=repository,
                 prefix=self.entity,
                 keep_hourly=self.keep_hourly,
@@ -2150,7 +2148,7 @@ def backup_timer_info(name):
 
 
 @is_unit_operation()
-def backup_timer_add(
+def backup_timer_create(
     operation_logger,
     name=None,
     description=None,
@@ -2196,11 +2194,21 @@ def backup_timer_remove(operation_logger, name):
 
 
 @is_unit_operation()
-def backup_timer_run(operation_logger, name):
+def backup_timer_start(operation_logger, name, now=False):
     """
-    Run a backup timer
+    Start a backup timer
     """
-    BackupTimer(name).run(operation_logger)
+    if now:
+        BackupTimer(name).run()
+
+    BackupTimer(name).start()
+
+@is_unit_operation()
+def backup_timer_pause(operation_logger, name):
+    """
+    Pause a backup timer
+    """
+    BackupTimer(name).stop()
 
 
 #

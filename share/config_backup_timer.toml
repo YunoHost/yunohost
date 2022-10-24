@@ -14,7 +14,7 @@ name.en = ""
         [main.main.repositories]
         type = "tags"
         visible = "creation"
-        default = "no"
+        default = []
         
         [main.main.system]
         type = "tags"
