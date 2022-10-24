@@ -1,9 +1,6 @@
 {
     "aborting": "Avbryter…",
     "admin_password": "Administrasjonspassord",
-    "admin_password_change_failed": "Kan ikke endre passord",
-    "admin_password_changed": "Administrasjonspassord endret",
-    "admin_password_too_long": "Velg et passord kortere enn 127 tegn",
     "app_already_installed": "{app} er allerede installert",
     "app_already_up_to_date": "{app} er allerede oppdatert",
     "app_argument_invalid": "Velg en gydlig verdi for argumentet '{name}': {error}",
@@ -98,8 +95,6 @@
     "app_upgrade_failed": "Kunne ikke oppgradere {app}",
     "app_upgrade_some_app_failed": "Noen programmer kunne ikke oppgraderes",
     "app_upgraded": "{app} oppgradert",
-    "ask_firstname": "Fornavn",
-    "ask_lastname": "Etternavn",
     "ask_main_domain": "Hoveddomene",
     "ask_new_admin_password": "Nytt administrasjonspassord",
     "app_upgrade_several_apps": "Følgende programmer vil oppgraderes: {apps}",

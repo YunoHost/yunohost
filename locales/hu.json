@@ -2,8 +2,6 @@
     "aborting": "Megszakítás.",
     "action_invalid": "Érvénytelen művelet '{action}'",
     "admin_password": "Adminisztrátori jelszó",
-    "admin_password_change_failed": "Nem lehet a jelszót megváltoztatni",
-    "admin_password_changed": "Az adminisztrátori jelszó megváltozott",
     "app_already_installed": "{app} már telepítve van",
     "app_already_installed_cant_change_url": "Ez az app már telepítve van. Ezzel a funkcióval az url nem változtatható. Javaslat 'app url változtatás' ha lehetséges.",
     "app_already_up_to_date": "{app} napra kész",

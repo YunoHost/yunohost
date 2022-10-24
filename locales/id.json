@@ -1,8 +1,5 @@
 {
     "admin_password": "Kata sandi administrasi",
-    "admin_password_change_failed": "Tidak dapat mengubah kata sandi",
-    "admin_password_changed": "Kata sandi administrasi diubah",
-    "admin_password_too_long": "Harap pilih kata sandi yang lebih pendek dari 127 karakter",
     "already_up_to_date": "Tak ada yang harus dilakukan. Semuanya sudah mutakhir.",
     "app_action_broke_system": "Tindakan ini sepertinya telah merusak layanan-layanan penting ini: {services}",
     "app_already_installed": "{app} sudah terpasang",
@@ -27,8 +24,6 @@
     "apps_already_up_to_date": "Semua aplikasi sudah pada versi mutakhir",
     "apps_catalog_update_success": "Katalog aplikasi telah diperbarui!",
     "apps_catalog_updating": "Memperbarui katalog aplikasi...",
-    "ask_firstname": "Nama depan",
-    "ask_lastname": "Nama belakang",
     "ask_main_domain": "Domain utama",
     "ask_new_domain": "Domain baru",
     "ask_user_domain": "Domain yang digunakan untuk alamat surel dan akun XMPP pengguna",
