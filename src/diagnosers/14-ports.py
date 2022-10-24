@@ -47,7 +47,7 @@ class MyDiagnoser(Diagnoser):
 
         ipversions = []
         ipv4 = Diagnoser.get_cached_report("ip", item={"test": "ipv4"}) or {}
-        if ipv4.get("status") == "SUCCESS" or settings_get(misc.network.dns_exposure") != "ipv6":
+        if ipv4.get("status") == "SUCCESS" or settings_get("misc.network.dns_exposure") != "ipv6":
             ipversions.append(4)
 
         # To be discussed: we could also make this check dependent on the
@@ -121,7 +121,7 @@ class MyDiagnoser(Diagnoser):
                         for record in dnsrecords.get("items", [])
                     )
 
-                if failed == 4 and settings_get(misc.network.dns_exposure") != "ipv6" or ipv6_is_important():
+                if failed == 4 and settings_get("misc.network.dns_exposure") != "ipv6" or ipv6_is_important():
                     yield dict(
                         meta={"port": port},
                         data={
