@@ -42,7 +42,7 @@ do_init_regen() {
     # Backup folders
     mkdir -p /home/yunohost.backup/archives
     chmod 750 /home/yunohost.backup/archives
-    chown root:root /home/yunohost.backup/archives # This is later changed to admin:root once admin user exists
+    chown root:root /home/yunohost.backup/archives # This is later changed to root:admins once the admins group exists
 
     # Empty ssowat json persistent conf
     echo "{}" >'/etc/ssowat/conf.json.persistent'
@@ -168,12 +168,11 @@ do_post_regen() {
     # Enfore permissions #
     ######################
 
-    chmod 750 /home/admin
-    chmod 750 /home/yunohost.backup
-    chmod 750 /home/yunohost.backup/archives
+    chmod 770 /home/yunohost.backup
+    chmod 770 /home/yunohost.backup/archives
     chmod 700 /var/cache/yunohost
-    chown admin:root /home/yunohost.backup
-    chown admin:root /home/yunohost.backup/archives
+    chown root:admins /home/yunohost.backup
+    chown root:admins /home/yunohost.backup/archives
     chown root:root /var/cache/yunohost
 
     # NB: x permission for 'others' is important for ssl-cert (and maybe mdns), otherwise slapd will fail to start because can't access the certs

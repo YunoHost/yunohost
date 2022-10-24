@@ -102,7 +102,7 @@ def config_app(request):
 
 def test_app_config_get(config_app):
 
-    user_create("alice", "Alice", "White", _get_maindomain(), "test123Ynh")
+    user_create("alice", _get_maindomain(), "test123Ynh", fullname="Alice White")
 
     assert isinstance(app_config_get(config_app), dict)
     assert isinstance(app_config_get(config_app, full=True), dict)

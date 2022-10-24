@@ -34,7 +34,7 @@ full-tests:
     PYTEST_ADDOPTS: "--color=yes"
   before_script:
     - *install_debs
-    - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns --force-diskspace
+    - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace
   script:
     - python3 -m pytest --cov=yunohost tests/ src/tests/ src/diagnosers/ --junitxml=report.xml
     - cd tests
@@ -124,6 +124,15 @@ test-app-config:
     changes:
       - src/app.py
       - src/utils/config.py
+
+test-app-resources:
+  extends: .test-stage
+  script:
+    - python3 -m pytest src/tests/test_app_resources.py
+  only:
+    changes:
+      - src/app.py
+      - src/utils/resources.py
 
 test-changeurl:
   extends: .test-stage

@@ -1,3 +1,21 @@
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import re
 
@@ -19,7 +37,7 @@ logger = getActionLogger("yunohost.app_catalog")
 
 APPS_CATALOG_CACHE = "/var/cache/yunohost/repo"
 APPS_CATALOG_CONF = "/etc/yunohost/apps_catalog.yml"
-APPS_CATALOG_API_VERSION = 2
+APPS_CATALOG_API_VERSION = 3
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 
 
@@ -48,8 +66,8 @@ def app_catalog(full=False, with_categories=False):
                 "level": infos["level"],
             }
         else:
-            infos["manifest"]["arguments"] = _set_default_ask_questions(
-                infos["manifest"].get("arguments", {})
+            infos["manifest"]["install"] = _set_default_ask_questions(
+                infos["manifest"].get("install", {})
             )
 
     # Trim info for categories if not using --full
@@ -232,6 +250,11 @@ def _load_apps_catalog():
                 )
                 continue
 
+            if info.get("level") == "?":
+                info["level"] = -1
+
+            # FIXME: we may want to autoconvert all v0/v1 manifest to v2 here
+            # so that everything is consistent in terms of APIs, datastructure format etc
             info["repository"] = apps_catalog_id
             merged_catalog["apps"][app] = info
 

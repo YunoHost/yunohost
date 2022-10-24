@@ -1,28 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2013 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
-""" yunohost_domain.py
-
-    Manage domains
-"""
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import re
 import time
@@ -35,12 +28,12 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, write_to_file, read_toml, mkdir
 
 from yunohost.domain import (
-    domain_list,
     _assert_domain_exists,
     domain_config_get,
     _get_domain_settings,
     _set_domain_settings,
     _list_subdomains_of,
+    _get_parent_domain_of,
 )
 from yunohost.utils.dns import dig, is_yunohost_dyndns_domain, is_special_use_tld
 from yunohost.utils.error import YunohostValidationError, YunohostError
@@ -446,8 +439,8 @@ def _get_dns_zone_for_domain(domain):
     # This is another strick to try to prevent this function from being
     # a bottleneck on system with 1 main domain + 10ish subdomains
     # when building the dns conf for the main domain (which will call domain_config_get, etc...)
-    parent_domain = domain.split(".", 1)[1]
-    if parent_domain in domain_list()["domains"]:
+    parent_domain = _get_parent_domain_of(domain)
+    if parent_domain:
         parent_cache_file = f"{cache_folder}/{parent_domain}"
         if (
             os.path.exists(parent_cache_file)
@@ -512,17 +505,19 @@ def _get_registrar_config_section(domain):
 
     from lexicon.providers.auto import _relevant_provider_for_domain
 
-    registrar_infos = {}
+    registrar_infos = {
+        "name": m18n.n('registrar_infos'),   # This is meant to name the config panel section, for proper display in the webadmin
+    }
 
     dns_zone = _get_dns_zone_for_domain(domain)
 
     # If parent domain exists in yunohost
-    parent_domain = domain.split(".", 1)[1]
-    if parent_domain in domain_list()["domains"]:
+    parent_domain = _get_parent_domain_of(domain, topest=True)
+    if parent_domain:
 
         # Dirty hack to have a link on the webadmin
         if Moulinette.interface.type == "api":
-            parent_domain_link = f"[{parent_domain}](#/domains/{parent_domain}/config)"
+            parent_domain_link = f"[{parent_domain}](#/domains/{parent_domain}/dns)"
         else:
             parent_domain_link = parent_domain
 
@@ -532,7 +527,7 @@ def _get_registrar_config_section(domain):
                 "style": "info",
                 "ask": m18n.n(
                     "domain_dns_registrar_managed_in_parent_domain",
-                    parent_domain=domain,
+                    parent_domain=parent_domain,
                     parent_domain_link=parent_domain_link,
                 ),
                 "value": "parent_domain",
@@ -647,7 +642,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         return {}
 
     if registrar == "parent_domain":
-        parent_domain = domain.split(".", 1)[1]
+        parent_domain = _get_parent_domain_of(domain, topest=True)
         registar, registrar_credentials = _get_registar_settings(parent_domain)
         if any(registrar_credentials.values()):
             raise YunohostValidationError(

@@ -1,32 +1,24 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2016 YUNOHOST.ORG
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-    yunohost_certificate.py
-
-    Manage certificates, in particular Let's encrypt
-"""
-
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import sys
 import shutil
-import pwd
-import grp
 import subprocess
 import glob
 
@@ -34,7 +26,8 @@ from datetime import datetime
 
 from moulinette import m18n
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file
+from moulinette.utils.filesystem import read_file, chown, chmod
+from moulinette.utils.process import check_output
 
 from yunohost.vendor.acme_tiny.acme_tiny import get_crt as sign_certificate
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -95,15 +88,17 @@ def certificate_status(domains, full=False):
         if not full:
             del status["subject"]
             del status["CA_name"]
-            status["CA_type"] = status["CA_type"]["verbose"]
-            status["summary"] = status["summary"]["verbose"]
 
         if full:
             try:
                 _check_domain_is_ready_for_ACME(domain)
                 status["ACME_eligible"] = True
-            except Exception:
-                status["ACME_eligible"] = False
+            except Exception as e:
+                if e.key == 'certmanager_domain_not_diagnosed_yet':
+                    status["ACME_eligible"] = None   # = unknown status
+                else:
+                    status["ACME_eligible"] = False
+
 
         del status["domain"]
         certificates[domain] = status
@@ -131,6 +126,7 @@ def certificate_install(domain_list, force=False, no_checks=False, self_signed=F
 
 def _certificate_install_selfsigned(domain_list, force=False):
 
+    failed_cert_install = []
     for domain in domain_list:
 
         operation_logger = OperationLogger(
@@ -154,7 +150,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
         if not force and os.path.isfile(current_cert_file):
             status = _get_status(domain)
 
-            if status["summary"]["code"] in ("good", "great"):
+            if status["style"] == "success":
                 raise YunohostValidationError(
                     "certmanager_attempt_to_replace_valid_cert", domain=domain
                 )
@@ -216,7 +212,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
 
         if (
             status
-            and status["CA_type"]["code"] == "self-signed"
+            and status["CA_type"] == "selfsigned"
             and status["validity"] > 3648
         ):
             logger.success(
@@ -225,8 +221,16 @@ def _certificate_install_selfsigned(domain_list, force=False):
             operation_logger.success()
         else:
             msg = f"Installation of self-signed certificate installation for {domain} failed !"
+            failed_cert_install.append(domain)
             logger.error(msg)
+            logger.error(status)
             operation_logger.error(msg)
+
+    if failed_cert_install:
+        raise YunohostError(
+            "certmanager_cert_install_failed_selfsigned",
+            domains=",".join(failed_cert_install)
+        )
 
 
 def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
@@ -241,7 +245,7 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
         for domain in domain_list()["domains"]:
 
             status = _get_status(domain)
-            if status["CA_type"]["code"] != "self-signed":
+            if status["CA_type"] != "selfsigned":
                 continue
 
             domains.append(domain)
@@ -253,12 +257,13 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
 
             # Is it self-signed?
             status = _get_status(domain)
-            if not force and status["CA_type"]["code"] != "self-signed":
+            if not force and status["CA_type"] != "selfsigned":
                 raise YunohostValidationError(
                     "certmanager_domain_cert_not_selfsigned", domain=domain
                 )
 
     # Actual install steps
+    failed_cert_install = []
     for domain in domains:
 
         if not no_checks:
@@ -287,10 +292,17 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
                 logger.error(
                     f"Please consider checking the 'DNS records' (basic) and 'Web' categories of the diagnosis to check for possible issues that may prevent installing a Let's Encrypt certificate on domain {domain}."
                 )
+            failed_cert_install.append(domain)
         else:
             logger.success(m18n.n("certmanager_cert_install_success", domain=domain))
 
             operation_logger.success()
+
+    if failed_cert_install:
+        raise YunohostError(
+            "certmanager_cert_install_failed",
+            domains=",".join(failed_cert_install)
+        )
 
 
 def certificate_renew(domains, force=False, no_checks=False, email=False):
@@ -314,7 +326,7 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
 
             # Does it have a Let's Encrypt cert?
             status = _get_status(domain)
-            if status["CA_type"]["code"] != "lets-encrypt":
+            if status["CA_type"] != "letsencrypt":
                 continue
 
             # Does it expire soon?
@@ -349,7 +361,7 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
                 )
 
             # Does it have a Let's Encrypt cert?
-            if status["CA_type"]["code"] != "lets-encrypt":
+            if status["CA_type"] != "letsencrypt":
                 raise YunohostValidationError(
                     "certmanager_attempt_to_renew_nonLE_cert", domain=domain
                 )
@@ -361,6 +373,7 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
                 )
 
     # Actual renew steps
+    failed_cert_install = []
     for domain in domains:
 
         if not no_checks:
@@ -402,6 +415,8 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
             logger.error(stack.getvalue())
             logger.error(str(e))
 
+            failed_cert_install.append(domain)
+
             if email:
                 logger.error("Sending email with details to root ...")
                 _email_renewing_failed(domain, msg + "\n" + str(e), stack.getvalue())
@@ -409,6 +424,11 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
             logger.success(m18n.n("certmanager_cert_renew_success", domain=domain))
             operation_logger.success()
 
+    if failed_cert_install:
+        raise YunohostError(
+            "certmanager_cert_renew_failed",
+            domains=",".join(failed_cert_install)
+        )
 
 #
 # Back-end stuff                                                            #
@@ -537,9 +557,9 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
     _enable_certificate(domain, new_cert_folder)
 
     # Check the status of the certificate is now good
-    status_summary = _get_status(domain)["summary"]
+    status_style = _get_status(domain)["style"]
 
-    if status_summary["code"] != "great":
+    if status_style != "success":
         raise YunohostError(
             "certmanager_certificate_fetching_or_enabling_failed", domain=domain
         )
@@ -633,59 +653,42 @@ def _get_status(domain):
     )
     days_remaining = (valid_up_to - datetime.utcnow()).days
 
-    if cert_issuer in ["yunohost.org"] + yunohost.domain.domain_list()["domains"]:
-        CA_type = {
-            "code": "self-signed",
-            "verbose": "Self-signed",
-        }
+    self_signed_issuers = ["yunohost.org"] + yunohost.domain.domain_list()["domains"]
 
+    # FIXME: is the .ca.cnf one actually used anywhere ? x_x
+    conf = os.path.join(SSL_DIR, "openssl.ca.cnf")
+    if os.path.exists(conf):
+        self_signed_issuers.append(check_output(f"grep commonName_default {conf}").split()[-1])
+    conf = os.path.join(SSL_DIR, "openssl.cnf")
+    if os.path.exists(conf):
+        self_signed_issuers.append(check_output(f"grep commonName_default {conf}").split()[-1])
+
+    if cert_issuer in self_signed_issuers:
+        CA_type = "selfsigned"
     elif organization_name == "Let's Encrypt":
-        CA_type = {
-            "code": "lets-encrypt",
-            "verbose": "Let's Encrypt",
-        }
-
+        CA_type = "letsencrypt"
     else:
-        CA_type = {
-            "code": "other-unknown",
-            "verbose": "Other / Unknown",
-        }
+        CA_type = "other"
 
     if days_remaining <= 0:
-        status_summary = {
-            "code": "critical",
-            "verbose": "CRITICAL",
-        }
-
-    elif CA_type["code"] in ("self-signed", "fake-lets-encrypt"):
-        status_summary = {
-            "code": "warning",
-            "verbose": "WARNING",
-        }
-
+        style = "danger"
+        summary = "expired"
+    elif CA_type == "selfsigned":
+        style = "warning"
+        summary = "selfsigned"
     elif days_remaining < VALIDITY_LIMIT:
-        status_summary = {
-            "code": "attention",
-            "verbose": "About to expire",
-        }
-
-    elif CA_type["code"] == "other-unknown":
-        status_summary = {
-            "code": "good",
-            "verbose": "Good",
-        }
-
-    elif CA_type["code"] == "lets-encrypt":
-        status_summary = {
-            "code": "great",
-            "verbose": "Great!",
-        }
-
+        style = "warning"
+        summary = "abouttoexpire"
+    elif CA_type == "other":
+        style = "success"
+        summary = "ok"
+    elif CA_type == "letsencrypt":
+        style = "success"
+        summary = "letsencrypt"
     else:
-        status_summary = {
-            "code": "unknown",
-            "verbose": "Unknown?",
-        }
+        # shouldnt happen, because CA_type can be only selfsigned, letsencrypt, or other
+        style = ""
+        summary = "wat"
 
     return {
         "domain": domain,
@@ -693,7 +696,8 @@ def _get_status(domain):
         "CA_name": cert_issuer,
         "CA_type": CA_type,
         "validity": days_remaining,
-        "summary": status_summary,
+        "style": style,
+        "summary": summary,
     }
 
 
@@ -719,11 +723,8 @@ def _generate_key(destination_path):
 
 
 def _set_permissions(path, user, group, permissions):
-    uid = pwd.getpwnam(user).pw_uid
-    gid = grp.getgrnam(group).gr_gid
-
-    os.chown(path, uid, gid)
-    os.chmod(path, permissions)
+    chown(path, user, group)
+    chmod(path, permissions)
 
 
 def _enable_certificate(domain, new_cert_folder):
@@ -791,7 +792,7 @@ def _check_domain_is_ready_for_ACME(domain):
         or {}
     )
 
-    parent_domain = _get_parent_domain_of(domain)
+    parent_domain = _get_parent_domain_of(domain, return_self=True)
 
     dnsrecords = (
         Diagnoser.get_cached_report(
@@ -908,6 +909,4 @@ def _name_self_CA():
 
 
 def _tail(n, file_path):
-    from moulinette.utils.process import check_output
-
     return check_output(f"tail -n {n} '{file_path}'")

@@ -1,11 +1,27 @@
-#!/usr/bin/env python
-
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import random
 import requests
 from typing import List
 
-from moulinette.utils.filesystem import read_file
+from moulinette.utils.filesystem import read_file, mkdir, rm
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.domain import domain_list
@@ -46,8 +62,8 @@ class MyDiagnoser(Diagnoser):
                 domains_to_check.append(domain)
 
         self.nonce = "".join(random.choice("0123456789abcedf") for i in range(16))
-        os.system("rm -rf /tmp/.well-known/ynh-diagnosis/")
-        os.system("mkdir -p /tmp/.well-known/ynh-diagnosis/")
+        rm("/tmp/.well-known/ynh-diagnosis/", recursive=True, force=True)
+        mkdir("/tmp/.well-known/ynh-diagnosis/", parents=True)
         os.system("touch /tmp/.well-known/ynh-diagnosis/%s" % self.nonce)
 
         if not domains_to_check:

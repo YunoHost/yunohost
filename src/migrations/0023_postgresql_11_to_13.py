@@ -7,7 +7,7 @@ from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
-from yunohost.utils.filesystem import free_space_in_directory, space_used_by_directory
+from yunohost.utils.system import free_space_in_directory, space_used_by_directory
 
 logger = getActionLogger("yunohost.migration")
 
