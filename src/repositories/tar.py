@@ -182,7 +182,7 @@ class TarBackupArchive(BackupArchive):
                 return "\n".join(tar.getnames())
             else:
                 return {f.name: {
-                                    "mode": f.mode, # FIXME Numeric or letter mode
+                                    "mode": f.mode,  # FIXME Numeric or letter mode
                                     "type": int(f.type),
                                     "uid": f.uid,
                                     "gid": f.gid,

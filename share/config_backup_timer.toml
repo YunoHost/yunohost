@@ -59,5 +59,18 @@ name.en = ""
         type = "number"
         min = 0
         default = 8
+        
+        [main.main.keep_last]
+        help = ''
+        type = "number"
+        min = 0
+        default = 0
+        
+        [main.main.keep_within]
+        help = ''
+        type = "string"
+        pattern.regexp = '^\d+[Hdw]$'
+        pattern.error = "keep_within_error"
+        default = ""
 
 
