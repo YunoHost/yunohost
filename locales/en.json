@@ -114,6 +114,7 @@
     "backup_not_sent": "Backup archive was not saved at all",
     "backup_partially_sent": "Backup archive was not sent into all repositories listed",
     "backup_nothings_done": "Nothing to save",
+    "backup_nowhere_to_backup": "Nowhere to backup your file with this archive name",
     "backup_output_directory_forbidden": "Pick a different output directory. Backups cannot be created in /bin, /boot, /dev, /etc, /lib, /root, /run, /sbin, /sys, /usr, /var or /home/yunohost.backup/archives sub-folders",
     "backup_output_directory_not_empty": "You should pick an empty output directory",
     "backup_output_directory_required": "You must provide an output directory for the backup",

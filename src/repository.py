@@ -283,7 +283,30 @@ class BackupRepository(ConfigPanel):
 
         return archives
 
-    def prune(self, prefix=None, **kwargs):
+    def prune(self, prefix=None, keep_last=None, keep_within=None, keep_hourly=None, keep_daily=None, keep_weekly=None, keep_monthly=None):
+
+        # Default prune options
+        keeps = [value is None for key, value in locals().items() if key.startswith("keep_")]
+        if all(keeps):
+            keep_hourly = 0
+            keep_daily = 10
+            keep_weekly = 8
+            keep_monthly = 8
+            logger.debug(f"Prune and keep one per each {keep_hourly} last hours, {keep_daily} last days, {keep_weekly} last weeks, {keep_monthly} last months")
+
+        keep_last = keep_last if keep_last else 0
+
+        # Convert keep_within as a date
+        units = {
+            "H": "hours",
+            "d": "days",
+            "w": "weeks",
+        }
+        now = datetime.utcnow()
+        if keep_within:
+            keep_within = now - timedelta(**{units[keep_within[-1]]: int(keep_within[:-1])})
+        else:
+            keep_within = now
 
         # List archives with creation date
         archives = {}
@@ -303,24 +326,32 @@ class BackupRepository(ConfigPanel):
             microseconds=now.microsecond
         )
         periods = set([])
-
-        for unit, qty in kwargs:
+        units = {
+            "keep_hourly": {"hours": 1},
+            "keep_daily": {"days": 1},
+            "keep_weekly": {"weeks": 1},
+            "keep_monthly": {"days": 30}
+        }
+        keeps_xly = {key: val for key, val in locals().items()
+                     if key.startswith("keep_") and key.endswith("ly")}
+        for unit, qty in keeps_xly.items():
             if not qty:
                 continue
-            period = timedelta(**{unit: 1})
-            periods += set([(now - period * i, now - period * (i - 1))
-                           for i in range(qty)])
+            period = timedelta(**units[unit])
+            periods.update(set([(now - period * i, now - period * (i - 1))
+                           for i in range(qty)]))
 
         # Delete unneeded archive
         for created_at in sorted(archives, reverse=True):
-            created_at = datetime.utcfromtimestamp(created_at)
-            keep_for = set(filter(lambda period: period[0] <= created_at <= period[1], periods))
+            date_created_at = datetime.utcfromtimestamp(created_at)
+            keep_for = set(filter(lambda period: period[0] <= date_created_at <= period[1], periods))
+            periods -= keep_for
 
-            if keep_for:
-                periods -= keep_for
+            if keep_for or keep_last > 0 or date_created_at >= keep_within:
+                keep_last -= 1
                 continue
 
-            archive.delete()
+            archives[created_at].delete()
 
     # =================================================
     # Repository abstract actions

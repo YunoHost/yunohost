@@ -176,45 +176,6 @@ class BorgBackupRepository(LocalBackupRepository):
         response = self._call('info', cmd, json_output=True)
         return response["cache"]["stats"]["unique_size"]
 
-    def prune(self, prefix=None, **kwargs):
-
-        # List archives with creation date
-        archives = {}
-        for archive_name in self.list_archive_name(prefix):
-            archive = BackupArchive(repo=self, name=archive_name)
-            created_at = archive.info()["created_at"]
-            archives[created_at] = archive
-
-        if not archives:
-            return
-
-        # Generate periods in which keep one archive
-        now = datetime.utcnow()
-        now -= timedelta(
-            minutes=now.minute,
-            seconds=now.second,
-            microseconds=now.microsecond
-        )
-        periods = set([])
-
-        for unit, qty in kwargs:
-            if not qty:
-                continue
-            period = timedelta(**{unit: 1})
-            periods += set([(now - period * i, now - period * (i - 1))
-                           for i in range(qty)])
-
-        # Delete unneeded archive
-        for created_at in sorted(archives, reverse=True):
-            created_at = datetime.utcfromtimestamp(created_at)
-            keep_for = set(filter(lambda period: period[0] <= created_at <= period[1], periods))
-
-            if keep_for:
-                periods -= keep_for
-                continue
-
-            archive.delete()
-
 
 class BorgBackupArchive(BackupArchive):
     """ Backup prepared files with borg """

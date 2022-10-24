@@ -1047,6 +1047,13 @@ backup:
                         pattern: &pattern_backup_archive_name
                             - !!str ^[\w\-\._]{1,50}$
                             - "pattern_backup_archive_name"
+                -p:
+                    full: --prefix
+                    help: Prefix of the backup archive
+                    extra:
+                        pattern: &pattern_backup_archive_prefix
+                            - !!str ^[\w\-\._]{1,35}$
+                            - "pattern_backup_archive_prefix"
                 -d:
                     full: --description
                     help: Short description of the backup
@@ -1277,6 +1284,33 @@ backup:
                         --prefix:
                             help: Prefix on which we prune
                             nargs: "?"
+                        -H:
+                            full: --keep-hourly
+                            help: Number of hourly archives to keep
+                            type: int
+                        -d:
+                            full: --keep-daily
+                            help: Number of daily archives to keep
+                            type: int
+                        -w:
+                            full: --keep-weekly
+                            help: Number of weekly archives to keep
+                            type: int
+                        -m:
+                            full: --keep-monthly
+                            help: Number of monthly archives to keep
+                            type: int
+                        --keep-last:
+                            help: Number of last archives to keep
+                            type: int
+                        --keep-within:
+                            help: Keep all archives within this time interval
+                            extra:
+                                pattern: &pattern_interval
+                                    - !!str ^\d+[Hdwmy]$
+                                    - "pattern_interval"
+
+
         timer:
             subcategory_help: Manage backup timer
             actions:

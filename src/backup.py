@@ -25,6 +25,7 @@ import csv
 import tempfile
 import re
 import urllib.parse
+import datetime
 from packaging import version
 
 from moulinette import Moulinette, m18n
@@ -260,7 +261,7 @@ class BackupManager:
         backup_manager.backup()
     """
 
-    def __init__(self, name=None, description="", repositories=[], work_dir=None):
+    def __init__(self, name=None, prefix="", description="", repositories=[], work_dir=None):
         """
         BackupManager constructor
 
@@ -286,7 +287,7 @@ class BackupManager:
         self.targets = BackupRestoreTargetsManager()
 
         # Define backup name if needed
-
+        self.prefix = prefix
         if not name:
             name = self._define_backup_name()
         self.name = name
@@ -334,7 +335,7 @@ class BackupManager:
         """
         # FIXME: case where this name already exist
 
-        return time.strftime("%Y%m%d-%H%M%S", time.gmtime())
+        return self.prefix + time.strftime("%Y%m%d-%H%M%S", time.gmtime())
 
     def _init_work_dir(self):
         """Initialize preparation directory
@@ -1648,6 +1649,7 @@ class RestoreManager:
 def backup_create(
     operation_logger,
     name=None,
+    prefix="",
     description=None,
     repositories=[],
     system=[],
@@ -1679,13 +1681,15 @@ def backup_create(
 
     # Validate there is no archive with the same name
     archives = backup_list(repositories=repositories)
+    archives_already_exists = []
     for repository in archives:
         if name and name in archives[repository]:
-            repositories.pop(repository)
+            repositories.remove(repository)
+            archives_already_exists.append(repository)
             logger.error(m18n.n("backup_archive_name_exists", repository=repository))
 
     if not repositories:
-        raise YunohostValidationError("backup_archive_name_exists")
+        raise YunohostValidationError("backup_nowhere_to_backup")
 
     # If no --system or --apps given, backup everything
 
@@ -1702,7 +1706,8 @@ def backup_create(
     repositories = [BackupRepository(repo) for repo in repositories]
 
     # Prepare files to backup
-    backup_manager = BackupManager(name, description,
+    backup_manager = BackupManager(name, prefix=prefix,
+                                   description=description,
                                    repositories=repositories)
 
     # Add backup targets (system and apps)
@@ -1741,6 +1746,7 @@ def backup_create(
         )
     )
     repo_results = backup_manager.backup()
+    repo_results.update({repo: "Not sent" for repo in archives_already_exists})
     repo_states = [repo_result == "Sent" for repository, repo_result in repo_results.items()]
 
     if all(repo_states) and all(parts_states):
@@ -1978,16 +1984,19 @@ def backup_repository_remove(operation_logger, shortname, purge=False):
 
 
 @is_unit_operation()
-def backup_repository_prune(operation_logger, shortname, prefix=None, keep_hourly=0, keep_daily=10, keep_weekly=8, keep_monthly=8):
+def backup_repository_prune(operation_logger, shortname, prefix=None, keep_hourly=None, keep_daily=None, keep_weekly=None, keep_monthly=None, keep_last=None, keep_within=None):
     """
     Remove a backup repository
     """
+
     BackupRepository(shortname).prune(
         prefix=prefix,
         keep_hourly=keep_hourly,
         keep_daily=keep_daily,
         keep_weekly=keep_weekly,
         keep_monthly=keep_monthly,
+        keep_last=keep_last,
+        keep_within=keep_within,
     )
 
 
@@ -2119,7 +2128,7 @@ Group=root
     def run(self):
         self._load_current_values()
         backup_create(
-            name=self.entity,
+            prefix=f"{self.entity}_",
             description=self.description,
             repositories=self.repositories,
             system=self.system,
@@ -2128,7 +2137,7 @@ Group=root
         for repository in self.repositories:
             backup_repository_prune(
                 shortname=repository,
-                prefix=self.entity,
+                prefix=f"{self.entity}_",
                 keep_hourly=self.keep_hourly,
                 keep_daily=self.keep_daily,
                 keep_weekly=self.keep_weekly,
