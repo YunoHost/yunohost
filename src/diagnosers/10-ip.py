@@ -122,7 +122,7 @@ class MyDiagnoser(Diagnoser):
         yield dict(
             meta={"test": "ipv4"},
             data={"global": ipv4, "local": get_local_ip("ipv4")},
-            status="SUCCESS" if ipv4 else "ERROR" if settings_get("dns_exposure") == "ipv4" else "WARNING",
+            status="SUCCESS" if ipv4 else "ERROR" if settings_get("misc.network.dns_exposure") == "ipv4" else "WARNING",
             summary="diagnosis_ip_connected_ipv4" if ipv4 else "diagnosis_ip_no_ipv4",
             details=["diagnosis_ip_global", "diagnosis_ip_local"] if ipv4 else None,
         )
@@ -130,7 +130,7 @@ class MyDiagnoser(Diagnoser):
         yield dict(
             meta={"test": "ipv6"},
             data={"global": ipv6, "local": get_local_ip("ipv6")},
-            status="SUCCESS" if ipv6 else "ERROR" if settings_get("dns_exposure") == "ipv6" else "WARNING",
+            status="SUCCESS" if ipv6 else "ERROR" if settings_get("misc.network.dns_exposure") == "ipv6" else "WARNING",
             summary="diagnosis_ip_connected_ipv6" if ipv6 else "diagnosis_ip_no_ipv6",
             details=["diagnosis_ip_global", "diagnosis_ip_local"]
             if ipv6
