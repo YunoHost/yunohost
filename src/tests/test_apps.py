@@ -167,7 +167,9 @@ def install_manifestv2_app(domain, path, public=True):
 
     app_install(
         os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"),
-        args="domain={}&path={}&init_main_permission={}".format(domain, path, "visitors" if public else "all_users"),
+        args="domain={}&path={}&init_main_permission={}".format(
+            domain, path, "visitors" if public else "all_users"
+        ),
         force=True,
     )
 
@@ -220,7 +222,12 @@ def test_legacy_app_manifest_preinstall():
     assert "integration" in m
     assert "install" in m
     assert m["doc"] == {}
-    assert m["notifications"] == {"pre_install": {}, "pre_upgrade": {}, "post_install": {}, "post_upgrade": {}}
+    assert m["notifications"] == {
+        "pre_install": {},
+        "pre_upgrade": {},
+        "post_install": {},
+        "post_upgrade": {},
+    }
 
 
 def test_manifestv2_app_manifest_preinstall():
@@ -231,11 +238,23 @@ def test_manifestv2_app_manifest_preinstall():
     assert "install" in m
     assert "description" in m
     assert "doc" in m
-    assert "This is a dummy description of this app features" in m["doc"]["DESCRIPTION"]["en"]
-    assert "Ceci est une fausse description des fonctionalités de l'app" in m["doc"]["DESCRIPTION"]["fr"]
+    assert (
+        "This is a dummy description of this app features"
+        in m["doc"]["DESCRIPTION"]["en"]
+    )
+    assert (
+        "Ceci est une fausse description des fonctionalités de l'app"
+        in m["doc"]["DESCRIPTION"]["fr"]
+    )
     assert "notifications" in m
-    assert "This is a dummy disclaimer to display prior to the install" in m["notifications"]["pre_install"]["main"]["en"]
-    assert "Ceci est un faux disclaimer à présenter avant l'installation" in m["notifications"]["pre_install"]["main"]["fr"]
+    assert (
+        "This is a dummy disclaimer to display prior to the install"
+        in m["notifications"]["pre_install"]["main"]["en"]
+    )
+    assert (
+        "Ceci est un faux disclaimer à présenter avant l'installation"
+        in m["notifications"]["pre_install"]["main"]["fr"]
+    )
 
 
 def test_manifestv2_app_install_main_domain():
@@ -269,11 +288,23 @@ def test_manifestv2_app_info_postinstall():
     assert "description" in m
     assert "doc" in m
     assert "The app install dir is /var/www/manifestv2_app" in m["doc"]["ADMIN"]["en"]
-    assert "Le dossier d'install de l'app est /var/www/manifestv2_app" in m["doc"]["ADMIN"]["fr"]
+    assert (
+        "Le dossier d'install de l'app est /var/www/manifestv2_app"
+        in m["doc"]["ADMIN"]["fr"]
+    )
     assert "notifications" in m
-    assert "The app install dir is /var/www/manifestv2_app" in m["notifications"]["post_install"]["main"]["en"]
-    assert "The app id is manifestv2_app" in m["notifications"]["post_install"]["main"]["en"]
-    assert f"The app url is {main_domain}/manifestv2" in m["notifications"]["post_install"]["main"]["en"]
+    assert (
+        "The app install dir is /var/www/manifestv2_app"
+        in m["notifications"]["post_install"]["main"]["en"]
+    )
+    assert (
+        "The app id is manifestv2_app"
+        in m["notifications"]["post_install"]["main"]["en"]
+    )
+    assert (
+        f"The app url is {main_domain}/manifestv2"
+        in m["notifications"]["post_install"]["main"]["en"]
+    )
 
 
 def test_manifestv2_app_info_preupgrade(monkeypatch):
@@ -281,6 +312,7 @@ def test_manifestv2_app_info_preupgrade(monkeypatch):
     manifest = app_manifest(os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"))
 
     from yunohost.app_catalog import _load_apps_catalog as original_load_apps_catalog
+
     def custom_load_apps_catalog(*args, **kwargs):
 
         res = original_load_apps_catalog(*args, **kwargs)
@@ -295,6 +327,7 @@ def test_manifestv2_app_info_preupgrade(monkeypatch):
         res["apps"]["manifestv2_app"]["manifest"]["version"] = "99999~ynh1"
 
         return res
+
     monkeypatch.setattr("yunohost.app._load_apps_catalog", custom_load_apps_catalog)
 
     main_domain = _get_maindomain()
@@ -306,8 +339,11 @@ def test_manifestv2_app_info_preupgrade(monkeypatch):
     # FIXME : as I write this test, I realize that this implies the catalog API
     # does provide the notifications, which means the list builder script
     # should parse the files in the original app repo, possibly with proper i18n etc
-    assert "This is a dummy disclaimer to display prior to any upgrade" \
-            in i["from_catalog"]["manifest"]["notifications"]["pre_upgrade"]["main"]["en"]
+    assert (
+        "This is a dummy disclaimer to display prior to any upgrade"
+        in i["from_catalog"]["manifest"]["notifications"]["pre_upgrade"]["main"]["en"]
+    )
+
 
 def test_app_from_catalog():
     main_domain = _get_maindomain()

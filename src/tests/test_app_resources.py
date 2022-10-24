@@ -5,7 +5,11 @@ from moulinette.utils.process import check_output
 
 from yunohost.app import app_setting
 from yunohost.domain import _get_maindomain
-from yunohost.utils.resources import AppResource, AppResourceManager, AppResourceClassesByType
+from yunohost.utils.resources import (
+    AppResource,
+    AppResourceManager,
+    AppResourceClassesByType,
+)
 from yunohost.permission import user_permission_list, permission_delete
 
 dummyfile = "/tmp/dummyappresource-testapp"
@@ -70,7 +74,9 @@ def test_provision_dummy():
     wanted = {"resources": {"dummy": {}}}
 
     assert not os.path.exists(dummyfile)
-    AppResourceManager("testapp", current=current, wanted=wanted).apply(rollback_if_failure=False)
+    AppResourceManager("testapp", current=current, wanted=wanted).apply(
+        rollback_if_failure=False
+    )
     assert open(dummyfile).read().strip() == "foo"
 
 
@@ -82,7 +88,9 @@ def test_deprovision_dummy():
     open(dummyfile, "w").write("foo")
 
     assert open(dummyfile).read().strip() == "foo"
-    AppResourceManager("testapp", current=current, wanted=wanted).apply(rollback_if_failure=False)
+    AppResourceManager("testapp", current=current, wanted=wanted).apply(
+        rollback_if_failure=False
+    )
     assert not os.path.exists(dummyfile)
 
 
@@ -92,7 +100,9 @@ def test_provision_dummy_nondefaultvalue():
     wanted = {"resources": {"dummy": {"content": "bar"}}}
 
     assert not os.path.exists(dummyfile)
-    AppResourceManager("testapp", current=current, wanted=wanted).apply(rollback_if_failure=False)
+    AppResourceManager("testapp", current=current, wanted=wanted).apply(
+        rollback_if_failure=False
+    )
     assert open(dummyfile).read().strip() == "bar"
 
 
@@ -104,7 +114,9 @@ def test_update_dummy():
     open(dummyfile, "w").write("foo")
 
     assert open(dummyfile).read().strip() == "foo"
-    AppResourceManager("testapp", current=current, wanted=wanted).apply(rollback_if_failure=False)
+    AppResourceManager("testapp", current=current, wanted=wanted).apply(
+        rollback_if_failure=False
+    )
     assert open(dummyfile).read().strip() == "bar"
 
 
@@ -117,7 +129,9 @@ def test_update_dummy_fail():
 
     assert open(dummyfile).read().strip() == "foo"
     with pytest.raises(Exception):
-        AppResourceManager("testapp", current=current, wanted=wanted).apply(rollback_if_failure=False)
+        AppResourceManager("testapp", current=current, wanted=wanted).apply(
+            rollback_if_failure=False
+        )
     assert open(dummyfile).read().strip() == "forbiddenvalue"
 
 
@@ -130,7 +144,9 @@ def test_update_dummy_failwithrollback():
 
     assert open(dummyfile).read().strip() == "foo"
     with pytest.raises(Exception):
-        AppResourceManager("testapp", current=current, wanted=wanted).apply(rollback_if_failure=True)
+        AppResourceManager("testapp", current=current, wanted=wanted).apply(
+            rollback_if_failure=True
+        )
     assert open(dummyfile).read().strip() == "foo"
 
 
@@ -222,7 +238,7 @@ def test_resource_data_dir():
     r(conf, "testapp").deprovision()
 
     # FIXME : implement and check purge option
-    #assert not os.path.exists("/home/yunohost.app/testapp")
+    # assert not os.path.exists("/home/yunohost.app/testapp")
 
 
 def test_resource_ports():
@@ -296,7 +312,7 @@ def test_resource_apt():
                 "key": "https://dl.yarnpkg.com/debian/pubkey.gpg",
                 "packages": "yarn",
             }
-        }
+        },
     }
 
     assert os.system("dpkg --list | grep -q 'ii *nyancat '") != 0
@@ -310,7 +326,9 @@ def test_resource_apt():
     assert os.system("dpkg --list | grep -q 'ii *nyancat '") == 0
     assert os.system("dpkg --list | grep -q 'ii *sl '") == 0
     assert os.system("dpkg --list | grep -q 'ii *yarn '") == 0
-    assert os.system("dpkg --list | grep -q 'ii *lolcat '") != 0  # Lolcat shouldnt be installed yet
+    assert (
+        os.system("dpkg --list | grep -q 'ii *lolcat '") != 0
+    )  # Lolcat shouldnt be installed yet
     assert os.system("dpkg --list | grep -q 'ii *testapp-ynh-deps '") == 0
 
     conf["packages"] += ", lolcat"
@@ -359,10 +377,7 @@ def test_resource_permissions():
     assert res["testapp.main"]["url"] == "/"
     assert "testapp.admin" not in res
 
-    conf["admin"] = {
-        "url": "/admin",
-        "allowed": ""
-    }
+    conf["admin"] = {"url": "/admin", "allowed": ""}
 
     r(conf, "testapp", manager).provision_or_update()
 

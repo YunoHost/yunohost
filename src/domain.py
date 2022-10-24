@@ -54,7 +54,10 @@ DOMAIN_CACHE_DURATION = 15
 def _get_maindomain():
     global main_domain_cache
     global main_domain_cache_timestamp
-    if not main_domain_cache or abs(main_domain_cache_timestamp - time.time()) > DOMAIN_CACHE_DURATION:
+    if (
+        not main_domain_cache
+        or abs(main_domain_cache_timestamp - time.time()) > DOMAIN_CACHE_DURATION
+    ):
         with open("/etc/yunohost/current_host", "r") as f:
             main_domain_cache = f.readline().rstrip()
         main_domain_cache_timestamp = time.time()
@@ -65,7 +68,10 @@ def _get_maindomain():
 def _get_domains(exclude_subdomains=False):
     global domain_list_cache
     global domain_list_cache_timestamp
-    if not domain_list_cache or abs(domain_list_cache_timestamp - time.time()) > DOMAIN_CACHE_DURATION:
+    if (
+        not domain_list_cache
+        or abs(domain_list_cache_timestamp - time.time()) > DOMAIN_CACHE_DURATION
+    ):
         from yunohost.utils.ldap import _get_ldap_interface
 
         ldap = _get_ldap_interface()
@@ -86,9 +92,7 @@ def _get_domains(exclude_subdomains=False):
 
     if exclude_subdomains:
         return [
-            domain
-            for domain in domain_list_cache
-            if not _get_parent_domain_of(domain)
+            domain for domain in domain_list_cache if not _get_parent_domain_of(domain)
         ]
 
     return domain_list_cache
@@ -562,7 +566,10 @@ class DomainConfigPanel(ConfigPanel):
         if not filter_key or filter_key[0] == "cert":
 
             from yunohost.certificate import certificate_status
-            status = certificate_status([self.entity], full=True)["certificates"][self.entity]
+
+            status = certificate_status([self.entity], full=True)["certificates"][
+                self.entity
+            ]
 
             toml["cert"]["cert"]["cert_summary"]["style"] = status["style"]
 
@@ -571,7 +578,9 @@ class DomainConfigPanel(ConfigPanel):
             # i18n: domain_config_cert_summary_abouttoexpire
             # i18n: domain_config_cert_summary_ok
             # i18n: domain_config_cert_summary_letsencrypt
-            toml["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(f"domain_config_cert_summary_{status['summary']}")
+            toml["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(
+                f"domain_config_cert_summary_{status['summary']}"
+            )
 
             # Other specific strings used in config panels
             # i18n: domain_config_cert_renew_help

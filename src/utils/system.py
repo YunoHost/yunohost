@@ -55,7 +55,9 @@ def space_used_by_directory(dirpath, follow_symlinks=True):
         return int(du_output.split()[0])
 
     stat = os.statvfs(dirpath)
-    return stat.f_frsize * stat.f_blocks  # FIXME : this doesnt do what the function name suggest this does ...
+    return (
+        stat.f_frsize * stat.f_blocks
+    )  # FIXME : this doesnt do what the function name suggest this does ...
 
 
 def human_to_binary(size: str) -> int:
@@ -69,7 +71,9 @@ def human_to_binary(size: str) -> int:
     size = size[:-1]
 
     if suffix not in symbols:
-        raise YunohostError(f"Invalid size suffix '{suffix}', expected one of {symbols}")
+        raise YunohostError(
+            f"Invalid size suffix '{suffix}', expected one of {symbols}"
+        )
 
     try:
         size_ = float(size)
@@ -97,6 +101,7 @@ def binary_to_human(n: int) -> str:
 def ram_available():
 
     import psutil
+
     return (psutil.virtual_memory().available, psutil.swap_memory().free)
 
 

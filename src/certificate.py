@@ -94,11 +94,10 @@ def certificate_status(domains, full=False):
                 _check_domain_is_ready_for_ACME(domain)
                 status["ACME_eligible"] = True
             except Exception as e:
-                if e.key == 'certmanager_domain_not_diagnosed_yet':
-                    status["ACME_eligible"] = None   # = unknown status
+                if e.key == "certmanager_domain_not_diagnosed_yet":
+                    status["ACME_eligible"] = None  # = unknown status
                 else:
                     status["ACME_eligible"] = False
-
 
         del status["domain"]
         certificates[domain] = status
@@ -210,11 +209,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
         # Check new status indicate a recently created self-signed certificate
         status = _get_status(domain)
 
-        if (
-            status
-            and status["CA_type"] == "selfsigned"
-            and status["validity"] > 3648
-        ):
+        if status and status["CA_type"] == "selfsigned" and status["validity"] > 3648:
             logger.success(
                 m18n.n("certmanager_cert_install_success_selfsigned", domain=domain)
             )
@@ -229,7 +224,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
     if failed_cert_install:
         raise YunohostError(
             "certmanager_cert_install_failed_selfsigned",
-            domains=",".join(failed_cert_install)
+            domains=",".join(failed_cert_install),
         )
 
 
@@ -300,8 +295,7 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
 
     if failed_cert_install:
         raise YunohostError(
-            "certmanager_cert_install_failed",
-            domains=",".join(failed_cert_install)
+            "certmanager_cert_install_failed", domains=",".join(failed_cert_install)
         )
 
 
@@ -426,9 +420,9 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
 
     if failed_cert_install:
         raise YunohostError(
-            "certmanager_cert_renew_failed",
-            domains=",".join(failed_cert_install)
+            "certmanager_cert_renew_failed", domains=",".join(failed_cert_install)
         )
+
 
 #
 # Back-end stuff                                                            #
@@ -658,10 +652,14 @@ def _get_status(domain):
     # FIXME: is the .ca.cnf one actually used anywhere ? x_x
     conf = os.path.join(SSL_DIR, "openssl.ca.cnf")
     if os.path.exists(conf):
-        self_signed_issuers.append(check_output(f"grep commonName_default {conf}").split()[-1])
+        self_signed_issuers.append(
+            check_output(f"grep commonName_default {conf}").split()[-1]
+        )
     conf = os.path.join(SSL_DIR, "openssl.cnf")
     if os.path.exists(conf):
-        self_signed_issuers.append(check_output(f"grep commonName_default {conf}").split()[-1])
+        self_signed_issuers.append(
+            check_output(f"grep commonName_default {conf}").split()[-1]
+        )
 
     if cert_issuer in self_signed_issuers:
         CA_type = "selfsigned"

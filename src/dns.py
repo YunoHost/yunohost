@@ -506,7 +506,9 @@ def _get_registrar_config_section(domain):
     from lexicon.providers.auto import _relevant_provider_for_domain
 
     registrar_infos = {
-        "name": m18n.n('registrar_infos'),   # This is meant to name the config panel section, for proper display in the webadmin
+        "name": m18n.n(
+            "registrar_infos"
+        ),  # This is meant to name the config panel section, for proper display in the webadmin
     }
 
     dns_zone = _get_dns_zone_for_domain(domain)

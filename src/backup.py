@@ -33,7 +33,15 @@ from packaging import version
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, mkdir, write_to_yaml, read_yaml, rm, chown, chmod
+from moulinette.utils.filesystem import (
+    read_file,
+    mkdir,
+    write_to_yaml,
+    read_yaml,
+    rm,
+    chown,
+    chmod,
+)
 from moulinette.utils.process import check_output
 
 import yunohost.domain
@@ -1509,8 +1517,11 @@ class RestoreManager:
         manifest = _get_manifest_of_app(app_settings_in_archive)
         if manifest["packaging_format"] >= 2:
             from yunohost.utils.resources import AppResourceManager
+
             try:
-                AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(rollback_if_failure=True)
+                AppResourceManager(
+                    app_instance_name, wanted=manifest, current={}
+                ).apply(rollback_if_failure=True)
             except Exception:
                 # FIXME : improve error handling ....
                 raise
@@ -1838,7 +1849,10 @@ class BackupMethod:
         # to mounting error
 
         # Compute size to copy
-        size = sum(space_used_by_directory(path["source"], follow_symlinks=False) for path in paths_needed_to_be_copied)
+        size = sum(
+            space_used_by_directory(path["source"], follow_symlinks=False)
+            for path in paths_needed_to_be_copied
+        )
         size /= 1024 * 1024  # Convert bytes to megabytes
 
         # Ask confirmation for copying

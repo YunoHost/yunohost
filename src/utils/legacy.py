@@ -99,11 +99,13 @@ LEGACY_SETTINGS = {
     "ssowat.panel_overlay.enabled": "misc.portal.ssowat_panel_overlay_enabled",
     "security.webadmin.allowlist.enabled": "security.webadmin.webadmin_allowlist_enabled",
     "security.webadmin.allowlist": "security.webadmin.webadmin_allowlist",
-    "security.experimental.enabled": "security.experimental.security_experimental_enabled"
+    "security.experimental.enabled": "security.experimental.security_experimental_enabled",
 }
+
 
 def translate_legacy_settings_to_configpanel_settings(settings):
     return LEGACY_SETTINGS.get(settings, settings)
+
 
 def legacy_permission_label(app, permission_type):
     return LEGACY_PERMISSION_LABEL.get(

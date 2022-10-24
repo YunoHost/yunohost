@@ -117,7 +117,9 @@ class AppResourceManager:
                 yield ("provision", name, None, wanted_resource)
             else:
                 infos_ = self.current["resources"][name]
-                current_resource = AppResourceClassesByType[name](infos_, self.app, self)
+                current_resource = AppResourceClassesByType[name](
+                    infos_, self.app, self
+                )
                 yield ("update", name, current_resource, wanted_resource)
 
 
@@ -143,24 +145,32 @@ class AppResource:
 
     def get_setting(self, key):
         from yunohost.app import app_setting
+
         return app_setting(self.app, key)
 
     def set_setting(self, key, value):
         from yunohost.app import app_setting
+
         app_setting(self.app, key, value=value)
 
     def delete_setting(self, key):
         from yunohost.app import app_setting
+
         app_setting(self.app, key, delete=True)
 
     def _run_script(self, action, script, env={}, user="root"):
 
-        from yunohost.app import _make_tmp_workdir_for_app, _make_environment_for_app_script
+        from yunohost.app import (
+            _make_tmp_workdir_for_app,
+            _make_environment_for_app_script,
+        )
         from yunohost.hook import hook_exec_with_script_debug_if_failure
 
         tmpdir = _make_tmp_workdir_for_app(app=self.app)
 
-        env_ = _make_environment_for_app_script(self.app, workdir=tmpdir, action=f"{action}_{self.type}")
+        env_ = _make_environment_for_app_script(
+            self.app, workdir=tmpdir, action=f"{action}_{self.type}"
+        )
         env_.update(env)
 
         script_path = f"{tmpdir}/{action}_{self.type}"
@@ -179,7 +189,9 @@ ynh_abort_if_errors
             # FIXME ? : this is an ugly hack :(
             operation_logger = OperationLogger._instances[-1]
         else:
-            operation_logger = OperationLogger("resource_snippet", [("app", self.app)], env=env_)
+            operation_logger = OperationLogger(
+                "resource_snippet", [("app", self.app)], env=env_
+            )
             operation_logger.start()
 
         try:
@@ -191,7 +203,7 @@ ynh_abort_if_errors
                 env=env_,
                 operation_logger=operation_logger,
                 error_message_if_script_failed="An error occured inside the script snippet",
-                error_message_if_failed=lambda e: f"{action} failed for {self.type} : {e}"
+                error_message_if_failed=lambda e: f"{action} failed for {self.type} : {e}",
             )
         finally:
             if call_failed:
@@ -204,7 +216,7 @@ ynh_abort_if_errors
                 # dunno if we want to do this here or manage it elsewhere
                 pass
 
-        #print(ret)
+        # print(ret)
 
 
 class PermissionsResource(AppResource):
@@ -253,8 +265,7 @@ class PermissionsResource(AppResource):
     type = "permissions"
     priority = 80
 
-    default_properties: Dict[str, Any] = {
-    }
+    default_properties: Dict[str, Any] = {}
 
     default_perm_properties: Dict[str, Any] = {
         "url": None,
@@ -277,16 +288,21 @@ class PermissionsResource(AppResource):
             if properties[perm]["show_tile"] is None:
                 properties[perm]["show_tile"] = bool(properties[perm]["url"])
 
-        if isinstance(properties["main"]["url"], str) and properties["main"]["url"] != "/":
-            raise YunohostError("URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app")
+        if (
+            isinstance(properties["main"]["url"], str)
+            and properties["main"]["url"] != "/"
+        ):
+            raise YunohostError(
+                "URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app"
+            )
 
         super().__init__({"permissions": properties}, *args, **kwargs)
 
-    def provision_or_update(self, context: Dict={}):
+    def provision_or_update(self, context: Dict = {}):
 
         from yunohost.permission import (
             permission_create,
-            #permission_url,
+            # permission_url,
             permission_delete,
             user_permission_list,
             user_permission_update,
@@ -296,7 +312,9 @@ class PermissionsResource(AppResource):
         # Delete legacy is_public setting if not already done
         self.delete_setting("is_public")
 
-        existing_perms = user_permission_list(short=True, apps=[self.app])["permissions"]
+        existing_perms = user_permission_list(short=True, apps=[self.app])[
+            "permissions"
+        ]
         for perm in existing_perms:
             if perm.split(".")[1] not in self.permissions.keys():
                 permission_delete(perm, force=True, sync_perm=False)
@@ -306,7 +324,11 @@ class PermissionsResource(AppResource):
                 # Use the 'allowed' key from the manifest,
                 # or use the 'init_{perm}_permission' from the install questions
                 # which is temporarily saved as a setting as an ugly hack to pass the info to this piece of code...
-                init_allowed = infos["allowed"] or self.get_setting(f"init_{perm}_permission") or []
+                init_allowed = (
+                    infos["allowed"]
+                    or self.get_setting(f"init_{perm}_permission")
+                    or []
+                )
                 permission_create(
                     f"{self.app}.{perm}",
                     allowed=init_allowed,
@@ -323,17 +345,17 @@ class PermissionsResource(AppResource):
                     f"{self.app}.{perm}",
                     show_tile=infos["show_tile"],
                     protected=infos["protected"],
-                    sync_perm=False
+                    sync_perm=False,
                 )
             else:
                 pass
                 # FIXME : current implementation of permission_url is hell for
                 # easy declarativeness of additional_urls >_> ...
-                #permission_url(f"{self.app}.{perm}", url=infos["url"], auth_header=infos["auth_header"], sync_perm=False)
+                # permission_url(f"{self.app}.{perm}", url=infos["url"], auth_header=infos["auth_header"], sync_perm=False)
 
         permission_sync_to_user()
 
-    def deprovision(self, context: Dict={}):
+    def deprovision(self, context: Dict = {}):
 
         from yunohost.permission import (
             permission_delete,
@@ -341,7 +363,9 @@ class PermissionsResource(AppResource):
             permission_sync_to_user,
         )
 
-        existing_perms = user_permission_list(short=True, apps=[self.app])["permissions"]
+        existing_perms = user_permission_list(short=True, apps=[self.app])[
+            "permissions"
+        ]
         for perm in existing_perms:
             permission_delete(perm, force=True, sync_perm=False)
 
@@ -380,10 +404,7 @@ class SystemuserAppResource(AppResource):
     type = "system_user"
     priority = 20
 
-    default_properties: Dict[str, Any] = {
-        "allow_ssh": False,
-        "allow_sftp": False
-    }
+    default_properties: Dict[str, Any] = {"allow_ssh": False, "allow_sftp": False}
 
     # FIXME : wat do regarding ssl-cert, multimedia
     # FIXME : wat do about home dir
@@ -391,7 +412,7 @@ class SystemuserAppResource(AppResource):
     allow_ssh: bool = False
     allow_sftp: bool = False
 
-    def provision_or_update(self, context: Dict={}):
+    def provision_or_update(self, context: Dict = {}):
 
         # FIXME : validate that no yunohost user exists with that name?
         # and/or that no system user exists during install ?
@@ -403,7 +424,9 @@ class SystemuserAppResource(AppResource):
             assert ret == 0, f"useradd command failed with exit code {ret}"
 
         if not check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
-            raise YunohostError(f"Failed to create system user for {self.app}", raw_msg=True)
+            raise YunohostError(
+                f"Failed to create system user for {self.app}", raw_msg=True
+            )
 
         groups = set(check_output(f"groups {self.app}").strip().split()[2:])
 
@@ -419,7 +442,7 @@ class SystemuserAppResource(AppResource):
 
         os.system(f"usermod -G {','.join(groups)} {self.app}")
 
-    def deprovision(self, context: Dict={}):
+    def deprovision(self, context: Dict = {}):
 
         if check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
             os.system(f"deluser {self.app} >/dev/null")
@@ -485,13 +508,15 @@ class InstalldirAppResource(AppResource):
 
     # FIXME: change default dir to /opt/stuff if app ain't a webapp ...
 
-    def provision_or_update(self, context: Dict={}):
+    def provision_or_update(self, context: Dict = {}):
 
-        assert self.dir.strip() # Be paranoid about self.dir being empty...
+        assert self.dir.strip()  # Be paranoid about self.dir being empty...
         assert self.owner.strip()
         assert self.group.strip()
 
-        current_install_dir = self.get_setting("install_dir") or self.get_setting("final_path")
+        current_install_dir = self.get_setting("install_dir") or self.get_setting(
+            "final_path"
+        )
 
         # If during install, /var/www/$app already exists, assume that it's okay to remove and recreate it
         # FIXME : is this the right thing to do ?
@@ -504,15 +529,25 @@ class InstalldirAppResource(AppResource):
             # Maybe a middle ground could be to compute the size, check that it's not too crazy (eg > 1G idk),
             # and check for available space on the destination
             if current_install_dir and os.path.isdir(current_install_dir):
-                logger.warning(f"Moving {current_install_dir} to {self.dir} ... (this may take a while)")
+                logger.warning(
+                    f"Moving {current_install_dir} to {self.dir} ... (this may take a while)"
+                )
                 shutil.move(current_install_dir, self.dir)
             else:
                 mkdir(self.dir)
 
         owner, owner_perm = self.owner.split(":")
         group, group_perm = self.group.split(":")
-        owner_perm_octal = (4 if "r" in owner_perm else 0) + (2 if "w" in owner_perm else 0) + (1 if "x" in owner_perm else 0)
-        group_perm_octal = (4 if "r" in group_perm else 0) + (2 if "w" in group_perm else 0) + (1 if "x" in group_perm else 0)
+        owner_perm_octal = (
+            (4 if "r" in owner_perm else 0)
+            + (2 if "w" in owner_perm else 0)
+            + (1 if "x" in owner_perm else 0)
+        )
+        group_perm_octal = (
+            (4 if "r" in group_perm else 0)
+            + (2 if "w" in group_perm else 0)
+            + (1 if "x" in group_perm else 0)
+        )
 
         perm_octal = 0o100 * owner_perm_octal + 0o010 * group_perm_octal
 
@@ -523,9 +558,9 @@ class InstalldirAppResource(AppResource):
         self.set_setting("install_dir", self.dir)
         self.delete_setting("final_path")  # Legacy
 
-    def deprovision(self, context: Dict={}):
+    def deprovision(self, context: Dict = {}):
 
-        assert self.dir.strip() # Be paranoid about self.dir being empty...
+        assert self.dir.strip()  # Be paranoid about self.dir being empty...
         assert self.owner.strip()
         assert self.group.strip()
 
@@ -585,9 +620,9 @@ class DatadirAppResource(AppResource):
     owner: str = ""
     group: str = ""
 
-    def provision_or_update(self, context: Dict={}):
+    def provision_or_update(self, context: Dict = {}):
 
-        assert self.dir.strip() # Be paranoid about self.dir being empty...
+        assert self.dir.strip()  # Be paranoid about self.dir being empty...
         assert self.owner.strip()
         assert self.group.strip()
 
@@ -604,8 +639,16 @@ class DatadirAppResource(AppResource):
 
         owner, owner_perm = self.owner.split(":")
         group, group_perm = self.group.split(":")
-        owner_perm_octal = (4 if "r" in owner_perm else 0) + (2 if "w" in owner_perm else 0) + (1 if "x" in owner_perm else 0)
-        group_perm_octal = (4 if "r" in group_perm else 0) + (2 if "w" in group_perm else 0) + (1 if "x" in group_perm else 0)
+        owner_perm_octal = (
+            (4 if "r" in owner_perm else 0)
+            + (2 if "w" in owner_perm else 0)
+            + (1 if "x" in owner_perm else 0)
+        )
+        group_perm_octal = (
+            (4 if "r" in group_perm else 0)
+            + (2 if "w" in group_perm else 0)
+            + (1 if "x" in group_perm else 0)
+        )
         perm_octal = 0o100 * owner_perm_octal + 0o010 * group_perm_octal
 
         chmod(self.dir, perm_octal)
@@ -614,15 +657,15 @@ class DatadirAppResource(AppResource):
         self.set_setting("data_dir", self.dir)
         self.delete_setting("datadir")  # Legacy
 
-    def deprovision(self, context: Dict={}):
+    def deprovision(self, context: Dict = {}):
 
-        assert self.dir.strip() # Be paranoid about self.dir being empty...
+        assert self.dir.strip()  # Be paranoid about self.dir being empty...
         assert self.owner.strip()
         assert self.group.strip()
 
         # FIXME: This should rm the datadir only if purge is enabled
         pass
-        #if os.path.isdir(self.dir):
+        # if os.path.isdir(self.dir):
         #    rm(self.dir, recursive=True)
         # FIXME : in fact we should delete settings to be consistent
 
@@ -661,10 +704,7 @@ class AptDependenciesAppResource(AppResource):
     type = "apt"
     priority = 50
 
-    default_properties: Dict[str, Any] = {
-        "packages": [],
-        "extras": {}
-    }
+    default_properties: Dict[str, Any] = {"packages": [], "extras": {}}
 
     packages: List = []
     extras: Dict[str, Dict[str, str]] = {}
@@ -672,21 +712,27 @@ class AptDependenciesAppResource(AppResource):
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
 
         for key, values in properties.get("extras", {}).items():
-            if not all(isinstance(values.get(k), str) for k in ["repo", "key", "packages"]):
-                raise YunohostError("In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' and 'packages' defined and be strings")
+            if not all(
+                isinstance(values.get(k), str) for k in ["repo", "key", "packages"]
+            ):
+                raise YunohostError(
+                    "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' and 'packages' defined and be strings"
+                )
 
         super().__init__(properties, *args, **kwargs)
 
-    def provision_or_update(self, context: Dict={}):
+    def provision_or_update(self, context: Dict = {}):
 
         script = [f"ynh_install_app_dependencies {self.packages}"]
         for repo, values in self.extras.items():
-            script += [f"ynh_install_extra_app_dependencies --repo='{values['repo']}' --key='{values['key']}' --package='{values['packages']}'"]
+            script += [
+                f"ynh_install_extra_app_dependencies --repo='{values['repo']}' --key='{values['key']}' --package='{values['packages']}'"
+            ]
             # FIXME : we're feeding the raw value of values['packages'] to the helper .. if we want to be consistent, may they should be comma-separated, though in the majority of cases, only a single package is installed from an extra repo..
 
-        self._run_script("provision_or_update", '\n'.join(script))
+        self._run_script("provision_or_update", "\n".join(script))
 
-    def deprovision(self, context: Dict={}):
+    def deprovision(self, context: Dict = {}):
 
         self._run_script("deprovision", "ynh_remove_app_dependencies")
 
@@ -727,20 +773,19 @@ class PortsResource(AppResource):
     """
 
     # Notes for future?
-    #deep_clean  -> ?
-    #backup -> nothing (backup port setting)
-    #restore -> nothing (restore port setting)
+    # deep_clean  -> ?
+    # backup -> nothing (backup port setting)
+    # restore -> nothing (restore port setting)
 
     type = "ports"
     priority = 70
 
-    default_properties: Dict[str, Any] = {
-    }
+    default_properties: Dict[str, Any] = {}
 
     default_port_properties = {
         "default": None,
-        "exposed": False,   # or True(="Both"), "TCP", "UDP"   # FIXME : implement logic for exposed port (allow/disallow in firewall ?)
-        "fixed": False,     # FIXME: implement logic. Corresponding to wether or not the port is "fixed" or any random port is ok
+        "exposed": False,  # or True(="Both"), "TCP", "UDP"   # FIXME : implement logic for exposed port (allow/disallow in firewall ?)
+        "fixed": False,  # FIXME: implement logic. Corresponding to wether or not the port is "fixed" or any random port is ok
     }
 
     ports: Dict[str, Dict[str, Any]]
@@ -762,12 +807,15 @@ class PortsResource(AppResource):
     def _port_is_used(self, port):
 
         # FIXME : this could be less brutal than two os.system ...
-        cmd1 = "ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ':%s$'" % port
+        cmd1 = (
+            "ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ':%s$'"
+            % port
+        )
         # This second command is mean to cover (most) case where an app is using a port yet ain't currently using it for some reason (typically service ain't up)
         cmd2 = f"grep --quiet \"port: '{port}'\" /etc/yunohost/apps/*/settings.yml"
         return os.system(cmd1) == 0 and os.system(cmd2) == 0
 
-    def provision_or_update(self, context: Dict={}):
+    def provision_or_update(self, context: Dict = {}):
 
         for name, infos in self.ports.items():
 
@@ -789,7 +837,7 @@ class PortsResource(AppResource):
 
             self.set_setting(setting_name, port_value)
 
-    def deprovision(self, context: Dict={}):
+    def deprovision(self, context: Dict = {}):
 
         for name, infos in self.ports.items():
             setting_name = f"port_{name}" if name != "main" else "port"
@@ -835,13 +883,18 @@ class DatabaseAppResource(AppResource):
     priority = 90
 
     default_properties: Dict[str, Any] = {
-        "type": None,   # FIXME: eeeeeeeh is this really a good idea considering 'type' is supposed to be the resource type x_x
+        "type": None,  # FIXME: eeeeeeeh is this really a good idea considering 'type' is supposed to be the resource type x_x
     }
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
 
-        if "type" not in properties or properties["type"] not in ["mysql", "postgresql"]:
-            raise YunohostError("Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources")
+        if "type" not in properties or properties["type"] not in [
+            "mysql",
+            "postgresql",
+        ]:
+            raise YunohostError(
+                "Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources"
+            )
 
         super().__init__(properties, *args, **kwargs)
 
@@ -850,14 +903,19 @@ class DatabaseAppResource(AppResource):
         if self.type == "mysql":
             return os.system(f"mysqlshow '{db_name}' >/dev/null 2>/dev/null") == 0
         elif self.type == "postgresql":
-            return os.system(f"sudo --login --user=postgres psql -c '' '{db_name}' >/dev/null 2>/dev/null") == 0
+            return (
+                os.system(
+                    f"sudo --login --user=postgres psql -c '' '{db_name}' >/dev/null 2>/dev/null"
+                )
+                == 0
+            )
         else:
             return False
 
-    def provision_or_update(self, context: Dict={}):
+    def provision_or_update(self, context: Dict = {}):
 
         # This is equivalent to ynh_sanitize_dbid
-        db_name = self.app.replace('-', '_').replace('.', '_')
+        db_name = self.app.replace("-", "_").replace(".", "_")
         db_user = db_name
         self.set_setting("db_name", db_name)
         self.set_setting("db_user", db_user)
@@ -867,7 +925,9 @@ class DatabaseAppResource(AppResource):
             db_pwd = self.get_setting("db_pwd")
         else:
             # Legacy setting migration
-            legacypasswordsetting = "psqlpwd" if self.type == "postgresql" else "mysqlpwd"
+            legacypasswordsetting = (
+                "psqlpwd" if self.type == "postgresql" else "mysqlpwd"
+            )
             if self.get_setting(legacypasswordsetting):
                 db_pwd = self.get_setting(legacypasswordsetting)
                 self.delete_setting(legacypasswordsetting)
@@ -875,25 +935,36 @@ class DatabaseAppResource(AppResource):
 
         if not db_pwd:
             from moulinette.utils.text import random_ascii
+
             db_pwd = random_ascii(24)
             self.set_setting("db_pwd", db_pwd)
 
         if not self.db_exists(db_name):
 
             if self.type == "mysql":
-                self._run_script("provision", f"ynh_mysql_create_db '{db_name}' '{db_user}' '{db_pwd}'")
+                self._run_script(
+                    "provision",
+                    f"ynh_mysql_create_db '{db_name}' '{db_user}' '{db_pwd}'",
+                )
             elif self.type == "postgresql":
-                self._run_script("provision", f"ynh_psql_create_user '{db_user}' '{db_pwd}'; ynh_psql_create_db '{db_name}' '{db_user}'")
+                self._run_script(
+                    "provision",
+                    f"ynh_psql_create_user '{db_user}' '{db_pwd}'; ynh_psql_create_db '{db_name}' '{db_user}'",
+                )
 
-    def deprovision(self, context: Dict={}):
+    def deprovision(self, context: Dict = {}):
 
-        db_name = self.app.replace('-', '_').replace('.', '_')
+        db_name = self.app.replace("-", "_").replace(".", "_")
         db_user = db_name
 
         if self.type == "mysql":
-            self._run_script("deprovision", f"ynh_mysql_remove_db '{db_name}' '{db_user}'")
+            self._run_script(
+                "deprovision", f"ynh_mysql_remove_db '{db_name}' '{db_user}'"
+            )
         elif self.type == "postgresql":
-            self._run_script("deprovision", f"ynh_psql_remove_db '{db_name}' '{db_user}'")
+            self._run_script(
+                "deprovision", f"ynh_psql_remove_db '{db_name}' '{db_user}'"
+            )
 
         self.delete_setting("db_name")
         self.delete_setting("db_user")

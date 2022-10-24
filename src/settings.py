@@ -147,6 +147,7 @@ class SettingsConfigPanel(ConfigPanel):
                 raise YunohostValidationError("password_confirmation_not_the_same")
 
             from yunohost.tools import tools_rootpw
+
             tools_rootpw(root_password, check_strength=True)
 
         super()._apply()
