@@ -147,6 +147,10 @@ name = "Other"
     
     [misc.backup]
     name = "Backup"
+        [misc.backup.backup_default_repositories]
+        type = "tags"
+        default = ["local-borg"]
+        
         [misc.backup.backup_compress_tar_archives]
         type = "boolean"
         default = false

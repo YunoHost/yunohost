@@ -40,6 +40,7 @@ from moulinette.utils.network import download_text
 from datetime import timedelta, datetime
 
 import yunohost.repositories
+from yunohost.settings import settings_get
 from yunohost.utils.config import ConfigPanel
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import disk_usage, binary_to_human
@@ -114,7 +115,8 @@ class BackupRepository(ConfigPanel):
         return full_repositories
 
     def __init__(self, entity, config_path=None, save_path=None, creation=False):
-
+        if self.entity is None:
+            self.entity = settings_get("misc.backup.backup_default_repositories")[0]
         super().__init__(entity, config_path, save_path, creation)
 
         self._load_current_values()

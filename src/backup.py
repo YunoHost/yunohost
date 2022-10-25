@@ -1677,7 +1677,7 @@ def backup_create(
     # Add backup repositories
 
     if not repositories:
-        repositories = ["local-borg"]
+        repositories = settings_get("misc.backup.backup_default_repositories")
 
     # Validate there is no archive with the same name
     archives = backup_list(repositories=repositories)
@@ -1775,7 +1775,7 @@ def backup_create(
     }
 
 
-def backup_restore(repository, name, system=[], apps=[], force=False):
+def backup_restore(name, repository=None, system=[], apps=[], force=False):
     """
     Restore from a local backup archive
 
@@ -1797,7 +1797,7 @@ def backup_restore(repository, name, system=[], apps=[], force=False):
         apps = []
 
     if not repository:
-        repository = "local-borg"
+        repository = settings_get("misc.backup.backup_default_repositories")[0]
 
     #
     # Initialize                                                            #
@@ -1860,7 +1860,7 @@ def backup_restore(repository, name, system=[], apps=[], force=False):
     return restore_manager.targets.results
 
 
-def backup_list(repository=None, name=None, repositories=[], with_info=False, human_readable=False):
+def backup_list(name=None, repositories=[], with_info=False, human_readable=False):
     """
     List available local backup archives
 
@@ -1870,10 +1870,11 @@ def backup_list(repository=None, name=None, repositories=[], with_info=False, hu
         human_readable -- Print sizes in human readable format
 
     """
-    if bool(repository) != bool(name):
-        raise YunohostError("backup_list_bad_arguments")
-    elif repository:
-        repo = BackupRepository(repository)
+    if not repositories:
+        repositories = settings_get("misc.backup.backup_default_repositories")[0]
+
+    if name:
+        repo = BackupRepository(repositories[0])
         archive = BackupArchive(repo, name)
         return archive.list(with_info)
 
@@ -1884,23 +1885,27 @@ def backup_list(repository=None, name=None, repositories=[], with_info=False, hu
     }
 
 
-def backup_download(repository, name):
+def backup_download(name, repository=None):
 
+    if not repository:
+        repository = settings_get("misc.backup.backup_default_repositories")[0]
     repo = BackupRepository(repository)
     archive = BackupArchive(repo, name)
 
     return archive.download()
 
 
-def backup_mount(repository, name, path):
+def backup_mount(name, path, repository=None):
 
+    if not repository:
+        repository = settings_get("misc.backup.backup_default_repositories")[0]
     repo = BackupRepository(repository)
     archive = BackupArchive(repo, name)
 
     archive.mount(path)
 
 
-def backup_info(repository, name, with_details=False, human_readable=False):
+def backup_info(name, repository=None, with_details=False, human_readable=False):
     """
     Get info about a local backup archive
 
@@ -1910,13 +1915,15 @@ def backup_info(repository, name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
+    if not repository:
+        repository = settings_get("misc.backup.backup_default_repositories")[0]
     repo = BackupRepository(repository)
     archive = BackupArchive(repo, name)
 
     return archive.info(with_details=with_details, human_readable=human_readable)
 
 
-def backup_delete(repository, archive_name):
+def backup_delete(name, repository=None):
     """
     Delete a backup
 
@@ -1924,9 +1931,11 @@ def backup_delete(repository, archive_name):
         name -- Name of the local backup archive
 
     """
-    for name in archive_name:
+    if not repository:
+        repository = settings_get("misc.backup.backup_default_repositories")[0]
+    for _name in name:
         repo = BackupRepository(repository)
-        BackupArchive(repo, name).delete()
+        BackupArchive(repo, _name).delete()
 
     logger.success(m18n.n("backup_deleted"))
 
@@ -2129,7 +2138,7 @@ Group=root
         self._load_current_values()
         backup_create(
             prefix=f"{self.entity}_",
-            description=self.description,
+            description=self.name,
             repositories=self.repositories,
             system=self.system,
             apps=self.apps
@@ -2152,15 +2161,15 @@ def backup_timer_list(full=False):
     return {"backup_timer": BackupTimer.list(full)}
 
 
-def backup_timer_info(name):
-    return BackupTimer(name).info()
+def backup_timer_info(shortname):
+    return BackupTimer(shortname).info()
 
 
 @is_unit_operation()
 def backup_timer_create(
     operation_logger,
+    shortname=None,
     name=None,
-    description=None,
     repositories=[],
     system=[],
     apps=[],
@@ -2175,8 +2184,10 @@ def backup_timer_create(
     """
     Add a backup timer
     """
+    if not repositories:
+        repositories = settings_get("misc.backup.backup_default_repositories")
     args = {k: v for k, v in locals().items() if v is not None}
-    timer = BackupTimer(name, creation=True)
+    timer = BackupTimer(shortname, creation=True)
     return timer.set(
         operation_logger=args.pop('operation_logger'),
         args=urllib.parse.urlencode(args, doseq=True)
@@ -2191,33 +2202,34 @@ def backup_timer_update(operation_logger, shortname, name=None,
     Update a backup timer
     """
 
-    backup_timer_add(creation=False, **locals())
+    backup_timer_create(creation=False, **locals())
 
 
 @is_unit_operation()
-def backup_timer_remove(operation_logger, name):
+def backup_timer_remove(operation_logger, shortname):
     """
     Remove a backup timer
     """
-    BackupTimer(name).remove()
+    BackupTimer(shortname).remove()
 
 
 @is_unit_operation()
-def backup_timer_start(operation_logger, name, now=False):
+def backup_timer_start(operation_logger, shortname, now=False):
     """
     Start a backup timer
     """
     if now:
-        BackupTimer(name).run()
+        BackupTimer(shortname).run()
 
-    BackupTimer(name).start()
+    BackupTimer(shortname).start()
+
 
 @is_unit_operation()
-def backup_timer_pause(operation_logger, name):
+def backup_timer_pause(operation_logger, shortname):
     """
     Pause a backup timer
     """
-    BackupTimer(name).stop()
+    BackupTimer(shortname).stop()
 
 
 #
