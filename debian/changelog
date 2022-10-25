@@ -1,3 +1,21 @@
+yunohost (11.1.0) testing; urgency=low
+
+  - apps: New 'v2' packaging format ([#1289](https://github.com/yunohost/yunohost/pull/1289))
+  - helpers: Upgrade n to version 9.0.0 ([#1477](https://github.com/yunohost/yunohost/pull/1477))
+  - helpers: Support extracting source from docker images in ynh_setup_source ([#1505](https://github.com/yunohost/yunohost/pull/1505))
+  - configpanels: Refactor global settings the new config panel framework ([#1459](https://github.com/yunohost/yunohost/pull/1459))
+  - configpanels: Add support for actions (= button widget) and apply it to domain cert management ([#1436](https://github.com/YunoHost/yunohost/pull/1436))
+  - admin: Drop the 'admin' user, have 'admins' be a group of Yunohost users instead ([#1408](https://github.com/yunohost/yunohost/pull/1408))
+  - admin: Implement a new 'virtual global setting' to change root password from the global setting config panel ([#1515](https://github.com/yunohost/yunohost/pull/1515))
+  - domains: Be able to "list" domain as a tree structure + add new 'domain_info' API endpoint ([#1434](https://github.com/yunohost/yunohost/pull/1434))
+  - users: Encourage to define a single 'full display name' instead of separate 'firstname/lastname' ([#1516](https://github.com/yunohost/yunohost/pull/1516))
+  - security: Improve most used password check list ([#1517](https://github.com/yunohost/yunohost/pull/1517))
+  - i18n: Translations updated for Slovak
+
+  Thanks to all contributors <3 ! (axolotle, Dante, Jose Riha, Tagadda, yalh76)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 25 Oct 2022 17:57:29 +0200
+
 yunohost (11.0.10.1) stable; urgency=low
 
   - self-upgrade: fix yunohost-api restart which was not triggered @_@ (472e9250)
