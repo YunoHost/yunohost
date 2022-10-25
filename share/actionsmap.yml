@@ -1377,9 +1377,7 @@ backup:
                         --keep-within:
                             help: Keep all archives within this time interval
                             extra:
-                                pattern: &pattern_interval
-                                    - !!str ^\d+[Hdw]$
-                                    - "pattern_interval"
+                                pattern: *pattern_interval
 
                 ### backup_timer_update()
                 update:
@@ -1429,9 +1427,7 @@ backup:
                         --keep-within:
                             help: Keep all archives within this time interval
                             extra:
-                                pattern: &pattern_interval
-                                    - !!str ^\d+[Hdw]$
-                                    - "pattern_interval"
+                                pattern: *pattern_interval
 
                 ### backup_timer_remove()
                 remove:

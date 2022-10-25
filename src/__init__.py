@@ -76,6 +76,7 @@ def check_command_is_valid_before_postinstall(args):
         "tools postinstall",
         "tools versions",
         "tools shell",
+        "backup repository",
         "backup list",
         "backup restore",
         "log display",

@@ -115,8 +115,10 @@ class BackupRepository(ConfigPanel):
         return full_repositories
 
     def __init__(self, entity, config_path=None, save_path=None, creation=False):
-        if self.entity is None:
-            self.entity = settings_get("misc.backup.backup_default_repositories")[0]
+
+        if entity is None:
+            entity = settings_get("misc.backup.backup_default_repositories")[0]
+
         super().__init__(entity, config_path, save_path, creation)
 
         self._load_current_values()
