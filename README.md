@@ -44,7 +44,6 @@ Webadmin ([Yunohost-Admin](https://github.com/YunoHost/yunohost-admin)) | Single
 ## License
 
 As [other components of YunoHost](https://yunohost.org/#/faq_en), this repository is licensed under GNU AGPL v3.
-![image]()
 
 ## They support us <3
 
