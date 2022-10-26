@@ -44,22 +44,22 @@ Webadmin ([Yunohost-Admin](https://github.com/YunoHost/yunohost-admin)) | Single
 ## License
 
 As [other components of YunoHost](https://yunohost.org/#/faq_en), this repository is licensed under GNU AGPL v3.
-
-<h2 align="center">They support us <3</h2>
+![image]()
 
 <div align="center">
-We are thankful for our sponsors providing us with infrastructure and grants!<br/>
-
-[![image](https://user-images.githubusercontent.com/36127788/198086658-9aa83942-51a4-419f-98de-4427499814a6.png)](https://nlnet.nl/)
-<p>This project was funded through the NGI0 PET Fund, a fund established by NLnet with financial support from the European Commission's Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 825310.</p>
-    
-
-[![image](https://user-images.githubusercontent.com/36127788/198085399-cc357b43-f450-4e54-b97b-3f7c603436c4.png)](https://www.ngi.eu/)
-[![image](https://user-images.githubusercontent.com/36127788/198085582-31655039-98cb-4d5f-9260-f0d4d69d02cc.png)](https://www.codelutin.com/)
-[![image](https://user-images.githubusercontent.com/36127788/198085659-b42b3a57-1e8c-4018-aa95-bb8c41d7e6df.png)](https://www.globenet.org/)
-[![image](https://user-images.githubusercontent.com/36127788/198085755-631c600b-7067-48ac-9118-2a3c8d7be01c.png)](https://www.gitoyen.net/)
-[![image](https://user-images.githubusercontent.com/36127788/198085839-ea32798d-3cec-43b5-8da2-e7849562017c.png)](https://tetaneutral.net/)
-[![image](https://user-images.githubusercontent.com/36127788/198085945-2b1ff034-7092-4b35-935f-4d58f656f8cb.png)](https://ldn-fai.net/)
-[![image](https://user-images.githubusercontent.com/36127788/198086008-34bd396a-5146-475b-a5ec-33ab11fe07de.png)](https://www.nbs-system.com/)
-
+<h2>They support us &lt;3<br />
+<small>We are thankful for our sponsors <br/>providing us with infrastructure and grants!</small>
+</h2>
+<p style="margin-left:auto;margin-right:auto;">
+<a style="padding: 5px;" href="https://nlnet.nl"><img src="https://user-images.githubusercontent.com/36127788/198088570-823c40bd-7ac3-44e3-a8ee-e7a9f14b47ac.png" width="150px"/></a>
+<a style="padding: 5px;" href="https://www.ngi.eu"><img src="https://user-images.githubusercontent.com/36127788/198088663-daf587b9-fd09-4c00-aaf2-37c803939c94.png" width="130px"/></a>
+<a style="padding: 5px;" href="https://www.codelutin.com"><img src="https://user-images.githubusercontent.com/36127788/198088737-d37b6674-379c-4be4-9d74-b93b6ad318d1.png" width="100px"/></a>
+</p>
+<p style="margin-left:auto;margin-right:auto;">
+<a style="padding: 5px;" href="https://www.globenet.org"><img src="https://user-images.githubusercontent.com/36127788/198088794-751129ab-737d-4d99-9f35-5e01845dcdfe.png" width="150px"/></a>
+<a style="padding: 5px;" href="https://www.gitoyen.net"><img src="https://user-images.githubusercontent.com/36127788/198088931-f16f4af4-57ae-42e9-8d42-fb3e2d8d7ee3.png" width="150px"/></a>
+<a style="padding: 5px;" href="https://tetaneutral.net"><img src="https://user-images.githubusercontent.com/36127788/198088995-3ad9c34d-9807-4ead-934b-44df97d3c552.png" width="90px"/></a>
+<a style="padding: 5px;" href="https://ldn-fai.net"><img src="https://user-images.githubusercontent.com/36127788/198089086-a4089d51-9173-4081-bd2e-fa1ac3378e49.png" width="120px"/></a>
+<a style="padding: 5px;" href="https://www.nbs-system.com"><img src="https://user-images.githubusercontent.com/36127788/198089161-4cc0b7b7-bf56-4798-892e-a76112497921.png" width="130px"/></a>
+</p>
 </div>
