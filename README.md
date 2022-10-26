@@ -48,8 +48,6 @@ As [other components of YunoHost](https://yunohost.org/#/faq_en), this repositor
 
 ## They support us <3
 
-<div align="center">
-
 We are thankful for our sponsors providing us with infrastructure and grants!
 
 <p style="margin-left:auto;margin-right:auto;">
@@ -66,5 +64,3 @@ We are thankful for our sponsors providing us with infrastructure and grants!
 </p>
 
 This project was funded through the [NGI0 PET](https://nlnet.nl/PET) Fund, a fund established by NLnet with financial support from the European Commission's [Next Generation Internet](https://ngi.eu/) programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 825310. If you're interested, [check out how to apply in this video](https://media.ccc.de/v/36c3-10795-ngi_zero_a_treasure_trove_of_it_innovation)! 
-
-</div>
