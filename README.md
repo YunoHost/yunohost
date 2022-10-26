@@ -50,7 +50,7 @@ As [other components of YunoHost](https://yunohost.org/#/faq_en), this repositor
 <div align="center">
 We are thankful for our sponsors providing us with infrastructure and grants!<br/>
 
-[![image](https://user-images.githubusercontent.com/36127788/198084993-acec5e21-4cbf-427b-bbb5-b8a87a423f10.png)](https://nlnet.nl/)
+[![image](https://user-images.githubusercontent.com/36127788/198086658-9aa83942-51a4-419f-98de-4427499814a6.png)](https://nlnet.nl/)
 <p>This project was funded through the NGI0 PET Fund, a fund established by NLnet with financial support from the European Commission's Next Generation Internet programme, under the aegis of DG Communications Networks, Content and Technology under grant agreement No 825310.</p>
     
 
