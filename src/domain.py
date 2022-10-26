@@ -156,7 +156,7 @@ def domain_info(domain):
         settings = _get_app_settings(app)
         if settings.get("domain") == domain:
             apps.append(
-                {"name": app_info(app)["name"], "id": app, "path": settings["path"]}
+                {"name": app_info(app)["name"], "id": app, "path": settings.get("path", "")}
             )
 
     return {
