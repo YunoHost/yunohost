@@ -47,6 +47,7 @@ As [other components of YunoHost](https://yunohost.org/#/faq_en), this repositor
 ![image]()
 
 <div align="center">
+
 ## They support us <3
                       
 We are thankful for our sponsors providing us with infrastructure and grants!
