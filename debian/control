@@ -27,7 +27,7 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , rspamd, opendkim-tools, postsrsd, procmail, mailutils
  , redis-server
  , acl
- , git, curl, wget, cron, unzip, jq, bc, at
+ , git, curl, wget, cron, unzip, jq, bc, at, procps
  , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping

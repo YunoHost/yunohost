@@ -16,6 +16,12 @@ yunohost (11.1.0) testing; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 25 Oct 2022 17:57:29 +0200
 
+yunohost (11.0.10.2) stable; urgency=low
+
+  - Add another trick to autorestart yunohost-api at the end of the upgrade when ran from the api itself... (6f640c08)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 27 Oct 2022 15:46:26 +0200
+
 yunohost (11.0.10.1) stable; urgency=low
 
   - self-upgrade: fix yunohost-api restart which was not triggered @_@ (472e9250)
