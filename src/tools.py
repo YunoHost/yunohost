@@ -277,6 +277,16 @@ def tools_postinstall(
 def tools_regen_conf(
     names=[], with_diff=False, force=False, dry_run=False, list_pending=False
 ):
+
+    # Make sure the settings are migrated before running the migration,
+    # which may otherwise fuck things up such as the ssh config ...
+    # We do this here because the regen-conf is called before the migration in debian/postinst
+    if os.path.exists("/etc/yunohost/settings.json") and not os.path.exists("/etc/yunohost/settings.yml"):
+        try:
+            tools_migrations_run(["0025_global_settings_to_configpanel"])
+        except Exception as e:
+            logger.error(e)
+
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
