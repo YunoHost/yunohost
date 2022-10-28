@@ -1,0 +1,63 @@
+#!/bin/bash
+set -euo pipefail
+ynh_return() {
+    echo "$1" >>"$YNH_STDRETURN"
+}
+
+work_dir="$2"
+name="$3"
+repo="$4"
+size="$5"
+description="$6"
+
+case "$1" in
+  # Repository actions
+  need_mount)
+    # Set false if your method can itself put files in good place in your archive
+    true
+    ;;
+  install)
+    ynh_return "super: true"
+    ;;
+  update)
+    ;;
+  purge)
+    ynh_return "super: true"
+    ;;
+  list_archives_names)
+    ls $YNH_BACKUP_LOCATION | { grep "^${YNH_BACKUP_PREFIX}" || true; } | sed 's/^/ - "/g' | sed 's/$/"/' >> "$YNH_STDRETURN"
+    ;;
+  backup)
+    cp -a "${work_dir}" "$YNH_BACKUP_LOCATION/$name"
+    ;;
+  delete)
+    source /usr/share/yunohost/helpers
+    ynh_secure_remove "$YNH_BACKUP_LOCATION/$name"
+    ;;
+  list_files)
+    ls $YNH_BACKUP_LOCATION | sed 's/^/ - "/g' | sed 's/$/"/' >>"$YNH_STDRETURN"
+    echo ok
+    ;;
+  download)
+    # Not implemented
+    exit 38
+    ;;
+  extract)
+    IFS=, read -ra extract_paths <<< "$YNH_BACKUP_PATHS"
+    exclude=$(echo "$YNH_BACKUP_EXCLUDE" | sed "s/,/ --exclude /g")
+    for include in "${extract_paths[@]}"
+    do
+	rsync --relative -av "$YNH_BACKUP_LOCATION/./$include" "./" $exclude 
+    done
+    ;;
+  mount)
+    mount --bind "$YNH_BACKUP_LOCATION/$name" "$work_dir"
+    ;;
+  *)
+    echo "hook called with unknown argument \`$1'" >&2
+    exit 1
+    ;;
+esac
+
+exit 0
+
