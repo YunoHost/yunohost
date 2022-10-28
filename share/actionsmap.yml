@@ -1104,6 +1104,10 @@ backup:
                     full: --repositories
                     help: List archives in these repositories
                     nargs: "*"
+                -p:
+                    full: --prefix
+                    help: List only archives starting with this prefix
+                    default: ""
                 -i:
                     full: --with-info
                     help: Show backup information for each archive
@@ -1143,6 +1147,27 @@ backup:
                 -r:
                     full: --repository
                     help: Repository in which we can found the archive
+        
+        ### backup_extract()
+        extract:
+            action_help: Extract data from a backup archive
+            api: POST /backups/<name>/extract
+            arguments:
+                name:
+                    help: Name of the backup archive
+                paths:
+                    help: Path to extract
+                    nargs: "*"
+                -r:
+                    full: --repository
+                    help: Repository in which we can found the archive
+                -t:
+                    full: --target
+                    help: Destination path for extracted data
+                -e:
+                    full: --exclude
+                    help: Paths to exclude
+                    nargs: "*"
         
         ### backup_mount()
         mount:
@@ -1286,7 +1311,6 @@ backup:
                                 pattern: *pattern_backup_repository_shortname
                         --prefix:
                             help: Prefix on which we prune
-                            nargs: "?"
                         -H:
                             full: --keep-hourly
                             help: Number of hourly archives to keep

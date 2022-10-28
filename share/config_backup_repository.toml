@@ -80,7 +80,6 @@ name.en = ""
         choices.borg = "BorgBackup (recommended)"
         choices.tar = "Legacy tar archive mechanism"
         default = "borg"
-        visible = "!is_remote"
         
         [main.main.path]
         type = "path"

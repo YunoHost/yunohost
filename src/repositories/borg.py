@@ -1,23 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2013 Yunohost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import subprocess
 import json
@@ -126,7 +124,6 @@ class BorgBackupRepository(LocalBackupRepository):
         if "quota" in self.future_values and self.future_values["quota"]:
             cmd += ['--storage-quota', self.quota]
 
-        logger.debug(cmd)
         try:
             self._call('init', cmd)
         except YunohostError as e:
@@ -182,11 +179,11 @@ class BorgBackupArchive(BackupArchive):
 
     def backup(self):
         cmd = ['borg', 'create', self.archive_path, './']
-        self.repo._call('backup', cmd, cwd=self.work_dir)
+        self.repository._call('backup', cmd, cwd=self.work_dir)
 
     def delete(self):
         cmd = ['borg', 'delete', '--force', self.archive_path]
-        self.repo._call('delete_archive', cmd)
+        self.repository._call('delete_archive', cmd)
 
     def list(self, with_info=False):
         """ Return a list of archives names
@@ -196,7 +193,7 @@ class BorgBackupArchive(BackupArchive):
         """
         cmd = ["borg", "list", "--json-lines" if with_info else "--short",
                self.archive_path]
-        out = self.repo._call('list_archive', cmd)
+        out = self.repository._call('list_archive', cmd)
 
         if not with_info:
             return out.decode()
@@ -218,7 +215,7 @@ class BorgBackupArchive(BackupArchive):
         cmd = ["borg", "export-tar", self.archive_path, "-"] + paths
         for path in exclude_paths:
             cmd += ['--exclude', path]
-        reader = self.repo._run_borg_command(cmd, stdout=subprocess.PIPE)
+        reader = self.repository._run_borg_command(cmd, stdout=subprocess.PIPE)
 
         # We return a raw bottle HTTPresponse (instead of serializable data like
         # list/dict, ...), which is gonna be picked and used directly by moulinette
@@ -226,15 +223,15 @@ class BorgBackupArchive(BackupArchive):
         response.content_type = "application/x-tar"
         return HTTPResponse(reader, 200)
 
-    def extract(self, paths=[], destination=None, exclude_paths=[]):
+    def extract(self, paths=[], target=None, exclude_paths=[]):
         # TODO exclude_paths not available in actions map
-        paths, destination, exclude_paths = super().extract(paths, destination, exclude_paths)
+        paths, target, exclude_paths = super().extract(paths, target, exclude_paths)
         cmd = ['borg', 'extract', self.archive_path] + paths
         for path in exclude_paths:
             cmd += ['--exclude', path]
-        return self.repo._call('extract_archive', cmd, cwd=destination)
+        return self.repository._call('extract_archive', cmd, cwd=target)
 
     def mount(self, path):
         # FIXME How to be sure the place where we mount is secure ?
         cmd = ['borg', 'mount', self.archive_path, path]
-        self.repo._call('mount_archive', cmd)
+        self.repository._call('mount_archive', cmd)

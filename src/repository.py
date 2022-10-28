@@ -1,28 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2013 Yunohost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
-""" yunohost_repository.py
-
-    Manage backup repositories
-"""
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import json
 import os
 import re
@@ -47,7 +40,10 @@ from yunohost.utils.system import disk_usage, binary_to_human
 from yunohost.utils.network import get_ssh_public_key, SHF_BASE_URL
 
 logger = getActionLogger('yunohost.repository')
+BACKUP_PATH = "/home/yunohost.backup"
+ARCHIVES_PATH = f"{BACKUP_PATH}/archives"
 REPOSITORIES_DIR = '/etc/yunohost/backup/repositories'
+HOOK_METHOD_DIR = '/etc/yunohost/hooks.d/backup_method'
 CACHE_INFO_DIR = "/var/cache/yunohost/repositories/{repository}"
 REPOSITORY_CONFIG_PATH = "/usr/share/yunohost/other/config_repository.toml"
 MB_ALLOWED_TO_ORGANIZE = 10
@@ -159,21 +155,35 @@ class BackupRepository(ConfigPanel):
         logger.debug("SHF running")
         return {'is_shf': True}
 
-    def post_ask__is_remote(self, question):
-        if question.value:
-            self.method = 'borg'
-        self._cast_by_backup_method()
-        return {}
-
     def post_ask__method(self, question):
         if question.value:
-            self.method = question.value
+            self.new_values["method"] = question.value
         self._cast_by_backup_method()
         return {}
 
     # =================================================
     # Config Panel Override
     # =================================================
+    def _get_toml(self):
+
+        toml = super()._get_toml()
+
+        # Add custom methods to the list of choices
+        methods = toml["main"]["main"]["method"]["choices"]
+
+        try:
+            hook_methods = os.listdir(HOOK_METHOD_DIR)
+        except FileNotFoundError:
+            hook_methods = []
+
+        for hook_method in hook_methods:
+            methods[hook_method] = hook_method.replace('-', ' ').replace('_', ' ').capitalize()
+
+        # Change default path
+        toml["main"]["main"]["path"]["default"] = f"{ARCHIVES_PATH}/{self.entity}"
+
+        return toml
+
     def _get_default_values(self):
         values = super()._get_default_values()
         # TODO move that in a getter hooks ?
@@ -268,8 +278,8 @@ class BackupRepository(ConfigPanel):
 
         return {self.entity: result}
 
-    def list_archives(self, with_info=False):
-        archives = self.list_archives_names()
+    def list_archives(self, with_info=False, prefix=""):
+        archives = self.list_archives_names(prefix=prefix)
         if with_info:
             d = {}
             for archive in archives:
@@ -373,7 +383,7 @@ class BackupRepository(ConfigPanel):
     def purge(self):
         raise NotImplementedError()
 
-    def list_archives_names(self, prefix=None):
+    def list_archives_names(self, prefix=""):
         raise NotImplementedError()
 
     def compute_space_used(self):
@@ -386,7 +396,11 @@ class BackupRepository(ConfigPanel):
 class LocalBackupRepository(BackupRepository):
     def install(self):
         self.new_values['location'] = self.location
-        mkdir(self.location, mode=0o0750, parents=True, uid="admin", gid="root", force=True)
+        if not os.path.isdir(self.location):
+            if os.path.lexists(self.location):
+                raise YunohostError("backup_output_symlink_dir_broken", path=self.location)
+
+            mkdir(self.location, mode=0o0750, parents=True, gid="admins", force=True)
 
     def update(self):
         self.install()
@@ -404,24 +418,24 @@ class BackupArchive:
             self.name = self.name[: -len(".tar.gz")]
         elif self.name.endswith(".tar"):
             self.name = self.name[: -len(".tar")]
-        self.repo = repo
+        self.repository = repo
 
         # Cast
-        if self.repo.method_name == 'tar':
+        if self.repository.method_name == 'tar':
             self.__class__ = yunohost.repositories.tar.TarBackupArchive
-        elif self.repo.method_name == 'borg':
+        elif self.repository.method_name == 'borg':
             self.__class__ = yunohost.repositories.borg.BorgBackupArchive
         else:
             self.__class__ = yunohost.repositories.hook.HookBackupArchive
 
         # Assert archive exists
-        if self.manager.__class__.__name__ != "BackupManager" and self.name not in self.repo.list_archives(False):
+        if self.manager.__class__.__name__ != "BackupManager" and self.name not in self.repository.list_archives(False):
             raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     @property
     def archive_path(self):
         """Return the archive path"""
-        return self.repo.location + '::' + self.name
+        return self.repository.location + '::' + self.name
 
     @property
     def work_dir(self):
@@ -434,11 +448,11 @@ class BackupArchive:
         For a RestoreManager, it is the directory where we mount the archive
         before restoring
         """
-        return self.manager.work_dir
+        return self.manager.work_dir if self.manager else None
 
     # This is not a property cause it could be managed in a hook
     def need_organized_files(self):
-        return self.repo.need_organized_files
+        return self.repository.need_organized_files
 
     def organize_and_backup(self):
         """
@@ -450,10 +464,10 @@ class BackupArchive:
         if self.need_organized_files():
             self._organize_files()
 
-        self.repo.install()
+        self.repository.install()
 
         # Check free space in output
-        self.repo.check_is_enough_free_space(self.manager.size)
+        self.repository.check_is_enough_free_space(self.manager.size)
         try:
             self.backup()
         finally:
@@ -506,7 +520,7 @@ class BackupArchive:
     def _get_info_string(self):
         """Extract info file from archive if needed and read it"""
 
-        cache_info_dir = CACHE_INFO_DIR.format(repository=self.repo.entity)
+        cache_info_dir = CACHE_INFO_DIR.format(repository=self.repository.entity)
         mkdir(cache_info_dir, mode=0o0700, parents=True, force=True)
         info_file = f"{cache_info_dir}/{self.name}.info.json"
 
@@ -515,9 +529,9 @@ class BackupArchive:
             try:
                 files_in_archive = self.list()
                 if "info.json" in files_in_archive:
-                    self.extract("info.json", destination=tmp_dir)
+                    self.extract("info.json", target=tmp_dir)
                 elif "./info.json" in files_in_archive:
-                    self.extract("./info.json", destination=tmp_dir)
+                    self.extract("./info.json", target=tmp_dir)
                 else:
                     raise YunohostError(
                         "backup_archive_cant_retrieve_info_json", archive=self.archive_path
@@ -741,7 +755,7 @@ class BackupArchive:
             )
             return
 
-    def extract(self, paths=None, destination=None, exclude_paths=[]):
+    def extract(self, paths=None, target=None, exclude_paths=[]):
         if self.__class__ == BackupArchive:
             raise NotImplementedError()
         if isinstance(paths, str):
@@ -750,7 +764,7 @@ class BackupArchive:
             paths = self.select_files()
         if isinstance(exclude_paths, str):
             exclude_paths = [exclude_paths]
-        return paths, destination, exclude_paths
+        return paths, target, exclude_paths
 
     def mount(self):
         if self.__class__ == BackupArchive:

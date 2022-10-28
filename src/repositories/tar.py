@@ -1,23 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2013 Yunohost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import tarfile
 import shutil
@@ -81,9 +79,9 @@ class TarBackupArchive(BackupArchive):
         if isinstance(self.manager, BackupManager) and settings_get(
             "backup.compress_tar_archives"
         ):
-            return os.path.join(self.repo.location, self.name + ".tar.gz")
+            return os.path.join(self.repository.location, self.name + ".tar.gz")
 
-        f = os.path.join(self.repo.path, self.name + ".tar")
+        f = os.path.join(self.repository.path, self.name + ".tar")
         if os.path.exists(f + ".gz"):
             f += ".gz"
         return f
@@ -124,12 +122,12 @@ class TarBackupArchive(BackupArchive):
         # Move info file
         shutil.copy(
             os.path.join(self.work_dir, "info.json"),
-            os.path.join(self.repo.location, self.name + ".info.json"),
+            os.path.join(self.repository.location, self.name + ".info.json"),
         )
 
         # If backuped to a non-default location, keep a symlink of the archive
         # to that location
-        link = os.path.join(self.repo.path, self.name + ".tar")
+        link = os.path.join(self.repository.path, self.name + ".tar")
         if not os.path.isfile(link):
             os.symlink(self.archive_path, link)
 
@@ -144,8 +142,8 @@ class TarBackupArchive(BackupArchive):
         tar.close()
 
     def delete(self):
-        archive_file = f"{self.repo.location}/{self.name}.tar"
-        info_file = f"{self.repo.location}/{self.name}.info.json"
+        archive_file = f"{self.repository.location}/{self.name}.tar"
+        info_file = f"{self.repository.location}/{self.name}.info.json"
         if os.path.exists(archive_file + ".gz"):
             archive_file += ".gz"
 
@@ -219,8 +217,8 @@ class TarBackupArchive(BackupArchive):
         archive_folder, archive_file_name = archive_file.rsplit("/", 1)
         return static_file(archive_file_name, archive_folder, download=archive_file_name)
 
-    def extract(self, paths=[], destination=None, exclude_paths=[]):
-        paths, destination, exclude_paths = super().extract(paths, destination, exclude_paths)
+    def extract(self, paths=[], target=None, exclude_paths=[]):
+        paths, target, exclude_paths = super().extract(paths, target, exclude_paths)
         # Open the tarball
         try:
             tar = tarfile.open(
@@ -241,7 +239,7 @@ class TarBackupArchive(BackupArchive):
                and all([not tarinfo.name.startswith(path) for path in exclude_paths])
             )
         ]
-        tar.extractall(members=subdir_and_files, path=destination)
+        tar.extractall(members=subdir_and_files, path=target)
         tar.close()
 
     def mount(self, path):

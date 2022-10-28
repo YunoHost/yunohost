@@ -56,7 +56,7 @@ from yunohost.tools import (
 )
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger, is_unit_operation
-from yunohost.repository import BackupRepository, BackupArchive
+from yunohost.repository import BackupRepository, BackupArchive, BACKUP_PATH
 from yunohost.utils.config import ConfigPanel
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import (
@@ -67,8 +67,6 @@ from yunohost.utils.system import (
 )
 from yunohost.settings import settings_get
 
-BACKUP_PATH = "/home/yunohost.backup"
-ARCHIVES_PATH = f"{BACKUP_PATH}/archives"
 APP_MARGIN_SPACE_SIZE = 100  # In MB
 CONF_MARGIN_SPACE_SIZE = 10  # IN MB
 POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
@@ -1860,7 +1858,7 @@ def backup_restore(name, repository=None, system=[], apps=[], force=False):
     return restore_manager.targets.results
 
 
-def backup_list(name=None, repositories=[], with_info=False, human_readable=False):
+def backup_list(name=None, repositories=[], prefix="", with_info=False, human_readable=False):
     """
     List available local backup archives
 
@@ -1879,7 +1877,7 @@ def backup_list(name=None, repositories=[], with_info=False, human_readable=Fals
         return archive.list(with_info)
 
     return {
-        name: BackupRepository(name).list_archives(with_info)
+        name: BackupRepository(name).list_archives(with_info=with_info, prefix=prefix)
 
         for name in repositories or BackupRepository.list(full=False)
     }
@@ -1893,6 +1891,20 @@ def backup_download(name, repository=None):
     archive = BackupArchive(repo, name)
 
     return archive.download()
+
+
+def backup_extract(name, paths, repository=None, target=None, exclude=[]):
+
+    if not repository:
+        repository = settings_get("misc.backup.backup_default_repositories")[0]
+
+    if not target:
+        target = os.getcwd()
+
+    repo = BackupRepository(repository)
+    archive = BackupArchive(repo, name)
+
+    archive.extract(path=paths, target=target, exclude_paths=exclude)
 
 
 def backup_mount(name, path, repository=None):
@@ -2235,18 +2247,6 @@ def backup_timer_pause(operation_logger, shortname):
 #
 # Misc helpers                                                              #
 #
-
-
-def _create_archive_dir():
-    """Create the YunoHost archives directory if doesn't exist"""
-
-    if not os.path.isdir(ARCHIVES_PATH):
-        if os.path.lexists(ARCHIVES_PATH):
-            raise YunohostError("backup_output_symlink_dir_broken", path=ARCHIVES_PATH)
-
-        # Create the archive folder, with 'admins' as groupowner, such that
-        # people can scp archives out of the server
-        mkdir(ARCHIVES_PATH, mode=0o770, parents=True, gid="admins")
 
 
 def _call_for_each_path(self, callback, csv_path=None):
