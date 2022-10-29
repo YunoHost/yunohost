@@ -1585,7 +1585,7 @@ def ask_questions_and_parse_answers(
         question = question_class(raw_question, context=context, hooks=hooks)
         if question.type == "button":
             if question.enabled is None or evaluate_simple_js_expression(  # type: ignore
-                question.enabled, context=context
+                question.enabled, context=context  # type: ignore
             ):  # type: ignore
                 continue
             else:
