@@ -70,6 +70,8 @@ do_pre_regen() {
 do_post_regen() {
     regen_conf_files=$1
 
+    chown postfix /etc/postfix
+
     if [ -e /etc/postfix/sasl_passwd ]; then
         chmod 750 /etc/postfix/sasl_passwd*
         chown postfix:root /etc/postfix/sasl_passwd*
