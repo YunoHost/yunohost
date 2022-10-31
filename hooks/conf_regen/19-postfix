@@ -30,7 +30,7 @@ do_pre_regen() {
     export relay_user=""
     export relay_host=""
     export relay_enabled="$(yunohost settings get 'email.smtp.smtp_relay_enabled')"
-    if [ "${relay_enabled}" == "True" ]; then
+    if [ "${relay_enabled}" == "1" ]; then
         relay_host="$(yunohost settings get 'email.smtp.smtp_relay_host')"
         relay_port="$(yunohost settings get 'email.smtp.smtp_relay_port')"
         relay_user="$(yunohost settings get 'email.smtp.smtp_relay_user')"
