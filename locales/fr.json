@@ -12,7 +12,7 @@
     "app_not_installed": "Nous n'avons pas trouvé {app} dans la liste des applications installées : {all_apps}",
     "app_not_properly_removed": "{app} n'a pas été supprimé correctement",
     "app_removed": "{app} désinstallé",
-    "app_requirements_checking": "Vérification des paquets requis pour {app}...",
+    "app_requirements_checking": "Vérification des prérequis pour {app} ...",
     "app_sources_fetch_failed": "Impossible de récupérer les fichiers sources, l'URL est-elle correcte ?",
     "app_unknown": "Application inconnue",
     "app_unsupported_remote_type": "Ce type de commande à distance utilisé pour cette application n'est pas supporté",
@@ -675,5 +675,16 @@
     "migration_description_0024_rebuild_python_venv": "Réparer l'application Python après la migration Bullseye",
     "migration_0024_rebuild_python_venv_broken_app": "Ignorer {app} car virtualenv ne peut pas être facilement reconstruit pour cette application. Au lieu de cela, vous devriez corriger la situation en forçant la mise à jour de cette application en utilisant `yunohost app upgrade --force {app}`.",
     "migration_0024_rebuild_python_venv_disclaimer_base": "Suite à la mise à niveau vers Debian Bullseye, certaines applications Python doivent être partiellement reconstruites pour être converties vers la nouvelle version Python livrée dans Debian (en termes techniques : ce qu'on appelle le \"virtualenv\" doit être recréé). En attendant, ces applications Python peuvent ne pas fonctionner. YunoHost peut tenter de reconstruire le virtualenv pour certains d'entre eux, comme détaillé ci-dessous. Pour les autres applications, ou si la tentative de reconstruction échoue, vous devrez forcer manuellement une mise à niveau pour ces applications.",
-    "migration_0024_rebuild_python_venv_disclaimer_ignored": "Les virtualenvs ne peuvent pas être reconstruits automatiquement pour ces applications. Vous devez forcer une mise à jour pour ceux-ci, ce qui peut être fait à partir de la ligne de commande : `yunohost app upgrade --force APP` : {ignored_apps}"
+    "migration_0024_rebuild_python_venv_disclaimer_ignored": "Les virtualenvs ne peuvent pas être reconstruits automatiquement pour ces applications. Vous devez forcer une mise à jour pour ceux-ci, ce qui peut être fait à partir de la ligne de commande : `yunohost app upgrade --force APP` : {ignored_apps}",
+    "admins": "Administrateurs",
+    "all_users": "Tous les utilisateurs de YunoHost",
+    "app_action_failed": "Échec de la commande {action} de l'application {app}",
+    "app_manifest_install_ask_init_admin_permission": "Qui doit avoir accès aux fonctions d'administration de cette application ? (Ceci peut être modifié ultérieurement)",
+    "app_manifest_install_ask_init_main_permission": "Qui doit avoir accès à cette application ? (Ceci peut être modifié ultérieurement)",
+    "ask_admin_fullname": "Nom complet de l'administrateur",
+    "ask_admin_username": "Nom d'utilisateur de l'administrateur",
+    "ask_fullname": "Nom complet (Nom et Prénom)",
+    "certmanager_cert_install_failed": "L'installation du certificat Let's Encrypt a échoué pour {domains}",
+    "certmanager_cert_install_failed_selfsigned": "L'installation du certificat auto-signé a échoué pour {domains}",
+    "certmanager_cert_renew_failed": "Le renouvellement du certificat Let's Encrypt a échoué pour {domains}"
 }
