@@ -703,7 +703,7 @@
     "pattern_fullname": "Doit être un nom complet valide (au moins 3 caractères)",
     "config_action_disabled": "Impossible d'exécuter l'action '{action}' car elle est désactivée, assurez-vous de respecter ses paramètres et contraintes. Aide : {help}",
     "config_action_failed": "Échec de l'exécution de l'action '{action}' : {error}",
-    "config_forbidden_readonly_type": "Le type '{type}' ne peut pas être défini comme étant en lecture seule, utilisez un autre type pour obtenir cette valeur (identifiant de l'argument approprié : '{id}').",
+    "config_forbidden_readonly_type": "Le type '{type}' ne peut pas être défini comme étant en lecture seule, utilisez un autre type pour obtenir cette valeur (identifiant de l'argument : '{id}').",
     "global_settings_setting_pop3_enabled": "Activer POP3",
     "registrar_infos": "Infos du Registrar (fournisseur du nom de domaine)",
     "root_password_changed": "Le mot de passe de root a été changé",
