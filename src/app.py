@@ -2301,6 +2301,9 @@ def _extract_app_from_gitrepo(
         manifest["remote"]["revision"] = revision
         manifest["lastUpdate"] = app_info.get("lastUpdate")
 
+    manifest["antifeatures"] = app_info["antifeatures"]
+    manifest["potential_alternative_to"] = app_info["potential_alternative_to"]
+
     return manifest, extracted_app_folder
 
 
