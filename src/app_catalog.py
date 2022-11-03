@@ -41,12 +41,12 @@ APPS_CATALOG_API_VERSION = 3
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 
 
-def app_catalog(full=False, with_categories=False):
+def app_catalog(full=False, with_categories=False, with_antifeatures=False):
     """
     Return a dict of apps available to installation from Yunohost's app catalog
     """
 
-    from yunohost.app import _installed_apps, _set_default_ask_questions
+    from yunohost.app import _installed_apps
 
     # Get app list from catalog cache
     catalog = _load_apps_catalog()
@@ -65,28 +65,38 @@ def app_catalog(full=False, with_categories=False):
                 "description": infos["manifest"]["description"],
                 "level": infos["level"],
             }
-        else:
-            infos["manifest"]["install"] = _set_default_ask_questions(
-                infos["manifest"].get("install", {})
-            )
 
-    # Trim info for categories if not using --full
-    for category in catalog["categories"]:
-        category["title"] = _value_for_locale(category["title"])
-        category["description"] = _value_for_locale(category["description"])
-        for subtags in category.get("subtags", []):
-            subtags["title"] = _value_for_locale(subtags["title"])
+    _catalog = {"apps": catalog["apps"]}
 
-    if not full:
-        catalog["categories"] = [
-            {"id": c["id"], "description": c["description"]}
-            for c in catalog["categories"]
-        ]
+    if with_categories:
+        for category in catalog["categories"]:
+            category["title"] = _value_for_locale(category["title"])
+            category["description"] = _value_for_locale(category["description"])
+            for subtags in category.get("subtags", []):
+                subtags["title"] = _value_for_locale(subtags["title"])
 
-    if not with_categories:
-        return {"apps": catalog["apps"]}
-    else:
-        return {"apps": catalog["apps"], "categories": catalog["categories"]}
+        if not full:
+            catalog["categories"] = [
+                {"id": c["id"], "description": c["description"]}
+                for c in catalog["categories"]
+            ]
+
+        _catalog["categories"] = catalog["categories"]
+
+    if with_antifeatures:
+        for antifeature in catalog["antifeatures"]:
+            antifeature["title"] = _value_for_locale(antifeature["title"])
+            antifeature["description"] = _value_for_locale(antifeature["description"])
+
+        if not full:
+            catalog["antifeatures"] = [
+                {"id": a["id"], "description": a["description"]}
+                for a in catalog["antifeatures"]
+            ]
+
+        _catalog["antifeatures"] = catalog["antifeatures"]
+
+    return _catalog
 
 
 def app_search(string):
@@ -211,7 +221,7 @@ def _load_apps_catalog():
     corresponding to all known apps and categories
     """
 
-    merged_catalog = {"apps": {}, "categories": []}
+    merged_catalog = {"apps": {}, "categories": [], "antifeatures": []}
 
     for apps_catalog_id in [L["id"] for L in _read_apps_catalog_list()]:
 
@@ -261,7 +271,8 @@ def _load_apps_catalog():
             info["repository"] = apps_catalog_id
             merged_catalog["apps"][app] = info
 
-        # Annnnd categories
+        # Annnnd categories + antifeatures
         merged_catalog["categories"] += apps_catalog_content["categories"]
+        merged_catalog["antifeatures"] += apps_catalog_content["antifeatures"]
 
     return merged_catalog

@@ -756,6 +756,10 @@ app:
                     full: --with-categories
                     help: Also return a list of app categories
                     action: store_true
+                -a:
+                    full: --with-antifeatures
+                    help: Also return a list of antifeatures categories
+                    action: store_true
 
         ### app_search()
         search:
