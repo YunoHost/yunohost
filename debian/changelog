@@ -1,3 +1,16 @@
+yunohost (11.1.0.2) testing; urgency=low
+
+  - globalsettings: make sure to run migration 25 prior to the regenconf (f3750598)
+  - domaininfo: Some apps don't have path ([#1521](https://github.com/yunohost/yunohost/pull/1521))
+  - Add sponsors to the README ([#1522](https://github.com/yunohost/yunohost/pull/1522))
+  - postfix: fix relay conf not triggered because new setting system now returns '1' and not 'True' (cd43c8bd)
+  - postfix: fix permission issue preventing to properly create sasl_passwd.db (5394790f)
+  - [i18n] Translations updated for French
+
+  Thanks to all contributors <3 ! (Félix Piédallu, Florian Masy, ppr, Tagada)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 04 Nov 2022 13:13:40 +0100
+
 yunohost (11.1.0.1) testing; urgency=low
 
   - Bump version after propagating hotfix on 11.0.10.2
