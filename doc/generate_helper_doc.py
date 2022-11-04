@@ -221,6 +221,9 @@ def main():
     helpers = []
 
     for helper_file in helper_files:
+        if not os.path.isfile(helper_file):
+            continue
+
         category_name = os.path.basename(helper_file)
         print("Parsing %s ..." % category_name)
         p = Parser(helper_file)
