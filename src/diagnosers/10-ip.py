@@ -237,5 +237,5 @@ class MyDiagnoser(Diagnoser):
         except Exception as e:
             protocol = str(protocol)
             e = str(e)
-            self.logger_debug(f"Could not get public IPv{protocol} : {e}")
+            logger.debug(f"Could not get public IPv{protocol} : {e}")
             return None
