@@ -585,5 +585,8 @@
     "global_settings_setting_ssh_compatibility_help": "SSH服务器的兼容性与安全性的权衡。影响密码（以及其他与安全性有关的方面）",
     "global_settings_setting_ssh_port": "SSH端口",
     "global_settings_setting_smtp_allow_ipv6_help": "允许使用IPv6接收和发送邮件",
-    "global_settings_setting_smtp_relay_enabled_help": "使用SMTP中继主机来代替这个YunoHost实例发送邮件。如果你有以下情况，就很有用:你的25端口被你的ISP或VPS提供商封锁，你有一个住宅IP列在DUHL上，你不能配置反向DNS，或者这个服务器没有直接暴露在互联网上，你想使用其他服务器来发送邮件。"
+    "global_settings_setting_smtp_relay_enabled_help": "使用SMTP中继主机来代替这个YunoHost实例发送邮件。如果你有以下情况，就很有用:你的25端口被你的ISP或VPS提供商封锁，你有一个住宅IP列在DUHL上，你不能配置反向DNS，或者这个服务器没有直接暴露在互联网上，你想使用其他服务器来发送邮件。",
+    "all_users": "所有的YunoHost用户",
+    "app_manifest_install_ask_init_admin_permission": "谁应该有权访问此应用程序的管理功能？（此配置可以稍后更改）",
+    "app_action_failed": "对应用{app}执行动作{action}失败"
 }
