@@ -1488,6 +1488,7 @@ def app_ssowatconf():
             "uris": [domain + "/yunohost/admin" for domain in domains]
             + [domain + "/yunohost/api" for domain in domains]
             + [
+                "re:^[^/]/502%.html$",
                 "re:^[^/]*/%.well%-known/ynh%-diagnosis/.*$",
                 "re:^[^/]*/%.well%-known/acme%-challenge/.*$",
                 "re:^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$",
