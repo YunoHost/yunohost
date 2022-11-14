@@ -807,19 +807,9 @@ def _confirm_app_install(app, force=False):
     # i18n: confirm_app_install_thirdparty
 
     if quality in ["danger", "thirdparty"]:
-        answer = Moulinette.prompt(
-            m18n.n("confirm_app_install_" + quality, answers="Yes, I understand"),
-            color="red",
-        )
-        if answer != "Yes, I understand":
-            raise YunohostError("aborting")
-
+        _ask_confirmation("confirm_app_install_" + quality)
     else:
-        answer = Moulinette.prompt(
-            m18n.n("confirm_app_install_" + quality, answers="Y/N"), color="yellow"
-        )
-        if answer.upper() != "Y":
-            raise YunohostError("aborting")
+        _ask_confirmation("confirm_app_install_" + quality, soft=True)
 
 
 @is_unit_operation()
@@ -2750,3 +2740,28 @@ def _assert_system_is_sane_for_app(manifest, when):
             raise YunohostValidationError("dpkg_is_broken")
         elif when == "post":
             raise YunohostError("this_action_broke_dpkg")
+
+
+# FIXME: move this to Moulinette
+def _ask_confirmation(
+    question: str,
+    params: object = {},
+    soft: bool = False,
+    force: bool = False,
+):
+    if force or Moulinette.interface.type == "api":
+        return
+
+    if soft:
+        answer = Moulinette.prompt(
+            m18n.n(question, answers="Y/N", **params), color="yellow"
+        )
+        answer = answer.upper() == "Y"
+    else:
+        answer = Moulinette.prompt(
+            m18n.n(question, answers="Yes, I understand", **params), color="red"
+        )
+        answer = answer == "Yes, I understand"
+
+    if not answer:
+        raise YunohostError("aborting")
