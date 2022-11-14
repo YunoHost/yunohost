@@ -29,7 +29,7 @@ import subprocess
 import tempfile
 import copy
 from collections import OrderedDict
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Iterator
 from packaging import version
 
 from moulinette import Moulinette, m18n
@@ -587,7 +587,11 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     upgrade_type = "UPGRADE_FULL"
 
         # Check requirements
-        _check_manifest_requirements(manifest, action="upgrade")
+        for _, check, values, err in _check_manifest_requirements(
+            manifest, action="upgrade"
+        ):
+            if not check:
+                raise YunohostValidationError(err, **values)
 
         if manifest["packaging_format"] >= 2:
             if no_safety_backup:
@@ -788,6 +792,18 @@ def app_manifest(app):
     raw_questions = manifest.get("install", {}).values()
     manifest["install"] = hydrate_questions_with_choices(raw_questions)
 
+    manifest["requirements"] = {}
+    for name, check, values, err in _check_manifest_requirements(
+        manifest, action="install"
+    ):
+        if Moulinette.interface.type == "api":
+            manifest["requirements"][name] = {
+                "pass": check,
+                "values": values,
+            }
+        else:
+            manifest["requirements"][name] = "ok" if check else m18n.n(err, **values)
+
     return manifest
 
 
@@ -873,7 +889,17 @@ def app_install(
     app_id = manifest["id"]
 
     # Check requirements
-    _check_manifest_requirements(manifest, action="install")
+    for name, check, values, err in _check_manifest_requirements(
+        manifest, action="install"
+    ):
+        if not check:
+            if name == "ram":
+                _ask_confirmation(
+                    "confirm_app_install_insufficient_ram", params=values, force=force
+                )
+            else:
+                raise YunohostValidationError(err, **values)
+
     _assert_system_is_sane_for_app(manifest, "pre")
 
     # Check if app can be forked
@@ -2351,72 +2377,98 @@ def _get_all_installed_apps_id():
     return all_apps_ids_formatted
 
 
-def _check_manifest_requirements(manifest: Dict, action: str):
+def _check_manifest_requirements(
+    manifest: Dict, action: str = ""
+) -> Iterator[Tuple[str, bool, object, str]]:
     """Check if required packages are met from the manifest"""
 
-    if manifest["packaging_format"] not in [1, 2]:
-        raise YunohostValidationError("app_packaging_format_not_supported")
-
     app_id = manifest["id"]
-
     logger.debug(m18n.n("app_requirements_checking", app=app_id))
 
-    # Yunohost version requirement
-
-    yunohost_requirement = version.parse(manifest["integration"]["yunohost"] or "4.3")
-    yunohost_installed_version = version.parse(
-        get_ynh_package_version("yunohost")["version"]
+    # Packaging format
+    yield (
+        "packaging_format",
+        manifest["packaging_format"] in (1, 2),
+        {},
+        "app_packaging_format_not_supported",  # i18n: app_packaging_format_not_supported
     )
-    if yunohost_requirement > yunohost_installed_version:
-        # FIXME : i18n
-        raise YunohostValidationError(
-            f"This app requires Yunohost >= {yunohost_requirement} but current installed version is {yunohost_installed_version}"
-        )
+
+    # Yunohost version
+    required_yunohost_version = manifest["integration"].get("yunohost", "4.3")
+    current_yunohost_version = get_ynh_package_version("yunohost")["version"]
+
+    yield (
+        "version",
+        version.parse(required_yunohost_version)
+        <= version.parse(current_yunohost_version),
+        {"current": current_yunohost_version, "required": required_yunohost_version},
+        "app_yunohost_version_not_supported",  # i18n: app_yunohost_version_not_supported
+    )
 
     # Architectures
     arch_requirement = manifest["integration"]["architectures"]
-    if arch_requirement != "all":
-        arch = system_arch()
-        if arch not in arch_requirement:
-            # FIXME: i18n
-            raise YunohostValidationError(
-                f"This app can only be installed on architectures {', '.join(arch_requirement)} but your server architecture is {arch}"
-            )
+    arch = system_arch()
+
+    yield (
+        "arch",
+        arch_requirement == "all" or arch in arch_requirement,
+        {"current": arch, "required": arch_requirement},
+        "app_arch_not_supported",  # i18n: app_arch_not_supported
+    )
 
     # Multi-instance
-    if action == "install" and manifest["integration"]["multi_instance"] == False:
-        apps = _installed_apps()
-        sibling_apps = [a for a in apps if a == app_id or a.startswith(f"{app_id}__")]
-        if len(sibling_apps) > 0:
-            raise YunohostValidationError("app_already_installed", app=app_id)
+    if action == "install":
+        multi_instance = manifest["integration"]["multi_instance"] == True
+        if not multi_instance:
+            apps = _installed_apps()
+            sibling_apps = [
+                a for a in apps if a == app_id or a.startswith(f"{app_id}__")
+            ]
+            multi_instance = len(sibling_apps) > 0
+
+        yield (
+            "install",
+            multi_instance,
+            {},
+            "app_already_installed",  # i18n: app_already_installed
+        )
 
     # Disk
     if action == "install":
-        disk_requirement = manifest["integration"]["disk"]
-
-        if free_space_in_directory("/") <= human_to_binary(
-            disk_requirement
-        ) or free_space_in_directory("/var") <= human_to_binary(disk_requirement):
-            # FIXME : i18m
-            raise YunohostValidationError(
-                f"This app requires {disk_requirement} free space."
-            )
-
-    # Ram for build
-    ram_build_requirement = manifest["integration"]["ram"]["build"]
-    # Is "include_swap" really useful ? We should probably decide wether to always include it or not instead
-    ram_include_swap = manifest["integration"]["ram"].get("include_swap", False)
-
-    ram, swap = ram_available()
-    if ram_include_swap:
-        ram += swap
-
-    if ram < human_to_binary(ram_build_requirement):
-        # FIXME : i18n
-        ram_human = binary_to_human(ram)
-        raise YunohostValidationError(
-            f"This app requires {ram_build_requirement} RAM to install/upgrade but only {ram_human} is available right now."
+        disk_req_bin = human_to_binary(manifest["integration"]["disk"])
+        root_free_space = free_space_in_directory("/")
+        var_free_space = free_space_in_directory("/var")
+        has_enough_disk = (
+            root_free_space > disk_req_bin and var_free_space > disk_req_bin
         )
+        free_space = binary_to_human(
+            root_free_space
+            if root_free_space == var_free_space
+            else root_free_space + var_free_space
+        )
+
+        yield (
+            "disk",
+            has_enough_disk,
+            {"current": free_space, "required": manifest["integration"]["disk"]},
+            "app_not_enough_disk",  # i18n: app_not_enough_disk
+        )
+
+    # Ram
+    ram_requirement = manifest["integration"]["ram"]
+    ram, swap = ram_available()
+    # Is "include_swap" really useful ? We should probably decide wether to always include it or not instead
+    if ram_requirement.get("include_swap", False):
+        ram += swap
+    can_build = ram > human_to_binary(ram_requirement["build"])
+    can_run = ram > human_to_binary(ram_requirement["runtime"])
+
+    yield (
+        "ram",
+        can_build and can_run,
+        {"current": binary_to_human(ram), "required": ram_requirement["build"]},
+        "app_not_enough_ram",  # i18n: app_not_enough_ram
+    )
 
 
 def _guess_webapp_path_requirement(app_folder: str) -> str:
