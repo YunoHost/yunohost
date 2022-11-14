@@ -2255,6 +2255,8 @@ def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
     logger.debug(m18n.n("done"))
 
     manifest["remote"] = {"type": "file", "path": path}
+    manifest["quality"] = {"level": -1, "state": "thirdparty"}
+
     return manifest, extracted_app_folder
 
 
@@ -2301,8 +2303,12 @@ def _extract_app_from_gitrepo(
         manifest["remote"]["revision"] = revision
         manifest["lastUpdate"] = app_info.get("lastUpdate")
 
-    manifest["antifeatures"] = app_info["antifeatures"]
-    manifest["potential_alternative_to"] = app_info["potential_alternative_to"]
+    manifest["quality"] = {
+        "level": app_info.get("level", -1),
+        "state": app_info.get("state", "thirdparty"),
+    }
+    manifest["antifeatures"] = app_info.get("antifeatures", [])
+    manifest["potential_alternative_to"] = app_info.get("potential_alternative_to")
 
     return manifest, extracted_app_folder
 
