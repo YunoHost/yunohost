@@ -2418,18 +2418,18 @@ def _check_manifest_requirements(
 
     # Multi-instance
     if action == "install":
-        multi_instance = manifest["integration"]["multi_instance"] == True
+        multi_instance = manifest["integration"]["multi_instance"] is True
         if not multi_instance:
             apps = _installed_apps()
             sibling_apps = [
                 a for a in apps if a == app_id or a.startswith(f"{app_id}__")
             ]
-            multi_instance = len(sibling_apps) > 0
+            multi_instance = len(sibling_apps) == 0
 
         yield (
             "install",
             multi_instance,
-            {},
+            {"app": app_id},
             "app_already_installed",  # i18n: app_already_installed
         )
 
