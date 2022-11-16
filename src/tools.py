@@ -311,7 +311,7 @@ def tools_update(target=None):
 
         # Update APT cache
         # LC_ALL=C is here to make sure the results are in english
-        command = "LC_ALL=C apt-get update -o Acquire::Retries=3"
+        command = "LC_ALL=C apt-get update -o Acquire::Retries=3 --allow-releaseinfo-change"
 
         # Filter boring message about "apt not having a stable CLI interface"
         # Also keep track of wether or not we encountered a warning...
