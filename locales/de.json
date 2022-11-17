@@ -6,7 +6,7 @@
     "app_argument_invalid": "Wähle einen gültigen Wert für das Argument '{name}': {error}",
     "app_argument_required": "Argument '{name}' wird benötigt",
     "app_extraction_failed": "Installationsdateien konnten nicht entpackt werden",
-    "app_id_invalid": "Falsche App-ID",
+    "app_id_invalid": "Falsche Applikations-ID",
     "app_install_files_invalid": "Diese Dateien können nicht installiert werden",
     "app_not_installed": "{app} konnte nicht in der Liste installierter Apps gefunden werden: {all_apps}",
     "app_removed": "{app} wurde entfernt",
@@ -666,7 +666,7 @@
     "global_settings_setting_smtp_relay_enabled_help": "Zu verwendender SMTP-Relay-Host um E-Mails zu versenden. Er wird anstelle dieser YunoHost-Instanz verwendet. Nützlich, wenn du in einer der folgenden Situationen bist: Dein ISP- oder VPS-Provider hat deinen Port 25 geblockt, eine deinen residentiellen IPs ist auf DUHL gelistet, du kannst keinen Reverse-DNS konfigurieren oder dieser Server ist nicht direkt mit dem Internet verbunden und du möchtest einen anderen verwenden, um E-Mails zu versenden.",
     "admins": "Administratoren",
     "all_users": "Alle YunoHost-Nutzer",
-    "app_action_failed": "Fehlgeschlagene Aktion {action} für App {app}",
+    "app_action_failed": "Fehlgeschlagene Aktion {action} für Applikation {app}",
     "app_manifest_install_ask_init_admin_permission": "Wer soll Zugriff auf die administrativen Funktionen für diese App erhalten? (Dies kann später wieder geändert werden)",
     "app_manifest_install_ask_init_main_permission": "Wer soll Zugriff auf diese App erhalten? (Dies kann später wieder geändert werden)",
     "ask_admin_fullname": "Vollständiger Name des Administrators",
@@ -678,5 +678,9 @@
     "config_action_disabled": "Konnte die Aktion '{action}' nicht durchführen, weil sie deaktiviert ist. Stellen Sie sicher, dass sie ihre Einschränkungen einhält. Hilfe: {help}",
     "config_action_failed": "Ausführung der Aktion '{action}' fehlgeschlagen: {error}",
     "config_forbidden_readonly_type": "Der Typ '{type}' kann nicht auf Nur-Lesen eingestellt werden. Verwenden Sie bitte einen anderen Typ, um diesen Wert zu generieren (relevante ID des Arguments: '{id}').",
-    "diagnosis_using_stable_codename": "<cmd>apt</cmd> (Paketmanager des Systems) ist gegenwärtig konfiguriert um die Pakete des Code-Namens 'stable' zu installieren, anstelle die des Code-Namen der aktuellen Debian-Version (bullseye)."
+    "diagnosis_using_stable_codename": "<cmd>apt</cmd> (Paketmanager des Systems) ist gegenwärtig konfiguriert um die Pakete des Code-Namens 'stable' zu installieren, anstelle die des Code-Namen der aktuellen Debian-Version (bullseye).",
+    "domain_config_acme_eligible": "Geeignet für ACME",
+    "diagnosis_using_stable_codename_details": "Dies wird meistens durch eine fehlerhafte Konfiguration seitens des Hosting-Providers verursacht. Dies stellt eine Gefahr dar, weil sobald die nächste Debian-Version zum neuen 'stable' wird, wird <cmd>apt</cmd> alle System-Pakete aktualisieren wollen, ohne eine ordnungsgemässe Migration zu durchlaufen. Es wird sehr empfohlen dies zu berichtigen, indem Sie die Datei der apt-Quellen des Debian-Basis-Repositorys entsprechend anpassen indem Sie das <cmd>stable</cmd>-Keyword durch <cmd>bullseye</cmd> ersetzen. Die zugehörige Konfigurationsdatei sollte <cmd>/etc/apt/sources.list</cmd>  oder eine Datei im Verzeichnis  <cmd>/etc/apt/sources.list.d/</cmd>sein.",
+    "diagnosis_using_yunohost_testing": "<cmd>apt</cmd> (der Paketmanager des Systems) ist aktuell so konfiguriert, dass die 'testing'-Upgrades für YunoHost core installiert werden.",
+    "diagnosis_using_yunohost_testing_details": "Dies ist wahrscheinlich OK, wenn Sie wissen, was Sie tun. Aber beachten Sie bitte die Release-Notes bevor sie zukünftige YunoHost-Upgrades installieren! Wenn Sie die 'testing'-Upgrades deaktivieren möchten, sollten sie das <cmd>testing</cmd>-Schlüsselwort aus <cmd>/etc/apt/sources.list.d/yunohost.list</cmd> entfernen."
 }
