@@ -373,7 +373,7 @@
     "domains_available": "Available domains:",
     "done": "Done",
     "downloading": "Downloading...",
-    "dpkg_is_broken": "You cannot do this right now because dpkg/APT (the system package managers) seems to be in a broken state... You can try to solve this issue by connecting through SSH and running `sudo apt install --fix-broken` and/or `sudo dpkg --configure -a`.",
+    "dpkg_is_broken": "You cannot do this right now because dpkg/APT (the system package managers) seems to be in a broken state... You can try to solve this issue by connecting through SSH and running `sudo apt install --fix-broken` and/or `sudo dpkg --configure -a` and/or `sudo dpkg --audit`.",
     "dpkg_lock_not_available": "This command can't be run right now because another program seems to be using the lock of dpkg (the system package manager)",
     "dyndns_could_not_check_available": "Could not check if {domain} is available on {provider}.",
     "dyndns_domain_not_provided": "DynDNS provider {provider} cannot provide domain {domain}.",
