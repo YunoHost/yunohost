@@ -175,7 +175,7 @@ def _update_apps_catalog():
     for apps_catalog in apps_catalog_list:
         if apps_catalog["url"] is None:
             continue
-            
+
         apps_catalog_id = apps_catalog["id"]
         actual_api_url = _actual_apps_catalog_api_url(apps_catalog["url"])
 
