@@ -202,7 +202,7 @@ do_post_regen() {
     mkdir -p /etc/yunohost/domains
 
     # Misc configuration / state files
-    chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
+    chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null | grep -vw mdns.yml)
     chmod 600 $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
 
     # Apps folder, custom hooks folder
