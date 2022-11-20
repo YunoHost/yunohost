@@ -10,7 +10,7 @@
 # Config database customization:
 # 1. Edit this file as you want.
 # 2. Apply your modifications. For this just run this following command in a shell:
-#    $ /usr/share/yunohost/hooks/conf_regen/06-slapd apply_config
+#    $ /usr/share/yunohost/hooks/conf_regen/06-slapd post true
 #
 # Note that if you customize this file, YunoHost's regen-conf will NOT
 # overwrite this file. But that also means that you should be careful about
