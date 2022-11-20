@@ -683,5 +683,12 @@
     "diagnosis_using_stable_codename_details": "Dies wird meistens durch eine fehlerhafte Konfiguration seitens des Hosting-Providers verursacht. Dies stellt eine Gefahr dar, weil sobald die nächste Debian-Version zum neuen 'stable' wird, wird <cmd>apt</cmd> alle System-Pakete aktualisieren wollen, ohne eine ordnungsgemässe Migration zu durchlaufen. Es wird sehr empfohlen dies zu berichtigen, indem Sie die Datei der apt-Quellen des Debian-Basis-Repositorys entsprechend anpassen indem Sie das <cmd>stable</cmd>-Keyword durch <cmd>bullseye</cmd> ersetzen. Die zugehörige Konfigurationsdatei sollte <cmd>/etc/apt/sources.list</cmd>  oder eine Datei im Verzeichnis  <cmd>/etc/apt/sources.list.d/</cmd>sein.",
     "diagnosis_using_yunohost_testing": "<cmd>apt</cmd> (der Paketmanager des Systems) ist aktuell so konfiguriert, dass die 'testing'-Upgrades für YunoHost core installiert werden.",
     "diagnosis_using_yunohost_testing_details": "Dies ist wahrscheinlich OK, wenn Sie wissen, was Sie tun. Aber beachten Sie bitte die Release-Notes bevor sie zukünftige YunoHost-Upgrades installieren! Wenn Sie die 'testing'-Upgrades deaktivieren möchten, sollten sie das <cmd>testing</cmd>-Schlüsselwort aus <cmd>/etc/apt/sources.list.d/yunohost.list</cmd> entfernen.",
-    "global_settings_setting_security_experimental_enabled": "Experimentelle Sicherheitsfunktionen"
+    "global_settings_setting_security_experimental_enabled": "Experimentelle Sicherheitsfunktionen",
+    "domain_config_acme_eligible_explain": "Es scheint, als ob diese Domäne nicht bereit ist für ein Let's Encrypt-Zertifikat. Bitte überprüfen Sie Ihre DNS-Konfiguration und ob Ihr Server über HTTP erreichbar ist . Die Abschnitte 'DNS-Einträge' und 'Web' auf der <a href='#/diagnosis'>Diagnose-Seite</a> können Ihnen dabei helfen, zu verstehen, was falsch konfiguriert ist.",
+    "domain_config_cert_install": "Installation des Let's Encrypt-Zertifikats",
+    "domain_config_cert_issuer": "Zertifizierungsstelle",
+    "domain_config_cert_no_checks": "Tests und andere Diagnose-Überprüfungen ignorieren",
+    "domain_config_cert_renew": "Erneuern des Let's Encrypt-Zertifikats",
+    "domain_config_cert_renew_help": "Das Zertifikat wird automatisch während den letzten 15 Tagen seiner Gültigkeit erneuert. Sie können es manuell erneuern, wenn Sie möchten. (nicht empfohlen).",
+    "domain_config_cert_summary": "Zertifikats-Status"
 }
