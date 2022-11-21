@@ -223,6 +223,11 @@ class MyDiagnoser(Diagnoser):
             expected = r["value"].split()[-1]
             current = r["current"].split()[-1]
             return expected == current
+        elif r["type"] == "CAA":
+            # For CAA, check only the last item, ignore the 0 / 128 nightmare
+            expected = r["value"].split()[-1]
+            current = r["current"].split()[-1]
+            return expected == current
         else:
             return r["current"] == r["value"]
 
