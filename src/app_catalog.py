@@ -272,7 +272,7 @@ def _load_apps_catalog():
             merged_catalog["apps"][app] = info
 
         # Annnnd categories + antifeatures
-        merged_catalog["categories"] += apps_catalog_content["categories"]
-        merged_catalog["antifeatures"] += apps_catalog_content["antifeatures"]
+        merged_catalog["categories"] += apps_catalog_content.get("categories", [])
+        merged_catalog["antifeatures"] += apps_catalog_content.get("antifeatures", [])
 
     return merged_catalog
