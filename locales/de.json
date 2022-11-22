@@ -267,7 +267,7 @@
     "diagnosis_cache_still_valid": "(Cache noch gültig für {category} Diagnose. Es wird keine neue Diagnose durchgeführt!)",
     "diagnosis_cant_run_because_of_dep": "Kann Diagnose für {category} nicht ausführen während wichtige Probleme zu {dep} noch nicht behoben sind.",
     "diagnosis_found_errors_and_warnings": "Habe {errors} erhebliche(s) Problem(e) (und {warnings} Warnung(en)) in Verbindung mit {category} gefunden!",
-    "diagnosis_ip_broken_dnsresolution": "Domainname-Auflösung scheint aus einem bestimmten Grund nicht zu funktionieren... Blockiert eine Firewall die DNS-Anfragen?",
+    "diagnosis_ip_broken_dnsresolution": "Domänennamen-Auflösung scheint aus einem bestimmten Grund nicht zu funktionieren... Blockiert vielleicht eine Firewall die DNS-Anfragen?",
     "diagnosis_ip_broken_resolvconf": "Domänen-Namensauflösung scheint nicht zu funktionieren, was daran liegen könnte, dass in <code>/etc/resolv.conf</code> kein Eintrag auf <code>127.0.0.1</code> zeigt.",
     "diagnosis_ip_weird_resolvconf_details": "Die Datei <code>/etc/resolv.conf</code> muss ein Symlink auf <code>/etc/resolvconf/run/resolv.conf</code> sein, welcher auf <code>127.0.0.1</code> (dnsmasq) zeigt. Falls du die DNS-Resolver manuell konfigurieren möchtest, bearbeite bitte <code>/etc/resolv.dnsmasq.conf</code>.",
     "diagnosis_dns_good_conf": "DNS Einträge korrekt konfiguriert für die Domäne {domain} (Kategorie {category})",
@@ -690,5 +690,6 @@
     "domain_config_cert_no_checks": "Tests und andere Diagnose-Überprüfungen ignorieren",
     "domain_config_cert_renew": "Erneuern des Let's Encrypt-Zertifikats",
     "domain_config_cert_renew_help": "Das Zertifikat wird automatisch während den letzten 15 Tagen seiner Gültigkeit erneuert. Sie können es manuell erneuern, wenn Sie möchten. (nicht empfohlen).",
-    "domain_config_cert_summary": "Zertifikats-Status"
+    "domain_config_cert_summary": "Zertifikats-Status",
+    "visitors": "Besucher"
 }
