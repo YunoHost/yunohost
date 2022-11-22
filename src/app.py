@@ -587,11 +587,16 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     upgrade_type = "UPGRADE_FULL"
 
         # Check requirements
-        for _, check, values, err in _check_manifest_requirements(
+        for name, check, values, err in _check_manifest_requirements(
             manifest, action="upgrade"
         ):
             if not check:
-                raise YunohostValidationError(err, **values)
+                if name == "ram":
+                    _ask_confirmation(
+                        "confirm_app_insufficient_ram", params=values, force=force
+                    )
+                else:
+                    raise YunohostValidationError(err, **values)
 
         if manifest["packaging_format"] >= 2:
             if no_safety_backup:
@@ -895,7 +900,7 @@ def app_install(
         if not check:
             if name == "ram":
                 _ask_confirmation(
-                    "confirm_app_install_insufficient_ram", params=values, force=force
+                    "confirm_app_insufficient_ram", params=values, force=force
                 )
             else:
                 raise YunohostValidationError(err, **values)
