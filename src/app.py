@@ -908,11 +908,10 @@ def app_install(
 
     # Display pre_install notices in cli mode
     if manifest["notifications"]["pre_install"] and Moulinette.interface.type == "cli":
-        for notice in manifest["notifications"]["pre_install"].values():
-            # Should we render the markdown maybe? idk
-            print("==========")
-            print(_value_for_locale(notice))
-            print("==========")
+        notifications = _filter_and_hydrate_notifications(
+            manifest["notifications"]["pre_install"]
+        )
+        _display_notifications(notifications, force=force)
 
     packaging_format = manifest["packaging_format"]
 
@@ -1182,13 +1181,12 @@ def app_install(
 
     # Display post_install notices in cli mode
     if manifest["notifications"]["post_install"] and Moulinette.interface.type == "cli":
-        # (Call app_info to get the version hydrated with settings)
-        infos = app_info(app_instance_name, full=True)
-        for notice in infos["manifest"]["notifications"]["post_install"].values():
-            # Should we render the markdown maybe? idk
-            print("==========")
-            print(_value_for_locale(notice))
-            print("==========")
+        # Get the generated settings to hydrate notifications
+        settings = _get_app_settings(app_instance_name)
+        notifications = _filter_and_hydrate_notifications(
+            manifest["notifications"]["post_install"], data=settings
+        )
+        _display_notifications(notifications, force=force)
 
     # Call postinstall hook
     hook_callback("post_app_install", env=env_dict)
