@@ -830,7 +830,7 @@ def _confirm_app_install(app, force=False):
     if quality in ["danger", "thirdparty"]:
         _ask_confirmation("confirm_app_install_" + quality)
     else:
-        _ask_confirmation("confirm_app_install_" + quality, soft=True)
+        _ask_confirmation("confirm_app_install_" + quality, kind="soft")
 
 
 @is_unit_operation()
@@ -2802,14 +2802,30 @@ def _assert_system_is_sane_for_app(manifest, when):
 # FIXME: move this to Moulinette
 def _ask_confirmation(
     question: str,
-    params: object = {},
-    soft: bool = False,
+    params: dict = {},
+    kind: str = "hard",
     force: bool = False,
 ):
+    """
+    Ask confirmation
+
+    Keyword argument:
+        question -- m18n key or string
+        params -- dict of values passed to the string formating
+        kind -- "hard": ask with "Yes, I understand", "soft": "Y/N", "simple": "press enter"
+        force -- Will not ask for confirmation
+
+    """
     if force or Moulinette.interface.type == "api":
         return
 
-    if soft:
+    if kind == "simple":
+        answer = Moulinette.prompt(
+            m18n.n(question, answers="Press enter to continue", **params),
+            color="yellow",
+        )
+        answer = True
+    elif kind == "soft":
         answer = Moulinette.prompt(
             m18n.n(question, answers="Y/N", **params), color="yellow"
         )
