@@ -691,5 +691,9 @@
     "domain_config_cert_renew": "Erneuern des Let's Encrypt-Zertifikats",
     "domain_config_cert_renew_help": "Das Zertifikat wird automatisch während den letzten 15 Tagen seiner Gültigkeit erneuert. Sie können es manuell erneuern, wenn Sie möchten. (nicht empfohlen).",
     "domain_config_cert_summary": "Zertifikats-Status",
-    "visitors": "Besucher"
+    "visitors": "Besucher",
+    "domain_config_cert_summary_abouttoexpire": "Das aktuelle Zertifikat läuft bald ab. Es sollte bald automatisch erneuert werden.",
+    "domain_config_cert_summary_expired": "ACHTUNG: Das aktuelle Zertifikat ist nicht gültig! HTTPS wird gar nicht funktionieren!",
+    "domain_config_cert_summary_letsencrypt": "Toll! Sie benutzen ein gültiges Let's Encrypt-Zertifikat!",
+    "domain_config_cert_summary_ok": "Gut, das aktuelle Zertifikat sieht gut aus!"
 }
