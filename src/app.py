@@ -164,6 +164,8 @@ def app_info(app, full=False, upgradable=False):
             ret["current_version"] = f" ({current_revision})"
             ret["new_version"] = f" ({new_revision})"
 
+    ret["settings"] = settings
+
     if not full:
         return ret
 
@@ -175,7 +177,6 @@ def app_info(app, full=False, upgradable=False):
     ret["manifest"]["install"] = _set_default_ask_questions(
         ret["manifest"].get("install", {})
     )
-    ret["settings"] = settings
 
     ret["from_catalog"] = from_catalog
 
