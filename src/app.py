@@ -2799,6 +2799,29 @@ def _assert_system_is_sane_for_app(manifest, when):
             raise YunohostError("this_action_broke_dpkg")
 
 
+def _filter_and_hydrate_notifications(notifications, current_version=None, data={}):
+    return {
+        # Should we render the markdown maybe? idk
+        name: _hydrate_app_template(_value_for_locale(content_per_lang), data)
+        for name, content_per_lang in notifications.items()
+        if current_version is None
+        or name == "main"
+        or version.parse(name) > current_version
+    }
+
+
+def _display_notifications(notifications, force=False):
+    if not notifications:
+        return
+
+    for name, content in notifications.items():
+        print(f"========== {name}")
+        print(content)
+    print("==========")
+
+    _ask_confirmation("confirm_notifications_read", kind="simple", force=force)
+
+
 # FIXME: move this to Moulinette
 def _ask_confirmation(
     question: str,
