@@ -122,6 +122,29 @@ def user_list(fields=None):
 
     return {"users": users}
 
+def list_shells():
+    import ctypes
+    import ctypes.util
+    import os
+    import sys
+
+    """List the shells from /etc/shells."""
+    libc = ctypes.CDLL(ctypes.util.find_library("c"))
+    getusershell = libc.getusershell
+    getusershell.restype = ctypes.c_char_p
+    libc.setusershell()
+    while True:
+        shell = getusershell()
+        if not shell:
+            break
+        yield shell.decode()
+    libc.endusershell()
+
+
+def shellexists(shell):
+    """Check if the provided shell exists and is executable."""
+    return os.path.isfile(shell) and os.access(shell, os.X_OK)
+
 
 @is_unit_operation([("username", "user")])
 def user_create(
@@ -134,8 +157,8 @@ def user_create(
     lastname=None,
     mailbox_quota="0",
     admin=False,
-    loginShell="/bin/bash",
     from_import=False,
+    loginShell=None,
 ):
 
     if firstname or lastname:
@@ -234,6 +257,12 @@ def user_create(
         # LXC uid number is limited to 65536 by default
         uid = str(random.randint(1001, 65000))
         uid_guid_found = uid not in all_uid and uid not in all_gid
+
+    if not loginShell:
+        loginShell = "/bin/bash"
+    else:
+        if not shellexists(loginShell) or loginShell not in list_shells():
+            raise YunohostValidationError("invalid_shell", shell=loginShell)
 
     attr_dict = {
         "objectClass": [
@@ -527,6 +556,8 @@ def user_update(
         env_dict["YNH_USER_MAILQUOTA"] = mailbox_quota
 
     if loginShell is not None:
+        if not shellexists(loginShell) or loginShell not in list_shells():
+            raise YunohostValidationError("invalid_shell", shell=loginShell)
         new_attr_dict["loginShell"] = [loginShell]
         env_dict["YNH_USER_LOGINSHELL"] = loginShell
 
@@ -563,7 +594,7 @@ def user_info(username):
 
     ldap = _get_ldap_interface()
 
-    user_attrs = ["cn", "mail", "uid", "maildrop", "mailuserquota"]
+    user_attrs = ["cn", "mail", "uid", "maildrop", "mailuserquota", "loginShell"]
 
     if len(username.split("@")) == 2:
         filter = "mail=" + username
@@ -581,6 +612,7 @@ def user_info(username):
         "username": user["uid"][0],
         "fullname": user["cn"][0],
         "mail": user["mail"][0],
+        "loginShell": user["loginShell"][0],
         "mail-aliases": [],
         "mail-forward": [],
     }
