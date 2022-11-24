@@ -134,6 +134,7 @@ def user_create(
     lastname=None,
     mailbox_quota="0",
     admin=False,
+    loginShell="/bin/bash",
     from_import=False,
 ):
 
@@ -253,7 +254,7 @@ def user_create(
         "gidNumber": [uid],
         "uidNumber": [uid],
         "homeDirectory": ["/home/" + username],
-        "loginShell": ["/bin/bash"],
+        "loginShell": [loginShell],
     }
 
     try:
@@ -363,6 +364,7 @@ def user_update(
     mailbox_quota=None,
     from_import=False,
     fullname=None,
+    loginShell=None,
 ):
 
     if firstname or lastname:
@@ -524,6 +526,10 @@ def user_update(
         new_attr_dict["mailuserquota"] = [mailbox_quota]
         env_dict["YNH_USER_MAILQUOTA"] = mailbox_quota
 
+    if loginShell is not None:
+        new_attr_dict["loginShell"] = [loginShell]
+        env_dict["YNH_USER_LOGINSHELL"] = loginShell
+
     if not from_import:
         operation_logger.start()
 
@@ -531,6 +537,10 @@ def user_update(
         ldap.update(f"uid={username},ou=users", new_attr_dict)
     except Exception as e:
         raise YunohostError("user_update_failed", user=username, error=e)
+
+    # Invalidate passwd and group to update the loginShell
+    subprocess.call(["nscd", "-i", "passwd"])
+    subprocess.call(["nscd", "-i", "group"])
 
     # Trigger post_user_update hooks
     hook_callback("post_user_update", env=env_dict)
