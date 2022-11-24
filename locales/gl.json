@@ -281,7 +281,7 @@
     "dyndns_ip_update_failed": "Non se actualizou o enderezo IP en DynDNS",
     "dyndns_could_not_check_available": "Non se comprobou se {domain} está dispoñible en {provider}.",
     "dpkg_lock_not_available": "Non se pode executar agora mesmo este comando porque semella que outro programa está a utilizar dpkg (o xestos de paquetes do sistema)",
-    "dpkg_is_broken": "Non podes facer isto agora mesmo porque dpkg/APT (o xestor de paquetes do sistema) semella que non está a funcionar... Podes intentar solucionalo conectándote a través de SSH e executando `sudo apt install --fix-broken`e/ou `sudo dpkg --configure -a`.",
+    "dpkg_is_broken": "Non podes facer isto agora mesmo porque dpkg/APT (o xestor de paquetes do sistema) semella que non está a funcionar... Podes intentar solucionalo conectándote a través de SSH e executando `sudo apt install --fix-broken`e/ou `sudo dpkg --configure -a` e/ou `sudo dpkg --audit`.",
     "downloading": "Descargando...",
     "done": "Feito",
     "domains_available": "Dominios dispoñibles:",
