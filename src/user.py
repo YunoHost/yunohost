@@ -125,8 +125,6 @@ def user_list(fields=None):
 def list_shells():
     import ctypes
     import ctypes.util
-    import os
-    import sys
 
     """List the shells from /etc/shells."""
     libc = ctypes.CDLL(ctypes.util.find_library("c"))
