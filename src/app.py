@@ -2508,11 +2508,7 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
         for p, a in apps_map[domain].items():
             if a["id"] == ignore_app:
                 continue
-            if path == p:
-                conflicts.append((p, a["id"], a["label"]))
-            # We also don't want conflicts with other apps starting with
-            # same name
-            elif path.startswith(p) or p.startswith(path):
+            if path == p or path == "/" or p == "/":
                 conflicts.append((p, a["id"], a["label"]))
 
     return conflicts
