@@ -1666,8 +1666,15 @@ def app_config_get(app, key="", full=False, export=False):
     else:
         mode = "classic"
 
-    config_ = AppConfigPanel(app)
-    return config_.get(key, mode)
+    try:
+        config_ = AppConfigPanel(app)
+        return config_.get(key, mode)
+    except YunohostValidationError as e:
+        if Moulinette.interface.type == 'api' and e.key == "config_no_panel":
+            # Be more permissive when no config panel found
+            return {}
+        else:
+            raise
 
 
 @is_unit_operation()
