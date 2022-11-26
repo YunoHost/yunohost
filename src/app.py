@@ -1010,6 +1010,10 @@ def app_install(
                 recursive=True,
             )
 
+    # Override manifest name by given label
+    if label:
+        manifest["name"] = label
+
     if packaging_format >= 2:
         from yunohost.utils.resources import AppResourceManager
 
@@ -1029,7 +1033,7 @@ def app_install(
         permission_create(
             app_instance_name + ".main",
             allowed=["all_users"],
-            label=label if label else manifest["name"],
+            label=manifest["name"],
             show_tile=False,
             protected=False,
         )
