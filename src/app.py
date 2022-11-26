@@ -821,10 +821,27 @@ def app_manifest(app):
 
     manifest, extracted_app_folder = _extract_app(app)
 
-    shutil.rmtree(extracted_app_folder)
-
     raw_questions = manifest.get("install", {}).values()
     manifest["install"] = hydrate_questions_with_choices(raw_questions)
+
+    # Add a base64 image to be displayed in web-admin
+    if Moulinette.interface.type == "api":
+        import base64
+
+        manifest["image"] = None
+        screenshots_folder = os.path.join(extracted_app_folder, "doc", "screenshots")
+
+        if os.path.exists(screenshots_folder):
+            with os.scandir(screenshots_folder) as it:
+                for entry in it:
+                    ext = os.path.splitext(entry.name)[1].replace(".", "").lower()
+                    if entry.is_file() and ext in ("png", "jpg", "jpeg", "webp"):
+                        with open(entry.path, "rb") as img_file:
+                            data = base64.b64encode(img_file.read()).decode("utf-8")
+                            manifest["image"] = f"data:image/{ext};charset=utf-8;base64,{data}"
+                        break
+
+    shutil.rmtree(extracted_app_folder)
 
     manifest["requirements"] = {}
     for name, check, values, err in _check_manifest_requirements(
@@ -1675,7 +1692,7 @@ def app_config_get(app, key="", full=False, export=False):
         config_ = AppConfigPanel(app)
         return config_.get(key, mode)
     except YunohostValidationError as e:
-        if Moulinette.interface.type == 'api' and e.key == "config_no_panel":
+        if Moulinette.interface.type == "api" and e.key == "config_no_panel":
             # Be more permissive when no config panel found
             return {}
         else:
