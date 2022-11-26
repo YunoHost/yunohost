@@ -53,24 +53,19 @@ def settings_get(key="", full=False, export=False):
     else:
         mode = "classic"
 
-    if mode == "classic" and key == "":
-        raise YunohostValidationError("Missing key", raw_msg=True)
-
     settings = SettingsConfigPanel()
     key = translate_legacy_settings_to_configpanel_settings(key)
     return settings.get(key, mode)
 
 
-def settings_list(full=False, export=True):
-    """
-    List all entries of the settings
+def settings_list(full=False):
 
-    """
+    settings = settings_get(full=full)
 
     if full:
-        export = False
-
-    return settings_get(full=full, export=export)
+        return settings
+    else:
+        return {k: v for k, v in settings.items() if not k.startswith("security.root_access")}
 
 
 @is_unit_operation()
