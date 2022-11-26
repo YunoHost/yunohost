@@ -1183,17 +1183,22 @@ def app_install(
 
     logger.success(m18n.n("installation_complete"))
 
+    # Get the generated settings to hydrate notifications
+    settings = _get_app_settings(app_instance_name)
+    notifications = _filter_and_hydrate_notifications(
+        manifest["notifications"]["post_install"], data=settings
+    )
+
     # Display post_install notices in cli mode
-    if manifest["notifications"]["post_install"] and Moulinette.interface.type == "cli":
-        # Get the generated settings to hydrate notifications
-        settings = _get_app_settings(app_instance_name)
-        notifications = _filter_and_hydrate_notifications(
-            manifest["notifications"]["post_install"], data=settings
-        )
+    if notifications and Moulinette.interface.type == "cli":
         _display_notifications(notifications, force=force)
 
     # Call postinstall hook
     hook_callback("post_app_install", env=env_dict)
+
+    # Return hydrated post install notif for API
+    if Moulinette.interface.type == "api":
+        return {"notifications": notifications}
 
 
 @is_unit_operation()
