@@ -2385,7 +2385,7 @@ def _check_manifest_requirements(manifest: Dict, action: str):
             )
 
     # Multi-instance
-    if action == "install" and manifest["integration"]["multi_instance"] == False:
+    if action == "install" and manifest["integration"]["multi_instance"] is False:
         apps = _installed_apps()
         sibling_apps = [a for a in apps if a == app_id or a.startswith(f"{app_id}__")]
         if len(sibling_apps) > 0:

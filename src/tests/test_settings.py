@@ -1,7 +1,6 @@
 import os
-import json
-import glob
 import pytest
+import yaml
 
 import moulinette
 from yunohost.utils.error import YunohostError, YunohostValidationError
