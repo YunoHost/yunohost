@@ -47,14 +47,7 @@ dn: cn=admins,ou=groups,dc=yunohost,dc=org
 objectClass: posixGroup
 objectClass: top
 objectClass: groupOfNamesYnh
-objectClass: mailGroup
 gidNumber: 4001
-mail: root
-mail: admin
-mail: admins
-mail: webmaster
-mail: postmaster
-mail: abuse
 cn: admins
 
 dn: cn=all_users,ou=groups,dc=yunohost,dc=org
