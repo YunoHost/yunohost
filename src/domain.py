@@ -98,7 +98,7 @@ def _get_domains(exclude_subdomains=False):
     return domain_list_cache
 
 
-def domain_list(exclude_subdomains=False, tree=False):
+def domain_list(exclude_subdomains=False, tree=False, features=[]):
     """
     List domains
 
@@ -110,6 +110,14 @@ def domain_list(exclude_subdomains=False, tree=False):
 
     domains = _get_domains(exclude_subdomains)
     main = _get_maindomain()
+
+    if features:
+        domains_filtered = []
+        for domain in domains:
+            config = domain_config_get(domain, key="feature", export=True)
+            if any(config.get(feature) == 1 for feature in features):
+                domains_filtered.append(domain)
+        domains = domains_filtered
 
     if not tree:
         return {"domains": domains, "main": main}
@@ -544,6 +552,30 @@ class DomainConfigPanel(ConfigPanel):
             and self.future_values["default_app"] != self.values["default_app"]
         ):
             app_ssowatconf()
+
+        stuff_to_regen_conf = []
+        if (
+            "xmpp" in self.future_values
+            and self.future_values["xmpp"] != self.values["xmpp"]
+        ):
+            stuff_to_regen_conf.append("nginx")
+            stuff_to_regen_conf.append("metronome")
+
+        if (
+            "mail_in" in self.future_values
+            and self.future_values["mail_in"] != self.values["mail_in"]
+        ) or (
+            "mail_out" in self.future_values
+            and self.future_values["mail_out"] != self.values["mail_out"]
+        ):
+            if "nginx" not in stuff_to_regen_conf:
+                stuff_to_regen_conf.append("nginx")
+            stuff_to_regen_conf.append("postfix")
+            stuff_to_regen_conf.append("dovecot")
+            stuff_to_regen_conf.append("rspamd")
+
+        if stuff_to_regen_conf:
+            regen_conf(names=stuff_to_regen_conf)
 
     def _get_toml(self):
 
