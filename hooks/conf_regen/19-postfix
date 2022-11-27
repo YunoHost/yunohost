@@ -46,13 +46,13 @@ do_pre_regen() {
         cat <<<"[${relay_host}]:${relay_port} ${relay_user}:${relay_password}" >${postfix_dir}/sasl_passwd
     fi
     export main_domain
-    export domain_list="$YNH_DOMAINS"
+    export domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]" | tr '\n' ' ')"
     ynh_render_template "main.cf" "${postfix_dir}/main.cf"
     ynh_render_template "sni" "${postfix_dir}/sni"
 
     cat postsrsd \
         | sed "s/{{ main_domain }}/${main_domain}/g" \
-        | sed "s/{{ domain_list }}/${YNH_DOMAINS}/g" \
+        | sed "s/{{ domain_list }}/${domain_list}/g" \
             >"${default_dir}/postsrsd"
 
     # adapt it for IPv4-only hosts
