@@ -49,7 +49,7 @@ FIELDS_FOR_IMPORT = {
     "groups": r"^|([a-z0-9_]+(,?[a-z0-9_]+)*)$",
 }
 
-ADMIN_ALIASES = ["root@", "admin@", "admins", "webmaster@", "postmaster@", "abuse@"]
+ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
 
 def user_list(fields=None):
@@ -209,11 +209,7 @@ def user_create(
     if username in all_existing_usernames:
         raise YunohostValidationError("system_username_exists")
 
-    main_domain = _get_maindomain()
-    # FIXME: should forbit root@any.domain, not just main domain?
-    admin_aliases = [alias + main_domain for alias in ADMIN_ALIASES]
-
-    if mail in admin_aliases:
+    if mail.split("@")[0] in ADMIN_ALIASES:
         raise YunohostValidationError("mail_unavailable")
 
     if not from_import:
@@ -377,7 +373,7 @@ def user_update(
             " ".join(fullname.split()[1:]) or " "
         )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
 
-    from yunohost.domain import domain_list, _get_maindomain
+    from yunohost.domain import domain_list
     from yunohost.app import app_ssowatconf
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
@@ -443,8 +439,6 @@ def user_update(
         env_dict["YNH_USER_PASSWORD"] = change_password
 
     if mail:
-        main_domain = _get_maindomain()
-
         # If the requested mail address is already as main address or as an alias by this user
         if mail in user["mail"]:
             user["mail"].remove(mail)
@@ -459,9 +453,7 @@ def user_update(
                 "mail_domain_unknown", domain=mail[mail.find("@") + 1 :]
             )
 
-        # FIXME: should also forbid root@any.domain and not just the main domain
-        aliases = [alias + main_domain for alias in ADMIN_ALIASES]
-        if mail in aliases:
+        if mail.split("@")[0] in ADMIN_ALIASES:
             raise YunohostValidationError("mail_unavailable")
 
         new_attr_dict["mail"] = [mail] + user["mail"][1:]
@@ -470,6 +462,9 @@ def user_update(
         if not isinstance(add_mailalias, list):
             add_mailalias = [add_mailalias]
         for mail in add_mailalias:
+            if mail.split("@")[0] in ADMIN_ALIASES:
+                raise YunohostValidationError("mail_unavailable")
+
             # (c.f. similar stuff as before)
             if mail in user["mail"]:
                 user["mail"].remove(mail)
@@ -1109,22 +1104,15 @@ def user_group_update(
     groupname,
     add=None,
     remove=None,
+    add_mailalias=None,
+    remove_mailalias=None,
     force=False,
     sync_perm=True,
     from_import=False,
 ):
-    """
-    Update user informations
-
-    Keyword argument:
-        groupname -- Groupname to update
-        add -- User(s) to add in group
-        remove -- User(s) to remove in group
-
-    """
 
     from yunohost.permission import permission_sync_to_user
-    from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
 
     existing_users = list(user_list()["users"].keys())
 
@@ -1141,53 +1129,119 @@ def user_group_update(
                 "group_cannot_edit_primary_group", group=groupname
             )
 
+    ldap = _get_ldap_interface()
+
+    # Fetch info for this group
+    result = ldap.search(
+        "ou=groups",
+        "cn=" + groupname,
+        ["cn", "member", "permission", "mail", "objectClass"],
+    )
+
+    if not result:
+        raise YunohostValidationError("group_unknown", group=groupname)
+
+    group = result[0]
+
     # We extract the uid for each member of the group to keep a simple flat list of members
-    current_group = user_group_info(groupname)["members"]
-    new_group = copy.copy(current_group)
+    current_group_mail = group.get("mail", [])
+    new_group_mail = copy.copy(current_group_mail)
+    current_group_members = [_ldap_path_extract(p, "uid") for p in group.get("member", [])]
+    new_group_members = copy.copy(current_group_members)
+    new_attr_dict = {}
 
     if add:
+
         users_to_add = [add] if not isinstance(add, list) else add
 
         for user in users_to_add:
             if user not in existing_users:
                 raise YunohostValidationError("user_unknown", user=user)
 
-            if user in current_group:
+            if user in current_group_members:
                 logger.warning(
                     m18n.n("group_user_already_in_group", user=user, group=groupname)
                 )
             else:
                 operation_logger.related_to.append(("user", user))
 
-        new_group += users_to_add
+        new_group_members += users_to_add
 
     if remove:
         users_to_remove = [remove] if not isinstance(remove, list) else remove
 
         for user in users_to_remove:
-            if user not in current_group:
+            if user not in current_group_members:
                 logger.warning(
                     m18n.n("group_user_not_in_group", user=user, group=groupname)
                 )
             else:
                 operation_logger.related_to.append(("user", user))
 
-        # Remove users_to_remove from new_group
-        # Kinda like a new_group -= users_to_remove
-        new_group = [u for u in new_group if u not in users_to_remove]
+        # Remove users_to_remove from new_group_members
+        # Kinda like a new_group_members -= users_to_remove
+        new_group_members = [u for u in new_group_members if u not in users_to_remove]
 
-    new_group_dns = [
-        "uid=" + user + ",ou=users,dc=yunohost,dc=org" for user in new_group
-    ]
+    # If something changed, we add this to the stuff to commit later in the code
+    if set(new_group_members) != set(current_group_members):
+        new_group_members_dns = [
+            "uid=" + user + ",ou=users,dc=yunohost,dc=org" for user in new_group_members
+        ]
+        new_attr_dict["member"] = set(new_group_members_dns)
+        new_attr_dict["memberUid"] = set(new_group_members)
 
-    if set(new_group) != set(current_group):
+    # Check the whole alias situation
+    if add_mailalias:
+
+        from yunohost.domain import domain_list
+        domains = domain_list()["domains"]
+
+        if not isinstance(add_mailalias, list):
+            add_mailalias = [add_mailalias]
+        for mail in add_mailalias:
+            if mail.split("@")[0] in ADMIN_ALIASES and groupname != "admins":
+                raise YunohostValidationError("mail_unavailable")
+            if mail in current_group_mail:
+                continue
+            try:
+                ldap.validate_uniqueness({"mail": mail})
+            except Exception as e:
+                raise YunohostError("group_update_failed", group=groupname, error=e)
+            if mail[mail.find("@") + 1 :] not in domains:
+                raise YunohostError(
+                    "mail_domain_unknown", domain=mail[mail.find("@") + 1 :]
+                )
+            new_group_mail.append(mail)
+
+    if remove_mailalias:
+        from yunohost.domain import _get_maindomain
+        if not isinstance(remove_mailalias, list):
+            remove_mailalias = [remove_mailalias]
+        for mail in remove_mailalias:
+            if "@" in mail and mail.split("@")[0] in ADMIN_ALIASES and groupname == "admins" and mail.split("@")[1] == _get_maindomain():
+                raise YunohostValidationError(f"The alias {mail} can not be removed from the 'admins' group", raw_msg=True)
+            if mail in new_group_mail:
+                new_group_mail.remove(mail)
+            else:
+                raise YunohostValidationError("mail_alias_remove_failed", mail=mail)
+
+    if set(new_group_mail) != set(current_group_mail):
+
+        logger.info(m18n.n("group_update_aliases", group=groupname))
+        new_attr_dict["mail"] = set(new_group_mail)
+
+        if new_attr_dict["mail"] and "mailAccount" not in group["objectClass"]:
+            new_attr_dict["objectClass"] = group["objectClass"] + ["mailAccount"]
+        elif not new_attr_dict["mail"] and "mailAccount" in group["objectClass"]:
+            new_attr_dict["objectClass"] = [c for c in group["objectClass"] if c != "mailAccount"]
+
+    if new_attr_dict:
         if not from_import:
             operation_logger.start()
-        ldap = _get_ldap_interface()
         try:
             ldap.update(
                 f"cn={groupname},ou=groups",
-                {"member": set(new_group_dns), "memberUid": set(new_group)},
+                new_attr_dict
             )
         except Exception as e:
             raise YunohostError("group_update_failed", group=groupname, error=e)
@@ -1197,7 +1251,10 @@ def user_group_update(
 
     if not from_import:
         if groupname != "all_users":
-            logger.success(m18n.n("group_updated", group=groupname))
+            if not new_attr_dict:
+                logger.info(m18n.n("group_no_change", group=groupname))
+            else:
+                logger.success(m18n.n("group_updated", group=groupname))
         else:
             logger.debug(m18n.n("group_updated", group=groupname))
 
@@ -1221,7 +1278,7 @@ def user_group_info(groupname):
     result = ldap.search(
         "ou=groups",
         "cn=" + groupname,
-        ["cn", "member", "permission"],
+        ["cn", "member", "permission", "mail"],
     )
 
     if not result:
@@ -1236,6 +1293,7 @@ def user_group_info(groupname):
         "permissions": [
             _ldap_path_extract(p, "cn") for p in infos.get("permission", [])
         ],
+        "mail-aliases": [m for m in infos.get("mail", [])]
     }
 
 
@@ -1264,6 +1322,13 @@ def user_group_remove(groupname, usernames, force=False, sync_perm=True):
         groupname, remove=usernames, force=force, sync_perm=sync_perm
     )
 
+
+def user_group_add_mailalias(groupname, aliases):
+    return user_group_update(groupname, add_mailalias=aliases, sync_perm=False)
+
+
+def user_group_remove_mailalias(groupname, aliases):
+    return user_group_update(groupname, remove_mailalias=aliases, sync_perm=False)
 
 #
 # Permission subcategory
@@ -1364,3 +1429,14 @@ def _hash_user_password(password):
 
     salt = "$6$" + salt + "$"
     return "{CRYPT}" + crypt.crypt(str(password), salt)
+
+
+def _update_admins_group_aliases(old_main_domain, new_main_domain):
+
+    current_admin_aliases = user_group_info("admins")["mail-aliases"]
+
+    aliases_to_remove = [a for a in current_admin_aliases \
+                         if "@" in a and a.split("@")[1] == old_main_domain and a.split("@")[0] in ADMIN_ALIASES]
+    aliases_to_add = [f"{a}@{new_main_domain}" for a in ADMIN_ALIASES]
+
+    user_group_update("admins", add_mailalias=aliases_to_add, remove_mailalias=aliases_to_remove)
