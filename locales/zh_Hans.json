@@ -121,7 +121,7 @@
     "app_restore_failed": "无法还原 {app}: {error}",
     "app_remove_after_failed_install": "安装失败后删除应用程序...",
     "app_requirements_checking": "正在检查{app}所需的软件包...",
-    "app_removed": "{app} 已删除",
+    "app_removed": "{app} 已卸载",
     "app_not_properly_removed": "{app} 未正确删除",
     "app_not_correctly_installed": "{app} 似乎安装不正确",
     "app_not_upgraded": "应用程序'{failed_app}'升级失败，因此以下应用程序的升级已被取消: {apps}",
@@ -129,7 +129,7 @@
     "app_manifest_install_ask_admin": "选择此应用的管理员用户",
     "app_manifest_install_ask_password": "选择此应用的管理密码",
     "additional_urls_already_removed": "权限'{permission}'的其他URL中已经删除了附加URL'{url}'",
-    "app_manifest_install_ask_path": "选择安装此应用的路径",
+    "app_manifest_install_ask_path": "选择安装此应用的路径(在域名之后)",
     "app_manifest_install_ask_domain": "选择应安装此应用程序的域",
     "app_location_unavailable": "该URL不可用，或与已安装的应用冲突：\n{apps}",
     "app_label_deprecated": "不推荐使用此命令！请使用新命令 'yunohost user permission update'来管理应用标签。",
@@ -585,5 +585,12 @@
     "global_settings_setting_ssh_compatibility_help": "SSH服务器的兼容性与安全性的权衡。影响密码（以及其他与安全性有关的方面）",
     "global_settings_setting_ssh_port": "SSH端口",
     "global_settings_setting_smtp_allow_ipv6_help": "允许使用IPv6接收和发送邮件",
-    "global_settings_setting_smtp_relay_enabled_help": "使用SMTP中继主机来代替这个YunoHost实例发送邮件。如果你有以下情况，就很有用:你的25端口被你的ISP或VPS提供商封锁，你有一个住宅IP列在DUHL上，你不能配置反向DNS，或者这个服务器没有直接暴露在互联网上，你想使用其他服务器来发送邮件。"
+    "global_settings_setting_smtp_relay_enabled_help": "使用SMTP中继主机来代替这个YunoHost实例发送邮件。如果你有以下情况，就很有用:你的25端口被你的ISP或VPS提供商封锁，你有一个住宅IP列在DUHL上，你不能配置反向DNS，或者这个服务器没有直接暴露在互联网上，你想使用其他服务器来发送邮件。",
+    "all_users": "所有的YunoHost用户",
+    "app_manifest_install_ask_init_admin_permission": "谁应该有权访问此应用程序的管理功能？（此配置可以稍后更改）",
+    "app_action_failed": "对应用{app}执行动作{action}失败",
+    "app_manifest_install_ask_init_main_permission": "谁应该有权访问此应用程序？（此配置稍后可以更改）",
+    "ask_admin_fullname": "管理员全名",
+    "ask_admin_username": "管理员用户名",
+    "ask_fullname": "全名"
 }
