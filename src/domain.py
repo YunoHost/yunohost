@@ -471,7 +471,10 @@ def domain_main_domain(operation_logger, new_main_domain=None):
         regen_conf()
 
     from yunohost.user import _update_admins_group_aliases
-    _update_admins_group_aliases(old_main_domain=old_main_domain, new_main_domain=new_main_domain)
+
+    _update_admins_group_aliases(
+        old_main_domain=old_main_domain, new_main_domain=new_main_domain
+    )
 
     logger.success(m18n.n("main_domain_changed"))
 

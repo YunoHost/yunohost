@@ -22,7 +22,14 @@ class MyMigration(Migration):
     @Migration.ldap_migration
     def run(self, *args):
 
-        from yunohost.user import user_list, user_info, user_group_update, user_update, user_group_add_mailalias, ADMIN_ALIASES
+        from yunohost.user import (
+            user_list,
+            user_info,
+            user_group_update,
+            user_update,
+            user_group_add_mailalias,
+            ADMIN_ALIASES,
+        )
         from yunohost.utils.ldap import _get_ldap_interface
         from yunohost.permission import permission_sync_to_user
         from yunohost.domain import _get_maindomain
@@ -94,7 +101,9 @@ class MyMigration(Migration):
             },
         )
 
-        user_group_add_mailalias("admins", [f"{alias}@{main_domain}" for alias in ADMIN_ALIASES])
+        user_group_add_mailalias(
+            "admins", [f"{alias}@{main_domain}" for alias in ADMIN_ALIASES]
+        )
 
         permission_sync_to_user()
 
