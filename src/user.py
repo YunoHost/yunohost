@@ -1146,7 +1146,9 @@ def user_group_update(
     # We extract the uid for each member of the group to keep a simple flat list of members
     current_group_mail = group.get("mail", [])
     new_group_mail = copy.copy(current_group_mail)
-    current_group_members = [_ldap_path_extract(p, "uid") for p in group.get("member", [])]
+    current_group_members = [
+        _ldap_path_extract(p, "uid") for p in group.get("member", [])
+    ]
     new_group_members = copy.copy(current_group_members)
     new_attr_dict = {}
 
@@ -1194,6 +1196,7 @@ def user_group_update(
     if add_mailalias:
 
         from yunohost.domain import domain_list
+
         domains = domain_list()["domains"]
 
         if not isinstance(add_mailalias, list):
@@ -1215,11 +1218,20 @@ def user_group_update(
 
     if remove_mailalias:
         from yunohost.domain import _get_maindomain
+
         if not isinstance(remove_mailalias, list):
             remove_mailalias = [remove_mailalias]
         for mail in remove_mailalias:
-            if "@" in mail and mail.split("@")[0] in ADMIN_ALIASES and groupname == "admins" and mail.split("@")[1] == _get_maindomain():
-                raise YunohostValidationError(f"The alias {mail} can not be removed from the 'admins' group", raw_msg=True)
+            if (
+                "@" in mail
+                and mail.split("@")[0] in ADMIN_ALIASES
+                and groupname == "admins"
+                and mail.split("@")[1] == _get_maindomain()
+            ):
+                raise YunohostValidationError(
+                    f"The alias {mail} can not be removed from the 'admins' group",
+                    raw_msg=True,
+                )
             if mail in new_group_mail:
                 new_group_mail.remove(mail)
             else:
@@ -1233,16 +1245,15 @@ def user_group_update(
         if new_attr_dict["mail"] and "mailAccount" not in group["objectClass"]:
             new_attr_dict["objectClass"] = group["objectClass"] + ["mailAccount"]
         elif not new_attr_dict["mail"] and "mailAccount" in group["objectClass"]:
-            new_attr_dict["objectClass"] = [c for c in group["objectClass"] if c != "mailAccount"]
+            new_attr_dict["objectClass"] = [
+                c for c in group["objectClass"] if c != "mailAccount"
+            ]
 
     if new_attr_dict:
         if not from_import:
             operation_logger.start()
         try:
-            ldap.update(
-                f"cn={groupname},ou=groups",
-                new_attr_dict
-            )
+            ldap.update(f"cn={groupname},ou=groups", new_attr_dict)
         except Exception as e:
             raise YunohostError("group_update_failed", group=groupname, error=e)
 
@@ -1293,7 +1304,7 @@ def user_group_info(groupname):
         "permissions": [
             _ldap_path_extract(p, "cn") for p in infos.get("permission", [])
         ],
-        "mail-aliases": [m for m in infos.get("mail", [])]
+        "mail-aliases": [m for m in infos.get("mail", [])],
     }
 
 
@@ -1329,6 +1340,7 @@ def user_group_add_mailalias(groupname, aliases):
 
 def user_group_remove_mailalias(groupname, aliases):
     return user_group_update(groupname, remove_mailalias=aliases, sync_perm=False)
+
 
 #
 # Permission subcategory
@@ -1435,8 +1447,15 @@ def _update_admins_group_aliases(old_main_domain, new_main_domain):
 
     current_admin_aliases = user_group_info("admins")["mail-aliases"]
 
-    aliases_to_remove = [a for a in current_admin_aliases \
-                         if "@" in a and a.split("@")[1] == old_main_domain and a.split("@")[0] in ADMIN_ALIASES]
+    aliases_to_remove = [
+        a
+        for a in current_admin_aliases
+        if "@" in a
+        and a.split("@")[1] == old_main_domain
+        and a.split("@")[0] in ADMIN_ALIASES
+    ]
     aliases_to_add = [f"{a}@{new_main_domain}" for a in ADMIN_ALIASES]
 
-    user_group_update("admins", add_mailalias=aliases_to_add, remove_mailalias=aliases_to_remove)
+    user_group_update(
+        "admins", add_mailalias=aliases_to_add, remove_mailalias=aliases_to_remove
+    )
