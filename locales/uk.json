@@ -727,5 +727,6 @@
     "invalid_credentials": "Недійсний пароль чи ім'я користувача",
     "log_settings_reset": "Скидання налаштування (одного)",
     "log_settings_reset_all": "Скидання усіх налаштувань",
-    "log_settings_set": "Застосування налаштувань"
+    "log_settings_set": "Застосування налаштувань",
+    "group_update_aliases": "Оновл"
 }
