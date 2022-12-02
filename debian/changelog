@@ -1,3 +1,27 @@
+yunohost (11.1.1) testing; urgency=low
+
+  - groups: add mail-aliases management (#1539) (0f9d9388)
+  - apps: Allow apps to be installed on a path sharing a common base, eg /foo and /foo2 (#1537) (ae594111)
+  - admins/ldap: re-allow member of the admins group to edit ldap db (4f5cc166)
+  - nginx: Add 502 custom error page (#1530) (5063e128)
+  - misc/nodejs: Upgrade n to version 9.0.1 ([#1528](https://github.com/yunohost/yunohost/pull/1528))
+  - misc/update: add --allow-releaseinfo-change option to apt update to prevent the classic nightmare when debian changes from stable to oldstable (ac6d6871)
+  - misc/dns: Add Webgo as Registrar to support it via LexiconAdd Webgo as Registrar (#1529) (c50f3771)
+  - misc/debug: Improve dpkg_is_broken instruction to also mention dpkg --audit (a772153b)
+  - misc/regeconf: fix yunohost hook incorectly tweaking mdns.yml ownership (9bd98162)
+  - misc/helpers: fix docker-image-extract helper (#1532)
+  - misc/yunoprompt: don't display postinstall tip to members of all_users group (because they can't check if /etc/yunohost/installed exists, but if they're member of the all_users group, then postinstall was already done) (4aaa8896)
+  - misc/diagnosis: make the dnsrecord diagnoser not complain about the damn 128 vs 0 stuff in CAA records (70a8225b)
+  - misc/settings: fix output format for 'yunohost settings list' (70bf38ce)
+  - misc/helpers: Better error message when psql is not there for database_exists (#992) (f49c121b)
+  - misc/multimedia: fix edgecase where setfacl crashes because of broken symlinks (94f21ea2)
+  - misc/legacy: auto-patch yunohost user create syntax in app scripts to use --fullname instead (d254fb1b)
+  - [i18n] Translations updated for Arabic, Basque, Chinese (Simplified), Dutch, French, Galician, German, Spanish, Ukrainian
+
+  Thanks to all contributors <3 ! (André Koot, Augustin Trancart, Axolotle, ButterflyOfFire, Christian Wehrli, Éric Gaspar, José M, lee, mod242, quiwy, tituspijean, Tymofii-Lytvynenko, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 02 Dec 2022 23:31:28 +0100
+
 yunohost (11.1.0.2) testing; urgency=low
 
   - globalsettings: make sure to run migration 25 prior to the regenconf (f3750598)
