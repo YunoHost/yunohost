@@ -253,6 +253,11 @@ def _patch_legacy_helpers(app_folder):
         "yunohost app checkport": {"important": True},
         "yunohost tools port-available": {"important": True},
         "yunohost app checkurl": {"important": True},
+        "yunohost user create": {
+            "pattern": r"yunohost user create (\S+) (-f|--firstname) (\S+) (-l|--lastname) \S+ (.*)",
+            "replace": r"yunohost user create \1 --fullname \3 \5",
+            "important": False,
+        },
         # Remove
         #    Automatic diagnosis data from YunoHost
         #    __PRE_TAG1__$(yunohost tools diagnosis | ...)__PRE_TAG2__"

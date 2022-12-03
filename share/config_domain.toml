@@ -1,14 +1,6 @@
 version = "1.0"
 i18n = "domain_config"
 
-#
-# Other things we may want to implement in the future:
-#
-# - maindomain handling
-# - autoredirect www in nginx conf
-# - ?
-#
-
 [feature]
 name = "Features"
 
@@ -19,12 +11,6 @@ name = "Features"
         default = "_none"
 
     [feature.mail]
-    #services = ['postfix', 'dovecot']
-
-        [feature.mail.features_disclaimer]
-        type = "alert"
-        style = "warning"
-        icon = "warning"
 
         [feature.mail.mail_out]
         type = "boolean"
@@ -34,31 +20,18 @@ name = "Features"
         type = "boolean"
         default = 1
 
-        #[feature.mail.backup_mx]
-        #type = "tags"
-        #default = []
-        #pattern.regexp = '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$'
-        #pattern.error = "pattern_error"
-
     [feature.xmpp]
 
         [feature.xmpp.xmpp]
         type = "boolean"
         default = 0
+        help = "NB: some XMPP features will require that you update your DNS records and regenerate your Lets Encrypt certificate to be enabled"
 
 [dns]
 name = "DNS"
 
     [dns.registrar]
     # This part is automatically generated in DomainConfigPanel
-
-#   [dns.advanced]
-#
-#        [dns.advanced.ttl]
-#        type = "number"
-#        min = 0
-#        default = 3600
-
 
 [cert]
 name = "Certificate"

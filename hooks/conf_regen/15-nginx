@@ -73,6 +73,8 @@ do_pre_regen() {
     cert_status=$(yunohost domain cert status --json)
 
     # add domain conf files
+    xmpp_domain_list="$(yunohost domain list --features xmpp --output-as json | jq -r ".domains[]")"
+    mail_domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]")"
     for domain in $YNH_DOMAINS; do
         domain_conf_dir="${nginx_conf_dir}/${domain}.d"
         mkdir -p "$domain_conf_dir"
@@ -84,9 +86,24 @@ do_pre_regen() {
         export domain_cert_ca=$(echo $cert_status \
             | jq ".certificates.\"$domain\".CA_type" \
             | tr -d '"')
+        if echo "$xmpp_domain_list" | grep -q "^$domain$"
+        then
+            export xmpp_enabled="True"
+        else
+            export xmpp_enabled="False"
+        fi
+        if echo "$mail_domain_list" | grep -q "^$domain$"
+        then
+            export mail_enabled="True"
+        else
+            export mail_enabled="False"
+        fi
 
         ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
-        ynh_render_template "autoconfig.tpl.xml" "${mail_autoconfig_dir}/config-v1.1.xml"
+        if [ $mail_enabled == "True" ]
+        then
+            ynh_render_template "autoconfig.tpl.xml" "${mail_autoconfig_dir}/config-v1.1.xml"
+        fi
 
         touch "${domain_conf_dir}/yunohost_local.conf" # Clean legacy conf files
 

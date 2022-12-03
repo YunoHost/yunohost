@@ -1,7 +1,6 @@
 import os
-import json
-import glob
 import pytest
+import yaml
 
 import moulinette
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -208,7 +207,7 @@ def test_settings_set_bad_value_select():
 
 def test_settings_list_modified():
     settings_set("example.example.number", 21)
-    assert settings_list()["number"] == 21
+    assert int(settings_list()["example.example.number"]["value"]) == 21
 
 
 def test_reset():
