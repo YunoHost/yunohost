@@ -1,5 +1,5 @@
 {
-    "action_invalid": "Acción no válida '{action} 1'",
+    "action_invalid": "Acción inválida '{action}'",
     "admin_password": "Contraseña administrativa",
     "app_already_installed": "{app} ya está instalada",
     "app_argument_choice_invalid": "Elija un valor válido para el argumento '{name}': '{value}' no se encuentra entre las opciones disponibles ({choices})",
@@ -145,7 +145,7 @@
     "certmanager_attempt_to_renew_nonLE_cert": "El certificado para el dominio «{domain}» no ha sido emitido por Let's Encrypt. ¡No se puede renovar automáticamente!",
     "certmanager_attempt_to_renew_valid_cert": "¡El certificado para el dominio «{domain}» no está a punto de expirar! (Puede usar --force si sabe lo que está haciendo)",
     "certmanager_domain_http_not_working": "Parece que no se puede acceder al dominio {domain} a través de HTTP. Por favor compruebe en los diagnósticos la categoría 'Web'para más información. (Si sabe lo que está haciendo, utilice '--no-checks' para no realizar estas comprobaciones.)",
-    "certmanager_domain_dns_ip_differs_from_public_ip": "El registro DNS 'A' para el dominio '{domain}' es diferente de la IP de este servidor. Por favor comprueba los 'registros DNS' (básicos) la categoría de diagnósticos para mayor información. Si recientemente modificó su registro 'A', espere a que se propague (algunos verificadores de propagación de DNS están disponibles en línea). (Si sabe lo que está haciendo, use '--no-checks' para desactivar esos cheques)",
+    "certmanager_domain_dns_ip_differs_from_public_ip": "Los registros DNS para el dominio '{domain}' son diferentes para la IP de este servidor. Por favor comprueba la categoría de los 'registros DNS' (básicos) en la página de diagnóstico para mayor información. Si has modificado recientemente tu registro 'A', espera a que se propague (algunos verificadores de propagación de DNS están disponibles en línea). (Si sabes lo que estás haciendo, usa '--no-checks' para desactivar estos marcadores)",
     "certmanager_cannot_read_cert": "Se ha producido un error al intentar abrir el certificado actual para el dominio {domain} (archivo: {file}), razón: {reason}",
     "certmanager_cert_install_success_selfsigned": "Instalado correctamente un certificado autofirmado para el dominio «{domain}»",
     "certmanager_cert_install_success": "Instalado correctamente un certificado de Let's Encrypt para el dominio «{domain}»",
@@ -158,7 +158,7 @@
     "certmanager_unable_to_parse_self_CA_name": "No se pudo procesar el nombre de la autoridad de autofirma (archivo: {file})",
     "domains_available": "Dominios disponibles:",
     "backup_archive_broken_link": "No se pudo acceder al archivo de respaldo (enlace roto a {path})",
-    "certmanager_acme_not_configured_for_domain": "El reto ACME no ha podido ser realizado para {domain} porque en su configuración de nginx falta el código correcto... Por favor, asegúrate que la configuración de nginx es correcta ejecutando en el terminal `yunohost tools regen-conf nginx --dry-run --with-diff`.",
+    "certmanager_acme_not_configured_for_domain": "El reto ACME no ha podido ser realizado para {domain} porque en su configuración de nginx falta el código correcto... Por favor, asegúrate que la configuración de nginx es correcta ejecutando en la terminal `yunohost tools regen-conf nginx --dry-run --with-diff`.",
     "domain_hostname_failed": "No se pudo establecer un nuevo nombre de anfitrión («hostname»). Esto podría causar problemas más tarde (no es seguro... podría ir bien).",
     "app_already_installed_cant_change_url": "Esta aplicación ya está instalada. La URL no se puede cambiar solo con esta función. Marque `app changeurl` si está disponible.",
     "app_change_url_identical_domains": "El antiguo y nuevo dominio/url_path son idénticos ('{domain}{path}'), no se realizarán cambios.",
@@ -523,8 +523,8 @@
     "diagnosis_mail_outgoing_port_25_blocked_relay_vpn": "Algunos proveedores de internet no le permitirán desbloquear el puerto 25 porque no les importa la Neutralidad de la Red.<br> - Algunos proporcionan una alternativa usando <a href='https://yunohost.org/#/email_configure_relay'>un relay como servidor de correo</a> lo que implica que el relay podrá espiar tu trafico de correo.<br>- Una alternativa buena para la privacidad es utilizar una VPN *con una IP pública dedicada* para evitar estas limitaciones. Mira en <a href='https://yunohost.org/#/vpn_advantage'>https://yunohost.org/#/vpn_advantage</a><br>- Otra alternativa es cambiar de proveedor de inteernet a <a href='https://yunohost.org/#/isp'>uno más amable con la Neutralidad de la Red</a>",
     "diagnosis_backports_in_sources_list": "Parece que apt (el gestor de paquetes) está configurado para usar el repositorio backports. A menos que realmente sepas lo que estás haciendo, desaconsejamos absolutamente instalar paquetes desde backports, ya que pueden provocar comportamientos intestables o conflictos en el sistema.",
     "diagnosis_basesystem_hardware_model": "El modelo de servidor es {model}",
-    "additional_urls_already_removed": "La URL adicional «{url}» ya se ha eliminado para el permiso «{permission}»",
-    "additional_urls_already_added": "La URL adicional «{url}» ya se ha añadido para el permiso «{permission}»",
+    "additional_urls_already_removed": "La URL adicional '{url}' ya se ha eliminado para el permiso «{permission}»",
+    "additional_urls_already_added": "La URL adicional '{url}' ya se ha añadido para el permiso «{permission}»",
     "config_apply_failed": "Falló la aplicación de la nueva configuración: {error}",
     "app_restore_script_failed": "Ha ocurrido un error dentro del script de restauración de aplicaciones",
     "app_config_unable_to_apply": "No se pudieron aplicar los valores del panel configuración.",
@@ -671,5 +671,8 @@
     "app_manifest_install_ask_init_main_permission": "¿Quién debería tener acceso a esta aplicación? (Esto puede cambiarse posteriormente)",
     "ask_admin_fullname": "Nombre completo del administrador",
     "ask_admin_username": "Nombre de usuario del administrador",
-    "ask_fullname": "Nombre completo"
+    "ask_fullname": "Nombre completo",
+    "certmanager_cert_install_failed": "La instalación del certificado Let's Encrypt a fallado para {domains}",
+    "certmanager_cert_install_failed_selfsigned": "La instalación del certificado autofirmado ha fallado para {domains}",
+    "certmanager_cert_renew_failed": "La renovación del certificado Let's Encrypt ha fallado para {domains}"
 }
