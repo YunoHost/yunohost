@@ -568,10 +568,10 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     # Set the domain
     csr.get_subject().CN = domain
 
-    from yunohost.domain import domain_list
+    from yunohost.domain import domain_list, domain_config_get
 
-    # For "parent" domains, include xmpp-upload subdomain in subject alternate names
-    if domain in domain_list(exclude_subdomains=True)["domains"]:
+    # If XMPP is enabled for this domain, add xmpp-upload domain
+    if domain_config_get(domain, key="feature.xmpp.xmpp") == 1:
         subdomain = "xmpp-upload." + domain
         xmpp_records = (
             Diagnoser.get_cached_report(
