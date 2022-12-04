@@ -807,6 +807,10 @@ app:
             arguments:
                 app:
                     help: Name, local path or git URL of the app to fetch the manifest of
+                -s:
+                    full: --with-screenshot
+                    help: Also return a base64 screenshot if any (API only)
+                    action: store_true
 
         ### app_list()
         list:

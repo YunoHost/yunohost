@@ -817,7 +817,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
     logger.success(m18n.n("upgrade_complete"))
 
 
-def app_manifest(app):
+def app_manifest(app, with_screenshot=False):
 
     manifest, extracted_app_folder = _extract_app(app)
 
@@ -825,20 +825,20 @@ def app_manifest(app):
     manifest["install"] = hydrate_questions_with_choices(raw_questions)
 
     # Add a base64 image to be displayed in web-admin
-    if Moulinette.interface.type == "api":
+    if with_screenshot and Moulinette.interface.type == "api":
         import base64
 
-        manifest["image"] = None
+        manifest["screenshot"] = None
         screenshots_folder = os.path.join(extracted_app_folder, "doc", "screenshots")
 
         if os.path.exists(screenshots_folder):
             with os.scandir(screenshots_folder) as it:
                 for entry in it:
                     ext = os.path.splitext(entry.name)[1].replace(".", "").lower()
-                    if entry.is_file() and ext in ("png", "jpg", "jpeg", "webp"):
+                    if entry.is_file() and ext in ("png", "jpg", "jpeg", "webp", "gif"):
                         with open(entry.path, "rb") as img_file:
                             data = base64.b64encode(img_file.read()).decode("utf-8")
-                            manifest["image"] = f"data:image/{ext};charset=utf-8;base64,{data}"
+                            manifest["screenshot"] = f"data:image/{ext};charset=utf-8;base64,{data}"
                         break
 
     shutil.rmtree(extracted_app_folder)
