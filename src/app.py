@@ -874,7 +874,7 @@ def _confirm_app_install(app, force=False):
     # i18n: confirm_app_install_thirdparty
 
     if quality in ["danger", "thirdparty"]:
-        _ask_confirmation("confirm_app_install_" + quality)
+        _ask_confirmation("confirm_app_install_" + quality, kind="hard")
     else:
         _ask_confirmation("confirm_app_install_" + quality, kind="soft")
 
@@ -2338,6 +2338,8 @@ def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
 
     manifest["remote"] = {"type": "file", "path": path}
     manifest["quality"] = {"level": -1, "state": "thirdparty"}
+    manifest["antifeatures"] = []
+    manifest["potential_alternative_to"] = []
 
     return manifest, extracted_app_folder
 
@@ -2390,7 +2392,7 @@ def _extract_app_from_gitrepo(
         "state": app_info.get("state", "thirdparty"),
     }
     manifest["antifeatures"] = app_info.get("antifeatures", [])
-    manifest["potential_alternative_to"] = app_info.get("potential_alternative_to")
+    manifest["potential_alternative_to"] = app_info.get("potential_alternative_to", [])
 
     return manifest, extracted_app_folder
 
