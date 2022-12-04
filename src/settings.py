@@ -65,7 +65,11 @@ def settings_list(full=False):
     if full:
         return settings
     else:
-        return {k: v for k, v in settings.items() if not k.startswith("security.root_access")}
+        return {
+            k: v
+            for k, v in settings.items()
+            if not k.startswith("security.root_access")
+        }
 
 
 @is_unit_operation()

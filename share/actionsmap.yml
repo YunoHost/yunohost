@@ -321,6 +321,35 @@ user:
                             extra:
                                 pattern: *pattern_username
 
+                add-mailalias:
+                    action_help: Add mail aliases to group
+                    api: PUT /users/groups/<groupname>/aliases/<aliases>
+                    arguments:
+                        groupname:
+                            help: Name of the group to add user(s) to
+                            extra:
+                                pattern: *pattern_groupname
+                        aliases:
+                          help: Mail aliases to add
+                          nargs: "+"
+                          metavar: MAIL
+                          extra:
+                              pattern: *pattern_email
+                remove-mailalias:
+                    action_help: Remove mail aliases to group
+                    api: DELETE /users/groups/<groupname>/aliases/<aliases>
+                    arguments:
+                        groupname:
+                            help: Name of the group to add user(s) to
+                            extra:
+                                pattern: *pattern_groupname
+                        aliases:
+                          help: Mail aliases to remove
+                          nargs: "+"
+                          metavar: MAIL
+
+
+
         permission:
             subcategory_help: Manage permissions
             actions:

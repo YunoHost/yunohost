@@ -456,6 +456,8 @@ def domain_main_domain(operation_logger, new_main_domain=None):
     if not new_main_domain:
         return {"current_main_domain": _get_maindomain()}
 
+    old_main_domain = _get_maindomain()
+
     # Check domain exists
     _assert_domain_exists(new_main_domain)
 
@@ -478,6 +480,12 @@ def domain_main_domain(operation_logger, new_main_domain=None):
     # Regen configurations
     if os.path.exists("/etc/yunohost/installed"):
         regen_conf()
+
+    from yunohost.user import _update_admins_group_aliases
+
+    _update_admins_group_aliases(
+        old_main_domain=old_main_domain, new_main_domain=new_main_domain
+    )
 
     logger.success(m18n.n("main_domain_changed"))
 
