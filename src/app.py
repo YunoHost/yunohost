@@ -2900,7 +2900,11 @@ def _ask_confirmation(
     """
     if force or Moulinette.interface.type == "api":
         return
-
+    
+    # If ran from the CLI in a non-interactive context,
+    # skip confirmation (except in hard mode)
+    if not os.isatty(1) and kind in ["simple", "soft"]:
+        return
     if kind == "simple":
         answer = Moulinette.prompt(
             m18n.n(question, answers="Press enter to continue", **params),
