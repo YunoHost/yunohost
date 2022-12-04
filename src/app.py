@@ -2462,11 +2462,11 @@ def _check_manifest_requirements(
     )
 
     # Yunohost version
-    required_yunohost_version = manifest["integration"].get("yunohost", "4.3")
+    required_yunohost_version = manifest["integration"].get("yunohost", "4.3").strip(">= ")
     current_yunohost_version = get_ynh_package_version("yunohost")["version"]
 
     yield (
-        "version",
+        "required_yunohost_version",
         version.parse(required_yunohost_version)
         <= version.parse(current_yunohost_version),
         {"current": current_yunohost_version, "required": required_yunohost_version},
