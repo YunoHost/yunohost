@@ -527,6 +527,8 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
     if len(apps) > 1:
         logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(apps)))
 
+    notifications = {}
+
     for number, app_instance_name in enumerate(apps):
         logger.info(m18n.n("app_upgrade_app_name", app=app_instance_name))
 
@@ -794,11 +796,8 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             # So much win
             logger.success(m18n.n("app_upgraded", app=app_instance_name))
 
-            # Display post-upgrade notifications and ask for simple confirm
-            if (
-                manifest["notifications"]["post_upgrade"]
-                and Moulinette.interface.type == "cli"
-            ):
+            # Format post-upgrade notifications
+            if manifest["notifications"]["post_upgrade"]:
                 # Get updated settings to hydrate notifications
                 settings = _get_app_settings(app_instance_name)
                 notifications = _filter_and_hydrate_notifications(
@@ -806,8 +805,9 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     current_version=app_current_version,
                     data=settings,
                 )
-                _display_notifications(notifications, force=force)
-                # FIXME Should return a response with post upgrade notif formatted with the newest settings to the web-admin
+                if Moulinette.interface.type == "cli":
+                    # ask for simple confirm
+                    _display_notifications(notifications, force=force)
 
             hook_callback("post_app_upgrade", env=env_dict)
             operation_logger.success()
@@ -815,6 +815,9 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
     permission_sync_to_user()
 
     logger.success(m18n.n("upgrade_complete"))
+
+    if Moulinette.interface.type == "api":
+        return {"notifications": {"post_upgrade": notifications}}
 
 
 def app_manifest(app, with_screenshot=False):
@@ -2921,7 +2924,7 @@ def _ask_confirmation(
     """
     if force or Moulinette.interface.type == "api":
         return
-    
+
     # If ran from the CLI in a non-interactive context,
     # skip confirmation (except in hard mode)
     if not os.isatty(1) and kind in ["simple", "soft"]:
