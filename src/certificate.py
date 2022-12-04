@@ -581,7 +581,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
             or {}
         )
         sanlist = []
-        for sub in ('xmpp-upload', 'muc'):
+        for sub in ("xmpp-upload", "muc"):
             subdomain = sub + "." + domain
             if xmpp_records.get("CNAME:" + sub) == "OK":
                 sanlist.append(("DNS:" + subdomain))
