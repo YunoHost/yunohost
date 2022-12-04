@@ -20,7 +20,6 @@ import re
 import os
 import subprocess
 import time
-import shutil
 from importlib import import_module
 from packaging import version
 from typing import List
@@ -33,9 +32,7 @@ from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm,
 from yunohost.app import (
     app_upgrade,
     app_list,
-    _filter_and_hydrate_notifications,
-    _extract_app,
-    _parse_app_instance_name,
+    _list_upgradable_apps,
 )
 from yunohost.app_catalog import (
     _initialize_apps_catalog_system,
@@ -370,22 +367,7 @@ def tools_update(target=None):
         except YunohostError as e:
             logger.error(str(e))
 
-        upgradable_apps = list(app_list(upgradable=True)["apps"])
-
-        # Retrieve next manifest notifications
-        for app in upgradable_apps:
-            absolute_app_name, _ = _parse_app_instance_name(app["id"])
-            manifest, extracted_app_folder = _extract_app(absolute_app_name)
-            current_version = version.parse(app["current_version"])
-            app["notifications"] = {
-                type_: _filter_and_hydrate_notifications(
-                    manifest["notifications"][type_], current_version, app["settings"]
-                )
-                for type_ in ("pre_upgrade", "post_upgrade")
-            }
-            # FIXME Post-upgrade notifs should be hydrated with post-upgrade app settings
-            del app["settings"]
-            shutil.rmtree(extracted_app_folder)
+        upgradable_apps = _list_upgradable_apps()
 
     if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
         logger.info(m18n.n("already_up_to_date"))

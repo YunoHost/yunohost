@@ -2397,6 +2397,27 @@ def _extract_app_from_gitrepo(
     return manifest, extracted_app_folder
 
 
+def _list_upgradable_apps():
+    upgradable_apps = list(app_list(upgradable=True)["apps"])
+
+    # Retrieve next manifest pre_upgrade notifications
+    for app in upgradable_apps:
+        absolute_app_name, _ = _parse_app_instance_name(app["id"])
+        manifest, extracted_app_folder = _extract_app(absolute_app_name)
+        current_version = version.parse(app["current_version"])
+        app["notifications"] = {}
+        if manifest["notifications"]["pre_upgrade"]:
+            app["notifications"]["pre_upgrade"] = _filter_and_hydrate_notifications(
+                manifest["notifications"]["pre_upgrade"],
+                current_version,
+                app["settings"],
+            )
+        del app["settings"]
+        shutil.rmtree(extracted_app_folder)
+
+    return upgradable_apps
+
+
 #
 # ############################### #
 #        Small utilities          #
