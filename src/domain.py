@@ -229,6 +229,9 @@ def domain_add(operation_logger, domain, dyndns=False):
     if domain.startswith("xmpp-upload."):
         raise YunohostValidationError("domain_cannot_add_xmpp_upload")
 
+    if domain.startswith("muc."):
+        raise YunohostError("domain_cannot_add_muc_upload")
+
     ldap = _get_ldap_interface()
 
     try:
