@@ -1028,6 +1028,7 @@ def app_install(
             )
 
     # Override manifest name by given label
+    # This info is also later picked-up by the 'permission' resource initialization
     if label:
         manifest["name"] = label
 

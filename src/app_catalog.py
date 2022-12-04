@@ -272,6 +272,7 @@ def _load_apps_catalog():
             merged_catalog["apps"][app] = info
 
         # Annnnd categories + antifeatures
+        # (we use .get here, only because the dev catalog doesnt include the categories/antifeatures keys)
         merged_catalog["categories"] += apps_catalog_content.get("categories", [])
         merged_catalog["antifeatures"] += apps_catalog_content.get("antifeatures", [])
 
