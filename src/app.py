@@ -588,10 +588,10 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     upgrade_type = "UPGRADE_FULL"
 
         # Check requirements
-        for name, check, values, err in _check_manifest_requirements(
+        for name, passed, values, err in _check_manifest_requirements(
             manifest, action="upgrade"
         ):
-            if not check:
+            if not passed:
                 if name == "ram":
                     _ask_confirmation(
                         "confirm_app_insufficient_ram", params=values, force=force
@@ -844,16 +844,16 @@ def app_manifest(app):
     shutil.rmtree(extracted_app_folder)
 
     manifest["requirements"] = {}
-    for name, check, values, err in _check_manifest_requirements(
+    for name, passed, values, err in _check_manifest_requirements(
         manifest, action="install"
     ):
         if Moulinette.interface.type == "api":
             manifest["requirements"][name] = {
-                "pass": check,
+                "pass": passed,
                 "values": values,
             }
         else:
-            manifest["requirements"][name] = "ok" if check else m18n.n(err, **values)
+            manifest["requirements"][name] = "ok" if passed else m18n.n(err, **values)
 
     return manifest
 
@@ -939,10 +939,10 @@ def app_install(
     app_id = manifest["id"]
 
     # Check requirements
-    for name, check, values, err in _check_manifest_requirements(
+    for name, passed, values, err in _check_manifest_requirements(
         manifest, action="install"
     ):
-        if not check:
+        if not passed:
             if name == "ram":
                 _ask_confirmation(
                     "confirm_app_insufficient_ram", params=values, force=force
