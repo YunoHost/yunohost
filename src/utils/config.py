@@ -682,7 +682,7 @@ class ConfigPanel:
                 section
                 and section.get("visible")
                 and not evaluate_simple_js_expression(
-                    section["visible"], context=self.new_values
+                    section["visible"], context=self.future_values
                 )
             ):
                 continue
