@@ -424,6 +424,8 @@
     "global_settings_setting_ssh_password_authentication_help": "Allow password authentication for SSH",
     "global_settings_setting_ssh_port": "SSH port",
     "global_settings_setting_ssowat_panel_overlay_enabled": "Enable the small 'YunoHost' portal shortcut square on apps",
+    "global_settings_setting_portal_theme": "Portal theme",
+    "global_settings_setting_portal_theme_help": "More info regarding creating custom portal themes at https://yunohost.org/theming",
     "global_settings_setting_user_strength": "User password strength requirements",
     "global_settings_setting_user_strength_help": "These requirements are only enforced when initializing or changing the password",
     "global_settings_setting_webadmin_allowlist": "Webadmin IP allowlist",

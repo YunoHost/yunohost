@@ -163,6 +163,20 @@ class SettingsConfigPanel(ConfigPanel):
                 logger.error(f"Post-change hook for setting failed : {e}")
                 raise
 
+    def _get_toml(self):
+
+        toml = super()._get_toml()
+
+        # Dynamic choice list for portal themes
+        THEMEDIR = "/usr/share/ssowat/portal/assets/themes/"
+        try:
+            themes = [d for d in os.listdir(THEMEDIR) if os.path.isdir(THEMEDIR + d)]
+        except Exception:
+            themes = ['unsplash', 'vapor', 'light', 'default', 'clouds']
+        toml["misc"]["portal"]["portal_theme"]["choices"] = themes
+
+        return toml
+
     def _load_current_values(self):
 
         super()._load_current_values()
