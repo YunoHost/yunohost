@@ -651,10 +651,19 @@ class ConfigPanel:
                         raw_msg=True,
                     )
             value = self.values[option["name"]]
+            
+            # Allow to use value instead of current_value in app config script.
+            # For example hotspot used it...
+            # See https://github.com/YunoHost/yunohost/pull/1546
+            if isinstance(value, dict) and "value" in value and "current_value" not in value:
+                value["current_value"] = value["value"]
+            
             # In general, the value is just a simple value.
             # Sometimes it could be a dict used to overwrite the option itself
             value = value if isinstance(value, dict) else {"current_value": value}
             option.update(value)
+            
+            self.values[option["id"]] = value.get("current_value")
 
         return self.values
 
