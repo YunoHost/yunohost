@@ -653,6 +653,7 @@ class ConfigPanel:
             value = self.values[option["name"]]
             
             # Allow to use value instead of current_value in app config script.
+            # e.g. apps may write `echo 'value: "foobar"'` in the config file (which is more intuitive that `echo 'current_value: "foobar"'`
             # For example hotspot used it...
             # See https://github.com/YunoHost/yunohost/pull/1546
             if isinstance(value, dict) and "value" in value and "current_value" not in value:
