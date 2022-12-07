@@ -276,6 +276,11 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 #
 # ===========================================
 
+@post_change_hook("portal_theme")
+def regen_ssowatconf(setting_name, old_value, new_value):
+    if old_value != new_value:
+        from yunohost.app import app_ssowatconf
+        app_ssowatconf()
 
 @post_change_hook("ssowat_panel_overlay_enabled")
 @post_change_hook("nginx_redirect_to_https")
