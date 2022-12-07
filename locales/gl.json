@@ -368,7 +368,7 @@
     "migration_ldap_backup_before_migration": "Crear copia de apoio da base de datos LDAP e axustes de apps antes de realizar a migración.",
     "main_domain_changed": "Foi cambiado o dominio principal",
     "main_domain_change_failed": "Non se pode cambiar o dominio principal",
-    "mail_unavailable": "Este enderezo de email está reservado e debería adxudicarse automáticamente á primeira usuaria",
+    "mail_unavailable": "Este enderezo de email está reservado para o grupo de admins",
     "mailbox_used_space_dovecot_down": "O servizo de caixa de correo Dovecot ten que estar activo se queres obter o espazo utilizado polo correo",
     "mailbox_disabled": "Desactivado email para usuaria {user}",
     "mail_forward_remove_failed": "Non se eliminou o reenvío de email '{mail}'",
@@ -735,5 +735,7 @@
     "global_settings_setting_root_password_confirm": "Novo contrasinal root (confirmar)",
     "global_settings_setting_smtp_relay_enabled": "Activar repetidor SMTP",
     "global_settings_setting_ssh_compatibility": "Compatibilidade SSH",
-    "migration_description_0026_new_admins_group": "Migrar ao novo sistema de 'admins múltiples'"
+    "migration_description_0026_new_admins_group": "Migrar ao novo sistema de 'admins múltiples'",
+    "group_update_aliases": "Actualizando os alias do grupo '{group}'",
+    "group_no_change": "Nada que cambiar para o grupo '{group}'"
 }

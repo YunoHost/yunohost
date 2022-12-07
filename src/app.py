@@ -1549,6 +1549,7 @@ def app_ssowatconf():
     """
     from yunohost.domain import domain_list, _get_maindomain, domain_config_get
     from yunohost.permission import user_permission_list
+    from yunohost.settings import settings_get
 
     main_domain = _get_maindomain()
     domains = domain_list()["domains"]
@@ -1628,6 +1629,7 @@ def app_ssowatconf():
         }
 
     conf_dict = {
+        "theme": settings_get("misc.portal.portal_theme"),
         "portal_domain": main_domain,
         "portal_path": "/yunohost/sso/",
         "additional_headers": {
