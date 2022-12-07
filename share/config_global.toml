@@ -149,7 +149,12 @@ name = "Other"
         [misc.portal.ssowat_panel_overlay_enabled]
         type = "boolean"
         default = true
-    
+
+        [misc.portal.portal_theme]
+        type = "select"
+        # Choices are loaded dynamically in the python code
+        default = "default"
+
     [misc.backup]
     name = "Backup"
         [misc.backup.backup_compress_tar_archives]
