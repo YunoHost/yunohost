@@ -2092,12 +2092,12 @@ def _convert_v1_manifest_to_v2(manifest):
         .replace(">", "")
         .replace("=", "")
         .replace(" ", ""),
-        "architectures": "all",
+        "architectures": "?",
         "multi_instance": manifest.get("multi_instance", False),
         "ldap": "?",
         "sso": "?",
-        "disk": "50M",
-        "ram": {"build": "50M", "runtime": "10M"},
+        "disk": "?",
+        "ram": {"build": "?", "runtime": "?"},
     }
 
     maintainers = manifest.get("maintainer", {})
@@ -2505,7 +2505,7 @@ def _check_manifest_requirements(
 
     yield (
         "arch",
-        arch_requirement == "all" or arch in arch_requirement,
+        arch_requirement in ["all", "?"] or arch in arch_requirement,
         {"current": arch, "required": arch_requirement},
         "app_arch_not_supported",  # i18n: app_arch_not_supported
     )
@@ -2529,12 +2529,15 @@ def _check_manifest_requirements(
 
     # Disk
     if action == "install":
-        disk_req_bin = human_to_binary(manifest["integration"]["disk"])
         root_free_space = free_space_in_directory("/")
         var_free_space = free_space_in_directory("/var")
-        has_enough_disk = (
-            root_free_space > disk_req_bin and var_free_space > disk_req_bin
-        )
+        if manifest["integration"]["disk"] == "?":
+            has_enough_disk = True
+        else:
+            disk_req_bin = human_to_binary(manifest["integration"]["disk"])
+            has_enough_disk = (
+                root_free_space > disk_req_bin and var_free_space > disk_req_bin
+            )
         free_space = binary_to_human(
             root_free_space
             if root_free_space == var_free_space
@@ -2554,8 +2557,8 @@ def _check_manifest_requirements(
     # Is "include_swap" really useful ? We should probably decide wether to always include it or not instead
     if ram_requirement.get("include_swap", False):
         ram += swap
-    can_build = ram > human_to_binary(ram_requirement["build"])
-    can_run = ram > human_to_binary(ram_requirement["runtime"])
+    can_build = ram_requirement["build"] == "?" or ram > human_to_binary(ram_requirement["build"])
+    can_run = ram_requirement["runtime"] == "?" or ram > human_to_binary(ram_requirement["runtime"])
 
     yield (
         "ram",
