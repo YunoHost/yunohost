@@ -393,6 +393,7 @@
     "firewall_reloaded": "Firewall reloaded",
     "firewall_rules_cmd_failed": "Some firewall rule commands have failed. More info in log.",
     "global_settings_reset_success": "Reset global settings",
+    "global_settings_setting_passwordless_sudo": "Allow admins to use 'sudo' without re-typing their passwords",
     "global_settings_setting_admin_strength": "Admin password strength requirements",
     "global_settings_setting_admin_strength_help": "These requirements are only enforced when initializing or changing the password",
     "global_settings_setting_backup_compress_tar_archives": "Compress backups",

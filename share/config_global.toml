@@ -22,6 +22,11 @@ name = "Security"
         choices.4 = "ditto, but also require at least 12 chars"
         default = "1"
 
+        [security.password.passwordless_sudo]
+        type = "boolean"
+        # The actual value is dynamically computed by checking the sudoOption of cn=admins,ou=sudo
+        default = false
+
     [security.ssh]
     name = "SSH"
         [security.ssh.ssh_compatibility]
