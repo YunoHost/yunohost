@@ -131,8 +131,12 @@ class SettingsConfigPanel(ConfigPanel):
         root_password_confirm = self.new_values.pop("root_password_confirm", None)
         passwordless_sudo = self.new_values.pop("passwordless_sudo", None)
 
-        self.values = {k: v for k, v in self.values.items() if k not in self.virtual_settings}
-        self.new_values = {k: v for k, v in self.new_values.items() if k not in self.virtual_settings}
+        self.values = {
+            k: v for k, v in self.values.items() if k not in self.virtual_settings
+        }
+        self.new_values = {
+            k: v for k, v in self.new_values.items() if k not in self.virtual_settings
+        }
 
         assert all(v not in self.future_values for v in self.virtual_settings)
 
@@ -147,8 +151,12 @@ class SettingsConfigPanel(ConfigPanel):
 
         if passwordless_sudo is not None:
             from yunohost.utils.ldap import _get_ldap_interface
+
             ldap = _get_ldap_interface()
-            ldap.update("cn=admins,ou=sudo", {"sudoOption": ["!authenticate"] if passwordless_sudo else []})
+            ldap.update(
+                "cn=admins,ou=sudo",
+                {"sudoOption": ["!authenticate"] if passwordless_sudo else []},
+            )
 
         super()._apply()
 
@@ -173,7 +181,7 @@ class SettingsConfigPanel(ConfigPanel):
         try:
             themes = [d for d in os.listdir(THEMEDIR) if os.path.isdir(THEMEDIR + d)]
         except Exception:
-            themes = ['unsplash', 'vapor', 'light', 'default', 'clouds']
+            themes = ["unsplash", "vapor", "light", "default", "clouds"]
         toml["misc"]["portal"]["portal_theme"]["choices"] = themes
 
         return toml
@@ -190,8 +198,11 @@ class SettingsConfigPanel(ConfigPanel):
         # Specific logic for virtual setting "passwordless_sudo"
         try:
             from yunohost.utils.ldap import _get_ldap_interface
+
             ldap = _get_ldap_interface()
-            self.values["passwordless_sudo"] = "!authenticate" in ldap.search("ou=sudo", "cn=admins", ["sudoOption"])[0].get("sudoOption", [])
+            self.values["passwordless_sudo"] = "!authenticate" in ldap.search(
+                "ou=sudo", "cn=admins", ["sudoOption"]
+            )[0].get("sudoOption", [])
         except:
             self.values["passwordless_sudo"] = False
 
@@ -285,11 +296,14 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 #
 # ===========================================
 
+
 @post_change_hook("portal_theme")
 def regen_ssowatconf(setting_name, old_value, new_value):
     if old_value != new_value:
         from yunohost.app import app_ssowatconf
+
         app_ssowatconf()
+
 
 @post_change_hook("ssowat_panel_overlay_enabled")
 @post_change_hook("nginx_redirect_to_https")
