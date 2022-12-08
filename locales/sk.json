@@ -36,7 +36,7 @@
     "app_packaging_format_not_supported": "Túto aplikáciu nie je možné nainštalovať, pretože formát balíčkov, ktorý používa, nie je podporovaný Vašou verziou YunoHost. Mali by ste zvážiť aktualizovanie Vášho systému.",
     "app_remove_after_failed_install": "Aplikácia sa po chybe počas inštalácie odstraňuje…",
     "app_removed": "{app} bola odinštalovaná",
-    "app_requirements_checking": "Kontrolujem programy vyžadované aplikáciou {app}…",
+    "app_requirements_checking": "Kontrolujem požiadavky aplikácie {app}…",
     "app_restore_failed": "Nepodarilo sa obnoviť {app}: {error}",
     "app_restore_script_failed": "Chyba nastala vo vnútri skriptu na obnovu aplikácie",
     "app_sources_fetch_failed": "Nepodarilo sa získať zdrojové súbory, je adresa URL správna?",
@@ -240,5 +240,14 @@
     "dyndns_could_not_check_available": "Nepodarilo sa zistiť, či je {domain} dostupná na {provider}.",
     "dyndns_unavailable": "Doména '{domain}' nie je dostupná.",
     "log_available_on_yunopaste": "Tento záznam je teraz dostupný na {url}",
-    "updating_apt_cache": "Získavam dostupné aktualizácie pre systémové balíčky…"
+    "updating_apt_cache": "Získavam dostupné aktualizácie systémových balíčkov…",
+    "admins": "Správcovia",
+    "app_action_failed": "Nepodarilo sa spustiť akciu {action} v aplikácii {app}",
+    "app_manifest_install_ask_init_admin_permission": "Kto má mať prístup k nastaveniam určených správcovi tejto aplikácie? (Nastavenie môžete neskôr zmeniť)",
+    "ask_admin_fullname": "Celé meno správcu",
+    "ask_admin_username": "Používateľské meno správcu",
+    "ask_fullname": "Celé meno",
+    "all_users": "Všetci používatelia YunoHost",
+    "app_manifest_install_ask_init_main_permission": "Kto má mať prístup k tejto aplikácii? (Nastavenie môžete neskôr zmeniť)",
+    "certmanager_cert_install_failed": "Inštalácia Let's Encrypt certifikátu pre {domains} skončila s chybou"
 }
