@@ -654,21 +654,9 @@ def _get_status(domain):
     )
     days_remaining = (valid_up_to - datetime.utcnow()).days
 
-    self_signed_issuers = ["yunohost.org"] + yunohost.domain.domain_list()["domains"]
-
-    # FIXME: is the .ca.cnf one actually used anywhere ? x_x
-    conf = os.path.join(SSL_DIR, "openssl.ca.cnf")
-    if os.path.exists(conf):
-        self_signed_issuers.append(
-            check_output(f"grep commonName_default {conf}").split()[-1]
-        )
-    conf = os.path.join(SSL_DIR, "openssl.cnf")
-    if os.path.exists(conf):
-        self_signed_issuers.append(
-            check_output(f"grep commonName_default {conf}").split()[-1]
-        )
-
-    if cert_issuer in self_signed_issuers:
+    # Identify that a domain's cert is self-signed if the cert dir
+    # is actually a symlink to a dir ending with -selfsigned
+    if os.path.realpath(os.path.join(CERT_FOLDER, domain)).endswith("-selfsigned"):
         CA_type = "selfsigned"
     elif organization_name == "Let's Encrypt":
         CA_type = "letsencrypt"
