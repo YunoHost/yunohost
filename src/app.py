@@ -2365,8 +2365,7 @@ def _check_manifest_requirements(manifest: Dict, action: str):
     logger.debug(m18n.n("app_requirements_checking", app=app_id))
 
     # Yunohost version requirement
-
-    yunohost_requirement = version.parse(manifest["integration"]["yunohost"] or "4.3")
+    yunohost_requirement = version.parse(manifest["integration"]["yunohost"].strip(">= ") or "4.3")
     yunohost_installed_version = version.parse(
         get_ynh_package_version("yunohost")["version"]
     )
