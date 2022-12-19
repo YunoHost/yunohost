@@ -423,6 +423,8 @@
     "global_settings_setting_ssh_compatibility_help": "Compatibility vs. security tradeoff for the SSH server. Affects the ciphers (and other security-related aspects). See https://infosec.mozilla.org/guidelines/openssh for more info.",
     "global_settings_setting_ssh_password_authentication": "Password authentication",
     "global_settings_setting_ssh_password_authentication_help": "Allow password authentication for SSH",
+    "global_settings_setting_ssh_allow_root_on_localnet": "Permit root from localnet",
+    "global_settings_setting_ssh_allow_root_on_localnet_help": "Allow root login from the local network",
     "global_settings_setting_ssh_port": "SSH port",
     "global_settings_setting_ssowat_panel_overlay_enabled": "Enable the small 'YunoHost' portal shortcut square on apps",
     "global_settings_setting_portal_theme": "Portal theme",
