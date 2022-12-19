@@ -57,11 +57,7 @@ UsePAM yes
 
 # PLEASE: if you wish to force everybody to authenticate using ssh keys, run this command:
 # yunohost settings set security.ssh.ssh_password_authentication -v no
-{% if password_authentication == "False" %}
-PasswordAuthentication no
-{% else %}
-#PasswordAuthentication yes
-{% endif %}
+PasswordAuthentication {{ password_authentication }}
 
 # Post-login stuff
 Banner /etc/issue.net
@@ -103,7 +99,7 @@ Match Group sftp.app,!ssh.app
     AllowStreamLocalForwarding no
     PermitTunnel no
     PermitUserRC no
-    PasswordAuthentication yes
+    PasswordAuthentication {{ password_authentication }}
 
 # root login is allowed on local networks
 # It's meant to be a backup solution in case LDAP is down and

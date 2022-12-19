@@ -42,6 +42,8 @@ name = "Security"
         [security.ssh.ssh_password_authentication]
         type = "boolean"
         default = true
+        yes = "yes"
+        no = "no"
 
     [security.nginx]
     name = "NGINX (web server)"
