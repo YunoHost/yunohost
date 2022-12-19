@@ -664,6 +664,7 @@
     "global_settings_setting_postfix_compatibility_help": "Compromis 'compatibilité versus sécurité' pour le serveur Postfix. Affecte les cryptogrammes utilisés (et d'autres aspects liés à la sécurité)",
     "global_settings_setting_ssh_compatibility_help": "Compromis 'compatibilité versus sécurité' pour le serveur SSH. Affecte les cryptogrammes utilisés (et d'autres aspects liés à la sécurité).",
     "global_settings_setting_ssh_password_authentication_help": "Autoriser l'authentification par mot de passe pour SSH",
+    "global_settings_setting_ssh_allow_root_on_localnet_help": "Permettre la connexion de l'utilisateur root depuis le réseau local",
     "global_settings_setting_ssh_port": "Port SSH",
     "global_settings_setting_webadmin_allowlist_help": "Adresses IP autorisées à accéder à la webadmin. Elles doivent être séparées par une virgule.",
     "global_settings_setting_webadmin_allowlist_enabled_help": "Autoriser seulement certaines IP à accéder à la webadmin.",
