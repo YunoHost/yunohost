@@ -1,6 +1,7 @@
 import os
 import pytest
 import yaml
+from mock import patch
 
 import moulinette
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -152,10 +153,10 @@ def test_settings_get_doesnt_exists():
 
 def test_settings_set():
     settings_set("example.example.boolean", False)
-    assert settings_get("example.example.boolean") is False
+    assert settings_get("example.example.boolean") == 0
 
     settings_set("example.example.boolean", "on")
-    assert settings_get("example.example.boolean") is True
+    assert settings_get("example.example.boolean") == 1
 
 
 def test_settings_set_int():
@@ -174,35 +175,39 @@ def test_settings_set_doesexit():
 
 
 def test_settings_set_bad_type_bool():
-    with pytest.raises(YunohostError):
-        settings_set("example.example.boolean", 42)
-    with pytest.raises(YunohostError):
-        settings_set("example.example.boolean", "pouet")
+
+    with patch.object(os, "isatty", return_value=False):
+        with pytest.raises(YunohostError):
+            settings_set("example.example.boolean", 42)
+        with pytest.raises(YunohostError):
+            settings_set("example.example.boolean", "pouet")
 
 
 def test_settings_set_bad_type_int():
     #    with pytest.raises(YunohostError):
     #        settings_set("example.example.number", True)
-    with pytest.raises(YunohostError):
-        settings_set("example.example.number", "pouet")
+    with patch.object(os, "isatty", return_value=False):
+        with pytest.raises(YunohostError):
+            settings_set("example.example.number", "pouet")
 
 
 # def test_settings_set_bad_type_string():
 #    with pytest.raises(YunohostError):
-#        settings_set("example.example.string", True)
+#        settings_set(eexample.example.string", True)
 #    with pytest.raises(YunohostError):
 #        settings_set("example.example.string", 42)
 
 
 def test_settings_set_bad_value_select():
-    with pytest.raises(YunohostError):
-        settings_set("example.example.select", True)
-    with pytest.raises(YunohostError):
-        settings_set("example.example.select", "e")
-    with pytest.raises(YunohostError):
-        settings_set("example.example.select", 42)
-    with pytest.raises(YunohostError):
-        settings_set("example.example.select", "pouet")
+    with patch.object(os, "isatty", return_value=False):
+        with pytest.raises(YunohostError):
+            settings_set("example.example.select", True)
+        with pytest.raises(YunohostError):
+            settings_set("example.example.select", "e")
+        with pytest.raises(YunohostError):
+            settings_set("example.example.select", 42)
+        with pytest.raises(YunohostError):
+            settings_set("example.example.select", "pouet")
 
 
 def test_settings_list_modified():

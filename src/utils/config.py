@@ -264,8 +264,17 @@ class ConfigPanel:
 
         # In 'classic' mode, we display the current value if key refer to an option
         if self.filter_key.count(".") == 2 and mode == "classic":
+
             option = self.filter_key.split(".")[-1]
-            return self.values.get(option, None)
+            value = self.values.get(option, None)
+
+            option_type = None
+            for _, _, option_ in self._iterate():
+                if option_["id"] == option:
+                    option_type = ARGUMENTS_TYPE_PARSERS[option_["type"]]
+                    break
+
+            return option_type.normalize(value) if option_type else value
 
         # Format result in 'classic' or 'export' mode
         logger.debug(f"Formating result in '{mode}' mode")
