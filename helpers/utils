@@ -957,3 +957,7 @@ _ynh_apply_default_permissions() {
         chown root:root $target
     fi
 }
+
+int_to_bool() {
+    sed -e 's/^1$/True/g' -e 's/^0$/False/g'
+}

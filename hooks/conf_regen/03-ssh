@@ -17,7 +17,7 @@ do_pre_regen() {
     # Support different strategy for security configurations
     export compatibility="$(yunohost settings get 'security.ssh.ssh_compatibility')"
     export port="$(yunohost settings get 'security.ssh.ssh_port')"
-    export password_authentication="$(yunohost settings get 'security.ssh.ssh_password_authentication')"
+    export password_authentication="$(yunohost settings get 'security.ssh.ssh_password_authentication' | int_to_bool)"
     export ssh_keys
     export ipv6_enabled
     ynh_render_template "sshd_config" "${pending_dir}/etc/ssh/sshd_config"

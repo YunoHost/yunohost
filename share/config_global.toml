@@ -160,3 +160,24 @@ name = "Other"
         [misc.backup.backup_compress_tar_archives]
         type = "boolean"
         default = false
+
+[example]
+    [example.example]
+        [example.example.boolean]
+        type = "boolean"
+        yes = "True"
+        no = "False"
+        default = "True"
+
+        [example.example.number]
+        type = "number"
+        default = 42
+
+        [example.example.string]
+        type = "string"
+        default = "yolo swag"
+
+        [example.example.select]
+        type = "select"
+        choices = ["a", "b", "c"]
+        default = "a"

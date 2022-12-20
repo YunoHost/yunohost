@@ -29,8 +29,8 @@ do_pre_regen() {
     export relay_port=""
     export relay_user=""
     export relay_host=""
-    export relay_enabled="$(yunohost settings get 'email.smtp.smtp_relay_enabled')"
-    if [ "${relay_enabled}" == "1" ]; then
+    export relay_enabled="$(yunohost settings get 'email.smtp.smtp_relay_enabled' | int_to_bool)"
+    if [ "${relay_enabled}" == "True" ]; then
         relay_host="$(yunohost settings get 'email.smtp.smtp_relay_host')"
         relay_port="$(yunohost settings get 'email.smtp.smtp_relay_port')"
         relay_user="$(yunohost settings get 'email.smtp.smtp_relay_user')"
@@ -56,7 +56,7 @@ do_pre_regen() {
             >"${default_dir}/postsrsd"
 
     # adapt it for IPv4-only hosts
-    ipv6="$(yunohost settings get 'email.smtp.smtp_allow_ipv6')"
+    ipv6="$(yunohost settings get 'email.smtp.smtp_allow_ipv6' | int_to_bool)"
     if [ "$ipv6" == "False" ] || [ ! -f /proc/net/if_inet6 ]; then
         sed -i \
             's/ \[::ffff:127.0.0.0\]\/104 \[::1\]\/128//g' \
