@@ -738,7 +738,7 @@ def _enable_certificate(domain, new_cert_folder):
 
     logger.debug("Restarting services...")
 
-    for service in ("postfix", "dovecot", "metronome"):
+    for service in ("dovecot", "metronome"):
         # Ugly trick to not restart metronome if it's not installed
         if (
             service == "metronome"
@@ -750,7 +750,8 @@ def _enable_certificate(domain, new_cert_folder):
     if os.path.isfile("/etc/yunohost/installed"):
         # regen nginx conf to be sure it integrates OCSP Stapling
         # (We don't do this yet if postinstall is not finished yet)
-        regen_conf(names=["nginx"])
+        # We also regenconf for postfix to propagate the SNI hash map thingy
+        regen_conf(names=["nginx", "postfix"])
 
     _run_service_command("reload", "nginx")
 
