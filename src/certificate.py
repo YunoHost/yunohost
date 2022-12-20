@@ -624,8 +624,6 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
 
 def _get_status(domain):
 
-    import yunohost.domain
-
     cert_file = os.path.join(CERT_FOLDER, domain, "crt.pem")
 
     if not os.path.isfile(cert_file):
