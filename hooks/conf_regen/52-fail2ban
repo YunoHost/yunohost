@@ -14,6 +14,7 @@ do_pre_regen() {
     mkdir -p "${fail2ban_dir}/jail.d"
 
     cp yunohost.conf "${fail2ban_dir}/filter.d/yunohost.conf"
+    cp postfix-sasl.conf "${fail2ban_dir}/filter.d/postfix-sasl.conf"
     cp jail.conf "${fail2ban_dir}/jail.conf"
 
     export ssh_port="$(yunohost settings get 'security.ssh.ssh_port')"
