@@ -258,7 +258,7 @@ class PermissionsResource(AppResource):
 
     ##### Provision/Update:
     - Delete any permissions that may exist and be related to this app yet is not declared anymore
-    - Loop over the declared permissions and create them if needed or update them with the new values (FIXME : update ain't implemented yet >_>)
+    - Loop over the declared permissions and create them if needed or update them with the new values
 
     ##### Deprovision:
     - Delete all permission related to this app
@@ -312,7 +312,7 @@ class PermissionsResource(AppResource):
 
         from yunohost.permission import (
             permission_create,
-            # permission_url,
+            permission_url,
             permission_delete,
             user_permission_list,
             user_permission_update,
@@ -330,7 +330,8 @@ class PermissionsResource(AppResource):
                 permission_delete(perm, force=True, sync_perm=False)
 
         for perm, infos in self.permissions.items():
-            if f"{self.app}.{perm}" not in existing_perms:
+            perm_id = f"{self.app}.{perm}"
+            if perm_id not in existing_perms:
                 # Use the 'allowed' key from the manifest,
                 # or use the 'init_{perm}_permission' from the install questions
                 # which is temporarily saved as a setting as an ugly hack to pass the info to this piece of code...
@@ -340,7 +341,7 @@ class PermissionsResource(AppResource):
                     or []
                 )
                 permission_create(
-                    f"{self.app}.{perm}",
+                    perm_id,
                     allowed=init_allowed,
                     # This is why the ugly hack with self.manager exists >_>
                     label=self.manager.wanted["name"] if perm == "main" else perm,
@@ -351,17 +352,19 @@ class PermissionsResource(AppResource):
                 )
                 self.delete_setting(f"init_{perm}_permission")
 
-                user_permission_update(
-                    f"{self.app}.{perm}",
-                    show_tile=infos["show_tile"],
-                    protected=infos["protected"],
-                    sync_perm=False,
-                )
-            else:
-                pass
-                # FIXME : current implementation of permission_url is hell for
-                # easy declarativeness of additional_urls >_> ...
-                # permission_url(f"{self.app}.{perm}", url=infos["url"], auth_header=infos["auth_header"], sync_perm=False)
+            user_permission_update(
+                perm_id,
+                show_tile=infos["show_tile"],
+                protected=infos["protected"],
+                sync_perm=False,
+            )
+            permission_url(
+                perm_id,
+                url=infos["url"],
+                set_url=infos["additional_urls"],
+                auth_header=infos["auth_header"],
+                sync_perm=False,
+            )
 
         permission_sync_to_user()
 
