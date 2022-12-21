@@ -36,9 +36,6 @@ logger = getActionLogger("yunohost.app_resources")
 
 class AppResourceManager:
 
-    # FIXME : add some sort of documentation mechanism
-    # to create a have a detailed description of each resource behavior
-
     def __init__(self, app: str, current: Dict, wanted: Dict):
 
         self.app = app
@@ -50,7 +47,7 @@ class AppResourceManager:
         if "resources" not in self.wanted:
             self.wanted["resources"] = {}
 
-    def apply(self, rollback_if_failure, **context):
+    def apply(self, rollback_and_raise_exception_if_failure, operation_logger=None, **context):
 
         todos = list(self.compute_todos())
         completed = []
@@ -69,12 +66,13 @@ class AppResourceManager:
                 elif todo == "update":
                     logger.info(f"Updating {name} ...")
                     new.provision_or_update(context=context)
-            # FIXME FIXME FIXME : this exception doesnt catch Ctrl+C ?!?!
-            except Exception as e:
+            except (KeyboardInterrupt, Exception) as e:
                 exception = e
-                # FIXME: better error handling ? display stacktrace ?
-                logger.warning(f"Failed to {todo} for {name} : {e}")
-                if rollback_if_failure:
+                if isinstance(e, KeyboardInterrupt):
+                    logger.error(m18n.n("operation_interrupted"))
+                else:
+                    logger.warning(f"Failed to {todo} {name} : {e}")
+                if rollback_and_raise_exception_if_failure:
                     rollback = True
                     completed.append((todo, name, old, new))
                     break
@@ -97,12 +95,24 @@ class AppResourceManager:
                     elif todo == "update":
                         logger.info(f"Reverting {name} ...")
                         old.provision_or_update(context=context)
-                except Exception as e:
-                    # FIXME: better error handling ? display stacktrace ?
-                    logger.error(f"Failed to rollback {name} : {e}")
+                except (KeyboardInterrupt, Exception) as e:
+                    if isinstance(e, KeyboardInterrupt):
+                        logger.error(m18n.n("operation_interrupted"))
+                    else:
+                        logger.error(f"Failed to rollback {name} : {e}")
 
         if exception:
-            raise exception
+            if rollback_and_raise_exception_if_failure:
+                logger.error(m18n.n("app_resource_failed", app=self.app, error=exception))
+                if operation_logger:
+                    failure_message_with_debug_instructions = operation_logger.error(str(exception))
+                    raise YunohostError(
+                        failure_message_with_debug_instructions, raw_msg=True
+                    )
+                else:
+                    raise YunohostError(str(exception), raw_msg=True0
+            else:
+                logger.error(exception)
 
     def compute_todos(self):
 

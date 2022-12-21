@@ -675,13 +675,9 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         if manifest["packaging_format"] >= 2:
             from yunohost.utils.resources import AppResourceManager
 
-            try:
-                AppResourceManager(
-                    app_instance_name, wanted=manifest, current=app_dict["manifest"]
-                ).apply(rollback_if_failure=True)
-            except Exception:
-                # FIXME : improve error handling ....
-                raise
+            AppResourceManager(
+                app_instance_name, wanted=manifest, current=app_dict["manifest"]
+            ).apply(rollback_and_raise_exception_if_failure=True, operation_logger=operation_logger)
 
         # Execute the app upgrade script
         upgrade_failed = True
@@ -1038,13 +1034,9 @@ def app_install(
     if packaging_format >= 2:
         from yunohost.utils.resources import AppResourceManager
 
-        try:
-            AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
-                rollback_if_failure=True
-            )
-        except Exception:
-            # FIXME : improve error handling ....
-            raise
+        AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
+            rollback_and_raise_exception_if_failure=True, operation_logger=operation_logger
+        )
     else:
         # Initialize the main permission for the app
         # The permission is initialized with no url associated, and with tile disabled
@@ -1108,6 +1100,9 @@ def app_install(
                 "Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - "
                 + "\n     -".join(manually_modified_files_by_app)
             )
+            # Actually forbid this for app packaging >= 2
+            if packaging_format >= 2:
+                broke_the_system = True
 
         # If the install failed or broke the system, we remove it
         if install_failed or broke_the_system:
@@ -1157,13 +1152,9 @@ def app_install(
             if packaging_format >= 2:
                 from yunohost.utils.resources import AppResourceManager
 
-                try:
-                    AppResourceManager(
-                        app_instance_name, wanted={}, current=manifest
-                    ).apply(rollback_if_failure=False)
-                except Exception:
-                    # FIXME : improve error handling ....
-                    raise
+                AppResourceManager(
+                    app_instance_name, wanted={}, current=manifest
+                ).apply(rollback_and_raise_exception_if_failure=False)
             else:
                 # Remove all permission in LDAP
                 for permission_name in user_permission_list()["permissions"].keys():
@@ -1288,15 +1279,11 @@ def app_remove(operation_logger, app, purge=False):
 
     packaging_format = manifest["packaging_format"]
     if packaging_format >= 2:
-        try:
-            from yunohost.utils.resources import AppResourceManager
+        from yunohost.utils.resources import AppResourceManager
 
-            AppResourceManager(app, wanted={}, current=manifest).apply(
-                rollback_if_failure=False
-            )
-        except Exception:
-            # FIXME : improve error handling ....
-            raise
+        AppResourceManager(app, wanted={}, current=manifest).apply(
+            rollback_and_raise_exception_if_failure=False
+        )
     else:
         # Remove all permission in LDAP
         for permission_name in user_permission_list(apps=[app])["permissions"].keys():
