@@ -2534,11 +2534,7 @@ def _check_manifest_requirements(
             has_enough_disk = (
                 root_free_space > disk_req_bin and var_free_space > disk_req_bin
             )
-        free_space = binary_to_human(
-            root_free_space
-            if root_free_space == var_free_space
-            else root_free_space + var_free_space
-        )
+        free_space = binary_to_human(min(root_free_space, var_free_space))
 
         yield (
             "disk",
