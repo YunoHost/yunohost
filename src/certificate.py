@@ -624,8 +624,6 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
 
 def _get_status(domain):
 
-    import yunohost.domain
-
     cert_file = os.path.join(CERT_FOLDER, domain, "crt.pem")
 
     if not os.path.isfile(cert_file):
@@ -654,21 +652,9 @@ def _get_status(domain):
     )
     days_remaining = (valid_up_to - datetime.utcnow()).days
 
-    self_signed_issuers = ["yunohost.org"] + yunohost.domain.domain_list()["domains"]
-
-    # FIXME: is the .ca.cnf one actually used anywhere ? x_x
-    conf = os.path.join(SSL_DIR, "openssl.ca.cnf")
-    if os.path.exists(conf):
-        self_signed_issuers.append(
-            check_output(f"grep commonName_default {conf}").split()[-1]
-        )
-    conf = os.path.join(SSL_DIR, "openssl.cnf")
-    if os.path.exists(conf):
-        self_signed_issuers.append(
-            check_output(f"grep commonName_default {conf}").split()[-1]
-        )
-
-    if cert_issuer in self_signed_issuers:
+    # Identify that a domain's cert is self-signed if the cert dir
+    # is actually a symlink to a dir ending with -selfsigned
+    if os.path.realpath(os.path.join(CERT_FOLDER, domain)).endswith("-selfsigned"):
         CA_type = "selfsigned"
     elif organization_name == "Let's Encrypt":
         CA_type = "letsencrypt"
@@ -752,7 +738,7 @@ def _enable_certificate(domain, new_cert_folder):
 
     logger.debug("Restarting services...")
 
-    for service in ("postfix", "dovecot", "metronome"):
+    for service in ("dovecot", "metronome"):
         # Ugly trick to not restart metronome if it's not installed
         if (
             service == "metronome"
@@ -764,7 +750,8 @@ def _enable_certificate(domain, new_cert_folder):
     if os.path.isfile("/etc/yunohost/installed"):
         # regen nginx conf to be sure it integrates OCSP Stapling
         # (We don't do this yet if postinstall is not finished yet)
-        regen_conf(names=["nginx"])
+        # We also regenconf for postfix to propagate the SNI hash map thingy
+        regen_conf(names=["nginx", "postfix"])
 
     _run_service_command("reload", "nginx")
 

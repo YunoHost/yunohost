@@ -123,6 +123,10 @@ do_post_regen() {
     chown -R openldap:openldap /etc/ldap/schema/
     chown -R openldap:openldap /etc/ldap/slapd.d/
 
+    # Fix weird scenarios where /etc/sudo-ldap.conf doesn't exists (yet is supposed to be
+    # created by the sudo-ldap package) : https://github.com/YunoHost/issues/issues/2091
+    [ -e /etc/sudo-ldap.conf ] || ln -s /etc/ldap/ldap.conf /etc/sudo-ldap.conf
+
     # If we changed the systemd ynh-override conf
     if echo "$regen_conf_files" | sed 's/,/\n/g' | grep -q "^/etc/systemd/system/slapd.service.d/ynh-override.conf$"; then
         systemctl daemon-reload

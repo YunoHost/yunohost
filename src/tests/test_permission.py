@@ -258,7 +258,7 @@ def check_LDAP_db_integrity():
 
     for user in user_search:
         user_dn = "uid=" + user["uid"][0] + ",ou=users,dc=yunohost,dc=org"
-        group_list = [_ldap_path_extract(m, "cn") for m in user["memberOf"]]
+        group_list = [_ldap_path_extract(m, "cn") for m in user.get("memberOf", [])]
         permission_list = [
             _ldap_path_extract(m, "cn") for m in user.get("permission", [])
         ]

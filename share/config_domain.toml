@@ -9,6 +9,8 @@ name = "Features"
         type = "app"
         filter = "is_webapp"
         default = "_none"
+        # FIXME: i18n
+        help = "People will automatically be redirected to this app when opening this domain. If no app is specified, people are redirected to the user portal login form."
 
     [feature.mail]
 
@@ -25,6 +27,7 @@ name = "Features"
         [feature.xmpp.xmpp]
         type = "boolean"
         default = 0
+        # FIXME: i18n
         help = "NB: some XMPP features will require that you update your DNS records and regenerate your Lets Encrypt certificate to be enabled"
 
 [dns]

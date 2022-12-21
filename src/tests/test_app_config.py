@@ -109,7 +109,7 @@ def test_app_config_get(config_app):
     assert isinstance(app_config_get(config_app, export=True), dict)
     assert isinstance(app_config_get(config_app, "main"), dict)
     assert isinstance(app_config_get(config_app, "main.components"), dict)
-    assert app_config_get(config_app, "main.components.boolean") == "0"
+    assert app_config_get(config_app, "main.components.boolean") == 0
 
     user_delete("alice")
 
@@ -141,16 +141,16 @@ def test_app_config_get_nonexistentstuff(config_app):
 
 def test_app_config_regular_setting(config_app):
 
-    assert app_config_get(config_app, "main.components.boolean") == "0"
+    assert app_config_get(config_app, "main.components.boolean") == 0
 
     app_config_set(config_app, "main.components.boolean", "no")
 
-    assert app_config_get(config_app, "main.components.boolean") == "0"
+    assert app_config_get(config_app, "main.components.boolean") == 0
     assert app_setting(config_app, "boolean") == "0"
 
     app_config_set(config_app, "main.components.boolean", "yes")
 
-    assert app_config_get(config_app, "main.components.boolean") == "1"
+    assert app_config_get(config_app, "main.components.boolean") == 1
     assert app_setting(config_app, "boolean") == "1"
 
     with pytest.raises(YunohostValidationError), patch.object(
