@@ -1282,7 +1282,7 @@ def app_remove(operation_logger, app, purge=False):
         from yunohost.utils.resources import AppResourceManager
 
         AppResourceManager(app, wanted={}, current=manifest).apply(
-            rollback_and_raise_exception_if_failure=False
+            rollback_and_raise_exception_if_failure=False, purge_data_dir=purge
         )
     else:
         # Remove all permission in LDAP

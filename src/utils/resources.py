@@ -536,6 +536,8 @@ class InstalldirAppResource(AppResource):
         if not current_install_dir and os.path.isdir(self.dir):
             rm(self.dir, recursive=True)
 
+        # isdir will be True if the path is a symlink pointing to a dir
+        # This should cover cases where people moved the data dir to another place via a symlink (ie we dont enter the if)
         if not os.path.isdir(self.dir):
             # Handle case where install location changed, in which case we shall move the existing install dir
             # FIXME: confirm that's what we wanna do
@@ -564,8 +566,10 @@ class InstalldirAppResource(AppResource):
 
         perm_octal = 0o100 * owner_perm_octal + 0o010 * group_perm_octal
 
-        chmod(self.dir, perm_octal)
-        chown(self.dir, owner, group)
+        # NB: we use realpath here to cover cases where self.dir could actually be a symlink
+        # in which case we want to apply the perm to the pointed dir, not to the symlink
+        chmod(os.path.realpath(self.dir), perm_octal)
+        chown(os.path.realpath(self.dir), owner, group)
         # FIXME: shall we apply permissions recursively ?
 
         self.set_setting("install_dir", self.dir)
@@ -605,9 +609,8 @@ class DatadirAppResource(AppResource):
     - save the value of `dir` as `data_dir` in the app's settings, which can be then used by the app scripts (`$data_dir`) and conf templates (`__DATA_DIR__`)
 
     ##### Deprovision:
-    - recursively deletes the directory if it exists
-    - FIXME: this should only be done if the PURGE option is set
-    - FIXME: this should also delete the corresponding setting
+    - (only if the purge option is chosen by the user) recursively deletes the directory if it exists
+    - also delete the corresponding setting
 
     ##### Legacy management:
     - In the past, the setting may have been called `datadir`. The code will automatically rename it as `data_dir`.
@@ -641,11 +644,15 @@ class DatadirAppResource(AppResource):
 
         current_data_dir = self.get_setting("data_dir") or self.get_setting("datadir")
 
+        # isdir will be True if the path is a symlink pointing to a dir
+        # This should cover cases where people moved the data dir to another place via a symlink (ie we dont enter the if)
         if not os.path.isdir(self.dir):
             # Handle case where install location changed, in which case we shall move the existing install dir
             # FIXME: same as install_dir, is this what we want ?
-            # FIXME: What if people manually mved the data dir and changed the setting value and dont want the folder to be moved ? x_x
             if current_data_dir and os.path.isdir(current_data_dir):
+                logger.warning(
+                    f"Moving {current_data_dir} to {self.dir} ... (this may take a while)"
+                )
                 shutil.move(current_data_dir, self.dir)
             else:
                 mkdir(self.dir)
@@ -664,8 +671,10 @@ class DatadirAppResource(AppResource):
         )
         perm_octal = 0o100 * owner_perm_octal + 0o010 * group_perm_octal
 
-        chmod(self.dir, perm_octal)
-        chown(self.dir, owner, group)
+        # NB: we use realpath here to cover cases where self.dir could actually be a symlink
+        # in which case we want to apply the perm to the pointed dir, not to the symlink
+        chmod(os.path.realpath(self.dir), perm_octal)
+        chown(os.path.realpath(self.dir), owner, group)
 
         self.set_setting("data_dir", self.dir)
         self.delete_setting("datadir")  # Legacy
@@ -676,11 +685,10 @@ class DatadirAppResource(AppResource):
         assert self.owner.strip()
         assert self.group.strip()
 
-        # FIXME: This should rm the datadir only if purge is enabled
-        pass
-        # if os.path.isdir(self.dir):
-        #    rm(self.dir, recursive=True)
-        # FIXME : in fact we should delete settings to be consistent
+        if context.get("purge_data_dir", False) and os.path.isdir(self.dir):
+            rm(self.dir, recursive=True)
+
+        self.delete_setting("data_dir")
 
 
 class AptDependenciesAppResource(AppResource):
