@@ -2480,12 +2480,8 @@ def _check_manifest_requirements(
     logger.debug(m18n.n("app_requirements_checking", app=app_id))
 
     # Packaging format
-    yield (
-        "packaging_format",
-        manifest["packaging_format"] in (1, 2),
-        {},
-        "app_packaging_format_not_supported",  # i18n: app_packaging_format_not_supported
-    )
+    if manifest["packaging_format"] not in [1, 2]:
+        raise YunohostValidationError("app_packaging_format_not_supported")
 
     # Yunohost version
     required_yunohost_version = manifest["integration"].get("yunohost", "4.3").strip(">= ")
