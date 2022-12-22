@@ -22,6 +22,7 @@ import shutil
 import random
 from typing import Dict, Any, List
 
+from moulinette import m18n
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
@@ -110,7 +111,7 @@ class AppResourceManager:
                         failure_message_with_debug_instructions, raw_msg=True
                     )
                 else:
-                    raise YunohostError(str(exception), raw_msg=True0
+                    raise YunohostError(str(exception), raw_msg=True)
             else:
                 logger.error(exception)
 
