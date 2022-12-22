@@ -136,7 +136,6 @@ smtpd_client_restrictions =
     permit_mynetworks,
     permit_sasl_authenticated,
     reject_rbl_client bl.spamcop.net,
-    reject_rbl_client cbl.abuseat.org,
     reject_rbl_client zen.spamhaus.org,
     permit
 
