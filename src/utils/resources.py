@@ -778,16 +778,16 @@ class PortsResource(AppResource):
 
     ##### Properties (for every port name):
     - `default`: The prefered value for the port. If this port is already being used by another process right now, or is booked in another app's setting, the code will increment the value until it finds a free port and store that value as the setting. If no value is specified, a random value between 10000 and 60000 is used.
-    - `exposed`: (default: `false`) Wether this port should be opened on the firewall and be publicly reachable. This should be kept to `false` for the majority of apps than only need a port for internal reverse-proxying! Possible values: `false`, `true`(=`Both`), `Both`, `TCP`, `UDP`. This will result in the port being opened on the firewall, and the diagnosis checking that a program answers on that port.  (FIXME: this is not implemented yet)
-    - `fixed`: (default: `false`) Tells that the app absolutely needs the specific value provided in `default`, typically because it's needed for a specific protocol (FIXME: this is not implemented yet)
+    - `exposed`: (default: `false`) Wether this port should be opened on the firewall and be publicly reachable. This should be kept to `false` for the majority of apps than only need a port for internal reverse-proxying! Possible values: `false`, `true`(=`Both`), `Both`, `TCP`, `UDP`. This will result in the port being opened on the firewall, and the diagnosis checking that a program answers on that port.
+    - `fixed`: (default: `false`) Tells that the app absolutely needs the specific value provided in `default`, typically because it's needed for a specific protocol
 
     ##### Provision/Update (for every port name):
     - If not already booked, look for a free port, starting with the `default` value (or a random value between 10000 and 60000 if no `default` set)
-    - (FIXME) If `exposed` is not `false`, open the port in the firewall accordingly - otherwise make sure it's closed.
+    - If `exposed` is not `false`, open the port in the firewall accordingly - otherwise make sure it's closed.
     - The value of the port is stored in the `$port` setting for the `main` port, or `$port_NAME` for other `NAME`s
 
     ##### Deprovision:
-    - (FIXME) Close the ports on the firewall
+    - Close the ports on the firewall if relevant
     - Deletes all the port settings
 
     ##### Legacy management:
@@ -806,8 +806,8 @@ class PortsResource(AppResource):
 
     default_port_properties = {
         "default": None,
-        "exposed": False,  # or True(="Both"), "TCP", "UDP"   # FIXME : implement logic for exposed port (allow/disallow in firewall ?)
-        "fixed": False,  # FIXME: implement logic. Corresponding to wether or not the port is "fixed" or any random port is ok
+        "exposed": False,  # or True(="Both"), "TCP", "UDP"
+        "fixed": False,
     }
 
     ports: Dict[str, Dict[str, Any]]
@@ -839,6 +839,8 @@ class PortsResource(AppResource):
 
     def provision_or_update(self, context: Dict = {}):
 
+        from yunohost.firewall import firewall_allow, firewall_disallow
+
         for name, infos in self.ports.items():
 
             setting_name = f"port_{name}" if name != "main" else "port"
@@ -854,16 +856,31 @@ class PortsResource(AppResource):
 
             if not port_value:
                 port_value = infos["default"]
-                while self._port_is_used(port_value):
-                    port_value += 1
+
+                if infos["fixed"]:
+                    if self._port_is_used(port_value):
+                        raise ValidationError(f"Port {port_value} is already used by another process or app.")
+                else:
+                    while self._port_is_used(port_value):
+                        port_value += 1
 
             self.set_setting(setting_name, port_value)
 
+            if infos["exposed"]:
+                firewall_allow(infos["exposed"], port_value, reload_only_if_change=True)
+            else:
+                firewall_disallow(infos["exposed"], port_value, reload_only_if_change=True)
+
     def deprovision(self, context: Dict = {}):
+
+        from yunohost.firewall import firewall_disallow
 
         for name, infos in self.ports.items():
             setting_name = f"port_{name}" if name != "main" else "port"
+            value = self.get_setting(setting_name)
             self.delete_setting(setting_name)
+            if value and str(value).strip():
+                firewall_disallow(infos["exposed"], int(value), reload_only_if_change=True)
 
 
 class DatabaseAppResource(AppResource):

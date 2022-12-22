@@ -11,6 +11,7 @@ from yunohost.utils.resources import (
     AppResourceClassesByType,
 )
 from yunohost.permission import user_permission_list, permission_delete
+from yunohost.firewall import firewall_list
 
 dummyfile = "/tmp/dummyappresource-testapp"
 
@@ -118,21 +119,6 @@ def test_update_dummy():
         rollback_and_raise_exception_if_failure=False
     )
     assert open(dummyfile).read().strip() == "bar"
-
-
-def test_update_dummy_fail():
-
-    current = {"resources": {"dummy": {}}}
-    wanted = {"resources": {"dummy": {"content": "forbiddenvalue"}}}
-
-    open(dummyfile, "w").write("foo")
-
-    assert open(dummyfile).read().strip() == "foo"
-    with pytest.raises(Exception):
-        AppResourceManager("testapp", current=current, wanted=wanted).apply(
-            rollback_and_raise_exception_if_failure=False
-        )
-    assert open(dummyfile).read().strip() == "forbiddenvalue"
 
 
 def test_update_dummy_failwithrollback():
@@ -274,6 +260,26 @@ def test_resource_ports_several():
 
     assert not app_setting("testapp", "port")
     assert not app_setting("testapp", "port_foobar")
+
+
+def test_resource_ports_firewall():
+
+    r = AppResourceClassesByType["ports"]
+    conf = {"main": {"default": 12345}}
+
+    r(conf, "testapp").provision_or_update()
+
+    assert 12345 not in firewall_list()["opened_ports"]
+
+    conf = {"main": {"default": 12345, "exposed": "TCP"}}
+
+    r(conf, "testapp").provision_or_update()
+
+    assert 12345 in firewall_list()["opened_ports"]
+
+    r(conf, "testapp").deprovision()
+
+    assert 12345 not in firewall_list()["opened_ports"]
 
 
 def test_resource_database():
