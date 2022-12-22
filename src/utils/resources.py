@@ -922,7 +922,7 @@ class DatabaseAppResource(AppResource):
     priority = 90
 
     default_properties: Dict[str, Any] = {
-        "type": None,  # FIXME: eeeeeeeh is this really a good idea considering 'type' is supposed to be the resource type x_x
+        "dbtype": None,
     }
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
@@ -935,13 +935,18 @@ class DatabaseAppResource(AppResource):
                 "Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources"
             )
 
+        # Hack so that people can write type = "mysql/postgresql" in toml but it's loaded as dbtype
+        # to avoid conflicting with the generic self.type of the resource object ...
+        # dunno if that's really a good idea :|
+        properties["dbtype"] = properties.pop("type")
+
         super().__init__(properties, *args, **kwargs)
 
     def db_exists(self, db_name):
 
-        if self.type == "mysql":
+        if self.dbtype == "mysql":
             return os.system(f"mysqlshow '{db_name}' >/dev/null 2>/dev/null") == 0
-        elif self.type == "postgresql":
+        elif self.dbtype == "postgresql":
             return (
                 os.system(
                     f"sudo --login --user=postgres psql -c '' '{db_name}' >/dev/null 2>/dev/null"
@@ -965,7 +970,7 @@ class DatabaseAppResource(AppResource):
         else:
             # Legacy setting migration
             legacypasswordsetting = (
-                "psqlpwd" if self.type == "postgresql" else "mysqlpwd"
+                "psqlpwd" if self.dbtype == "postgresql" else "mysqlpwd"
             )
             if self.get_setting(legacypasswordsetting):
                 db_pwd = self.get_setting(legacypasswordsetting)
@@ -980,12 +985,12 @@ class DatabaseAppResource(AppResource):
 
         if not self.db_exists(db_name):
 
-            if self.type == "mysql":
+            if self.dbtype == "mysql":
                 self._run_script(
                     "provision",
                     f"ynh_mysql_create_db '{db_name}' '{db_user}' '{db_pwd}'",
                 )
-            elif self.type == "postgresql":
+            elif self.dbtype == "postgresql":
                 self._run_script(
                     "provision",
                     f"ynh_psql_create_user '{db_user}' '{db_pwd}'; ynh_psql_create_db '{db_name}' '{db_user}'",
@@ -996,11 +1001,11 @@ class DatabaseAppResource(AppResource):
         db_name = self.app.replace("-", "_").replace(".", "_")
         db_user = db_name
 
-        if self.type == "mysql":
+        if self.dbtype == "mysql":
             self._run_script(
                 "deprovision", f"ynh_mysql_remove_db '{db_name}' '{db_user}'"
             )
-        elif self.type == "postgresql":
+        elif self.dbtype == "postgresql":
             self._run_script(
                 "deprovision", f"ynh_psql_remove_db '{db_name}' '{db_user}'"
             )
