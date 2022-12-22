@@ -75,7 +75,7 @@ def test_provision_dummy():
 
     assert not os.path.exists(dummyfile)
     AppResourceManager("testapp", current=current, wanted=wanted).apply(
-        rollback_if_failure=False
+        rollback_and_raise_exception_if_failure=False
     )
     assert open(dummyfile).read().strip() == "foo"
 
@@ -89,7 +89,7 @@ def test_deprovision_dummy():
 
     assert open(dummyfile).read().strip() == "foo"
     AppResourceManager("testapp", current=current, wanted=wanted).apply(
-        rollback_if_failure=False
+        rollback_and_raise_exception_if_failure=False
     )
     assert not os.path.exists(dummyfile)
 
@@ -101,7 +101,7 @@ def test_provision_dummy_nondefaultvalue():
 
     assert not os.path.exists(dummyfile)
     AppResourceManager("testapp", current=current, wanted=wanted).apply(
-        rollback_if_failure=False
+        rollback_and_raise_exception_if_failure=False
     )
     assert open(dummyfile).read().strip() == "bar"
 
@@ -115,7 +115,7 @@ def test_update_dummy():
 
     assert open(dummyfile).read().strip() == "foo"
     AppResourceManager("testapp", current=current, wanted=wanted).apply(
-        rollback_if_failure=False
+        rollback_and_raise_exception_if_failure=False
     )
     assert open(dummyfile).read().strip() == "bar"
 
@@ -130,7 +130,7 @@ def test_update_dummy_fail():
     assert open(dummyfile).read().strip() == "foo"
     with pytest.raises(Exception):
         AppResourceManager("testapp", current=current, wanted=wanted).apply(
-            rollback_if_failure=False
+            rollback_and_raise_exception_if_failure=False
         )
     assert open(dummyfile).read().strip() == "forbiddenvalue"
 
@@ -145,7 +145,7 @@ def test_update_dummy_failwithrollback():
     assert open(dummyfile).read().strip() == "foo"
     with pytest.raises(Exception):
         AppResourceManager("testapp", current=current, wanted=wanted).apply(
-            rollback_if_failure=True
+            rollback_and_raise_exception_if_failure=True
         )
     assert open(dummyfile).read().strip() == "foo"
 
@@ -397,9 +397,7 @@ def test_resource_permissions():
 
     res = user_permission_list(full=True)["permissions"]
 
-    # FIXME FIXME FIXME : this is the current behavior but
-    # it is NOT okay. c.f. comment in the code
-    assert res["testapp.admin"]["url"] == "/admin"  # should be '/adminpanel'
+    assert res["testapp.admin"]["url"] == "/adminpanel"
 
     r(conf, "testapp").deprovision()
 
