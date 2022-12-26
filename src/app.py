@@ -1762,6 +1762,7 @@ ynh_app_config_run $1
                 "app": app,
                 "app_instance_nb": str(app_instance_nb),
                 "final_path": settings.get("final_path", ""),
+                "install_dir": settings.get("install_dir", ""),
                 "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, app),
             }
         )
