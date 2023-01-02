@@ -71,6 +71,7 @@ from yunohost.app_catalog import (  # noqa
     app_catalog,
     app_search,
     _load_apps_catalog,
+    APPS_CATALOG_LOGOS,
 )
 
 logger = getActionLogger("yunohost.app")
@@ -151,6 +152,9 @@ def app_info(app, full=False, upgradable=False):
     absolute_app_name, _ = _parse_app_instance_name(app)
     from_catalog = _load_apps_catalog()["apps"].get(absolute_app_name, {})
 
+    # Check if $app.png exists in the app logo folder, this is a trick to be able to easily customize the logo
+    # of an app just by creating $app.png (instead of the hash.png) in the corresponding folder
+    ret["logo"] = app if os.path.exists(f"{APPS_CATALOG_LOGOS}/{app}.png") else from_catalog.get("logo_hash")
     ret["upgradable"] = _app_upgradable({**ret, "from_catalog": from_catalog})
 
     if ret["upgradable"] == "yes":
