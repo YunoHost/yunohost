@@ -605,7 +605,6 @@
     "domain_dns_push_success": "DNS-Einträge aktualisiert!",
     "domain_dns_push_failed": "Die Aktualisierung der DNS-Einträge ist leider gescheitert.",
     "domain_dns_push_partial_failure": "DNS-Einträge teilweise aktualisiert: einige Warnungen/Fehler wurden gemeldet.",
-    "domain_config_features_disclaimer": "Bisher hat das Aktivieren/Deaktivieren von Mail- oder XMPP-Funktionen nur Auswirkungen auf die empfohlene und automatische DNS-Konfiguration, nicht auf die Systemkonfigurationen!",
     "domain_config_mail_in": "Eingehende E-Mails",
     "domain_config_mail_out": "Ausgehende E-Mails",
     "domain_config_xmpp": "Instant Messaging (XMPP)",

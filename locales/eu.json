@@ -337,7 +337,6 @@
     "domain_dns_registrar_supported": "YunoHostek automatikoki antzeman du domeinu hau **{registrar}** erregistro-enpresak kudeatzen duela. Nahi baduzu YunoHostek automatikoki konfiguratu ditzake DNS ezarpenak, API egiaztagiri zuzenak zehazten badituzu. API egiaztagiriak non lortzeko dokumentazioa orri honetan duzu: https://yunohost.org/registar_api_{registrar}. (Baduzu DNS erregistroak eskuz konfiguratzeko aukera ere, gidalerro hauetan ageri den bezala: https://yunohost.org/dns)",
     "domain_dns_push_failed_to_list": "Ezinezkoa izan da APIa erabiliz oraingo erregistroak antzematea: {error}",
     "domain_dns_push_already_up_to_date": "Ezarpenak egunean daude, ez dago zereginik.",
-    "domain_config_features_disclaimer": "Oraingoz, posta elektronikoa edo XMPP funtzioak gaitu/desgaitzeak DNS ezarpenei soilik eragiten die, ez sistemaren konfigurazioari!",
     "domain_config_mail_out": "Bidalitako mezuak",
     "domain_config_xmpp": "Bat-bateko mezularitza (XMPP)",
     "good_practices_about_user_password": "Erabiltzaile-pasahitz berria ezartzear zaude. Pasahitzak 8 karaktere izan beharko lituzke gutxienez, baina gomendagarria da pasahitz luzeagoa erabiltzea (esaldi bat, esaterako) edota karaktere desberdinak erabiltzea (hizki larriak, txikiak, zenbakiak eta karaktere bereziak).",

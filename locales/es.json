@@ -574,7 +574,6 @@
     "domain_dns_push_failed_to_authenticate": "No se pudo autenticar en la API del registrador para el dominio '{domain}'. ¿Lo más probable es que las credenciales sean incorrectas? (Error: {error})",
     "domain_dns_registrar_experimental": "Hasta ahora, la comunidad de YunoHost no ha probado ni revisado correctamente la interfaz con la API de **{registrar}**. El soporte es **muy experimental**. ¡Ten cuidado!",
     "domain_dns_push_record_failed": "No se pudo {action} registrar {type}/{name}: {error}",
-    "domain_config_features_disclaimer": "Hasta ahora, habilitar/deshabilitar las funciones de correo o XMPP solo afecta la configuración de DNS recomendada y automática, ¡no las configuraciones del sistema!",
     "domain_config_mail_in": "Correos entrantes",
     "domain_config_mail_out": "Correos salientes",
     "domain_config_xmpp": "Mensajería instantánea (XMPP)",

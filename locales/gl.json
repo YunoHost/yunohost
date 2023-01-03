@@ -604,7 +604,6 @@
     "domain_dns_push_record_failed": "Fallou {action} do rexistro {type}/{name}: {error}",
     "domain_dns_push_success": "Rexistros DNS actualizados!",
     "domain_dns_push_failed": "Fallou completamente a actualización dos rexistros DNS.",
-    "domain_config_features_disclaimer": "Ata o momento, activar/desactivar as funcións de email ou XMPP só ten impacto na configuración automática da configuración DNS, non na configuración do sistema!",
     "domain_config_mail_in": "Emails entrantes",
     "domain_config_mail_out": "Emails saíntes",
     "domain_config_xmpp": "Mensaxería instantánea (XMPP)",
