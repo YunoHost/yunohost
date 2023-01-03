@@ -53,9 +53,6 @@ do_post_regen() {
         systemctl daemon-reload
     fi
 
-    systemctl disable avahi-daemon.socket --quiet --now 2>/dev/null || true
-    systemctl disable avahi-daemon --quiet --now 2>/dev/null || true
-
     # Legacy stuff to enable the new yunomdns service on legacy systems
     if [[ -e /etc/avahi/avahi-daemon.conf ]] && grep -q 'yunohost' /etc/avahi/avahi-daemon.conf; then
         systemctl enable yunomdns --now --quiet
