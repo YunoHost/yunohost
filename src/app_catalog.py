@@ -18,6 +18,7 @@
 #
 import os
 import re
+import hashlib
 
 from moulinette import m18n
 from moulinette.utils.log import getActionLogger
@@ -36,6 +37,7 @@ from yunohost.utils.error import YunohostError
 logger = getActionLogger("yunohost.app_catalog")
 
 APPS_CATALOG_CACHE = "/var/cache/yunohost/repo"
+APPS_CATALOG_LOGOS = "/usr/share/yunohost/applogos"
 APPS_CATALOG_CONF = "/etc/yunohost/apps_catalog.yml"
 APPS_CATALOG_API_VERSION = 3
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
@@ -182,6 +184,9 @@ def _update_apps_catalog():
         logger.debug("Initialize folder for apps catalog cache")
         mkdir(APPS_CATALOG_CACHE, mode=0o750, parents=True, uid="root")
 
+    if not os.path.exists(APPS_CATALOG_LOGOS):
+        mkdir(APPS_CATALOG_LOGOS, mode=0o755, parents=True, uid="root")
+
     for apps_catalog in apps_catalog_list:
         if apps_catalog["url"] is None:
             continue
@@ -211,6 +216,37 @@ def _update_apps_catalog():
                 f"Unable to write cache data for {apps_catalog_id} apps_catalog : {e}",
                 raw_msg=True,
             )
+
+        # Download missing app logos
+        logos_to_download = []
+        for app, infos in apps_catalog_content["apps"].items():
+            logo_hash = infos.get("logo_hash")
+            if not logo_hash or os.path.exists(f"{APPS_CATALOG_LOGOS}/{logo_hash}.png"):
+                continue
+            logos_to_download.append(logo_hash)
+
+        if len(logos_to_download) > 20:
+            logger.info(f"(Will fetch {len(logos_to_download)} logos, this may take a couple minutes)")
+
+        import requests
+        from multiprocessing.pool import ThreadPool
+
+        def fetch_logo(logo_hash):
+            try:
+                r = requests.get(f"{apps_catalog['url']}/v{APPS_CATALOG_API_VERSION}/logos/{logo_hash}.png", timeout=10)
+                assert r.status_code == 200, f"Got status code {r.status_code}, expected 200"
+                if hashlib.sha256(r.content).hexdigest() != logo_hash:
+                    raise Exception(f"Found inconsistent hash while downloading logo {logo_hash}")
+                open(f"{APPS_CATALOG_LOGOS}/{logo_hash}.png", "wb").write(r.content)
+                return True
+            except Exception as e:
+                logger.debug(f"Failed to download logo {logo_hash} : {e}")
+                return False
+
+        results = ThreadPool(8).imap_unordered(fetch_logo, logos_to_download)
+        for result in results:
+            # Is this even needed to iterate on the results ?
+            pass
 
     logger.success(m18n.n("apps_catalog_update_success"))
 
