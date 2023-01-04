@@ -607,12 +607,12 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
         # Display pre-upgrade notifications and ask for simple confirm
         if (
-            manifest["notifications"]["pre_upgrade"]
+            manifest["notifications"]["PRE_UPGRADE"]
             and Moulinette.interface.type == "cli"
         ):
             settings = _get_app_settings(app_instance_name)
             notifications = _filter_and_hydrate_notifications(
-                manifest["notifications"]["pre_upgrade"],
+                manifest["notifications"]["PRE_UPGRADE"],
                 current_version=app_current_version,
                 data=settings,
             )
@@ -797,11 +797,11 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             logger.success(m18n.n("app_upgraded", app=app_instance_name))
 
             # Format post-upgrade notifications
-            if manifest["notifications"]["post_upgrade"]:
+            if manifest["notifications"]["POST_UPGRADE"]:
                 # Get updated settings to hydrate notifications
                 settings = _get_app_settings(app_instance_name)
                 notifications = _filter_and_hydrate_notifications(
-                    manifest["notifications"]["post_upgrade"],
+                    manifest["notifications"]["POST_UPGRADE"],
                     current_version=app_current_version,
                     data=settings,
                 )
@@ -817,7 +817,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
     logger.success(m18n.n("upgrade_complete"))
 
     if Moulinette.interface.type == "api":
-        return {"notifications": {"post_upgrade": notifications}}
+        return {"notifications": {"POST_UPGRADE": notifications}}
 
 
 def app_manifest(app, with_screenshot=False):
@@ -927,9 +927,9 @@ def app_install(
     manifest, extracted_app_folder = _extract_app(app)
 
     # Display pre_install notices in cli mode
-    if manifest["notifications"]["pre_install"] and Moulinette.interface.type == "cli":
+    if manifest["notifications"]["PRE_INSTALL"] and Moulinette.interface.type == "cli":
         notifications = _filter_and_hydrate_notifications(
-            manifest["notifications"]["pre_install"]
+            manifest["notifications"]["PRE_INSTALL"]
         )
         _display_notifications(notifications, force=force)
 
@@ -1202,7 +1202,7 @@ def app_install(
     # Get the generated settings to hydrate notifications
     settings = _get_app_settings(app_instance_name)
     notifications = _filter_and_hydrate_notifications(
-        manifest["notifications"]["post_install"], data=settings
+        manifest["notifications"]["POST_INSTALL"], data=settings
     )
 
     # Display post_install notices in cli mode
@@ -2001,6 +2001,7 @@ def _get_manifest_of_app(path):
 def _parse_app_doc_and_notifications(path):
 
     doc = {}
+    notification_names = ["PRE_INSTALL", "POST_INSTALL", "PRE_UPGRADE", "POST_UPGRADE"]
 
     for filepath in glob.glob(os.path.join(path, "doc") + "/*.md"):
 
@@ -2011,7 +2012,12 @@ def _parse_app_doc_and_notifications(path):
         if not m:
             # FIXME: shall we display a warning ? idk
             continue
+
         pagename, lang = m.groups()
+
+        if pagename in notification_names:
+            continue
+
         lang = lang.strip("_") if lang else "en"
 
         if pagename not in doc:
@@ -2020,10 +2026,10 @@ def _parse_app_doc_and_notifications(path):
 
     notifications = {}
 
-    for step in ["pre_install", "post_install", "pre_upgrade", "post_upgrade"]:
+    for step in notification_names:
         notifications[step] = {}
         for filepath in glob.glob(
-            os.path.join(path, "doc", "notifications", f"{step}*.md")
+            os.path.join(path, "doc", f"{step}*.md")
         ):
             m = re.match(step + "(_[a-z]{2,3})?.md", filepath.split("/")[-1])
             if not m:
@@ -2035,7 +2041,7 @@ def _parse_app_doc_and_notifications(path):
             notifications[step][pagename][lang] = read_file(filepath).strip()
 
         for filepath in glob.glob(
-            os.path.join(path, "doc", "notifications", f"{step}.d") + "/*.md"
+            os.path.join(path, "doc", f"{step}.d") + "/*.md"
         ):
             m = re.match(
                 r"([A-Za-z0-9\.\~]*)(_[a-z]{2,3})?.md", filepath.split("/")[-1]
@@ -2403,9 +2409,9 @@ def _list_upgradable_apps():
         manifest, extracted_app_folder = _extract_app(absolute_app_name)
         current_version = version.parse(app["current_version"])
         app["notifications"] = {}
-        if manifest["notifications"]["pre_upgrade"]:
-            app["notifications"]["pre_upgrade"] = _filter_and_hydrate_notifications(
-                manifest["notifications"]["pre_upgrade"],
+        if manifest["notifications"]["PRE_UPGRADE"]:
+            app["notifications"]["PRE_UPGRADE"] = _filter_and_hydrate_notifications(
+                manifest["notifications"]["PRE_UPGRADE"],
                 current_version,
                 app["settings"],
             )
