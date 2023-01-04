@@ -981,6 +981,17 @@ app:
                     help: Undo redirection
                     action: store_true
 
+        ### app_dismiss_notification
+        dismiss-notification:
+            hide_in_help: True
+            action_help: Dismiss post_install or post_upgrade notification
+            api: PUT /apps/<app>/dismiss_notification/<name>
+            arguments:
+                app:
+                    help: App ID to dismiss notification for
+                name:
+                    help: Notification name, either post_install or post_upgrade
+
         ### app_ssowatconf()
         ssowatconf:
             action_help: Regenerate SSOwat configuration file

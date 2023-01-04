@@ -190,6 +190,13 @@ def app_info(app, full=False, upgradable=False):
             ret["manifest"]["doc"][pagename][lang] = _hydrate_app_template(
                 content, settings
             )
+
+    # Filter dismissed notification
+    ret["manifest"]["notifications"] = {k: v
+            for k, v in ret["manifest"]["notifications"].items()
+            if not _notification_is_dismissed(k, settings) }
+
+    # Hydrate notifications (also filter uneeded post_upgrade notification based on version)
     for step, notifications in ret["manifest"]["notifications"].items():
         for name, content_per_lang in notifications.items():
             for lang, content in content_per_lang.items():
@@ -808,6 +815,9 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                 if Moulinette.interface.type == "cli":
                     # ask for simple confirm
                     _display_notifications(notifications, force=force)
+
+            # Reset the dismiss flag for post upgrade notification
+            app_setting(app, "_dismiss_notification_post_upgrade", delete=True)
 
             hook_callback("post_app_upgrade", env=env_dict)
             operation_logger.success()
@@ -2875,6 +2885,33 @@ def _assert_system_is_sane_for_app(manifest, when):
             raise YunohostValidationError("dpkg_is_broken")
         elif when == "post":
             raise YunohostError("this_action_broke_dpkg")
+
+
+def app_dismiss_notification(app, name):
+
+    assert isinstance(name, str)
+    name = name.lower()
+    assert name in ["post_install", "post_upgrade"]
+    _assert_is_installed(app)
+
+    app_setting(app, f"_dismiss_notification_{name}", value="1")
+
+
+def _notification_is_dismissed(name, settings):
+    # Check for _dismiss_notiication_$name setting and also auto-dismiss
+    # notifications after one week (otherwise people using mostly CLI would
+    # never really dismiss the notification and it would be displayed forever)
+
+    if name == "POST_INSTALL":
+        return settings.get("_dismiss_notification_post_install") \
+                or (int(time.time()) - settings.get("install_time", 0)) / (24 * 3600) > 7
+    elif name == "POST_UPGRADE":
+        # Check on update_time also implicitly prevent the post_upgrade notification
+        # from being displayed after install, because update_time is only set during upgrade
+        return settings.get("_dismiss_notification_post_upgrade") \
+                or (int(time.time()) - settings.get("update_time", 0)) / (24 * 3600) > 7
+    else:
+        return False
 
 
 def _filter_and_hydrate_notifications(notifications, current_version=None, data={}):
