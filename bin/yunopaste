@@ -19,7 +19,7 @@ paste_data() {
   [[ -z "$json" ]] && _die "Unable to post the data to the server."
 
   key=$(echo "$json" \
-    | python -c 'import json,sys;o=json.load(sys.stdin);print(o["key"])' \
+    | python3 -c 'import json,sys;o=json.load(sys.stdin);print(o["key"])' \
         2>/dev/null)
   [[ -z "$key" ]] && _die "Unable to parse the server response."
 
