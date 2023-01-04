@@ -2893,7 +2893,7 @@ def _display_notifications(notifications, force=False):
         return
 
     for name, content in notifications.items():
-        print(f"========== {name}")
+        print("==========")
         print(content)
     print("==========")
 
