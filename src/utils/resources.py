@@ -30,7 +30,7 @@ from moulinette.utils.filesystem import (
     rm,
 )
 
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 logger = getActionLogger("yunohost.app_resources")
 
@@ -859,7 +859,7 @@ class PortsResource(AppResource):
 
                 if infos["fixed"]:
                     if self._port_is_used(port_value):
-                        raise ValidationError(f"Port {port_value} is already used by another process or app.")
+                        raise YunohostValidationError(f"Port {port_value} is already used by another process or app.")
                 else:
                     while self._port_is_used(port_value):
                         port_value += 1
@@ -920,6 +920,7 @@ class DatabaseAppResource(AppResource):
 
     type = "database"
     priority = 90
+    dbtype: str = ""
 
     default_properties: Dict[str, Any] = {
         "dbtype": None,
@@ -932,7 +933,8 @@ class DatabaseAppResource(AppResource):
             "postgresql",
         ]:
             raise YunohostError(
-                "Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources"
+                "Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources",
+                raw_msg=True
             )
 
         # Hack so that people can write type = "mysql/postgresql" in toml but it's loaded as dbtype
