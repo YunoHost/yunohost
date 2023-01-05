@@ -23,7 +23,7 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
  , dnsmasq, resolvconf, libnss-myhostname
  , postfix, postfix-ldap, postfix-policyd-spf-perl, postfix-pcre
- , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved, dovecot-antispam
+ , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved, dovecot-antispam, dovecot-pop3d
  , rspamd, opendkim-tools, postsrsd, procmail, mailutils
  , redis-server
  , acl
