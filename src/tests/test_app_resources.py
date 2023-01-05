@@ -11,6 +11,7 @@ from yunohost.utils.resources import (
     AppResourceClassesByType,
 )
 from yunohost.permission import user_permission_list, permission_delete
+from yunohost.firewall import firewall_list
 
 dummyfile = "/tmp/dummyappresource-testapp"
 
@@ -75,7 +76,7 @@ def test_provision_dummy():
 
     assert not os.path.exists(dummyfile)
     AppResourceManager("testapp", current=current, wanted=wanted).apply(
-        rollback_if_failure=False
+        rollback_and_raise_exception_if_failure=False
     )
     assert open(dummyfile).read().strip() == "foo"
 
@@ -89,7 +90,7 @@ def test_deprovision_dummy():
 
     assert open(dummyfile).read().strip() == "foo"
     AppResourceManager("testapp", current=current, wanted=wanted).apply(
-        rollback_if_failure=False
+        rollback_and_raise_exception_if_failure=False
     )
     assert not os.path.exists(dummyfile)
 
@@ -101,7 +102,7 @@ def test_provision_dummy_nondefaultvalue():
 
     assert not os.path.exists(dummyfile)
     AppResourceManager("testapp", current=current, wanted=wanted).apply(
-        rollback_if_failure=False
+        rollback_and_raise_exception_if_failure=False
     )
     assert open(dummyfile).read().strip() == "bar"
 
@@ -115,24 +116,9 @@ def test_update_dummy():
 
     assert open(dummyfile).read().strip() == "foo"
     AppResourceManager("testapp", current=current, wanted=wanted).apply(
-        rollback_if_failure=False
+        rollback_and_raise_exception_if_failure=False
     )
     assert open(dummyfile).read().strip() == "bar"
-
-
-def test_update_dummy_fail():
-
-    current = {"resources": {"dummy": {}}}
-    wanted = {"resources": {"dummy": {"content": "forbiddenvalue"}}}
-
-    open(dummyfile, "w").write("foo")
-
-    assert open(dummyfile).read().strip() == "foo"
-    with pytest.raises(Exception):
-        AppResourceManager("testapp", current=current, wanted=wanted).apply(
-            rollback_if_failure=False
-        )
-    assert open(dummyfile).read().strip() == "forbiddenvalue"
 
 
 def test_update_dummy_failwithrollback():
@@ -145,7 +131,7 @@ def test_update_dummy_failwithrollback():
     assert open(dummyfile).read().strip() == "foo"
     with pytest.raises(Exception):
         AppResourceManager("testapp", current=current, wanted=wanted).apply(
-            rollback_if_failure=True
+            rollback_and_raise_exception_if_failure=True
         )
     assert open(dummyfile).read().strip() == "foo"
 
@@ -276,6 +262,26 @@ def test_resource_ports_several():
     assert not app_setting("testapp", "port_foobar")
 
 
+def test_resource_ports_firewall():
+
+    r = AppResourceClassesByType["ports"]
+    conf = {"main": {"default": 12345}}
+
+    r(conf, "testapp").provision_or_update()
+
+    assert 12345 not in firewall_list()["opened_ports"]
+
+    conf = {"main": {"default": 12345, "exposed": "TCP"}}
+
+    r(conf, "testapp").provision_or_update()
+
+    assert 12345 in firewall_list()["opened_ports"]
+
+    r(conf, "testapp").deprovision()
+
+    assert 12345 not in firewall_list()["opened_ports"]
+
+
 def test_resource_database():
 
     r = AppResourceClassesByType["database"]
@@ -397,9 +403,7 @@ def test_resource_permissions():
 
     res = user_permission_list(full=True)["permissions"]
 
-    # FIXME FIXME FIXME : this is the current behavior but
-    # it is NOT okay. c.f. comment in the code
-    assert res["testapp.admin"]["url"] == "/admin"  # should be '/adminpanel'
+    assert res["testapp.admin"]["url"] == "/adminpanel"
 
     r(conf, "testapp").deprovision()
 

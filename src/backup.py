@@ -1518,13 +1518,9 @@ class RestoreManager:
         if manifest["packaging_format"] >= 2:
             from yunohost.utils.resources import AppResourceManager
 
-            try:
-                AppResourceManager(
-                    app_instance_name, wanted=manifest, current={}
-                ).apply(rollback_if_failure=True)
-            except Exception:
-                # FIXME : improve error handling ....
-                raise
+            AppResourceManager(
+                app_instance_name, wanted=manifest, current={}
+            ).apply(rollback_and_raise_exception_if_failure=True, operation_logger=operation_logger)
 
         # Execute the app install script
         restore_failed = True

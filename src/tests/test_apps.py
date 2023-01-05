@@ -223,10 +223,10 @@ def test_legacy_app_manifest_preinstall():
     assert "install" in m
     assert m["doc"] == {}
     assert m["notifications"] == {
-        "pre_install": {},
-        "pre_upgrade": {},
-        "post_install": {},
-        "post_upgrade": {},
+        "PRE_INSTALL": {},
+        "PRE_UPGRADE": {},
+        "POST_INSTALL": {},
+        "POST_UPGRADE": {},
     }
 
 
@@ -249,11 +249,11 @@ def test_manifestv2_app_manifest_preinstall():
     assert "notifications" in m
     assert (
         "This is a dummy disclaimer to display prior to the install"
-        in m["notifications"]["pre_install"]["main"]["en"]
+        in m["notifications"]["PRE_INSTALL"]["main"]["en"]
     )
     assert (
         "Ceci est un faux disclaimer à présenter avant l'installation"
-        in m["notifications"]["pre_install"]["main"]["fr"]
+        in m["notifications"]["PRE_INSTALL"]["main"]["fr"]
     )
 
 
@@ -295,15 +295,15 @@ def test_manifestv2_app_info_postinstall():
     assert "notifications" in m
     assert (
         "The app install dir is /var/www/manifestv2_app"
-        in m["notifications"]["post_install"]["main"]["en"]
+        in m["notifications"]["POST_INSTALL"]["main"]["en"]
     )
     assert (
         "The app id is manifestv2_app"
-        in m["notifications"]["post_install"]["main"]["en"]
+        in m["notifications"]["POST_INSTALL"]["main"]["en"]
     )
     assert (
         f"The app url is {main_domain}/manifestv2"
-        in m["notifications"]["post_install"]["main"]["en"]
+        in m["notifications"]["POST_INSTALL"]["main"]["en"]
     )
 
 
@@ -341,7 +341,7 @@ def test_manifestv2_app_info_preupgrade(monkeypatch):
     # should parse the files in the original app repo, possibly with proper i18n etc
     assert (
         "This is a dummy disclaimer to display prior to any upgrade"
-        in i["from_catalog"]["manifest"]["notifications"]["pre_upgrade"]["main"]["en"]
+        in i["from_catalog"]["manifest"]["notifications"]["PRE_UPGRADE"]["main"]["en"]
     )
 
 

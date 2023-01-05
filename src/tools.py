@@ -29,7 +29,11 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm, chown
 
-from yunohost.app import app_upgrade, app_list
+from yunohost.app import (
+    app_upgrade,
+    app_list,
+    _list_upgradable_apps,
+)
 from yunohost.app_catalog import (
     _initialize_apps_catalog_system,
     _update_apps_catalog,
@@ -363,7 +367,7 @@ def tools_update(target=None):
         except YunohostError as e:
             logger.error(str(e))
 
-        upgradable_apps = list(app_list(upgradable=True)["apps"])
+        upgradable_apps = _list_upgradable_apps()
 
     if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
         logger.info(m18n.n("already_up_to_date"))
