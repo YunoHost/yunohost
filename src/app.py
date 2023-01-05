@@ -2425,12 +2425,11 @@ def _list_upgradable_apps():
     for app in upgradable_apps:
         absolute_app_name, _ = _parse_app_instance_name(app["id"])
         manifest, extracted_app_folder = _extract_app(absolute_app_name)
-        current_version = version.parse(app["current_version"])
         app["notifications"] = {}
         if manifest["notifications"]["PRE_UPGRADE"]:
             app["notifications"]["PRE_UPGRADE"] = _filter_and_hydrate_notifications(
                 manifest["notifications"]["PRE_UPGRADE"],
-                current_version,
+                app["current_version"],
                 app["settings"],
             )
         del app["settings"]
@@ -2933,13 +2932,22 @@ def _notification_is_dismissed(name, settings):
 
 
 def _filter_and_hydrate_notifications(notifications, current_version=None, data={}):
+
+    def is_version_more_recent_than_current_version(name):
+        # Boring code to handle the fact that "0.1 < 9999~ynh1" is False
+
+        if "~" in name:
+            return version.parse(name) > version.parse(current_version)
+        else:
+            return version.parse(name) > version.parse(current_version.split("~")[0])
+
     return {
         # Should we render the markdown maybe? idk
         name: _hydrate_app_template(_value_for_locale(content_per_lang), data)
         for name, content_per_lang in notifications.items()
         if current_version is None
         or name == "main"
-        or version.parse(name) > current_version
+        or is_version_more_recent_than_current_version(name)
     }
 
 
