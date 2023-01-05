@@ -455,11 +455,16 @@ investigate :
 -- Certificate Manager
 """
 
-    import smtplib
+    try:
+        import smtplib
 
-    smtp = smtplib.SMTP("localhost")
-    smtp.sendmail(from_, [to_], message.encode("utf-8"))
-    smtp.quit()
+        smtp = smtplib.SMTP("localhost")
+        smtp.sendmail(from_, [to_], message.encode("utf-8"))
+        smtp.quit()
+    except Exception as e:
+        # Dont miserably crash the whole auto renew cert when one renewal fails ...
+        # cf boring cases like https://github.com/YunoHost/issues/issues/2102
+        logger.exception(f"Failed to send mail about cert renewal failure ... : {e}")
 
 
 def _check_acme_challenge_configuration(domain):

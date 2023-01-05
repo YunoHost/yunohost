@@ -1,5 +1,5 @@
 {
-    "action_invalid": "Acção Inválida '{action}'",
+    "action_invalid": "Ação inválida '{action}'",
     "admin_password": "Senha de administração",
     "app_already_installed": "{app} já está instalada",
     "app_extraction_failed": "Não foi possível extrair os arquivos para instalação",
@@ -125,7 +125,7 @@
     "app_action_cannot_be_ran_because_required_services_down": "Estes serviços devem estar funcionado para executar esta ação: {services}. Tente reiniciá-los para continuar (e possivelmente investigar o porquê de não estarem funcionado).",
     "app_action_broke_system": "Esta ação parece ter quebrado estes serviços importantes: {services}",
     "already_up_to_date": "Nada a ser feito. Tudo já está atualizado.",
-    "additional_urls_already_removed": "A URL adicional '{url}'já está removida para a permissão '{permission}'",
+    "additional_urls_already_removed": "A URL adicional '{url}' já foi removida da permissão '{permission}'",
     "additional_urls_already_added": "A URL adicional '{url}' já está adicionada para a permissão '{permission}'",
     "app_install_script_failed": "Ocorreu um erro dentro do script de instalação do aplicativo",
     "app_install_failed": "Não foi possível instalar {app}: {error}",
@@ -245,5 +245,6 @@
     "diagnosis_basesystem_hardware_model": "O modelo do servidor é {model}",
     "diagnosis_backports_in_sources_list": "Parece que o apt (o gerenciador de pacotes) está configurado para usar o repositório backport. A não ser que você saiba o que você esteá fazendo, desencorajamos fortemente a instalação de pacotes de backports porque é provável que crie instabilidades ou conflitos no seu sistema.",
     "certmanager_cert_renew_success": "Certificado Let's Encrypt renovado para o domínio '{domain}'",
-    "certmanager_warning_subdomain_dns_record": "O subdomínio '{subdomain}' não resolve para o mesmo IP que '{domain}'. Algumas funcionalidades não estarão disponíveis até que você conserte isto e regenere o certificado."
+    "certmanager_warning_subdomain_dns_record": "O subdomínio '{subdomain}' não resolve para o mesmo IP que '{domain}'. Algumas funcionalidades não estarão disponíveis até que você conserte isto e regenere o certificado.",
+    "admins": "Admins"
 }

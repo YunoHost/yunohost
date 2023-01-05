@@ -737,5 +737,9 @@
     "global_settings_setting_ssh_compatibility": "Compatibilidade SSH",
     "migration_description_0026_new_admins_group": "Migrar ao novo sistema de 'admins múltiples'",
     "group_update_aliases": "Actualizando os alias do grupo '{group}'",
-    "group_no_change": "Nada que cambiar para o grupo '{group}'"
+    "group_no_change": "Nada que cambiar para o grupo '{group}'",
+    "domain_cannot_add_muc_upload": "Non podes engadir dominios que comecen por 'muc.'. Este tipo de dominio está reservado para as salas de conversa de XMPP integradas en YunoHost.",
+    "global_settings_setting_passwordless_sudo": "Permitir a Admins usar 'sudo' sen ter que volver a escribir o contrasinal",
+    "global_settings_setting_portal_theme": "Decorado do Portal",
+    "global_settings_setting_portal_theme_help": "Tes máis info acerca da creación de decorados para o portal de acceso en https://yunohost.org/theming"
 }
