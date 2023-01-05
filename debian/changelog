@@ -1,3 +1,15 @@
+yunohost (11.1.1.2) testing; urgency=low
+
+  - group mailalias: the ldap class is in fact mailGroup, not mailAccount -_- (1cb5e43e)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 03 Dec 2022 15:57:22 +0100
+
+yunohost (11.1.1.1) testing; urgency=low
+
+  - Fix again the legacy patch for yunohost user create @_@ (46d6fab0)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 03 Dec 2022 14:13:09 +0100
+
 yunohost (11.1.1) testing; urgency=low
 
   - groups: add mail-aliases management (#1539) (0f9d9388)
