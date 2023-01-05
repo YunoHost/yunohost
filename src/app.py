@@ -154,7 +154,11 @@ def app_info(app, full=False, upgradable=False):
 
     # Check if $app.png exists in the app logo folder, this is a trick to be able to easily customize the logo
     # of an app just by creating $app.png (instead of the hash.png) in the corresponding folder
-    ret["logo"] = app if os.path.exists(f"{APPS_CATALOG_LOGOS}/{app}.png") else from_catalog.get("logo_hash")
+    ret["logo"] = (
+        app
+        if os.path.exists(f"{APPS_CATALOG_LOGOS}/{app}.png")
+        else from_catalog.get("logo_hash")
+    )
     ret["upgradable"] = _app_upgradable({**ret, "from_catalog": from_catalog})
 
     if ret["upgradable"] == "yes":
@@ -192,9 +196,11 @@ def app_info(app, full=False, upgradable=False):
             )
 
     # Filter dismissed notification
-    ret["manifest"]["notifications"] = {k: v
-            for k, v in ret["manifest"]["notifications"].items()
-            if not _notification_is_dismissed(k, settings) }
+    ret["manifest"]["notifications"] = {
+        k: v
+        for k, v in ret["manifest"]["notifications"].items()
+        if not _notification_is_dismissed(k, settings)
+    }
 
     # Hydrate notifications (also filter uneeded post_upgrade notification based on version)
     for step, notifications in ret["manifest"]["notifications"].items():
@@ -688,7 +694,10 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
             AppResourceManager(
                 app_instance_name, wanted=manifest, current=app_dict["manifest"]
-            ).apply(rollback_and_raise_exception_if_failure=True, operation_logger=operation_logger)
+            ).apply(
+                rollback_and_raise_exception_if_failure=True,
+                operation_logger=operation_logger,
+            )
 
         # Execute the app upgrade script
         upgrade_failed = True
@@ -817,7 +826,9 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     _display_notifications(notifications, force=force)
 
             # Reset the dismiss flag for post upgrade notification
-            app_setting(app, "_dismiss_notification_post_upgrade", delete=True)
+            app_setting(
+                app_instance_name, "_dismiss_notification_post_upgrade", delete=True
+            )
 
             hook_callback("post_app_upgrade", env=env_dict)
             operation_logger.success()
@@ -1049,7 +1060,8 @@ def app_install(
         from yunohost.utils.resources import AppResourceManager
 
         AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
-            rollback_and_raise_exception_if_failure=True, operation_logger=operation_logger
+            rollback_and_raise_exception_if_failure=True,
+            operation_logger=operation_logger,
         )
     else:
         # Initialize the main permission for the app
@@ -2038,9 +2050,7 @@ def _parse_app_doc_and_notifications(path):
 
     for step in notification_names:
         notifications[step] = {}
-        for filepath in glob.glob(
-            os.path.join(path, "doc", f"{step}*.md")
-        ):
+        for filepath in glob.glob(os.path.join(path, "doc", f"{step}*.md")):
             m = re.match(step + "(_[a-z]{2,3})?.md", filepath.split("/")[-1])
             if not m:
                 continue
@@ -2050,9 +2060,7 @@ def _parse_app_doc_and_notifications(path):
                 notifications[step][pagename] = {}
             notifications[step][pagename][lang] = read_file(filepath).strip()
 
-        for filepath in glob.glob(
-            os.path.join(path, "doc", f"{step}.d") + "/*.md"
-        ):
+        for filepath in glob.glob(os.path.join(path, "doc", f"{step}.d") + "/*.md"):
             m = re.match(
                 r"([A-Za-z0-9\.\~]*)(_[a-z]{2,3})?.md", filepath.split("/")[-1]
             )
@@ -2492,7 +2500,9 @@ def _check_manifest_requirements(
         raise YunohostValidationError("app_packaging_format_not_supported")
 
     # Yunohost version
-    required_yunohost_version = manifest["integration"].get("yunohost", "4.3").strip(">= ")
+    required_yunohost_version = (
+        manifest["integration"].get("yunohost", "4.3").strip(">= ")
+    )
     current_yunohost_version = get_ynh_package_version("yunohost")["version"]
 
     yield (
@@ -2557,8 +2567,12 @@ def _check_manifest_requirements(
     # Is "include_swap" really useful ? We should probably decide wether to always include it or not instead
     if ram_requirement.get("include_swap", False):
         ram += swap
-    can_build = ram_requirement["build"] == "?" or ram > human_to_binary(ram_requirement["build"])
-    can_run = ram_requirement["runtime"] == "?" or ram > human_to_binary(ram_requirement["runtime"])
+    can_build = ram_requirement["build"] == "?" or ram > human_to_binary(
+        ram_requirement["build"]
+    )
+    can_run = ram_requirement["runtime"] == "?" or ram > human_to_binary(
+        ram_requirement["runtime"]
+    )
 
     yield (
         "ram",
@@ -2903,13 +2917,17 @@ def _notification_is_dismissed(name, settings):
     # never really dismiss the notification and it would be displayed forever)
 
     if name == "POST_INSTALL":
-        return settings.get("_dismiss_notification_post_install") \
-                or (int(time.time()) - settings.get("install_time", 0)) / (24 * 3600) > 7
+        return (
+            settings.get("_dismiss_notification_post_install")
+            or (int(time.time()) - settings.get("install_time", 0)) / (24 * 3600) > 7
+        )
     elif name == "POST_UPGRADE":
         # Check on update_time also implicitly prevent the post_upgrade notification
         # from being displayed after install, because update_time is only set during upgrade
-        return settings.get("_dismiss_notification_post_upgrade") \
-                or (int(time.time()) - settings.get("update_time", 0)) / (24 * 3600) > 7
+        return (
+            settings.get("_dismiss_notification_post_upgrade")
+            or (int(time.time()) - settings.get("update_time", 0)) / (24 * 3600) > 7
+        )
     else:
         return False
 
