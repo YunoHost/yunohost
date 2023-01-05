@@ -738,7 +738,7 @@
     "global_settings_setting_smtp_allow_ipv6": "Autoriser l'IPv6",
     "password_too_long": "Veuillez choisir un mot de passe de moins de 127 caractères",
     "domain_cannot_add_muc_upload": "Vous ne pouvez pas ajouter de domaines commençant par 'muc.'. Ce type de nom est réservé à la fonction de chat XMPP multi-utilisateurs intégrée à YunoHost.",
-    "group_update_aliases": "Mise à jour des alias du groupe '{group}'.",
+    "group_update_aliases": "Mise à jour des alias du groupe '{group}'",
     "group_no_change": "Rien à mettre à jour pour le groupe '{group}'",
     "global_settings_setting_portal_theme": "Thème du portail",
     "global_settings_setting_portal_theme_help": "Pour plus d'informations sur la création de thèmes de portail personnalisés, voir https://yunohost.org/theming",
