@@ -940,7 +940,7 @@ class DatabaseAppResource(AppResource):
         # Hack so that people can write type = "mysql/postgresql" in toml but it's loaded as dbtype
         # to avoid conflicting with the generic self.type of the resource object ...
         # dunno if that's really a good idea :|
-        properties["dbtype"] = properties.pop("type")
+        properties = {"dbtype": properties["type"]}
 
         super().__init__(properties, *args, **kwargs)
 
