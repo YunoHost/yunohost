@@ -18,51 +18,51 @@ _make_dummy_src() {
 }
 
 ynhtest_setup_source_nominal() {
-    final_path="$(mktemp -d -p $VAR_WWW)"
+    install_dir="$(mktemp -d -p $VAR_WWW)"
     _make_dummy_src > ../conf/dummy.src
     
-    ynh_setup_source --dest_dir="$final_path" --source_id="dummy"
+    ynh_setup_source --dest_dir="$install_dir" --source_id="dummy"
 
-    test -e "$final_path"
-    test -e "$final_path/index.html"
+    test -e "$install_dir"
+    test -e "$install_dir/index.html"
 }
 
 ynhtest_setup_source_nominal_upgrade() {
-    final_path="$(mktemp -d -p $VAR_WWW)"
+    install_dir="$(mktemp -d -p $VAR_WWW)"
     _make_dummy_src > ../conf/dummy.src
 
-    ynh_setup_source --dest_dir="$final_path" --source_id="dummy"
+    ynh_setup_source --dest_dir="$install_dir" --source_id="dummy"
 
-    test "$(cat $final_path/index.html)" == "Lorem Ipsum"
+    test "$(cat $install_dir/index.html)" == "Lorem Ipsum"
     
     # Except index.html to get overwritten during next ynh_setup_source
-    echo "IEditedYou!" > $final_path/index.html
-    test "$(cat $final_path/index.html)" == "IEditedYou!"
+    echo "IEditedYou!" > $install_dir/index.html
+    test "$(cat $install_dir/index.html)" == "IEditedYou!"
 
-    ynh_setup_source --dest_dir="$final_path" --source_id="dummy"
+    ynh_setup_source --dest_dir="$install_dir" --source_id="dummy"
 
-    test "$(cat $final_path/index.html)" == "Lorem Ipsum"
+    test "$(cat $install_dir/index.html)" == "Lorem Ipsum"
 }
 
 
 ynhtest_setup_source_with_keep() {
-    final_path="$(mktemp -d -p $VAR_WWW)"
+    install_dir="$(mktemp -d -p $VAR_WWW)"
     _make_dummy_src > ../conf/dummy.src
 
-    echo "IEditedYou!" > $final_path/index.html
-    echo "IEditedYou!" > $final_path/test.txt
+    echo "IEditedYou!" > $install_dir/index.html
+    echo "IEditedYou!" > $install_dir/test.txt
 
-    ynh_setup_source --dest_dir="$final_path" --source_id="dummy" --keep="index.html test.txt"
+    ynh_setup_source --dest_dir="$install_dir" --source_id="dummy" --keep="index.html test.txt"
 
-    test -e "$final_path"
-    test -e "$final_path/index.html"
-    test -e "$final_path/test.txt"
-    test "$(cat $final_path/index.html)" == "IEditedYou!"
-    test "$(cat $final_path/test.txt)" == "IEditedYou!"
+    test -e "$install_dir"
+    test -e "$install_dir/index.html"
+    test -e "$install_dir/test.txt"
+    test "$(cat $install_dir/index.html)" == "IEditedYou!"
+    test "$(cat $install_dir/test.txt)" == "IEditedYou!"
 }
 
 ynhtest_setup_source_with_patch() {
-    final_path="$(mktemp -d -p $VAR_WWW)"
+    install_dir="$(mktemp -d -p $VAR_WWW)"
     _make_dummy_src > ../conf/dummy.src
 
     mkdir -p ../sources/patches
@@ -74,7 +74,7 @@ ynhtest_setup_source_with_patch() {
 +Lorem Ipsum dolor sit amet
 EOF
 
-    ynh_setup_source --dest_dir="$final_path" --source_id="dummy"
+    ynh_setup_source --dest_dir="$install_dir" --source_id="dummy"
 
-    test "$(cat $final_path/index.html)" == "Lorem Ipsum dolor sit amet"
+    test "$(cat $install_dir/index.html)" == "Lorem Ipsum dolor sit amet"
 }

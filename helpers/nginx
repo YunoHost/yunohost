@@ -20,7 +20,7 @@ ynh_add_nginx_config() {
 
     local finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
 
-    ynh_add_config --template="$YNH_APP_BASEDIR/conf/nginx.conf" --destination="$finalnginxconf"
+    ynh_add_config --template="nginx.conf" --destination="$finalnginxconf"
 
     if [ "${path_url:-}" != "/" ]; then
         ynh_replace_string --match_string="^#sub_path_only" --replace_string="" --target_file="$finalnginxconf"

@@ -1,28 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2013 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
-""" yunohost_tools.py
-
-    Specific tools
-"""
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import re
 import os
 import subprocess
@@ -34,9 +27,13 @@ from typing import List
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import call_async_output
-from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm
+from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm, chown
 
-from yunohost.app import app_upgrade, app_list
+from yunohost.app import (
+    app_upgrade,
+    app_list,
+    _list_upgradable_apps,
+)
 from yunohost.app_catalog import (
     _initialize_apps_catalog_system,
     _update_apps_catalog,
@@ -45,10 +42,12 @@ from yunohost.domain import domain_add
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_start, service_enable
 from yunohost.regenconf import regen_conf
-from yunohost.utils.packages import (
+from yunohost.utils.system import (
     _dump_sources_list,
     _list_upgradable_apt_packages,
     ynh_packages_version,
+    dpkg_is_broken,
+    dpkg_lock_available,
 )
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation, OperationLogger
@@ -62,63 +61,42 @@ def tools_versions():
     return ynh_packages_version()
 
 
-def tools_adminpw(new_password, check_strength=True):
-    """
-    Change admin password
+def tools_rootpw(new_password, check_strength=True):
 
-    Keyword argument:
-        new_password
-
-    """
     from yunohost.user import _hash_user_password
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
-        assert_password_is_compatible
+        assert_password_is_compatible,
     )
     import spwd
 
+    assert_password_is_compatible(new_password)
     if check_strength:
         assert_password_is_strong_enough("admin", new_password)
 
-    assert_password_is_compatible(new_password)
-
     new_hash = _hash_user_password(new_password)
 
-    from yunohost.utils.ldap import _get_ldap_interface
-
-    ldap = _get_ldap_interface()
-
+    # Write as root password
     try:
-        ldap.update(
-            "cn=admin",
-            {"userPassword": [new_hash]},
-        )
-    except Exception as e:
-        logger.error(f"unable to change admin password : {e}")
-        raise YunohostError("admin_password_change_failed")
-    else:
-        # Write as root password
-        try:
-            hash_root = spwd.getspnam("root").sp_pwd
+        hash_root = spwd.getspnam("root").sp_pwd
 
-            with open("/etc/shadow", "r") as before_file:
-                before = before_file.read()
+        with open("/etc/shadow", "r") as before_file:
+            before = before_file.read()
 
-            with open("/etc/shadow", "w") as after_file:
-                after_file.write(
-                    before.replace(
-                        "root:" + hash_root, "root:" + new_hash.replace("{CRYPT}", "")
-                    )
+        with open("/etc/shadow", "w") as after_file:
+            after_file.write(
+                before.replace(
+                    "root:" + hash_root, "root:" + new_hash.replace("{CRYPT}", "")
                 )
-        # An IOError may be thrown if for some reason we can't read/write /etc/passwd
-        # A KeyError could also be thrown if 'root' is not in /etc/passwd in the first place (for example because no password defined ?)
-        # (c.f. the line about getspnam)
-        except (IOError, KeyError):
-            logger.warning(m18n.n("root_password_desynchronized"))
-            return
-
-        logger.info(m18n.n("root_password_replaced_by_admin_password"))
-        logger.success(m18n.n("admin_password_changed"))
+            )
+    # An IOError may be thrown if for some reason we can't read/write /etc/passwd
+    # A KeyError could also be thrown if 'root' is not in /etc/passwd in the first place (for example because no password defined ?)
+    # (c.f. the line about getspnam)
+    except (IOError, KeyError):
+        logger.warning(m18n.n("root_password_desynchronized"))
+        return
+    else:
+        logger.info(m18n.n("root_password_changed"))
 
 
 def tools_maindomain(new_main_domain=None):
@@ -166,46 +144,25 @@ def _set_hostname(hostname, pretty_hostname=None):
             logger.debug(out)
 
 
-def _detect_virt():
-    """
-    Returns the output of systemd-detect-virt (so e.g. 'none' or 'lxc' or ...)
-    You can check the man of the command to have a list of possible outputs...
-    """
-
-    p = subprocess.Popen(
-        "systemd-detect-virt".split(), stdout=subprocess.PIPE, stderr=subprocess.STDOUT
-    )
-
-    out, _ = p.communicate()
-    return out.split()[0]
-
-
 @is_unit_operation()
 def tools_postinstall(
     operation_logger,
     domain,
+    username,
+    fullname,
     password,
     ignore_dyndns=False,
-    force_password=False,
     force_diskspace=False,
 ):
-    """
-    YunoHost post-install
 
-    Keyword argument:
-        domain -- YunoHost main domain
-        ignore_dyndns -- Do not subscribe domain to a DynDNS service (only
-        needed for nohost.me, noho.st domains)
-        password -- YunoHost admin password
-
-    """
     from yunohost.dyndns import _dyndns_available
     from yunohost.utils.dns import is_yunohost_dyndns_domain
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
-        assert_password_is_compatible
+        assert_password_is_compatible,
     )
     from yunohost.domain import domain_main_domain
+    from yunohost.user import user_create
     import psutil
 
     # Do some checks at first
@@ -219,7 +176,9 @@ def tools_postinstall(
         )
 
     # Check there's at least 10 GB on the rootfs...
-    disk_partitions = sorted(psutil.disk_partitions(), key=lambda k: k.mountpoint)
+    disk_partitions = sorted(
+        psutil.disk_partitions(all=True), key=lambda k: k.mountpoint
+    )
     main_disk_partitions = [d for d in disk_partitions if d.mountpoint in ["/", "/var"]]
     main_space = sum(
         psutil.disk_usage(d.mountpoint).total for d in main_disk_partitions
@@ -230,12 +189,13 @@ def tools_postinstall(
 
     # Check password
     assert_password_is_compatible(password)
-
-    if not force_password:
-        assert_password_is_strong_enough("admin", password)
+    assert_password_is_strong_enough("admin", password)
 
     # If this is a nohost.me/noho.st, actually check for availability
     if not ignore_dyndns and is_yunohost_dyndns_domain(domain):
+
+        available = None
+
         # Check if the domain is available...
         try:
             available = _dyndns_available(domain)
@@ -268,8 +228,10 @@ def tools_postinstall(
     domain_add(domain, dyndns)
     domain_main_domain(domain)
 
+    user_create(username, domain, password, admin=True, fullname=fullname)
+
     # Update LDAP admin and create home dir
-    tools_adminpw(password, check_strength=not force_password)
+    tools_rootpw(password)
 
     # Enable UPnP silently and reload firewall
     firewall_upnp("enable", no_refresh=True)
@@ -319,6 +281,18 @@ def tools_postinstall(
 def tools_regen_conf(
     names=[], with_diff=False, force=False, dry_run=False, list_pending=False
 ):
+
+    # Make sure the settings are migrated before running the migration,
+    # which may otherwise fuck things up such as the ssh config ...
+    # We do this here because the regen-conf is called before the migration in debian/postinst
+    if os.path.exists("/etc/yunohost/settings.json") and not os.path.exists(
+        "/etc/yunohost/settings.yml"
+    ):
+        try:
+            tools_migrations_run(["0025_global_settings_to_configpanel"])
+        except Exception as e:
+            logger.error(e)
+
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
@@ -341,7 +315,9 @@ def tools_update(target=None):
 
         # Update APT cache
         # LC_ALL=C is here to make sure the results are in english
-        command = "LC_ALL=C apt-get update -o Acquire::Retries=3"
+        command = (
+            "LC_ALL=C apt-get update -o Acquire::Retries=3 --allow-releaseinfo-change"
+        )
 
         # Filter boring message about "apt not having a stable CLI interface"
         # Also keep track of wether or not we encountered a warning...
@@ -391,12 +367,34 @@ def tools_update(target=None):
         except YunohostError as e:
             logger.error(str(e))
 
-        upgradable_apps = list(app_list(upgradable=True)["apps"])
+        upgradable_apps = _list_upgradable_apps()
 
     if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
         logger.info(m18n.n("already_up_to_date"))
 
-    return {"system": upgradable_system_packages, "apps": upgradable_apps}
+    important_yunohost_upgrade = False
+    if upgradable_system_packages and any(
+        p["name"] == "yunohost" for p in upgradable_system_packages
+    ):
+        yunohost = [p for p in upgradable_system_packages if p["name"] == "yunohost"][0]
+        current_version = yunohost["current_version"].split(".")[:2]
+        new_version = yunohost["new_version"].split(".")[:2]
+        important_yunohost_upgrade = current_version != new_version
+
+    # Wrapping this in a try/except just in case for some reason we can't load
+    # the migrations, which would result in the update/upgrade process being blocked...
+    try:
+        pending_migrations = tools_migrations_list(pending=True)["migrations"]
+    except Exception as e:
+        logger.error(e)
+        pending_migrations = []
+
+    return {
+        "system": upgradable_system_packages,
+        "apps": upgradable_apps,
+        "important_yunohost_upgrade": important_yunohost_upgrade,
+        "pending_migrations": pending_migrations,
+    }
 
 
 @is_unit_operation()
@@ -408,13 +406,12 @@ def tools_upgrade(operation_logger, target=None):
        apps -- List of apps to upgrade (or [] to update all apps)
        system -- True to upgrade system
     """
-    from yunohost.utils import packages
 
-    if packages.dpkg_is_broken():
+    if dpkg_is_broken():
         raise YunohostValidationError("dpkg_is_broken")
 
     # Check for obvious conflict with other dpkg/apt commands already running in parallel
-    if not packages.dpkg_lock_available():
+    if not dpkg_lock_available():
         raise YunohostValidationError("dpkg_lock_not_available")
 
     if target not in ["apps", "system"]:
@@ -496,7 +493,10 @@ def tools_upgrade(operation_logger, target=None):
         returncode = call_async_output(dist_upgrade, callbacks, shell=True)
 
         # If yunohost is being upgraded from the webadmin
-        if "yunohost" in upgradables and Moulinette.interface.type == "api":
+        if (
+            any(p["name"] == "yunohost" for p in upgradables)
+            and Moulinette.interface.type == "api"
+        ):
 
             # Restart the API after 10 sec (at now doesn't support sub-minute times...)
             # We do this so that the API / webadmin still gets the proper HTTP response
@@ -538,6 +538,8 @@ def _apt_log_line_is_relevant(line):
         "==> Keeping old config file as default.",
         "is a disabled or a static unit",
         " update-rc.d: warning: start and stop actions are no longer supported; falling back to defaults",
+        "insserv: warning: current stop runlevel",
+        "insserv: warning: current start runlevel",
     ]
     return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
 
@@ -980,7 +982,7 @@ class Migration:
     def description(self):
         return m18n.n(f"migration_description_{self.id}")
 
-    def ldap_migration(self, run):
+    def ldap_migration(run):
         def func(self):
 
             # Backup LDAP before the migration
@@ -1008,22 +1010,28 @@ class Migration:
             try:
                 run(self, backup_folder)
             except Exception:
-                logger.warning(
-                    m18n.n("migration_ldap_migration_failed_trying_to_rollback")
-                )
-                os.system("systemctl stop slapd")
-                # To be sure that we don't keep some part of the old config
-                rm("/etc/ldap/slapd.d", force=True, recursive=True)
-                cp(f"{backup_folder}/ldap_config", "/etc/ldap", recursive=True)
-                cp(f"{backup_folder}/ldap_db", "/var/lib/ldap", recursive=True)
-                cp(
-                    f"{backup_folder}/apps_settings",
-                    "/etc/yunohost/apps",
-                    recursive=True,
-                )
-                os.system("systemctl start slapd")
-                rm(backup_folder, force=True, recursive=True)
-                logger.info(m18n.n("migration_ldap_rollback_success"))
+                if self.ldap_migration_started:
+                    logger.warning(
+                        m18n.n("migration_ldap_migration_failed_trying_to_rollback")
+                    )
+                    os.system("systemctl stop slapd")
+                    # To be sure that we don't keep some part of the old config
+                    rm("/etc/ldap", force=True, recursive=True)
+                    cp(f"{backup_folder}/ldap_config", "/etc/ldap", recursive=True)
+                    chown("/etc/ldap/schema/", "openldap", "openldap", recursive=True)
+                    chown("/etc/ldap/slapd.d/", "openldap", "openldap", recursive=True)
+                    rm("/var/lib/ldap", force=True, recursive=True)
+                    cp(f"{backup_folder}/ldap_db", "/var/lib/ldap", recursive=True)
+                    rm("/etc/yunohost/apps", force=True, recursive=True)
+                    chown("/var/lib/ldap/", "openldap", recursive=True)
+                    cp(
+                        f"{backup_folder}/apps_settings",
+                        "/etc/yunohost/apps",
+                        recursive=True,
+                    )
+                    os.system("systemctl start slapd")
+                    rm(backup_folder, force=True, recursive=True)
+                    logger.info(m18n.n("migration_ldap_rollback_success"))
                 raise
             else:
                 rm(backup_folder, force=True, recursive=True)

@@ -26,8 +26,14 @@ do_pre_regen() {
         | sed "s/{{ main_domain }}/${main_domain}/g" \
             >"${metronome_dir}/metronome.cfg.lua"
 
-    # add domain conf files
+    # Trick such that old conf files are flagged as to remove
     for domain in $YNH_DOMAINS; do
+        touch "${metronome_conf_dir}/${domain}.cfg.lua"
+    done
+
+    # add domain conf files
+    domain_list="$(yunohost domain list --features xmpp --output-as json | jq -r ".domains[]")"
+    for domain in $domain_list; do
         cat domain.tpl.cfg.lua \
             | sed "s/{{ domain }}/${domain}/g" \
                 >"${metronome_conf_dir}/${domain}.cfg.lua"

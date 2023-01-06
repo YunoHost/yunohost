@@ -192,7 +192,7 @@ pm.process_idle_timeout = 10s
 
     if [ -e "$YNH_APP_BASEDIR/conf/php-fpm.ini" ]; then
         ynh_print_warn --message="Packagers ! Please do not use a separate php ini file, merge your directives in the pool file instead."
-        ynh_add_config --template="$YNH_APP_BASEDIR/conf/php-fpm.ini" --destination="$fpm_config_dir/conf.d/20-$app.ini"
+        ynh_add_config --template="php-fpm.ini" --destination="$fpm_config_dir/conf.d/20-$app.ini"
     fi
 
     if [ $dedicated_service -eq 1 ]; then
@@ -206,7 +206,7 @@ syslog.ident = php-fpm-__APP__
 include = __FINALPHPCONF__
 " >$YNH_APP_BASEDIR/conf/php-fpm-$app.conf
 
-        ynh_add_config --template="$YNH_APP_BASEDIR/conf/php-fpm-$app.conf" --destination="$globalphpconf"
+        ynh_add_config --template="php-fpm-$app.conf" --destination="$globalphpconf"
 
         # Create a config for a dedicated PHP-FPM service for the app
         echo "[Unit]
@@ -474,9 +474,9 @@ YNH_COMPOSER_VERSION=${YNH_COMPOSER_VERSION:-$YNH_DEFAULT_COMPOSER_VERSION}
 
 # Execute a command with Composer
 #
-# usage: ynh_composer_exec [--phpversion=phpversion] [--workdir=$final_path] --commands="commands"
+# usage: ynh_composer_exec [--phpversion=phpversion] [--workdir=$install_dir] --commands="commands"
 # | arg: -v, --phpversion - PHP version to use with composer
-# | arg: -w, --workdir - The directory from where the command will be executed. Default $final_path.
+# | arg: -w, --workdir - The directory from where the command will be executed. Default $install_dir or $final_path
 # | arg: -c, --commands - Commands to execute.
 #
 # Requires YunoHost version 4.2 or higher.
@@ -489,7 +489,7 @@ ynh_composer_exec() {
     local commands
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    workdir="${workdir:-$final_path}"
+    workdir="${workdir:-${install_dir:-$final_path}}"
     phpversion="${phpversion:-$YNH_PHP_VERSION}"
 
     COMPOSER_HOME="$workdir/.composer" COMPOSER_MEMORY_LIMIT=-1 \

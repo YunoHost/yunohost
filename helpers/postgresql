@@ -195,7 +195,13 @@ ynh_psql_database_exists() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT datname FROM pg_database WHERE datname='$database';" | grep --quiet "$database"; then
+    # if psql is not there, we cannot check the db
+    # though it could exists.
+    if ! command -v psql
+    then
+      ynh_print_err -m "PostgreSQL is not installed, impossible to check for db existence."
+      return 1
+    elif ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT datname FROM pg_database WHERE datname='$database';" | grep --quiet "$database"; then
         return 1
     else
         return 0

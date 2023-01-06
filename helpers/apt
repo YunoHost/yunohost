@@ -227,9 +227,8 @@ ynh_install_app_dependencies() {
     # Add a comma for each space between packages. But not add a comma if the space separate a version specification. (See  below)
     dependencies="$(echo "$dependencies" | sed 's/\([^\<=\>]\)\ \([^(]\)/\1, \2/g')"
     local dependencies=${dependencies//|/ | }
-    local manifest_path="$YNH_APP_BASEDIR/manifest.json"
 
-    local version=$(jq -r '.version' "$manifest_path")
+    local version=$(ynh_read_manifest --manifest_key="version")
     if [ -z "${version}" ] || [ "$version" == "null" ]; then
         version="1.0"
     fi
@@ -361,17 +360,14 @@ ynh_remove_app_dependencies() {
         current_dependencies=${current_dependencies// | /|}
     fi
 
-    ynh_package_autopurge ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
-
-    # Check if this app used a specific php version ... in which case we check
-    # if the corresponding php-fpm is still there. Otherwise, we remove the
-    # service from yunohost as well
-
-    local specific_php_version=$(echo $current_dependencies | tr '-' ' ' | grep -o -E "\<php[0-9.]+\>" | sed 's/php//g' | sort | uniq)
-    [[ "$specific_php_version" != "$YNH_DEFAULT_PHP_VERSION" ]] || specific_php_version=""
-    if [[ -n "$specific_php_version" ]] && ! ynh_package_is_installed --package="php${specific_php_version}-fpm"; then
-        yunohost service remove php${specific_php_version}-fpm
+    # Edge case where the app dep may be on hold,
+    # cf https://forum.yunohost.org/t/migration-error-cause-of-ffsync/20675/4
+    if apt-mark showhold | grep -q -w ${dep_app}-ynh-deps
+    then
+        apt-mark unhold ${dep_app}-ynh-deps
     fi
+
+    ynh_package_autopurge ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
 }
 
 # Install packages from an extra repository properly.

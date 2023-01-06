@@ -1,7 +1,7 @@
 #!/bin/bash
 
-n_version=8.2.0
-n_checksum=75efd9e583836f3e6cc6d793df1501462fdceeb3460d5a2dbba99993997383b9
+n_version=9.0.1
+n_checksum=ad305e8ee9111aa5b08e6dbde23f01109401ad2d25deecacd880b3f9ea45702b
 n_install_dir="/opt/node_n"
 node_version_path="$n_install_dir/n/versions/node"
 # N_PREFIX is the directory of n, it needs to be loaded as a environment variable.

@@ -285,6 +285,14 @@ ynh_restore_file() {
     else
         mv "$archive_path" "${dest_path}"
     fi
+
+    # Boring hack for nginx conf file mapped to php7.3
+    # Note that there's no need to patch the fpm config because most php apps
+    # will call "ynh_add_fpm_config" during restore, effectively recreating the file from scratch
+    if [[ "${dest_path}" == "/etc/nginx/conf.d/"* ]] && grep 'php7.3.*sock' "${dest_path}"
+    then
+        sed -i 's/php7.3/php7.4/g' "${dest_path}"
+    fi
 }
 
 # Calculate and store a file checksum into the app settings
