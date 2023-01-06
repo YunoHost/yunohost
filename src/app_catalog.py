@@ -226,17 +226,26 @@ def _update_apps_catalog():
             logos_to_download.append(logo_hash)
 
         if len(logos_to_download) > 20:
-            logger.info(f"(Will fetch {len(logos_to_download)} logos, this may take a couple minutes)")
+            logger.info(
+                f"(Will fetch {len(logos_to_download)} logos, this may take a couple minutes)"
+            )
 
         import requests
         from multiprocessing.pool import ThreadPool
 
         def fetch_logo(logo_hash):
             try:
-                r = requests.get(f"{apps_catalog['url']}/v{APPS_CATALOG_API_VERSION}/logos/{logo_hash}.png", timeout=10)
-                assert r.status_code == 200, f"Got status code {r.status_code}, expected 200"
+                r = requests.get(
+                    f"{apps_catalog['url']}/v{APPS_CATALOG_API_VERSION}/logos/{logo_hash}.png",
+                    timeout=10,
+                )
+                assert (
+                    r.status_code == 200
+                ), f"Got status code {r.status_code}, expected 200"
                 if hashlib.sha256(r.content).hexdigest() != logo_hash:
-                    raise Exception(f"Found inconsistent hash while downloading logo {logo_hash}")
+                    raise Exception(
+                        f"Found inconsistent hash while downloading logo {logo_hash}"
+                    )
                 open(f"{APPS_CATALOG_LOGOS}/{logo_hash}.png", "wb").write(r.content)
                 return True
             except Exception as e:

@@ -862,7 +862,9 @@ def app_manifest(app, with_screenshot=False):
                     if entry.is_file() and ext in ("png", "jpg", "jpeg", "webp", "gif"):
                         with open(entry.path, "rb") as img_file:
                             data = base64.b64encode(img_file.read()).decode("utf-8")
-                            manifest["screenshot"] = f"data:image/{ext};charset=utf-8;base64,{data}"
+                            manifest[
+                                "screenshot"
+                            ] = f"data:image/{ext};charset=utf-8;base64,{data}"
                         break
 
     shutil.rmtree(extracted_app_folder)
@@ -2932,7 +2934,6 @@ def _notification_is_dismissed(name, settings):
 
 
 def _filter_and_hydrate_notifications(notifications, current_version=None, data={}):
-
     def is_version_more_recent_than_current_version(name):
         # Boring code to handle the fact that "0.1 < 9999~ynh1" is False
 
