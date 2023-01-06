@@ -151,6 +151,7 @@ def find_expected_string_keys():
     global_config = toml.load(open(ROOT + "share/config_global.toml"))
     # Boring hard-coding because there's no simple other way idk
     settings_without_help_key = [
+        "passwordless_sudo",
         "smtp_relay_host",
         "smtp_relay_password",
         "smtp_relay_port",

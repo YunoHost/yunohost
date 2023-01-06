@@ -612,6 +612,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         ):
             if not passed:
                 if name == "ram":
+                    # i18n: confirm_app_insufficient_ram
                     _ask_confirmation(
                         "confirm_app_insufficient_ram", params=values, force=force
                     )
@@ -2961,6 +2962,7 @@ def _display_notifications(notifications, force=False):
         print(content)
     print("==========")
 
+    # i18n: confirm_notifications_read
     _ask_confirmation("confirm_notifications_read", kind="simple", force=force)
 
 
