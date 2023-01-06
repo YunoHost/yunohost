@@ -1246,7 +1246,9 @@ def user_group_update(
             new_attr_dict["objectClass"] = group["objectClass"] + ["mailGroup"]
         if not new_attr_dict["mail"] and "mailGroup" in group["objectClass"]:
             new_attr_dict["objectClass"] = [
-                c for c in group["objectClass"] if c != "mailGroup" and c != "mailAccount"
+                c
+                for c in group["objectClass"]
+                if c != "mailGroup" and c != "mailAccount"
             ]
 
     if new_attr_dict:

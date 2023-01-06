@@ -32,7 +32,13 @@ logger = getActionLogger("yunohost.firewall")
 
 
 def firewall_allow(
-    protocol, port, ipv4_only=False, ipv6_only=False, no_upnp=False, no_reload=False, reload_only_if_change=False
+    protocol,
+    port,
+    ipv4_only=False,
+    ipv6_only=False,
+    no_upnp=False,
+    no_reload=False,
+    reload_only_if_change=False,
 ):
     """
     Allow connections on a port
@@ -81,7 +87,9 @@ def firewall_allow(
             else:
                 ipv = "IPv%s" % i[3]
                 if not reload_only_if_change:
-                    logger.warning(m18n.n("port_already_opened", port=port, ip_version=ipv))
+                    logger.warning(
+                        m18n.n("port_already_opened", port=port, ip_version=ipv)
+                    )
         # Add port forwarding with UPnP
         if not no_upnp and port not in firewall["uPnP"][p]:
             firewall["uPnP"][p].append(port)
@@ -98,7 +106,13 @@ def firewall_allow(
 
 
 def firewall_disallow(
-    protocol, port, ipv4_only=False, ipv6_only=False, upnp_only=False, no_reload=False, reload_only_if_change=False
+    protocol,
+    port,
+    ipv4_only=False,
+    ipv6_only=False,
+    upnp_only=False,
+    no_reload=False,
+    reload_only_if_change=False,
 ):
     """
     Disallow connections on a port
@@ -154,7 +168,9 @@ def firewall_disallow(
             else:
                 ipv = "IPv%s" % i[3]
                 if not reload_only_if_change:
-                    logger.warning(m18n.n("port_already_closed", port=port, ip_version=ipv))
+                    logger.warning(
+                        m18n.n("port_already_closed", port=port, ip_version=ipv)
+                    )
         # Remove port forwarding with UPnP
         if upnp and port in firewall["uPnP"][p]:
             firewall["uPnP"][p].remove(port)

@@ -36,7 +36,6 @@ logger = getActionLogger("yunohost.app_resources")
 
 
 class AppResourceManager:
-
     def __init__(self, app: str, current: Dict, wanted: Dict):
 
         self.app = app
@@ -48,7 +47,9 @@ class AppResourceManager:
         if "resources" not in self.wanted:
             self.wanted["resources"] = {}
 
-    def apply(self, rollback_and_raise_exception_if_failure, operation_logger=None, **context):
+    def apply(
+        self, rollback_and_raise_exception_if_failure, operation_logger=None, **context
+    ):
 
         todos = list(self.compute_todos())
         completed = []
@@ -104,9 +105,13 @@ class AppResourceManager:
 
         if exception:
             if rollback_and_raise_exception_if_failure:
-                logger.error(m18n.n("app_resource_failed", app=self.app, error=exception))
+                logger.error(
+                    m18n.n("app_resource_failed", app=self.app, error=exception)
+                )
                 if operation_logger:
-                    failure_message_with_debug_instructions = operation_logger.error(str(exception))
+                    failure_message_with_debug_instructions = operation_logger.error(
+                        str(exception)
+                    )
                     raise YunohostError(
                         failure_message_with_debug_instructions, raw_msg=True
                     )
@@ -859,7 +864,9 @@ class PortsResource(AppResource):
 
                 if infos["fixed"]:
                     if self._port_is_used(port_value):
-                        raise YunohostValidationError(f"Port {port_value} is already used by another process or app.")
+                        raise YunohostValidationError(
+                            f"Port {port_value} is already used by another process or app."
+                        )
                 else:
                     while self._port_is_used(port_value):
                         port_value += 1
@@ -869,7 +876,9 @@ class PortsResource(AppResource):
             if infos["exposed"]:
                 firewall_allow(infos["exposed"], port_value, reload_only_if_change=True)
             else:
-                firewall_disallow(infos["exposed"], port_value, reload_only_if_change=True)
+                firewall_disallow(
+                    infos["exposed"], port_value, reload_only_if_change=True
+                )
 
     def deprovision(self, context: Dict = {}):
 
@@ -880,7 +889,9 @@ class PortsResource(AppResource):
             value = self.get_setting(setting_name)
             self.delete_setting(setting_name)
             if value and str(value).strip():
-                firewall_disallow(infos["exposed"], int(value), reload_only_if_change=True)
+                firewall_disallow(
+                    infos["exposed"], int(value), reload_only_if_change=True
+                )
 
 
 class DatabaseAppResource(AppResource):
@@ -934,7 +945,7 @@ class DatabaseAppResource(AppResource):
         ]:
             raise YunohostError(
                 "Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources",
-                raw_msg=True
+                raw_msg=True,
             )
 
         # Hack so that people can write type = "mysql/postgresql" in toml but it's loaded as dbtype

@@ -173,7 +173,7 @@ def test_app_config_bind_on_file(config_app):
     assert app_setting(config_app, "arg5") == "Foo Bar"
 
 
-#def test_app_config_custom_get(config_app):
+# def test_app_config_custom_get(config_app):
 #
 #    assert app_setting(config_app, "arg9") is None
 #    assert (
