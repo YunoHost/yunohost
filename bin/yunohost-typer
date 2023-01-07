@@ -1,0 +1,26 @@
+#! /usr/bin/python3
+
+import os
+import sys
+
+os.environ["INTERFACE"] = "cli"
+
+# Stupid PATH management because sometimes (e.g. some cron job) PATH is only /usr/bin:/bin ...
+default_path = "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+if os.environ["PATH"] != default_path:
+    os.environ["PATH"] = default_path + ":" + os.environ["PATH"]
+
+
+if __name__ == "__main__":
+
+    from yunohost.__init_ import create_interface
+
+    if os.geteuid() != 0:
+        sys.stderr.write(
+            "\033[1;31mError:\033[0m yunohost command must be "
+            "run as root or with sudo.\n"
+        )
+        sys.exit(1)
+
+    app = create_interface()
+    app()

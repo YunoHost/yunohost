@@ -1,0 +1,33 @@
+#! /usr/bin/python3
+
+import os
+import typer
+import uvicorn
+
+os.environ["INTERFACE"] = "api"
+
+
+def main(
+    host: str = typer.Option("127.0.0.1", "--host", "-h", help="Host to listen on", rich_help_panel="Server configuration"),
+    port: int = typer.Option(6787, "--port", "-p", help="Port to listen on", rich_help_panel="Server configuration"),
+    debug: bool = typer.Option(False, "--debug", help="Set log level to DEBUG"),
+    reload: bool = typer.Option(False, "--reload", hidden=True),
+    reload_dirs: list[str] = typer.Option([], hidden=True)
+):
+    """
+    Run the YunoHost API to manage your server.
+    """
+    uvicorn.run(
+        "yunohost.__init_:create_interface",
+        factory=True,
+        host=host,
+        port=port,
+        log_level="info" if not debug else "debug",
+        reload=reload,
+        reload_dirs=reload_dirs,
+        root_path="/yunohost/api",
+    )
+
+
+if __name__ == "__main__":
+    typer.run(main)
