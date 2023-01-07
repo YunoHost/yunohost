@@ -4,7 +4,6 @@ import inspect
 import types
 import fastapi
 import pydantic
-import uvicorn
 
 from typing import Optional, Union
 
@@ -75,16 +74,6 @@ class Interface:
         assert isinstance(interface.instance, fastapi.APIRouter)
         self.instance.include_router(
             interface.instance, prefix=f"/{interface.name}", tags=[interface.name]
-        )
-
-    def run(self, host="127.0.0.1", port=6787, debug=False, reload=False):
-        uvicorn.run(
-            self.instance,
-            host=host,
-            port=port,
-            log_level="info" if not debug else "debug",
-            reload=reload,
-            root_path="/yunohost/api",
         )
 
     def cli(self, *args, **kwargs):

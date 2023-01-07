@@ -11,7 +11,7 @@ from rich.syntax import Syntax
 
 def parse_cli_command(command: str) -> tuple[str, list[str]]:
     command, *args = command.split(" ")
-    return (command, [arg.strip("{}") for arg in args])
+    return command, [arg.strip("{}") for arg in args]
 
 
 def print_as_yaml(data: Any):
@@ -31,9 +31,6 @@ class Interface:
 
     def add(self, interface: Interface):
         self.instance.add_typer(interface.instance, name=interface.name)
-
-    def run(self):
-        self.instance()
 
     def cli(self, command_def: str, **kwargs):
         def decorator(func):
