@@ -76,7 +76,7 @@ def test_domain_add_subscribe():
 
     time.sleep(35)  # Dynette blocks requests that happen too frequently
     assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
-    domain_add(TEST_DYNDNS_DOMAIN, subscribe=TEST_DYNDNS_PASSWORD)
+    domain_add(TEST_DYNDNS_DOMAIN, dyndns_password_recovery=TEST_DYNDNS_PASSWORD)
     assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
 
 

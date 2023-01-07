@@ -180,12 +180,12 @@ def _detect_virt():
     return out.split()[0]
 
 
-@is_unit_operation(exclude=["subscribe", "password"])
+@is_unit_operation(exclude=["dyndns_password_recovery", "password"])
 def tools_postinstall(
     operation_logger,
     domain,
     password,
-    subscribe=None,
+    dyndns_password_recovery=None,
     no_subscribe=False,
     force_password=False,
     force_diskspace=False,
@@ -232,7 +232,7 @@ def tools_postinstall(
 
     # If this is a nohost.me/noho.st, actually check for availability
     if is_yunohost_dyndns_domain(domain):
-        if ((subscribe is None) == (no_subscribe is False)):
+        if ((dyndns_password_recovery is None) == (no_subscribe is False)):
             raise YunohostValidationError("domain_dyndns_instruction_unclear")
 
         # Check if the domain is available...
@@ -257,7 +257,7 @@ def tools_postinstall(
     logger.info(m18n.n("yunohost_installing"))
 
     # New domain config
-    domain_add(domain, subscribe=subscribe, no_subscribe=no_subscribe)
+    domain_add(domain, dyndns_password_recovery=dyndns_password_recovery, no_subscribe=no_subscribe)
     domain_main_domain(domain)
 
     # Update LDAP admin and create home dir

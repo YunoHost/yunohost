@@ -73,6 +73,7 @@
     "ask_new_domain": "New domain",
     "ask_new_path": "New path",
     "ask_password": "Password",
+    "ask_dyndns_recovery_password": "DynDNS recovey password",
     "ask_user_domain": "Domain to use for the user's email address and XMPP account",
     "backup_abstract_method": "This backup method has yet to be implemented",
     "backup_actually_backuping": "Creating a backup archive from the collected files...",
