@@ -1,12 +1,22 @@
-from __future__ import annotations
+from __future__ import (
+    annotations,
+)  # Enable self reference a class in its own method arguments
 
 import inspect
 import typer
 import yaml
 
-from typing import Any, Optional
+from typing import Any, Callable
 from rich import print as rprint
 from rich.syntax import Syntax
+
+from yunohost.interface.base import (
+    BaseInterface,
+    InterfaceKind,
+    merge_dicts,
+    get_params_doc,
+    override_function,
+)
 
 
 def parse_cli_command(command: str) -> tuple[str, list[str]]:
@@ -19,63 +29,74 @@ def print_as_yaml(data: Any):
     rprint(Syntax(data, "yaml", background_color="default"))
 
 
-class Interface:
-    type = "cli"
-
+class Interface(BaseInterface):
+    kind = InterfaceKind.CLI
     instance: typer.Typer
     name: str
 
-    def __init__(self, root: bool = False, name: Optional[str] = None):
-        self.instance = typer.Typer()
-        self.name = "root" if root else name or ""
+    def __init__(self, root: bool = False, **kwargs):
+        super().__init__(root=root, **kwargs)
+        self.instance = typer.Typer(rich_markup_mode="markdown")
 
     def add(self, interface: Interface):
-        self.instance.add_typer(interface.instance, name=interface.name)
+        self.instance.add_typer(
+            interface.instance, name=interface.name, help=interface.help
+        )
 
-    def cli(self, command_def: str, **kwargs):
-        def decorator(func):
+    def cli(self, command_def: str, **extra_data):
+        def decorator(func: Callable):
             signature = inspect.signature(func)
             override_params = []
+            params = self.filter_params(signature.parameters.values())
+            local_data = merge_dicts(self.local_data, extra_data)
+            params_doc = get_params_doc(func.__doc__)
             command, args = parse_cli_command(command_def)
 
-            for param in signature.parameters.values():
+            for param in params:
+                param_kwargs = local_data.get(param.name, {})
+                param_kwargs["help"] = params_doc.get(param.name, None)
 
-                # Auto setup typer Argument or Option kwargs
-                default_kwargs = kwargs.get(param.name, {})
-                # if param.name not in args and not default_kwargs.get("hidden", False):
-                #     default_kwargs["prompt"] = True
+                if param_kwargs.pop("deprecated", False):
+                    param_kwargs["rich_help_panel"] = "Deprecated Options"
+
+                if param.name not in args and not param_kwargs.get("hidden", False):
+                    param_kwargs["prompt"] = True
+
                 if param.name == "password":
-                    default_kwargs["confirmation_prompt"] = True
-                    default_kwargs["hide_input"] = True
+                    param_kwargs["confirmation_prompt"] = True
+                    param_kwargs["hide_input"] = True
 
-                # Define new default value for typer
-                default_cls = typer.Argument if param.name in args else typer.Option
-                if param.default is None:
-                    default_value = default_cls(None, **default_kwargs)
-                elif param.default is param.empty:
-                    default_value = default_cls(..., **default_kwargs)
+                # Populate default param value with typer.Argument|Option
+                param_default = (
+                    param.default
+                    if not param.default == param.empty
+                    else ...  # required
+                )
+                if param.name in args:
+                    param_default = typer.Argument(param_default, **param_kwargs)
                 else:
-                    default_value = default_cls(param.default, **default_kwargs)
+                    param_default = typer.Option(param_default, **param_kwargs)
 
-                override_params.append(param.replace(default=default_value))
+                override_params.append(param.replace(default=param_default))
 
             def hook_results(*args, **kwargs):
                 results = func(*args, **kwargs)
                 print_as_yaml(results)
                 return results
 
-            hook_results.__name__ = func.__name__
-            hook_results.__signature__ = signature.replace(
-                parameters=tuple(override_params)
+            command_func = override_function(
+                func,
+                signature,
+                override_params,
+                decorator=hook_results,
+                doc=func.__doc__.split("\b")[0] if func.__doc__ else None,
             )
-            self.instance.command(command)(hook_results)
+            self.instance.command(
+                command, deprecated=local_data.get("deprecated", False)
+            )(command_func)
 
-            return func
+            self.clear_local_data()
 
-        return decorator
-
-    def api(self, *args, **kwargs):
-        def decorator(func):
             return func
 
         return decorator
