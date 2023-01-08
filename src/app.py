@@ -2300,7 +2300,9 @@ def _extract_app(src: str) -> Tuple[Dict, str]:
         url = app_info["git"]["url"]
         branch = app_info["git"]["branch"]
         revision = str(app_info["git"]["revision"])
-        return _extract_app_from_gitrepo(url, branch=branch, revision=revision, app_info=app_info)
+        return _extract_app_from_gitrepo(
+            url, branch=branch, revision=revision, app_info=app_info
+        )
     # App is a git repo url
     elif _is_app_repo_url(src):
         url = src.strip().strip("/")
@@ -2372,18 +2374,21 @@ def _extract_app_from_gitrepo(
     url: str, branch: Optional[str] = None, revision: str = "HEAD", app_info: Dict = {}
 ) -> Tuple[Dict, str]:
 
-
     logger.debug("Checking default branch")
 
     try:
-        git_remote_show = check_output(["git", "remote", "show", url], env={"GIT_TERMINAL_PROMPT": "0", "LC_ALL": "C"}, shell=False)
+        git_remote_show = check_output(
+            ["git", "remote", "show", url],
+            env={"GIT_TERMINAL_PROMPT": "0", "LC_ALL": "C"},
+            shell=False,
+        )
     except Exception:
         raise YunohostError("app_sources_fetch_failed")
 
     if not branch:
         default_branch = None
         try:
-            for line in git_remote_show.split('\n'):
+            for line in git_remote_show.split("\n"):
                 if "HEAD branch:" in line:
                     default_branch = line.split()[-1]
         except Exception:
@@ -2391,11 +2396,13 @@ def _extract_app_from_gitrepo(
 
         if not default_branch:
             logger.warning("Failed to parse default branch, trying 'main'")
-            branch = 'main'
+            branch = "main"
         else:
-            if default_branch in ['testing', 'dev']:
-                logger.warning(f"Trying 'master' branch instead of default '{default_branch}'")
-                branch = 'master'
+            if default_branch in ["testing", "dev"]:
+                logger.warning(
+                    f"Trying 'master' branch instead of default '{default_branch}'"
+                )
+                branch = "master"
             else:
                 branch = default_branch
 
