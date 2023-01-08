@@ -29,7 +29,7 @@ import subprocess
 import tempfile
 import copy
 from collections import OrderedDict
-from typing import List, Tuple, Dict, Any, Iterator
+from typing import List, Tuple, Dict, Any, Iterator, Optional
 from packaging import version
 
 from moulinette import Moulinette, m18n
@@ -2300,19 +2300,19 @@ def _extract_app(src: str) -> Tuple[Dict, str]:
         url = app_info["git"]["url"]
         branch = app_info["git"]["branch"]
         revision = str(app_info["git"]["revision"])
-        return _extract_app_from_gitrepo(url, branch, revision, app_info)
+        return _extract_app_from_gitrepo(url, branch=branch, revision=revision, app_info=app_info)
     # App is a git repo url
     elif _is_app_repo_url(src):
         url = src.strip().strip("/")
-        branch = "master"
-        revision = "HEAD"
         # gitlab urls may look like 'https://domain/org/group/repo/-/tree/testing'
         # compated to github urls looking like 'https://domain/org/repo/tree/testing'
         if "/-/" in url:
             url = url.replace("/-/", "/")
         if "/tree/" in url:
             url, branch = url.split("/tree/", 1)
-        return _extract_app_from_gitrepo(url, branch, revision, {})
+        else:
+            branch = None
+        return _extract_app_from_gitrepo(url, branch=branch)
     # App is a local folder
     elif os.path.exists(src):
         return _extract_app_from_folder(src)
@@ -2369,8 +2369,35 @@ def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
 
 
 def _extract_app_from_gitrepo(
-    url: str, branch: str, revision: str, app_info: Dict = {}
+    url: str, branch: Optional[str] = None, revision: str = "HEAD", app_info: Dict = {}
 ) -> Tuple[Dict, str]:
+
+
+    logger.debug("Checking default branch")
+
+    try:
+        git_remote_show = check_output(["git", "remote", "show", url], env={"GIT_TERMINAL_PROMPT": "0", "LC_ALL": "C"}, shell=False)
+    except Exception:
+        raise YunohostError("app_sources_fetch_failed")
+
+    if not branch:
+        default_branch = None
+        try:
+            for line in git_remote_show.split('\n'):
+                if "HEAD branch:" in line:
+                    default_branch = line.split()[-1]
+        except Exception:
+            pass
+
+        if not default_branch:
+            logger.warning("Failed to parse default branch, trying 'main'")
+            branch = 'main'
+        else:
+            if default_branch in ['testing', 'dev']:
+                logger.warning(f"Trying 'master' branch instead of default '{default_branch}'")
+                branch = 'master'
+            else:
+                branch = default_branch
 
     logger.debug(m18n.n("downloading"))
 
