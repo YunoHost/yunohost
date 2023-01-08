@@ -37,14 +37,6 @@ _global:
     authentication:
         api: ldap_admin
         cli: null
-    arguments:
-        -v:
-            full: --version
-            help: Display YunoHost packages versions
-            action: callback
-            callback:
-                method: yunohost.utils.packages.ynh_packages_version
-                return: true
 
 #############################
 #           User            #
@@ -73,19 +65,28 @@ user:
                         pattern: &pattern_username
                             - !!str ^[a-z0-9_]+$
                             - "pattern_username"
+                -F:
+                    full: --fullname
+                    help: The full name of the user. For example 'Camille Dupont'
+                    extra:
+                        ask: ask_fullname
+                        required: False
+                        pattern: &pattern_fullname
+                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
+                            - "pattern_fullname"
                 -f:
                     full: --firstname
+                    help: Deprecated. Use --fullname instead.
                     extra:
-                        ask: ask_firstname
-                        required: True
+                        required: False
                         pattern: &pattern_firstname
                             - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_firstname"
                 -l:
                     full: --lastname
+                    help: Deprecated. Use --fullname instead.
                     extra:
-                        ask: ask_lastname
-                        required: True
+                        required: False
                         pattern: &pattern_lastname
                             - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_lastname"
@@ -136,12 +137,19 @@ user:
             arguments:
                 username:
                     help: Username to update
+                -F:
+                    full: --fullname
+                    help: The full name of the user. For example 'Camille Dupont'
+                    extra:
+                        pattern: *pattern_fullname
                 -f:
                     full: --firstname
+                    help: Deprecated. Use --fullname instead.
                     extra:
                         pattern: *pattern_firstname
                 -l:
                     full: --lastname
+                    help: Deprecated. Use --fullname instead.
                     extra:
                         pattern: *pattern_lastname
                 -m:
@@ -305,6 +313,35 @@ user:
                             extra:
                                 pattern: *pattern_username
 
+                add-mailalias:
+                    action_help: Add mail aliases to group
+                    api: PUT /users/groups/<groupname>/aliases/<aliases>
+                    arguments:
+                        groupname:
+                            help: Name of the group to add user(s) to
+                            extra:
+                                pattern: *pattern_groupname
+                        aliases:
+                          help: Mail aliases to add
+                          nargs: "+"
+                          metavar: MAIL
+                          extra:
+                              pattern: *pattern_email
+                remove-mailalias:
+                    action_help: Remove mail aliases to group
+                    api: DELETE /users/groups/<groupname>/aliases/<aliases>
+                    arguments:
+                        groupname:
+                            help: Name of the group to add user(s) to
+                            extra:
+                                pattern: *pattern_groupname
+                        aliases:
+                          help: Mail aliases to remove
+                          nargs: "+"
+                          metavar: MAIL
+
+
+
         permission:
             subcategory_help: Manage permissions
             actions:
@@ -443,12 +480,22 @@ domain:
                 --exclude-subdomains:
                     help: Filter out domains that are obviously subdomains of other declared domains
                     action: store_true
-                --auto-push:
-                    help: Only display domains that are pushed automatically
+                --tree:
+                    help: Display domains as a tree
                     action: store_true
-                --full:
-                  action: store_true
-                  help: Display more information
+                --features:
+                    help: List only domains with features enabled (xmpp, mail_in, mail_out, auto_push)
+                    nargs: "*"
+
+        ### domain_info()
+        info:
+            action_help: Get domain aggredated data
+            api: GET /domains/<domain>
+            arguments:
+                domain:
+                    help: Domain to check
+                    extra:
+                        pattern: *pattern_domain
 
         ### domain_add()
         add:
@@ -517,9 +564,7 @@ domain:
             action_help: Check the current main domain, or change it
             deprecated_alias:
                 - maindomain
-            api:
-                - GET /domains/main
-                - PUT /domains/<new_main_domain>/main
+            api: PUT /domains/<new_main_domain>/main
             arguments:
                 -n:
                     full: --new-main-domain
@@ -577,6 +622,7 @@ domain:
 
         ### domain_url_available()
         url-available:
+            hide_in_help: True
             action_help: Check availability of a web path
             api: GET /domain/<domain>/urlavailable
             arguments:
@@ -587,6 +633,20 @@ domain:
                 path:
                     help: The path to check (e.g. /coffee)
         
+
+        ### domain_action_run()
+        action-run:
+            hide_in_help: True
+            action_help: Run domain action
+            api: PUT /domain/<domain>/actions/<action>
+            arguments:
+              domain:
+                  help: Domain name
+              action:
+                  help: action id
+              -a:
+                  full: --args
+                  help: Serialized arguments for action (i.e. "foo=bar&lorem=ipsum")
 
     subcategories:
         dyndns:
@@ -638,7 +698,9 @@ domain:
                 ### domain_config_get()
                 get:
                     action_help: Display a domain configuration
-                    api: GET /domains/<domain>/config
+                    api:
+                      - GET /domains/<domain>/config
+                      - GET /domains/<domain>/config/<key>
                     arguments:
                       domain:
                           help: Domain name
@@ -657,7 +719,7 @@ domain:
                 ### domain_config_set()
                 set:
                     action_help: Apply a new configuration
-                    api: PUT /domains/<domain>/config
+                    api: PUT /domains/<domain>/config/<key>
                     arguments:
                       domain:
                           help: Domain name
@@ -781,6 +843,10 @@ app:
                     full: --with-categories
                     help: Also return a list of app categories
                     action: store_true
+                -a:
+                    full: --with-antifeatures
+                    help: Also return a list of antifeatures categories
+                    action: store_true
 
         ### app_search()
         search:
@@ -796,6 +862,10 @@ app:
             arguments:
                 app:
                     help: Name, local path or git URL of the app to fetch the manifest of
+                -s:
+                    full: --with-screenshot
+                    help: Also return a base64 screenshot if any (API only)
+                    action: store_true
 
         ### app_list()
         list:
@@ -939,6 +1009,7 @@ app:
 
         ### app_register_url()
         register-url:
+            hide_in_help: True
             action_help: Book/register a web path for a given app
             arguments:
                 app:
@@ -951,6 +1022,7 @@ app:
 
         ### app_makedefault()
         makedefault:
+            hide_in_help: True
             action_help: Redirect domain root to an app
             api: PUT /apps/<app>/default
             arguments:
@@ -963,6 +1035,17 @@ app:
                     full: --undo
                     help: Undo redirection
                     action: store_true
+
+        ### app_dismiss_notification
+        dismiss-notification:
+            hide_in_help: True
+            action_help: Dismiss post_install or post_upgrade notification
+            api: PUT /apps/<app>/dismiss_notification/<name>
+            arguments:
+                app:
+                    help: App ID to dismiss notification for
+                name:
+                    help: Notification name, either post_install or post_upgrade
 
         ### app_ssowatconf()
         ssowatconf:
@@ -1012,7 +1095,9 @@ app:
               ### app_config_get()
               get:
                   action_help: Display an app configuration
-                  api: GET /apps/<app>/config-panel
+                  api:
+                    - GET /apps/<app>/config
+                    - GET /apps/<app>/config/<key>
                   arguments:
                     app:
                         help: App name
@@ -1031,7 +1116,7 @@ app:
               ### app_config_set()
               set:
                   action_help: Apply a new configuration
-                  api: PUT /apps/<app>/config
+                  api: PUT /apps/<app>/config/<key>
                   arguments:
                     app:
                         help: App name
@@ -1136,6 +1221,7 @@ backup:
 
         ### backup_download()
         download:
+            hide_in_help: True
             action_help: (API only) Request to download the file
             api: GET /backups/<name>/download
             arguments:
@@ -1164,6 +1250,11 @@ settings:
         list:
             action_help: list all entries of the settings
             api: GET /settings
+            arguments:
+                -f:
+                    full: --full
+                    help: Display all details (meant to be used by the API)
+                    action: store_true
 
         ### settings_get()
         get:
@@ -1172,22 +1263,29 @@ settings:
             arguments:
                 key:
                     help: Settings key
-                --full:
-                    help: Show more details
+                -f:
+                    full: --full
+                    help: Display all details (meant to be used by the API)
+                    action: store_true
+                -e:
+                    full: --export
+                    help: Only export key/values, meant to be reimported using "config set --args-file"
                     action: store_true
 
         ### settings_set()
         set:
             action_help: set an entry value in the settings
-            api: POST /settings/<key>
+            api: PUT /settings/<key>
             arguments:
                 key:
-                    help: Settings key
+                    help: The question or form key 
+                    nargs: '?'
                 -v:
                     full: --value
                     help: new value
-                    extra:
-                        required: True
+                -a:
+                    full: --args
+                    help: Serialized arguments for new configuration (i.e. "mail_in=0&mail_out=0")
 
         ### settings_reset_all()
         reset-all:
@@ -1530,10 +1628,10 @@ tools:
     category_help: Specific tools
     actions:
 
-        ### tools_adminpw()
-        adminpw:
-            action_help: Change password of admin and root users
-            api: PUT /adminpw
+        ### tools_rootpw()
+        rootpw:
+            action_help: Change root password
+            api: PUT /rootpw
             arguments:
                 -n:
                     full: --new-password
@@ -1568,6 +1666,20 @@ tools:
                         ask: ask_main_domain
                         pattern: *pattern_domain
                         required: True
+                -u:
+                    full: --username
+                    help: Username for the first (admin) user. For example 'camille'
+                    extra:
+                        ask: ask_admin_username
+                        pattern: *pattern_username
+                        required: True
+                -F:
+                    full: --fullname
+                    help: The full name for the first (admin) user. For example 'Camille Dupont'
+                    extra:
+                        ask: ask_admin_fullname
+                        required: True
+                        pattern: *pattern_fullname
                 -p:
                     full: --password
                     help: YunoHost admin password
@@ -1588,13 +1700,9 @@ tools:
                     extra:
                         pattern: *pattern_password
                         comment: dyndns_added_password
-                --force-password:
-                    help: Use this if you really want to set a weak password
-                    action: store_true
                 --force-diskspace:
                     help: Use this if you really want to install YunoHost on a setup with less than 10 GB on the root filesystem
                     action: store_true
-
 
         ### tools_update()
         update:
@@ -1757,6 +1865,7 @@ hook:
 
         ### hook_info()
         info:
+            hide_in_help: True
             action_help: Get information about a given hook
             arguments:
                 action:
@@ -1786,6 +1895,7 @@ hook:
 
         ### hook_callback()
         callback:
+            hide_in_help: True
             action_help: Execute all scripts binded to an action
             arguments:
                 action:
@@ -1808,6 +1918,7 @@ hook:
 
         ### hook_exec()
         exec:
+            hide_in_help: True
             action_help: Execute hook from a file with arguments
             arguments:
                 path:

@@ -1,12 +1,13 @@
 import subprocess
 import time
+import os
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
-from yunohost.utils.filesystem import free_space_in_directory, space_used_by_directory
+from yunohost.utils.system import free_space_in_directory, space_used_by_directory
 
 logger = getActionLogger("yunohost.migration")
 
@@ -18,6 +19,15 @@ class MyMigration(Migration):
     dependencies = ["migrate_to_bullseye"]
 
     def run(self):
+
+        if (
+            os.system(
+                'grep -A10 "ynh-deps" /var/lib/dpkg/status | grep -E "Package:|Depends:" | grep -B1 postgresql'
+            )
+            != 0
+        ):
+            logger.info("No YunoHost app seem to require postgresql... Skipping!")
+            return
 
         if not self.package_is_installed("postgresql-11"):
             logger.warning(m18n.n("migration_0023_postgresql_11_not_installed"))

@@ -16,9 +16,9 @@ do_pre_regen() {
     cp dovecot-ldap.conf "${dovecot_dir}/dovecot-ldap.conf"
     cp dovecot.sieve "${dovecot_dir}/global_script/dovecot.sieve"
 
-    export pop3_enabled="$(yunohost settings get 'pop3.enabled')"
+    export pop3_enabled="$(yunohost settings get 'email.pop3.pop3_enabled')"
     export main_domain=$(cat /etc/yunohost/current_host)
-    export domain_list="$YNH_DOMAINS"
+    export domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]" | tr '\n' ' ')"
 
     ynh_render_template "dovecot.conf" "${dovecot_dir}/dovecot.conf"
 

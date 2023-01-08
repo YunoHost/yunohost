@@ -1,28 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2013 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
-""" yunohost_firewall.py
-
-    Manage firewall rules
-"""
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import yaml
 import miniupnpc
@@ -39,7 +32,13 @@ logger = getActionLogger("yunohost.firewall")
 
 
 def firewall_allow(
-    protocol, port, ipv4_only=False, ipv6_only=False, no_upnp=False, no_reload=False
+    protocol,
+    port,
+    ipv4_only=False,
+    ipv6_only=False,
+    no_upnp=False,
+    no_reload=False,
+    reload_only_if_change=False,
 ):
     """
     Allow connections on a port
@@ -77,14 +76,20 @@ def firewall_allow(
             "ipv6",
         ]
 
+    changed = False
+
     for p in protocols:
         # Iterate over IP versions to add port
         for i in ipvs:
             if port not in firewall[i][p]:
                 firewall[i][p].append(port)
+                changed = True
             else:
                 ipv = "IPv%s" % i[3]
-                logger.warning(m18n.n("port_already_opened", port=port, ip_version=ipv))
+                if not reload_only_if_change:
+                    logger.warning(
+                        m18n.n("port_already_opened", port=port, ip_version=ipv)
+                    )
         # Add port forwarding with UPnP
         if not no_upnp and port not in firewall["uPnP"][p]:
             firewall["uPnP"][p].append(port)
@@ -96,12 +101,18 @@ def firewall_allow(
 
     # Update and reload firewall
     _update_firewall_file(firewall)
-    if not no_reload:
+    if not no_reload or (reload_only_if_change and changed):
         return firewall_reload()
 
 
 def firewall_disallow(
-    protocol, port, ipv4_only=False, ipv6_only=False, upnp_only=False, no_reload=False
+    protocol,
+    port,
+    ipv4_only=False,
+    ipv6_only=False,
+    upnp_only=False,
+    no_reload=False,
+    reload_only_if_change=False,
 ):
     """
     Disallow connections on a port
@@ -146,14 +157,20 @@ def firewall_disallow(
     elif upnp_only:
         ipvs = []
 
+    changed = False
+
     for p in protocols:
         # Iterate over IP versions to remove port
         for i in ipvs:
             if port in firewall[i][p]:
                 firewall[i][p].remove(port)
+                changed = True
             else:
                 ipv = "IPv%s" % i[3]
-                logger.warning(m18n.n("port_already_closed", port=port, ip_version=ipv))
+                if not reload_only_if_change:
+                    logger.warning(
+                        m18n.n("port_already_closed", port=port, ip_version=ipv)
+                    )
         # Remove port forwarding with UPnP
         if upnp and port in firewall["uPnP"][p]:
             firewall["uPnP"][p].remove(port)
@@ -163,7 +180,7 @@ def firewall_disallow(
 
     # Update and reload firewall
     _update_firewall_file(firewall)
-    if not no_reload:
+    if not no_reload or (reload_only_if_change and changed):
         return firewall_reload()
 
 

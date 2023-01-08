@@ -1,29 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2013 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
-""" yunohost_service.py
-
-    Manage services
-"""
-
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import re
 import os
 import time
@@ -710,6 +702,10 @@ def _get_services():
     )
     php_fpm_versions = [v for v in php_fpm_versions.split("\n") if v.strip()]
     for version in php_fpm_versions:
+        # Skip php 7.3 which is most likely dead after buster->bullseye migration
+        # because users get spooked
+        if version == "7.3":
+            continue
         services[f"php{version}-fpm"] = {
             "log": f"/var/log/php{version}-fpm.log",
             "test_conf": f"php-fpm{version} --test",  # ofc the service is phpx.y-fpm but the program is php-fpmx.y because why not ...

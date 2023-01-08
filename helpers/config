@@ -22,7 +22,7 @@ _ynh_app_config_get_one() {
         if [[ "$bind" == "settings" ]]; then
             ynh_die --message="File '${short_setting}' can't be stored in settings"
         fi
-        old[$short_setting]="$(ls "$(echo $bind | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)" 2>/dev/null || echo YNH_NULL)"
+        old[$short_setting]="$(ls "$(echo $bind | sed s@__INSTALL_DIR__@$install_dir@ | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)" 2>/dev/null || echo YNH_NULL)"
         file_hash[$short_setting]="true"
 
     # Get multiline text from settings or from a full file
@@ -32,7 +32,7 @@ _ynh_app_config_get_one() {
         elif [[ "$bind" == *":"* ]]; then
             ynh_die --message="For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
         else
-            old[$short_setting]="$(cat $(echo $bind | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/) 2>/dev/null || echo YNH_NULL)"
+            old[$short_setting]="$(cat $(echo $bind | sed s@__INSTALL_DIR__@$install_dir@ | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/) 2>/dev/null || echo YNH_NULL)"
         fi
 
     # Get value from a kind of key/value file
@@ -47,7 +47,7 @@ _ynh_app_config_get_one() {
             bind_after="$(echo "${bind_key_}" | cut -d'>' -f1)"
             bind_key_="$(echo "${bind_key_}" | cut -d'>' -f2)"
         fi
-        local bind_file="$(echo "$bind" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
+        local bind_file="$(echo "$bind" | cut -d: -f2 | sed s@__INSTALL_DIR__@$install_dir@ | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
         old[$short_setting]="$(ynh_read_var_in_file --file="${bind_file}" --key="${bind_key_}" --after="${bind_after}")"
 
     fi
@@ -73,11 +73,11 @@ _ynh_app_config_apply_one() {
             if [[ "$bind" == "settings" ]]; then
                 ynh_die --message="File '${short_setting}' can't be stored in settings"
             fi
-            local bind_file="$(echo "$bind" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
+            local bind_file="$(echo "$bind" | sed s@__INSTALL_DIR__@$install_dir@ | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
             if [[ "${!short_setting}" == "" ]]; then
                 ynh_backup_if_checksum_is_different --file="$bind_file"
                 ynh_secure_remove --file="$bind_file"
-                ynh_delete_file_checksum --file="$bind_file" --update_only
+                ynh_delete_file_checksum --file="$bind_file"
                 ynh_print_info --message="File '$bind_file' removed"
             else
                 ynh_backup_if_checksum_is_different --file="$bind_file"
@@ -98,7 +98,7 @@ _ynh_app_config_apply_one() {
             if [[ "$bind" == *":"* ]]; then
                 ynh_die --message="For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
             fi
-            local bind_file="$(echo "$bind" | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
+            local bind_file="$(echo "$bind" | sed s@__INSTALL_DIR__@$install_dir@ | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
             ynh_backup_if_checksum_is_different --file="$bind_file"
             echo "${!short_setting}" >"$bind_file"
             ynh_store_file_checksum --file="$bind_file" --update_only
@@ -113,7 +113,7 @@ _ynh_app_config_apply_one() {
                 bind_after="$(echo "${bind_key_}" | cut -d'>' -f1)"
                 bind_key_="$(echo "${bind_key_}" | cut -d'>' -f2)"
             fi
-            local bind_file="$(echo "$bind" | cut -d: -f2 | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
+            local bind_file="$(echo "$bind" | cut -d: -f2 | sed s@__INSTALL_DIR__@$install_dir@ | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
 
             ynh_backup_if_checksum_is_different --file="$bind_file"
             ynh_write_var_in_file --file="${bind_file}" --key="${bind_key_}" --value="${!short_setting}" --after="${bind_after}"
@@ -285,6 +285,18 @@ ynh_app_config_apply() {
     _ynh_app_config_apply
 }
 
+ynh_app_action_run() {
+    local runner="run__$1"
+    # Get value from getter if exists
+    if type -t "$runner" 2>/dev/null | grep -q '^function$' 2>/dev/null; then
+        $runner
+        #ynh_return "result:"
+        #ynh_return "$(echo "${result}" | sed 's/^/  /g')"
+    else
+        ynh_die "No handler defined in app's script for action $1. If you are the maintainer of this app, you should define '$runner'"
+    fi
+}
+
 ynh_app_config_run() {
     declare -Ag old=()
     declare -Ag changed=()
@@ -309,5 +321,7 @@ ynh_app_config_run() {
         ynh_app_config_apply
         ynh_script_progression --message="Configuration of $app completed" --last
         ;;
+    *)
+        ynh_app_action_run $1
     esac
 }

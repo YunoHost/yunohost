@@ -23,37 +23,38 @@ from yunohost.utils.error import YunohostError, YunohostValidationError
 """
 Argument default format:
 {
-    "name": "the_name",
-    "type": "one_of_the_available_type",  // "sting" is not specified
-    "ask": {
-        "en": "the question in english",
-        "fr": "the question in french"
-    },
-    "help": {
-        "en": "some help text in english",
-        "fr": "some help text in french"
-    },
-    "example": "an example value", // optional
-    "default", "some stuff", // optional, not available for all types
-    "optional": true // optional, will skip if not answered
+    "the_name": {
+        "type": "one_of_the_available_type",  // "sting" is not specified
+        "ask": {
+            "en": "the question in english",
+            "fr": "the question in french"
+        },
+        "help": {
+            "en": "some help text in english",
+            "fr": "some help text in french"
+        },
+        "example": "an example value", // optional
+        "default", "some stuff", // optional, not available for all types
+        "optional": true // optional, will skip if not answered
+    }
 }
 
 User answers:
-{"name": "value", ...}
+{"the_name": "value", ...}
 """
 
 
 def test_question_empty():
-    ask_questions_and_parse_answers([], {}) == []
+    ask_questions_and_parse_answers({}, {}) == []
 
 
 def test_question_string():
-    questions = [
-        {
-            "name": "some_string",
+
+    questions = {
+        "some_string": {
             "type": "string",
         }
-    ]
+    }
     answers = {"some_string": "some_value"}
 
     out = ask_questions_and_parse_answers(questions, answers)[0]
@@ -65,12 +66,11 @@ def test_question_string():
 
 def test_question_string_from_query_string():
 
-    questions = [
-        {
-            "name": "some_string",
+    questions = {
+        "some_string": {
             "type": "string",
         }
-    ]
+    }
     answers = "foo=bar&some_string=some_value&lorem=ipsum"
 
     out = ask_questions_and_parse_answers(questions, answers)[0]
@@ -81,11 +81,7 @@ def test_question_string_from_query_string():
 
 
 def test_question_string_default_type():
-    questions = [
-        {
-            "name": "some_string",
-        }
-    ]
+    questions = {"some_string": {}}
     answers = {"some_string": "some_value"}
 
     out = ask_questions_and_parse_answers(questions, answers)[0]
@@ -96,11 +92,7 @@ def test_question_string_default_type():
 
 
 def test_question_string_no_input():
-    questions = [
-        {
-            "name": "some_string",
-        }
-    ]
+    questions = {"some_string": {}}
     answers = {}
 
     with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
@@ -108,12 +100,11 @@ def test_question_string_no_input():
 
 
 def test_question_string_input():
-    questions = [
-        {
-            "name": "some_string",
+    questions = {
+        "some_string": {
             "ask": "some question",
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
@@ -127,11 +118,7 @@ def test_question_string_input():
 
 
 def test_question_string_input_no_ask():
-    questions = [
-        {
-            "name": "some_string",
-        }
-    ]
+    questions = {"some_string": {}}
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
@@ -145,12 +132,7 @@ def test_question_string_input_no_ask():
 
 
 def test_question_string_no_input_optional():
-    questions = [
-        {
-            "name": "some_string",
-            "optional": True,
-        }
-    ]
+    questions = {"some_string": {"optional": True}}
     answers = {}
     with patch.object(os, "isatty", return_value=False):
         out = ask_questions_and_parse_answers(questions, answers)[0]
@@ -161,13 +143,12 @@ def test_question_string_no_input_optional():
 
 
 def test_question_string_optional_with_input():
-    questions = [
-        {
-            "name": "some_string",
+    questions = {
+        "some_string": {
             "ask": "some question",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
@@ -181,13 +162,12 @@ def test_question_string_optional_with_input():
 
 
 def test_question_string_optional_with_empty_input():
-    questions = [
-        {
-            "name": "some_string",
+    questions = {
+        "some_string": {
             "ask": "some question",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value=""), patch.object(
@@ -201,12 +181,11 @@ def test_question_string_optional_with_empty_input():
 
 
 def test_question_string_optional_with_input_without_ask():
-    questions = [
-        {
-            "name": "some_string",
+    questions = {
+        "some_string": {
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
@@ -220,13 +199,12 @@ def test_question_string_optional_with_input_without_ask():
 
 
 def test_question_string_no_input_default():
-    questions = [
-        {
-            "name": "some_string",
+    questions = {
+        "some_string": {
             "ask": "some question",
             "default": "some_value",
         }
-    ]
+    }
     answers = {}
     with patch.object(os, "isatty", return_value=False):
         out = ask_questions_and_parse_answers(questions, answers)[0]
@@ -238,12 +216,11 @@ def test_question_string_no_input_default():
 
 def test_question_string_input_test_ask():
     ask_text = "some question"
-    questions = [
-        {
-            "name": "some_string",
+    questions = {
+        "some_string": {
             "ask": ask_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -264,13 +241,12 @@ def test_question_string_input_test_ask():
 def test_question_string_input_test_ask_with_default():
     ask_text = "some question"
     default_text = "some example"
-    questions = [
-        {
-            "name": "some_string",
+    questions = {
+        "some_string": {
             "ask": ask_text,
             "default": default_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -292,13 +268,12 @@ def test_question_string_input_test_ask_with_default():
 def test_question_string_input_test_ask_with_example():
     ask_text = "some question"
     example_text = "some example"
-    questions = [
-        {
-            "name": "some_string",
+    questions = {
+        "some_string": {
             "ask": ask_text,
             "example": example_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -313,13 +288,12 @@ def test_question_string_input_test_ask_with_example():
 def test_question_string_input_test_ask_with_help():
     ask_text = "some question"
     help_text = "some_help"
-    questions = [
-        {
-            "name": "some_string",
+    questions = {
+        "some_string": {
             "ask": ask_text,
             "help": help_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -331,7 +305,7 @@ def test_question_string_input_test_ask_with_help():
 
 
 def test_question_string_with_choice():
-    questions = [{"name": "some_string", "type": "string", "choices": ["fr", "en"]}]
+    questions = {"some_string": {"type": "string", "choices": ["fr", "en"]}}
     answers = {"some_string": "fr"}
     out = ask_questions_and_parse_answers(questions, answers)[0]
 
@@ -341,7 +315,7 @@ def test_question_string_with_choice():
 
 
 def test_question_string_with_choice_prompt():
-    questions = [{"name": "some_string", "type": "string", "choices": ["fr", "en"]}]
+    questions = {"some_string": {"type": "string", "choices": ["fr", "en"]}}
     answers = {"some_string": "fr"}
     with patch.object(Moulinette, "prompt", return_value="fr"), patch.object(
         os, "isatty", return_value=True
@@ -354,7 +328,7 @@ def test_question_string_with_choice_prompt():
 
 
 def test_question_string_with_choice_bad():
-    questions = [{"name": "some_string", "type": "string", "choices": ["fr", "en"]}]
+    questions = {"some_string": {"type": "string", "choices": ["fr", "en"]}}
     answers = {"some_string": "bad"}
 
     with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
@@ -364,13 +338,12 @@ def test_question_string_with_choice_bad():
 def test_question_string_with_choice_ask():
     ask_text = "some question"
     choices = ["fr", "en", "es", "it", "ru"]
-    questions = [
-        {
-            "name": "some_string",
+    questions = {
+        "some_string": {
             "ask": ask_text,
             "choices": choices,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="ru") as prompt, patch.object(
@@ -384,14 +357,13 @@ def test_question_string_with_choice_ask():
 
 
 def test_question_string_with_choice_default():
-    questions = [
-        {
-            "name": "some_string",
+    questions = {
+        "some_string": {
             "type": "string",
             "choices": ["fr", "en"],
             "default": "en",
         }
-    ]
+    }
     answers = {}
     with patch.object(os, "isatty", return_value=False):
         out = ask_questions_and_parse_answers(questions, answers)[0]
@@ -402,12 +374,11 @@ def test_question_string_with_choice_default():
 
 
 def test_question_password():
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "type": "password",
         }
-    ]
+    }
     answers = {"some_password": "some_value"}
     out = ask_questions_and_parse_answers(questions, answers)[0]
 
@@ -417,12 +388,11 @@ def test_question_password():
 
 
 def test_question_password_no_input():
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "type": "password",
         }
-    ]
+    }
     answers = {}
 
     with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
@@ -430,13 +400,12 @@ def test_question_password_no_input():
 
 
 def test_question_password_input():
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "type": "password",
             "ask": "some question",
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
@@ -450,12 +419,11 @@ def test_question_password_input():
 
 
 def test_question_password_input_no_ask():
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "type": "password",
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
@@ -469,13 +437,12 @@ def test_question_password_input_no_ask():
 
 
 def test_question_password_no_input_optional():
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "type": "password",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(os, "isatty", return_value=False):
@@ -485,9 +452,7 @@ def test_question_password_no_input_optional():
     assert out.type == "password"
     assert out.value == ""
 
-    questions = [
-        {"name": "some_password", "type": "password", "optional": True, "default": ""}
-    ]
+    questions = {"some_password": {"type": "password", "optional": True, "default": ""}}
 
     with patch.object(os, "isatty", return_value=False):
         out = ask_questions_and_parse_answers(questions, answers)[0]
@@ -498,14 +463,13 @@ def test_question_password_no_input_optional():
 
 
 def test_question_password_optional_with_input():
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "ask": "some question",
             "type": "password",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
@@ -519,14 +483,13 @@ def test_question_password_optional_with_input():
 
 
 def test_question_password_optional_with_empty_input():
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "ask": "some question",
             "type": "password",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value=""), patch.object(
@@ -540,13 +503,12 @@ def test_question_password_optional_with_empty_input():
 
 
 def test_question_password_optional_with_input_without_ask():
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "type": "password",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
@@ -560,14 +522,13 @@ def test_question_password_optional_with_input_without_ask():
 
 
 def test_question_password_no_input_default():
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "type": "password",
             "ask": "some question",
             "default": "some_value",
         }
-    ]
+    }
     answers = {}
 
     # no default for password!
@@ -577,14 +538,13 @@ def test_question_password_no_input_default():
 
 @pytest.mark.skip  # this should raises
 def test_question_password_no_input_example():
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "type": "password",
             "ask": "some question",
             "example": "some_value",
         }
-    ]
+    }
     answers = {"some_password": "some_value"}
 
     # no example for password!
@@ -594,13 +554,12 @@ def test_question_password_no_input_example():
 
 def test_question_password_input_test_ask():
     ask_text = "some question"
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "type": "password",
             "ask": ask_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -622,14 +581,13 @@ def test_question_password_input_test_ask():
 def test_question_password_input_test_ask_with_example():
     ask_text = "some question"
     example_text = "some example"
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "type": "password",
             "ask": ask_text,
             "example": example_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -644,14 +602,13 @@ def test_question_password_input_test_ask_with_example():
 def test_question_password_input_test_ask_with_help():
     ask_text = "some question"
     help_text = "some_help"
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "type": "password",
             "ask": ask_text,
             "help": help_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -663,14 +620,13 @@ def test_question_password_input_test_ask_with_help():
 
 
 def test_question_password_bad_chars():
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "type": "password",
             "ask": "some question",
             "example": "some_value",
         }
-    ]
+    }
 
     for i in PasswordQuestion.forbidden_chars:
         with pytest.raises(YunohostError), patch.object(
@@ -680,14 +636,13 @@ def test_question_password_bad_chars():
 
 
 def test_question_password_strong_enough():
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "type": "password",
             "ask": "some question",
             "example": "some_value",
         }
-    ]
+    }
 
     with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
         # too short
@@ -698,14 +653,13 @@ def test_question_password_strong_enough():
 
 
 def test_question_password_optional_strong_enough():
-    questions = [
-        {
-            "name": "some_password",
+    questions = {
+        "some_password": {
             "ask": "some question",
             "type": "password",
             "optional": True,
         }
-    ]
+    }
 
     with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
         # too short
@@ -716,12 +670,11 @@ def test_question_password_optional_strong_enough():
 
 
 def test_question_path():
-    questions = [
-        {
-            "name": "some_path",
+    questions = {
+        "some_path": {
             "type": "path",
         }
-    ]
+    }
     answers = {"some_path": "/some_value"}
     out = ask_questions_and_parse_answers(questions, answers)[0]
 
@@ -731,12 +684,11 @@ def test_question_path():
 
 
 def test_question_path_no_input():
-    questions = [
-        {
-            "name": "some_path",
+    questions = {
+        "some_path": {
             "type": "path",
         }
-    ]
+    }
     answers = {}
 
     with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
@@ -744,13 +696,12 @@ def test_question_path_no_input():
 
 
 def test_question_path_input():
-    questions = [
-        {
-            "name": "some_path",
+    questions = {
+        "some_path": {
             "type": "path",
             "ask": "some question",
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
@@ -764,12 +715,11 @@ def test_question_path_input():
 
 
 def test_question_path_input_no_ask():
-    questions = [
-        {
-            "name": "some_path",
+    questions = {
+        "some_path": {
             "type": "path",
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
@@ -783,13 +733,12 @@ def test_question_path_input_no_ask():
 
 
 def test_question_path_no_input_optional():
-    questions = [
-        {
-            "name": "some_path",
+    questions = {
+        "some_path": {
             "type": "path",
             "optional": True,
         }
-    ]
+    }
     answers = {}
     with patch.object(os, "isatty", return_value=False):
         out = ask_questions_and_parse_answers(questions, answers)[0]
@@ -800,14 +749,13 @@ def test_question_path_no_input_optional():
 
 
 def test_question_path_optional_with_input():
-    questions = [
-        {
-            "name": "some_path",
+    questions = {
+        "some_path": {
             "ask": "some question",
             "type": "path",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
@@ -821,14 +769,13 @@ def test_question_path_optional_with_input():
 
 
 def test_question_path_optional_with_empty_input():
-    questions = [
-        {
-            "name": "some_path",
+    questions = {
+        "some_path": {
             "ask": "some question",
             "type": "path",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value=""), patch.object(
@@ -842,13 +789,12 @@ def test_question_path_optional_with_empty_input():
 
 
 def test_question_path_optional_with_input_without_ask():
-    questions = [
-        {
-            "name": "some_path",
+    questions = {
+        "some_path": {
             "type": "path",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
@@ -862,14 +808,13 @@ def test_question_path_optional_with_input_without_ask():
 
 
 def test_question_path_no_input_default():
-    questions = [
-        {
-            "name": "some_path",
+    questions = {
+        "some_path": {
             "ask": "some question",
             "type": "path",
             "default": "some_value",
         }
-    ]
+    }
     answers = {}
     with patch.object(os, "isatty", return_value=False):
         out = ask_questions_and_parse_answers(questions, answers)[0]
@@ -881,13 +826,12 @@ def test_question_path_no_input_default():
 
 def test_question_path_input_test_ask():
     ask_text = "some question"
-    questions = [
-        {
-            "name": "some_path",
+    questions = {
+        "some_path": {
             "type": "path",
             "ask": ask_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -908,14 +852,13 @@ def test_question_path_input_test_ask():
 def test_question_path_input_test_ask_with_default():
     ask_text = "some question"
     default_text = "someexample"
-    questions = [
-        {
-            "name": "some_path",
+    questions = {
+        "some_path": {
             "type": "path",
             "ask": ask_text,
             "default": default_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -937,14 +880,13 @@ def test_question_path_input_test_ask_with_default():
 def test_question_path_input_test_ask_with_example():
     ask_text = "some question"
     example_text = "some example"
-    questions = [
-        {
-            "name": "some_path",
+    questions = {
+        "some_path": {
             "type": "path",
             "ask": ask_text,
             "example": example_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -959,14 +901,13 @@ def test_question_path_input_test_ask_with_example():
 def test_question_path_input_test_ask_with_help():
     ask_text = "some question"
     help_text = "some_help"
-    questions = [
-        {
-            "name": "some_path",
+    questions = {
+        "some_path": {
             "type": "path",
             "ask": ask_text,
             "help": help_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -978,12 +919,11 @@ def test_question_path_input_test_ask_with_help():
 
 
 def test_question_boolean():
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "type": "boolean",
         }
-    ]
+    }
     answers = {"some_boolean": "y"}
     out = ask_questions_and_parse_answers(questions, answers)[0]
 
@@ -993,12 +933,11 @@ def test_question_boolean():
 
 
 def test_question_boolean_all_yes():
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "type": "boolean",
         }
-    ]
+    }
 
     for value in ["Y", "yes", "Yes", "YES", "1", 1, True, "True", "TRUE", "true"]:
         out = ask_questions_and_parse_answers(questions, {"some_boolean": value})[0]
@@ -1008,12 +947,11 @@ def test_question_boolean_all_yes():
 
 
 def test_question_boolean_all_no():
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "type": "boolean",
         }
-    ]
+    }
 
     for value in ["n", "N", "no", "No", "No", "0", 0, False, "False", "FALSE", "false"]:
         out = ask_questions_and_parse_answers(questions, {"some_boolean": value})[0]
@@ -1024,12 +962,11 @@ def test_question_boolean_all_no():
 
 # XXX apparently boolean are always False (0) by default, I'm not sure what to think about that
 def test_question_boolean_no_input():
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "type": "boolean",
         }
-    ]
+    }
     answers = {}
 
     with patch.object(os, "isatty", return_value=False):
@@ -1039,12 +976,11 @@ def test_question_boolean_no_input():
 
 
 def test_question_boolean_bad_input():
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "type": "boolean",
         }
-    ]
+    }
     answers = {"some_boolean": "stuff"}
 
     with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
@@ -1052,13 +988,12 @@ def test_question_boolean_bad_input():
 
 
 def test_question_boolean_input():
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "type": "boolean",
             "ask": "some question",
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="y"), patch.object(
@@ -1075,12 +1010,11 @@ def test_question_boolean_input():
 
 
 def test_question_boolean_input_no_ask():
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "type": "boolean",
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="y"), patch.object(
@@ -1091,13 +1025,12 @@ def test_question_boolean_input_no_ask():
 
 
 def test_question_boolean_no_input_optional():
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "type": "boolean",
             "optional": True,
         }
-    ]
+    }
     answers = {}
     with patch.object(os, "isatty", return_value=False):
         out = ask_questions_and_parse_answers(questions, answers)[0]
@@ -1105,14 +1038,13 @@ def test_question_boolean_no_input_optional():
 
 
 def test_question_boolean_optional_with_input():
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "ask": "some question",
             "type": "boolean",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="y"), patch.object(
@@ -1123,14 +1055,13 @@ def test_question_boolean_optional_with_input():
 
 
 def test_question_boolean_optional_with_empty_input():
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "ask": "some question",
             "type": "boolean",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value=""), patch.object(
@@ -1142,13 +1073,12 @@ def test_question_boolean_optional_with_empty_input():
 
 
 def test_question_boolean_optional_with_input_without_ask():
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "type": "boolean",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="n"), patch.object(
@@ -1160,14 +1090,13 @@ def test_question_boolean_optional_with_input_without_ask():
 
 
 def test_question_boolean_no_input_default():
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "ask": "some question",
             "type": "boolean",
             "default": 0,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(os, "isatty", return_value=False):
@@ -1177,14 +1106,13 @@ def test_question_boolean_no_input_default():
 
 
 def test_question_boolean_bad_default():
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "ask": "some question",
             "type": "boolean",
             "default": "bad default",
         }
-    ]
+    }
     answers = {}
     with pytest.raises(YunohostError):
         ask_questions_and_parse_answers(questions, answers)
@@ -1192,13 +1120,12 @@ def test_question_boolean_bad_default():
 
 def test_question_boolean_input_test_ask():
     ask_text = "some question"
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "type": "boolean",
             "ask": ask_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value=0) as prompt, patch.object(
@@ -1219,14 +1146,13 @@ def test_question_boolean_input_test_ask():
 def test_question_boolean_input_test_ask_with_default():
     ask_text = "some question"
     default_text = 1
-    questions = [
-        {
-            "name": "some_boolean",
+    questions = {
+        "some_boolean": {
             "type": "boolean",
             "ask": ask_text,
             "default": default_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value=1) as prompt, patch.object(
@@ -1245,12 +1171,11 @@ def test_question_boolean_input_test_ask_with_default():
 
 
 def test_question_domain_empty():
-    questions = [
-        {
-            "name": "some_domain",
+    questions = {
+        "some_domain": {
             "type": "domain",
         }
-    ]
+    }
     main_domain = "my_main_domain.com"
     answers = {}
 
@@ -1271,12 +1196,11 @@ def test_question_domain_empty():
 def test_question_domain():
     main_domain = "my_main_domain.com"
     domains = [main_domain]
-    questions = [
-        {
-            "name": "some_domain",
+    questions = {
+        "some_domain": {
             "type": "domain",
         }
-    ]
+    }
 
     answers = {"some_domain": main_domain}
 
@@ -1295,12 +1219,11 @@ def test_question_domain_two_domains():
     other_domain = "some_other_domain.tld"
     domains = [main_domain, other_domain]
 
-    questions = [
-        {
-            "name": "some_domain",
+    questions = {
+        "some_domain": {
             "type": "domain",
         }
-    ]
+    }
     answers = {"some_domain": other_domain}
 
     with patch.object(
@@ -1329,12 +1252,11 @@ def test_question_domain_two_domains_wrong_answer():
     other_domain = "some_other_domain.tld"
     domains = [main_domain, other_domain]
 
-    questions = [
-        {
-            "name": "some_domain",
+    questions = {
+        "some_domain": {
             "type": "domain",
         }
-    ]
+    }
     answers = {"some_domain": "doesnt_exist.pouet"}
 
     with patch.object(
@@ -1351,12 +1273,11 @@ def test_question_domain_two_domains_default_no_ask():
     other_domain = "some_other_domain.tld"
     domains = [main_domain, other_domain]
 
-    questions = [
-        {
-            "name": "some_domain",
+    questions = {
+        "some_domain": {
             "type": "domain",
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -1378,7 +1299,7 @@ def test_question_domain_two_domains_default():
     other_domain = "some_other_domain.tld"
     domains = [main_domain, other_domain]
 
-    questions = [{"name": "some_domain", "type": "domain", "ask": "choose a domain"}]
+    questions = {"some_domain": {"type": "domain", "ask": "choose a domain"}}
     answers = {}
 
     with patch.object(
@@ -1400,7 +1321,7 @@ def test_question_domain_two_domains_default_input():
     other_domain = "some_other_domain.tld"
     domains = [main_domain, other_domain]
 
-    questions = [{"name": "some_domain", "type": "domain", "ask": "choose a domain"}]
+    questions = {"some_domain": {"type": "domain", "ask": "choose a domain"}}
     answers = {}
 
     with patch.object(
@@ -1436,12 +1357,11 @@ def test_question_user_empty():
         }
     }
 
-    questions = [
-        {
-            "name": "some_user",
+    questions = {
+        "some_user": {
             "type": "user",
         }
-    ]
+    }
     answers = {}
 
     with patch.object(user, "user_list", return_value={"users": users}):
@@ -1463,12 +1383,11 @@ def test_question_user():
         }
     }
 
-    questions = [
-        {
-            "name": "some_user",
+    questions = {
+        "some_user": {
             "type": "user",
         }
-    ]
+    }
     answers = {"some_user": username}
 
     with patch.object(user, "user_list", return_value={"users": users}), patch.object(
@@ -1501,12 +1420,11 @@ def test_question_user_two_users():
         },
     }
 
-    questions = [
-        {
-            "name": "some_user",
+    questions = {
+        "some_user": {
             "type": "user",
         }
-    ]
+    }
     answers = {"some_user": other_user}
 
     with patch.object(user, "user_list", return_value={"users": users}), patch.object(
@@ -1550,12 +1468,11 @@ def test_question_user_two_users_wrong_answer():
         },
     }
 
-    questions = [
-        {
-            "name": "some_user",
+    questions = {
+        "some_user": {
             "type": "user",
         }
-    ]
+    }
     answers = {"some_user": "doesnt_exist.pouet"}
 
     with patch.object(user, "user_list", return_value={"users": users}):
@@ -1585,7 +1502,7 @@ def test_question_user_two_users_no_default():
         },
     }
 
-    questions = [{"name": "some_user", "type": "user", "ask": "choose a user"}]
+    questions = {"some_user": {"type": "user", "ask": "choose a user"}}
     answers = {}
 
     with patch.object(user, "user_list", return_value={"users": users}):
@@ -1615,7 +1532,7 @@ def test_question_user_two_users_default_input():
         },
     }
 
-    questions = [{"name": "some_user", "type": "user", "ask": "choose a user"}]
+    questions = {"some_user": {"type": "user", "ask": "choose a user"}}
     answers = {}
 
     with patch.object(user, "user_list", return_value={"users": users}), patch.object(
@@ -1639,12 +1556,11 @@ def test_question_user_two_users_default_input():
 
 
 def test_question_number():
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "type": "number",
         }
-    ]
+    }
     answers = {"some_number": 1337}
     out = ask_questions_and_parse_answers(questions, answers)[0]
 
@@ -1654,12 +1570,11 @@ def test_question_number():
 
 
 def test_question_number_no_input():
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "type": "number",
         }
-    ]
+    }
     answers = {}
 
     with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
@@ -1667,12 +1582,11 @@ def test_question_number_no_input():
 
 
 def test_question_number_bad_input():
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "type": "number",
         }
-    ]
+    }
     answers = {"some_number": "stuff"}
 
     with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
@@ -1684,13 +1598,12 @@ def test_question_number_bad_input():
 
 
 def test_question_number_input():
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "type": "number",
             "ask": "some question",
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="1337"), patch.object(
@@ -1722,12 +1635,11 @@ def test_question_number_input():
 
 
 def test_question_number_input_no_ask():
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "type": "number",
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="1337"), patch.object(
@@ -1741,13 +1653,12 @@ def test_question_number_input_no_ask():
 
 
 def test_question_number_no_input_optional():
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "type": "number",
             "optional": True,
         }
-    ]
+    }
     answers = {}
     with patch.object(os, "isatty", return_value=False):
         out = ask_questions_and_parse_answers(questions, answers)[0]
@@ -1758,14 +1669,13 @@ def test_question_number_no_input_optional():
 
 
 def test_question_number_optional_with_input():
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "ask": "some question",
             "type": "number",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="1337"), patch.object(
@@ -1779,13 +1689,12 @@ def test_question_number_optional_with_input():
 
 
 def test_question_number_optional_with_input_without_ask():
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "type": "number",
             "optional": True,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(Moulinette, "prompt", return_value="0"), patch.object(
@@ -1799,14 +1708,13 @@ def test_question_number_optional_with_input_without_ask():
 
 
 def test_question_number_no_input_default():
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "ask": "some question",
             "type": "number",
             "default": 1337,
         }
-    ]
+    }
     answers = {}
     with patch.object(os, "isatty", return_value=False):
         out = ask_questions_and_parse_answers(questions, answers)[0]
@@ -1817,14 +1725,13 @@ def test_question_number_no_input_default():
 
 
 def test_question_number_bad_default():
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "ask": "some question",
             "type": "number",
             "default": "bad default",
         }
-    ]
+    }
     answers = {}
     with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
         ask_questions_and_parse_answers(questions, answers)
@@ -1832,13 +1739,12 @@ def test_question_number_bad_default():
 
 def test_question_number_input_test_ask():
     ask_text = "some question"
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "type": "number",
             "ask": ask_text,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -1859,14 +1765,13 @@ def test_question_number_input_test_ask():
 def test_question_number_input_test_ask_with_default():
     ask_text = "some question"
     default_value = 1337
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "type": "number",
             "ask": ask_text,
             "default": default_value,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -1888,14 +1793,13 @@ def test_question_number_input_test_ask_with_default():
 def test_question_number_input_test_ask_with_example():
     ask_text = "some question"
     example_value = 1337
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "type": "number",
             "ask": ask_text,
             "example": example_value,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -1910,14 +1814,13 @@ def test_question_number_input_test_ask_with_example():
 def test_question_number_input_test_ask_with_help():
     ask_text = "some question"
     help_value = 1337
-    questions = [
-        {
-            "name": "some_number",
+    questions = {
+        "some_number": {
             "type": "number",
             "ask": ask_text,
             "help": help_value,
         }
-    ]
+    }
     answers = {}
 
     with patch.object(
@@ -1929,7 +1832,7 @@ def test_question_number_input_test_ask_with_help():
 
 
 def test_question_display_text():
-    questions = [{"name": "some_app", "type": "display_text", "ask": "foobar"}]
+    questions = {"some_app": {"type": "display_text", "ask": "foobar"}}
     answers = {}
 
     with patch.object(sys, "stdout", new_callable=StringIO) as stdout, patch.object(
@@ -1947,12 +1850,11 @@ def test_question_file_from_cli():
     os.system(f"rm -f {filename}")
     os.system(f"echo helloworld > {filename}")
 
-    questions = [
-        {
-            "name": "some_file",
+    questions = {
+        "some_file": {
             "type": "file",
         }
-    ]
+    }
     answers = {"some_file": filename}
 
     out = ask_questions_and_parse_answers(questions, answers)[0]
@@ -1978,12 +1880,11 @@ def test_question_file_from_api():
     from base64 import b64encode
 
     b64content = b64encode(b"helloworld")
-    questions = [
-        {
-            "name": "some_file",
+    questions = {
+        "some_file": {
             "type": "file",
         }
-    ]
+    }
     answers = {"some_file": b64content}
 
     interface_type_bkp = Moulinette.interface.type

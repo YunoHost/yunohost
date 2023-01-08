@@ -1,5 +1,21 @@
-#!/usr/bin/env python
-
+#
+# Copyright (c) 2022 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import re
 from typing import List
@@ -105,7 +121,7 @@ class MyDiagnoser(Diagnoser):
                 if r["value"] == "@":
                     r["value"] = domain + "."
                 elif r["type"] == "CNAME":
-                    r["value"] = r["value"] + f".{base_dns_zone}."
+                    r["value"] = r["value"]  # + f".{base_dns_zone}."
 
                 if self.current_record_match_expected(r):
                     results[id_] = "OK"
@@ -204,6 +220,11 @@ class MyDiagnoser(Diagnoser):
             return expected == current
         elif r["type"] == "MX":
             # For MX, we want to ignore the priority
+            expected = r["value"].split()[-1]
+            current = r["current"].split()[-1]
+            return expected == current
+        elif r["type"] == "CAA":
+            # For CAA, check only the last item, ignore the 0 / 128 nightmare
             expected = r["value"].split()[-1]
             current = r["current"].split()[-1]
             return expected == current

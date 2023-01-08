@@ -21,9 +21,9 @@ do_pre_regen() {
     cat plain/resolv.dnsmasq.conf | grep "^nameserver" | shuf >${pending_dir}/etc/resolv.dnsmasq.conf
 
     # retrieve variables
-    ipv4=$(curl -s -4 https://ip.yunohost.org 2>/dev/null || true)
+    ipv4=$(curl --max-time 10 -s -4 https://ip.yunohost.org 2>/dev/null || true)
     ynh_validate_ip4 "$ipv4" || ipv4='127.0.0.1'
-    ipv6=$(curl -s -6 https://ip6.yunohost.org 2>/dev/null || true)
+    ipv6=$(curl --max-time 10 -s -6 https://ip6.yunohost.org 2>/dev/null || true)
     ynh_validate_ip6 "$ipv6" || ipv6=''
     interfaces="$(ip -j addr show | jq -r '[.[].ifname]|join(" ")')"
     wireless_interfaces="lo"
@@ -73,7 +73,7 @@ do_post_regen() {
 
         grep -q '^supersede domain-name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-name "";' >>/etc/dhcp/dhclient.conf
         grep -q '^supersede domain-search "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede domain-search "";' >>/etc/dhcp/dhclient.conf
-        grep -q '^supersede name "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede name "";' >>/etc/dhcp/dhclient.conf
+        grep -q '^supersede search "";' /etc/dhcp/dhclient.conf 2>/dev/null || echo 'supersede search "";' >>/etc/dhcp/dhclient.conf
         systemctl restart resolvconf
     fi
 

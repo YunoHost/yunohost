@@ -99,15 +99,6 @@ def find_expected_string_keys():
         for m in ("log_" + match for match in p4.findall(content)):
             yield m
 
-    # Global settings descriptions
-    # Will be on a line like : ("service.ssh.allow_deprecated_dsa_hostkey", {"type": "bool", ...
-    p5 = re.compile(r" \(\n*\s*[\"\'](\w[\w\.]+)[\"\'],")
-    content = open(ROOT + "src/settings.py").read()
-    for m in (
-        "global_settings_setting_" + s.replace(".", "_") for s in p5.findall(content)
-    ):
-        yield m
-
     # Keys for the actionmap ...
     for category in yaml.safe_load(open(ROOT + "share/actionsmap.yml")).values():
         if "actions" not in category.keys():
@@ -143,6 +134,7 @@ def find_expected_string_keys():
         for key in registrars[registrar].keys():
             yield f"domain_config_{key}"
 
+    # Domain config panel
     domain_config = toml.load(open(ROOT + "share/config_domain.toml"))
     for panel in domain_config.values():
         if not isinstance(panel, dict):
@@ -154,6 +146,35 @@ def find_expected_string_keys():
                 if not isinstance(values, dict):
                     continue
                 yield f"domain_config_{key}"
+
+    # Global settings
+    global_config = toml.load(open(ROOT + "share/config_global.toml"))
+    # Boring hard-coding because there's no simple other way idk
+    settings_without_help_key = [
+        "passwordless_sudo",
+        "smtp_relay_host",
+        "smtp_relay_password",
+        "smtp_relay_port",
+        "smtp_relay_user",
+        "ssh_port",
+        "ssowat_panel_overlay_enabled",
+        "root_password",
+        "root_access_explain",
+        "root_password_confirm",
+    ]
+
+    for panel in global_config.values():
+        if not isinstance(panel, dict):
+            continue
+        for section in panel.values():
+            if not isinstance(section, dict):
+                continue
+            for key, values in section.items():
+                if not isinstance(values, dict):
+                    continue
+                yield f"global_settings_setting_{key}"
+                if key not in settings_without_help_key:
+                    yield f"global_settings_setting_{key}_help"
 
 
 ###############################################################################
