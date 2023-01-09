@@ -2382,20 +2382,24 @@ def _extract_app_from_gitrepo(
     logger.debug("Checking default branch")
 
     try:
-        git_remote_show = check_output(
-            ["git", "remote", "show", url],
+        git_ls_remote = check_output(
+            ["git", "ls-remote", "--symref", url, "HEAD"],
             env={"GIT_TERMINAL_PROMPT": "0", "LC_ALL": "C"},
             shell=False,
         )
-    except Exception:
+    except Exception as e:
+        logger.error(str(e))
         raise YunohostError("app_sources_fetch_failed")
 
     if not branch:
         default_branch = None
         try:
-            for line in git_remote_show.split("\n"):
-                if "HEAD branch:" in line:
-                    default_branch = line.split()[-1]
+            for line in git_ls_remote.split("\n"):
+                # Look for the line formated like :
+                # ref: refs/heads/master	HEAD
+                if "ref: refs/heads/" in line:
+                    line = line.replace("/", " ").replace("\t", " ")
+                    default_branch = line.split()[3]
         except Exception:
             pass
 
