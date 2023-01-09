@@ -162,7 +162,6 @@
     "config_validate_email": "Should be a valid email",
     "config_validate_time": "Should be a valid time like HH:MM",
     "config_validate_url": "Should be a valid web URL",
-    "config_version_not_supported": "Config panel versions '{version}' are not supported.",
     "confirm_app_install_danger": "DANGER! This app is known to be still experimental (if not explicitly not working)! You should probably NOT install it unless you know what you are doing. NO SUPPORT will be provided if this app doesn't work or breaks your system... If you are willing to take that risk anyway, type '{answers}'",
     "confirm_app_install_thirdparty": "DANGER! This app is not part of YunoHost's app catalog. Installing third-party apps may compromise the integrity and security of your system. You should probably NOT install it unless you know what you are doing. NO SUPPORT will be provided if this app doesn't work or breaks your system... If you are willing to take that risk anyway, type '{answers}'",
     "confirm_app_install_warning": "Warning: This app may work, but is not well-integrated into YunoHost. Some features such as single sign-on and backup/restore might not be available. Install anyway? [{answers}] ",
