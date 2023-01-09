@@ -1,3 +1,14 @@
+yunohost (11.1.2.1) testing; urgency=low
+
+  - i18n: fix (un)defined string issues (dd33476f)
+  - doc: Revive the old auto documentation of API with swagger
+  - apps: don't clone 'master' branch by default, use git ls-remote to check what's the default branch instead (a6db52b7)
+  - ssowat: add use_remote_user_var_in_nginx_conf flag on permission (f258eab6)
+
+  Thanks to all contributors <3 ! (ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 09 Jan 2023 23:58:51 +0100
+
 yunohost (11.1.2) testing; urgency=low
 
   - apps: Various fixes/improvements for appsv2, mostly related to webadmin integration ([#1526](https://github.com/yunohost/yunohost/pull/1526))
