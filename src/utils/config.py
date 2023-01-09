@@ -575,7 +575,7 @@ class ConfigPanel:
                         subnode["name"] = key  # legacy
                         subnode.setdefault("optional", raw_infos.get("optional", True))
                         # If this section contains at least one button, it becomes an "action" section
-                        if subnode["type"] == "button":
+                        if subnode.get("type") == "button":
                             out["is_action_section"] = True
                     out.setdefault(sublevel, []).append(subnode)
                 # Key/value are a property
