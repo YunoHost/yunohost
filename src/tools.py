@@ -416,7 +416,8 @@ def tools_upgrade(operation_logger, target=None):
 
     if target not in ["apps", "system"]:
         raise YunohostValidationError(
-            "Uhoh ?! tools_upgrade should have 'apps' or 'system' value for argument target"
+            "Uhoh ?! tools_upgrade should have 'apps' or 'system' value for argument target",
+            raw_msg=True
         )
 
     #
@@ -510,7 +511,7 @@ def tools_upgrade(operation_logger, target=None):
             logger.warning(
                 m18n.n(
                     "tools_upgrade_failed",
-                    packages_list=", ".join(upgradables),
+                    packages_list=", ".join([p["name"] for p in upgradables]),
                 )
             )
 
