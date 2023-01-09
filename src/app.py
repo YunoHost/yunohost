@@ -1595,6 +1595,8 @@ def app_ssowatconf():
     }
     redirected_urls = {}
 
+    apps_using_remote_user_var_in_nginx = check_output('grep -nri \'$remote_user\' /etc/yunohost/apps/*/conf/*nginx*conf | awk -F/ \'{print $5}\' || true').strip().split("\n")
+
     for app in _installed_apps():
 
         app_settings = read_yaml(APPS_SETTING_PATH + app + "/settings.yml") or {}
@@ -1633,7 +1635,10 @@ def app_ssowatconf():
         if not uris:
             continue
 
+        app_id = perm_name.split(".")[0]
+
         permissions[perm_name] = {
+            "use_remote_user_var_in_nginx_conf": app_id in apps_using_remote_user_var_in_nginx,
             "users": perm_info["corresponding_users"],
             "label": perm_info["label"],
             "show_tile": perm_info["show_tile"]
