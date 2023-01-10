@@ -479,6 +479,7 @@ def permission_url(
     url=None,
     add_url=None,
     remove_url=None,
+    set_url=None,
     auth_header=None,
     clear_urls=False,
     sync_perm=True,
@@ -491,6 +492,7 @@ def permission_url(
         url         -- (optional) URL for which access will be allowed/forbidden.
         add_url     -- (optional) List of additional url to add for which access will be allowed/forbidden
         remove_url  -- (optional) List of additional url to remove for which access will be allowed/forbidden
+        set_url     -- (optional) List of additional url to set/replace for which access will be allowed/forbidden
         auth_header -- (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application
         clear_urls  -- (optional) Clean all urls (url and additional_urls)
     """
@@ -555,6 +557,9 @@ def permission_url(
                 )
 
         new_additional_urls = [u for u in new_additional_urls if u not in remove_url]
+
+    if set_url:
+        new_additional_urls = set_url
 
     if auth_header is None:
         auth_header = existing_permission["auth_header"]

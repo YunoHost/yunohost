@@ -545,9 +545,7 @@ domain:
             action_help: Check the current main domain, or change it
             deprecated_alias:
                 - maindomain
-            api:
-                - GET /domains/main
-                - PUT /domains/<new_main_domain>/main
+            api: PUT /domains/<new_main_domain>/main
             arguments:
                 -n:
                     full: --new-main-domain
@@ -780,6 +778,10 @@ app:
                     full: --with-categories
                     help: Also return a list of app categories
                     action: store_true
+                -a:
+                    full: --with-antifeatures
+                    help: Also return a list of antifeatures categories
+                    action: store_true
 
         ### app_search()
         search:
@@ -795,6 +797,10 @@ app:
             arguments:
                 app:
                     help: Name, local path or git URL of the app to fetch the manifest of
+                -s:
+                    full: --with-screenshot
+                    help: Also return a base64 screenshot if any (API only)
+                    action: store_true
 
         ### app_list()
         list:
@@ -964,6 +970,17 @@ app:
                     full: --undo
                     help: Undo redirection
                     action: store_true
+
+        ### app_dismiss_notification
+        dismiss-notification:
+            hide_in_help: True
+            action_help: Dismiss post_install or post_upgrade notification
+            api: PUT /apps/<app>/dismiss_notification/<name>
+            arguments:
+                app:
+                    help: App ID to dismiss notification for
+                name:
+                    help: Notification name, either post_install or post_upgrade
 
         ### app_ssowatconf()
         ssowatconf:

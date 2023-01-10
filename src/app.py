@@ -29,7 +29,7 @@ import subprocess
 import tempfile
 import copy
 from collections import OrderedDict
-from typing import List, Tuple, Dict, Any
+from typing import List, Tuple, Dict, Any, Iterator, Optional
 from packaging import version
 
 from moulinette import Moulinette, m18n
@@ -71,6 +71,7 @@ from yunohost.app_catalog import (  # noqa
     app_catalog,
     app_search,
     _load_apps_catalog,
+    APPS_CATALOG_LOGOS,
 )
 
 logger = getActionLogger("yunohost.app")
@@ -151,6 +152,13 @@ def app_info(app, full=False, upgradable=False):
     absolute_app_name, _ = _parse_app_instance_name(app)
     from_catalog = _load_apps_catalog()["apps"].get(absolute_app_name, {})
 
+    # Check if $app.png exists in the app logo folder, this is a trick to be able to easily customize the logo
+    # of an app just by creating $app.png (instead of the hash.png) in the corresponding folder
+    ret["logo"] = (
+        app
+        if os.path.exists(f"{APPS_CATALOG_LOGOS}/{app}.png")
+        else from_catalog.get("logo_hash")
+    )
     ret["upgradable"] = _app_upgradable({**ret, "from_catalog": from_catalog})
 
     if ret["upgradable"] == "yes":
@@ -164,6 +172,8 @@ def app_info(app, full=False, upgradable=False):
             ret["current_version"] = f" ({current_revision})"
             ret["new_version"] = f" ({new_revision})"
 
+    ret["settings"] = settings
+
     if not full:
         return ret
 
@@ -175,7 +185,6 @@ def app_info(app, full=False, upgradable=False):
     ret["manifest"]["install"] = _set_default_ask_questions(
         ret["manifest"].get("install", {})
     )
-    ret["settings"] = settings
 
     ret["from_catalog"] = from_catalog
 
@@ -185,6 +194,15 @@ def app_info(app, full=False, upgradable=False):
             ret["manifest"]["doc"][pagename][lang] = _hydrate_app_template(
                 content, settings
             )
+
+    # Filter dismissed notification
+    ret["manifest"]["notifications"] = {
+        k: v
+        for k, v in ret["manifest"]["notifications"].items()
+        if not _notification_is_dismissed(k, settings)
+    }
+
+    # Hydrate notifications (also filter uneeded post_upgrade notification based on version)
     for step, notifications in ret["manifest"]["notifications"].items():
         for name, content_per_lang in notifications.items():
             for lang, content in content_per_lang.items():
@@ -526,6 +544,8 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
     if len(apps) > 1:
         logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(apps)))
 
+    notifications = {}
+
     for number, app_instance_name in enumerate(apps):
         logger.info(m18n.n("app_upgrade_app_name", app=app_instance_name))
 
@@ -587,7 +607,30 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     upgrade_type = "UPGRADE_FULL"
 
         # Check requirements
-        _check_manifest_requirements(manifest, action="upgrade")
+        for name, passed, values, err in _check_manifest_requirements(
+            manifest, action="upgrade"
+        ):
+            if not passed:
+                if name == "ram":
+                    # i18n: confirm_app_insufficient_ram
+                    _ask_confirmation(
+                        "confirm_app_insufficient_ram", params=values, force=force
+                    )
+                else:
+                    raise YunohostValidationError(err, **values)
+
+        # Display pre-upgrade notifications and ask for simple confirm
+        if (
+            manifest["notifications"]["PRE_UPGRADE"]
+            and Moulinette.interface.type == "cli"
+        ):
+            settings = _get_app_settings(app_instance_name)
+            notifications = _filter_and_hydrate_notifications(
+                manifest["notifications"]["PRE_UPGRADE"],
+                current_version=app_current_version,
+                data=settings,
+            )
+            _display_notifications(notifications, force=force)
 
         if manifest["packaging_format"] >= 2:
             if no_safety_backup:
@@ -650,13 +693,12 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         if manifest["packaging_format"] >= 2:
             from yunohost.utils.resources import AppResourceManager
 
-            try:
-                AppResourceManager(
-                    app_instance_name, wanted=manifest, current=app_dict["manifest"]
-                ).apply(rollback_if_failure=True)
-            except Exception:
-                # FIXME : improve error handling ....
-                raise
+            AppResourceManager(
+                app_instance_name, wanted=manifest, current=app_dict["manifest"]
+            ).apply(
+                rollback_and_raise_exception_if_failure=True,
+                operation_logger=operation_logger,
+            )
 
         # Execute the app upgrade script
         upgrade_failed = True
@@ -771,6 +813,24 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             # So much win
             logger.success(m18n.n("app_upgraded", app=app_instance_name))
 
+            # Format post-upgrade notifications
+            if manifest["notifications"]["POST_UPGRADE"]:
+                # Get updated settings to hydrate notifications
+                settings = _get_app_settings(app_instance_name)
+                notifications = _filter_and_hydrate_notifications(
+                    manifest["notifications"]["POST_UPGRADE"],
+                    current_version=app_current_version,
+                    data=settings,
+                )
+                if Moulinette.interface.type == "cli":
+                    # ask for simple confirm
+                    _display_notifications(notifications, force=force)
+
+            # Reset the dismiss flag for post upgrade notification
+            app_setting(
+                app_instance_name, "_dismiss_notification_post_upgrade", delete=True
+            )
+
             hook_callback("post_app_upgrade", env=env_dict)
             operation_logger.success()
 
@@ -778,15 +838,49 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
     logger.success(m18n.n("upgrade_complete"))
 
+    if Moulinette.interface.type == "api":
+        return {"notifications": {"POST_UPGRADE": notifications}}
 
-def app_manifest(app):
+
+def app_manifest(app, with_screenshot=False):
 
     manifest, extracted_app_folder = _extract_app(app)
 
-    shutil.rmtree(extracted_app_folder)
-
     raw_questions = manifest.get("install", {}).values()
     manifest["install"] = hydrate_questions_with_choices(raw_questions)
+
+    # Add a base64 image to be displayed in web-admin
+    if with_screenshot and Moulinette.interface.type == "api":
+        import base64
+
+        manifest["screenshot"] = None
+        screenshots_folder = os.path.join(extracted_app_folder, "doc", "screenshots")
+
+        if os.path.exists(screenshots_folder):
+            with os.scandir(screenshots_folder) as it:
+                for entry in it:
+                    ext = os.path.splitext(entry.name)[1].replace(".", "").lower()
+                    if entry.is_file() and ext in ("png", "jpg", "jpeg", "webp", "gif"):
+                        with open(entry.path, "rb") as img_file:
+                            data = base64.b64encode(img_file.read()).decode("utf-8")
+                            manifest[
+                                "screenshot"
+                            ] = f"data:image/{ext};charset=utf-8;base64,{data}"
+                        break
+
+    shutil.rmtree(extracted_app_folder)
+
+    manifest["requirements"] = {}
+    for name, passed, values, err in _check_manifest_requirements(
+        manifest, action="install"
+    ):
+        if Moulinette.interface.type == "api":
+            manifest["requirements"][name] = {
+                "pass": passed,
+                "values": values,
+            }
+        else:
+            manifest["requirements"][name] = "ok" if passed else m18n.n(err, **values)
 
     return manifest
 
@@ -807,19 +901,9 @@ def _confirm_app_install(app, force=False):
     # i18n: confirm_app_install_thirdparty
 
     if quality in ["danger", "thirdparty"]:
-        answer = Moulinette.prompt(
-            m18n.n("confirm_app_install_" + quality, answers="Yes, I understand"),
-            color="red",
-        )
-        if answer != "Yes, I understand":
-            raise YunohostError("aborting")
-
+        _ask_confirmation("confirm_app_install_" + quality, kind="hard")
     else:
-        answer = Moulinette.prompt(
-            m18n.n("confirm_app_install_" + quality, answers="Y/N"), color="yellow"
-        )
-        if answer.upper() != "Y":
-            raise YunohostError("aborting")
+        _ask_confirmation("confirm_app_install_" + quality, kind="soft")
 
 
 @is_unit_operation()
@@ -867,12 +951,11 @@ def app_install(
     manifest, extracted_app_folder = _extract_app(app)
 
     # Display pre_install notices in cli mode
-    if manifest["notifications"]["pre_install"] and Moulinette.interface.type == "cli":
-        for notice in manifest["notifications"]["pre_install"].values():
-            # Should we render the markdown maybe? idk
-            print("==========")
-            print(_value_for_locale(notice))
-            print("==========")
+    if manifest["notifications"]["PRE_INSTALL"] and Moulinette.interface.type == "cli":
+        notifications = _filter_and_hydrate_notifications(
+            manifest["notifications"]["PRE_INSTALL"]
+        )
+        _display_notifications(notifications, force=force)
 
     packaging_format = manifest["packaging_format"]
 
@@ -883,7 +966,17 @@ def app_install(
     app_id = manifest["id"]
 
     # Check requirements
-    _check_manifest_requirements(manifest, action="install")
+    for name, passed, values, err in _check_manifest_requirements(
+        manifest, action="install"
+    ):
+        if not passed:
+            if name == "ram":
+                _ask_confirmation(
+                    "confirm_app_insufficient_ram", params=values, force=force
+                )
+            else:
+                raise YunohostValidationError(err, **values)
+
     _assert_system_is_sane_for_app(manifest, "pre")
 
     # Check if app can be forked
@@ -961,16 +1054,18 @@ def app_install(
                 recursive=True,
             )
 
+    # Override manifest name by given label
+    # This info is also later picked-up by the 'permission' resource initialization
+    if label:
+        manifest["name"] = label
+
     if packaging_format >= 2:
         from yunohost.utils.resources import AppResourceManager
 
-        try:
-            AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
-                rollback_if_failure=True
-            )
-        except Exception:
-            # FIXME : improve error handling ....
-            raise
+        AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
+            rollback_and_raise_exception_if_failure=True,
+            operation_logger=operation_logger,
+        )
     else:
         # Initialize the main permission for the app
         # The permission is initialized with no url associated, and with tile disabled
@@ -980,7 +1075,7 @@ def app_install(
         permission_create(
             app_instance_name + ".main",
             allowed=["all_users"],
-            label=label if label else manifest["name"],
+            label=manifest["name"],
             show_tile=False,
             protected=False,
         )
@@ -1034,6 +1129,9 @@ def app_install(
                 "Packagers /!\\ This app manually modified some system configuration files! This should not happen! If you need to do so, you should implement a proper conf_regen hook. Those configuration were affected:\n    - "
                 + "\n     -".join(manually_modified_files_by_app)
             )
+            # Actually forbid this for app packaging >= 2
+            if packaging_format >= 2:
+                broke_the_system = True
 
         # If the install failed or broke the system, we remove it
         if install_failed or broke_the_system:
@@ -1083,13 +1181,9 @@ def app_install(
             if packaging_format >= 2:
                 from yunohost.utils.resources import AppResourceManager
 
-                try:
-                    AppResourceManager(
-                        app_instance_name, wanted={}, current=manifest
-                    ).apply(rollback_if_failure=False)
-                except Exception:
-                    # FIXME : improve error handling ....
-                    raise
+                AppResourceManager(
+                    app_instance_name, wanted={}, current=manifest
+                ).apply(rollback_and_raise_exception_if_failure=False)
             else:
                 # Remove all permission in LDAP
                 for permission_name in user_permission_list()["permissions"].keys():
@@ -1130,18 +1224,22 @@ def app_install(
 
     logger.success(m18n.n("installation_complete"))
 
+    # Get the generated settings to hydrate notifications
+    settings = _get_app_settings(app_instance_name)
+    notifications = _filter_and_hydrate_notifications(
+        manifest["notifications"]["POST_INSTALL"], data=settings
+    )
+
     # Display post_install notices in cli mode
-    if manifest["notifications"]["post_install"] and Moulinette.interface.type == "cli":
-        # (Call app_info to get the version hydrated with settings)
-        infos = app_info(app_instance_name, full=True)
-        for notice in infos["manifest"]["notifications"]["post_install"].values():
-            # Should we render the markdown maybe? idk
-            print("==========")
-            print(_value_for_locale(notice))
-            print("==========")
+    if notifications and Moulinette.interface.type == "cli":
+        _display_notifications(notifications, force=force)
 
     # Call postinstall hook
     hook_callback("post_app_install", env=env_dict)
+
+    # Return hydrated post install notif for API
+    if Moulinette.interface.type == "api":
+        return {"notifications": notifications}
 
 
 @is_unit_operation()
@@ -1210,15 +1308,11 @@ def app_remove(operation_logger, app, purge=False):
 
     packaging_format = manifest["packaging_format"]
     if packaging_format >= 2:
-        try:
-            from yunohost.utils.resources import AppResourceManager
+        from yunohost.utils.resources import AppResourceManager
 
-            AppResourceManager(app, wanted={}, current=manifest).apply(
-                rollback_if_failure=False
-            )
-        except Exception:
-            # FIXME : improve error handling ....
-            raise
+        AppResourceManager(app, wanted={}, current=manifest).apply(
+            rollback_and_raise_exception_if_failure=False, purge_data_dir=purge
+        )
     else:
         # Remove all permission in LDAP
         for permission_name in user_permission_list(apps=[app])["permissions"].keys():
@@ -1501,6 +1595,8 @@ def app_ssowatconf():
     }
     redirected_urls = {}
 
+    apps_using_remote_user_var_in_nginx = check_output('grep -nri \'$remote_user\' /etc/yunohost/apps/*/conf/*nginx*conf | awk -F/ \'{print $5}\' || true').strip().split("\n")
+
     for app in _installed_apps():
 
         app_settings = read_yaml(APPS_SETTING_PATH + app + "/settings.yml") or {}
@@ -1539,7 +1635,10 @@ def app_ssowatconf():
         if not uris:
             continue
 
+        app_id = perm_name.split(".")[0]
+
         permissions[perm_name] = {
+            "use_remote_user_var_in_nginx_conf": app_id in apps_using_remote_user_var_in_nginx,
             "users": perm_info["corresponding_users"],
             "label": perm_info["label"],
             "show_tile": perm_info["show_tile"]
@@ -1616,8 +1715,15 @@ def app_config_get(app, key="", full=False, export=False):
     else:
         mode = "classic"
 
-    config_ = AppConfigPanel(app)
-    return config_.get(key, mode)
+    try:
+        config_ = AppConfigPanel(app)
+        return config_.get(key, mode)
+    except YunohostValidationError as e:
+        if Moulinette.interface.type == "api" and e.key == "config_no_panel":
+            # Be more permissive when no config panel found
+            return {}
+        else:
+            raise
 
 
 @is_unit_operation()
@@ -1690,6 +1796,7 @@ ynh_app_config_run $1
                 "app": app,
                 "app_instance_nb": str(app_instance_nb),
                 "final_path": settings.get("final_path", ""),
+                "install_dir": settings.get("install_dir", ""),
                 "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, app),
             }
         )
@@ -1924,6 +2031,7 @@ def _get_manifest_of_app(path):
 def _parse_app_doc_and_notifications(path):
 
     doc = {}
+    notification_names = ["PRE_INSTALL", "POST_INSTALL", "PRE_UPGRADE", "POST_UPGRADE"]
 
     for filepath in glob.glob(os.path.join(path, "doc") + "/*.md"):
 
@@ -1934,7 +2042,12 @@ def _parse_app_doc_and_notifications(path):
         if not m:
             # FIXME: shall we display a warning ? idk
             continue
+
         pagename, lang = m.groups()
+
+        if pagename in notification_names:
+            continue
+
         lang = lang.strip("_") if lang else "en"
 
         if pagename not in doc:
@@ -1943,11 +2056,9 @@ def _parse_app_doc_and_notifications(path):
 
     notifications = {}
 
-    for step in ["pre_install", "post_install", "pre_upgrade", "post_upgrade"]:
+    for step in notification_names:
         notifications[step] = {}
-        for filepath in glob.glob(
-            os.path.join(path, "doc", "notifications", f"{step}*.md")
-        ):
+        for filepath in glob.glob(os.path.join(path, "doc", f"{step}*.md")):
             m = re.match(step + "(_[a-z]{2,3})?.md", filepath.split("/")[-1])
             if not m:
                 continue
@@ -1957,9 +2068,7 @@ def _parse_app_doc_and_notifications(path):
                 notifications[step][pagename] = {}
             notifications[step][pagename][lang] = read_file(filepath).strip()
 
-        for filepath in glob.glob(
-            os.path.join(path, "doc", "notifications", f"{step}.d") + "/*.md"
-        ):
+        for filepath in glob.glob(os.path.join(path, "doc", f"{step}.d") + "/*.md"):
             m = re.match(
                 r"([A-Za-z0-9\.\~]*)(_[a-z]{2,3})?.md", filepath.split("/")[-1]
             )
@@ -2007,12 +2116,12 @@ def _convert_v1_manifest_to_v2(manifest):
         .replace(">", "")
         .replace("=", "")
         .replace(" ", ""),
-        "architectures": "all",
+        "architectures": "?",
         "multi_instance": manifest.get("multi_instance", False),
         "ldap": "?",
         "sso": "?",
-        "disk": "50M",
-        "ram": {"build": "50M", "runtime": "10M"},
+        "disk": "?",
+        "ram": {"build": "?", "runtime": "?"},
     }
 
     maintainers = manifest.get("maintainer", {})
@@ -2196,19 +2305,21 @@ def _extract_app(src: str) -> Tuple[Dict, str]:
         url = app_info["git"]["url"]
         branch = app_info["git"]["branch"]
         revision = str(app_info["git"]["revision"])
-        return _extract_app_from_gitrepo(url, branch, revision, app_info)
+        return _extract_app_from_gitrepo(
+            url, branch=branch, revision=revision, app_info=app_info
+        )
     # App is a git repo url
     elif _is_app_repo_url(src):
         url = src.strip().strip("/")
-        branch = "master"
-        revision = "HEAD"
         # gitlab urls may look like 'https://domain/org/group/repo/-/tree/testing'
         # compated to github urls looking like 'https://domain/org/repo/tree/testing'
         if "/-/" in url:
             url = url.replace("/-/", "/")
         if "/tree/" in url:
             url, branch = url.split("/tree/", 1)
-        return _extract_app_from_gitrepo(url, branch, revision, {})
+        else:
+            branch = None
+        return _extract_app_from_gitrepo(url, branch=branch)
     # App is a local folder
     elif os.path.exists(src):
         return _extract_app_from_folder(src)
@@ -2257,12 +2368,52 @@ def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
     logger.debug(m18n.n("done"))
 
     manifest["remote"] = {"type": "file", "path": path}
+    manifest["quality"] = {"level": -1, "state": "thirdparty"}
+    manifest["antifeatures"] = []
+    manifest["potential_alternative_to"] = []
+
     return manifest, extracted_app_folder
 
 
 def _extract_app_from_gitrepo(
-    url: str, branch: str, revision: str, app_info: Dict = {}
+    url: str, branch: Optional[str] = None, revision: str = "HEAD", app_info: Dict = {}
 ) -> Tuple[Dict, str]:
+
+    logger.debug("Checking default branch")
+
+    try:
+        git_ls_remote = check_output(
+            ["git", "ls-remote", "--symref", url, "HEAD"],
+            env={"GIT_TERMINAL_PROMPT": "0", "LC_ALL": "C"},
+            shell=False,
+        )
+    except Exception as e:
+        logger.error(str(e))
+        raise YunohostError("app_sources_fetch_failed")
+
+    if not branch:
+        default_branch = None
+        try:
+            for line in git_ls_remote.split("\n"):
+                # Look for the line formated like :
+                # ref: refs/heads/master	HEAD
+                if "ref: refs/heads/" in line:
+                    line = line.replace("/", " ").replace("\t", " ")
+                    default_branch = line.split()[3]
+        except Exception:
+            pass
+
+        if not default_branch:
+            logger.warning("Failed to parse default branch, trying 'main'")
+            branch = "main"
+        else:
+            if default_branch in ["testing", "dev"]:
+                logger.warning(
+                    f"Trying 'master' branch instead of default '{default_branch}'"
+                )
+                branch = "master"
+            else:
+                branch = default_branch
 
     logger.debug(m18n.n("downloading"))
 
@@ -2303,7 +2454,34 @@ def _extract_app_from_gitrepo(
         manifest["remote"]["revision"] = revision
         manifest["lastUpdate"] = app_info.get("lastUpdate")
 
+    manifest["quality"] = {
+        "level": app_info.get("level", -1),
+        "state": app_info.get("state", "thirdparty"),
+    }
+    manifest["antifeatures"] = app_info.get("antifeatures", [])
+    manifest["potential_alternative_to"] = app_info.get("potential_alternative_to", [])
+
     return manifest, extracted_app_folder
+
+
+def _list_upgradable_apps():
+    upgradable_apps = list(app_list(upgradable=True)["apps"])
+
+    # Retrieve next manifest pre_upgrade notifications
+    for app in upgradable_apps:
+        absolute_app_name, _ = _parse_app_instance_name(app["id"])
+        manifest, extracted_app_folder = _extract_app(absolute_app_name)
+        app["notifications"] = {}
+        if manifest["notifications"]["PRE_UPGRADE"]:
+            app["notifications"]["PRE_UPGRADE"] = _filter_and_hydrate_notifications(
+                manifest["notifications"]["PRE_UPGRADE"],
+                app["current_version"],
+                app["settings"],
+            )
+        del app["settings"]
+        shutil.rmtree(extracted_app_folder)
+
+    return upgradable_apps
 
 
 #
@@ -2354,73 +2532,99 @@ def _get_all_installed_apps_id():
     return all_apps_ids_formatted
 
 
-def _check_manifest_requirements(manifest: Dict, action: str):
+def _check_manifest_requirements(
+    manifest: Dict, action: str = ""
+) -> Iterator[Tuple[str, bool, object, str]]:
     """Check if required packages are met from the manifest"""
 
+    app_id = manifest["id"]
+    logger.debug(m18n.n("app_requirements_checking", app=app_id))
+
+    # Packaging format
     if manifest["packaging_format"] not in [1, 2]:
         raise YunohostValidationError("app_packaging_format_not_supported")
 
-    app_id = manifest["id"]
-
-    logger.debug(m18n.n("app_requirements_checking", app=app_id))
-
-    # Yunohost version requirement
-    yunohost_requirement = version.parse(
-        manifest["integration"]["yunohost"].strip(">= ") or "4.3"
+    # Yunohost version
+    required_yunohost_version = (
+        manifest["integration"].get("yunohost", "4.3").strip(">= ")
     )
-    yunohost_installed_version = version.parse(
-        get_ynh_package_version("yunohost")["version"]
+    current_yunohost_version = get_ynh_package_version("yunohost")["version"]
+
+    yield (
+        "required_yunohost_version",
+        version.parse(required_yunohost_version)
+        <= version.parse(current_yunohost_version),
+        {"current": current_yunohost_version, "required": required_yunohost_version},
+        "app_yunohost_version_not_supported",  # i18n: app_yunohost_version_not_supported
     )
-    if yunohost_requirement > yunohost_installed_version:
-        # FIXME : i18n
-        raise YunohostValidationError(
-            f"This app requires Yunohost >= {yunohost_requirement} but current installed version is {yunohost_installed_version}"
-        )
 
     # Architectures
     arch_requirement = manifest["integration"]["architectures"]
-    if arch_requirement != "all":
-        arch = system_arch()
-        if arch not in arch_requirement:
-            # FIXME: i18n
-            raise YunohostValidationError(
-                f"This app can only be installed on architectures {', '.join(arch_requirement)} but your server architecture is {arch}"
-            )
+    arch = system_arch()
+
+    yield (
+        "arch",
+        arch_requirement in ["all", "?"] or arch in arch_requirement,
+        {"current": arch, "required": arch_requirement},
+        "app_arch_not_supported",  # i18n: app_arch_not_supported
+    )
 
     # Multi-instance
-    if action == "install" and manifest["integration"]["multi_instance"] is False:
-        apps = _installed_apps()
-        sibling_apps = [a for a in apps if a == app_id or a.startswith(f"{app_id}__")]
-        if len(sibling_apps) > 0:
-            raise YunohostValidationError("app_already_installed", app=app_id)
+    if action == "install":
+        multi_instance = manifest["integration"]["multi_instance"] is True
+        if not multi_instance:
+            apps = _installed_apps()
+            sibling_apps = [
+                a for a in apps if a == app_id or a.startswith(f"{app_id}__")
+            ]
+            multi_instance = len(sibling_apps) == 0
+
+        yield (
+            "install",
+            multi_instance,
+            {"app": app_id},
+            "app_already_installed",  # i18n: app_already_installed
+        )
 
     # Disk
     if action == "install":
-        disk_requirement = manifest["integration"]["disk"]
-
-        if free_space_in_directory("/") <= human_to_binary(
-            disk_requirement
-        ) or free_space_in_directory("/var") <= human_to_binary(disk_requirement):
-            # FIXME : i18m
-            raise YunohostValidationError(
-                f"This app requires {disk_requirement} free space."
+        root_free_space = free_space_in_directory("/")
+        var_free_space = free_space_in_directory("/var")
+        if manifest["integration"]["disk"] == "?":
+            has_enough_disk = True
+        else:
+            disk_req_bin = human_to_binary(manifest["integration"]["disk"])
+            has_enough_disk = (
+                root_free_space > disk_req_bin and var_free_space > disk_req_bin
             )
+        free_space = binary_to_human(min(root_free_space, var_free_space))
 
-    # Ram for build
-    ram_build_requirement = manifest["integration"]["ram"]["build"]
-    # Is "include_swap" really useful ? We should probably decide wether to always include it or not instead
-    ram_include_swap = manifest["integration"]["ram"].get("include_swap", False)
-
-    ram, swap = ram_available()
-    if ram_include_swap:
-        ram += swap
-
-    if ram < human_to_binary(ram_build_requirement):
-        # FIXME : i18n
-        ram_human = binary_to_human(ram)
-        raise YunohostValidationError(
-            f"This app requires {ram_build_requirement} RAM to install/upgrade but only {ram_human} is available right now."
+        yield (
+            "disk",
+            has_enough_disk,
+            {"current": free_space, "required": manifest["integration"]["disk"]},
+            "app_not_enough_disk",  # i18n: app_not_enough_disk
         )
+
+    # Ram
+    ram_requirement = manifest["integration"]["ram"]
+    ram, swap = ram_available()
+    # Is "include_swap" really useful ? We should probably decide wether to always include it or not instead
+    if ram_requirement.get("include_swap", False):
+        ram += swap
+    can_build = ram_requirement["build"] == "?" or ram > human_to_binary(
+        ram_requirement["build"]
+    )
+    can_run = ram_requirement["runtime"] == "?" or ram > human_to_binary(
+        ram_requirement["runtime"]
+    )
+
+    yield (
+        "ram",
+        can_build and can_run,
+        {"current": binary_to_human(ram), "required": ram_requirement["build"]},
+        "app_not_enough_ram",  # i18n: app_not_enough_ram
+    )
 
 
 def _guess_webapp_path_requirement(app_folder: str) -> str:
@@ -2740,3 +2944,111 @@ def _assert_system_is_sane_for_app(manifest, when):
             raise YunohostValidationError("dpkg_is_broken")
         elif when == "post":
             raise YunohostError("this_action_broke_dpkg")
+
+
+def app_dismiss_notification(app, name):
+
+    assert isinstance(name, str)
+    name = name.lower()
+    assert name in ["post_install", "post_upgrade"]
+    _assert_is_installed(app)
+
+    app_setting(app, f"_dismiss_notification_{name}", value="1")
+
+
+def _notification_is_dismissed(name, settings):
+    # Check for _dismiss_notiication_$name setting and also auto-dismiss
+    # notifications after one week (otherwise people using mostly CLI would
+    # never really dismiss the notification and it would be displayed forever)
+
+    if name == "POST_INSTALL":
+        return (
+            settings.get("_dismiss_notification_post_install")
+            or (int(time.time()) - settings.get("install_time", 0)) / (24 * 3600) > 7
+        )
+    elif name == "POST_UPGRADE":
+        # Check on update_time also implicitly prevent the post_upgrade notification
+        # from being displayed after install, because update_time is only set during upgrade
+        return (
+            settings.get("_dismiss_notification_post_upgrade")
+            or (int(time.time()) - settings.get("update_time", 0)) / (24 * 3600) > 7
+        )
+    else:
+        return False
+
+
+def _filter_and_hydrate_notifications(notifications, current_version=None, data={}):
+    def is_version_more_recent_than_current_version(name):
+        # Boring code to handle the fact that "0.1 < 9999~ynh1" is False
+
+        if "~" in name:
+            return version.parse(name) > version.parse(current_version)
+        else:
+            return version.parse(name) > version.parse(current_version.split("~")[0])
+
+    return {
+        # Should we render the markdown maybe? idk
+        name: _hydrate_app_template(_value_for_locale(content_per_lang), data)
+        for name, content_per_lang in notifications.items()
+        if current_version is None
+        or name == "main"
+        or is_version_more_recent_than_current_version(name)
+    }
+
+
+def _display_notifications(notifications, force=False):
+    if not notifications:
+        return
+
+    for name, content in notifications.items():
+        print("==========")
+        print(content)
+    print("==========")
+
+    # i18n: confirm_notifications_read
+    _ask_confirmation("confirm_notifications_read", kind="simple", force=force)
+
+
+# FIXME: move this to Moulinette
+def _ask_confirmation(
+    question: str,
+    params: dict = {},
+    kind: str = "hard",
+    force: bool = False,
+):
+    """
+    Ask confirmation
+
+    Keyword argument:
+        question -- m18n key or string
+        params -- dict of values passed to the string formating
+        kind -- "hard": ask with "Yes, I understand", "soft": "Y/N", "simple": "press enter"
+        force -- Will not ask for confirmation
+
+    """
+    if force or Moulinette.interface.type == "api":
+        return
+
+    # If ran from the CLI in a non-interactive context,
+    # skip confirmation (except in hard mode)
+    if not os.isatty(1) and kind in ["simple", "soft"]:
+        return
+    if kind == "simple":
+        answer = Moulinette.prompt(
+            m18n.n(question, answers="Press enter to continue", **params),
+            color="yellow",
+        )
+        answer = True
+    elif kind == "soft":
+        answer = Moulinette.prompt(
+            m18n.n(question, answers="Y/N", **params), color="yellow"
+        )
+        answer = answer.upper() == "Y"
+    else:
+        answer = Moulinette.prompt(
+            m18n.n(question, answers="Yes, I understand", **params), color="red"
+        )
+        answer = answer == "Yes, I understand"
+
+    if not answer:
+        raise YunohostError("aborting")

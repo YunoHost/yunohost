@@ -1242,11 +1242,13 @@ def user_group_update(
         logger.info(m18n.n("group_update_aliases", group=groupname))
         new_attr_dict["mail"] = set(new_group_mail)
 
-        if new_attr_dict["mail"] and "mailAccount" not in group["objectClass"]:
-            new_attr_dict["objectClass"] = group["objectClass"] + ["mailAccount"]
-        elif not new_attr_dict["mail"] and "mailAccount" in group["objectClass"]:
+        if new_attr_dict["mail"] and "mailGroup" not in group["objectClass"]:
+            new_attr_dict["objectClass"] = group["objectClass"] + ["mailGroup"]
+        if not new_attr_dict["mail"] and "mailGroup" in group["objectClass"]:
             new_attr_dict["objectClass"] = [
-                c for c in group["objectClass"] if c != "mailAccount"
+                c
+                for c in group["objectClass"]
+                if c != "mailGroup" and c != "mailAccount"
             ]
 
     if new_attr_dict:

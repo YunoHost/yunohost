@@ -22,6 +22,7 @@ import shutil
 import random
 from typing import Dict, Any, List
 
+from moulinette import m18n
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
@@ -29,16 +30,12 @@ from moulinette.utils.filesystem import (
     rm,
 )
 
-from yunohost.utils.error import YunohostError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 logger = getActionLogger("yunohost.app_resources")
 
 
 class AppResourceManager:
-
-    # FIXME : add some sort of documentation mechanism
-    # to create a have a detailed description of each resource behavior
-
     def __init__(self, app: str, current: Dict, wanted: Dict):
 
         self.app = app
@@ -50,7 +47,9 @@ class AppResourceManager:
         if "resources" not in self.wanted:
             self.wanted["resources"] = {}
 
-    def apply(self, rollback_if_failure, **context):
+    def apply(
+        self, rollback_and_raise_exception_if_failure, operation_logger=None, **context
+    ):
 
         todos = list(self.compute_todos())
         completed = []
@@ -69,12 +68,13 @@ class AppResourceManager:
                 elif todo == "update":
                     logger.info(f"Updating {name} ...")
                     new.provision_or_update(context=context)
-            # FIXME FIXME FIXME : this exception doesnt catch Ctrl+C ?!?!
-            except Exception as e:
+            except (KeyboardInterrupt, Exception) as e:
                 exception = e
-                # FIXME: better error handling ? display stacktrace ?
-                logger.warning(f"Failed to {todo} for {name} : {e}")
-                if rollback_if_failure:
+                if isinstance(e, KeyboardInterrupt):
+                    logger.error(m18n.n("operation_interrupted"))
+                else:
+                    logger.warning(f"Failed to {todo} {name} : {e}")
+                if rollback_and_raise_exception_if_failure:
                     rollback = True
                     completed.append((todo, name, old, new))
                     break
@@ -97,12 +97,28 @@ class AppResourceManager:
                     elif todo == "update":
                         logger.info(f"Reverting {name} ...")
                         old.provision_or_update(context=context)
-                except Exception as e:
-                    # FIXME: better error handling ? display stacktrace ?
-                    logger.error(f"Failed to rollback {name} : {e}")
+                except (KeyboardInterrupt, Exception) as e:
+                    if isinstance(e, KeyboardInterrupt):
+                        logger.error(m18n.n("operation_interrupted"))
+                    else:
+                        logger.error(f"Failed to rollback {name} : {e}")
 
         if exception:
-            raise exception
+            if rollback_and_raise_exception_if_failure:
+                logger.error(
+                    m18n.n("app_resource_failed", app=self.app, error=exception)
+                )
+                if operation_logger:
+                    failure_message_with_debug_instructions = operation_logger.error(
+                        str(exception)
+                    )
+                    raise YunohostError(
+                        failure_message_with_debug_instructions, raw_msg=True
+                    )
+                else:
+                    raise YunohostError(str(exception), raw_msg=True)
+            else:
+                logger.error(exception)
 
     def compute_todos(self):
 
@@ -248,7 +264,7 @@ class PermissionsResource(AppResource):
 
     ##### Provision/Update:
     - Delete any permissions that may exist and be related to this app yet is not declared anymore
-    - Loop over the declared permissions and create them if needed or update them with the new values (FIXME : update ain't implemented yet >_>)
+    - Loop over the declared permissions and create them if needed or update them with the new values
 
     ##### Deprovision:
     - Delete all permission related to this app
@@ -302,7 +318,7 @@ class PermissionsResource(AppResource):
 
         from yunohost.permission import (
             permission_create,
-            # permission_url,
+            permission_url,
             permission_delete,
             user_permission_list,
             user_permission_update,
@@ -320,7 +336,8 @@ class PermissionsResource(AppResource):
                 permission_delete(perm, force=True, sync_perm=False)
 
         for perm, infos in self.permissions.items():
-            if f"{self.app}.{perm}" not in existing_perms:
+            perm_id = f"{self.app}.{perm}"
+            if perm_id not in existing_perms:
                 # Use the 'allowed' key from the manifest,
                 # or use the 'init_{perm}_permission' from the install questions
                 # which is temporarily saved as a setting as an ugly hack to pass the info to this piece of code...
@@ -330,7 +347,7 @@ class PermissionsResource(AppResource):
                     or []
                 )
                 permission_create(
-                    f"{self.app}.{perm}",
+                    perm_id,
                     allowed=init_allowed,
                     # This is why the ugly hack with self.manager exists >_>
                     label=self.manager.wanted["name"] if perm == "main" else perm,
@@ -341,17 +358,19 @@ class PermissionsResource(AppResource):
                 )
                 self.delete_setting(f"init_{perm}_permission")
 
-                user_permission_update(
-                    f"{self.app}.{perm}",
-                    show_tile=infos["show_tile"],
-                    protected=infos["protected"],
-                    sync_perm=False,
-                )
-            else:
-                pass
-                # FIXME : current implementation of permission_url is hell for
-                # easy declarativeness of additional_urls >_> ...
-                # permission_url(f"{self.app}.{perm}", url=infos["url"], auth_header=infos["auth_header"], sync_perm=False)
+            user_permission_update(
+                perm_id,
+                show_tile=infos["show_tile"],
+                protected=infos["protected"],
+                sync_perm=False,
+            )
+            permission_url(
+                perm_id,
+                url=infos["url"],
+                set_url=infos["additional_urls"],
+                auth_header=infos["auth_header"],
+                sync_perm=False,
+            )
 
         permission_sync_to_user()
 
@@ -523,6 +542,8 @@ class InstalldirAppResource(AppResource):
         if not current_install_dir and os.path.isdir(self.dir):
             rm(self.dir, recursive=True)
 
+        # isdir will be True if the path is a symlink pointing to a dir
+        # This should cover cases where people moved the data dir to another place via a symlink (ie we dont enter the if)
         if not os.path.isdir(self.dir):
             # Handle case where install location changed, in which case we shall move the existing install dir
             # FIXME: confirm that's what we wanna do
@@ -551,8 +572,10 @@ class InstalldirAppResource(AppResource):
 
         perm_octal = 0o100 * owner_perm_octal + 0o010 * group_perm_octal
 
-        chmod(self.dir, perm_octal)
-        chown(self.dir, owner, group)
+        # NB: we use realpath here to cover cases where self.dir could actually be a symlink
+        # in which case we want to apply the perm to the pointed dir, not to the symlink
+        chmod(os.path.realpath(self.dir), perm_octal)
+        chown(os.path.realpath(self.dir), owner, group)
         # FIXME: shall we apply permissions recursively ?
 
         self.set_setting("install_dir", self.dir)
@@ -592,9 +615,8 @@ class DatadirAppResource(AppResource):
     - save the value of `dir` as `data_dir` in the app's settings, which can be then used by the app scripts (`$data_dir`) and conf templates (`__DATA_DIR__`)
 
     ##### Deprovision:
-    - recursively deletes the directory if it exists
-    - FIXME: this should only be done if the PURGE option is set
-    - FIXME: this should also delete the corresponding setting
+    - (only if the purge option is chosen by the user) recursively deletes the directory if it exists
+    - also delete the corresponding setting
 
     ##### Legacy management:
     - In the past, the setting may have been called `datadir`. The code will automatically rename it as `data_dir`.
@@ -628,11 +650,15 @@ class DatadirAppResource(AppResource):
 
         current_data_dir = self.get_setting("data_dir") or self.get_setting("datadir")
 
+        # isdir will be True if the path is a symlink pointing to a dir
+        # This should cover cases where people moved the data dir to another place via a symlink (ie we dont enter the if)
         if not os.path.isdir(self.dir):
             # Handle case where install location changed, in which case we shall move the existing install dir
             # FIXME: same as install_dir, is this what we want ?
-            # FIXME: What if people manually mved the data dir and changed the setting value and dont want the folder to be moved ? x_x
             if current_data_dir and os.path.isdir(current_data_dir):
+                logger.warning(
+                    f"Moving {current_data_dir} to {self.dir} ... (this may take a while)"
+                )
                 shutil.move(current_data_dir, self.dir)
             else:
                 mkdir(self.dir)
@@ -651,8 +677,10 @@ class DatadirAppResource(AppResource):
         )
         perm_octal = 0o100 * owner_perm_octal + 0o010 * group_perm_octal
 
-        chmod(self.dir, perm_octal)
-        chown(self.dir, owner, group)
+        # NB: we use realpath here to cover cases where self.dir could actually be a symlink
+        # in which case we want to apply the perm to the pointed dir, not to the symlink
+        chmod(os.path.realpath(self.dir), perm_octal)
+        chown(os.path.realpath(self.dir), owner, group)
 
         self.set_setting("data_dir", self.dir)
         self.delete_setting("datadir")  # Legacy
@@ -663,11 +691,10 @@ class DatadirAppResource(AppResource):
         assert self.owner.strip()
         assert self.group.strip()
 
-        # FIXME: This should rm the datadir only if purge is enabled
-        pass
-        # if os.path.isdir(self.dir):
-        #    rm(self.dir, recursive=True)
-        # FIXME : in fact we should delete settings to be consistent
+        if context.get("purge_data_dir", False) and os.path.isdir(self.dir):
+            rm(self.dir, recursive=True)
+
+        self.delete_setting("data_dir")
 
 
 class AptDependenciesAppResource(AppResource):
@@ -756,16 +783,16 @@ class PortsResource(AppResource):
 
     ##### Properties (for every port name):
     - `default`: The prefered value for the port. If this port is already being used by another process right now, or is booked in another app's setting, the code will increment the value until it finds a free port and store that value as the setting. If no value is specified, a random value between 10000 and 60000 is used.
-    - `exposed`: (default: `false`) Wether this port should be opened on the firewall and be publicly reachable. This should be kept to `false` for the majority of apps than only need a port for internal reverse-proxying! Possible values: `false`, `true`(=`Both`), `Both`, `TCP`, `UDP`. This will result in the port being opened on the firewall, and the diagnosis checking that a program answers on that port.  (FIXME: this is not implemented yet)
-    - `fixed`: (default: `false`) Tells that the app absolutely needs the specific value provided in `default`, typically because it's needed for a specific protocol (FIXME: this is not implemented yet)
+    - `exposed`: (default: `false`) Wether this port should be opened on the firewall and be publicly reachable. This should be kept to `false` for the majority of apps than only need a port for internal reverse-proxying! Possible values: `false`, `true`(=`Both`), `Both`, `TCP`, `UDP`. This will result in the port being opened on the firewall, and the diagnosis checking that a program answers on that port.
+    - `fixed`: (default: `false`) Tells that the app absolutely needs the specific value provided in `default`, typically because it's needed for a specific protocol
 
     ##### Provision/Update (for every port name):
     - If not already booked, look for a free port, starting with the `default` value (or a random value between 10000 and 60000 if no `default` set)
-    - (FIXME) If `exposed` is not `false`, open the port in the firewall accordingly - otherwise make sure it's closed.
+    - If `exposed` is not `false`, open the port in the firewall accordingly - otherwise make sure it's closed.
     - The value of the port is stored in the `$port` setting for the `main` port, or `$port_NAME` for other `NAME`s
 
     ##### Deprovision:
-    - (FIXME) Close the ports on the firewall
+    - Close the ports on the firewall if relevant
     - Deletes all the port settings
 
     ##### Legacy management:
@@ -784,8 +811,8 @@ class PortsResource(AppResource):
 
     default_port_properties = {
         "default": None,
-        "exposed": False,  # or True(="Both"), "TCP", "UDP"   # FIXME : implement logic for exposed port (allow/disallow in firewall ?)
-        "fixed": False,  # FIXME: implement logic. Corresponding to wether or not the port is "fixed" or any random port is ok
+        "exposed": False,  # or True(="Both"), "TCP", "UDP"
+        "fixed": False,
     }
 
     ports: Dict[str, Dict[str, Any]]
@@ -817,6 +844,8 @@ class PortsResource(AppResource):
 
     def provision_or_update(self, context: Dict = {}):
 
+        from yunohost.firewall import firewall_allow, firewall_disallow
+
         for name, infos in self.ports.items():
 
             setting_name = f"port_{name}" if name != "main" else "port"
@@ -832,16 +861,37 @@ class PortsResource(AppResource):
 
             if not port_value:
                 port_value = infos["default"]
-                while self._port_is_used(port_value):
-                    port_value += 1
+
+                if infos["fixed"]:
+                    if self._port_is_used(port_value):
+                        raise YunohostValidationError(
+                            f"Port {port_value} is already used by another process or app."
+                        )
+                else:
+                    while self._port_is_used(port_value):
+                        port_value += 1
 
             self.set_setting(setting_name, port_value)
 
+            if infos["exposed"]:
+                firewall_allow(infos["exposed"], port_value, reload_only_if_change=True)
+            else:
+                firewall_disallow(
+                    infos["exposed"], port_value, reload_only_if_change=True
+                )
+
     def deprovision(self, context: Dict = {}):
+
+        from yunohost.firewall import firewall_disallow
 
         for name, infos in self.ports.items():
             setting_name = f"port_{name}" if name != "main" else "port"
+            value = self.get_setting(setting_name)
             self.delete_setting(setting_name)
+            if value and str(value).strip():
+                firewall_disallow(
+                    infos["exposed"], int(value), reload_only_if_change=True
+                )
 
 
 class DatabaseAppResource(AppResource):
@@ -881,9 +931,10 @@ class DatabaseAppResource(AppResource):
 
     type = "database"
     priority = 90
+    dbtype: str = ""
 
     default_properties: Dict[str, Any] = {
-        "type": None,  # FIXME: eeeeeeeh is this really a good idea considering 'type' is supposed to be the resource type x_x
+        "dbtype": None,
     }
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
@@ -893,16 +944,22 @@ class DatabaseAppResource(AppResource):
             "postgresql",
         ]:
             raise YunohostError(
-                "Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources"
+                "Specifying the type of db ('mysql' or 'postgresql') is mandatory for db resources",
+                raw_msg=True,
             )
+
+        # Hack so that people can write type = "mysql/postgresql" in toml but it's loaded as dbtype
+        # to avoid conflicting with the generic self.type of the resource object ...
+        # dunno if that's really a good idea :|
+        properties = {"dbtype": properties["type"]}
 
         super().__init__(properties, *args, **kwargs)
 
     def db_exists(self, db_name):
 
-        if self.type == "mysql":
+        if self.dbtype == "mysql":
             return os.system(f"mysqlshow '{db_name}' >/dev/null 2>/dev/null") == 0
-        elif self.type == "postgresql":
+        elif self.dbtype == "postgresql":
             return (
                 os.system(
                     f"sudo --login --user=postgres psql -c '' '{db_name}' >/dev/null 2>/dev/null"
@@ -926,7 +983,7 @@ class DatabaseAppResource(AppResource):
         else:
             # Legacy setting migration
             legacypasswordsetting = (
-                "psqlpwd" if self.type == "postgresql" else "mysqlpwd"
+                "psqlpwd" if self.dbtype == "postgresql" else "mysqlpwd"
             )
             if self.get_setting(legacypasswordsetting):
                 db_pwd = self.get_setting(legacypasswordsetting)
@@ -941,12 +998,12 @@ class DatabaseAppResource(AppResource):
 
         if not self.db_exists(db_name):
 
-            if self.type == "mysql":
+            if self.dbtype == "mysql":
                 self._run_script(
                     "provision",
                     f"ynh_mysql_create_db '{db_name}' '{db_user}' '{db_pwd}'",
                 )
-            elif self.type == "postgresql":
+            elif self.dbtype == "postgresql":
                 self._run_script(
                     "provision",
                     f"ynh_psql_create_user '{db_user}' '{db_pwd}'; ynh_psql_create_db '{db_name}' '{db_user}'",
@@ -957,11 +1014,11 @@ class DatabaseAppResource(AppResource):
         db_name = self.app.replace("-", "_").replace(".", "_")
         db_user = db_name
 
-        if self.type == "mysql":
+        if self.dbtype == "mysql":
             self._run_script(
                 "deprovision", f"ynh_mysql_remove_db '{db_name}' '{db_user}'"
             )
-        elif self.type == "postgresql":
+        elif self.dbtype == "postgresql":
             self._run_script(
                 "deprovision", f"ynh_psql_remove_db '{db_name}' '{db_user}'"
             )

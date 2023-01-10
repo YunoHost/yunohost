@@ -192,6 +192,9 @@ ynh_setup_source() {
     # Extract source into the app dir
     mkdir --parents "$dest_dir"
 
+    if [ -n "${install_dir:-}" ] && [ "$dest_dir" == "$install_dir" ]; then
+        _ynh_apply_default_permissions $dest_dir
+    fi
     if [ -n "${final_path:-}" ] && [ "$dest_dir" == "$final_path" ]; then
         _ynh_apply_default_permissions $dest_dir
     fi
@@ -330,7 +333,7 @@ ynh_local_curl() {
 # | arg: -d, --destination=    - Destination of the config file
 #
 # examples:
-#    ynh_add_config --template=".env" --destination="$final_path/.env" use the template file "../conf/.env"
+#    ynh_add_config --template=".env" --destination="$install_dir/.env" use the template file "../conf/.env"
 #    ynh_add_config --template="/etc/nginx/sites-available/default" --destination="etc/nginx/sites-available/mydomain.conf"
 #
 # The template can be by default the name of a file in the conf directory
@@ -444,8 +447,10 @@ ynh_replace_vars() {
         ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$file"
         ynh_replace_string --match_string="__USER__" --replace_string="$app" --target_file="$file"
     fi
+    # Legacy
     if test -n "${final_path:-}"; then
         ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$file"
+        ynh_replace_string --match_string="__INSTALL_DIR__" --replace_string="$final_path" --target_file="$file"
     fi
     if test -n "${YNH_PHP_VERSION:-}"; then
         ynh_replace_string --match_string="__PHPVERSION__" --replace_string="$YNH_PHP_VERSION" --target_file="$file"

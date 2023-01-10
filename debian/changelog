@@ -1,3 +1,50 @@
+yunohost (11.1.2.1) testing; urgency=low
+
+  - i18n: fix (un)defined string issues (dd33476f)
+  - doc: Revive the old auto documentation of API with swagger
+  - apps: don't clone 'master' branch by default, use git ls-remote to check what's the default branch instead (a6db52b7)
+  - ssowat: add use_remote_user_var_in_nginx_conf flag on permission (f258eab6)
+
+  Thanks to all contributors <3 ! (ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 09 Jan 2023 23:58:51 +0100
+
+yunohost (11.1.2) testing; urgency=low
+
+  - apps: Various fixes/improvements for appsv2, mostly related to webadmin integration ([#1526](https://github.com/yunohost/yunohost/pull/1526))
+  - domains/regenconf: propagate mail/xmpp enable/disable toggle to actual system configs ([#1541](https://github.com/yunohost/yunohost/pull/1541))
+  - settings: Add a virtual setting to enable passwordless sudo for admins (75cb3cb2)
+  - settings: Add a global setting to choose SSOwat's theme ([#1545](https://github.com/yunohost/yunohost/pull/1545))
+  - certs: Improve trick to identify certs as self-signed (c38aba74)
+  - certs: be more resilient when mail cant be sent to root for some reason .. (d7ee1c23)
+  - certs/postfix: propagate postfix SNI stuff when renewing certificates (31794008)
+  - certs/xmpp: add to domain's certificate the alt subdomain muc ([#1163](https://github.com/yunohost/yunohost/pull/1163))
+  - conf/ldap: fix issue where sudo doesn't work because sudo-ldap doesn't create /etc/sudo-ldap.conf :/ (d2417c33)
+  - configpanels: fix custom getter ([#1546](https://github.com/yunohost/yunohost/pull/1546))
+  - configpanels: fix inconsistent return format for boolean, sometimes 1/0, sometimes True/False -> force normalization of values when calling get() for a single setting from a config panel (47b9b8b5)
+  - postfix/fail2ban: Add postfix SASL login failure to a fail2ban jail ([#1552](https://github.com/yunohost/yunohost/pull/1552))
+  - mail: Fix flag case sensitivity in dovecot and rspamd sieve filter ([#1450](https://github.com/yunohost/yunohost/pull/1450))
+  - misc: Don't disable avahi-daemon by force in conf_regen ([#1555](https://github.com/yunohost/yunohost/pull/1555))
+  - misc: Fix yunopaste ([#1558](https://github.com/yunohost/yunohost/pull/1558))
+  - misc: Don't take lock for read/GET operations (#1554) (0ac8e66a)
+  - i18n: Translations updated for Basque, French, Galician, Portuguese, Slovak, Spanish, Ukrainian
+
+  Thanks to all contributors <3 ! (axolotle, DDATAA, Fabian Wilkens, Gabriel, José M, Jose Riha, ljf, Luis H. Porras, ppr, quiwy, Rafael Fontenelle, selfhoster1312, Tymofii-Lytvynenko, xabirequejo, Xavier Brochard)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 06 Jan 2023 00:12:53 +0100
+
+yunohost (11.1.1.2) testing; urgency=low
+
+  - group mailalias: the ldap class is in fact mailGroup, not mailAccount -_- (1cb5e43e)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 03 Dec 2022 15:57:22 +0100
+
+yunohost (11.1.1.1) testing; urgency=low
+
+  - Fix again the legacy patch for yunohost user create @_@ (46d6fab0)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 03 Dec 2022 14:13:09 +0100
+
 yunohost (11.1.1) testing; urgency=low
 
   - groups: add mail-aliases management (#1539) (0f9d9388)

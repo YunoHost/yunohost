@@ -479,9 +479,8 @@ class ConfigPanel:
 
         # Check TOML config panel is in a supported version
         if float(toml_config_panel["version"]) < CONFIG_PANEL_VERSION_SUPPORTED:
-            raise YunohostError(
-                "config_version_not_supported", version=toml_config_panel["version"]
-            )
+            logger.error(f"Config panels version {toml_config_panel['version']} are not supported")
+            return None
 
         # Transform toml format into internal format
         format_description = {
@@ -575,7 +574,7 @@ class ConfigPanel:
                         subnode["name"] = key  # legacy
                         subnode.setdefault("optional", raw_infos.get("optional", True))
                         # If this section contains at least one button, it becomes an "action" section
-                        if subnode["type"] == "button":
+                        if subnode.get("type") == "button":
                             out["is_action_section"] = True
                     out.setdefault(sublevel, []).append(subnode)
                 # Key/value are a property

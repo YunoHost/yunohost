@@ -29,7 +29,11 @@ from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm, chown
 
-from yunohost.app import app_upgrade, app_list
+from yunohost.app import (
+    app_upgrade,
+    app_list,
+    _list_upgradable_apps,
+)
 from yunohost.app_catalog import (
     _initialize_apps_catalog_system,
     _update_apps_catalog,
@@ -363,7 +367,7 @@ def tools_update(target=None):
         except YunohostError as e:
             logger.error(str(e))
 
-        upgradable_apps = list(app_list(upgradable=True)["apps"])
+        upgradable_apps = _list_upgradable_apps()
 
     if len(upgradable_apps) == 0 and len(upgradable_system_packages) == 0:
         logger.info(m18n.n("already_up_to_date"))
@@ -412,7 +416,8 @@ def tools_upgrade(operation_logger, target=None):
 
     if target not in ["apps", "system"]:
         raise YunohostValidationError(
-            "Uhoh ?! tools_upgrade should have 'apps' or 'system' value for argument target"
+            "Uhoh ?! tools_upgrade should have 'apps' or 'system' value for argument target",
+            raw_msg=True
         )
 
     #
@@ -506,7 +511,7 @@ def tools_upgrade(operation_logger, target=None):
             logger.warning(
                 m18n.n(
                     "tools_upgrade_failed",
-                    packages_list=", ".join(upgradables),
+                    packages_list=", ".join([p["name"] for p in upgradables]),
                 )
             )
 
