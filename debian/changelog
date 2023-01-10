@@ -1,3 +1,15 @@
+yunohost (11.1.2.2) testing; urgency=low
+
+  - Minor technical fixes (b37d4baf, 68342171)
+  - configpanel: stop the madness of returning a 500 error when trying to load config panel 0.1 ... otherwise this will crash the new app info view ... (f21fbed2)
+  - apps: fix trick to find the default branch from git repo @_@ (25c10166)
+  - debian: regen ssowatconf during package upgrade (4615d7b7)
+  - [i18n] Translations updated for French
+
+  Thanks to all contributors <3 ! (Éric Gaspar, ppr)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 10 Jan 2023 13:23:28 +0100
+
 yunohost (11.1.2.1) testing; urgency=low
 
   - i18n: fix (un)defined string issues (dd33476f)
