@@ -67,7 +67,7 @@ class Interface(BaseInterface):
     def add(self, interface: Interface):
         assert isinstance(interface.instance, fastapi.APIRouter)
         self.instance.include_router(
-            interface.instance, prefix=f"/{interface.name}", tags=[interface.name]
+            interface.instance, prefix=interface.prefix, tags=[interface.name] if interface.name else []
         )
 
     def prepare_params(

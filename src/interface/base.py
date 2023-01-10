@@ -68,9 +68,16 @@ class BaseInterface:
     kind: InterfaceKind
     local_data: dict[str, Any] = {}
 
-    def __init__(self, root: bool = False, name: str = "", help: str = ""):
+    def __init__(
+        self,
+        root: bool = False,
+        name: str = "",
+        help: str = "",
+        prefix: str = "",
+    ):
         self.name = "root" if root else name or ""
         self.help = help
+        self.prefix = prefix
 
     def __call__(self, *args, **kwargs):
         self.local_data = kwargs
