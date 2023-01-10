@@ -612,7 +612,6 @@
     "domain_dns_push_success": "Record DNS aggiornati!",
     "domain_dns_push_failed": "L’aggiornamento dei record DNS è miseramente fallito.",
     "domain_dns_push_partial_failure": "Record DNS parzialmente aggiornati: alcuni segnali/errori sono stati riportati.",
-    "domain_config_features_disclaimer": "Per ora, abilitare/disabilitare le impostazioni di posta o XMPP impatta unicamente sulle configurazioni DNS raccomandate o ottimizzate, non cambia quelle di sistema!",
     "domain_config_mail_in": "Email in arrivo",
     "domain_config_auth_application_key": "Chiave applicazione",
     "domain_config_auth_application_secret": "Chiave segreta applicazione",
