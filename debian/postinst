@@ -24,6 +24,7 @@ do_configure() {
         fi
     else
         echo "Regenerating configuration, this might take a while..."
+        yunohost app ssowatconf
         yunohost tools regen-conf --output-as none
 
         echo "Launching migrations..."
