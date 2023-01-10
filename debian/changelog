@@ -1,3 +1,10 @@
+yunohost (4.4.3) stable; urgency=low
+
+  - ssowat: add use_remote_user_var_in_nginx_conf flag on permission (5dd237b6)
+  - debian: regen ssowatconf during package upgrade (980df4f5)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 10 Jan 2023 13:53:29 +0100
+
 yunohost (4.4.2.9) stable; urgency=low
 
   - apt helper: fix edge case with equivs package being flagged hold because of buster->bullseye migration (b306df2c)
