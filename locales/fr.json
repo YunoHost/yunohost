@@ -738,9 +738,16 @@
     "global_settings_setting_smtp_allow_ipv6": "Autoriser l'IPv6",
     "password_too_long": "Veuillez choisir un mot de passe de moins de 127 caractères",
     "domain_cannot_add_muc_upload": "Vous ne pouvez pas ajouter de domaines commençant par 'muc.'. Ce type de nom est réservé à la fonction de chat XMPP multi-utilisateurs intégrée à YunoHost.",
-    "group_update_aliases": "Mise à jour des alias du groupe '{group}'.",
+    "group_update_aliases": "Mise à jour des alias du groupe '{group}'",
     "group_no_change": "Rien à mettre à jour pour le groupe '{group}'",
     "global_settings_setting_portal_theme": "Thème du portail",
     "global_settings_setting_portal_theme_help": "Pour plus d'informations sur la création de thèmes de portail personnalisés, voir https://yunohost.org/theming",
-    "global_settings_setting_passwordless_sudo": "Permettre aux administrateurs d'utiliser 'sudo' sans retaper leur mot de passe"
+    "global_settings_setting_passwordless_sudo": "Permettre aux administrateurs d'utiliser 'sudo' sans retaper leur mot de passe",
+    "app_arch_not_supported": "Cette application ne peut être installée que sur les architectures {', '.join(required)}. L'architecture de votre serveur est {current}",
+    "app_resource_failed": "L'allocation automatique des ressources (provisioning), la suppression d'accès à ces ressources (déprovisioning) ou la mise à jour des ressources pour {app} a échoué : {error}",
+    "confirm_app_insufficient_ram": "ATTENTION ! Cette application requiert {required} de RAM pour l'installation/mise à niveau mais il n'y a que {current} de disponible actuellement. Même si cette application pouvait fonctionner, son processus d'installation/mise à niveau nécessite une grande quantité de RAM. Votre serveur pourrait donc geler (freezer) et planter lamentablement. Si vous êtes prêt à prendre ce risque, tapez '{answers}'",
+    "app_not_enough_disk": "Cette application nécessite {required} d'espace libre.",
+    "app_not_enough_ram": "Cette application nécessite {required} de mémoire vive (RAM) pour être installée/mise à niveau mais seule {current} de mémoire est disponible actuellement.",
+    "app_yunohost_version_not_supported": "Cette application nécessite une version de YunoHost >= {required}. La version installée est {current}",
+    "confirm_notifications_read": "AVERTISSEMENT : Vous devriez vérifier les notifications de l'application susmentionnée avant de continuer, il pourrait y avoir des éléments d'information importants à connaître. [{answers}]"
 }
