@@ -96,7 +96,7 @@ def test_domain_remove_unsubscribe():
 
     time.sleep(35)  # Dynette blocks requests that happen too frequently
     assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
-    domain_remove(TEST_DYNDNS_DOMAIN, unsubscribe=TEST_DYNDNS_PASSWORD)
+    domain_remove(TEST_DYNDNS_DOMAIN, dyndns_password_recovery=TEST_DYNDNS_PASSWORD)
     assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
 
 
