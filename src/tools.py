@@ -417,7 +417,7 @@ def tools_upgrade(operation_logger, target=None):
     if target not in ["apps", "system"]:
         raise YunohostValidationError(
             "Uhoh ?! tools_upgrade should have 'apps' or 'system' value for argument target",
-            raw_msg=True
+            raw_msg=True,
         )
 
     #
