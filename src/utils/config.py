@@ -479,7 +479,9 @@ class ConfigPanel:
 
         # Check TOML config panel is in a supported version
         if float(toml_config_panel["version"]) < CONFIG_PANEL_VERSION_SUPPORTED:
-            logger.error(f"Config panels version {toml_config_panel['version']} are not supported")
+            logger.error(
+                f"Config panels version {toml_config_panel['version']} are not supported"
+            )
             return None
 
         # Transform toml format into internal format
