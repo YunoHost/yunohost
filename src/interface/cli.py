@@ -17,6 +17,7 @@ from yunohost.interface.base import (
     get_params_doc,
     override_function,
 )
+from yunohost.utils.error import YunohostValidationError
 
 
 def parse_cli_command(command: str) -> tuple[str, list[str]]:
@@ -53,31 +54,37 @@ class Interface(BaseInterface):
             command, args = parse_cli_command(command_def)
 
             for param in params:
+                param_default = (
+                    param.default
+                    if not param.default == param.empty
+                    else ...  # required
+                )
+
                 param_kwargs = local_data.get(param.name, {})
                 param_kwargs["help"] = params_doc.get(param.name, None)
 
                 if param_kwargs.pop("deprecated", False):
                     param_kwargs["rich_help_panel"] = "Deprecated Options"
 
-                if param.name not in args and not param_kwargs.get("hidden", False):
-                    param_kwargs["prompt"] = True
-
-                if param.name == "password":
-                    param_kwargs["confirmation_prompt"] = True
-                    param_kwargs["hide_input"] = True
+                if param_kwargs.get("prompt", False):
+                    if param.name == "password":
+                        param_kwargs["confirmation_prompt"] = True
+                        param_kwargs["hide_input"] = True
 
                 # Populate default param value with typer.Argument|Option
-                param_default = (
-                    param.default
-                    if not param.default == param.empty
-                    else ...  # required
-                )
-                if param.name in args:
-                    param_default = typer.Argument(param_default, **param_kwargs)
+                if param_kwargs.pop("file", False):
+                    new_param = param.replace(
+                        annotation=typer.FileText,
+                        default=param_default
+                    )
+                elif param.kind == param.VAR_POSITIONAL:
+                    new_param = param
+                elif param.name in args:
+                    new_param = param.replace(default=typer.Argument(param_default, **param_kwargs))
                 else:
-                    param_default = typer.Option(param_default, **param_kwargs)
+                    new_param = param.replace(default=typer.Option(param_default, **param_kwargs))
 
-                override_params.append(param.replace(default=param_default))
+                override_params.append(new_param)
 
             def hook_results(*args, **kwargs):
                 try:

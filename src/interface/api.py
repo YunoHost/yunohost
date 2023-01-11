@@ -4,6 +4,8 @@ from __future__ import (
 
 import inspect
 import re
+import codecs
+
 import fastapi
 import pydantic
 import starlette
@@ -132,12 +134,17 @@ class Interface(BaseInterface):
                         else ...  # required
                     )
 
-                    if param.name in paths:
-                        param_default = fastapi.Path(param_default, **param_kwargs)
+                    if param_kwargs.pop("file", False):
+                        new_param = param.replace(
+                            annotation=fastapi.UploadFile,
+                            default=param_default
+                        )
+                    elif param.name in paths:
+                        new_param = param.replace(default=fastapi.Path(param_default, **param_kwargs))
                     else:
-                        param_default = fastapi.Query(param_default, **param_kwargs)
+                        new_param = param.replace(default=fastapi.Query(param_default, **param_kwargs))
 
-                    override_params.append(param.replace(default=param_default))
+                    override_params.append(new_param)
 
             def hook_results(*args, **kwargs):
                 new_kwargs = {}
@@ -147,6 +154,10 @@ class Interface(BaseInterface):
                     if isinstance(value, pydantic.BaseModel):
                         # Turn pydantic model back to individual kwargs
                         new_kwargs = value.dict() | new_kwargs
+                    elif isinstance(value, starlette.datastructures.UploadFile):
+                        # views expects a opened file (fastapi UploadFile is a bytes SpooledTemporaryFile)
+                        new_kwargs[name] = codecs.iterdecode(value.file, 'utf-8')
+                        opened_files.append(name)
                     else:
                         new_kwargs[name] = value
 
@@ -158,6 +169,10 @@ class Interface(BaseInterface):
                     raise fastapi.exceptions.RequestValidationError([ErrorWrapper(ValueError(e.strerror), ("query", "test"))])
                 except:
                     raise
+                finally:
+                    # I guess we need to close the opened file
+                    for kwarg_name in opened_files:
+                        kwargs[kwarg_name].file.close()
 
             route_func = override_function(
                 func,
