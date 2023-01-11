@@ -748,5 +748,5 @@
     "app_not_enough_ram": "Cette application nécessite {required} de mémoire vive (RAM) pour être installée/mise à niveau mais seule {current} de mémoire est disponible actuellement.",
     "app_yunohost_version_not_supported": "Cette application nécessite une version de YunoHost >= {required}. La version installée est {current}",
     "confirm_notifications_read": "AVERTISSEMENT : Vous devriez vérifier les notifications de l'application susmentionnée avant de continuer, il pourrait y avoir des éléments d'information importants à connaître. [{answers}]",
-    "global_settings_setting_passwordless_sudo_help": "RÉPAREZ-MOI"
+    "global_settings_setting_passwordless_sudo_help": "RÉPAREZ-MOI / AIDEZ-MOI"
 }
