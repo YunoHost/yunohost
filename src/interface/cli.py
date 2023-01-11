@@ -80,9 +80,14 @@ class Interface(BaseInterface):
                 override_params.append(param.replace(default=param_default))
 
             def hook_results(*args, **kwargs):
-                results = func(*args, **kwargs)
-                print_as_yaml(results)
-                return results
+                try:
+                    results = func(*args, **kwargs)
+                    print_as_yaml(results)
+                    return results
+                except YunohostValidationError as e:
+                    raise typer.BadParameter(e.strerror)
+                except:
+                    raise
 
             command_func = override_function(
                 func,

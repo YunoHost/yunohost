@@ -6,8 +6,12 @@ import inspect
 import re
 import fastapi
 import pydantic
+import starlette
 
 from typing import Any, Optional, Union
+
+from pydantic.error_wrappers import ErrorWrapper
+
 from yunohost.interface.base import (
     BaseInterface,
     InterfaceKind,
@@ -15,6 +19,7 @@ from yunohost.interface.base import (
     get_params_doc,
     override_function,
 )
+from yunohost.utils.error import YunohostValidationError
 
 
 def snake_to_camel_case(snake: str) -> str:
@@ -134,24 +139,35 @@ class Interface(BaseInterface):
 
                     override_params.append(param.replace(default=param_default))
 
-            if as_body:
+            def hook_results(*args, **kwargs):
+                new_kwargs = {}
+                opened_files = []
 
-                def body_to_args_back(*args, **kwargs):
-                    new_kwargs = {}
-                    for kwarg, value in kwargs.items():
-                        if issubclass(type(value), pydantic.BaseModel):
-                            new_kwargs = value.dict() | new_kwargs
-                        else:
-                            new_kwargs[kwarg] = value
+                for name, value in kwargs.items():
+                    if isinstance(value, pydantic.BaseModel):
+                        # Turn pydantic model back to individual kwargs
+                        new_kwargs = value.dict() | new_kwargs
+                    else:
+                        new_kwargs[name] = value
+
+                try:
                     return func(*args, **new_kwargs)
+                except YunohostValidationError as e:
+                    # Try to mimic Pydantic validation errors
+                    # FIXME replace dummy error information
+                    raise fastapi.exceptions.RequestValidationError([ErrorWrapper(ValueError(e.strerror), ("query", "test"))])
+                except:
+                    raise
 
-                route_func = override_function(
-                    func, signature, override_params, decorator=body_to_args_back
-                )
-            else:
-                route_func = override_function(func, signature, override_params)
+            route_func = override_function(
+                func,
+                signature,
+                override_params,
+                decorator=hook_results,
+                doc=func.__doc__.split("\f")[0] if func.__doc__ else None,
+            )
 
-            summary = func.__doc__.split("\n\n")[0] if func.__doc__ else None
+            summary = func.__doc__.split("\b")[0] if func.__doc__ else None
             getattr(self.instance, method)(
                 route, summary=summary, deprecated=local_data.get("deprecated")
             )(route_func)
