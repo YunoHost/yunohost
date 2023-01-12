@@ -2,6 +2,7 @@ from __future__ import (
     annotations,
 )  # Enable self reference a class in its own method arguments
 
+import os
 import inspect
 import typer
 import yaml
@@ -43,6 +44,23 @@ class Interface(BaseInterface):
         self.instance.add_typer(
             interface.instance, name=interface.name, help=interface.help
         )
+
+    @staticmethod
+    def display(content: str):
+        if os.environ.get("INTERFACE") == "cli":
+            rprint(content)
+        else:
+            from moulinette import Moulinette
+            Moulinette.display(content)
+
+    @staticmethod
+    def prompt(ask: str, is_password=False, confirm=False, **kwargs):
+        if os.environ.get("INTERFACE") == "cli":
+            return typer.prompt(ask, hide_input=is_password, confirmation_prompt=confirm)
+        else:
+            from moulinette import Moulinette
+            return Moulinette.prompt(ask, is_password=is_password, confirm=confirm, **kwargs)
+
 
     def cli(self, command_def: str, **extra_data):
         def decorator(func: Callable):
