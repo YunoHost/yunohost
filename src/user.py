@@ -26,16 +26,24 @@ import string
 import subprocess
 import copy
 
+from typing import Optional
+
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
 
+from yunohost.interface import Interface, InterfaceKind
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.service import service_status
 from yunohost.log import is_unit_operation
 from yunohost.utils.system import binary_to_human
 
 logger = getActionLogger("yunohost.user")
+user = Interface(name="user", help="Manage users and groups")
+group = Interface(name="group", help="Manage user groups", prefix="/groups")
+permission = Interface(
+    name="permission", help="Manage permissions", prefix="/permissions"
+)
 
 FIELDS_FOR_IMPORT = {
     "username": r"^[a-z0-9_]+$",
@@ -52,7 +60,15 @@ FIELDS_FOR_IMPORT = {
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
 
-def user_list(fields=None):
+@user.api("/list")
+@user.cli("list")
+def user_list(fields: list[str] = ["username", "fullname", "mail", "mailbox-quota"]):
+    """
+    List users
+
+    \b
+    - **fields**: a list of fields to fetch per user. Available attributes: `username`, `password`, `fullname`, `firstname`, `lastname`, `mail`, `mail-alias`, `mail-forward`, `mailbox-quota`, `groups`, `shell`, `home-path`.
+    """
 
     from yunohost.utils.ldap import _get_ldap_interface
 
@@ -123,19 +139,46 @@ def user_list(fields=None):
     return {"users": users}
 
 
+@user(
+    private=["from_import"],
+    username={"pattern": "^[a-z0-9_]+$"},
+    firstname={"deprecated": True},
+    lastname={"deprecated": True},
+)
+@user.api("/create", method="post", as_body=True)
+@user.cli(
+    "create {username}",
+    domain={"prompt": True},
+    password={"prompt": True},
+    fullname={"prompt": True},
+)
 @is_unit_operation([("username", "user")])
 def user_create(
     operation_logger,
-    username,
-    domain,
-    password,
-    fullname=None,
-    firstname=None,
-    lastname=None,
-    mailbox_quota="0",
-    admin=False,
-    from_import=False,
+    username: str,
+    domain: str,
+    password: str,
+    fullname: Optional[str] = None,
+    mailbox_quota: str = "0",
+    admin: bool = False,
+    firstname: Optional[str] = None,
+    lastname: Optional[str] = None,
+    from_import: bool = False,
 ):
+    """
+    Create user
+    \b
+    - **username**: The unique username to create
+    - **domain**: Domain for the email address and xmpp account
+    - **password**: User password
+    - **fullname**: The full name of the user
+    - **mailbox_quota**: Mailbox size quota
+    - **admin**: Add in adrmin group
+    - **firstname**: Deprecated. Use `--fullname` instead.
+    - **lastname**: Deprecated. Use `--fullname` instead.
+    \f
+    - **from_import**:
+    """
 
     if firstname or lastname:
         logger.warning(
@@ -171,19 +214,19 @@ def user_create(
     assert_password_is_strong_enough("admin" if admin else "user", password)
 
     # Validate domain used for email address/xmpp account
-    if domain is None:
-        if Moulinette.interface.type == "api":
+    if not domain:
+        if Interface.kind is InterfaceKind.API:
             raise YunohostValidationError(
                 "Invalid usage, you should specify a domain argument"
             )
         else:
             # On affiche les differents domaines possibles
-            Moulinette.display(m18n.n("domains_available"))
+            Interface.display(m18n.n("domains_available"))
             for domain in domain_list()["domains"]:
-                Moulinette.display(f"- {domain}")
+                Interface.display(f"- {domain}")
 
             maindomain = _get_maindomain()
-            domain = Moulinette.prompt(
+            domain = Interface.prompt(
                 m18n.n("ask_user_domain") + f" (default: {maindomain})"
             )
             if not domain:
@@ -663,8 +706,13 @@ def user_export():
         return body
 
 
+@user(csvfile={"file": True})
+@user.api("/import", method="post")
+@user.cli("import")
 @is_unit_operation()
-def user_import(operation_logger, csvfile, update=False, delete=False):
+def user_import(
+    operation_logger, csvfile: str, update: bool = False, delete: bool = False
+):
     """
     Import users from CSV
 
@@ -1274,6 +1322,8 @@ def user_group_update(
         return user_group_info(groupname)
 
 
+@group.api("/{groupname}")
+@group.cli("info {groupname}")
 def user_group_info(groupname):
     """
     Get user informations
@@ -1310,7 +1360,12 @@ def user_group_info(groupname):
     }
 
 
-def user_group_add(groupname, usernames, force=False, sync_perm=True):
+@group(private=["force", "sync_perm"])
+@group.api("/{groupname}/add", method="put")
+@group.cli("add {groupname} {usernames}")
+def user_group_add(
+    groupname: str, usernames: list[str], force: bool = False, sync_perm: bool = True
+):
     """
     Add user(s) to a group
 
@@ -1349,7 +1404,13 @@ def user_group_remove_mailalias(groupname, aliases):
 #
 
 
-def user_permission_list(short=False, full=False, apps=[]):
+@permission.api("/")
+@permission.cli("list {apps}")
+def user_permission_list(
+    apps: Optional[list[str]] = None,
+    short: bool = False,
+    full: bool = False,
+):
     from yunohost.permission import user_permission_list
 
     return user_permission_list(short, full, absolute_urls=True, apps=apps)

@@ -30,12 +30,14 @@ from io import IOBase
 
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
+from yunohost.interface import Interface, InterfaceKind
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import get_ynh_package_version
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml
 
 logger = getActionLogger("yunohost.log")
+log = Interface(name="log", help="Manage debug logs", prefix="/logs")
 
 CATEGORIES_PATH = "/var/log/yunohost/categories/"
 OPERATIONS_PATH = "/var/log/yunohost/categories/operation/"
@@ -67,7 +69,13 @@ BORING_LOG_LINES = [
 ]
 
 
-def log_list(limit=None, with_details=False, with_suboperations=False):
+@log.api("")
+@log.cli("list")
+def log_list(
+    limit: int = 50,
+    with_details: bool = False,
+    with_suboperations: bool = False,
+):
     """
     List available logs
 
@@ -159,8 +167,21 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
     return {"operation": operations}
 
 
+@log.api("/{path:path}/share")
+@log.cli("share {path}")
+def log_share(path: str):
+    return log_show(path, share=True)
+
+
+@log(share={"deprecated": True})
+@log.api("/{path:path}")
+@log.cli("show {path}")
 def log_show(
-    path, number=None, share=False, filter_irrelevant=False, with_suboperations=False
+    path: str,
+    number: int = 50,
+    share: bool = False,
+    filter_irrelevant: bool = False,
+    with_suboperations: bool = False,
 ):
     """
     Display a log file enriched with metadata if any.
@@ -315,10 +336,6 @@ def log_show(
         infos["logs"] = logs
 
     return infos
-
-
-def log_share(path):
-    return log_show(path, share=True)
 
 
 def is_unit_operation(
