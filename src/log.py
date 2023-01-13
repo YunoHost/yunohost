@@ -21,6 +21,7 @@ import re
 import yaml
 import glob
 import psutil
+import functools
 from typing import List
 
 from datetime import datetime, timedelta
@@ -151,7 +152,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
     operations = list(reversed(sorted(operations, key=lambda o: o["name"])))
     # Reverse the order of log when in cli, more comfortable to read (avoid
     # unecessary scrolling)
-    is_api = Moulinette.interface.type == "api"
+    is_api = Interface.kind is InterfaceKind.API
     if not is_api:
         operations = list(reversed(operations))
 
@@ -233,7 +234,7 @@ def log_show(
         url = yunopaste(content)
 
         logger.info(m18n.n("log_available_on_yunopaste", url=url))
-        if Moulinette.interface.type == "api":
+        if Interface.kind is InterfaceKind.API:
             return {"url": url}
         else:
             return
@@ -348,6 +349,7 @@ def is_unit_operation(
     """
 
     def decorate(func):
+        @functools.wraps(func)
         def func_wrapper(*args, **kwargs):
             op_key = operation_key
             if op_key is None:
@@ -640,7 +642,7 @@ class OperationLogger:
             "operation": self.operation,
             "parent": self.parent,
             "yunohost_version": get_ynh_package_version("yunohost")["version"],
-            "interface": Moulinette.interface.type,
+            "interface": Interface.kind.value,
         }
         if self.related_to is not None:
             data["related_to"] = self.related_to
@@ -699,7 +701,7 @@ class OperationLogger:
             self.logger.removeHandler(self.file_handler)
             self.file_handler.close()
 
-        is_api = Moulinette.interface.type == "api"
+        is_api = Interface.kind is InterfaceKind.API
         desc = _get_description_from_name(self.name)
         if error is None:
             if is_api:
