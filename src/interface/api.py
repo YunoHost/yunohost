@@ -134,6 +134,11 @@ class Interface(BaseInterface):
                         else ...  # required
                     )
 
+                    pattern = param_kwargs.pop("pattern", None)
+                    if pattern:
+                        # FIXME for now throw generic error (need to catch and update text)
+                        param_kwargs["regex"] = pattern
+
                     if param_kwargs.pop("file", False):
                         new_param = param.replace(
                             annotation=fastapi.UploadFile,

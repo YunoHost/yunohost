@@ -42,6 +42,12 @@ def get_params_doc(docstring: Optional[str]) -> dict[str, str]:
     }
 
 
+def validate_pattern(pattern: str, value: str, name: str):
+    if not re.match(pattern, value, re.UNICODE):
+        raise ValueError(f"'{value}' does'nt match pattern '{pattern}'")
+    return value
+
+
 def override_function(
     func: Callable,
     func_signature: inspect.Signature,
@@ -89,10 +95,10 @@ class BaseInterface:
     def filter_params(self, params: list[inspect.Parameter]) -> list[inspect.Parameter]:
         private = self.local_data.get("private", [])
 
-        if private:
-            return [param for param in params if param.name not in private]
-
-        return params
+        return [
+            param for param in params
+            if param.name not in private and param.name != "operation_logger"
+        ]
 
     def api(self, *args, **kwargs):
         return pass_func

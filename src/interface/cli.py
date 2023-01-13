@@ -17,6 +17,7 @@ from yunohost.interface.base import (
     merge_dicts,
     get_params_doc,
     override_function,
+    validate_pattern
 )
 from yunohost.utils.error import YunohostValidationError
 
@@ -29,6 +30,18 @@ def parse_cli_command(command: str) -> tuple[str, list[str]]:
 def print_as_yaml(data: Any):
     data = yaml.dump(data, default_flow_style=False)
     rprint(Syntax(data, "yaml", background_color="default"))
+
+
+def pattern_validator(pattern: str, name: str):
+    def inner_validator(ctx: typer.Context, param_: typer.CallbackParam, value: str):
+        if ctx.resilient_parsing:
+            return
+        try:
+            return validate_pattern(pattern, value, name)
+        except ValueError as e:
+            raise typer.BadParameter(str(e))
+
+    return inner_validator
 
 
 class Interface(BaseInterface):
@@ -88,6 +101,10 @@ class Interface(BaseInterface):
                     if param.name == "password":
                         param_kwargs["confirmation_prompt"] = True
                         param_kwargs["hide_input"] = True
+
+                pattern = param_kwargs.pop("pattern", None)
+                if pattern:
+                    param_kwargs["callback"] = pattern_validator(pattern, param.name)
 
                 # Populate default param value with typer.Argument|Option
                 if param_kwargs.pop("file", False):
