@@ -25,7 +25,7 @@ from yunohost.interface.base import (
     merge_dicts,
     get_params_doc,
     override_function,
-    validate_pattern
+    validate_pattern,
 )
 from yunohost.utils.error import YunohostValidationError
 
@@ -40,7 +40,7 @@ def print_as_yaml(data: Any):
     rprint(Syntax(data, "yaml", background_color="default"))
 
 
-def pattern_validator(pattern: str, name: str):
+def pattern_validator(pattern: str, name: Optional[str]):
     def inner_validator(ctx: typer.Context, param_: typer.CallbackParam, value: str):
         if ctx.resilient_parsing:
             return
@@ -72,16 +72,21 @@ class Interface(BaseInterface):
             rprint(content)
         else:
             from moulinette import Moulinette
+
             Moulinette.display(content)
 
     @staticmethod
     def prompt(ask: str, is_password=False, confirm=False, **kwargs):
         if os.environ.get("INTERFACE") == "cli":
-            return typer.prompt(ask, hide_input=is_password, confirmation_prompt=confirm)
+            return typer.prompt(
+                ask, hide_input=is_password, confirmation_prompt=confirm
+            )
         else:
             from moulinette import Moulinette
-            return Moulinette.prompt(ask, is_password=is_password, confirm=confirm, **kwargs)
 
+            return Moulinette.prompt(
+                ask, is_password=is_password, confirm=confirm, **kwargs
+            )
 
     def cli(self, command_def: str, **extra_data):
         def decorator(func: Callable):

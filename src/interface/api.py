@@ -30,35 +30,6 @@ def parse_api_route(route: str) -> list[str]:
     return re.findall(r"{(\w+)}", route)
 
 
-def params_to_body(
-    params: list[inspect.Parameter],
-    data: dict[str, Any],
-    doc: dict[str, Any],
-    func_name: str,
-) -> inspect.Parameter:
-    model = pydantic.create_model(
-        snake_to_camel_case(func_name),
-        **{
-            param.name: (
-                param.annotation,
-                pydantic.Field(
-                    param.default if param.default != param.empty else ...,
-                    description=doc.get(param.name, None),
-                    **data.get(param.name, {}),
-                ),
-            )
-            for param in params
-        },
-    )
-
-    return inspect.Parameter(
-        func_name.split("_")[0],
-        inspect.Parameter.POSITIONAL_ONLY,
-        default=...,
-        annotation=model,
-    )
-
-
 class Interface(BaseInterface):
     kind = InterfaceKind.API
 
@@ -72,31 +43,10 @@ class Interface(BaseInterface):
     def add(self, interface: Interface):
         assert isinstance(interface.instance, fastapi.APIRouter)
         self.instance.include_router(
-            interface.instance, prefix=interface.prefix, tags=[interface.name] if interface.name else []
+            interface.instance,
+            prefix=interface.prefix,
+            tags=[interface.name] if interface.name else [],
         )
-
-    def prepare_params(
-        self,
-        params: list[inspect.Parameter],
-        as_body: bool,
-        as_body_except: Optional[list[str]] = None,
-    ) -> list[Union[list[inspect.Parameter], inspect.Parameter]]:
-        params = self.filter_params(params)
-
-        if as_body_except:
-            body_params = []
-            rest = []
-            for param in params:
-                if param.name not in as_body_except:
-                    body_params.append(param)
-                else:
-                    rest.append(param)
-            return [body_params, *rest]
-
-        if as_body:
-            return [params]
-
-        return params
 
     def api(
         self,

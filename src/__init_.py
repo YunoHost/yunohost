@@ -56,7 +56,7 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
 
     logging_configuration = {
         "version": 1,
-        "disable_existing_loggers": True,
+        "disable_existing_loggers": False,
         "formatters": {
             "console": {
                 "format": "%(relativeCreated)-5d %(levelname)-8s %(name)s %(funcName)s - %(message)s"
