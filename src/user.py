@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 #
 # Copyright (c) 2022 YunoHost Contributors
 #
@@ -26,16 +28,17 @@ import string
 import subprocess
 import copy
 
-from typing import Optional
+from typing import Annotated, Optional
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
 
-from yunohost.interface import Interface, InterfaceKind
+from yunohost.interface import Field, Interface, InterfaceKind
+from yunohost.interface.types import Private
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.service import service_status
-from yunohost.log import is_unit_operation
+from yunohost.log import OperationLogger, is_unit_operation
 from yunohost.utils.system import binary_to_human
 
 logger = getActionLogger("yunohost.user")
@@ -58,6 +61,30 @@ FIELDS_FOR_IMPORT = {
 }
 
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
+
+DepreciatedField = Field(deprecated=True)
+UsernameField = Field(pattern=("pattern_username", r"^[a-z0-9_]+$"), example="username")
+FullnameField = Field(
+    param_decls=["-F"],
+    ask=True,
+    pattern=("pattern_fullname", r"^([^\W\d_]{1,30}[ ,.'-]{0,3})+$"),
+    example="Camille Dupont",
+)
+DomainField = Field(
+    pattern=(
+        "pattern_domain",
+        r"^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$",
+    ),
+    example="domain.tld",
+)
+PasswordField = Field(
+    ask=True,
+    confirm=True,
+    redac=True,
+    pattern=("pattern_password", r"^.{3,}$"),
+    example="secret_password",
+)
+MailboxQuotaField = Field(pattern=("pattern_mailbox_quota", r"^(\d+[bkMGT])|0$"))
 
 
 @user.api("/list")
@@ -139,31 +166,20 @@ def user_list(fields: list[str] = ["username", "fullname", "mail", "mailbox-quot
     return {"users": users}
 
 
-@user(
-    private=["from_import"],
-    username={"pattern": "^[a-z0-9_]+$"},
-    firstname={"deprecated": True},
-    lastname={"deprecated": True},
-)
 @user.api("/create", method="post", as_body=True)
-@user.cli(
-    "create {username}",
-    domain={"prompt": True},
-    password={"prompt": True},
-    fullname={"prompt": True},
-)
+@user.cli("create {username}")
 @is_unit_operation([("username", "user")])
 def user_create(
-    operation_logger,
-    username: str,
-    domain: str,
-    password: str,
-    fullname: Optional[str] = None,
-    mailbox_quota: str = "0",
+    operation_logger: Private[OperationLogger],
+    username: Annotated[str, UsernameField],
+    domain: Annotated[str, DomainField],
+    password: Annotated[str, PasswordField],
+    fullname: Annotated[Optional[str], FullnameField] = None,
+    mailbox_quota: Annotated[str, MailboxQuotaField] = "0",
+    firstname: Annotated[Optional[str], DepreciatedField] = None,
+    lastname: Annotated[Optional[str], DepreciatedField] = None,
     admin: bool = False,
-    firstname: Optional[str] = None,
-    lastname: Optional[str] = None,
-    from_import: bool = False,
+    from_import: Private[bool] = False,
 ):
     """
     Create user
@@ -171,9 +187,9 @@ def user_create(
     - **username**: The unique username to create
     - **domain**: Domain for the email address and xmpp account
     - **password**: User password
-    - **fullname**: The full name of the user
+    - **fullname**: The full name of the user (ex: 'Camille Dupont')
     - **mailbox_quota**: Mailbox size quota
-    - **admin**: Add in adrmin group
+    - **admin**: Add in `admin` group
     - **firstname**: Deprecated. Use `--fullname` instead.
     - **lastname**: Deprecated. Use `--fullname` instead.
     \f
@@ -706,12 +722,14 @@ def user_export():
         return body
 
 
-@user(csvfile={"file": True})
 @user.api("/import", method="post")
-@user.cli("import")
+@user.cli("import {csvfile}")
 @is_unit_operation()
 def user_import(
-    operation_logger, csvfile: str, update: bool = False, delete: bool = False
+    operation_logger: Private[OperationLogger],
+    csvfile: Annotated[str, Field(file=True)],
+    update: bool = False,
+    delete: bool = False,
 ):
     """
     Import users from CSV
@@ -979,6 +997,10 @@ def user_import(
 #
 # Group subcategory
 #
+
+GroupnameField = Field(pattern=("pattern_groupname", r"^[a-z0-9_]+$"))
+
+
 def user_group_list(short=False, full=False, include_primary_groups=True):
     """
     List users
@@ -1324,7 +1346,7 @@ def user_group_update(
 
 @group.api("/{groupname}")
 @group.cli("info {groupname}")
-def user_group_info(groupname):
+def user_group_info(groupname: Annotated[str, GroupnameField]):
     """
     Get user informations
 
@@ -1360,11 +1382,13 @@ def user_group_info(groupname):
     }
 
 
-@group(private=["force", "sync_perm"])
 @group.api("/{groupname}/add", method="put")
 @group.cli("add {groupname} {usernames}")
 def user_group_add(
-    groupname: str, usernames: list[str], force: bool = False, sync_perm: bool = True
+    groupname: Annotated[str, GroupnameField],
+    usernames: Annotated[list[str], UsernameField],
+    force: Private[bool] = False,
+    sync_perm: Private[bool] = True,
 ):
     """
     Add user(s) to a group
