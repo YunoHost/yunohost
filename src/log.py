@@ -21,6 +21,7 @@ import re
 import yaml
 import glob
 import psutil
+import functools
 from typing import List
 
 from datetime import datetime, timedelta
@@ -29,12 +30,14 @@ from io import IOBase
 
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
+from yunohost.interface import Interface, InterfaceKind
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import get_ynh_package_version
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml
 
 logger = getActionLogger("yunohost.log")
+log = Interface(name="log", help="Manage debug logs", prefix="/logs")
 
 CATEGORIES_PATH = "/var/log/yunohost/categories/"
 OPERATIONS_PATH = "/var/log/yunohost/categories/operation/"
@@ -66,7 +69,13 @@ BORING_LOG_LINES = [
 ]
 
 
-def log_list(limit=None, with_details=False, with_suboperations=False):
+@log.api("")
+@log.cli("list")
+def log_list(
+    limit: int = 50,
+    with_details: bool = False,
+    with_suboperations: bool = False,
+):
     """
     List available logs
 
@@ -151,15 +160,28 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
     operations = list(reversed(sorted(operations, key=lambda o: o["name"])))
     # Reverse the order of log when in cli, more comfortable to read (avoid
     # unecessary scrolling)
-    is_api = Moulinette.interface.type == "api"
+    is_api = Interface.kind is InterfaceKind.API
     if not is_api:
         operations = list(reversed(operations))
 
     return {"operation": operations}
 
 
+@log.api("/{path:path}/share")
+@log.cli("share {path}")
+def log_share(path: str):
+    return log_show(path, share=True)
+
+
+@log(share={"deprecated": True})
+@log.api("/{path:path}")
+@log.cli("show {path}")
 def log_show(
-    path, number=None, share=False, filter_irrelevant=False, with_suboperations=False
+    path: str,
+    number: int = 50,
+    share: bool = False,
+    filter_irrelevant: bool = False,
+    with_suboperations: bool = False,
 ):
     """
     Display a log file enriched with metadata if any.
@@ -233,7 +255,7 @@ def log_show(
         url = yunopaste(content)
 
         logger.info(m18n.n("log_available_on_yunopaste", url=url))
-        if Moulinette.interface.type == "api":
+        if Interface.kind is InterfaceKind.API:
             return {"url": url}
         else:
             return
@@ -316,10 +338,6 @@ def log_show(
     return infos
 
 
-def log_share(path):
-    return log_show(path, share=True)
-
-
 def is_unit_operation(
     entities=["app", "domain", "group", "service", "user"],
     exclude=["password"],
@@ -348,6 +366,7 @@ def is_unit_operation(
     """
 
     def decorate(func):
+        @functools.wraps(func)
         def func_wrapper(*args, **kwargs):
             op_key = operation_key
             if op_key is None:
@@ -640,7 +659,7 @@ class OperationLogger:
             "operation": self.operation,
             "parent": self.parent,
             "yunohost_version": get_ynh_package_version("yunohost")["version"],
-            "interface": Moulinette.interface.type,
+            "interface": Interface.kind.value,
         }
         if self.related_to is not None:
             data["related_to"] = self.related_to
@@ -699,7 +718,7 @@ class OperationLogger:
             self.logger.removeHandler(self.file_handler)
             self.file_handler.close()
 
-        is_api = Moulinette.interface.type == "api"
+        is_api = Interface.kind is InterfaceKind.API
         desc = _get_description_from_name(self.name)
         if error is None:
             if is_api:

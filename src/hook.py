@@ -25,6 +25,7 @@ from glob import iglob
 from importlib import import_module
 
 from moulinette import m18n, Moulinette
+from yunohost.interface import Interface, InterfaceKind
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils import log
 from moulinette.utils.filesystem import read_yaml, cp
@@ -409,7 +410,7 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
         env = {}
     env["YNH_CWD"] = chdir
 
-    env["YNH_INTERFACE"] = Moulinette.interface.type
+    env["YNH_INTERFACE"] = Interface.kind.value
 
     stdreturn = os.path.join(tempfile.mkdtemp(), "stdreturn")
     with open(stdreturn, "w") as f:
@@ -511,7 +512,7 @@ def hook_exec_with_script_debug_if_failure(*args, **kwargs):
             error = error_message_if_script_failed
             logger.error(error_message_if_failed(error))
             failure_message_with_debug_instructions = operation_logger.error(error)
-            if Moulinette.interface.type != "api":
+            if Interface.kind is not InterfaceKind.API:
                 operation_logger.dump_script_log_extract_for_debugging()
     # Script got manually interrupted ...
     # N.B. : KeyboardInterrupt does not inherit from Exception
