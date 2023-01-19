@@ -127,12 +127,7 @@ def list_shells():
     with open("/etc/shells", "r") as f:
         content = f.readlines()
 
-    shells = []
-    for line in content:
-        if line.startswith("/"):
-            shells.append(line.replace("\n",""))
-    return shells
-
+    return [line.strip() for line in content if line.startswith("/")]
 
 
 def shellexists(shell):
