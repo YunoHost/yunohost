@@ -618,7 +618,6 @@
     "domain_config_auth_consumer_key": "Chiave consumatore",
     "ldap_attribute_already_exists": "L’attributo LDAP '{attribute}' esiste già con il valore '{value}'",
     "config_validate_time": "È necessario inserire un orario valido, come HH:MM",
-    "config_version_not_supported": "Le versioni '{version}' del pannello di configurazione non sono supportate.",
     "danger": "Attenzione:",
     "log_domain_config_set": "Aggiorna la configurazione per il dominio '{}'",
     "domain_dns_push_managed_in_parent_domain": "La configurazione automatica del DNS è gestita nel dominio genitore {parent_domain}.",

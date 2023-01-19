@@ -590,7 +590,6 @@
     "log_app_config_set": "Aplicar a configuración á app '{}'",
     "app_config_unable_to_apply": "Fallou a aplicación dos valores de configuración.",
     "config_cant_set_value_on_section": "Non podes establecer un valor único na sección completa de configuración.",
-    "config_version_not_supported": "A versión do panel de configuración '{version}' non está soportada.",
     "invalid_number_max": "Ten que ser menor de {max}",
     "service_not_reloading_because_conf_broken": "Non se recargou/reiniciou o servizo '{name}' porque a súa configuración está estragada: {errors}",
     "diagnosis_http_special_use_tld": "O dominio {domain} baséase nun dominio de alto-nivel (TLD) especial como .local ou .test e por isto non é de agardar que esté exposto fóra da rede local.",

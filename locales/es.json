@@ -552,7 +552,6 @@
     "config_validate_email": "Debe ser una dirección de correo correcta",
     "config_validate_time": "Debe ser una hora valida en formato HH:MM",
     "config_validate_url": "Debe ser una URL válida",
-    "config_version_not_supported": "Las versiones del panel de configuración '{version}' no están soportadas.",
     "domain_remove_confirm_apps_removal": "La supresión de este dominio también eliminará las siguientes aplicaciones:\n{apps}\n\n¿Seguro? [{answers}]",
     "domain_registrar_is_not_configured": "El registrador aún no ha configurado el dominio {domain}.",
     "diagnosis_apps_not_in_app_catalog": "Esta aplicación se encuentra ausente o ya no figura en el catálogo de aplicaciones de YunoHost. Deberías considerar desinstalarla ya que no recibirá actualizaciones y podría comprometer la integridad y seguridad de tu sistema.",
