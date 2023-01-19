@@ -37,7 +37,7 @@ workflow:
     - when: always
 
 variables:
-  YNH_BUILD_DIR: "$CI_PROJECT_DIR/ynh-build"
+  YNH_BUILD_DIR: "$PWD/ynh-build"
 
 include:
   - template: Code-Quality.gitlab-ci.yml
