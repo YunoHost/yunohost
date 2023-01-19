@@ -8,7 +8,7 @@
     - DEBIAN_FRONTEND=noninteractive apt update
   artifacts:
     paths:
-      - $YNH_BUILD_DIR/*.deb
+      - ./*.deb
 
 .build_script: &build_script
   - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" install devscripts --no-install-recommends
@@ -22,6 +22,7 @@
   - ls -l $YNH_BUILD_DIR
   - ls -l $YNH_BUILD_DIR/$PACKAGE/
   - ls -l $YNH_BUILD_DIR/*.deb
+  - cd $YNH_BUILD_DIR/
 
 ########################################
 # BUILD DEB
