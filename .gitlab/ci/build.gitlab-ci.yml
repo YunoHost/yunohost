@@ -31,7 +31,7 @@ build-yunohost:
     - mkdir -p $YNH_BUILD_DIR/$PACKAGE
     - cat archive.tar.gz | tar -xz -C $YNH_BUILD_DIR/$PACKAGE
     - rm archive.tar.gz
-    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE
     - *build_script
 
 
@@ -42,7 +42,7 @@ build-ssowat:
   script:
     - DEBIAN_DEPENDS=$(cat debian/control | tr "," "\n" | grep -Po "ssowat \([>,=,<]+ .*\)" | grep -Po "[0-9\.]+")
     - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE -b $DEBIAN_DEPENDS $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE --depth 1
-    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE
     - *build_script
 
 build-moulinette:
@@ -52,5 +52,5 @@ build-moulinette:
   script:
     - DEBIAN_DEPENDS=$(cat debian/control | tr "," "\n" | grep -Po "moulinette \([>,=,<]+ .*\)" | grep -Po "[0-9\.]+")
     - git clone $YNH_SOURCE/$PACKAGE -b $CI_COMMIT_REF_NAME $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE -b $DEBIAN_DEPENDS $YNH_BUILD_DIR/$PACKAGE --depth 1 || git clone $YNH_SOURCE/$PACKAGE $YNH_BUILD_DIR/$PACKAGE --depth 1
-    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $(pwd)/$YNH_BUILD_DIR/$PACKAGE
+    - DEBIAN_FRONTEND=noninteractive apt --assume-yes -o Dpkg::Options::="--force-confold" build-dep $YNH_BUILD_DIR/$PACKAGE
     - *build_script
