@@ -122,21 +122,17 @@ def user_list(fields=None):
 
     return {"users": users}
 
-def list_shells():
-    import ctypes
-    import ctypes.util
 
-    """List the shells from /etc/shells."""
-    libc = ctypes.CDLL(ctypes.util.find_library("c"))
-    getusershell = libc.getusershell
-    getusershell.restype = ctypes.c_char_p
-    libc.setusershell()
-    while True:
-        shell = getusershell()
-        if not shell:
-            break
-        yield shell.decode()
-    libc.endusershell()
+def list_shells():
+    with open("/etc/shells", "r") as f:
+        content = f.readlines()
+
+    shells = []
+    for line in content:
+        if line.startswith("/"):
+            shells.append(line.replace("\n",""))
+    return shells
+
 
 
 def shellexists(shell):
