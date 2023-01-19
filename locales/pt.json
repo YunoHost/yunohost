@@ -204,7 +204,6 @@
     "config_cant_set_value_on_section": "Você não pode setar um único valor na seção de configuração inteira.",
     "config_validate_time": "Deve ser um horário válido como HH:MM",
     "config_validate_url": "Deve ser uma URL válida",
-    "config_version_not_supported": "Versões do painel de configuração '{version}' não são suportadas.",
     "danger": "Perigo:",
     "diagnosis_basesystem_ynh_inconsistent_versions": "Você está executando versões inconsistentes dos pacotes YunoHost... provavelmente por causa de uma atualização parcial ou que falhou.",
     "diagnosis_description_basesystem": "Sistema base",

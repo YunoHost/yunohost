@@ -49,7 +49,6 @@
     "config_validate_email": "Benetazko posta elektronikoa izan behar da",
     "config_validate_time": "OO:MM formatua duen ordu bat izan behar da",
     "config_validate_url": "Benetazko URL bat izan behar da",
-    "config_version_not_supported": "Ezinezkoa da konfigurazio-panelaren '{version}' bertsioa erabiltzea.",
     "app_restore_script_failed": "Errorea gertatu da aplikazioa lehengoratzeko aginduan",
     "app_upgrade_some_app_failed": "Ezinezkoa izan da aplikazio batzuk eguneratzea",
     "app_install_failed": "Ezinezkoa izan da {app} instalatzea: {error}",

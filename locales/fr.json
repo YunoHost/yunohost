@@ -590,7 +590,6 @@
     "config_validate_email": "Doit être un email valide",
     "config_validate_time": "Doit être une heure valide comme HH:MM",
     "config_validate_url": "Doit être une URL Web valide",
-    "config_version_not_supported": "Les versions du panneau de configuration '{version}' ne sont pas prises en charge.",
     "danger": "Danger :",
     "invalid_number_min": "Doit être supérieur à {min}",
     "invalid_number_max": "Doit être inférieur à {max}",
