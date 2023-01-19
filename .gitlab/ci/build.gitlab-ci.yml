@@ -22,7 +22,8 @@
   - ls -l $YNH_BUILD_DIR
   - ls -l $YNH_BUILD_DIR/$PACKAGE/
   - ls -l $YNH_BUILD_DIR/*.deb
-  - cd $YNH_BUILD_DIR/
+  - cp ./*.deb ${CI_PROJECT_DIR}/
+  - cd ${CI_PROJECT_DIR}
 
 ########################################
 # BUILD DEB
