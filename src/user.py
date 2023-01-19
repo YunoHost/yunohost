@@ -123,6 +123,18 @@ def user_list(fields=None):
     return {"users": users}
 
 
+def list_shells():
+    with open("/etc/shells", "r") as f:
+        content = f.readlines()
+
+    return [line.strip() for line in content if line.startswith("/")]
+
+
+def shellexists(shell):
+    """Check if the provided shell exists and is executable."""
+    return os.path.isfile(shell) and os.access(shell, os.X_OK)
+
+
 @is_unit_operation([("username", "user")])
 def user_create(
     operation_logger,
@@ -135,6 +147,7 @@ def user_create(
     mailbox_quota="0",
     admin=False,
     from_import=False,
+    loginShell=None,
 ):
 
     if firstname or lastname:
@@ -230,6 +243,12 @@ def user_create(
         uid = str(random.randint(1001, 65000))
         uid_guid_found = uid not in all_uid and uid not in all_gid
 
+    if not loginShell:
+        loginShell = "/bin/bash"
+    else:
+        if not shellexists(loginShell) or loginShell not in list_shells():
+            raise YunohostValidationError("invalid_shell", shell=loginShell)
+
     attr_dict = {
         "objectClass": [
             "mailAccount",
@@ -249,7 +268,7 @@ def user_create(
         "gidNumber": [uid],
         "uidNumber": [uid],
         "homeDirectory": ["/home/" + username],
-        "loginShell": ["/bin/bash"],
+        "loginShell": [loginShell],
     }
 
     try:
@@ -359,6 +378,7 @@ def user_update(
     mailbox_quota=None,
     from_import=False,
     fullname=None,
+    loginShell=None,
 ):
 
     if firstname or lastname:
@@ -519,6 +539,12 @@ def user_update(
         new_attr_dict["mailuserquota"] = [mailbox_quota]
         env_dict["YNH_USER_MAILQUOTA"] = mailbox_quota
 
+    if loginShell is not None:
+        if not shellexists(loginShell) or loginShell not in list_shells():
+            raise YunohostValidationError("invalid_shell", shell=loginShell)
+        new_attr_dict["loginShell"] = [loginShell]
+        env_dict["YNH_USER_LOGINSHELL"] = loginShell
+
     if not from_import:
         operation_logger.start()
 
@@ -526,6 +552,10 @@ def user_update(
         ldap.update(f"uid={username},ou=users", new_attr_dict)
     except Exception as e:
         raise YunohostError("user_update_failed", user=username, error=e)
+
+    # Invalidate passwd and group to update the loginShell
+    subprocess.call(["nscd", "-i", "passwd"])
+    subprocess.call(["nscd", "-i", "group"])
 
     # Trigger post_user_update hooks
     hook_callback("post_user_update", env=env_dict)
@@ -548,7 +578,7 @@ def user_info(username):
 
     ldap = _get_ldap_interface()
 
-    user_attrs = ["cn", "mail", "uid", "maildrop", "mailuserquota"]
+    user_attrs = ["cn", "mail", "uid", "maildrop", "mailuserquota", "loginShell"]
 
     if len(username.split("@")) == 2:
         filter = "mail=" + username
@@ -566,6 +596,7 @@ def user_info(username):
         "username": user["uid"][0],
         "fullname": user["cn"][0],
         "mail": user["mail"][0],
+        "loginShell": user["loginShell"][0],
         "mail-aliases": [],
         "mail-forward": [],
     }
