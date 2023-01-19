@@ -17,6 +17,11 @@
   - VERSION_NIGHTLY="${VERSION}+$(date +%Y%m%d%H%M)"
   - dch --package "${PACKAGE}" --force-bad-version -v "${VERSION_NIGHTLY}" -D "unstable" --force-distribution "Daily build."
   - debuild --no-lintian -us -uc
+  - ls -l
+  - ls -l ../
+  - ls -l $YNH_BUILD_DIR
+  - ls -l $YNH_BUILD_DIR/$PACKAGE/
+  - ls -l $YNH_BUILD_DIR/*.deb
 
 ########################################
 # BUILD DEB
