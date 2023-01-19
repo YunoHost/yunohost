@@ -63,15 +63,15 @@ FIELDS_FOR_IMPORT = {
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
 DepreciatedField = Field(deprecated=True)
-UsernameField = Field(pattern=("pattern_username", r"^[a-z0-9_]+$"), example="username")
+UsernameField = Field(regex=("pattern_username", r"^[a-z0-9_]+$"), example="username")
 FullnameField = Field(
     param_decls=["-F"],
     ask=True,
-    pattern=("pattern_fullname", r"^([^\W\d_]{1,30}[ ,.'-]{0,3})+$"),
+    regex=("pattern_fullname", r"^([^\W\d_]{1,30}[ ,.'-]{0,3})+$"),
     example="Camille Dupont",
 )
 DomainField = Field(
-    pattern=(
+    regex=(
         "pattern_domain",
         r"^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$",
     ),
@@ -81,7 +81,7 @@ PasswordField = Field(
     ask=True,
     confirm=True,
     redac=True,
-    pattern=("pattern_password", r"^.{3,}$"),
+    regex=("pattern_password", r"^.{3,}$"),
     example="secret_password",
 )
 MailboxQuotaField = Field(pattern=("pattern_mailbox_quota", r"^(\d+[bkMGT])|0$"))

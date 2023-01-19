@@ -69,7 +69,7 @@ class Interface(BaseInterface):
             override_params = []
             body_fields = {}
             for param, field in self.build_fields(
-                Interface, params, annotations, doc, positional_params
+                params, annotations, doc, positional_params
             ):
 
                 if field and field.extra.get("file"):
@@ -117,7 +117,7 @@ class Interface(BaseInterface):
                     # FIXME replace dummy error information
                     raise fastapi.exceptions.RequestValidationError(
                         [
-                            pydantic.errors.ErrorWrapper(
+                            pydantic.error_wrappers.ErrorWrapper(
                                 ValueError(e.strerror), ("query", "test")
                             )
                         ]

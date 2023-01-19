@@ -117,7 +117,6 @@ class BaseInterface:
 
     @staticmethod
     def build_fields(
-        cls,
         params: Iterable[inspect.Parameter],
         annotations: dict[str, Any],
         doc: dict[str, str],
@@ -135,7 +134,7 @@ class BaseInterface:
                 if get_origin(field) is PrivateParam:
                     field = None
                 elif isinstance(field, pydantic.fields.FieldInfo):
-                    update_field_from_annotation(
+                    field = update_field_from_annotation(
                         field,
                         param.default,
                         name=param.name,
@@ -175,7 +174,7 @@ def Field(
     deprecated: bool = False,
     description: Optional[str] = None,
     hidden: bool = False,
-    pattern: Optional[Union[str, tuple[str, str]]] = None,
+    regex: Optional[Union[str, tuple[str, str]]] = None,
     ask: Union[str, bool] = False,
     confirm: bool = False,
     redac: bool = False,
@@ -207,9 +206,9 @@ def Field(
     **kwargs: Any,
 ) -> pydantic.fields.FieldInfo:
 
-    pattern_name = None
-    if isinstance(pattern, tuple):
-        pattern_name, pattern = pattern
+    pattern_name = kwargs.get("pattern_name", None)
+    if isinstance(regex, tuple):
+        pattern_name, regex = regex
 
     return pydantic.fields.Field(
         default=... if default is inspect.Parameter.empty else default,
@@ -234,7 +233,7 @@ def Field(
         # min_length=min_length,
         # max_length=max_length,
         # allow_mutation=allow_mutation,
-        regex=pattern,  # type: ignore
+        regex=regex,  # type: ignore
         # discriminator=discriminator,
         # repr=repr,
         # Yunohost custom
@@ -264,6 +263,10 @@ def update_field_from_annotation(
     description: Optional[str] = None,
     positional: bool = False,
 ):
+    #  FIXME proper copyy?
+    copy = {attr: getattr(field, attr) for attr in field.__slots__}
+    field = Field(**copy | copy.pop("extra"))
+
     field.default = ... if default is inspect.Parameter.empty else default
     if name:
         field.extra["name"] = name
@@ -272,3 +275,5 @@ def update_field_from_annotation(
     if positional:
         field.extra["positional"] = positional
         field.extra["ask"] = False
+
+    return field

@@ -102,7 +102,7 @@ class Interface(BaseInterface):
             override_params = []
 
             for param, field in self.build_fields(
-                Interface, params, annotations, doc, positional_params
+                params, annotations, doc, positional_params
             ):
                 forward_params.append(param)
 
