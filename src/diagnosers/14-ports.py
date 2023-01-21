@@ -121,7 +121,7 @@ class MyDiagnoser(Diagnoser):
                         for record in dnsrecords.get("items", [])
                     )
 
-                if failed == 4 and settings_get("misc.network.dns_exposure") != "ipv6" or ipv6_is_important():
+                if (failed == 4 and settings_get("misc.network.dns_exposure") in ["both", "ipv4"]) or (failed == 6 and ipv6_is_important()):
                     yield dict(
                         meta={"port": port},
                         data={
