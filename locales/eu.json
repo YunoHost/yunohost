@@ -735,5 +735,17 @@
     "password_too_long": "Aukeratu 127 karaktere baino laburragoa den pasahitz bat",
     "diagnosis_using_stable_codename_details": "Ostatatzaileak zerbait oker ezarri duenean gertatu ohi da hau. Arriskutsua da, Debianen datorren bertsioa 'estable' (egonkorra) bilakatzen denean, <cmd>apt</cmd>-ek sistemaren pakete guztiak bertsio-berritzen saiatuko da, beharrezko migrazio-prozedurarik burutu gabe. Debianen repositorioan apt iturria editatzen konpontzea da gomendioa, <cmd>stable</cmd> gakoa <cmd>bullseye</cmd> gakoarekin ordezkatuz. Ezarpen-fitxategia <cmd>/etc/apt/sources.list</cmd> izan beharko litzateke, edo <cmd>/etc/apt/sources.list.d/</cmd> direktorioko fitxategiren bat.",
     "group_update_aliases": "'{group}' taldearen aliasak eguneratzen",
-    "group_no_change": "Ez da ezer aldatu behar '{group}' talderako"
+    "group_no_change": "Ez da ezer aldatu behar '{group}' talderako",
+    "app_not_enough_ram": "Aplikazio honek {required} RAM behar ditu instalatu edo bertsio-berritzeko, baina {current} bakarrik daude erabilgarri une honetan.",
+    "domain_cannot_add_muc_upload": "Ezin duzu 'muc.'-ekin hasten den domeinurik gehitu. Mota honetako izenak YunoHosten integratuta dagoen XMPP taldeko txatek erabil ditzaten gordeta daude.",
+    "confirm_app_insufficient_ram": "KONTUZ! Aplikazio honek {required} RAM behar ditu instalatu edo bertsio-berritzeko baina unean {current} bakarrik daude erabilgarri. Aplikazioa ibiliko balitz ere, instalazioak edo bertsio-berritzeak RAM koporu handia eskatzen du eta zure zerbitzaria izoztu eta huts egin lezake. Hala ere arriskatu nahi baduzu idatzi '{answers}'",
+    "confirm_notifications_read": "ADI: ikuskatu aplikazioaren jakinarazpenak jarraitu baino lehen, baliteke jakin beharreko zerbait esatea. [{answers}]",
+    "app_arch_not_supported": "Aplikazio hau {', '.join(required)} arkitekturan instala daiteke bakarrik, baina zure zerbitzariaren arkitektura {current} da",
+    "app_resource_failed": "Huts egin du {app} aplikaziorako baliabideak",
+    "app_not_enough_disk": "Aplikazio honek {required} espazio libre behar ditu.",
+    "app_yunohost_version_not_supported": "Aplikazio honek YunoHost >= {required} behar du baina unean instalatutako bertsioa {current} da",
+    "global_settings_setting_passwordless_sudo": "Baimendu administrariek 'sudo' erabiltzea pasahitzak berriro idatzi beharrik gabe",
+    "global_settings_setting_portal_theme": "Atariko gaia",
+    "global_settings_setting_portal_theme_help": "Atariko gai propioak sortzeari buruzko informazio gehiago: https://yunohost.org/theming",
+    "invalid_shell": "Shell baliogabea: {shell}"
 }
