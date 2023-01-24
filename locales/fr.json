@@ -708,7 +708,7 @@
     "visitors": "Visiteurs",
     "global_settings_reset_success": "Réinitialisation des paramètres généraux",
     "domain_config_acme_eligible": "Éligibilité au protocole ACME (Automatic Certificate Management Environment, littéralement : environnement de gestion automatique de certificat)",
-    "domain_config_acme_eligible_explain": "Ce domaine ne semble pas près pour installer un certificat Let's Encrypt. Veuillez vérifier votre configuration DNS mais aussi que votre serveur est bien joignable en HTTP. Les sections 'Enregistrements DNS' et 'Web' de <a href='#/diagnosis'>la page Diagnostic</a> peuvent vous aider à comprendre ce qui est mal configuré.",
+    "domain_config_acme_eligible_explain": "Ce domaine ne semble pas prêt pour installer un certificat Let's Encrypt. Veuillez vérifier votre configuration DNS mais aussi que votre serveur est bien joignable en HTTP. Les sections 'Enregistrements DNS' et 'Web' de <a href='#/diagnosis'>la page Diagnostic</a> peuvent vous aider à comprendre ce qui est mal configuré.",
     "domain_config_cert_install": "Installer un certificat Let's Encrypt",
     "domain_config_cert_issuer": "Autorité de certification",
     "domain_config_cert_no_checks": "Ignorer les tests et autres vérifications du diagnostic",
