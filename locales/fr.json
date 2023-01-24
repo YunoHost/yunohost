@@ -627,7 +627,7 @@
     "diagnosis_http_special_use_tld": "Le domaine {domain} est basé sur un domaine de premier niveau (TLD) à usage spécial tel que .local ou .test et n'est donc pas censé être exposé en dehors du réseau local.",
     "domain_dns_conf_special_use_tld": "Ce domaine est basé sur un domaine de premier niveau (TLD) à usage spécial tel que .local ou .test et ne devrait donc pas avoir d'enregistrements DNS réels.",
     "other_available_options": "... et {n} autres options disponibles non affichées",
-    "domain_config_auth_consumer_key": "La clé utilisateur",
+    "domain_config_auth_consumer_key": "Clé utilisateur",
     "domain_unknown": "Domaine '{domain}' inconnu",
     "migration_0021_start": "Démarrage de la migration vers Bullseye",
     "migration_0021_patching_sources_list": "Mise à jour du fichier sources.lists...",
