@@ -741,5 +741,12 @@
     "domain_config_acme_eligible": "Elegibilidad ACME",
     "global_settings_setting_ssh_password_authentication": "Autenticación por contraseña",
     "domain_config_cert_issuer": "Autoridad de certificación",
-    "invalid_shell": "Shell inválido: {shell}"
+    "invalid_shell": "Shell inválido: {shell}",
+    "log_settings_reset": "Restablecer ajuste",
+    "migration_description_0026_new_admins_group": "Migrar al nuevo sistema de 'varios administradores'",
+    "visitors": "Visitantes",
+    "global_settings_setting_smtp_relay_host": "Host de retransmisión SMTP",
+    "migration_0024_rebuild_python_venv_disclaimer_rebuild": "Se intentará reconstruir el virtualenv para las siguientes apps (NB: ¡la operación puede llevar algún tiempo!): {rebuild_apps}",
+    "migration_description_0025_global_settings_to_configpanel": "Migración de la nomenclatura de ajustes globales heredada a la nomenclatura nueva y moderna",
+    "registrar_infos": "Información sobre el registrador"
 }
