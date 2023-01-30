@@ -133,7 +133,7 @@ ynh_mysql_dump_db() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    mysqldump --single-transaction --skip-dump-date "$database"
+    mysqldump --single-transaction --skip-dump-date --routines "$database"
 }
 
 # Create a user

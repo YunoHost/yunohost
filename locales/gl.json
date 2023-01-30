@@ -590,7 +590,6 @@
     "log_app_config_set": "Aplicar a configuración á app '{}'",
     "app_config_unable_to_apply": "Fallou a aplicación dos valores de configuración.",
     "config_cant_set_value_on_section": "Non podes establecer un valor único na sección completa de configuración.",
-    "config_version_not_supported": "A versión do panel de configuración '{version}' non está soportada.",
     "invalid_number_max": "Ten que ser menor de {max}",
     "service_not_reloading_because_conf_broken": "Non se recargou/reiniciou o servizo '{name}' porque a súa configuración está estragada: {errors}",
     "diagnosis_http_special_use_tld": "O dominio {domain} baséase nun dominio de alto-nivel (TLD) especial como .local ou .test e por isto non é de agardar que esté exposto fóra da rede local.",
@@ -604,7 +603,6 @@
     "domain_dns_push_record_failed": "Fallou {action} do rexistro {type}/{name}: {error}",
     "domain_dns_push_success": "Rexistros DNS actualizados!",
     "domain_dns_push_failed": "Fallou completamente a actualización dos rexistros DNS.",
-    "domain_config_features_disclaimer": "Ata o momento, activar/desactivar as funcións de email ou XMPP só ten impacto na configuración automática da configuración DNS, non na configuración do sistema!",
     "domain_config_mail_in": "Emails entrantes",
     "domain_config_mail_out": "Emails saíntes",
     "domain_config_xmpp": "Mensaxería instantánea (XMPP)",
@@ -741,5 +739,11 @@
     "domain_cannot_add_muc_upload": "Non podes engadir dominios que comecen por 'muc.'. Este tipo de dominio está reservado para as salas de conversa de XMPP integradas en YunoHost.",
     "global_settings_setting_passwordless_sudo": "Permitir a Admins usar 'sudo' sen ter que volver a escribir o contrasinal",
     "global_settings_setting_portal_theme": "Decorado do Portal",
-    "global_settings_setting_portal_theme_help": "Tes máis info acerca da creación de decorados para o portal de acceso en https://yunohost.org/theming"
+    "global_settings_setting_portal_theme_help": "Tes máis info acerca da creación de decorados para o portal de acceso en https://yunohost.org/theming",
+    "app_arch_not_supported": "Esta app só pode ser instalada e arquitecturas {', '.join(required)} pero a arquitectura do teu servidor é {current}",
+    "app_not_enough_disk": "Esta app precisa {required} de espazo libre.",
+    "app_yunohost_version_not_supported": "Esta app require YunoHost >= {required} pero a versión actual instalada é {current}",
+    "confirm_app_insufficient_ram": "PERIGO! Esta app precisa {required} de RAM para instalar/actualizar pero só hai {current} dispoñibles. Incluso se a app funcionase, o seu proceso de instalación/actualización require gran cantidade de RAM e o teu servidor podería colgarse e fallar. Se queres asumir o risco, escribe '{answers}'",
+    "confirm_notifications_read": "AVISO: Deberías comprobar as notificacións da app antes de continuar, poderías ter información importante que revisar. [{answers}]",
+    "app_not_enough_ram": "Esta app require {required} de RAM para instalar/actualizar pero só hai {current} dispoñible."
 }

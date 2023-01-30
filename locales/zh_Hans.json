@@ -571,7 +571,6 @@
     "config_validate_email": "是有效的电子邮件",
     "config_validate_time": "应该是像 HH:MM 这样的有效时间",
     "config_validate_url": "应该是有效的URL",
-    "config_version_not_supported": "不支持配置面板版本“{ version }”。",
     "danger": "警告：",
     "diagnosis_apps_allgood": "所有已安装的应用程序都遵守基本的打包原则",
     "diagnosis_apps_deprecated_practices": "此应用程序的安装 版本仍然使用一些超旧的弃用打包原则。推荐您升级它。",

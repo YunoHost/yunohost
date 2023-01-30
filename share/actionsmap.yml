@@ -116,6 +116,11 @@ user:
                         pattern: &pattern_mailbox_quota
                             - !!str ^(\d+[bkMGT])|0$
                             - "pattern_mailbox_quota"
+                -s:
+                    full: --loginShell
+                    help: The login shell used
+                    default: "/bin/bash"
+                    
 
         ### user_delete()
         delete:
@@ -195,6 +200,10 @@ user:
                     metavar: "{SIZE|0}"
                     extra:
                         pattern: *pattern_mailbox_quota
+                -s:
+                    full: --loginShell
+                    help: The login shell used
+                    default: "/bin/bash"
 
         ### user_info()
         info:
