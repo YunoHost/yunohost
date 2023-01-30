@@ -310,7 +310,6 @@ def regen_ssowatconf(setting_name, old_value, new_value):
 @post_change_hook("nginx_compatibility")
 @post_change_hook("webadmin_allowlist_enabled")
 @post_change_hook("webadmin_allowlist")
-@post_change_hook("dns_exposure")
 def reconfigure_nginx(setting_name, old_value, new_value):
     if old_value != new_value:
         regen_conf(names=["nginx"])
@@ -342,7 +341,6 @@ def reconfigure_ssh_and_fail2ban(setting_name, old_value, new_value):
 @post_change_hook("smtp_relay_user")
 @post_change_hook("smtp_relay_password")
 @post_change_hook("postfix_compatibility")
-@post_change_hook("dns_exposure")
 def reconfigure_postfix(setting_name, old_value, new_value):
     if old_value != new_value:
         regen_conf(names=["postfix"])
