@@ -77,7 +77,9 @@ class MyDiagnoser(Diagnoser):
 
         ipversions = []
         ipv4 = Diagnoser.get_cached_report("ip", item={"test": "ipv4"}) or {}
-        if ipv4.get("status") == "SUCCESS" and settings_get("misc.network.dns_exposure") in ["both", "ipv4"]:
+        if ipv4.get("status") == "SUCCESS" and settings_get(
+            "misc.network.dns_exposure"
+        ) in ["both", "ipv4"]:
             ipversions.append(4)
 
         # To be discussed: we could also make this check dependent on the
@@ -97,7 +99,10 @@ class MyDiagnoser(Diagnoser):
         # "curl --head the.global.ip" will simply timeout...
         if self.do_hairpinning_test:
             global_ipv4 = ipv4.get("data", {}).get("global", None)
-            if global_ipv4 and settings_get("misc.network.dns_exposure") in ["both", "ipv4"]:
+            if global_ipv4 and settings_get("misc.network.dns_exposure") in [
+                "both",
+                "ipv4",
+            ]:
                 try:
                     requests.head("http://" + global_ipv4, timeout=5)
                 except requests.exceptions.Timeout:
@@ -148,7 +153,10 @@ class MyDiagnoser(Diagnoser):
             if all(
                 results[ipversion][domain]["status"] == "ok" for ipversion in ipversions
             ):
-                if 4 in ipversions and settings_get("misc.network.dns_exposure") in ["both", "ipv4"]:
+                if 4 in ipversions and settings_get("misc.network.dns_exposure") in [
+                    "both",
+                    "ipv4",
+                ]:
                     self.do_hairpinning_test = True
                 yield dict(
                     meta={"domain": domain},
@@ -186,7 +194,9 @@ class MyDiagnoser(Diagnoser):
                     )
                     AAAA_status = dnsrecords.get("data", {}).get("AAAA:@")
 
-                    return AAAA_status in ["OK", "WRONG"] or settings_get("misc.network.dns_exposure") in ["both", "ipv6"]
+                    return AAAA_status in ["OK", "WRONG"] or settings_get(
+                        "misc.network.dns_exposure"
+                    ) in ["both", "ipv6"]
 
                 if failed == 4 or ipv6_is_important_for_this_domain():
                     yield dict(
