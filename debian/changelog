@@ -1,3 +1,12 @@
+yunohost (11.1.3.1) testing; urgency=low
+
+  - nginx: add xmpp-upload. and muc. server_name only if xmpp_enabled is enabled (c444dee4)
+  - [i18n] Translations updated for Arabic, Basque, French, Galician, Spanish, Turkish
+
+  Thanks to all contributors <3 ! (Alperen İsa Nalbant, ButterflyOfFire, cristian amoyao, Éric Gaspar, José M, Kayou, ppr, quiwy, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 30 Jan 2023 15:44:30 +0100
+
 yunohost (11.1.3) testing; urgency=low
 
   - helpers: Include procedures in MySQL database backup ([#1570](https://github.com/yunohost/yunohost/pull/1570))
