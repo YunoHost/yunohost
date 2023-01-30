@@ -31,6 +31,7 @@ from yunohost.diagnosis import Diagnoser
 from yunohost.domain import _get_maindomain, domain_list
 from yunohost.settings import settings_get
 from yunohost.utils.dns import dig
+from yunohost.settings import settings_get
 
 DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/dnsbl_list.yml"
 
@@ -301,13 +302,13 @@ class MyDiagnoser(Diagnoser):
         outgoing_ipversions = []
         outgoing_ips = []
         ipv4 = Diagnoser.get_cached_report("ip", {"test": "ipv4"}) or {}
-        if ipv4.get("status") == "SUCCESS":
+        if ipv4.get("status") == "SUCCESS" and settings_get("misc.network.dns_exposure") in ["both", "ipv4"]:
             outgoing_ipversions.append(4)
             global_ipv4 = ipv4.get("data", {}).get("global", {})
             if global_ipv4:
                 outgoing_ips.append(global_ipv4)
 
-        if settings_get("email.smtp.smtp_allow_ipv6"):
+        if settings_get("email.smtp.smtp_allow_ipv6") or settings_get("misc.network.dns_exposure") in ["both", "ipv6"]:
             ipv6 = Diagnoser.get_cached_report("ip", {"test": "ipv6"}) or {}
             if ipv6.get("status") == "SUCCESS":
                 outgoing_ipversions.append(6)

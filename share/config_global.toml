@@ -160,3 +160,12 @@ name = "Other"
         [misc.backup.backup_compress_tar_archives]
         type = "boolean"
         default = false
+
+    [misc.network]
+    name = "Network"
+        [misc.network.dns_exposure]
+        type = "select"
+        choices.both = "Both"
+        choices.ipv4 = "IPv4 Only"
+        choices.ipv6 = "IPv6 Only"
+        default = "both"
