@@ -5,5 +5,15 @@
     "already_up_to_date": "Yapılacak yeni bir şey yok. Her şey zaten güncel.",
     "app_action_broke_system": "Bu işlem bazı hizmetleri bozmuş olabilir: {services}",
     "good_practices_about_user_password": "Şimdi yeni bir kullanıcı şifresi tanımlamak üzeresiniz. Parola en az 8 karakter uzunluğunda olmalıdır - ancak daha uzun bir parola (yani bir parola) ve/veya çeşitli karakterler (büyük harf, küçük harf, rakamlar ve özel karakterler) daha iyidir.",
-    "aborting": "İptal ediliyor."
+    "aborting": "İptal ediliyor.",
+    "app_action_failed": "{app} uygulaması için {action} eylemini çalıştırma başarısız",
+    "admins": "Yöneticiler",
+    "all_users": "Tüm YunoHost kullanıcıları",
+    "app_already_up_to_date": "{app} zaten güncel",
+    "app_already_installed": "{app} zaten kurulu",
+    "app_already_installed_cant_change_url": "Bu uygulama zaten kurulu. URL yalnızca bu işlev kullanarak değiştirilemez. Eğer varsa `app changeurl`'i kontrol edin.",
+    "additional_urls_already_added": "Ek URL '{url}' zaten '{permission}' izni için ek URL'ye eklendi",
+    "additional_urls_already_removed": "Ek URL '{url}', '{permission}' izni için ek URL'de zaten kaldırıldı",
+    "app_action_cannot_be_ran_because_required_services_down": "Bu eylemi gerçekleştirmek için şu servisler çalışıyor olmalıdır: {services}. Devam etmek için onları yeniden başlatın (ve muhtemelen neden çalışmadığını araştırın).",
+    "app_arch_not_supported": "Bu uygulama yalnızca {', '.join(required)} işlemci mimarisi üzerine kurulabilir ancak sunucunuzun işlemci mimarisi {current}."
 }
