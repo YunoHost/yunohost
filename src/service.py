@@ -712,6 +712,10 @@ def _get_services():
             "category": "web",
         }
 
+    # Ignore metronome entirely if XMPP was disabled on all domains
+    if "metronome" in services and not glob("/etc/metronome/conf.d/*.cfg.lua"):
+        del services["metronome"]
+
     # Remove legacy /var/log/daemon.log and /var/log/syslog from log entries
     # because they are too general. Instead, now the journalctl log is
     # returned by default which is more relevant.
