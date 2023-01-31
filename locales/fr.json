@@ -749,7 +749,7 @@
     "app_yunohost_version_not_supported": "Cette application nécessite une version de YunoHost >= {required}. La version installée est {current}",
     "confirm_notifications_read": "AVERTISSEMENT : Vous devriez vérifier les notifications de l'application susmentionnée avant de continuer, il pourrait y avoir des informations importantes à connaître. [{answers}]",
     "invalid_shell": "Shell invalide : {shell}",
-    "global_settings_setting_dns_exposure": "Versions/Suites d'IP à prendre en compte pour la configuration et le diagnostic du DNS",
+    "global_settings_setting_dns_exposure": "Suites d'IP à prendre en compte pour la configuration et le diagnostic du DNS",
     "global_settings_setting_dns_exposure_help": "NB : Ceci n'affecte que la configuration DNS recommandée et les vérifications de diagnostic. Cela n'affecte pas les configurations du système.",
     "diagnosis_ip_no_ipv6_tip_important": "IPv6 devrait généralement être configuré automatiquement par le système ou par votre fournisseur d'accès à internet (FAI) s'il est disponible. Sinon, vous devrez peut-être configurer quelques éléments manuellement, comme expliqué dans la documentation ici : <a href='https://yunohost.org/#/ipv6'>https://yunohost.org/#/ipv6</a>."
 }
