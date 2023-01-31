@@ -167,7 +167,7 @@ ynh_setup_source() {
             || ynh_die --message="$out"
         # Check the control sum
         echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status \
-            || ynh_die --message="Corrupt source for ${src_filename}: Expected ${src_sum} but got $(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1)."
+            || ynh_die --message="Corrupt source for ${src_filename}: Expected ${src_sum} but got $(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1) (size: $(du -hs ${src_filename} | cut --delimiter=' ' --fields=1))."
     fi
 
     # Keep files to be backup/restored at the end of the helper
