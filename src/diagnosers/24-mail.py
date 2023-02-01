@@ -31,7 +31,6 @@ from yunohost.diagnosis import Diagnoser
 from yunohost.domain import _get_maindomain, domain_list
 from yunohost.settings import settings_get
 from yunohost.utils.dns import dig
-from yunohost.settings import settings_get
 
 DEFAULT_DNS_BLACKLIST = "/usr/share/yunohost/dnsbl_list.yml"
 
