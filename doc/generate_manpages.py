@@ -60,7 +60,6 @@ def main():
 
     # man pages of "yunohost *"
     with open(ACTIONSMAP_FILE, "r") as actionsmap:
-
         # Getting the dictionary containning what actions are possible per domain
         actionsmap = ordered_yaml_load(actionsmap)
 

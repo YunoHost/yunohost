@@ -62,7 +62,6 @@ def tools_versions():
 
 
 def tools_rootpw(new_password, check_strength=True):
-
     from yunohost.user import _hash_user_password
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
@@ -154,7 +153,6 @@ def tools_postinstall(
     ignore_dyndns=False,
     force_diskspace=False,
 ):
-
     from yunohost.dyndns import _dyndns_available
     from yunohost.utils.dns import is_yunohost_dyndns_domain
     from yunohost.utils.password import (
@@ -193,7 +191,6 @@ def tools_postinstall(
 
     # If this is a nohost.me/noho.st, actually check for availability
     if not ignore_dyndns and is_yunohost_dyndns_domain(domain):
-
         available = None
 
         # Check if the domain is available...
@@ -281,7 +278,6 @@ def tools_postinstall(
 def tools_regen_conf(
     names=[], with_diff=False, force=False, dry_run=False, list_pending=False
 ):
-
     # Make sure the settings are migrated before running the migration,
     # which may otherwise fuck things up such as the ssh config ...
     # We do this here because the regen-conf is called before the migration in debian/postinst
@@ -312,7 +308,6 @@ def tools_update(target=None):
 
     upgradable_system_packages = []
     if target in ["system", "all"]:
-
         # Update APT cache
         # LC_ALL=C is here to make sure the results are in english
         command = (
@@ -426,7 +421,6 @@ def tools_upgrade(operation_logger, target=None):
     #
 
     if target == "apps":
-
         # Make sure there's actually something to upgrade
 
         upgradable_apps = [app["id"] for app in app_list(upgradable=True)["apps"]]
@@ -450,7 +444,6 @@ def tools_upgrade(operation_logger, target=None):
     #
 
     if target == "system":
-
         # Check that there's indeed some packages to upgrade
         upgradables = list(_list_upgradable_apt_packages())
         if not upgradables:
@@ -498,7 +491,6 @@ def tools_upgrade(operation_logger, target=None):
             any(p["name"] == "yunohost" for p in upgradables)
             and Moulinette.interface.type == "api"
         ):
-
             # Restart the API after 10 sec (at now doesn't support sub-minute times...)
             # We do this so that the API / webadmin still gets the proper HTTP response
             # It's then up to the webadmin to implement a proper UX process to wait 10 sec and then auto-fresh the webadmin
@@ -722,7 +714,6 @@ def tools_migrations_run(
 
     # Actually run selected migrations
     for migration in targets:
-
         # If we are migrating in "automatic mode" (i.e. from debian configure
         # during an upgrade of the package) but we are asked for running
         # migrations to be ran manually by the user, stop there and ask the
@@ -778,7 +769,6 @@ def tools_migrations_run(
             _write_migration_state(migration.id, "skipped")
             operation_logger.success()
         else:
-
             try:
                 migration.operation_logger = operation_logger
                 logger.info(m18n.n("migrations_running_forward", id=migration.id))
@@ -810,14 +800,12 @@ def tools_migrations_state():
 
 
 def _write_migration_state(migration_id, state):
-
     current_states = tools_migrations_state()
     current_states["migrations"][migration_id] = state
     write_to_yaml(MIGRATIONS_STATE_PATH, current_states)
 
 
 def _get_migrations_list():
-
     # states is a datastructure that represents the last run migration
     # it has this form:
     # {
@@ -868,7 +856,6 @@ def _get_migration_by_name(migration_name):
 
 
 def _load_migration(migration_file):
-
     migration_id = migration_file[: -len(".py")]
 
     logger.debug(m18n.n("migrations_loading_migration", id=migration_id))
@@ -903,7 +890,6 @@ def _skip_all_migrations():
 
 
 def _tools_migrations_run_after_system_restore(backup_version):
-
     all_migrations = _get_migrations_list()
 
     current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
@@ -930,7 +916,6 @@ def _tools_migrations_run_after_system_restore(backup_version):
 
 
 def _tools_migrations_run_before_app_restore(backup_version, app_id):
-
     all_migrations = _get_migrations_list()
 
     current_version = version.parse(ynh_packages_version()["yunohost"]["version"])
@@ -957,7 +942,6 @@ def _tools_migrations_run_before_app_restore(backup_version, app_id):
 
 
 class Migration:
-
     # Those are to be implemented by daughter classes
 
     mode = "auto"
@@ -985,7 +969,6 @@ class Migration:
 
     def ldap_migration(run):
         def func(self):
-
             # Backup LDAP before the migration
             logger.info(m18n.n("migration_ldap_backup_before_migration"))
             try:

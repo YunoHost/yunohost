@@ -28,17 +28,14 @@ from yunohost.permission import user_permission_list, permission_delete
 
 
 def setup_function(function):
-
     clean()
 
 
 def teardown_function(function):
-
     clean()
 
 
 def clean():
-
     # Make sure we have a ssowat
     os.system("mkdir -p /etc/ssowat/")
     app_ssowatconf()
@@ -53,7 +50,6 @@ def clean():
     ]
 
     for test_app in test_apps:
-
         if _is_installed(test_app):
             app_remove(test_app)
 
@@ -95,7 +91,6 @@ def check_permission_for_apps_call():
 
 @pytest.fixture(scope="module")
 def secondary_domain(request):
-
     if "example.test" not in domain_list()["domains"]:
         domain_add("example.test")
 
@@ -113,7 +108,6 @@ def secondary_domain(request):
 
 
 def app_expected_files(domain, app):
-
     yield "/etc/nginx/conf.d/{}.d/{}.conf".format(domain, app)
     if app.startswith("legacy_app"):
         yield "/var/www/%s/index.html" % app
@@ -127,21 +121,18 @@ def app_expected_files(domain, app):
 
 
 def app_is_installed(domain, app):
-
     return _is_installed(app) and all(
         os.path.exists(f) for f in app_expected_files(domain, app)
     )
 
 
 def app_is_not_installed(domain, app):
-
     return not _is_installed(app) and not all(
         os.path.exists(f) for f in app_expected_files(domain, app)
     )
 
 
 def app_is_exposed_on_http(domain, path, message_in_page):
-
     try:
         r = requests.get(
             "https://127.0.0.1" + path + "/",
@@ -155,7 +146,6 @@ def app_is_exposed_on_http(domain, path, message_in_page):
 
 
 def install_legacy_app(domain, path, public=True):
-
     app_install(
         os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
         args="domain={}&path={}&is_public={}".format(domain, path, 1 if public else 0),
@@ -164,7 +154,6 @@ def install_legacy_app(domain, path, public=True):
 
 
 def install_manifestv2_app(domain, path, public=True):
-
     app_install(
         os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"),
         args="domain={}&path={}&init_main_permission={}".format(
@@ -175,7 +164,6 @@ def install_manifestv2_app(domain, path, public=True):
 
 
 def install_full_domain_app(domain):
-
     app_install(
         os.path.join(get_test_apps_dir(), "full_domain_app_ynh"),
         args="domain=%s" % domain,
@@ -184,7 +172,6 @@ def install_full_domain_app(domain):
 
 
 def install_break_yo_system(domain, breakwhat):
-
     app_install(
         os.path.join(get_test_apps_dir(), "break_yo_system_ynh"),
         args="domain={}&breakwhat={}".format(domain, breakwhat),
@@ -193,7 +180,6 @@ def install_break_yo_system(domain, breakwhat):
 
 
 def test_legacy_app_install_main_domain():
-
     main_domain = _get_maindomain()
 
     install_legacy_app(main_domain, "/legacy")
@@ -213,7 +199,6 @@ def test_legacy_app_install_main_domain():
 
 
 def test_legacy_app_manifest_preinstall():
-
     m = app_manifest(os.path.join(get_test_apps_dir(), "legacy_app_ynh"))
     # v1 manifesto are expected to have been autoconverted to v2
 
@@ -231,7 +216,6 @@ def test_legacy_app_manifest_preinstall():
 
 
 def test_manifestv2_app_manifest_preinstall():
-
     m = app_manifest(os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"))
 
     assert "id" in m
@@ -258,7 +242,6 @@ def test_manifestv2_app_manifest_preinstall():
 
 
 def test_manifestv2_app_install_main_domain():
-
     main_domain = _get_maindomain()
 
     install_manifestv2_app(main_domain, "/manifestv2")
@@ -278,7 +261,6 @@ def test_manifestv2_app_install_main_domain():
 
 
 def test_manifestv2_app_info_postinstall():
-
     main_domain = _get_maindomain()
     install_manifestv2_app(main_domain, "/manifestv2")
     m = app_info("manifestv2_app", full=True)["manifest"]
@@ -308,13 +290,11 @@ def test_manifestv2_app_info_postinstall():
 
 
 def test_manifestv2_app_info_preupgrade(monkeypatch):
-
     manifest = app_manifest(os.path.join(get_test_apps_dir(), "manifestv2_app_ynh"))
 
     from yunohost.app_catalog import _load_apps_catalog as original_load_apps_catalog
 
     def custom_load_apps_catalog(*args, **kwargs):
-
         res = original_load_apps_catalog(*args, **kwargs)
         res["apps"]["manifestv2_app"] = {
             "id": "manifestv2_app",
@@ -372,7 +352,6 @@ def test_app_from_catalog():
 
 
 def test_legacy_app_install_secondary_domain(secondary_domain):
-
     install_legacy_app(secondary_domain, "/legacy")
 
     assert app_is_installed(secondary_domain, "legacy_app")
@@ -384,7 +363,6 @@ def test_legacy_app_install_secondary_domain(secondary_domain):
 
 
 def test_legacy_app_install_secondary_domain_on_root(secondary_domain):
-
     install_legacy_app(secondary_domain, "/")
 
     app_map_ = app_map(raw=True)
@@ -402,7 +380,6 @@ def test_legacy_app_install_secondary_domain_on_root(secondary_domain):
 
 
 def test_legacy_app_install_private(secondary_domain):
-
     install_legacy_app(secondary_domain, "/legacy", public=False)
 
     assert app_is_installed(secondary_domain, "legacy_app")
@@ -416,7 +393,6 @@ def test_legacy_app_install_private(secondary_domain):
 
 
 def test_legacy_app_install_unknown_domain(mocker):
-
     with pytest.raises(YunohostError):
         with message(mocker, "app_argument_invalid"):
             install_legacy_app("whatever.nope", "/legacy")
@@ -425,7 +401,6 @@ def test_legacy_app_install_unknown_domain(mocker):
 
 
 def test_legacy_app_install_multiple_instances(secondary_domain):
-
     install_legacy_app(secondary_domain, "/foo")
     install_legacy_app(secondary_domain, "/bar")
 
@@ -447,7 +422,6 @@ def test_legacy_app_install_multiple_instances(secondary_domain):
 
 
 def test_legacy_app_install_path_unavailable(mocker, secondary_domain):
-
     # These will be removed in teardown
     install_legacy_app(secondary_domain, "/legacy")
 
@@ -460,7 +434,6 @@ def test_legacy_app_install_path_unavailable(mocker, secondary_domain):
 
 
 def test_legacy_app_install_with_nginx_down(mocker, secondary_domain):
-
     os.system("systemctl stop nginx")
 
     with raiseYunohostError(
@@ -470,7 +443,6 @@ def test_legacy_app_install_with_nginx_down(mocker, secondary_domain):
 
 
 def test_legacy_app_failed_install(mocker, secondary_domain):
-
     # This will conflict with the folder that the app
     # attempts to create, making the install fail
     mkdir("/var/www/legacy_app/", 0o750)
@@ -483,7 +455,6 @@ def test_legacy_app_failed_install(mocker, secondary_domain):
 
 
 def test_legacy_app_failed_remove(mocker, secondary_domain):
-
     install_legacy_app(secondary_domain, "/legacy")
 
     # The remove script runs with set -eu and attempt to remove this
@@ -503,14 +474,12 @@ def test_legacy_app_failed_remove(mocker, secondary_domain):
 
 
 def test_full_domain_app(secondary_domain):
-
     install_full_domain_app(secondary_domain)
 
     assert app_is_exposed_on_http(secondary_domain, "/", "This is a dummy app")
 
 
 def test_full_domain_app_with_conflicts(mocker, secondary_domain):
-
     install_legacy_app(secondary_domain, "/legacy")
 
     with raiseYunohostError(mocker, "app_full_domain_unavailable"):
@@ -518,7 +487,6 @@ def test_full_domain_app_with_conflicts(mocker, secondary_domain):
 
 
 def test_systemfuckedup_during_app_install(mocker, secondary_domain):
-
     with pytest.raises(YunohostError):
         with message(mocker, "app_install_failed"):
             with message(mocker, "app_action_broke_system"):
@@ -528,7 +496,6 @@ def test_systemfuckedup_during_app_install(mocker, secondary_domain):
 
 
 def test_systemfuckedup_during_app_remove(mocker, secondary_domain):
-
     install_break_yo_system(secondary_domain, breakwhat="remove")
 
     with pytest.raises(YunohostError):
@@ -540,7 +507,6 @@ def test_systemfuckedup_during_app_remove(mocker, secondary_domain):
 
 
 def test_systemfuckedup_during_app_install_and_remove(mocker, secondary_domain):
-
     with pytest.raises(YunohostError):
         with message(mocker, "app_install_failed"):
             with message(mocker, "app_action_broke_system"):
@@ -550,7 +516,6 @@ def test_systemfuckedup_during_app_install_and_remove(mocker, secondary_domain):
 
 
 def test_systemfuckedup_during_app_upgrade(mocker, secondary_domain):
-
     install_break_yo_system(secondary_domain, breakwhat="upgrade")
 
     with pytest.raises(YunohostError):
@@ -562,7 +527,6 @@ def test_systemfuckedup_during_app_upgrade(mocker, secondary_domain):
 
 
 def test_failed_multiple_app_upgrade(mocker, secondary_domain):
-
     install_legacy_app(secondary_domain, "/legacy")
     install_break_yo_system(secondary_domain, breakwhat="upgrade")
 

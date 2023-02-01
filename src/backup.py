@@ -93,7 +93,6 @@ class BackupRestoreTargetsManager:
     """
 
     def __init__(self):
-
         self.targets = {}
         self.results = {"system": {}, "apps": {}}
 
@@ -349,7 +348,6 @@ class BackupManager:
         if not os.path.isdir(self.work_dir):
             mkdir(self.work_dir, 0o750, parents=True)
         elif self.is_tmp_work_dir:
-
             logger.debug(
                 "temporary directory for backup '%s' already exists... attempting to clean it",
                 self.work_dir,
@@ -887,7 +885,6 @@ class RestoreManager:
 
     @property
     def success(self):
-
         successful_apps = self.targets.list("apps", include=["Success", "Warning"])
         successful_system = self.targets.list("system", include=["Success", "Warning"])
 
@@ -1443,7 +1440,6 @@ class RestoreManager:
             existing_groups = user_group_list()["groups"]
 
             for permission_name, permission_infos in permissions.items():
-
                 if "allowed" not in permission_infos:
                     logger.warning(
                         f"'allowed' key corresponding to allowed groups for permission {permission_name} not found when restoring app {app_instance_name} … You might have to reconfigure permissions yourself."
@@ -1547,7 +1543,6 @@ class RestoreManager:
                 self.targets.set_result("apps", app_instance_name, "Success")
                 operation_logger.success()
             else:
-
                 self.targets.set_result("apps", app_instance_name, "Error")
 
                 remove_script = os.path.join(app_scripts_in_archive, "remove")
@@ -1938,12 +1933,10 @@ class CopyBackupMethod(BackupMethod):
 
 
 class TarBackupMethod(BackupMethod):
-
     method_name = "tar"
 
     @property
     def _archive_file(self):
-
         if isinstance(self.manager, BackupManager) and settings_get(
             "misc.backup.backup_compress_tar_archives"
         ):
@@ -2430,7 +2423,6 @@ def backup_list(with_info=False, human_readable=False):
 
 
 def backup_download(name):
-
     if Moulinette.interface.type != "api":
         logger.error(
             "This option is only meant for the API/webadmin and doesn't make sense for the command line."
@@ -2571,7 +2563,6 @@ def backup_info(name, with_details=False, human_readable=False):
         if "size_details" in info.keys():
             for category in ["apps", "system"]:
                 for name, key_info in info[category].items():
-
                     if category == "system":
                         # Stupid legacy fix for weird format between 3.5 and 3.6
                         if isinstance(key_info, dict):

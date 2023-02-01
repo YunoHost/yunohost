@@ -19,7 +19,6 @@ TEST_DOMAINS = ["example.tld", "sub.example.tld", "other-example.com"]
 
 
 def setup_function(function):
-
     # Save domain list in variable to avoid multiple calls to domain_list()
     domains = domain_list()["domains"]
 
@@ -52,7 +51,6 @@ def setup_function(function):
 
 
 def teardown_function(function):
-
     clean()
 
 
@@ -102,7 +100,6 @@ def test_domain_config_get_default():
 
 
 def test_domain_config_get_export():
-
     assert domain_config_get(TEST_DOMAINS[0], export=True)["xmpp"] == 1
     assert domain_config_get(TEST_DOMAINS[1], export=True)["xmpp"] == 0
 

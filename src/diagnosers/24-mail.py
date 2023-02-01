@@ -39,13 +39,11 @@ logger = log.getActionLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: List[str] = ["ip"]
 
     def run(self):
-
         self.ehlo_domain = _get_maindomain()
         self.mail_domains = domain_list()["domains"]
         self.ipversions, self.ips = self.get_ips_checked()

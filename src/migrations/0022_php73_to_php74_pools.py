@@ -27,7 +27,6 @@ MIGRATION_COMMENT = (
 
 
 class MyMigration(Migration):
-
     "Migrate php7.3-fpm 'pool' conf files to php7.4"
 
     dependencies = ["migrate_to_bullseye"]
@@ -43,7 +42,6 @@ class MyMigration(Migration):
         oldphp_pool_files = [f for f in oldphp_pool_files if f != "www.conf"]
 
         for pf in oldphp_pool_files:
-
             # Copy the files to the php7.3 pool
             src = "{}/{}".format(OLDPHP_POOLS, pf)
             dest = "{}/{}".format(NEWPHP_POOLS, pf)

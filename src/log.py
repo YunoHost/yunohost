@@ -95,7 +95,6 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
             logs = logs[: limit * 5]
 
     for log in logs:
-
         base_filename = log[: -len(METADATA_FILE_EXT)]
         md_path = os.path.join(OPERATIONS_PATH, log)
 
@@ -264,7 +263,6 @@ def log_show(
                         return
 
                     for filename in os.listdir(OPERATIONS_PATH):
-
                         if not filename.endswith(METADATA_FILE_EXT):
                             continue
 
@@ -438,7 +436,6 @@ class RedactingFormatter(Formatter):
         return msg
 
     def identify_data_to_redact(self, record):
-
         # Wrapping this in a try/except because we don't want this to
         # break everything in case it fails miserably for some reason :s
         try:
@@ -497,7 +494,6 @@ class OperationLogger:
             os.makedirs(self.path)
 
     def parent_logger(self):
-
         # If there are other operation logger instances
         for instance in reversed(self._instances):
             # Is one of these operation logger started but not yet done ?
@@ -732,7 +728,6 @@ class OperationLogger:
             self.error(m18n.n("log_operation_unit_unclosed_properly"))
 
     def dump_script_log_extract_for_debugging(self):
-
         with open(self.log_path, "r") as f:
             lines = f.readlines()
 
@@ -774,7 +769,6 @@ class OperationLogger:
 
 
 def _get_datetime_from_name(name):
-
     # Filenames are expected to follow the format:
     # 20200831-170740-short_description-and-stuff
 

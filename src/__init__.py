@@ -32,7 +32,6 @@ def is_installed():
 
 
 def cli(debug, quiet, output_as, timeout, args, parser):
-
     init_logging(interface="cli", debug=debug, quiet=quiet)
 
     # Check that YunoHost is installed
@@ -51,7 +50,6 @@ def cli(debug, quiet, output_as, timeout, args, parser):
 
 
 def api(debug, host, port):
-
     init_logging(interface="api", debug=debug)
 
     def is_installed_api():
@@ -71,7 +69,6 @@ def api(debug, host, port):
 
 
 def check_command_is_valid_before_postinstall(args):
-
     allowed_if_not_postinstalled = [
         "tools postinstall",
         "tools versions",
@@ -109,7 +106,6 @@ def init_i18n():
 
 
 def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yunohost"):
-
     logfile = os.path.join(logdir, "yunohost-%s.log" % interface)
 
     if not os.path.isdir(logdir):

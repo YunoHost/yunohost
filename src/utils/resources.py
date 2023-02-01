@@ -37,7 +37,6 @@ logger = getActionLogger("yunohost.app_resources")
 
 class AppResourceManager:
     def __init__(self, app: str, current: Dict, wanted: Dict):
-
         self.app = app
         self.current = current
         self.wanted = wanted
@@ -50,7 +49,6 @@ class AppResourceManager:
     def apply(
         self, rollback_and_raise_exception_if_failure, operation_logger=None, **context
     ):
-
         todos = list(self.compute_todos())
         completed = []
         rollback = False
@@ -121,7 +119,6 @@ class AppResourceManager:
                 logger.error(exception)
 
     def compute_todos(self):
-
         for name, infos in reversed(self.current["resources"].items()):
             if name not in self.wanted["resources"].keys():
                 resource = AppResourceClassesByType[name](infos, self.app, self)
@@ -140,12 +137,10 @@ class AppResourceManager:
 
 
 class AppResource:
-
     type: str = ""
     default_properties: Dict[str, Any] = {}
 
     def __init__(self, properties: Dict[str, Any], app: str, manager=None):
-
         self.app = app
         self.manager = manager
 
@@ -175,7 +170,6 @@ class AppResource:
         app_setting(self.app, key, delete=True)
 
     def _run_script(self, action, script, env={}, user="root"):
-
         from yunohost.app import (
             _make_tmp_workdir_for_app,
             _make_environment_for_app_script,
@@ -295,7 +289,6 @@ class PermissionsResource(AppResource):
     permissions: Dict[str, Dict[str, Any]] = {}
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-
         # FIXME : if url != None, we should check that there's indeed a domain/path defined ? ie that app is a webapp
 
         for perm, infos in properties.items():
@@ -315,7 +308,6 @@ class PermissionsResource(AppResource):
         super().__init__({"permissions": properties}, *args, **kwargs)
 
     def provision_or_update(self, context: Dict = {}):
-
         from yunohost.permission import (
             permission_create,
             permission_url,
@@ -375,7 +367,6 @@ class PermissionsResource(AppResource):
         permission_sync_to_user()
 
     def deprovision(self, context: Dict = {}):
-
         from yunohost.permission import (
             permission_delete,
             user_permission_list,
@@ -432,7 +423,6 @@ class SystemuserAppResource(AppResource):
     allow_sftp: bool = False
 
     def provision_or_update(self, context: Dict = {}):
-
         # FIXME : validate that no yunohost user exists with that name?
         # and/or that no system user exists during install ?
 
@@ -462,7 +452,6 @@ class SystemuserAppResource(AppResource):
         os.system(f"usermod -G {','.join(groups)} {self.app}")
 
     def deprovision(self, context: Dict = {}):
-
         if check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
             os.system(f"deluser {self.app} >/dev/null")
         if check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
@@ -528,7 +517,6 @@ class InstalldirAppResource(AppResource):
     # FIXME: change default dir to /opt/stuff if app ain't a webapp ...
 
     def provision_or_update(self, context: Dict = {}):
-
         assert self.dir.strip()  # Be paranoid about self.dir being empty...
         assert self.owner.strip()
         assert self.group.strip()
@@ -582,7 +570,6 @@ class InstalldirAppResource(AppResource):
         self.delete_setting("final_path")  # Legacy
 
     def deprovision(self, context: Dict = {}):
-
         assert self.dir.strip()  # Be paranoid about self.dir being empty...
         assert self.owner.strip()
         assert self.group.strip()
@@ -643,7 +630,6 @@ class DatadirAppResource(AppResource):
     group: str = ""
 
     def provision_or_update(self, context: Dict = {}):
-
         assert self.dir.strip()  # Be paranoid about self.dir being empty...
         assert self.owner.strip()
         assert self.group.strip()
@@ -686,7 +672,6 @@ class DatadirAppResource(AppResource):
         self.delete_setting("datadir")  # Legacy
 
     def deprovision(self, context: Dict = {}):
-
         assert self.dir.strip()  # Be paranoid about self.dir being empty...
         assert self.owner.strip()
         assert self.group.strip()
@@ -737,7 +722,6 @@ class AptDependenciesAppResource(AppResource):
     extras: Dict[str, Dict[str, str]] = {}
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-
         for key, values in properties.get("extras", {}).items():
             if not all(
                 isinstance(values.get(k), str) for k in ["repo", "key", "packages"]
@@ -749,7 +733,6 @@ class AptDependenciesAppResource(AppResource):
         super().__init__(properties, *args, **kwargs)
 
     def provision_or_update(self, context: Dict = {}):
-
         script = [f"ynh_install_app_dependencies {self.packages}"]
         for repo, values in self.extras.items():
             script += [
@@ -760,7 +743,6 @@ class AptDependenciesAppResource(AppResource):
         self._run_script("provision_or_update", "\n".join(script))
 
     def deprovision(self, context: Dict = {}):
-
         self._run_script("deprovision", "ynh_remove_app_dependencies")
 
 
@@ -818,7 +800,6 @@ class PortsResource(AppResource):
     ports: Dict[str, Dict[str, Any]]
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-
         if "main" not in properties:
             properties["main"] = {}
 
@@ -832,7 +813,6 @@ class PortsResource(AppResource):
         super().__init__({"ports": properties}, *args, **kwargs)
 
     def _port_is_used(self, port):
-
         # FIXME : this could be less brutal than two os.system ...
         cmd1 = (
             "ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ':%s$'"
@@ -843,11 +823,9 @@ class PortsResource(AppResource):
         return os.system(cmd1) == 0 and os.system(cmd2) == 0
 
     def provision_or_update(self, context: Dict = {}):
-
         from yunohost.firewall import firewall_allow, firewall_disallow
 
         for name, infos in self.ports.items():
-
             setting_name = f"port_{name}" if name != "main" else "port"
             port_value = self.get_setting(setting_name)
             if not port_value and name != "main":
@@ -881,7 +859,6 @@ class PortsResource(AppResource):
                 )
 
     def deprovision(self, context: Dict = {}):
-
         from yunohost.firewall import firewall_disallow
 
         for name, infos in self.ports.items():
@@ -938,7 +915,6 @@ class DatabaseAppResource(AppResource):
     }
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-
         if "type" not in properties or properties["type"] not in [
             "mysql",
             "postgresql",
@@ -956,7 +932,6 @@ class DatabaseAppResource(AppResource):
         super().__init__(properties, *args, **kwargs)
 
     def db_exists(self, db_name):
-
         if self.dbtype == "mysql":
             return os.system(f"mysqlshow '{db_name}' >/dev/null 2>/dev/null") == 0
         elif self.dbtype == "postgresql":
@@ -970,7 +945,6 @@ class DatabaseAppResource(AppResource):
             return False
 
     def provision_or_update(self, context: Dict = {}):
-
         # This is equivalent to ynh_sanitize_dbid
         db_name = self.app.replace("-", "_").replace(".", "_")
         db_user = db_name
@@ -997,7 +971,6 @@ class DatabaseAppResource(AppResource):
             self.set_setting("db_pwd", db_pwd)
 
         if not self.db_exists(db_name):
-
             if self.dbtype == "mysql":
                 self._run_script(
                     "provision",
@@ -1010,7 +983,6 @@ class DatabaseAppResource(AppResource):
                 )
 
     def deprovision(self, context: Dict = {}):
-
         db_name = self.app.replace("-", "_").replace(".", "_")
         db_user = db_name
 

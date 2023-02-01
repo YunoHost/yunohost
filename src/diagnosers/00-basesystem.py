@@ -35,13 +35,11 @@ logger = log.getActionLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: List[str] = []
 
     def run(self):
-
         virt = system_virt()
         if virt.lower() == "none":
             virt = "bare-metal"
@@ -193,7 +191,6 @@ class MyDiagnoser(Diagnoser):
             )
 
     def bad_sury_packages(self):
-
         packages_to_check = ["openssl", "libssl1.1", "libssl-dev"]
         for package in packages_to_check:
             cmd = "dpkg --list | grep '^ii' | grep gbp | grep -q -w %s" % package
@@ -209,12 +206,10 @@ class MyDiagnoser(Diagnoser):
             yield (package, version_to_downgrade_to)
 
     def backports_in_sources_list(self):
-
         cmd = "grep -q -nr '^ *deb .*-backports' /etc/apt/sources.list*"
         return os.system(cmd) == 0
 
     def number_of_recent_auth_failure(self):
-
         # Those syslog facilities correspond to auth and authpriv
         # c.f. https://unix.stackexchange.com/a/401398
         # and https://wiki.archlinux.org/title/Systemd/Journal#Facility

@@ -25,13 +25,11 @@ from yunohost.settings import settings_get
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: List[str] = ["ip"]
 
     def run(self):
-
         # TODO: report a warning if port 53 or 5353 is exposed to the outside world...
 
         # This dict is something like :

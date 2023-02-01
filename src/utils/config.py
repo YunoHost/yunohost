@@ -264,7 +264,6 @@ class ConfigPanel:
 
         # In 'classic' mode, we display the current value if key refer to an option
         if self.filter_key.count(".") == 2 and mode == "classic":
-
             option = self.filter_key.split(".")[-1]
             value = self.values.get(option, None)
 
@@ -280,7 +279,6 @@ class ConfigPanel:
         logger.debug(f"Formating result in '{mode}' mode")
         result = {}
         for panel, section, option in self._iterate():
-
             if section["is_action_section"] and mode != "full":
                 continue
 
@@ -323,7 +321,6 @@ class ConfigPanel:
             return result
 
     def list_actions(self):
-
         actions = {}
 
         # FIXME : meh, loading the entire config panel is again going to cause
@@ -462,7 +459,6 @@ class ConfigPanel:
         return read_toml(self.config_path)
 
     def _get_config_panel(self):
-
         # Split filter_key
         filter_key = self.filter_key.split(".") if self.filter_key != "" else []
         if len(filter_key) > 3:
@@ -639,7 +635,6 @@ class ConfigPanel:
         # Hydrating config panel with current value
         for _, section, option in self._iterate():
             if option["id"] not in self.values:
-
                 allowed_empty_types = [
                     "alert",
                     "display_text",
@@ -701,7 +696,6 @@ class ConfigPanel:
                 Moulinette.display(colorize(message, "purple"))
 
         for panel, section, obj in self._iterate(["panel", "section"]):
-
             if (
                 section
                 and section.get("visible")
@@ -814,7 +808,6 @@ class ConfigPanel:
         write_to_yaml(self.save_path, values_to_save)
 
     def _reload_services(self):
-
         from yunohost.service import service_reload_or_restart
 
         services_to_reload = set()
@@ -905,7 +898,6 @@ class Question:
         )
 
     def ask_if_needed(self):
-
         if self.visible and not evaluate_simple_js_expression(
             self.visible, context=self.context
         ):
@@ -980,7 +972,6 @@ class Question:
                 )
 
     def _format_text_for_user_input_in_cli(self):
-
         text_for_user_input_in_cli = _value_for_locale(self.ask)
 
         if self.readonly:
@@ -991,7 +982,6 @@ class Question:
                 )
             return text_for_user_input_in_cli + f" {self.humanize(self.current_value)}"
         elif self.choices:
-
             # Prevent displaying a shitload of choices
             # (e.g. 100+ available users when choosing an app admin...)
             choices = (
@@ -1160,7 +1150,6 @@ class PathQuestion(Question):
 
     @staticmethod
     def normalize(value, option={}):
-
         option = option.__dict__ if isinstance(option, Question) else option
 
         if not value.strip():
@@ -1187,7 +1176,6 @@ class BooleanQuestion(Question):
 
     @staticmethod
     def humanize(value, option={}):
-
         option = option.__dict__ if isinstance(option, Question) else option
 
         yes = option.get("yes", 1)
@@ -1211,7 +1199,6 @@ class BooleanQuestion(Question):
 
     @staticmethod
     def normalize(value, option={}):
-
         option = option.__dict__ if isinstance(option, Question) else option
 
         if isinstance(value, str):
@@ -1368,7 +1355,6 @@ class GroupQuestion(Question):
     def __init__(
         self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
     ):
-
         from yunohost.user import user_group_list
 
         super().__init__(question, context)
@@ -1401,7 +1387,6 @@ class NumberQuestion(Question):
 
     @staticmethod
     def normalize(value, option={}):
-
         if isinstance(value, int):
             return value
 

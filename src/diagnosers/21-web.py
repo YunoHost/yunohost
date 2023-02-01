@@ -32,17 +32,14 @@ DIAGNOSIS_SERVER = "diagnosis.yunohost.org"
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: List[str] = ["ip"]
 
     def run(self):
-
         all_domains = domain_list()["domains"]
         domains_to_check = []
         for domain in all_domains:
-
             # If the diagnosis location ain't defined, can't do diagnosis,
             # probably because nginx conf manually modified...
             nginx_conf = "/etc/nginx/conf.d/%s.conf" % domain
@@ -119,7 +116,6 @@ class MyDiagnoser(Diagnoser):
                     pass
 
     def test_http(self, domains, ipversions):
-
         results = {}
         for ipversion in ipversions:
             try:
@@ -144,7 +140,6 @@ class MyDiagnoser(Diagnoser):
             return
 
         for domain in domains:
-
             # i18n: diagnosis_http_bad_status_code
             # i18n: diagnosis_http_connection_error
             # i18n: diagnosis_http_timeout

@@ -25,13 +25,11 @@ from yunohost.diagnosis import Diagnoser
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
     dependencies: List[str] = []
 
     def run(self):
-
         apps = app_list(full=True)["apps"]
         for app in apps:
             app["issues"] = list(self.issues(app))
@@ -44,7 +42,6 @@ class MyDiagnoser(Diagnoser):
             )
         else:
             for app in apps:
-
                 if not app["issues"]:
                     continue
 
@@ -62,7 +59,6 @@ class MyDiagnoser(Diagnoser):
                 )
 
     def issues(self, app):
-
         # Check quality level in catalog
 
         if not app.get("from_catalog") or app["from_catalog"].get("state") != "working":

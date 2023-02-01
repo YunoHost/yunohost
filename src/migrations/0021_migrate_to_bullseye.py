@@ -72,13 +72,11 @@ def _backup_pip_freeze_for_python_app_venvs():
 
 
 class MyMigration(Migration):
-
     "Upgrade the system to Debian Bullseye and Yunohost 11.x"
 
     mode = "manual"
 
     def run(self):
-
         self.check_assertions()
 
         logger.info(m18n.n("migration_0021_start"))
@@ -389,7 +387,6 @@ class MyMigration(Migration):
         return int(get_ynh_package_version("yunohost")["version"].split(".")[0])
 
     def check_assertions(self):
-
         # Be on buster (10.x) and yunohost 4.x
         # NB : we do both check to cover situations where the upgrade crashed
         # in the middle and debian version could be > 9.x but yunohost package
@@ -453,7 +450,6 @@ class MyMigration(Migration):
 
     @property
     def disclaimer(self):
-
         # Avoid having a super long disclaimer + uncessary check if we ain't
         # on buster / yunohost 4.x anymore
         # NB : we do both check to cover situations where the upgrade crashed
@@ -494,7 +490,6 @@ class MyMigration(Migration):
         return message
 
     def patch_apt_sources_list(self):
-
         sources_list = glob.glob("/etc/apt/sources.list.d/*.list")
         if os.path.exists("/etc/apt/sources.list"):
             sources_list.append("/etc/apt/sources.list")
@@ -516,7 +511,6 @@ class MyMigration(Migration):
             os.system(command)
 
     def get_apps_equivs_packages(self):
-
         command = (
             "dpkg --get-selections"
             " | grep -v deinstall"

@@ -43,13 +43,11 @@ logger = log.getActionLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: List[str] = ["ip"]
 
     def run(self):
-
         main_domain = _get_maindomain()
 
         major_domains = domain_list(exclude_subdomains=True)["domains"]
@@ -77,7 +75,6 @@ class MyDiagnoser(Diagnoser):
             yield report
 
     def check_domain(self, domain, is_main_domain):
-
         if is_special_use_tld(domain):
             yield dict(
                 meta={"domain": domain},
@@ -97,13 +94,11 @@ class MyDiagnoser(Diagnoser):
         categories = ["basic", "mail", "xmpp", "extra"]
 
         for category in categories:
-
             records = expected_configuration[category]
             discrepancies = []
             results = {}
 
             for r in records:
-
                 id_ = r["type"] + ":" + r["name"]
                 fqdn = r["name"] + "." + base_dns_zone if r["name"] != "@" else domain
 
@@ -182,7 +177,6 @@ class MyDiagnoser(Diagnoser):
             yield output
 
     def get_current_record(self, fqdn, type_):
-
         success, answers = dig(fqdn, type_, resolvers="force_external")
 
         if success != "ok":
