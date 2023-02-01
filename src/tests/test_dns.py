@@ -12,12 +12,10 @@ from yunohost.dns import (
 
 
 def setup_function(function):
-
     clean()
 
 
 def teardown_function(function):
-
     clean()
 
 
@@ -76,7 +74,6 @@ def example_domain():
 
 
 def test_domain_dns_suggest(example_domain):
-
     assert _build_dns_conf(example_domain)
 
 

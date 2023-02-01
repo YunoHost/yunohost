@@ -14,7 +14,6 @@ OLD_SETTINGS_PATH = "/etc/yunohost/settings.json"
 
 
 class MyMigration(Migration):
-
     "Migrate old global settings to the new ConfigPanel global settings"
 
     dependencies = ["migrate_to_bullseye"]

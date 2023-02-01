@@ -36,7 +36,6 @@ _ldap_interface = None
 
 
 def _get_ldap_interface():
-
     global _ldap_interface
 
     if _ldap_interface is None:

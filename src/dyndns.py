@@ -227,7 +227,6 @@ def dyndns_update(
 
     for dns_auth in DYNDNS_DNS_AUTH:
         for type_ in ["A", "AAAA"]:
-
             ok, result = dig(dns_auth, type_)
             if ok == "ok" and len(result) and result[0]:
                 auth_resolvers.append(result[0])
@@ -238,7 +237,6 @@ def dyndns_update(
         )
 
     def resolve_domain(domain, rdtype):
-
         ok, result = dig(domain, rdtype, resolvers=auth_resolvers)
         if ok == "ok":
             return result[0] if len(result) else None

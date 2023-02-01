@@ -193,7 +193,6 @@ LEGACY_PHP_VERSION_REPLACEMENTS = [
 
 
 def _patch_legacy_php_versions(app_folder):
-
     files_to_patch = []
     files_to_patch.extend(glob.glob("%s/conf/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
@@ -203,7 +202,6 @@ def _patch_legacy_php_versions(app_folder):
     files_to_patch.append("%s/manifest.toml" % app_folder)
 
     for filename in files_to_patch:
-
         # Ignore non-regular files
         if not os.path.isfile(filename):
             continue
@@ -217,7 +215,6 @@ def _patch_legacy_php_versions(app_folder):
 
 
 def _patch_legacy_php_versions_in_settings(app_folder):
-
     settings = read_yaml(os.path.join(app_folder, "settings.yml"))
 
     if settings.get("fpm_config_dir") in ["/etc/php/7.0/fpm", "/etc/php/7.3/fpm"]:
@@ -243,7 +240,6 @@ def _patch_legacy_php_versions_in_settings(app_folder):
 
 
 def _patch_legacy_helpers(app_folder):
-
     files_to_patch = []
     files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
@@ -291,7 +287,6 @@ def _patch_legacy_helpers(app_folder):
         infos["replace"] = infos.get("replace")
 
     for filename in files_to_patch:
-
         # Ignore non-regular files
         if not os.path.isfile(filename):
             continue
@@ -305,7 +300,6 @@ def _patch_legacy_helpers(app_folder):
         show_warning = False
 
         for helper, infos in stuff_to_replace.items():
-
             # Ignore if not relevant for this file
             if infos.get("only_for") and not any(
                 filename.endswith(f) for f in infos["only_for"]
@@ -329,7 +323,6 @@ def _patch_legacy_helpers(app_folder):
                 )
 
         if replaced_stuff:
-
             # Check the app do load the helper
             # If it doesn't, add the instruction ourselve (making sure it's after the #!/bin/bash if it's there...
             if filename.split("/")[-1] in [

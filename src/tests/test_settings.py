@@ -65,7 +65,6 @@ old_translate = moulinette.core.Translator.translate
 
 
 def _monkeypatch_translator(self, key, *args, **kwargs):
-
     if key.startswith("global_settings_setting_"):
         return f"Dummy translation for {key}"
 
@@ -175,7 +174,6 @@ def test_settings_set_doesexit():
 
 
 def test_settings_set_bad_type_bool():
-
     with patch.object(os, "isatty", return_value=False):
         with pytest.raises(YunohostError):
             settings_set("example.example.boolean", 42)

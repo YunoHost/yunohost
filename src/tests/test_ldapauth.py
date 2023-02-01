@@ -10,7 +10,6 @@ from moulinette.core import MoulinetteError
 
 
 def setup_function(function):
-
     for u in user_list()["users"]:
         user_delete(u, purge=True)
 
@@ -24,7 +23,6 @@ def setup_function(function):
 
 
 def teardown_function():
-
     os.system("systemctl is-active slapd >/dev/null || systemctl start slapd; sleep 5")
 
     for u in user_list()["users"]:
@@ -36,7 +34,6 @@ def test_authenticate():
 
 
 def test_authenticate_with_no_user():
-
     with pytest.raises(MoulinetteError):
         LDAPAuth().authenticate_credentials(credentials="Yunohost")
 
@@ -45,7 +42,6 @@ def test_authenticate_with_no_user():
 
 
 def test_authenticate_with_user_who_is_not_admin():
-
     with pytest.raises(MoulinetteError) as exception:
         LDAPAuth().authenticate_credentials(credentials="bob:test123Ynh")
 
@@ -70,7 +66,6 @@ def test_authenticate_server_down(mocker):
 
 
 def test_authenticate_change_password():
-
     LDAPAuth().authenticate_credentials(credentials="alice:Yunohost")
 
     user_update("alice", change_password="plopette")

@@ -339,7 +339,6 @@ def hook_exec(
         raise YunohostError("file_does_not_exist", path=path)
 
     def is_relevant_warning(msg):
-
         # Ignore empty warning messages...
         if not msg:
             return False
@@ -389,7 +388,6 @@ def hook_exec(
 
 
 def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
-
     from moulinette.utils.process import call_async_output
 
     # Construct command variables
@@ -477,7 +475,6 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
 
 
 def _hook_exec_python(path, args, env, loggers):
-
     dir_ = os.path.dirname(path)
     name = os.path.splitext(os.path.basename(path))[0]
 
@@ -497,7 +494,6 @@ def _hook_exec_python(path, args, env, loggers):
 
 
 def hook_exec_with_script_debug_if_failure(*args, **kwargs):
-
     operation_logger = kwargs.pop("operation_logger")
     error_message_if_failed = kwargs.pop("error_message_if_failed")
     error_message_if_script_failed = kwargs.pop("error_message_if_script_failed")

@@ -19,7 +19,6 @@ REFERENCE_FILE = LOCALE_FOLDER + "en.json"
 
 
 def find_expected_string_keys():
-
     # Try to find :
     #    m18n.n(   "foo"
     #    YunohostError("foo"
@@ -197,7 +196,6 @@ undefined_keys = sorted(undefined_keys)
 
 mode = sys.argv[1].strip("-")
 if mode == "check":
-
     # Unused keys are not too problematic, will be automatically
     # removed by the other autoreformat script,
     # but still informative to display them

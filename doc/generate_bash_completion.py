@@ -31,7 +31,6 @@ def get_dict_actions(OPTION_SUBTREE, category):
 
 
 with open(ACTIONSMAP_FILE, "r") as stream:
-
     # Getting the dictionary containning what actions are possible per category
     OPTION_TREE = yaml.safe_load(stream)
 
@@ -65,7 +64,6 @@ with open(ACTIONSMAP_FILE, "r") as stream:
     os.makedirs(BASH_COMPLETION_FOLDER, exist_ok=True)
 
     with open(BASH_COMPLETION_FILE, "w") as generated_file:
-
         # header of the file
         generated_file.write("#\n")
         generated_file.write("# completion for yunohost\n")

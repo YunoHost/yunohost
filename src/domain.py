@@ -187,7 +187,6 @@ def _assert_domain_exists(domain):
 
 
 def _list_subdomains_of(parent_domain):
-
     _assert_domain_exists(parent_domain)
 
     out = []
@@ -199,7 +198,6 @@ def _list_subdomains_of(parent_domain):
 
 
 def _get_parent_domain_of(domain, return_self=False, topest=False):
-
     domains = _get_domains(exclude_subdomains=topest)
 
     domain_ = domain
@@ -248,7 +246,6 @@ def domain_add(operation_logger, domain, dyndns=False):
 
     # DynDNS domain
     if dyndns:
-
         from yunohost.utils.dns import is_yunohost_dyndns_domain
         from yunohost.dyndns import _guess_current_dyndns_domain
 
@@ -589,7 +586,6 @@ class DomainConfigPanel(ConfigPanel):
             regen_conf(names=stuff_to_regen_conf)
 
     def _get_toml(self):
-
         toml = super()._get_toml()
 
         toml["feature"]["xmpp"]["xmpp"]["default"] = (
@@ -611,7 +607,6 @@ class DomainConfigPanel(ConfigPanel):
 
         # Cert stuff
         if not filter_key or filter_key[0] == "cert":
-
             from yunohost.certificate import certificate_status
 
             status = certificate_status([self.entity], full=True)["certificates"][
@@ -638,7 +633,6 @@ class DomainConfigPanel(ConfigPanel):
         return toml
 
     def _load_current_values(self):
-
         # TODO add mechanism to share some settings with other domains on the same zone
         super()._load_current_values()
 
@@ -656,7 +650,6 @@ class DomainConfigPanel(ConfigPanel):
 
 
 def domain_action_run(domain, action, args=None):
-
     import urllib.parse
 
     if action == "cert.cert.cert_install":
@@ -671,7 +664,6 @@ def domain_action_run(domain, action, args=None):
 
 
 def _get_domain_settings(domain: str) -> dict:
-
     _assert_domain_exists(domain)
 
     if os.path.exists(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"):
@@ -681,7 +673,6 @@ def _get_domain_settings(domain: str) -> dict:
 
 
 def _set_domain_settings(domain: str, settings: dict) -> None:
-
     _assert_domain_exists(domain)
 
     write_to_yaml(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml", settings)

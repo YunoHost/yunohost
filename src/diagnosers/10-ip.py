@@ -34,13 +34,11 @@ logger = log.getActionLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: List[str] = []
 
     def run(self):
-
         # ############################################################ #
         # PING : Check that we can ping outside at least in ipv4 or v6 #
         # ############################################################ #
@@ -155,7 +153,6 @@ class MyDiagnoser(Diagnoser):
         # TODO / FIXME : add some attempt to detect ISP (using whois ?) ?
 
     def can_ping_outside(self, protocol=4):
-
         assert protocol in [
             4,
             6,
@@ -234,7 +231,6 @@ class MyDiagnoser(Diagnoser):
         return len(content) == 1 and content[0].split() == ["nameserver", "127.0.0.1"]
 
     def get_public_ip(self, protocol=4):
-
         # FIXME - TODO : here we assume that DNS resolution for ip.yunohost.org is working
         # but if we want to be able to diagnose DNS resolution issues independently from
         # internet connectivity, we gotta rely on fixed IPs first....

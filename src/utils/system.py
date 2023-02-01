@@ -49,7 +49,6 @@ def free_space_in_directory(dirpath):
 
 
 def space_used_by_directory(dirpath, follow_symlinks=True):
-
     if not follow_symlinks:
         du_output = check_output(["du", "-sb", dirpath], shell=False)
         return int(du_output.split()[0])
@@ -61,7 +60,6 @@ def space_used_by_directory(dirpath, follow_symlinks=True):
 
 
 def human_to_binary(size: str) -> int:
-
     symbols = ("K", "M", "G", "T", "P", "E", "Z", "Y")
     factor = {}
     for i, s in enumerate(symbols):
@@ -99,14 +97,12 @@ def binary_to_human(n: int) -> str:
 
 
 def ram_available():
-
     import psutil
 
     return (psutil.virtual_memory().available, psutil.swap_memory().free)
 
 
 def get_ynh_package_version(package):
-
     # Returns the installed version and release version ('stable' or 'testing'
     # or 'unstable')
 
@@ -152,7 +148,6 @@ def dpkg_lock_available():
 
 
 def _list_upgradable_apt_packages():
-
     # List upgradable packages
     # LC_ALL=C is here to make sure the results are in english
     upgradable_raw = check_output("LC_ALL=C apt list --upgradable")
@@ -162,7 +157,6 @@ def _list_upgradable_apt_packages():
         line.strip() for line in upgradable_raw.split("\n") if line.strip()
     ]
     for line in upgradable_raw:
-
         # Remove stupid warning and verbose messages >.>
         if "apt does not have a stable CLI interface" in line or "Listing..." in line:
             continue
@@ -182,7 +176,6 @@ def _list_upgradable_apt_packages():
 
 
 def _dump_sources_list():
-
     from glob import glob
 
     filenames = glob("/etc/apt/sources.list") + glob("/etc/apt/sources.list.d/*")

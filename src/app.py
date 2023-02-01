@@ -238,7 +238,6 @@ def app_info(app, full=False, upgradable=False):
 
 
 def _app_upgradable(app_infos):
-
     # Determine upgradability
 
     app_in_catalog = app_infos.get("from_catalog")
@@ -374,7 +373,6 @@ def app_map(app=None, raw=False, user=None):
             )
 
             for url in perm_all_urls:
-
                 # Here, we decide to completely ignore regex-type urls ...
                 # Because :
                 # - displaying them in regular "yunohost app map" output creates
@@ -716,7 +714,6 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                 ),
             )
         finally:
-
             # If upgrade failed, try to restore the safety backup
             if (
                 upgrade_failed
@@ -762,7 +759,6 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             # If upgrade failed or broke the system,
             # raise an error and interrupt all other pending upgrades
             if upgrade_failed or broke_the_system:
-
                 # display this if there are remaining apps
                 if apps[number + 1 :]:
                     not_upgraded_apps = apps[number:]
@@ -843,7 +839,6 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
 
 def app_manifest(app, with_screenshot=False):
-
     manifest, extracted_app_folder = _extract_app(app)
 
     raw_questions = manifest.get("install", {}).values()
@@ -886,7 +881,6 @@ def app_manifest(app, with_screenshot=False):
 
 
 def _confirm_app_install(app, force=False):
-
     # Ignore if there's nothing for confirm (good quality app), if --force is used
     # or if request on the API (confirm already implemented on the API side)
     if force or Moulinette.interface.type == "api":
@@ -1036,7 +1030,6 @@ def app_install(
     # If packaging_format v2+, save all install questions as settings
     if packaging_format >= 2:
         for question in questions:
-
             # Except user-provider passwords
             if question.type == "password":
                 continue
@@ -1135,7 +1128,6 @@ def app_install(
 
         # If the install failed or broke the system, we remove it
         if install_failed or broke_the_system:
-
             # This option is meant for packagers to debug their apps more easily
             if no_remove_on_failure:
                 raise YunohostError(
@@ -1390,7 +1382,6 @@ def app_setting(app, key, value=None, delete=False):
     )
 
     if is_legacy_permission_setting:
-
         from yunohost.permission import (
             user_permission_list,
             user_permission_update,
@@ -1433,7 +1424,6 @@ def app_setting(app, key, value=None, delete=False):
 
         # SET
         else:
-
             urls = value
             # If the request is about the root of the app (/), ( = the vast majority of cases)
             # we interpret this as a change for the main permission
@@ -1445,7 +1435,6 @@ def app_setting(app, key, value=None, delete=False):
                 else:
                     user_permission_update(app + ".main", remove="visitors")
             else:
-
                 urls = urls.split(",")
                 if key.endswith("_regex"):
                     urls = ["re:" + url for url in urls]
@@ -1604,7 +1593,6 @@ def app_ssowatconf():
     )
 
     for app in _installed_apps():
-
         app_settings = read_yaml(APPS_SETTING_PATH + app + "/settings.yml") or {}
 
         # Redirected
@@ -1630,7 +1618,6 @@ def app_ssowatconf():
 
     # New permission system
     for perm_name, perm_info in all_permissions.items():
-
         uris = (
             []
             + ([perm_info["url"]] if perm_info["url"] else [])
@@ -1694,13 +1681,11 @@ def app_change_label(app, new_label):
 
 
 def app_action_list(app):
-
     return AppConfigPanel(app).list_actions()
 
 
 @is_unit_operation()
 def app_action_run(operation_logger, app, action, args=None, args_file=None):
-
     return AppConfigPanel(app).run_action(
         action, args=args, args_file=args_file, operation_logger=operation_logger
     )
@@ -2036,12 +2021,10 @@ def _get_manifest_of_app(path):
 
 
 def _parse_app_doc_and_notifications(path):
-
     doc = {}
     notification_names = ["PRE_INSTALL", "POST_INSTALL", "PRE_UPGRADE", "POST_UPGRADE"]
 
     for filepath in glob.glob(os.path.join(path, "doc") + "/*.md"):
-
         # to be improved : [a-z]{2,3} is a clumsy way of parsing the
         # lang code ... some lang code are more complex that this é_è
         m = re.match("([A-Z]*)(_[a-z]{2,3})?.md", filepath.split("/")[-1])
@@ -2091,11 +2074,9 @@ def _parse_app_doc_and_notifications(path):
 
 
 def _hydrate_app_template(template, data):
-
     stuff_to_replace = set(re.findall(r"__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__", template))
 
     for stuff in stuff_to_replace:
-
         varname = stuff.strip("_").lower()
 
         if varname in data:
@@ -2105,7 +2086,6 @@ def _hydrate_app_template(template, data):
 
 
 def _convert_v1_manifest_to_v2(manifest):
-
     manifest = copy.deepcopy(manifest)
 
     if "upstream" not in manifest:
@@ -2186,7 +2166,6 @@ def _convert_v1_manifest_to_v2(manifest):
 
 
 def _set_default_ask_questions(questions, script_name="install"):
-
     # arguments is something like
     # { "domain":
     #       {
@@ -2244,7 +2223,6 @@ def _set_default_ask_questions(questions, script_name="install"):
 
 
 def _is_app_repo_url(string: str) -> bool:
-
     string = string.strip()
 
     # Dummy test for ssh-based stuff ... should probably be improved somehow
@@ -2261,7 +2239,6 @@ def _app_quality(src: str) -> str:
 
     raw_app_catalog = _load_apps_catalog()["apps"]
     if src in raw_app_catalog or _is_app_repo_url(src):
-
         # If we got an app name directly (e.g. just "wordpress"), we gonna test this name
         if src in raw_app_catalog:
             app_name_to_test = src
@@ -2274,7 +2251,6 @@ def _app_quality(src: str) -> str:
             return "thirdparty"
 
         if app_name_to_test in raw_app_catalog:
-
             state = raw_app_catalog[app_name_to_test].get("state", "notworking")
             level = raw_app_catalog[app_name_to_test].get("level", None)
             if state in ["working", "validated"]:
@@ -2385,7 +2361,6 @@ def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
 def _extract_app_from_gitrepo(
     url: str, branch: Optional[str] = None, revision: str = "HEAD", app_info: Dict = {}
 ) -> Tuple[Dict, str]:
-
     logger.debug("Checking default branch")
 
     try:
@@ -2635,7 +2610,6 @@ def _check_manifest_requirements(
 
 
 def _guess_webapp_path_requirement(app_folder: str) -> str:
-
     # If there's only one "domain" and "path", validate that domain/path
     # is an available url and normalize the path.
 
@@ -2681,7 +2655,6 @@ def _guess_webapp_path_requirement(app_folder: str) -> str:
 def _validate_webpath_requirement(
     args: Dict[str, Any], path_requirement: str, ignore_app=None
 ) -> None:
-
     domain = args.get("domain")
     path = args.get("path")
 
@@ -2729,7 +2702,6 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
 
 
 def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False):
-
     conflicts = _get_conflicting_apps(domain, path, ignore_app)
 
     if conflicts:
@@ -2748,7 +2720,6 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
 def _make_environment_for_app_script(
     app, args={}, args_prefix="APP_ARG_", workdir=None, action=None
 ):
-
     app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
     manifest = _get_manifest_of_app(app_setting_path)
@@ -2777,7 +2748,6 @@ def _make_environment_for_app_script(
     if manifest["packaging_format"] >= 2:
         env_dict["app"] = app
         for setting_name, setting_value in _get_app_settings(app).items():
-
             # Ignore special internal settings like checksum__
             # (not a huge deal to load them but idk...)
             if setting_name.startswith("checksum__"):
@@ -2822,7 +2792,6 @@ def _parse_app_instance_name(app_instance_name: str) -> Tuple[str, int]:
 
 
 def _next_instance_number_for_app(app):
-
     # Get list of sibling apps, such as {app}, {app}__2, {app}__4
     apps = _installed_apps()
     sibling_app_ids = [a for a in apps if a == app or a.startswith(f"{app}__")]
@@ -2840,7 +2809,6 @@ def _next_instance_number_for_app(app):
 
 
 def _make_tmp_workdir_for_app(app=None):
-
     # Create parent dir if it doesn't exists yet
     if not os.path.exists(APP_TMP_WORKDIRS):
         os.makedirs(APP_TMP_WORKDIRS)
@@ -2870,12 +2838,10 @@ def _make_tmp_workdir_for_app(app=None):
 
 
 def unstable_apps():
-
     output = []
     deprecated_apps = ["mailman", "ffsync"]
 
     for infos in app_list(full=True)["apps"]:
-
         if (
             not infos.get("from_catalog")
             or infos.get("from_catalog").get("state")
@@ -2891,7 +2857,6 @@ def unstable_apps():
 
 
 def _assert_system_is_sane_for_app(manifest, when):
-
     from yunohost.service import service_status
 
     logger.debug("Checking that required services are up and running...")
@@ -2954,7 +2919,6 @@ def _assert_system_is_sane_for_app(manifest, when):
 
 
 def app_dismiss_notification(app, name):
-
     assert isinstance(name, str)
     name = name.lower()
     assert name in ["post_install", "post_upgrade"]

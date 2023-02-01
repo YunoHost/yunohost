@@ -58,7 +58,6 @@ def assert_password_is_compatible(password):
     """
 
     if len(password) >= 127:
-
         # Note that those imports are made here and can't be put
         # on top (at least not the moulinette ones)
         # because the moulinette needs to be correctly initialized
@@ -69,7 +68,6 @@ def assert_password_is_compatible(password):
 
 
 def assert_password_is_strong_enough(profile, password):
-
     PasswordValidator(profile).validate(password)
 
 
@@ -197,7 +195,6 @@ class PasswordValidator:
         return strength_level
 
     def is_in_most_used_list(self, password):
-
         # Decompress file if compressed
         if os.path.exists("%s.gz" % MOST_USED_PASSWORDS):
             os.system("gzip -fd %s.gz" % MOST_USED_PASSWORDS)

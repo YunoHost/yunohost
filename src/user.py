@@ -53,7 +53,6 @@ ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
 
 def user_list(fields=None):
-
     from yunohost.utils.ldap import _get_ldap_interface
 
     ldap_attrs = {
@@ -149,7 +148,6 @@ def user_create(
     from_import=False,
     loginShell=None,
 ):
-
     if firstname or lastname:
         logger.warning(
             "Options --firstname / --lastname of 'yunohost user create' are deprecated. We recommend using --fullname instead."
@@ -319,7 +317,6 @@ def user_create(
 
 @is_unit_operation([("username", "user")])
 def user_delete(operation_logger, username, purge=False, from_import=False):
-
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
 
@@ -380,7 +377,6 @@ def user_update(
     fullname=None,
     loginShell=None,
 ):
-
     if firstname or lastname:
         logger.warning(
             "Options --firstname / --lastname of 'yunohost user create' are deprecated. We recommend using --fullname instead."
@@ -735,7 +731,6 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         )
 
     for user in reader:
-
         # Validate column values against regexes
         format_errors = [
             f"{key}: '{user[key]}' doesn't match the expected format"
@@ -991,7 +986,6 @@ def user_group_list(short=False, full=False, include_primary_groups=True):
     users = user_list()["users"]
     groups = {}
     for infos in groups_infos:
-
         name = infos["cn"][0]
 
         if not include_primary_groups and name in users:
@@ -1141,7 +1135,6 @@ def user_group_update(
     sync_perm=True,
     from_import=False,
 ):
-
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
 
@@ -1184,7 +1177,6 @@ def user_group_update(
     new_attr_dict = {}
 
     if add:
-
         users_to_add = [add] if not isinstance(add, list) else add
 
         for user in users_to_add:
@@ -1225,7 +1217,6 @@ def user_group_update(
 
     # Check the whole alias situation
     if add_mailalias:
-
         from yunohost.domain import domain_list
 
         domains = domain_list()["domains"]
@@ -1269,7 +1260,6 @@ def user_group_update(
                 raise YunohostValidationError("mail_alias_remove_failed", mail=mail)
 
     if set(new_group_mail) != set(current_group_mail):
-
         logger.info(m18n.n("group_update_aliases", group=groupname))
         new_attr_dict["mail"] = set(new_group_mail)
 
@@ -1477,7 +1467,6 @@ def _hash_user_password(password):
 
 
 def _update_admins_group_aliases(old_main_domain, new_main_domain):
-
     current_admin_aliases = user_group_info("admins")["mail-aliases"]
 
     aliases_to_remove = [
