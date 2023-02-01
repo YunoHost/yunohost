@@ -20,7 +20,7 @@ import os
 import sys
 import shutil
 import subprocess
-import glob
+from glob import glob
 
 from datetime import datetime
 
@@ -734,10 +734,11 @@ def _enable_certificate(domain, new_cert_folder):
     logger.debug("Restarting services...")
 
     for service in ("dovecot", "metronome"):
-        # Ugly trick to not restart metronome if it's not installed
+        # Ugly trick to not restart metronome if it's not installed or no domain configured for XMPP
         if (
             service == "metronome"
-            and os.system("dpkg --list | grep -q 'ii *metronome'") != 0
+            and (os.system("dpkg --list | grep -q 'ii *metronome'") != 0
+                 or not glob("/etc/metronome/conf.d/*.cfg.lua"))
         ):
             continue
         _run_service_command("restart", service)
@@ -853,7 +854,7 @@ def _regen_dnsmasq_if_needed():
     do_regen = False
 
     # For all domain files in DNSmasq conf...
-    domainsconf = glob.glob("/etc/dnsmasq.d/*.*")
+    domainsconf = glob("/etc/dnsmasq.d/*.*")
     for domainconf in domainsconf:
         # Look for the IP, it's in the lines with this format :
         # host-record=the.domain.tld,11.22.33.44
