@@ -140,7 +140,7 @@ class MyDiagnoser(Diagnoser):
             status="SUCCESS"
             if ipv6
             else "ERROR"
-            if is_ipvx_important(6)
+            if settings_get("misc.network.dns_exposure") == "ipv6"
             else "WARNING",
             summary="diagnosis_ip_connected_ipv6" if ipv6 else "diagnosis_ip_no_ipv6",
             details=["diagnosis_ip_global", "diagnosis_ip_local"]
