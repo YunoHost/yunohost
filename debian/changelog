@@ -1,3 +1,15 @@
+yunohost (11.1.5) stable; urgency=low
+
+  - Release as stable !
+
+  - diagnosis: we can't yield an ERROR if there's no IPv6, otherwise that blocks all subsequent network-related diagnoser because of the dependency system ... (ade92e43)
+  - domains: fix domain_config.toml typos in conditions (480f7a43)
+  - certs: Don't try restarting metronome if no domain configured for it (452ba8bb)
+
+  Thanks to all contributors <3 ! (Axolotle)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 01 Feb 2023 20:21:56 +0100
+
 yunohost (11.1.4.1) testing; urgency=low
 
   - debian: don't dump upgradable apps during postinst's catalog update (82d30f02)
