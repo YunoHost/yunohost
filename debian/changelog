@@ -1,3 +1,13 @@
+yunohost (11.1.4.1) testing; urgency=low
+
+  - debian: don't dump upgradable apps during postinst's catalog update (82d30f02)
+  - ynh_setup_source: Output checksums when source is 'corrupt' ([#1578](https://github.com/yunohost/yunohost/pull/1578))
+  - metronome: Auto-enable/disable metronome if there's no/at least one domain configured for XMPP (c990cee6)
+
+  Thanks to all contributors <3 ! (tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 01 Feb 2023 17:10:32 +0100
+
 yunohost (11.1.4) testing; urgency=low
 
   - settings: Add DNS exposure setting given the IP version ([#1451](https://github.com/yunohost/yunohost/pull/1451))
