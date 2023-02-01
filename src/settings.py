@@ -198,7 +198,7 @@ class SettingsConfigPanel(ConfigPanel):
             self.values["passwordless_sudo"] = "!authenticate" in ldap.search(
                 "ou=sudo", "cn=admins", ["sudoOption"]
             )[0].get("sudoOption", [])
-        except:
+        except Exception:
             self.values["passwordless_sudo"] = False
 
     def get(self, key="", mode="classic"):

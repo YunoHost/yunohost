@@ -26,15 +26,16 @@ import requests
 
 
 def main():
-    """ """
+
     with open("../share/actionsmap.yml") as f:
         action_map = yaml.safe_load(f)
 
-    try:
-        with open("/etc/yunohost/current_host", "r") as f:
-            domain = f.readline().rstrip()
-    except IOError:
-        domain = requests.get("http://ip.yunohost.org").text
+    #try:
+    #    with open("/etc/yunohost/current_host", "r") as f:
+    #        domain = f.readline().rstrip()
+    #except IOError:
+    #    domain = requests.get("http://ip.yunohost.org").text
+
     with open("../debian/changelog") as f:
         top_changelog = f.readline()
     api_version = top_changelog[top_changelog.find("(") + 1 : top_changelog.find(")")]
