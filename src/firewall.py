@@ -415,7 +415,6 @@ def firewall_upnp(action="status", no_refresh=False):
                 for protocol in ["TCP", "UDP"]:
                     if protocol + "_TO_CLOSE" in firewall["uPnP"]:
                         for port in firewall["uPnP"][protocol + "_TO_CLOSE"]:
-
                             if not isinstance(port, int):
                                 # FIXME : how should we handle port ranges ?
                                 logger.warning("Can't use UPnP to close '%s'" % port)
@@ -430,7 +429,6 @@ def firewall_upnp(action="status", no_refresh=False):
                         firewall["uPnP"][protocol + "_TO_CLOSE"] = []
 
                     for port in firewall["uPnP"][protocol]:
-
                         if not isinstance(port, int):
                             # FIXME : how should we handle port ranges ?
                             logger.warning("Can't use UPnP to open '%s'" % port)

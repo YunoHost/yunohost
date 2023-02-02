@@ -64,24 +64,24 @@ name = "Certificate"
         [cert.cert.acme_eligible_explain]
         type = "alert"
         style = "warning"
-        visible = "acme_eligible == false || acme_elligible == null"
+        visible = "acme_eligible == false || acme_eligible == null"
 
         [cert.cert.cert_no_checks]
         ask = "Ignore diagnosis checks"
         type = "boolean"
         default = false
-        visible = "acme_eligible == false || acme_elligible == null"
+        visible = "acme_eligible == false || acme_eligible == null"
 
         [cert.cert.cert_install]
         type = "button"
         icon = "star"
         style = "success"
-        visible = "issuer != 'letsencrypt'"
+        visible = "cert_issuer != 'letsencrypt'"
         enabled = "acme_eligible || cert_no_checks"
 
         [cert.cert.cert_renew]
         type = "button"
         icon = "refresh"
         style = "warning"
-        visible = "issuer == 'letsencrypt'"
+        visible = "cert_issuer == 'letsencrypt'"
         enabled = "acme_eligible || cert_no_checks"

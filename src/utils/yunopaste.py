@@ -28,7 +28,6 @@ logger = logging.getLogger("yunohost.utils.yunopaste")
 
 
 def yunopaste(data):
-
     paste_server = "https://paste.yunohost.org"
 
     try:

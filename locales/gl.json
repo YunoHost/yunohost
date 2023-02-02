@@ -590,7 +590,6 @@
     "log_app_config_set": "Aplicar a configuración á app '{}'",
     "app_config_unable_to_apply": "Fallou a aplicación dos valores de configuración.",
     "config_cant_set_value_on_section": "Non podes establecer un valor único na sección completa de configuración.",
-    "config_version_not_supported": "A versión do panel de configuración '{version}' non está soportada.",
     "invalid_number_max": "Ten que ser menor de {max}",
     "service_not_reloading_because_conf_broken": "Non se recargou/reiniciou o servizo '{name}' porque a súa configuración está estragada: {errors}",
     "diagnosis_http_special_use_tld": "O dominio {domain} baséase nun dominio de alto-nivel (TLD) especial como .local ou .test e por isto non é de agardar que esté exposto fóra da rede local.",
@@ -740,5 +739,14 @@
     "domain_cannot_add_muc_upload": "Non podes engadir dominios que comecen por 'muc.'. Este tipo de dominio está reservado para as salas de conversa de XMPP integradas en YunoHost.",
     "global_settings_setting_passwordless_sudo": "Permitir a Admins usar 'sudo' sen ter que volver a escribir o contrasinal",
     "global_settings_setting_portal_theme": "Decorado do Portal",
-    "global_settings_setting_portal_theme_help": "Tes máis info acerca da creación de decorados para o portal de acceso en https://yunohost.org/theming"
+    "global_settings_setting_portal_theme_help": "Tes máis info acerca da creación de decorados para o portal de acceso en https://yunohost.org/theming",
+    "app_arch_not_supported": "Esta app só pode ser instalada e arquitecturas {', '.join(required)} pero a arquitectura do teu servidor é {current}",
+    "app_not_enough_disk": "Esta app precisa {required} de espazo libre.",
+    "app_yunohost_version_not_supported": "Esta app require YunoHost >= {required} pero a versión actual instalada é {current}",
+    "confirm_app_insufficient_ram": "PERIGO! Esta app precisa {required} de RAM para instalar/actualizar pero só hai {current} dispoñibles. Incluso se a app funcionase, o seu proceso de instalación/actualización require gran cantidade de RAM e o teu servidor podería colgarse e fallar. Se queres asumir o risco, escribe '{answers}'",
+    "confirm_notifications_read": "AVISO: Deberías comprobar as notificacións da app antes de continuar, poderías ter información importante que revisar. [{answers}]",
+    "app_not_enough_ram": "Esta app require {required} de RAM para instalar/actualizar pero só hai {current} dispoñible.",
+    "global_settings_setting_dns_exposure": "Versións de IP a ter en conta para a configuración DNS e diagnóstico",
+    "global_settings_setting_dns_exposure_help": "Nota: Esto só lle afecta á configuración DNS recomendada e diagnóstico do sistema. Non lle afecta aos axustes do sistema.",
+    "diagnosis_ip_no_ipv6_tip_important": "Se está dispoñible, IPv6 debería estar automáticamente configurado polo sistema ou o teu provedor. Se non, pode que teñas que facer algúns axustes manualmente tal como se explica na documentación: <a href='https://yunohost.org/#/ipv6'>https://yunohost.org/#/ipv6</a>."
 }

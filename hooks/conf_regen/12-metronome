@@ -74,8 +74,22 @@ do_post_regen() {
     chown -R metronome: /var/lib/metronome/
     chown -R metronome: /etc/metronome/conf.d/
 
-    [[ -z "$regen_conf_files" ]] \
-        || systemctl restart metronome
+    if [[ -z "$(ls /etc/metronome/conf.d/*.cfg.lua 2>/dev/null)" ]]
+    then
+        if systemctl is-enabled metronome &>/dev/null
+        then
+            systemctl disable metronome --now 2>/dev/null
+        fi
+    else
+        if ! systemctl is-enabled metronome &>/dev/null
+        then
+            systemctl enable metronome --now 2>/dev/null
+            sleep 3
+        fi
+
+        [[ -z "$regen_conf_files" ]] \
+            || systemctl restart metronome
+    fi
 }
 
 do_$1_regen ${@:2}

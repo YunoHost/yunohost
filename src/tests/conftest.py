@@ -51,7 +51,6 @@ old_translate = moulinette.core.Translator.translate
 
 
 def new_translate(self, key, *args, **kwargs):
-
     if key not in self._translations[self.default_locale].keys():
         raise KeyError("Unable to retrieve key %s for default locale !" % key)
 
@@ -67,7 +66,6 @@ moulinette.core.Translator.translate = new_translate
 
 
 def pytest_cmdline_main(config):
-
     import sys
 
     sys.path.insert(0, "/usr/lib/moulinette/")
@@ -76,7 +74,6 @@ def pytest_cmdline_main(config):
     yunohost.init(debug=config.option.yunodebug)
 
     class DummyInterface:
-
         type = "cli"
 
         def prompt(self, *args, **kwargs):

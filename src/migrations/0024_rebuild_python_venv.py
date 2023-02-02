@@ -14,7 +14,6 @@ VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bullseye_upgrade.txt"
 
 
 def extract_app_from_venv_path(venv_path):
-
     venv_path = venv_path.replace("/var/www/", "")
     venv_path = venv_path.replace("/opt/yunohost/", "")
     venv_path = venv_path.replace("/opt/", "")
@@ -137,13 +136,11 @@ class MyMigration(Migration):
         return msg
 
     def run(self):
-
         if self.mode == "auto":
             return
 
         venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
         for venv in venvs:
-
             app_corresponding_to_venv = extract_app_from_venv_path(venv)
 
             # Search for ignore apps

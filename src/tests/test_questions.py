@@ -49,7 +49,6 @@ def test_question_empty():
 
 
 def test_question_string():
-
     questions = {
         "some_string": {
             "type": "string",
@@ -65,7 +64,6 @@ def test_question_string():
 
 
 def test_question_string_from_query_string():
-
     questions = {
         "some_string": {
             "type": "string",
@@ -1539,7 +1537,6 @@ def test_question_user_two_users_default_input():
         os, "isatty", return_value=True
     ):
         with patch.object(user, "user_info", return_value={}):
-
             with patch.object(Moulinette, "prompt", return_value=username):
                 out = ask_questions_and_parse_answers(questions, answers)[0]
 
@@ -1843,7 +1840,6 @@ def test_question_display_text():
 
 
 def test_question_file_from_cli():
-
     FileQuestion.clean_upload_dirs()
 
     filename = "/tmp/ynh_test_question_file"
@@ -1874,7 +1870,6 @@ def test_question_file_from_cli():
 
 
 def test_question_file_from_api():
-
     FileQuestion.clean_upload_dirs()
 
     from base64 import b64encode
@@ -1907,7 +1902,6 @@ def test_question_file_from_api():
 
 
 def test_normalize_boolean_nominal():
-
     assert BooleanQuestion.normalize("yes") == 1
     assert BooleanQuestion.normalize("Yes") == 1
     assert BooleanQuestion.normalize(" yes  ") == 1
@@ -1937,7 +1931,6 @@ def test_normalize_boolean_nominal():
 
 
 def test_normalize_boolean_humanize():
-
     assert BooleanQuestion.humanize("yes") == "yes"
     assert BooleanQuestion.humanize("true") == "yes"
     assert BooleanQuestion.humanize("on") == "yes"
@@ -1948,7 +1941,6 @@ def test_normalize_boolean_humanize():
 
 
 def test_normalize_boolean_invalid():
-
     with pytest.raises(YunohostValidationError):
         BooleanQuestion.normalize("yesno")
     with pytest.raises(YunohostValidationError):
@@ -1958,7 +1950,6 @@ def test_normalize_boolean_invalid():
 
 
 def test_normalize_boolean_special_yesno():
-
     customyesno = {"yes": "enabled", "no": "disabled"}
 
     assert BooleanQuestion.normalize("yes", customyesno) == "enabled"
@@ -1977,14 +1968,12 @@ def test_normalize_boolean_special_yesno():
 
 
 def test_normalize_domain():
-
     assert DomainQuestion.normalize("https://yolo.swag/") == "yolo.swag"
     assert DomainQuestion.normalize("http://yolo.swag") == "yolo.swag"
     assert DomainQuestion.normalize("yolo.swag/") == "yolo.swag"
 
 
 def test_normalize_path():
-
     assert PathQuestion.normalize("") == "/"
     assert PathQuestion.normalize("") == "/"
     assert PathQuestion.normalize("macnuggets") == "/macnuggets"

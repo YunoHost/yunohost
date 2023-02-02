@@ -354,7 +354,6 @@ def check_permission_for_apps():
 
 
 def can_access_webpage(webpath, logged_as=None):
-
     webpath = webpath.rstrip("/")
     sso_url = "https://" + maindomain + "/yunohost/sso/"
 
@@ -1094,7 +1093,6 @@ def test_permission_protection_management_by_helper():
 
 @pytest.mark.other_domains(number=1)
 def test_permission_app_propagation_on_ssowat():
-
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
@@ -1131,7 +1129,6 @@ def test_permission_app_propagation_on_ssowat():
 
 @pytest.mark.other_domains(number=1)
 def test_permission_legacy_app_propagation_on_ssowat():
-
     app_install(
         os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=1"

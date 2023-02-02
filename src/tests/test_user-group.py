@@ -92,7 +92,6 @@ def test_list_groups():
 
 
 def test_create_user(mocker):
-
     with message(mocker, "user_created"):
         user_create("albert", maindomain, "test123Ynh", fullname="Albert Good")
 
@@ -104,7 +103,6 @@ def test_create_user(mocker):
 
 
 def test_del_user(mocker):
-
     with message(mocker, "user_deleted"):
         user_delete("alice")
 
@@ -185,7 +183,6 @@ def test_export_user(mocker):
 
 
 def test_create_group(mocker):
-
     with message(mocker, "group_created", group="adminsys"):
         user_group_create("adminsys")
 
@@ -196,7 +193,6 @@ def test_create_group(mocker):
 
 
 def test_del_group(mocker):
-
     with message(mocker, "group_deleted", group="dev"):
         user_group_delete("dev")
 

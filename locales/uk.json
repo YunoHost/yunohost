@@ -587,7 +587,6 @@
     "config_validate_email": "Е-пошта має бути дійсною",
     "config_validate_time": "Час має бути дійсним, наприклад ГГ:ХХ",
     "config_validate_url": "Вебадреса має бути дійсною",
-    "config_version_not_supported": "Версії конфігураційної панелі '{version}' не підтримуються.",
     "danger": "Небезпека:",
     "invalid_number_min": "Має бути більшим за {min}",
     "invalid_number_max": "Має бути меншим за {max}",

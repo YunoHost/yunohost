@@ -53,7 +53,6 @@ ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
 
 def user_list(fields=None):
-
     from yunohost.utils.ldap import _get_ldap_interface
 
     ldap_attrs = {
@@ -123,6 +122,18 @@ def user_list(fields=None):
     return {"users": users}
 
 
+def list_shells():
+    with open("/etc/shells", "r") as f:
+        content = f.readlines()
+
+    return [line.strip() for line in content if line.startswith("/")]
+
+
+def shellexists(shell):
+    """Check if the provided shell exists and is executable."""
+    return os.path.isfile(shell) and os.access(shell, os.X_OK)
+
+
 @is_unit_operation([("username", "user")])
 def user_create(
     operation_logger,
@@ -135,8 +146,8 @@ def user_create(
     mailbox_quota="0",
     admin=False,
     from_import=False,
+    loginShell=None,
 ):
-
     if firstname or lastname:
         logger.warning(
             "Options --firstname / --lastname of 'yunohost user create' are deprecated. We recommend using --fullname instead."
@@ -230,6 +241,12 @@ def user_create(
         uid = str(random.randint(1001, 65000))
         uid_guid_found = uid not in all_uid and uid not in all_gid
 
+    if not loginShell:
+        loginShell = "/bin/bash"
+    else:
+        if not shellexists(loginShell) or loginShell not in list_shells():
+            raise YunohostValidationError("invalid_shell", shell=loginShell)
+
     attr_dict = {
         "objectClass": [
             "mailAccount",
@@ -249,7 +266,7 @@ def user_create(
         "gidNumber": [uid],
         "uidNumber": [uid],
         "homeDirectory": ["/home/" + username],
-        "loginShell": ["/bin/bash"],
+        "loginShell": [loginShell],
     }
 
     try:
@@ -300,7 +317,6 @@ def user_create(
 
 @is_unit_operation([("username", "user")])
 def user_delete(operation_logger, username, purge=False, from_import=False):
-
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
 
@@ -359,8 +375,8 @@ def user_update(
     mailbox_quota=None,
     from_import=False,
     fullname=None,
+    loginShell=None,
 ):
-
     if firstname or lastname:
         logger.warning(
             "Options --firstname / --lastname of 'yunohost user create' are deprecated. We recommend using --fullname instead."
@@ -519,6 +535,12 @@ def user_update(
         new_attr_dict["mailuserquota"] = [mailbox_quota]
         env_dict["YNH_USER_MAILQUOTA"] = mailbox_quota
 
+    if loginShell is not None:
+        if not shellexists(loginShell) or loginShell not in list_shells():
+            raise YunohostValidationError("invalid_shell", shell=loginShell)
+        new_attr_dict["loginShell"] = [loginShell]
+        env_dict["YNH_USER_LOGINSHELL"] = loginShell
+
     if not from_import:
         operation_logger.start()
 
@@ -526,6 +548,10 @@ def user_update(
         ldap.update(f"uid={username},ou=users", new_attr_dict)
     except Exception as e:
         raise YunohostError("user_update_failed", user=username, error=e)
+
+    # Invalidate passwd and group to update the loginShell
+    subprocess.call(["nscd", "-i", "passwd"])
+    subprocess.call(["nscd", "-i", "group"])
 
     # Trigger post_user_update hooks
     hook_callback("post_user_update", env=env_dict)
@@ -548,7 +574,7 @@ def user_info(username):
 
     ldap = _get_ldap_interface()
 
-    user_attrs = ["cn", "mail", "uid", "maildrop", "mailuserquota"]
+    user_attrs = ["cn", "mail", "uid", "maildrop", "mailuserquota", "loginShell"]
 
     if len(username.split("@")) == 2:
         filter = "mail=" + username
@@ -566,6 +592,7 @@ def user_info(username):
         "username": user["uid"][0],
         "fullname": user["cn"][0],
         "mail": user["mail"][0],
+        "loginShell": user["loginShell"][0],
         "mail-aliases": [],
         "mail-forward": [],
     }
@@ -704,7 +731,6 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
         )
 
     for user in reader:
-
         # Validate column values against regexes
         format_errors = [
             f"{key}: '{user[key]}' doesn't match the expected format"
@@ -960,7 +986,6 @@ def user_group_list(short=False, full=False, include_primary_groups=True):
     users = user_list()["users"]
     groups = {}
     for infos in groups_infos:
-
         name = infos["cn"][0]
 
         if not include_primary_groups and name in users:
@@ -1110,7 +1135,6 @@ def user_group_update(
     sync_perm=True,
     from_import=False,
 ):
-
     from yunohost.permission import permission_sync_to_user
     from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract
 
@@ -1153,7 +1177,6 @@ def user_group_update(
     new_attr_dict = {}
 
     if add:
-
         users_to_add = [add] if not isinstance(add, list) else add
 
         for user in users_to_add:
@@ -1194,7 +1217,6 @@ def user_group_update(
 
     # Check the whole alias situation
     if add_mailalias:
-
         from yunohost.domain import domain_list
 
         domains = domain_list()["domains"]
@@ -1238,7 +1260,6 @@ def user_group_update(
                 raise YunohostValidationError("mail_alias_remove_failed", mail=mail)
 
     if set(new_group_mail) != set(current_group_mail):
-
         logger.info(m18n.n("group_update_aliases", group=groupname))
         new_attr_dict["mail"] = set(new_group_mail)
 
@@ -1446,7 +1467,6 @@ def _hash_user_password(password):
 
 
 def _update_admins_group_aliases(old_main_domain, new_main_domain):
-
     current_admin_aliases = user_group_info("admins")["mail-aliases"]
 
     aliases_to_remove = [
