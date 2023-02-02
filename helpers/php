@@ -156,7 +156,7 @@ ynh_add_fpm_config() {
 user = __APP__
 group = __APP__
 
-chdir = __FINALPATH__
+chdir = __INSTALL_DIR__
 
 listen = /var/run/php/php__PHPVERSION__-fpm-__APP__.sock
 listen.owner = www-data
