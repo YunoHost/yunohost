@@ -1,3 +1,18 @@
+yunohost (11.1.5.1) stable; urgency=low
+
+  - debian: Bump moulinette/ssowat requirement to 11.1 (0826a541)
+  - helpers: Fixes $app unbound when running ynh_secure_remove ([#1582](https://github.com/yunohost/yunohost/pull/1582))
+  - log/appv2: don't dump all settings in log metadata (a9ac55e4)
+  - appv2: resource upgrade will tweak settings, we have to re-update the env_dict after upgrading resources (3110460a)
+  - appv2: safety-backup-before-upgrade should only contain the app (1c95bcff)
+  - appv2: fix env not including vars for v1->v2 upgrade (2b2d49a5)
+  - backup: add name of the backup in create/delete message, otherwise that creates some spooky messages with 'Backup created' directly followed by 'Backup deleted' during safety-backup-before-upgrade in v2 apps (8090acb1)
+  - [i18n] Translations updated for Arabic, French, Galician, Polish
+
+  Thanks to all contributors <3 ! (ButterflyOfFire, Éric Gaspar, Eryk Michalak, Florent, José M, ppr)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 02 Feb 2023 23:37:46 +0100
+
 yunohost (11.1.5) stable; urgency=low
 
   - Release as stable !
