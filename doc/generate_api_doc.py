@@ -22,7 +22,6 @@ import os
 import sys
 import yaml
 import json
-import requests
 
 
 def main():
