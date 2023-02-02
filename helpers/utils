@@ -718,7 +718,7 @@ _acceptable_path_to_delete() {
     local forbidden_paths=$(ls -d / /* /{var,home,usr}/* /etc/{default,sudoers.d,yunohost,cron*})
 
     # Legacy : A couple apps still have data in /home/$app ...
-    if [[ -n "$app" ]]
+    if [[ -n "${app:-}" ]]
     then
         forbidden_paths=$(echo "$forbidden_paths" | grep -v "/home/$app")
     fi
