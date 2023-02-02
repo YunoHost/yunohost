@@ -1,3 +1,10 @@
+yunohost (11.1.5.2) testing; urgency=low
+
+  - maintenance: new year, update copyright header (ba4f1925)
+  - helpers: fix remaining __FINALPATH__ in php template (note that this is backward compatible because ynh_add_config will replace __INSTALL_DIR__ by $finalpath if $finalpath exists... (9b7668da)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 02 Feb 2023 23:58:29 +0100
+
 yunohost (11.1.5.1) stable; urgency=low
 
   - debian: Bump moulinette/ssowat requirement to 11.1 (0826a541)
