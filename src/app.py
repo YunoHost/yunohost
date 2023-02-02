@@ -677,11 +677,17 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         env_dict = _make_environment_for_app_script(
             app_instance_name, workdir=extracted_app_folder, action="upgrade"
         )
-        env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
-        env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
-        env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
+
+        env_dict_more = {
+            "YNH_APP_UPGRADE_TYPE": upgrade_type,
+            "YNH_APP_MANIFEST_VERSION": str(app_new_version),
+            "YNH_APP_CURRENT_VERSION": str(app_current_version),
+        }
+
         if manifest["packaging_format"] < 2:
-            env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
+            env_dict_more["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
+
+        env_dict.update(env_dict_more)
 
         # Start register change on system
         related_to = [("app", app_instance_name)]
@@ -697,6 +703,13 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
             )
+
+            # Boring stuff : the resource upgrade may have added/remove/updated setting
+            # so we need to reflect this in the env_dict used to call the actual upgrade script x_x
+            env_dict = _make_environment_for_app_script(
+                app_instance_name, workdir=extracted_app_folder, action="upgrade"
+            )
+            env_dict.update(env_dict_more)
 
         # Execute the app upgrade script
         upgrade_failed = True
