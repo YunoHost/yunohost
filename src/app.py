@@ -647,7 +647,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     safety_backup_name = f"{app_instance_name}-pre-upgrade2"
                     other_safety_backup_name = f"{app_instance_name}-pre-upgrade1"
 
-                backup_create(name=safety_backup_name, apps=[app_instance_name])
+                backup_create(name=safety_backup_name, apps=[app_instance_name], system=None)
 
                 if safety_backup_name in backup_list()["archives"]:
                     # if the backup suceeded, delete old safety backup to save space
