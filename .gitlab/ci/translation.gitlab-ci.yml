@@ -26,7 +26,7 @@ autofix-translated-strings:
     - git checkout -b "ci-autofix-translated-strings-${CI_COMMIT_REF_NAME}" --no-track
     - python3 maintenance/missing_i18n_keys.py --fix
     - python3 maintenance/autofix_locale_format.py
-    - '[ $(git diff | wc -l) != 0 ] || exit 0'  # stop if there is nothing to commit
+    - '[ $(git diff --ignore-blank-lines --ignore-all-space --ignore-space-at-eol --ignore-cr-at-eol | wc -l) != 0 ] || exit 0'  # stop if there is nothing to commit
     - git commit -am "[CI] Reformat / remove stale translated strings" || true
     - git push -f origin "ci-autofix-translated-strings-${CI_COMMIT_REF_NAME}":"ci-remove-stale-translated-strings-${CI_COMMIT_REF_NAME}"
     - hub pull-request -m "[CI] Reformat / remove stale translated strings" -b Yunohost:$CI_COMMIT_REF_NAME -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
