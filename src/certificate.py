@@ -735,10 +735,9 @@ def _enable_certificate(domain, new_cert_folder):
 
     for service in ("dovecot", "metronome"):
         # Ugly trick to not restart metronome if it's not installed or no domain configured for XMPP
-        if (
-            service == "metronome"
-            and (os.system("dpkg --list | grep -q 'ii *metronome'") != 0
-                 or not glob("/etc/metronome/conf.d/*.cfg.lua"))
+        if service == "metronome" and (
+            os.system("dpkg --list | grep -q 'ii *metronome'") != 0
+            or not glob("/etc/metronome/conf.d/*.cfg.lua")
         ):
             continue
         _run_service_command("restart", service)
