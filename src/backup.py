@@ -2295,7 +2295,7 @@ def backup_create(
     )
     backup_manager.backup()
 
-    logger.success(m18n.n("backup_created"))
+    logger.success(m18n.n("backup_created", name=name))
     operation_logger.success()
 
     return {
@@ -2622,7 +2622,7 @@ def backup_delete(name):
 
     hook_callback("post_backup_delete", args=[name])
 
-    logger.success(m18n.n("backup_deleted"))
+    logger.success(m18n.n("backup_deleted", name=name))
 
 
 #
