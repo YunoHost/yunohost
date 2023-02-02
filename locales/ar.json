@@ -209,5 +209,10 @@
     "unbackup_app": "لن يتم حفظ التطبيق '{app}'",
     "unrestore_app": "لن يتم استعادة التطبيق '{app}'",
     "yunohost_already_installed": "إنّ YunoHost مُنصّب مِن قَبل",
-    "hook_name_unknown": "إسم الإجراء '{name}' غير معروف"
+    "hook_name_unknown": "إسم الإجراء '{name}' غير معروف",
+    "app_manifest_install_ask_admin": "اختر مستخدمًا إداريًا لهذا التطبيق",
+    "domain_config_cert_summary_abouttoexpire": "مدة صلاحية الشهادة الحالية على وشك الإنتهاء ومِن المفتَرض أن يتم تجديدها تلقائيا قريبا.",
+    "app_manifest_install_ask_path": "اختر مسار URL (بعد النطاق) حيث ينبغي تنصيب هذا التطبيق",
+    "app_manifest_install_ask_domain": "اختر اسم النطاق الذي ينبغي فيه تنصيب هذا التطبيق",
+    "app_manifest_install_ask_is_public": "هل يجب أن يكون هذا التطبيق ظاهرًا للزوار المجهولين؟"
 }
