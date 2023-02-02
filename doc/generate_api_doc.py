@@ -26,14 +26,13 @@ import requests
 
 
 def main():
-
     with open("../share/actionsmap.yml") as f:
         action_map = yaml.safe_load(f)
 
-    #try:
+    # try:
     #    with open("/etc/yunohost/current_host", "r") as f:
     #        domain = f.readline().rstrip()
-    #except IOError:
+    # except IOError:
     #    domain = requests.get("http://ip.yunohost.org").text
 
     with open("../debian/changelog") as f:
