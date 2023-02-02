@@ -647,7 +647,9 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     safety_backup_name = f"{app_instance_name}-pre-upgrade2"
                     other_safety_backup_name = f"{app_instance_name}-pre-upgrade1"
 
-                backup_create(name=safety_backup_name, apps=[app_instance_name], system=None)
+                backup_create(
+                    name=safety_backup_name, apps=[app_instance_name], system=None
+                )
 
                 if safety_backup_name in backup_list()["archives"]:
                     # if the backup suceeded, delete old safety backup to save space
@@ -708,7 +710,10 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             # so we need to reflect this in the env_dict used to call the actual upgrade script x_x
             # Or: the old manifest may be in v1 and the new in v2, so force to add the setting in env
             env_dict = _make_environment_for_app_script(
-                app_instance_name, workdir=extracted_app_folder, action="upgrade", include_app_settings=True,
+                app_instance_name,
+                workdir=extracted_app_folder,
+                action="upgrade",
+                include_app_settings=True,
             )
             env_dict.update(env_dict_more)
 
@@ -2732,7 +2737,12 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
 
 
 def _make_environment_for_app_script(
-    app, args={}, args_prefix="APP_ARG_", workdir=None, action=None, include_app_settings=False,
+    app,
+    args={},
+    args_prefix="APP_ARG_",
+    workdir=None,
+    action=None,
+    include_app_settings=False,
 ):
     app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 

@@ -601,7 +601,9 @@ class OperationLogger:
         # all settings are included in the env but we probably don't want to dump all of these
         # which may contain various secret/private data ...
         if "env" in metadata:
-            metadata["env"] = {k: v for k, v in metadata["env"].items() if k == k.upper()}
+            metadata["env"] = {
+                k: v for k, v in metadata["env"].items() if k == k.upper()
+            }
 
         dump = yaml.safe_dump(self.metadata, default_flow_style=False)
         for data in self.data_to_redact:
