@@ -348,7 +348,7 @@ ynh_local_curl() {
 #   __NAMETOCHANGE__        by $app
 #   __USER__                by $app
 #   __FINALPATH__           by $final_path
-#   __PHPVERSION__          by $YNH_PHP_VERSION
+#   __PHPVERSION__          by $YNH_PHP_VERSION (packaging v1 only, packaging v2 uses phpversion setting implicitly set by apt resource)
 #   __YNH_NODE_LOAD_PATH__  by $ynh_node_load_PATH
 # ```
 # And any dynamic variables that should be defined before calling this helper like:
@@ -417,7 +417,7 @@ ynh_add_config() {
 #   __NAMETOCHANGE__        by $app
 #   __USER__                by $app
 #   __FINALPATH__           by $final_path
-#   __PHPVERSION__          by $YNH_PHP_VERSION
+#   __PHPVERSION__          by $YNH_PHP_VERSION (packaging v1 only, packaging v2 uses phpversion setting implicitly set by apt resource)
 #   __YNH_NODE_LOAD_PATH__  by $ynh_node_load_PATH
 #
 # And any dynamic variables that should be defined before calling this helper like:
@@ -452,7 +452,8 @@ ynh_replace_vars() {
         ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$file"
         ynh_replace_string --match_string="__INSTALL_DIR__" --replace_string="$final_path" --target_file="$file"
     fi
-    if test -n "${YNH_PHP_VERSION:-}"; then
+    # Legacy / Packaging v1 only
+    if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} lt 2 && test -n "${YNH_PHP_VERSION:-}"; then
         ynh_replace_string --match_string="__PHPVERSION__" --replace_string="$YNH_PHP_VERSION" --target_file="$file"
     fi
     if test -n "${ynh_node_load_PATH:-}"; then
@@ -718,7 +719,7 @@ _acceptable_path_to_delete() {
     local forbidden_paths=$(ls -d / /* /{var,home,usr}/* /etc/{default,sudoers.d,yunohost,cron*})
 
     # Legacy : A couple apps still have data in /home/$app ...
-    if [[ -n "$app" ]]
+    if [[ -n "${app:-}" ]]
     then
         forbidden_paths=$(echo "$forbidden_paths" | grep -v "/home/$app")
     fi

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+import copy
 import os
 import re
 import yaml
@@ -593,6 +594,16 @@ class OperationLogger:
         """
         Write or rewrite the metadata file with all metadata known
         """
+
+        metadata = copy.copy(self.metadata)
+
+        # Remove lower-case keys ... this is because with the new v2 app packaging,
+        # all settings are included in the env but we probably don't want to dump all of these
+        # which may contain various secret/private data ...
+        if "env" in metadata:
+            metadata["env"] = {
+                k: v for k, v in metadata["env"].items() if k == k.upper()
+            }
 
         dump = yaml.safe_dump(self.metadata, default_flow_style=False)
         for data in self.data_to_redact:

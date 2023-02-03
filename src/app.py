@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -647,7 +647,9 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     safety_backup_name = f"{app_instance_name}-pre-upgrade2"
                     other_safety_backup_name = f"{app_instance_name}-pre-upgrade1"
 
-                backup_create(name=safety_backup_name, apps=[app_instance_name])
+                backup_create(
+                    name=safety_backup_name, apps=[app_instance_name], system=None
+                )
 
                 if safety_backup_name in backup_list()["archives"]:
                     # if the backup suceeded, delete old safety backup to save space
@@ -677,11 +679,17 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         env_dict = _make_environment_for_app_script(
             app_instance_name, workdir=extracted_app_folder, action="upgrade"
         )
-        env_dict["YNH_APP_UPGRADE_TYPE"] = upgrade_type
-        env_dict["YNH_APP_MANIFEST_VERSION"] = str(app_new_version)
-        env_dict["YNH_APP_CURRENT_VERSION"] = str(app_current_version)
+
+        env_dict_more = {
+            "YNH_APP_UPGRADE_TYPE": upgrade_type,
+            "YNH_APP_MANIFEST_VERSION": str(app_new_version),
+            "YNH_APP_CURRENT_VERSION": str(app_current_version),
+        }
+
         if manifest["packaging_format"] < 2:
-            env_dict["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
+            env_dict_more["NO_BACKUP_UPGRADE"] = "1" if no_safety_backup else "0"
+
+        env_dict.update(env_dict_more)
 
         # Start register change on system
         related_to = [("app", app_instance_name)]
@@ -697,6 +705,17 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
             )
+
+            # Boring stuff : the resource upgrade may have added/remove/updated setting
+            # so we need to reflect this in the env_dict used to call the actual upgrade script x_x
+            # Or: the old manifest may be in v1 and the new in v2, so force to add the setting in env
+            env_dict = _make_environment_for_app_script(
+                app_instance_name,
+                workdir=extracted_app_folder,
+                action="upgrade",
+                include_app_settings=True,
+            )
+            env_dict.update(env_dict_more)
 
         # Execute the app upgrade script
         upgrade_failed = True
@@ -2718,7 +2737,12 @@ def _assert_no_conflicting_apps(domain, path, ignore_app=None, full_domain=False
 
 
 def _make_environment_for_app_script(
-    app, args={}, args_prefix="APP_ARG_", workdir=None, action=None
+    app,
+    args={},
+    args_prefix="APP_ARG_",
+    workdir=None,
+    action=None,
+    include_app_settings=False,
 ):
     app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
@@ -2745,7 +2769,7 @@ def _make_environment_for_app_script(
         env_dict[f"YNH_{args_prefix}{arg_name_upper}"] = str(arg_value)
 
     # If packaging format v2, load all settings
-    if manifest["packaging_format"] >= 2:
+    if manifest["packaging_format"] >= 2 or include_app_settings:
         env_dict["app"] = app
         for setting_name, setting_value in _get_app_settings(app).items():
             # Ignore special internal settings like checksum__

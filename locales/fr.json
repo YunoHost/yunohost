@@ -652,7 +652,7 @@
     "tools_upgrade_failed": "Impossible de mettre à jour les paquets : {packages_list}",
     "migration_0023_not_enough_space": "Prévoyez suffisamment d'espace disponible dans {path} pour exécuter la migration.",
     "migration_0023_postgresql_11_not_installed": "PostgreSQL n'a pas été installé sur votre système. Il n'y a rien à faire.",
-    "global_settings_setting_backup_compress_tar_archives_help": "Lors de la création de nouvelles sauvegardes, compresser automatiquement les archives (.tar.gz) au lieu des archives non compressées (.tar). N.B. : activer cette option permet de créer des archives plus légères, mais la procédure de sauvegarde initiale sera significativement plus longues et plus gourmandes en CPU.",
+    "global_settings_setting_backup_compress_tar_archives_help": "Lors de la création de nouvelles sauvegardes, compresser automatiquement les archives (.tar.gz) au lieu des archives non compressées (.tar).\nN.B. : activer cette option permet de créer des archives plus légères, mais la procédure de sauvegarde initiale sera significativement plus longues et plus gourmandes en CPU.",
     "global_settings_setting_security_experimental_enabled": "Fonctionnalités de sécurité expérimentales",
     "global_settings_setting_security_experimental_enabled_help": "Activer les fonctionnalités de sécurité expérimentales (ne l'activez pas si vous ne savez pas ce que vous faites !)",
     "global_settings_setting_nginx_compatibility_help": "Compromis 'compatibilité versus sécurité' pour le serveur web NGINX. Affecte les cryptogrammes utilisés (et d'autres aspects liés à la sécurité)",
