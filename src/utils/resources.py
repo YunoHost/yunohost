@@ -320,6 +320,16 @@ class PermissionsResource(AppResource):
         # Delete legacy is_public setting if not already done
         self.delete_setting("is_public")
 
+        # Detect that we're using a full-domain app,
+        # in which case we probably need to automagically
+        # define the "path" setting with "/"
+        if (
+            isinstance(self.permissions["main"]["url"], str)
+            and self.get_setting("domain")
+            and not self.get_setting("path")
+        ):
+            self.set_setting("path", "/")
+
         existing_perms = user_permission_list(short=True, apps=[self.app])[
             "permissions"
         ]
