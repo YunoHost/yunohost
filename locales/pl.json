@@ -67,5 +67,14 @@
     "global_settings_setting_ssh_compatibility": "Kompatybilność z SSH",
     "global_settings_setting_ssh_port": "Port SSH",
     "log_settings_reset": "Resetuj ustawienia",
-    "log_tools_migrations_migrate_forward": "Uruchom migracje"
+    "log_tools_migrations_migrate_forward": "Uruchom migracje",
+    "app_action_cannot_be_ran_because_required_services_down": "Następujące usługi powinny być uruchomione, aby rozpocząć to działanie: {services}. Spróbuj uruchomić je ponownie aby kontynuować (i dowiedzieć się, dlaczego były one wyłączone)",
+    "app_argument_choice_invalid": "Wybierz poprawną wartość dla argumentu '{name}': '{value}' nie znajduje się w liście poprawnych opcji ({choices})",
+    "app_action_broke_system": "Wydaje się, że ta akcja przerwała te ważne usługi: {services}",
+    "additional_urls_already_removed": "Dodatkowy URL '{url}' już usunięty w dodatkowym URL dla uprawnienia '{permission}'",
+    "additional_urls_already_added": "Dodatkowy URL '{url}' już dodany w dodatkowym URL dla uprawnienia '{permission}'",
+    "app_arch_not_supported": "Ta aplikacja może być zainstalowana tylko na architekturach {', '.join(required)}, a twoja architektura serwera to {current}",
+    "app_argument_invalid": "Wybierz poprawną wartość dla argumentu '{name}': {błąd}",
+    "all_users": "Wszyscy użytkownicy YunoHost",
+    "app_action_failed": "Nie udało się uruchomić akcji {action} dla aplikacji {app}"
 }
