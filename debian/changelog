@@ -1,4 +1,11 @@
-yunohost (11.1.5.2) testing; urgency=low
+yunohost (11.1.5.3) stable; urgency=low
+
+  - helpers/appsv2: replacement of __PHPVERSION__ should use the phpversion setting, not YNH_PHP_VERSION (13d4e16e)
+  - appv2 resources: document the fact that the apt resource may create a phpversion setting when the dependencies contain php packages (2107a848)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 03 Feb 2023 03:05:11 +0100
+
+yunohost (11.1.5.2) stable; urgency=low
 
   - maintenance: new year, update copyright header (ba4f1925)
   - helpers: fix remaining __FINALPATH__ in php template (note that this is backward compatible because ynh_add_config will replace __INSTALL_DIR__ by $finalpath if $finalpath exists... (9b7668da)
