@@ -499,9 +499,9 @@ ynh_composer_exec() {
 
 # Install and initialize Composer in the given directory
 #
-# usage: ynh_install_composer [--phpversion=phpversion] [--workdir=$final_path] [--install_args="--optimize-autoloader"] [--composerversion=composerversion]
+# usage: ynh_install_composer [--phpversion=phpversion] [--workdir=$install_dir] [--install_args="--optimize-autoloader"] [--composerversion=composerversion]
 # | arg: -v, --phpversion - PHP version to use with composer
-# | arg: -w, --workdir - The directory from where the command will be executed. Default $final_path.
+# | arg: -w, --workdir - The directory from where the command will be executed. Default $install_dir.
 # | arg: -a, --install_args - Additional arguments provided to the composer install. Argument --no-dev already include
 # | arg: -c, --composerversion - Composer version to install
 #
@@ -516,7 +516,7 @@ ynh_install_composer() {
     local composerversion
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    workdir="${workdir:-$final_path}"
+    workdir="${workdir:-$install_dir}"
     phpversion="${phpversion:-$YNH_PHP_VERSION}"
     install_args="${install_args:-}"
     composerversion="${composerversion:-$YNH_COMPOSER_VERSION}"
