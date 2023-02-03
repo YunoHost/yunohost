@@ -58,13 +58,13 @@ class AppResourceManager:
             try:
                 if todo == "deprovision":
                     # FIXME : i18n, better info strings
-                    logger.info(f"Deprovisionning {name} ...")
+                    logger.info(f"Deprovisionning {name}...")
                     old.deprovision(context=context)
                 elif todo == "provision":
-                    logger.info(f"Provisionning {name} ...")
+                    logger.info(f"Provisionning {name}...")
                     new.provision_or_update(context=context)
                 elif todo == "update":
-                    logger.info(f"Updating {name} ...")
+                    logger.info(f"Updating {name}...")
                     new.provision_or_update(context=context)
             except (KeyboardInterrupt, Exception) as e:
                 exception = e
@@ -87,13 +87,13 @@ class AppResourceManager:
                     # (NB. here we want to undo the todo)
                     if todo == "deprovision":
                         # FIXME : i18n, better info strings
-                        logger.info(f"Reprovisionning {name} ...")
+                        logger.info(f"Reprovisionning {name}...")
                         old.provision_or_update(context=context)
                     elif todo == "provision":
-                        logger.info(f"Deprovisionning {name} ...")
+                        logger.info(f"Deprovisionning {name}...")
                         new.deprovision(context=context)
                     elif todo == "update":
-                        logger.info(f"Reverting {name} ...")
+                        logger.info(f"Reverting {name}...")
                         old.provision_or_update(context=context)
                 except (KeyboardInterrupt, Exception) as e:
                     if isinstance(e, KeyboardInterrupt):
@@ -222,7 +222,7 @@ ynh_abort_if_errors
                 )
             else:
                 # FIXME: currently in app install code, we have
-                # more sophisticated code checking if this broke something on the system etc ...
+                # more sophisticated code checking if this broke something on the system etc.
                 # dunno if we want to do this here or manage it elsewhere
                 pass
 
@@ -514,7 +514,7 @@ class InstalldirAppResource(AppResource):
     owner: str = ""
     group: str = ""
 
-    # FIXME: change default dir to /opt/stuff if app ain't a webapp ...
+    # FIXME: change default dir to /opt/stuff if app ain't a webapp...
 
     def provision_or_update(self, context: Dict = {}):
         assert self.dir.strip()  # Be paranoid about self.dir being empty...
@@ -539,7 +539,7 @@ class InstalldirAppResource(AppResource):
             # and check for available space on the destination
             if current_install_dir and os.path.isdir(current_install_dir):
                 logger.warning(
-                    f"Moving {current_install_dir} to {self.dir} ... (this may take a while)"
+                    f"Moving {current_install_dir} to {self.dir}... (this may take a while)"
                 )
                 shutil.move(current_install_dir, self.dir)
             else:
@@ -643,7 +643,7 @@ class DatadirAppResource(AppResource):
             # FIXME: same as install_dir, is this what we want ?
             if current_data_dir and os.path.isdir(current_data_dir):
                 logger.warning(
-                    f"Moving {current_data_dir} to {self.dir} ... (this may take a while)"
+                    f"Moving {current_data_dir} to {self.dir}... (this may take a while)"
                 )
                 shutil.move(current_data_dir, self.dir)
             else:
@@ -756,7 +756,7 @@ class PortsResource(AppResource):
     ##### Example:
     ```toml
     [resources.port]
-    # (empty should be fine for most apps ... though you can customize stuff if absolutely needed)
+    # (empty should be fine for most apps... though you can customize stuff if absolutely needed)
 
     main.default = 12345    # if you really want to specify a prefered value .. but shouldnt matter in the majority of cases
 
@@ -814,7 +814,7 @@ class PortsResource(AppResource):
         super().__init__({"ports": properties}, *args, **kwargs)
 
     def _port_is_used(self, port):
-        # FIXME : this could be less brutal than two os.system ...
+        # FIXME : this could be less brutal than two os.system...
         cmd1 = (
             "ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ':%s$'"
             % port
@@ -903,7 +903,7 @@ class DatabaseAppResource(AppResource):
     """
 
     # Notes for future?
-    # deep_clean  -> ... idk look into any db name that would not be related to any app ...
+    # deep_clean  -> ... idk look into any db name that would not be related to any app...
     # backup -> dump db
     # restore -> setup + inject db dump
 
@@ -926,7 +926,7 @@ class DatabaseAppResource(AppResource):
             )
 
         # Hack so that people can write type = "mysql/postgresql" in toml but it's loaded as dbtype
-        # to avoid conflicting with the generic self.type of the resource object ...
+        # to avoid conflicting with the generic self.type of the resource object...
         # dunno if that's really a good idea :|
         properties = {"dbtype": properties["type"]}
 
