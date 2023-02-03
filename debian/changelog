@@ -1,3 +1,10 @@
+yunohost (11.1.5.4) stable; urgency=low
+
+  - appsv2: typo in ports resource doc x_x (0e787acb)
+  - appsv2: fix permission provisioning for fulldomain apps + fix apps not properly getting removed after failed resources init (476908bd)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 03 Feb 2023 20:43:04 +0100
+
 yunohost (11.1.5.3) stable; urgency=low
 
   - helpers/appsv2: replacement of __PHPVERSION__ should use the phpversion setting, not YNH_PHP_VERSION (13d4e16e)
