@@ -1,3 +1,11 @@
+yunohost (11.1.5.5) stable; urgency=low
+
+  - admin->admins migration: try to handle boring case where the 'first' user cant be identified because it doesnt have the root@ alias (8485ebc7)
+  - appsv2: ignore the old/ugly/legacy removal of apt deps when removing the php conf, because that's handled by the apt resource (3bbba640)
+  - appsv2: moar fixes for v1->v2 upgrade not getting the proper env context (fb54da2e)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 04 Feb 2023 18:51:03 +0100
+
 yunohost (11.1.5.4) stable; urgency=low
 
   - appsv2: typo in ports resource doc x_x (0e787acb)
