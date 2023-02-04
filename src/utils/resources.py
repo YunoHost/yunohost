@@ -179,7 +179,7 @@ class AppResource:
         tmpdir = _make_tmp_workdir_for_app(app=self.app)
 
         env_ = _make_environment_for_app_script(
-            self.app, workdir=tmpdir, action=f"{action}_{self.type}"
+            self.app, workdir=tmpdir, action=f"{action}_{self.type}", include_app_settings=True,
         )
         env_.update(env)
 
