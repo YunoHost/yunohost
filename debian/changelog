@@ -1,3 +1,21 @@
+yunohost (11.1.6) testing; urgency=low
+
+  - helpers: allow to use ynh_replace_string with @ ([#1588](https://github.com/yunohost/yunohost/pull/1588))
+  - helpers: fix behavior of ynh_write_var_in_file when key is duplicated ([#1589](https://github.com/yunohost/yunohost/pull/1589), [#1591](https://github.com/yunohost/yunohost/pull/1591))
+  - helpers: fix composer workdir variable for package v2 ([#1586](https://github.com/yunohost/yunohost/pull/1586))
+  - configpanels: properly escape & for values used in ynh_write_var_in_file ([#1590](https://github.com/yunohost/yunohost/pull/1590))
+  - appsv2/group question: don't include primary groups in choices (c179d4b8)
+  - appsv2: when initalizing permission, make sure to add 'all_users' when visitors is chosen (71042f08)
+  - backup/multimedia: test that /home/yunohots.multimedia does exists to avoid boring warning later (170eaf5d)
+  - domains: add missing logic to inject translated 'help' keys in config panel like we do for global settings (4dee434e)
+  - domain/dns: don't miserably crash when the domain is known by lexicon but not in registrar_list.toml (b5b69e95)
+  - admin->admins migration: try to losen up even more the search for first admin user x_x (1e520342)
+  - i18n: Translations updated for French, Polish
+
+  Thanks to all contributors <3 ! (Éric Gaspar, Grzegorz Cichocki, Kayou, Krzysztof Nowakowski, ljf, ppr)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 07 Feb 2023 00:14:17 +0100
+
 yunohost (11.1.5.5) stable; urgency=low
 
   - admin->admins migration: try to handle boring case where the 'first' user cant be identified because it doesnt have the root@ alias (8485ebc7)
