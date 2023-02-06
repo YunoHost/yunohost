@@ -2295,7 +2295,7 @@ def backup_create(
     )
     backup_manager.backup()
 
-    logger.success(m18n.n("backup_created", name=name))
+    logger.success(m18n.n("backup_created", name=backup_manager.name))
     operation_logger.success()
 
     return {
