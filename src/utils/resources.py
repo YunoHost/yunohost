@@ -348,6 +348,11 @@ class PermissionsResource(AppResource):
                     or self.get_setting(f"init_{perm}_permission")
                     or []
                 )
+
+                # If we're choosing 'visitors' from the init_{perm}_permission question, add all_users too
+                if not infos["allowed"] and init_allowed == "visitors":
+                    init_allowed = ["visitors", "all_users"]
+
                 permission_create(
                     perm_id,
                     allowed=init_allowed,
