@@ -27,10 +27,10 @@
     "backup_archive_name_unknown": "L'archive locale de sauvegarde nommée '{name}' est inconnue",
     "backup_archive_open_failed": "Impossible d'ouvrir l'archive de la sauvegarde",
     "backup_cleaning_failed": "Impossible de nettoyer le dossier temporaire de sauvegarde",
-    "backup_created": "Sauvegarde terminée",
+    "backup_created": "Sauvegarde créée : {name}",
     "backup_creation_failed": "Impossible de créer l'archive de la sauvegarde",
     "backup_delete_error": "Impossible de supprimer '{path}'",
-    "backup_deleted": "La sauvegarde a été supprimée",
+    "backup_deleted": "Sauvegarde supprimée : {name}",
     "backup_hook_unknown": "Script de sauvegarde '{hook}' inconnu",
     "backup_nothings_done": "Il n'y a rien à sauvegarder",
     "backup_output_directory_forbidden": "Choisissez un répertoire de destination différent. Les sauvegardes ne peuvent pas être créées dans les sous-dossiers /bin, /boot, /dev, /etc, /lib, /root, /run, /sbin, /sys, /usr, /var ou /home/yunohost.backup/archives",
@@ -751,5 +751,7 @@
     "invalid_shell": "Shell invalide : {shell}",
     "global_settings_setting_dns_exposure": "Suites d'IP à prendre en compte pour la configuration et le diagnostic du DNS",
     "global_settings_setting_dns_exposure_help": "NB : Ceci n'affecte que la configuration DNS recommandée et les vérifications de diagnostic. Cela n'affecte pas les configurations du système.",
-    "diagnosis_ip_no_ipv6_tip_important": "IPv6 devrait généralement être configuré automatiquement par le système ou par votre fournisseur d'accès à internet (FAI) s'il est disponible. Sinon, vous devrez peut-être configurer quelques éléments manuellement, comme expliqué dans la documentation ici : <a href='https://yunohost.org/#/ipv6'>https://yunohost.org/#/ipv6</a>."
+    "diagnosis_ip_no_ipv6_tip_important": "IPv6 devrait généralement être configuré automatiquement par le système ou par votre fournisseur d'accès à internet (FAI) s'il est disponible. Sinon, vous devrez peut-être configurer quelques éléments manuellement, comme expliqué dans la documentation ici : <a href='https://yunohost.org/#/ipv6'>https://yunohost.org/#/ipv6</a>.",
+    "domain_config_default_app_help": "Les personnes seront automatiquement redirigées vers cette application lorsqu'elles ouvriront ce domaine. Si aucune application n'est spécifiée, les personnes sont redirigées vers le formulaire de connexion du portail utilisateur.",
+    "domain_config_xmpp_help": "NB : certaines fonctions XMPP nécessiteront la mise à jour de vos enregistrements DNS et la régénération de votre certificat Lets Encrypt pour être activées"
 }
