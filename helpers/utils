@@ -614,15 +614,14 @@ ynh_write_var_in_file() {
     set +o xtrace # set +x
 
     # Get the line number after which we search for the variable
-    local line_number=1
+    local after_line_number=1
     if [[ -n "$after" ]]; then
-        line_number=$(grep -m1 -n $after $file | cut -d: -f1)
-        if [[ -z "$line_number" ]]; then
+        after_line_number=$(grep -m1 -n $after $file | cut -d: -f1)
+        if [[ -z "$after_line_number" ]]; then
             set -o xtrace # set -x
             return 1
         fi
     fi
-    local range="${line_number},\$ "
 
     local filename="$(basename -- "$file")"
     local ext="${filename##*.}"
@@ -647,11 +646,14 @@ ynh_write_var_in_file() {
     var_part+='\s*'
 
     # Extract the part after assignation sign
-    local expression_with_comment="$((tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL) | head -n1)"
+    local expression_with_comment="$((tail +$after_line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL) | head -n1)"
     if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
         set -o xtrace # set -x
         return 1
     fi
+    local value_line_number="$(tail +$after_line_number ${file} | grep -m1 -n -i -P $var_part'\K.*$' | cut -d: -f1)"
+    value_line_number=$((after_line_number + value_line_number))
+    local range="${after_line_number},${value_line_number} "
 
     # Remove comments if needed
     local expression="$(echo "$expression_with_comment" | sed "s@${comments}[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
