@@ -516,7 +516,11 @@ ynh_install_composer() {
     local composerversion
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    workdir="${workdir:-$install_dir}"
+    if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} lt 2; then
+        workdir="${workdir:-$final_path}"
+    else
+        workdir="${workdir:-$install_dir}"
+    fi
     phpversion="${phpversion:-$YNH_PHP_VERSION}"
     install_args="${install_args:-}"
     composerversion="${composerversion:-$YNH_COMPOSER_VERSION}"
