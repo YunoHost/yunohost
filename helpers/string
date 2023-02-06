@@ -48,7 +48,7 @@ ynh_replace_string() {
     ynh_handle_getopts_args "$@"
     set +o xtrace # set +x
 
-    local delimit=@
+    local delimit=$'\001'
     # Escape the delimiter if it's in the string.
     match_string=${match_string//${delimit}/"\\${delimit}"}
     replace_string=${replace_string//${delimit}/"\\${delimit}"}
