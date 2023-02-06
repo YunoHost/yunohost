@@ -16,6 +16,8 @@ default:
 code_quality:
   tags:
     - docker
+  only:
+    - tags
 
 code_quality_html:
   extends: code_quality
@@ -23,6 +25,8 @@ code_quality_html:
     REPORT_FORMAT: html
   artifacts:
     paths: [gl-code-quality-report.html]
+  only:
+    - tags
 
 # see: https://docs.gitlab.com/ee/ci/yaml/#switch-between-branch-pipelines-and-merge-request-pipelines
 workflow:
