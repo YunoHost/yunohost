@@ -568,7 +568,7 @@ ynh_read_var_in_file() {
     var_part+='\s*'
 
     # Extract the part after assignation sign
-    local expression_with_comment="$(tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL | head -n1)"
+    local expression_with_comment="$((tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL) | head -n1)"
     if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
         set -o xtrace # set -x
         echo YNH_NULL
@@ -647,7 +647,7 @@ ynh_write_var_in_file() {
     var_part+='\s*'
 
     # Extract the part after assignation sign
-    local expression_with_comment="$(tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL | head -n1)"
+    local expression_with_comment="$((tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL) | head -n1)"
     if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
         set -o xtrace # set -x
         return 1
