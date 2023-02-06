@@ -658,6 +658,7 @@ ynh_write_var_in_file() {
     endline=${expression_with_comment#"$expression"}
     endline="$(echo "$endline" | sed 's/\\/\\\\/g')"
     value="$(echo "$value" | sed 's/\\/\\\\/g')"
+    value=${value//&/"\&"}
     local first_char="${expression:0:1}"
     delimiter=$'\001'
     if [[ "$first_char" == '"' ]]; then
