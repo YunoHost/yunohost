@@ -591,7 +591,10 @@ def _get_registrar_config_section(domain):
 
         # TODO : add a help tip with the link to the registar's API doc (c.f. Lexicon's README)
         registrar_list = read_toml(DOMAIN_REGISTRAR_LIST_PATH)
-        registrar_credentials = registrar_list[registrar]
+        registrar_credentials = registrar_list.get(registrar)
+        if registrar_credentials is None:
+            logger.warning(f"Registrar {registrar} unknown / Should be added to YunoHost's registrar_list.toml by the development team!")
+            registrar_credentials = {}
         for credential, infos in registrar_credentials.items():
             infos["default"] = infos.get("default", "")
             infos["optional"] = infos.get("optional", "False")

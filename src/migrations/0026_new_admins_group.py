@@ -46,6 +46,19 @@ class MyMigration(Migration):
                 new_admin_user = user
                 break
 
+        # For some reason some system have no user with root@ alias,
+        # but the user does has admin / postmaster / ... alias
+        # ... try to find it instead otherwise this creashes the migration
+        # later because the admin@, postmaster@, .. aliases will already exist
+        if not new_admin_user:
+            for user in all_users:
+                aliases = user_info(user).get("mail-aliases", [])
+                if any(alias.startswith(f"admin@{main_domain}") for alias in aliases) \
+                  or any(alias.startswith(f"postmaster@{main_domain}") for alias in aliases):
+                    new_admin_user = user
+                    break
+
+
         self.ldap_migration_started = True
 
         if new_admin_user:

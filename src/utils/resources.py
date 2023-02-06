@@ -179,7 +179,7 @@ class AppResource:
         tmpdir = _make_tmp_workdir_for_app(app=self.app)
 
         env_ = _make_environment_for_app_script(
-            self.app, workdir=tmpdir, action=f"{action}_{self.type}"
+            self.app, workdir=tmpdir, action=f"{action}_{self.type}", include_app_settings=True,
         )
         env_.update(env)
 
@@ -320,6 +320,16 @@ class PermissionsResource(AppResource):
         # Delete legacy is_public setting if not already done
         self.delete_setting("is_public")
 
+        # Detect that we're using a full-domain app,
+        # in which case we probably need to automagically
+        # define the "path" setting with "/"
+        if (
+            isinstance(self.permissions["main"]["url"], str)
+            and self.get_setting("domain")
+            and not self.get_setting("path")
+        ):
+            self.set_setting("path", "/")
+
         existing_perms = user_permission_list(short=True, apps=[self.app])[
             "permissions"
         ]
@@ -338,6 +348,11 @@ class PermissionsResource(AppResource):
                     or self.get_setting(f"init_{perm}_permission")
                     or []
                 )
+
+                # If we're choosing 'visitors' from the init_{perm}_permission question, add all_users too
+                if not infos["allowed"] and init_allowed == "visitors":
+                    init_allowed = ["visitors", "all_users"]
+
                 permission_create(
                     perm_id,
                     allowed=init_allowed,
@@ -755,8 +770,9 @@ class PortsResource(AppResource):
 
     ##### Example:
     ```toml
-    [resources.port]
+    [resources.ports]
     # (empty should be fine for most apps... though you can customize stuff if absolutely needed)
+
 
     main.default = 12345    # if you really want to specify a prefered value .. but shouldnt matter in the majority of cases
 

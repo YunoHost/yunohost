@@ -1074,10 +1074,14 @@ def app_install(
     if packaging_format >= 2:
         from yunohost.utils.resources import AppResourceManager
 
-        AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
-            rollback_and_raise_exception_if_failure=True,
-            operation_logger=operation_logger,
-        )
+        try:
+            AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
+                rollback_and_raise_exception_if_failure=True,
+                operation_logger=operation_logger,
+            )
+        except (KeyboardInterrupt, EOFError, Exception) as e:
+            shutil.rmtree(app_setting_path)
+            raise e
     else:
         # Initialize the main permission for the app
         # The permission is initialized with no url associated, and with tile disabled
@@ -2651,22 +2655,31 @@ def _guess_webapp_path_requirement(app_folder: str) -> str:
     if len(domain_questions) == 1 and len(path_questions) == 1:
         return "domain_and_path"
     if len(domain_questions) == 1 and len(path_questions) == 0:
-        # This is likely to be a full-domain app...
 
-        # Confirm that this is a full-domain app This should cover most cases
-        # ...  though anyway the proper solution is to implement some mechanism
-        # in the manifest for app to declare that they require a full domain
-        # (among other thing) so that we can dynamically check/display this
-        # requirement on the webadmin form and not miserably fail at submit time
+        if manifest.get("packaging_format", 0) < 2:
 
-        # Full-domain apps typically declare something like path_url="/" or path=/
-        # and use ynh_webpath_register or yunohost_app_checkurl inside the install script
-        install_script_content = read_file(os.path.join(app_folder, "scripts/install"))
+            # This is likely to be a full-domain app...
 
-        if re.search(
-            r"\npath(_url)?=[\"']?/[\"']?", install_script_content
-        ) and re.search(r"ynh_webpath_register", install_script_content):
-            return "full_domain"
+            # Confirm that this is a full-domain app This should cover most cases
+            # ...  though anyway the proper solution is to implement some mechanism
+            # in the manifest for app to declare that they require a full domain
+            # (among other thing) so that we can dynamically check/display this
+            # requirement on the webadmin form and not miserably fail at submit time
+
+            # Full-domain apps typically declare something like path_url="/" or path=/
+            # and use ynh_webpath_register or yunohost_app_checkurl inside the install script
+            install_script_content = read_file(os.path.join(app_folder, "scripts/install"))
+
+            if re.search(
+                r"\npath(_url)?=[\"']?/[\"']?", install_script_content
+            ) and re.search(r"ynh_webpath_register", install_script_content):
+                return "full_domain"
+
+        else:
+            # For packaging v2 apps, check if there's a permission with url being a string
+            perm_resource = manifest.get("resources", {}).get("permissions")
+            if perm_resource is not None and isinstance(perm_resource.get("main", {}).get("url"), str):
+                return "full_domain"
 
     return "?"
 

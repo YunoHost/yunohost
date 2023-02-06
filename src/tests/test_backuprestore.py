@@ -6,6 +6,8 @@ from mock import patch
 
 from .conftest import message, raiseYunohostError, get_test_apps_dir
 
+from moulinette.utils.text import random_ascii
+
 from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed
 from yunohost.backup import (
@@ -236,8 +238,9 @@ def add_archive_system_from_4p2():
 
 def test_backup_only_ldap(mocker):
     # Create the backup
-    with message(mocker, "backup_created"):
-        backup_create(system=["conf_ldap"], apps=None)
+    name = random_ascii(8)
+    with message(mocker, "backup_created", name=name):
+        backup_create(name=name, system=["conf_ldap"], apps=None)
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -261,9 +264,10 @@ def test_backup_system_part_that_does_not_exists(mocker):
 
 
 def test_backup_and_restore_all_sys(mocker):
+    name = random_ascii(8)
     # Create the backup
-    with message(mocker, "backup_created"):
-        backup_create(system=[], apps=None)
+    with message(mocker, "backup_created", name=name):
+        backup_create(name=name, system=[], apps=None)
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -294,9 +298,10 @@ def test_backup_and_restore_all_sys(mocker):
 
 @pytest.mark.with_system_archive_from_4p2
 def test_restore_system_from_Ynh4p2(monkeypatch, mocker):
+    name = random_ascii(8)
     # Backup current system
-    with message(mocker, "backup_created"):
-        backup_create(system=[], apps=None)
+    with message(mocker, "backup_created", name=name):
+        backup_create(name=name, system=[], apps=None)
     archives = backup_list()["archives"]
     assert len(archives) == 2
 
@@ -393,16 +398,17 @@ def test_backup_app_with_no_restore_script(mocker):
 
 @pytest.mark.clean_opt_dir
 def test_backup_with_different_output_directory(mocker):
+    name = random_ascii(8)
     # Create the backup
-    with message(mocker, "backup_created"):
+    with message(mocker, "backup_created", name=name):
         backup_create(
             system=["conf_ynh_settings"],
             apps=None,
             output_directory="/opt/test_backup_output_directory",
-            name="backup",
+            name=name,
         )
 
-    assert os.path.exists("/opt/test_backup_output_directory/backup.tar")
+    assert os.path.exists(f"/opt/test_backup_output_directory/{name}.tar")
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -416,13 +422,14 @@ def test_backup_with_different_output_directory(mocker):
 @pytest.mark.clean_opt_dir
 def test_backup_using_copy_method(mocker):
     # Create the backup
-    with message(mocker, "backup_created"):
+    name = random_ascii(8)
+    with message(mocker, "backup_created", name=name):
         backup_create(
             system=["conf_ynh_settings"],
             apps=None,
             output_directory="/opt/test_backup_output_directory",
             methods=["copy"],
-            name="backup",
+            name=name,
         )
 
     assert os.path.exists("/opt/test_backup_output_directory/info.json")
@@ -565,8 +572,9 @@ def test_backup_and_restore_permission_app(mocker):
 
 def _test_backup_and_restore_app(mocker, app):
     # Create a backup of this app
-    with message(mocker, "backup_created"):
-        backup_create(system=None, apps=[app])
+    name = random_ascii(8)
+    with message(mocker, "backup_created", name=name):
+        backup_create(name=name, system=None, apps=[app])
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -628,8 +636,9 @@ def test_restore_archive_with_custom_hook(mocker):
     os.system("touch %s/99-yolo" % custom_restore_hook_folder)
 
     # Backup with custom hook system
-    with message(mocker, "backup_created"):
-        backup_create(system=[], apps=None)
+    name = random_ascii(8)
+    with message(mocker, "backup_created", name=name):
+        backup_create(name=name, system=[], apps=None)
     archives = backup_list()["archives"]
     assert len(archives) == 1
 
@@ -666,5 +675,6 @@ def test_backup_binds_are_readonly(mocker, monkeypatch):
     )
 
     # Create the backup
-    with message(mocker, "backup_created"):
-        backup_create(system=[])
+    name = random_ascii(8)
+    with message(mocker, "backup_created", name=name):
+        backup_create(name=name, system=[])
