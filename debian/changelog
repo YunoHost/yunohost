@@ -1,4 +1,4 @@
-yunohost (11.1.6) testing; urgency=low
+yunohost (11.1.6) stable; urgency=low
 
   - helpers: allow to use ynh_replace_string with @ ([#1588](https://github.com/yunohost/yunohost/pull/1588))
   - helpers: fix behavior of ynh_write_var_in_file when key is duplicated ([#1589](https://github.com/yunohost/yunohost/pull/1589), [#1591](https://github.com/yunohost/yunohost/pull/1591))
