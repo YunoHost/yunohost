@@ -72,7 +72,7 @@ user:
                         ask: ask_fullname
                         required: False
                         pattern: &pattern_fullname
-                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
+                            - !!str ^([^\W_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_fullname"
                 -f:
                     full: --firstname
