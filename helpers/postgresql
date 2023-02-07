@@ -285,6 +285,40 @@ ynh_psql_remove_db() {
     fi
 }
 
+# Remove all existing PostgreSQL databases associated with a given user
+#
+# usage: ynh_psql_remove_all_user_dbs --db_user=db_user
+# | arg: -u, --db_user=    - the PostgreSQL role/user of which to remove all owned databases
+#
+# This can be useful to prepare the removal of a given user.
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_psql_remove_all_user_dbs() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=u
+    local -A args_array=([u]=db_user=)
+    local db_user
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+	
+	local dbs_to_drop=$(ynh_psql_list_user_dbs $db_user) 
+	if [ -n "$dbs_to_drop" ]; then	   # Check that the list of database(s) is not empty 
+		
+		local db_name
+		for db_name in $dbs_to_drop   # Iterate through the list of database(s) to remove. Note: this would fail in case databases names would contain space character or characters such as "*". IFS parsing method would then be required. 
+		do
+			if ynh_psql_database_exists --database=$db_name; then # Check if the database exists
+				ynh_psql_drop_db $db_name                         # Remove the database
+				ynh_print_info --message="Removed database $db_name associated to role $db_user"
+			else
+				ynh_print_warn --message="Database $db_name not found"
+			fi
+		done
+	else 
+		ynh_print_warn --message="No associated database to role $db_user was found"
+	fi
+}
+
 # Create a master password and set up global settings
 #
 # [internal]
