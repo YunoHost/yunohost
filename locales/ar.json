@@ -30,7 +30,7 @@
     "certmanager_cert_install_success_selfsigned": "نجحت عملية تثبيت الشهادة الموقعة ذاتيا الخاصة بالنطاق '{domain}'",
     "certmanager_cert_renew_success": "نجحت عملية تجديد شهادة Let's Encrypt الخاصة باسم النطاق '{domain}'",
     "certmanager_cert_signing_failed": "فشل إجراء توقيع الشهادة الجديدة",
-    "certmanager_no_cert_file": "تعذرت عملية قراءة شهادة نطاق {domain} (الملف : {file})",
+    "certmanager_no_cert_file": "تعذرت عملية قراءة ملف شهادة نطاق {domain} (الملف : {file})",
     "domain_created": "تم إنشاء النطاق",
     "domain_creation_failed": "تعذرت عملية إنشاء النطاق {domain}: {error}",
     "domain_deleted": "تم حذف النطاق",
@@ -170,7 +170,7 @@
     "domain_config_cert_issuer": "الهيئة الموثِّقة",
     "domain_config_cert_renew": "تجديد شهادة Let's Encrypt",
     "domain_config_cert_summary": "حالة الشهادة",
-    "domain_config_cert_summary_ok": "حسنًا، يبدو أنّ الشهادة جيدة!",
+    "domain_config_cert_summary_ok": "حسنًا، يبدو أنّ الشهادة الحالية جيدة!",
     "domain_config_cert_validity": "مدة الصلاحية",
     "domain_config_xmpp": "المراسَلة الفورية (XMPP)",
     "global_settings_setting_root_password": "كلمة السر الجديدة لـ root",
@@ -214,5 +214,8 @@
     "domain_config_cert_summary_abouttoexpire": "مدة صلاحية الشهادة الحالية على وشك الإنتهاء ومِن المفتَرض أن يتم تجديدها تلقائيا قريبا.",
     "app_manifest_install_ask_path": "اختر مسار URL (بعد النطاق) حيث ينبغي تنصيب هذا التطبيق",
     "app_manifest_install_ask_domain": "اختر اسم النطاق الذي ينبغي فيه تنصيب هذا التطبيق",
-    "app_manifest_install_ask_is_public": "هل يجب أن يكون هذا التطبيق ظاهرًا للزوار المجهولين؟"
+    "app_manifest_install_ask_is_public": "هل يجب أن يكون هذا التطبيق ظاهرًا للزوار المجهولين؟",
+    "domain_config_default_app_help": "سيعاد توجيه الناس تلقائيا إلى هذا التطبيق عند فتح اسم النطاق هذا. وإذا لم يُحدَّد أي تطبيق، يعاد توجيه الناس إلى استمارة تسجيل الدخولفي بوابة المستخدمين.",
+    "domain_config_xmpp_help": "ملاحطة: بعض ميزات الـ(إكس إم بي بي) ستتطلب أن تُحدّث سجلاتك الخاصة لـ DNS وتُعيد توليد شهادة Lets Encrypt لتفعيلها",
+    "certmanager_cert_install_failed": "أخفقت عملية تنصيب شهادة Let's Encrypt على {domains}"
 }
