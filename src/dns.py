@@ -138,7 +138,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
             {"type": "A", "name": "*", "value": "123.123.123.123", "ttl": 3600},
             # if ipv6 available
             {"type": "AAAA", "name": "*", "value": "valid-ipv6", "ttl": 3600},
-            {"type": "CAA", "name": "@", "value": "128 issue \"letsencrypt.org\"", "ttl": 3600},
+            {"type": "CAA", "name": "@", "value": "0 issue \"letsencrypt.org\"", "ttl": 3600},
         ],
         "example_of_a_custom_rule": [
             {"type": "SRV", "name": "_matrix", "value": "domain.tld.", "ttl": 3600}
@@ -248,7 +248,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
             elif include_empty_AAAA_if_no_ipv6:
                 extra.append([f"*{suffix}", ttl, "AAAA", None])
 
-            extra.append([basename, ttl, "CAA", '128 issue "letsencrypt.org"'])
+            extra.append([basename, ttl, "CAA", '0 issue "letsencrypt.org"'])
 
         ####################
         # Standard records #
