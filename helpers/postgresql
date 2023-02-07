@@ -143,6 +143,41 @@ ynh_psql_dump_db() {
     sudo --login --user=postgres pg_dump "$database"
 }
 
+# Dump all existing PostgreSQL databases associated with a given user
+#
+# usage: ynh_psql_dump_all_user_dbs --db_user=db_user [--app=app]
+# | arg: -u, --db_user=    - the PostgreSQL role/user of which to remove all owned databases
+# | arg: -a, --app=     - the application id to tag the dump with
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_psql_dump_all_user_dbs() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=ua
+    local -A args_array=([u]=db_user= [a]=app=)
+    local db_user
+    local app
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    app="${app:-}"
+	
+	local dbs_to_dump=$(ynh_psql_list_user_dbs $db_user)
+	if [ -n "$dbs_to_dump" ]; then	   # Check that the list of database(s) is not empty 
+		
+		local db_name
+		for db_name in $dbs_to_dump   # Iterate through the list of database(s) to dump. Note: this would fail in case databases names would contain space character or characters such as "*". IFS parsing method would then be required. 
+		do
+			if ynh_psql_database_exists --database=$db_name; then # Check if the database exists
+				ynh_psql_dump_db $db_name > "$app-$db_name-dump.sql" # Dump the database to a filename format of app-db_name-dump.sql, or of db_name-dump.sql if app parameter was not supplied  
+				ynh_print_info --message="Dumped database $db_name associated to role $db_user"
+			else
+				ynh_print_warn --message="Database $db_name not found"
+			fi
+		done
+	else 
+		ynh_print_warn --message="No associated database to role $db_user was found"
+	fi
+}
+
 # Create a user
 #
 # [internal]
