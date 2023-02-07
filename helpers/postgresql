@@ -178,6 +178,56 @@ ynh_psql_dump_all_user_dbs() {
 	fi
 }
 
+# Restore all dumped PostgreSQL databases for the given app
+#
+# usage: ynh_psql_restore_all_app_dbs_dumps --db_user=db_user [--db_user_pwd=db_user_pwd]
+# | arg: -u, --db_user=    		- the PostgreSQL role/user which will own the restored databases. If not existing, it will be created.
+# | arg: -p, --db_user_pwd= 	- the password associated to the PostgreSQL role/user which will own the databases. If not existing, it will be generated and saved to the app's config file.
+#	
+# SQL dump files to restore must be named according to this format "app_id-db_name-dump.sql" (e.g. "noalyss-account_repository-dump.sql") and be located in the app folder 
+# The filename format requirement is so in order to match the files dumped using ynh_psql_dump_all_user_dbs --user=user --app=app (with both parameters specified).
+# 
+# Requires YunoHost version 3.5.0 or higher.
+ynh_psql_restore_all_app_dbs_dumps(){
+    # Declare an array to define the options of this helper.
+    local legacy_args=up
+    local -A args_array=([u]=db_user= [p]=db_user_pwd=)
+    local db_user
+    local db_user_pwd
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"	
+	
+	if [ -z "$app" ]; then
+		ynh_die --message="No global app_ID variable defined in the script"
+	fi
+
+	ynh_psql_test_if_first_run  # Make sure PSQL is installed
+	
+	local filename
+	for filename in *-dump.sql	# Loop among all files ending with "-dump.sql" in the current folder  
+	do	
+		local db_name
+		db_name="${filename#${app}-}"							# Remove "$app-" prefix from filename string to parse db_name. Will do nothing if there is no match.
+		db_name="${db_name%-dump.sql}"							# Remove "-dump.sql" suffix from filename string to parse db_name. Will do nothing if there is no match.
+		db_name=$(ynh_sanitize_dbid --db_name="$db_name")
+		
+		if [[ "${filename#${app}-}" = "$filename" || -z "$db_name" ]] ; then  	# Check whether app_ID is included in filename OR $db_name is empty
+			ynh_print_warn --message="File ignored: $filename. Filename not matching expected format (appID-db_name-dump.sql)"
+			continue												
+		else														
+		    db_user_pwd="${db_user_pwd:-}"
+			if [ -z "$db_user_pwd" ]; then 
+				db_user_pwd=$(ynh_app_setting_get --app=$app --key=psqlpwd) 				# Try to retrieve db_user_pwd from the app's settings. It may prove empty during the first loop, but will get populated before the second loop by ynh_psql_setup_db() below.   
+			fi
+			
+			ynh_psql_setup_db --db_user=$db_user --db_name=$db_name --db_pwd=$db_user_pwd	# Check that the db_user exists or create it generating a random password and then create an empty database named $db_name.  
+			ynh_psql_execute_file_as_root --file="./${filename}" --database=$db_name		# Restore the dabatase from the corresponding dump file
+			
+			ynh_print_info --message="Restored database $db_name, owned by PostgreSQL user $db_user"
+		fi
+	done	
+}
+
 # Create a user
 #
 # [internal]
