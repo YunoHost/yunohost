@@ -302,3 +302,24 @@ ynh_psql_test_if_first_run() {
 
     yunohost tools regen-conf postgresql
 }
+
+# List all existing PostgreSQL databases associated with a given user
+#
+# [internal]
+#
+# usage: ynh_psql_list_user_dbs db_user
+# | arg: db_user  - the PostgreSQL role/user of which to list all owned databases
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_psql_list_user_dbs() {
+    local db_user=$1
+	
+    if ynh_psql_user_exists --user=$db_user; then # Check that the db_user exists
+        local sql="COPY (SELECT datname FROM pg_database JOIN pg_authid ON pg_database.datdba = pg_authid.oid WHERE rolname = '${db_user}') TO STDOUT"
+        local dbs_list=$(ynh_psql_execute_as_root --sql="$sql") # Fetch database(s) associated to role $db_user as a string using space as delimiter (ex: "db1 db2 db3 db4")
+        echo "$dbs_list"
+    else
+        ynh_print_err --message="User \'$db_user\' does not exist"
+        echo ""
+    fi
+}
