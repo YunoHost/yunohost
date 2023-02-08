@@ -152,6 +152,7 @@ def tools_postinstall(
     password,
     ignore_dyndns=False,
     force_diskspace=False,
+    overwrite_root_password=True,
 ):
     from yunohost.dyndns import _dyndns_available
     from yunohost.utils.dns import is_yunohost_dyndns_domain
@@ -225,10 +226,11 @@ def tools_postinstall(
     domain_add(domain, dyndns)
     domain_main_domain(domain)
 
+    # First user
     user_create(username, domain, password, admin=True, fullname=fullname)
 
-    # Update LDAP admin and create home dir
-    tools_rootpw(password)
+    if overwrite_root_password:
+        tools_rootpw(password)
 
     # Enable UPnP silently and reload firewall
     firewall_upnp("enable", no_refresh=True)

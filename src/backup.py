@@ -32,6 +32,7 @@ from functools import reduce
 from packaging import version
 
 from moulinette import Moulinette, m18n
+from moulinette.utils.text import random_ascii
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
     read_file,
@@ -936,7 +937,10 @@ class RestoreManager:
                 )
 
             logger.debug("executing the post-install...")
-            tools_postinstall(domain, "Yunohost", True)
+
+            # Use a dummy password which is not gonna be saved anywhere
+            # because the next thing to happen should be that a full restore of the LDAP db will happen
+            tools_postinstall(domain, "admin", "Admin", password=random_ascii(70), ignore_dyndns=True, overwrite_root_password=False)
 
     def clean(self):
         """
