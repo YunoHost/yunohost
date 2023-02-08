@@ -1,3 +1,14 @@
+yunohost (11.1.6.1) stable; urgency=low
+
+  - dns: fix CAA recommended DNS conf -> 0 is apparently a more sensible value than 128... (2eb7da06)
+  - users: Allow digits in user fullname (024db62a)
+  - backup: fix full backup restore postinstall calls that now need first username+fullname+password (48e488f8)
+  - i18n: Translations updated for Arabic, Basque, Chinese (Simplified)
+
+  Thanks to all contributors <3 ! (ButterflyOfFire, Poesty Li, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 08 Feb 2023 22:50:37 +0100
+
 yunohost (11.1.6) stable; urgency=low
 
   - helpers: allow to use ynh_replace_string with @ ([#1588](https://github.com/yunohost/yunohost/pull/1588))
