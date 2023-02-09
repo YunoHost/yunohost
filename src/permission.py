@@ -814,10 +814,12 @@ def _update_ldap_group_permission(
 def _get_absolute_url(url, base_path):
     #
     # For example transform:
-    #    (/api, domain.tld/nextcloud)     into  domain.tld/nextcloud/api
-    #    (/api, domain.tld/nextcloud/)    into  domain.tld/nextcloud/api
-    #    (re:/foo.*, domain.tld/app)      into  re:domain\.tld/app/foo.*
-    #    (domain.tld/bar, domain.tld/app) into  domain.tld/bar
+    #    (/,    domain.tld/)                  into  domain.tld (no trailing /)
+    #    (/api, domain.tld/nextcloud)         into  domain.tld/nextcloud/api
+    #    (/api, domain.tld/nextcloud/)        into  domain.tld/nextcloud/api
+    #    (re:/foo.*, domain.tld/app)          into  re:domain\.tld/app/foo.*
+    #    (domain.tld/bar, domain.tld/app)     into  domain.tld/bar
+    #    (some.other.domain/, domain.tld/app) into  some.other.domain (no trailing /)
     #
     base_path = base_path.rstrip("/")
     if url is None:
@@ -827,7 +829,7 @@ def _get_absolute_url(url, base_path):
     if url.startswith("re:/"):
         return "re:" + base_path.replace(".", "\\.") + url[3:]
     else:
-        return url
+        return url.rstrip("/")
 
 
 def _validate_and_sanitize_permission_url(url, app_base_path, app):
