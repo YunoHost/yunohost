@@ -1,3 +1,11 @@
+yunohost (11.1.6.2) stable; urgency=low
+
+  - permissions: fix trailing-slash issue in edge case where app has additional urls related to a different domain (a4fa6e07)
+  - backup: fix postinstall during full restore ... tmp admin user can't be named 'admin' because of conflicting alias with the admins group (65894007)
+  - doc: improve app resource doc (a154e811)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 09 Feb 2023 19:00:42 +0100
+
 yunohost (11.1.6.1) stable; urgency=low
 
   - dns: fix CAA recommended DNS conf -> 0 is apparently a more sensible value than 128... (2eb7da06)
