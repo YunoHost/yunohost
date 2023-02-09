@@ -24,7 +24,7 @@ def render(helpers):
 
     data = {
         "helpers": helpers,
-        "date": datetime.datetime.now().strftime("%m/%d/%Y"),
+        "date": datetime.datetime.now().strftime("%d/%m/%Y"),
         "version": open("../debian/changelog").readlines()[0].split()[1].strip("()"),
     }
 
