@@ -1050,6 +1050,7 @@ def app_install(
     if packaging_format >= 2:
         for question in questions:
             # Except user-provider passwords
+            # ... which we need to reinject later in the env_dict
             if question.type == "password":
                 continue
 
@@ -1101,11 +1102,22 @@ def app_install(
         app_instance_name, args=args, workdir=extracted_app_folder, action="install"
     )
 
+    # If packaging_format v2+, save all install questions as settings
+    if packaging_format >= 2:
+        for question in questions:
+            # Reinject user-provider passwords which are not in the app settings
+            # (cf a few line before)
+            if question.type == "password":
+                env_dict[question.name] = question.value
+
+    # We want to hav the env_dict in the log ... but not password values
     env_dict_for_logging = env_dict.copy()
     for question in questions:
         # Or should it be more generally question.redact ?
         if question.type == "password":
             del env_dict_for_logging[f"YNH_APP_ARG_{question.name.upper()}"]
+            if question.name in env_dict_for_logging:
+                del env_dict_for_logging[question.name]
 
     operation_logger.extra.update({"env": env_dict_for_logging})
 
