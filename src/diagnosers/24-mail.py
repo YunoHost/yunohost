@@ -277,7 +277,7 @@ class MyDiagnoser(Diagnoser):
                 data={"error": str(e)},
                 status="ERROR",
                 summary="diagnosis_mail_queue_unavailable",
-                details="diagnosis_mail_queue_unavailable_details",
+                details=["diagnosis_mail_queue_unavailable_details"],
             )
         else:
             if pending_emails > 100:
