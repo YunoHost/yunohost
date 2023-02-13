@@ -298,11 +298,11 @@ class PermissionsResource(AppResource):
                 properties[perm]["show_tile"] = bool(properties[perm]["url"])
 
         if (
-            isinstance(properties["main"]["url"], str)
-            and properties["main"]["url"] != "/"
+            not isinstance(properties["main"].get("url"), str)
+            or properties["main"]["url"] != "/"
         ):
             raise YunohostError(
-                "URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app",
+                "URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app, i.e $domain.tld/$path/",
                 raw_msg=True
             )
 
