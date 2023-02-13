@@ -704,7 +704,7 @@
     "global_settings_setting_security_experimental_enabled": "Funciones de seguridad experimentales",
     "migration_0024_rebuild_python_venv_disclaimer_ignored": "Virtualenvs no puede reconstruirse automáticamente para esas aplicaciones. Necesitas forzar una actualización para ellas, lo que puede hacerse desde la línea de comandos con: `yunohost app upgrade --force APP`: {ignored_apps}",
     "migration_0024_rebuild_python_venv_failed": "Error al reconstruir el virtualenv de Python para {app}. La aplicación puede no funcionar mientras esto no se resuelva. Deberías arreglar la situación forzando la actualización de esta app usando `yunohost app upgrade --force {app}`.",
-    "app_arch_not_supported": "Esta aplicación sólo puede instalarse en arquitecturas {', '.join(required)} pero la arquitectura de su servidor es {current}",
+    "app_arch_not_supported": "Esta aplicación sólo puede instalarse en arquitecturas {required} pero la arquitectura de su servidor es {current}",
     "app_resource_failed": "Falló la asignación, desasignación o actualización de recursos para {app}: {error}",
     "app_not_enough_disk": "Esta aplicación requiere {required} espacio libre.",
     "app_not_enough_ram": "Esta aplicación requiere {required} de RAM para ser instalada/actualizada, pero solo hay {current} disponible actualmente.",

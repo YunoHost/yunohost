@@ -73,7 +73,7 @@
     "app_action_broke_system": "Wydaje się, że ta akcja przerwała te ważne usługi: {services}",
     "additional_urls_already_removed": "Dodatkowy URL '{url}' już usunięty w dodatkowym URL dla uprawnienia '{permission}'",
     "additional_urls_already_added": "Dodatkowy URL '{url}' już dodany w dodatkowym URL dla uprawnienia '{permission}'",
-    "app_arch_not_supported": "Ta aplikacja może być zainstalowana tylko na architekturach {', '.join(required)}, a twoja architektura serwera to {current}",
+    "app_arch_not_supported": "Ta aplikacja może być zainstalowana tylko na architekturach {required}, a twoja architektura serwera to {current}",
     "app_argument_invalid": "Wybierz poprawną wartość dla argumentu '{name}': {błąd}",
     "all_users": "Wszyscy użytkownicy YunoHost",
     "app_action_failed": "Nie udało się uruchomić akcji {action} dla aplikacji {app}",

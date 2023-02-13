@@ -2582,7 +2582,7 @@ def _check_manifest_requirements(
     yield (
         "arch",
         arch_requirement in ["all", "?"] or arch in arch_requirement,
-        {"current": arch, "required": arch_requirement},
+        {"current": arch, "required": ', '.join(arch_requirement)},
         "app_arch_not_supported",  # i18n: app_arch_not_supported
     )
 

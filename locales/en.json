@@ -13,7 +13,7 @@
     "app_already_installed": "{app} is already installed",
     "app_already_installed_cant_change_url": "This app is already installed. The URL cannot be changed just by this function. Check in `app changeurl` if it's available.",
     "app_already_up_to_date": "{app} is already up-to-date",
-    "app_arch_not_supported": "This app can only be installed on architectures {', '.join(required)} but your server architecture is {current}",
+    "app_arch_not_supported": "This app can only be installed on architectures {required} but your server architecture is {current}",
     "app_argument_choice_invalid": "Pick a valid value for argument '{name}': '{value}' is not among the available choices ({choices})",
     "app_argument_invalid": "Pick a valid value for the argument '{name}': {error}",
     "app_argument_password_no_default": "Error while parsing password argument '{name}': password argument can't have a default value for security reasons",

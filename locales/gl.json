@@ -740,7 +740,7 @@
     "global_settings_setting_passwordless_sudo": "Permitir a Admins usar 'sudo' sen ter que volver a escribir o contrasinal",
     "global_settings_setting_portal_theme": "Decorado do Portal",
     "global_settings_setting_portal_theme_help": "Tes máis info acerca da creación de decorados para o portal de acceso en https://yunohost.org/theming",
-    "app_arch_not_supported": "Esta app só pode ser instalada e arquitecturas {', '.join(required)} pero a arquitectura do teu servidor é {current}",
+    "app_arch_not_supported": "Esta app só pode ser instalada e arquitecturas {required} pero a arquitectura do teu servidor é {current}",
     "app_not_enough_disk": "Esta app precisa {required} de espazo libre.",
     "app_yunohost_version_not_supported": "Esta app require YunoHost >= {required} pero a versión actual instalada é {current}",
     "confirm_app_insufficient_ram": "PERIGO! Esta app precisa {required} de RAM para instalar/actualizar pero só hai {current} dispoñibles. Incluso se a app funcionase, o seu proceso de instalación/actualización require gran cantidade de RAM e o teu servidor podería colgarse e fallar. Se queres asumir o risco, escribe '{answers}'",

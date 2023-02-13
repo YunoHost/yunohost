@@ -740,7 +740,7 @@
     "domain_cannot_add_muc_upload": "Ezin duzu 'muc.'-ekin hasten den domeinurik gehitu. Mota honetako izenak YunoHosten integratuta dagoen XMPP taldeko txatek erabil ditzaten gordeta daude.",
     "confirm_app_insufficient_ram": "KONTUZ! Aplikazio honek {required} RAM behar ditu instalatu edo bertsio-berritzeko baina unean {current} bakarrik daude erabilgarri. Aplikazioa ibiliko balitz ere, instalazioak edo bertsio-berritzeak RAM kopuru handia eskatzen du eta zure zerbitzaria izoztu eta huts egin lezake. Hala ere arriskatu nahi baduzu idatzi '{answers}'",
     "confirm_notifications_read": "ADI: ikuskatu aplikazioaren jakinarazpenak jarraitu baino lehen, baliteke jakin beharreko zerbait esatea. [{answers}]",
-    "app_arch_not_supported": "Aplikazio hau {', '.join(required)} arkitekturan instala daiteke bakarrik, baina zure zerbitzariaren arkitektura {current} da",
+    "app_arch_not_supported": "Aplikazio hau {required} arkitekturan instala daiteke bakarrik, baina zure zerbitzariaren arkitektura {current} da",
     "app_resource_failed": "Huts egin du {app} aplikaziorako baliabideen eguneraketak / prestaketak / askapenak: {error}",
     "app_not_enough_disk": "Aplikazio honek {required} espazio libre behar ditu.",
     "app_yunohost_version_not_supported": "Aplikazio honek YunoHost >= {required} behar du baina unean instalatutako bertsioa {current} da",
