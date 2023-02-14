@@ -743,7 +743,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                     "Upgrade failed ... attempting to restore the satefy backup (Yunohost first need to remove the app for this) ..."
                 )
 
-                app_remove(app_instance_name)
+                app_remove(app_instance_name, force_workdir=extracted_app_folder)
                 backup_restore(
                     name=safety_backup_name, apps=[app_instance_name], force=True
                 )
@@ -1270,14 +1270,14 @@ def app_install(
 
 
 @is_unit_operation()
-def app_remove(operation_logger, app, purge=False):
+def app_remove(operation_logger, app, purge=False, force_workdir=None):
     """
     Remove app
 
     Keyword arguments:
         app -- App(s) to delete
         purge -- Remove with all app data
-
+        force_workdir -- Special var to force the working directoy to use, in context such as remove-after-failed-upgrade or remove-after-failed-restore
     """
     from yunohost.utils.legacy import _patch_legacy_php_versions, _patch_legacy_helpers
     from yunohost.hook import hook_exec, hook_remove, hook_callback
@@ -1296,7 +1296,6 @@ def app_remove(operation_logger, app, purge=False):
     operation_logger.start()
 
     logger.info(m18n.n("app_start_remove", app=app))
-
     app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
     # Attempt to patch legacy helpers ...
@@ -1306,8 +1305,20 @@ def app_remove(operation_logger, app, purge=False):
     # script might date back from jessie install)
     _patch_legacy_php_versions(app_setting_path)
 
-    manifest = _get_manifest_of_app(app_setting_path)
-    tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
+    if force_workdir:
+        # This is when e.g. calling app_remove() from the upgrade-failed case
+        # where we want to remove using the *new* remove script and not the old one
+        # and also get the new manifest
+        # It's especially important during v1->v2 app format transition where the
+        # setting names change (e.g. install_dir instead of final_path) and
+        # running the old remove script doesnt make sense anymore ...
+        tmp_workdir_for_app = tempfile.mkdtemp(prefix="app_", dir=APP_TMP_WORKDIRS)
+        os.system(f"cp -a {force_workdir}/* {tmp_workdir_for_app}/")
+    else:
+        tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
+
+    manifest = _get_manifest_of_app(tmp_workdir_for_app)
+
     remove_script = f"{tmp_workdir_for_app}/scripts/remove"
 
     env_dict = {}
