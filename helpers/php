@@ -57,6 +57,7 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 #
 # Requires YunoHost version 4.1.0 or higher.
 ynh_add_fpm_config() {
+    local _globalphpversion=${phpversion-:}
     # Declare an array to define the options of this helper.
     local legacy_args=vtufpd
     local -A args_array=([v]=phpversion= [t]=use_template [u]=usage= [f]=footprint= [p]=package= [d]=dedicated_service)
@@ -81,11 +82,16 @@ ynh_add_fpm_config() {
     dedicated_service=${dedicated_service:-0}
 
     # Set the default PHP-FPM version by default
-    phpversion="${phpversion:-$YNH_PHP_VERSION}"
+    if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} lt 2; then
+        phpversion="${phpversion:-$YNH_PHP_VERSION}"
+    else
+        phpversion="${phpversion:-$_globalphpversion}"
+    fi
 
     local old_phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
 
     # If the PHP version changed, remove the old fpm conf
+    # (NB: This stuff is also handled by the apt helper, which is usually triggered before this helper)
     if [ -n "$old_phpversion" ] && [ "$old_phpversion" != "$phpversion" ]; then
         local old_php_fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
         local old_php_finalphpconf="$old_php_fpm_config_dir/pool.d/$app.conf"
@@ -100,6 +106,7 @@ ynh_add_fpm_config() {
     # Legacy args (packager should just list their php dependency as regular apt dependencies...
     if [ -n "$package" ]; then
         # Install the additionnal packages from the default repository
+        ynh_print_warn --message "Argument --package of ynh_add_fpm_config is deprecated and to be removed in the future"
         ynh_install_app_dependencies "$package"
     fi
 
@@ -481,6 +488,7 @@ YNH_COMPOSER_VERSION=${YNH_COMPOSER_VERSION:-$YNH_DEFAULT_COMPOSER_VERSION}
 #
 # Requires YunoHost version 4.2 or higher.
 ynh_composer_exec() {
+    local _globalphpversion=${phpversion-:}
     # Declare an array to define the options of this helper.
     local legacy_args=vwc
     declare -Ar args_array=([v]=phpversion= [w]=workdir= [c]=commands=)
@@ -490,7 +498,12 @@ ynh_composer_exec() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     workdir="${workdir:-${install_dir:-$final_path}}"
-    phpversion="${phpversion:-$YNH_PHP_VERSION}"
+
+    if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} lt 2; then
+        phpversion="${phpversion:-$YNH_PHP_VERSION}"
+    else
+        phpversion="${phpversion:-$_globalphpversion}"
+    fi
 
     COMPOSER_HOME="$workdir/.composer" COMPOSER_MEMORY_LIMIT=-1 \
         php${phpversion} "$workdir/composer.phar" $commands \
@@ -507,6 +520,7 @@ ynh_composer_exec() {
 #
 # Requires YunoHost version 4.2 or higher.
 ynh_install_composer() {
+    local _globalphpversion=${phpversion-:}
     # Declare an array to define the options of this helper.
     local legacy_args=vwac
     declare -Ar args_array=([v]=phpversion= [w]=workdir= [a]=install_args= [c]=composerversion=)
@@ -521,7 +535,13 @@ ynh_install_composer() {
     else
         workdir="${workdir:-$install_dir}"
     fi
-    phpversion="${phpversion:-$YNH_PHP_VERSION}"
+
+    if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} lt 2; then
+        phpversion="${phpversion:-$YNH_PHP_VERSION}"
+    else
+        phpversion="${phpversion:-$_globalphpversion}"
+    fi
+
     install_args="${install_args:-}"
     composerversion="${composerversion:-$YNH_COMPOSER_VERSION}"
 
