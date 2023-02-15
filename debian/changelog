@@ -1,3 +1,23 @@
+yunohost (11.1.7) stable; urgency=low
+
+  - mail: fix complain about unused parameters in postfix: exclude_internal=yes / search_timeout=30 (0da6370d)
+  - mail: Add push notification plugins in dovecot ([#1594](https://github.com/yunohost/yunohost/pull/1594))
+  - diagnosis: fix typo, diagnosis detail should be a list, not a string (d0ca120e)
+  - helpers: in apt/php stuff, don't try to upgrade-alternatives if the default PHP version ain't available anymore (e24ddd29)
+  - apps: fix inconsistent app removal during remove-after-failed-upgrade and remove-after-failed-backup contexts (7be7eb11)
+  - appsv2: we don't want to store user-provided passwords by default, but they should still be set in the env for the script to use it (9bd4344f)
+  - appsv2: fix i18n for arch mismatch, can't juste join() inside string formated with .format() (aa9bc47a)
+  - appsv2: missing raw_msg=True for exceptions (1d1a3756)
+  - appsv2: fix check that main permission url is '/' (ab8a6b94)
+  - appsv2: mysqlshow is fucking dumb and returns exit code 0 when DB doesnt exists ... (0ab20b73)
+  - appsv2: also replace __DOMAIN__ in resource properties (0c4a006a)
+  - appsv2: in php helpers, use the global $phpversion var/setting by default instead of $YNH_PHP_VERSION (60b21795)
+  - i18n: Translations updated for Arabic, Galician
+
+  Thanks to all contributors <3 ! (ButterflyOfFire, John Hackett, José M)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 15 Feb 2023 21:08:04 +0100
+
 yunohost (11.1.6.2) stable; urgency=low
 
   - permissions: fix trailing-slash issue in edge case where app has additional urls related to a different domain (a4fa6e07)
