@@ -277,7 +277,10 @@ ynh_install_app_dependencies() {
         ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
 
         # Set the default php version back as the default version for php-cli.
-        update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
+        if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION
+        then
+            update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
+        fi
     elif grep --quiet 'php' <<< "$dependencies"; then
         ynh_app_setting_set --app=$app --key=phpversion --value=$YNH_DEFAULT_PHP_VERSION
     fi
