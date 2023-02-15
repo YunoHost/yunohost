@@ -1369,8 +1369,6 @@ class RestoreManager:
         from yunohost.user import user_group_list
         from yunohost.permission import (
             permission_create,
-            permission_delete,
-            user_permission_list,
             permission_sync_to_user,
         )
 
