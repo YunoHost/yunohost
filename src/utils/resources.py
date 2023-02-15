@@ -152,6 +152,9 @@ class AppResource:
         for key, value in properties.items():
             if isinstance(value, str):
                 value = value.replace("__APP__", self.app)
+                # This one is needed for custom permission urls where the domain might be used
+                if "__DOMAIN__" in value:
+                    value.replace("__DOMAIN__", self.get_setting("domain"))
             setattr(self, key, value)
 
     def get_setting(self, key):
@@ -298,11 +301,12 @@ class PermissionsResource(AppResource):
                 properties[perm]["show_tile"] = bool(properties[perm]["url"])
 
         if (
-            isinstance(properties["main"]["url"], str)
-            and properties["main"]["url"] != "/"
+            not isinstance(properties["main"].get("url"), str)
+            or properties["main"]["url"] != "/"
         ):
             raise YunohostError(
-                "URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app"
+                "URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app, i.e $domain.tld/$path/",
+                raw_msg=True
             )
 
         super().__init__({"permissions": properties}, *args, **kwargs)
@@ -470,12 +474,12 @@ class SystemuserAppResource(AppResource):
         if check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
             os.system(f"deluser {self.app} >/dev/null")
         if check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
-            raise YunohostError(f"Failed to delete system user for {self.app}")
+            raise YunohostError(f"Failed to delete system user for {self.app}", raw_msg=True)
 
         if check_output(f"getent group {self.app} &>/dev/null || true").strip():
             os.system(f"delgroup {self.app} >/dev/null")
         if check_output(f"getent group {self.app} &>/dev/null || true").strip():
-            raise YunohostError(f"Failed to delete system user for {self.app}")
+            raise YunohostError(f"Failed to delete system user for {self.app}", raw_msg=True)
 
         # FIXME : better logging and error handling, add stdout/stderr from the deluser/delgroup commands...
 
@@ -743,7 +747,8 @@ class AptDependenciesAppResource(AppResource):
                 isinstance(values.get(k), str) for k in ["repo", "key", "packages"]
             ):
                 raise YunohostError(
-                    "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' and 'packages' defined and be strings"
+                    "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' and 'packages' defined and be strings",
+                    raw_msg=True
                 )
 
         super().__init__(properties, *args, **kwargs)
@@ -860,7 +865,8 @@ class PortsResource(AppResource):
                 if infos["fixed"]:
                     if self._port_is_used(port_value):
                         raise YunohostValidationError(
-                            f"Port {port_value} is already used by another process or app."
+                            f"Port {port_value} is already used by another process or app.",
+                            raw_msg=True
                         )
                 else:
                     while self._port_is_used(port_value):
@@ -950,7 +956,7 @@ class DatabaseAppResource(AppResource):
 
     def db_exists(self, db_name):
         if self.dbtype == "mysql":
-            return os.system(f"mysqlshow '{db_name}' >/dev/null 2>/dev/null") == 0
+            return os.system(f"mysqlshow | grep -q -w '{db_name}' 2>/dev/null") == 0
         elif self.dbtype == "postgresql":
             return (
                 os.system(
