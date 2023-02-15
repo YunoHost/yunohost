@@ -244,5 +244,6 @@
     "pattern_fullname": "يجب أن يكون اسماً كاملاً صالحاً (على الأقل 3 حروف)",
     "migration_0021_main_upgrade": "بداية التحديث الرئيسي…",
     "migration_0021_patching_sources_list": "تحديث ملف sources.lists…",
-    "pattern_firstname": "يجب أن يكون اسماً أولياً صالحاً (على الأقل 3 حروف)"
+    "pattern_firstname": "يجب أن يكون اسماً أولياً صالحاً (على الأقل 3 حروف)",
+    "yunohost_configured": "تم إعداد YunoHost الآن"
 }
