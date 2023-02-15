@@ -152,6 +152,9 @@ class AppResource:
         for key, value in properties.items():
             if isinstance(value, str):
                 value = value.replace("__APP__", self.app)
+                # This one is needed for custom permission urls where the domain might be used
+                if "__DOMAIN__" in value:
+                    value.replace("__DOMAIN__", self.get_setting("domain"))
             setattr(self, key, value)
 
     def get_setting(self, key):
