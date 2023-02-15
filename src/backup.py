@@ -941,7 +941,14 @@ class RestoreManager:
 
             # Use a dummy password which is not gonna be saved anywhere
             # because the next thing to happen should be that a full restore of the LDAP db will happen
-            tools_postinstall(domain, "tmpadmin", "Tmp Admin", password=random_ascii(70), ignore_dyndns=True, overwrite_root_password=False)
+            tools_postinstall(
+                domain,
+                "tmpadmin",
+                "Tmp Admin",
+                password=random_ascii(70),
+                ignore_dyndns=True,
+                overwrite_root_password=False,
+            )
 
     def clean(self):
         """
@@ -1190,7 +1197,7 @@ class RestoreManager:
         except Exception as e:
             raise YunohostError(
                 f"The following critical error happened during restoration: {e}",
-                raw_msg=True
+                raw_msg=True,
             )
         finally:
             self.clean()

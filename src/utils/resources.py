@@ -182,7 +182,10 @@ class AppResource:
         tmpdir = _make_tmp_workdir_for_app(app=self.app)
 
         env_ = _make_environment_for_app_script(
-            self.app, workdir=tmpdir, action=f"{action}_{self.type}", include_app_settings=True,
+            self.app,
+            workdir=tmpdir,
+            action=f"{action}_{self.type}",
+            include_app_settings=True,
         )
         env_.update(env)
 
@@ -306,7 +309,7 @@ class PermissionsResource(AppResource):
         ):
             raise YunohostError(
                 "URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app, i.e $domain.tld/$path/",
-                raw_msg=True
+                raw_msg=True,
             )
 
         super().__init__({"permissions": properties}, *args, **kwargs)
@@ -474,12 +477,16 @@ class SystemuserAppResource(AppResource):
         if check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
             os.system(f"deluser {self.app} >/dev/null")
         if check_output(f"getent passwd {self.app} &>/dev/null || true").strip():
-            raise YunohostError(f"Failed to delete system user for {self.app}", raw_msg=True)
+            raise YunohostError(
+                f"Failed to delete system user for {self.app}", raw_msg=True
+            )
 
         if check_output(f"getent group {self.app} &>/dev/null || true").strip():
             os.system(f"delgroup {self.app} >/dev/null")
         if check_output(f"getent group {self.app} &>/dev/null || true").strip():
-            raise YunohostError(f"Failed to delete system user for {self.app}", raw_msg=True)
+            raise YunohostError(
+                f"Failed to delete system user for {self.app}", raw_msg=True
+            )
 
         # FIXME : better logging and error handling, add stdout/stderr from the deluser/delgroup commands...
 
@@ -748,7 +755,7 @@ class AptDependenciesAppResource(AppResource):
             ):
                 raise YunohostError(
                     "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' and 'packages' defined and be strings",
-                    raw_msg=True
+                    raw_msg=True,
                 )
 
         super().__init__(properties, *args, **kwargs)
@@ -866,7 +873,7 @@ class PortsResource(AppResource):
                     if self._port_is_used(port_value):
                         raise YunohostValidationError(
                             f"Port {port_value} is already used by another process or app.",
-                            raw_msg=True
+                            raw_msg=True,
                         )
                 else:
                     while self._port_is_used(port_value):
