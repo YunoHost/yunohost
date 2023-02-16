@@ -1359,7 +1359,9 @@ class GroupQuestion(Question):
 
         super().__init__(question, context)
 
-        self.choices = list(user_group_list(short=True, include_primary_groups=False)["groups"])
+        self.choices = list(
+            user_group_list(short=True, include_primary_groups=False)["groups"]
+        )
 
         def _human_readable_group(g):
             # i18n: visitors
