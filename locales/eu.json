@@ -738,7 +738,7 @@
     "group_no_change": "Ez da ezer aldatu behar '{group}' talderako",
     "app_not_enough_ram": "Aplikazio honek {required} RAM behar ditu instalatu edo bertsio-berritzeko, baina {current} bakarrik daude erabilgarri une honetan.",
     "domain_cannot_add_muc_upload": "Ezin duzu 'muc.'-ekin hasten den domeinurik gehitu. Mota honetako izenak YunoHosten integratuta dagoen XMPP taldeko txatek erabil ditzaten gordeta daude.",
-    "confirm_app_insufficient_ram": "KONTUZ! Aplikazio honek {required} RAM behar ditu instalatu edo bertsio-berritzeko baina unean {current} bakarrik daude erabilgarri. Aplikazioa ibiliko balitz ere, instalazioak edo bertsio-berritzeak RAM kopuru handia eskatzen du eta zure zerbitzaria izoztu eta huts egin lezake. Hala ere arriskatu nahi baduzu idatzi '{answers}'",
+    "confirm_app_insufficient_ram": "KONTUZ! Aplikazio honek {required} RAM behar ditu instalatu edo bertsio-berritzeko baina unean soilik {current} daude erabilgarri. Aplikazioa ibiliko balitz ere, instalazioak edo bertsio-berritzeak RAM kopuru handia behar du eta zure zerbitzariak erantzuteari utzi eta huts egin lezake. Hala ere arriskatu nahi baduzu idatzi '{answers}'",
     "confirm_notifications_read": "ADI: ikuskatu aplikazioaren jakinarazpenak jarraitu baino lehen, baliteke jakin beharreko zerbait esatea. [{answers}]",
     "app_arch_not_supported": "Aplikazio hau {required} arkitekturan instala daiteke bakarrik, baina zure zerbitzariaren arkitektura {current} da",
     "app_resource_failed": "Huts egin du {app} aplikaziorako baliabideen eguneraketak / prestaketak / askapenak: {error}",
@@ -752,6 +752,6 @@
     "domain_config_xmpp_help": "Ohart ongi: XMPP ezaugarri batzuk gaitzeko DNS erregistroak eguneratu eta Lets Encrypt ziurtagiria birsortu beharko dira",
     "global_settings_setting_dns_exposure": "DNS ezarpenetan eta diagnostikoan kontuan hartzeko IP bertsioak",
     "global_settings_setting_dns_exposure_help": "Ohart ongi: honek gomendatutako DNS ezarpenei eta diagnostikoari eragiten die soilik. Ez du eraginik sistemaren ezarpenetan.",
-    "diagnosis_ip_no_ipv6_tip_important": "IPv6 automatikoki ezarri ohi du sistemak edo hornitzaileak erabilgarri baldin badago. Bestela eskuz ezarri beharko dituzu aukera batzuk ondorengo dokumentazioan azaldu bezala: <a href='https://yunohost.org/#/ipv6'>https://yunohost.org/#/ipv62</a>.",
+    "diagnosis_ip_no_ipv6_tip_important": "IPv6 automatikoki ezarri ohi du sistemak edo hornitzaileak erabilgarri baldin badago. Bestela eskuz ezarri beharko dituzu aukera batzuk ondorengo dokumentazioan azaldu bezala: <a href='https://yunohost.org/#/ipv6'>https://yunohost.org/#/ipv6</a>.",
     "pattern_fullname": "Baliozko izen oso bat izan behar da (gutxienez hiru karaktere)"
 }
