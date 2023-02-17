@@ -46,6 +46,27 @@ class AppResourceManager:
         if "resources" not in self.wanted:
             self.wanted["resources"] = {}
 
+        if self.wanted["resources"]:
+            self.validate()
+
+    def validate(self):
+
+        resources = self.wanted["resources"]
+
+        if "database" in list(resources.keys()):
+            if "apt" not in list(resources.keys()):
+                logger.error(" ! Packagers: having an 'apt' resource is mandatory when using a 'database' resource, to also install postgresql/mysql if needed")
+            else:
+                if list(resources.keys()).index("database") < list(resources.keys()).index("apt"):
+                    logger.error(" ! Packagers: the 'apt' resource should be placed before the 'database' resource, to install postgresql/mysql if needed *before* provisioning the database")
+
+                dbtype = resources["database"]["type"]
+                apt_packages = resources["apt"].get("packages", "").split(", ")
+                if dbtype == "mysql" and "mariadb-server" not in apt_packages:
+                    logger.error(" ! Packagers : when using a mysql database, you should add mariadb-server in apt dependencies. Even though it's currently installed by default in YunoHost installations, it might not be in the future !")
+                if dbtype == "postgresql" and "postgresql" not in apt_packages:
+                    logger.error(" ! Packagers : when using a postgresql database, you should add postgresql in apt dependencies.")
+
     def apply(
         self, rollback_and_raise_exception_if_failure, operation_logger=None, **context
     ):
