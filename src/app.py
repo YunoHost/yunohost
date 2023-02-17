@@ -2088,7 +2088,12 @@ def _parse_app_doc_and_notifications(path):
 
         if pagename not in doc:
             doc[pagename] = {}
-        doc[pagename][lang] = read_file(filepath).strip()
+
+        try:
+            doc[pagename][lang] = read_file(filepath).strip()
+        except Exception as e:
+            logger.error(e)
+            continue
 
     notifications = {}
 
@@ -2102,7 +2107,11 @@ def _parse_app_doc_and_notifications(path):
             lang = m.groups()[0].strip("_") if m.groups()[0] else "en"
             if pagename not in notifications[step]:
                 notifications[step][pagename] = {}
-            notifications[step][pagename][lang] = read_file(filepath).strip()
+            try:
+                notifications[step][pagename][lang] = read_file(filepath).strip()
+            except Exception as e:
+                logger.error(e)
+                continue
 
         for filepath in glob.glob(os.path.join(path, "doc", f"{step}.d") + "/*.md"):
             m = re.match(
@@ -2114,7 +2123,12 @@ def _parse_app_doc_and_notifications(path):
             lang = lang.strip("_") if lang else "en"
             if pagename not in notifications[step]:
                 notifications[step][pagename] = {}
-            notifications[step][pagename][lang] = read_file(filepath).strip()
+
+            try:
+                notifications[step][pagename][lang] = read_file(filepath).strip()
+            except Exception as e:
+                logger.error(e)
+                continue
 
     return doc, notifications
 
