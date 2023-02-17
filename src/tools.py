@@ -161,7 +161,7 @@ def tools_postinstall(
         assert_password_is_compatible,
     )
     from yunohost.domain import domain_main_domain
-    from yunohost.user import user_create
+    from yunohost.user import user_create, ADMIN_ALIASES
     import psutil
 
     # Do some checks at first
@@ -173,6 +173,9 @@ def tools_postinstall(
             "It looks like you're trying to re-postinstall a system that was already working previously ... If you recently had some bug or issues with your installation, please first discuss with the team on how to fix the situation instead of savagely re-running the postinstall ...",
             raw_msg=True,
         )
+
+    if username in ADMIN_ALIASES:
+        raise YunohostValidationError(f"Unfortunately, {username} cannot be used as a username", raw_msg=True)
 
     # Check there's at least 10 GB on the rootfs...
     disk_partitions = sorted(
