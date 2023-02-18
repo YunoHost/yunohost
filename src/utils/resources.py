@@ -469,13 +469,13 @@ class SystemuserAppResource(AppResource):
         # FIXME : validate that no yunohost user exists with that name?
         # and/or that no system user exists during install ?
 
-        if os.system(f"getent passwd {self.app} &>/dev/null") != 0:
+        if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") != 0:
             # FIXME: improve logging ? os.system wont log stdout / stderr
             cmd = f"useradd --system --user-group {self.app}"
             ret = os.system(cmd)
             assert ret == 0, f"useradd command failed with exit code {ret}"
 
-        if os.system(f"getent passwd {self.app} &>/dev/null") != 0:
+        if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") != 0:
             raise YunohostError(
                 f"Failed to create system user for {self.app}", raw_msg=True
             )
@@ -495,16 +495,16 @@ class SystemuserAppResource(AppResource):
         os.system(f"usermod -G {','.join(groups)} {self.app}")
 
     def deprovision(self, context: Dict = {}):
-        if os.system(f"getent passwd {self.app} &>/dev/null") == 0:
+        if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") == 0:
             os.system(f"deluser {self.app} >/dev/null")
-        if os.system(f"getent passwd {self.app} &>/dev/null") == 0:
+        if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") == 0:
             raise YunohostError(
                 f"Failed to delete system user for {self.app}", raw_msg=True
             )
 
-        if os.system(f"getent group {self.app} &>/dev/null") == 0:
+        if os.system(f"getent group {self.app} >/dev/null 2>/dev/null") == 0:
             os.system(f"delgroup {self.app} >/dev/null")
-        if os.system(f"getent group {self.app} &>/dev/null") == 0:
+        if os.system(f"getent group {self.app} >/dev/null 2>/dev/null") == 0:
             raise YunohostError(
                 f"Failed to delete system user for {self.app}", raw_msg=True
             )
