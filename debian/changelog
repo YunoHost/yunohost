@@ -1,3 +1,19 @@
+yunohost (11.1.8) stable; urgency=low
+
+  - apps: don't miserably crash when failing to read .md file such as DESCRIPTION.md (58ac633d)
+  - apps: fix edge case when upgrading using a local folder not modified since a while (d3ec5d05)
+  - appsv2: fix system user provisioning ... (d123fd76, 771b801e)
+  - appsv2: add check about database vs. apt consistency in resource / warn about lack of explicit dependency to mariadb-server (97b69e7c)
+  - appsv2: add home dir that defaults to /var/www/__APP__ for system user resource (ce7227c0)
+  - postgresql: fix regenconf hook, the arg format thingy changed a bit at some point ? (8a43b046)
+  - regenconf: in apt/php stuff, don't try to upgrade-alternatives if the default PHP version ain't available anymore (similar to commit e24ddd29) (18e034df)
+  - postinstall: raise a proper error when trying to use e.g. 'admin' as the first username which will conflict with the admins group mail aliases (475c93d5)
+  - i18n: Translations updated for Arabic, Basque
+
+  Thanks to all contributors <3 ! (ButterflyOfFire, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 19 Feb 2023 18:22:02 +0100
+
 yunohost (11.1.7) stable; urgency=low
 
   - mail: fix complain about unused parameters in postfix: exclude_internal=yes / search_timeout=30 (0da6370d)
