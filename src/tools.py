@@ -474,13 +474,6 @@ def tools_upgrade(operation_logger, target=None):
 
         logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
-        def is_relevant(line):
-            irrelevants = [
-                "service sudo-ldap already provided",
-                "Reading database ...",
-            ]
-            return all(i not in line.rstrip() for i in irrelevants)
-
         callbacks = (
             lambda l: logger.info("+ " + l.rstrip() + "\r")
             if _apt_log_line_is_relevant(l)
