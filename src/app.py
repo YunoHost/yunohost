@@ -2392,6 +2392,10 @@ def _extract_app_from_folder(path: str) -> Tuple[Dict, str]:
         if path[-1] != "/":
             path = path + "/"
         cp(path, extracted_app_folder, recursive=True)
+        # Change the last edit time which is used in _make_tmp_workdir_for_app
+        # to cleanup old dir ... otherwise it may end up being incorrectly removed
+        # at the end of the safety-backup-before-upgrade :/
+        os.system(f"touch {extracted_app_folder}")
     else:
         try:
             shutil.unpack_archive(path, extracted_app_folder)
