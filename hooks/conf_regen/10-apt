@@ -2,6 +2,8 @@
 
 set -e
 
+readonly YNH_DEFAULT_PHP_VERSION=7.4
+
 do_pre_regen() {
     pending_dir=$1
 
