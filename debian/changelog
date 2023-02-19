@@ -1,3 +1,10 @@
+yunohost (11.1.8.1) stable; urgency=low
+
+  - postgresql: moar regenconf fixes (e6ae3892)
+  - postgresql: ugly hack to hide boring warning messages when installing postgresql with apt the first time ... (13d50f4f)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 19 Feb 2023 19:41:05 +0100
+
 yunohost (11.1.8) stable; urgency=low
 
   - apps: don't miserably crash when failing to read .md file such as DESCRIPTION.md (58ac633d)
