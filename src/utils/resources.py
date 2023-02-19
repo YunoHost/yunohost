@@ -437,7 +437,8 @@ class SystemuserAppResource(AppResource):
 
     ##### Properties:
     - `allow_ssh`: (default: False) Adds the user to the ssh.app group, allowing SSH connection via this user
-    - `allow_sftp`: (defalt: False) Adds the user to the sftp.app group, allowing SFTP connection via this user
+    - `allow_sftp`: (default: False) Adds the user to the sftp.app group, allowing SFTP connection via this user
+    - `home`: (default: `/var/www/__APP__`) Defines the home property for this user. NB: unfortunately you can't simply use `__INSTALL_DIR__` or `__DATA_DIR__` for now
 
     ##### Provision/Update:
     - will create the system user if it doesn't exists yet
@@ -457,13 +458,13 @@ class SystemuserAppResource(AppResource):
     type = "system_user"
     priority = 20
 
-    default_properties: Dict[str, Any] = {"allow_ssh": False, "allow_sftp": False}
+    default_properties: Dict[str, Any] = {"allow_ssh": False, "allow_sftp": False, "home": "/var/www/__APP__"}
 
-    # FIXME : wat do regarding ssl-cert, multimedia
-    # FIXME : wat do about home dir
+    # FIXME : wat do regarding ssl-cert, multimedia, and other groups
 
     allow_ssh: bool = False
     allow_sftp: bool = False
+    home: str = ""
 
     def provision_or_update(self, context: Dict = {}):
         # FIXME : validate that no yunohost user exists with that name?
@@ -471,7 +472,7 @@ class SystemuserAppResource(AppResource):
 
         if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") != 0:
             # FIXME: improve logging ? os.system wont log stdout / stderr
-            cmd = f"useradd --system --user-group {self.app}"
+            cmd = f"useradd --system --user-group {self.app} --home-dir {self.home} --no-create-home"
             ret = os.system(cmd)
             assert ret == 0, f"useradd command failed with exit code {ret}"
 
@@ -492,7 +493,17 @@ class SystemuserAppResource(AppResource):
         elif "sftp.app" in groups:
             groups.remove("sftp.app")
 
-        os.system(f"usermod -G {','.join(groups)} {self.app}")
+        raw_user_line_in_etc_passwd = check_output(f"getent passwd {self.app}").strip()
+        user_infos = raw_user_line_in_etc_passwd.split(":")
+        current_home = user_infos[5]
+        if current_home != self.home:
+            ret = os.system(f"usermod --home {self.home} {self.app} 2>/dev/null")
+            # Most of the time this won't work because apparently we can't change the home dir while being logged-in -_-
+            # So we gotta brute force by replacing the line in /etc/passwd T_T
+            if ret != 0:
+                user_infos[5] = self.home
+                new_raw_user_line_in_etc_passwd = ':'.join(user_infos)
+                os.system(f"sed -i 's@{raw_user_line_in_etc_passwd}@{new_raw_user_line_in_etc_passwd}@g' /etc/passwd")
 
     def deprovision(self, context: Dict = {}):
         if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") == 0:
