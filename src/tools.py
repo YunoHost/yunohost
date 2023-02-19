@@ -175,7 +175,9 @@ def tools_postinstall(
         )
 
     if username in ADMIN_ALIASES:
-        raise YunohostValidationError(f"Unfortunately, {username} cannot be used as a username", raw_msg=True)
+        raise YunohostValidationError(
+            f"Unfortunately, {username} cannot be used as a username", raw_msg=True
+        )
 
     # Check there's at least 10 GB on the rootfs...
     disk_partitions = sorted(

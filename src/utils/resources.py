@@ -50,22 +50,31 @@ class AppResourceManager:
             self.validate()
 
     def validate(self):
-
         resources = self.wanted["resources"]
 
         if "database" in list(resources.keys()):
             if "apt" not in list(resources.keys()):
-                logger.error(" ! Packagers: having an 'apt' resource is mandatory when using a 'database' resource, to also install postgresql/mysql if needed")
+                logger.error(
+                    " ! Packagers: having an 'apt' resource is mandatory when using a 'database' resource, to also install postgresql/mysql if needed"
+                )
             else:
-                if list(resources.keys()).index("database") < list(resources.keys()).index("apt"):
-                    logger.error(" ! Packagers: the 'apt' resource should be placed before the 'database' resource, to install postgresql/mysql if needed *before* provisioning the database")
+                if list(resources.keys()).index("database") < list(
+                    resources.keys()
+                ).index("apt"):
+                    logger.error(
+                        " ! Packagers: the 'apt' resource should be placed before the 'database' resource, to install postgresql/mysql if needed *before* provisioning the database"
+                    )
 
                 dbtype = resources["database"]["type"]
                 apt_packages = resources["apt"].get("packages", "").split(", ")
                 if dbtype == "mysql" and "mariadb-server" not in apt_packages:
-                    logger.error(" ! Packagers : when using a mysql database, you should add mariadb-server in apt dependencies. Even though it's currently installed by default in YunoHost installations, it might not be in the future !")
+                    logger.error(
+                        " ! Packagers : when using a mysql database, you should add mariadb-server in apt dependencies. Even though it's currently installed by default in YunoHost installations, it might not be in the future !"
+                    )
                 if dbtype == "postgresql" and "postgresql" not in apt_packages:
-                    logger.error(" ! Packagers : when using a postgresql database, you should add postgresql in apt dependencies.")
+                    logger.error(
+                        " ! Packagers : when using a postgresql database, you should add postgresql in apt dependencies."
+                    )
 
     def apply(
         self, rollback_and_raise_exception_if_failure, operation_logger=None, **context
@@ -458,7 +467,11 @@ class SystemuserAppResource(AppResource):
     type = "system_user"
     priority = 20
 
-    default_properties: Dict[str, Any] = {"allow_ssh": False, "allow_sftp": False, "home": "/var/www/__APP__"}
+    default_properties: Dict[str, Any] = {
+        "allow_ssh": False,
+        "allow_sftp": False,
+        "home": "/var/www/__APP__",
+    }
 
     # FIXME : wat do regarding ssl-cert, multimedia, and other groups
 
@@ -502,8 +515,10 @@ class SystemuserAppResource(AppResource):
             # So we gotta brute force by replacing the line in /etc/passwd T_T
             if ret != 0:
                 user_infos[5] = self.home
-                new_raw_user_line_in_etc_passwd = ':'.join(user_infos)
-                os.system(f"sed -i 's@{raw_user_line_in_etc_passwd}@{new_raw_user_line_in_etc_passwd}@g' /etc/passwd")
+                new_raw_user_line_in_etc_passwd = ":".join(user_infos)
+                os.system(
+                    f"sed -i 's@{raw_user_line_in_etc_passwd}@{new_raw_user_line_in_etc_passwd}@g' /etc/passwd"
+                )
 
     def deprovision(self, context: Dict = {}):
         if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") == 0:
