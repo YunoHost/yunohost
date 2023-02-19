@@ -20,7 +20,7 @@ do_pre_regen() {
 }
 
 do_post_regen() {
-    regen_conf_files=$1
+    #regen_conf_files=$1
   
     # Make sure postgresql is started and enabled
     # (N.B. : to check the active state, we check the cluster state because
@@ -34,6 +34,8 @@ do_post_regen() {
     if [ ! -f "$PSQL_ROOT_PWD_FILE" ] || [ -z "$(cat $PSQL_ROOT_PWD_FILE)" ]; then
         ynh_string_random >$PSQL_ROOT_PWD_FILE
     fi
+
+    [ ! -e $PSQL_ROOT_PWD_FILE ] || { chown root:postgres $PSQL_ROOT_PWD_FILE; chmod 440 $PSQL_ROOT_PWD_FILE; }
     
     sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$(cat $PSQL_ROOT_PWD_FILE)'" postgres
   
