@@ -411,7 +411,7 @@ def app_change_url(operation_logger, app, domain, path):
         path -- New path at which the application will be move
 
     """
-    from yunohost.hook import hook_exec, hook_callback
+    from yunohost.hook import hook_exec_with_script_debug_if_failure, hook_callback
     from yunohost.service import service_reload_or_restart
 
     installed = _is_installed(app)
@@ -445,6 +445,10 @@ def app_change_url(operation_logger, app, domain, path):
     _validate_webpath_requirement(
         {"domain": domain, "path": path}, path_requirement, ignore_app=app
     )
+    if path_requirement == "full_domain" and path != "/":
+        raise YunohostValidationError(
+            "app_change_url_require_full_domain", app=app
+        )
 
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
@@ -452,43 +456,77 @@ def app_change_url(operation_logger, app, domain, path):
     env_dict = _make_environment_for_app_script(
         app, workdir=tmp_workdir_for_app, action="change_url"
     )
+
     env_dict["YNH_APP_OLD_DOMAIN"] = old_domain
     env_dict["YNH_APP_OLD_PATH"] = old_path
     env_dict["YNH_APP_NEW_DOMAIN"] = domain
     env_dict["YNH_APP_NEW_PATH"] = path
+
+    env_dict["old_domain"] = old_domain
+    env_dict["old_path"] = old_path
+    env_dict["new_domain"] = domain
+    env_dict["new_path"] = path
+    env_dict["change_path"] = "1" if old_path != path else "0"
+    env_dict["change_domain"] = "1" if old_domain != domain else "0"
 
     if domain != old_domain:
         operation_logger.related_to.append(("domain", old_domain))
     operation_logger.extra.update({"env": env_dict})
     operation_logger.start()
 
+    old_nginx_conf_path = f"/etc/nginx/conf.d/{old_domain}.d/{app}.conf"
+    new_nginx_conf_path = f"/etc/nginx/conf.d/{domain}.d/{app}.conf"
+    old_nginx_conf_backup = None
+    if not os.path.exists(old_nginx_conf_path):
+        logger.warning(f"Current nginx config file {old_nginx_conf_path} doesn't seem to exist ... wtf ?")
+    else:
+        old_nginx_conf_backup = read_file(old_nginx_conf_path)
+
     change_url_script = os.path.join(tmp_workdir_for_app, "scripts/change_url")
 
     # Execute App change_url script
-    ret = hook_exec(change_url_script, env=env_dict)[0]
-    if ret != 0:
-        msg = f"Failed to change '{app}' url."
-        logger.error(msg)
-        operation_logger.error(msg)
+    change_url_failed = True
+    try:
+        (
+            change_url_failed,
+            failure_message_with_debug_instructions,
+        ) = hook_exec_with_script_debug_if_failure(
+            change_url_script,
+            env=env_dict,
+            operation_logger=operation_logger,
+            error_message_if_script_failed=m18n.n("app_change_url_script_failed"),
+            error_message_if_failed=lambda e: m18n.n(
+                "app_change_url_failed", app=app, error=e
+            ),
+        )
+    finally:
 
-        # restore values modified by app_checkurl
-        # see begining of the function
-        app_setting(app, "domain", value=old_domain)
-        app_setting(app, "path", value=old_path)
-        return
-    shutil.rmtree(tmp_workdir_for_app)
+        shutil.rmtree(tmp_workdir_for_app)
 
-    # this should idealy be done in the change_url script but let's avoid common mistakes
-    app_setting(app, "domain", value=domain)
-    app_setting(app, "path", value=path)
+        if change_url_failed:
+            logger.warning("Restoring initial nginx config file")
+            if old_nginx_conf_path != new_nginx_conf_path and os.path.exists(new_nginx_conf_path):
+                rm(new_nginx_conf_path, force=True)
+            write_to_file(old_nginx_conf_path, old_nginx_conf_backup)
+            service_reload_or_restart("nginx")
 
-    app_ssowatconf()
+            # restore values modified by app_checkurl
+            # see begining of the function
+            app_setting(app, "domain", value=old_domain)
+            app_setting(app, "path", value=old_path)
+            raise YunohostError(failure_message_with_debug_instructions, raw_msg=True)
+        else:
+            # make sure the domain/path setting are propagated
+            app_setting(app, "domain", value=domain)
+            app_setting(app, "path", value=path)
 
-    service_reload_or_restart("nginx")
+            app_ssowatconf()
 
-    logger.success(m18n.n("app_change_url_success", app=app, domain=domain, path=path))
+            service_reload_or_restart("nginx")
 
-    hook_callback("post_app_change_url", env=env_dict)
+            logger.success(m18n.n("app_change_url_success", app=app, domain=domain, path=path))
+
+            hook_callback("post_app_change_url", env=env_dict)
 
 
 def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False):
