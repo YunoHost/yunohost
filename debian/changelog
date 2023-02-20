@@ -1,3 +1,15 @@
+yunohost (11.1.9) stable; urgency=low
+
+  - apps: simplify the redaction of change_url scripts by adding a new ynh_change_url_nginx_config helper + predefining new/old/change domain/path variables (2b70ccbf)
+  - appsv2: revert commit that adds a bunch of warning about apt/database consistency, it's more relevant to have them in package linter instead (63f0f084)
+  - appsv2: fix system user group update, broke in commit from earlier (ec4c2684)
+  - log: Previous trick about getting rid of setting didnt work, forgot to use metadata instead of self.metadata (848adf89)
+  - ux: Moar boring postgresql messages displayed as warning (290d627f)
+
+  Thanks to all contributors <3 ! (Bram)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 20 Feb 2023 20:32:28 +0100
+
 yunohost (11.1.8.2) stable; urgency=low
 
   - regenconf: fix undefined var in apt regenconf (343065eb)
