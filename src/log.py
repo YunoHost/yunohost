@@ -605,7 +605,7 @@ class OperationLogger:
                 k: v for k, v in metadata["env"].items() if k == k.upper()
             }
 
-        dump = yaml.safe_dump(self.metadata, default_flow_style=False)
+        dump = yaml.safe_dump(metadata, default_flow_style=False)
         for data in self.data_to_redact:
             # N.B. : we need quotes here, otherwise yaml isn't happy about loading the yml later
             dump = dump.replace(data, "'**********'")
