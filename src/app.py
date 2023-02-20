@@ -508,8 +508,9 @@ def app_change_url(operation_logger, app, domain, path):
                 new_nginx_conf_path
             ):
                 rm(new_nginx_conf_path, force=True)
-            write_to_file(old_nginx_conf_path, old_nginx_conf_backup)
-            service_reload_or_restart("nginx")
+            if old_nginx_conf_backup:
+                write_to_file(old_nginx_conf_path, old_nginx_conf_backup)
+                service_reload_or_restart("nginx")
 
             # restore values modified by app_checkurl
             # see begining of the function
