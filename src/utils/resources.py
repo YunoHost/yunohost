@@ -215,7 +215,7 @@ class AppResource:
             self.app,
             workdir=tmpdir,
             action=f"{action}_{self.type}",
-            include_app_settings=True,
+            force_include_app_settings=True,
         )
         env_.update(env)
 

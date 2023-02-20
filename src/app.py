@@ -713,7 +713,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
                 app_instance_name,
                 workdir=extracted_app_folder,
                 action="upgrade",
-                include_app_settings=True,
+                force_include_app_settings=True,
             )
             env_dict.update(env_dict_more)
 
@@ -2798,7 +2798,7 @@ def _make_environment_for_app_script(
     args_prefix="APP_ARG_",
     workdir=None,
     action=None,
-    include_app_settings=False,
+    force_include_app_settings=False,
 ):
     app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
@@ -2825,7 +2825,7 @@ def _make_environment_for_app_script(
         env_dict[f"YNH_{args_prefix}{arg_name_upper}"] = str(arg_value)
 
     # If packaging format v2, load all settings
-    if manifest["packaging_format"] >= 2 or include_app_settings:
+    if manifest["packaging_format"] >= 2 or force_include_app_settings:
         env_dict["app"] = app
         for setting_name, setting_value in _get_app_settings(app).items():
             # Ignore special internal settings like checksum__
