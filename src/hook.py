@@ -354,6 +354,7 @@ def hook_exec(
             r"update-rc.d: ",
             r"update-alternatives: ",
             # Postgresql boring messages -_-
+            r"Adding user postgres to group ssl-cert",
             r"Building PostgreSQL dictionaries from .*",
             r"Removing obsolete dictionary files",
             r"Creating new PostgreSQL cluster",
