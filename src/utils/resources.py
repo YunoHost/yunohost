@@ -464,6 +464,7 @@ class SystemuserAppResource(AppResource):
                 f"Failed to create system user for {self.app}", raw_msg=True
             )
 
+        # Update groups
         groups = set(check_output(f"groups {self.app}").strip().split()[2:])
 
         if self.allow_ssh:
@@ -476,6 +477,9 @@ class SystemuserAppResource(AppResource):
         elif "sftp.app" in groups:
             groups.remove("sftp.app")
 
+        os.system(f"usermod -G {','.join(groups)} {self.app}")
+
+        # Update home dir
         raw_user_line_in_etc_passwd = check_output(f"getent passwd {self.app}").strip()
         user_infos = raw_user_line_in_etc_passwd.split(":")
         current_home = user_infos[5]
