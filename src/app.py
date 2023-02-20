@@ -446,9 +446,7 @@ def app_change_url(operation_logger, app, domain, path):
         {"domain": domain, "path": path}, path_requirement, ignore_app=app
     )
     if path_requirement == "full_domain" and path != "/":
-        raise YunohostValidationError(
-            "app_change_url_require_full_domain", app=app
-        )
+        raise YunohostValidationError("app_change_url_require_full_domain", app=app)
 
     tmp_workdir_for_app = _make_tmp_workdir_for_app(app=app)
 
@@ -478,7 +476,9 @@ def app_change_url(operation_logger, app, domain, path):
     new_nginx_conf_path = f"/etc/nginx/conf.d/{domain}.d/{app}.conf"
     old_nginx_conf_backup = None
     if not os.path.exists(old_nginx_conf_path):
-        logger.warning(f"Current nginx config file {old_nginx_conf_path} doesn't seem to exist ... wtf ?")
+        logger.warning(
+            f"Current nginx config file {old_nginx_conf_path} doesn't seem to exist ... wtf ?"
+        )
     else:
         old_nginx_conf_backup = read_file(old_nginx_conf_path)
 
@@ -500,12 +500,13 @@ def app_change_url(operation_logger, app, domain, path):
             ),
         )
     finally:
-
         shutil.rmtree(tmp_workdir_for_app)
 
         if change_url_failed:
             logger.warning("Restoring initial nginx config file")
-            if old_nginx_conf_path != new_nginx_conf_path and os.path.exists(new_nginx_conf_path):
+            if old_nginx_conf_path != new_nginx_conf_path and os.path.exists(
+                new_nginx_conf_path
+            ):
                 rm(new_nginx_conf_path, force=True)
             write_to_file(old_nginx_conf_path, old_nginx_conf_backup)
             service_reload_or_restart("nginx")
@@ -524,7 +525,9 @@ def app_change_url(operation_logger, app, domain, path):
 
             service_reload_or_restart("nginx")
 
-            logger.success(m18n.n("app_change_url_success", app=app, domain=domain, path=path))
+            logger.success(
+                m18n.n("app_change_url_success", app=app, domain=domain, path=path)
+            )
 
             hook_callback("post_app_change_url", env=env_dict)
 
