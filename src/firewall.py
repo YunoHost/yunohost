@@ -101,7 +101,7 @@ def firewall_allow(
 
     # Update and reload firewall
     _update_firewall_file(firewall)
-    if not no_reload or (reload_only_if_change and changed):
+    if (not reload_only_if_change and not no_reload) or (reload_only_if_change and changed):
         return firewall_reload()
 
 
@@ -180,7 +180,7 @@ def firewall_disallow(
 
     # Update and reload firewall
     _update_firewall_file(firewall)
-    if not no_reload or (reload_only_if_change and changed):
+    if (not reload_only_if_change and not no_reload) or (reload_only_if_change and changed):
         return firewall_reload()
 
 
