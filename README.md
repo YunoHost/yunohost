@@ -7,10 +7,10 @@
 <div align="center">
 
 ![Version](https://img.shields.io/github/v/tag/yunohost/yunohost?label=version&sort=semver)
-[![Build status](https://shields.io/gitlab/pipeline/yunohost/yunohost/dev)](https://gitlab.com/yunohost/yunohost/-/pipelines)
-![Test coverage](https://img.shields.io/gitlab/coverage/yunohost/yunohost/dev)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/YunoHost/yunohost.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/YunoHost/yunohost/context:python)
-[![GitHub license](https://img.shields.io/github/license/YunoHost/yunohost)](https://github.com/YunoHost/yunohost/blob/dev/LICENSE)
+[![Pipeline status](https://gitlab.com/yunohost/yunohost/badges/dev/pipeline.svg)](https://gitlab.com/yunohost/yunohost/-/pipelines)
+![Test coverage](https://gitlab.com/yunohost/yunohost/badges/dev/coverage.svg)
+[![Project license](https://img.shields.io/gitlab/license/yunohost/yunohost)](https://github.com/YunoHost/yunohost/blob/dev/LICENSE)
+[![CodeQL](https://github.com/yunohost/yunohost/workflows/CodeQL/badge.svg)](https://github.com/YunoHost/yunohost/security/code-scanning)
 [![Mastodon Follow](https://img.shields.io/mastodon/follow/28084)](https://mastodon.social/@yunohost)
 
 </div>
