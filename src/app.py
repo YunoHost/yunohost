@@ -48,10 +48,11 @@ from moulinette.utils.filesystem import (
     chmod,
 )
 
+from yunohost.utils.form import prompt_or_fill_raw_questions
 from yunohost.utils.configpanel import Config
 from yunohost.utils.config import (
     # ConfigPanel,
-    ask_questions_and_parse_answers,
+    # ask_questions_and_parse_answers,
     DomainQuestion,
     PathQuestion,
     hydrate_questions_with_choices,
@@ -1050,14 +1051,9 @@ def app_install(
 
     app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
 
-    # Retrieve arguments list for install script
-    raw_questions = manifest["install"]
-    questions = ask_questions_and_parse_answers(raw_questions, prefilled_answers=args)
-    args = {
-        question.name: question.value
-        for question in questions
-        if question.value is not None
-    }
+    # # Retrieve arguments list for install script
+    questions, form = prompt_or_fill_raw_questions(manifest["install"], args=args, name="AppInstall")
+    args = form.dict(exclude_none=True, as_env=True)
 
     # Validate domain / path availability for webapps
     # (ideally this should be handled by the resource system for manifest v >= 2
@@ -1102,7 +1098,7 @@ def app_install(
             if question.type == "password":
                 continue
 
-            app_settings[question.name] = question.value
+            app_settings[question.id] = args[question.id]
 
     _set_app_settings(app_instance_name, app_settings)
 
@@ -1156,16 +1152,16 @@ def app_install(
             # Reinject user-provider passwords which are not in the app settings
             # (cf a few line before)
             if question.type == "password":
-                env_dict[question.name] = question.value
+                env_dict[question.id] = args[question.id]
 
     # We want to hav the env_dict in the log ... but not password values
     env_dict_for_logging = env_dict.copy()
     for question in questions:
         # Or should it be more generally question.redact ?
         if question.type == "password":
-            del env_dict_for_logging[f"YNH_APP_ARG_{question.name.upper()}"]
-            if question.name in env_dict_for_logging:
-                del env_dict_for_logging[question.name]
+            del env_dict_for_logging[f"YNH_APP_ARG_{question.id.upper()}"]
+            if question.id in env_dict_for_logging:
+                del env_dict_for_logging[question.id]
 
     operation_logger.extra.update({"env": env_dict_for_logging})
 
