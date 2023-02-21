@@ -19,6 +19,7 @@
 import ast
 import datetime
 import operator as op
+import os
 import re
 import urllib
 from enum import Enum
@@ -1145,6 +1146,33 @@ def prompt_form(
         # TODO hooks
         # Question._post_parse_value (redac stuff in operation logger)
     return form
+
+
+def prompt_or_fill_raw_questions(
+    raw_options: dict[str, Any],
+    args: Union[str, None] = None,
+    args_file=None,  # FIXME TYPING
+    name: str = "DynamicYunoForm"
+):
+    """
+    Helper that from a raw list of questions and potential preffiled answers
+    tries to build a form from those questions and validate prompted or preffilled answers.
+    """
+    prefilled_answers = parse_prefilled_values(args, args_file)
+    # Parse/validate raw questions
+    options = OptionsContainer(**raw_options)
+    options.translate_options()
+    # Build the form from those questions and instantiate it without
+    # parsing/validation (construct) since it may contains required questions.
+    form = build_form(options.options, name=name).construct()
+
+    if Moulinette.interface.type == "cli" and os.isatty(1):
+        form = prompt_form(options.options, form, prefilled_answers=prefilled_answers)
+    else:  # API or CLI without tty?
+        form = fill_form(options.options, form, prefilled_answers=prefilled_answers)
+
+    # return the list of options directly, the object itself is no longer needed
+    return (options.options, form)
 
 
 # ╭───────────────────────────────────────────────────────╮
