@@ -1,3 +1,13 @@
+yunohost (11.1.10) stable; urgency=low
+
+  - apps: add 'YNH_DEBIAN_VERSION' variable in apps contexts (df6a2a2c)
+  - appsv2: add support for a packages_from_raw_bash option in apt where one can add a multiline bash snippet to echo packages (4dfff201)
+  - appsv2: fix resource provisioning scripts picking up already-closed operation logger, resulting in confusing debugging output (888593ad)
+  - appsv2: fix reload_only_if_change option not working as expected, resulting in incorrect 'Firewall reloaded' messages (d725b454)
+  - appsv2: fix check that postgresql db exists... (1dc8b753)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 21 Feb 2023 18:57:33 +0100
+
 yunohost (11.1.9) stable; urgency=low
 
   - apps: simplify the redaction of change_url scripts by adding a new ynh_change_url_nginx_config helper + predefining new/old/change domain/path variables (2b70ccbf)
