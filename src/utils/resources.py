@@ -20,6 +20,7 @@ import os
 import copy
 import shutil
 import random
+import tempfile
 from typing import Dict, Any, List
 
 from moulinette import m18n
@@ -172,7 +173,30 @@ class AppResource:
 
         app_setting(self.app, key, delete=True)
 
-    def _run_script(self, action, script, env={}, user="root"):
+    def check_output_bash_snippet(self, snippet, env={}):
+        from yunohost.app import (
+            _make_environment_for_app_script,
+        )
+
+        env_ = _make_environment_for_app_script(
+            self.app,
+            force_include_app_settings=True,
+        )
+        env_.update(env)
+
+        with tempfile.NamedTemporaryFile(prefix="ynh_") as fp:
+            fp.write(snippet.encode())
+            fp.seek(0)
+            with tempfile.TemporaryFile() as stderr:
+                out = check_output(f"bash {fp.name}", env=env_, stderr=stderr)
+
+                stderr.seek(0)
+                err = stderr.read().decode()
+
+        return out, err
+
+
+    def _run_script(self, action, script, env={}):
         from yunohost.app import (
             _make_tmp_workdir_for_app,
             _make_environment_for_app_script,
@@ -746,6 +770,7 @@ class AptDependenciesAppResource(AppResource):
 
     ##### Properties:
     - `packages`: Comma-separated list of packages to be installed via `apt`
+    - `packages_from_raw_bash`: A multi-line bash snippet (using triple quotes as open/close) which should echo additional packages to be installed. Meant to be used for packages to be conditionally installed depending on architecture, debian version, install questions, or other logic.
     - `extras`: A dict of (repo, key, packages) corresponding to "extra" repositories to fetch dependencies from
 
     ##### Provision/Update:
@@ -767,6 +792,7 @@ class AptDependenciesAppResource(AppResource):
     default_properties: Dict[str, Any] = {"packages": [], "extras": {}}
 
     packages: List = []
+    packages_from_raw_bash: str = ""
     extras: Dict[str, Dict[str, str]] = {}
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
@@ -780,6 +806,14 @@ class AptDependenciesAppResource(AppResource):
                 )
 
         super().__init__(properties, *args, **kwargs)
+
+        if self.packages_from_raw_bash:
+            out, err = self.check_output_bash_snippet(self.packages_from_raw_bash)
+            if err:
+                logger.error("Error while running apt resource packages_from_raw_bash snippet:")
+                logger.error(err)
+            self.packages += ", " + out.replace("\n", ", ")
+
 
     def provision_or_update(self, context: Dict = {}):
         script = [f"ynh_install_app_dependencies {self.packages}"]
