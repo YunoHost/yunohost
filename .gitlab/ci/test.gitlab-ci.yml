@@ -46,7 +46,7 @@ full-tests:
         artifacts: true
       - job: build-moulinette
         artifacts: true
-  coverage: 'TOTAL.*\s+(\d+%)'
+  coverage: '/TOTAL.*\s+(\d+%)/'
   artifacts:
     reports:
       junit: report.xml
