@@ -36,7 +36,7 @@ full-tests:
     - *install_debs
     - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace
   script:
-    - python3 -m pytest --cov=yunohost tests/ src/tests/ src/diagnosers/ --junitxml=report.xml
+    - python3 -m pytest --cov=yunohost tests/ src/tests/ --junitxml=report.xml
     - cd tests
     - bash test_helpers.sh
   needs:
