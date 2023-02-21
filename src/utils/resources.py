@@ -1023,7 +1023,7 @@ class DatabaseAppResource(AppResource):
         elif self.dbtype == "postgresql":
             return (
                 os.system(
-                    f"sudo --login --user=postgres psql -c '' '{db_name}' >/dev/null 2>/dev/null"
+                    f"sudo --login --user=postgres psql '{db_name}' -c ';' >/dev/null 2>/dev/null"
                 )
                 == 0
             )
