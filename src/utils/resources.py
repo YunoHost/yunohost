@@ -225,9 +225,10 @@ ynh_abort_if_errors
 
         from yunohost.log import OperationLogger
 
-        if OperationLogger._instances:
-            # FIXME ? : this is an ugly hack :(
-            operation_logger = OperationLogger._instances[-1]
+        # FIXME ? : this is an ugly hack :(
+        active_operation_loggers = [o for o in OperationLogger._instances if o.ended_at is None]
+        if active_operation_loggers:
+            operation_logger = active_operation_loggers[-1]
         else:
             operation_logger = OperationLogger(
                 "resource_snippet", [("app", self.app)], env=env_
