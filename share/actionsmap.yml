@@ -911,6 +911,10 @@ app:
                     full: --no-safety-backup
                     help: Disable the safety backup during upgrade
                     action: store_true
+                -c:
+                    full: --continue-on-failure
+                    help: Continue to upgrade apps event if one or more upgrade failed
+                    action: store_true
 
         ### app_change_url()
         change-url:

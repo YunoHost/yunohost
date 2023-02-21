@@ -533,7 +533,7 @@ def app_change_url(operation_logger, app, domain, path):
             hook_callback("post_app_change_url", env=env_dict)
 
 
-def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False):
+def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False, continue_on_failure=False):
     """
     Upgrade app
 
@@ -585,6 +585,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
         logger.info(m18n.n("app_upgrade_several_apps", apps=", ".join(apps)))
 
     notifications = {}
+    failed_to_upgrade_apps = []
 
     for number, app_instance_name in enumerate(apps):
         logger.info(m18n.n("app_upgrade_app_name", app=app_instance_name))
@@ -820,20 +821,43 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             # If upgrade failed or broke the system,
             # raise an error and interrupt all other pending upgrades
             if upgrade_failed or broke_the_system:
-                # display this if there are remaining apps
-                if apps[number + 1 :]:
-                    not_upgraded_apps = apps[number:]
-                    logger.error(
-                        m18n.n(
-                            "app_not_upgraded",
-                            failed_app=app_instance_name,
-                            apps=", ".join(not_upgraded_apps),
-                        )
+                if not continue_on_failure or broke_the_system:
+                    # display this if there are remaining apps
+                    if apps[number + 1 :]:
+                        not_upgraded_apps = apps[number:]
+                        if broke_the_system and not continue_on_failure:
+                            logger.error(
+                                m18n.n(
+                                    "app_not_upgraded_broken_system",
+                                    failed_app=app_instance_name,
+                                    apps=", ".join(not_upgraded_apps),
+                                )
+                            )
+                        elif broke_the_system and continue_on_failure:
+                            logger.error(
+                                m18n.n(
+                                    "app_not_upgraded_broken_system_continue",
+                                    failed_app=app_instance_name,
+                                    apps=", ".join(not_upgraded_apps),
+                                )
+                            )
+                        else:
+                            logger.error(
+                                m18n.n(
+                                    "app_not_upgraded",
+                                    failed_app=app_instance_name,
+                                    apps=", ".join(not_upgraded_apps),
+                                )
+                            )
+
+                    raise YunohostError(
+                        failure_message_with_debug_instructions, raw_msg=True
                     )
 
-                raise YunohostError(
-                    failure_message_with_debug_instructions, raw_msg=True
-                )
+                else:
+                    operation_logger.close()
+                    logger.error(m18n.n("app_failed_to_upgrade_but_continue", failed_app=app_instance_name, operation_logger_name=operation_logger.name))
+                    failed_to_upgrade_apps.append((app_instance_name, operation_logger.name))
 
             # Otherwise we're good and keep going !
             now = int(time.time())
@@ -894,6 +918,13 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
     permission_sync_to_user()
 
     logger.success(m18n.n("upgrade_complete"))
+
+    if failed_to_upgrade_apps:
+        apps = ""
+        for app_id, operation_logger_name in failed_to_upgrade_apps:
+            apps += m18n.n("apps_failed_to_upgrade_line", app_id=app_id, operation_logger_name=operation_logger_name)
+
+        logger.warning(m18n.n("apps_failed_to_upgrade", apps=apps))
 
     if Moulinette.interface.type == "api":
         return {"notifications": {"POST_UPGRADE": notifications}}
