@@ -43,6 +43,10 @@ name = "Security"
         type = "boolean"
         default = true
 
+        [security.ssh.ssh_banner]
+        type = "boolean"
+        default = true
+
     [security.nginx]
     name = "NGINX (web server)"
         [security.nginx.nginx_redirect_to_https]

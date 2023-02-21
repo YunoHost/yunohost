@@ -64,7 +64,13 @@ PasswordAuthentication no
 {% endif %}
 
 # Post-login stuff
+# PLEASE: if you wish to hide the system name and version when attempting to connect to your server, run this command:
+# yunohost settings set security.ssh.ssh_banner -v no
+{% if banner == "False" %}
+#Banner none
+{% else %}
 Banner /etc/issue.net
+{% endif %}
 PrintMotd no
 PrintLastLog yes
 ClientAliveInterval 60
