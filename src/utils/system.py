@@ -28,6 +28,10 @@ logger = logging.getLogger("yunohost.utils.packages")
 YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "moulinette", "ssowat"]
 
 
+def debian_version():
+    return check_output('grep "^VERSION_CODENAME=" /etc/os-release | cut -d= -f2')
+
+
 def system_arch():
     return check_output("dpkg --print-architecture")
 

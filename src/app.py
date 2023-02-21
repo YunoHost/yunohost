@@ -62,6 +62,7 @@ from yunohost.utils.system import (
     dpkg_is_broken,
     get_ynh_package_version,
     system_arch,
+    debian_version,
     human_to_binary,
     binary_to_human,
     ram_available,
@@ -2854,6 +2855,7 @@ def _make_environment_for_app_script(
         "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?"),
         "YNH_APP_PACKAGING_FORMAT": str(manifest["packaging_format"]),
         "YNH_ARCH": system_arch(),
+        "YNH_DEBIAN_VERSION": debian_version(),
     }
 
     if workdir:
