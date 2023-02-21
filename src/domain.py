@@ -18,7 +18,7 @@
 #
 import os
 import time
-from typing import List, Optional
+from typing import List, Optional, TYPE_CHECKING, Union, Any
 from collections import OrderedDict
 
 from moulinette import m18n, Moulinette
@@ -33,9 +33,13 @@ from yunohost.app import (
     _get_conflicting_apps,
 )
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
-from yunohost.utils.config import ConfigPanel, Question
+from yunohost.utils.configpanel import Config
+from yunohost.utils.config import Question
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation
+
+if TYPE_CHECKING:
+    from yunohost.utils.configpanel import YunoForm
 
 logger = getActionLogger("yunohost.domain")
 
@@ -532,135 +536,103 @@ def domain_config_set(
     return config.set(key, value, args, args_file, operation_logger=operation_logger)
 
 
-class DomainConfigPanel(ConfigPanel):
+class DomainConfigPanel(Config):
     entity_type = "domain"
     save_path_tpl = f"{DOMAIN_SETTINGS_DIR}/{{entity}}.yml"
     save_mode = "diff"
 
-    def _apply(self):
-        if (
-            "default_app" in self.future_values
-            and self.future_values["default_app"] != self.values["default_app"]
-        ):
-            from yunohost.app import app_ssowatconf, app_map
+    # TODO add mechanism to share some settings with other domains on the same zone
 
-            if "/" in app_map(raw=True).get(self.entity, {}):
-                raise YunohostValidationError(
-                    "app_make_default_location_already_used",
-                    app=self.future_values["default_app"],
-                    domain=self.entity,
-                    other_app=app_map(raw=True)[self.entity]["/"]["id"],
-                )
+    def _get_config_data(
+        self,
+        panel_id: Union[str, None] = None,
+        section_id: Union[str, None] = None,
+        option_id: Union[str, None] = None,
+    ) -> dict[str, Any]:
+        any_filter = all([panel_id, section_id, option_id])
+        config_data = super()._get_config_data(panel_id, section_id, option_id)
 
-        super()._apply()
-
-        # Reload ssowat if default app changed
-        if (
-            "default_app" in self.future_values
-            and self.future_values["default_app"] != self.values["default_app"]
-        ):
-            app_ssowatconf()
-
-        stuff_to_regen_conf = []
-        if (
-            "xmpp" in self.future_values
-            and self.future_values["xmpp"] != self.values["xmpp"]
-        ):
-            stuff_to_regen_conf.append("nginx")
-            stuff_to_regen_conf.append("metronome")
-
-        if (
-            "mail_in" in self.future_values
-            and self.future_values["mail_in"] != self.values["mail_in"]
-        ) or (
-            "mail_out" in self.future_values
-            and self.future_values["mail_out"] != self.values["mail_out"]
-        ):
-            if "nginx" not in stuff_to_regen_conf:
-                stuff_to_regen_conf.append("nginx")
-            stuff_to_regen_conf.append("postfix")
-            stuff_to_regen_conf.append("dovecot")
-            stuff_to_regen_conf.append("rspamd")
-
-        if stuff_to_regen_conf:
-            regen_conf(names=stuff_to_regen_conf)
-
-    def _get_toml(self):
-        toml = super()._get_toml()
-
-        toml["feature"]["xmpp"]["xmpp"]["default"] = (
+        config_data["feature"]["xmpp"]["xmpp"]["default"] = (
             1 if self.entity == _get_maindomain() else 0
         )
 
         # Optimize wether or not to load the DNS section,
         # e.g. we don't want to trigger the whole _get_registary_config_section
         # when just getting the current value from the feature section
-        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
-        if not filter_key or filter_key[0] == "dns":
+        if not any_filter or panel_id == "dns":
             from yunohost.dns import _get_registrar_config_section
 
-            toml["dns"]["registrar"] = _get_registrar_config_section(self.entity)
-
-            # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
-            self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
-            del toml["dns"]["registrar"]["registrar"]["value"]
+            config_data["dns"]["registrar"] = _get_registrar_config_section(self.entity)
 
         # Cert stuff
-        if not filter_key or filter_key[0] == "cert":
+        if not any_filter or panel_id == "cert":
             from yunohost.certificate import certificate_status
 
             status = certificate_status([self.entity], full=True)["certificates"][
                 self.entity
             ]
 
-            toml["cert"]["cert"]["cert_summary"]["style"] = status["style"]
+            config_data["cert"]["cert"]["cert_summary"]["style"] = status["style"]
 
             # i18n: domain_config_cert_summary_expired
             # i18n: domain_config_cert_summary_selfsigned
             # i18n: domain_config_cert_summary_abouttoexpire
             # i18n: domain_config_cert_summary_ok
             # i18n: domain_config_cert_summary_letsencrypt
-            toml["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(
+            config_data["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(
                 f"domain_config_cert_summary_{status['summary']}"
             )
 
-            # FIXME: Ugly hack to save the cert status and reinject it in _load_current_values ...
-            self.cert_status = status
+            for option_id, status_key in [
+                ("cert_validity", "validity"),
+                ("cert_issuer", "CA_type"),
+                ("acme_eligible", "ACME_eligible"),
+                # FIXME not sure why "summary" was injected in settings values
+                # ("summary", "summary")
+            ]:
+                config_data["cert"]["cert"][option_id]["default"] = status[status_key]
 
-        return toml
+            # Other specific strings used in config panels
+            # i18n: domain_config_cert_renew_help
 
-    def get(self, key="", mode="classic"):
-        result = super().get(key=key, mode=mode)
+        return config_data
 
-        if mode == "full":
-            for panel, section, option in self._iterate():
-                # This injects:
-                # i18n: domain_config_cert_renew_help
-                # i18n: domain_config_default_app_help
-                # i18n: domain_config_xmpp_help
-                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
-                    option["help"] = m18n.n(
-                        self.config["i18n"] + "_" + option["id"] + "_help"
-                    )
-            return self.config
+    def _apply(self, settings: "YunoForm", exclude=None):
+        # Do not rely on super `_apply` to get new values since it excludes
+        # values that are default values.
+        new_values = settings.dict(exclude_unset=True)
 
-        return result
+        # Check if another app is already the default one
+        # FIXME could be a custom pydantic.validator() instead
+        if "default_app" in new_values:
+            from yunohost.app import app_ssowatconf, app_map
 
-    def _load_current_values(self):
-        # TODO add mechanism to share some settings with other domains on the same zone
-        super()._load_current_values()
+            app_map_ = app_map(raw=True).get(self.entity, {})
+            if "/" in app_map_:
+                raise YunohostValidationError(
+                    "app_make_default_location_already_used",
+                    app=new_values["default_app"],
+                    domain=self.entity,
+                    other_app=app_map_["/"]["id"],
+                )
 
-        # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
-        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
-        if not filter_key or filter_key[0] == "dns":
-            self.values["registrar"] = self.registar_id
+        # Save settings (without default values)
+        super()._apply(settings)
 
-        # FIXME: Ugly hack to save the cert status and reinject it in _load_current_values ...
-        if not filter_key or filter_key[0] == "cert":
-            self.values["cert_validity"] = self.cert_status["validity"]
-            self.values["cert_issuer"] = self.cert_status["CA_type"]
-            self.values["acme_eligible"] = self.cert_status["ACME_eligible"]
-            self.values["summary"] = self.cert_status["summary"]
+        # Reload ssowat if default app changed
+        if "default_app" in new_values:
+            app_ssowatconf()
+
+        stuff_to_regen_conf = set()
+        if "xmpp" in new_values:
+            stuff_to_regen_conf.update({"nginx", "metronome"})
+
+        if "mail_in" in new_values or "mail_out" in new_values:
+            stuff_to_regen_conf.update({"nginx", "postfix", "dovecot", "rspamd"})
+
+        if stuff_to_regen_conf:
+            # TODO `regen_conf` could (only?) accept a set() as "names"
+            regen_conf(names=list(stuff_to_regen_conf))
 
 
 def domain_action_run(domain, action, args=None):

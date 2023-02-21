@@ -5,10 +5,10 @@ i18n = "domain_config"
 name = "Features"
 
     [feature.app]
+
         [feature.app.default_app]
         type = "app"
         filter = "is_webapp"
-        default = "_none"
 
     [feature.mail]
 
@@ -44,28 +44,30 @@ name = "Certificate"
         [cert.cert.cert_validity]
         type = "number"
         readonly = true
-        visible = "false"
+        visible = false
         # Automatically filled by DomainConfigPanel
 
         [cert.cert.cert_issuer]
         type = "string"
+        readonly = true
         visible = false
         # Automatically filled by DomainConfigPanel
 
         [cert.cert.acme_eligible]
         type = "boolean"
+        readonly = true
         visible = false
         # Automatically filled by DomainConfigPanel
 
         [cert.cert.acme_eligible_explain]
         type = "alert"
         style = "warning"
-        visible = "acme_eligible == false || acme_eligible == null"
+        visible = "!acme_eligible"
 
         [cert.cert.cert_no_checks]
         type = "boolean"
         default = false
-        visible = "acme_eligible == false || acme_eligible == null"
+        visible = "!acme_eligible"
 
         [cert.cert.cert_install]
         type = "button"

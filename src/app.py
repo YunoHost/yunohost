@@ -1411,7 +1411,7 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
 
     for domain in domain_list()["domains"]:
         if domain_config_get(domain, "feature.app.default_app") == app:
-            domain_config_set(domain, "feature.app.default_app", "_none")
+            domain_config_set(domain, "feature.app.default_app", None)
 
     if ret == 0:
         logger.success(m18n.n("app_removed", app=app))
@@ -1448,7 +1448,7 @@ def app_makedefault(operation_logger, app, domain=None, undo=False):
     operation_logger.start()
 
     if undo:
-        domain_config_set(domain, "feature.app.default_app", "_none")
+        domain_config_set(domain, "feature.app.default_app", None)
     else:
         domain_config_set(domain, "feature.app.default_app", app)
 
@@ -1701,7 +1701,7 @@ def app_ssowatconf():
 
     for domain in domains:
         default_app = domain_config_get(domain, "feature.app.default_app")
-        if default_app != "_none" and _is_installed(default_app):
+        if default_app and _is_installed(default_app):
             app_settings = _get_app_settings(default_app)
             app_domain = app_settings["domain"]
             app_path = app_settings["path"]
