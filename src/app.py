@@ -29,7 +29,7 @@ import subprocess
 import tempfile
 import copy
 from collections import OrderedDict
-from typing import List, Tuple, Dict, Any, Iterator, Optional
+from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Iterator, Optional
 from packaging import version
 
 from moulinette import Moulinette, m18n
@@ -48,8 +48,9 @@ from moulinette.utils.filesystem import (
     chmod,
 )
 
+from yunohost.utils.configpanel import Config
 from yunohost.utils.config import (
-    ConfigPanel,
+    # ConfigPanel,
     ask_questions_and_parse_answers,
     DomainQuestion,
     PathQuestion,
@@ -74,6 +75,9 @@ from yunohost.app_catalog import (  # noqa
     _load_apps_catalog,
     APPS_CATALOG_LOGOS,
 )
+
+if TYPE_CHECKING:
+    from yunohost.utils.configpanel import ConfigPanel, YunoForm
 
 logger = getActionLogger("yunohost.app")
 
@@ -209,7 +213,8 @@ def app_info(app, full=False, upgradable=False):
             for lang, content in content_per_lang.items():
                 notifications[name][lang] = _hydrate_app_template(content, settings)
 
-    ret["is_webapp"] = "domain" in settings and "path" in settings
+    # FIXME when installing an app with no domain option, settings["domain"] == ""
+    ret["is_webapp"] = "domain" in settings and settings["domain"] and "path" in settings
 
     if ret["is_webapp"]:
         ret["is_default"] = (
@@ -1820,20 +1825,20 @@ def app_config_set(
     return config_.set(key, value, args, args_file, operation_logger=operation_logger)
 
 
-class AppConfigPanel(ConfigPanel):
+class AppConfigPanel(Config):
     entity_type = "app"
     save_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/settings.yml")
     config_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/config_panel.toml")
 
-    def _load_current_values(self):
-        self.values = self._call_config_script("show")
+    def _get_settings_data(self, config: "ConfigPanel") -> dict[str, Any]:
+        return self._call_config_script("show")
 
-    def _run_action(self, action):
-        env = {key: str(value) for key, value in self.new_values.items()}
+    def _run_action(self, action: str, settings: "YunoForm"):
+        env = settings.dict(as_env=True)
         self._call_config_script(action, env=env)
 
-    def _apply(self):
-        env = {key: str(value) for key, value in self.new_values.items()}
+    def _apply(self, settings: "YunoForm", exclude=None):
+        env = settings.dict(as_env=True)
         return_content = self._call_config_script("apply", env=env)
 
         # If the script returned validation error
