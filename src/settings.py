@@ -18,22 +18,27 @@
 #
 import os
 import subprocess
+from typing import TYPE_CHECKING, Any, Union
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.config import ConfigPanel, Question
+from yunohost.utils.configpanel import Config
+from yunohost.utils.config import Question
 from moulinette.utils.log import getActionLogger
 from yunohost.regenconf import regen_conf
 from yunohost.firewall import firewall_reload
 from yunohost.log import is_unit_operation
 from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_settings
 
+if TYPE_CHECKING:
+    from yunohost.utils.configpanel import ConfigPanel, YunoForm
+
 logger = getActionLogger("yunohost.settings")
 
 SETTINGS_PATH = "/etc/yunohost/settings.yml"
 
 
-def settings_get(key="", full=False, export=False):
+def settings_get(key=None, full=False, export=False):
     """
     Get an entry value in the settings
 
@@ -54,7 +59,8 @@ def settings_get(key="", full=False, export=False):
         mode = "classic"
 
     settings = SettingsConfigPanel()
-    key = translate_legacy_settings_to_configpanel_settings(key)
+    if key:
+        key = translate_legacy_settings_to_configpanel_settings(key)
     return settings.get(key, mode)
 
 
@@ -115,30 +121,60 @@ def settings_reset_all(operation_logger):
     return settings.reset(operation_logger=operation_logger)
 
 
-class SettingsConfigPanel(ConfigPanel):
+class SettingsConfigPanel(Config):
     entity_type = "global"
     save_path_tpl = SETTINGS_PATH
     save_mode = "diff"
-    virtual_settings = ["root_password", "root_password_confirm", "passwordless_sudo"]
+    virtual_settings = {"root_password", "root_password_confirm", "passwordless_sudo"}
 
     def __init__(self, config_path=None, save_path=None, creation=False):
         super().__init__("settings")
 
-    def _apply(self):
-        root_password = self.new_values.pop("root_password", None)
-        root_password_confirm = self.new_values.pop("root_password_confirm", None)
-        passwordless_sudo = self.new_values.pop("passwordless_sudo", None)
+    def _get_config_data(
+        self,
+        panel_id: Union[str, None] = None,
+        section_id: Union[str, None] = None,
+        option_id: Union[str, None] = None,
+    ) -> dict[str, Any]:
+        config_data = super()._get_config_data(panel_id, section_id, option_id)
 
-        self.values = {
-            k: v for k, v in self.values.items() if k not in self.virtual_settings
-        }
-        self.new_values = {
-            k: v for k, v in self.new_values.items() if k not in self.virtual_settings
-        }
+        # Dynamic choice list for portal themes
+        THEMEDIR = "/usr/share/ssowat/portal/assets/themes/"
+        try:
+            themes = [d for d in os.listdir(THEMEDIR) if os.path.isdir(THEMEDIR + d)]
+        except Exception:
+            themes = ["unsplash", "vapor", "light", "default", "clouds"]
+        config_data["misc"]["portal"]["portal_theme"]["choices"] = themes
 
-        assert all(v not in self.future_values for v in self.virtual_settings)
+        return config_data
 
-        if root_password and root_password.strip():
+    def _get_settings_data(self, config: "ConfigPanel"):
+        settings_data = super()._get_settings_data(config)
+
+        # Specific logic for those settings who are "private" settings
+        # and only meant to have a custom setter mapped to tools_rootpw
+        settings_data["root_password"] = ""
+        settings_data["root_password_confirm"] = ""
+
+        # Specific logic for private setting "passwordless_sudo"
+        try:
+            from yunohost.utils.ldap import _get_ldap_interface
+
+            ldap = _get_ldap_interface()
+            settings_data["passwordless_sudo"] = "!authenticate" in ldap.search(
+                "ou=sudo", "cn=admins", ["sudoOption"]
+            )[0].get("sudoOption", [])
+        except Exception:
+            settings_data["passwordless_sudo"] = False
+
+        return settings_data
+
+    def _apply(self, settings: "YunoForm", exclude=None):
+        root_password = settings.get("root_password", None)
+        root_password_confirm = settings.get("root_password_confirm", None)
+        passwordless_sudo = settings.get("passwordless_sudo", None)
+
+        if root_password is not None:
             if root_password != root_password_confirm:
                 raise YunohostValidationError("password_confirmation_not_the_same")
 
@@ -155,70 +191,43 @@ class SettingsConfigPanel(ConfigPanel):
                 {"sudoOption": ["!authenticate"] if passwordless_sudo else []},
             )
 
-        super()._apply()
+        # First save settings except virtual + default ones
+        super()._apply(settings, exclude=self.virtual_settings)
+        # Then get new values (values that have changed)
+        new_values = settings.dict(exclude=self.virtual_settings, exclude_unset=True)
 
-        settings = {
-            k: v for k, v in self.future_values.items() if self.values.get(k) != v
-        }
-        for setting_name, value in settings.items():
+        for setting_name, value in new_values.items():
             try:
+                # FIXME not sure why we need to provide old value?
+                # FIXME save old values
                 trigger_post_change_hook(
-                    setting_name, self.values.get(setting_name), value
+                    setting_name, settings[setting_name], value
                 )
             except Exception as e:
                 logger.error(f"Post-change hook for setting failed : {e}")
                 raise
 
-    def _get_toml(self):
-        toml = super()._get_toml()
+    # FIXME Hum translation is auto now and "get" should returns real python types
+    # FIXME probably not needed anymore
+    # def get(self, key="", mode="classic"):
+    #     result = super().get(key=key, mode=mode)
 
-        # Dynamic choice list for portal themes
-        THEMEDIR = "/usr/share/ssowat/portal/assets/themes/"
-        try:
-            themes = [d for d in os.listdir(THEMEDIR) if os.path.isdir(THEMEDIR + d)]
-        except Exception:
-            themes = ["unsplash", "vapor", "light", "default", "clouds"]
-        toml["misc"]["portal"]["portal_theme"]["choices"] = themes
+    #     if mode == "full":
+    #         for panel, section, option in self._iterate():
+    #             if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
+    #                 option["help"] = m18n.n(
+    #                     self.config["i18n"] + "_" + option["id"] + "_help"
+    #                 )
+    #         return self.config
 
-        return toml
+    #     # Dirty hack to let settings_get() to work from a python script
+    #     if isinstance(result, str) and result in ["True", "False"]:
+    #         result = bool(result == "True")
 
-    def _load_current_values(self):
-        super()._load_current_values()
-
-        # Specific logic for those settings who are "virtual" settings
-        # and only meant to have a custom setter mapped to tools_rootpw
-        self.values["root_password"] = ""
-        self.values["root_password_confirm"] = ""
-
-        # Specific logic for virtual setting "passwordless_sudo"
-        try:
-            from yunohost.utils.ldap import _get_ldap_interface
-
-            ldap = _get_ldap_interface()
-            self.values["passwordless_sudo"] = "!authenticate" in ldap.search(
-                "ou=sudo", "cn=admins", ["sudoOption"]
-            )[0].get("sudoOption", [])
-        except Exception:
-            self.values["passwordless_sudo"] = False
-
-    def get(self, key="", mode="classic"):
-        result = super().get(key=key, mode=mode)
-
-        if mode == "full":
-            for panel, section, option in self._iterate():
-                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
-                    option["help"] = m18n.n(
-                        self.config["i18n"] + "_" + option["id"] + "_help"
-                    )
-            return self.config
-
-        # Dirty hack to let settings_get() to work from a python script
-        if isinstance(result, str) and result in ["True", "False"]:
-            result = bool(result == "True")
-
-        return result
+    #     return result
 
     def reset(self, key="", operation_logger=None):
+        # FIXME integrate into base Config
         self.filter_key = key
 
         # Read config panel toml

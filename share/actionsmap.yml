@@ -1207,6 +1207,7 @@ settings:
             arguments:
                 key:
                     help: Settings key
+                    nargs: '?'
                 -f:
                     full: --full
                     help: Display all details (meant to be used by the API)

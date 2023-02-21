@@ -73,7 +73,6 @@ name = "Security"
         type = "tags"
         visible = "webadmin_allowlist_enabled"
         optional = true
-        default = ""
 
     [security.root_access]
     name = "Change root password"
@@ -107,7 +106,7 @@ name = "Email"
         [email.pop3.pop3_enabled]
         type = "boolean"
         default = false
-    
+
     [email.smtp]
     name = "SMTP"
         [email.smtp.smtp_allow_ipv6]
@@ -117,7 +116,7 @@ name = "Email"
         [email.smtp.smtp_relay_enabled]
         type = "boolean"
         default = false
-        
+
         [email.smtp.smtp_relay_host]
         type = "string"
         default = ""
@@ -134,7 +133,7 @@ name = "Email"
         default = ""
         optional = true
         visible="smtp_relay_enabled"
-        
+
         [email.smtp.smtp_relay_password]
         type = "password"
         default = ""
