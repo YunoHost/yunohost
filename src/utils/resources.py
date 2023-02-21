@@ -195,7 +195,6 @@ class AppResource:
 
         return out, err
 
-
     def _run_script(self, action, script, env={}):
         from yunohost.app import (
             _make_tmp_workdir_for_app,
@@ -226,7 +225,9 @@ ynh_abort_if_errors
         from yunohost.log import OperationLogger
 
         # FIXME ? : this is an ugly hack :(
-        active_operation_loggers = [o for o in OperationLogger._instances if o.ended_at is None]
+        active_operation_loggers = [
+            o for o in OperationLogger._instances if o.ended_at is None
+        ]
         if active_operation_loggers:
             operation_logger = active_operation_loggers[-1]
         else:
@@ -811,10 +812,11 @@ class AptDependenciesAppResource(AppResource):
         if self.packages_from_raw_bash:
             out, err = self.check_output_bash_snippet(self.packages_from_raw_bash)
             if err:
-                logger.error("Error while running apt resource packages_from_raw_bash snippet:")
+                logger.error(
+                    "Error while running apt resource packages_from_raw_bash snippet:"
+                )
                 logger.error(err)
             self.packages += ", " + out.replace("\n", ", ")
-
 
     def provision_or_update(self, context: Dict = {}):
         script = [f"ynh_install_app_dependencies {self.packages}"]
