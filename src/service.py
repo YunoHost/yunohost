@@ -775,7 +775,7 @@ def _tail(file, n):
             f = gzip.open(file)
             lines = f.read().splitlines()
         else:
-            f = open(file)
+            f = open(file, errors='replace')
             pos = 1
             lines = []
             while len(lines) < to_read and pos > 0:
