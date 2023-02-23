@@ -339,8 +339,13 @@ class PermissionsResource(AppResource):
 
         for perm, infos in self.permissions.items():
             if "__DOMAIN__" in infos.get("url", ""):
-                infos["url"] = infos["url"].replace("__DOMAIN__", self.get_setting("domain"))
-            infos["additional_urls"] = [u.replace("__DOMAIN__", self.get_setting("domain")) for u in infos.get("additional_urls")]
+                infos["url"] = infos["url"].replace(
+                    "__DOMAIN__", self.get_setting("domain")
+                )
+            infos["additional_urls"] = [
+                u.replace("__DOMAIN__", self.get_setting("domain"))
+                for u in infos.get("additional_urls")
+            ]
 
     def provision_or_update(self, context: Dict = {}):
         from yunohost.permission import (
