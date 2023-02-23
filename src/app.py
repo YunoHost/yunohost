@@ -2845,7 +2845,8 @@ def _make_environment_for_app_script(
 ):
     app_setting_path = os.path.join(APPS_SETTING_PATH, app)
 
-    manifest = _get_manifest_of_app(app_setting_path)
+    manifest = _get_manifest_of_app(workdir if workdir else app_setting_path)
+
     app_id, app_instance_nb = _parse_app_instance_name(app)
 
     env_dict = {
