@@ -1,3 +1,15 @@
+yunohost (11.1.11) stable; urgency=low
+
+  - logs: fix decoding errors not handled when trying to read service logs ([#1606](https://github.com/yunohost/yunohost/pull/1606))
+  - mail: fix dovecot-pop3d not being installed when enabling pop3 ([#1607](https://github.com/yunohost/yunohost/pull/1607))
+  - apps: when creating the app's bash env for script, make sure to use the manifest from the workdir instead of app setting dir, which is important for consistency during edge case when upgrade from v1 to v2 fails (bab27014)
+  - appsv2: data_dir's owner should have rwx by default (139e54a2)
+  - appsv2: fix usage of __DOMAIN__ in permission url (943b9ff8)
+
+  Thanks to all contributors <3 ! (Eric Geldmacher, ljf)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 23 Feb 2023 22:31:02 +0100
+
 yunohost (11.1.10) stable; urgency=low
 
   - apps: add 'YNH_DEBIAN_VERSION' variable in apps contexts (df6a2a2c)
