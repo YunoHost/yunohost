@@ -347,7 +347,7 @@ def reconfigure_dovecot(setting_name, old_value, new_value):
     environment = os.environ.copy()
     environment.update({"DEBIAN_FRONTEND": "noninteractive"})
 
-    if new_value == True:
+    if new_value is True:
         command = [
             "apt-get",
             "-y",
