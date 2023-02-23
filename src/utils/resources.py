@@ -665,7 +665,7 @@ class DatadirAppResource(AppResource):
 
     ##### Properties:
     - `dir`: (default: `/home/yunohost.app/__APP__`) The full path of the data dir
-    - `owner`: (default: `__APP__:rx`) The owner (and owner permissions) for the data dir
+    - `owner`: (default: `__APP__:rwx`) The owner (and owner permissions) for the data dir
     - `group`: (default: `__APP__:rx`) The group (and group permissions) for the data dir
 
     ##### Provision/Update:
@@ -694,7 +694,7 @@ class DatadirAppResource(AppResource):
 
     default_properties: Dict[str, Any] = {
         "dir": "/home/yunohost.app/__APP__",
-        "owner": "__APP__:rx",
+        "owner": "__APP__:rwx",
         "group": "__APP__:rx",
     }
 
