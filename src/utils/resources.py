@@ -338,13 +338,13 @@ class PermissionsResource(AppResource):
         super().__init__({"permissions": properties}, *args, **kwargs)
 
         for perm, infos in self.permissions.items():
-            if "__DOMAIN__" in infos.get("url", ""):
+            if infos.get("url") and "__DOMAIN__" in infos.get("url", ""):
                 infos["url"] = infos["url"].replace(
                     "__DOMAIN__", self.get_setting("domain")
                 )
             infos["additional_urls"] = [
                 u.replace("__DOMAIN__", self.get_setting("domain"))
-                for u in infos.get("additional_urls")
+                for u in infos.get("additional_urls", [])
             ]
 
     def provision_or_update(self, context: Dict = {}):
