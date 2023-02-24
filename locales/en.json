@@ -516,6 +516,7 @@
     "log_permission_url": "Update URL related to permission '{}'",
     "log_regen_conf": "Regenerate system configurations '{}'",
     "log_remove_on_failed_install": "Remove '{}' after a failed installation",
+    "log_remove_on_failed_restore": "Remove '{}' after a failed restore",
     "log_resource_snippet": "Provisioning/deprovisioning/updating a resource",
     "log_selfsigned_cert_install": "Install self-signed certificate on '{}' domain",
     "log_settings_reset": "Reset setting",
