@@ -623,7 +623,7 @@ class InstalldirAppResource(AppResource):
                 )
                 shutil.move(current_install_dir, self.dir)
             else:
-                mkdir(self.dir)
+                mkdir(self.dir, parents=True)
 
         owner, owner_perm = self.owner.split(":")
         group, group_perm = self.group.split(":")
