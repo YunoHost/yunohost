@@ -1,3 +1,9 @@
+yunohost (11.1.11.1) testing; urgency=low
+
+  - appsv2: fix previous commit about __DOMAIN__ because url may be None x_x (e05df676)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 24 Feb 2023 01:30:14 +0100
+
 yunohost (11.1.11) stable; urgency=low
 
   - logs: fix decoding errors not handled when trying to read service logs ([#1606](https://github.com/yunohost/yunohost/pull/1606))
