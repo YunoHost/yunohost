@@ -557,7 +557,7 @@ class InstalldirAppResource(AppResource):
 
     ##### Properties:
     - `dir`: (default: `/var/www/__APP__`) The full path of the install dir
-    - `owner`: (default: `__APP__:rx`) The owner (and owner permissions) for the install dir
+    - `owner`: (default: `__APP__:rwx`) The owner (and owner permissions) for the install dir
     - `group`: (default: `__APP__:rx`) The group (and group permissions) for the install dir
 
     ##### Provision/Update:
@@ -586,7 +586,7 @@ class InstalldirAppResource(AppResource):
 
     default_properties: Dict[str, Any] = {
         "dir": "/var/www/__APP__",
-        "owner": "__APP__:rx",
+        "owner": "__APP__:rwx",
         "group": "__APP__:rx",
     }
 
