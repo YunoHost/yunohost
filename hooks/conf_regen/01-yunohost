@@ -245,6 +245,11 @@ do_post_regen() {
         rm -f /etc/dpkg/origins/default
         ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
     fi
+
+    if test -e /etc/yunohost/installed && test -e /etc/profile.d/check_yunohost_is_installed.sh
+    then
+        rm /etc/profile.d/check_yunohost_is_installed.sh
+    fi
 }
 
 do_$1_regen ${@:2}
