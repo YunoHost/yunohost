@@ -1,7 +1,7 @@
 {
     "password_too_simple_1": "Hasło musi mieć co najmniej 8 znaków",
     "app_already_up_to_date": "{app} jest obecnie aktualna",
-    "app_already_installed": "{app:s} jest już zainstalowana",
+    "app_already_installed": "{app} jest już zainstalowana",
     "already_up_to_date": "Nic do zrobienia. Wszystko jest obecnie aktualne.",
     "admin_password": "Hasło administratora",
     "action_invalid": "Nieprawidłowe działanie '{action:s}'",
