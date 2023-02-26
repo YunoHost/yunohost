@@ -29,7 +29,6 @@
     "downloading": "Laster ned…",
     "dyndns_could_not_check_available": "Kunne ikke sjekke om {domain} er tilgjengelig på {provider}.",
     "mail_domain_unknown": "Ukjent e-postadresse for domenet '{domain}'",
-    "log_remove_on_failed_restore": "Fjern '{}' etter mislykket gjenoppretting fra sikkerhetskopiarkiv",
     "log_letsencrypt_cert_install": "Installer et Let's Encrypt-sertifikat på '{}'-domenet",
     "log_letsencrypt_cert_renew": "Forny '{}'-Let's Encrypt-sertifikat",
     "log_user_update": "Oppdater brukerinfo for '{}'",

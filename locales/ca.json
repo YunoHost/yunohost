@@ -165,7 +165,6 @@
     "log_available_on_yunopaste": "Aquest registre està disponible via {url}",
     "log_backup_restore_system": "Restaura el sistema a partir d'una còpia de seguretat",
     "log_backup_restore_app": "Restaura « {} » a partir d'una còpia de seguretat",
-    "log_remove_on_failed_restore": "Elimina « {} » després de que la restauració a partir de la còpia de seguretat hagi fallat",
     "log_remove_on_failed_install": "Elimina « {} » després de que la instal·lació hagi fallat",
     "log_domain_add": "Afegir el domini « {} » a la configuració del sistema",
     "log_domain_remove": "Elimina el domini « {} » de la configuració del sistema",

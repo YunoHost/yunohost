@@ -481,7 +481,6 @@
     "log_domain_remove": "从系统配置中删除 '{}' 域",
     "log_domain_add": "将 '{}'域添加到系统配置中",
     "log_remove_on_failed_install": "安装失败后删除 '{}'",
-    "log_remove_on_failed_restore": "从备份存档还原失败后，删除 '{}'",
     "log_backup_restore_app": "从备份存档还原 '{}'",
     "log_backup_restore_system": "从备份档案还原系统",
     "permission_currently_allowed_for_all_users": "这个权限目前除了授予其他组以外，还授予所有用户。您可能想删除'all_users'权限或删除目前授予它的其他组。",

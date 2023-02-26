@@ -417,7 +417,6 @@
     "domain_cannot_remove_main_add_new_one": "Sie können '{domain}' nicht entfernen, da es die Hauptdomäne und Ihre einzige Domäne ist. Sie müssen zuerst eine andere Domäne mit 'yunohost domain add <domäne.com>' hinzufügen, dann als Hauptdomäne mit 'yunohost domain main-domain -n <domäne.com>' festlegen und dann können Sie die Domäne '{domain}' mit 'yunohost domain remove {domain}' entfernen'.'",
     "diagnosis_rootfstotalspace_critical": "Das Root-Filesystem hat noch freien Speicher von {space}. Das ist besorngiserregend! Der Speicher wird schnell aufgebraucht sein. 16 GB für das Root-Filesystem werden empfohlen.",
     "diagnosis_rootfstotalspace_warning": "Das Root-Filesystem hat noch freien Speicher von {space}. Möglich, dass das in Ordnung ist. Vielleicht ist er aber auch schneller aufgebraucht. 16 GB für das Root-Filesystem werden empfohlen.",
-    "log_remove_on_failed_restore": "Entfernen von '{}' nach einer fehlgeschlagenen Wiederherstellung aus einem Sicherungsarchiv",
     "log_backup_restore_app": "Wiederherstellen von '{}' aus einem Sicherungsarchiv",
     "log_backup_restore_system": "System aus einem Sicherungsarchiv wiederherstellen",
     "log_available_on_yunopaste": "Das Protokoll ist nun via {url} verfügbar",

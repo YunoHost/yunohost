@@ -238,7 +238,6 @@
     "log_available_on_yunopaste": "Lo jornal es ara disponible via {url}",
     "log_backup_restore_system": "Restaurar lo sistèma a partir d’una salvagarda",
     "log_backup_restore_app": "Restaurar « {} » a partir d’una salvagarda",
-    "log_remove_on_failed_restore": "Levar « {} » aprèp un fracàs de restauracion a partir d’una salvagarda",
     "log_remove_on_failed_install": "Tirar « {} » aprèp una installacion pas reüssida",
     "log_domain_add": "Ajustar lo domeni « {} » dins la configuracion sistèma",
     "log_domain_remove": "Tirar lo domeni « {} » d’a la configuracion sistèma",

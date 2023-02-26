@@ -347,7 +347,6 @@
     "log_domain_remove": "Eliminar o dominio '{}' da configuración do sistema",
     "log_domain_add": "Engadir dominio '{}' á configuración do sistema",
     "log_remove_on_failed_install": "Eliminar '{}' tras unha instalación fallida",
-    "log_remove_on_failed_restore": "Eliminar '{}' tras un intento fallido de restablecemento desde copia",
     "log_backup_restore_app": "Restablecer '{}' desde unha copia de apoio",
     "log_backup_restore_system": "Restablecer o sistema desde unha copia de apoio",
     "log_backup_create": "Crear copia de apoio",

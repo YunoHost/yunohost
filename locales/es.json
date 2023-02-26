@@ -287,7 +287,6 @@
     "log_domain_remove": "Eliminar el dominio «{}» de la configuración del sistema",
     "log_domain_add": "Añadir el dominio «{}» a la configuración del sistema",
     "log_remove_on_failed_install": "Eliminar «{}» después de una instalación fallida",
-    "log_remove_on_failed_restore": "Eliminar «{}» después de una restauración fallida desde un archivo de respaldo",
     "log_backup_restore_app": "Restaurar «{}» desde un archivo de respaldo",
     "log_backup_restore_system": "Restaurar sistema desde un archivo de respaldo",
     "log_available_on_yunopaste": "Este registro está ahora disponible vía {url}",

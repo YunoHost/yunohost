@@ -241,7 +241,6 @@
     "log_available_on_yunopaste": "Le journal est désormais disponible via {url}",
     "log_backup_restore_system": "Restaurer le système depuis une archive de sauvegarde",
     "log_backup_restore_app": "Restaurer '{}' depuis une sauvegarde",
-    "log_remove_on_failed_restore": "Retirer '{}' après un échec de restauration depuis une archive de sauvegarde",
     "log_remove_on_failed_install": "Enlever '{}' après une installation échouée",
     "log_domain_add": "Ajouter le domaine '{}' dans la configuration du système",
     "log_domain_remove": "Enlever le domaine '{}' de la configuration du système",
