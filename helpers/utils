@@ -71,39 +71,78 @@ fi
 #
 # usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"] [--full_replace]
 # | arg: -d, --dest_dir=     - Directory where to setup sources
-# | arg: -s, --source_id=    - Name of the source, defaults to `app`
+# | arg: -s, --source_id=    - Name of the source, defaults to `main` (when sources.toml exists) or (legacy) `app` (when no sources.toml exists)
 # | arg: -k, --keep=         - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs/'
 # | arg: -r, --full_replace= - Remove previous sources before installing new sources
+#
+# #### New format `.toml`
+#
+# This helper will read infos from a sources.toml at the root of the app package
+# and expect a structure like:
+#
+# ```toml
+# [main]
+# url = "https://some.address.to/download/the/app/archive"
+# sha256 = "0123456789abcdef"    # The sha256 sum of the asset obtained from the URL
+#
+#
+# # Optional flags:
+# format    = "tar.gz"/xz/bz2    # automatically guessed from the extension of the URL, but can be set explicitly. Will use `tar` to extract
+#             "zip"              # automatically guessed from the extension of the URL, but can be set explicitly. Will use `unzip` to extract
+#             "docker"           # useful to extract files from an already-built docker image (instead of rebuilding them locally). Will use `docker-image-extract` to extract
+#             "whatever"         # an arbitrary value, not really meaningful except to imply that the file won't be extracted
+#
+# in_subdir = true    # default, there's an intermediate subdir in the archive before accessing the actual files
+#             false   # sources are directly in the archive root
+#             n       # (special cases) an integer representing a number of subdirs levels to get rid of
+#
+# extract   = true    # default if file is indeed an archive such as .zip, .tar.gz, .tar.bz2, ...
+#           = false   # default if file 'format' is not set and the file is not to be extracted because it is not an archive but a script or binary or whatever asset.
+#                     #    in which case the file will only be `mv`ed to the location possibly renamed using the `rename` value
+#
+# rename    = "whatever_your_want"   # to be used for convenience when `extract` is false and the default name of the file is not practical
+# platform  = "linux/amd64"          # (defaults to "linux/$YNH_ARCH") to be used in conjonction with `format = "docker"` to specify which architecture to extract for
+# ```
+#
+# You may also define sublevels for each architectures such as:
+# ```toml
+# [main]
+# autoswitch_per_arch = true
+#
+#     [main.amd64]
+#     url = "https://some.address.to/download/the/app/archive/when/amd64"
+#     sha256 = "0123456789abcdef"
+#
+#     [main.armhf]
+#     url = "https://some.address.to/download/the/app/archive/when/armhf"
+#     sha256 = "fedcba9876543210"
+# ```
+#
+# In which case ynh_setup_source --dest_dir="$install_dir" will automatically pick the appropriate source depending on the arch
+#
+#
+#
+# #### Legacy format '.src'
 #
 # This helper will read `conf/${source_id}.src`, download and install the sources.
 #
 # The src file need to contains:
 # ```
 # SOURCE_URL=Address to download the app archive
-# SOURCE_SUM=Control sum
-# # (Optional) Program to check the integrity (sha256sum, md5sum...). Default: sha256
-# SOURCE_SUM_PRG=sha256
-# # (Optional) Archive format. Default: tar.gz
+# SOURCE_SUM=Sha256 sum
 # SOURCE_FORMAT=tar.gz
-# # (Optional) Put false if sources are directly in the archive root. Default: true
-# # Instead of true, SOURCE_IN_SUBDIR could be the number of sub directories to remove.
 # SOURCE_IN_SUBDIR=false
-# # (Optionnal) Name of the local archive (offline setup support). Default: ${src_id}.${src_format}
 # SOURCE_FILENAME=example.tar.gz
-# # (Optional) If it set as false don't extract the source. Default: true
-# # (Useful to get a debian package or a python wheel.)
 # SOURCE_EXTRACT=(true|false)
-# # (Optionnal) Name of the plateform. Default: "linux/$YNH_ARCH"
 # SOURCE_PLATFORM=linux/arm64/v8
 # ```
 #
 # The helper will:
-# - Check if there is a local source archive in `/opt/yunohost-apps-src/$APP_ID/$SOURCE_FILENAME`
-# - Download `$SOURCE_URL` if there is no local archive
-# - Check the integrity with `$SOURCE_SUM_PRG -c --status`
+# - Download the specific URL if there is no local archive
+# - Check the integrity with the specific sha256 sum
 # - Uncompress the archive to `$dest_dir`.
-#   - If `$SOURCE_IN_SUBDIR` is true, the first level directory of the archive will be removed.
-#   - If `$SOURCE_IN_SUBDIR` is a numeric value, the N first level directories will be removed.
+#   - If `in_subdir` is true, the first level directory of the archive will be removed.
+#   - If `in_subdir` is a numeric value, the N first level directories will be removed.
 # - Patches named `sources/patches/${src_id}-*.patch` will be applied to `$dest_dir`
 # - Extra files in `sources/extra_files/$src_id` will be copied to dest_dir
 #
@@ -118,22 +157,64 @@ ynh_setup_source() {
     local full_replace
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    source_id="${source_id:-app}"
     keep="${keep:-}"
     full_replace="${full_replace:-0}"
 
-    local src_file_path="$YNH_APP_BASEDIR/conf/${source_id}.src"
+    if test -e $YNH_APP_BASEDIR/sources.toml
+    then
+        source_id="${source_id:-main}"
+        local sources_json=$(cat $YNH_APP_BASEDIR/sources.toml | toml_to_json)
+        if [[ "$(echo "$sources_json" | jq -r ".$source_id.autoswitch_per_arch")" == "true" ]]
+        then
+            source_id=$source_id.$YNH_ARCH
+        fi
 
-    # Load value from configuration file (see above for a small doc about this file
-    # format)
-    local src_url=$(grep 'SOURCE_URL=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_sum=$(grep 'SOURCE_SUM=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_format=$(grep 'SOURCE_FORMAT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_filename=$(grep 'SOURCE_FILENAME=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_extract=$(grep 'SOURCE_EXTRACT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_plateform=$(grep 'SOURCE_PLATFORM=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_url="$(echo "$sources_json" | jq -r ".$source_id.url" | sed 's/^null$//')"
+        local src_sum="$(echo "$sources_json" | jq -r ".$source_id.sha256" | sed 's/^null$//')"
+        local src_sumprg="sha256sum"
+        local src_format="$(echo "$sources_json" | jq -r ".$source_id.format" | sed 's/^null$//')"
+        local src_in_subdir="$(echo "$sources_json" | jq -r ".$source_id.in_subdir" | sed 's/^null$//')"
+        local src_extract="$(echo "$sources_json" | jq -r ".$source_id.extract" | sed 's/^null$//')"
+        local src_platform="$(echo "$sources_json" | jq -r ".$source_id.platform" | sed 's/^null$//')"
+        local src_rename="$(echo "$sources_json" | jq -r ".$source_id.rename" | sed 's/^null$//')"
+
+        [[ -n "$src_url" ]] || ynh_die "No URL defined for source $source_id ?"
+        [[ -n "$src_sum" ]] || ynh_die "No sha256 sum defined for source $source_id ?"
+
+        if [[ -z "$src_format" ]]
+        then
+            if [[ "$src_url" =~ ^.*\.zip$ ]] || [[ "$src_url" =~ ^.*/zipball/.*$ ]]
+            then
+                src_format="zip"
+            elif [[ "$src_url" =~ ^.*\.tar\.gz$ ]] || [[ "$src_url" =~ ^.*\.tgz$ ]] || [[ "$src_url" =~ ^.*/tar\.gz/.*$ ]] || [[ "$src_url" =~ ^.*/tarball/.*$ ]]
+            then
+                src_format="tar.gz"
+            elif [[ "$src_url" =~ ^.*\.tar\.xz$ ]]
+            then
+                src_format="tar.xz"
+            elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]
+            then
+                src_format="tar.bz2"
+            elif [[ -z "$src_extract" ]]
+            then
+                src_extract="false"
+            fi
+        fi
+    else
+        source_id="${source_id:-app}"
+        local src_file_path="$YNH_APP_BASEDIR/conf/${source_id}.src"
+
+        # Load value from configuration file (see above for a small doc about this file
+        # format)
+        local src_url=$(grep 'SOURCE_URL=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_sum=$(grep 'SOURCE_SUM=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_format=$(grep 'SOURCE_FORMAT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_rename=$(grep 'SOURCE_FILENAME=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_extract=$(grep 'SOURCE_EXTRACT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_platform=$(grep 'SOURCE_PLATFORM=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+    fi
 
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
@@ -141,9 +222,13 @@ ynh_setup_source() {
     src_format=${src_format:-tar.gz}
     src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
     src_extract=${src_extract:-true}
-    if [ "$src_filename" = "" ]; then
-        src_filename="${source_id}.${src_format}"
+    src_filename="${source_id}.${src_format}"
+
+    if [[ "$src_extract" != "true" ]] && [[ "$src_extract" != "false" ]]
+    then
+        ynh_die "For source $source_id, expected either 'true' or 'false' for the extract parameter"
     fi
+
 
     # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
@@ -152,7 +237,7 @@ ynh_setup_source() {
     src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${src_filename}"
 
     if [ "$src_format" = "docker" ]; then
-        src_plateform="${src_plateform:-"linux/$YNH_ARCH"}"
+        src_platform="${src_platform:-"linux/$YNH_ARCH"}"
     elif test -e "$local_src"; then
         cp $local_src $src_filename
     else
@@ -199,11 +284,16 @@ ynh_setup_source() {
         _ynh_apply_default_permissions $dest_dir
     fi
 
-    if ! "$src_extract"; then
-        mv $src_filename $dest_dir
-    elif [ "$src_format" = "docker" ]; then
-        /usr/share/yunohost/helpers.d/vendor/docker-image-extract/docker-image-extract -p $src_plateform -o $dest_dir $src_url 2>&1
-    elif [ "$src_format" = "zip" ]; then
+    if [[ "$src_extract" == "false" ]]; then
+        if [[ -z "$src_rename" ]]
+        then
+            mv $src_filename $dest_dir
+        else
+            mv $src_filename $dest_dir/$src_rename
+        fi
+    elif [[ "$src_format" == "docker" ]]; then
+        /usr/share/yunohost/helpers.d/vendor/docker-image-extract/docker-image-extract -p $src_platform -o $dest_dir $src_url 2>&1
+    elif [[ "$src_format" == "zip" ]]; then
         # Zip format
         # Using of a temp directory, because unzip doesn't manage --strip-components
         if $src_in_subdir; then
@@ -969,4 +1059,8 @@ _ynh_apply_default_permissions() {
 
 int_to_bool() {
     sed -e 's/^1$/True/g' -e 's/^0$/False/g'
+}
+
+toml_to_json() {
+    python3 -c 'import toml, json, sys; print(json.dumps(toml.load(sys.stdin)))'
 }
