@@ -398,7 +398,6 @@
     "hook_exec_not_terminated": "Aginduak ez du behar bezala amaitu: {path}",
     "log_corrupted_md_file": "Erregistroei lotutako YAML metadatu fitxategia kaltetuta dago: '{md_file}\nErrorea: {error}'",
     "log_letsencrypt_cert_renew": "Berriztu '{}' Let's Encrypt ziurtagiria",
-    "log_remove_on_failed_restore": "Ezabatu '{}' babeskopia baten lehengoratzeak huts egin eta gero",
     "diagnosis_package_installed_from_sury_details": "Sury izena duen kanpoko biltegi batetik instalatu dira pakete batzuk, nahi gabe. YunoHosten taldeak hobekuntzak egin ditu pakete hauek kudeatzeko, baina litekeena da PHP7.3 aplikazioak Stretch sistema eragilean instalatu zituzten kasu batzuetan arazoak sortzea. Egoera hau konpontzeko, honako komando hau exekutatu beharko zenuke: <cmd>{cmd_to_fix}</cmd>",
     "log_help_to_get_log": "'{desc}' eragiketaren erregistroa ikusteko, exekutatu 'yunohost log show {name}'",
     "dpkg_is_broken": "Une honetan ezinezkoa da sistemaren dpkg/APT pakateen kudeatzaileek hondatutako itxura dutelako… Arazoa konpontzeko SSH bidez konektatzen saia zaitezke eta ondoren exekutatu 'sudo apt install --fix-broken' edota 'sudo dpkg --configure -a' edota 'sudo dpkg --audit'.",

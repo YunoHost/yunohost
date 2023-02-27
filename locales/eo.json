@@ -191,7 +191,6 @@
     "unexpected_error": "Io neatendita iris malbone: {error}",
     "password_listed": "Ĉi tiu pasvorto estas inter la plej uzataj pasvortoj en la mondo. Bonvolu elekti ion pli unikan.",
     "ssowat_conf_generated": "SSOwat-agordo generita",
-    "log_remove_on_failed_restore": "Forigu '{}' post malsukcesa restarigo de rezerva ar archiveivo",
     "dpkg_is_broken": "Vi ne povas fari ĉi tion nun ĉar dpkg/APT (la administrantoj pri pakaĵaj sistemoj) ŝajnas esti rompita stato ... Vi povas provi solvi ĉi tiun problemon per konekto per SSH kaj funkcianta `sudo dpkg --configure -a`.",
     "certmanager_cert_signing_failed": "Ne povis subskribi la novan atestilon",
     "log_tools_upgrade": "Ĝisdatigu sistemajn pakaĵojn",

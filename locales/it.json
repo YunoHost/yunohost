@@ -233,7 +233,6 @@
     "log_available_on_yunopaste": "Questo registro è ora disponibile via {url}",
     "log_backup_restore_system": "Ripristina sistema da un archivio di backup",
     "log_backup_restore_app": "Ripristina '{}' da un archivio di backup",
-    "log_remove_on_failed_restore": "Rimuovi '{}' dopo un ripristino fallito da un archivio di backup",
     "log_remove_on_failed_install": "Rimuovi '{}' dopo un'installazione fallita",
     "log_domain_add": "Aggiungi il dominio '{}' nella configurazione di sistema",
     "log_domain_remove": "Rimuovi il dominio '{}' dalla configurazione di sistema",
