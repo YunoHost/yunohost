@@ -61,7 +61,7 @@ ynh_remove_systemd_config() {
 # | arg: -l, --line_match=   - Line to match - The line to find in the log to attest the service have finished to boot. If not defined it don't wait until the service is completely started.
 # | arg: -p, --log_path=     - Log file - Path to the log file. Default : `/var/log/$app/$app.log`
 # | arg: -t, --timeout=      - Timeout - The maximum time to wait before ending the watching. Default : 300 seconds.
-# | arg: -e, --length=       - Length of the error log : Default : 20
+# | arg: -e, --length=       - Length of the error log displayed for debugging : Default : 20
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_systemd_action() {
@@ -110,6 +110,8 @@ ynh_systemd_action() {
         action="reload-or-restart"
     fi
 
+    local time_start="$(date --utc --rfc-3339=seconds | cut -d+ -f1) UTC"
+
     # If the service fails to perform the action
     if ! systemctl $action $service_name; then
         # Show syslog for this service
@@ -128,9 +130,17 @@ ynh_systemd_action() {
         local i=0
         for i in $(seq 1 $timeout); do
             # Read the log until the sentence is found, that means the app finished to start. Or run until the timeout
-            if grep --extended-regexp --quiet "$line_match" "$templog"; then
-                ynh_print_info --message="The service $service_name has correctly executed the action ${action}."
-                break
+            if [ "$log_path" == "systemd" ]; then
+                # For systemd services, we in fact dont rely on the templog, which for some reason is not reliable, but instead re-read journalctl every iteration, starting at the timestamp where we triggered the action
+                if journalctl --unit=$service_name --since="$time_start" --quiet --no-pager --no-hostname | grep --extended-regexp --quiet "$line_match"; then
+                    ynh_print_info --message="The service $service_name has correctly executed the action ${action}."
+                    break
+                fi
+            else
+                if grep --extended-regexp --quiet "$line_match" "$templog"; then
+                    ynh_print_info --message="The service $service_name has correctly executed the action ${action}."
+                    break
+                fi
             fi
             if [ $i -eq 30 ]; then
                 echo "(this may take some time)" >&2
