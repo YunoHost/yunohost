@@ -451,6 +451,7 @@ class SystemuserAppResource(AppResource):
     ##### Properties:
     - `allow_ssh`: (default: False) Adds the user to the ssh.app group, allowing SSH connection via this user
     - `allow_sftp`: (default: False) Adds the user to the sftp.app group, allowing SFTP connection via this user
+    - `allow_email`: (default: False) Enable authentication on the mail stack for the system user and send mail using `__APP__@__DOMAIN__`. A `mail_pwd` setting is automatically defined (similar to `db_pwd` for databases). You can then configure the app to use `__APP__` and `__MAIL_PWD__` as SMTP credentials (with host 127.0.0.1)
     - `home`: (default: `/var/www/__APP__`) Defines the home property for this user. NB: unfortunately you can't simply use `__INSTALL_DIR__` or `__DATA_DIR__` for now
 
     ##### Provision/Update:
