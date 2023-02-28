@@ -320,6 +320,9 @@ class PermissionsResource(AppResource):
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
         # FIXME : if url != None, we should check that there's indeed a domain/path defined ? ie that app is a webapp
 
+        if "main" not in properties:
+            properties["main"] = self.default_perm_properties
+        
         for perm, infos in properties.items():
             properties[perm] = copy.copy(self.default_perm_properties)
             properties[perm].update(infos)
@@ -327,11 +330,12 @@ class PermissionsResource(AppResource):
                 properties[perm]["show_tile"] = bool(properties[perm]["url"])
 
         if (
-            not isinstance(properties["main"].get("url"), str)
-            or properties["main"]["url"] != "/"
+            properties["main"]["url"] is not None
+            and ( not isinstance(properties["main"].get("url"), str)
+                  or properties["main"]["url"] != "/" )
         ):
             raise YunohostError(
-                "URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app, i.e $domain.tld/$path/",
+                "URL for the 'main' permission should be '/' for webapps (or left undefined for non-webapps). Note that / refers to the install url of the app, i.e $domain.tld/$path/",
                 raw_msg=True,
             )
 
