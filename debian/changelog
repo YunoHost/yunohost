@@ -1,3 +1,21 @@
+yunohost (11.1.12) stable; urgency=low
+
+  - apps: add '--continue-on-failure' to 'yunohost app upgrade ([#1602](https://github.com/yunohost/yunohost/pull/1602))
+  - appsv2: Create parent dirs when provisioning install_dir ([#1609](https://github.com/yunohost/yunohost/pull/1609))
+  - appsv2: set `w` as default permission on `install_dir` folder ([#1611](https://github.com/yunohost/yunohost/pull/1611))
+  - appsv2: Handle undefined main permission url ([#1620](https://github.com/yunohost/yunohost/pull/1620))
+  - apps/helpers: tweak behavior of checksum helper in CI context to help debug why file appear as 'manually modified' ([#1618](https://github.com/yunohost/yunohost/pull/1618))
+  - apps/helpers: more robust way to grep that the service correctly started ? ([#1617](https://github.com/yunohost/yunohost/pull/1617))
+  - regenconf: sometimes ntp doesnt exist (97c0128c)
+  - nginx/security: fix empty webadmin allowlist breaking nginx conf... (e458d881)
+  - misc: automatic get rid of /etc/profile.d/check_yunohost_is_installed.sh when yunohost is postinstalled (20e8805e)
+  - settings: Fix pop3_enabled parsing returning 0/1 instead of True/False ... (b40c0de3)
+  - [i18n] Translations updated for French, Galician, Italian, Polish
+
+  Thanks to all contributors <3 ! (Éric Gaspar, John Schmidt, José M, Krakinou, Kuba Bazan, Laurent Peuch, ppr, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 28 Feb 2023 23:08:02 +0100
+
 yunohost (11.1.11.2) stable; urgency=low
 
   - Rebump version to flag as stable, not testing >_>
