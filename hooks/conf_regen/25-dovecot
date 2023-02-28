@@ -53,6 +53,8 @@ do_post_regen() {
     chown root:mail /var/mail
     chmod 1775 /var/mail
 
+    python3 -c 'from yunohost.app import regen_mail_app_user_config_for_dovecot_and_postfix as r; r(only="dovecot")'
+
     [ -z "$regen_conf_files" ] && exit 0
 
     # compile sieve script
