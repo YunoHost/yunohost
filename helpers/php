@@ -15,7 +15,7 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 #
 # -----------------------------------------------------------------------------
 #
-# usage 2: ynh_add_fpm_config [--phpversion=7.X] --usage=usage --footprint=footprint [--package=packages] [--dedicated_service]
+# usage 2: ynh_add_fpm_config [--phpversion=7.X] --usage=usage --footprint=footprint [--dedicated_service]
 # | arg: -v, --phpversion=          - Version of PHP to use.
 # | arg: -f, --footprint=           - Memory footprint of the service (low/medium/high).
 # low    - Less than 20 MB of RAM by pool.
@@ -30,7 +30,6 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 # medium - Low usage, few people or/and publicly accessible.
 # high   - High usage, frequently visited website.
 #
-# | arg: -p, --package=             - Additionnal PHP packages to install for a specific version of PHP
 # | arg: -d, --dedicated_service    - Use a dedicated PHP-FPM service instead of the common one.
 #
 #
@@ -60,16 +59,14 @@ ynh_add_fpm_config() {
     local _globalphpversion=${phpversion-:}
     # Declare an array to define the options of this helper.
     local legacy_args=vtufpd
-    local -A args_array=([v]=phpversion= [t]=use_template [u]=usage= [f]=footprint= [p]=package= [d]=dedicated_service)
+    local -A args_array=([v]=phpversion= [t]=use_template [u]=usage= [f]=footprint= [d]=dedicated_service)
     local phpversion
     local use_template
     local usage
     local footprint
-    local package
     local dedicated_service
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    package=${package:-}
 
     # The default behaviour is to use the template.
     use_template="${use_template:-1}"
@@ -101,13 +98,6 @@ ynh_add_fpm_config() {
             ynh_backup_if_checksum_is_different --file="$old_php_finalphpconf"
             ynh_remove_fpm_config
         fi
-    fi
-
-    # Legacy args (packager should just list their php dependency as regular apt dependencies...
-    if [ -n "$package" ]; then
-        # Install the additionnal packages from the default repository
-        ynh_print_warn --message "Argument --package of ynh_add_fpm_config is deprecated and to be removed in the future"
-        ynh_install_app_dependencies "$package"
     fi
 
     if [ $dedicated_service -eq 1 ]; then
@@ -197,11 +187,6 @@ pm.process_idle_timeout = 10s
     local finalphpconf="$fpm_config_dir/pool.d/$app.conf"
     ynh_add_config --template="$phpfpm_path" --destination="$finalphpconf"
 
-    if [ -e "$YNH_APP_BASEDIR/conf/php-fpm.ini" ]; then
-        ynh_print_warn --message="Packagers ! Please do not use a separate php ini file, merge your directives in the pool file instead."
-        ynh_add_config --template="php-fpm.ini" --destination="$fpm_config_dir/conf.d/20-$app.ini"
-    fi
-
     if [ $dedicated_service -eq 1 ]; then
         # Create a dedicated php-fpm.conf for the service
         local globalphpconf=$fpm_config_dir/php-fpm-$app.conf
@@ -272,9 +257,6 @@ ynh_remove_fpm_config() {
     fi
 
     ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
-    if [ -e $fpm_config_dir/conf.d/20-$app.ini ]; then
-        ynh_secure_remove --file="$fpm_config_dir/conf.d/20-$app.ini"
-    fi
 
     if [ $dedicated_service -eq 1 ]; then
         # Remove the dedicated service PHP-FPM service for the app
@@ -286,55 +268,6 @@ ynh_remove_fpm_config() {
     elif ynh_package_is_installed --package="php${phpversion}-fpm"; then
         ynh_systemd_action --service_name=$fpm_service --action=reload
     fi
-
-    # If the PHP version used is not the default version for YunoHost
-    # The second part with YNH_APP_PURGE is an ugly hack to guess that we're inside the remove script
-    # (we don't actually care about its value, we just check its not empty hence it exists)
-    if [ "$phpversion" != "$YNH_DEFAULT_PHP_VERSION" ] && [ -n "${YNH_APP_PURGE:-}" ] && dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} lt 2; then
-        # Remove app dependencies ... but ideally should happen via an explicit call from packager
-        ynh_remove_app_dependencies
-    fi
-}
-
-# Install another version of PHP.
-#
-# [internal]
-#
-# Legacy, to be remove on bullseye
-#
-# usage: ynh_install_php --phpversion=phpversion [--package=packages]
-# | arg: -v, --phpversion=  - Version of PHP to install.
-# | arg: -p, --package=     - Additionnal PHP packages to install
-#
-# Requires YunoHost version 3.8.1 or higher.
-ynh_install_php() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=vp
-    local -A args_array=([v]=phpversion= [p]=package=)
-    local phpversion
-    local package
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-    package=${package:-}
-
-    if [ "$phpversion" == "$YNH_DEFAULT_PHP_VERSION" ]; then
-        ynh_die --message="Do not use ynh_install_php to install php$YNH_DEFAULT_PHP_VERSION"
-    fi
-
-    ynh_install_app_dependencies "$package"
-}
-
-# Remove the specific version of PHP used by the app.
-#
-# [internal]
-#
-# Legacy, to be remove on bullseye
-#
-# usage: ynh_remove_php
-#
-# Requires YunoHost version 3.8.1 or higher.
-ynh_remove_php () {
-    ynh_remove_app_dependencies
 }
 
 # Define the values to configure PHP-FPM
