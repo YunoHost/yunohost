@@ -1,3 +1,9 @@
+yunohost (11.1.12.2) stable; urgency=low
+
+  - helpers: omg base64 wraps the output by default :| (d04f2085)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 01 Mar 2023 22:12:51 +0100
+
 yunohost (11.1.12.1) stable; urgency=low
 
   - helper: fix previous tweak about debugging diff for manually modified files on the CI @_@ (fd304008)
