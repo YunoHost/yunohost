@@ -548,37 +548,51 @@ class TestMockedAppUpgrade:
     This class is here to test the logical workflow of app_upgrade and thus
     mock nearly all side effects
     """
+
     def setup_method(self, method):
         self.apps_list = []
         self.upgradable_apps_list = []
 
     def _mock_app_upgrade(self, mocker):
         # app list
-        self._installed_apps = mocker.patch("yunohost.app._installed_apps", side_effect=lambda: self.apps_list)
+        self._installed_apps = mocker.patch(
+            "yunohost.app._installed_apps", side_effect=lambda: self.apps_list
+        )
 
         # just check if an app is really installed
-        mocker.patch("yunohost.app._is_installed", side_effect=lambda app: app in self.apps_list)
+        mocker.patch(
+            "yunohost.app._is_installed", side_effect=lambda app: app in self.apps_list
+        )
 
         # app_dict =
-        mocker.patch("yunohost.app.app_info", side_effect=lambda app, full: {
-            "upgradable": "yes" if app in self.upgradable_apps_list else "no",
-            "manifest": {"id": app},
-            "version": "?",
-        })
+        mocker.patch(
+            "yunohost.app.app_info",
+            side_effect=lambda app, full: {
+                "upgradable": "yes" if app in self.upgradable_apps_list else "no",
+                "manifest": {"id": app},
+                "version": "?",
+            },
+        )
 
         def custom_extract_app(app):
-            return ({
-                "version": "?",
-                "packaging_format": 1,
-                "id": app,
-                "notifications": {"PRE_UPGRADE": None, "POST_UPGRADE": None},
-            }, "MOCKED_BY_TEST")
+            return (
+                {
+                    "version": "?",
+                    "packaging_format": 1,
+                    "id": app,
+                    "notifications": {"PRE_UPGRADE": None, "POST_UPGRADE": None},
+                },
+                "MOCKED_BY_TEST",
+            )
 
         # return (manifest, extracted_app_folder)
         mocker.patch("yunohost.app._extract_app", side_effect=custom_extract_app)
 
         # for [(name, passed, values, err), ...] in
-        mocker.patch("yunohost.app._check_manifest_requirements", return_value=[(None, True, None, None)])
+        mocker.patch(
+            "yunohost.app._check_manifest_requirements",
+            return_value=[(None, True, None, None)],
+        )
 
         # raise on failure
         mocker.patch("yunohost.app._assert_system_is_sane_for_app", return_value=True)
@@ -593,12 +607,15 @@ class TestMockedAppUpgrade:
         mocker.patch("os.path.exists", side_effect=custom_os_path_exists)
 
         # manifest =
-        mocker.patch("yunohost.app.read_toml", return_value={
-            "arguments": {"install": []}
-        })
+        mocker.patch(
+            "yunohost.app.read_toml", return_value={"arguments": {"install": []}}
+        )
 
         # install_failed, failure_message_with_debug_instructions =
-        self.hook_exec_with_script_debug_if_failure = mocker.patch("yunohost.hook.hook_exec_with_script_debug_if_failure", return_value=(False, ""))
+        self.hook_exec_with_script_debug_if_failure = mocker.patch(
+            "yunohost.hook.hook_exec_with_script_debug_if_failure",
+            return_value=(False, ""),
+        )
         # settings =
         mocker.patch("yunohost.app._get_app_settings", return_value={})
         # return nothing
@@ -644,7 +661,12 @@ class TestMockedAppUpgrade:
         app_upgrade()
 
         self.hook_exec_with_script_debug_if_failure.assert_called_once()
-        assert self.hook_exec_with_script_debug_if_failure.call_args.kwargs["env"]["YNH_APP_ID"] == "some_app"
+        assert (
+            self.hook_exec_with_script_debug_if_failure.call_args.kwargs["env"][
+                "YNH_APP_ID"
+            ]
+            == "some_app"
+        )
 
     def test_app_upgrade_continue_on_failure(self, mocker):
         self._mock_app_upgrade(mocker)
@@ -682,7 +704,10 @@ class TestMockedAppUpgrade:
                 raise Exception()
             return True
 
-        mocker.patch("yunohost.app._assert_system_is_sane_for_app", side_effect=_assert_system_is_sane_for_app)
+        mocker.patch(
+            "yunohost.app._assert_system_is_sane_for_app",
+            side_effect=_assert_system_is_sane_for_app,
+        )
 
         with pytest.raises(YunohostError):
             app_upgrade()
