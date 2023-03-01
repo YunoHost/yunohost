@@ -534,7 +534,14 @@ def app_change_url(operation_logger, app, domain, path):
             hook_callback("post_app_change_url", env=env_dict)
 
 
-def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False, continue_on_failure=False):
+def app_upgrade(
+    app=[],
+    url=None,
+    file=None,
+    force=False,
+    no_safety_backup=False,
+    continue_on_failure=False,
+):
     """
     Upgrade app
 
@@ -857,8 +864,16 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
                 else:
                     operation_logger.close()
-                    logger.error(m18n.n("app_failed_to_upgrade_but_continue", failed_app=app_instance_name, operation_logger_name=operation_logger.name))
-                    failed_to_upgrade_apps.append((app_instance_name, operation_logger.name))
+                    logger.error(
+                        m18n.n(
+                            "app_failed_to_upgrade_but_continue",
+                            failed_app=app_instance_name,
+                            operation_logger_name=operation_logger.name,
+                        )
+                    )
+                    failed_to_upgrade_apps.append(
+                        (app_instance_name, operation_logger.name)
+                    )
 
             # Otherwise we're good and keep going !
             now = int(time.time())
@@ -923,7 +938,11 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
     if failed_to_upgrade_apps:
         apps = ""
         for app_id, operation_logger_name in failed_to_upgrade_apps:
-            apps += m18n.n("apps_failed_to_upgrade_line", app_id=app_id, operation_logger_name=operation_logger_name)
+            apps += m18n.n(
+                "apps_failed_to_upgrade_line",
+                app_id=app_id,
+                operation_logger_name=operation_logger_name,
+            )
 
         logger.warning(m18n.n("apps_failed_to_upgrade", apps=apps))
 
