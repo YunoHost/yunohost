@@ -330,6 +330,7 @@ ynh_store_file_checksum() {
     if [ ${PACKAGE_CHECK_EXEC:-0} -eq 1 ]; then
         # Using a base64 is in fact more reversible than "replace / and space by _" ... So we can in fact obtain the original file path in an easy reliable way ...
         local file_path_base64=$(echo "$file" | base64)
+        mkdir -p /var/cache/yunohost/appconfbackup/
         cat $file > /var/cache/yunohost/appconfbackup/original_${file_path_base64}
     fi
 
