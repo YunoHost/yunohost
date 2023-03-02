@@ -916,8 +916,8 @@ class PortsResource(AppResource):
             % port
         )
         # This second command is mean to cover (most) case where an app is using a port yet ain't currently using it for some reason (typically service ain't up)
-        cmd2 = f"grep --quiet \"port: '{port}'\" /etc/yunohost/apps/*/settings.yml"
-        return os.system(cmd1) == 0 and os.system(cmd2) == 0
+        cmd2 = f"grep --quiet --extended-regexp \"port: '?{port}'?\" /etc/yunohost/apps/*/settings.yml"
+        return os.system(cmd1) == 0 or os.system(cmd2) == 0
 
     def provision_or_update(self, context: Dict = {}):
         from yunohost.firewall import firewall_allow, firewall_disallow
