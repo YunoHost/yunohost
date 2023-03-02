@@ -245,5 +245,6 @@
     "migration_0021_main_upgrade": "بداية التحديث الرئيسي…",
     "migration_0021_patching_sources_list": "تحديث ملف sources.lists…",
     "pattern_firstname": "يجب أن يكون اسماً أولياً صالحاً (على الأقل 3 حروف)",
-    "yunohost_configured": "تم إعداد YunoHost الآن"
+    "yunohost_configured": "تم إعداد YunoHost الآن",
+    "global_settings_setting_backup_compress_tar_archives": "ضغط النُسخ الاحتياطية"
 }
