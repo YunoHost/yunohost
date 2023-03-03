@@ -2233,7 +2233,7 @@ def _hydrate_app_template(template, data):
         varname = stuff.strip("_").lower()
 
         if varname in data:
-            template = template.replace(stuff, data[varname])
+            template = template.replace(stuff, str(data[varname]))
 
     return template
 
