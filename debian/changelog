@@ -1,3 +1,13 @@
+yunohost (11.1.13) stable; urgency=low
+
+  - appsv2: fix port already used detection ([#1622](https://github.com/yunohost/yunohost/pull/1622))
+  - appsv2: when hydrating template, the data may be not-string, eg ports are int (72986842)
+  - [i18n] Translations updated for Arabic, French, Galician, German, Occitan
+
+  Thanks to all contributors <3 ! (ButterflyOfFire, Christian Wehrli, José M, Kay0u, ppr)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 03 Mar 2023 22:57:14 +0100
+
 yunohost (11.1.12.2) stable; urgency=low
 
   - helpers: omg base64 wraps the output by default :| (d04f2085)
