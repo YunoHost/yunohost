@@ -309,7 +309,7 @@ ynh_script_progression() {
 
     local print_exec_time=""
     if [ $time -eq 1 ] && [ "$exec_time" -gt 10 ]; then
-        print_exec_time=" [$(bc <<< 'scale=1; 12345 / 60' ) minutes]"
+        print_exec_time=" [$(bc <<< 'scale=1; $exec_time / 60' ) minutes]"
     fi
 
     ynh_print_info "[$progression_bar] > ${message}${print_exec_time}"
