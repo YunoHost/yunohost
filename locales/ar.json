@@ -246,5 +246,9 @@
     "migration_0021_patching_sources_list": "تحديث ملف sources.lists…",
     "pattern_firstname": "يجب أن يكون اسماً أولياً صالحاً (على الأقل 3 حروف)",
     "yunohost_configured": "تم إعداد YunoHost الآن",
-    "global_settings_setting_backup_compress_tar_archives": "ضغط النُسخ الاحتياطية"
+    "global_settings_setting_backup_compress_tar_archives": "ضغط النُسخ الاحتياطية",
+    "diagnosis_description_apps": "التطبيقات",
+    "danger": "خطر:",
+    "diagnosis_basesystem_hardware": "بنية الخادم هي {virt} {arch}",
+    "diagnosis_basesystem_hardware_model": "طراز الخادم {model}"
 }
