@@ -352,8 +352,6 @@ class SourcesResource(AppResource):
         if context.get("action") == "restore":
             return
 
-        import pdb; pdb.set_trace()
-
         for source_id, infos in self.sources.items():
 
             if not infos["prefetch"]:
