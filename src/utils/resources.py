@@ -320,7 +320,7 @@ class SourcesResource(AppResource):
     - For elements with `prefetch = true`, will download the asset (for the appropriate architecture) and store them in `/var/cache/yunohost/download/$app/$source_id`, to be later picked up by `ynh_setup_source`. (NB: this only happens during install and upgrade, not restore)
 
     ##### Deprovision:
-    - Nothing
+    - Nothing (just cleanup the cache)
     """
 
     type = "sources"
@@ -345,7 +345,6 @@ class SourcesResource(AppResource):
     def deprovision(self, context: Dict = {}):
         if os.path.isdir(f"/var/cache/yunohost/download/{self.app}/"):
             rm(f"/var/cache/yunohost/download/{self.app}/", recursive=True)
-        pass
 
     def provision_or_update(self, context: Dict = {}):
 
