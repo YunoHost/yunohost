@@ -747,6 +747,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             ).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
+                action="upgrade",
             )
 
             # Boring stuff : the resource upgrade may have added/remove/updated setting
@@ -1122,6 +1123,7 @@ def app_install(
             AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
+                action="install",
             )
         except (KeyboardInterrupt, EOFError, Exception) as e:
             shutil.rmtree(app_setting_path)
@@ -1253,7 +1255,7 @@ def app_install(
 
                 AppResourceManager(
                     app_instance_name, wanted={}, current=manifest
-                ).apply(rollback_and_raise_exception_if_failure=False)
+                ).apply(rollback_and_raise_exception_if_failure=False, action="remove")
             else:
                 # Remove all permission in LDAP
                 for permission_name in user_permission_list()["permissions"].keys():
@@ -1392,7 +1394,7 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
         from yunohost.utils.resources import AppResourceManager
 
         AppResourceManager(app, wanted={}, current=manifest).apply(
-            rollback_and_raise_exception_if_failure=False, purge_data_dir=purge
+            rollback_and_raise_exception_if_failure=False, purge_data_dir=purge, action="remove"
         )
     else:
         # Remove all permission in LDAP

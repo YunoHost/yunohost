@@ -1528,6 +1528,7 @@ class RestoreManager:
             AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
+                action="restore",
             )
 
         # Execute the app install script

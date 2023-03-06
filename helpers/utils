@@ -160,17 +160,19 @@ ynh_setup_source() {
     keep="${keep:-}"
     full_replace="${full_replace:-0}"
 
-    if test -e $YNH_APP_BASEDIR/sources.toml
+    if test -e $YNH_APP_BASEDIR/manifest.toml && cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq -e '.resources.sources' >/dev/null
     then
         source_id="${source_id:-main}"
-        local sources_json=$(cat $YNH_APP_BASEDIR/sources.toml | toml_to_json)
-        if [[ "$(echo "$sources_json" | jq -r ".$source_id.autoswitch_per_arch")" == "true" ]]
+        local sources_json=$(cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq '.resources.sources')
+        if ! echo "$sources_json" | jq -re ".$source_id.url"
         then
-            source_id=$source_id.$YNH_ARCH
+            local arch_prefix=".$YNH_ARCH"
+        else
+            local arch_prefix=""
         fi
 
-        local src_url="$(echo "$sources_json" | jq -r ".$source_id.url" | sed 's/^null$//')"
-        local src_sum="$(echo "$sources_json" | jq -r ".$source_id.sha256" | sed 's/^null$//')"
+        local src_url="$(echo "$sources_json" | jq -r ".$source_id$arch_prefix.url" | sed 's/^null$//')"
+        local src_sum="$(echo "$sources_json" | jq -r ".$source_id$arch_prefix.sha256" | sed 's/^null$//')"
         local src_sumprg="sha256sum"
         local src_format="$(echo "$sources_json" | jq -r ".$source_id.format" | sed 's/^null$//')"
         local src_in_subdir="$(echo "$sources_json" | jq -r ".$source_id.in_subdir" | sed 's/^null$//')"
@@ -178,8 +180,8 @@ ynh_setup_source() {
         local src_platform="$(echo "$sources_json" | jq -r ".$source_id.platform" | sed 's/^null$//')"
         local src_rename="$(echo "$sources_json" | jq -r ".$source_id.rename" | sed 's/^null$//')"
 
-        [[ -n "$src_url" ]] || ynh_die "No URL defined for source $source_id ?"
-        [[ -n "$src_sum" ]] || ynh_die "No sha256 sum defined for source $source_id ?"
+        [[ -n "$src_url" ]] || ynh_die "No URL defined for source $source_id$arch_prefix ?"
+        [[ -n "$src_sum" ]] || ynh_die "No sha256 sum defined for source $source_id$arch_prefix ?"
 
         if [[ -z "$src_format" ]]
         then
@@ -222,7 +224,6 @@ ynh_setup_source() {
     src_format=${src_format:-tar.gz}
     src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
     src_extract=${src_extract:-true}
-    src_filename="${source_id}.${src_format}"
 
     if [[ "$src_extract" != "true" ]] && [[ "$src_extract" != "false" ]]
     then
@@ -231,10 +232,10 @@ ynh_setup_source() {
 
 
     # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
-    local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
+    local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${source_id}"
 
     mkdir -p /var/cache/yunohost/download/${YNH_APP_ID}/
-    src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${src_filename}"
+    src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${source_id}"
 
     if [ "$src_format" = "docker" ]; then
         src_platform="${src_platform:-"linux/$YNH_ARCH"}"
@@ -243,16 +244,30 @@ ynh_setup_source() {
     else
         [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
 
-        # NB. we have to declare the var as local first,
-        # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
-        # because local always return 0 ...
-        local out
-        # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-        out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$src_filename $src_url 2>&1) \
-            || ynh_die --message="$out"
+        # If the file was prefetched but somehow doesn't match the sum, rm and redownload it
+        if [ -e "$src_filename" ] && ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
+        then
+            rm -f "$src_filename"
+        fi
+
+        # Only redownload the file if it wasnt prefetched
+        if [ ! -e "$src_filename" ]
+        then
+            # NB. we have to declare the var as local first,
+            # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
+            # because local always return 0 ...
+            local out
+            # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
+            out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$src_filename $src_url 2>&1) \
+                || ynh_die --message="$out"
+        fi
+
         # Check the control sum
-        echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status \
-            || ynh_die --message="Corrupt source for ${src_filename}: Expected ${src_sum} but got $(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1) (size: $(du -hs ${src_filename} | cut --delimiter=' ' --fields=1))."
+        if ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
+        then
+            rm ${src_filename}
+            ynh_die --message="Corrupt source for ${src_filename}: Expected ${src_sum} but got $(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1) (size: $(du -hs ${src_filename} | cut --delimiter=' ' --fields=1))."
+        fi
     fi
 
     # Keep files to be backup/restored at the end of the helper
