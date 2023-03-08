@@ -292,7 +292,7 @@ class SourcesResource(AppResource):
 
         [resources.sources.zblerg]
         url = "https://zblerg.com/download/zblerg"
-        sha256sum = "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2"
+        sha256 = "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2"
         format = "script"
         rename = "zblerg.sh"
 
@@ -384,8 +384,7 @@ class SourcesResource(AppResource):
         if returncode != 0:
             if os.path.exists(filename):
                 rm(filename)
-            out = out.decode()
-            raise YunohostError(f"Failed to download asset {source_id} ({url}) for {self.app}: {out}", raw_msg=True)
+            raise YunohostError("app_failed_to_download_asset", source_id=source_id, url=url, app=self.app, out=out.decode())
 
         assert os.path.exists(filename), f"For some reason, wget worked but {filename} doesnt exists?"
 
@@ -393,7 +392,7 @@ class SourcesResource(AppResource):
         if computed_sha256 != expected_sha256:
             size = check_output(f"du -hs {filename}").split()[0]
             rm(filename)
-            raise YunohostError(f"Corrupt source for {url} : expected to find {expected_sha256} as sha256sum, but got {computed_sha256} instead ... (file size : {size})", raw_msg=True)
+            raise YunohostError("app_corrupt_source", source_id=source_id, url=url, app=self.app, expected_sha256=expected_sha256, computed_sha256=computed_sha256, size=size)
 
 
 class PermissionsResource(AppResource):
