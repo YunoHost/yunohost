@@ -89,7 +89,9 @@ fi
 #     sha256 = "0123456789abcdef"    # The sha256 sum of the asset obtained from the URL
 # ```
 #
-# # Optional flags:
+# ##### Optional flags
+#
+# ```text
 # format    = "tar.gz"/xz/bz2    # automatically guessed from the extension of the URL, but can be set explicitly. Will use `tar` to extract
 #             "zip"              # automatically guessed from the extension of the URL, but can be set explicitly. Will use `unzip` to extract
 #             "docker"           # useful to extract files from an already-built docker image (instead of rebuilding them locally). Will use `docker-image-extract` to extract
@@ -105,7 +107,7 @@ fi
 #
 # rename    = "whatever_your_want"   # to be used for convenience when `extract` is false and the default name of the file is not practical
 # platform  = "linux/amd64"          # (defaults to "linux/$YNH_ARCH") to be used in conjonction with `format = "docker"` to specify which architecture to extract for
-# 
+# ```
 #
 # You may also define assets url and checksum per-architectures such as:
 # ```toml
