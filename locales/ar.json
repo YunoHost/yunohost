@@ -250,5 +250,11 @@
     "diagnosis_description_apps": "التطبيقات",
     "danger": "خطر:",
     "diagnosis_basesystem_hardware": "بنية الخادم هي {virt} {arch}",
-    "diagnosis_basesystem_hardware_model": "طراز الخادم {model}"
+    "diagnosis_basesystem_hardware_model": "طراز الخادم {model}",
+    "diagnosis_mail_queue_ok": "هناك {nb_pending} رسائل بريد إلكتروني معلقة في قوائم انتظار البريد",
+    "diagnosis_mail_ehlo_ok": "يمكن الوصول إلى خادم بريد SMTP من الخارج وبالتالي فهو قادر على استقبال رسائل البريد الإلكتروني!",
+    "diagnosis_dns_good_conf": "تم إعداد سجلات نظام أسماء النطاقات DNS بشكل صحيح للنطاق {domain} (category {category})",
+    "diagnosis_ip_dnsresolution_working": "تحليل اسم النطاق يعمل!",
+    "diagnosis_mail_blacklist_listed_by": "إن عنوان الـ IP الخص بك أو نطاقك <code>{item}</code> مُدرَج ضمن قائمة سوداء على {blacklist_name}",
+    "diagnosis_mail_outgoing_port_25_ok": "خادم بريد SMTP قادر على إرسال رسائل البريد الإلكتروني (منفذ البريد الصادر 25 غير محظور)."
 }
