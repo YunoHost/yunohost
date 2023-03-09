@@ -71,20 +71,23 @@ fi
 #
 # usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"] [--full_replace]
 # | arg: -d, --dest_dir=     - Directory where to setup sources
-# | arg: -s, --source_id=    - Name of the source, defaults to `main` (when sources.toml exists) or (legacy) `app` (when no sources.toml exists)
+# | arg: -s, --source_id=    - Name of the source, defaults to `main` (when the sources resource exists in manifest.toml) or (legacy) `app` otherwise
 # | arg: -k, --keep=         - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs/'
 # | arg: -r, --full_replace= - Remove previous sources before installing new sources
 #
-# #### New format `.toml`
+# #### New 'sources' resources
 #
-# This helper will read infos from a sources.toml at the root of the app package
+# (See also the resources documentation which may be more complete?)
+#
+# This helper will read infos from the 'sources' resources in the manifest.toml of the app
 # and expect a structure like:
 #
 # ```toml
-# [main]
-# url = "https://some.address.to/download/the/app/archive"
-# sha256 = "0123456789abcdef"    # The sha256 sum of the asset obtained from the URL
-#
+# [resources.sources]
+#     [resources.sources.main]
+#     url = "https://some.address.to/download/the/app/archive"
+#     sha256 = "0123456789abcdef"    # The sha256 sum of the asset obtained from the URL
+# ```
 #
 # # Optional flags:
 # format    = "tar.gz"/xz/bz2    # automatically guessed from the extension of the URL, but can be set explicitly. Will use `tar` to extract
@@ -102,20 +105,16 @@ fi
 #
 # rename    = "whatever_your_want"   # to be used for convenience when `extract` is false and the default name of the file is not practical
 # platform  = "linux/amd64"          # (defaults to "linux/$YNH_ARCH") to be used in conjonction with `format = "docker"` to specify which architecture to extract for
-# ```
+# 
 #
-# You may also define sublevels for each architectures such as:
+# You may also define assets url and checksum per-architectures such as:
 # ```toml
-# [main]
-# autoswitch_per_arch = true
-#
-#     [main.amd64]
-#     url = "https://some.address.to/download/the/app/archive/when/amd64"
-#     sha256 = "0123456789abcdef"
-#
-#     [main.armhf]
-#     url = "https://some.address.to/download/the/app/archive/when/armhf"
-#     sha256 = "fedcba9876543210"
+# [resources.sources]
+#     [resources.sources.main]
+#     amd64.url = "https://some.address.to/download/the/app/archive/when/amd64"
+#     amd64.sha256 = "0123456789abcdef"
+#     armhf.url = "https://some.address.to/download/the/app/archive/when/armhf"
+#     armhf.sha256 = "fedcba9876543210"
 # ```
 #
 # In which case ynh_setup_source --dest_dir="$install_dir" will automatically pick the appropriate source depending on the arch
