@@ -1,3 +1,13 @@
+yunohost (11.1.14) stable; urgency=low
+
+  - helpers: simplify --time display option for ynh_script_progression .. we don't care about displaying time when below 10 sc (8731f77a)
+  - appsv2: add support for a 'sources' app resources to modernize and replace app.src format ([#1615](https://github.com/yunohost/yunohost/pull/1615))
+  - i18n: Translations updated for Arabic, Polish, Ukrainian
+
+  Thanks to all contributors <3 ! (ButterflyOfFire, Grzegorz Cichocki, Tymofii-Lytvynenko)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 09 Mar 2023 15:34:17 +0100
+
 yunohost (11.1.13) stable; urgency=low
 
   - appsv2: fix port already used detection ([#1622](https://github.com/yunohost/yunohost/pull/1622))
