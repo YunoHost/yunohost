@@ -258,6 +258,7 @@ ynh_abort_if_errors
 
         # print(ret)
 
+
 class SourcesResource(AppResource):
     """
     Declare what are the sources / assets used by this app. Typically, this corresponds to some tarball published by the upstream project, that needs to be downloaded and extracted in the install dir using the ynh_setup_source helper.
@@ -335,7 +336,6 @@ class SourcesResource(AppResource):
     sources: Dict[str, Dict[str, Any]] = {}
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
-
         for source_id, infos in properties.items():
             properties[source_id] = copy.copy(self.default_sources_properties)
             properties[source_id].update(infos)
@@ -347,29 +347,37 @@ class SourcesResource(AppResource):
             rm(f"/var/cache/yunohost/download/{self.app}/", recursive=True)
 
     def provision_or_update(self, context: Dict = {}):
-
         # Don't prefetch stuff during restore
         if context.get("action") == "restore":
             return
 
         for source_id, infos in self.sources.items():
-
             if not infos["prefetch"]:
                 continue
 
             if infos["url"] is None:
                 arch = system_arch()
-                if arch in infos and isinstance(infos[arch], dict) and isinstance(infos[arch].get("url"), str) and isinstance(infos[arch].get("sha256"), str):
+                if (
+                    arch in infos
+                    and isinstance(infos[arch], dict)
+                    and isinstance(infos[arch].get("url"), str)
+                    and isinstance(infos[arch].get("sha256"), str)
+                ):
                     self.prefetch(source_id, infos[arch]["url"], infos[arch]["sha256"])
                 else:
-                    raise YunohostError(f"In resources.sources: it looks like you forgot to define url/sha256 or {arch}.url/{arch}.sha256", raw_msg=True)
+                    raise YunohostError(
+                        f"In resources.sources: it looks like you forgot to define url/sha256 or {arch}.url/{arch}.sha256",
+                        raw_msg=True,
+                    )
             else:
                 if infos["sha256"] is None:
-                    raise YunohostError(f"In resources.sources: it looks like the sha256 is missing for {source_id}", raw_msg=True)
+                    raise YunohostError(
+                        f"In resources.sources: it looks like the sha256 is missing for {source_id}",
+                        raw_msg=True,
+                    )
                 self.prefetch(source_id, infos["url"], infos["sha256"])
 
     def prefetch(self, source_id, url, expected_sha256):
-
         logger.debug(f"Prefetching asset {source_id}: {url} ...")
 
         if not os.path.isdir(f"/var/cache/yunohost/download/{self.app}/"):
@@ -378,21 +386,49 @@ class SourcesResource(AppResource):
 
         # NB: we use wget and not requests.get() because we want to output to a file (ie avoid ending up with the full archive in RAM)
         # AND the nice --tries, --no-dns-cache, --timeout options ...
-        p = subprocess.Popen(["/usr/bin/wget", "--tries=3", "--no-dns-cache", "--timeout=900", "--no-verbose", "--output-document=" + filename, url], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        p = subprocess.Popen(
+            [
+                "/usr/bin/wget",
+                "--tries=3",
+                "--no-dns-cache",
+                "--timeout=900",
+                "--no-verbose",
+                "--output-document=" + filename,
+                url,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
         out, _ = p.communicate()
         returncode = p.returncode
         if returncode != 0:
             if os.path.exists(filename):
                 rm(filename)
-            raise YunohostError("app_failed_to_download_asset", source_id=source_id, url=url, app=self.app, out=out.decode())
+            raise YunohostError(
+                "app_failed_to_download_asset",
+                source_id=source_id,
+                url=url,
+                app=self.app,
+                out=out.decode(),
+            )
 
-        assert os.path.exists(filename), f"For some reason, wget worked but {filename} doesnt exists?"
+        assert os.path.exists(
+            filename
+        ), f"For some reason, wget worked but {filename} doesnt exists?"
 
         computed_sha256 = check_output(f"sha256sum {filename}").split()[0]
         if computed_sha256 != expected_sha256:
             size = check_output(f"du -hs {filename}").split()[0]
             rm(filename)
-            raise YunohostError("app_corrupt_source", source_id=source_id, url=url, app=self.app, expected_sha256=expected_sha256, computed_sha256=computed_sha256, size=size)
+            raise YunohostError(
+                "app_corrupt_source",
+                source_id=source_id,
+                url=url,
+                app=self.app,
+                expected_sha256=expected_sha256,
+                computed_sha256=computed_sha256,
+                size=size,
+            )
 
 
 class PermissionsResource(AppResource):
