@@ -21,6 +21,7 @@ import copy
 import shutil
 import random
 import tempfile
+import subprocess
 from typing import Dict, Any, List
 
 from moulinette import m18n
@@ -30,7 +31,7 @@ from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
 from moulinette.utils.filesystem import (
     rm,
 )
-
+from yunohost.utils.system import system_arch
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
 logger = getActionLogger("yunohost.app_resources")
@@ -256,6 +257,142 @@ ynh_abort_if_errors
                 pass
 
         # print(ret)
+
+class SourcesResource(AppResource):
+    """
+    Declare what are the sources / assets used by this app. Typically, this corresponds to some tarball published by the upstream project, that needs to be downloaded and extracted in the install dir using the ynh_setup_source helper.
+
+    This resource is intended both to declare the assets, which will be parsed by ynh_setup_source during the app script runtime, AND to prefetch and validate the sha256sum of those asset before actually running the script, to be able to report an error early when the asset turns out to not be available for some reason.
+
+    Various options are available to accomodate the behavior according to the asset structure
+
+    ##### Example:
+
+    ```toml
+    [resources.sources]
+
+        [resources.sources.main]
+        url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.tar.gz"
+        sha256 = "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+    ```
+
+    Or more complex examples with several element, including one with asset that depends on the arch
+
+    ```toml
+    [resources.sources]
+
+        [resources.sources.main]
+        in_subdir = false
+        amd64.url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.amd64.tar.gz"
+        amd64.sha256 = "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+        i386.url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.amd64.tar.gz"
+        i386.sha256 = "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3"
+        armhf.url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.armhf.tar.gz"
+        armhf.sha256 = "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+
+        [resources.sources.zblerg]
+        url = "https://zblerg.com/download/zblerg"
+        sha256 = "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2"
+        format = "script"
+        rename = "zblerg.sh"
+
+    ```
+
+    ##### Properties (for each source):
+
+    - `prefetch` : `true` (default) or `false`, wether or not to pre-fetch this asset during the provisioning phase of the resource. If several arch-dependent url are provided, YunoHost will only prefetch the one for the current system architecture.
+    - `url` : the asset's URL
+        - If the asset's URL depend on the architecture, you may instead provide `amd64.url`, `i386.url`, `armhf.url` and `arm64.url` (depending on what architectures are supported), using the same `dpkg --print-architecture` nomenclature as for the supported architecture key in the manifest
+    - `sha256` : the asset's sha256sum. This is used both as an integrity check, and as a layer of security to protect against malicious actors which could have injected malicious code inside the asset...
+        - Same as `url` : if the asset's URL depend on the architecture, you may instead provide `amd64.sha256`, `i386.sha256`, ...
+    - `format` : The "format" of the asset. It is typically automatically guessed from the extension of the URL (or the mention of "tarball", "zipball" in the URL), but can be set explicitly:
+        - `tar.gz`, `tar.xz`, `tar.bz2` : will use `tar` to extract the archive
+        - `zip` : will use `unzip` to extract the archive
+        - `docker` : useful to extract files from an already-built docker image (instead of rebuilding them locally). Will use `docker-image-extract`
+        - `whatever`: whatever arbitrary value, not really meaningful except to imply that the file won't be extracted (eg because it's a .deb to be manually installed with dpkg/apt, or a script, or ...)
+    - `in_subdir`: `true` (default) or `false`, depending on if there's an intermediate subdir in the archive before accessing the actual files. Can also be `N` (an integer) to handle special cases where there's `N` level of subdir to get rid of to actually access the files
+    - `extract` : `true` or `false`. Defaults to `true` for archives such as `zip`, `tar.gz`, `tar.bz2`, ... Or defaults to `false` when `format` is not something that should be extracted. When `extract = false`, the file will only be `mv`ed to the location, possibly renamed using the `rename` value
+    - `rename`: some string like `whatever_your_want`, to be used for convenience when `extract` is `false` and the default name of the file is not practical
+    - `platform`: for example `linux/amd64` (defaults to `linux/$YNH_ARCH`) to be used in conjonction with `format = "docker"` to specify which architecture to extract for
+
+
+    ##### Provision/Update:
+    - For elements with `prefetch = true`, will download the asset (for the appropriate architecture) and store them in `/var/cache/yunohost/download/$app/$source_id`, to be later picked up by `ynh_setup_source`. (NB: this only happens during install and upgrade, not restore)
+
+    ##### Deprovision:
+    - Nothing (just cleanup the cache)
+    """
+
+    type = "sources"
+    priority = 10
+
+    default_sources_properties: Dict[str, Any] = {
+        "prefetch": True,
+        "url": None,
+        "sha256": None,
+    }
+
+    sources: Dict[str, Dict[str, Any]] = {}
+
+    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
+
+        for source_id, infos in properties.items():
+            properties[source_id] = copy.copy(self.default_sources_properties)
+            properties[source_id].update(infos)
+
+        super().__init__({"sources": properties}, *args, **kwargs)
+
+    def deprovision(self, context: Dict = {}):
+        if os.path.isdir(f"/var/cache/yunohost/download/{self.app}/"):
+            rm(f"/var/cache/yunohost/download/{self.app}/", recursive=True)
+
+    def provision_or_update(self, context: Dict = {}):
+
+        # Don't prefetch stuff during restore
+        if context.get("action") == "restore":
+            return
+
+        for source_id, infos in self.sources.items():
+
+            if not infos["prefetch"]:
+                continue
+
+            if infos["url"] is None:
+                arch = system_arch()
+                if arch in infos and isinstance(infos[arch], dict) and isinstance(infos[arch].get("url"), str) and isinstance(infos[arch].get("sha256"), str):
+                    self.prefetch(source_id, infos[arch]["url"], infos[arch]["sha256"])
+                else:
+                    raise YunohostError(f"In resources.sources: it looks like you forgot to define url/sha256 or {arch}.url/{arch}.sha256", raw_msg=True)
+            else:
+                if infos["sha256"] is None:
+                    raise YunohostError(f"In resources.sources: it looks like the sha256 is missing for {source_id}", raw_msg=True)
+                self.prefetch(source_id, infos["url"], infos["sha256"])
+
+    def prefetch(self, source_id, url, expected_sha256):
+
+        logger.debug(f"Prefetching asset {source_id}: {url} ...")
+
+        if not os.path.isdir(f"/var/cache/yunohost/download/{self.app}/"):
+            mkdir(f"/var/cache/yunohost/download/{self.app}/", parents=True)
+        filename = f"/var/cache/yunohost/download/{self.app}/{source_id}"
+
+        # NB: we use wget and not requests.get() because we want to output to a file (ie avoid ending up with the full archive in RAM)
+        # AND the nice --tries, --no-dns-cache, --timeout options ...
+        p = subprocess.Popen(["/usr/bin/wget", "--tries=3", "--no-dns-cache", "--timeout=900", "--no-verbose", "--output-document=" + filename, url], stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+        out, _ = p.communicate()
+        returncode = p.returncode
+        if returncode != 0:
+            if os.path.exists(filename):
+                rm(filename)
+            raise YunohostError("app_failed_to_download_asset", source_id=source_id, url=url, app=self.app, out=out.decode())
+
+        assert os.path.exists(filename), f"For some reason, wget worked but {filename} doesnt exists?"
+
+        computed_sha256 = check_output(f"sha256sum {filename}").split()[0]
+        if computed_sha256 != expected_sha256:
+            size = check_output(f"du -hs {filename}").split()[0]
+            rm(filename)
+            raise YunohostError("app_corrupt_source", source_id=source_id, url=url, app=self.app, expected_sha256=expected_sha256, computed_sha256=computed_sha256, size=size)
 
 
 class PermissionsResource(AppResource):
