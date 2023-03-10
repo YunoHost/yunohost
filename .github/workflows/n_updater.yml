@@ -21,7 +21,8 @@ jobs:
           git config --global user.name 'yunohost-bot'
           git config --global user.email 'yunohost-bot@users.noreply.github.com'
           # Run the updater script
-          /bin/bash .github/workflows/n_updater.sh
+          wget https://raw.githubusercontent.com/tj/n/master/bin/n --output-document=helpers/vendor/n/n
+          [[ -z "$(git diff helpers/vendor/n/n)" ]] || echo "PROCEED=true" >> $GITHUB_ENV
       - name: Commit changes
         id: commit
         if: ${{ env.PROCEED == 'true' }}
