@@ -497,10 +497,20 @@ class PermissionsResource(AppResource):
             properties["main"] = self.default_perm_properties
 
         for perm, infos in properties.items():
+            if "auth_header" in infos and not isinstance(infos.get("auth_header"), bool):
+                raise YunohostError(f"In manifest, for permission '{perm}', 'auth_header' should be a boolean", raw_msg=True)
+            if "show_tile" in infos and not isinstance(infos.get("show_tile"), bool):
+                raise YunohostError(f"In manifest, for permission '{perm}', 'show_tile' should be a boolean", raw_msg=True)
+            if "protected" in infos and not isinstance(infos.get("protected"), bool):
+                raise YunohostError(f"In manifest, for permission '{perm}', 'protected' should be a boolean", raw_msg=True)
+            if "additional_urls" in infos and not isinstance(infos.get("additional_urls"), list):
+                raise YunohostError(f"In manifest, for permission '{perm}', 'additional_urls' should be a list", raw_msg=True)
+
             properties[perm] = copy.copy(self.default_perm_properties)
             properties[perm].update(infos)
             if properties[perm]["show_tile"] is None:
                 properties[perm]["show_tile"] = bool(properties[perm]["url"])
+
 
         if properties["main"]["url"] is not None and (
             not isinstance(properties["main"].get("url"), str)
