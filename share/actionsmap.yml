@@ -1911,6 +1911,11 @@ log:
                 path:
                     help: Log file to share
 
+        ### log_current-operation()
+        current-operation:
+            action_help: Return YunoHost current operation (if any)
+            api: GET /logs/current_operation
+
 
 #############################
 #          Diagnosis        #

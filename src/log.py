@@ -33,10 +33,11 @@ from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import get_ynh_package_version
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import read_file, read_yaml
+from moulinette.utils.filesystem import read_file, read_yaml, write_to_yaml
 
 logger = getActionLogger("yunohost.log")
 
+LOCKFILE = "/var/run/moulinette_yunohost.lock"
 CATEGORIES_PATH = "/var/log/yunohost/categories/"
 OPERATIONS_PATH = "/var/log/yunohost/categories/operation/"
 METADATA_FILE_EXT = ".yml"
@@ -65,6 +66,55 @@ BORING_LOG_LINES = [
     r"DEBUG - \+ echo '",
     r"DEBUG - \+ exit (1|0)$",
 ]
+
+
+def log_current_operation():
+
+    # If no lock exists, then most likely no current operation
+    if not os.path.exists(LOCKFILE):
+        return None
+
+    lock_pids = read_file(LOCKFILE).strip().split("\n")
+    if lock_pids == []:
+        return None
+
+    try:
+        proc = psutil.Process(int(lock_pids[0]))
+    except:
+        return None
+
+    recent_operation_logs = sorted(
+        glob.iglob(OPERATIONS_PATH + "*.log"), key=os.path.getctime, reverse=True
+    )[:20]
+
+    # We use proc.open_files() to list files opened / actively used by this proc
+    # We only keep files matching a recent yunohost operation log
+    active_logs = sorted(
+        (f.path for f in proc.open_files() if f.path in recent_operation_logs),
+        key=os.path.getctime,
+        reverse=True,
+    )
+
+    if active_logs != []:
+        operation_id = os.path.basename(active_logs[0])[:-4]
+        return {
+            "operation_id": operation_id,
+            "operation_description": _get_description_from_name(operation_id)
+        }
+    elif Moulinette.interface.type == "cli":
+        # Fallback to the raw cmd line ? Should be something like 'app_install'
+        # This happens when a lock is taken, but no operation logger actually started yet
+        # e.g. we're still answering the install questions prior to the install
+        cmdline = '_'.join(proc.cmdline()[2:4])
+        return {
+            "operation_id": None,
+            "operation_description": cmdline,
+        }
+
+    return {
+        "operation_id": None,
+        "operation_description": "Unknown?",
+    }
 
 
 def log_list(limit=None, with_details=False, with_suboperations=False):
@@ -505,10 +555,10 @@ class OperationLogger:
         # If no lock exists, we are probably in tests or yunohost is used as a
         # lib ... let's not really care about that case and assume we're the
         # root logger then.
-        if not os.path.exists("/var/run/moulinette_yunohost.lock"):
+        if not os.path.exists(LOCKFILE):
             return None
 
-        locks = read_file("/var/run/moulinette_yunohost.lock").strip().split("\n")
+        locks = read_file(LOCKFILE).strip().split("\n")
         # If we're the process with the lock, we're the root logger
         if locks == [] or str(os.getpid()) in locks:
             return None
