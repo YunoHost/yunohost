@@ -267,8 +267,10 @@ ynh_setup_source() {
         # Check the control sum
         if ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
         then
-            rm ${src_filename}
-            ynh_die --message="Corrupt source for ${src_filename}: Expected ${src_sum} but got $(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1) (size: $(du -hs ${src_filename} | cut --delimiter=' ' --fields=1))."
+            local actual_sum="$(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1)"
+            local actual_size="$(du -hs ${src_filename} | cut --delimiter=' ' --fields=1)"
+            rm -f ${src_filename}
+            ynh_die --message="Corrupt source for ${src_filename}: Expected ${src_sum} but got ${actual_sum} (size: ${actual_size})."
         fi
     fi
 
