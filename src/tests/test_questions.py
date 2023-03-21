@@ -596,6 +596,38 @@ class TestText(BaseTest):
     # fmt: on
 
 
+# ╭───────────────────────────────────────────────────────╮
+# │ PASSWORD                                              │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestPassword(BaseTest):
+    raw_option = {"type": "password", "id": "password_id"}
+    prefill = {
+        "raw_option": {"default": None, "optional": True},
+        "prefill": "",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, raw_option={"optional": True}, error=TypeError),  # FIXME those fails with TypeError
+        *all_fails([], ["one"], {}, raw_option={"optional": True}, error=AttributeError),  # FIXME those fails with AttributeError
+        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(None, "", output=""),
+        *xpass(scenarios=[
+            (" value \n moarc0mpl1cat3d\n  ", "value \n moarc0mpl1cat3d"),
+            (" some_ value", "some_ value"),
+        ], reason="Should output exactly the same"),
+        ("s3cr3t!!", "s3cr3t!!"),
+        ("secret", FAIL),
+        *[("supersecret" + char, FAIL) for char in PasswordQuestion.forbidden_chars],  # FIXME maybe add ` \n` to the list?
+        # readonly
+        *xpass(scenarios=[
+            ("s3cr3t!!", "s3cr3t!!", {"readonly": True}),
+        ], reason="Should fail since readonly is forbidden"),
+    ]
+    # fmt: on
+
+
 def test_question_empty():
     ask_questions_and_parse_answers({}, {}) == []
 
@@ -720,210 +752,6 @@ def test_question_string_with_choice_default():
     assert out.value == "en"
 
 
-def test_question_password():
-    questions = {
-        "some_password": {
-            "type": "password",
-        }
-    }
-    answers = {"some_password": "some_value"}
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == "some_value"
-
-
-def test_question_password_no_input():
-    questions = {
-        "some_password": {
-            "type": "password",
-        }
-    }
-    answers = {}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_password_input():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": "some question",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == "some_value"
-
-
-def test_question_password_input_no_ask():
-    questions = {
-        "some_password": {
-            "type": "password",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == "some_value"
-
-
-def test_question_password_no_input_optional():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == ""
-
-    questions = {"some_password": {"type": "password", "optional": True, "default": ""}}
-
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == ""
-
-
-def test_question_password_optional_with_input():
-    questions = {
-        "some_password": {
-            "ask": "some question",
-            "type": "password",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == "some_value"
-
-
-def test_question_password_optional_with_empty_input():
-    questions = {
-        "some_password": {
-            "ask": "some question",
-            "type": "password",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value=""), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == ""
-
-
-def test_question_password_optional_with_input_without_ask():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == "some_value"
-
-
-def test_question_password_no_input_default():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": "some question",
-            "default": "some_value",
-        }
-    }
-    answers = {}
-
-    # no default for password!
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-@pytest.mark.skip  # this should raises
-def test_question_password_no_input_example():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": "some question",
-            "example": "some_value",
-        }
-    }
-    answers = {"some_password": "some_value"}
-
-    # no example for password!
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_password_input_test_ask():
-    ask_text = "some question"
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": ask_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=True,
-            confirm=False,
-            prefill="",
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
-
-
 @pytest.mark.skip  # we should do something with this example
 def test_question_password_input_test_ask_with_example():
     ask_text = "some question"
@@ -964,56 +792,6 @@ def test_question_password_input_test_ask_with_help():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert help_text in prompt.call_args[1]["message"]
-
-
-def test_question_password_bad_chars():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": "some question",
-            "example": "some_value",
-        }
-    }
-
-    for i in PasswordQuestion.forbidden_chars:
-        with pytest.raises(YunohostError), patch.object(
-            os, "isatty", return_value=False
-        ):
-            ask_questions_and_parse_answers(questions, {"some_password": i * 8})
-
-
-def test_question_password_strong_enough():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": "some question",
-            "example": "some_value",
-        }
-    }
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        # too short
-        ask_questions_and_parse_answers(questions, {"some_password": "a"})
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, {"some_password": "password"})
-
-
-def test_question_password_optional_strong_enough():
-    questions = {
-        "some_password": {
-            "ask": "some question",
-            "type": "password",
-            "optional": True,
-        }
-    }
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        # too short
-        ask_questions_and_parse_answers(questions, {"some_password": "a"})
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, {"some_password": "password"})
 
 
 def test_question_path():
