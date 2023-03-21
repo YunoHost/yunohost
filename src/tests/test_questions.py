@@ -1,15 +1,22 @@
+import inspect
 import sys
 import pytest
 import os
 
+from contextlib import contextmanager
 from mock import patch
 from io import StringIO
+from typing import Any, Literal, Sequence, TypedDict, Union
+
+from _pytest.mark.structures import ParameterSet
+
 
 from moulinette import Moulinette
-
 from yunohost import domain, user
 from yunohost.utils.config import (
+    ARGUMENTS_TYPE_PARSERS,
     ask_questions_and_parse_answers,
+    DisplayTextQuestion,
     PasswordQuestion,
     DomainQuestion,
     PathQuestion,
@@ -42,6 +49,473 @@ Argument default format:
 User answers:
 {"the_name": "value", ...}
 """
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │  ┌─╮╭─┐╶┬╴╭─╴╷ ╷╶┬╴╭╮╷╭─╮                             │
+# │  ├─╯├─┤ │ │  ├─┤ │ ││││╶╮                             │
+# │  ╵  ╵ ╵ ╵ ╰─╴╵ ╵╶┴╴╵╰╯╰─╯                             │
+# ╰───────────────────────────────────────────────────────╯
+
+
+@contextmanager
+def patch_isatty(isatty):
+    with patch.object(os, "isatty", return_value=isatty):
+        yield
+
+
+@contextmanager
+def patch_interface(interface: Literal["api", "cli"] = "api"):
+    with patch.object(Moulinette.interface, "type", interface), patch_isatty(
+        interface == "cli"
+    ):
+        yield
+
+
+@contextmanager
+def patch_prompt(return_value):
+    with patch_interface("cli"), patch.object(
+        Moulinette, "prompt", return_value=return_value
+    ) as prompt:
+        yield prompt
+
+
+@pytest.fixture
+def patch_no_tty():
+    with patch_isatty(False):
+        yield
+
+
+@pytest.fixture
+def patch_with_tty():
+    with patch_isatty(True):
+        yield
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │  ╭─╴╭─╴┌─╴╭╮╷╭─┐┌─╮╶┬╴╭─╮╭─╴                          │
+# │  ╰─╮│  ├─╴│││├─┤├┬╯ │ │ │╰─╮                          │
+# │  ╶─╯╰─╴╰─╴╵╰╯╵ ╵╵ ╰╶┴╴╰─╯╶─╯                          │
+# ╰───────────────────────────────────────────────────────╯
+
+
+MinScenario = tuple[Any, Union[Literal["FAIL"], Any]]
+PartialScenario = tuple[Any, Union[Literal["FAIL"], Any], dict[str, Any]]
+FullScenario = tuple[Any, Union[Literal["FAIL"], Any], dict[str, Any], dict[str, Any]]
+
+Scenario = Union[
+    MinScenario,
+    PartialScenario,
+    FullScenario,
+    "InnerScenario",
+]
+
+
+class InnerScenario(TypedDict, total=False):
+    scenarios: Sequence[Scenario]
+    raw_options: Sequence[dict[str, Any]]
+    data: Sequence[dict[str, Any]]
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ Scenario generators/helpers                           │
+# ╰───────────────────────────────────────────────────────╯
+
+
+def get_hydrated_scenarios(raw_options, scenarios, data=[{}]):
+    """
+    Normalize and hydrate a mixed list of scenarios to proper tuple/pytest.param flattened list values.
+
+    Example::
+        scenarios = [
+            {
+                "raw_options": [{}, {"optional": True}],
+                "scenarios": [
+                    ("", "value", {"default": "value"}),
+                    *unchanged("value", "other"),
+                ]
+            },
+            *all_fails(-1, 0, 1, raw_options={"optional": True}),
+            *xfail(scenarios=[(True, "True"), (False, "False)], reason="..."),
+        ]
+        # Is exactly the same as
+        scenarios = [
+            ("", "value", {"default": "value"}),
+            ("", "value", {"optional": True, "default": "value"}),
+            ("value", "value", {}),
+            ("value", "value", {"optional": True}),
+            ("other", "other", {}),
+            ("other", "other", {"optional": True}),
+            (-1, FAIL, {"optional": True}),
+            (0, FAIL, {"optional": True}),
+            (1, FAIL, {"optional": True}),
+            pytest.param(True, "True", {}, marks=pytest.mark.xfail(reason="...")),
+            pytest.param(False, "False", {}, marks=pytest.mark.xfail(reason="...")),
+        ]
+    """
+    hydrated_scenarios = []
+    for raw_option in raw_options:
+        for mocked_data in data:
+            for scenario in scenarios:
+                if isinstance(scenario, dict):
+                    merged_raw_options = [
+                        {**raw_option, **raw_opt}
+                        for raw_opt in scenario.get("raw_options", [{}])
+                    ]
+                    hydrated_scenarios += get_hydrated_scenarios(
+                        merged_raw_options,
+                        scenario["scenarios"],
+                        scenario.get("data", [mocked_data]),
+                    )
+                elif isinstance(scenario, ParameterSet):
+                    intake, output, custom_raw_option = (
+                        scenario.values
+                        if len(scenario.values) == 3
+                        else (*scenario.values, {})
+                    )
+                    merged_raw_option = {**raw_option, **custom_raw_option}
+                    hydrated_scenarios.append(
+                        pytest.param(
+                            intake,
+                            output,
+                            merged_raw_option,
+                            mocked_data,
+                            marks=scenario.marks,
+                        )
+                    )
+                elif isinstance(scenario, tuple):
+                    intake, output, custom_raw_option = (
+                        scenario if len(scenario) == 3 else (*scenario, {})
+                    )
+                    merged_raw_option = {**raw_option, **custom_raw_option}
+                    hydrated_scenarios.append(
+                        (intake, output, merged_raw_option, mocked_data)
+                    )
+                else:
+                    raise Exception(
+                        "Test scenario should be tuple(intake, output, raw_option), pytest.param(intake, output, raw_option) or dict(raw_options, scenarios, data)"
+                    )
+
+    return hydrated_scenarios
+
+
+def generate_test_name(intake, output, raw_option, data):
+    values_as_str = []
+    for value in (intake, output):
+        if isinstance(value, str) and value != FAIL:
+            values_as_str.append(f"'{value}'")
+        elif inspect.isclass(value) and issubclass(value, Exception):
+            values_as_str.append(value.__name__)
+        else:
+            values_as_str.append(value)
+    name = f"{values_as_str[0]} -> {values_as_str[1]}"
+
+    keys = [
+        "=".join(
+            [
+                key,
+                str(raw_option[key])
+                if not isinstance(raw_option[key], str)
+                else f"'{raw_option[key]}'",
+            ]
+        )
+        for key in raw_option.keys()
+        if key not in ("id", "type")
+    ]
+    if keys:
+        name += " (" + ",".join(keys) + ")"
+    return name
+
+
+def pytest_generate_tests(metafunc):
+    """
+    Pytest test factory that, for each `BaseTest` subclasses, parametrize its
+    methods if it requires it by checking the method's parameters.
+    For those and based on their `cls.scenarios`, a series of `pytest.param` are
+    automaticly injected as test values.
+    """
+    if metafunc.cls and issubclass(metafunc.cls, BaseTest):
+        argnames = []
+        argvalues = []
+        ids = []
+        fn_params = inspect.signature(metafunc.function).parameters
+
+        for params in [
+            ["intake", "expected_output", "raw_option", "data"],
+            ["intake", "expected_normalized", "raw_option", "data"],
+            ["intake", "expected_humanized", "raw_option", "data"],
+        ]:
+            if all(param in fn_params for param in params):
+                argnames += params
+                if params[1] == "expected_output":
+                    # Hydrate scenarios with generic raw_option data
+                    argvalues += get_hydrated_scenarios(
+                        [metafunc.cls.raw_option], metafunc.cls.scenarios
+                    )
+                    ids += [
+                        generate_test_name(*args.values)
+                        if isinstance(args, ParameterSet)
+                        else generate_test_name(*args)
+                        for args in argvalues
+                    ]
+                elif params[1] == "expected_normalized":
+                    argvalues += metafunc.cls.normalized
+                    ids += [
+                        f"{metafunc.cls.raw_option['type']}-normalize-{scenario[0]}"
+                        for scenario in metafunc.cls.normalized
+                    ]
+                elif params[1] == "expected_humanized":
+                    argvalues += metafunc.cls.humanized
+                    ids += [
+                        f"{metafunc.cls.raw_option['type']}-normalize-{scenario[0]}"
+                        for scenario in metafunc.cls.humanized
+                    ]
+
+                metafunc.parametrize(argnames, argvalues, ids=ids)
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ Scenario helpers                                      │
+# ╰───────────────────────────────────────────────────────╯
+
+FAIL = YunohostValidationError
+
+
+def nones(
+    *nones, output, raw_option: dict[str, Any] = {}, fail_if_required: bool = True
+) -> list[PartialScenario]:
+    """
+    Returns common scenarios for ~None values.
+    - required and required + as default -> `FAIL`
+    - optional and optional + as default -> `expected_output=None`
+    """
+    return [
+        (none, FAIL if fail_if_required else output, base_raw_option | raw_option)  # type: ignore
+        for none in nones
+        for base_raw_option in ({}, {"default": none})
+    ] + [
+        (none, output, base_raw_option | raw_option)
+        for none in nones
+        for base_raw_option in ({"optional": True}, {"optional": True, "default": none})
+    ]
+
+
+def unchanged(*args, raw_option: dict[str, Any] = {}) -> list[PartialScenario]:
+    """
+    Returns a series of params for which output is expected to be the same as its intake
+
+    Example::
+        # expect `"value"` to output as `"value"`, etc.
+        unchanged("value", "yes", "none")
+
+    """
+    return [(arg, arg, raw_option.copy()) for arg in args]
+
+
+def all_as(*args, output, raw_option: dict[str, Any] = {}) -> list[PartialScenario]:
+    """
+    Returns a series of params for which output is expected to be the same single value
+
+    Example::
+        # expect all values to output as `True`
+        all_as("y", "yes", 1, True, output=True)
+    """
+    return [(arg, output, raw_option.copy()) for arg in args]
+
+
+def all_fails(
+    *args, raw_option: dict[str, Any] = {}, error=FAIL
+) -> list[PartialScenario]:
+    """
+    Returns a series of params for which output is expected to be failing with validation error
+    """
+    return [(arg, error, raw_option.copy()) for arg in args]
+
+
+def xpass(*, scenarios: list[Scenario], reason="unknown") -> list[Scenario]:
+    """
+    Return a pytest param for which test should have fail but currently passes.
+    """
+    return [
+        pytest.param(
+            *scenario,
+            marks=pytest.mark.xfail(
+                reason=f"Currently valid but probably shouldn't. details: {reason}."
+            ),
+        )
+        for scenario in scenarios
+    ]
+
+
+def xfail(*, scenarios: list[Scenario], reason="unknown") -> list[Scenario]:
+    """
+    Return a pytest param for which test should have passed but currently fails.
+    """
+    return [
+        pytest.param(
+            *scenario,
+            marks=pytest.mark.xfail(
+                reason=f"Currently invalid but should probably pass. details: {reason}."
+            ),
+        )
+        for scenario in scenarios
+    ]
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │  ╶┬╴┌─╴╭─╴╶┬╴╭─╴                                      │
+# │   │ ├─╴╰─╮ │ ╰─╮                                      │
+# │   ╵ ╰─╴╶─╯ ╵ ╶─╯                                      │
+# ╰───────────────────────────────────────────────────────╯
+
+
+def _fill_or_prompt_one_option(raw_option, intake):
+    raw_option = raw_option.copy()
+    id_ = raw_option.pop("id")
+    options = {id_: raw_option}
+    answers = {id_: intake} if intake is not None else {}
+
+    option = ask_questions_and_parse_answers(options, answers)[0]
+
+    return (option, option.value)
+
+
+def _test_value_is_expected_output(value, expected_output):
+    """
+    Properly compares bools and None
+    """
+    if isinstance(expected_output, bool) or expected_output is None:
+        assert value is expected_output
+    else:
+        assert value == expected_output
+
+
+def _test_intake(raw_option, intake, expected_output):
+    option, value = _fill_or_prompt_one_option(raw_option, intake)
+
+    _test_value_is_expected_output(value, expected_output)
+
+
+def _test_intake_may_fail(raw_option, intake, expected_output):
+    if inspect.isclass(expected_output) and issubclass(expected_output, Exception):
+        with pytest.raises(expected_output):
+            _fill_or_prompt_one_option(raw_option, intake)
+    else:
+        _test_intake(raw_option, intake, expected_output)
+
+
+class BaseTest:
+    raw_option: dict[str, Any] = {}
+    prefill: dict[Literal["raw_option", "prefill", "intake"], Any]
+    scenarios: list[Scenario]
+
+    # fmt: off
+    # scenarios = [
+    #     *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+    #     *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+    #     *nones(None, "", output=""),
+    # ]
+    # fmt: on
+    # TODO
+    # - pattern (also on Date for example to see if it override the default pattern)
+    # - example
+    # - visible
+    # - redact
+    # - regex
+    # - hooks
+
+    @classmethod
+    def get_raw_option(cls, raw_option={}, **kwargs):
+        base_raw_option = cls.raw_option.copy()
+        base_raw_option.update(**raw_option)
+        base_raw_option.update(**kwargs)
+        return base_raw_option
+
+    @classmethod
+    def _test_basic_attrs(self):
+        raw_option = self.get_raw_option(optional=True)
+        id_ = raw_option["id"]
+        option, value = _fill_or_prompt_one_option(raw_option, None)
+
+        is_special_readonly_option = isinstance(option, DisplayTextQuestion)
+
+        assert isinstance(option, ARGUMENTS_TYPE_PARSERS[raw_option["type"]])
+        assert option.type == raw_option["type"]
+        assert option.name == id_
+        assert option.ask == {"en": id_}
+        assert option.readonly is (True if is_special_readonly_option else False)
+        assert option.visible is None
+        # assert option.bind is None
+
+        if is_special_readonly_option:
+            assert value is None
+
+        return (raw_option, option, value)
+
+    @pytest.mark.usefixtures("patch_no_tty")
+    def test_basic_attrs(self):
+        """
+        Test basic options factories and BaseOption default attributes values.
+        """
+        # Intermediate method since pytest doesn't like tests that returns something.
+        # This allow a test class to call `_test_basic_attrs` then do additional checks
+        self._test_basic_attrs()
+
+    def test_options_prompted_with_ask_help(self, prefill_data=None):
+        """
+        Test that assert that moulinette prompt is called with:
+        - `message` with translated string and possible choices list
+        -  help` with translated string
+        - `prefill` is the expected string value from a custom default
+        - `is_password` is true for `password`s only
+        - `is_multiline` is true for `text`s only
+        - `autocomplete` is option choices
+
+        Ran only once with `cls.prefill` data
+        """
+        if prefill_data is None:
+            prefill_data = self.prefill
+
+        base_raw_option = prefill_data["raw_option"]
+        prefill = prefill_data["prefill"]
+
+        with patch_prompt("") as prompt:
+            raw_option = self.get_raw_option(
+                raw_option=base_raw_option,
+                ask={"en": "Can i haz question?"},
+                help={"en": "Here's help!"},
+            )
+            option, value = _fill_or_prompt_one_option(raw_option, None)
+
+            expected_message = option.ask["en"]
+
+            if option.choices:
+                choices = (
+                    option.choices
+                    if isinstance(option.choices, list)
+                    else option.choices.keys()
+                )
+                expected_message += f" [{' | '.join(choices)}]"
+            if option.type == "boolean":
+                expected_message += " [yes | no]"
+
+            prompt.assert_called_with(
+                message=expected_message,
+                is_password=option.type == "password",
+                confirm=False,  # FIXME no confirm?
+                prefill=prefill,
+                is_multiline=option.type == "text",
+                autocomplete=option.choices or [],
+                help=option.help["en"],
+            )
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        with patch_interface("api"):
+            _test_intake_may_fail(
+                raw_option,
+                intake,
+                expected_output,
+            )
 
 
 def test_question_empty():
