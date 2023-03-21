@@ -519,6 +519,45 @@ class BaseTest:
 
 
 # ╭───────────────────────────────────────────────────────╮
+# │ DISPLAY_TEXT                                          │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestDisplayText(BaseTest):
+    raw_option = {"type": "display_text", "id": "display_text_id"}
+    prefill = {
+        "raw_option": {},
+        "prefill": " custom default",
+    }
+    # fmt: off
+    scenarios = [
+        (None, None, {"ask": "Some text\na new line"}),
+        (None, None, {"ask": {"en": "Some text\na new line", "fr": "Un peu de texte\nune nouvelle ligne"}}),
+    ]
+    # fmt: on
+
+    def test_options_prompted_with_ask_help(self, prefill_data=None):
+        pytest.skip(reason="no prompt for display types")
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        _id = raw_option.pop("id")
+        answers = {_id: intake} if intake is not None else {}
+        options = None
+        with patch_interface("cli"):
+            if inspect.isclass(expected_output) and issubclass(
+                expected_output, Exception
+            ):
+                with pytest.raises(expected_output):
+                    ask_questions_and_parse_answers({_id: raw_option}, answers)
+            else:
+                with patch.object(sys, "stdout", new_callable=StringIO) as stdout:
+                    options = ask_questions_and_parse_answers(
+                        {_id: raw_option}, answers
+                    )
+                    assert stdout.getvalue() == f"{options[0].ask['en']}\n"
+
+
+# ╭───────────────────────────────────────────────────────╮
 # │ STRING                                                │
 # ╰───────────────────────────────────────────────────────╯
 
@@ -1212,17 +1251,6 @@ def test_question_number_input_test_ask_with_help():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert help_value in prompt.call_args[1]["message"]
-
-
-def test_question_display_text():
-    questions = {"some_app": {"type": "display_text", "ask": "foobar"}}
-    answers = {}
-
-    with patch.object(sys, "stdout", new_callable=StringIO) as stdout, patch.object(
-        os, "isatty", return_value=True
-    ):
-        ask_questions_and_parse_answers(questions, answers)
-        assert "foobar" in stdout.getvalue()
 
 
 def test_question_file_from_cli():
