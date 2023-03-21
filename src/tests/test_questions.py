@@ -518,38 +518,86 @@ class BaseTest:
             )
 
 
+# ╭───────────────────────────────────────────────────────╮
+# │ STRING                                                │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestString(BaseTest):
+    raw_option = {"type": "string", "id": "string_id"}
+    prefill = {
+        "raw_option": {"default": " custom default"},
+        "prefill": " custom default",
+    }
+    # fmt: off
+    scenarios = [
+        *nones(None, "", output=""),
+        # basic typed values
+        *unchanged(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),  # FIXME should output as str?
+        *unchanged("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", raw_option={"optional": True}),
+        *xpass(scenarios=[
+            ([], []),
+        ], reason="Should fail"),
+        # test strip
+        ("value", "value"),
+        ("value\n", "value"),
+        ("  \n value\n", "value"),
+        ("  \\n value\\n", "\\n value\\n"),
+        ("  \tvalue\t", "value"),
+        (r" ##value \n \tvalue\n  ", r"##value \n \tvalue\n"),
+        *xpass(scenarios=[
+            ("value\nvalue", "value\nvalue"),
+            (" ##value \n \tvalue\n  ", "##value \n \tvalue"),
+        ], reason=r"should fail or without `\n`?"),
+        # readonly
+        *xfail(scenarios=[
+            ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ TEXT                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestText(BaseTest):
+    raw_option = {"type": "text", "id": "text_id"}
+    prefill = {
+        "raw_option": {"default": "some value\nanother line "},
+        "prefill": "some value\nanother line ",
+    }
+    # fmt: off
+    scenarios = [
+        *nones(None, "", output=""),
+        # basic typed values
+        *unchanged(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),  # FIXME should fail or output as str?
+        *unchanged("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", raw_option={"optional": True}),
+        *xpass(scenarios=[
+            ([], [])
+        ], reason="Should fail"),
+        ("value", "value"),
+        ("value\n value", "value\n value"),
+        # test no strip
+        *xpass(scenarios=[
+            ("value\n", "value"),
+            ("  \n value\n", "value"),
+            ("  \\n value\\n", "\\n value\\n"),
+            ("  \tvalue\t", "value"),
+            (" ##value \n \tvalue\n  ", "##value \n \tvalue"),
+            (r" ##value \n \tvalue\n  ", r"##value \n \tvalue\n"),
+        ], reason="Should not be stripped"),
+        # readonly
+        *xfail(scenarios=[
+            ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
 def test_question_empty():
     ask_questions_and_parse_answers({}, {}) == []
-
-
-def test_question_string():
-    questions = {
-        "some_string": {
-            "type": "string",
-        }
-    }
-    answers = {"some_string": "some_value"}
-
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
-
-
-def test_question_string_from_query_string():
-    questions = {
-        "some_string": {
-            "type": "string",
-        }
-    }
-    answers = "foo=bar&some_string=some_value&lorem=ipsum"
-
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
 
 
 def test_question_string_default_type():
@@ -561,179 +609,6 @@ def test_question_string_default_type():
     assert out.name == "some_string"
     assert out.type == "string"
     assert out.value == "some_value"
-
-
-def test_question_string_no_input():
-    questions = {"some_string": {}}
-    answers = {}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_string_input():
-    questions = {
-        "some_string": {
-            "ask": "some question",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
-
-
-def test_question_string_input_no_ask():
-    questions = {"some_string": {}}
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
-
-
-def test_question_string_no_input_optional():
-    questions = {"some_string": {"optional": True}}
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == ""
-
-
-def test_question_string_optional_with_input():
-    questions = {
-        "some_string": {
-            "ask": "some question",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
-
-
-def test_question_string_optional_with_empty_input():
-    questions = {
-        "some_string": {
-            "ask": "some question",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value=""), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == ""
-
-
-def test_question_string_optional_with_input_without_ask():
-    questions = {
-        "some_string": {
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
-
-
-def test_question_string_no_input_default():
-    questions = {
-        "some_string": {
-            "ask": "some question",
-            "default": "some_value",
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
-
-
-def test_question_string_input_test_ask():
-    ask_text = "some question"
-    questions = {
-        "some_string": {
-            "ask": ask_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=False,
-            confirm=False,
-            prefill="",
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
-
-
-def test_question_string_input_test_ask_with_default():
-    ask_text = "some question"
-    default_text = "some example"
-    questions = {
-        "some_string": {
-            "ask": ask_text,
-            "default": default_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=False,
-            confirm=False,
-            prefill=default_text,
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
 
 
 @pytest.mark.skip  # we should do something with this example
