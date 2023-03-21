@@ -2,6 +2,7 @@ import inspect
 import sys
 import pytest
 import os
+import tempfile
 
 from contextlib import contextmanager
 from mock import patch
@@ -831,6 +832,141 @@ class TestWebPath(BaseTest):
 
 
 # ╭───────────────────────────────────────────────────────╮
+# │ FILE                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+
+@pytest.fixture
+def file_clean():
+    FileQuestion.clean_upload_dirs()
+    yield
+    FileQuestion.clean_upload_dirs()
+
+
+@contextmanager
+def patch_file_cli(intake):
+    upload_dir = tempfile.mkdtemp(prefix="ynh_test_option_file")
+    _, filename = tempfile.mkstemp(dir=upload_dir)
+    with open(filename, "w") as f:
+        f.write(intake)
+
+    yield filename
+    os.system(f"rm -f {filename}")
+
+
+@contextmanager
+def patch_file_api(intake):
+    from base64 import b64encode
+
+    with patch_interface("api"):
+        yield b64encode(intake.encode())
+
+
+def _test_file_intake_may_fail(raw_option, intake, expected_output):
+    if inspect.isclass(expected_output) and issubclass(expected_output, Exception):
+        with pytest.raises(expected_output):
+            _fill_or_prompt_one_option(raw_option, intake)
+
+    option, value = _fill_or_prompt_one_option(raw_option, intake)
+
+    # The file is supposed to be copied somewhere else
+    assert value != intake
+    assert value.startswith("/tmp/ynh_filequestion_")
+    assert os.path.exists(value)
+    with open(value) as f:
+        assert f.read() == expected_output
+
+    FileQuestion.clean_upload_dirs()
+
+    assert not os.path.exists(value)
+
+
+file_content1 = "helloworld"
+file_content2 = """
+{
+    "testy": true,
+    "test": ["one"]
+}
+"""
+
+
+class TestFile(BaseTest):
+    raw_option = {"type": "file", "id": "file_id"}
+    # Prefill data is generated in `cls.test_options_prompted_with_ask_help`
+    # fmt: off
+    scenarios = [
+        *nones(None, "", output=""),
+        *unchanged(file_content1, file_content2),
+        # other type checks are done in `test_wrong_intake`
+    ]
+    # fmt: on
+    # TODO test readonly
+    # TODO test accept
+
+    @pytest.mark.usefixtures("patch_no_tty")
+    def test_basic_attrs(self):
+        raw_option, option, value = self._test_basic_attrs()
+
+        accept = raw_option.get("accept", "")  # accept default
+        assert option.accept == accept
+
+    def test_options_prompted_with_ask_help(self):
+        with patch_file_cli(file_content1) as default_filename:
+            super().test_options_prompted_with_ask_help(
+                prefill_data={
+                    "raw_option": {
+                        "default": default_filename,
+                    },
+                    "prefill": default_filename,
+                }
+            )
+
+    @pytest.mark.usefixtures("file_clean")
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        if intake in (None, ""):
+            with patch_prompt(intake):
+                _test_intake_may_fail(raw_option, None, expected_output)
+            with patch_isatty(False):
+                _test_intake_may_fail(raw_option, intake, expected_output)
+        else:
+            with patch_file_cli(intake) as filename:
+                with patch_prompt(filename):
+                    _test_file_intake_may_fail(raw_option, None, expected_output)
+            with patch_file_api(intake) as b64content:
+                with patch_isatty(False):
+                    _test_file_intake_may_fail(raw_option, b64content, expected_output)
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/tmp/inexistant_file.txt",
+            "/tmp",
+            "/tmp/",
+        ],
+    )
+    def test_wrong_cli_filename(self, path):
+        with patch_prompt(path):
+            with pytest.raises(YunohostValidationError):
+                _fill_or_prompt_one_option(self.raw_option, None)
+
+    @pytest.mark.parametrize(
+        "intake",
+        [
+            # fmt: off
+            False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {},
+            "none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n"
+            # fmt: on
+        ],
+    )
+    def test_wrong_intake(self, intake):
+        with pytest.raises(YunohostValidationError):
+            with patch_prompt(intake):
+                _fill_or_prompt_one_option(self.raw_option, None)
+            with patch_isatty(False):
+                _fill_or_prompt_one_option(self.raw_option, intake)
+
+
+# ╭───────────────────────────────────────────────────────╮
 # │ DOMAIN                                                │
 # ╰───────────────────────────────────────────────────────╯
 
@@ -1038,26 +1174,6 @@ def test_question_string_input_test_ask_with_example():
         assert example_text in prompt.call_args[1]["message"]
 
 
-@pytest.mark.skip  # we should do something with this help
-def test_question_string_input_test_ask_with_help():
-    ask_text = "some question"
-    help_text = "some_help"
-    questions = {
-        "some_string": {
-            "ask": ask_text,
-            "help": help_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        assert ask_text in prompt.call_args[1]["message"]
-        assert help_text in prompt.call_args[1]["message"]
-
-
 def test_question_string_with_choice():
     questions = {"some_string": {"type": "string", "choices": ["fr", "en"]}}
     answers = {"some_string": "fr"}
@@ -1148,27 +1264,6 @@ def test_question_password_input_test_ask_with_example():
         assert example_text in prompt.call_args[1]["message"]
 
 
-@pytest.mark.skip  # we should do something with this help
-def test_question_password_input_test_ask_with_help():
-    ask_text = "some question"
-    help_text = "some_help"
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": ask_text,
-            "help": help_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        assert ask_text in prompt.call_args[1]["message"]
-        assert help_text in prompt.call_args[1]["message"]
-
-
 @pytest.mark.skip  # we should do something with this example
 def test_question_path_input_test_ask_with_example():
     ask_text = "some question"
@@ -1190,27 +1285,6 @@ def test_question_path_input_test_ask_with_example():
         assert example_text in prompt.call_args[1]["message"]
 
 
-@pytest.mark.skip  # we should do something with this help
-def test_question_path_input_test_ask_with_help():
-    ask_text = "some question"
-    help_text = "some_help"
-    questions = {
-        "some_path": {
-            "type": "path",
-            "ask": ask_text,
-            "help": help_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        assert ask_text in prompt.call_args[1]["message"]
-        assert help_text in prompt.call_args[1]["message"]
-
-
 @pytest.mark.skip  # we should do something with this example
 def test_question_number_input_test_ask_with_example():
     ask_text = "some question"
@@ -1230,89 +1304,6 @@ def test_question_number_input_test_ask_with_example():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert example_value in prompt.call_args[1]["message"]
-
-
-@pytest.mark.skip  # we should do something with this help
-def test_question_number_input_test_ask_with_help():
-    ask_text = "some question"
-    help_value = 1337
-    questions = {
-        "some_number": {
-            "type": "number",
-            "ask": ask_text,
-            "help": help_value,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="1111"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        assert ask_text in prompt.call_args[1]["message"]
-        assert help_value in prompt.call_args[1]["message"]
-
-
-def test_question_file_from_cli():
-    FileQuestion.clean_upload_dirs()
-
-    filename = "/tmp/ynh_test_question_file"
-    os.system(f"rm -f {filename}")
-    os.system(f"echo helloworld > {filename}")
-
-    questions = {
-        "some_file": {
-            "type": "file",
-        }
-    }
-    answers = {"some_file": filename}
-
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_file"
-    assert out.type == "file"
-
-    # The file is supposed to be copied somewhere else
-    assert out.value != filename
-    assert out.value.startswith("/tmp/")
-    assert os.path.exists(out.value)
-    assert "helloworld" in open(out.value).read().strip()
-
-    FileQuestion.clean_upload_dirs()
-
-    assert not os.path.exists(out.value)
-
-
-def test_question_file_from_api():
-    FileQuestion.clean_upload_dirs()
-
-    from base64 import b64encode
-
-    b64content = b64encode(b"helloworld")
-    questions = {
-        "some_file": {
-            "type": "file",
-        }
-    }
-    answers = {"some_file": b64content}
-
-    interface_type_bkp = Moulinette.interface.type
-    try:
-        Moulinette.interface.type = "api"
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-    finally:
-        Moulinette.interface.type = interface_type_bkp
-
-    assert out.name == "some_file"
-    assert out.type == "file"
-
-    assert out.value.startswith("/tmp/")
-    assert os.path.exists(out.value)
-    assert "helloworld" in open(out.value).read().strip()
-
-    FileQuestion.clean_upload_dirs()
-
-    assert not os.path.exists(out.value)
 
 
 def test_normalize_boolean_nominal():
