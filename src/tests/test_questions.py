@@ -629,6 +629,51 @@ class TestPassword(BaseTest):
 
 
 # ╭───────────────────────────────────────────────────────╮
+# │ NUMBER | RANGE                                        │
+# ╰───────────────────────────────────────────────────────╯
+# Testing only number since "range" is only for webadmin (slider instead of classic intake).
+
+
+class TestNumber(BaseTest):
+    raw_option = {"type": "number", "id": "number_id"}
+    prefill = {
+        "raw_option": {"default": 10},
+        "prefill": "10",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails([], ["one"], {}),
+        *all_fails("none", "_none", "False", "True", "[]", ",", "['one']", "one,two", r"{}", "value"),
+
+        *nones(None, "", output=None),
+        *unchanged(0, 1, -1, 1337),
+        *xpass(scenarios=[(False, False)], reason="should fail or output as `0`"),
+        *xpass(scenarios=[(True, True)], reason="should fail or output as `1`"),
+        *all_as("0", 0, output=0),
+        *all_as("1", 1, output=1),
+        *all_as("1337", 1337, output=1337),
+        *xfail(scenarios=[
+            ("-1", -1)
+        ], reason="should output as `-1` instead of failing"),
+        *all_fails(13.37, "13.37"),
+
+        *unchanged(10, 5000, 10000, raw_option={"min": 10, "max": 10000}),
+        *all_fails(9, 10001, raw_option={"min": 10, "max": 10000}),
+
+        *all_as(None, "", output=0, raw_option={"default": 0}),
+        *all_as(None, "", output=0, raw_option={"default": 0, "optional": True}),
+        (-10, -10, {"default": 10}),
+        (-10, -10, {"default": 10, "optional": True}),
+        # readonly
+        *xfail(scenarios=[
+            (1337, 10000, {"readonly": True, "default": 10000}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+    # FIXME should `step` be some kind of "multiple of"?
+
+
+# ╭───────────────────────────────────────────────────────╮
 # │ BOOLEAN                                               │
 # ╰───────────────────────────────────────────────────────╯
 
@@ -1125,240 +1170,6 @@ def test_question_path_input_test_ask_with_help():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert help_text in prompt.call_args[1]["message"]
-
-
-def test_question_number():
-    questions = {
-        "some_number": {
-            "type": "number",
-        }
-    }
-    answers = {"some_number": 1337}
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 1337
-
-
-def test_question_number_no_input():
-    questions = {
-        "some_number": {
-            "type": "number",
-        }
-    }
-    answers = {}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_number_bad_input():
-    questions = {
-        "some_number": {
-            "type": "number",
-        }
-    }
-    answers = {"some_number": "stuff"}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-    answers = {"some_number": 1.5}
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_number_input():
-    questions = {
-        "some_number": {
-            "type": "number",
-            "ask": "some question",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="1337"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 1337
-
-    with patch.object(Moulinette, "prompt", return_value=1337), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 1337
-
-    with patch.object(Moulinette, "prompt", return_value="0"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 0
-
-
-def test_question_number_input_no_ask():
-    questions = {
-        "some_number": {
-            "type": "number",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="1337"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 1337
-
-
-def test_question_number_no_input_optional():
-    questions = {
-        "some_number": {
-            "type": "number",
-            "optional": True,
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value is None
-
-
-def test_question_number_optional_with_input():
-    questions = {
-        "some_number": {
-            "ask": "some question",
-            "type": "number",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="1337"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 1337
-
-
-def test_question_number_optional_with_input_without_ask():
-    questions = {
-        "some_number": {
-            "type": "number",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="0"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 0
-
-
-def test_question_number_no_input_default():
-    questions = {
-        "some_number": {
-            "ask": "some question",
-            "type": "number",
-            "default": 1337,
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 1337
-
-
-def test_question_number_bad_default():
-    questions = {
-        "some_number": {
-            "ask": "some question",
-            "type": "number",
-            "default": "bad default",
-        }
-    }
-    answers = {}
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_number_input_test_ask():
-    ask_text = "some question"
-    questions = {
-        "some_number": {
-            "type": "number",
-            "ask": ask_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="1111"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=False,
-            confirm=False,
-            prefill="",
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
-
-
-def test_question_number_input_test_ask_with_default():
-    ask_text = "some question"
-    default_value = 1337
-    questions = {
-        "some_number": {
-            "type": "number",
-            "ask": ask_text,
-            "default": default_value,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="1111"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=False,
-            confirm=False,
-            prefill=str(default_value),
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
 
 
 @pytest.mark.skip  # we should do something with this example
