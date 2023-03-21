@@ -813,6 +813,112 @@ class TestDomain(BaseTest):
             super().test_scenarios(intake, expected_output, raw_option, data)
 
 
+# ╭───────────────────────────────────────────────────────╮
+# │ USER                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+admin_username = "admin_user"
+admin_user = {
+    "ssh_allowed": False,
+    "username": admin_username,
+    "mailbox-quota": "0",
+    "mail": "a@ynh.local",
+    "mail-aliases": [f"root@{main_domain}"],  # Faking "admin"
+    "fullname": "john doe",
+    "group": [],
+}
+regular_username = "normal_user"
+regular_user = {
+    "ssh_allowed": False,
+    "username": regular_username,
+    "mailbox-quota": "0",
+    "mail": "z@ynh.local",
+    "fullname": "john doe",
+    "group": [],
+}
+
+
+@contextmanager
+def patch_users(
+    *,
+    users,
+    admin_username,
+    main_domain,
+):
+    """
+    Data mocking for UserOption:
+    - yunohost.user.user_list
+    - yunohost.user.user_info
+    - yunohost.domain._get_maindomain
+    """
+    admin_info = next(
+        (user for user in users.values() if user["username"] == admin_username),
+        {"mail-aliases": []},
+    )
+    with patch.object(user, "user_list", return_value={"users": users}), patch.object(
+        user,
+        "user_info",
+        return_value=admin_info,  # Faking admin user
+    ), patch.object(domain, "_get_maindomain", return_value=main_domain):
+        yield
+
+
+class TestUser(BaseTest):
+    raw_option = {"type": "user", "id": "user_id"}
+    # fmt: off
+    scenarios = [
+        # No tests for empty users since it should not happens
+        {
+            "data": [
+                {"users": {admin_username: admin_user}, "admin_username": admin_username, "main_domain": main_domain},
+                {"users": {admin_username: admin_user, regular_username: regular_user}, "admin_username": admin_username, "main_domain": main_domain},
+            ],
+            "scenarios": [
+                # FIXME User option is not really nullable, even if optional
+                *nones(None, "", output=admin_username, fail_if_required=False),
+                ("fake_user", FAIL),
+                ("fake_user", FAIL, {"choices": ["fake_user"]}),
+            ]
+        },
+        {
+            "data": [
+                {"users": {admin_username: admin_user, regular_username: regular_user}, "admin_username": admin_username, "main_domain": main_domain},
+            ],
+            "scenarios": [
+                *xpass(scenarios=[
+                    ("", regular_username, {"default": regular_username})
+                ], reason="Should throw 'no default allowed'"),
+                # readonly
+                *xpass(scenarios=[
+                    (admin_username, admin_username, {"readonly": True}),
+                ], reason="Should fail since readonly is forbidden"),
+            ]
+        },
+    ]
+    # fmt: on
+
+    def test_options_prompted_with_ask_help(self, prefill_data=None):
+        with patch_users(
+            users={admin_username: admin_user, regular_username: regular_user},
+            admin_username=admin_username,
+            main_domain=main_domain,
+        ):
+            super().test_options_prompted_with_ask_help(
+                prefill_data={"raw_option": {}, "prefill": admin_username}
+            )
+            # FIXME This should fail, not allowed to set a default
+            super().test_options_prompted_with_ask_help(
+                prefill_data={
+                    "raw_option": {"default": regular_username},
+                    "prefill": regular_username,
+                }
+            )
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        with patch_users(**data):
+            super().test_scenarios(intake, expected_output, raw_option, data)
+
+
 def test_question_empty():
     ask_questions_and_parse_answers({}, {}) == []
 
@@ -1019,214 +1125,6 @@ def test_question_path_input_test_ask_with_help():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert help_text in prompt.call_args[1]["message"]
-
-
-def test_question_user_empty():
-    users = {
-        "some_user": {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "p@ynh.local",
-            "fullname": "the first name the last name",
-        }
-    }
-
-    questions = {
-        "some_user": {
-            "type": "user",
-        }
-    }
-    answers = {}
-
-    with patch.object(user, "user_list", return_value={"users": users}):
-        with pytest.raises(YunohostError), patch.object(
-            os, "isatty", return_value=False
-        ):
-            ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_user():
-    username = "some_user"
-    users = {
-        username: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "p@ynh.local",
-            "fullname": "the first name the last name",
-        }
-    }
-
-    questions = {
-        "some_user": {
-            "type": "user",
-        }
-    }
-    answers = {"some_user": username}
-
-    with patch.object(user, "user_list", return_value={"users": users}), patch.object(
-        user, "user_info", return_value={}
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_user"
-    assert out.type == "user"
-    assert out.value == username
-
-
-def test_question_user_two_users():
-    username = "some_user"
-    other_user = "some_other_user"
-    users = {
-        username: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "p@ynh.local",
-            "fullname": "the first name the last name",
-        },
-        other_user: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "z@ynh.local",
-            "fullname": "john doe",
-        },
-    }
-
-    questions = {
-        "some_user": {
-            "type": "user",
-        }
-    }
-    answers = {"some_user": other_user}
-
-    with patch.object(user, "user_list", return_value={"users": users}), patch.object(
-        user, "user_info", return_value={}
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_user"
-    assert out.type == "user"
-    assert out.value == other_user
-
-    answers = {"some_user": username}
-
-    with patch.object(user, "user_list", return_value={"users": users}), patch.object(
-        user, "user_info", return_value={}
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_user"
-    assert out.type == "user"
-    assert out.value == username
-
-
-def test_question_user_two_users_wrong_answer():
-    username = "my_username.com"
-    other_user = "some_other_user"
-    users = {
-        username: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "p@ynh.local",
-            "fullname": "the first name the last name",
-        },
-        other_user: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "z@ynh.local",
-            "fullname": "john doe",
-        },
-    }
-
-    questions = {
-        "some_user": {
-            "type": "user",
-        }
-    }
-    answers = {"some_user": "doesnt_exist.pouet"}
-
-    with patch.object(user, "user_list", return_value={"users": users}):
-        with pytest.raises(YunohostError), patch.object(
-            os, "isatty", return_value=False
-        ):
-            ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_user_two_users_no_default():
-    username = "my_username.com"
-    other_user = "some_other_user.tld"
-    users = {
-        username: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "p@ynh.local",
-            "fullname": "the first name the last name",
-        },
-        other_user: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "z@ynh.local",
-            "fullname": "john doe",
-        },
-    }
-
-    questions = {"some_user": {"type": "user", "ask": "choose a user"}}
-    answers = {}
-
-    with patch.object(user, "user_list", return_value={"users": users}):
-        with pytest.raises(YunohostError), patch.object(
-            os, "isatty", return_value=False
-        ):
-            ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_user_two_users_default_input():
-    username = "my_username.com"
-    other_user = "some_other_user.tld"
-    users = {
-        username: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "p@ynh.local",
-            "fullname": "the first name the last name",
-        },
-        other_user: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "z@ynh.local",
-            "fullname": "john doe",
-        },
-    }
-
-    questions = {"some_user": {"type": "user", "ask": "choose a user"}}
-    answers = {}
-
-    with patch.object(user, "user_list", return_value={"users": users}), patch.object(
-        os, "isatty", return_value=True
-    ):
-        with patch.object(user, "user_info", return_value={}):
-            with patch.object(Moulinette, "prompt", return_value=username):
-                out = ask_questions_and_parse_answers(questions, answers)[0]
-
-            assert out.name == "some_user"
-            assert out.type == "user"
-            assert out.value == username
-
-            with patch.object(Moulinette, "prompt", return_value=other_user):
-                out = ask_questions_and_parse_answers(questions, answers)[0]
-
-            assert out.name == "some_user"
-            assert out.type == "user"
-            assert out.value == other_user
 
 
 def test_question_number():
