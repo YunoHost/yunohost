@@ -628,6 +628,58 @@ class TestPassword(BaseTest):
     # fmt: on
 
 
+# ╭───────────────────────────────────────────────────────╮
+# │ PATH                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestWebPath(BaseTest):
+    raw_option = {"type": "path", "id": "path_id"}
+    prefill = {
+        "raw_option": {"default": "some_path"},
+        "prefill": "some_path",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+
+        *nones(None, "", output=""),
+        # custom valid
+        ("/", "/"),
+        ("/one/two", "/one/two"),
+        *[
+            (v, "/" + v)
+            for v in ("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value")
+        ],
+        ("value\n", "/value"),
+        ("//value", "/value"),
+        ("///value///", "/value"),
+        *xpass(scenarios=[
+            ("value\nvalue", "/value\nvalue"),
+            ("value value", "/value value"),
+            ("value//value", "/value//value"),
+        ], reason="Should fail"),
+        *xpass(scenarios=[
+            ("./here", "/./here"),
+            ("../here", "/../here"),
+            ("/somewhere/../here", "/somewhere/../here"),
+        ], reason="Should fail or flattened"),
+
+        *xpass(scenarios=[
+            ("/one?withquery=ah", "/one?withquery=ah"),
+        ], reason="Should fail or query string removed"),
+        *xpass(scenarios=[
+            ("https://example.com/folder", "/https://example.com/folder")
+        ], reason="Should fail or scheme+domain removed"),
+        # readonly
+        *xfail(scenarios=[
+            ("/overwrite", "/value", {"readonly": True, "default": "/value"}),
+        ], reason="Should not be overwritten"),
+        # FIXME should path have forbidden_chars?
+    ]
+    # fmt: on
+
+
 def test_question_empty():
     ask_questions_and_parse_answers({}, {}) == []
 
@@ -792,213 +844,6 @@ def test_question_password_input_test_ask_with_help():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert help_text in prompt.call_args[1]["message"]
-
-
-def test_question_path():
-    questions = {
-        "some_path": {
-            "type": "path",
-        }
-    }
-    answers = {"some_path": "/some_value"}
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == "/some_value"
-
-
-def test_question_path_no_input():
-    questions = {
-        "some_path": {
-            "type": "path",
-        }
-    }
-    answers = {}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_path_input():
-    questions = {
-        "some_path": {
-            "type": "path",
-            "ask": "some question",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == "/some_value"
-
-
-def test_question_path_input_no_ask():
-    questions = {
-        "some_path": {
-            "type": "path",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == "/some_value"
-
-
-def test_question_path_no_input_optional():
-    questions = {
-        "some_path": {
-            "type": "path",
-            "optional": True,
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == ""
-
-
-def test_question_path_optional_with_input():
-    questions = {
-        "some_path": {
-            "ask": "some question",
-            "type": "path",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == "/some_value"
-
-
-def test_question_path_optional_with_empty_input():
-    questions = {
-        "some_path": {
-            "ask": "some question",
-            "type": "path",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value=""), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == ""
-
-
-def test_question_path_optional_with_input_without_ask():
-    questions = {
-        "some_path": {
-            "type": "path",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == "/some_value"
-
-
-def test_question_path_no_input_default():
-    questions = {
-        "some_path": {
-            "ask": "some question",
-            "type": "path",
-            "default": "some_value",
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == "/some_value"
-
-
-def test_question_path_input_test_ask():
-    ask_text = "some question"
-    questions = {
-        "some_path": {
-            "type": "path",
-            "ask": ask_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=False,
-            confirm=False,
-            prefill="",
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
-
-
-def test_question_path_input_test_ask_with_default():
-    ask_text = "some question"
-    default_text = "someexample"
-    questions = {
-        "some_path": {
-            "type": "path",
-            "ask": ask_text,
-            "default": default_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=False,
-            confirm=False,
-            prefill=default_text,
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
 
 
 @pytest.mark.skip  # we should do something with this example
