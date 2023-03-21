@@ -629,6 +629,72 @@ class TestPassword(BaseTest):
 
 
 # ╭───────────────────────────────────────────────────────╮
+# │ BOOLEAN                                               │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestBoolean(BaseTest):
+    raw_option = {"type": "boolean", "id": "boolean_id"}
+    prefill = {
+        "raw_option": {"default": True},
+        "prefill": "yes",
+    }
+    # fmt: off
+    truthy_values = (True, 1, "1", "True", "true", "Yes", "yes", "y", "on")
+    falsy_values = (False, 0, "0", "False", "false", "No", "no", "n", "off")
+    scenarios = [
+        *all_as(None, "", output=0),
+        *all_fails("none", "None"),  # FIXME should output as `0` (default) like other none values when required?
+        *all_as(None, "", output=0, raw_option={"optional": True}),  # FIXME should output as `None`?
+        *all_as("none", "None", output=None, raw_option={"optional": True}),
+        # FIXME even if default is explicity `None|""`, it ends up with class_default `0`
+        *all_as(None, "", output=0, raw_option={"default": None}),  # FIXME this should fail, default is `None`
+        *all_as(None, "", output=0, raw_option={"optional": True, "default": None}),  # FIXME even if default is explicity None, it ends up with class_default
+        *all_as(None, "", output=0, raw_option={"default": ""}),  # FIXME this should fail, default is `""`
+        *all_as(None, "", output=0, raw_option={"optional": True, "default": ""}),  # FIXME even if default is explicity None, it ends up with class_default
+        # With "none" behavior is ok
+        *all_fails(None, "", raw_option={"default": "none"}),
+        *all_as(None, "", output=None, raw_option={"optional": True, "default": "none"}),
+        # Unhandled types should fail
+        *all_fails(1337, "1337", "string", [], "[]", ",", "one,two"),
+        *all_fails(1337, "1337", "string", [], "[]", ",", "one,two", {"optional": True}),
+        # Required
+        *all_as(*truthy_values, output=1),
+        *all_as(*falsy_values, output=0),
+        # Optional
+        *all_as(*truthy_values, output=1, raw_option={"optional": True}),
+        *all_as(*falsy_values, output=0, raw_option={"optional": True}),
+        # test values as default, as required option without intake
+        *[(None, 1, {"default": true for true in truthy_values})],
+        *[(None, 0, {"default": false for false in falsy_values})],
+        # custom boolean output
+        ("", "disallow", {"yes": "allow", "no": "disallow"}),  # required -> default to False -> `"disallow"`
+        ("n", "disallow", {"yes": "allow", "no": "disallow"}),
+        ("y", "allow", {"yes": "allow", "no": "disallow"}),
+        ("", False, {"yes": True, "no": False}),  # required -> default to False -> `False`
+        ("n", False, {"yes": True, "no": False}),
+        ("y", True, {"yes": True, "no": False}),
+        ("", -1, {"yes": 1, "no": -1}),  # required -> default to False -> `-1`
+        ("n", -1, {"yes": 1, "no": -1}),
+        ("y", 1, {"yes": 1, "no": -1}),
+        {
+            "raw_options": [
+                {"yes": "no", "no": "yes", "optional": True},
+                {"yes": False, "no": True, "optional": True},
+                {"yes": "0", "no": "1", "optional": True},
+            ],
+            # "no" for "yes" and "yes" for "no" should fail
+            "scenarios": all_fails("", "y", "n", error=AssertionError),
+        },
+        # readonly
+        *xfail(scenarios=[
+            (1, 0, {"readonly": True, "default": 0}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
 # │ PATH                                                  │
 # ╰───────────────────────────────────────────────────────╯
 
@@ -886,258 +952,6 @@ def test_question_path_input_test_ask_with_help():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert help_text in prompt.call_args[1]["message"]
-
-
-def test_question_boolean():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-        }
-    }
-    answers = {"some_boolean": "y"}
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_boolean"
-    assert out.type == "boolean"
-    assert out.value == 1
-
-
-def test_question_boolean_all_yes():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-        }
-    }
-
-    for value in ["Y", "yes", "Yes", "YES", "1", 1, True, "True", "TRUE", "true"]:
-        out = ask_questions_and_parse_answers(questions, {"some_boolean": value})[0]
-        assert out.name == "some_boolean"
-        assert out.type == "boolean"
-        assert out.value == 1
-
-
-def test_question_boolean_all_no():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-        }
-    }
-
-    for value in ["n", "N", "no", "No", "No", "0", 0, False, "False", "FALSE", "false"]:
-        out = ask_questions_and_parse_answers(questions, {"some_boolean": value})[0]
-        assert out.name == "some_boolean"
-        assert out.type == "boolean"
-        assert out.value == 0
-
-
-# XXX apparently boolean are always False (0) by default, I'm not sure what to think about that
-def test_question_boolean_no_input():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-        }
-    }
-    answers = {}
-
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.value == 0
-
-
-def test_question_boolean_bad_input():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-        }
-    }
-    answers = {"some_boolean": "stuff"}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_boolean_input():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-            "ask": "some question",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="y"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-    assert out.value == 1
-
-    with patch.object(Moulinette, "prompt", return_value="n"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-    assert out.value == 0
-
-
-def test_question_boolean_input_no_ask():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="y"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-    assert out.value == 1
-
-
-def test_question_boolean_no_input_optional():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-            "optional": True,
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-    assert out.value == 0
-
-
-def test_question_boolean_optional_with_input():
-    questions = {
-        "some_boolean": {
-            "ask": "some question",
-            "type": "boolean",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="y"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-    assert out.value == 1
-
-
-def test_question_boolean_optional_with_empty_input():
-    questions = {
-        "some_boolean": {
-            "ask": "some question",
-            "type": "boolean",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value=""), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.value == 0
-
-
-def test_question_boolean_optional_with_input_without_ask():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="n"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.value == 0
-
-
-def test_question_boolean_no_input_default():
-    questions = {
-        "some_boolean": {
-            "ask": "some question",
-            "type": "boolean",
-            "default": 0,
-        }
-    }
-    answers = {}
-
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.value == 0
-
-
-def test_question_boolean_bad_default():
-    questions = {
-        "some_boolean": {
-            "ask": "some question",
-            "type": "boolean",
-            "default": "bad default",
-        }
-    }
-    answers = {}
-    with pytest.raises(YunohostError):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_boolean_input_test_ask():
-    ask_text = "some question"
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-            "ask": ask_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value=0) as prompt, patch.object(
-        os, "isatty", return_value=True
-    ):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text + " [yes | no]",
-            is_password=False,
-            confirm=False,
-            prefill="no",
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
-
-
-def test_question_boolean_input_test_ask_with_default():
-    ask_text = "some question"
-    default_text = 1
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-            "ask": ask_text,
-            "default": default_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value=1) as prompt, patch.object(
-        os, "isatty", return_value=True
-    ):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text + " [yes | no]",
-            is_password=False,
-            confirm=False,
-            prefill="yes",
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
 
 
 def test_question_domain_empty():
