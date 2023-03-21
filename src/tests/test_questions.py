@@ -746,6 +746,73 @@ class TestWebPath(BaseTest):
     # fmt: on
 
 
+# ╭───────────────────────────────────────────────────────╮
+# │ DOMAIN                                                │
+# ╰───────────────────────────────────────────────────────╯
+
+main_domain = "ynh.local"
+domains1 = ["ynh.local"]
+domains2 = ["another.org", "ynh.local", "yet.another.org"]
+
+
+@contextmanager
+def patch_domains(*, domains, main_domain):
+    """
+    Data mocking for DomainOption:
+    - yunohost.domain.domain_list
+    """
+    with patch.object(
+        domain,
+        "domain_list",
+        return_value={"domains": domains, "main": main_domain},
+    ), patch.object(domain, "_get_maindomain", return_value=main_domain):
+        yield
+
+
+class TestDomain(BaseTest):
+    raw_option = {"type": "domain", "id": "domain_id"}
+    prefill = {
+        "raw_option": {
+            "default": None,
+        },
+        "prefill": main_domain,
+    }
+    # fmt: off
+    scenarios = [
+        # Probably not needed to test common types since those are not available as choices
+        # Also no scenarios with no domains since it should not be possible
+        {
+            "data": [{"main_domain": domains1[0], "domains": domains1}],
+            "scenarios": [
+                *nones(None, "", output=domains1[0], fail_if_required=False),
+                (domains1[0], domains1[0], {}),
+                ("doesnt_exist.pouet", FAIL, {}),
+                ("fake.com", FAIL, {"choices": ["fake.com"]}),
+                # readonly
+                *xpass(scenarios=[
+                    (domains1[0], domains1[0], {"readonly": True}),
+                ], reason="Should fail since readonly is forbidden"),
+            ]
+        },
+        {
+            "data": [{"main_domain": domains2[1], "domains": domains2}],
+            "scenarios": [
+                *nones(None, "", output=domains2[1], fail_if_required=False),
+                (domains2[1], domains2[1], {}),
+                (domains2[0], domains2[0], {}),
+                ("doesnt_exist.pouet", FAIL, {}),
+                ("fake.com", FAIL, {"choices": ["fake.com"]}),
+            ]
+        },
+
+    ]
+    # fmt: on
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        with patch_domains(**data):
+            super().test_scenarios(intake, expected_output, raw_option, data)
+
+
 def test_question_empty():
     ask_questions_and_parse_answers({}, {}) == []
 
@@ -952,182 +1019,6 @@ def test_question_path_input_test_ask_with_help():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert help_text in prompt.call_args[1]["message"]
-
-
-def test_question_domain_empty():
-    questions = {
-        "some_domain": {
-            "type": "domain",
-        }
-    }
-    main_domain = "my_main_domain.com"
-    answers = {}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value="my_main_domain.com"
-    ), patch.object(
-        domain, "domain_list", return_value={"domains": [main_domain]}
-    ), patch.object(
-        os, "isatty", return_value=False
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_domain"
-    assert out.type == "domain"
-    assert out.value == main_domain
-
-
-def test_question_domain():
-    main_domain = "my_main_domain.com"
-    domains = [main_domain]
-    questions = {
-        "some_domain": {
-            "type": "domain",
-        }
-    }
-
-    answers = {"some_domain": main_domain}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_domain"
-    assert out.type == "domain"
-    assert out.value == main_domain
-
-
-def test_question_domain_two_domains():
-    main_domain = "my_main_domain.com"
-    other_domain = "some_other_domain.tld"
-    domains = [main_domain, other_domain]
-
-    questions = {
-        "some_domain": {
-            "type": "domain",
-        }
-    }
-    answers = {"some_domain": other_domain}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_domain"
-    assert out.type == "domain"
-    assert out.value == other_domain
-
-    answers = {"some_domain": main_domain}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_domain"
-    assert out.type == "domain"
-    assert out.value == main_domain
-
-
-def test_question_domain_two_domains_wrong_answer():
-    main_domain = "my_main_domain.com"
-    other_domain = "some_other_domain.tld"
-    domains = [main_domain, other_domain]
-
-    questions = {
-        "some_domain": {
-            "type": "domain",
-        }
-    }
-    answers = {"some_domain": "doesnt_exist.pouet"}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
-        with pytest.raises(YunohostError), patch.object(
-            os, "isatty", return_value=False
-        ):
-            ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_domain_two_domains_default_no_ask():
-    main_domain = "my_main_domain.com"
-    other_domain = "some_other_domain.tld"
-    domains = [main_domain, other_domain]
-
-    questions = {
-        "some_domain": {
-            "type": "domain",
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(
-        domain, "domain_list", return_value={"domains": domains}
-    ), patch.object(
-        os, "isatty", return_value=False
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_domain"
-    assert out.type == "domain"
-    assert out.value == main_domain
-
-
-def test_question_domain_two_domains_default():
-    main_domain = "my_main_domain.com"
-    other_domain = "some_other_domain.tld"
-    domains = [main_domain, other_domain]
-
-    questions = {"some_domain": {"type": "domain", "ask": "choose a domain"}}
-    answers = {}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(
-        domain, "domain_list", return_value={"domains": domains}
-    ), patch.object(
-        os, "isatty", return_value=False
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_domain"
-    assert out.type == "domain"
-    assert out.value == main_domain
-
-
-def test_question_domain_two_domains_default_input():
-    main_domain = "my_main_domain.com"
-    other_domain = "some_other_domain.tld"
-    domains = [main_domain, other_domain]
-
-    questions = {"some_domain": {"type": "domain", "ask": "choose a domain"}}
-    answers = {}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(
-        domain, "domain_list", return_value={"domains": domains}
-    ), patch.object(
-        os, "isatty", return_value=True
-    ):
-        with patch.object(Moulinette, "prompt", return_value=main_domain):
-            out = ask_questions_and_parse_answers(questions, answers)[0]
-
-        assert out.name == "some_domain"
-        assert out.type == "domain"
-        assert out.value == main_domain
-
-        with patch.object(Moulinette, "prompt", return_value=other_domain):
-            out = ask_questions_and_parse_answers(questions, answers)[0]
-
-        assert out.name == "some_domain"
-        assert out.type == "domain"
-        assert out.value == other_domain
 
 
 def test_question_user_empty():
