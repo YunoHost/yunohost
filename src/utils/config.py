@@ -856,7 +856,9 @@ class Question:
         # Don't restrict choices if there's none specified
         self.choices = question.get("choices", None)
         self.pattern = question.get("pattern", self.pattern)
-        self.ask = question.get("ask", {"en": self.name})
+        self.ask = question.get("ask", self.name)
+        if not isinstance(self.ask, dict):
+            self.ask = {"en": self.ask}
         self.help = question.get("help")
         self.redact = question.get("redact", False)
         self.filter = question.get("filter", None)
@@ -962,7 +964,7 @@ class Question:
                     "app_argument_choice_invalid",
                     name=self.name,
                     value=self.value,
-                    choices=", ".join(self.choices),
+                    choices=", ".join(str(choice) for choice in self.choices),
                 )
             if self.pattern and not re.match(self.pattern["regexp"], str(self.value)):
                 raise YunohostValidationError(
@@ -1085,13 +1087,13 @@ class TagsQuestion(Question):
     @staticmethod
     def humanize(value, option={}):
         if isinstance(value, list):
-            return ",".join(value)
+            return ",".join(str(v) for v in value)
         return value
 
     @staticmethod
     def normalize(value, option={}):
         if isinstance(value, list):
-            return ",".join(value)
+            return ",".join(str(v) for v in value)
         if isinstance(value, str):
             value = value.strip()
         return value
@@ -1102,6 +1104,21 @@ class TagsQuestion(Question):
             values = values.split(",")
         elif values is None:
             values = []
+
+        if not isinstance(values, list):
+            if self.choices:
+                raise YunohostValidationError(
+                    "app_argument_choice_invalid",
+                    name=self.name,
+                    value=self.value,
+                    choices=", ".join(str(choice) for choice in self.choices),
+                )
+            raise YunohostValidationError(
+                "app_argument_invalid",
+                name=self.name,
+                error=f"'{str(self.value)}' is not a list",
+            )
+
         for value in values:
             self.value = value
             super()._prevalidate()
@@ -1151,6 +1168,13 @@ class PathQuestion(Question):
     @staticmethod
     def normalize(value, option={}):
         option = option.__dict__ if isinstance(option, Question) else option
+
+        if not isinstance(value, str):
+            raise YunohostValidationError(
+                "app_argument_invalid",
+                name=option.get("name"),
+                error="Argument for path should be a string.",
+            )
 
         if not value.strip():
             if option.get("optional"):
@@ -1399,7 +1423,7 @@ class NumberQuestion(Question):
             return int(value)
 
         if value in [None, ""]:
-            return value
+            return None
 
         option = option.__dict__ if isinstance(option, Question) else option
         raise YunohostValidationError(
@@ -1481,8 +1505,12 @@ class FileQuestion(Question):
 
         super()._prevalidate()
 
+        # Validation should have already failed if required
+        if self.value in (None, ""):
+            return self.value
+
         if Moulinette.interface.type != "api":
-            if not self.value or not os.path.exists(str(self.value)):
+            if not os.path.exists(str(self.value)) or not os.path.isfile(str(self.value)):
                 raise YunohostValidationError(
                     "app_argument_invalid",
                     name=self.name,
@@ -1493,7 +1521,7 @@ class FileQuestion(Question):
         from base64 import b64decode
 
         if not self.value:
-            return self.value
+            return ""
 
         upload_dir = tempfile.mkdtemp(prefix="ynh_filequestion_")
         _, file_path = tempfile.mkstemp(dir=upload_dir)
