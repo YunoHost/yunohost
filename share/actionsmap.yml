@@ -1032,9 +1032,6 @@ app:
                         help: App name
                     action:
                         help: action id
-                    -a:
-                        full: --args
-                        help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path")
 
       config:
           subcategory_help: Applications configuration panel
