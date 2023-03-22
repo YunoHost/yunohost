@@ -559,6 +559,77 @@ class TestDisplayText(BaseTest):
 
 
 # ╭───────────────────────────────────────────────────────╮
+# │ MARKDOWN                                              │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestMarkdown(TestDisplayText):
+    raw_option = {"type": "markdown", "id": "markdown_id"}
+    # in cli this option is exactly the same as "display_text", no markdown support for now
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ ALERT                                                 │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestAlert(TestDisplayText):
+    raw_option = {"type": "alert", "id": "alert_id"}
+    prefill = {
+        "raw_option": {"ask": " Custom info message"},
+        "prefill": " custom default",
+    }
+    # fmt: off
+    scenarios = [
+        (None, None, {"ask": "Some text\na new line"}),
+        (None, None, {"ask": {"en": "Some text\na new line", "fr": "Un peu de texte\nune nouvelle ligne"}}),
+        *[(None, None, {"ask": "question", "style": style}) for style in ("success", "info", "warning", "danger")],
+        *xpass(scenarios=[
+            (None, None, {"ask": "question", "style": "nimp"}),
+        ], reason="Should fail, wrong style"),
+    ]
+    # fmt: on
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        style = raw_option.get("style", "info")
+        colors = {"danger": "31", "warning": "33", "info": "36", "success": "32"}
+        answers = {"alert_id": intake} if intake is not None else {}
+
+        with patch_interface("cli"):
+            if inspect.isclass(expected_output) and issubclass(
+                expected_output, Exception
+            ):
+                with pytest.raises(expected_output):
+                    ask_questions_and_parse_answers(
+                        {"display_text_id": raw_option}, answers
+                    )
+            else:
+                with patch.object(sys, "stdout", new_callable=StringIO) as stdout:
+                    options = ask_questions_and_parse_answers(
+                        {"display_text_id": raw_option}, answers
+                    )
+                    ask = options[0].ask["en"]
+                    if style in colors:
+                        color = colors[style]
+                        title = style.title() + (":" if style != "success" else "!")
+                        assert (
+                            stdout.getvalue()
+                            == f"\x1b[{color}m\x1b[1m{title}\x1b[m {ask}\n"
+                        )
+                    else:
+                        # FIXME should fail
+                        stdout.getvalue() == f"{ask}\n"
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ BUTTON                                                │
+# ╰───────────────────────────────────────────────────────╯
+
+
+# TODO
+
+
+# ╭───────────────────────────────────────────────────────╮
 # │ STRING                                                │
 # ╰───────────────────────────────────────────────────────╯
 
@@ -653,6 +724,10 @@ class TestPassword(BaseTest):
         *all_fails([], ["one"], {}, raw_option={"optional": True}, error=AttributeError),  # FIXME those fails with AttributeError
         *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
         *nones(None, "", output=""),
+        ("s3cr3t!!", FAIL, {"default": "SUPAs3cr3t!!"}),  # default is forbidden
+        *xpass(scenarios=[
+            ("s3cr3t!!", "s3cr3t!!", {"example": "SUPAs3cr3t!!"}),  # example is forbidden
+        ], reason="Should fail; example is forbidden"),
         *xpass(scenarios=[
             (" value \n moarc0mpl1cat3d\n  ", "value \n moarc0mpl1cat3d"),
             (" some_ value", "some_ value"),
@@ -664,6 +739,49 @@ class TestPassword(BaseTest):
         *xpass(scenarios=[
             ("s3cr3t!!", "s3cr3t!!", {"readonly": True}),
         ], reason="Should fail since readonly is forbidden"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ COLOR                                                 │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestColor(BaseTest):
+    raw_option = {"type": "color", "id": "color_id"}
+    prefill = {
+        "raw_option": {"default": "#ff0000"},
+        "prefill": "#ff0000",
+        # "intake": "#ff00ff",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(None, "", output=""),
+        # custom valid
+        ("#000000", "#000000"),
+        ("#000", "#000"),
+        ("#fe100", "#fe100"),
+        (" #fe100  ", "#fe100"),
+        ("#ABCDEF", "#ABCDEF"),
+        # custom fail
+        *xpass(scenarios=[
+            ("#feaf", "#feaf"),
+        ], reason="Should fail; not a legal color value"),
+        ("000000", FAIL),
+        ("#12", FAIL),
+        ("#gggggg", FAIL),
+        ("#01010101af", FAIL),
+        *xfail(scenarios=[
+            ("red", "#ff0000"),
+            ("yellow", "#ffff00"),
+        ], reason="Should work with pydantic"),
+        # readonly
+        *xfail(scenarios=[
+            ("#ffff00", "#fe100", {"readonly": True, "default": "#fe100"}),
+        ], reason="Should not be overwritten"),
     ]
     # fmt: on
 
@@ -776,6 +894,171 @@ class TestBoolean(BaseTest):
             (1, 0, {"readonly": True, "default": 0}),
         ], reason="Should not be overwritten"),
     ]
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ DATE                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestDate(BaseTest):
+    raw_option = {"type": "date", "id": "date_id"}
+    prefill = {
+        "raw_option": {"default": "2024-12-29"},
+        "prefill": "2024-12-29",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(None, "", output=""),
+        # custom valid
+        ("2070-12-31", "2070-12-31"),
+        ("2024-02-29", "2024-02-29"),
+        *xfail(scenarios=[
+            ("2025-06-15T13:45:30", "2025-06-15"),
+            ("2025-06-15 13:45:30", "2025-06-15")
+        ], reason="iso date repr should be valid and extra data striped"),
+        *xfail(scenarios=[
+            (1749938400, "2025-06-15"),
+            (1749938400.0, "2025-06-15"),
+            ("1749938400", "2025-06-15"),
+            ("1749938400.0", "2025-06-15"),
+        ], reason="timestamp could be an accepted value"),
+        # custom invalid
+        ("29-12-2070", FAIL),
+        ("12-01-10", FAIL),
+        ("2022-02-29", FAIL),
+        # readonly
+        *xfail(scenarios=[
+            ("2070-12-31", "2024-02-29", {"readonly": True, "default": "2024-02-29"}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ TIME                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestTime(BaseTest):
+    raw_option = {"type": "time", "id": "time_id"}
+    prefill = {
+        "raw_option": {"default": "12:26"},
+        "prefill": "12:26",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(None, "", output=""),
+        # custom valid
+        *unchanged("00:00", "08:00", "12:19", "20:59", "23:59"),
+        ("3:00", "3:00"),  # FIXME should fail or output as `"03:00"`?
+        *xfail(scenarios=[
+            ("22:35:05", "22:35"),
+            ("22:35:03.514", "22:35"),
+        ], reason="time as iso format could be valid"),
+        # custom invalid
+        ("24:00", FAIL),
+        ("23:1", FAIL),
+        ("23:005", FAIL),
+        # readonly
+        *xfail(scenarios=[
+            ("00:00", "08:00", {"readonly": True, "default": "08:00"}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ EMAIL                                                 │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestEmail(BaseTest):
+    raw_option = {"type": "email", "id": "email_id"}
+    prefill = {
+        "raw_option": {"default": "Abc@example.tld"},
+        "prefill": "Abc@example.tld",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+        *all_fails("none", "_none", "False", "True", "0", "1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+
+        *nones(None, "", output=""),
+        ("\n Abc@example.tld  ", "Abc@example.tld"),
+        # readonly
+        *xfail(scenarios=[
+            ("Abc@example.tld", "admin@ynh.local", {"readonly": True, "default": "admin@ynh.local"}),
+        ], reason="Should not be overwritten"),
+
+        # Next examples are from https://github.com/JoshData/python-email-validator/blob/main/tests/test_syntax.py
+        # valid email values
+        ("Abc@example.tld", "Abc@example.tld"),
+        ("Abc.123@test-example.com", "Abc.123@test-example.com"),
+        ("user+mailbox/department=shipping@example.tld", "user+mailbox/department=shipping@example.tld"),
+        ("伊昭傑@郵件.商務", "伊昭傑@郵件.商務"),
+        ("राम@मोहन.ईन्फो", "राम@मोहन.ईन्फो"),
+        ("юзер@екзампл.ком", "юзер@екзампл.ком"),
+        ("θσερ@εχαμπλε.ψομ", "θσερ@εχαμπλε.ψομ"),
+        ("葉士豪@臺網中心.tw", "葉士豪@臺網中心.tw"),
+        ("jeff@臺網中心.tw", "jeff@臺網中心.tw"),
+        ("葉士豪@臺網中心.台灣", "葉士豪@臺網中心.台灣"),
+        ("jeff葉@臺網中心.tw", "jeff葉@臺網中心.tw"),
+        ("ñoñó@example.tld", "ñoñó@example.tld"),
+        ("甲斐黒川日本@example.tld", "甲斐黒川日本@example.tld"),
+        ("чебурашкаящик-с-апельсинами.рф@example.tld", "чебурашкаящик-с-апельсинами.рф@example.tld"),
+        ("उदाहरण.परीक्ष@domain.with.idn.tld", "उदाहरण.परीक्ष@domain.with.idn.tld"),
+        ("ιωάννης@εεττ.gr", "ιωάννης@εεττ.gr"),
+        # invalid email (Hiding because our current regex is very permissive)
+        # ("my@localhost", FAIL),
+        # ("my@.leadingdot.com", FAIL),
+        # ("my@．leadingfwdot.com", FAIL),
+        # ("my@twodots..com", FAIL),
+        # ("my@twofwdots．．.com", FAIL),
+        # ("my@trailingdot.com.", FAIL),
+        # ("my@trailingfwdot.com．", FAIL),
+        # ("me@-leadingdash", FAIL),
+        # ("me@－leadingdashfw", FAIL),
+        # ("me@trailingdash-", FAIL),
+        # ("me@trailingdashfw－", FAIL),
+        # ("my@baddash.-.com", FAIL),
+        # ("my@baddash.-a.com", FAIL),
+        # ("my@baddash.b-.com", FAIL),
+        # ("my@baddashfw.－.com", FAIL),
+        # ("my@baddashfw.－a.com", FAIL),
+        # ("my@baddashfw.b－.com", FAIL),
+        # ("my@example.com\n", FAIL),
+        # ("my@example\n.com", FAIL),
+        # ("me@x!", FAIL),
+        # ("me@x ", FAIL),
+        # (".leadingdot@domain.com", FAIL),
+        # ("twodots..here@domain.com", FAIL),
+        # ("trailingdot.@domain.email", FAIL),
+        # ("me@⒈wouldbeinvalid.com", FAIL),
+        ("@example.com", FAIL),
+        # ("\nmy@example.com", FAIL),
+        ("m\ny@example.com", FAIL),
+        ("my\n@example.com", FAIL),
+        # ("11111111112222222222333333333344444444445555555555666666666677777@example.com", FAIL),
+        # ("111111111122222222223333333333444444444455555555556666666666777777@example.com", FAIL),
+        # ("me@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.111111111122222222223333333333444444444455555555556.com", FAIL),
+        # ("me@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555566.com", FAIL),
+        # ("me@中1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555566.com", FAIL),
+        # ("my.long.address@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.11111111112222222222333333333344444.info", FAIL),
+        # ("my.long.address@λ111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.11111111112222222222333333.info", FAIL),
+        # ("my.long.address@λ111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444.info", FAIL),
+        # ("my.λong.address@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.111111111122222222223333333333444.info", FAIL),
+        # ("my.λong.address@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444.info", FAIL),
+        # ("me@bad-tld-1", FAIL),
+        # ("me@bad.tld-2", FAIL),
+        # ("me@xn--0.tld", FAIL),
+        # ("me@yy--0.tld", FAIL),
+        # ("me@yy－－0.tld", FAIL),
+    ]
     # fmt: on
 
 
@@ -827,6 +1110,110 @@ class TestWebPath(BaseTest):
             ("/overwrite", "/value", {"readonly": True, "default": "/value"}),
         ], reason="Should not be overwritten"),
         # FIXME should path have forbidden_chars?
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ URL                                                   │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestUrl(BaseTest):
+    raw_option = {"type": "url", "id": "url_id"}
+    prefill = {
+        "raw_option": {"default": "https://domain.tld"},
+        "prefill": "https://domain.tld",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+
+        *nones(None, "", output=""),
+        ("http://some.org/folder/file.txt", "http://some.org/folder/file.txt"),
+        # readonly
+        *xfail(scenarios=[
+            ("https://overwrite.org", "https://example.org", {"readonly": True, "default": "https://example.org"}),
+        ], reason="Should not be overwritten"),
+        # rest is taken from https://github.com/pydantic/pydantic/blob/main/tests/test_networks.py
+        # valid
+        *unchanged(
+            # Those are valid but not sure how they will output with pydantic
+            'http://example.org',
+            'http://test',
+            'http://localhost',
+            'https://example.org/whatever/next/',
+            'https://example.org',
+            'http://localhost',
+            'http://localhost/',
+            'http://localhost:8000',
+            'http://localhost:8000/',
+            'https://foo_bar.example.com/',
+            'http://example.co.jp',
+            'http://www.example.com/a%C2%B1b',
+            'http://www.example.com/~username/',
+            'http://info.example.com?fred',
+            'http://info.example.com/?fred',
+            'http://xn--mgbh0fb.xn--kgbechtv/',
+            'http://example.com/blue/red%3Fand+green',
+            'http://www.example.com/?array%5Bkey%5D=value',
+            'http://xn--rsum-bpad.example.org/',
+            'http://123.45.67.8/',
+            'http://123.45.67.8:8329/',
+            'http://[2001:db8::ff00:42]:8329',
+            'http://[2001::1]:8329',
+            'http://[2001:db8::1]/',
+            'http://www.example.com:8000/foo',
+            'http://www.cwi.nl:80/%7Eguido/Python.html',
+            'https://www.python.org/путь',
+            'http://андрей@example.com',
+            'https://exam_ple.com/',
+            'http://twitter.com/@handle/',
+            'http://11.11.11.11.example.com/action',
+            'http://abc.11.11.11.11.example.com/action',
+            'http://example#',
+            'http://example/#',
+            'http://example/#fragment',
+            'http://example/?#',
+            'http://example.org/path#',
+            'http://example.org/path#fragment',
+            'http://example.org/path?query#',
+            'http://example.org/path?query#fragment',
+        ),
+        # Pydantic default parsing add a final `/`
+        ('https://foo_bar.example.com/', 'https://foo_bar.example.com/'),
+        ('https://exam_ple.com/', 'https://exam_ple.com/'),
+        *xfail(scenarios=[
+            ('  https://www.example.com \n', 'https://www.example.com/'),
+            ('HTTP://EXAMPLE.ORG', 'http://example.org/'),
+            ('https://example.org', 'https://example.org/'),
+            ('https://example.org?a=1&b=2', 'https://example.org/?a=1&b=2'),
+            ('https://example.org#a=3;b=3', 'https://example.org/#a=3;b=3'),
+            ('https://example.xn--p1ai', 'https://example.xn--p1ai/'),
+            ('https://example.xn--vermgensberatung-pwb', 'https://example.xn--vermgensberatung-pwb/'),
+            ('https://example.xn--zfr164b', 'https://example.xn--zfr164b/'),
+        ], reason="pydantic default behavior would append a final `/`"),
+
+        # invalid
+        *all_fails(
+            'ftp://example.com/',
+            "$https://example.org",
+            "../icons/logo.gif",
+            "abc",
+            "..",
+            "/",
+            "+http://example.com/",
+            "ht*tp://example.com/",
+        ),
+        *xpass(scenarios=[
+            ("http:///", "http:///"),
+            ("http://??", "http://??"),
+            ("https://example.org more", "https://example.org more"),
+            ("http://2001:db8::ff00:42:8329", "http://2001:db8::ff00:42:8329"),
+            ("http://[192.168.1.1]:8329", "http://[192.168.1.1]:8329"),
+            ("http://example.com:99999", "http://example.com:99999"),
+        ], reason="Should fail"),
     ]
     # fmt: on
 
@@ -967,6 +1354,135 @@ class TestFile(BaseTest):
 
 
 # ╭───────────────────────────────────────────────────────╮
+# │ SELECT                                                │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestSelect(BaseTest):
+    raw_option = {"type": "select", "id": "select_id"}
+    prefill = {
+        "raw_option": {"default": "one", "choices": ["one", "two"]},
+        "prefill": "one",
+    }
+    # fmt: off
+    scenarios = [
+        {
+            # ["one", "two"]
+            "raw_options": [
+                {"choices": ["one", "two"]},
+                {"choices": {"one": "verbose one", "two": "verbose two"}},
+            ],
+            "scenarios": [
+                *nones(None, "", output=""),
+                *unchanged("one", "two"),
+                ("three", FAIL),
+            ]
+        },
+        # custom bash style list as choices (only strings for now)
+        ("one", "one", {"choices": "one,two"}),
+        {
+            # [-1, 0, 1]
+            "raw_options": [
+                {"choices": [-1, 0, 1, 10]},
+                {"choices": {-1: "verbose -one", 0: "verbose zero", 1: "verbose one", 10: "verbose ten"}},
+            ],
+            "scenarios": [
+                *nones(None, "", output=""),
+                *unchanged(-1, 0, 1, 10),
+                *xfail(scenarios=[
+                    ("-1", -1),
+                    ("0", 0),
+                    ("1", 1),
+                    ("10", 10),
+                ], reason="str -> int not handled"),
+                *all_fails("100", 100),
+            ]
+        },
+        # [True, False, None]
+        *unchanged(True, False, raw_option={"choices": [True, False, None]}),  # FIXME we should probably forbid None in choices
+        (None, FAIL, {"choices": [True, False, None]}),
+        {
+            # mixed types
+            "raw_options": [{"choices": ["one", 2, True]}],
+            "scenarios": [
+                *xpass(scenarios=[
+                    ("one", "one"),
+                    (2, 2),
+                    (True, True),
+                ], reason="mixed choices, should fail"),
+                *all_fails("2", "True", "y"),
+            ]
+        },
+        {
+            "raw_options": [{"choices": ""}, {"choices": []}],
+            "scenarios": [
+                # FIXME those should fail at option level (wrong default, dev error)
+                *all_fails(None, ""),
+                *xpass(scenarios=[
+                    ("", "", {"optional": True}),
+                    (None, "", {"optional": True}),
+                ], reason="empty choices, should fail at option instantiation"),
+            ]
+        },
+        # readonly
+        *xfail(scenarios=[
+            ("one", "two", {"readonly": True, "choices": ["one", "two"], "default": "two"}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ TAGS                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestTags(BaseTest):
+    raw_option = {"type": "tags", "id": "tags_id"}
+    prefill = {
+        "raw_option": {"default": ["one", "two"]},
+        "prefill": "one,two",
+    }
+    # fmt: off
+    scenarios = [
+        *nones(None, [], "", output=""),
+        # FIXME `","` could be considered a none value which kinda already is since it fail when required
+        (",", FAIL),
+        *xpass(scenarios=[
+            (",", ",", {"optional": True})
+        ], reason="Should output as `''`? ie: None"),
+        {
+            "raw_options": [
+                {},
+                {"choices": ["one", "two"]}
+            ],
+            "scenarios": [
+                *unchanged("one", "one,two"),
+                (["one"], "one"),
+                (["one", "two"], "one,two"),
+            ]
+        },
+        ("three", FAIL, {"choices": ["one", "two"]}),
+        *unchanged("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", "['one']", "one,two", r"{}", "value"),
+        (" value\n", "value"),
+        ([False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}], "False,True,-1,0,1,1337,13.37,[],['one'],{}"),
+        *(([t], str(t)) for t in (False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {})),
+        # basic types (not in a list) should fail
+        *all_fails(True, False, -1, 0, 1, 1337, 13.37, {}),
+        # Mixed choices should fail
+        ([False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}], FAIL, {"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        ("False,True,-1,0,1,1337,13.37,[],['one'],{}", FAIL, {"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        *all_fails(*([t] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        *all_fails(*([str(t)] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        # readonly
+        *xfail(scenarios=[
+            ("one", "one,two", {"readonly": True, "choices": ["one", "two"], "default": "one,two"}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
 # │ DOMAIN                                                │
 # ╰───────────────────────────────────────────────────────╯
 
@@ -1030,6 +1546,124 @@ class TestDomain(BaseTest):
 
     def test_scenarios(self, intake, expected_output, raw_option, data):
         with patch_domains(**data):
+            super().test_scenarios(intake, expected_output, raw_option, data)
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ APP                                                   │
+# ╰───────────────────────────────────────────────────────╯
+
+installed_webapp = {
+    "is_webapp": True,
+    "is_default": True,
+    "label": "My webapp",
+    "id": "my_webapp",
+    "domain_path": "/ynh-dev",
+}
+installed_non_webapp = {
+    "is_webapp": False,
+    "is_default": False,
+    "label": "My non webapp",
+    "id": "my_non_webapp",
+}
+
+
+@contextmanager
+def patch_apps(*, apps):
+    """
+    Data mocking for AppOption:
+    - yunohost.app.app_list
+    """
+    with patch.object(app, "app_list", return_value={"apps": apps}):
+        yield
+
+
+class TestApp(BaseTest):
+    raw_option = {"type": "app", "id": "app_id"}
+    # fmt: off
+    scenarios = [
+        # Probably not needed to test common types since those are not available as choices
+        {
+            "data": [
+                {"apps": []},
+                {"apps": [installed_webapp]},
+                {"apps": [installed_webapp, installed_non_webapp]},
+            ],
+            "scenarios": [
+                # FIXME there are currently 3 different nones (`None`, `""` and `_none`), choose one?
+                *nones(None, output=None),  # FIXME Should return chosen none?
+                *nones("", output=""),  # FIXME Should return chosen none?
+                *xpass(scenarios=[
+                    ("_none", "_none"),
+                    ("_none", "_none", {"default": "_none"}),
+                ], reason="should fail; is required"),
+                *xpass(scenarios=[
+                    ("_none", "_none", {"optional": True}),
+                    ("_none", "_none", {"optional": True, "default": "_none"})
+                ], reason="Should output chosen none value"),
+                ("fake_app", FAIL),
+                ("fake_app", FAIL, {"choices": ["fake_app"]}),
+            ]
+        },
+        {
+            "data": [
+                {"apps": [installed_webapp]},
+                {"apps": [installed_webapp, installed_non_webapp]},
+            ],
+            "scenarios": [
+                (installed_webapp["id"], installed_webapp["id"]),
+                (installed_webapp["id"], installed_webapp["id"], {"filter": "is_webapp"}),
+                (installed_webapp["id"], FAIL, {"filter": "is_webapp == false"}),
+                (installed_webapp["id"], FAIL, {"filter": "id != 'my_webapp'"}),
+                (None, None, {"filter": "id == 'fake_app'", "optional": True}),
+            ]
+        },
+        {
+            "data": [{"apps": [installed_webapp, installed_non_webapp]}],
+            "scenarios": [
+                (installed_non_webapp["id"], installed_non_webapp["id"]),
+                (installed_non_webapp["id"], FAIL, {"filter": "is_webapp"}),
+                # readonly
+                *xpass(scenarios=[
+                    (installed_non_webapp["id"], installed_non_webapp["id"], {"readonly": True}),
+                ], reason="Should fail since readonly is forbidden"),
+            ]
+        },
+    ]
+    # fmt: on
+
+    @pytest.mark.usefixtures("patch_no_tty")
+    def test_basic_attrs(self):
+        with patch_apps(apps=[]):
+            raw_option, option, value = self._test_basic_attrs()
+
+            assert option.choices == {"_none": "---"}
+            assert option.filter is None
+
+        with patch_apps(apps=[installed_webapp, installed_non_webapp]):
+            raw_option, option, value = self._test_basic_attrs()
+
+            assert option.choices == {
+                "_none": "---",
+                "my_webapp": "My webapp (/ynh-dev)",
+                "my_non_webapp": "My non webapp (my_non_webapp)",
+            }
+            assert option.filter is None
+
+    def test_options_prompted_with_ask_help(self, prefill_data=None):
+        with patch_apps(apps=[installed_webapp, installed_non_webapp]):
+            super().test_options_prompted_with_ask_help(
+                prefill_data={
+                    "raw_option": {"default": installed_webapp["id"]},
+                    "prefill": installed_webapp["id"],
+                }
+            )
+            super().test_options_prompted_with_ask_help(
+                prefill_data={"raw_option": {"optional": True}, "prefill": ""}
+            )
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        with patch_apps(**data):
             super().test_scenarios(intake, expected_output, raw_option, data)
 
 
@@ -1139,8 +1773,205 @@ class TestUser(BaseTest):
             super().test_scenarios(intake, expected_output, raw_option, data)
 
 
-def test_question_empty():
+# ╭───────────────────────────────────────────────────────╮
+# │ GROUP                                                 │
+# ╰───────────────────────────────────────────────────────╯
+
+groups1 = ["all_users", "visitors", "admins"]
+groups2 = ["all_users", "visitors", "admins", "custom_group"]
+
+
+@contextmanager
+def patch_groups(*, groups):
+    """
+    Data mocking for GroupOption:
+    - yunohost.user.user_group_list
+    """
+    with patch.object(user, "user_group_list", return_value={"groups": groups}):
+        yield
+
+
+class TestGroup(BaseTest):
+    raw_option = {"type": "group", "id": "group_id"}
+    # fmt: off
+    scenarios = [
+        # No tests for empty groups since it should not happens
+        {
+            "data": [
+                {"groups": groups1},
+                {"groups": groups2},
+            ],
+            "scenarios": [
+                # FIXME Group option is not really nullable, even if optional
+                *nones(None, "", output="all_users", fail_if_required=False),
+                ("admins", "admins"),
+                ("fake_group", FAIL),
+                ("fake_group", FAIL, {"choices": ["fake_group"]}),
+            ]
+        },
+        {
+            "data": [
+                {"groups": groups2},
+            ],
+            "scenarios": [
+                ("custom_group", "custom_group"),
+                *all_as("", None, output="visitors", raw_option={"default": "visitors"}),
+                *xpass(scenarios=[
+                    ("", "custom_group", {"default": "custom_group"}),
+                ], reason="Should throw 'default must be in (None, 'all_users', 'visitors', 'admins')"),
+                # readonly
+                *xpass(scenarios=[
+                    ("admins", "admins", {"readonly": True}),
+                ], reason="Should fail since readonly is forbidden"),
+            ]
+        },
+    ]
+    # fmt: on
+
+    def test_options_prompted_with_ask_help(self, prefill_data=None):
+        with patch_groups(groups=groups2):
+            super().test_options_prompted_with_ask_help(
+                prefill_data={"raw_option": {}, "prefill": "all_users"}
+            )
+            super().test_options_prompted_with_ask_help(
+                prefill_data={
+                    "raw_option": {"default": "admins"},
+                    "prefill": "admins",
+                }
+            )
+            # FIXME This should fail, not allowed to set a default which is not a default group
+            super().test_options_prompted_with_ask_help(
+                prefill_data={
+                    "raw_option": {"default": "custom_group"},
+                    "prefill": "custom_group",
+                }
+            )
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        with patch_groups(**data):
+            super().test_scenarios(intake, expected_output, raw_option, data)
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ MULTIPLE                                              │
+# ╰───────────────────────────────────────────────────────╯
+
+
+@pytest.fixture
+def patch_entities():
+    with patch_domains(domains=domains2, main_domain=main_domain), patch_apps(
+        apps=[installed_webapp, installed_non_webapp]
+    ), patch_users(
+        users={admin_username: admin_user, regular_username: regular_user},
+        admin_username=admin_username,
+        main_domain=main_domain,
+    ), patch_groups(
+        groups=groups2
+    ):
+        yield
+
+
+def test_options_empty():
     ask_questions_and_parse_answers({}, {}) == []
+
+
+@pytest.mark.usefixtures("patch_entities", "file_clean")
+def test_options_query_string():
+    raw_options = {
+        "string_id": {"type": "string"},
+        "text_id": {"type": "text"},
+        "password_id": {"type": "password"},
+        "color_id": {"type": "color"},
+        "number_id": {"type": "number"},
+        "boolean_id": {"type": "boolean"},
+        "date_id": {"type": "date"},
+        "time_id": {"type": "time"},
+        "email_id": {"type": "email"},
+        "path_id": {"type": "path"},
+        "url_id": {"type": "url"},
+        "file_id": {"type": "file"},
+        "select_id": {"type": "select", "choices": ["one", "two"]},
+        "tags_id": {"type": "tags", "choices": ["one", "two"]},
+        "domain_id": {"type": "domain"},
+        "app_id": {"type": "app"},
+        "user_id": {"type": "user"},
+        "group_id": {"type": "group"},
+    }
+
+    results = {
+        "string_id": "string",
+        "text_id": "text\ntext",
+        "password_id": "sUpRSCRT",
+        "color_id": "#ffff00",
+        "number_id": 10,
+        "boolean_id": 1,
+        "date_id": "2030-03-06",
+        "time_id": "20:55",
+        "email_id": "coucou@ynh.local",
+        "path_id": "/ynh-dev",
+        "url_id": "https://yunohost.org",
+        "file_id": file_content1,
+        "select_id": "one",
+        "tags_id": "one,two",
+        "domain_id": main_domain,
+        "app_id": installed_webapp["id"],
+        "user_id": regular_username,
+        "group_id": "admins",
+    }
+
+    @contextmanager
+    def patch_query_string(file_repr):
+        yield (
+            "string_id= string"
+            "&text_id=text\ntext"
+            "&password_id=sUpRSCRT"
+            "&color_id=#ffff00"
+            "&number_id=10"
+            "&boolean_id=y"
+            "&date_id=2030-03-06"
+            "&time_id=20:55"
+            "&email_id=coucou@ynh.local"
+            "&path_id=ynh-dev/"
+            "&url_id=https://yunohost.org"
+            f"&file_id={file_repr}"
+            "&select_id=one"
+            "&tags_id=one,two"
+            # FIXME We can't test with parse.qs for now, next syntax is available only with config panels
+            # "&tags_id=one"
+            # "&tags_id=two"
+            f"&domain_id={main_domain}"
+            f"&app_id={installed_webapp['id']}"
+            f"&user_id={regular_username}"
+            "&group_id=admins"
+            # not defined extra values are silently ignored
+            "&fake_id=fake_value"
+        )
+
+    def _assert_correct_values(options, raw_options):
+        form = {option.name: option.value for option in options}
+
+        for k, v in results.items():
+            if k == "file_id":
+                assert os.path.exists(form["file_id"]) and os.path.isfile(
+                    form["file_id"]
+                )
+                with open(form["file_id"], "r") as f:
+                    assert f.read() == file_content1
+            else:
+                assert form[k] == results[k]
+
+        assert len(options) == len(raw_options.keys())
+        assert "fake_id" not in form
+
+    with patch_interface("api"), patch_file_api(file_content1) as b64content:
+        with patch_query_string(b64content.decode("utf-8")) as query_string:
+            options = ask_questions_and_parse_answers(raw_options, query_string)
+            _assert_correct_values(options, raw_options)
+
+    with patch_interface("cli"), patch_file_cli(file_content1) as filepath:
+        with patch_query_string(filepath) as query_string:
+            options = ask_questions_and_parse_answers(raw_options, query_string)
+            _assert_correct_values(options, raw_options)
 
 
 def test_question_string_default_type():
