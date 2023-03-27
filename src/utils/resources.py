@@ -267,7 +267,7 @@ class SourcesResource(AppResource):
 
     Various options are available to accomodate the behavior according to the asset structure
 
-    ##### Example:
+    ##### Example
 
     ```toml
     [resources.sources]
@@ -275,6 +275,8 @@ class SourcesResource(AppResource):
         [resources.sources.main]
         url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.tar.gz"
         sha256 = "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+
+        autoupdate.strategy = "latest_github_tag"
     ```
 
     Or more complex examples with several element, including one with asset that depends on the arch
@@ -286,10 +288,15 @@ class SourcesResource(AppResource):
         in_subdir = false
         amd64.url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.amd64.tar.gz"
         amd64.sha256 = "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
-        i386.url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.amd64.tar.gz"
+        i386.url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.386.tar.gz"
         i386.sha256 = "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3"
-        armhf.url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.armhf.tar.gz"
+        armhf.url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.arm.tar.gz"
         armhf.sha256 = "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+
+        autoupdate.strategy = "latest_github_release"
+        autoupdate.asset.amd64 = ".*\.amd64.tar.gz"
+        autoupdate.asset.i386 = ".*\.386.tar.gz"
+        autoupdate.asset.armhf = ".*\.arm.tar.gz"
 
         [resources.sources.zblerg]
         url = "https://zblerg.com/download/zblerg"
@@ -299,7 +306,7 @@ class SourcesResource(AppResource):
 
     ```
 
-    ##### Properties (for each source):
+    ##### Properties (for each source)
 
     - `prefetch` : `true` (default) or `false`, wether or not to pre-fetch this asset during the provisioning phase of the resource. If several arch-dependent url are provided, YunoHost will only prefetch the one for the current system architecture.
     - `url` : the asset's URL
@@ -316,11 +323,24 @@ class SourcesResource(AppResource):
     - `rename`: some string like `whatever_your_want`, to be used for convenience when `extract` is `false` and the default name of the file is not practical
     - `platform`: for example `linux/amd64` (defaults to `linux/$YNH_ARCH`) to be used in conjonction with `format = "docker"` to specify which architecture to extract for
 
+    ###### Regarding `autoupdate`
 
-    ##### Provision/Update:
+    Strictly speaking, this has nothing to do with the actual app install. `autoupdate` is expected to contain metadata for automatic maintenance / update of the app sources info in the manifest. It is meant to be a simpler replacement for "autoupdate" Github workflow mechanism.
+
+    The infos are used by this script : https://github.com/YunoHost/apps/blob/master/tools/autoupdate_app_sources/autoupdate_app_sources.py which is ran by the YunoHost infrastructure periodically and will create the corresponding pull request automatically.
+
+    The script will rely on the code repo specified in the upstream section of the manifest.
+
+    `autoupdate.strategy` is expected to be one of :
+    - `latest_github_tag` : look for the latest tag (by sorting tags and finding the "largest" version). Then using the corresponding tar.gz url. Tags containing `rc`, `beta`, `alpha`, `start` are ignored, and actually any tag which doesn't look like `x.y.z` or `vx.y.z`
+    - `latest_github_release` : similar to `latest_github_tags`, but starting from the list of releases. Pre- or draft releases are ignored. Releases may have assets attached to them, in which case you can define:
+        - `autoupdate.asset = "some regex"` (when there's only one asset to use). The regex is used to find the appropriate asset among the list of all assets
+        - or several `autoupdate.asset.$arch = "some_regex"` (when the asset is arch-specific). The regex is used to find the appropriate asset for the specific arch among the list of assets
+
+    ##### Provision/Update
     - For elements with `prefetch = true`, will download the asset (for the appropriate architecture) and store them in `/var/cache/yunohost/download/$app/$source_id`, to be later picked up by `ynh_setup_source`. (NB: this only happens during install and upgrade, not restore)
 
-    ##### Deprovision:
+    ##### Deprovision
     - Nothing (just cleanup the cache)
     """
 
@@ -439,7 +459,7 @@ class PermissionsResource(AppResource):
 
     The list of allowed user/groups may be initialized using the content of the `init_{perm}_permission` question from the manifest, hence `init_main_permission` replaces the `is_public` question and shall contain a group name (typically, `all_users` or `visitors`).
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.permissions]
     main.url = "/"
@@ -450,7 +470,7 @@ class PermissionsResource(AppResource):
     admin.allowed = "admins"   # Assuming the "admins" group exists (cf future developments ;))
     ```
 
-    ##### Properties (for each perm name):
+    ##### Properties (for each perm name)
     - `url`: The relative URI corresponding to this permission. Typically `/` or `/something`. This property may be omitted for non-web permissions.
     - `show_tile`: (default: `true` if `url` is defined) Wether or not a tile should be displayed for that permission in the user portal
     - `allowed`: (default: nobody) The group initially allowed to access this perm, if `init_{perm}_permission` is not defined in the manifest questions. Note that the admin may tweak who is allowed/unallowed on that permission later on, this is only meant to **initialize** the permission.
@@ -458,14 +478,14 @@ class PermissionsResource(AppResource):
     - `protected`: (default: `false`) Define if this permission is protected. If it is protected the administrator won't be able to add or remove the visitors group of this permission. Defaults to 'false'.
     - `additional_urls`: (default: none) List of additional URL for which access will be allowed/forbidden
 
-    ##### Provision/Update:
+    ##### Provision/Update
     - Delete any permissions that may exist and be related to this app yet is not declared anymore
     - Loop over the declared permissions and create them if needed or update them with the new values
 
-    ##### Deprovision:
+    ##### Deprovision
     - Delete all permission related to this app
 
-    ##### Legacy management:
+    ##### Legacy management
     - Legacy `is_public` setting will be deleted if it exists
     """
 
@@ -627,22 +647,22 @@ class SystemuserAppResource(AppResource):
     """
     Provision a system user to be used by the app. The username is exactly equal to the app id
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.system_user]
     # (empty - defaults are usually okay)
     ```
 
-    ##### Properties:
+    ##### Properties
     - `allow_ssh`: (default: False) Adds the user to the ssh.app group, allowing SSH connection via this user
     - `allow_sftp`: (default: False) Adds the user to the sftp.app group, allowing SFTP connection via this user
     - `home`: (default: `/var/www/__APP__`) Defines the home property for this user. NB: unfortunately you can't simply use `__INSTALL_DIR__` or `__DATA_DIR__` for now
 
-    ##### Provision/Update:
+    ##### Provision/Update
     - will create the system user if it doesn't exists yet
     - will add/remove the ssh/sftp.app groups
 
-    ##### Deprovision:
+    ##### Deprovision
     - deletes the user and group
     """
 
@@ -735,28 +755,28 @@ class InstalldirAppResource(AppResource):
     """
     Creates a directory to be used by the app as the installation directory, typically where the app sources and assets are located. The corresponding path is stored in the settings as `install_dir`
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.install_dir]
     # (empty - defaults are usually okay)
     ```
 
-    ##### Properties:
+    ##### Properties
     - `dir`: (default: `/var/www/__APP__`) The full path of the install dir
     - `owner`: (default: `__APP__:rwx`) The owner (and owner permissions) for the install dir
     - `group`: (default: `__APP__:rx`) The group (and group permissions) for the install dir
 
-    ##### Provision/Update:
+    ##### Provision/Update
     - during install, the folder will be deleted if it already exists (FIXME: is this what we want?)
     - if the dir path changed and a folder exists at the old location, the folder will be `mv`'ed to the new location
     - otherwise, creates the directory if it doesn't exists yet
     - (re-)apply permissions (only on the folder itself, not recursively)
     - save the value of `dir` as `install_dir` in the app's settings, which can be then used by the app scripts (`$install_dir`) and conf templates (`__INSTALL_DIR__`)
 
-    ##### Deprovision:
+    ##### Deprovision
     - recursively deletes the directory if it exists
 
-    ##### Legacy management:
+    ##### Legacy management
     - In the past, the setting was called `final_path`. The code will automatically rename it as `install_dir`.
     - As explained in the 'Provision/Update' section, the folder will also be moved if the location changed
 
@@ -850,28 +870,28 @@ class DatadirAppResource(AppResource):
     """
     Creates a directory to be used by the app as the data store directory, typically where the app multimedia or large assets added by users are located. The corresponding path is stored in the settings as `data_dir`. This resource behaves very similarly to install_dir.
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.data_dir]
     # (empty - defaults are usually okay)
     ```
 
-    ##### Properties:
+    ##### Properties
     - `dir`: (default: `/home/yunohost.app/__APP__`) The full path of the data dir
     - `owner`: (default: `__APP__:rwx`) The owner (and owner permissions) for the data dir
     - `group`: (default: `__APP__:rx`) The group (and group permissions) for the data dir
 
-    ##### Provision/Update:
+    ##### Provision/Update
     - if the dir path changed and a folder exists at the old location, the folder will be `mv`'ed to the new location
     - otherwise, creates the directory if it doesn't exists yet
     - (re-)apply permissions (only on the folder itself, not recursively)
     - save the value of `dir` as `data_dir` in the app's settings, which can be then used by the app scripts (`$data_dir`) and conf templates (`__DATA_DIR__`)
 
-    ##### Deprovision:
+    ##### Deprovision
     - (only if the purge option is chosen by the user) recursively deletes the directory if it exists
     - also delete the corresponding setting
 
-    ##### Legacy management:
+    ##### Legacy management
     - In the past, the setting may have been called `datadir`. The code will automatically rename it as `data_dir`.
     - As explained in the 'Provision/Update' section, the folder will also be moved if the location changed
 
@@ -952,7 +972,7 @@ class AptDependenciesAppResource(AppResource):
     """
     Create a virtual package in apt, depending on the list of specified packages that the app needs. The virtual packages is called `$app-ynh-deps` (with `_` being replaced by `-` in the app name, see `ynh_install_app_dependencies`)
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.apt]
     packages = "nyancat, lolcat, sl"
@@ -963,16 +983,16 @@ class AptDependenciesAppResource(AppResource):
     extras.yarn.packages = "yarn"
     ```
 
-    ##### Properties:
+    ##### Properties
     - `packages`: Comma-separated list of packages to be installed via `apt`
     - `packages_from_raw_bash`: A multi-line bash snippet (using triple quotes as open/close) which should echo additional packages to be installed. Meant to be used for packages to be conditionally installed depending on architecture, debian version, install questions, or other logic.
     - `extras`: A dict of (repo, key, packages) corresponding to "extra" repositories to fetch dependencies from
 
-    ##### Provision/Update:
+    ##### Provision/Update
     - The code literally calls the bash helpers `ynh_install_app_dependencies` and `ynh_install_extra_app_dependencies`, similar to what happens in v1.
     - Note that when `packages` contains some phpX.Y-foobar dependencies, this will automagically define a `phpversion` setting equal to `X.Y` which can therefore be used in app scripts ($phpversion) or templates (`__PHPVERSION__`)
 
-    ##### Deprovision:
+    ##### Deprovision
     - The code literally calls the bash helper `ynh_remove_app_dependencies`
     """
 
@@ -1031,7 +1051,7 @@ class PortsResource(AppResource):
 
     Note that because multiple ports can be booked, each properties is prefixed by the name of the port. `main` is a special name and will correspond to the setting `$port`, whereas for example `xmpp_client` will correspond to the setting `$port_xmpp_client`.
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.ports]
     # (empty should be fine for most apps... though you can customize stuff if absolutely needed)
@@ -1043,21 +1063,21 @@ class PortsResource(AppResource):
     xmpp_client.exposed = "TCP" # here, we're telling that the port needs to be publicly exposed on TCP on the firewall
     ```
 
-    ##### Properties (for every port name):
+    ##### Properties (for every port name)
     - `default`: The prefered value for the port. If this port is already being used by another process right now, or is booked in another app's setting, the code will increment the value until it finds a free port and store that value as the setting. If no value is specified, a random value between 10000 and 60000 is used.
     - `exposed`: (default: `false`) Wether this port should be opened on the firewall and be publicly reachable. This should be kept to `false` for the majority of apps than only need a port for internal reverse-proxying! Possible values: `false`, `true`(=`Both`), `Both`, `TCP`, `UDP`. This will result in the port being opened on the firewall, and the diagnosis checking that a program answers on that port.
     - `fixed`: (default: `false`) Tells that the app absolutely needs the specific value provided in `default`, typically because it's needed for a specific protocol
 
-    ##### Provision/Update (for every port name):
+    ##### Provision/Update (for every port name)
     - If not already booked, look for a free port, starting with the `default` value (or a random value between 10000 and 60000 if no `default` set)
     - If `exposed` is not `false`, open the port in the firewall accordingly - otherwise make sure it's closed.
     - The value of the port is stored in the `$port` setting for the `main` port, or `$port_NAME` for other `NAME`s
 
-    ##### Deprovision:
+    ##### Deprovision
     - Close the ports on the firewall if relevant
     - Deletes all the port settings
 
-    ##### Legacy management:
+    ##### Legacy management
     - In the past, some settings may have been named `NAME_port` instead of `port_NAME`, in which case the code will automatically rename the old setting.
     """
 
@@ -1160,25 +1180,25 @@ class DatabaseAppResource(AppResource):
 
     NB2: no automagic migration will happen in an suddenly change `type` from `mysql` to `postgresql` or viceversa in its life
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.database]
     type = "mysql"   # or : "postgresql". Only these two values are supported
     ```
 
-    ##### Properties:
+    ##### Properties
     - `type`: The database type, either `mysql` or `postgresql`
 
-    ##### Provision/Update:
+    ##### Provision/Update
     - (Re)set the `$db_name` and `$db_user` settings with the sanitized app name (replacing `-` and `.` with `_`)
     - If `$db_pwd` doesn't already exists, pick a random database password and store it in that setting
     - If the database doesn't exists yet, create the SQL user and DB using `ynh_mysql_create_db` or `ynh_psql_create_db`.
 
-    ##### Deprovision:
+    ##### Deprovision
     - Drop the DB using `ynh_mysql_remove_db` or `ynh_psql_remove_db`
     - Deletes the `db_name`, `db_user` and `db_pwd` settings
 
-    ##### Legacy management:
+    ##### Legacy management
     - In the past, the sql passwords may have been named `mysqlpwd` or `psqlpwd`, in which case it will automatically be renamed as `db_pwd`
     """
 
