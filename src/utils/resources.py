@@ -336,6 +336,9 @@ class SourcesResource(AppResource):
     - `latest_github_release` : similar to `latest_github_tags`, but starting from the list of releases. Pre- or draft releases are ignored. Releases may have assets attached to them, in which case you can define:
         - `autoupdate.asset = "some regex"` (when there's only one asset to use). The regex is used to find the appropriate asset among the list of all assets
         - or several `autoupdate.asset.$arch = "some_regex"` (when the asset is arch-specific). The regex is used to find the appropriate asset for the specific arch among the list of assets
+    - `latest_github_commit` : will use the latest commit on github, and the corresponding tarball. If this is used for the 'main' source, it will also assume that the version is YYYY.MM.DD corresponding to the date of the commit.
+
+    It is also possible to define `autoupdate.upstream` to use a different Git(hub) repository instead of the code repository from the upstream section of the manifest. This can be useful when, for example, the app uses other assets such as plugin from a different repository.
 
     ##### Provision/Update
     - For elements with `prefetch = true`, will download the asset (for the appropriate architecture) and store them in `/var/cache/yunohost/download/$app/$source_id`, to be later picked up by `ynh_setup_source`. (NB: this only happens during install and upgrade, not restore)
