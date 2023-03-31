@@ -881,13 +881,15 @@ class DatadirAppResource(AppResource):
 
     ##### Properties
     - `dir`: (default: `/home/yunohost.app/__APP__`) The full path of the data dir
+    - `subdirs`: (default: empty list) A list of subdirs to initialize inside the data dir. For example, `['foo', 'bar']`
     - `owner`: (default: `__APP__:rwx`) The owner (and owner permissions) for the data dir
     - `group`: (default: `__APP__:rx`) The group (and group permissions) for the data dir
 
     ##### Provision/Update
     - if the dir path changed and a folder exists at the old location, the folder will be `mv`'ed to the new location
     - otherwise, creates the directory if it doesn't exists yet
-    - (re-)apply permissions (only on the folder itself, not recursively)
+    - create each subdir declared and which do not exist already
+    - (re-)apply permissions (only on the folder itself and declared subdirs, not recursively)
     - save the value of `dir` as `data_dir` in the app's settings, which can be then used by the app scripts (`$data_dir`) and conf templates (`__DATA_DIR__`)
 
     ##### Deprovision
@@ -910,11 +912,13 @@ class DatadirAppResource(AppResource):
 
     default_properties: Dict[str, Any] = {
         "dir": "/home/yunohost.app/__APP__",
+        "subdirs": [],
         "owner": "__APP__:rwx",
         "group": "__APP__:rx",
     }
 
     dir: str = ""
+    subdirs: list = []
     owner: str = ""
     group: str = ""
 
@@ -938,6 +942,11 @@ class DatadirAppResource(AppResource):
             else:
                 mkdir(self.dir)
 
+        for subdir in self.subdirs:
+            full_path = os.path.join(self.dir, subdir)
+            if not os.path.isdir(full_path):
+                mkdir(full_path)
+
         owner, owner_perm = self.owner.split(":")
         group, group_perm = self.group.split(":")
         owner_perm_octal = (
@@ -956,6 +965,10 @@ class DatadirAppResource(AppResource):
         # in which case we want to apply the perm to the pointed dir, not to the symlink
         chmod(os.path.realpath(self.dir), perm_octal)
         chown(os.path.realpath(self.dir), owner, group)
+        for subdir in self.subdirs:
+            full_path = os.path.join(self.dir, subdir)
+            chmod(os.path.realpath(full_path), perm_octal)
+            chown(os.path.realpath(full_path), owner, group)
 
         self.set_setting("data_dir", self.dir)
         self.delete_setting("datadir")  # Legacy
