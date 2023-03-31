@@ -631,7 +631,7 @@ def user_info(username):
             has_value = re.search(r"Value=(\d+)", cmd_result)
 
             if has_value:
-                storage_use = int(has_value.group(1))
+                storage_use = int(has_value.group(1)) * 1000
                 storage_use = binary_to_human(storage_use)
 
                 if is_limited:
