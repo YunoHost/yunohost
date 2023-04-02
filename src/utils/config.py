@@ -581,7 +581,9 @@ class ConfigPanel:
                         logger.warning(f"Unknown key '{key}' found in config panel")
                     # Todo search all i18n keys
                     out[key] = (
-                        value if key not in ["ask", "help", "name"] or isinstance(value, dict) else {"en": value}
+                        value
+                        if key not in ["ask", "help", "name"] or isinstance(value, dict)
+                        else {"en": value}
                     )
             return out
 
