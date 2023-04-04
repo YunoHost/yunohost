@@ -1506,7 +1506,7 @@ class FileQuestion(Question):
         super()._prevalidate()
 
         # Validation should have already failed if required
-        if self.value in (None, ""):
+        if self.value in [None, ""]:
             return self.value
 
         if Moulinette.interface.type != "api":
