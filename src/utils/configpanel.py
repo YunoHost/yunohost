@@ -35,6 +35,13 @@ from moulinette.utils.filesystem import (
 
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.form import (
+    ARGUMENTS_TYPE_PARSERS,
+    FileQuestion,
+    Question,
+    ask_questions_and_parse_answers,
+    evaluate_simple_js_expression,
+)
 
 logger = getActionLogger("yunohost.configpanel")
 CONFIG_PANEL_VERSION_SUPPORTED = 1.0

@@ -21,7 +21,8 @@ import subprocess
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.config import ConfigPanel, Question
+from yunohost.utils.configpanel import ConfigPanel
+from yunohost.utils.form import Question
 from moulinette.utils.log import getActionLogger
 from yunohost.regenconf import regen_conf
 from yunohost.firewall import firewall_reload
