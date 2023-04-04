@@ -48,9 +48,8 @@ from moulinette.utils.filesystem import (
     chmod,
 )
 
-from yunohost.utils.config import (
-    ConfigPanel,
-    ask_questions_and_parse_answers,
+from yunohost.utils.configpanel import ConfigPanel, ask_questions_and_parse_answers
+from yunohost.utils.form import (
     DomainQuestion,
     PathQuestion,
     hydrate_questions_with_choices,

@@ -14,7 +14,7 @@ from _pytest.mark.structures import ParameterSet
 
 from moulinette import Moulinette
 from yunohost import app, domain, user
-from yunohost.utils.config import (
+from yunohost.utils.form import (
     ARGUMENTS_TYPE_PARSERS,
     ask_questions_and_parse_answers,
     DisplayTextQuestion,
