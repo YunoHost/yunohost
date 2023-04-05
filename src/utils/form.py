@@ -858,7 +858,9 @@ class FileQuestion(Question):
             return self.value
 
         if Moulinette.interface.type != "api":
-            if not os.path.exists(str(self.value)) or not os.path.isfile(str(self.value)):
+            if not os.path.exists(str(self.value)) or not os.path.isfile(
+                str(self.value)
+            ):
                 raise YunohostValidationError(
                     "app_argument_invalid",
                     name=self.name,
