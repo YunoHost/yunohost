@@ -955,12 +955,12 @@ class DatadirAppResource(AppResource):
                 )
                 shutil.move(current_data_dir, self.dir)
             else:
-                mkdir(self.dir)
+                mkdir(self.dir, parents=True)
 
         for subdir in self.subdirs:
             full_path = os.path.join(self.dir, subdir)
             if not os.path.isdir(full_path):
-                mkdir(full_path)
+                mkdir(full_path, parents=True)
 
         owner, owner_perm = self.owner.split(":")
         group, group_perm = self.group.split(":")
