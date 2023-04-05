@@ -1,3 +1,15 @@
+yunohost (11.1.17) stable; urgency=low
+
+  - domains: fix autodns for gandi root domain ([#1634](https://github.com/yunohost/yunohost/pull/1634))
+  - helpers: fix previous change about using YNH_APP_ACTION ... which is not defined in config panel context (8c25aa9b)
+  - appsv2: for the dir/subdirs of data_dir, create parent folders if they don't exist (9a4267ff)
+  - quality: Split utils/config.py ([#1635](https://github.com/yunohost/yunohost/pull/1635))
+  - quality: Rework questions/options tests ([#1629](https://github.com/yunohost/yunohost/pull/1629))
+
+  Thanks to all contributors <3 ! (axolotle, Kayou)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 05 Apr 2023 16:00:09 +0200
+
 yunohost (11.1.16) stable; urgency=low
 
   - apps: fix i18n panel+section names ([#1630](https://github.com/yunohost/yunohost/pull/1630))
