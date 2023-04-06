@@ -569,7 +569,7 @@ class PermissionsResource(AppResource):
                        variable, self.get_setting(variable.lower().replace("__",""))
                     )
             for i in range(0, len(infos.get("additional_urls", []))):
-                for variable in re.findall(r"(__[A-Z0-9_]+__)", infos.get("additional_urls", [])[i])):
+                for variable in re.findall(r"(__[A-Z0-9_]+__)", infos.get("additional_urls", [])[i]):
                     infos["additional_urls"][i] = infos["additional_urls"][i].replace(
                        variable, self.get_setting(variable.lower().replace("__",""))
                     )
