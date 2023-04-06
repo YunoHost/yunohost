@@ -17,6 +17,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 import os
+import re
 import copy
 import shutil
 import random
@@ -562,14 +563,16 @@ class PermissionsResource(AppResource):
         super().__init__({"permissions": properties}, *args, **kwargs)
 
         for perm, infos in self.permissions.items():
-            if infos.get("url") and "__DOMAIN__" in infos.get("url", ""):
-                infos["url"] = infos["url"].replace(
-                    "__DOMAIN__", self.get_setting("domain")
-                )
-            infos["additional_urls"] = [
-                u.replace("__DOMAIN__", self.get_setting("domain"))
-                for u in infos.get("additional_urls", [])
-            ]
+            if infos.get("url"):
+                for variable in re.findall(r"(__[A-Z0-9_]+__)", infos.get("url", "")):
+                    infos["url"] = infos["url"].replace(
+                       variable, self.get_setting(variable.lower().replace("__",""))
+                    )
+            for i in range(0, len(infos.get("additional_urls", []))):
+                for variable in re.findall(r"(__[A-Z0-9_]+__)", infos.get("additional_urls", [])[i])):
+                    infos["additional_urls"][i] = infos["additional_urls"][i].replace(
+                       variable, self.get_setting(variable.lower().replace("__",""))
+                    )
 
     def provision_or_update(self, context: Dict = {}):
         from yunohost.permission import (
