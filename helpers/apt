@@ -370,7 +370,13 @@ ynh_remove_app_dependencies() {
         apt-mark unhold ${dep_app}-ynh-deps
     fi
 
-    ynh_package_autopurge ${dep_app}-ynh-deps	# Remove the fake package and its dependencies if they not still used.
+    # Remove the fake package and its dependencies if they not still used.
+    # (except if dpkg doesn't know anything about the package,
+    # which should be symptomatic of a failed install, and we don't want bash to report an error)
+    if dpkg-query --show ${dep_app}-ynh-deps &>/dev/null
+    then
+        ynh_package_autopurge ${dep_app}-ynh-deps
+    fi
 }
 
 # Install packages from an extra repository properly.

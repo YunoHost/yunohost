@@ -1,15 +1,23 @@
+import inspect
 import sys
 import pytest
 import os
+import tempfile
 
+from contextlib import contextmanager
 from mock import patch
 from io import StringIO
+from typing import Any, Literal, Sequence, TypedDict, Union
+
+from _pytest.mark.structures import ParameterSet
+
 
 from moulinette import Moulinette
-
-from yunohost import domain, user
-from yunohost.utils.config import (
+from yunohost import app, domain, user
+from yunohost.utils.form import (
+    ARGUMENTS_TYPE_PARSERS,
     ask_questions_and_parse_answers,
+    DisplayTextQuestion,
     PasswordQuestion,
     DomainQuestion,
     PathQuestion,
@@ -44,38 +52,1926 @@ User answers:
 """
 
 
-def test_question_empty():
+# ╭───────────────────────────────────────────────────────╮
+# │  ┌─╮╭─┐╶┬╴╭─╴╷ ╷╶┬╴╭╮╷╭─╮                             │
+# │  ├─╯├─┤ │ │  ├─┤ │ ││││╶╮                             │
+# │  ╵  ╵ ╵ ╵ ╰─╴╵ ╵╶┴╴╵╰╯╰─╯                             │
+# ╰───────────────────────────────────────────────────────╯
+
+
+@contextmanager
+def patch_isatty(isatty):
+    with patch.object(os, "isatty", return_value=isatty):
+        yield
+
+
+@contextmanager
+def patch_interface(interface: Literal["api", "cli"] = "api"):
+    with patch.object(Moulinette.interface, "type", interface), patch_isatty(
+        interface == "cli"
+    ):
+        yield
+
+
+@contextmanager
+def patch_prompt(return_value):
+    with patch_interface("cli"), patch.object(
+        Moulinette, "prompt", return_value=return_value
+    ) as prompt:
+        yield prompt
+
+
+@pytest.fixture
+def patch_no_tty():
+    with patch_isatty(False):
+        yield
+
+
+@pytest.fixture
+def patch_with_tty():
+    with patch_isatty(True):
+        yield
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │  ╭─╴╭─╴┌─╴╭╮╷╭─┐┌─╮╶┬╴╭─╮╭─╴                          │
+# │  ╰─╮│  ├─╴│││├─┤├┬╯ │ │ │╰─╮                          │
+# │  ╶─╯╰─╴╰─╴╵╰╯╵ ╵╵ ╰╶┴╴╰─╯╶─╯                          │
+# ╰───────────────────────────────────────────────────────╯
+
+
+MinScenario = tuple[Any, Union[Literal["FAIL"], Any]]
+PartialScenario = tuple[Any, Union[Literal["FAIL"], Any], dict[str, Any]]
+FullScenario = tuple[Any, Union[Literal["FAIL"], Any], dict[str, Any], dict[str, Any]]
+
+Scenario = Union[
+    MinScenario,
+    PartialScenario,
+    FullScenario,
+    "InnerScenario",
+]
+
+
+class InnerScenario(TypedDict, total=False):
+    scenarios: Sequence[Scenario]
+    raw_options: Sequence[dict[str, Any]]
+    data: Sequence[dict[str, Any]]
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ Scenario generators/helpers                           │
+# ╰───────────────────────────────────────────────────────╯
+
+
+def get_hydrated_scenarios(raw_options, scenarios, data=[{}]):
+    """
+    Normalize and hydrate a mixed list of scenarios to proper tuple/pytest.param flattened list values.
+
+    Example::
+        scenarios = [
+            {
+                "raw_options": [{}, {"optional": True}],
+                "scenarios": [
+                    ("", "value", {"default": "value"}),
+                    *unchanged("value", "other"),
+                ]
+            },
+            *all_fails(-1, 0, 1, raw_options={"optional": True}),
+            *xfail(scenarios=[(True, "True"), (False, "False)], reason="..."),
+        ]
+        # Is exactly the same as
+        scenarios = [
+            ("", "value", {"default": "value"}),
+            ("", "value", {"optional": True, "default": "value"}),
+            ("value", "value", {}),
+            ("value", "value", {"optional": True}),
+            ("other", "other", {}),
+            ("other", "other", {"optional": True}),
+            (-1, FAIL, {"optional": True}),
+            (0, FAIL, {"optional": True}),
+            (1, FAIL, {"optional": True}),
+            pytest.param(True, "True", {}, marks=pytest.mark.xfail(reason="...")),
+            pytest.param(False, "False", {}, marks=pytest.mark.xfail(reason="...")),
+        ]
+    """
+    hydrated_scenarios = []
+    for raw_option in raw_options:
+        for mocked_data in data:
+            for scenario in scenarios:
+                if isinstance(scenario, dict):
+                    merged_raw_options = [
+                        {**raw_option, **raw_opt}
+                        for raw_opt in scenario.get("raw_options", [{}])
+                    ]
+                    hydrated_scenarios += get_hydrated_scenarios(
+                        merged_raw_options,
+                        scenario["scenarios"],
+                        scenario.get("data", [mocked_data]),
+                    )
+                elif isinstance(scenario, ParameterSet):
+                    intake, output, custom_raw_option = (
+                        scenario.values
+                        if len(scenario.values) == 3
+                        else (*scenario.values, {})
+                    )
+                    merged_raw_option = {**raw_option, **custom_raw_option}
+                    hydrated_scenarios.append(
+                        pytest.param(
+                            intake,
+                            output,
+                            merged_raw_option,
+                            mocked_data,
+                            marks=scenario.marks,
+                        )
+                    )
+                elif isinstance(scenario, tuple):
+                    intake, output, custom_raw_option = (
+                        scenario if len(scenario) == 3 else (*scenario, {})
+                    )
+                    merged_raw_option = {**raw_option, **custom_raw_option}
+                    hydrated_scenarios.append(
+                        (intake, output, merged_raw_option, mocked_data)
+                    )
+                else:
+                    raise Exception(
+                        "Test scenario should be tuple(intake, output, raw_option), pytest.param(intake, output, raw_option) or dict(raw_options, scenarios, data)"
+                    )
+
+    return hydrated_scenarios
+
+
+def generate_test_name(intake, output, raw_option, data):
+    values_as_str = []
+    for value in (intake, output):
+        if isinstance(value, str) and value != FAIL:
+            values_as_str.append(f"'{value}'")
+        elif inspect.isclass(value) and issubclass(value, Exception):
+            values_as_str.append(value.__name__)
+        else:
+            values_as_str.append(value)
+    name = f"{values_as_str[0]} -> {values_as_str[1]}"
+
+    keys = [
+        "=".join(
+            [
+                key,
+                str(raw_option[key])
+                if not isinstance(raw_option[key], str)
+                else f"'{raw_option[key]}'",
+            ]
+        )
+        for key in raw_option.keys()
+        if key not in ("id", "type")
+    ]
+    if keys:
+        name += " (" + ",".join(keys) + ")"
+    return name
+
+
+def pytest_generate_tests(metafunc):
+    """
+    Pytest test factory that, for each `BaseTest` subclasses, parametrize its
+    methods if it requires it by checking the method's parameters.
+    For those and based on their `cls.scenarios`, a series of `pytest.param` are
+    automaticly injected as test values.
+    """
+    if metafunc.cls and issubclass(metafunc.cls, BaseTest):
+        argnames = []
+        argvalues = []
+        ids = []
+        fn_params = inspect.signature(metafunc.function).parameters
+
+        for params in [
+            ["intake", "expected_output", "raw_option", "data"],
+            ["intake", "expected_normalized", "raw_option", "data"],
+            ["intake", "expected_humanized", "raw_option", "data"],
+        ]:
+            if all(param in fn_params for param in params):
+                argnames += params
+                if params[1] == "expected_output":
+                    # Hydrate scenarios with generic raw_option data
+                    argvalues += get_hydrated_scenarios(
+                        [metafunc.cls.raw_option], metafunc.cls.scenarios
+                    )
+                    ids += [
+                        generate_test_name(*args.values)
+                        if isinstance(args, ParameterSet)
+                        else generate_test_name(*args)
+                        for args in argvalues
+                    ]
+                elif params[1] == "expected_normalized":
+                    argvalues += metafunc.cls.normalized
+                    ids += [
+                        f"{metafunc.cls.raw_option['type']}-normalize-{scenario[0]}"
+                        for scenario in metafunc.cls.normalized
+                    ]
+                elif params[1] == "expected_humanized":
+                    argvalues += metafunc.cls.humanized
+                    ids += [
+                        f"{metafunc.cls.raw_option['type']}-normalize-{scenario[0]}"
+                        for scenario in metafunc.cls.humanized
+                    ]
+
+                metafunc.parametrize(argnames, argvalues, ids=ids)
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ Scenario helpers                                      │
+# ╰───────────────────────────────────────────────────────╯
+
+FAIL = YunohostValidationError
+
+
+def nones(
+    *nones, output, raw_option: dict[str, Any] = {}, fail_if_required: bool = True
+) -> list[PartialScenario]:
+    """
+    Returns common scenarios for ~None values.
+    - required and required + as default -> `FAIL`
+    - optional and optional + as default -> `expected_output=None`
+    """
+    return [
+        (none, FAIL if fail_if_required else output, base_raw_option | raw_option)  # type: ignore
+        for none in nones
+        for base_raw_option in ({}, {"default": none})
+    ] + [
+        (none, output, base_raw_option | raw_option)
+        for none in nones
+        for base_raw_option in ({"optional": True}, {"optional": True, "default": none})
+    ]
+
+
+def unchanged(*args, raw_option: dict[str, Any] = {}) -> list[PartialScenario]:
+    """
+    Returns a series of params for which output is expected to be the same as its intake
+
+    Example::
+        # expect `"value"` to output as `"value"`, etc.
+        unchanged("value", "yes", "none")
+
+    """
+    return [(arg, arg, raw_option.copy()) for arg in args]
+
+
+def all_as(*args, output, raw_option: dict[str, Any] = {}) -> list[PartialScenario]:
+    """
+    Returns a series of params for which output is expected to be the same single value
+
+    Example::
+        # expect all values to output as `True`
+        all_as("y", "yes", 1, True, output=True)
+    """
+    return [(arg, output, raw_option.copy()) for arg in args]
+
+
+def all_fails(
+    *args, raw_option: dict[str, Any] = {}, error=FAIL
+) -> list[PartialScenario]:
+    """
+    Returns a series of params for which output is expected to be failing with validation error
+    """
+    return [(arg, error, raw_option.copy()) for arg in args]
+
+
+def xpass(*, scenarios: list[Scenario], reason="unknown") -> list[Scenario]:
+    """
+    Return a pytest param for which test should have fail but currently passes.
+    """
+    return [
+        pytest.param(
+            *scenario,
+            marks=pytest.mark.xfail(
+                reason=f"Currently valid but probably shouldn't. details: {reason}."
+            ),
+        )
+        for scenario in scenarios
+    ]
+
+
+def xfail(*, scenarios: list[Scenario], reason="unknown") -> list[Scenario]:
+    """
+    Return a pytest param for which test should have passed but currently fails.
+    """
+    return [
+        pytest.param(
+            *scenario,
+            marks=pytest.mark.xfail(
+                reason=f"Currently invalid but should probably pass. details: {reason}."
+            ),
+        )
+        for scenario in scenarios
+    ]
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │  ╶┬╴┌─╴╭─╴╶┬╴╭─╴                                      │
+# │   │ ├─╴╰─╮ │ ╰─╮                                      │
+# │   ╵ ╰─╴╶─╯ ╵ ╶─╯                                      │
+# ╰───────────────────────────────────────────────────────╯
+
+
+def _fill_or_prompt_one_option(raw_option, intake):
+    raw_option = raw_option.copy()
+    id_ = raw_option.pop("id")
+    options = {id_: raw_option}
+    answers = {id_: intake} if intake is not None else {}
+
+    option = ask_questions_and_parse_answers(options, answers)[0]
+
+    return (option, option.value)
+
+
+def _test_value_is_expected_output(value, expected_output):
+    """
+    Properly compares bools and None
+    """
+    if isinstance(expected_output, bool) or expected_output is None:
+        assert value is expected_output
+    else:
+        assert value == expected_output
+
+
+def _test_intake(raw_option, intake, expected_output):
+    option, value = _fill_or_prompt_one_option(raw_option, intake)
+
+    _test_value_is_expected_output(value, expected_output)
+
+
+def _test_intake_may_fail(raw_option, intake, expected_output):
+    if inspect.isclass(expected_output) and issubclass(expected_output, Exception):
+        with pytest.raises(expected_output):
+            _fill_or_prompt_one_option(raw_option, intake)
+    else:
+        _test_intake(raw_option, intake, expected_output)
+
+
+class BaseTest:
+    raw_option: dict[str, Any] = {}
+    prefill: dict[Literal["raw_option", "prefill", "intake"], Any]
+    scenarios: list[Scenario]
+
+    # fmt: off
+    # scenarios = [
+    #     *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+    #     *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+    #     *nones(None, "", output=""),
+    # ]
+    # fmt: on
+    # TODO
+    # - pattern (also on Date for example to see if it override the default pattern)
+    # - example
+    # - visible
+    # - redact
+    # - regex
+    # - hooks
+
+    @classmethod
+    def get_raw_option(cls, raw_option={}, **kwargs):
+        base_raw_option = cls.raw_option.copy()
+        base_raw_option.update(**raw_option)
+        base_raw_option.update(**kwargs)
+        return base_raw_option
+
+    @classmethod
+    def _test_basic_attrs(self):
+        raw_option = self.get_raw_option(optional=True)
+        id_ = raw_option["id"]
+        option, value = _fill_or_prompt_one_option(raw_option, None)
+
+        is_special_readonly_option = isinstance(option, DisplayTextQuestion)
+
+        assert isinstance(option, ARGUMENTS_TYPE_PARSERS[raw_option["type"]])
+        assert option.type == raw_option["type"]
+        assert option.name == id_
+        assert option.ask == {"en": id_}
+        assert option.readonly is (True if is_special_readonly_option else False)
+        assert option.visible is None
+        # assert option.bind is None
+
+        if is_special_readonly_option:
+            assert value is None
+
+        return (raw_option, option, value)
+
+    @pytest.mark.usefixtures("patch_no_tty")
+    def test_basic_attrs(self):
+        """
+        Test basic options factories and BaseOption default attributes values.
+        """
+        # Intermediate method since pytest doesn't like tests that returns something.
+        # This allow a test class to call `_test_basic_attrs` then do additional checks
+        self._test_basic_attrs()
+
+    def test_options_prompted_with_ask_help(self, prefill_data=None):
+        """
+        Test that assert that moulinette prompt is called with:
+        - `message` with translated string and possible choices list
+        -  help` with translated string
+        - `prefill` is the expected string value from a custom default
+        - `is_password` is true for `password`s only
+        - `is_multiline` is true for `text`s only
+        - `autocomplete` is option choices
+
+        Ran only once with `cls.prefill` data
+        """
+        if prefill_data is None:
+            prefill_data = self.prefill
+
+        base_raw_option = prefill_data["raw_option"]
+        prefill = prefill_data["prefill"]
+
+        with patch_prompt("") as prompt:
+            raw_option = self.get_raw_option(
+                raw_option=base_raw_option,
+                ask={"en": "Can i haz question?"},
+                help={"en": "Here's help!"},
+            )
+            option, value = _fill_or_prompt_one_option(raw_option, None)
+
+            expected_message = option.ask["en"]
+
+            if option.choices:
+                choices = (
+                    option.choices
+                    if isinstance(option.choices, list)
+                    else option.choices.keys()
+                )
+                expected_message += f" [{' | '.join(choices)}]"
+            if option.type == "boolean":
+                expected_message += " [yes | no]"
+
+            prompt.assert_called_with(
+                message=expected_message,
+                is_password=option.type == "password",
+                confirm=False,  # FIXME no confirm?
+                prefill=prefill,
+                is_multiline=option.type == "text",
+                autocomplete=option.choices or [],
+                help=option.help["en"],
+            )
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        with patch_interface("api"):
+            _test_intake_may_fail(
+                raw_option,
+                intake,
+                expected_output,
+            )
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ DISPLAY_TEXT                                          │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestDisplayText(BaseTest):
+    raw_option = {"type": "display_text", "id": "display_text_id"}
+    prefill = {
+        "raw_option": {},
+        "prefill": " custom default",
+    }
+    # fmt: off
+    scenarios = [
+        (None, None, {"ask": "Some text\na new line"}),
+        (None, None, {"ask": {"en": "Some text\na new line", "fr": "Un peu de texte\nune nouvelle ligne"}}),
+    ]
+    # fmt: on
+
+    def test_options_prompted_with_ask_help(self, prefill_data=None):
+        pytest.skip(reason="no prompt for display types")
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        _id = raw_option.pop("id")
+        answers = {_id: intake} if intake is not None else {}
+        options = None
+        with patch_interface("cli"):
+            if inspect.isclass(expected_output) and issubclass(
+                expected_output, Exception
+            ):
+                with pytest.raises(expected_output):
+                    ask_questions_and_parse_answers({_id: raw_option}, answers)
+            else:
+                with patch.object(sys, "stdout", new_callable=StringIO) as stdout:
+                    options = ask_questions_and_parse_answers(
+                        {_id: raw_option}, answers
+                    )
+                    assert stdout.getvalue() == f"{options[0].ask['en']}\n"
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ MARKDOWN                                              │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestMarkdown(TestDisplayText):
+    raw_option = {"type": "markdown", "id": "markdown_id"}
+    # in cli this option is exactly the same as "display_text", no markdown support for now
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ ALERT                                                 │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestAlert(TestDisplayText):
+    raw_option = {"type": "alert", "id": "alert_id"}
+    prefill = {
+        "raw_option": {"ask": " Custom info message"},
+        "prefill": " custom default",
+    }
+    # fmt: off
+    scenarios = [
+        (None, None, {"ask": "Some text\na new line"}),
+        (None, None, {"ask": {"en": "Some text\na new line", "fr": "Un peu de texte\nune nouvelle ligne"}}),
+        *[(None, None, {"ask": "question", "style": style}) for style in ("success", "info", "warning", "danger")],
+        *xpass(scenarios=[
+            (None, None, {"ask": "question", "style": "nimp"}),
+        ], reason="Should fail, wrong style"),
+    ]
+    # fmt: on
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        style = raw_option.get("style", "info")
+        colors = {"danger": "31", "warning": "33", "info": "36", "success": "32"}
+        answers = {"alert_id": intake} if intake is not None else {}
+
+        with patch_interface("cli"):
+            if inspect.isclass(expected_output) and issubclass(
+                expected_output, Exception
+            ):
+                with pytest.raises(expected_output):
+                    ask_questions_and_parse_answers(
+                        {"display_text_id": raw_option}, answers
+                    )
+            else:
+                with patch.object(sys, "stdout", new_callable=StringIO) as stdout:
+                    options = ask_questions_and_parse_answers(
+                        {"display_text_id": raw_option}, answers
+                    )
+                    ask = options[0].ask["en"]
+                    if style in colors:
+                        color = colors[style]
+                        title = style.title() + (":" if style != "success" else "!")
+                        assert (
+                            stdout.getvalue()
+                            == f"\x1b[{color}m\x1b[1m{title}\x1b[m {ask}\n"
+                        )
+                    else:
+                        # FIXME should fail
+                        stdout.getvalue() == f"{ask}\n"
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ BUTTON                                                │
+# ╰───────────────────────────────────────────────────────╯
+
+
+# TODO
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ STRING                                                │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestString(BaseTest):
+    raw_option = {"type": "string", "id": "string_id"}
+    prefill = {
+        "raw_option": {"default": " custom default"},
+        "prefill": " custom default",
+    }
+    # fmt: off
+    scenarios = [
+        *nones(None, "", output=""),
+        # basic typed values
+        *unchanged(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),  # FIXME should output as str?
+        *unchanged("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", raw_option={"optional": True}),
+        *xpass(scenarios=[
+            ([], []),
+        ], reason="Should fail"),
+        # test strip
+        ("value", "value"),
+        ("value\n", "value"),
+        ("  \n value\n", "value"),
+        ("  \\n value\\n", "\\n value\\n"),
+        ("  \tvalue\t", "value"),
+        (r" ##value \n \tvalue\n  ", r"##value \n \tvalue\n"),
+        *xpass(scenarios=[
+            ("value\nvalue", "value\nvalue"),
+            (" ##value \n \tvalue\n  ", "##value \n \tvalue"),
+        ], reason=r"should fail or without `\n`?"),
+        # readonly
+        *xfail(scenarios=[
+            ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ TEXT                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestText(BaseTest):
+    raw_option = {"type": "text", "id": "text_id"}
+    prefill = {
+        "raw_option": {"default": "some value\nanother line "},
+        "prefill": "some value\nanother line ",
+    }
+    # fmt: off
+    scenarios = [
+        *nones(None, "", output=""),
+        # basic typed values
+        *unchanged(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),  # FIXME should fail or output as str?
+        *unchanged("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", raw_option={"optional": True}),
+        *xpass(scenarios=[
+            ([], [])
+        ], reason="Should fail"),
+        ("value", "value"),
+        ("value\n value", "value\n value"),
+        # test no strip
+        *xpass(scenarios=[
+            ("value\n", "value"),
+            ("  \n value\n", "value"),
+            ("  \\n value\\n", "\\n value\\n"),
+            ("  \tvalue\t", "value"),
+            (" ##value \n \tvalue\n  ", "##value \n \tvalue"),
+            (r" ##value \n \tvalue\n  ", r"##value \n \tvalue\n"),
+        ], reason="Should not be stripped"),
+        # readonly
+        *xfail(scenarios=[
+            ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ PASSWORD                                              │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestPassword(BaseTest):
+    raw_option = {"type": "password", "id": "password_id"}
+    prefill = {
+        "raw_option": {"default": None, "optional": True},
+        "prefill": "",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, raw_option={"optional": True}, error=TypeError),  # FIXME those fails with TypeError
+        *all_fails([], ["one"], {}, raw_option={"optional": True}, error=AttributeError),  # FIXME those fails with AttributeError
+        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(None, "", output=""),
+        ("s3cr3t!!", FAIL, {"default": "SUPAs3cr3t!!"}),  # default is forbidden
+        *xpass(scenarios=[
+            ("s3cr3t!!", "s3cr3t!!", {"example": "SUPAs3cr3t!!"}),  # example is forbidden
+        ], reason="Should fail; example is forbidden"),
+        *xpass(scenarios=[
+            (" value \n moarc0mpl1cat3d\n  ", "value \n moarc0mpl1cat3d"),
+            (" some_ value", "some_ value"),
+        ], reason="Should output exactly the same"),
+        ("s3cr3t!!", "s3cr3t!!"),
+        ("secret", FAIL),
+        *[("supersecret" + char, FAIL) for char in PasswordQuestion.forbidden_chars],  # FIXME maybe add ` \n` to the list?
+        # readonly
+        *xpass(scenarios=[
+            ("s3cr3t!!", "s3cr3t!!", {"readonly": True}),
+        ], reason="Should fail since readonly is forbidden"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ COLOR                                                 │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestColor(BaseTest):
+    raw_option = {"type": "color", "id": "color_id"}
+    prefill = {
+        "raw_option": {"default": "#ff0000"},
+        "prefill": "#ff0000",
+        # "intake": "#ff00ff",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(None, "", output=""),
+        # custom valid
+        ("#000000", "#000000"),
+        ("#000", "#000"),
+        ("#fe100", "#fe100"),
+        (" #fe100  ", "#fe100"),
+        ("#ABCDEF", "#ABCDEF"),
+        # custom fail
+        *xpass(scenarios=[
+            ("#feaf", "#feaf"),
+        ], reason="Should fail; not a legal color value"),
+        ("000000", FAIL),
+        ("#12", FAIL),
+        ("#gggggg", FAIL),
+        ("#01010101af", FAIL),
+        *xfail(scenarios=[
+            ("red", "#ff0000"),
+            ("yellow", "#ffff00"),
+        ], reason="Should work with pydantic"),
+        # readonly
+        *xfail(scenarios=[
+            ("#ffff00", "#fe100", {"readonly": True, "default": "#fe100"}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ NUMBER | RANGE                                        │
+# ╰───────────────────────────────────────────────────────╯
+# Testing only number since "range" is only for webadmin (slider instead of classic intake).
+
+
+class TestNumber(BaseTest):
+    raw_option = {"type": "number", "id": "number_id"}
+    prefill = {
+        "raw_option": {"default": 10},
+        "prefill": "10",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails([], ["one"], {}),
+        *all_fails("none", "_none", "False", "True", "[]", ",", "['one']", "one,two", r"{}", "value"),
+
+        *nones(None, "", output=None),
+        *unchanged(0, 1, -1, 1337),
+        *xpass(scenarios=[(False, False)], reason="should fail or output as `0`"),
+        *xpass(scenarios=[(True, True)], reason="should fail or output as `1`"),
+        *all_as("0", 0, output=0),
+        *all_as("1", 1, output=1),
+        *all_as("1337", 1337, output=1337),
+        *xfail(scenarios=[
+            ("-1", -1)
+        ], reason="should output as `-1` instead of failing"),
+        *all_fails(13.37, "13.37"),
+
+        *unchanged(10, 5000, 10000, raw_option={"min": 10, "max": 10000}),
+        *all_fails(9, 10001, raw_option={"min": 10, "max": 10000}),
+
+        *all_as(None, "", output=0, raw_option={"default": 0}),
+        *all_as(None, "", output=0, raw_option={"default": 0, "optional": True}),
+        (-10, -10, {"default": 10}),
+        (-10, -10, {"default": 10, "optional": True}),
+        # readonly
+        *xfail(scenarios=[
+            (1337, 10000, {"readonly": True, "default": 10000}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+    # FIXME should `step` be some kind of "multiple of"?
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ BOOLEAN                                               │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestBoolean(BaseTest):
+    raw_option = {"type": "boolean", "id": "boolean_id"}
+    prefill = {
+        "raw_option": {"default": True},
+        "prefill": "yes",
+    }
+    # fmt: off
+    truthy_values = (True, 1, "1", "True", "true", "Yes", "yes", "y", "on")
+    falsy_values = (False, 0, "0", "False", "false", "No", "no", "n", "off")
+    scenarios = [
+        *all_as(None, "", output=0),
+        *all_fails("none", "None"),  # FIXME should output as `0` (default) like other none values when required?
+        *all_as(None, "", output=0, raw_option={"optional": True}),  # FIXME should output as `None`?
+        *all_as("none", "None", output=None, raw_option={"optional": True}),
+        # FIXME even if default is explicity `None|""`, it ends up with class_default `0`
+        *all_as(None, "", output=0, raw_option={"default": None}),  # FIXME this should fail, default is `None`
+        *all_as(None, "", output=0, raw_option={"optional": True, "default": None}),  # FIXME even if default is explicity None, it ends up with class_default
+        *all_as(None, "", output=0, raw_option={"default": ""}),  # FIXME this should fail, default is `""`
+        *all_as(None, "", output=0, raw_option={"optional": True, "default": ""}),  # FIXME even if default is explicity None, it ends up with class_default
+        # With "none" behavior is ok
+        *all_fails(None, "", raw_option={"default": "none"}),
+        *all_as(None, "", output=None, raw_option={"optional": True, "default": "none"}),
+        # Unhandled types should fail
+        *all_fails(1337, "1337", "string", [], "[]", ",", "one,two"),
+        *all_fails(1337, "1337", "string", [], "[]", ",", "one,two", {"optional": True}),
+        # Required
+        *all_as(*truthy_values, output=1),
+        *all_as(*falsy_values, output=0),
+        # Optional
+        *all_as(*truthy_values, output=1, raw_option={"optional": True}),
+        *all_as(*falsy_values, output=0, raw_option={"optional": True}),
+        # test values as default, as required option without intake
+        *[(None, 1, {"default": true for true in truthy_values})],
+        *[(None, 0, {"default": false for false in falsy_values})],
+        # custom boolean output
+        ("", "disallow", {"yes": "allow", "no": "disallow"}),  # required -> default to False -> `"disallow"`
+        ("n", "disallow", {"yes": "allow", "no": "disallow"}),
+        ("y", "allow", {"yes": "allow", "no": "disallow"}),
+        ("", False, {"yes": True, "no": False}),  # required -> default to False -> `False`
+        ("n", False, {"yes": True, "no": False}),
+        ("y", True, {"yes": True, "no": False}),
+        ("", -1, {"yes": 1, "no": -1}),  # required -> default to False -> `-1`
+        ("n", -1, {"yes": 1, "no": -1}),
+        ("y", 1, {"yes": 1, "no": -1}),
+        {
+            "raw_options": [
+                {"yes": "no", "no": "yes", "optional": True},
+                {"yes": False, "no": True, "optional": True},
+                {"yes": "0", "no": "1", "optional": True},
+            ],
+            # "no" for "yes" and "yes" for "no" should fail
+            "scenarios": all_fails("", "y", "n", error=AssertionError),
+        },
+        # readonly
+        *xfail(scenarios=[
+            (1, 0, {"readonly": True, "default": 0}),
+        ], reason="Should not be overwritten"),
+    ]
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ DATE                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestDate(BaseTest):
+    raw_option = {"type": "date", "id": "date_id"}
+    prefill = {
+        "raw_option": {"default": "2024-12-29"},
+        "prefill": "2024-12-29",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(None, "", output=""),
+        # custom valid
+        ("2070-12-31", "2070-12-31"),
+        ("2024-02-29", "2024-02-29"),
+        *xfail(scenarios=[
+            ("2025-06-15T13:45:30", "2025-06-15"),
+            ("2025-06-15 13:45:30", "2025-06-15")
+        ], reason="iso date repr should be valid and extra data striped"),
+        *xfail(scenarios=[
+            (1749938400, "2025-06-15"),
+            (1749938400.0, "2025-06-15"),
+            ("1749938400", "2025-06-15"),
+            ("1749938400.0", "2025-06-15"),
+        ], reason="timestamp could be an accepted value"),
+        # custom invalid
+        ("29-12-2070", FAIL),
+        ("12-01-10", FAIL),
+        ("2022-02-29", FAIL),
+        # readonly
+        *xfail(scenarios=[
+            ("2070-12-31", "2024-02-29", {"readonly": True, "default": "2024-02-29"}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ TIME                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestTime(BaseTest):
+    raw_option = {"type": "time", "id": "time_id"}
+    prefill = {
+        "raw_option": {"default": "12:26"},
+        "prefill": "12:26",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+        *nones(None, "", output=""),
+        # custom valid
+        *unchanged("00:00", "08:00", "12:19", "20:59", "23:59"),
+        ("3:00", "3:00"),  # FIXME should fail or output as `"03:00"`?
+        *xfail(scenarios=[
+            ("22:35:05", "22:35"),
+            ("22:35:03.514", "22:35"),
+        ], reason="time as iso format could be valid"),
+        # custom invalid
+        ("24:00", FAIL),
+        ("23:1", FAIL),
+        ("23:005", FAIL),
+        # readonly
+        *xfail(scenarios=[
+            ("00:00", "08:00", {"readonly": True, "default": "08:00"}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ EMAIL                                                 │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestEmail(BaseTest):
+    raw_option = {"type": "email", "id": "email_id"}
+    prefill = {
+        "raw_option": {"default": "Abc@example.tld"},
+        "prefill": "Abc@example.tld",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+        *all_fails("none", "_none", "False", "True", "0", "1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+
+        *nones(None, "", output=""),
+        ("\n Abc@example.tld  ", "Abc@example.tld"),
+        # readonly
+        *xfail(scenarios=[
+            ("Abc@example.tld", "admin@ynh.local", {"readonly": True, "default": "admin@ynh.local"}),
+        ], reason="Should not be overwritten"),
+
+        # Next examples are from https://github.com/JoshData/python-email-validator/blob/main/tests/test_syntax.py
+        # valid email values
+        ("Abc@example.tld", "Abc@example.tld"),
+        ("Abc.123@test-example.com", "Abc.123@test-example.com"),
+        ("user+mailbox/department=shipping@example.tld", "user+mailbox/department=shipping@example.tld"),
+        ("伊昭傑@郵件.商務", "伊昭傑@郵件.商務"),
+        ("राम@मोहन.ईन्फो", "राम@मोहन.ईन्फो"),
+        ("юзер@екзампл.ком", "юзер@екзампл.ком"),
+        ("θσερ@εχαμπλε.ψομ", "θσερ@εχαμπλε.ψομ"),
+        ("葉士豪@臺網中心.tw", "葉士豪@臺網中心.tw"),
+        ("jeff@臺網中心.tw", "jeff@臺網中心.tw"),
+        ("葉士豪@臺網中心.台灣", "葉士豪@臺網中心.台灣"),
+        ("jeff葉@臺網中心.tw", "jeff葉@臺網中心.tw"),
+        ("ñoñó@example.tld", "ñoñó@example.tld"),
+        ("甲斐黒川日本@example.tld", "甲斐黒川日本@example.tld"),
+        ("чебурашкаящик-с-апельсинами.рф@example.tld", "чебурашкаящик-с-апельсинами.рф@example.tld"),
+        ("उदाहरण.परीक्ष@domain.with.idn.tld", "उदाहरण.परीक्ष@domain.with.idn.tld"),
+        ("ιωάννης@εεττ.gr", "ιωάννης@εεττ.gr"),
+        # invalid email (Hiding because our current regex is very permissive)
+        # ("my@localhost", FAIL),
+        # ("my@.leadingdot.com", FAIL),
+        # ("my@．leadingfwdot.com", FAIL),
+        # ("my@twodots..com", FAIL),
+        # ("my@twofwdots．．.com", FAIL),
+        # ("my@trailingdot.com.", FAIL),
+        # ("my@trailingfwdot.com．", FAIL),
+        # ("me@-leadingdash", FAIL),
+        # ("me@－leadingdashfw", FAIL),
+        # ("me@trailingdash-", FAIL),
+        # ("me@trailingdashfw－", FAIL),
+        # ("my@baddash.-.com", FAIL),
+        # ("my@baddash.-a.com", FAIL),
+        # ("my@baddash.b-.com", FAIL),
+        # ("my@baddashfw.－.com", FAIL),
+        # ("my@baddashfw.－a.com", FAIL),
+        # ("my@baddashfw.b－.com", FAIL),
+        # ("my@example.com\n", FAIL),
+        # ("my@example\n.com", FAIL),
+        # ("me@x!", FAIL),
+        # ("me@x ", FAIL),
+        # (".leadingdot@domain.com", FAIL),
+        # ("twodots..here@domain.com", FAIL),
+        # ("trailingdot.@domain.email", FAIL),
+        # ("me@⒈wouldbeinvalid.com", FAIL),
+        ("@example.com", FAIL),
+        # ("\nmy@example.com", FAIL),
+        ("m\ny@example.com", FAIL),
+        ("my\n@example.com", FAIL),
+        # ("11111111112222222222333333333344444444445555555555666666666677777@example.com", FAIL),
+        # ("111111111122222222223333333333444444444455555555556666666666777777@example.com", FAIL),
+        # ("me@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.111111111122222222223333333333444444444455555555556.com", FAIL),
+        # ("me@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555566.com", FAIL),
+        # ("me@中1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555566.com", FAIL),
+        # ("my.long.address@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.11111111112222222222333333333344444.info", FAIL),
+        # ("my.long.address@λ111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.11111111112222222222333333.info", FAIL),
+        # ("my.long.address@λ111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444.info", FAIL),
+        # ("my.λong.address@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.111111111122222222223333333333444.info", FAIL),
+        # ("my.λong.address@1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444444444555555555.6666666666777777777788888888889999999999000000000.1111111111222222222233333333334444.info", FAIL),
+        # ("me@bad-tld-1", FAIL),
+        # ("me@bad.tld-2", FAIL),
+        # ("me@xn--0.tld", FAIL),
+        # ("me@yy--0.tld", FAIL),
+        # ("me@yy－－0.tld", FAIL),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ PATH                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestWebPath(BaseTest):
+    raw_option = {"type": "path", "id": "path_id"}
+    prefill = {
+        "raw_option": {"default": "some_path"},
+        "prefill": "some_path",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+
+        *nones(None, "", output=""),
+        # custom valid
+        ("/", "/"),
+        ("/one/two", "/one/two"),
+        *[
+            (v, "/" + v)
+            for v in ("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value")
+        ],
+        ("value\n", "/value"),
+        ("//value", "/value"),
+        ("///value///", "/value"),
+        *xpass(scenarios=[
+            ("value\nvalue", "/value\nvalue"),
+            ("value value", "/value value"),
+            ("value//value", "/value//value"),
+        ], reason="Should fail"),
+        *xpass(scenarios=[
+            ("./here", "/./here"),
+            ("../here", "/../here"),
+            ("/somewhere/../here", "/somewhere/../here"),
+        ], reason="Should fail or flattened"),
+
+        *xpass(scenarios=[
+            ("/one?withquery=ah", "/one?withquery=ah"),
+        ], reason="Should fail or query string removed"),
+        *xpass(scenarios=[
+            ("https://example.com/folder", "/https://example.com/folder")
+        ], reason="Should fail or scheme+domain removed"),
+        # readonly
+        *xfail(scenarios=[
+            ("/overwrite", "/value", {"readonly": True, "default": "/value"}),
+        ], reason="Should not be overwritten"),
+        # FIXME should path have forbidden_chars?
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ URL                                                   │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestUrl(BaseTest):
+    raw_option = {"type": "url", "id": "url_id"}
+    prefill = {
+        "raw_option": {"default": "https://domain.tld"},
+        "prefill": "https://domain.tld",
+    }
+    # fmt: off
+    scenarios = [
+        *all_fails(False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {}, raw_option={"optional": True}),
+        *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
+
+        *nones(None, "", output=""),
+        ("http://some.org/folder/file.txt", "http://some.org/folder/file.txt"),
+        # readonly
+        *xfail(scenarios=[
+            ("https://overwrite.org", "https://example.org", {"readonly": True, "default": "https://example.org"}),
+        ], reason="Should not be overwritten"),
+        # rest is taken from https://github.com/pydantic/pydantic/blob/main/tests/test_networks.py
+        # valid
+        *unchanged(
+            # Those are valid but not sure how they will output with pydantic
+            'http://example.org',
+            'http://test',
+            'http://localhost',
+            'https://example.org/whatever/next/',
+            'https://example.org',
+            'http://localhost',
+            'http://localhost/',
+            'http://localhost:8000',
+            'http://localhost:8000/',
+            'https://foo_bar.example.com/',
+            'http://example.co.jp',
+            'http://www.example.com/a%C2%B1b',
+            'http://www.example.com/~username/',
+            'http://info.example.com?fred',
+            'http://info.example.com/?fred',
+            'http://xn--mgbh0fb.xn--kgbechtv/',
+            'http://example.com/blue/red%3Fand+green',
+            'http://www.example.com/?array%5Bkey%5D=value',
+            'http://xn--rsum-bpad.example.org/',
+            'http://123.45.67.8/',
+            'http://123.45.67.8:8329/',
+            'http://[2001:db8::ff00:42]:8329',
+            'http://[2001::1]:8329',
+            'http://[2001:db8::1]/',
+            'http://www.example.com:8000/foo',
+            'http://www.cwi.nl:80/%7Eguido/Python.html',
+            'https://www.python.org/путь',
+            'http://андрей@example.com',
+            'https://exam_ple.com/',
+            'http://twitter.com/@handle/',
+            'http://11.11.11.11.example.com/action',
+            'http://abc.11.11.11.11.example.com/action',
+            'http://example#',
+            'http://example/#',
+            'http://example/#fragment',
+            'http://example/?#',
+            'http://example.org/path#',
+            'http://example.org/path#fragment',
+            'http://example.org/path?query#',
+            'http://example.org/path?query#fragment',
+        ),
+        # Pydantic default parsing add a final `/`
+        ('https://foo_bar.example.com/', 'https://foo_bar.example.com/'),
+        ('https://exam_ple.com/', 'https://exam_ple.com/'),
+        *xfail(scenarios=[
+            ('  https://www.example.com \n', 'https://www.example.com/'),
+            ('HTTP://EXAMPLE.ORG', 'http://example.org/'),
+            ('https://example.org', 'https://example.org/'),
+            ('https://example.org?a=1&b=2', 'https://example.org/?a=1&b=2'),
+            ('https://example.org#a=3;b=3', 'https://example.org/#a=3;b=3'),
+            ('https://example.xn--p1ai', 'https://example.xn--p1ai/'),
+            ('https://example.xn--vermgensberatung-pwb', 'https://example.xn--vermgensberatung-pwb/'),
+            ('https://example.xn--zfr164b', 'https://example.xn--zfr164b/'),
+        ], reason="pydantic default behavior would append a final `/`"),
+
+        # invalid
+        *all_fails(
+            'ftp://example.com/',
+            "$https://example.org",
+            "../icons/logo.gif",
+            "abc",
+            "..",
+            "/",
+            "+http://example.com/",
+            "ht*tp://example.com/",
+        ),
+        *xpass(scenarios=[
+            ("http:///", "http:///"),
+            ("http://??", "http://??"),
+            ("https://example.org more", "https://example.org more"),
+            ("http://2001:db8::ff00:42:8329", "http://2001:db8::ff00:42:8329"),
+            ("http://[192.168.1.1]:8329", "http://[192.168.1.1]:8329"),
+            ("http://example.com:99999", "http://example.com:99999"),
+        ], reason="Should fail"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ FILE                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+
+@pytest.fixture
+def file_clean():
+    FileQuestion.clean_upload_dirs()
+    yield
+    FileQuestion.clean_upload_dirs()
+
+
+@contextmanager
+def patch_file_cli(intake):
+    upload_dir = tempfile.mkdtemp(prefix="ynh_test_option_file")
+    _, filename = tempfile.mkstemp(dir=upload_dir)
+    with open(filename, "w") as f:
+        f.write(intake)
+
+    yield filename
+    os.system(f"rm -f {filename}")
+
+
+@contextmanager
+def patch_file_api(intake):
+    from base64 import b64encode
+
+    with patch_interface("api"):
+        yield b64encode(intake.encode())
+
+
+def _test_file_intake_may_fail(raw_option, intake, expected_output):
+    if inspect.isclass(expected_output) and issubclass(expected_output, Exception):
+        with pytest.raises(expected_output):
+            _fill_or_prompt_one_option(raw_option, intake)
+
+    option, value = _fill_or_prompt_one_option(raw_option, intake)
+
+    # The file is supposed to be copied somewhere else
+    assert value != intake
+    assert value.startswith("/tmp/ynh_filequestion_")
+    assert os.path.exists(value)
+    with open(value) as f:
+        assert f.read() == expected_output
+
+    FileQuestion.clean_upload_dirs()
+
+    assert not os.path.exists(value)
+
+
+file_content1 = "helloworld"
+file_content2 = """
+{
+    "testy": true,
+    "test": ["one"]
+}
+"""
+
+
+class TestFile(BaseTest):
+    raw_option = {"type": "file", "id": "file_id"}
+    # Prefill data is generated in `cls.test_options_prompted_with_ask_help`
+    # fmt: off
+    scenarios = [
+        *nones(None, "", output=""),
+        *unchanged(file_content1, file_content2),
+        # other type checks are done in `test_wrong_intake`
+    ]
+    # fmt: on
+    # TODO test readonly
+    # TODO test accept
+
+    @pytest.mark.usefixtures("patch_no_tty")
+    def test_basic_attrs(self):
+        raw_option, option, value = self._test_basic_attrs()
+
+        accept = raw_option.get("accept", "")  # accept default
+        assert option.accept == accept
+
+    def test_options_prompted_with_ask_help(self):
+        with patch_file_cli(file_content1) as default_filename:
+            super().test_options_prompted_with_ask_help(
+                prefill_data={
+                    "raw_option": {
+                        "default": default_filename,
+                    },
+                    "prefill": default_filename,
+                }
+            )
+
+    @pytest.mark.usefixtures("file_clean")
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        if intake in (None, ""):
+            with patch_prompt(intake):
+                _test_intake_may_fail(raw_option, None, expected_output)
+            with patch_isatty(False):
+                _test_intake_may_fail(raw_option, intake, expected_output)
+        else:
+            with patch_file_cli(intake) as filename:
+                with patch_prompt(filename):
+                    _test_file_intake_may_fail(raw_option, None, expected_output)
+            with patch_file_api(intake) as b64content:
+                with patch_isatty(False):
+                    _test_file_intake_may_fail(raw_option, b64content, expected_output)
+
+    @pytest.mark.parametrize(
+        "path",
+        [
+            "/tmp/inexistant_file.txt",
+            "/tmp",
+            "/tmp/",
+        ],
+    )
+    def test_wrong_cli_filename(self, path):
+        with patch_prompt(path):
+            with pytest.raises(YunohostValidationError):
+                _fill_or_prompt_one_option(self.raw_option, None)
+
+    @pytest.mark.parametrize(
+        "intake",
+        [
+            # fmt: off
+            False, True, 0, 1, -1, 1337, 13.37, [], ["one"], {},
+            "none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n"
+            # fmt: on
+        ],
+    )
+    def test_wrong_intake(self, intake):
+        with pytest.raises(YunohostValidationError):
+            with patch_prompt(intake):
+                _fill_or_prompt_one_option(self.raw_option, None)
+            with patch_isatty(False):
+                _fill_or_prompt_one_option(self.raw_option, intake)
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ SELECT                                                │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestSelect(BaseTest):
+    raw_option = {"type": "select", "id": "select_id"}
+    prefill = {
+        "raw_option": {"default": "one", "choices": ["one", "two"]},
+        "prefill": "one",
+    }
+    # fmt: off
+    scenarios = [
+        {
+            # ["one", "two"]
+            "raw_options": [
+                {"choices": ["one", "two"]},
+                {"choices": {"one": "verbose one", "two": "verbose two"}},
+            ],
+            "scenarios": [
+                *nones(None, "", output=""),
+                *unchanged("one", "two"),
+                ("three", FAIL),
+            ]
+        },
+        # custom bash style list as choices (only strings for now)
+        ("one", "one", {"choices": "one,two"}),
+        {
+            # [-1, 0, 1]
+            "raw_options": [
+                {"choices": [-1, 0, 1, 10]},
+                {"choices": {-1: "verbose -one", 0: "verbose zero", 1: "verbose one", 10: "verbose ten"}},
+            ],
+            "scenarios": [
+                *nones(None, "", output=""),
+                *unchanged(-1, 0, 1, 10),
+                *xfail(scenarios=[
+                    ("-1", -1),
+                    ("0", 0),
+                    ("1", 1),
+                    ("10", 10),
+                ], reason="str -> int not handled"),
+                *all_fails("100", 100),
+            ]
+        },
+        # [True, False, None]
+        *unchanged(True, False, raw_option={"choices": [True, False, None]}),  # FIXME we should probably forbid None in choices
+        (None, FAIL, {"choices": [True, False, None]}),
+        {
+            # mixed types
+            "raw_options": [{"choices": ["one", 2, True]}],
+            "scenarios": [
+                *xpass(scenarios=[
+                    ("one", "one"),
+                    (2, 2),
+                    (True, True),
+                ], reason="mixed choices, should fail"),
+                *all_fails("2", "True", "y"),
+            ]
+        },
+        {
+            "raw_options": [{"choices": ""}, {"choices": []}],
+            "scenarios": [
+                # FIXME those should fail at option level (wrong default, dev error)
+                *all_fails(None, ""),
+                *xpass(scenarios=[
+                    ("", "", {"optional": True}),
+                    (None, "", {"optional": True}),
+                ], reason="empty choices, should fail at option instantiation"),
+            ]
+        },
+        # readonly
+        *xfail(scenarios=[
+            ("one", "two", {"readonly": True, "choices": ["one", "two"], "default": "two"}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ TAGS                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class TestTags(BaseTest):
+    raw_option = {"type": "tags", "id": "tags_id"}
+    prefill = {
+        "raw_option": {"default": ["one", "two"]},
+        "prefill": "one,two",
+    }
+    # fmt: off
+    scenarios = [
+        *nones(None, [], "", output=""),
+        # FIXME `","` could be considered a none value which kinda already is since it fail when required
+        (",", FAIL),
+        *xpass(scenarios=[
+            (",", ",", {"optional": True})
+        ], reason="Should output as `''`? ie: None"),
+        {
+            "raw_options": [
+                {},
+                {"choices": ["one", "two"]}
+            ],
+            "scenarios": [
+                *unchanged("one", "one,two"),
+                (["one"], "one"),
+                (["one", "two"], "one,two"),
+            ]
+        },
+        ("three", FAIL, {"choices": ["one", "two"]}),
+        *unchanged("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", "['one']", "one,two", r"{}", "value"),
+        (" value\n", "value"),
+        ([False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}], "False,True,-1,0,1,1337,13.37,[],['one'],{}"),
+        *(([t], str(t)) for t in (False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {})),
+        # basic types (not in a list) should fail
+        *all_fails(True, False, -1, 0, 1, 1337, 13.37, {}),
+        # Mixed choices should fail
+        ([False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}], FAIL, {"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        ("False,True,-1,0,1,1337,13.37,[],['one'],{}", FAIL, {"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        *all_fails(*([t] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        *all_fails(*([str(t)] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        # readonly
+        *xfail(scenarios=[
+            ("one", "one,two", {"readonly": True, "choices": ["one", "two"], "default": "one,two"}),
+        ], reason="Should not be overwritten"),
+    ]
+    # fmt: on
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ DOMAIN                                                │
+# ╰───────────────────────────────────────────────────────╯
+
+main_domain = "ynh.local"
+domains1 = ["ynh.local"]
+domains2 = ["another.org", "ynh.local", "yet.another.org"]
+
+
+@contextmanager
+def patch_domains(*, domains, main_domain):
+    """
+    Data mocking for DomainOption:
+    - yunohost.domain.domain_list
+    """
+    with patch.object(
+        domain,
+        "domain_list",
+        return_value={"domains": domains, "main": main_domain},
+    ), patch.object(domain, "_get_maindomain", return_value=main_domain):
+        yield
+
+
+class TestDomain(BaseTest):
+    raw_option = {"type": "domain", "id": "domain_id"}
+    prefill = {
+        "raw_option": {
+            "default": None,
+        },
+        "prefill": main_domain,
+    }
+    # fmt: off
+    scenarios = [
+        # Probably not needed to test common types since those are not available as choices
+        # Also no scenarios with no domains since it should not be possible
+        {
+            "data": [{"main_domain": domains1[0], "domains": domains1}],
+            "scenarios": [
+                *nones(None, "", output=domains1[0], fail_if_required=False),
+                (domains1[0], domains1[0], {}),
+                ("doesnt_exist.pouet", FAIL, {}),
+                ("fake.com", FAIL, {"choices": ["fake.com"]}),
+                # readonly
+                *xpass(scenarios=[
+                    (domains1[0], domains1[0], {"readonly": True}),
+                ], reason="Should fail since readonly is forbidden"),
+            ]
+        },
+        {
+            "data": [{"main_domain": domains2[1], "domains": domains2}],
+            "scenarios": [
+                *nones(None, "", output=domains2[1], fail_if_required=False),
+                (domains2[1], domains2[1], {}),
+                (domains2[0], domains2[0], {}),
+                ("doesnt_exist.pouet", FAIL, {}),
+                ("fake.com", FAIL, {"choices": ["fake.com"]}),
+            ]
+        },
+
+    ]
+    # fmt: on
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        with patch_domains(**data):
+            super().test_scenarios(intake, expected_output, raw_option, data)
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ APP                                                   │
+# ╰───────────────────────────────────────────────────────╯
+
+installed_webapp = {
+    "is_webapp": True,
+    "is_default": True,
+    "label": "My webapp",
+    "id": "my_webapp",
+    "domain_path": "/ynh-dev",
+}
+installed_non_webapp = {
+    "is_webapp": False,
+    "is_default": False,
+    "label": "My non webapp",
+    "id": "my_non_webapp",
+}
+
+
+@contextmanager
+def patch_apps(*, apps):
+    """
+    Data mocking for AppOption:
+    - yunohost.app.app_list
+    """
+    with patch.object(app, "app_list", return_value={"apps": apps}):
+        yield
+
+
+class TestApp(BaseTest):
+    raw_option = {"type": "app", "id": "app_id"}
+    # fmt: off
+    scenarios = [
+        # Probably not needed to test common types since those are not available as choices
+        {
+            "data": [
+                {"apps": []},
+                {"apps": [installed_webapp]},
+                {"apps": [installed_webapp, installed_non_webapp]},
+            ],
+            "scenarios": [
+                # FIXME there are currently 3 different nones (`None`, `""` and `_none`), choose one?
+                *nones(None, output=None),  # FIXME Should return chosen none?
+                *nones("", output=""),  # FIXME Should return chosen none?
+                *xpass(scenarios=[
+                    ("_none", "_none"),
+                    ("_none", "_none", {"default": "_none"}),
+                ], reason="should fail; is required"),
+                *xpass(scenarios=[
+                    ("_none", "_none", {"optional": True}),
+                    ("_none", "_none", {"optional": True, "default": "_none"})
+                ], reason="Should output chosen none value"),
+                ("fake_app", FAIL),
+                ("fake_app", FAIL, {"choices": ["fake_app"]}),
+            ]
+        },
+        {
+            "data": [
+                {"apps": [installed_webapp]},
+                {"apps": [installed_webapp, installed_non_webapp]},
+            ],
+            "scenarios": [
+                (installed_webapp["id"], installed_webapp["id"]),
+                (installed_webapp["id"], installed_webapp["id"], {"filter": "is_webapp"}),
+                (installed_webapp["id"], FAIL, {"filter": "is_webapp == false"}),
+                (installed_webapp["id"], FAIL, {"filter": "id != 'my_webapp'"}),
+                (None, None, {"filter": "id == 'fake_app'", "optional": True}),
+            ]
+        },
+        {
+            "data": [{"apps": [installed_webapp, installed_non_webapp]}],
+            "scenarios": [
+                (installed_non_webapp["id"], installed_non_webapp["id"]),
+                (installed_non_webapp["id"], FAIL, {"filter": "is_webapp"}),
+                # readonly
+                *xpass(scenarios=[
+                    (installed_non_webapp["id"], installed_non_webapp["id"], {"readonly": True}),
+                ], reason="Should fail since readonly is forbidden"),
+            ]
+        },
+    ]
+    # fmt: on
+
+    @pytest.mark.usefixtures("patch_no_tty")
+    def test_basic_attrs(self):
+        with patch_apps(apps=[]):
+            raw_option, option, value = self._test_basic_attrs()
+
+            assert option.choices == {"_none": "---"}
+            assert option.filter is None
+
+        with patch_apps(apps=[installed_webapp, installed_non_webapp]):
+            raw_option, option, value = self._test_basic_attrs()
+
+            assert option.choices == {
+                "_none": "---",
+                "my_webapp": "My webapp (/ynh-dev)",
+                "my_non_webapp": "My non webapp (my_non_webapp)",
+            }
+            assert option.filter is None
+
+    def test_options_prompted_with_ask_help(self, prefill_data=None):
+        with patch_apps(apps=[installed_webapp, installed_non_webapp]):
+            super().test_options_prompted_with_ask_help(
+                prefill_data={
+                    "raw_option": {"default": installed_webapp["id"]},
+                    "prefill": installed_webapp["id"],
+                }
+            )
+            super().test_options_prompted_with_ask_help(
+                prefill_data={"raw_option": {"optional": True}, "prefill": ""}
+            )
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        with patch_apps(**data):
+            super().test_scenarios(intake, expected_output, raw_option, data)
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ USER                                                  │
+# ╰───────────────────────────────────────────────────────╯
+
+admin_username = "admin_user"
+admin_user = {
+    "ssh_allowed": False,
+    "username": admin_username,
+    "mailbox-quota": "0",
+    "mail": "a@ynh.local",
+    "mail-aliases": [f"root@{main_domain}"],  # Faking "admin"
+    "fullname": "john doe",
+    "group": [],
+}
+regular_username = "normal_user"
+regular_user = {
+    "ssh_allowed": False,
+    "username": regular_username,
+    "mailbox-quota": "0",
+    "mail": "z@ynh.local",
+    "fullname": "john doe",
+    "group": [],
+}
+
+
+@contextmanager
+def patch_users(
+    *,
+    users,
+    admin_username,
+    main_domain,
+):
+    """
+    Data mocking for UserOption:
+    - yunohost.user.user_list
+    - yunohost.user.user_info
+    - yunohost.domain._get_maindomain
+    """
+    admin_info = next(
+        (user for user in users.values() if user["username"] == admin_username),
+        {"mail-aliases": []},
+    )
+    with patch.object(user, "user_list", return_value={"users": users}), patch.object(
+        user,
+        "user_info",
+        return_value=admin_info,  # Faking admin user
+    ), patch.object(domain, "_get_maindomain", return_value=main_domain):
+        yield
+
+
+class TestUser(BaseTest):
+    raw_option = {"type": "user", "id": "user_id"}
+    # fmt: off
+    scenarios = [
+        # No tests for empty users since it should not happens
+        {
+            "data": [
+                {"users": {admin_username: admin_user}, "admin_username": admin_username, "main_domain": main_domain},
+                {"users": {admin_username: admin_user, regular_username: regular_user}, "admin_username": admin_username, "main_domain": main_domain},
+            ],
+            "scenarios": [
+                # FIXME User option is not really nullable, even if optional
+                *nones(None, "", output=admin_username, fail_if_required=False),
+                ("fake_user", FAIL),
+                ("fake_user", FAIL, {"choices": ["fake_user"]}),
+            ]
+        },
+        {
+            "data": [
+                {"users": {admin_username: admin_user, regular_username: regular_user}, "admin_username": admin_username, "main_domain": main_domain},
+            ],
+            "scenarios": [
+                *xpass(scenarios=[
+                    ("", regular_username, {"default": regular_username})
+                ], reason="Should throw 'no default allowed'"),
+                # readonly
+                *xpass(scenarios=[
+                    (admin_username, admin_username, {"readonly": True}),
+                ], reason="Should fail since readonly is forbidden"),
+            ]
+        },
+    ]
+    # fmt: on
+
+    def test_options_prompted_with_ask_help(self, prefill_data=None):
+        with patch_users(
+            users={admin_username: admin_user, regular_username: regular_user},
+            admin_username=admin_username,
+            main_domain=main_domain,
+        ):
+            super().test_options_prompted_with_ask_help(
+                prefill_data={"raw_option": {}, "prefill": admin_username}
+            )
+            # FIXME This should fail, not allowed to set a default
+            super().test_options_prompted_with_ask_help(
+                prefill_data={
+                    "raw_option": {"default": regular_username},
+                    "prefill": regular_username,
+                }
+            )
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        with patch_users(**data):
+            super().test_scenarios(intake, expected_output, raw_option, data)
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ GROUP                                                 │
+# ╰───────────────────────────────────────────────────────╯
+
+groups1 = ["all_users", "visitors", "admins"]
+groups2 = ["all_users", "visitors", "admins", "custom_group"]
+
+
+@contextmanager
+def patch_groups(*, groups):
+    """
+    Data mocking for GroupOption:
+    - yunohost.user.user_group_list
+    """
+    with patch.object(user, "user_group_list", return_value={"groups": groups}):
+        yield
+
+
+class TestGroup(BaseTest):
+    raw_option = {"type": "group", "id": "group_id"}
+    # fmt: off
+    scenarios = [
+        # No tests for empty groups since it should not happens
+        {
+            "data": [
+                {"groups": groups1},
+                {"groups": groups2},
+            ],
+            "scenarios": [
+                # FIXME Group option is not really nullable, even if optional
+                *nones(None, "", output="all_users", fail_if_required=False),
+                ("admins", "admins"),
+                ("fake_group", FAIL),
+                ("fake_group", FAIL, {"choices": ["fake_group"]}),
+            ]
+        },
+        {
+            "data": [
+                {"groups": groups2},
+            ],
+            "scenarios": [
+                ("custom_group", "custom_group"),
+                *all_as("", None, output="visitors", raw_option={"default": "visitors"}),
+                *xpass(scenarios=[
+                    ("", "custom_group", {"default": "custom_group"}),
+                ], reason="Should throw 'default must be in (None, 'all_users', 'visitors', 'admins')"),
+                # readonly
+                *xpass(scenarios=[
+                    ("admins", "admins", {"readonly": True}),
+                ], reason="Should fail since readonly is forbidden"),
+            ]
+        },
+    ]
+    # fmt: on
+
+    def test_options_prompted_with_ask_help(self, prefill_data=None):
+        with patch_groups(groups=groups2):
+            super().test_options_prompted_with_ask_help(
+                prefill_data={"raw_option": {}, "prefill": "all_users"}
+            )
+            super().test_options_prompted_with_ask_help(
+                prefill_data={
+                    "raw_option": {"default": "admins"},
+                    "prefill": "admins",
+                }
+            )
+            # FIXME This should fail, not allowed to set a default which is not a default group
+            super().test_options_prompted_with_ask_help(
+                prefill_data={
+                    "raw_option": {"default": "custom_group"},
+                    "prefill": "custom_group",
+                }
+            )
+
+    def test_scenarios(self, intake, expected_output, raw_option, data):
+        with patch_groups(**data):
+            super().test_scenarios(intake, expected_output, raw_option, data)
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ MULTIPLE                                              │
+# ╰───────────────────────────────────────────────────────╯
+
+
+@pytest.fixture
+def patch_entities():
+    with patch_domains(domains=domains2, main_domain=main_domain), patch_apps(
+        apps=[installed_webapp, installed_non_webapp]
+    ), patch_users(
+        users={admin_username: admin_user, regular_username: regular_user},
+        admin_username=admin_username,
+        main_domain=main_domain,
+    ), patch_groups(
+        groups=groups2
+    ):
+        yield
+
+
+def test_options_empty():
     ask_questions_and_parse_answers({}, {}) == []
 
 
-def test_question_string():
-    questions = {
-        "some_string": {
-            "type": "string",
-        }
+@pytest.mark.usefixtures("patch_entities", "file_clean")
+def test_options_query_string():
+    raw_options = {
+        "string_id": {"type": "string"},
+        "text_id": {"type": "text"},
+        "password_id": {"type": "password"},
+        "color_id": {"type": "color"},
+        "number_id": {"type": "number"},
+        "boolean_id": {"type": "boolean"},
+        "date_id": {"type": "date"},
+        "time_id": {"type": "time"},
+        "email_id": {"type": "email"},
+        "path_id": {"type": "path"},
+        "url_id": {"type": "url"},
+        "file_id": {"type": "file"},
+        "select_id": {"type": "select", "choices": ["one", "two"]},
+        "tags_id": {"type": "tags", "choices": ["one", "two"]},
+        "domain_id": {"type": "domain"},
+        "app_id": {"type": "app"},
+        "user_id": {"type": "user"},
+        "group_id": {"type": "group"},
     }
-    answers = {"some_string": "some_value"}
 
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
-
-
-def test_question_string_from_query_string():
-    questions = {
-        "some_string": {
-            "type": "string",
-        }
+    results = {
+        "string_id": "string",
+        "text_id": "text\ntext",
+        "password_id": "sUpRSCRT",
+        "color_id": "#ffff00",
+        "number_id": 10,
+        "boolean_id": 1,
+        "date_id": "2030-03-06",
+        "time_id": "20:55",
+        "email_id": "coucou@ynh.local",
+        "path_id": "/ynh-dev",
+        "url_id": "https://yunohost.org",
+        "file_id": file_content1,
+        "select_id": "one",
+        "tags_id": "one,two",
+        "domain_id": main_domain,
+        "app_id": installed_webapp["id"],
+        "user_id": regular_username,
+        "group_id": "admins",
     }
-    answers = "foo=bar&some_string=some_value&lorem=ipsum"
 
-    out = ask_questions_and_parse_answers(questions, answers)[0]
+    @contextmanager
+    def patch_query_string(file_repr):
+        yield (
+            "string_id= string"
+            "&text_id=text\ntext"
+            "&password_id=sUpRSCRT"
+            "&color_id=#ffff00"
+            "&number_id=10"
+            "&boolean_id=y"
+            "&date_id=2030-03-06"
+            "&time_id=20:55"
+            "&email_id=coucou@ynh.local"
+            "&path_id=ynh-dev/"
+            "&url_id=https://yunohost.org"
+            f"&file_id={file_repr}"
+            "&select_id=one"
+            "&tags_id=one,two"
+            # FIXME We can't test with parse.qs for now, next syntax is available only with config panels
+            # "&tags_id=one"
+            # "&tags_id=two"
+            f"&domain_id={main_domain}"
+            f"&app_id={installed_webapp['id']}"
+            f"&user_id={regular_username}"
+            "&group_id=admins"
+            # not defined extra values are silently ignored
+            "&fake_id=fake_value"
+        )
 
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
+    def _assert_correct_values(options, raw_options):
+        form = {option.name: option.value for option in options}
+
+        for k, v in results.items():
+            if k == "file_id":
+                assert os.path.exists(form["file_id"]) and os.path.isfile(
+                    form["file_id"]
+                )
+                with open(form["file_id"], "r") as f:
+                    assert f.read() == file_content1
+            else:
+                assert form[k] == results[k]
+
+        assert len(options) == len(raw_options.keys())
+        assert "fake_id" not in form
+
+    with patch_interface("api"), patch_file_api(file_content1) as b64content:
+        with patch_query_string(b64content.decode("utf-8")) as query_string:
+            options = ask_questions_and_parse_answers(raw_options, query_string)
+            _assert_correct_values(options, raw_options)
+
+    with patch_interface("cli"), patch_file_cli(file_content1) as filepath:
+        with patch_query_string(filepath) as query_string:
+            options = ask_questions_and_parse_answers(raw_options, query_string)
+            _assert_correct_values(options, raw_options)
 
 
 def test_question_string_default_type():
@@ -87,179 +1983,6 @@ def test_question_string_default_type():
     assert out.name == "some_string"
     assert out.type == "string"
     assert out.value == "some_value"
-
-
-def test_question_string_no_input():
-    questions = {"some_string": {}}
-    answers = {}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_string_input():
-    questions = {
-        "some_string": {
-            "ask": "some question",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
-
-
-def test_question_string_input_no_ask():
-    questions = {"some_string": {}}
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
-
-
-def test_question_string_no_input_optional():
-    questions = {"some_string": {"optional": True}}
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == ""
-
-
-def test_question_string_optional_with_input():
-    questions = {
-        "some_string": {
-            "ask": "some question",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
-
-
-def test_question_string_optional_with_empty_input():
-    questions = {
-        "some_string": {
-            "ask": "some question",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value=""), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == ""
-
-
-def test_question_string_optional_with_input_without_ask():
-    questions = {
-        "some_string": {
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
-
-
-def test_question_string_no_input_default():
-    questions = {
-        "some_string": {
-            "ask": "some question",
-            "default": "some_value",
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
-
-
-def test_question_string_input_test_ask():
-    ask_text = "some question"
-    questions = {
-        "some_string": {
-            "ask": ask_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=False,
-            confirm=False,
-            prefill="",
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
-
-
-def test_question_string_input_test_ask_with_default():
-    ask_text = "some question"
-    default_text = "some example"
-    questions = {
-        "some_string": {
-            "ask": ask_text,
-            "default": default_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=False,
-            confirm=False,
-            prefill=default_text,
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
 
 
 @pytest.mark.skip  # we should do something with this example
@@ -280,26 +2003,6 @@ def test_question_string_input_test_ask_with_example():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert example_text in prompt.call_args[1]["message"]
-
-
-@pytest.mark.skip  # we should do something with this help
-def test_question_string_input_test_ask_with_help():
-    ask_text = "some question"
-    help_text = "some_help"
-    questions = {
-        "some_string": {
-            "ask": ask_text,
-            "help": help_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        assert ask_text in prompt.call_args[1]["message"]
-        assert help_text in prompt.call_args[1]["message"]
 
 
 def test_question_string_with_choice():
@@ -371,210 +2074,6 @@ def test_question_string_with_choice_default():
     assert out.value == "en"
 
 
-def test_question_password():
-    questions = {
-        "some_password": {
-            "type": "password",
-        }
-    }
-    answers = {"some_password": "some_value"}
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == "some_value"
-
-
-def test_question_password_no_input():
-    questions = {
-        "some_password": {
-            "type": "password",
-        }
-    }
-    answers = {}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_password_input():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": "some question",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == "some_value"
-
-
-def test_question_password_input_no_ask():
-    questions = {
-        "some_password": {
-            "type": "password",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == "some_value"
-
-
-def test_question_password_no_input_optional():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == ""
-
-    questions = {"some_password": {"type": "password", "optional": True, "default": ""}}
-
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == ""
-
-
-def test_question_password_optional_with_input():
-    questions = {
-        "some_password": {
-            "ask": "some question",
-            "type": "password",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == "some_value"
-
-
-def test_question_password_optional_with_empty_input():
-    questions = {
-        "some_password": {
-            "ask": "some question",
-            "type": "password",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value=""), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == ""
-
-
-def test_question_password_optional_with_input_without_ask():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_password"
-    assert out.type == "password"
-    assert out.value == "some_value"
-
-
-def test_question_password_no_input_default():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": "some question",
-            "default": "some_value",
-        }
-    }
-    answers = {}
-
-    # no default for password!
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-@pytest.mark.skip  # this should raises
-def test_question_password_no_input_example():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": "some question",
-            "example": "some_value",
-        }
-    }
-    answers = {"some_password": "some_value"}
-
-    # no example for password!
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_password_input_test_ask():
-    ask_text = "some question"
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": ask_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=True,
-            confirm=False,
-            prefill="",
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
-
-
 @pytest.mark.skip  # we should do something with this example
 def test_question_password_input_test_ask_with_example():
     ask_text = "some question"
@@ -594,284 +2093,6 @@ def test_question_password_input_test_ask_with_example():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert example_text in prompt.call_args[1]["message"]
-
-
-@pytest.mark.skip  # we should do something with this help
-def test_question_password_input_test_ask_with_help():
-    ask_text = "some question"
-    help_text = "some_help"
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": ask_text,
-            "help": help_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        assert ask_text in prompt.call_args[1]["message"]
-        assert help_text in prompt.call_args[1]["message"]
-
-
-def test_question_password_bad_chars():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": "some question",
-            "example": "some_value",
-        }
-    }
-
-    for i in PasswordQuestion.forbidden_chars:
-        with pytest.raises(YunohostError), patch.object(
-            os, "isatty", return_value=False
-        ):
-            ask_questions_and_parse_answers(questions, {"some_password": i * 8})
-
-
-def test_question_password_strong_enough():
-    questions = {
-        "some_password": {
-            "type": "password",
-            "ask": "some question",
-            "example": "some_value",
-        }
-    }
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        # too short
-        ask_questions_and_parse_answers(questions, {"some_password": "a"})
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, {"some_password": "password"})
-
-
-def test_question_password_optional_strong_enough():
-    questions = {
-        "some_password": {
-            "ask": "some question",
-            "type": "password",
-            "optional": True,
-        }
-    }
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        # too short
-        ask_questions_and_parse_answers(questions, {"some_password": "a"})
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, {"some_password": "password"})
-
-
-def test_question_path():
-    questions = {
-        "some_path": {
-            "type": "path",
-        }
-    }
-    answers = {"some_path": "/some_value"}
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == "/some_value"
-
-
-def test_question_path_no_input():
-    questions = {
-        "some_path": {
-            "type": "path",
-        }
-    }
-    answers = {}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_path_input():
-    questions = {
-        "some_path": {
-            "type": "path",
-            "ask": "some question",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == "/some_value"
-
-
-def test_question_path_input_no_ask():
-    questions = {
-        "some_path": {
-            "type": "path",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == "/some_value"
-
-
-def test_question_path_no_input_optional():
-    questions = {
-        "some_path": {
-            "type": "path",
-            "optional": True,
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == ""
-
-
-def test_question_path_optional_with_input():
-    questions = {
-        "some_path": {
-            "ask": "some question",
-            "type": "path",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == "/some_value"
-
-
-def test_question_path_optional_with_empty_input():
-    questions = {
-        "some_path": {
-            "ask": "some question",
-            "type": "path",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value=""), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == ""
-
-
-def test_question_path_optional_with_input_without_ask():
-    questions = {
-        "some_path": {
-            "type": "path",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="/some_value"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == "/some_value"
-
-
-def test_question_path_no_input_default():
-    questions = {
-        "some_path": {
-            "ask": "some question",
-            "type": "path",
-            "default": "some_value",
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_path"
-    assert out.type == "path"
-    assert out.value == "/some_value"
-
-
-def test_question_path_input_test_ask():
-    ask_text = "some question"
-    questions = {
-        "some_path": {
-            "type": "path",
-            "ask": ask_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=False,
-            confirm=False,
-            prefill="",
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
-
-
-def test_question_path_input_test_ask_with_default():
-    ask_text = "some question"
-    default_text = "someexample"
-    questions = {
-        "some_path": {
-            "type": "path",
-            "ask": ask_text,
-            "default": default_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=False,
-            confirm=False,
-            prefill=default_text,
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
 
 
 @pytest.mark.skip  # we should do something with this example
@@ -895,897 +2116,6 @@ def test_question_path_input_test_ask_with_example():
         assert example_text in prompt.call_args[1]["message"]
 
 
-@pytest.mark.skip  # we should do something with this help
-def test_question_path_input_test_ask_with_help():
-    ask_text = "some question"
-    help_text = "some_help"
-    questions = {
-        "some_path": {
-            "type": "path",
-            "ask": ask_text,
-            "help": help_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="some_value"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        assert ask_text in prompt.call_args[1]["message"]
-        assert help_text in prompt.call_args[1]["message"]
-
-
-def test_question_boolean():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-        }
-    }
-    answers = {"some_boolean": "y"}
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_boolean"
-    assert out.type == "boolean"
-    assert out.value == 1
-
-
-def test_question_boolean_all_yes():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-        }
-    }
-
-    for value in ["Y", "yes", "Yes", "YES", "1", 1, True, "True", "TRUE", "true"]:
-        out = ask_questions_and_parse_answers(questions, {"some_boolean": value})[0]
-        assert out.name == "some_boolean"
-        assert out.type == "boolean"
-        assert out.value == 1
-
-
-def test_question_boolean_all_no():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-        }
-    }
-
-    for value in ["n", "N", "no", "No", "No", "0", 0, False, "False", "FALSE", "false"]:
-        out = ask_questions_and_parse_answers(questions, {"some_boolean": value})[0]
-        assert out.name == "some_boolean"
-        assert out.type == "boolean"
-        assert out.value == 0
-
-
-# XXX apparently boolean are always False (0) by default, I'm not sure what to think about that
-def test_question_boolean_no_input():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-        }
-    }
-    answers = {}
-
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.value == 0
-
-
-def test_question_boolean_bad_input():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-        }
-    }
-    answers = {"some_boolean": "stuff"}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_boolean_input():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-            "ask": "some question",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="y"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-    assert out.value == 1
-
-    with patch.object(Moulinette, "prompt", return_value="n"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-    assert out.value == 0
-
-
-def test_question_boolean_input_no_ask():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="y"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-    assert out.value == 1
-
-
-def test_question_boolean_no_input_optional():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-            "optional": True,
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-    assert out.value == 0
-
-
-def test_question_boolean_optional_with_input():
-    questions = {
-        "some_boolean": {
-            "ask": "some question",
-            "type": "boolean",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="y"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-    assert out.value == 1
-
-
-def test_question_boolean_optional_with_empty_input():
-    questions = {
-        "some_boolean": {
-            "ask": "some question",
-            "type": "boolean",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value=""), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.value == 0
-
-
-def test_question_boolean_optional_with_input_without_ask():
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="n"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.value == 0
-
-
-def test_question_boolean_no_input_default():
-    questions = {
-        "some_boolean": {
-            "ask": "some question",
-            "type": "boolean",
-            "default": 0,
-        }
-    }
-    answers = {}
-
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.value == 0
-
-
-def test_question_boolean_bad_default():
-    questions = {
-        "some_boolean": {
-            "ask": "some question",
-            "type": "boolean",
-            "default": "bad default",
-        }
-    }
-    answers = {}
-    with pytest.raises(YunohostError):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_boolean_input_test_ask():
-    ask_text = "some question"
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-            "ask": ask_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value=0) as prompt, patch.object(
-        os, "isatty", return_value=True
-    ):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text + " [yes | no]",
-            is_password=False,
-            confirm=False,
-            prefill="no",
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
-
-
-def test_question_boolean_input_test_ask_with_default():
-    ask_text = "some question"
-    default_text = 1
-    questions = {
-        "some_boolean": {
-            "type": "boolean",
-            "ask": ask_text,
-            "default": default_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value=1) as prompt, patch.object(
-        os, "isatty", return_value=True
-    ):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text + " [yes | no]",
-            is_password=False,
-            confirm=False,
-            prefill="yes",
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
-
-
-def test_question_domain_empty():
-    questions = {
-        "some_domain": {
-            "type": "domain",
-        }
-    }
-    main_domain = "my_main_domain.com"
-    answers = {}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value="my_main_domain.com"
-    ), patch.object(
-        domain, "domain_list", return_value={"domains": [main_domain]}
-    ), patch.object(
-        os, "isatty", return_value=False
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_domain"
-    assert out.type == "domain"
-    assert out.value == main_domain
-
-
-def test_question_domain():
-    main_domain = "my_main_domain.com"
-    domains = [main_domain]
-    questions = {
-        "some_domain": {
-            "type": "domain",
-        }
-    }
-
-    answers = {"some_domain": main_domain}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_domain"
-    assert out.type == "domain"
-    assert out.value == main_domain
-
-
-def test_question_domain_two_domains():
-    main_domain = "my_main_domain.com"
-    other_domain = "some_other_domain.tld"
-    domains = [main_domain, other_domain]
-
-    questions = {
-        "some_domain": {
-            "type": "domain",
-        }
-    }
-    answers = {"some_domain": other_domain}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_domain"
-    assert out.type == "domain"
-    assert out.value == other_domain
-
-    answers = {"some_domain": main_domain}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_domain"
-    assert out.type == "domain"
-    assert out.value == main_domain
-
-
-def test_question_domain_two_domains_wrong_answer():
-    main_domain = "my_main_domain.com"
-    other_domain = "some_other_domain.tld"
-    domains = [main_domain, other_domain]
-
-    questions = {
-        "some_domain": {
-            "type": "domain",
-        }
-    }
-    answers = {"some_domain": "doesnt_exist.pouet"}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(domain, "domain_list", return_value={"domains": domains}):
-        with pytest.raises(YunohostError), patch.object(
-            os, "isatty", return_value=False
-        ):
-            ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_domain_two_domains_default_no_ask():
-    main_domain = "my_main_domain.com"
-    other_domain = "some_other_domain.tld"
-    domains = [main_domain, other_domain]
-
-    questions = {
-        "some_domain": {
-            "type": "domain",
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(
-        domain, "domain_list", return_value={"domains": domains}
-    ), patch.object(
-        os, "isatty", return_value=False
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_domain"
-    assert out.type == "domain"
-    assert out.value == main_domain
-
-
-def test_question_domain_two_domains_default():
-    main_domain = "my_main_domain.com"
-    other_domain = "some_other_domain.tld"
-    domains = [main_domain, other_domain]
-
-    questions = {"some_domain": {"type": "domain", "ask": "choose a domain"}}
-    answers = {}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(
-        domain, "domain_list", return_value={"domains": domains}
-    ), patch.object(
-        os, "isatty", return_value=False
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_domain"
-    assert out.type == "domain"
-    assert out.value == main_domain
-
-
-def test_question_domain_two_domains_default_input():
-    main_domain = "my_main_domain.com"
-    other_domain = "some_other_domain.tld"
-    domains = [main_domain, other_domain]
-
-    questions = {"some_domain": {"type": "domain", "ask": "choose a domain"}}
-    answers = {}
-
-    with patch.object(
-        domain, "_get_maindomain", return_value=main_domain
-    ), patch.object(
-        domain, "domain_list", return_value={"domains": domains}
-    ), patch.object(
-        os, "isatty", return_value=True
-    ):
-        with patch.object(Moulinette, "prompt", return_value=main_domain):
-            out = ask_questions_and_parse_answers(questions, answers)[0]
-
-        assert out.name == "some_domain"
-        assert out.type == "domain"
-        assert out.value == main_domain
-
-        with patch.object(Moulinette, "prompt", return_value=other_domain):
-            out = ask_questions_and_parse_answers(questions, answers)[0]
-
-        assert out.name == "some_domain"
-        assert out.type == "domain"
-        assert out.value == other_domain
-
-
-def test_question_user_empty():
-    users = {
-        "some_user": {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "p@ynh.local",
-            "fullname": "the first name the last name",
-        }
-    }
-
-    questions = {
-        "some_user": {
-            "type": "user",
-        }
-    }
-    answers = {}
-
-    with patch.object(user, "user_list", return_value={"users": users}):
-        with pytest.raises(YunohostError), patch.object(
-            os, "isatty", return_value=False
-        ):
-            ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_user():
-    username = "some_user"
-    users = {
-        username: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "p@ynh.local",
-            "fullname": "the first name the last name",
-        }
-    }
-
-    questions = {
-        "some_user": {
-            "type": "user",
-        }
-    }
-    answers = {"some_user": username}
-
-    with patch.object(user, "user_list", return_value={"users": users}), patch.object(
-        user, "user_info", return_value={}
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_user"
-    assert out.type == "user"
-    assert out.value == username
-
-
-def test_question_user_two_users():
-    username = "some_user"
-    other_user = "some_other_user"
-    users = {
-        username: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "p@ynh.local",
-            "fullname": "the first name the last name",
-        },
-        other_user: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "z@ynh.local",
-            "fullname": "john doe",
-        },
-    }
-
-    questions = {
-        "some_user": {
-            "type": "user",
-        }
-    }
-    answers = {"some_user": other_user}
-
-    with patch.object(user, "user_list", return_value={"users": users}), patch.object(
-        user, "user_info", return_value={}
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_user"
-    assert out.type == "user"
-    assert out.value == other_user
-
-    answers = {"some_user": username}
-
-    with patch.object(user, "user_list", return_value={"users": users}), patch.object(
-        user, "user_info", return_value={}
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_user"
-    assert out.type == "user"
-    assert out.value == username
-
-
-def test_question_user_two_users_wrong_answer():
-    username = "my_username.com"
-    other_user = "some_other_user"
-    users = {
-        username: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "p@ynh.local",
-            "fullname": "the first name the last name",
-        },
-        other_user: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "z@ynh.local",
-            "fullname": "john doe",
-        },
-    }
-
-    questions = {
-        "some_user": {
-            "type": "user",
-        }
-    }
-    answers = {"some_user": "doesnt_exist.pouet"}
-
-    with patch.object(user, "user_list", return_value={"users": users}):
-        with pytest.raises(YunohostError), patch.object(
-            os, "isatty", return_value=False
-        ):
-            ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_user_two_users_no_default():
-    username = "my_username.com"
-    other_user = "some_other_user.tld"
-    users = {
-        username: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "p@ynh.local",
-            "fullname": "the first name the last name",
-        },
-        other_user: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "z@ynh.local",
-            "fullname": "john doe",
-        },
-    }
-
-    questions = {"some_user": {"type": "user", "ask": "choose a user"}}
-    answers = {}
-
-    with patch.object(user, "user_list", return_value={"users": users}):
-        with pytest.raises(YunohostError), patch.object(
-            os, "isatty", return_value=False
-        ):
-            ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_user_two_users_default_input():
-    username = "my_username.com"
-    other_user = "some_other_user.tld"
-    users = {
-        username: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "p@ynh.local",
-            "fullname": "the first name the last name",
-        },
-        other_user: {
-            "ssh_allowed": False,
-            "username": "some_user",
-            "mailbox-quota": "0",
-            "mail": "z@ynh.local",
-            "fullname": "john doe",
-        },
-    }
-
-    questions = {"some_user": {"type": "user", "ask": "choose a user"}}
-    answers = {}
-
-    with patch.object(user, "user_list", return_value={"users": users}), patch.object(
-        os, "isatty", return_value=True
-    ):
-        with patch.object(user, "user_info", return_value={}):
-            with patch.object(Moulinette, "prompt", return_value=username):
-                out = ask_questions_and_parse_answers(questions, answers)[0]
-
-            assert out.name == "some_user"
-            assert out.type == "user"
-            assert out.value == username
-
-            with patch.object(Moulinette, "prompt", return_value=other_user):
-                out = ask_questions_and_parse_answers(questions, answers)[0]
-
-            assert out.name == "some_user"
-            assert out.type == "user"
-            assert out.value == other_user
-
-
-def test_question_number():
-    questions = {
-        "some_number": {
-            "type": "number",
-        }
-    }
-    answers = {"some_number": 1337}
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 1337
-
-
-def test_question_number_no_input():
-    questions = {
-        "some_number": {
-            "type": "number",
-        }
-    }
-    answers = {}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_number_bad_input():
-    questions = {
-        "some_number": {
-            "type": "number",
-        }
-    }
-    answers = {"some_number": "stuff"}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-    answers = {"some_number": 1.5}
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_number_input():
-    questions = {
-        "some_number": {
-            "type": "number",
-            "ask": "some question",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="1337"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 1337
-
-    with patch.object(Moulinette, "prompt", return_value=1337), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 1337
-
-    with patch.object(Moulinette, "prompt", return_value="0"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 0
-
-
-def test_question_number_input_no_ask():
-    questions = {
-        "some_number": {
-            "type": "number",
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="1337"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 1337
-
-
-def test_question_number_no_input_optional():
-    questions = {
-        "some_number": {
-            "type": "number",
-            "optional": True,
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value is None
-
-
-def test_question_number_optional_with_input():
-    questions = {
-        "some_number": {
-            "ask": "some question",
-            "type": "number",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="1337"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 1337
-
-
-def test_question_number_optional_with_input_without_ask():
-    questions = {
-        "some_number": {
-            "type": "number",
-            "optional": True,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="0"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 0
-
-
-def test_question_number_no_input_default():
-    questions = {
-        "some_number": {
-            "ask": "some question",
-            "type": "number",
-            "default": 1337,
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_number"
-    assert out.type == "number"
-    assert out.value == 1337
-
-
-def test_question_number_bad_default():
-    questions = {
-        "some_number": {
-            "ask": "some question",
-            "type": "number",
-            "default": "bad default",
-        }
-    }
-    answers = {}
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_number_input_test_ask():
-    ask_text = "some question"
-    questions = {
-        "some_number": {
-            "type": "number",
-            "ask": ask_text,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="1111"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=False,
-            confirm=False,
-            prefill="",
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
-
-
-def test_question_number_input_test_ask_with_default():
-    ask_text = "some question"
-    default_value = 1337
-    questions = {
-        "some_number": {
-            "type": "number",
-            "ask": ask_text,
-            "default": default_value,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="1111"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        prompt.assert_called_with(
-            message=ask_text,
-            is_password=False,
-            confirm=False,
-            prefill=str(default_value),
-            is_multiline=False,
-            autocomplete=[],
-            help=None,
-        )
-
-
 @pytest.mark.skip  # we should do something with this example
 def test_question_number_input_test_ask_with_example():
     ask_text = "some question"
@@ -1805,100 +2135,6 @@ def test_question_number_input_test_ask_with_example():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert example_value in prompt.call_args[1]["message"]
-
-
-@pytest.mark.skip  # we should do something with this help
-def test_question_number_input_test_ask_with_help():
-    ask_text = "some question"
-    help_value = 1337
-    questions = {
-        "some_number": {
-            "type": "number",
-            "ask": ask_text,
-            "help": help_value,
-        }
-    }
-    answers = {}
-
-    with patch.object(
-        Moulinette, "prompt", return_value="1111"
-    ) as prompt, patch.object(os, "isatty", return_value=True):
-        ask_questions_and_parse_answers(questions, answers)
-        assert ask_text in prompt.call_args[1]["message"]
-        assert help_value in prompt.call_args[1]["message"]
-
-
-def test_question_display_text():
-    questions = {"some_app": {"type": "display_text", "ask": "foobar"}}
-    answers = {}
-
-    with patch.object(sys, "stdout", new_callable=StringIO) as stdout, patch.object(
-        os, "isatty", return_value=True
-    ):
-        ask_questions_and_parse_answers(questions, answers)
-        assert "foobar" in stdout.getvalue()
-
-
-def test_question_file_from_cli():
-    FileQuestion.clean_upload_dirs()
-
-    filename = "/tmp/ynh_test_question_file"
-    os.system(f"rm -f {filename}")
-    os.system(f"echo helloworld > {filename}")
-
-    questions = {
-        "some_file": {
-            "type": "file",
-        }
-    }
-    answers = {"some_file": filename}
-
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_file"
-    assert out.type == "file"
-
-    # The file is supposed to be copied somewhere else
-    assert out.value != filename
-    assert out.value.startswith("/tmp/")
-    assert os.path.exists(out.value)
-    assert "helloworld" in open(out.value).read().strip()
-
-    FileQuestion.clean_upload_dirs()
-
-    assert not os.path.exists(out.value)
-
-
-def test_question_file_from_api():
-    FileQuestion.clean_upload_dirs()
-
-    from base64 import b64encode
-
-    b64content = b64encode(b"helloworld")
-    questions = {
-        "some_file": {
-            "type": "file",
-        }
-    }
-    answers = {"some_file": b64content}
-
-    interface_type_bkp = Moulinette.interface.type
-    try:
-        Moulinette.interface.type = "api"
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-    finally:
-        Moulinette.interface.type = interface_type_bkp
-
-    assert out.name == "some_file"
-    assert out.type == "file"
-
-    assert out.value.startswith("/tmp/")
-    assert os.path.exists(out.value)
-    assert "helloworld" in open(out.value).read().strip()
-
-    FileQuestion.clean_upload_dirs()
-
-    assert not os.path.exists(out.value)
 
 
 def test_normalize_boolean_nominal():

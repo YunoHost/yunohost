@@ -33,7 +33,8 @@ from yunohost.app import (
     _get_conflicting_apps,
 )
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
-from yunohost.utils.config import ConfigPanel, Question
+from yunohost.utils.configpanel import ConfigPanel
+from yunohost.utils.form import Question
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation
 

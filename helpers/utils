@@ -22,7 +22,10 @@ YNH_APP_BASEDIR=${YNH_APP_BASEDIR:-$(realpath ..)}
 ynh_exit_properly() {
     local exit_code=$?
 
-    rm -rf "/var/cache/yunohost/download/"
+    if [[ "${YNH_APP_ACTION:-}" =~ ^install$|^upgrade$|^restore$ ]]
+    then
+        rm -rf "/var/cache/yunohost/download/"
+    fi
 
     if [ "$exit_code" -eq 0 ]; then
         exit 0 # Exit without error if the script ended correctly
@@ -89,7 +92,9 @@ fi
 #     sha256 = "0123456789abcdef"    # The sha256 sum of the asset obtained from the URL
 # ```
 #
-# # Optional flags:
+# ##### Optional flags
+#
+# ```text
 # format    = "tar.gz"/xz/bz2    # automatically guessed from the extension of the URL, but can be set explicitly. Will use `tar` to extract
 #             "zip"              # automatically guessed from the extension of the URL, but can be set explicitly. Will use `unzip` to extract
 #             "docker"           # useful to extract files from an already-built docker image (instead of rebuilding them locally). Will use `docker-image-extract` to extract
@@ -105,7 +110,7 @@ fi
 #
 # rename    = "whatever_your_want"   # to be used for convenience when `extract` is false and the default name of the file is not practical
 # platform  = "linux/amd64"          # (defaults to "linux/$YNH_ARCH") to be used in conjonction with `format = "docker"` to specify which architecture to extract for
-# 
+# ```
 #
 # You may also define assets url and checksum per-architectures such as:
 # ```toml
@@ -162,22 +167,22 @@ ynh_setup_source() {
     if test -e $YNH_APP_BASEDIR/manifest.toml && cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq -e '.resources.sources' >/dev/null
     then
         source_id="${source_id:-main}"
-        local sources_json=$(cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq '.resources.sources')
-        if ! echo "$sources_json" | jq -re ".$source_id.url"
+        local sources_json=$(cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq ".resources.sources[\"$source_id\"]")
+        if jq -re ".url" <<< "$sources_json"
         then
-            local arch_prefix=".$YNH_ARCH"
-        else
             local arch_prefix=""
+        else
+            local arch_prefix=".$YNH_ARCH"
         fi
 
-        local src_url="$(echo "$sources_json" | jq -r ".$source_id$arch_prefix.url" | sed 's/^null$//')"
-        local src_sum="$(echo "$sources_json" | jq -r ".$source_id$arch_prefix.sha256" | sed 's/^null$//')"
+        local src_url="$(jq -r "$arch_prefix.url" <<< "$sources_json" | sed 's/^null$//')"
+        local src_sum="$(jq -r "$arch_prefix.sha256" <<< "$sources_json" | sed 's/^null$//')"
         local src_sumprg="sha256sum"
-        local src_format="$(echo "$sources_json" | jq -r ".$source_id.format" | sed 's/^null$//')"
-        local src_in_subdir="$(echo "$sources_json" | jq -r ".$source_id.in_subdir" | sed 's/^null$//')"
-        local src_extract="$(echo "$sources_json" | jq -r ".$source_id.extract" | sed 's/^null$//')"
-        local src_platform="$(echo "$sources_json" | jq -r ".$source_id.platform" | sed 's/^null$//')"
-        local src_rename="$(echo "$sources_json" | jq -r ".$source_id.rename" | sed 's/^null$//')"
+        local src_format="$(jq -r ".format" <<< "$sources_json" | sed 's/^null$//')"
+        local src_in_subdir="$(jq -r ".in_subdir" <<< "$sources_json" | sed 's/^null$//')"
+        local src_extract="$(jq -r ".extract" <<< "$sources_json" | sed 's/^null$//')"
+        local src_platform="$(jq -r ".platform" <<< "$sources_json" | sed 's/^null$//')"
+        local src_rename="$(jq -r ".rename" <<< "$sources_json" | sed 's/^null$//')"
 
         [[ -n "$src_url" ]] || ynh_die "No URL defined for source $source_id$arch_prefix ?"
         [[ -n "$src_sum" ]] || ynh_die "No sha256 sum defined for source $source_id$arch_prefix ?"
@@ -233,8 +238,9 @@ ynh_setup_source() {
     # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${source_id}"
 
-    mkdir -p /var/cache/yunohost/download/${YNH_APP_ID}/
-    src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${source_id}"
+    # Gotta use this trick with 'dirname' because source_id may contain slashes x_x
+    mkdir -p $(dirname /var/cache/yunohost/download/${YNH_APP_INSTANCE_NAME}/${source_id})
+    src_filename="/var/cache/yunohost/download/${YNH_APP_INSTANCE_NAME}/${source_id}"
 
     if [ "$src_format" = "docker" ]; then
         src_platform="${src_platform:-"linux/$YNH_ARCH"}"
@@ -264,8 +270,10 @@ ynh_setup_source() {
         # Check the control sum
         if ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
         then
-            rm ${src_filename}
-            ynh_die --message="Corrupt source for ${src_filename}: Expected ${src_sum} but got $(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1) (size: $(du -hs ${src_filename} | cut --delimiter=' ' --fields=1))."
+            local actual_sum="$(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1)"
+            local actual_size="$(du -hs ${src_filename} | cut --delimiter=' ' --fields=1)"
+            rm -f ${src_filename}
+            ynh_die --message="Corrupt source for ${src_filename}: Expected ${src_sum} but got ${actual_sum} (size: ${actual_size})."
         fi
     fi
 

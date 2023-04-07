@@ -960,6 +960,9 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
                         f"Pushing {record['type']} records is not properly supported by Lexicon/Godaddy."
                     )
                     continue
+            elif registrar == "gandi":
+                if record["name"] == base_dns_zone:
+                    record["name"] = "@." + record["name"]
 
             record["action"] = action
             query = (

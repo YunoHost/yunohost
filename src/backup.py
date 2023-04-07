@@ -2376,6 +2376,7 @@ def backup_list(with_info=False, human_readable=False):
     # (we do a realpath() to resolve symlinks)
     archives = glob(f"{ARCHIVES_PATH}/*.tar.gz") + glob(f"{ARCHIVES_PATH}/*.tar")
     archives = {os.path.realpath(archive) for archive in archives}
+    archives = {archive for archive in archives if os.path.exists(archive)}
     archives = sorted(archives, key=lambda x: os.path.getctime(x))
     # Extract only filename without the extension
 

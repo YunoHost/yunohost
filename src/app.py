@@ -48,9 +48,8 @@ from moulinette.utils.filesystem import (
     chmod,
 )
 
-from yunohost.utils.config import (
-    ConfigPanel,
-    ask_questions_and_parse_answers,
+from yunohost.utils.configpanel import ConfigPanel, ask_questions_and_parse_answers
+from yunohost.utils.form import (
     DomainQuestion,
     PathQuestion,
     hydrate_questions_with_choices,
@@ -1444,7 +1443,9 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
         from yunohost.utils.resources import AppResourceManager
 
         AppResourceManager(app, wanted={}, current=manifest).apply(
-            rollback_and_raise_exception_if_failure=False, purge_data_dir=purge, action="remove"
+            rollback_and_raise_exception_if_failure=False,
+            purge_data_dir=purge,
+            action="remove",
         )
     else:
         # Remove all permission in LDAP

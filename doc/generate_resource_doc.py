@@ -2,7 +2,7 @@ import ast
 import datetime
 import subprocess
 
-version = (open("../debian/changelog").readlines()[0].split()[1].strip("()"),)
+version = open("../debian/changelog").readlines()[0].split()[1].strip("()")
 today = datetime.datetime.now().strftime("%d/%m/%Y")
 
 
