@@ -1878,12 +1878,12 @@ class AppConfigPanel(ConfigPanel):
     save_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/settings.yml")
     config_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/config_panel.toml")
 
-    def _load_current_values(self):
-        self.values = self._call_config_script("show")
-
     def _run_action(self, action):
         env = {key: str(value) for key, value in self.new_values.items()}
         self._call_config_script(action, env=env)
+
+    def _load_current_values(self):
+        self.values = self._call_config_script("show")
 
     def _apply(self):
         env = {key: str(value) for key, value in self.new_values.items()}

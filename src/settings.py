@@ -125,83 +125,6 @@ class SettingsConfigPanel(ConfigPanel):
     def __init__(self, config_path=None, save_path=None, creation=False):
         super().__init__("settings")
 
-    def _apply(self):
-        root_password = self.new_values.pop("root_password", None)
-        root_password_confirm = self.new_values.pop("root_password_confirm", None)
-        passwordless_sudo = self.new_values.pop("passwordless_sudo", None)
-
-        self.values = {
-            k: v for k, v in self.values.items() if k not in self.virtual_settings
-        }
-        self.new_values = {
-            k: v for k, v in self.new_values.items() if k not in self.virtual_settings
-        }
-
-        assert all(v not in self.future_values for v in self.virtual_settings)
-
-        if root_password and root_password.strip():
-            if root_password != root_password_confirm:
-                raise YunohostValidationError("password_confirmation_not_the_same")
-
-            from yunohost.tools import tools_rootpw
-
-            tools_rootpw(root_password, check_strength=True)
-
-        if passwordless_sudo is not None:
-            from yunohost.utils.ldap import _get_ldap_interface
-
-            ldap = _get_ldap_interface()
-            ldap.update(
-                "cn=admins,ou=sudo",
-                {"sudoOption": ["!authenticate"] if passwordless_sudo else []},
-            )
-
-        super()._apply()
-
-        settings = {
-            k: v for k, v in self.future_values.items() if self.values.get(k) != v
-        }
-        for setting_name, value in settings.items():
-            try:
-                trigger_post_change_hook(
-                    setting_name, self.values.get(setting_name), value
-                )
-            except Exception as e:
-                logger.error(f"Post-change hook for setting failed : {e}")
-                raise
-
-    def _get_toml(self):
-        toml = super()._get_toml()
-
-        # Dynamic choice list for portal themes
-        THEMEDIR = "/usr/share/ssowat/portal/assets/themes/"
-        try:
-            themes = [d for d in os.listdir(THEMEDIR) if os.path.isdir(THEMEDIR + d)]
-        except Exception:
-            themes = ["unsplash", "vapor", "light", "default", "clouds"]
-        toml["misc"]["portal"]["portal_theme"]["choices"] = themes
-
-        return toml
-
-    def _load_current_values(self):
-        super()._load_current_values()
-
-        # Specific logic for those settings who are "virtual" settings
-        # and only meant to have a custom setter mapped to tools_rootpw
-        self.values["root_password"] = ""
-        self.values["root_password_confirm"] = ""
-
-        # Specific logic for virtual setting "passwordless_sudo"
-        try:
-            from yunohost.utils.ldap import _get_ldap_interface
-
-            ldap = _get_ldap_interface()
-            self.values["passwordless_sudo"] = "!authenticate" in ldap.search(
-                "ou=sudo", "cn=admins", ["sudoOption"]
-            )[0].get("sudoOption", [])
-        except Exception:
-            self.values["passwordless_sudo"] = False
-
     def get(self, key="", mode="classic"):
         result = super().get(key=key, mode=mode)
 
@@ -256,6 +179,83 @@ class SettingsConfigPanel(ConfigPanel):
 
         logger.success(m18n.n("global_settings_reset_success"))
         operation_logger.success()
+
+    def _get_toml(self):
+        toml = super()._get_toml()
+
+        # Dynamic choice list for portal themes
+        THEMEDIR = "/usr/share/ssowat/portal/assets/themes/"
+        try:
+            themes = [d for d in os.listdir(THEMEDIR) if os.path.isdir(THEMEDIR + d)]
+        except Exception:
+            themes = ["unsplash", "vapor", "light", "default", "clouds"]
+        toml["misc"]["portal"]["portal_theme"]["choices"] = themes
+
+        return toml
+
+    def _load_current_values(self):
+        super()._load_current_values()
+
+        # Specific logic for those settings who are "virtual" settings
+        # and only meant to have a custom setter mapped to tools_rootpw
+        self.values["root_password"] = ""
+        self.values["root_password_confirm"] = ""
+
+        # Specific logic for virtual setting "passwordless_sudo"
+        try:
+            from yunohost.utils.ldap import _get_ldap_interface
+
+            ldap = _get_ldap_interface()
+            self.values["passwordless_sudo"] = "!authenticate" in ldap.search(
+                "ou=sudo", "cn=admins", ["sudoOption"]
+            )[0].get("sudoOption", [])
+        except Exception:
+            self.values["passwordless_sudo"] = False
+
+    def _apply(self):
+        root_password = self.new_values.pop("root_password", None)
+        root_password_confirm = self.new_values.pop("root_password_confirm", None)
+        passwordless_sudo = self.new_values.pop("passwordless_sudo", None)
+
+        self.values = {
+            k: v for k, v in self.values.items() if k not in self.virtual_settings
+        }
+        self.new_values = {
+            k: v for k, v in self.new_values.items() if k not in self.virtual_settings
+        }
+
+        assert all(v not in self.future_values for v in self.virtual_settings)
+
+        if root_password and root_password.strip():
+            if root_password != root_password_confirm:
+                raise YunohostValidationError("password_confirmation_not_the_same")
+
+            from yunohost.tools import tools_rootpw
+
+            tools_rootpw(root_password, check_strength=True)
+
+        if passwordless_sudo is not None:
+            from yunohost.utils.ldap import _get_ldap_interface
+
+            ldap = _get_ldap_interface()
+            ldap.update(
+                "cn=admins,ou=sudo",
+                {"sudoOption": ["!authenticate"] if passwordless_sudo else []},
+            )
+
+        super()._apply()
+
+        settings = {
+            k: v for k, v in self.future_values.items() if self.values.get(k) != v
+        }
+        for setting_name, value in settings.items():
+            try:
+                trigger_post_change_hook(
+                    setting_name, self.values.get(setting_name), value
+                )
+            except Exception as e:
+                logger.error(f"Post-change hook for setting failed : {e}")
+                raise
 
 
 # Meant to be a dict of setting_name -> function to call

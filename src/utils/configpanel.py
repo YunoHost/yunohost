@@ -175,6 +175,68 @@ class ConfigPanel:
         else:
             return result
 
+    def set(
+        self, key=None, value=None, args=None, args_file=None, operation_logger=None
+    ):
+        self.filter_key = key or ""
+
+        # Read config panel toml
+        self._get_config_panel()
+
+        if not self.config:
+            raise YunohostValidationError("config_no_panel")
+
+        if (args is not None or args_file is not None) and value is not None:
+            raise YunohostValidationError(
+                "You should either provide a value, or a serie of args/args_file, but not both at the same time",
+                raw_msg=True,
+            )
+
+        if self.filter_key.count(".") != 2 and value is not None:
+            raise YunohostValidationError("config_cant_set_value_on_section")
+
+        # Import and parse pre-answered options
+        logger.debug("Import and parse pre-answered options")
+        self._parse_pre_answered(args, value, args_file)
+
+        # Read or get values and hydrate the config
+        self._load_current_values()
+        self._hydrate()
+        BaseOption.operation_logger = operation_logger
+        self._ask()
+
+        if operation_logger:
+            operation_logger.start()
+
+        try:
+            self._apply()
+        except YunohostError:
+            raise
+        # Script got manually interrupted ...
+        # N.B. : KeyboardInterrupt does not inherit from Exception
+        except (KeyboardInterrupt, EOFError):
+            error = m18n.n("operation_interrupted")
+            logger.error(m18n.n("config_apply_failed", error=error))
+            raise
+        # Something wrong happened in Yunohost's code (most probably hook_exec)
+        except Exception:
+            import traceback
+
+            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+            logger.error(m18n.n("config_apply_failed", error=error))
+            raise
+        finally:
+            # Delete files uploaded from API
+            # FIXME : this is currently done in the context of config panels,
+            # but could also happen in the context of app install ... (or anywhere else
+            # where we may parse args etc...)
+            FileOption.clean_upload_dirs()
+
+        self._reload_services()
+
+        logger.success("Config updated as expected")
+        operation_logger.success()
+
     def list_actions(self):
         actions = {}
 
@@ -246,68 +308,6 @@ class ConfigPanel:
 
         # FIXME: i18n
         logger.success(f"Action {action_id} successful")
-        operation_logger.success()
-
-    def set(
-        self, key=None, value=None, args=None, args_file=None, operation_logger=None
-    ):
-        self.filter_key = key or ""
-
-        # Read config panel toml
-        self._get_config_panel()
-
-        if not self.config:
-            raise YunohostValidationError("config_no_panel")
-
-        if (args is not None or args_file is not None) and value is not None:
-            raise YunohostValidationError(
-                "You should either provide a value, or a serie of args/args_file, but not both at the same time",
-                raw_msg=True,
-            )
-
-        if self.filter_key.count(".") != 2 and value is not None:
-            raise YunohostValidationError("config_cant_set_value_on_section")
-
-        # Import and parse pre-answered options
-        logger.debug("Import and parse pre-answered options")
-        self._parse_pre_answered(args, value, args_file)
-
-        # Read or get values and hydrate the config
-        self._load_current_values()
-        self._hydrate()
-        BaseOption.operation_logger = operation_logger
-        self._ask()
-
-        if operation_logger:
-            operation_logger.start()
-
-        try:
-            self._apply()
-        except YunohostError:
-            raise
-        # Script got manually interrupted ...
-        # N.B. : KeyboardInterrupt does not inherit from Exception
-        except (KeyboardInterrupt, EOFError):
-            error = m18n.n("operation_interrupted")
-            logger.error(m18n.n("config_apply_failed", error=error))
-            raise
-        # Something wrong happened in Yunohost's code (most probably hook_exec)
-        except Exception:
-            import traceback
-
-            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-            logger.error(m18n.n("config_apply_failed", error=error))
-            raise
-        finally:
-            # Delete files uploaded from API
-            # FIXME : this is currently done in the context of config panels,
-            # but could also happen in the context of app install ... (or anywhere else
-            # where we may parse args etc...)
-            FileOption.clean_upload_dirs()
-
-        self._reload_services()
-
-        logger.success("Config updated as expected")
         operation_logger.success()
 
     def _get_toml(self):
@@ -488,6 +488,26 @@ class ConfigPanel:
 
         return self.config
 
+    def _get_default_values(self):
+        return {
+            option["id"]: option["default"]
+            for _, _, option in self._iterate()
+            if "default" in option
+        }
+
+    def _load_current_values(self):
+        """
+        Retrieve entries in YAML file
+        And set default values if needed
+        """
+
+        # Inject defaults if needed (using the magic .update() ;))
+        self.values = self._get_default_values()
+
+        # Retrieve entries in the YAML
+        if os.path.exists(self.save_path) and os.path.isfile(self.save_path):
+            self.values.update(read_yaml(self.save_path) or {})
+
     def _hydrate(self):
         # Hydrating config panel with current value
         for _, section, option in self._iterate():
@@ -604,13 +624,6 @@ class ConfigPanel:
                 }
             )
 
-    def _get_default_values(self):
-        return {
-            option["id"]: option["default"]
-            for _, _, option in self._iterate()
-            if "default" in option
-        }
-
     @property
     def future_values(self):
         return {**self.values, **self.new_values}
@@ -623,19 +636,6 @@ class ConfigPanel:
             return self.values[name]
 
         return self.__dict__[name]
-
-    def _load_current_values(self):
-        """
-        Retrieve entries in YAML file
-        And set default values if needed
-        """
-
-        # Inject defaults if needed (using the magic .update() ;))
-        self.values = self._get_default_values()
-
-        # Retrieve entries in the YAML
-        if os.path.exists(self.save_path) and os.path.isfile(self.save_path):
-            self.values.update(read_yaml(self.save_path) or {})
 
     def _parse_pre_answered(self, args, value, args_file):
         args = urllib.parse.parse_qs(args or "", keep_blank_values=True)
