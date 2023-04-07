@@ -377,105 +377,50 @@ class BaseOption:
         return self.value
 
 
+class DisplayTextOption(BaseOption):
+    argument_type = "display_text"
+
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
+        super().__init__(question, context, hooks)
+
+        self.optional = True
+        self.readonly = True
+        self.style = question.get(
+            "style", "info" if question["type"] == "alert" else ""
+        )
+
+    def _format_text_for_user_input_in_cli(self):
+        text = _value_for_locale(self.ask)
+
+        if self.style in ["success", "info", "warning", "danger"]:
+            color = {
+                "success": "green",
+                "info": "cyan",
+                "warning": "yellow",
+                "danger": "red",
+            }
+            prompt = m18n.g(self.style) if self.style != "danger" else m18n.n("danger")
+            return colorize(prompt, color[self.style]) + f" {text}"
+        else:
+            return text
+
+
+class ButtonOption(BaseOption):
+    argument_type = "button"
+    enabled = None
+
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
+        super().__init__(question, context, hooks)
+        self.enabled = question.get("enabled", None)
+
+
 class StringOption(BaseOption):
     argument_type = "string"
     default_value = ""
-
-
-class EmailOption(StringOption):
-    pattern = {
-        "regexp": r"^.+@.+",
-        "error": "config_validate_email",  # i18n: config_validate_email
-    }
-
-
-class URLOption(StringOption):
-    pattern = {
-        "regexp": r"^https?://.*$",
-        "error": "config_validate_url",  # i18n: config_validate_url
-    }
-
-
-class DateOption(StringOption):
-    pattern = {
-        "regexp": r"^\d{4}-\d\d-\d\d$",
-        "error": "config_validate_date",  # i18n: config_validate_date
-    }
-
-    def _prevalidate(self):
-        from datetime import datetime
-
-        super()._prevalidate()
-
-        if self.value not in [None, ""]:
-            try:
-                datetime.strptime(self.value, "%Y-%m-%d")
-            except ValueError:
-                raise YunohostValidationError("config_validate_date")
-
-
-class TimeOption(StringOption):
-    pattern = {
-        "regexp": r"^(?:\d|[01]\d|2[0-3]):[0-5]\d$",
-        "error": "config_validate_time",  # i18n: config_validate_time
-    }
-
-
-class ColorOption(StringOption):
-    pattern = {
-        "regexp": r"^#[ABCDEFabcdef\d]{3,6}$",
-        "error": "config_validate_color",  # i18n: config_validate_color
-    }
-
-
-class TagsOption(BaseOption):
-    argument_type = "tags"
-    default_value = ""
-
-    @staticmethod
-    def humanize(value, option={}):
-        if isinstance(value, list):
-            return ",".join(str(v) for v in value)
-        return value
-
-    @staticmethod
-    def normalize(value, option={}):
-        if isinstance(value, list):
-            return ",".join(str(v) for v in value)
-        if isinstance(value, str):
-            value = value.strip()
-        return value
-
-    def _prevalidate(self):
-        values = self.value
-        if isinstance(values, str):
-            values = values.split(",")
-        elif values is None:
-            values = []
-
-        if not isinstance(values, list):
-            if self.choices:
-                raise YunohostValidationError(
-                    "app_argument_choice_invalid",
-                    name=self.name,
-                    value=self.value,
-                    choices=", ".join(str(choice) for choice in self.choices),
-                )
-            raise YunohostValidationError(
-                "app_argument_invalid",
-                name=self.name,
-                error=f"'{str(self.value)}' is not a list",
-            )
-
-        for value in values:
-            self.value = value
-            super()._prevalidate()
-        self.value = values
-
-    def _post_parse_value(self):
-        if isinstance(self.value, list):
-            self.value = ",".join(self.value)
-        return super()._post_parse_value()
 
 
 class PasswordOption(BaseOption):
@@ -509,35 +454,64 @@ class PasswordOption(BaseOption):
             assert_password_is_strong_enough("user", self.value)
 
 
-class WebPathOption(BaseOption):
-    argument_type = "path"
-    default_value = ""
+class ColorOption(StringOption):
+    pattern = {
+        "regexp": r"^#[ABCDEFabcdef\d]{3,6}$",
+        "error": "config_validate_color",  # i18n: config_validate_color
+    }
+
+
+class NumberOption(BaseOption):
+    argument_type = "number"
+    default_value = None
+
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
+        super().__init__(question, context, hooks)
+        self.min = question.get("min", None)
+        self.max = question.get("max", None)
+        self.step = question.get("step", None)
 
     @staticmethod
     def normalize(value, option={}):
-        option = option.__dict__ if isinstance(option, BaseOption) else option
+        if isinstance(value, int):
+            return value
 
-        if not isinstance(value, str):
+        if isinstance(value, str):
+            value = value.strip()
+
+        if isinstance(value, str) and value.isdigit():
+            return int(value)
+
+        if value in [None, ""]:
+            return None
+
+        option = option.__dict__ if isinstance(option, BaseOption) else option
+        raise YunohostValidationError(
+            "app_argument_invalid",
+            name=option.get("name"),
+            error=m18n.n("invalid_number"),
+        )
+
+    def _prevalidate(self):
+        super()._prevalidate()
+        if self.value in [None, ""]:
+            return
+
+        if self.min is not None and int(self.value) < self.min:
             raise YunohostValidationError(
                 "app_argument_invalid",
-                name=option.get("name"),
-                error="Argument for path should be a string.",
+                name=self.name,
+                error=m18n.n("invalid_number_min", min=self.min),
             )
 
-        if not value.strip():
-            if option.get("optional"):
-                return ""
-            # Hmpf here we could just have a "else" case
-            # but we also want WebPathOption.normalize("") to return "/"
-            # (i.e. if no option is provided, hence .get("optional") is None
-            elif option.get("optional") is False:
-                raise YunohostValidationError(
-                    "app_argument_invalid",
-                    name=option.get("name"),
-                    error="Option is mandatory",
-                )
-
-        return "/" + value.strip().strip(" /")
+        if self.max is not None and int(self.value) > self.max:
+            raise YunohostValidationError(
+                "app_argument_invalid",
+                name=self.name,
+                error=m18n.n("invalid_number_max", max=self.max),
+            )
 
 
 class BooleanOption(BaseOption):
@@ -628,6 +602,191 @@ class BooleanOption(BaseOption):
 
     def get(self, key, default=None):
         return getattr(self, key, default)
+
+
+class DateOption(StringOption):
+    pattern = {
+        "regexp": r"^\d{4}-\d\d-\d\d$",
+        "error": "config_validate_date",  # i18n: config_validate_date
+    }
+
+    def _prevalidate(self):
+        from datetime import datetime
+
+        super()._prevalidate()
+
+        if self.value not in [None, ""]:
+            try:
+                datetime.strptime(self.value, "%Y-%m-%d")
+            except ValueError:
+                raise YunohostValidationError("config_validate_date")
+
+
+class TimeOption(StringOption):
+    pattern = {
+        "regexp": r"^(?:\d|[01]\d|2[0-3]):[0-5]\d$",
+        "error": "config_validate_time",  # i18n: config_validate_time
+    }
+
+
+class EmailOption(StringOption):
+    pattern = {
+        "regexp": r"^.+@.+",
+        "error": "config_validate_email",  # i18n: config_validate_email
+    }
+
+
+class WebPathOption(BaseOption):
+    argument_type = "path"
+    default_value = ""
+
+    @staticmethod
+    def normalize(value, option={}):
+        option = option.__dict__ if isinstance(option, BaseOption) else option
+
+        if not isinstance(value, str):
+            raise YunohostValidationError(
+                "app_argument_invalid",
+                name=option.get("name"),
+                error="Argument for path should be a string.",
+            )
+
+        if not value.strip():
+            if option.get("optional"):
+                return ""
+            # Hmpf here we could just have a "else" case
+            # but we also want WebPathOption.normalize("") to return "/"
+            # (i.e. if no option is provided, hence .get("optional") is None
+            elif option.get("optional") is False:
+                raise YunohostValidationError(
+                    "app_argument_invalid",
+                    name=option.get("name"),
+                    error="Option is mandatory",
+                )
+
+        return "/" + value.strip().strip(" /")
+
+
+class URLOption(StringOption):
+    pattern = {
+        "regexp": r"^https?://.*$",
+        "error": "config_validate_url",  # i18n: config_validate_url
+    }
+
+
+class FileOption(BaseOption):
+    argument_type = "file"
+    upload_dirs: List[str] = []
+
+    @classmethod
+    def clean_upload_dirs(cls):
+        # Delete files uploaded from API
+        for upload_dir in cls.upload_dirs:
+            if os.path.exists(upload_dir):
+                shutil.rmtree(upload_dir)
+
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
+        super().__init__(question, context, hooks)
+        self.accept = question.get("accept", "")
+
+    def _prevalidate(self):
+        if self.value is None:
+            self.value = self.current_value
+
+        super()._prevalidate()
+
+        # Validation should have already failed if required
+        if self.value in [None, ""]:
+            return self.value
+
+        if Moulinette.interface.type != "api":
+            if not os.path.exists(str(self.value)) or not os.path.isfile(
+                str(self.value)
+            ):
+                raise YunohostValidationError(
+                    "app_argument_invalid",
+                    name=self.name,
+                    error=m18n.n("file_does_not_exist", path=str(self.value)),
+                )
+
+    def _post_parse_value(self):
+        from base64 import b64decode
+
+        if not self.value:
+            return ""
+
+        upload_dir = tempfile.mkdtemp(prefix="ynh_filequestion_")
+        _, file_path = tempfile.mkstemp(dir=upload_dir)
+
+        FileOption.upload_dirs += [upload_dir]
+
+        logger.debug(f"Saving file {self.name} for file question into {file_path}")
+
+        def is_file_path(s):
+            return isinstance(s, str) and s.startswith("/") and os.path.exists(s)
+
+        if Moulinette.interface.type != "api" or is_file_path(self.value):
+            content = read_file(str(self.value), file_mode="rb")
+        else:
+            content = b64decode(self.value)
+
+        write_to_file(file_path, content, file_mode="wb")
+
+        self.value = file_path
+
+        return self.value
+
+
+class TagsOption(BaseOption):
+    argument_type = "tags"
+    default_value = ""
+
+    @staticmethod
+    def humanize(value, option={}):
+        if isinstance(value, list):
+            return ",".join(str(v) for v in value)
+        return value
+
+    @staticmethod
+    def normalize(value, option={}):
+        if isinstance(value, list):
+            return ",".join(str(v) for v in value)
+        if isinstance(value, str):
+            value = value.strip()
+        return value
+
+    def _prevalidate(self):
+        values = self.value
+        if isinstance(values, str):
+            values = values.split(",")
+        elif values is None:
+            values = []
+
+        if not isinstance(values, list):
+            if self.choices:
+                raise YunohostValidationError(
+                    "app_argument_choice_invalid",
+                    name=self.name,
+                    value=self.value,
+                    choices=", ".join(str(choice) for choice in self.choices),
+                )
+            raise YunohostValidationError(
+                "app_argument_invalid",
+                name=self.name,
+                error=f"'{str(self.value)}' is not a list",
+            )
+
+        for value in values:
+            self.value = value
+            super()._prevalidate()
+        self.value = values
+
+    def _post_parse_value(self):
+        if isinstance(self.value, list):
+            self.value = ",".join(self.value)
+        return super()._post_parse_value()
 
 
 class DomainOption(BaseOption):
@@ -747,189 +906,30 @@ class GroupOption(BaseOption):
             self.default = "all_users"
 
 
-class NumberOption(BaseOption):
-    argument_type = "number"
-    default_value = None
-
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
-        super().__init__(question, context, hooks)
-        self.min = question.get("min", None)
-        self.max = question.get("max", None)
-        self.step = question.get("step", None)
-
-    @staticmethod
-    def normalize(value, option={}):
-        if isinstance(value, int):
-            return value
-
-        if isinstance(value, str):
-            value = value.strip()
-
-        if isinstance(value, str) and value.isdigit():
-            return int(value)
-
-        if value in [None, ""]:
-            return None
-
-        option = option.__dict__ if isinstance(option, BaseOption) else option
-        raise YunohostValidationError(
-            "app_argument_invalid",
-            name=option.get("name"),
-            error=m18n.n("invalid_number"),
-        )
-
-    def _prevalidate(self):
-        super()._prevalidate()
-        if self.value in [None, ""]:
-            return
-
-        if self.min is not None and int(self.value) < self.min:
-            raise YunohostValidationError(
-                "app_argument_invalid",
-                name=self.name,
-                error=m18n.n("invalid_number_min", min=self.min),
-            )
-
-        if self.max is not None and int(self.value) > self.max:
-            raise YunohostValidationError(
-                "app_argument_invalid",
-                name=self.name,
-                error=m18n.n("invalid_number_max", max=self.max),
-            )
-
-
-class DisplayTextOption(BaseOption):
-    argument_type = "display_text"
-
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
-        super().__init__(question, context, hooks)
-
-        self.optional = True
-        self.readonly = True
-        self.style = question.get(
-            "style", "info" if question["type"] == "alert" else ""
-        )
-
-    def _format_text_for_user_input_in_cli(self):
-        text = _value_for_locale(self.ask)
-
-        if self.style in ["success", "info", "warning", "danger"]:
-            color = {
-                "success": "green",
-                "info": "cyan",
-                "warning": "yellow",
-                "danger": "red",
-            }
-            prompt = m18n.g(self.style) if self.style != "danger" else m18n.n("danger")
-            return colorize(prompt, color[self.style]) + f" {text}"
-        else:
-            return text
-
-
-class FileOption(BaseOption):
-    argument_type = "file"
-    upload_dirs: List[str] = []
-
-    @classmethod
-    def clean_upload_dirs(cls):
-        # Delete files uploaded from API
-        for upload_dir in cls.upload_dirs:
-            if os.path.exists(upload_dir):
-                shutil.rmtree(upload_dir)
-
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
-        super().__init__(question, context, hooks)
-        self.accept = question.get("accept", "")
-
-    def _prevalidate(self):
-        if self.value is None:
-            self.value = self.current_value
-
-        super()._prevalidate()
-
-        # Validation should have already failed if required
-        if self.value in [None, ""]:
-            return self.value
-
-        if Moulinette.interface.type != "api":
-            if not os.path.exists(str(self.value)) or not os.path.isfile(
-                str(self.value)
-            ):
-                raise YunohostValidationError(
-                    "app_argument_invalid",
-                    name=self.name,
-                    error=m18n.n("file_does_not_exist", path=str(self.value)),
-                )
-
-    def _post_parse_value(self):
-        from base64 import b64decode
-
-        if not self.value:
-            return ""
-
-        upload_dir = tempfile.mkdtemp(prefix="ynh_filequestion_")
-        _, file_path = tempfile.mkstemp(dir=upload_dir)
-
-        FileOption.upload_dirs += [upload_dir]
-
-        logger.debug(f"Saving file {self.name} for file question into {file_path}")
-
-        def is_file_path(s):
-            return isinstance(s, str) and s.startswith("/") and os.path.exists(s)
-
-        if Moulinette.interface.type != "api" or is_file_path(self.value):
-            content = read_file(str(self.value), file_mode="rb")
-        else:
-            content = b64decode(self.value)
-
-        write_to_file(file_path, content, file_mode="wb")
-
-        self.value = file_path
-
-        return self.value
-
-
-class ButtonOption(BaseOption):
-    argument_type = "button"
-    enabled = None
-
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
-        super().__init__(question, context, hooks)
-        self.enabled = question.get("enabled", None)
-
-
 OPTIONS = {
+    "display_text": DisplayTextOption,
+    "markdown": DisplayTextOption,
+    "alert": DisplayTextOption,
+    "button": ButtonOption,
     "string": StringOption,
     "text": StringOption,
-    "select": StringOption,
-    "tags": TagsOption,
-    "email": EmailOption,
-    "url": URLOption,
-    "date": DateOption,
-    "time": TimeOption,
-    "color": ColorOption,
     "password": PasswordOption,
-    "path": WebPathOption,
-    "boolean": BooleanOption,
-    "domain": DomainOption,
-    "user": UserOption,
-    "group": GroupOption,
+    "color": ColorOption,
     "number": NumberOption,
     "range": NumberOption,
-    "display_text": DisplayTextOption,
-    "alert": DisplayTextOption,
-    "markdown": DisplayTextOption,
+    "boolean": BooleanOption,
+    "date": DateOption,
+    "time": TimeOption,
+    "email": EmailOption,
+    "path": WebPathOption,
+    "url": URLOption,
     "file": FileOption,
+    "select": StringOption,
+    "tags": TagsOption,
+    "domain": DomainOption,
     "app": AppOption,
-    "button": ButtonOption,
+    "user": UserOption,
+    "group": GroupOption,
 }
 
 
@@ -996,9 +996,7 @@ def hydrate_questions_with_choices(raw_questions: List) -> List:
     out = []
 
     for raw_question in raw_questions:
-        question = OPTIONS[raw_question.get("type", "string")](
-            raw_question
-        )
+        question = OPTIONS[raw_question.get("type", "string")](raw_question)
         if question.choices:
             raw_question["choices"] = question.choices
             raw_question["default"] = question.default
