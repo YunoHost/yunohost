@@ -231,22 +231,6 @@ class BaseOption:
             value = value.strip()
         return value
 
-    def _prompt(self, text):
-        prefill = ""
-        if self.current_value is not None:
-            prefill = self.humanize(self.current_value, self)
-        elif self.default is not None:
-            prefill = self.humanize(self.default, self)
-        self.value = Moulinette.prompt(
-            message=text,
-            is_password=self.hide_user_input_in_prompt,
-            confirm=False,
-            prefill=prefill,
-            is_multiline=(self.type == "text"),
-            autocomplete=self.choices or [],
-            help=_value_for_locale(self.help),
-        )
-
     def ask_if_needed(self):
         if self.visible and not evaluate_simple_js_expression(
             self.visible, context=self.context
@@ -301,25 +285,21 @@ class BaseOption:
 
         return self.values
 
-    def _value_pre_validator(self):
-        if self.value in [None, ""] and not self.optional:
-            raise YunohostValidationError("app_argument_required", name=self.name)
-
-        # we have an answer, do some post checks
-        if self.value not in [None, ""]:
-            if self.choices and self.value not in self.choices:
-                raise YunohostValidationError(
-                    "app_argument_choice_invalid",
-                    name=self.name,
-                    value=self.value,
-                    choices=", ".join(str(choice) for choice in self.choices),
-                )
-            if self.pattern and not re.match(self.pattern["regexp"], str(self.value)):
-                raise YunohostValidationError(
-                    self.pattern["error"],
-                    name=self.name,
-                    value=self.value,
-                )
+    def _prompt(self, text):
+        prefill = ""
+        if self.current_value is not None:
+            prefill = self.humanize(self.current_value, self)
+        elif self.default is not None:
+            prefill = self.humanize(self.default, self)
+        self.value = Moulinette.prompt(
+            message=text,
+            is_password=self.hide_user_input_in_prompt,
+            confirm=False,
+            prefill=prefill,
+            is_multiline=(self.type == "text"),
+            autocomplete=self.choices or [],
+            help=_value_for_locale(self.help),
+        )
 
     def _format_text_for_user_input_in_cli(self):
         text_for_user_input_in_cli = _value_for_locale(self.ask)
@@ -352,6 +332,26 @@ class BaseOption:
             text_for_user_input_in_cli += f" [{choices_to_display}]"
 
         return text_for_user_input_in_cli
+
+    def _value_pre_validator(self):
+        if self.value in [None, ""] and not self.optional:
+            raise YunohostValidationError("app_argument_required", name=self.name)
+
+        # we have an answer, do some post checks
+        if self.value not in [None, ""]:
+            if self.choices and self.value not in self.choices:
+                raise YunohostValidationError(
+                    "app_argument_choice_invalid",
+                    name=self.name,
+                    value=self.value,
+                    choices=", ".join(str(choice) for choice in self.choices),
+                )
+            if self.pattern and not re.match(self.pattern["regexp"], str(self.value)):
+                raise YunohostValidationError(
+                    self.pattern["error"],
+                    name=self.name,
+                    value=self.value,
+                )
 
     def _value_post_validator(self):
         if not self.redact:
@@ -520,6 +520,15 @@ class BooleanOption(BaseOption):
     yes_answers = ["1", "yes", "y", "true", "t", "on"]
     no_answers = ["0", "no", "n", "false", "f", "off"]
 
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
+        super().__init__(question, context, hooks)
+        self.yes = question.get("yes", 1)
+        self.no = question.get("no", 0)
+        if self.default is None:
+            self.default = self.no
+
     @staticmethod
     def humanize(value, option={}):
         option = option.__dict__ if isinstance(option, BaseOption) else option
@@ -583,14 +592,8 @@ class BooleanOption(BaseOption):
             choices="yes/no",
         )
 
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
-        super().__init__(question, context, hooks)
-        self.yes = question.get("yes", 1)
-        self.no = question.get("no", 0)
-        if self.default is None:
-            self.default = self.no
+    def get(self, key, default=None):
+        return getattr(self, key, default)
 
     def _format_text_for_user_input_in_cli(self):
         text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli()
@@ -599,9 +602,6 @@ class BooleanOption(BaseOption):
             text_for_user_input_in_cli += " [yes | no]"
 
         return text_for_user_input_in_cli
-
-    def get(self, key, default=None):
-        return getattr(self, key, default)
 
 
 class DateOption(StringOption):
@@ -678,18 +678,18 @@ class FileOption(BaseOption):
     argument_type = "file"
     upload_dirs: List[str] = []
 
+    def __init__(
+        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+    ):
+        super().__init__(question, context, hooks)
+        self.accept = question.get("accept", "")
+
     @classmethod
     def clean_upload_dirs(cls):
         # Delete files uploaded from API
         for upload_dir in cls.upload_dirs:
             if os.path.exists(upload_dir):
                 shutil.rmtree(upload_dir)
-
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
-        super().__init__(question, context, hooks)
-        self.accept = question.get("accept", "")
 
     def _value_pre_validator(self):
         if self.value is None:
