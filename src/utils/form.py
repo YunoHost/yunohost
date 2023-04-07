@@ -40,6 +40,13 @@ from yunohost.log import OperationLogger
 logger = getActionLogger("yunohost.form")
 
 
+# ╭───────────────────────────────────────────────────────╮
+# │  ┌─╴╷ ╷╭─┐╷                                           │
+# │  ├─╴│╭╯├─┤│                                           │
+# │  ╰─╴╰╯ ╵ ╵╰─╴                                         │
+# ╰───────────────────────────────────────────────────────╯
+
+
 # Those js-like evaluate functions are used to eval safely visible attributes
 # The goal is to evaluate in the same way than js simple-evaluate
 # https://github.com/shepherdwind/simple-evaluate
@@ -181,6 +188,13 @@ def evaluate_simple_js_expression(expr, context={}):
         return False
     node = ast.parse(js_to_python(expr), mode="eval").body
     return evaluate_simple_ast(node, context)
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │  ╭─╮┌─╮╶┬╴╶┬╴╭─╮╭╮╷╭─╴                                │
+# │  │ │├─╯ │  │ │ ││││╰─╮                                │
+# │  ╰─╯╵   ╵ ╶┴╴╰─╯╵╰╯╶─╯                                │
+# ╰───────────────────────────────────────────────────────╯
 
 
 class BaseOption:
@@ -377,6 +391,11 @@ class BaseOption:
         return self.value
 
 
+# ╭───────────────────────────────────────────────────────╮
+# │ DISPLAY OPTIONS                                       │
+# ╰───────────────────────────────────────────────────────╯
+
+
 class DisplayTextOption(BaseOption):
     argument_type = "display_text"
 
@@ -416,6 +435,14 @@ class ButtonOption(BaseOption):
     ):
         super().__init__(question, context, hooks)
         self.enabled = question.get("enabled", None)
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ INPUT OPTIONS                                         │
+# ╰───────────────────────────────────────────────────────╯
+
+
+# ─ STRINGS ───────────────────────────────────────────────
 
 
 class StringOption(BaseOption):
@@ -459,6 +486,9 @@ class ColorOption(StringOption):
         "regexp": r"^#[ABCDEFabcdef\d]{3,6}$",
         "error": "config_validate_color",  # i18n: config_validate_color
     }
+
+
+# ─ NUMERIC ───────────────────────────────────────────────
 
 
 class NumberOption(BaseOption):
@@ -512,6 +542,9 @@ class NumberOption(BaseOption):
                 name=self.name,
                 error=m18n.n("invalid_number_max", max=self.max),
             )
+
+
+# ─ BOOLEAN ───────────────────────────────────────────────
 
 
 class BooleanOption(BaseOption):
@@ -604,6 +637,9 @@ class BooleanOption(BaseOption):
         return text_for_user_input_in_cli
 
 
+# ─ TIME ──────────────────────────────────────────────────
+
+
 class DateOption(StringOption):
     pattern = {
         "regexp": r"^\d{4}-\d\d-\d\d$",
@@ -627,6 +663,9 @@ class TimeOption(StringOption):
         "regexp": r"^(?:\d|[01]\d|2[0-3]):[0-5]\d$",
         "error": "config_validate_time",  # i18n: config_validate_time
     }
+
+
+# ─ LOCATIONS ─────────────────────────────────────────────
 
 
 class EmailOption(StringOption):
@@ -672,6 +711,9 @@ class URLOption(StringOption):
         "regexp": r"^https?://.*$",
         "error": "config_validate_url",  # i18n: config_validate_url
     }
+
+
+# ─ FILE ──────────────────────────────────────────────────
 
 
 class FileOption(BaseOption):
@@ -737,6 +779,9 @@ class FileOption(BaseOption):
         self.value = file_path
 
         return self.value
+
+
+# ─ CHOICES ───────────────────────────────────────────────
 
 
 class TagsOption(BaseOption):
@@ -931,6 +976,13 @@ OPTIONS = {
     "user": UserOption,
     "group": GroupOption,
 }
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │  ╷ ╷╶┬╴╶┬╴╷  ╭─╴                                      │
+# │  │ │ │  │ │  ╰─╮                                      │
+# │  ╰─╯ ╵ ╶┴╴╰─╴╶─╯                                      │
+# ╰───────────────────────────────────────────────────────╯
 
 
 def ask_questions_and_parse_answers(
