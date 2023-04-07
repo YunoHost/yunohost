@@ -279,7 +279,7 @@ class BaseOption:
             try:
                 # Normalize and validate
                 self.value = self.normalize(self.value, self)
-                self._prevalidate()
+                self._value_pre_validator()
             except YunohostValidationError as e:
                 # If in interactive cli, re-ask the current question
                 if i < 4 and Moulinette.interface.type == "cli" and os.isatty(1):
@@ -292,7 +292,7 @@ class BaseOption:
 
             break
 
-        self.value = self.values[self.name] = self._post_parse_value()
+        self.value = self.values[self.name] = self._value_post_validator()
 
         # Search for post actions in hooks
         post_hook = f"post_ask__{self.name}"
@@ -301,7 +301,7 @@ class BaseOption:
 
         return self.values
 
-    def _prevalidate(self):
+    def _value_pre_validator(self):
         if self.value in [None, ""] and not self.optional:
             raise YunohostValidationError("app_argument_required", name=self.name)
 
@@ -353,7 +353,7 @@ class BaseOption:
 
         return text_for_user_input_in_cli
 
-    def _post_parse_value(self):
+    def _value_post_validator(self):
         if not self.redact:
             return self.value
 
@@ -439,8 +439,8 @@ class PasswordOption(BaseOption):
                 "app_argument_password_no_default", name=self.name
             )
 
-    def _prevalidate(self):
-        super()._prevalidate()
+    def _value_pre_validator(self):
+        super()._value_pre_validator()
 
         if self.value not in [None, ""]:
             if any(char in self.value for char in self.forbidden_chars):
@@ -494,8 +494,8 @@ class NumberOption(BaseOption):
             error=m18n.n("invalid_number"),
         )
 
-    def _prevalidate(self):
-        super()._prevalidate()
+    def _value_pre_validator(self):
+        super()._value_pre_validator()
         if self.value in [None, ""]:
             return
 
@@ -610,10 +610,10 @@ class DateOption(StringOption):
         "error": "config_validate_date",  # i18n: config_validate_date
     }
 
-    def _prevalidate(self):
+    def _value_pre_validator(self):
         from datetime import datetime
 
-        super()._prevalidate()
+        super()._value_pre_validator()
 
         if self.value not in [None, ""]:
             try:
@@ -691,11 +691,11 @@ class FileOption(BaseOption):
         super().__init__(question, context, hooks)
         self.accept = question.get("accept", "")
 
-    def _prevalidate(self):
+    def _value_pre_validator(self):
         if self.value is None:
             self.value = self.current_value
 
-        super()._prevalidate()
+        super()._value_pre_validator()
 
         # Validation should have already failed if required
         if self.value in [None, ""]:
@@ -711,7 +711,7 @@ class FileOption(BaseOption):
                     error=m18n.n("file_does_not_exist", path=str(self.value)),
                 )
 
-    def _post_parse_value(self):
+    def _value_post_validator(self):
         from base64 import b64decode
 
         if not self.value:
@@ -757,7 +757,7 @@ class TagsOption(BaseOption):
             value = value.strip()
         return value
 
-    def _prevalidate(self):
+    def _value_pre_validator(self):
         values = self.value
         if isinstance(values, str):
             values = values.split(",")
@@ -780,13 +780,13 @@ class TagsOption(BaseOption):
 
         for value in values:
             self.value = value
-            super()._prevalidate()
+            super()._value_pre_validator()
         self.value = values
 
-    def _post_parse_value(self):
+    def _value_post_validator(self):
         if isinstance(self.value, list):
             self.value = ",".join(self.value)
-        return super()._post_parse_value()
+        return super()._value_post_validator()
 
 
 class DomainOption(BaseOption):
