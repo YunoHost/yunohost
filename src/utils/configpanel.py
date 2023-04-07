@@ -37,8 +37,8 @@ from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
     ARGUMENTS_TYPE_PARSERS,
-    FileQuestion,
-    Question,
+    FileOption,
+    BaseOption,
     ask_questions_and_parse_answers,
     evaluate_simple_js_expression,
 )
@@ -213,7 +213,7 @@ class ConfigPanel:
         # Read or get values and hydrate the config
         self._load_current_values()
         self._hydrate()
-        Question.operation_logger = operation_logger
+        BaseOption.operation_logger = operation_logger
         self._ask(action=action_id)
 
         # FIXME: here, we could want to check constrains on
@@ -244,7 +244,7 @@ class ConfigPanel:
             # FIXME : this is currently done in the context of config panels,
             # but could also happen in the context of app install ... (or anywhere else
             # where we may parse args etc...)
-            FileQuestion.clean_upload_dirs()
+            FileOption.clean_upload_dirs()
 
         # FIXME: i18n
         logger.success(f"Action {action_id} successful")
@@ -277,7 +277,7 @@ class ConfigPanel:
         # Read or get values and hydrate the config
         self._load_current_values()
         self._hydrate()
-        Question.operation_logger = operation_logger
+        BaseOption.operation_logger = operation_logger
         self._ask()
 
         if operation_logger:
@@ -305,7 +305,7 @@ class ConfigPanel:
             # FIXME : this is currently done in the context of config panels,
             # but could also happen in the context of app install ... (or anywhere else
             # where we may parse args etc...)
-            FileQuestion.clean_upload_dirs()
+            FileOption.clean_upload_dirs()
 
         self._reload_services()
 

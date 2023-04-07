@@ -34,7 +34,7 @@ from yunohost.app import (
 )
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.configpanel import ConfigPanel
-from yunohost.utils.form import Question
+from yunohost.utils.form import BaseOption
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation
 
@@ -528,7 +528,7 @@ def domain_config_set(
     """
     Apply a new domain configuration
     """
-    Question.operation_logger = operation_logger
+    BaseOption.operation_logger = operation_logger
     config = DomainConfigPanel(domain)
     return config.set(key, value, args, args_file, operation_logger=operation_logger)
 

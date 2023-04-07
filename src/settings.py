@@ -22,7 +22,7 @@ import subprocess
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.configpanel import ConfigPanel
-from yunohost.utils.form import Question
+from yunohost.utils.form import BaseOption
 from moulinette.utils.log import getActionLogger
 from yunohost.regenconf import regen_conf
 from yunohost.firewall import firewall_reload
@@ -82,7 +82,7 @@ def settings_set(operation_logger, key=None, value=None, args=None, args_file=No
         value -- New value
 
     """
-    Question.operation_logger = operation_logger
+    BaseOption.operation_logger = operation_logger
     settings = SettingsConfigPanel()
     key = translate_legacy_settings_to_configpanel_settings(key)
     return settings.set(key, value, args, args_file, operation_logger=operation_logger)
@@ -231,7 +231,7 @@ class SettingsConfigPanel(ConfigPanel):
         # Replace all values with default values
         self.values = self._get_default_values()
 
-        Question.operation_logger = operation_logger
+        BaseOption.operation_logger = operation_logger
 
         if operation_logger:
             operation_logger.start()

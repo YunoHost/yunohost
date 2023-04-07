@@ -183,7 +183,7 @@ def evaluate_simple_js_expression(expr, context={}):
     return evaluate_simple_ast(node, context)
 
 
-class Question:
+class BaseOption:
     hide_user_input_in_prompt = False
     pattern: Optional[Dict] = None
 
@@ -377,26 +377,26 @@ class Question:
         return self.value
 
 
-class StringQuestion(Question):
+class StringOption(BaseOption):
     argument_type = "string"
     default_value = ""
 
 
-class EmailQuestion(StringQuestion):
+class EmailOption(StringOption):
     pattern = {
         "regexp": r"^.+@.+",
         "error": "config_validate_email",  # i18n: config_validate_email
     }
 
 
-class URLQuestion(StringQuestion):
+class URLOption(StringOption):
     pattern = {
         "regexp": r"^https?://.*$",
         "error": "config_validate_url",  # i18n: config_validate_url
     }
 
 
-class DateQuestion(StringQuestion):
+class DateOption(StringOption):
     pattern = {
         "regexp": r"^\d{4}-\d\d-\d\d$",
         "error": "config_validate_date",  # i18n: config_validate_date
@@ -414,21 +414,21 @@ class DateQuestion(StringQuestion):
                 raise YunohostValidationError("config_validate_date")
 
 
-class TimeQuestion(StringQuestion):
+class TimeOption(StringOption):
     pattern = {
         "regexp": r"^(?:\d|[01]\d|2[0-3]):[0-5]\d$",
         "error": "config_validate_time",  # i18n: config_validate_time
     }
 
 
-class ColorQuestion(StringQuestion):
+class ColorOption(StringOption):
     pattern = {
         "regexp": r"^#[ABCDEFabcdef\d]{3,6}$",
         "error": "config_validate_color",  # i18n: config_validate_color
     }
 
 
-class TagsQuestion(Question):
+class TagsOption(BaseOption):
     argument_type = "tags"
     default_value = ""
 
@@ -478,7 +478,7 @@ class TagsQuestion(Question):
         return super()._post_parse_value()
 
 
-class PasswordQuestion(Question):
+class PasswordOption(BaseOption):
     hide_user_input_in_prompt = True
     argument_type = "password"
     default_value = ""
@@ -509,13 +509,13 @@ class PasswordQuestion(Question):
             assert_password_is_strong_enough("user", self.value)
 
 
-class PathQuestion(Question):
+class WebPathOption(BaseOption):
     argument_type = "path"
     default_value = ""
 
     @staticmethod
     def normalize(value, option={}):
-        option = option.__dict__ if isinstance(option, Question) else option
+        option = option.__dict__ if isinstance(option, BaseOption) else option
 
         if not isinstance(value, str):
             raise YunohostValidationError(
@@ -528,19 +528,19 @@ class PathQuestion(Question):
             if option.get("optional"):
                 return ""
             # Hmpf here we could just have a "else" case
-            # but we also want PathQuestion.normalize("") to return "/"
+            # but we also want WebPathOption.normalize("") to return "/"
             # (i.e. if no option is provided, hence .get("optional") is None
             elif option.get("optional") is False:
                 raise YunohostValidationError(
                     "app_argument_invalid",
                     name=option.get("name"),
-                    error="Question is mandatory",
+                    error="Option is mandatory",
                 )
 
         return "/" + value.strip().strip(" /")
 
 
-class BooleanQuestion(Question):
+class BooleanOption(BaseOption):
     argument_type = "boolean"
     default_value = 0
     yes_answers = ["1", "yes", "y", "true", "t", "on"]
@@ -548,12 +548,12 @@ class BooleanQuestion(Question):
 
     @staticmethod
     def humanize(value, option={}):
-        option = option.__dict__ if isinstance(option, Question) else option
+        option = option.__dict__ if isinstance(option, BaseOption) else option
 
         yes = option.get("yes", 1)
         no = option.get("no", 0)
 
-        value = BooleanQuestion.normalize(value, option)
+        value = BooleanOption.normalize(value, option)
 
         if value == yes:
             return "yes"
@@ -571,7 +571,7 @@ class BooleanQuestion(Question):
 
     @staticmethod
     def normalize(value, option={}):
-        option = option.__dict__ if isinstance(option, Question) else option
+        option = option.__dict__ if isinstance(option, BaseOption) else option
 
         if isinstance(value, str):
             value = value.strip()
@@ -579,8 +579,8 @@ class BooleanQuestion(Question):
         technical_yes = option.get("yes", 1)
         technical_no = option.get("no", 0)
 
-        no_answers = BooleanQuestion.no_answers
-        yes_answers = BooleanQuestion.yes_answers
+        no_answers = BooleanOption.no_answers
+        yes_answers = BooleanOption.yes_answers
 
         assert (
             str(technical_yes).lower() not in no_answers
@@ -630,7 +630,7 @@ class BooleanQuestion(Question):
         return getattr(self, key, default)
 
 
-class DomainQuestion(Question):
+class DomainOption(BaseOption):
     argument_type = "domain"
 
     def __init__(
@@ -661,7 +661,7 @@ class DomainQuestion(Question):
         return value
 
 
-class AppQuestion(Question):
+class AppOption(BaseOption):
     argument_type = "app"
 
     def __init__(
@@ -688,7 +688,7 @@ class AppQuestion(Question):
         self.choices.update({app["id"]: _app_display(app) for app in apps})
 
 
-class UserQuestion(Question):
+class UserOption(BaseOption):
     argument_type = "user"
 
     def __init__(
@@ -721,7 +721,7 @@ class UserQuestion(Question):
                     break
 
 
-class GroupQuestion(Question):
+class GroupOption(BaseOption):
     argument_type = "group"
 
     def __init__(
@@ -747,7 +747,7 @@ class GroupQuestion(Question):
             self.default = "all_users"
 
 
-class NumberQuestion(Question):
+class NumberOption(BaseOption):
     argument_type = "number"
     default_value = None
 
@@ -773,7 +773,7 @@ class NumberQuestion(Question):
         if value in [None, ""]:
             return None
 
-        option = option.__dict__ if isinstance(option, Question) else option
+        option = option.__dict__ if isinstance(option, BaseOption) else option
         raise YunohostValidationError(
             "app_argument_invalid",
             name=option.get("name"),
@@ -800,7 +800,7 @@ class NumberQuestion(Question):
             )
 
 
-class DisplayTextQuestion(Question):
+class DisplayTextOption(BaseOption):
     argument_type = "display_text"
 
     def __init__(
@@ -830,7 +830,7 @@ class DisplayTextQuestion(Question):
             return text
 
 
-class FileQuestion(Question):
+class FileOption(BaseOption):
     argument_type = "file"
     upload_dirs: List[str] = []
 
@@ -876,7 +876,7 @@ class FileQuestion(Question):
         upload_dir = tempfile.mkdtemp(prefix="ynh_filequestion_")
         _, file_path = tempfile.mkstemp(dir=upload_dir)
 
-        FileQuestion.upload_dirs += [upload_dir]
+        FileOption.upload_dirs += [upload_dir]
 
         logger.debug(f"Saving file {self.name} for file question into {file_path}")
 
@@ -895,7 +895,7 @@ class FileQuestion(Question):
         return self.value
 
 
-class ButtonQuestion(Question):
+class ButtonOption(BaseOption):
     argument_type = "button"
     enabled = None
 
@@ -907,29 +907,29 @@ class ButtonQuestion(Question):
 
 
 ARGUMENTS_TYPE_PARSERS = {
-    "string": StringQuestion,
-    "text": StringQuestion,
-    "select": StringQuestion,
-    "tags": TagsQuestion,
-    "email": EmailQuestion,
-    "url": URLQuestion,
-    "date": DateQuestion,
-    "time": TimeQuestion,
-    "color": ColorQuestion,
-    "password": PasswordQuestion,
-    "path": PathQuestion,
-    "boolean": BooleanQuestion,
-    "domain": DomainQuestion,
-    "user": UserQuestion,
-    "group": GroupQuestion,
-    "number": NumberQuestion,
-    "range": NumberQuestion,
-    "display_text": DisplayTextQuestion,
-    "alert": DisplayTextQuestion,
-    "markdown": DisplayTextQuestion,
-    "file": FileQuestion,
-    "app": AppQuestion,
-    "button": ButtonQuestion,
+    "string": StringOption,
+    "text": StringOption,
+    "select": StringOption,
+    "tags": TagsOption,
+    "email": EmailOption,
+    "url": URLOption,
+    "date": DateOption,
+    "time": TimeOption,
+    "color": ColorOption,
+    "password": PasswordOption,
+    "path": WebPathOption,
+    "boolean": BooleanOption,
+    "domain": DomainOption,
+    "user": UserOption,
+    "group": GroupOption,
+    "number": NumberOption,
+    "range": NumberOption,
+    "display_text": DisplayTextOption,
+    "alert": DisplayTextOption,
+    "markdown": DisplayTextOption,
+    "file": FileOption,
+    "app": AppOption,
+    "button": ButtonOption,
 }
 
 
@@ -938,7 +938,7 @@ def ask_questions_and_parse_answers(
     prefilled_answers: Union[str, Mapping[str, Any]] = {},
     current_values: Mapping[str, Any] = {},
     hooks: Dict[str, Callable[[], None]] = {},
-) -> List[Question]:
+) -> List[BaseOption]:
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
 
