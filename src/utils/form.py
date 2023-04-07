@@ -906,7 +906,7 @@ class ButtonOption(BaseOption):
         self.enabled = question.get("enabled", None)
 
 
-ARGUMENTS_TYPE_PARSERS = {
+OPTIONS = {
     "string": StringOption,
     "text": StringOption,
     "select": StringOption,
@@ -969,7 +969,7 @@ def ask_questions_and_parse_answers(
 
     for name, raw_question in raw_questions.items():
         raw_question["name"] = name
-        question_class = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")]
+        question_class = OPTIONS[raw_question.get("type", "string")]
         raw_question["value"] = answers.get(name)
         question = question_class(raw_question, context=context, hooks=hooks)
         if question.type == "button":
@@ -996,7 +996,7 @@ def hydrate_questions_with_choices(raw_questions: List) -> List:
     out = []
 
     for raw_question in raw_questions:
-        question = ARGUMENTS_TYPE_PARSERS[raw_question.get("type", "string")](
+        question = OPTIONS[raw_question.get("type", "string")](
             raw_question
         )
         if question.choices:

@@ -36,7 +36,7 @@ from moulinette.utils.filesystem import (
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
-    ARGUMENTS_TYPE_PARSERS,
+    OPTIONS,
     FileOption,
     BaseOption,
     ask_questions_and_parse_answers,
@@ -127,7 +127,7 @@ class ConfigPanel:
             option_type = None
             for _, _, option_ in self._iterate():
                 if option_["id"] == option:
-                    option_type = ARGUMENTS_TYPE_PARSERS[option_["type"]]
+                    option_type = OPTIONS[option_["type"]]
                     break
 
             return option_type.normalize(value) if option_type else value
@@ -152,7 +152,7 @@ class ConfigPanel:
 
             if mode == "full":
                 option["ask"] = ask
-                question_class = ARGUMENTS_TYPE_PARSERS[option.get("type", "string")]
+                question_class = OPTIONS[option.get("type", "string")]
                 # FIXME : maybe other properties should be taken from the question, not just choices ?.
                 option["choices"] = question_class(option).choices
                 option["default"] = question_class(option).default
@@ -160,9 +160,7 @@ class ConfigPanel:
             else:
                 result[key] = {"ask": ask}
                 if "current_value" in option:
-                    question_class = ARGUMENTS_TYPE_PARSERS[
-                        option.get("type", "string")
-                    ]
+                    question_class = OPTIONS[option.get("type", "string")]
                     result[key]["value"] = question_class.humanize(
                         option["current_value"], option
                     )

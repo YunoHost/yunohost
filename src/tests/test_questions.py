@@ -15,7 +15,7 @@ from _pytest.mark.structures import ParameterSet
 from moulinette import Moulinette
 from yunohost import app, domain, user
 from yunohost.utils.form import (
-    ARGUMENTS_TYPE_PARSERS,
+    OPTIONS,
     ask_questions_and_parse_answers,
     DisplayTextOption,
     PasswordOption,
@@ -440,7 +440,7 @@ class BaseTest:
 
         is_special_readonly_option = isinstance(option, DisplayTextOption)
 
-        assert isinstance(option, ARGUMENTS_TYPE_PARSERS[raw_option["type"]])
+        assert isinstance(option, OPTIONS[raw_option["type"]])
         assert option.type == raw_option["type"]
         assert option.name == id_
         assert option.ask == {"en": id_}
