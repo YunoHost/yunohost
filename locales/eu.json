@@ -752,5 +752,8 @@
     "global_settings_setting_dns_exposure": "DNS ezarpenetan eta diagnostikoan kontuan hartzeko IP bertsioak",
     "global_settings_setting_dns_exposure_help": "Ohart ongi: honek gomendatutako DNS ezarpenei eta diagnostikoari eragiten die soilik. Ez du eraginik sistemaren ezarpenetan.",
     "diagnosis_ip_no_ipv6_tip_important": "IPv6 automatikoki ezarri ohi du sistemak edo hornitzaileak erabilgarri baldin badago. Bestela eskuz ezarri beharko dituzu aukera batzuk ondorengo dokumentazioan azaldu bezala: <a href='https://yunohost.org/#/ipv6'>https://yunohost.org/#/ipv6</a>.",
-    "pattern_fullname": "Baliozko izen oso bat izan behar da (gutxienez hiru karaktere)"
+    "pattern_fullname": "Baliozko izen oso bat izan behar da (gutxienez hiru karaktere)",
+    "app_change_url_failed": "Ezin izan da {app} aplikazioaren URLa aldatu: {error}",
+    "app_change_url_require_full_domain": "Ezin da {app} aplikazioa URL berri honetara aldatu domeinu oso bat behar duelako (i.e. with path = /)",
+    "app_change_url_script_failed": "Errorea gertatu da URLa aldatzeko aginduaren barnean"
 }
