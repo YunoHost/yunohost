@@ -1882,7 +1882,7 @@ class AppConfigPanel(ConfigPanel):
         env = {key: str(value) for key, value in self.new_values.items()}
         self._call_config_script(action, env=env)
 
-    def _load_current_values(self):
+    def _get_raw_settings(self):
         self.values = self._call_config_script("show")
 
     def _apply(self):

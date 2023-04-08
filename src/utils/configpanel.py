@@ -116,7 +116,7 @@ class ConfigPanel:
             raise YunohostValidationError("config_no_panel")
 
         # Read or get values and hydrate the config
-        self._load_current_values()
+        self._get_raw_settings()
         self._hydrate()
 
         # In 'classic' mode, we display the current value if key refer to an option
@@ -200,7 +200,7 @@ class ConfigPanel:
         self._parse_pre_answered(args, value, args_file)
 
         # Read or get values and hydrate the config
-        self._load_current_values()
+        self._get_raw_settings()
         self._hydrate()
         BaseOption.operation_logger = operation_logger
         self._ask()
@@ -271,7 +271,7 @@ class ConfigPanel:
         self._parse_pre_answered(args, None, args_file)
 
         # Read or get values and hydrate the config
-        self._load_current_values()
+        self._get_raw_settings()
         self._hydrate()
         BaseOption.operation_logger = operation_logger
         self._ask(action=action_id)
@@ -310,7 +310,7 @@ class ConfigPanel:
         logger.success(f"Action {action_id} successful")
         operation_logger.success()
 
-    def _get_toml(self):
+    def _get_raw_config(self):
         return read_toml(self.config_path)
 
     def _get_config_panel(self):
@@ -326,7 +326,7 @@ class ConfigPanel:
             logger.debug(f"Config panel {self.config_path} doesn't exists")
             return None
 
-        toml_config_panel = self._get_toml()
+        toml_config_panel = self._get_raw_config()
 
         # Check TOML config panel is in a supported version
         if float(toml_config_panel["version"]) < CONFIG_PANEL_VERSION_SUPPORTED:
@@ -495,7 +495,7 @@ class ConfigPanel:
             if "default" in option
         }
 
-    def _load_current_values(self):
+    def _get_raw_settings(self):
         """
         Retrieve entries in YAML file
         And set default values if needed

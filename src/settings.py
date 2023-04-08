@@ -180,8 +180,8 @@ class SettingsConfigPanel(ConfigPanel):
         logger.success(m18n.n("global_settings_reset_success"))
         operation_logger.success()
 
-    def _get_toml(self):
-        toml = super()._get_toml()
+    def _get_raw_config(self):
+        toml = super()._get_raw_config()
 
         # Dynamic choice list for portal themes
         THEMEDIR = "/usr/share/ssowat/portal/assets/themes/"
@@ -193,8 +193,8 @@ class SettingsConfigPanel(ConfigPanel):
 
         return toml
 
-    def _load_current_values(self):
-        super()._load_current_values()
+    def _get_raw_settings(self):
+        super()._get_raw_settings()
 
         # Specific logic for those settings who are "virtual" settings
         # and only meant to have a custom setter mapped to tools_rootpw

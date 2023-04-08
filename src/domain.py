@@ -555,8 +555,8 @@ class DomainConfigPanel(ConfigPanel):
 
         return result
 
-    def _get_toml(self):
-        toml = super()._get_toml()
+    def _get_raw_config(self):
+        toml = super()._get_raw_config()
 
         toml["feature"]["xmpp"]["xmpp"]["default"] = (
             1 if self.entity == _get_maindomain() else 0
@@ -571,7 +571,7 @@ class DomainConfigPanel(ConfigPanel):
 
             toml["dns"]["registrar"] = _get_registrar_config_section(self.entity)
 
-            # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
+            # FIXME: Ugly hack to save the registar id/value and reinject it in _get_raw_settings ...
             self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
             del toml["dns"]["registrar"]["registrar"]["value"]
 
@@ -594,21 +594,21 @@ class DomainConfigPanel(ConfigPanel):
                 f"domain_config_cert_summary_{status['summary']}"
             )
 
-            # FIXME: Ugly hack to save the cert status and reinject it in _load_current_values ...
+            # FIXME: Ugly hack to save the cert status and reinject it in _get_raw_settings ...
             self.cert_status = status
 
         return toml
 
-    def _load_current_values(self):
+    def _get_raw_settings(self):
         # TODO add mechanism to share some settings with other domains on the same zone
-        super()._load_current_values()
+        super()._get_raw_settings()
 
-        # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
+        # FIXME: Ugly hack to save the registar id/value and reinject it in _get_raw_settings ...
         filter_key = self.filter_key.split(".") if self.filter_key != "" else []
         if not filter_key or filter_key[0] == "dns":
             self.values["registrar"] = self.registar_id
 
-        # FIXME: Ugly hack to save the cert status and reinject it in _load_current_values ...
+        # FIXME: Ugly hack to save the cert status and reinject it in _get_raw_settings ...
         if not filter_key or filter_key[0] == "cert":
             self.values["cert_validity"] = self.cert_status["validity"]
             self.values["cert_issuer"] = self.cert_status["CA_type"]
