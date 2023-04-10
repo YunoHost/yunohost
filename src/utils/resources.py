@@ -516,9 +516,7 @@ class PermissionsResource(AppResource):
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
         # FIXME : if url != None, we should check that there's indeed a domain/path defined ? ie that app is a webapp
 
-        if "main" not in properties:
-            properties["main"] = self.default_perm_properties
-
+        # Validate packager-provided infos
         for perm, infos in properties.items():
             if "auth_header" in infos and not isinstance(
                 infos.get("auth_header"), bool
@@ -545,6 +543,10 @@ class PermissionsResource(AppResource):
                     raw_msg=True,
                 )
 
+        if "main" not in properties:
+            properties["main"] = copy.copy(self.default_perm_properties)
+
+        for perm, infos in properties.items():
             properties[perm] = copy.copy(self.default_perm_properties)
             properties[perm].update(infos)
             if properties[perm]["show_tile"] is None:
