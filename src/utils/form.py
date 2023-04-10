@@ -16,26 +16,22 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import os
-import re
-import urllib.parse
-import tempfile
-import shutil
 import ast
 import operator as op
-from typing import Optional, Dict, List, Union, Any, Mapping, Callable
+import os
+import re
+import shutil
+import tempfile
+import urllib.parse
+from typing import Any, Callable, Dict, List, Mapping, Optional, Union
 
-from moulinette.interfaces.cli import colorize
 from moulinette import Moulinette, m18n
+from moulinette.interfaces.cli import colorize
+from moulinette.utils.filesystem import read_file, write_to_file
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import (
-    read_file,
-    write_to_file,
-)
-
-from yunohost.utils.i18n import _value_for_locale
-from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import OperationLogger
+from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.i18n import _value_for_locale
 
 logger = getActionLogger("yunohost.form")
 

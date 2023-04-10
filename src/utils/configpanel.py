@@ -23,25 +23,19 @@ import urllib.parse
 from collections import OrderedDict
 from typing import Union
 
-from moulinette.interfaces.cli import colorize
 from moulinette import Moulinette, m18n
+from moulinette.interfaces.cli import colorize
+from moulinette.utils.filesystem import mkdir, read_toml, read_yaml, write_to_yaml
 from moulinette.utils.log import getActionLogger
-from moulinette.utils.filesystem import (
-    read_toml,
-    read_yaml,
-    write_to_yaml,
-    mkdir,
-)
-
-from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
     OPTIONS,
-    FileOption,
     BaseOption,
+    FileOption,
     ask_questions_and_parse_answers,
     evaluate_simple_js_expression,
 )
+from yunohost.utils.i18n import _value_for_locale
 
 logger = getActionLogger("yunohost.configpanel")
 CONFIG_PANEL_VERSION_SUPPORTED = 1.0
