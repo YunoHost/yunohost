@@ -563,15 +563,15 @@ class PermissionsResource(AppResource):
 
         super().__init__({"permissions": properties}, *args, **kwargs)
 
+        from yunohost.app import _get_app_settings, _hydrate_app_template
+
+        settings = _get_app_settings(self.app)
         for perm, infos in self.permissions.items():
-            if infos.get("url") and "__DOMAIN__" in infos.get("url", ""):
-                infos["url"] = infos["url"].replace(
-                    "__DOMAIN__", self.get_setting("domain")
-                )
-            infos["additional_urls"] = [
-                u.replace("__DOMAIN__", self.get_setting("domain"))
-                for u in infos.get("additional_urls", [])
-            ]
+            if infos.get("url") and "__" in infos.get("url"):
+                infos["url"] = _hydrate_app_template(infos["url"], settings)
+
+            if infos.get("additional_urls"):
+                infos["additional_urls"] = [_hydrate_app_template(url) for url in infos["additional_urls"]]
 
     def provision_or_update(self, context: Dict = {}):
         from yunohost.permission import (
