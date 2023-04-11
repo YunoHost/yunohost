@@ -618,24 +618,8 @@ def _get_registar_settings(domain):
     return registrar, settings
 
 
-def domain_dns_push(domains, dry_run=False, force=False, purge=False, auto=False):
-    if auto:
-        domains = domain_list(exclude_subdomains=True, auto_push=True)["domains"]
-    elif len(domains) == 0:
-        domains = domain_list(exclude_subdomains=True)["domains"]
-    error_domains = []
-    for domain in domains:
-        try:
-            domain_dns_push_unique(domain, dry_run=dry_run, force=force, purge=purge)
-        except YunohostError as e:
-            logger.error(m18n.n("domain_dns_push_failed_domain", domain=domain, error=str(e)))
-            error_domains.append(domain)
-    if len(error_domains) > 0:
-        raise YunohostError("domain_dns_push_failed_domains", domains=', '.join(error_domains))
-
-
 @is_unit_operation()
-def domain_dns_push_unique(operation_logger, domain, dry_run=False, force=False, purge=False):
+def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=False):
     """
     Send DNS records to the previously-configured registrar of the domain.
     """

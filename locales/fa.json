@@ -28,7 +28,7 @@
     "diagnosis_domain_not_found_details": "دامنه {domain} در پایگاه داده WHOIS وجود ندارد یا منقضی شده است!",
     "diagnosis_domain_expiration_not_found": "بررسی تاریخ انقضا برخی از دامنه ها امکان پذیر نیست",
     "diagnosis_dns_specialusedomain": "دامنه {domain} بر اساس یک دامنه سطح بالا (TLD) مخصوص استفاده است و بنابراین انتظار نمی رود که دارای سوابق DNS واقعی باشد.",
-    "diagnosis_dns_try_dyndns_update_force": "پیکربندی DNS این دامنه باید به طور خودکار توسط YunoHost مدیریت شود. اگر اینطور نیست ، می توانید سعی کنید به زور یک به روز رسانی را با استفاده از <cmd>yunohost domain dns push DOMAIN --force</cmd>.",
+    "diagnosis_dns_try_dyndns_update_force": "پیکربندی DNS این دامنه باید به طور خودکار توسط YunoHost مدیریت شود. اگر اینطور نیست ، می توانید سعی کنید به زور یک به روز رسانی را با استفاده از <cmd>yunohost dyndns update --force</cmd>.",
     "diagnosis_dns_point_to_doc": "لطفاً اسناد را در <a href='https://yunohost.org/dns_config'>https://yunohost.org/dns_config</a> برسی و مطالعه کنید، اگر در مورد پیکربندی سوابق DNS به کمک نیاز دارید.",
     "diagnosis_dns_discrepancy": "به نظر می رسد پرونده DNS زیر از پیکربندی توصیه شده پیروی نمی کند:<br>نوع: <code>{type}</code><br>نام: <code>{name}</code><br>ارزش فعلی: <code>{current}</code><br>مقدار مورد انتظار: <code>{value}</code>",
     "diagnosis_dns_missing_record": "با توجه به پیکربندی DNS توصیه شده ، باید یک رکورد DNS با اطلاعات زیر اضافه کنید.<br>نوع: <code>{type}</code><br> نام: <code>{name}</code><br>ارزش: <code>{value}</code>",

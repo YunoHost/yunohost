@@ -751,9 +751,8 @@ domain:
                     action_help: Push DNS records to registrar
                     api: POST /domains/<domain>/dns/push
                     arguments:
-                        domains:
-                            help: Domain names to push DNS conf for
-                            nargs: "*"
+                        domain:
+                            help: Domain name to push DNS conf for
                             extra:
                                 pattern: *pattern_domain
                         -d:
@@ -766,9 +765,6 @@ domain:
                         --purge:
                             help: Delete all records
                             action: store_true
-                        --auto:
-                          help: Push only domains that should be pushed automatically
-                          action: store_true
 
         cert:
             subcategory_help: Manage domain certificates
@@ -1572,7 +1568,7 @@ dyndns:
                     extra:
                         pattern: *pattern_domain
                 -p:
-                    full: --password
+                    full: --recovery-password
                     nargs: "?"
                     const: 0
                     help: Password used to later delete the domain
@@ -1580,25 +1576,6 @@ dyndns:
                         pattern: *pattern_password
                         comment: dyndns_added_password
         
-        ### dyndns_unsubscribe()
-        unsubscribe:
-            action_help: Unsubscribe to a DynDNS service ( deprecated, use 'yunohost domain dyndns unsubscribe' instead )
-            deprecated: true
-            arguments:
-                -d:
-                    full: --domain
-                    help: Full domain to unsubscribe with
-                    extra:
-                        pattern: *pattern_domain
-                        required: True
-                -p:
-                    full: --password
-                    nargs: "?"
-                    const: 0
-                    help: Password used to delete the domain
-                    extra:
-                        pattern: *pattern_password
-
         ### dyndns_update()
         update:
             action_help: Update IP on DynDNS platform ( deprecated, use 'yunohost domain dns push DOMAIN' instead )

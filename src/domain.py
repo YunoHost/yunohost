@@ -116,7 +116,6 @@ def domain_list(exclude_subdomains=False, tree=False, features=[]):
         domains_filtered = []
         for domain in domains:
             config = domain_config_get(domain, key="feature", export=True)
-            config += domain_config_get(domain, key="dns.zone", export=True)
             if any(config.get(feature) == 1 for feature in features):
                 domains_filtered.append(domain)
         domains = domains_filtered
@@ -791,7 +790,7 @@ def domain_dns_suggest(domain):
     return domain_dns_suggest(domain)
 
 
-def domain_dns_push(domains, dry_run=None, force=None, purge=None, auto=False):
+def domain_dns_push(domain, dry_run, force, purge):
     from yunohost.dns import domain_dns_push
 
-    return domain_dns_push(domains, dry_run=dry_run, force=force, purge=purge, auto=auto)
+    return domain_dns_push(domain, dry_run, force, purge)

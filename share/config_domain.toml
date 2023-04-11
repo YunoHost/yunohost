@@ -33,13 +33,6 @@ name = "Features"
 [dns]
 name = "DNS"
 
-	[dns.zone]
-
-		[dns.zone.autopush]
-		type = "boolean"
-		default = 0
-		help = ""
-    
     [dns.registrar]
     # This part is automatically generated in DomainConfigPanel
 

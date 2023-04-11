@@ -200,15 +200,15 @@ def tools_postinstall(
 
         # Check if the domain is available...
         try:
-            _dyndns_available(domain)
+            available = _dyndns_available(domain)
         # If an exception is thrown, most likely we don't have internet
         # connectivity or something. Assume that this domain isn't manageable
         # and inform the user that we could not contact the dyndns host server.
         except Exception:
-            logger.warning(
-                m18n.n("dyndns_provider_unreachable", provider="dyndns.yunohost.org")
-            )
-            raise YunohostValidationError("dyndns_unavailable", domain=domain)
+            raise YunohostValidationError("dyndns_provider_unreachable", provider="dyndns.yunohost.org")
+        else:
+            if not available:
+                raise YunohostValidationError("dyndns_unavailable", domain=domain)
 
     if os.system("iptables -V >/dev/null 2>/dev/null") != 0:
         raise YunohostValidationError(
