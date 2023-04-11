@@ -760,5 +760,6 @@
     "apps_failed_to_upgrade": "Fallou a actualización das seguintes aplicacións:{apps}",
     "invalid_shell": "Intérprete de ordes non válido: {shell}",
     "log_resource_snippet": "Aprovisionamento/desaprovisionamento/actualización dun recurso",
-    "app_resource_failed": "Fallou o aprovisionamento, desaprovisionamento ou actualización de recursos para {app}: {error}"
+    "app_resource_failed": "Fallou o aprovisionamento, desaprovisionamento ou actualización de recursos para {app}: {error}",
+    "app_failed_to_download_asset": "Fallou a descarga do recurso '{source_id}' ({url}) para {app}: {out}"
 }
