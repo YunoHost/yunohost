@@ -17,7 +17,6 @@ dummyfile = "/tmp/dummyappresource-testapp"
 
 
 class DummyAppResource(AppResource):
-
     type = "dummy"
 
     default_properties = {
@@ -26,14 +25,12 @@ class DummyAppResource(AppResource):
     }
 
     def provision_or_update(self, context):
-
         open(self.file, "w").write(self.content)
 
         if self.content == "forbiddenvalue":
             raise Exception("Emeged you used the forbidden value!1!£&")
 
     def deprovision(self, context):
-
         os.system(f"rm -f {self.file}")
 
 
@@ -41,7 +38,6 @@ AppResourceClassesByType["dummy"] = DummyAppResource
 
 
 def setup_function(function):
-
     clean()
 
     os.system("mkdir /etc/yunohost/apps/testapp")
@@ -51,12 +47,10 @@ def setup_function(function):
 
 
 def teardown_function(function):
-
     clean()
 
 
 def clean():
-
     os.system(f"rm -f {dummyfile}")
     os.system("rm -rf /etc/yunohost/apps/testapp")
     os.system("rm -rf /var/www/testapp")
@@ -70,7 +64,6 @@ def clean():
 
 
 def test_provision_dummy():
-
     current = {"resources": {}}
     wanted = {"resources": {"dummy": {}}}
 
@@ -82,7 +75,6 @@ def test_provision_dummy():
 
 
 def test_deprovision_dummy():
-
     current = {"resources": {"dummy": {}}}
     wanted = {"resources": {}}
 
@@ -96,7 +88,6 @@ def test_deprovision_dummy():
 
 
 def test_provision_dummy_nondefaultvalue():
-
     current = {"resources": {}}
     wanted = {"resources": {"dummy": {"content": "bar"}}}
 
@@ -108,7 +99,6 @@ def test_provision_dummy_nondefaultvalue():
 
 
 def test_update_dummy():
-
     current = {"resources": {"dummy": {}}}
     wanted = {"resources": {"dummy": {"content": "bar"}}}
 
@@ -122,7 +112,6 @@ def test_update_dummy():
 
 
 def test_update_dummy_failwithrollback():
-
     current = {"resources": {"dummy": {}}}
     wanted = {"resources": {"dummy": {"content": "forbiddenvalue"}}}
 
@@ -137,7 +126,6 @@ def test_update_dummy_failwithrollback():
 
 
 def test_resource_system_user():
-
     r = AppResourceClassesByType["system_user"]
 
     conf = {}
@@ -161,7 +149,6 @@ def test_resource_system_user():
 
 
 def test_resource_install_dir():
-
     r = AppResourceClassesByType["install_dir"]
     conf = {"owner": "nobody:rx", "group": "nogroup:rx"}
 
@@ -196,7 +183,6 @@ def test_resource_install_dir():
 
 
 def test_resource_data_dir():
-
     r = AppResourceClassesByType["data_dir"]
     conf = {"owner": "nobody:rx", "group": "nogroup:rx"}
 
@@ -228,7 +214,6 @@ def test_resource_data_dir():
 
 
 def test_resource_ports():
-
     r = AppResourceClassesByType["ports"]
     conf = {}
 
@@ -244,7 +229,6 @@ def test_resource_ports():
 
 
 def test_resource_ports_several():
-
     r = AppResourceClassesByType["ports"]
     conf = {"main": {"default": 12345}, "foobar": {"default": 23456}}
 
@@ -263,7 +247,6 @@ def test_resource_ports_several():
 
 
 def test_resource_ports_firewall():
-
     r = AppResourceClassesByType["ports"]
     conf = {"main": {"default": 12345}}
 
@@ -283,7 +266,6 @@ def test_resource_ports_firewall():
 
 
 def test_resource_database():
-
     r = AppResourceClassesByType["database"]
     conf = {"type": "mysql"}
 
@@ -308,7 +290,6 @@ def test_resource_database():
 
 
 def test_resource_apt():
-
     r = AppResourceClassesByType["apt"]
     conf = {
         "packages": "nyancat, sl",
@@ -356,7 +337,6 @@ def test_resource_apt():
 
 
 def test_resource_permissions():
-
     maindomain = _get_maindomain()
     os.system(f"echo 'domain: {maindomain}' >> /etc/yunohost/apps/testapp/settings.yml")
     os.system("echo 'path: /testapp' >> /etc/yunohost/apps/testapp/settings.yml")

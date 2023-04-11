@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -20,7 +20,7 @@ import os
 import sys
 import shutil
 import subprocess
-import glob
+from glob import glob
 
 from datetime import datetime
 
@@ -124,10 +124,8 @@ def certificate_install(domain_list, force=False, no_checks=False, self_signed=F
 
 
 def _certificate_install_selfsigned(domain_list, force=False):
-
     failed_cert_install = []
     for domain in domain_list:
-
         operation_logger = OperationLogger(
             "selfsigned_cert_install", [("domain", domain)], args={"force": force}
         )
@@ -238,7 +236,6 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
     # certificates
     if domains == []:
         for domain in domain_list()["domains"]:
-
             status = _get_status(domain)
             if status["CA_type"] != "selfsigned":
                 continue
@@ -260,7 +257,6 @@ def _certificate_install_letsencrypt(domains, force=False, no_checks=False):
     # Actual install steps
     failed_cert_install = []
     for domain in domains:
-
         if not no_checks:
             try:
                 _check_domain_is_ready_for_ACME(domain)
@@ -317,7 +313,6 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
     # certificates
     if domains == []:
         for domain in domain_list()["domains"]:
-
             # Does it have a Let's Encrypt cert?
             status = _get_status(domain)
             if status["CA_type"] != "letsencrypt":
@@ -342,7 +337,6 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
     # Else, validate the domain list given
     else:
         for domain in domains:
-
             # Is it in Yunohost domain list?
             _assert_domain_exists(domain)
 
@@ -369,7 +363,6 @@ def certificate_renew(domains, force=False, no_checks=False, email=False):
     # Actual renew steps
     failed_cert_install = []
     for domain in domains:
-
         if not no_checks:
             try:
                 _check_domain_is_ready_for_ACME(domain)
@@ -468,13 +461,11 @@ investigate :
 
 
 def _check_acme_challenge_configuration(domain):
-
     domain_conf = f"/etc/nginx/conf.d/{domain}.conf"
     return "include /etc/nginx/conf.d/acme-challenge.conf.inc" in read_file(domain_conf)
 
 
 def _fetch_and_enable_new_certificate(domain, no_checks=False):
-
     if not os.path.exists(ACCOUNT_KEY_FILE):
         _generate_account_key()
 
@@ -628,7 +619,6 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
 
 
 def _get_status(domain):
-
     cert_file = os.path.join(CERT_FOLDER, domain, "crt.pem")
 
     if not os.path.isfile(cert_file):
@@ -744,10 +734,10 @@ def _enable_certificate(domain, new_cert_folder):
     logger.debug("Restarting services...")
 
     for service in ("dovecot", "metronome"):
-        # Ugly trick to not restart metronome if it's not installed
-        if (
-            service == "metronome"
-            and os.system("dpkg --list | grep -q 'ii *metronome'") != 0
+        # Ugly trick to not restart metronome if it's not installed or no domain configured for XMPP
+        if service == "metronome" and (
+            os.system("dpkg --list | grep -q 'ii *metronome'") != 0
+            or not glob("/etc/metronome/conf.d/*.cfg.lua")
         ):
             continue
         _run_service_command("restart", service)
@@ -777,7 +767,6 @@ def _backup_current_cert(domain):
 
 
 def _check_domain_is_ready_for_ACME(domain):
-
     from yunohost.domain import _get_parent_domain_of
     from yunohost.dns import _get_dns_zone_for_domain
     from yunohost.utils.dns import is_yunohost_dyndns_domain
@@ -864,9 +853,8 @@ def _regen_dnsmasq_if_needed():
     do_regen = False
 
     # For all domain files in DNSmasq conf...
-    domainsconf = glob.glob("/etc/dnsmasq.d/*.*")
+    domainsconf = glob("/etc/dnsmasq.d/*.*")
     for domainconf in domainsconf:
-
         # Look for the IP, it's in the lines with this format :
         # host-record=the.domain.tld,11.22.33.44
         for line in open(domainconf).readlines():

@@ -144,7 +144,6 @@
     "config_validate_email": "Toto by mal byť platný e-mail",
     "config_validate_time": "Toto by mal byť platný čas vo formáte HH:MM",
     "config_validate_url": "Toto by mala byť platná URL adresa webu",
-    "config_version_not_supported": "Verzie konfiguračného panela '{version}' nie sú podporované.",
     "danger": "Nebezpečenstvo:",
     "confirm_app_install_danger": "NEBEZPEČENSTVO! Táto aplikácia je experimentálna (ak vôbec funguje)! Pravdepodobne by ste ju NEMALI inštalovať, pokiaľ si nie ste istý, čo robíte. NEPOSKYTNEME VÁM ŽIADNU POMOC, ak táto aplikácia nebude fungovať alebo rozbije Váš systém… Ak sa rozhodnete i napriek tomu podstúpiť toto riziko, zadajte '{answers}'",
     "confirm_app_install_thirdparty": "NEBEZPEČENSTVO! Táto aplikácia nie je súčasťou katalógu aplikácií YunoHost. Inštalovaním aplikácií tretích strán môžete ohroziť integritu a bezpečnosť Vášho systému. Pravdepodobne by ste NEMALI pokračovať v inštalácií, pokiaľ neviete, čo robíte. NEPOSKYTNEME VÁM ŽIADNU POMOC, ak táto aplikácia nebude fungovať alebo rozbije Váš systém… Ak sa rozhodnete i napriek tomu podstúpiť toto riziko, zadajte '{answers}'",

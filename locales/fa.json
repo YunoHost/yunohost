@@ -414,7 +414,6 @@
     "log_domain_remove": "دامنه '{}' را از پیکربندی سیستم حذف کنید",
     "log_domain_add": "دامنه '{}' را به پیکربندی سیستم اضافه کنید",
     "log_remove_on_failed_install": "پس از نصب ناموفق '{}' را حذف کنید",
-    "log_remove_on_failed_restore": "پس از بازیابی ناموفق از بایگانی پشتیبان، '{}' را حذف کنید",
     "log_backup_restore_app": "بازیابی '{}' از بایگانی پشتیبان",
     "log_backup_restore_system": "بازیابی سیستم بوسیله آرشیو پشتیبان",
     "log_backup_create": "بایگانی پشتیبان ایجاد کنید",

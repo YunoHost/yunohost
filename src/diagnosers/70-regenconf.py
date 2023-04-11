@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -27,13 +27,11 @@ from moulinette.utils.filesystem import read_file
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
     dependencies: List[str] = []
 
     def run(self):
-
         regenconf_modified_files = list(self.manually_modified_files())
 
         if not regenconf_modified_files:
@@ -82,7 +80,6 @@ class MyDiagnoser(Diagnoser):
             )
 
     def manually_modified_files(self):
-
         for category, infos in _get_regenconf_infos().items():
             for path, hash_ in infos["conffiles"].items():
                 if hash_ != _calculate_hash(path):

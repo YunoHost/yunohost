@@ -13,13 +13,11 @@ logger = getActionLogger("yunohost.migration")
 
 
 class MyMigration(Migration):
-
     "Migrate DBs from Postgresql 11 to 13 after migrating to Bullseye"
 
     dependencies = ["migrate_to_bullseye"]
 
     def run(self):
-
         if (
             os.system(
                 'grep -A10 "ynh-deps" /var/lib/dpkg/status | grep -E "Package:|Depends:" | grep -B1 postgresql'
@@ -63,7 +61,6 @@ class MyMigration(Migration):
         self.runcmd("systemctl start postgresql")
 
     def package_is_installed(self, package_name):
-
         (returncode, out, err) = self.runcmd(
             "dpkg --list | grep '^ii ' | grep -q -w {}".format(package_name),
             raise_on_errors=False,
@@ -71,7 +68,6 @@ class MyMigration(Migration):
         return returncode == 0
 
     def runcmd(self, cmd, raise_on_errors=True):
-
         logger.debug("Running command: " + cmd)
 
         p = subprocess.Popen(

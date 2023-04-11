@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -21,16 +21,15 @@ from typing import List
 
 from yunohost.diagnosis import Diagnoser
 from yunohost.service import _get_services
+from yunohost.settings import settings_get
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: List[str] = ["ip"]
 
     def run(self):
-
         # TODO: report a warning if port 53 or 5353 is exposed to the outside world...
 
         # This dict is something like :
@@ -46,7 +45,10 @@ class MyDiagnoser(Diagnoser):
 
         ipversions = []
         ipv4 = Diagnoser.get_cached_report("ip", item={"test": "ipv4"}) or {}
-        if ipv4.get("status") == "SUCCESS":
+        if (
+            ipv4.get("status") == "SUCCESS"
+            or settings_get("misc.network.dns_exposure") != "ipv6"
+        ):
             ipversions.append(4)
 
         # To be discussed: we could also make this check dependent on the
@@ -120,7 +122,10 @@ class MyDiagnoser(Diagnoser):
                         for record in dnsrecords.get("items", [])
                     )
 
-                if failed == 4 or ipv6_is_important():
+                if (
+                    failed == 4
+                    and settings_get("misc.network.dns_exposure") in ["both", "ipv4"]
+                ) or (failed == 6 and ipv6_is_important()):
                     yield dict(
                         meta={"port": port},
                         data={

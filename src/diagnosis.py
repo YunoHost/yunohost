@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -45,7 +45,6 @@ def diagnosis_list():
 
 
 def diagnosis_get(category, item):
-
     # Get all the categories
     all_categories_names = _list_diagnosis_categories()
 
@@ -69,7 +68,6 @@ def diagnosis_get(category, item):
 def diagnosis_show(
     categories=[], issues=False, full=False, share=False, human_readable=False
 ):
-
     if not os.path.exists(DIAGNOSIS_CACHE):
         logger.warning(m18n.n("diagnosis_never_ran_yet"))
         return
@@ -90,7 +88,6 @@ def diagnosis_show(
     # Fetch all reports
     all_reports = []
     for category in categories:
-
         try:
             report = Diagnoser.get_cached_report(category)
         except Exception as e:
@@ -139,7 +136,6 @@ def diagnosis_show(
 
 
 def _dump_human_readable_reports(reports):
-
     output = ""
 
     for report in reports:
@@ -159,7 +155,6 @@ def _dump_human_readable_reports(reports):
 def diagnosis_run(
     categories=[], force=False, except_if_never_ran_yet=False, email=False
 ):
-
     if (email or except_if_never_ran_yet) and not os.path.exists(DIAGNOSIS_CACHE):
         return
 
@@ -263,7 +258,6 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
         return {"ignore_filters": configuration.get("ignore_filters", {})}
 
     def validate_filter_criterias(filter_):
-
         # Get all the categories
         all_categories_names = _list_diagnosis_categories()
 
@@ -286,7 +280,6 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
         return category, criterias
 
     if add_filter:
-
         category, criterias = validate_filter_criterias(add_filter)
 
         # Fetch current issues for the requested category
@@ -320,7 +313,6 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
         return
 
     if remove_filter:
-
         category, criterias = validate_filter_criterias(remove_filter)
 
         # Make sure the subdicts/lists exists
@@ -394,12 +386,10 @@ def add_ignore_flag_to_issues(report):
 
 class Diagnoser:
     def __init__(self):
-
         self.cache_file = Diagnoser.cache_file(self.id_)
         self.description = Diagnoser.get_description(self.id_)
 
     def cached_time_ago(self):
-
         if not os.path.exists(self.cache_file):
             return 99999999
         return time.time() - os.path.getmtime(self.cache_file)
@@ -410,7 +400,6 @@ class Diagnoser:
         return write_to_json(self.cache_file, report)
 
     def diagnose(self, force=False):
-
         if not force and self.cached_time_ago() < self.cache_duration:
             logger.debug(f"Cache still valid : {self.cache_file}")
             logger.info(
@@ -548,7 +537,6 @@ class Diagnoser:
 
     @staticmethod
     def i18n(report, force_remove_html_tags=False):
-
         # "Render" the strings with m18n.n
         # N.B. : we do those m18n.n right now instead of saving the already-translated report
         # because we can't be sure we'll redisplay the infos with the same locale as it
@@ -558,7 +546,6 @@ class Diagnoser:
         report["description"] = Diagnoser.get_description(report["id"])
 
         for item in report["items"]:
-
             # For the summary and each details, we want to call
             # m18n() on the string, with the appropriate data for string
             # formatting which can come from :
@@ -597,7 +584,6 @@ class Diagnoser:
 
     @staticmethod
     def remote_diagnosis(uri, data, ipversion, timeout=30):
-
         # Lazy loading for performance
         import requests
         import socket
@@ -646,7 +632,6 @@ class Diagnoser:
 
 
 def _list_diagnosis_categories():
-
     paths = glob.glob(os.path.dirname(__file__) + "/diagnosers/??-*.py")
     names = [
         name.split("-")[-1]
@@ -657,7 +642,6 @@ def _list_diagnosis_categories():
 
 
 def _load_diagnoser(diagnoser_name):
-
     logger.debug(f"Loading diagnoser {diagnoser_name}")
 
     paths = glob.glob(os.path.dirname(__file__) + f"/diagnosers/??-{diagnoser_name}.py")

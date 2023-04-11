@@ -2,8 +2,6 @@ server_host = localhost
 server_port = 389
 search_base = dc=yunohost,dc=org
 query_filter = (&(objectClass=groupOfNamesYnh)(mail=%s))
-exclude_internal = yes
-search_timeout = 30
 scope = sub
 result_attribute = memberUid, mail
 terminal_result_attribute = memberUid

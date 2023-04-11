@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -38,13 +38,11 @@ logger = log.getActionLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: List[str] = ["ip"]
 
     def run(self):
-
         self.ehlo_domain = _get_maindomain()
         self.mail_domains = domain_list()["domains"]
         self.ipversions, self.ips = self.get_ips_checked()
@@ -279,7 +277,7 @@ class MyDiagnoser(Diagnoser):
                 data={"error": str(e)},
                 status="ERROR",
                 summary="diagnosis_mail_queue_unavailable",
-                details="diagnosis_mail_queue_unavailable_details",
+                details=["diagnosis_mail_queue_unavailable_details"],
             )
         else:
             if pending_emails > 100:
@@ -301,13 +299,17 @@ class MyDiagnoser(Diagnoser):
         outgoing_ipversions = []
         outgoing_ips = []
         ipv4 = Diagnoser.get_cached_report("ip", {"test": "ipv4"}) or {}
-        if ipv4.get("status") == "SUCCESS":
+        if ipv4.get("status") == "SUCCESS" and settings_get(
+            "misc.network.dns_exposure"
+        ) in ["both", "ipv4"]:
             outgoing_ipversions.append(4)
             global_ipv4 = ipv4.get("data", {}).get("global", {})
             if global_ipv4:
                 outgoing_ips.append(global_ipv4)
 
-        if settings_get("email.smtp.smtp_allow_ipv6"):
+        if settings_get("email.smtp.smtp_allow_ipv6") or settings_get(
+            "misc.network.dns_exposure"
+        ) in ["both", "ipv6"]:
             ipv6 = Diagnoser.get_cached_report("ip", {"test": "ipv6"}) or {}
             if ipv6.get("status") == "SUCCESS":
                 outgoing_ipversions.append(6)

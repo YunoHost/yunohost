@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+import copy
 import os
 import re
 import yaml
@@ -95,7 +96,6 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
             logs = logs[: limit * 5]
 
     for log in logs:
-
         base_filename = log[: -len(METADATA_FILE_EXT)]
         md_path = os.path.join(OPERATIONS_PATH, log)
 
@@ -264,7 +264,6 @@ def log_show(
                         return
 
                     for filename in os.listdir(OPERATIONS_PATH):
-
                         if not filename.endswith(METADATA_FILE_EXT):
                             continue
 
@@ -438,7 +437,6 @@ class RedactingFormatter(Formatter):
         return msg
 
     def identify_data_to_redact(self, record):
-
         # Wrapping this in a try/except because we don't want this to
         # break everything in case it fails miserably for some reason :s
         try:
@@ -497,7 +495,6 @@ class OperationLogger:
             os.makedirs(self.path)
 
     def parent_logger(self):
-
         # If there are other operation logger instances
         for instance in reversed(self._instances):
             # Is one of these operation logger started but not yet done ?
@@ -598,7 +595,17 @@ class OperationLogger:
         Write or rewrite the metadata file with all metadata known
         """
 
-        dump = yaml.safe_dump(self.metadata, default_flow_style=False)
+        metadata = copy.copy(self.metadata)
+
+        # Remove lower-case keys ... this is because with the new v2 app packaging,
+        # all settings are included in the env but we probably don't want to dump all of these
+        # which may contain various secret/private data ...
+        if "env" in metadata:
+            metadata["env"] = {
+                k: v for k, v in metadata["env"].items() if k == k.upper()
+            }
+
+        dump = yaml.safe_dump(metadata, default_flow_style=False)
         for data in self.data_to_redact:
             # N.B. : we need quotes here, otherwise yaml isn't happy about loading the yml later
             dump = dump.replace(data, "'**********'")
@@ -732,7 +739,6 @@ class OperationLogger:
             self.error(m18n.n("log_operation_unit_unclosed_properly"))
 
     def dump_script_log_extract_for_debugging(self):
-
         with open(self.log_path, "r") as f:
             lines = f.readlines()
 
@@ -774,7 +780,6 @@ class OperationLogger:
 
 
 def _get_datetime_from_name(name):
-
     # Filenames are expected to follow the format:
     # 20200831-170740-short_description-and-stuff
 

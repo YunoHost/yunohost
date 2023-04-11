@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -33,7 +33,8 @@ from yunohost.app import (
     _get_conflicting_apps,
 )
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
-from yunohost.utils.config import ConfigPanel, Question
+from yunohost.utils.configpanel import ConfigPanel
+from yunohost.utils.form import Question
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.dns import is_yunohost_dyndns_domain
 from yunohost.log import is_unit_operation
@@ -188,7 +189,6 @@ def _assert_domain_exists(domain):
 
 
 def _list_subdomains_of(parent_domain):
-
     _assert_domain_exists(parent_domain)
 
     out = []
@@ -200,7 +200,6 @@ def _list_subdomains_of(parent_domain):
 
 
 def _get_parent_domain_of(domain, return_self=False, topest=False):
-
     domains = _get_domains(exclude_subdomains=topest)
 
     domain_ = domain
@@ -657,7 +656,6 @@ class DomainConfigPanel(ConfigPanel):
             regen_conf(names=stuff_to_regen_conf)
 
     def _get_toml(self):
-
         toml = super()._get_toml()
 
         toml["feature"]["xmpp"]["xmpp"]["default"] = (
@@ -679,7 +677,6 @@ class DomainConfigPanel(ConfigPanel):
 
         # Cert stuff
         if not filter_key or filter_key[0] == "cert":
-
             from yunohost.certificate import certificate_status
 
             status = certificate_status([self.entity], full=True)["certificates"][
@@ -697,16 +694,29 @@ class DomainConfigPanel(ConfigPanel):
                 f"domain_config_cert_summary_{status['summary']}"
             )
 
-            # Other specific strings used in config panels
-            # i18n: domain_config_cert_renew_help
-
             # FIXME: Ugly hack to save the cert status and reinject it in _load_current_values ...
             self.cert_status = status
 
         return toml
 
-    def _load_current_values(self):
+    def get(self, key="", mode="classic"):
+        result = super().get(key=key, mode=mode)
 
+        if mode == "full":
+            for panel, section, option in self._iterate():
+                # This injects:
+                # i18n: domain_config_cert_renew_help
+                # i18n: domain_config_default_app_help
+                # i18n: domain_config_xmpp_help
+                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
+                    option["help"] = m18n.n(
+                        self.config["i18n"] + "_" + option["id"] + "_help"
+                    )
+            return self.config
+
+        return result
+
+    def _load_current_values(self):
         # TODO add mechanism to share some settings with other domains on the same zone
         super()._load_current_values()
 
@@ -724,7 +734,6 @@ class DomainConfigPanel(ConfigPanel):
 
 
 def domain_action_run(domain, action, args=None):
-
     import urllib.parse
 
     if action == "cert.cert.cert_install":
@@ -739,7 +748,6 @@ def domain_action_run(domain, action, args=None):
 
 
 def _get_domain_settings(domain: str) -> dict:
-
     _assert_domain_exists(domain)
 
     if os.path.exists(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"):
@@ -749,7 +757,6 @@ def _get_domain_settings(domain: str) -> dict:
 
 
 def _set_domain_settings(domain: str, settings: dict) -> None:
-
     _assert_domain_exists(domain)
 
     write_to_yaml(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml", settings)

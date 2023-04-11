@@ -233,7 +233,6 @@
     "log_available_on_yunopaste": "Questo registro è ora disponibile via {url}",
     "log_backup_restore_system": "Ripristina sistema da un archivio di backup",
     "log_backup_restore_app": "Ripristina '{}' da un archivio di backup",
-    "log_remove_on_failed_restore": "Rimuovi '{}' dopo un ripristino fallito da un archivio di backup",
     "log_remove_on_failed_install": "Rimuovi '{}' dopo un'installazione fallita",
     "log_domain_add": "Aggiungi il dominio '{}' nella configurazione di sistema",
     "log_domain_remove": "Rimuovi il dominio '{}' dalla configurazione di sistema",
@@ -612,14 +611,12 @@
     "domain_dns_push_success": "Record DNS aggiornati!",
     "domain_dns_push_failed": "L’aggiornamento dei record DNS è miseramente fallito.",
     "domain_dns_push_partial_failure": "Record DNS parzialmente aggiornati: alcuni segnali/errori sono stati riportati.",
-    "domain_config_features_disclaimer": "Per ora, abilitare/disabilitare le impostazioni di posta o XMPP impatta unicamente sulle configurazioni DNS raccomandate o ottimizzate, non cambia quelle di sistema!",
     "domain_config_mail_in": "Email in arrivo",
     "domain_config_auth_application_key": "Chiave applicazione",
     "domain_config_auth_application_secret": "Chiave segreta applicazione",
     "domain_config_auth_consumer_key": "Chiave consumatore",
     "ldap_attribute_already_exists": "L’attributo LDAP '{attribute}' esiste già con il valore '{value}'",
     "config_validate_time": "È necessario inserire un orario valido, come HH:MM",
-    "config_version_not_supported": "Le versioni '{version}' del pannello di configurazione non sono supportate.",
     "danger": "Attenzione:",
     "log_domain_config_set": "Aggiorna la configurazione per il dominio '{}'",
     "domain_dns_push_managed_in_parent_domain": "La configurazione automatica del DNS è gestita nel dominio genitore {parent_domain}.",
@@ -640,5 +637,6 @@
     "global_settings_setting_webadmin_allowlist_enabled_help": "Permetti solo ad alcuni IP di accedere al webadmin.",
     "global_settings_setting_smtp_allow_ipv6_help": "Permetti l'utilizzo di IPv6 per ricevere e inviare mail",
     "global_settings_setting_smtp_relay_enabled_help": "Utilizza SMTP relay per inviare mail al posto di questa instanza yunohost. Utile se sei in una di queste situazioni: la tua porta 25 è bloccata dal tuo provider ISP o VPS; hai un IP residenziale listato su DUHL; non sei puoi configurare il DNS inverso; oppure questo server non è direttamente esposto a Internet e vuoi usarne un'altro per spedire email.",
-    "domain_config_default_app": "Applicazione di default"
+    "domain_config_default_app": "Applicazione di default",
+    "app_change_url_failed": "Non è possibile cambiare l'URL per {app}:{error}"
 }

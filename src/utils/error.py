@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -21,7 +21,6 @@ from moulinette import m18n
 
 
 class YunohostError(MoulinetteError):
-
     http_code = 500
 
     """
@@ -43,7 +42,6 @@ class YunohostError(MoulinetteError):
         super(YunohostError, self).__init__(msg, raw_msg=True)
 
     def content(self):
-
         if not self.log_ref:
             return super().content()
         else:
@@ -51,14 +49,11 @@ class YunohostError(MoulinetteError):
 
 
 class YunohostValidationError(YunohostError):
-
     http_code = 400
 
     def content(self):
-
         return {"error": self.strerror, "error_key": self.key, **self.kwargs}
 
 
 class YunohostAuthenticationError(MoulinetteAuthenticationError):
-
     pass

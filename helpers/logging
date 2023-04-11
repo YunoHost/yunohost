@@ -308,8 +308,8 @@ ynh_script_progression() {
     local progression_bar="${progress_string2:0:$effective_progression}${progress_string1:0:$expected_progression}${progress_string0:0:$left_progression}"
 
     local print_exec_time=""
-    if [ $time -eq 1 ]; then
-        print_exec_time=" [$(date +%Hh%Mm,%Ss --date="0 + $exec_time sec")]"
+    if [ $time -eq 1 ] && [ "$exec_time" -gt 10 ]; then
+        print_exec_time=" [$(bc <<< "scale=1; $exec_time / 60" ) minutes]"
     fi
 
     ynh_print_info "[$progression_bar] > ${message}${print_exec_time}"

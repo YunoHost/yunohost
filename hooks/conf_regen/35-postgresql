@@ -20,7 +20,7 @@ do_pre_regen() {
 }
 
 do_post_regen() {
-    regen_conf_files=$1
+    #regen_conf_files=$1
   
     # Make sure postgresql is started and enabled
     # (N.B. : to check the active state, we check the cluster state because
@@ -34,6 +34,8 @@ do_post_regen() {
     if [ ! -f "$PSQL_ROOT_PWD_FILE" ] || [ -z "$(cat $PSQL_ROOT_PWD_FILE)" ]; then
         ynh_string_random >$PSQL_ROOT_PWD_FILE
     fi
+
+    [ ! -e $PSQL_ROOT_PWD_FILE ] || { chown root:postgres $PSQL_ROOT_PWD_FILE; chmod 440 $PSQL_ROOT_PWD_FILE; }
     
     sudo --login --user=postgres psql -c"ALTER user postgres WITH PASSWORD '$(cat $PSQL_ROOT_PWD_FILE)'" postgres
   
@@ -47,20 +49,4 @@ do_post_regen() {
     ynh_systemd_action --service_name=postgresql --action=reload
 }
 
-FORCE=${2:-0}
-DRY_RUN=${3:-0}
-
-case "$1" in
-  pre)
-    do_pre_regen $4
-    ;;
-  post)
-    do_post_regen $4
-    ;;
-  *)
-    echo "hook called with unknown argument \`$1'" >&2
-    exit 1
-    ;;
-esac
-
-exit 0
+do_$1_regen ${@:2}

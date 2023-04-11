@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -21,7 +21,8 @@ import subprocess
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.config import ConfigPanel, Question
+from yunohost.utils.configpanel import ConfigPanel
+from yunohost.utils.form import Question
 from moulinette.utils.log import getActionLogger
 from yunohost.regenconf import regen_conf
 from yunohost.firewall import firewall_reload
@@ -59,7 +60,6 @@ def settings_get(key="", full=False, export=False):
 
 
 def settings_list(full=False):
-
     settings = settings_get(full=full)
 
     if full:
@@ -126,7 +126,6 @@ class SettingsConfigPanel(ConfigPanel):
         super().__init__("settings")
 
     def _apply(self):
-
         root_password = self.new_values.pop("root_password", None)
         root_password_confirm = self.new_values.pop("root_password_confirm", None)
         passwordless_sudo = self.new_values.pop("passwordless_sudo", None)
@@ -141,7 +140,6 @@ class SettingsConfigPanel(ConfigPanel):
         assert all(v not in self.future_values for v in self.virtual_settings)
 
         if root_password and root_password.strip():
-
             if root_password != root_password_confirm:
                 raise YunohostValidationError("password_confirmation_not_the_same")
 
@@ -173,7 +171,6 @@ class SettingsConfigPanel(ConfigPanel):
                 raise
 
     def _get_toml(self):
-
         toml = super()._get_toml()
 
         # Dynamic choice list for portal themes
@@ -187,7 +184,6 @@ class SettingsConfigPanel(ConfigPanel):
         return toml
 
     def _load_current_values(self):
-
         super()._load_current_values()
 
         # Specific logic for those settings who are "virtual" settings
@@ -203,11 +199,10 @@ class SettingsConfigPanel(ConfigPanel):
             self.values["passwordless_sudo"] = "!authenticate" in ldap.search(
                 "ou=sudo", "cn=admins", ["sudoOption"]
             )[0].get("sudoOption", [])
-        except:
+        except Exception:
             self.values["passwordless_sudo"] = False
 
     def get(self, key="", mode="classic"):
-
         result = super().get(key=key, mode=mode)
 
         if mode == "full":
@@ -353,7 +348,7 @@ def reconfigure_dovecot(setting_name, old_value, new_value):
     environment = os.environ.copy()
     environment.update({"DEBIAN_FRONTEND": "noninteractive"})
 
-    if new_value == "True":
+    if new_value is True:
         command = [
             "apt-get",
             "-y",

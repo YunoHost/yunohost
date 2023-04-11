@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -38,6 +38,7 @@ from yunohost.domain import (
 from yunohost.utils.dns import dig, is_yunohost_dyndns_domain, is_special_use_tld
 from yunohost.utils.error import YunohostValidationError, YunohostError
 from yunohost.utils.network import get_public_ip
+from yunohost.settings import settings_get
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
 
@@ -137,7 +138,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
             {"type": "A", "name": "*", "value": "123.123.123.123", "ttl": 3600},
             # if ipv6 available
             {"type": "AAAA", "name": "*", "value": "valid-ipv6", "ttl": 3600},
-            {"type": "CAA", "name": "@", "value": "128 issue \"letsencrypt.org\"", "ttl": 3600},
+            {"type": "CAA", "name": "@", "value": "0 issue \"letsencrypt.org\"", "ttl": 3600},
         ],
         "example_of_a_custom_rule": [
             {"type": "SRV", "name": "_matrix", "value": "domain.tld.", "ttl": 3600}
@@ -168,7 +169,6 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
     base_dns_zone = _get_dns_zone_for_domain(base_domain)
 
     for domain, settings in domains_settings.items():
-
         #   Domain           #   Base DNS zone   # Basename  #  Suffix  #
         # ------------------ # ----------------- # --------- # -------- #
         #         domain.tld #       domain.tld  #        @  #          #
@@ -185,7 +185,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
         ###########################
         # Basic ipv4/ipv6 records #
         ###########################
-        if ipv4:
+        if ipv4 and settings_get("misc.network.dns_exposure") in ["both", "ipv4"]:
             basic.append([basename, ttl, "A", ipv4])
 
         if ipv6:
@@ -240,7 +240,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
 
         # Only recommend wildcard and CAA for the top level
         if domain == base_domain:
-            if ipv4:
+            if ipv4 and settings_get("misc.network.dns_exposure") in ["both", "ipv4"]:
                 extra.append([f"*{suffix}", ttl, "A", ipv4])
 
             if ipv6:
@@ -248,7 +248,7 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
             elif include_empty_AAAA_if_no_ipv6:
                 extra.append([f"*{suffix}", ttl, "AAAA", None])
 
-            extra.append([basename, ttl, "CAA", '128 issue "letsencrypt.org"'])
+            extra.append([basename, ttl, "CAA", '0 issue "letsencrypt.org"'])
 
         ####################
         # Standard records #
@@ -461,7 +461,6 @@ def _get_dns_zone_for_domain(domain):
 
     # We don't wan't to do A NS request on the tld
     for parent in parent_list[0:-1]:
-
         # Check if there's a NS record for that domain
         answer = dig(parent, rdtype="NS", full_answers=True, resolvers="force_external")
 
@@ -502,7 +501,6 @@ def _get_relative_name_for_dns_zone(domain, base_dns_zone):
 
 
 def _get_registrar_config_section(domain):
-
     from lexicon.providers.auto import _relevant_provider_for_domain
 
     registrar_infos = {
@@ -516,7 +514,6 @@ def _get_registrar_config_section(domain):
     # If parent domain exists in yunohost
     parent_domain = _get_parent_domain_of(domain, topest=True)
     if parent_domain:
-
         # Dirty hack to have a link on the webadmin
         if Moulinette.interface.type == "api":
             parent_domain_link = f"[{parent_domain}](#/domains/{parent_domain}/dns)"
@@ -571,7 +568,6 @@ def _get_registrar_config_section(domain):
             }
         )
     else:
-
         registrar_infos["registrar"] = OrderedDict(
             {
                 "type": "alert",
@@ -595,7 +591,12 @@ def _get_registrar_config_section(domain):
 
         # TODO : add a help tip with the link to the registar's API doc (c.f. Lexicon's README)
         registrar_list = read_toml(DOMAIN_REGISTRAR_LIST_PATH)
-        registrar_credentials = registrar_list[registrar]
+        registrar_credentials = registrar_list.get(registrar)
+        if registrar_credentials is None:
+            logger.warning(
+                f"Registrar {registrar} unknown / Should be added to YunoHost's registrar_list.toml by the development team!"
+            )
+            registrar_credentials = {}
         for credential, infos in registrar_credentials.items():
             infos["default"] = infos.get("default", "")
             infos["optional"] = infos.get("optional", "False")
@@ -605,7 +606,6 @@ def _get_registrar_config_section(domain):
 
 
 def _get_registar_settings(domain):
-
     _assert_domain_exists(domain)
 
     settings = domain_config_get(domain, key="dns.registrar", export=True)
@@ -679,7 +679,6 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     wanted_records = []
     for records in _build_dns_conf(domain).values():
         for record in records:
-
             # Make sure the name is a FQDN
             name = (
                 f"{record['name']}.{base_dns_zone}"
@@ -754,7 +753,6 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     ]
 
     for record in current_records:
-
         # Try to get rid of weird stuff like ".domain.tld" or "@.domain.tld"
         record["name"] = record["name"].strip("@").strip(".")
 
@@ -804,7 +802,6 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
         comparison[(record["type"], record["name"])]["wanted"].append(record)
 
     for type_and_name, records in comparison.items():
-
         #
         # Step 1 : compute a first "diff" where we remove records which are the same on both sides
         #
@@ -948,9 +945,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     results = {"warnings": [], "errors": []}
 
     for action in ["delete", "create", "update"]:
-
         for record in changes[action]:
-
             relative_name = _get_relative_name_for_dns_zone(
                 record["name"], base_dns_zone
             )
@@ -975,6 +970,9 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
                         f"Pushing {record['type']} records is not properly supported by Lexicon/Godaddy."
                     )
                     continue
+            elif registrar == "gandi":
+                if record["name"] == base_dns_zone:
+                    record["name"] = "@." + record["name"]
 
             record["action"] = action
             query = (
@@ -1035,7 +1033,6 @@ def _set_managed_dns_records_hashes(domain: str, hashes: list) -> None:
 
 
 def _hash_dns_record(record: dict) -> int:
-
     fields = ["name", "type", "content"]
     record_ = {f: record.get(f) for f in fields}
 

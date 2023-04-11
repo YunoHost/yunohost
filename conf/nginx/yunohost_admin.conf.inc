@@ -7,9 +7,11 @@ location /yunohost/admin/ {
     index index.html;
 
     {% if webadmin_allowlist_enabled == "True" %}
-    {% for ip in webadmin_allowlist.split(',') %}
-    allow {{ ip }};
-    {% endfor %}
+    {% if webadmin_allowlist.strip() -%}
+    {% for ip in webadmin_allowlist.strip().split(',') -%}
+    allow {{ ip.strip() }};
+    {% endfor -%}
+    {% endif -%}
     deny all;
     {% endif %}
 

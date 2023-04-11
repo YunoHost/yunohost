@@ -1,6 +1,6 @@
 .install_debs: &install_debs
     - apt-get update -o Acquire::Retries=3
-    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./$YNH_BUILD_DIR/*.deb
+    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
     - pip3 install -U mock pip pytest pytest-cov pytest-mock pytest-sugar requests-mock tox ansi2html black jinja2 "packaging<22"
 
 .test-stage:
@@ -36,7 +36,7 @@ full-tests:
     - *install_debs
     - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace
   script:
-    - python3 -m pytest --cov=yunohost tests/ src/tests/ src/diagnosers/ --junitxml=report.xml
+    - python3 -m pytest --cov=yunohost tests/ src/tests/ --junitxml=report.xml
     - cd tests
     - bash test_helpers.sh
   needs:
@@ -46,6 +46,7 @@ full-tests:
         artifacts: true
       - job: build-moulinette
         artifacts: true
+  coverage: '/TOTAL.*\s+(\d+%)/'
   artifacts:
     reports:
       junit: report.xml

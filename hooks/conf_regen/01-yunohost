@@ -125,12 +125,15 @@ EOF
     fi
 
     # Skip ntp if inside a container (inspired from the conf of systemd-timesyncd)
-    mkdir -p ${pending_dir}/etc/systemd/system/ntp.service.d/
-    cat >${pending_dir}/etc/systemd/system/ntp.service.d/ynh-override.conf <<EOF
+    if systemctl | grep -q 'ntp.service'
+    then
+        mkdir -p ${pending_dir}/etc/systemd/system/ntp.service.d/
+        cat >${pending_dir}/etc/systemd/system/ntp.service.d/ynh-override.conf <<EOF
 [Unit]
 ConditionCapability=CAP_SYS_TIME
 ConditionVirtualization=!container
 EOF
+    fi
 
     # Make nftable conflict with yunohost-firewall
     mkdir -p ${pending_dir}/etc/systemd/system/nftables.service.d/
@@ -215,10 +218,13 @@ do_post_regen() {
     grep -q '^sftp.app:' /etc/group || groupadd sftp.app
 
     # Propagates changes in systemd service config overrides
-    [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || {
-        systemctl daemon-reload
-        systemctl restart ntp
-    }
+    if systemctl | grep -q 'ntp.service'
+    then
+        [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || {
+            systemctl daemon-reload
+            systemctl restart ntp
+        }
+    fi
     [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || systemctl daemon-reload
     [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] ||  {
         systemctl daemon-reload
@@ -244,6 +250,11 @@ do_post_regen() {
     then
         rm -f /etc/dpkg/origins/default
         ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
+    fi
+
+    if test -e /etc/yunohost/installed && test -e /etc/profile.d/check_yunohost_is_installed.sh
+    then
+        rm /etc/profile.d/check_yunohost_is_installed.sh
     fi
 }
 

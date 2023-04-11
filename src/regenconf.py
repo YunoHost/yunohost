@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -77,7 +77,6 @@ def regen_conf(
 
         for category, conf_files in pending_conf.items():
             for system_path, pending_path in conf_files.items():
-
                 pending_conf[category][system_path] = {
                     "pending_conf": pending_path,
                     "diff": _get_files_diff(system_path, pending_path, True),
@@ -595,7 +594,6 @@ def _update_conf_hashes(category, hashes):
 
 
 def _force_clear_hashes(paths):
-
     categories = _get_regenconf_infos()
     for path in paths:
         for category in categories.keys():
@@ -675,7 +673,6 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
 
 
 def manually_modified_files():
-
     output = []
     regenconf_categories = _get_regenconf_infos()
     for category, infos in regenconf_categories.items():
@@ -690,7 +687,6 @@ def manually_modified_files():
 def manually_modified_files_compared_to_debian_default(
     ignore_handled_by_regenconf=False,
 ):
-
     # from https://serverfault.com/a/90401
     files = check_output(
         "dpkg-query -W -f='${Conffiles}\n' '*' \

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -157,7 +157,6 @@ def _read_apps_catalog_list():
 
 
 def _actual_apps_catalog_api_url(base_url):
-
     return f"{base_url}/v{APPS_CATALOG_API_VERSION}/apps.json"
 
 
@@ -269,7 +268,6 @@ def _load_apps_catalog():
     merged_catalog = {"apps": {}, "categories": [], "antifeatures": []}
 
     for apps_catalog_id in [L["id"] for L in _read_apps_catalog_list()]:
-
         # Let's load the json from cache for this catalog
         cache_file = f"{APPS_CATALOG_CACHE}/{apps_catalog_id}.json"
 
@@ -298,7 +296,6 @@ def _load_apps_catalog():
 
         # Add apps from this catalog to the output
         for app, info in apps_catalog_content["apps"].items():
-
             # (N.B. : there's a small edge case where multiple apps catalog could be listing the same apps ...
             #         in which case we keep only the first one found)
             if app in merged_catalog["apps"]:

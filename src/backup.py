@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -32,6 +32,7 @@ from functools import reduce
 from packaging import version
 
 from moulinette import Moulinette, m18n
+from moulinette.utils.text import random_ascii
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
     read_file,
@@ -51,6 +52,7 @@ from yunohost.app import (
     _make_environment_for_app_script,
     _make_tmp_workdir_for_app,
     _get_manifest_of_app,
+    app_remove,
 )
 from yunohost.hook import (
     hook_list,
@@ -93,7 +95,6 @@ class BackupRestoreTargetsManager:
     """
 
     def __init__(self):
-
         self.targets = {}
         self.results = {"system": {}, "apps": {}}
 
@@ -349,7 +350,6 @@ class BackupManager:
         if not os.path.isdir(self.work_dir):
             mkdir(self.work_dir, 0o750, parents=True)
         elif self.is_tmp_work_dir:
-
             logger.debug(
                 "temporary directory for backup '%s' already exists... attempting to clean it",
                 self.work_dir,
@@ -887,7 +887,6 @@ class RestoreManager:
 
     @property
     def success(self):
-
         successful_apps = self.targets.list("apps", include=["Success", "Warning"])
         successful_system = self.targets.list("system", include=["Success", "Warning"])
 
@@ -939,7 +938,17 @@ class RestoreManager:
                 )
 
             logger.debug("executing the post-install...")
-            tools_postinstall(domain, "Yunohost", True)
+
+            # Use a dummy password which is not gonna be saved anywhere
+            # because the next thing to happen should be that a full restore of the LDAP db will happen
+            tools_postinstall(
+                domain,
+                "tmpadmin",
+                "Tmp Admin",
+                password=random_ascii(70),
+                ignore_dyndns=True,
+                overwrite_root_password=False,
+            )
 
     def clean(self):
         """
@@ -1187,7 +1196,8 @@ class RestoreManager:
             self._restore_apps()
         except Exception as e:
             raise YunohostError(
-                f"The following critical error happened during restoration: {e}"
+                f"The following critical error happened during restoration: {e}",
+                raw_msg=True,
             )
         finally:
             self.clean()
@@ -1366,8 +1376,6 @@ class RestoreManager:
         from yunohost.user import user_group_list
         from yunohost.permission import (
             permission_create,
-            permission_delete,
-            user_permission_list,
             permission_sync_to_user,
         )
 
@@ -1443,7 +1451,6 @@ class RestoreManager:
             existing_groups = user_group_list()["groups"]
 
             for permission_name, permission_infos in permissions.items():
-
                 if "allowed" not in permission_infos:
                     logger.warning(
                         f"'allowed' key corresponding to allowed groups for permission {permission_name} not found when restoring app {app_instance_name} … You might have to reconfigure permissions yourself."
@@ -1521,6 +1528,7 @@ class RestoreManager:
             AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
+                action="restore",
             )
 
         # Execute the app install script
@@ -1547,39 +1555,9 @@ class RestoreManager:
                 self.targets.set_result("apps", app_instance_name, "Success")
                 operation_logger.success()
             else:
-
                 self.targets.set_result("apps", app_instance_name, "Error")
 
-                remove_script = os.path.join(app_scripts_in_archive, "remove")
-
-                # Setup environment for remove script
-                env_dict_remove = _make_environment_for_app_script(
-                    app_instance_name, workdir=app_workdir
-                )
-                remove_operation_logger = OperationLogger(
-                    "remove_on_failed_restore",
-                    [("app", app_instance_name)],
-                    env=env_dict_remove,
-                )
-                remove_operation_logger.start()
-
-                # Execute remove script
-                if hook_exec(remove_script, env=env_dict_remove)[0] != 0:
-                    msg = m18n.n("app_not_properly_removed", app=app_instance_name)
-                    logger.warning(msg)
-                    remove_operation_logger.error(msg)
-                else:
-                    remove_operation_logger.success()
-
-                # Cleaning app directory
-                shutil.rmtree(app_settings_new_path, ignore_errors=True)
-
-                # Remove all permission in LDAP for this app
-                for permission_name in user_permission_list()["permissions"].keys():
-                    if permission_name.startswith(app_instance_name + "."):
-                        permission_delete(permission_name, force=True)
-
-                # TODO Cleaning app hooks
+                app_remove(app_instance_name, force_workdir=app_workdir)
 
                 logger.error(failure_message_with_debug_instructions)
 
@@ -1938,12 +1916,10 @@ class CopyBackupMethod(BackupMethod):
 
 
 class TarBackupMethod(BackupMethod):
-
     method_name = "tar"
 
     @property
     def _archive_file(self):
-
         if isinstance(self.manager, BackupManager) and settings_get(
             "misc.backup.backup_compress_tar_archives"
         ):
@@ -2302,7 +2278,7 @@ def backup_create(
     )
     backup_manager.backup()
 
-    logger.success(m18n.n("backup_created"))
+    logger.success(m18n.n("backup_created", name=backup_manager.name))
     operation_logger.success()
 
     return {
@@ -2400,6 +2376,7 @@ def backup_list(with_info=False, human_readable=False):
     # (we do a realpath() to resolve symlinks)
     archives = glob(f"{ARCHIVES_PATH}/*.tar.gz") + glob(f"{ARCHIVES_PATH}/*.tar")
     archives = {os.path.realpath(archive) for archive in archives}
+    archives = {archive for archive in archives if os.path.exists(archive)}
     archives = sorted(archives, key=lambda x: os.path.getctime(x))
     # Extract only filename without the extension
 
@@ -2430,7 +2407,6 @@ def backup_list(with_info=False, human_readable=False):
 
 
 def backup_download(name):
-
     if Moulinette.interface.type != "api":
         logger.error(
             "This option is only meant for the API/webadmin and doesn't make sense for the command line."
@@ -2571,7 +2547,6 @@ def backup_info(name, with_details=False, human_readable=False):
         if "size_details" in info.keys():
             for category in ["apps", "system"]:
                 for name, key_info in info[category].items():
-
                     if category == "system":
                         # Stupid legacy fix for weird format between 3.5 and 3.6
                         if isinstance(key_info, dict):
@@ -2631,7 +2606,7 @@ def backup_delete(name):
 
     hook_callback("post_backup_delete", args=[name])
 
-    logger.success(m18n.n("backup_deleted"))
+    logger.success(m18n.n("backup_deleted", name=name))
 
 
 #

@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -36,7 +36,6 @@ _ldap_interface = None
 
 
 def _get_ldap_interface():
-
     global _ldap_interface
 
     if _ldap_interface is None:

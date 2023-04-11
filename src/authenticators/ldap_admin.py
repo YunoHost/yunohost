@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -38,14 +38,12 @@ AUTH_DN = "uid={uid},ou=users,dc=yunohost,dc=org"
 
 
 class Authenticator(BaseAuthenticator):
-
     name = "ldap_admin"
 
     def __init__(self, *args, **kwargs):
         pass
 
     def _authenticate_credentials(self, credentials=None):
-
         try:
             admins = (
                 _get_ldap_interface()
@@ -125,7 +123,6 @@ class Authenticator(BaseAuthenticator):
                 con.unbind_s()
 
     def set_session_cookie(self, infos):
-
         from bottle import response
 
         assert isinstance(infos, dict)
@@ -145,7 +142,6 @@ class Authenticator(BaseAuthenticator):
         )
 
     def get_session_cookie(self, raise_if_no_session_exists=True):
-
         from bottle import request
 
         try:
@@ -174,7 +170,6 @@ class Authenticator(BaseAuthenticator):
         return infos
 
     def delete_session_cookie(self):
-
         from bottle import response
 
         response.set_cookie("yunohost.admin", "", max_age=-1)

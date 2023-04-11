@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -79,7 +79,6 @@ def user_permission_list(
 
     permissions = {}
     for infos in permissions_infos:
-
         name = infos["cn"][0]
         app = name.split(".")[0]
 
@@ -654,7 +653,6 @@ def permission_sync_to_user():
     permissions = user_permission_list(full=True)["permissions"]
 
     for permission_name, permission_infos in permissions.items():
-
         # These are the users currently allowed because there's an 'inheritPermission' object corresponding to it
         currently_allowed_users = set(permission_infos["corresponding_users"])
 
@@ -740,7 +738,6 @@ def _update_ldap_group_permission(
         update["isProtected"] = [str(protected).upper()]
 
     if show_tile is not None:
-
         if show_tile is True:
             if not existing_permission["url"]:
                 logger.warning(
@@ -817,10 +814,12 @@ def _update_ldap_group_permission(
 def _get_absolute_url(url, base_path):
     #
     # For example transform:
-    #    (/api, domain.tld/nextcloud)     into  domain.tld/nextcloud/api
-    #    (/api, domain.tld/nextcloud/)    into  domain.tld/nextcloud/api
-    #    (re:/foo.*, domain.tld/app)      into  re:domain\.tld/app/foo.*
-    #    (domain.tld/bar, domain.tld/app) into  domain.tld/bar
+    #    (/,    domain.tld/)                  into  domain.tld (no trailing /)
+    #    (/api, domain.tld/nextcloud)         into  domain.tld/nextcloud/api
+    #    (/api, domain.tld/nextcloud/)        into  domain.tld/nextcloud/api
+    #    (re:/foo.*, domain.tld/app)          into  re:domain\.tld/app/foo.*
+    #    (domain.tld/bar, domain.tld/app)     into  domain.tld/bar
+    #    (some.other.domain/, domain.tld/app) into  some.other.domain (no trailing /)
     #
     base_path = base_path.rstrip("/")
     if url is None:
@@ -830,7 +829,7 @@ def _get_absolute_url(url, base_path):
     if url.startswith("re:/"):
         return "re:" + base_path.replace(".", "\\.") + url[3:]
     else:
-        return url
+        return url.rstrip("/")
 
 
 def _validate_and_sanitize_permission_url(url, app_base_path, app):
@@ -876,7 +875,6 @@ def _validate_and_sanitize_permission_url(url, app_base_path, app):
             raise YunohostValidationError("invalid_regex", regex=regex)
 
     if url.startswith("re:"):
-
         # regex without domain
         # we check for the first char after 're:'
         if url[3] in ["/", "^", "\\"]:

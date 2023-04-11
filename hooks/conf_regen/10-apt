@@ -2,6 +2,8 @@
 
 set -e
 
+readonly YNH_DEFAULT_PHP_VERSION=7.4
+
 do_pre_regen() {
     pending_dir=$1
 
@@ -68,7 +70,10 @@ do_post_regen() {
     fi
 
     # Make sure php7.4 is the default version when using php in cli
-    update-alternatives --set php /usr/bin/php7.4
+    if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION
+    then
+        update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
+    fi
 }
 
 do_$1_regen ${@:2}

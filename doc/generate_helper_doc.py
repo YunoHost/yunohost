@@ -20,12 +20,11 @@ def get_current_commit():
 
 
 def render(helpers):
-
     current_commit = get_current_commit()
 
     data = {
         "helpers": helpers,
-        "date": datetime.datetime.now().strftime("%m/%d/%Y"),
+        "date": datetime.datetime.now().strftime("%d/%m/%Y"),
         "version": open("../debian/changelog").readlines()[0].split()[1].strip("()"),
     }
 
@@ -56,20 +55,17 @@ def render(helpers):
 
 class Parser:
     def __init__(self, filename):
-
         self.filename = filename
         self.file = open(filename, "r").readlines()
         self.blocks = None
 
     def parse_blocks(self):
-
         self.blocks = []
 
         current_reading = "void"
         current_block = {"name": None, "line": -1, "comments": [], "code": []}
 
         for i, line in enumerate(self.file):
-
             if line.startswith("#!/bin/bash"):
                 continue
 
@@ -117,7 +113,6 @@ class Parser:
                     current_reading = "code"
 
             elif current_reading == "code":
-
                 if line == "}":
                     # We're getting out of the function
                     current_reading = "void"
@@ -138,7 +133,6 @@ class Parser:
                 continue
 
     def parse_block(self, b):
-
         b["brief"] = ""
         b["details"] = ""
         b["usage"] = ""
@@ -164,7 +158,6 @@ class Parser:
 
             elif subblock.startswith("usage"):
                 for line in subblock.split("\n"):
-
                     if line.startswith("| arg"):
                         linesplit = line.split()
                         argname = linesplit[2]
@@ -216,7 +209,6 @@ def malformed_error(line_number):
 
 
 def main():
-
     helper_files = sorted(glob.glob("../helpers/*"))
     helpers = []
 

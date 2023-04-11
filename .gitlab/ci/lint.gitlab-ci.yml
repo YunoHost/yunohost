@@ -42,7 +42,6 @@ black:
     - '[ $(git diff | wc -l) != 0 ] || exit 0'  # stop if there is nothing to commit
     - git commit -am "[CI] Format code with Black" || true
     - git push -f origin "ci-format-${CI_COMMIT_REF_NAME}":"ci-format-${CI_COMMIT_REF_NAME}"
-    - hub pull-request -m "[CI] Format code with Black" -b Yunohost:$CI_COMMIT_REF_NAME -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
+    - hub pull-request -m "[CI] Format code with Black" -b Yunohost:dev -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
   only:
-    variables:
-      - $CI_COMMIT_REF_NAME == $CI_DEFAULT_BRANCH
+    - tags

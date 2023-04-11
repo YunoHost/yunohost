@@ -72,7 +72,7 @@ user:
                         ask: ask_fullname
                         required: False
                         pattern: &pattern_fullname
-                            - !!str ^([^\W\d_]{1,30}[ ,.'-]{0,3})+$
+                            - !!str ^([^\W_]{1,30}[ ,.'-]{0,3})+$
                             - "pattern_fullname"
                 -f:
                     full: --firstname
@@ -116,6 +116,11 @@ user:
                         pattern: &pattern_mailbox_quota
                             - !!str ^(\d+[bkMGT])|0$
                             - "pattern_mailbox_quota"
+                -s:
+                    full: --loginShell
+                    help: The login shell used
+                    default: "/bin/bash"
+                    
 
         ### user_delete()
         delete:
@@ -195,6 +200,10 @@ user:
                     metavar: "{SIZE|0}"
                     extra:
                         pattern: *pattern_mailbox_quota
+                -s:
+                    full: --loginShell
+                    help: The login shell used
+                    default: "/bin/bash"
 
         ### user_info()
         info:
@@ -960,6 +969,10 @@ app:
                 -b:
                     full: --no-safety-backup
                     help: Disable the safety backup during upgrade
+                    action: store_true
+                -c:
+                    full: --continue-on-failure
+                    help: Continue to upgrade apps event if one or more upgrade failed
                     action: store_true
 
         ### app_change_url()

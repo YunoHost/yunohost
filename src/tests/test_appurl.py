@@ -18,7 +18,6 @@ maindomain = _get_maindomain()
 
 
 def setup_function(function):
-
     try:
         app_remove("register_url_app")
     except Exception:
@@ -26,7 +25,6 @@ def setup_function(function):
 
 
 def teardown_function(function):
-
     try:
         app_remove("register_url_app")
     except Exception:
@@ -34,7 +32,6 @@ def teardown_function(function):
 
 
 def test_parse_app_instance_name():
-
     assert _parse_app_instance_name("yolo") == ("yolo", 1)
     assert _parse_app_instance_name("yolo1") == ("yolo1", 1)
     assert _parse_app_instance_name("yolo__0") == ("yolo__0", 1)
@@ -86,7 +83,6 @@ def test_repo_url_definition():
 
 
 def test_urlavailable():
-
     # Except the maindomain/macnuggets to be available
     assert domain_url_available(maindomain, "/macnuggets")
 
@@ -96,7 +92,6 @@ def test_urlavailable():
 
 
 def test_registerurl():
-
     app_install(
         os.path.join(get_test_apps_dir(), "register_url_app_ynh"),
         args="domain={}&path={}".format(maindomain, "/urlregisterapp"),
@@ -115,7 +110,6 @@ def test_registerurl():
 
 
 def test_registerurl_baddomain():
-
     with pytest.raises(YunohostError):
         app_install(
             os.path.join(get_test_apps_dir(), "register_url_app_ynh"),

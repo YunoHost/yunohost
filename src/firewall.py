@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2022 YunoHost Contributors
+# Copyright (c) 2023 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -101,7 +101,9 @@ def firewall_allow(
 
     # Update and reload firewall
     _update_firewall_file(firewall)
-    if not no_reload or (reload_only_if_change and changed):
+    if (not reload_only_if_change and not no_reload) or (
+        reload_only_if_change and changed
+    ):
         return firewall_reload()
 
 
@@ -180,7 +182,9 @@ def firewall_disallow(
 
     # Update and reload firewall
     _update_firewall_file(firewall)
-    if not no_reload or (reload_only_if_change and changed):
+    if (not reload_only_if_change and not no_reload) or (
+        reload_only_if_change and changed
+    ):
         return firewall_reload()
 
 
@@ -415,7 +419,6 @@ def firewall_upnp(action="status", no_refresh=False):
                 for protocol in ["TCP", "UDP"]:
                     if protocol + "_TO_CLOSE" in firewall["uPnP"]:
                         for port in firewall["uPnP"][protocol + "_TO_CLOSE"]:
-
                             if not isinstance(port, int):
                                 # FIXME : how should we handle port ranges ?
                                 logger.warning("Can't use UPnP to close '%s'" % port)
@@ -430,7 +433,6 @@ def firewall_upnp(action="status", no_refresh=False):
                         firewall["uPnP"][protocol + "_TO_CLOSE"] = []
 
                     for port in firewall["uPnP"][protocol]:
-
                         if not isinstance(port, int):
                             # FIXME : how should we handle port ranges ?
                             logger.warning("Can't use UPnP to open '%s'" % port)
