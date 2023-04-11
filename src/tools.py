@@ -144,14 +144,14 @@ def _set_hostname(hostname, pretty_hostname=None):
             logger.debug(out)
 
 
-@is_unit_operation(exclude=["dyndns_password_recovery", "password"])
+@is_unit_operation(exclude=["dyndns_recovery_password", "password"])
 def tools_postinstall(
     operation_logger,
     domain,
     username,
     fullname,
     password,
-    dyndns_password_recovery=None,
+    dyndns_recovery_password=None,
     no_subscribe=False,
     force_diskspace=False,
 ):
@@ -194,7 +194,7 @@ def tools_postinstall(
 
     # If this is a nohost.me/noho.st, actually check for availability
     if is_yunohost_dyndns_domain(domain):
-        if ((dyndns_password_recovery is None) == (no_subscribe is False)):
+        if ((dyndns_recovery_password is None) == (no_subscribe is False)):
             raise YunohostValidationError("domain_dyndns_instruction_unclear")
 
         # Check if the domain is available...
@@ -219,7 +219,7 @@ def tools_postinstall(
     logger.info(m18n.n("yunohost_installing"))
 
     # New domain config
-    domain_add(domain, dyndns_password_recovery=dyndns_password_recovery, no_subscribe=no_subscribe)
+    domain_add(domain, dyndns_recovery_password=dyndns_recovery_password, no_subscribe=no_subscribe)
     domain_main_domain(domain)
 
     user_create(username, domain, password, admin=True, fullname=fullname)

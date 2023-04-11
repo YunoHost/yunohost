@@ -510,7 +510,7 @@ domain:
                     full: --no-subscribe
                     help: If adding a DynDNS domain, only add the domain, without subscribing to the DynDNS service
                     action: store_true
-                --dyndns-password-recovery:
+                --dyndns-recovery-password:
                     metavar: PASSWORD
                     nargs: "?"
                     const: 0
@@ -540,7 +540,7 @@ domain:
                     full: --no-unsubscribe
                     help: If removing a DynDNS domain, only remove the domain, without unsubscribing from the DynDNS service
                     action: store_true
-                --dyndns-password-recovery:
+                --dyndns-recovery-password:
                     metavar: PASSWORD
                     nargs: "?"
                     const: 0
@@ -1692,7 +1692,7 @@ tools:
                     full: --no-subscribe
                     help: If adding a DynDNS domain, only add the domain, without subscribing to the DynDNS service
                     action: store_true
-                --dyndns-password-recovery:
+                --dyndns-recovery-password:
                     metavar: PASSWORD
                     nargs: "?"
                     const: 0
