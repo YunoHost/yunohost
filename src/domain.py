@@ -450,22 +450,22 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, dynd
     logger.success(m18n.n("domain_deleted"))
 
 
-def domain_dyndns_subscribe(**kwargs):
+def domain_dyndns_subscribe(*args, **kwargs):
     """
     Subscribe to a DynDNS domain
     """
     from yunohost.dyndns import dyndns_subscribe
 
-    dyndns_subscribe(**kwargs)
+    dyndns_subscribe(*args, **kwargs)
 
 
-def domain_dyndns_unsubscribe(**kwargs):
+def domain_dyndns_unsubscribe(*args, **kwargs):
     """
     Unsubscribe from a DynDNS domain
     """
     from yunohost.dyndns import dyndns_unsubscribe
 
-    dyndns_unsubscribe(**kwargs)
+    dyndns_unsubscribe(*args, **kwargs)
 
 
 def domain_dyndns_list():
@@ -477,13 +477,22 @@ def domain_dyndns_list():
     return dyndns_list()
 
 
-def domain_dyndns_update(**kwargs):
+def domain_dyndns_update(*args, **kwargs):
     """
     Update a DynDNS domain
     """
     from yunohost.dyndns import dyndns_update
 
-    dyndns_update(**kwargs)
+    dyndns_update(*args, **kwargs)
+
+
+def domain_dyndns_set_recovery_password(*args, **kwargs):
+    """
+    Set a recovery password for an already registered dyndns domain
+    """
+    from yunohost.dyndns import dyndns_set_recovery_password
+
+    dyndns_set_recovery_password(*args, **kwargs)
 
 
 @is_unit_operation()

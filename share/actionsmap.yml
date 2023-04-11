@@ -670,7 +670,7 @@ domain:
                             full: --recovery-password
                             nargs: "?"
                             const: 0
-                            help: Password used to later delete the domain
+                            help: Password used to later recover the domain if needed
                             extra:
                                 pattern: *pattern_password
                 
@@ -687,13 +687,29 @@ domain:
                             full: --recovery-password
                             nargs: "?"
                             const: 0
-                            help: Password used to delete the domain
+                            help: Recovery password used to delete the domain
                             extra:
                                 pattern: *pattern_password
 
                 ### domain_dyndns_list()
                 list:
                     action_help: List all subscribed DynDNS domains
+
+                ### domain_dyndns_set_recovery_password()
+                set-recovery-password:
+                    action_help: Set recovery password
+                    arguments:
+                        domain:
+                            help: Domain to set recovery password for
+                            extra:
+                                pattern: *pattern_domain
+                                required: True
+                        -p:
+                            full: --recovery-password
+                            help: The new recovery password
+                            extra:
+                                password: ask_dyndns_recovery_password
+                                pattern: *pattern_password
 
         config:
             subcategory_help: Domain settings
