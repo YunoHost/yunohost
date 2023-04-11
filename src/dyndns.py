@@ -165,14 +165,14 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
         )
     except Exception as e:
         rm(key_file, force=True)
-        raise YunohostError("dyndns_registration_failed", error=str(e))
+        raise YunohostError("dyndns_subscribe_failed", error=str(e))
     if r.status_code != 201:
         rm(key_file, force=True)
         try:
             error = json.loads(r.text)["error"]
         except Exception:
             error = f'Server error, code: {r.status_code}. (Message: "{r.text}")'
-        raise YunohostError("dyndns_registration_failed", error=error)
+        raise YunohostError("dyndns_subscribe_failed", error=error)
 
     # Yunohost regen conf will add the dyndns cron job if a key exists
     # in /etc/yunohost/dyndns
@@ -187,7 +187,7 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
     subprocess.check_call(["bash", "-c", cmd.format(t="2 min")])
     subprocess.check_call(["bash", "-c", cmd.format(t="4 min")])
 
-    logger.success(m18n.n("dyndns_registered"))
+    logger.success(m18n.n("dyndns_subscribed"))
 
 
 @is_unit_operation(exclude=["recovery_password"])
@@ -202,23 +202,37 @@ def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
 
     import requests  # lazy loading this module for performance reasons
 
-    # FIXME : it should be possible to unsubscribe the domain just using the key file ...
+    # Unsubscribe the domain using the key if available
+    keys = glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*.key")
+    if keys:
+        key = keys[0]
+        with open(key) as f:
+            key = f.readline().strip().split(" ", 6)[-1]
+        base64key = base64.b64encode(key.encode()).decode()
+        credential = {"key": base64key}
+    else:
+        # Ensure sufficiently complex password
+        if Moulinette.interface.type == "cli" and not recovery_password:
+            logger.warning(m18n.n("ask_dyndns_recovery_password_explain_during_unsubscribe"))
+            recovery_password = Moulinette.prompt(
+                m18n.n("ask_dyndns_recovery_password"),
+                is_password=True
+            )
 
-    # Ensure sufficiently complex password
-    if Moulinette.interface.type == "cli" and not recovery_password:
-        recovery_password = Moulinette.prompt(
-            m18n.n("ask_dyndns_recovery_password"),
-            is_password=True
-        )
+        if not recovery_password:
+            logger.error(f"Cannot unsubscribe the domain {domain}: no credential provided")
+            return
+
+        secret = str(domain) + ":" + str(recovery_password).strip()
+        credential = {"recovery_password": hashlib.sha256(secret.encode('utf-8')).hexdigest()}
 
     operation_logger.start()
 
     # Send delete request
     try:
-        secret = str(domain) + ":" + str(recovery_password).strip()
         r = requests.delete(
             f"https://{DYNDNS_PROVIDER}/domains/{domain}",
-            data={"recovery_password": hashlib.sha256(secret.encode('utf-8')).hexdigest()},
+            data=credential,
             timeout=30,
         )
     except Exception as e:
@@ -230,12 +244,14 @@ def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
         # Yunohost regen conf will add the dyndns cron job if a key exists
         # in /etc/yunohost/dyndns
         regen_conf(["yunohost"])
-    elif r.status_code == 403:  # Wrong password
-        raise YunohostError("dyndns_unsubscribe_wrong_password")
-    elif r.status_code == 404:  # Invalid domain
-        raise YunohostError("dyndns_unsubscribe_wrong_domain")
+    elif r.status_code == 403:
+        raise YunohostError("dyndns_unsubscribe_denied")
+    elif r.status_code == 409:
+        raise YunohostError("dyndns_unsubscribe_already_unsubscribed")
+    else:
+        raise YunohostError("dyndns_unsubscribe_failed", error=f"The server returned code {r.status_code}")
 
-    logger.success(m18n.n("dyndns_unregistered"))
+    logger.success(m18n.n("dyndns_unsubscribed"))
 
 
 def dyndns_list():

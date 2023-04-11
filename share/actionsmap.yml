@@ -663,9 +663,8 @@ domain:
                 subscribe:
                     action_help: Subscribe to a DynDNS service
                     arguments:
-                        -d:
-                            full: --domain
-                            help: Full domain to subscribe with
+                        domain:
+                            help: Domain to subscribe to the DynDNS service
                             extra:
                                 pattern: *pattern_domain
                         -p:
@@ -681,9 +680,8 @@ domain:
                 unsubscribe:
                     action_help: Unsubscribe from a DynDNS service
                     arguments:
-                        -d:
-                            full: --domain
-                            help: Full domain to unsubscribe with
+                        domain:
+                            help: Domain to unsubscribe from the DynDNS service
                             extra:
                                 pattern: *pattern_domain
                                 required: True
