@@ -228,7 +228,7 @@ def domain_add(operation_logger, domain, dyndns_recovery_password=None, ignore_d
     from yunohost.utils.password import assert_password_is_strong_enough
     from yunohost.certificate import _certificate_install_selfsigned
 
-    if dyndns_recovery_password != 0 and dyndns_recovery_password is not None:
+    if dyndns_recovery_password:
         operation_logger.data_to_redact.append(dyndns_recovery_password)
 
     if domain.startswith("xmpp-upload."):
@@ -252,35 +252,19 @@ def domain_add(operation_logger, domain, dyndns_recovery_password=None, ignore_d
     domain = domain.encode("idna").decode("utf-8")
 
     # Detect if this is a DynDNS domain ( and not a subdomain of a DynDNS domain )
-    dyndns = is_yunohost_dyndns_domain(domain) and len(domain.split(".")) == 3
+    dyndns = not ignore_dyndns and is_yunohost_dyndns_domain(domain) and len(domain.split(".")) == 3
     if dyndns:
-        if not ignore_dyndns and not dyndns_recovery_password:
-            if Moulinette.interface.type == "api":
-                raise YunohostValidationError("domain_dyndns_missing_password")
-            else:
-                dyndns_recovery_password = Moulinette.prompt(
-                    m18n.n("ask_dyndns_recovery_password"), is_password=True, confirm=True
-                )
-
-                # Ensure sufficiently complex password
-                assert_password_is_strong_enough("admin", dyndns_recovery_password)
-
-        if ((dyndns_recovery_password is None) == (ignore_dyndns is False)):
-            raise YunohostValidationError("domain_dyndns_instruction_unclear")
-
         from yunohost.dyndns import is_subscribing_allowed
-
         # Do not allow to subscribe to multiple dyndns domains...
         if not is_subscribing_allowed():
             raise YunohostValidationError("domain_dyndns_already_subscribed")
+        if dyndns_recovery_password:
+            assert_password_is_strong_enough("admin", dyndns_recovery_password)
 
     operation_logger.start()
-    if not dyndns and (dyndns_recovery_password is not None or ignore_dyndns):
-        logger.warning("This domain is not a DynDNS one, no need for the --dyndns-recovery-password or --ignore-dyndns option")
 
-    if dyndns and not ignore_dyndns:
-        # Actually subscribe
-        domain_dyndns_subscribe(domain=domain, password=dyndns_recovery_password)
+    if dyndns:
+        domain_dyndns_subscribe(domain=domain, recovery_password=dyndns_recovery_password)
 
     _certificate_install_selfsigned([domain], True)
 
@@ -346,7 +330,7 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, dynd
     from yunohost.app import app_ssowatconf, app_info, app_remove
     from yunohost.utils.ldap import _get_ldap_interface
 
-    if dyndns_recovery_password != 0 and dyndns_recovery_password is not None:
+    if dyndns_recovery_password:
         operation_logger.data_to_redact.append(dyndns_recovery_password)
 
     # the 'force' here is related to the exception happening in domain_add ...
@@ -410,15 +394,9 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, dynd
             )
 
     # Detect if this is a DynDNS domain ( and not a subdomain of a DynDNS domain )
-    dyndns = is_yunohost_dyndns_domain(domain) and len(domain.split(".")) == 3
-    if dyndns:
-        if ((dyndns_recovery_password is None) == (ignore_dyndns is False)):
-            raise YunohostValidationError("domain_dyndns_instruction_unclear_unsubscribe")
+    dyndns = not ignore_dyndns and is_yunohost_dyndns_domain(domain) and len(domain.split(".")) == 3
 
     operation_logger.start()
-
-    if not dyndns and ((dyndns_recovery_password is not None) or (ignore_dyndns is not False)):
-        logger.warning("This domain is not a DynDNS one, no need for the --dyndns_recovery_password or --ignore-dyndns option")
 
     ldap = _get_ldap_interface()
     try:
@@ -465,9 +443,9 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, dynd
     hook_callback("post_domain_remove", args=[domain])
 
     # If a password is provided, delete the DynDNS record
-    if dyndns and not ignore_dyndns:
+    if dyndns:
         # Actually unsubscribe
-        domain_dyndns_unsubscribe(domain=domain, password=dyndns_recovery_password)
+        domain_dyndns_unsubscribe(domain=domain, recovery_password=dyndns_recovery_password)
 
     logger.success(m18n.n("domain_deleted"))
 

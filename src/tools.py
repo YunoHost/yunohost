@@ -197,11 +197,8 @@ def tools_postinstall(
     assert_password_is_strong_enough("admin", password)
 
     # If this is a nohost.me/noho.st, actually check for availability
-    if not ignore_dyndns and is_yunohost_dyndns_domain(domain):
-
-        if (bool(dyndns_recovery_password), ignore_dyndns) in [(True, True), (False, False)]:
-            raise YunohostValidationError("domain_dyndns_instruction_unclear")
-
+    dyndns = not ignore_dyndns and is_yunohost_dyndns_domain(domain)
+    if dyndns:
         # Check if the domain is available...
         try:
             available = _dyndns_available(domain)

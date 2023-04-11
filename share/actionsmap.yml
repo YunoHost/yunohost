@@ -493,7 +493,7 @@ domain:
                     help: Display domains as a tree
                     action: store_true
                 --features:
-                    help: List only domains with features enabled (xmpp, mail_in, mail_out, auto_push)
+                    help: List only domains with features enabled (xmpp, mail_in, mail_out)
                     nargs: "*"
 
         ### domain_info()

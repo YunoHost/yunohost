@@ -50,7 +50,7 @@ def is_subscribing_allowed():
     Returns:
         True if the limit is not reached, False otherwise
     """
-    return len(glob.glob("/etc/yunohost/dyndns/*.key")) < MAX_DYNDNS_DOMAINS
+    return len(dyndns_list()["domains"]) < MAX_DYNDNS_DOMAINS
 
 
 def _dyndns_available(domain):
@@ -78,7 +78,7 @@ def _dyndns_available(domain):
     return r == f"Domain {domain} is available"
 
 
-@is_unit_operation()
+@is_unit_operation(exclude=["recovery_password"])
 def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
     """
     Subscribe to a DynDNS service
@@ -87,26 +87,6 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
         domain -- Full domain to subscribe with
         recovery_password -- Password that will be used to delete the domain
     """
-
-    if recovery_password is None:
-        logger.warning(m18n.n('dyndns_no_recovery_password'))
-    else:
-        from yunohost.utils.password import assert_password_is_strong_enough
-        # Ensure sufficiently complex password
-        if Moulinette.interface.type == "cli" and recovery_password == 0:
-            recovery_password = Moulinette.prompt(
-                m18n.n("ask_password"),
-                is_password=True,
-                confirm=True
-            )
-        assert_password_is_strong_enough("admin", recovery_password)
-
-    if not is_subscribing_allowed():
-        raise YunohostValidationError("domain_dyndns_already_subscribed")
-
-    if domain is None:
-        domain = _get_maindomain()
-        operation_logger.related_to.append(("domain", domain))
 
     # Verify if domain is provided by subscribe_host
     if not is_yunohost_dyndns_domain(domain):
@@ -118,6 +98,30 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
     if not _dyndns_available(domain):
         raise YunohostValidationError("dyndns_unavailable", domain=domain)
 
+    # Check adding another dyndns domain is still allowed
+    if not is_subscribing_allowed():
+        raise YunohostValidationError("domain_dyndns_already_subscribed")
+
+    # Prompt for a password if running in CLI and no password provided
+    if not recovery_password and Moulinette.interface.type == "cli":
+        logger.warning(m18n.n("ask_dyndns_recovery_password_explain"))
+        recovery_password = Moulinette.prompt(
+            m18n.n("ask_dyndns_recovery_password"),
+            is_password=True,
+            confirm=True
+        )
+    elif not recovery_password:
+        logger.warning(m18n.n("dyndns_no_recovery_password"))
+
+    if recovery_password:
+        from yunohost.utils.password import assert_password_is_strong_enough
+        assert_password_is_strong_enough("admin", recovery_password)
+        operation_logger.data_to_redact.append(recovery_password)
+
+    if domain is None:
+        domain = _get_maindomain()
+        operation_logger.related_to.append(("domain", domain))
+
     operation_logger.start()
 
     # '165' is the convention identifier for hmac-sha512 algorithm
@@ -126,8 +130,6 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
 
     if not os.path.exists("/etc/yunohost/dyndns"):
         os.makedirs("/etc/yunohost/dyndns")
-
-    logger.debug(m18n.n("dyndns_key_generating"))
 
     # Here, we emulate the behavior of the old 'dnssec-keygen' utility
     # which since bullseye was replaced by ddns-keygen which is now
@@ -154,7 +156,7 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
         # Yeah the secret is already a base64-encoded but we double-bas64-encode it, whatever...
         b64encoded_key = base64.b64encode(secret.encode()).decode()
         data = {"subdomain": domain}
-        if password is not None:
+        if recovery_password:
             data["recovery_password"] = hashlib.sha256((domain + ":" + recovery_password.strip()).encode('utf-8')).hexdigest()
         r = requests.post(
             f"https://{DYNDNS_PROVIDER}/key/{b64encoded_key}?key_algo=hmac-sha512",
@@ -188,7 +190,7 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
     logger.success(m18n.n("dyndns_registered"))
 
 
-@is_unit_operation()
+@is_unit_operation(exclude=["recovery_password"])
 def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
     """
     Unsubscribe from a DynDNS service
@@ -198,23 +200,18 @@ def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
         recovery_password -- Password that is used to delete the domain ( defined when subscribing )
     """
 
-    from yunohost.utils.password import assert_password_is_strong_enough
+    import requests  # lazy loading this module for performance reasons
+
+    # FIXME : it should be possible to unsubscribe the domain just using the key file ...
 
     # Ensure sufficiently complex password
     if Moulinette.interface.type == "cli" and not recovery_password:
         recovery_password = Moulinette.prompt(
-            m18n.n("ask_password"),
+            m18n.n("ask_dyndns_recovery_password"),
             is_password=True
         )
-    assert_password_is_strong_enough("admin", recovery_password)
 
     operation_logger.start()
-
-    # '165' is the convention identifier for hmac-sha512 algorithm
-    # '1234' is idk? doesnt matter, but the old format contained a number here...
-    key_file = f"/etc/yunohost/dyndns/K{domain}.+165+1234.key"
-
-    import requests  # lazy loading this module for performance reasons
 
     # Send delete request
     try:
@@ -228,16 +225,17 @@ def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
         raise YunohostError("dyndns_unregistration_failed", error=str(e))
 
     if r.status_code == 200:  # Deletion was successful
-        rm(key_file, force=True)
+        for key_file in glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*.key"):
+            rm(key_file, force=True)
         # Yunohost regen conf will add the dyndns cron job if a key exists
         # in /etc/yunohost/dyndns
         regen_conf(["yunohost"])
-
-        logger.success(m18n.n("dyndns_unregistered"))
     elif r.status_code == 403:  # Wrong password
         raise YunohostError("dyndns_unsubscribe_wrong_password")
     elif r.status_code == 404:  # Invalid domain
         raise YunohostError("dyndns_unsubscribe_wrong_domain")
+
+    logger.success(m18n.n("dyndns_unregistered"))
 
 
 def dyndns_list():
@@ -245,13 +243,12 @@ def dyndns_list():
     Returns all currently subscribed DynDNS domains ( deduced from the key files )
     """
 
-    files = glob.glob("/etc/yunohost/dyndns/K*key")
-    # Get the domain names
-    for i in range(len(files)):
-        files[i] = files[i].split(".+", 1)[0]
-        files[i] = files[i].split("/etc/yunohost/dyndns/K")[1]
+    from yunohost.domain import domain_list
 
-    return {"domains": files}
+    domains = domain_list(exclude_subdomains=True)["domains"]
+    dyndns_domains = [d for d in domains if is_yunohost_dyndns_domain(d) and glob.glob(f"/etc/yunohost/dyndns/K{d}.+*.key")]
+
+    return {"domains": dyndns_domains}
 
 
 @is_unit_operation()
@@ -277,21 +274,14 @@ def dyndns_update(
     # If domain is not given, update all DynDNS domains
     if domain is None:
 
-        from yunohost.domain import domain_list
+        dyndns_domains = dyndns_list()["domains"]
 
-        domains = domain_list(exclude_subdomains=True, auto_push=True)["domains"]
-        pushed = 0
-        for d in domains:
-            if is_yunohost_dyndns_domain(d):
-                dyndns_update(d, force=force, dry_run=dry_run)
-                pushed += 1
-        if pushed == 0:
+        if not dyndns_domains:
             raise YunohostValidationError("dyndns_no_domain_registered")
-        return
 
-    elif type(domain).__name__ in ["list", "tuple"]:
-        for d in domain:
-            dyndns_update(d, force=force, dry_run=dry_run)
+        for domain in dyndns_domains:
+            dyndns_update(domain, force=force, dry_run=dry_run)
+
         return
 
     # If key is not given, pick the first file we find with the domain given
