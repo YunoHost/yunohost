@@ -403,7 +403,6 @@
     "dyndns_key_not_found": "DNS key not found for the domain",
     "dyndns_no_domain_registered": "No domain registered with DynDNS",
     "dyndns_no_recovery_password": "No recovery password specified! In case you loose control of this domain, you will need to contact an administrator in the YunoHost team!",
-    "dyndns_added_password": "Remember your recovery password, you can use it to delete this domain record.",
     "dyndns_provider_unreachable": "Unable to reach DynDNS provider {provider}: either your YunoHost is not correctly connected to the internet or the dynette server is down.",
     "dyndns_subscribed": "DynDNS domain subscribed",
     "dyndns_subscribe_failed": "Could not subscribe DynDNS domain: {error}",
