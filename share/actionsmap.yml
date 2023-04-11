@@ -506,8 +506,7 @@ domain:
                     help: Domain name to add
                     extra:
                         pattern: *pattern_domain
-                -n:
-                    full: --no-subscribe
+                --ignore-dyndns:
                     help: If adding a DynDNS domain, only add the domain, without subscribing to the DynDNS service
                     action: store_true
                 --dyndns-recovery-password:
@@ -536,8 +535,7 @@ domain:
                     full: --force
                     help: Do not ask confirmation to remove apps
                     action: store_true
-                -n:
-                    full: --no-unsubscribe
+                --ignore-dyndns:
                     help: If removing a DynDNS domain, only remove the domain, without unsubscribing from the DynDNS service
                     action: store_true
                 --dyndns-recovery-password:
@@ -662,7 +660,7 @@ domain:
                             extra:
                                 pattern: *pattern_domain
                         -p:
-                            full: --password
+                            full: --recovery-password
                             nargs: "?"
                             const: 0
                             help: Password used to later delete the domain
@@ -681,7 +679,7 @@ domain:
                                 pattern: *pattern_domain
                                 required: True
                         -p:
-                            full: --password
+                            full: --recovery-password
                             nargs: "?"
                             const: 0
                             help: Password used to delete the domain
@@ -1688,8 +1686,7 @@ tools:
                         pattern: *pattern_password
                         required: True
                         comment: good_practices_about_admin_password
-                -n:
-                    full: --no-subscribe
+                --ingnore-dyndns:
                     help: If adding a DynDNS domain, only add the domain, without subscribing to the DynDNS service
                     action: store_true
                 --dyndns-recovery-password:

@@ -79,27 +79,27 @@ def _dyndns_available(domain):
 
 
 @is_unit_operation()
-def dyndns_subscribe(operation_logger, domain=None, password=None):
+def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
     """
     Subscribe to a DynDNS service
 
     Keyword argument:
         domain -- Full domain to subscribe with
-        password -- Password that will be used to delete the domain
+        recovery_password -- Password that will be used to delete the domain
     """
 
-    if password is None:
+    if recovery_password is None:
         logger.warning(m18n.n('dyndns_no_recovery_password'))
     else:
         from yunohost.utils.password import assert_password_is_strong_enough
         # Ensure sufficiently complex password
-        if Moulinette.interface.type == "cli" and password == 0:
-            password = Moulinette.prompt(
+        if Moulinette.interface.type == "cli" and recovery_password == 0:
+            recovery_password = Moulinette.prompt(
                 m18n.n("ask_password"),
                 is_password=True,
                 confirm=True
             )
-        assert_password_is_strong_enough("admin", password)
+        assert_password_is_strong_enough("admin", recovery_password)
 
     if not is_subscribing_allowed():
         raise YunohostValidationError("domain_dyndns_already_subscribed")
@@ -155,7 +155,7 @@ def dyndns_subscribe(operation_logger, domain=None, password=None):
         b64encoded_key = base64.b64encode(secret.encode()).decode()
         data = {"subdomain": domain}
         if password is not None:
-            data["recovery_password"] = hashlib.sha256((domain + ":" + password.strip()).encode('utf-8')).hexdigest()
+            data["recovery_password"] = hashlib.sha256((domain + ":" + recovery_password.strip()).encode('utf-8')).hexdigest()
         r = requests.post(
             f"https://{DYNDNS_PROVIDER}/key/{b64encoded_key}?key_algo=hmac-sha512",
             data=data,
@@ -193,24 +193,24 @@ def dyndns_subscribe(operation_logger, domain=None, password=None):
 
 
 @is_unit_operation()
-def dyndns_unsubscribe(operation_logger, domain, password=None):
+def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
     """
     Unsubscribe from a DynDNS service
 
     Keyword argument:
         domain -- Full domain to unsubscribe with
-        password -- Password that is used to delete the domain ( defined when subscribing )
+        recovery_password -- Password that is used to delete the domain ( defined when subscribing )
     """
 
     from yunohost.utils.password import assert_password_is_strong_enough
 
     # Ensure sufficiently complex password
-    if Moulinette.interface.type == "cli" and not password:
-        password = Moulinette.prompt(
+    if Moulinette.interface.type == "cli" and not recovery_password:
+        recovery_password = Moulinette.prompt(
             m18n.n("ask_password"),
             is_password=True
         )
-    assert_password_is_strong_enough("admin", password)
+    assert_password_is_strong_enough("admin", recovery_password)
 
     operation_logger.start()
 
@@ -222,7 +222,7 @@ def dyndns_unsubscribe(operation_logger, domain, password=None):
 
     # Send delete request
     try:
-        secret = str(domain) + ":" + str(password).strip()
+        secret = str(domain) + ":" + str(recovery_password).strip()
         r = requests.delete(
             f"https://{DYNDNS_PROVIDER}/domains/{domain}",
             data={"recovery_password": hashlib.sha256(secret.encode('utf-8')).hexdigest()},
