@@ -62,12 +62,12 @@ class MyDiagnoser(Diagnoser):
         # Check quality level in catalog
 
         if not app.get("from_catalog") or app["from_catalog"].get("state") != "working":
-            yield ("error", "diagnosis_apps_not_in_app_catalog")
+            yield ("warning", "diagnosis_apps_not_in_app_catalog")
         elif (
             not isinstance(app["from_catalog"].get("level"), int)
             or app["from_catalog"]["level"] == 0
         ):
-            yield ("error", "diagnosis_apps_broken")
+            yield ("warning", "diagnosis_apps_broken")
         elif app["from_catalog"]["level"] <= 4:
             yield ("warning", "diagnosis_apps_bad_quality")
 
