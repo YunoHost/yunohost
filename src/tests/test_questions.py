@@ -445,7 +445,7 @@ class BaseTest:
         assert option.name == id_
         assert option.ask == {"en": id_}
         assert option.readonly is (True if is_special_readonly_option else False)
-        assert option.visible is None
+        assert option.visible is True
         # assert option.bind is None
 
         if is_special_readonly_option:

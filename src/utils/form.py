@@ -35,6 +35,7 @@ from yunohost.utils.i18n import _value_for_locale
 
 logger = getActionLogger("yunohost.form")
 
+Context = dict[str, Any]
 
 # ╭───────────────────────────────────────────────────────╮
 # │  ┌─╴╷ ╷╭─┐╷                                           │
@@ -200,16 +201,14 @@ class BaseOption:
     def __init__(
         self,
         question: Dict[str, Any],
-        context: Mapping[str, Any] = {},
         hooks: Dict[str, Callable] = {},
     ):
         self.name = question["name"]
-        self.context = context
         self.hooks = hooks
         self.type = question.get("type", "string")
         self.default = question.get("default", None)
         self.optional = question.get("optional", False)
-        self.visible = question.get("visible", None)
+        self.visible = question.get("visible", True)
         self.readonly = question.get("readonly", False)
         # Don't restrict choices if there's none specified
         self.choices = question.get("choices", None)
@@ -241,75 +240,11 @@ class BaseOption:
             value = value.strip()
         return value
 
-    def ask_if_needed(self):
-        if self.visible and not evaluate_simple_js_expression(
-            self.visible, context=self.context
-        ):
-            # FIXME There could be several use case if the question is not displayed:
-            # - we doesn't want to give a specific value
-            # - we want to keep the previous value
-            # - we want the default value
-            self.value = self.values[self.name] = None
-            return self.values
+    def is_visible(self, context: Context) -> bool:
+        if isinstance(self.visible, bool):
+            return self.visible
 
-        for i in range(5):
-            # Display question if no value filled or if it's a readonly message
-            if Moulinette.interface.type == "cli" and os.isatty(1):
-                text_for_user_input_in_cli = self._format_text_for_user_input_in_cli()
-                if self.readonly:
-                    Moulinette.display(text_for_user_input_in_cli)
-                    self.value = self.values[self.name] = self.current_value
-                    return self.values
-                elif self.value is None:
-                    self._prompt(text_for_user_input_in_cli)
-
-            # Apply default value
-            class_default = getattr(self, "default_value", None)
-            if self.value in [None, ""] and (
-                self.default is not None or class_default is not None
-            ):
-                self.value = class_default if self.default is None else self.default
-
-            try:
-                # Normalize and validate
-                self.value = self.normalize(self.value, self)
-                self._value_pre_validator()
-            except YunohostValidationError as e:
-                # If in interactive cli, re-ask the current question
-                if i < 4 and Moulinette.interface.type == "cli" and os.isatty(1):
-                    logger.error(str(e))
-                    self.value = None
-                    continue
-
-                # Otherwise raise the ValidationError
-                raise
-
-            break
-
-        self.value = self.values[self.name] = self._value_post_validator()
-
-        # Search for post actions in hooks
-        post_hook = f"post_ask__{self.name}"
-        if post_hook in self.hooks:
-            self.values.update(self.hooks[post_hook](self))
-
-        return self.values
-
-    def _prompt(self, text):
-        prefill = ""
-        if self.current_value is not None:
-            prefill = self.humanize(self.current_value, self)
-        elif self.default is not None:
-            prefill = self.humanize(self.default, self)
-        self.value = Moulinette.prompt(
-            message=text,
-            is_password=self.hide_user_input_in_prompt,
-            confirm=False,
-            prefill=prefill,
-            is_multiline=(self.type == "text"),
-            autocomplete=self.choices or [],
-            help=_value_for_locale(self.help),
-        )
+        return evaluate_simple_js_expression(self.visible, context=context)
 
     def _format_text_for_user_input_in_cli(self):
         text_for_user_input_in_cli = _value_for_locale(self.ask)
@@ -396,9 +331,9 @@ class DisplayTextOption(BaseOption):
     argument_type = "display_text"
 
     def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+        self, question, hooks: Dict[str, Callable] = {}
     ):
-        super().__init__(question, context, hooks)
+        super().__init__(question, hooks)
 
         self.optional = True
         self.readonly = True
@@ -424,13 +359,19 @@ class DisplayTextOption(BaseOption):
 
 class ButtonOption(BaseOption):
     argument_type = "button"
-    enabled = None
+    enabled = True
 
     def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
+        self, question, hooks: Dict[str, Callable] = {}
     ):
-        super().__init__(question, context, hooks)
-        self.enabled = question.get("enabled", None)
+        super().__init__(question, hooks)
+        self.enabled = question.get("enabled", True)
+
+    def is_enabled(self, context: Context) -> bool:
+        if isinstance(self.enabled, bool):
+            return self.enabled
+
+        return evaluate_simple_js_expression(self.enabled, context=context)
 
 
 # ╭───────────────────────────────────────────────────────╮
@@ -452,10 +393,8 @@ class PasswordOption(BaseOption):
     default_value = ""
     forbidden_chars = "{}"
 
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
-        super().__init__(question, context, hooks)
+    def __init__(self, question, hooks: Dict[str, Callable] = {}):
+        super().__init__(question, hooks)
         self.redact = True
         if self.default is not None:
             raise YunohostValidationError(
@@ -491,10 +430,8 @@ class NumberOption(BaseOption):
     argument_type = "number"
     default_value = None
 
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
-        super().__init__(question, context, hooks)
+    def __init__(self, question, hooks: Dict[str, Callable] = {}):
+        super().__init__(question, hooks)
         self.min = question.get("min", None)
         self.max = question.get("max", None)
         self.step = question.get("step", None)
@@ -549,10 +486,8 @@ class BooleanOption(BaseOption):
     yes_answers = ["1", "yes", "y", "true", "t", "on"]
     no_answers = ["0", "no", "n", "false", "f", "off"]
 
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
-        super().__init__(question, context, hooks)
+    def __init__(self, question, hooks: Dict[str, Callable] = {}):
+        super().__init__(question, hooks)
         self.yes = question.get("yes", 1)
         self.no = question.get("no", 0)
         if self.default is None:
@@ -716,10 +651,8 @@ class FileOption(BaseOption):
     argument_type = "file"
     upload_dirs: List[str] = []
 
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
-        super().__init__(question, context, hooks)
+    def __init__(self, question, hooks: Dict[str, Callable] = {}):
+        super().__init__(question, hooks)
         self.accept = question.get("accept", "")
 
     @classmethod
@@ -830,15 +763,16 @@ class TagsOption(BaseOption):
         return super()._value_post_validator()
 
 
+# ─ ENTITIES ──────────────────────────────────────────────
+
+
 class DomainOption(BaseOption):
     argument_type = "domain"
 
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
+    def __init__(self, question, hooks: Dict[str, Callable] = {}):
         from yunohost.domain import domain_list, _get_maindomain
 
-        super().__init__(question, context, hooks)
+        super().__init__(question, hooks)
 
         if self.default is None:
             self.default = _get_maindomain()
@@ -864,12 +798,10 @@ class DomainOption(BaseOption):
 class AppOption(BaseOption):
     argument_type = "app"
 
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
+    def __init__(self, question, hooks: Dict[str, Callable] = {}):
         from yunohost.app import app_list
 
-        super().__init__(question, context, hooks)
+        super().__init__(question, hooks)
 
         apps = app_list(full=True)["apps"]
 
@@ -891,13 +823,11 @@ class AppOption(BaseOption):
 class UserOption(BaseOption):
     argument_type = "user"
 
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
+    def __init__(self, question, hooks: Dict[str, Callable] = {}):
         from yunohost.user import user_list, user_info
         from yunohost.domain import _get_maindomain
 
-        super().__init__(question, context, hooks)
+        super().__init__(question, hooks)
 
         self.choices = {
             username: f"{infos['fullname']} ({infos['mail']})"
@@ -924,12 +854,10 @@ class UserOption(BaseOption):
 class GroupOption(BaseOption):
     argument_type = "group"
 
-    def __init__(
-        self, question, context: Mapping[str, Any] = {}, hooks: Dict[str, Callable] = {}
-    ):
+    def __init__(self, question, hooks: Dict[str, Callable] = {}):
         from yunohost.user import user_group_list
 
-        super().__init__(question, context)
+        super().__init__(question)
 
         self.choices = list(
             user_group_list(short=True, include_primary_groups=False)["groups"]
@@ -981,12 +909,111 @@ OPTIONS = {
 # ╰───────────────────────────────────────────────────────╯
 
 
+def prompt_or_validate_form(
+    raw_options: dict[str, Any],
+    prefilled_answers: dict[str, Any] = {},
+    context: Context = {},
+    hooks: dict[str, Callable[[], None]] = {},
+) -> list[BaseOption]:
+    options = []
+    answers = {**prefilled_answers}
+
+    for name, raw_option in raw_options.items():
+        raw_option["name"] = name
+        raw_option["value"] = answers.get(name)
+        question_class = OPTIONS[raw_option.get("type", "string")]
+        option = question_class(raw_option, hooks=hooks)
+
+        interactive = Moulinette.interface.type == "cli" and os.isatty(1)
+
+        if isinstance(option, ButtonOption):
+            if option.is_enabled(context):
+                continue
+            else:
+                raise YunohostValidationError(
+                    "config_action_disabled",
+                    action=option.name,
+                    help=_value_for_locale(option.help),
+                )
+
+        if option.is_visible(context):
+            for i in range(5):
+                # Display question if no value filled or if it's a readonly message
+                if interactive:
+                    text_for_user_input_in_cli = (
+                        option._format_text_for_user_input_in_cli()
+                    )
+                    if option.readonly:
+                        Moulinette.display(text_for_user_input_in_cli)
+                        option.value = option.current_value
+                        break
+                    elif option.value is None:
+                        prefill = ""
+                        if option.current_value is not None:
+                            prefill = option.humanize(option.current_value, option)
+                        elif option.default is not None:
+                            prefill = option.humanize(option.default, option)
+                        option.value = Moulinette.prompt(
+                            message=text_for_user_input_in_cli,
+                            is_password=option.hide_user_input_in_prompt,
+                            confirm=False,
+                            prefill=prefill,
+                            is_multiline=(option.type == "text"),
+                            autocomplete=option.choices or [],
+                            help=_value_for_locale(option.help),
+                        )
+
+                # Apply default value
+                class_default = getattr(option, "default_value", None)
+                if option.value in [None, ""] and (
+                    option.default is not None or class_default is not None
+                ):
+                    option.value = (
+                        class_default if option.default is None else option.default
+                    )
+
+                try:
+                    # Normalize and validate
+                    option.value = option.normalize(option.value, option)
+                    option._value_pre_validator()
+                except YunohostValidationError as e:
+                    # If in interactive cli, re-ask the current question
+                    if i < 4 and interactive:
+                        logger.error(str(e))
+                        option.value = None
+                        continue
+
+                    # Otherwise raise the ValidationError
+                    raise
+
+                break
+
+            option.value = option.values[option.name] = option._value_post_validator()
+
+            # Search for post actions in hooks
+            post_hook = f"post_ask__{option.name}"
+            if post_hook in option.hooks:
+                option.values.update(option.hooks[post_hook](option))
+        else:
+            # FIXME There could be several use case if the question is not displayed:
+            # - we doesn't want to give a specific value
+            # - we want to keep the previous value
+            # - we want the default value
+            option.value = option.values[option.name] = None
+
+        answers.update(option.values)
+        context.update(option.values)
+        options.append(option)
+
+    return options
+
+
 def ask_questions_and_parse_answers(
-    raw_questions: Dict,
+    raw_options: dict[str, Any],
     prefilled_answers: Union[str, Mapping[str, Any]] = {},
     current_values: Mapping[str, Any] = {},
     hooks: Dict[str, Callable[[], None]] = {},
-) -> List[BaseOption]:
+) -> list[BaseOption]:
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
 
@@ -1013,31 +1040,10 @@ def ask_questions_and_parse_answers(
         answers = {}
 
     context = {**current_values, **answers}
-    out = []
 
-    for name, raw_question in raw_questions.items():
-        raw_question["name"] = name
-        question_class = OPTIONS[raw_question.get("type", "string")]
-        raw_question["value"] = answers.get(name)
-        question = question_class(raw_question, context=context, hooks=hooks)
-        if question.type == "button":
-            if question.enabled is None or evaluate_simple_js_expression(  # type: ignore
-                question.enabled, context=context  # type: ignore
-            ):  # type: ignore
-                continue
-            else:
-                raise YunohostValidationError(
-                    "config_action_disabled",
-                    action=question.name,
-                    help=_value_for_locale(question.help),
-                )
-
-        new_values = question.ask_if_needed()
-        answers.update(new_values)
-        context.update(new_values)
-        out.append(question)
-
-    return out
+    return prompt_or_validate_form(
+        raw_options, prefilled_answers=answers, context=context, hooks=hooks
+    )
 
 
 def hydrate_questions_with_choices(raw_questions: List) -> List:
