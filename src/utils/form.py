@@ -195,9 +195,6 @@ def evaluate_simple_js_expression(expr, context={}):
 
 
 class BaseOption:
-    hide_user_input_in_prompt = False
-    pattern: Optional[Dict] = None
-
     def __init__(
         self,
         question: Dict[str, Any],
@@ -206,16 +203,101 @@ class BaseOption:
         self.name = question["name"]
         self.hooks = hooks
         self.type = question.get("type", "string")
-        self.default = question.get("default", None)
-        self.optional = question.get("optional", False)
         self.visible = question.get("visible", True)
         self.readonly = question.get("readonly", False)
-        # Don't restrict choices if there's none specified
-        self.choices = question.get("choices", None)
-        self.pattern = question.get("pattern", self.pattern)
         self.ask = question.get("ask", self.name)
         if not isinstance(self.ask, dict):
             self.ask = {"en": self.ask}
+
+    def is_visible(self, context: Context) -> bool:
+        if isinstance(self.visible, bool):
+            return self.visible
+
+        return evaluate_simple_js_expression(self.visible, context=context)
+
+    def _format_text_for_user_input_in_cli(self) -> str:
+        return _value_for_locale(self.ask)
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ DISPLAY OPTIONS                                       │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class BaseReadonlyOption(BaseOption):
+    def __init__(self, question, hooks: Dict[str, Callable] = {}):
+        super().__init__(question, hooks)
+        self.readonly = True
+
+
+class DisplayTextOption(BaseReadonlyOption):
+    argument_type = "display_text"
+
+
+class MarkdownOption(BaseReadonlyOption):
+    argument_type = "markdown"
+
+
+class AlertOption(BaseReadonlyOption):
+    argument_type = "alert"
+
+    def __init__(self, question, hooks: Dict[str, Callable] = {}):
+        super().__init__(question, hooks)
+        self.style = question.get("style", "info")
+
+    def _format_text_for_user_input_in_cli(self) -> str:
+        text = _value_for_locale(self.ask)
+
+        if self.style in ["success", "info", "warning", "danger"]:
+            color = {
+                "success": "green",
+                "info": "cyan",
+                "warning": "yellow",
+                "danger": "red",
+            }
+            prompt = m18n.g(self.style) if self.style != "danger" else m18n.n("danger")
+            return colorize(prompt, color[self.style]) + f" {text}"
+        else:
+            return text
+
+
+class ButtonOption(BaseReadonlyOption):
+    argument_type = "button"
+    enabled = True
+
+    def __init__(self, question, hooks: Dict[str, Callable] = {}):
+        super().__init__(question, hooks)
+        self.help = question.get("help")
+        self.style = question.get("style", "success")
+        self.enabled = question.get("enabled", True)
+
+    def is_enabled(self, context: Context) -> bool:
+        if isinstance(self.enabled, bool):
+            return self.enabled
+
+        return evaluate_simple_js_expression(self.enabled, context=context)
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │ INPUT OPTIONS                                         │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class BaseInputOption(BaseOption):
+    hide_user_input_in_prompt = False
+    pattern: Optional[Dict] = None
+
+    def __init__(
+        self,
+        question: Dict[str, Any],
+        hooks: Dict[str, Callable] = {},
+    ):
+        super().__init__(question, hooks)
+        self.default = question.get("default", None)
+        self.optional = question.get("optional", False)
+        # Don't restrict choices if there's none specified
+        self.choices = question.get("choices", None)
+        self.pattern = question.get("pattern", self.pattern)
         self.help = question.get("help")
         self.redact = question.get("redact", False)
         self.filter = question.get("filter", None)
@@ -240,14 +322,8 @@ class BaseOption:
             value = value.strip()
         return value
 
-    def is_visible(self, context: Context) -> bool:
-        if isinstance(self.visible, bool):
-            return self.visible
-
-        return evaluate_simple_js_expression(self.visible, context=context)
-
-    def _format_text_for_user_input_in_cli(self):
-        text_for_user_input_in_cli = _value_for_locale(self.ask)
+    def _format_text_for_user_input_in_cli(self) -> str:
+        text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli()
 
         if self.readonly:
             text_for_user_input_in_cli = colorize(text_for_user_input_in_cli, "purple")
@@ -322,72 +398,15 @@ class BaseOption:
         return self.value
 
 
-# ╭───────────────────────────────────────────────────────╮
-# │ DISPLAY OPTIONS                                       │
-# ╰───────────────────────────────────────────────────────╯
-
-
-class DisplayTextOption(BaseOption):
-    argument_type = "display_text"
-
-    def __init__(
-        self, question, hooks: Dict[str, Callable] = {}
-    ):
-        super().__init__(question, hooks)
-
-        self.optional = True
-        self.readonly = True
-        self.style = question.get(
-            "style", "info" if question["type"] == "alert" else ""
-        )
-
-    def _format_text_for_user_input_in_cli(self):
-        text = _value_for_locale(self.ask)
-
-        if self.style in ["success", "info", "warning", "danger"]:
-            color = {
-                "success": "green",
-                "info": "cyan",
-                "warning": "yellow",
-                "danger": "red",
-            }
-            prompt = m18n.g(self.style) if self.style != "danger" else m18n.n("danger")
-            return colorize(prompt, color[self.style]) + f" {text}"
-        else:
-            return text
-
-
-class ButtonOption(BaseOption):
-    argument_type = "button"
-    enabled = True
-
-    def __init__(
-        self, question, hooks: Dict[str, Callable] = {}
-    ):
-        super().__init__(question, hooks)
-        self.enabled = question.get("enabled", True)
-
-    def is_enabled(self, context: Context) -> bool:
-        if isinstance(self.enabled, bool):
-            return self.enabled
-
-        return evaluate_simple_js_expression(self.enabled, context=context)
-
-
-# ╭───────────────────────────────────────────────────────╮
-# │ INPUT OPTIONS                                         │
-# ╰───────────────────────────────────────────────────────╯
-
-
 # ─ STRINGS ───────────────────────────────────────────────
 
 
-class StringOption(BaseOption):
+class StringOption(BaseInputOption):
     argument_type = "string"
     default_value = ""
 
 
-class PasswordOption(BaseOption):
+class PasswordOption(BaseInputOption):
     hide_user_input_in_prompt = True
     argument_type = "password"
     default_value = ""
@@ -426,7 +445,7 @@ class ColorOption(StringOption):
 # ─ NUMERIC ───────────────────────────────────────────────
 
 
-class NumberOption(BaseOption):
+class NumberOption(BaseInputOption):
     argument_type = "number"
     default_value = None
 
@@ -480,7 +499,7 @@ class NumberOption(BaseOption):
 # ─ BOOLEAN ───────────────────────────────────────────────
 
 
-class BooleanOption(BaseOption):
+class BooleanOption(BaseInputOption):
     argument_type = "boolean"
     default_value = 0
     yes_answers = ["1", "yes", "y", "true", "t", "on"]
@@ -606,7 +625,7 @@ class EmailOption(StringOption):
     }
 
 
-class WebPathOption(BaseOption):
+class WebPathOption(BaseInputOption):
     argument_type = "path"
     default_value = ""
 
@@ -647,7 +666,7 @@ class URLOption(StringOption):
 # ─ FILE ──────────────────────────────────────────────────
 
 
-class FileOption(BaseOption):
+class FileOption(BaseInputOption):
     argument_type = "file"
     upload_dirs: List[str] = []
 
@@ -713,7 +732,7 @@ class FileOption(BaseOption):
 # ─ CHOICES ───────────────────────────────────────────────
 
 
-class TagsOption(BaseOption):
+class TagsOption(BaseInputOption):
     argument_type = "tags"
     default_value = ""
 
@@ -766,7 +785,7 @@ class TagsOption(BaseOption):
 # ─ ENTITIES ──────────────────────────────────────────────
 
 
-class DomainOption(BaseOption):
+class DomainOption(BaseInputOption):
     argument_type = "domain"
 
     def __init__(self, question, hooks: Dict[str, Callable] = {}):
@@ -795,7 +814,7 @@ class DomainOption(BaseOption):
         return value
 
 
-class AppOption(BaseOption):
+class AppOption(BaseInputOption):
     argument_type = "app"
 
     def __init__(self, question, hooks: Dict[str, Callable] = {}):
@@ -820,7 +839,7 @@ class AppOption(BaseOption):
         self.choices.update({app["id"]: _app_display(app) for app in apps})
 
 
-class UserOption(BaseOption):
+class UserOption(BaseInputOption):
     argument_type = "user"
 
     def __init__(self, question, hooks: Dict[str, Callable] = {}):
@@ -851,7 +870,7 @@ class UserOption(BaseOption):
                     break
 
 
-class GroupOption(BaseOption):
+class GroupOption(BaseInputOption):
     argument_type = "group"
 
     def __init__(self, question, hooks: Dict[str, Callable] = {}):
@@ -877,8 +896,8 @@ class GroupOption(BaseOption):
 
 OPTIONS = {
     "display_text": DisplayTextOption,
-    "markdown": DisplayTextOption,
-    "alert": DisplayTextOption,
+    "markdown": MarkdownOption,
+    "alert": AlertOption,
     "button": ButtonOption,
     "string": StringOption,
     "text": StringOption,

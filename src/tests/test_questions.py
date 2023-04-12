@@ -17,6 +17,8 @@ from yunohost import app, domain, user
 from yunohost.utils.form import (
     OPTIONS,
     ask_questions_and_parse_answers,
+    BaseInputOption,
+    BaseReadonlyOption,
     DisplayTextOption,
     PasswordOption,
     DomainOption,
@@ -377,8 +379,7 @@ def _fill_or_prompt_one_option(raw_option, intake):
     answers = {id_: intake} if intake is not None else {}
 
     option = ask_questions_and_parse_answers(options, answers)[0]
-
-    return (option, option.value)
+    return (option, option.value if isinstance(option, BaseInputOption) else None)
 
 
 def _test_value_is_expected_output(value, expected_output):
@@ -438,7 +439,7 @@ class BaseTest:
         id_ = raw_option["id"]
         option, value = _fill_or_prompt_one_option(raw_option, None)
 
-        is_special_readonly_option = isinstance(option, DisplayTextOption)
+        is_special_readonly_option = isinstance(option, BaseReadonlyOption)
 
         assert isinstance(option, OPTIONS[raw_option["type"]])
         assert option.type == raw_option["type"]
