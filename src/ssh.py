@@ -81,7 +81,7 @@ def user_ssh_add_key(username, key, comment):
             parents=True,
             uid=user["uid"][0],
         )
-        chmod(os.path.join(user["homeDirectory"][0], ".ssh"), 0o600)
+        chmod(os.path.join(user["homeDirectory"][0], ".ssh"), 0o700)
 
         # create empty file to set good permissions
         write_to_file(authorized_keys_file, "")
