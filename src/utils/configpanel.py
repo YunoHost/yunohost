@@ -465,20 +465,10 @@ class ConfigPanel:
             "max_progression",
         ]
         forbidden_keywords += format_description["sections"]
-        forbidden_readonly_types = ["password", "app", "domain", "user", "file"]
 
         for _, _, option in self._iterate():
             if option["id"] in forbidden_keywords:
                 raise YunohostError("config_forbidden_keyword", keyword=option["id"])
-            if (
-                option.get("readonly", False)
-                and option.get("type", "string") in forbidden_readonly_types
-            ):
-                raise YunohostError(
-                    "config_forbidden_readonly_type",
-                    type=option["type"],
-                    id=option["id"],
-                )
 
         return self.config
 

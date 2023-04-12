@@ -662,9 +662,7 @@ class TestString(BaseTest):
             (" ##value \n \tvalue\n  ", "##value \n \tvalue"),
         ], reason=r"should fail or without `\n`?"),
         # readonly
-        *xfail(scenarios=[
-            ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),
-        ], reason="Should not be overwritten"),
+        ("overwrite", "expected value", {"readonly": True, "current_value": "expected value"}),
     ]
     # fmt: on
 
@@ -701,9 +699,7 @@ class TestText(BaseTest):
             (r" ##value \n \tvalue\n  ", r"##value \n \tvalue\n"),
         ], reason="Should not be stripped"),
         # readonly
-        *xfail(scenarios=[
-            ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),
-        ], reason="Should not be overwritten"),
+        ("overwrite", "expected value", {"readonly": True, "current_value": "expected value"}),
     ]
     # fmt: on
 
@@ -737,9 +733,7 @@ class TestPassword(BaseTest):
         ("secret", FAIL),
         *[("supersecret" + char, FAIL) for char in PasswordOption.forbidden_chars],  # FIXME maybe add ` \n` to the list?
         # readonly
-        *xpass(scenarios=[
-            ("s3cr3t!!", "s3cr3t!!", {"readonly": True}),
-        ], reason="Should fail since readonly is forbidden"),
+        ("s3cr3t!!", YunohostError, {"readonly": True, "current_value": "isforbidden"}),  # readonly is forbidden
     ]
     # fmt: on
 
@@ -780,9 +774,7 @@ class TestColor(BaseTest):
             ("yellow", "#ffff00"),
         ], reason="Should work with pydantic"),
         # readonly
-        *xfail(scenarios=[
-            ("#ffff00", "#fe100", {"readonly": True, "default": "#fe100"}),
-        ], reason="Should not be overwritten"),
+        ("#ffff00", "#fe100", {"readonly": True, "current_value": "#fe100"}),
     ]
     # fmt: on
 
@@ -824,9 +816,7 @@ class TestNumber(BaseTest):
         (-10, -10, {"default": 10}),
         (-10, -10, {"default": 10, "optional": True}),
         # readonly
-        *xfail(scenarios=[
-            (1337, 10000, {"readonly": True, "default": 10000}),
-        ], reason="Should not be overwritten"),
+        (1337, 10000, {"readonly": True, "current_value": 10000}),
     ]
     # fmt: on
     # FIXME should `step` be some kind of "multiple of"?
@@ -891,9 +881,7 @@ class TestBoolean(BaseTest):
             "scenarios": all_fails("", "y", "n", error=AssertionError),
         },
         # readonly
-        *xfail(scenarios=[
-            (1, 0, {"readonly": True, "default": 0}),
-        ], reason="Should not be overwritten"),
+        (1, 0, {"readonly": True, "current_value": 0}),
     ]
 
 
@@ -931,9 +919,7 @@ class TestDate(BaseTest):
         ("12-01-10", FAIL),
         ("2022-02-29", FAIL),
         # readonly
-        *xfail(scenarios=[
-            ("2070-12-31", "2024-02-29", {"readonly": True, "default": "2024-02-29"}),
-        ], reason="Should not be overwritten"),
+        ("2070-12-31", "2024-02-29", {"readonly": True, "current_value": "2024-02-29"}),
     ]
     # fmt: on
 
@@ -966,9 +952,7 @@ class TestTime(BaseTest):
         ("23:1", FAIL),
         ("23:005", FAIL),
         # readonly
-        *xfail(scenarios=[
-            ("00:00", "08:00", {"readonly": True, "default": "08:00"}),
-        ], reason="Should not be overwritten"),
+        ("00:00", "08:00", {"readonly": True, "current_value": "08:00"}),
     ]
     # fmt: on
 
@@ -992,9 +976,7 @@ class TestEmail(BaseTest):
         *nones(None, "", output=""),
         ("\n Abc@example.tld  ", "Abc@example.tld"),
         # readonly
-        *xfail(scenarios=[
-            ("Abc@example.tld", "admin@ynh.local", {"readonly": True, "default": "admin@ynh.local"}),
-        ], reason="Should not be overwritten"),
+        ("Abc@example.tld", "admin@ynh.local", {"readonly": True, "current_value": "admin@ynh.local"}),
 
         # Next examples are from https://github.com/JoshData/python-email-validator/blob/main/tests/test_syntax.py
         # valid email values
@@ -1107,9 +1089,7 @@ class TestWebPath(BaseTest):
             ("https://example.com/folder", "/https://example.com/folder")
         ], reason="Should fail or scheme+domain removed"),
         # readonly
-        *xfail(scenarios=[
-            ("/overwrite", "/value", {"readonly": True, "default": "/value"}),
-        ], reason="Should not be overwritten"),
+        ("/overwrite", "/value", {"readonly": True, "current_value": "/value"}),
         # FIXME should path have forbidden_chars?
     ]
     # fmt: on
@@ -1134,9 +1114,7 @@ class TestUrl(BaseTest):
         *nones(None, "", output=""),
         ("http://some.org/folder/file.txt", "http://some.org/folder/file.txt"),
         # readonly
-        *xfail(scenarios=[
-            ("https://overwrite.org", "https://example.org", {"readonly": True, "default": "https://example.org"}),
-        ], reason="Should not be overwritten"),
+        ("https://overwrite.org", "https://example.org", {"readonly": True, "current_value": "https://example.org"}),
         # rest is taken from https://github.com/pydantic/pydantic/blob/main/tests/test_networks.py
         # valid
         *unchanged(
@@ -1426,9 +1404,7 @@ class TestSelect(BaseTest):
             ]
         },
         # readonly
-        *xfail(scenarios=[
-            ("one", "two", {"readonly": True, "choices": ["one", "two"], "default": "two"}),
-        ], reason="Should not be overwritten"),
+        ("one", "two", {"readonly": True, "choices": ["one", "two"], "current_value": "two"}),
     ]
     # fmt: on
 
@@ -1476,9 +1452,7 @@ class TestTags(BaseTest):
         *all_fails(*([t] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
         *all_fails(*([str(t)] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
         # readonly
-        *xfail(scenarios=[
-            ("one", "one,two", {"readonly": True, "choices": ["one", "two"], "default": "one,two"}),
-        ], reason="Should not be overwritten"),
+        ("one", "one,two", {"readonly": True, "choices": ["one", "two"], "current_value": "one,two"}),
     ]
     # fmt: on
 
@@ -1526,9 +1500,7 @@ class TestDomain(BaseTest):
                 ("doesnt_exist.pouet", FAIL, {}),
                 ("fake.com", FAIL, {"choices": ["fake.com"]}),
                 # readonly
-                *xpass(scenarios=[
-                    (domains1[0], domains1[0], {"readonly": True}),
-                ], reason="Should fail since readonly is forbidden"),
+                (domains1[0], YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
         {
@@ -1625,9 +1597,7 @@ class TestApp(BaseTest):
                 (installed_non_webapp["id"], installed_non_webapp["id"]),
                 (installed_non_webapp["id"], FAIL, {"filter": "is_webapp"}),
                 # readonly
-                *xpass(scenarios=[
-                    (installed_non_webapp["id"], installed_non_webapp["id"], {"readonly": True}),
-                ], reason="Should fail since readonly is forbidden"),
+                (installed_non_webapp["id"], YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]
@@ -1744,9 +1714,7 @@ class TestUser(BaseTest):
                     ("", regular_username, {"default": regular_username})
                 ], reason="Should throw 'no default allowed'"),
                 # readonly
-                *xpass(scenarios=[
-                    (admin_username, admin_username, {"readonly": True}),
-                ], reason="Should fail since readonly is forbidden"),
+                (admin_username, YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]
@@ -1821,9 +1789,7 @@ class TestGroup(BaseTest):
                     ("", "custom_group", {"default": "custom_group"}),
                 ], reason="Should throw 'default must be in (None, 'all_users', 'visitors', 'admins')"),
                 # readonly
-                *xpass(scenarios=[
-                    ("admins", "admins", {"readonly": True}),
-                ], reason="Should fail since readonly is forbidden"),
+                ("admins", YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]

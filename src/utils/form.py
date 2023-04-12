@@ -204,7 +204,16 @@ class BaseOption:
         self.hooks = hooks
         self.type = question.get("type", "string")
         self.visible = question.get("visible", True)
+
         self.readonly = question.get("readonly", False)
+        if self.readonly and self.type in {"password", "app", "domain", "user", "group", "file"}:
+            # FIXME i18n
+            raise YunohostError(
+                "config_forbidden_readonly_type",
+                type=self.type,
+                id=self.name,
+            )
+
         self.ask = question.get("ask", self.name)
         if not isinstance(self.ask, dict):
             self.ask = {"en": self.ask}
@@ -328,9 +337,10 @@ class BaseInputOption(BaseOption):
         if self.readonly:
             text_for_user_input_in_cli = colorize(text_for_user_input_in_cli, "purple")
             if self.choices:
-                return (
-                    text_for_user_input_in_cli + f" {self.choices[self.current_value]}"
-                )
+                choice = self.current_value
+                if isinstance(self.choices, dict) and choice is not None:
+                    choice = self.choices[choice]
+                return f"{text_for_user_input_in_cli} {choice}"
             return text_for_user_input_in_cli + f" {self.humanize(self.current_value)}"
         elif self.choices:
             # Prevent displaying a shitload of choices
@@ -348,7 +358,9 @@ class BaseInputOption(BaseOption):
                     m18n.n("other_available_options", n=remaining_choices)
                 ]
 
-            choices_to_display = " | ".join(choices_to_display)
+            choices_to_display = " | ".join(
+                str(choice) for choice in choices_to_display
+            )
 
             text_for_user_input_in_cli += f" [{choices_to_display}]"
 
@@ -946,7 +958,7 @@ def prompt_or_validate_form(
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
         if isinstance(option, ButtonOption):
-            if option.is_enabled(context):
+            if option.is_visible(context) and option.is_enabled(context):
                 continue
             else:
                 raise YunohostValidationError(
@@ -955,32 +967,49 @@ def prompt_or_validate_form(
                     help=_value_for_locale(option.help),
                 )
 
-        if option.is_visible(context):
+        # FIXME not sure why we do not append Buttons to returned options
+        options.append(option)
+
+        if not option.is_visible(context):
+            if isinstance(option, BaseInputOption):
+                # FIXME There could be several use case if the question is not displayed:
+                # - we doesn't want to give a specific value
+                # - we want to keep the previous value
+                # - we want the default value
+                option.value = context[option.name] = None
+
+            continue
+
+        message = option._format_text_for_user_input_in_cli()
+
+        if option.readonly:
+            if interactive:
+                Moulinette.display(message)
+
+            if isinstance(option, BaseInputOption):
+                option.value = context[option.name] = option.current_value
+
+            continue
+
+        if isinstance(option, BaseInputOption):
             for i in range(5):
-                # Display question if no value filled or if it's a readonly message
-                if interactive:
-                    text_for_user_input_in_cli = (
-                        option._format_text_for_user_input_in_cli()
+                if interactive and option.value is None:
+                    prefill = ""
+
+                    if option.current_value is not None:
+                        prefill = option.humanize(option.current_value, option)
+                    elif option.default is not None:
+                        prefill = option.humanize(option.default, option)
+
+                    option.value = Moulinette.prompt(
+                        message=message,
+                        is_password=isinstance(option, PasswordOption),
+                        confirm=False,
+                        prefill=prefill,
+                        is_multiline=(option.type == "text"),
+                        autocomplete=option.choices or [],
+                        help=_value_for_locale(option.help),
                     )
-                    if option.readonly:
-                        Moulinette.display(text_for_user_input_in_cli)
-                        option.value = option.current_value
-                        break
-                    elif option.value is None:
-                        prefill = ""
-                        if option.current_value is not None:
-                            prefill = option.humanize(option.current_value, option)
-                        elif option.default is not None:
-                            prefill = option.humanize(option.default, option)
-                        option.value = Moulinette.prompt(
-                            message=text_for_user_input_in_cli,
-                            is_password=option.hide_user_input_in_prompt,
-                            confirm=False,
-                            prefill=prefill,
-                            is_multiline=(option.type == "text"),
-                            autocomplete=option.choices or [],
-                            help=_value_for_locale(option.help),
-                        )
 
                 # Apply default value
                 class_default = getattr(option, "default_value", None)
@@ -1013,16 +1042,9 @@ def prompt_or_validate_form(
             post_hook = f"post_ask__{option.name}"
             if post_hook in option.hooks:
                 option.values.update(option.hooks[post_hook](option))
-        else:
-            # FIXME There could be several use case if the question is not displayed:
-            # - we doesn't want to give a specific value
-            # - we want to keep the previous value
-            # - we want the default value
-            option.value = option.values[option.name] = None
 
-        answers.update(option.values)
-        context.update(option.values)
-        options.append(option)
+            answers.update(option.values)
+            context.update(option.values)
 
     return options
 
@@ -1070,7 +1092,7 @@ def hydrate_questions_with_choices(raw_questions: List) -> List:
 
     for raw_question in raw_questions:
         question = OPTIONS[raw_question.get("type", "string")](raw_question)
-        if question.choices:
+        if isinstance(question, BaseInputOption) and question.choices:
             raw_question["choices"] = question.choices
             raw_question["default"] = question.default
         out.append(raw_question)
