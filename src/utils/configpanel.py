@@ -30,6 +30,8 @@ from moulinette.utils.log import getActionLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
     OPTIONS,
+    BaseChoicesOption,
+    BaseInputOption,
     BaseOption,
     FileOption,
     ask_questions_and_parse_answers,
@@ -148,9 +150,11 @@ class ConfigPanel:
                 option["ask"] = ask
                 question_class = OPTIONS[option.get("type", "string")]
                 # FIXME : maybe other properties should be taken from the question, not just choices ?.
-                option["choices"] = question_class(option).choices
-                option["default"] = question_class(option).default
-                option["pattern"] = question_class(option).pattern
+                if issubclass(question_class, BaseChoicesOption):
+                    option["choices"] = question_class(option).choices
+                if issubclass(question_class, BaseInputOption):
+                    option["default"] = question_class(option).default
+                    option["pattern"] = question_class(option).pattern
             else:
                 result[key] = {"ask": ask}
                 if "current_value" in option:
