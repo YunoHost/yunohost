@@ -17,9 +17,9 @@ from yunohost import app, domain, user
 from yunohost.utils.form import (
     OPTIONS,
     ask_questions_and_parse_answers,
+    BaseChoicesOption,
     BaseInputOption,
     BaseReadonlyOption,
-    DisplayTextOption,
     PasswordOption,
     DomainOption,
     WebPathOption,
@@ -490,14 +490,12 @@ class BaseTest:
             option, value = _fill_or_prompt_one_option(raw_option, None)
 
             expected_message = option.ask["en"]
+            choices = []
 
-            if option.choices:
-                choices = (
-                    option.choices
-                    if isinstance(option.choices, list)
-                    else option.choices.keys()
-                )
-                expected_message += f" [{' | '.join(choices)}]"
+            if isinstance(option, BaseChoicesOption):
+                choices = option.choices
+                if choices:
+                    expected_message += f" [{' | '.join(choices)}]"
             if option.type == "boolean":
                 expected_message += " [yes | no]"
 
@@ -507,7 +505,7 @@ class BaseTest:
                 confirm=False,  # FIXME no confirm?
                 prefill=prefill,
                 is_multiline=option.type == "text",
-                autocomplete=option.choices or [],
+                autocomplete=choices,
                 help=option.help["en"],
             )
 
@@ -1970,75 +1968,6 @@ def test_question_string_input_test_ask_with_example():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert example_text in prompt.call_args[1]["message"]
-
-
-def test_question_string_with_choice():
-    questions = {"some_string": {"type": "string", "choices": ["fr", "en"]}}
-    answers = {"some_string": "fr"}
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "fr"
-
-
-def test_question_string_with_choice_prompt():
-    questions = {"some_string": {"type": "string", "choices": ["fr", "en"]}}
-    answers = {"some_string": "fr"}
-    with patch.object(Moulinette, "prompt", return_value="fr"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "fr"
-
-
-def test_question_string_with_choice_bad():
-    questions = {"some_string": {"type": "string", "choices": ["fr", "en"]}}
-    answers = {"some_string": "bad"}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_string_with_choice_ask():
-    ask_text = "some question"
-    choices = ["fr", "en", "es", "it", "ru"]
-    questions = {
-        "some_string": {
-            "ask": ask_text,
-            "choices": choices,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="ru") as prompt, patch.object(
-        os, "isatty", return_value=True
-    ):
-        ask_questions_and_parse_answers(questions, answers)
-        assert ask_text in prompt.call_args[1]["message"]
-
-        for choice in choices:
-            assert choice in prompt.call_args[1]["message"]
-
-
-def test_question_string_with_choice_default():
-    questions = {
-        "some_string": {
-            "type": "string",
-            "choices": ["fr", "en"],
-            "default": "en",
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "en"
 
 
 @pytest.mark.skip  # we should do something with this example

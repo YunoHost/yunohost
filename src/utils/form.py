@@ -306,8 +306,6 @@ class BaseInputOption(BaseOption):
         super().__init__(question, hooks)
         self.default = question.get("default", None)
         self.optional = question.get("optional", False)
-        # Don't restrict choices if there's none specified
-        self.choices = question.get("choices", None)
         self.pattern = question.get("pattern", self.pattern)
         self.help = question.get("help")
         self.redact = question.get("redact", False)
@@ -338,33 +336,7 @@ class BaseInputOption(BaseOption):
 
         if self.readonly:
             message = colorize(message, "purple")
-            if self.choices:
-                choice = self.current_value
-                if isinstance(self.choices, dict) and choice is not None:
-                    choice = self.choices[choice]
-                return f"{message} {choice}"
-            return message + f" {self.humanize(self.current_value)}"
-        elif self.choices:
-            # Prevent displaying a shitload of choices
-            # (e.g. 100+ available users when choosing an app admin...)
-            choices = (
-                list(self.choices.keys())
-                if isinstance(self.choices, dict)
-                else self.choices
-            )
-            choices_to_display = choices[:20]
-            remaining_choices = len(choices[20:])
-
-            if remaining_choices > 0:
-                choices_to_display += [
-                    m18n.n("other_available_options", n=remaining_choices)
-                ]
-
-            choices_to_display = " | ".join(
-                str(choice) for choice in choices_to_display
-            )
-
-            message += f" [{choices_to_display}]"
+            return f"{message} {self.humanize(self.current_value)}"
 
         return message
 
@@ -374,13 +346,6 @@ class BaseInputOption(BaseOption):
 
         # we have an answer, do some post checks
         if self.value not in [None, ""]:
-            if self.choices and self.value not in self.choices:
-                raise YunohostValidationError(
-                    "app_argument_choice_invalid",
-                    name=self.name,
-                    value=self.value,
-                    choices=", ".join(str(choice) for choice in self.choices),
-                )
             if self.pattern and not re.match(self.pattern["regexp"], str(self.value)):
                 raise YunohostValidationError(
                     self.pattern["error"],
@@ -746,7 +711,72 @@ class FileOption(BaseInputOption):
 # ─ CHOICES ───────────────────────────────────────────────
 
 
-class TagsOption(BaseInputOption):
+class BaseChoicesOption(BaseInputOption):
+    def __init__(
+        self,
+        question: Dict[str, Any],
+        hooks: Dict[str, Callable] = {},
+    ):
+        super().__init__(question, hooks)
+        # Don't restrict choices if there's none specified
+        self.choices = question.get("choices", None)
+
+    def _get_prompt_message(self) -> str:
+        message = super()._get_prompt_message()
+
+        if self.readonly:
+            message = message
+            choice = self.current_value
+
+            if isinstance(self.choices, dict) and choice is not None:
+                choice = self.choices[choice]
+
+            return f"{colorize(message, 'purple')} {choice}"
+
+        if self.choices:
+            # Prevent displaying a shitload of choices
+            # (e.g. 100+ available users when choosing an app admin...)
+            choices = (
+                list(self.choices.keys())
+                if isinstance(self.choices, dict)
+                else self.choices
+            )
+            choices_to_display = choices[:20]
+            remaining_choices = len(choices[20:])
+
+            if remaining_choices > 0:
+                choices_to_display += [
+                    m18n.n("other_available_options", n=remaining_choices)
+                ]
+
+            choices_to_display = " | ".join(
+                str(choice) for choice in choices_to_display
+            )
+
+            return f"{message} [{choices_to_display}]"
+
+        return message
+
+    def _value_pre_validator(self):
+        super()._value_pre_validator()
+
+        # we have an answer, do some post checks
+        if self.value not in [None, ""]:
+            if self.choices and self.value not in self.choices:
+                raise YunohostValidationError(
+                    "app_argument_choice_invalid",
+                    name=self.name,
+                    value=self.value,
+                    choices=", ".join(str(choice) for choice in self.choices),
+                )
+
+
+class SelectOption(BaseChoicesOption):
+    argument_type = "select"
+    default_value = ""
+
+
+class TagsOption(BaseChoicesOption):
     argument_type = "tags"
     default_value = ""
 
@@ -799,7 +829,7 @@ class TagsOption(BaseInputOption):
 # ─ ENTITIES ──────────────────────────────────────────────
 
 
-class DomainOption(BaseInputOption):
+class DomainOption(BaseChoicesOption):
     argument_type = "domain"
 
     def __init__(self, question, hooks: Dict[str, Callable] = {}):
@@ -828,7 +858,7 @@ class DomainOption(BaseInputOption):
         return value
 
 
-class AppOption(BaseInputOption):
+class AppOption(BaseChoicesOption):
     argument_type = "app"
 
     def __init__(self, question, hooks: Dict[str, Callable] = {}):
@@ -853,7 +883,7 @@ class AppOption(BaseInputOption):
         self.choices.update({app["id"]: _app_display(app) for app in apps})
 
 
-class UserOption(BaseInputOption):
+class UserOption(BaseChoicesOption):
     argument_type = "user"
 
     def __init__(self, question, hooks: Dict[str, Callable] = {}):
@@ -884,7 +914,7 @@ class UserOption(BaseInputOption):
                     break
 
 
-class GroupOption(BaseInputOption):
+class GroupOption(BaseChoicesOption):
     argument_type = "group"
 
     def __init__(self, question, hooks: Dict[str, Callable] = {}):
@@ -926,7 +956,7 @@ OPTIONS = {
     "path": WebPathOption,
     "url": URLOption,
     "file": FileOption,
-    "select": StringOption,
+    "select": SelectOption,
     "tags": TagsOption,
     "domain": DomainOption,
     "app": AppOption,
@@ -997,6 +1027,9 @@ def prompt_or_validate_form(
             for i in range(5):
                 if interactive and option.value is None:
                     prefill = ""
+                    choices = (
+                        option.choices if isinstance(option, BaseChoicesOption) else []
+                    )
 
                     if option.current_value is not None:
                         prefill = option.humanize(option.current_value, option)
@@ -1009,7 +1042,7 @@ def prompt_or_validate_form(
                         confirm=False,
                         prefill=prefill,
                         is_multiline=(option.type == "text"),
-                        autocomplete=option.choices or [],
+                        autocomplete=choices,
                         help=_value_for_locale(option.help),
                     )
 
@@ -1094,7 +1127,7 @@ def hydrate_questions_with_choices(raw_questions: List) -> List:
 
     for raw_question in raw_questions:
         question = OPTIONS[raw_question.get("type", "string")](raw_question)
-        if isinstance(question, BaseInputOption) and question.choices:
+        if isinstance(question, BaseChoicesOption) and question.choices:
             raw_question["choices"] = question.choices
             raw_question["default"] = question.default
         out.append(raw_question)
