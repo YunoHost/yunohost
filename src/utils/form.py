@@ -23,7 +23,8 @@ import re
 import shutil
 import tempfile
 import urllib.parse
-from typing import Any, Callable, Dict, List, Mapping, Optional, Union
+from enum import Enum
+from typing import Any, Callable, Dict, List, Literal, Mapping, Optional, Union
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
@@ -193,7 +194,50 @@ def evaluate_simple_js_expression(expr, context={}):
 # │  ╰─╯╵   ╵ ╶┴╴╰─╯╵╰╯╶─╯                                │
 # ╰───────────────────────────────────────────────────────╯
 
-FORBIDDEN_READONLY_TYPES = {"password", "app", "domain", "user", "group"}
+
+class OptionType(str, Enum):
+    # display
+    display_text = "display_text"
+    markdown = "markdown"
+    alert = "alert"
+    # action
+    button = "button"
+    # text
+    string = "string"
+    text = "text"
+    password = "password"
+    color = "color"
+    # numeric
+    number = "number"
+    range = "range"
+    # boolean
+    boolean = "boolean"
+    # time
+    date = "date"
+    time = "time"
+    # location
+    email = "email"
+    path = "path"
+    url = "url"
+    # file
+    file = "file"
+    # choice
+    select = "select"
+    tags = "tags"
+    # entity
+    domain = "domain"
+    app = "app"
+    user = "user"
+    group = "group"
+
+
+FORBIDDEN_READONLY_TYPES = {
+    OptionType.password,
+    OptionType.app,
+    OptionType.domain,
+    OptionType.user,
+    OptionType.group,
+}
 
 
 class BaseOption:
@@ -202,7 +246,7 @@ class BaseOption:
         question: Dict[str, Any],
     ):
         self.name = question["name"]
-        self.type = question.get("type", "string")
+        self.type = question.get("type", OptionType.string)
         self.visible = question.get("visible", True)
 
         self.readonly = question.get("readonly", False)
@@ -240,15 +284,15 @@ class BaseReadonlyOption(BaseOption):
 
 
 class DisplayTextOption(BaseReadonlyOption):
-    argument_type = "display_text"
+    type: Literal[OptionType.display_text] = OptionType.display_text
 
 
 class MarkdownOption(BaseReadonlyOption):
-    argument_type = "markdown"
+    type: Literal[OptionType.markdown] = OptionType.markdown
 
 
 class AlertOption(BaseReadonlyOption):
-    argument_type = "alert"
+    type: Literal[OptionType.alert] = OptionType.alert
 
     def __init__(self, question):
         super().__init__(question)
@@ -271,7 +315,7 @@ class AlertOption(BaseReadonlyOption):
 
 
 class ButtonOption(BaseReadonlyOption):
-    argument_type = "button"
+    type: Literal[OptionType.button] = OptionType.button
     enabled = True
 
     def __init__(self, question):
@@ -373,14 +417,21 @@ class BaseInputOption(BaseOption):
 # ─ STRINGS ───────────────────────────────────────────────
 
 
-class StringOption(BaseInputOption):
-    argument_type = "string"
+class BaseStringOption(BaseInputOption):
     default_value = ""
 
 
+class StringOption(BaseStringOption):
+    type: Literal[OptionType.string] = OptionType.string
+
+
+class TextOption(BaseStringOption):
+    type: Literal[OptionType.text] = OptionType.text
+
+
 class PasswordOption(BaseInputOption):
+    type: Literal[OptionType.password] = OptionType.password
     hide_user_input_in_prompt = True
-    argument_type = "password"
     default_value = ""
     forbidden_chars = "{}"
 
@@ -407,7 +458,8 @@ class PasswordOption(BaseInputOption):
             assert_password_is_strong_enough("user", self.value)
 
 
-class ColorOption(StringOption):
+class ColorOption(BaseStringOption):
+    type: Literal[OptionType.color] = OptionType.color
     pattern = {
         "regexp": r"^#[ABCDEFabcdef\d]{3,6}$",
         "error": "config_validate_color",  # i18n: config_validate_color
@@ -418,7 +470,7 @@ class ColorOption(StringOption):
 
 
 class NumberOption(BaseInputOption):
-    argument_type = "number"
+    type: Literal[OptionType.number, OptionType.range] = OptionType.number
     default_value = None
 
     def __init__(self, question):
@@ -472,7 +524,7 @@ class NumberOption(BaseInputOption):
 
 
 class BooleanOption(BaseInputOption):
-    argument_type = "boolean"
+    type: Literal[OptionType.boolean] = OptionType.boolean
     default_value = 0
     yes_answers = ["1", "yes", "y", "true", "t", "on"]
     no_answers = ["0", "no", "n", "false", "f", "off"]
@@ -562,7 +614,8 @@ class BooleanOption(BaseInputOption):
 # ─ TIME ──────────────────────────────────────────────────
 
 
-class DateOption(StringOption):
+class DateOption(BaseStringOption):
+    type: Literal[OptionType.date] = OptionType.date
     pattern = {
         "regexp": r"^\d{4}-\d\d-\d\d$",
         "error": "config_validate_date",  # i18n: config_validate_date
@@ -580,7 +633,8 @@ class DateOption(StringOption):
                 raise YunohostValidationError("config_validate_date")
 
 
-class TimeOption(StringOption):
+class TimeOption(BaseStringOption):
+    type: Literal[OptionType.time] = OptionType.time
     pattern = {
         "regexp": r"^(?:\d|[01]\d|2[0-3]):[0-5]\d$",
         "error": "config_validate_time",  # i18n: config_validate_time
@@ -590,7 +644,8 @@ class TimeOption(StringOption):
 # ─ LOCATIONS ─────────────────────────────────────────────
 
 
-class EmailOption(StringOption):
+class EmailOption(BaseStringOption):
+    type: Literal[OptionType.email] = OptionType.email
     pattern = {
         "regexp": r"^.+@.+",
         "error": "config_validate_email",  # i18n: config_validate_email
@@ -598,7 +653,7 @@ class EmailOption(StringOption):
 
 
 class WebPathOption(BaseInputOption):
-    argument_type = "path"
+    type: Literal[OptionType.path] = OptionType.path
     default_value = ""
 
     @staticmethod
@@ -628,7 +683,8 @@ class WebPathOption(BaseInputOption):
         return "/" + value.strip().strip(" /")
 
 
-class URLOption(StringOption):
+class URLOption(BaseStringOption):
+    type: Literal[OptionType.url] = OptionType.url
     pattern = {
         "regexp": r"^https?://.*$",
         "error": "config_validate_url",  # i18n: config_validate_url
@@ -639,7 +695,7 @@ class URLOption(StringOption):
 
 
 class FileOption(BaseInputOption):
-    argument_type = "file"
+    type: Literal[OptionType.file] = OptionType.file
     upload_dirs: List[str] = []
 
     def __init__(self, question):
@@ -764,12 +820,12 @@ class BaseChoicesOption(BaseInputOption):
 
 
 class SelectOption(BaseChoicesOption):
-    argument_type = "select"
+    type: Literal[OptionType.select] = OptionType.select
     default_value = ""
 
 
 class TagsOption(BaseChoicesOption):
-    argument_type = "tags"
+    type: Literal[OptionType.tags] = OptionType.tags
     default_value = ""
 
     @staticmethod
@@ -822,7 +878,7 @@ class TagsOption(BaseChoicesOption):
 
 
 class DomainOption(BaseChoicesOption):
-    argument_type = "domain"
+    type: Literal[OptionType.domain] = OptionType.domain
 
     def __init__(self, question):
         from yunohost.domain import domain_list, _get_maindomain
@@ -851,7 +907,7 @@ class DomainOption(BaseChoicesOption):
 
 
 class AppOption(BaseChoicesOption):
-    argument_type = "app"
+    type: Literal[OptionType.app] = OptionType.app
 
     def __init__(self, question):
         from yunohost.app import app_list
@@ -877,7 +933,7 @@ class AppOption(BaseChoicesOption):
 
 
 class UserOption(BaseChoicesOption):
-    argument_type = "user"
+    type: Literal[OptionType.user] = OptionType.user
 
     def __init__(self, question):
         from yunohost.user import user_list, user_info
@@ -908,7 +964,7 @@ class UserOption(BaseChoicesOption):
 
 
 class GroupOption(BaseChoicesOption):
-    argument_type = "group"
+    type: Literal[OptionType.group] = OptionType.group
 
     def __init__(self, question):
         from yunohost.user import user_group_list
@@ -932,29 +988,29 @@ class GroupOption(BaseChoicesOption):
 
 
 OPTIONS = {
-    "display_text": DisplayTextOption,
-    "markdown": MarkdownOption,
-    "alert": AlertOption,
-    "button": ButtonOption,
-    "string": StringOption,
-    "text": StringOption,
-    "password": PasswordOption,
-    "color": ColorOption,
-    "number": NumberOption,
-    "range": NumberOption,
-    "boolean": BooleanOption,
-    "date": DateOption,
-    "time": TimeOption,
-    "email": EmailOption,
-    "path": WebPathOption,
-    "url": URLOption,
-    "file": FileOption,
-    "select": SelectOption,
-    "tags": TagsOption,
-    "domain": DomainOption,
-    "app": AppOption,
-    "user": UserOption,
-    "group": GroupOption,
+    OptionType.display_text: DisplayTextOption,
+    OptionType.markdown: MarkdownOption,
+    OptionType.alert: AlertOption,
+    OptionType.button: ButtonOption,
+    OptionType.string: StringOption,
+    OptionType.text: StringOption,
+    OptionType.password: PasswordOption,
+    OptionType.color: ColorOption,
+    OptionType.number: NumberOption,
+    OptionType.range: NumberOption,
+    OptionType.boolean: BooleanOption,
+    OptionType.date: DateOption,
+    OptionType.time: TimeOption,
+    OptionType.email: EmailOption,
+    OptionType.path: WebPathOption,
+    OptionType.url: URLOption,
+    OptionType.file: FileOption,
+    OptionType.select: SelectOption,
+    OptionType.tags: TagsOption,
+    OptionType.domain: DomainOption,
+    OptionType.app: AppOption,
+    OptionType.user: UserOption,
+    OptionType.group: GroupOption,
 }
 
 
@@ -1122,7 +1178,7 @@ def hydrate_questions_with_choices(raw_questions: List) -> List:
     out = []
 
     for raw_question in raw_questions:
-        question = OPTIONS[raw_question.get("type", "string")](raw_question)
+        question = OPTIONS[raw_question.get("type", OptionType.string)](raw_question)
         if isinstance(question, BaseChoicesOption) and question.choices:
             raw_question["choices"] = question.choices
             raw_question["default"] = question.default

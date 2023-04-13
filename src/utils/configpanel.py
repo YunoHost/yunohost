@@ -34,6 +34,7 @@ from yunohost.utils.form import (
     BaseInputOption,
     BaseOption,
     FileOption,
+    OptionType,
     ask_questions_and_parse_answers,
     evaluate_simple_js_expression,
 )
@@ -148,7 +149,7 @@ class ConfigPanel:
 
             if mode == "full":
                 option["ask"] = ask
-                question_class = OPTIONS[option.get("type", "string")]
+                question_class = OPTIONS[option.get("type", OptionType.string)]
                 # FIXME : maybe other properties should be taken from the question, not just choices ?.
                 if issubclass(question_class, BaseChoicesOption):
                     option["choices"] = question_class(option).choices
@@ -158,7 +159,7 @@ class ConfigPanel:
             else:
                 result[key] = {"ask": ask}
                 if "current_value" in option:
-                    question_class = OPTIONS[option.get("type", "string")]
+                    question_class = OPTIONS[option.get("type", OptionType.string)]
                     result[key]["value"] = question_class.humanize(
                         option["current_value"], option
                     )
@@ -243,7 +244,7 @@ class ConfigPanel:
         self.filter_key = ""
         self._get_config_panel()
         for panel, section, option in self._iterate():
-            if option["type"] == "button":
+            if option["type"] == OptionType.button:
                 key = f"{panel['id']}.{section['id']}.{option['id']}"
                 actions[key] = _value_for_locale(option["ask"])
 
@@ -425,7 +426,7 @@ class ConfigPanel:
                         subnode["name"] = key  # legacy
                         subnode.setdefault("optional", raw_infos.get("optional", True))
                         # If this section contains at least one button, it becomes an "action" section
-                        if subnode.get("type") == "button":
+                        if subnode.get("type") == OptionType.button:
                             out["is_action_section"] = True
                     out.setdefault(sublevel, []).append(subnode)
                 # Key/value are a property
@@ -500,13 +501,13 @@ class ConfigPanel:
         # Hydrating config panel with current value
         for _, section, option in self._iterate():
             if option["id"] not in self.values:
-                allowed_empty_types = [
-                    "alert",
-                    "display_text",
-                    "markdown",
-                    "file",
-                    "button",
-                ]
+                allowed_empty_types = {
+                    OptionType.alert,
+                    OptionType.display_text,
+                    OptionType.markdown,
+                    OptionType.file,
+                    OptionType.button,
+                }
 
                 if section["is_action_section"] and option.get("default") is not None:
                     self.values[option["id"]] = option["default"]
@@ -587,7 +588,7 @@ class ConfigPanel:
                 section["options"] = [
                     option
                     for option in section["options"]
-                    if option.get("type", "string") != "button"
+                    if option.get("type", OptionType.string) != OptionType.button
                     or option["id"] == action
                 ]
 
