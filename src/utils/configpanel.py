@@ -521,7 +521,7 @@ class ConfigPanel:
                         f"Config panel question '{option['id']}' should be initialized with a value during install or upgrade.",
                         raw_msg=True,
                     )
-            value = self.values[option["name"]]
+            value = self.values[option["id"]]
 
             # Allow to use value instead of current_value in app config script.
             # e.g. apps may write `echo 'value: "foobar"'` in the config file (which is more intuitive that `echo 'current_value: "foobar"'`
@@ -600,14 +600,14 @@ class ConfigPanel:
             prefilled_answers.update(self.new_values)
 
             questions = ask_questions_and_parse_answers(
-                {question["name"]: question for question in section["options"]},
+                {question["id"]: question for question in section["options"]},
                 prefilled_answers=prefilled_answers,
                 current_values=self.values,
                 hooks=self.hooks,
             )
             self.new_values.update(
                 {
-                    question.name: question.value
+                    question.id: question.value
                     for question in questions
                     if question.value is not None
                 }

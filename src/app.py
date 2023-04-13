@@ -1099,7 +1099,7 @@ def app_install(
     raw_questions = manifest["install"]
     questions = ask_questions_and_parse_answers(raw_questions, prefilled_answers=args)
     args = {
-        question.name: question.value
+        question.id: question.value
         for question in questions
         if question.value is not None
     }
@@ -1147,7 +1147,7 @@ def app_install(
             if question.type == "password":
                 continue
 
-            app_settings[question.name] = question.value
+            app_settings[question.id] = question.value
 
     _set_app_settings(app_instance_name, app_settings)
 
@@ -1202,16 +1202,16 @@ def app_install(
             # Reinject user-provider passwords which are not in the app settings
             # (cf a few line before)
             if question.type == "password":
-                env_dict[question.name] = question.value
+                env_dict[question.id] = question.value
 
     # We want to hav the env_dict in the log ... but not password values
     env_dict_for_logging = env_dict.copy()
     for question in questions:
         # Or should it be more generally question.redact ?
         if question.type == "password":
-            del env_dict_for_logging[f"YNH_APP_ARG_{question.name.upper()}"]
-            if question.name in env_dict_for_logging:
-                del env_dict_for_logging[question.name]
+            del env_dict_for_logging[f"YNH_APP_ARG_{question.id.upper()}"]
+            if question.id in env_dict_for_logging:
+                del env_dict_for_logging[question.id]
 
     operation_logger.extra.update({"env": env_dict_for_logging})
 
@@ -2358,17 +2358,17 @@ def _set_default_ask_questions(questions, script_name="install"):
         ),  # i18n: app_manifest_install_ask_init_admin_permission
     ]
 
-    for question_name, question in questions.items():
-        question["name"] = question_name
+    for question_id, question in questions.items():
+        question["id"] = question_id
 
         # If this question corresponds to a question with default ask message...
         if any(
-            (question.get("type"), question["name"]) == question_with_default
+            (question.get("type"), question["id"]) == question_with_default
             for question_with_default in questions_with_default
         ):
             # The key is for example "app_manifest_install_ask_domain"
             question["ask"] = m18n.n(
-                f"app_manifest_{script_name}_ask_{question['name']}"
+                f"app_manifest_{script_name}_ask_{question['id']}"
             )
 
             # Also it in fact doesn't make sense for any of those questions to have an example value nor a default value...

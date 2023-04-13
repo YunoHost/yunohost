@@ -245,7 +245,7 @@ class BaseOption:
         self,
         question: Dict[str, Any],
     ):
-        self.name = question["name"]
+        self.id = question["id"]
         self.type = question.get("type", OptionType.string)
         self.visible = question.get("visible", True)
 
@@ -255,10 +255,10 @@ class BaseOption:
             raise YunohostError(
                 "config_forbidden_readonly_type",
                 type=self.type,
-                id=self.name,
+                id=self.id,
             )
 
-        self.ask = question.get("ask", self.name)
+        self.ask = question.get("ask", self.id)
         if not isinstance(self.ask, dict):
             self.ask = {"en": self.ask}
 
@@ -379,14 +379,14 @@ class BaseInputOption(BaseOption):
 
     def _value_pre_validator(self):
         if self.value in [None, ""] and not self.optional:
-            raise YunohostValidationError("app_argument_required", name=self.name)
+            raise YunohostValidationError("app_argument_required", name=self.id)
 
         # we have an answer, do some post checks
         if self.value not in [None, ""]:
             if self.pattern and not re.match(self.pattern["regexp"], str(self.value)):
                 raise YunohostValidationError(
                     self.pattern["error"],
-                    name=self.name,
+                    name=self.id,
                     value=self.value,
                 )
 
@@ -440,7 +440,7 @@ class PasswordOption(BaseInputOption):
         self.redact = True
         if self.default is not None:
             raise YunohostValidationError(
-                "app_argument_password_no_default", name=self.name
+                "app_argument_password_no_default", name=self.id
             )
 
     def _value_pre_validator(self):
@@ -496,7 +496,7 @@ class NumberOption(BaseInputOption):
         option = option.__dict__ if isinstance(option, BaseOption) else option
         raise YunohostValidationError(
             "app_argument_invalid",
-            name=option.get("name"),
+            name=option.get("id"),
             error=m18n.n("invalid_number"),
         )
 
@@ -508,14 +508,14 @@ class NumberOption(BaseInputOption):
         if self.min is not None and int(self.value) < self.min:
             raise YunohostValidationError(
                 "app_argument_invalid",
-                name=self.name,
+                name=self.id,
                 error=m18n.n("invalid_number_min", min=self.min),
             )
 
         if self.max is not None and int(self.value) > self.max:
             raise YunohostValidationError(
                 "app_argument_invalid",
-                name=self.name,
+                name=self.id,
                 error=m18n.n("invalid_number_max", max=self.max),
             )
 
@@ -554,7 +554,7 @@ class BooleanOption(BaseInputOption):
 
         raise YunohostValidationError(
             "app_argument_choice_invalid",
-            name=option.get("name"),
+            name=option.get("id"),
             value=value,
             choices="yes/no",
         )
@@ -594,7 +594,7 @@ class BooleanOption(BaseInputOption):
 
         raise YunohostValidationError(
             "app_argument_choice_invalid",
-            name=option.get("name"),
+            name=option.get("id"),
             value=strvalue,
             choices="yes/no",
         )
@@ -663,7 +663,7 @@ class WebPathOption(BaseInputOption):
         if not isinstance(value, str):
             raise YunohostValidationError(
                 "app_argument_invalid",
-                name=option.get("name"),
+                name=option.get("id"),
                 error="Argument for path should be a string.",
             )
 
@@ -676,7 +676,7 @@ class WebPathOption(BaseInputOption):
             elif option.get("optional") is False:
                 raise YunohostValidationError(
                     "app_argument_invalid",
-                    name=option.get("name"),
+                    name=option.get("id"),
                     error="Option is mandatory",
                 )
 
@@ -725,7 +725,7 @@ class FileOption(BaseInputOption):
             ):
                 raise YunohostValidationError(
                     "app_argument_invalid",
-                    name=self.name,
+                    name=self.id,
                     error=m18n.n("file_does_not_exist", path=str(self.value)),
                 )
 
@@ -740,7 +740,7 @@ class FileOption(BaseInputOption):
 
         FileOption.upload_dirs += [upload_dir]
 
-        logger.debug(f"Saving file {self.name} for file question into {file_path}")
+        logger.debug(f"Saving file {self.id} for file question into {file_path}")
 
         def is_file_path(s):
             return isinstance(s, str) and s.startswith("/") and os.path.exists(s)
@@ -813,7 +813,7 @@ class BaseChoicesOption(BaseInputOption):
             if self.choices and self.value not in self.choices:
                 raise YunohostValidationError(
                     "app_argument_choice_invalid",
-                    name=self.name,
+                    name=self.id,
                     value=self.value,
                     choices=", ".join(str(choice) for choice in self.choices),
                 )
@@ -853,13 +853,13 @@ class TagsOption(BaseChoicesOption):
             if self.choices:
                 raise YunohostValidationError(
                     "app_argument_choice_invalid",
-                    name=self.name,
+                    name=self.id,
                     value=self.value,
                     choices=", ".join(str(choice) for choice in self.choices),
                 )
             raise YunohostValidationError(
                 "app_argument_invalid",
-                name=self.name,
+                name=self.id,
                 error=f"'{str(self.value)}' is not a list",
             )
 
@@ -949,7 +949,7 @@ class UserOption(BaseChoicesOption):
         if not self.choices:
             raise YunohostValidationError(
                 "app_argument_invalid",
-                name=self.name,
+                name=self.id,
                 error="You should create a YunoHost user first.",
             )
 
@@ -1033,9 +1033,9 @@ def prompt_or_validate_form(
     options = []
     answers = {**prefilled_answers}
 
-    for name, raw_option in raw_options.items():
-        raw_option["name"] = name
-        raw_option["value"] = answers.get(name)
+    for id_, raw_option in raw_options.items():
+        raw_option["id"] = id_
+        raw_option["value"] = answers.get(id_)
         question_class = OPTIONS[raw_option.get("type", "string")]
         option = question_class(raw_option)
 
@@ -1047,7 +1047,7 @@ def prompt_or_validate_form(
             else:
                 raise YunohostValidationError(
                     "config_action_disabled",
-                    action=option.name,
+                    action=option.id,
                     help=_value_for_locale(option.help),
                 )
 
@@ -1060,7 +1060,7 @@ def prompt_or_validate_form(
                 # - we doesn't want to give a specific value
                 # - we want to keep the previous value
                 # - we want the default value
-                option.value = context[option.name] = None
+                option.value = context[option.id] = None
 
             continue
 
@@ -1071,7 +1071,7 @@ def prompt_or_validate_form(
                 Moulinette.display(message)
 
             if isinstance(option, BaseInputOption):
-                option.value = context[option.name] = option.current_value
+                option.value = context[option.id] = option.current_value
 
             continue
 
@@ -1123,10 +1123,10 @@ def prompt_or_validate_form(
 
                 break
 
-            option.value = option.values[option.name] = option._value_post_validator()
+            option.value = option.values[option.id] = option._value_post_validator()
 
             # Search for post actions in hooks
-            post_hook = f"post_ask__{option.name}"
+            post_hook = f"post_ask__{option.id}"
             if post_hook in hooks:
                 option.values.update(hooks[post_hook](option))
 

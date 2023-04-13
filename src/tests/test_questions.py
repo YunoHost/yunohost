@@ -33,7 +33,7 @@ from yunohost.utils.error import YunohostError, YunohostValidationError
 """
 Argument default format:
 {
-    "the_name": {
+    "the_id": {
         "type": "one_of_the_available_type",  // "sting" is not specified
         "ask": {
             "en": "the question in english",
@@ -50,7 +50,7 @@ Argument default format:
 }
 
 User answers:
-{"the_name": "value", ...}
+{"the_id": "value", ...}
 """
 
 
@@ -443,7 +443,7 @@ class BaseTest:
 
         assert isinstance(option, OPTIONS[raw_option["type"]])
         assert option.type == raw_option["type"]
-        assert option.name == id_
+        assert option.id == id_
         assert option.ask == {"en": id_}
         assert option.readonly is (True if is_special_readonly_option else False)
         assert option.visible is True
@@ -1913,7 +1913,7 @@ def test_options_query_string():
         )
 
     def _assert_correct_values(options, raw_options):
-        form = {option.name: option.value for option in options}
+        form = {option.id: option.value for option in options}
 
         for k, v in results.items():
             if k == "file_id":
@@ -1945,7 +1945,7 @@ def test_question_string_default_type():
 
     out = ask_questions_and_parse_answers(questions, answers)[0]
 
-    assert out.name == "some_string"
+    assert out.id == "some_string"
     assert out.type == "string"
     assert out.value == "some_value"
 
