@@ -193,6 +193,8 @@ def evaluate_simple_js_expression(expr, context={}):
 # │  ╰─╯╵   ╵ ╶┴╴╰─╯╵╰╯╶─╯                                │
 # ╰───────────────────────────────────────────────────────╯
 
+FORBIDDEN_READONLY_TYPES = {"password", "app", "domain", "user", "group"}
+
 
 class BaseOption:
     def __init__(
@@ -206,7 +208,7 @@ class BaseOption:
         self.visible = question.get("visible", True)
 
         self.readonly = question.get("readonly", False)
-        if self.readonly and self.type in {"password", "app", "domain", "user", "group", "file"}:
+        if self.readonly and self.type in FORBIDDEN_READONLY_TYPES:
             # FIXME i18n
             raise YunohostError(
                 "config_forbidden_readonly_type",
@@ -224,7 +226,7 @@ class BaseOption:
 
         return evaluate_simple_js_expression(self.visible, context=context)
 
-    def _format_text_for_user_input_in_cli(self) -> str:
+    def _get_prompt_message(self) -> str:
         return _value_for_locale(self.ask)
 
 
@@ -254,7 +256,7 @@ class AlertOption(BaseReadonlyOption):
         super().__init__(question, hooks)
         self.style = question.get("style", "info")
 
-    def _format_text_for_user_input_in_cli(self) -> str:
+    def _get_prompt_message(self) -> str:
         text = _value_for_locale(self.ask)
 
         if self.style in ["success", "info", "warning", "danger"]:
@@ -331,17 +333,17 @@ class BaseInputOption(BaseOption):
             value = value.strip()
         return value
 
-    def _format_text_for_user_input_in_cli(self) -> str:
-        text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli()
+    def _get_prompt_message(self) -> str:
+        message = super()._get_prompt_message()
 
         if self.readonly:
-            text_for_user_input_in_cli = colorize(text_for_user_input_in_cli, "purple")
+            message = colorize(message, "purple")
             if self.choices:
                 choice = self.current_value
                 if isinstance(self.choices, dict) and choice is not None:
                     choice = self.choices[choice]
-                return f"{text_for_user_input_in_cli} {choice}"
-            return text_for_user_input_in_cli + f" {self.humanize(self.current_value)}"
+                return f"{message} {choice}"
+            return message + f" {self.humanize(self.current_value)}"
         elif self.choices:
             # Prevent displaying a shitload of choices
             # (e.g. 100+ available users when choosing an app admin...)
@@ -362,9 +364,9 @@ class BaseInputOption(BaseOption):
                 str(choice) for choice in choices_to_display
             )
 
-            text_for_user_input_in_cli += f" [{choices_to_display}]"
+            message += f" [{choices_to_display}]"
 
-        return text_for_user_input_in_cli
+        return message
 
     def _value_pre_validator(self):
         if self.value in [None, ""] and not self.optional:
@@ -590,13 +592,13 @@ class BooleanOption(BaseInputOption):
     def get(self, key, default=None):
         return getattr(self, key, default)
 
-    def _format_text_for_user_input_in_cli(self):
-        text_for_user_input_in_cli = super()._format_text_for_user_input_in_cli()
+    def _get_prompt_message(self):
+        message = super()._get_prompt_message()
 
         if not self.readonly:
-            text_for_user_input_in_cli += " [yes | no]"
+            message += " [yes | no]"
 
-        return text_for_user_input_in_cli
+        return message
 
 
 # ─ TIME ──────────────────────────────────────────────────
@@ -980,7 +982,7 @@ def prompt_or_validate_form(
 
             continue
 
-        message = option._format_text_for_user_input_in_cli()
+        message = option._get_prompt_message()
 
         if option.readonly:
             if interactive:
