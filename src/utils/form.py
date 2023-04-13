@@ -200,10 +200,8 @@ class BaseOption:
     def __init__(
         self,
         question: Dict[str, Any],
-        hooks: Dict[str, Callable] = {},
     ):
         self.name = question["name"]
-        self.hooks = hooks
         self.type = question.get("type", "string")
         self.visible = question.get("visible", True)
 
@@ -236,8 +234,8 @@ class BaseOption:
 
 
 class BaseReadonlyOption(BaseOption):
-    def __init__(self, question, hooks: Dict[str, Callable] = {}):
-        super().__init__(question, hooks)
+    def __init__(self, question):
+        super().__init__(question)
         self.readonly = True
 
 
@@ -252,8 +250,8 @@ class MarkdownOption(BaseReadonlyOption):
 class AlertOption(BaseReadonlyOption):
     argument_type = "alert"
 
-    def __init__(self, question, hooks: Dict[str, Callable] = {}):
-        super().__init__(question, hooks)
+    def __init__(self, question):
+        super().__init__(question)
         self.style = question.get("style", "info")
 
     def _get_prompt_message(self) -> str:
@@ -276,8 +274,8 @@ class ButtonOption(BaseReadonlyOption):
     argument_type = "button"
     enabled = True
 
-    def __init__(self, question, hooks: Dict[str, Callable] = {}):
-        super().__init__(question, hooks)
+    def __init__(self, question):
+        super().__init__(question)
         self.help = question.get("help")
         self.style = question.get("style", "success")
         self.enabled = question.get("enabled", True)
@@ -298,12 +296,8 @@ class BaseInputOption(BaseOption):
     hide_user_input_in_prompt = False
     pattern: Optional[Dict] = None
 
-    def __init__(
-        self,
-        question: Dict[str, Any],
-        hooks: Dict[str, Callable] = {},
-    ):
-        super().__init__(question, hooks)
+    def __init__(self, question: Dict[str, Any]):
+        super().__init__(question)
         self.default = question.get("default", None)
         self.optional = question.get("optional", False)
         self.pattern = question.get("pattern", self.pattern)
@@ -390,8 +384,8 @@ class PasswordOption(BaseInputOption):
     default_value = ""
     forbidden_chars = "{}"
 
-    def __init__(self, question, hooks: Dict[str, Callable] = {}):
-        super().__init__(question, hooks)
+    def __init__(self, question):
+        super().__init__(question)
         self.redact = True
         if self.default is not None:
             raise YunohostValidationError(
@@ -427,8 +421,8 @@ class NumberOption(BaseInputOption):
     argument_type = "number"
     default_value = None
 
-    def __init__(self, question, hooks: Dict[str, Callable] = {}):
-        super().__init__(question, hooks)
+    def __init__(self, question):
+        super().__init__(question)
         self.min = question.get("min", None)
         self.max = question.get("max", None)
         self.step = question.get("step", None)
@@ -483,8 +477,8 @@ class BooleanOption(BaseInputOption):
     yes_answers = ["1", "yes", "y", "true", "t", "on"]
     no_answers = ["0", "no", "n", "false", "f", "off"]
 
-    def __init__(self, question, hooks: Dict[str, Callable] = {}):
-        super().__init__(question, hooks)
+    def __init__(self, question):
+        super().__init__(question)
         self.yes = question.get("yes", 1)
         self.no = question.get("no", 0)
         if self.default is None:
@@ -648,8 +642,8 @@ class FileOption(BaseInputOption):
     argument_type = "file"
     upload_dirs: List[str] = []
 
-    def __init__(self, question, hooks: Dict[str, Callable] = {}):
-        super().__init__(question, hooks)
+    def __init__(self, question):
+        super().__init__(question)
         self.accept = question.get("accept", "")
 
     @classmethod
@@ -714,9 +708,8 @@ class BaseChoicesOption(BaseInputOption):
     def __init__(
         self,
         question: Dict[str, Any],
-        hooks: Dict[str, Callable] = {},
     ):
-        super().__init__(question, hooks)
+        super().__init__(question)
         # Don't restrict choices if there's none specified
         self.choices = question.get("choices", None)
 
@@ -831,10 +824,10 @@ class TagsOption(BaseChoicesOption):
 class DomainOption(BaseChoicesOption):
     argument_type = "domain"
 
-    def __init__(self, question, hooks: Dict[str, Callable] = {}):
+    def __init__(self, question):
         from yunohost.domain import domain_list, _get_maindomain
 
-        super().__init__(question, hooks)
+        super().__init__(question)
 
         if self.default is None:
             self.default = _get_maindomain()
@@ -860,10 +853,10 @@ class DomainOption(BaseChoicesOption):
 class AppOption(BaseChoicesOption):
     argument_type = "app"
 
-    def __init__(self, question, hooks: Dict[str, Callable] = {}):
+    def __init__(self, question):
         from yunohost.app import app_list
 
-        super().__init__(question, hooks)
+        super().__init__(question)
         self.filter = question.get("filter", None)
 
         apps = app_list(full=True)["apps"]
@@ -886,11 +879,11 @@ class AppOption(BaseChoicesOption):
 class UserOption(BaseChoicesOption):
     argument_type = "user"
 
-    def __init__(self, question, hooks: Dict[str, Callable] = {}):
+    def __init__(self, question):
         from yunohost.user import user_list, user_info
         from yunohost.domain import _get_maindomain
 
-        super().__init__(question, hooks)
+        super().__init__(question)
 
         self.choices = {
             username: f"{infos['fullname']} ({infos['mail']})"
@@ -917,7 +910,7 @@ class UserOption(BaseChoicesOption):
 class GroupOption(BaseChoicesOption):
     argument_type = "group"
 
-    def __init__(self, question, hooks: Dict[str, Callable] = {}):
+    def __init__(self, question):
         from yunohost.user import user_group_list
 
         super().__init__(question)
@@ -972,11 +965,14 @@ OPTIONS = {
 # ╰───────────────────────────────────────────────────────╯
 
 
+Hooks = dict[str, Callable[[BaseInputOption], Any]]
+
+
 def prompt_or_validate_form(
     raw_options: dict[str, Any],
     prefilled_answers: dict[str, Any] = {},
     context: Context = {},
-    hooks: dict[str, Callable[[], None]] = {},
+    hooks: Hooks = {},
 ) -> list[BaseOption]:
     options = []
     answers = {**prefilled_answers}
@@ -985,7 +981,7 @@ def prompt_or_validate_form(
         raw_option["name"] = name
         raw_option["value"] = answers.get(name)
         question_class = OPTIONS[raw_option.get("type", "string")]
-        option = question_class(raw_option, hooks=hooks)
+        option = question_class(raw_option)
 
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
@@ -1075,8 +1071,8 @@ def prompt_or_validate_form(
 
             # Search for post actions in hooks
             post_hook = f"post_ask__{option.name}"
-            if post_hook in option.hooks:
-                option.values.update(option.hooks[post_hook](option))
+            if post_hook in hooks:
+                option.values.update(hooks[post_hook](option))
 
             answers.update(option.values)
             context.update(option.values)
@@ -1088,7 +1084,7 @@ def ask_questions_and_parse_answers(
     raw_options: dict[str, Any],
     prefilled_answers: Union[str, Mapping[str, Any]] = {},
     current_values: Mapping[str, Any] = {},
-    hooks: Dict[str, Callable[[], None]] = {},
+    hooks: Hooks = {},
 ) -> list[BaseOption]:
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
