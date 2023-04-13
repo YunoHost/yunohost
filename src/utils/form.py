@@ -309,7 +309,6 @@ class BaseInputOption(BaseOption):
         self.pattern = question.get("pattern", self.pattern)
         self.help = question.get("help")
         self.redact = question.get("redact", False)
-        self.filter = question.get("filter", None)
         # .current_value is the currently stored value
         self.current_value = question.get("current_value")
         # .value is the "proposed" value which we got from the user
@@ -865,6 +864,7 @@ class AppOption(BaseChoicesOption):
         from yunohost.app import app_list
 
         super().__init__(question, hooks)
+        self.filter = question.get("filter", None)
 
         apps = app_list(full=True)["apps"]
 
