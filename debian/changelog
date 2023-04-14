@@ -1,3 +1,17 @@
+yunohost (11.1.18) stable; urgency=low
+
+  - appsv2: always set an 'app' setting equal to app id to be able to use __APP__ in markdown templates ([#1645](https://github.com/yunohost/yunohost/pull/1645))
+  - appsv2: fix edge-case when validating packager-provided infos for permissions resource (aa43e6c2)
+  - appsv2: Support using any variables/setting in permissions declaration ([#1637](https://github.com/yunohost/yunohost/pull/1637))
+  - dns: Add support for Porkbun through Lexicon ([#1638](https://github.com/yunohost/yunohost/pull/1638))
+  - diagnosis: Report out-of-catalog/broken/bad quality apps as warning instead of error ([#1641](https://github.com/yunohost/yunohost/pull/1641))
+  - user: .ssh directory should be executable ([#1642](https://github.com/yunohost/yunohost/pull/1642))
+  - i18n: Translations updated for Arabic, Basque, French, Galician
+
+  Thanks to all contributors <3 ! (ButterflyOfFire, José M, ppr, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 14 Apr 2023 17:20:58 +0200
+
 yunohost (11.1.17) stable; urgency=low
 
   - domains: fix autodns for gandi root domain ([#1634](https://github.com/yunohost/yunohost/pull/1634))
