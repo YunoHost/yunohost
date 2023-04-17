@@ -285,6 +285,7 @@ class BaseOption(BaseModel):
     readonly: bool = False
     visible: Union[JSExpression, bool] = True
     bind: Union[str, None] = None
+    name: Union[str, None] = None  # LEGACY (replaced by `id`)
 
     class Config:
         arbitrary_types_allowed = True
@@ -297,6 +298,12 @@ class BaseOption(BaseModel):
             del schema["description"]
             schema["additionalProperties"] = False
 
+    # FIXME Legacy, is `name` still needed?
+    @validator("name", pre=True, always=True)
+    def apply_legacy_name(cls, value: Union[str, None], values: Values) -> str:
+        if value is None:
+            return values["id"]
+        return value
 
     @validator("readonly", pre=True)
     def can_be_readonly(cls, value: bool, values: Values) -> bool:
