@@ -741,7 +741,7 @@ class TestPassword(BaseTest):
         ("secret", FAIL),
         *[("supersecret" + char, FAIL) for char in FORBIDDEN_PASSWORD_CHARS],  # FIXME maybe add ` \n` to the list?
         # readonly
-        ("s3cr3t!!", FAIL, {"readonly": True, "current_value": "isforbidden"}),  # readonly is forbidden
+        ("s3cr3t!!", FAIL, {"readonly": True}),  # readonly is forbidden
     ]
     # fmt: on
 
@@ -1519,7 +1519,7 @@ class TestDomain(BaseTest):
                 ("doesnt_exist.pouet", FAIL, {}),
                 ("fake.com", FAIL, {"choices": ["fake.com"]}),
                 # readonly
-                (domains1[0], YunohostError, {"readonly": True}),  # readonly is forbidden
+                (domains1[0], FAIL, {"readonly": True}),  # readonly is forbidden
             ]
         },
         {
@@ -1619,7 +1619,7 @@ class TestApp(BaseTest):
                 (installed_non_webapp["id"], installed_non_webapp["id"]),
                 (installed_non_webapp["id"], FAIL, {"filter": "is_webapp"}),
                 # readonly
-                (installed_non_webapp["id"], YunohostError, {"readonly": True}),  # readonly is forbidden
+                (installed_non_webapp["id"], FAIL, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]
@@ -1736,7 +1736,7 @@ class TestUser(BaseTest):
                     ("", regular_username, {"default": regular_username})
                 ], reason="Should throw 'no default allowed'"),
                 # readonly
-                (admin_username, YunohostError, {"readonly": True}),  # readonly is forbidden
+                (admin_username, FAIL, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]
@@ -1820,7 +1820,7 @@ class TestGroup(BaseTest):
                     ("", "custom_group", {"default": "custom_group"}),
                 ], reason="Should throw 'default must be in (None, 'all_users', 'visitors', 'admins')"),
                 # readonly
-                ("admins", "all_users", {"readonly": True}),  # readonly is forbidden (default is "all_users")
+                ("admins", FAIL, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]

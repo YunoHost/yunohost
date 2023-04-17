@@ -300,8 +300,7 @@ class BaseOption(BaseModel):
 
     @validator("readonly", pre=True)
     def can_be_readonly(cls, value: bool, values: Values) -> bool:
-        forbidden_types = ("password", "app", "domain", "user", "file")
-        if value is True and values["type"] in forbidden_types:
+        if value is True and values["type"] in FORBIDDEN_READONLY_TYPES:
             raise ValueError(
                 m18n.n(
                     "config_forbidden_readonly_type",
