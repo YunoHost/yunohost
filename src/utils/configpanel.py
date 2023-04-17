@@ -21,7 +21,9 @@ import os
 import re
 import urllib.parse
 from collections import OrderedDict
-from typing import Union
+from typing import TYPE_CHECKING, Any, Literal, Sequence, Type, Union
+
+from pydantic import BaseModel, Extra, validator
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
@@ -30,18 +32,204 @@ from moulinette.utils.log import getActionLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
     OPTIONS,
-    BaseChoicesOption,
     BaseInputOption,
     BaseOption,
+    BaseReadonlyOption,
     FileOption,
+    OptionsModel,
     OptionType,
+    Translation,
     ask_questions_and_parse_answers,
     evaluate_simple_js_expression,
 )
 from yunohost.utils.i18n import _value_for_locale
 
+if TYPE_CHECKING:
+    from pydantic.fields import ModelField
+
 logger = getActionLogger("yunohost.configpanel")
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │  ╭╮╮╭─╮┌─╮┌─╴╷  ╭─╴                                   │
+# │  ││││ ││ │├─╴│  ╰─╮                                   │
+# │  ╵╵╵╰─╯└─╯╰─╴╰─╴╶─╯                                   │
+# ╰───────────────────────────────────────────────────────╯
+
 CONFIG_PANEL_VERSION_SUPPORTED = 1.0
+
+
+class ContainerModel(BaseModel):
+    id: str
+    name: Union[Translation, None] = None
+    services: list[str] = []
+    help: Union[Translation, None] = None
+
+    def translate(self, i18n_key: Union[str, None] = None):
+        """
+        Translate `ask` and `name` attributes of panels and section.
+        This is in place mutation.
+        """
+
+        for key in ("help", "name"):
+            value = getattr(self, key)
+            if value:
+                setattr(self, key, _value_for_locale(value))
+            elif key == "help" and m18n.key_exists(f"{i18n_key}_{self.id}_help"):
+                setattr(self, key, m18n.n(f"{i18n_key}_{self.id}_help"))
+
+
+class SectionModel(ContainerModel, OptionsModel):
+    visible: Union[bool, str] = True
+    optional: bool = True
+
+    # Don't forget to pass arguments to super init
+    def __init__(
+        self,
+        id: str,
+        name: Union[Translation, None] = None,
+        services: list[str] = [],
+        help: Union[Translation, None] = None,
+        visible: Union[bool, str] = True,
+        **kwargs,
+    ) -> None:
+        options = self.options_dict_to_list(kwargs, defaults={"optional": True})
+
+        ContainerModel.__init__(
+            self,
+            id=id,
+            name=name,
+            services=services,
+            help=help,
+            visible=visible,
+            options=options,
+        )
+
+    @property
+    def is_action_section(self):
+        return any([option.type is OptionType.button for option in self.options])
+
+    def is_visible(self, context: dict[str, Any]):
+        if isinstance(self.visible, bool):
+            return self.visible
+
+        return evaluate_simple_js_expression(self.visible, context=context)
+
+    def translate(self, i18n_key: Union[str, None] = None):
+        """
+        Call to `Container`'s `translate` for self translation
+        + Call to `OptionsContainer`'s `translate_options` for options translation
+        """
+        super().translate(i18n_key)
+        self.translate_options(i18n_key)
+
+
+class PanelModel(ContainerModel):
+    # FIXME what to do with `actions?
+    actions: dict[str, Translation] = {"apply": {"en": "Apply"}}
+    sections: list[SectionModel]
+
+    class Config:
+        extra = Extra.allow
+
+    # Don't forget to pass arguments to super init
+    def __init__(
+        self,
+        id: str,
+        name: Union[Translation, None] = None,
+        services: list[str] = [],
+        help: Union[Translation, None] = None,
+        **kwargs,
+    ) -> None:
+        sections = [data | {"id": name} for name, data in kwargs.items()]
+        super().__init__(
+            id=id, name=name, services=services, help=help, sections=sections
+        )
+
+    def translate(self, i18n_key: Union[str, None] = None):
+        """
+        Recursivly mutate translatable attributes to their translation
+        """
+        super().translate(i18n_key)
+
+        for section in self.sections:
+            section.translate(i18n_key)
+
+
+class ConfigPanelModel(BaseModel):
+    version: float = CONFIG_PANEL_VERSION_SUPPORTED
+    i18n: Union[str, None] = None
+    panels: list[PanelModel]
+
+    class Config:
+        arbitrary_types_allowed = True
+        extra = Extra.allow
+
+    # Don't forget to pass arguments to super init
+    def __init__(
+        self,
+        version: float,
+        i18n: Union[str, None] = None,
+        **kwargs,
+    ) -> None:
+        panels = [data | {"id": name} for name, data in kwargs.items()]
+        super().__init__(version=version, i18n=i18n, panels=panels)
+
+    @property
+    def sections(self):
+        """Convinient prop to iter on all sections"""
+        for panel in self.panels:
+            for section in panel.sections:
+                yield section
+
+    @property
+    def options(self):
+        """Convinient prop to iter on all options"""
+        for section in self.sections:
+            for option in section.options:
+                yield option
+
+
+    def iter_children(
+        self,
+        trigger: list[Literal["panel", "section", "option", "action"]] = ["option"],
+    ):
+        for panel in self.panels:
+            if "panel" in trigger:
+                yield (panel, None, None)
+            for section in panel.sections:
+                if "section" in trigger:
+                    yield (panel, section, None)
+                if "action" in trigger:
+                    for option in section.options:
+                        if option.type is OptionType.button:
+                            yield (panel, section, option)
+                if "option" in trigger:
+                    for option in section.options:
+                        yield (panel, section, option)
+
+    def translate(self):
+        """
+        Recursivly mutate translatable attributes to their translation
+        """
+        for panel in self.panels:
+            panel.translate(self.i18n)
+
+    @validator("version", always=True)
+    def check_version(cls, value, field: "ModelField"):
+        if value < CONFIG_PANEL_VERSION_SUPPORTED:
+            raise ValueError(
+                f"Config panels version '{value}' are no longer supported."
+            )
+
+        return value
+
+
+# ╭───────────────────────────────────────────────────────╮
+# │  ╭─╴╭─╮╭╮╷┌─╴╶┬╴╭─╮   ╶┬╴╭╮╮┌─╮╷                      │
+# │  │  │ ││││├─╴ │ │╶╮    │ │││├─╯│                      │
+# │  ╰─╴╰─╯╵╰╯╵  ╶┴╴╰─╯   ╶┴╴╵╵╵╵  ╰─╴                    │
+# ╰───────────────────────────────────────────────────────╯
 
 
 class ConfigPanel:
