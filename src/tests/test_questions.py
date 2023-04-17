@@ -11,11 +11,11 @@ from typing import Any, Literal, Sequence, TypedDict, Union
 
 from _pytest.mark.structures import ParameterSet
 
-
 from moulinette import Moulinette
 from yunohost import app, domain, user
 from yunohost.utils.form import (
     OPTIONS,
+    FORBIDDEN_PASSWORD_CHARS,
     ask_questions_and_parse_answers,
     BaseChoicesOption,
     BaseInputOption,
@@ -378,8 +378,8 @@ def _fill_or_prompt_one_option(raw_option, intake):
     options = {id_: raw_option}
     answers = {id_: intake} if intake is not None else {}
 
-    option = ask_questions_and_parse_answers(options, answers)[0]
-    return (option, option.value if isinstance(option, BaseInputOption) else None)
+    options, form = ask_questions_and_parse_answers(options, answers)
+    return (options[0], form[id_] if isinstance(options[0], BaseInputOption) else None)
 
 
 def _test_value_is_expected_output(value, expected_output):
@@ -551,7 +551,7 @@ class TestDisplayText(BaseTest):
                     ask_questions_and_parse_answers({_id: raw_option}, answers)
             else:
                 with patch.object(sys, "stdout", new_callable=StringIO) as stdout:
-                    options = ask_questions_and_parse_answers(
+                    options, form = ask_questions_and_parse_answers(
                         {_id: raw_option}, answers
                     )
                     assert stdout.getvalue() == f"{options[0].ask['en']}\n"
@@ -604,7 +604,7 @@ class TestAlert(TestDisplayText):
                     )
             else:
                 with patch.object(sys, "stdout", new_callable=StringIO) as stdout:
-                    options = ask_questions_and_parse_answers(
+                    options, form = ask_questions_and_parse_answers(
                         {"display_text_id": raw_option}, answers
                     )
                     ask = options[0].ask["en"]
@@ -1925,9 +1925,7 @@ def test_options_query_string():
             "&fake_id=fake_value"
         )
 
-    def _assert_correct_values(options, raw_options):
-        form = {option.id: option.value for option in options}
-
+    def _assert_correct_values(options, form, raw_options):
         for k, v in results.items():
             if k == "file_id":
                 assert os.path.exists(form["file_id"]) and os.path.isfile(
@@ -1943,24 +1941,24 @@ def test_options_query_string():
 
     with patch_interface("api"), patch_file_api(file_content1) as b64content:
         with patch_query_string(b64content.decode("utf-8")) as query_string:
-            options = ask_questions_and_parse_answers(raw_options, query_string)
-            _assert_correct_values(options, raw_options)
+            options, form = ask_questions_and_parse_answers(raw_options, query_string)
+            _assert_correct_values(options, form, raw_options)
 
     with patch_interface("cli"), patch_file_cli(file_content1) as filepath:
         with patch_query_string(filepath) as query_string:
-            options = ask_questions_and_parse_answers(raw_options, query_string)
-            _assert_correct_values(options, raw_options)
+            options, form = ask_questions_and_parse_answers(raw_options, query_string)
+            _assert_correct_values(options, form, raw_options)
 
 
 def test_question_string_default_type():
     questions = {"some_string": {}}
     answers = {"some_string": "some_value"}
 
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.id == "some_string"
-    assert out.type == "string"
-    assert out.value == "some_value"
+    options, form = ask_questions_and_parse_answers(questions, answers)
+    option = options[0]
+    assert option.id == "some_string"
+    assert option.type == "string"
+    assert form[option.id] == "some_value"
 
 
 def test_option_default_type_with_choices_is_select():
