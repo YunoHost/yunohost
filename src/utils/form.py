@@ -265,7 +265,26 @@ FORBIDDEN_READONLY_TYPES = {
     OptionType.user,
     OptionType.group,
 }
-
+FORBIDDEN_KEYWORDS = {
+    "old",
+    "app",
+    "changed",
+    "file_hash",
+    "binds",
+    "types",
+    "formats",
+    "getter",
+    "setter",
+    "short_setting",
+    "type",
+    "bind",
+    "nothing_changed",
+    "changes_validated",
+    "result",
+    "max_progression",
+    "properties",
+    "defaults",
+}
 
 Context = dict[str, Any]
 Translation = Union[dict[str, str], str]
@@ -297,6 +316,12 @@ class BaseOption(BaseModel):
             # FIXME Do proper doctstring for Options
             del schema["description"]
             schema["additionalProperties"] = False
+
+    @validator("id", pre=True)
+    def check_id_is_not_forbidden(cls, value: str) -> str:
+        if value in FORBIDDEN_KEYWORDS:
+            raise ValueError(m18n.n("config_forbidden_keyword", keyword=value))
+        return value
 
     # FIXME Legacy, is `name` still needed?
     @validator("name", pre=True, always=True)
