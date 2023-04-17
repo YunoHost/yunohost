@@ -27,6 +27,8 @@ import urllib.parse
 from enum import Enum
 from logging import getLogger
 from typing import (
+    TYPE_CHECKING,
+    cast,
     Annotated,
     Any,
     Callable,
@@ -35,7 +37,6 @@ from typing import (
     Mapping,
     Type,
     Union,
-    cast,
 )
 
 from pydantic import (
@@ -49,6 +50,7 @@ from pydantic import (
 from pydantic.color import Color
 from pydantic.fields import Field
 from pydantic.networks import EmailStr, HttpUrl
+from pydantic.types import constr
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
@@ -56,6 +58,9 @@ from moulinette.utils.filesystem import read_file, write_to_file
 from yunohost.log import OperationLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.i18n import _value_for_locale
+
+if TYPE_CHECKING:
+    from pydantic.fields import FieldInfo
 
 logger = getLogger("yunohost.form")
 
@@ -391,6 +396,7 @@ class BaseInputOption(BaseOption):
     redact: bool = False
     optional: bool = False  # FIXME keep required as default?
     default: Any = None
+    _annotation = Any
 
     @validator("default", pre=True)
     def check_empty_default(value: Any) -> Any:
@@ -407,6 +413,57 @@ class BaseInputOption(BaseOption):
         if isinstance(value, str):
             value = value.strip()
         return value
+
+    @property
+    def _dynamic_annotation(self) -> Any:
+        """
+        Returns the expected type of an Option's value.
+        This may be dynamic based on constraints.
+        """
+        return self._annotation
+
+    def _get_field_attrs(self) -> dict[str, Any]:
+        """
+        Returns attributes to build a `pydantic.Field`.
+        This may contains non `Field` attrs that will end up in `Field.extra`.
+        Those extra can be used as constraints in custom validators and ends up
+        in the JSON Schema.
+        """
+        # TODO
+        # - help
+        # - placeholder
+        attrs: dict[str, Any] = {
+            "redact": self.redact,  # extra
+            "none_as_empty_str": self._none_as_empty_str,
+        }
+
+        if self.readonly:
+            attrs["allow_mutation"] = False
+
+        if self.example:
+            attrs["examples"] = [self.example]
+
+        if self.default is not None:
+            attrs["default"] = self.default
+        else:
+            attrs["default"] = ... if not self.optional else None
+
+        return attrs
+
+    def _as_dynamic_model_field(self) -> tuple[Any, "FieldInfo"]:
+        """
+        Return a tuple of a type and a Field instance to be injected in a
+        custom form declaration.
+        """
+        attrs = self._get_field_attrs()
+        anno = (
+            self._dynamic_annotation
+            if not self.optional
+            else Union[self._dynamic_annotation, None]
+        )
+        field = Field(default=attrs.pop("default", None), **attrs)
+
+        return (anno, field)
 
     def _get_prompt_message(self, value: Any) -> str:
         message = super()._get_prompt_message(value)
@@ -460,6 +517,22 @@ class BaseInputOption(BaseOption):
 class BaseStringOption(BaseInputOption):
     default: Union[str, None]
     pattern: Union[Pattern, None] = None
+    _annotation = str
+
+    @property
+    def _dynamic_annotation(self) -> Type[str]:
+        if self.pattern:
+            return constr(regex=self.pattern.regexp)
+
+        return self._annotation
+
+    def _get_field_attrs(self) -> dict[str, Any]:
+        attrs = super()._get_field_attrs()
+
+        if self.pattern:
+            attrs["regex_error"] = self.pattern.error  # extra
+
+        return attrs
 
 
 class StringOption(BaseStringOption):
@@ -478,7 +551,15 @@ class PasswordOption(BaseInputOption):
     example: Literal[None] = None
     default: Literal[None] = None
     redact: Literal[True] = True
+    _annotation = str
     _forbidden_chars: str = FORBIDDEN_PASSWORD_CHARS
+
+    def _get_field_attrs(self) -> dict[str, Any]:
+        attrs = super()._get_field_attrs()
+
+        attrs["forbidden_chars"] = self._forbidden_chars  # extra
+
+        return attrs
 
     def _value_pre_validator(self):
         super()._value_pre_validator()
@@ -498,10 +579,7 @@ class PasswordOption(BaseInputOption):
 class ColorOption(BaseInputOption):
     type: Literal[OptionType.color] = OptionType.color
     default: Union[str, None]
-    # pattern = {
-    #     "regexp": r"^#[ABCDEFabcdef\d]{3,6}$",
-    #     "error": "config_validate_color",  # i18n: config_validate_color
-    # }
+    _annotation = Color
 
 
 # ─ NUMERIC ───────────────────────────────────────────────
@@ -514,6 +592,7 @@ class NumberOption(BaseInputOption):
     min: Union[int, None] = None
     max: Union[int, None] = None
     step: Union[int, None] = None
+    _annotation = int
 
     @staticmethod
     def normalize(value, option={}):
@@ -535,6 +614,14 @@ class NumberOption(BaseInputOption):
             name=option.get("id"),
             error=m18n.n("invalid_number"),
         )
+
+    def _get_field_attrs(self) -> dict[str, Any]:
+        attrs = super()._get_field_attrs()
+        attrs["ge"] = self.min
+        attrs["le"] = self.max
+        attrs["step"] = self.step  # extra
+
+        return attrs
 
     def _value_pre_validator(self):
         super()._value_pre_validator()
@@ -564,6 +651,7 @@ class BooleanOption(BaseInputOption):
     yes: Any = 1
     no: Any = 0
     default: Union[bool, int, str, None] = 0
+    _annotation = Union[bool, int, str]
     _yes_answers: set[str] = {"1", "yes", "y", "true", "t", "on"}
     _no_answers: set[str] = {"0", "no", "n", "false", "f", "off"}
 
@@ -633,6 +721,14 @@ class BooleanOption(BaseInputOption):
     def get(self, key, default=None):
         return getattr(self, key, default)
 
+    def _get_field_attrs(self) -> dict[str, Any]:
+        attrs = super()._get_field_attrs()
+        attrs["parse"] = {  # extra
+            True: self.yes,
+            False: self.no,
+        }
+        return attrs
+
     def _get_prompt_message(self, value: Union[bool, None]) -> str:
         message = super()._get_prompt_message(value)
 
@@ -648,10 +744,7 @@ class BooleanOption(BaseInputOption):
 class DateOption(BaseInputOption):
     type: Literal[OptionType.date] = OptionType.date
     default: Union[str, None]
-    # pattern = {
-    #     "regexp": r"^\d{4}-\d\d-\d\d$",
-    #     "error": "config_validate_date",  # i18n: config_validate_date
-    # }
+    _annotation = datetime.date
 
     def _value_pre_validator(self):
         super()._value_pre_validator()
@@ -666,10 +759,7 @@ class DateOption(BaseInputOption):
 class TimeOption(BaseInputOption):
     type: Literal[OptionType.time] = OptionType.time
     default: Union[str, int, None]
-    # pattern = {
-    #     "regexp": r"^(?:\d|[01]\d|2[0-3]):[0-5]\d$",
-    #     "error": "config_validate_time",  # i18n: config_validate_time
-    # }
+    _annotation = datetime.time
 
 
 # ─ LOCATIONS ─────────────────────────────────────────────
@@ -678,15 +768,13 @@ class TimeOption(BaseInputOption):
 class EmailOption(BaseInputOption):
     type: Literal[OptionType.email] = OptionType.email
     default: Union[EmailStr, None]
-    # pattern = {
-    #     "regexp": r"^.+@.+",
-    #     "error": "config_validate_email",  # i18n: config_validate_email
-    # }
+    _annotation = EmailStr
 
 
 class WebPathOption(BaseInputOption):
     type: Literal[OptionType.path] = OptionType.path
     default: Union[str, None]
+    _annotation = str
 
     @staticmethod
     def normalize(value, option={}):
@@ -718,10 +806,7 @@ class WebPathOption(BaseInputOption):
 class URLOption(BaseStringOption):
     type: Literal[OptionType.url] = OptionType.url
     default: Union[str, None]
-    # pattern = {
-    #     "regexp": r"^https?://.*$",
-    #     "error": "config_validate_url",  # i18n: config_validate_url
-    # }
+    _annotation = HttpUrl
 
 
 # ─ FILE ──────────────────────────────────────────────────
@@ -733,6 +818,7 @@ class FileOption(BaseInputOption):
     # `bytes` for API (a base64 encoded file actually)
     accept: Union[str, None] = ""  # currently only used by the web-admin
     default: Union[str, None]
+    _annotation = str  # TODO could be Path at some point
     _upload_dirs: set[str] = set()
 
     @classmethod
@@ -809,6 +895,17 @@ class BaseChoicesOption(BaseInputOption):
     # FIXME probably forbid choices to be None?
     choices: Union[dict[str, Any], list[Any], None]
 
+    @property
+    def _dynamic_annotation(self) -> Union[object, Type[str]]:
+        if self.choices is not None:
+            choices = (
+                self.choices if isinstance(self.choices, list) else self.choices.keys()
+            )
+            # FIXME in case of dict, try to parse keys with `item_type` (at least number)
+            return Literal[tuple(choices)]
+
+        return self._annotation
+
     def _get_prompt_message(self, value: Any) -> str:
         message = super()._get_prompt_message(value)
 
@@ -858,6 +955,7 @@ class SelectOption(BaseChoicesOption):
     type: Literal[OptionType.select] = OptionType.select
     choices: Union[dict[str, Any], list[Any]]
     default: Union[str, None]
+    _annotation = str
 
 
 class TagsOption(BaseChoicesOption):
@@ -865,6 +963,7 @@ class TagsOption(BaseChoicesOption):
     choices: Union[list[str], None] = None
     pattern: Union[Pattern, None] = None
     default: Union[str, list[str], None]
+    _annotation = str
 
     @staticmethod
     def humanize(value, option={}):
@@ -879,6 +978,26 @@ class TagsOption(BaseChoicesOption):
         if isinstance(value, str):
             value = value.strip()
         return value
+
+    @property
+    def _dynamic_annotation(self):
+        # TODO use Literal when serialization is seperated from validation
+        # if self.choices is not None:
+        #     return Literal[tuple(self.choices)]
+
+        # Repeat pattern stuff since we can't call the bare class `_dynamic_annotation` prop without instantiating it
+        if self.pattern:
+            return constr(regex=self.pattern.regexp)
+
+        return self._annotation
+
+    def _get_field_attrs(self) -> dict[str, Any]:
+        attrs = super()._get_field_attrs()
+
+        if self.choices:
+            attrs["choices"] = self.choices  # extra
+
+        return attrs
 
     def _value_pre_validator(self):
         values = self.value
