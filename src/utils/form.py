@@ -1281,12 +1281,14 @@ class OptionsModel(BaseModel):
     options: list[Annotated[AnyOption, Field(discriminator="type")]]
 
     @staticmethod
-    def options_dict_to_list(options: dict[str, Any], defaults: dict[str, Any] = {}):
+    def options_dict_to_list(options: dict[str, Any], optional: bool = False):
         return [
             option
             | {
                 "id": id_,
                 "type": option.get("type", "string"),
+                # ConfigPanel options needs to be set as optional by default
+                "optional": option.get("optional", optional)
             }
             for id_, option in options.items()
         ]
