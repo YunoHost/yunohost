@@ -1096,13 +1096,9 @@ def app_install(
     app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
 
     # Retrieve arguments list for install script
-    raw_questions = manifest["install"]
-    questions = ask_questions_and_parse_answers(raw_questions, prefilled_answers=args)
-    args = {
-        question.id: question.value
-        for question in questions
-        if question.value is not None
-    }
+    raw_options = manifest["install"]
+    options, form = ask_questions_and_parse_answers(raw_options, prefilled_answers=args)
+    args = form.dict(exclude_none=True)
 
     # Validate domain / path availability for webapps
     # (ideally this should be handled by the resource system for manifest v >= 2
@@ -1139,15 +1135,15 @@ def app_install(
         "current_revision": manifest.get("remote", {}).get("revision", "?"),
     }
 
-    # If packaging_format v2+, save all install questions as settings
+    # If packaging_format v2+, save all install options as settings
     if packaging_format >= 2:
-        for question in questions:
+        for option in options:
             # Except user-provider passwords
             # ... which we need to reinject later in the env_dict
-            if question.type == "password":
+            if option.type == "password":
                 continue
 
-            app_settings[question.id] = question.value
+            app_settings[option.id] = form[option.id]
 
     _set_app_settings(app_instance_name, app_settings)
 
@@ -1196,22 +1192,22 @@ def app_install(
         app_instance_name, args=args, workdir=extracted_app_folder, action="install"
     )
 
-    # If packaging_format v2+, save all install questions as settings
+    # If packaging_format v2+, save all install options as settings
     if packaging_format >= 2:
-        for question in questions:
+        for option in options:
             # Reinject user-provider passwords which are not in the app settings
             # (cf a few line before)
-            if question.type == "password":
-                env_dict[question.id] = question.value
+            if option.type == "password":
+                env_dict[option.id] = form[option.id]
 
     # We want to hav the env_dict in the log ... but not password values
     env_dict_for_logging = env_dict.copy()
-    for question in questions:
-        # Or should it be more generally question.redact ?
-        if question.type == "password":
-            del env_dict_for_logging[f"YNH_APP_ARG_{question.id.upper()}"]
-            if question.id in env_dict_for_logging:
-                del env_dict_for_logging[question.id]
+    for option in options:
+        # Or should it be more generally option.redact ?
+        if option.type == "password":
+            del env_dict_for_logging[f"YNH_APP_ARG_{option.id.upper()}"]
+            if option.id in env_dict_for_logging:
+                del env_dict_for_logging[option.id]
 
     operation_logger.extra.update({"env": env_dict_for_logging})
 
