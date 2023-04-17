@@ -297,15 +297,6 @@ class BaseOption(BaseModel):
             del schema["description"]
             schema["additionalProperties"] = False
 
-    @validator("ask", always=True)
-    def parse_or_set_default_ask(
-        cls, value: Union[Translation, None], values: Values
-    ) -> Translation:
-        if value is None:
-            return {"en": values["id"]}
-        if isinstance(value, str):
-            return {"en": value}
-        return value
 
     @validator("readonly", pre=True)
     def can_be_readonly(cls, value: bool, values: Values) -> bool:
@@ -327,7 +318,9 @@ class BaseOption(BaseModel):
         return evaluate_simple_js_expression(self.visible, context=context)
 
     def _get_prompt_message(self, value: None) -> str:
-        return _value_for_locale(self.ask)
+        # force type to str
+        # `OptionsModel.translate_options()` should have been called before calling this method
+        return cast(str, self.ask)
 
 
 # ╭───────────────────────────────────────────────────────╮
@@ -367,7 +360,7 @@ class AlertOption(BaseReadonlyOption):
             State.danger: "red",
         }
         message = m18n.g(self.style) if self.style != State.danger else m18n.n("danger")
-        return f"{colorize(message, colors[self.style])} {_value_for_locale(self.ask)}"
+        return f"{colorize(message, colors[self.style])} {self.ask}"
 
 
 class ButtonOption(BaseReadonlyOption):
@@ -624,6 +617,7 @@ class NumberOption(BaseInputOption):
     max: Union[int, None] = None
     step: Union[int, None] = None
     _annotation = int
+    _none_as_empty_str = False
 
     @staticmethod
     def normalize(value, option={}):
@@ -1269,6 +1263,26 @@ class OptionsModel(BaseModel):
     def __init__(self, **kwargs) -> None:
         super().__init__(options=self.options_dict_to_list(kwargs))
 
+    def translate_options(self, i18n_key: Union[str, None] = None):
+        """
+        Mutate in place translatable attributes of options to their translations
+        """
+        for option in self.options:
+            for key in ("ask", "help"):
+                if not hasattr(option, key):
+                    continue
+
+                value = getattr(option, key)
+                if value:
+                    setattr(option, key, _value_for_locale(value))
+                elif key == "ask" and m18n.key_exists(f"{i18n_key}_{option.id}"):
+                    setattr(option, key, m18n.n(f"{i18n_key}_{option.id}"))
+                elif key == "help" and m18n.key_exists(f"{i18n_key}_{option.id}_help"):
+                    setattr(option, key, m18n.n(f"{i18n_key}_{option.id}_help"))
+                elif key == "ask":
+                    # FIXME warn?
+                    option.ask = option.id
+
 
 class FormModel(BaseModel):
     """
@@ -1379,7 +1393,7 @@ def prompt_or_validate_form(
                 raise YunohostValidationError(
                     "config_action_disabled",
                     action=option.id,
-                    help=_value_for_locale(option.help),
+                    help=option.help,
                 )
 
         if not option.is_visible(context):
@@ -1428,7 +1442,7 @@ def prompt_or_validate_form(
                     prefill=value,
                     is_multiline=isinstance(option, TextOption),
                     autocomplete=choices,
-                    help=_value_for_locale(option.help),
+                    help=option.help,
                 )
 
             # Apply default value if none
@@ -1507,6 +1521,7 @@ def ask_questions_and_parse_answers(
         # FIXME use YunohostError instead since it is not really a user mistake?
         raise YunohostValidationError(error, raw_msg=True)
 
+    model.translate_options()
     # Build the form from those questions and instantiate it without
     # parsing/validation (construct) since it may contains required questions.
     form = build_form(model.options).construct()

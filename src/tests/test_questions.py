@@ -447,7 +447,7 @@ class BaseTest:
         assert isinstance(option, OPTIONS[raw_option["type"]])
         assert option.type == raw_option["type"]
         assert option.id == id_
-        assert option.ask == {"en": id_}
+        assert option.ask == id_
         assert option.readonly is (True if is_special_readonly_option else False)
         assert option.visible is True
         # assert option.bind is None
@@ -493,7 +493,7 @@ class BaseTest:
             )
             option, value = _fill_or_prompt_one_option(raw_option, None)
 
-            expected_message = option.ask["en"]
+            expected_message = option.ask
             choices = []
 
             if isinstance(option, BaseChoicesOption):
@@ -510,7 +510,7 @@ class BaseTest:
                 prefill=prefill,
                 is_multiline=option.type == "text",
                 autocomplete=choices,
-                help=option.help["en"],
+                help=option.help,
             )
 
     def test_scenarios(self, intake, expected_output, raw_option, data):
@@ -558,7 +558,7 @@ class TestDisplayText(BaseTest):
                     options, form = ask_questions_and_parse_answers(
                         {_id: raw_option}, answers
                     )
-                    assert stdout.getvalue() == f"{options[0].ask['en']}\n"
+                    assert stdout.getvalue() == f"{options[0].ask}\n"
 
 
 # ╭───────────────────────────────────────────────────────╮
@@ -609,7 +609,7 @@ class TestAlert(TestDisplayText):
                     options, form = ask_questions_and_parse_answers(
                         {"display_text_id": raw_option}, answers
                     )
-                    ask = options[0].ask["en"]
+                    ask = options[0].ask
                     if style in colors:
                         color = colors[style]
                         title = style.title() + (":" if style != "success" else "!")
