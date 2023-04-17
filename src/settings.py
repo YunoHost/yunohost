@@ -19,6 +19,7 @@
 import os
 import subprocess
 from logging import getLogger
+from typing import TYPE_CHECKING
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -28,6 +29,9 @@ from yunohost.regenconf import regen_conf
 from yunohost.firewall import firewall_reload
 from yunohost.log import is_unit_operation
 from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_settings
+
+if TYPE_CHECKING:
+    from yunohost.utils.configpanel import ConfigPanelModel, RawConfig, RawSettings
 
 logger = getLogger("yunohost.settings")
 
@@ -180,8 +184,8 @@ class SettingsConfigPanel(ConfigPanel):
         logger.success(m18n.n("global_settings_reset_success"))
         operation_logger.success()
 
-    def _get_raw_config(self):
-        toml = super()._get_raw_config()
+    def _get_raw_config(self) -> "RawConfig":
+        raw_config = super()._get_raw_config()
 
         # Dynamic choice list for portal themes
         THEMEDIR = "/usr/share/ssowat/portal/assets/themes/"
@@ -189,28 +193,30 @@ class SettingsConfigPanel(ConfigPanel):
             themes = [d for d in os.listdir(THEMEDIR) if os.path.isdir(THEMEDIR + d)]
         except Exception:
             themes = ["unsplash", "vapor", "light", "default", "clouds"]
-        toml["misc"]["portal"]["portal_theme"]["choices"] = themes
+        raw_config["misc"]["portal"]["portal_theme"]["choices"] = themes
 
-        return toml
+        return raw_config
 
-    def _get_raw_settings(self):
-        super()._get_raw_settings()
+    def _get_raw_settings(self, config: "ConfigPanelModel") -> "RawSettings":
+        raw_settings = super()._get_raw_settings(config)
 
         # Specific logic for those settings who are "virtual" settings
         # and only meant to have a custom setter mapped to tools_rootpw
-        self.values["root_password"] = ""
-        self.values["root_password_confirm"] = ""
+        raw_settings["root_password"] = ""
+        raw_settings["root_password_confirm"] = ""
 
         # Specific logic for virtual setting "passwordless_sudo"
         try:
             from yunohost.utils.ldap import _get_ldap_interface
 
             ldap = _get_ldap_interface()
-            self.values["passwordless_sudo"] = "!authenticate" in ldap.search(
+            raw_settings["passwordless_sudo"] = "!authenticate" in ldap.search(
                 "ou=sudo", "cn=admins", ["sudoOption"]
             )[0].get("sudoOption", [])
         except Exception:
-            self.values["passwordless_sudo"] = False
+            raw_settings["passwordless_sudo"] = False
+
+        return raw_settings
 
     def _apply(self):
         root_password = self.new_values.pop("root_password", None)

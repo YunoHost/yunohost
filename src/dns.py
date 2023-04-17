@@ -528,7 +528,7 @@ def _get_registrar_config_section(domain):
                     parent_domain=parent_domain,
                     parent_domain_link=parent_domain_link,
                 ),
-                "value": "parent_domain",
+                "default": "parent_domain",
             }
         )
         return OrderedDict(registrar_infos)
@@ -541,7 +541,7 @@ def _get_registrar_config_section(domain):
                 "type": "alert",
                 "style": "success",
                 "ask": m18n.n("domain_dns_registrar_yunohost"),
-                "value": "yunohost",
+                "default": "yunohost",
             }
         )
         return OrderedDict(registrar_infos)
@@ -551,7 +551,7 @@ def _get_registrar_config_section(domain):
                 "type": "alert",
                 "style": "info",
                 "ask": m18n.n("domain_dns_conf_special_use_tld"),
-                "value": None,
+                "default": None,
             }
         )
 
@@ -563,7 +563,7 @@ def _get_registrar_config_section(domain):
                 "type": "alert",
                 "style": "warning",
                 "ask": m18n.n("domain_dns_registrar_not_supported"),
-                "value": None,
+                "default": None,
             }
         )
     else:
@@ -572,7 +572,7 @@ def _get_registrar_config_section(domain):
                 "type": "alert",
                 "style": "info",
                 "ask": m18n.n("domain_dns_registrar_supported", registrar=registrar),
-                "value": registrar,
+                "default": registrar,
             }
         )
 

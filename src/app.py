@@ -26,7 +26,8 @@ import re
 import subprocess
 import tempfile
 import copy
-from typing import List, Tuple, Dict, Any, Iterator, Optional
+from collections import OrderedDict
+from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Iterator, Optional
 from packaging import version
 from logging import getLogger
 from pathlib import Path
@@ -70,6 +71,9 @@ from yunohost.app_catalog import (  # noqa
     _load_apps_catalog,
     APPS_CATALOG_LOGOS,
 )
+
+if TYPE_CHECKING:
+    from yunohost.utils.configpanel import ConfigPanelModel, RawSettings
 
 logger = getLogger("yunohost.app")
 
@@ -1802,8 +1806,8 @@ class AppConfigPanel(ConfigPanel):
         env = {key: str(value) for key, value in self.new_values.items()}
         self._call_config_script(action, env=env)
 
-    def _get_raw_settings(self):
-        self.values = self._call_config_script("show")
+    def _get_raw_settings(self, config: "ConfigPanelModel") -> "RawSettings":
+        return self._call_config_script("show")
 
     def _apply(self):
         env = {key: str(value) for key, value in self.new_values.items()}

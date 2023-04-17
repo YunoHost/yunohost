@@ -19,7 +19,7 @@
 import os
 import time
 from pathlib import Path
-from typing import List, Optional
+from typing import TYPE_CHECKING, List, Optional
 from collections import OrderedDict
 from logging import getLogger
 
@@ -46,6 +46,9 @@ from yunohost.utils.form import BaseOption
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.dns import is_yunohost_dyndns_domain
 from yunohost.log import is_unit_operation
+
+if TYPE_CHECKING:
+    from yunohost.utils.configpanel import RawConfig
 
 logger = getLogger("yunohost.domain")
 
@@ -666,10 +669,14 @@ class DomainConfigPanel(ConfigPanel):
 
         return result
 
-    def _get_raw_config(self):
-        toml = super()._get_raw_config()
+    def _get_raw_config(self) -> "RawConfig":
+        # TODO add mechanism to share some settings with other domains on the same zone
+        raw_config = super()._get_raw_config()
 
-        toml["feature"]["xmpp"]["xmpp"]["default"] = (
+        any_filter = all(self.filter_key)
+        panel_id, section_id, option_id = self.filter_key
+
+        raw_config["feature"]["xmpp"]["xmpp"]["default"] = (
             1 if self.entity == _get_maindomain() else 0
         )
 
@@ -680,55 +687,43 @@ class DomainConfigPanel(ConfigPanel):
         # Optimize wether or not to load the DNS section,
         # e.g. we don't want to trigger the whole _get_registary_config_section
         # when just getting the current value from the feature section
-        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
-        if not filter_key or filter_key[0] == "dns":
+        if not any_filter or panel_id == "dns":
             from yunohost.dns import _get_registrar_config_section
 
-            toml["dns"]["registrar"] = _get_registrar_config_section(self.entity)
-
-            # FIXME: Ugly hack to save the registar id/value and reinject it in _get_raw_settings ...
-            self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
-            del toml["dns"]["registrar"]["registrar"]["value"]
+            raw_config["dns"]["registrar"] = _get_registrar_config_section(self.entity)
 
         # Cert stuff
-        if not filter_key or filter_key[0] == "cert":
+        if not any_filter or panel_id == "cert":
             from yunohost.certificate import certificate_status
 
             status = certificate_status([self.entity], full=True)["certificates"][
                 self.entity
             ]
 
-            toml["cert"]["cert"]["cert_summary"]["style"] = status["style"]
+            raw_config["cert"]["cert"]["cert_summary"]["style"] = status["style"]
 
             # i18n: domain_config_cert_summary_expired
             # i18n: domain_config_cert_summary_selfsigned
             # i18n: domain_config_cert_summary_abouttoexpire
             # i18n: domain_config_cert_summary_ok
             # i18n: domain_config_cert_summary_letsencrypt
-            toml["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(
+            raw_config["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(
                 f"domain_config_cert_summary_{status['summary']}"
             )
 
-            # FIXME: Ugly hack to save the cert status and reinject it in _get_raw_settings ...
-            self.cert_status = status
+            for option_id, status_key in [
+                ("cert_validity", "validity"),
+                ("cert_issuer", "CA_type"),
+                ("acme_eligible", "ACME_eligible"),
+                # FIXME not sure why "summary" was injected in settings values
+                # ("summary", "summary")
+            ]:
+                raw_config["cert"]["cert"][option_id]["default"] = status[status_key]
 
-        return toml
+            # Other specific strings used in config panels
+            # i18n: domain_config_cert_renew_help
 
-    def _get_raw_settings(self):
-        # TODO add mechanism to share some settings with other domains on the same zone
-        super()._get_raw_settings()
-
-        # FIXME: Ugly hack to save the registar id/value and reinject it in _get_raw_settings ...
-        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
-        if not filter_key or filter_key[0] == "dns":
-            self.values["registrar"] = self.registar_id
-
-        # FIXME: Ugly hack to save the cert status and reinject it in _get_raw_settings ...
-        if not filter_key or filter_key[0] == "cert":
-            self.values["cert_validity"] = self.cert_status["validity"]
-            self.values["cert_issuer"] = self.cert_status["CA_type"]
-            self.values["acme_eligible"] = self.cert_status["ACME_eligible"]
-            self.values["summary"] = self.cert_status["summary"]
+        return raw_config
 
     def _apply(self):
         if (

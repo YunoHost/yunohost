@@ -31,15 +31,16 @@ from moulinette.interfaces.cli import colorize
 from moulinette.utils.filesystem import mkdir, read_toml, read_yaml, write_to_yaml
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
-    OPTIONS,
     BaseInputOption,
     BaseOption,
     BaseReadonlyOption,
     FileOption,
+    FormModel,
     OptionsModel,
     OptionType,
     Translation,
     ask_questions_and_parse_answers,
+    build_form,
     evaluate_simple_js_expression,
 )
 from yunohost.utils.i18n import _value_for_locale
@@ -93,7 +94,7 @@ class SectionModel(ContainerModel, OptionsModel):
         visible: Union[bool, str] = True,
         **kwargs,
     ) -> None:
-        options = self.options_dict_to_list(kwargs, defaults={"optional": True})
+        options = self.options_dict_to_list(kwargs, optional=True)
 
         ContainerModel.__init__(
             self,
@@ -231,12 +232,33 @@ class ConfigPanelModel(BaseModel):
 # │  ╰─╴╰─╯╵╰╯╵  ╶┴╴╰─╯   ╶┴╴╵╵╵╵  ╰─╴                    │
 # ╰───────────────────────────────────────────────────────╯
 
+if TYPE_CHECKING:
+    FilterKey = Sequence[Union[str, None]]
+    RawConfig = OrderedDict[str, Any]
+    RawSettings = dict[str, Any]
+
+
+def parse_filter_key(key: Union[str, None] = None) -> "FilterKey":
+    if key and key.count(".") > 2:
+        raise YunohostError(
+            f"The filter key {key} has too many sub-levels, the max is 3.",
+            raw_msg=True,
+        )
+
+    if not key:
+        return (None, None, None)
+    keys = key.split(".")
+    return tuple(keys[i] if len(keys) > i else None for i in range(3))
+
 
 class ConfigPanel:
     entity_type = "config"
     save_path_tpl: Union[str, None] = None
     config_path_tpl = "/usr/share/yunohost/config_{entity_type}.toml"
     save_mode = "full"
+    filter_key: "FilterKey" = (None, None, None)
+    config: Union[ConfigPanelModel, None] = None
+    form: Union[FormModel, None] = None
 
     @classmethod
     def list(cls):
@@ -265,9 +287,6 @@ class ConfigPanel:
         self.save_path = save_path
         if not save_path and self.save_path_tpl:
             self.save_path = self.save_path_tpl.format(entity=entity)
-        self.config = {}
-        self.values = {}
-        self.new_values = {}
 
         if (
             self.save_path
@@ -501,215 +520,103 @@ class ConfigPanel:
         logger.success(f"Action {action_id} successful")
         operation_logger.success()
 
-    def _get_raw_config(self):
+    def _get_raw_config(self) -> "RawConfig":
+        if not os.path.exists(self.config_path):
+            raise YunohostValidationError("config_no_panel")
+
         return read_toml(self.config_path)
 
-    def _get_config_panel(self):
-        # Split filter_key
-        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
-        if len(filter_key) > 3:
-            raise YunohostError(
-                f"The filter key {filter_key} has too many sub-levels, the max is 3.",
-                raw_msg=True,
+    def _get_raw_settings(self, config: ConfigPanelModel) -> "RawSettings":
+        if not self.save_path or not os.path.exists(self.save_path):
+            raise YunohostValidationError("config_no_settings")
+
+        return read_yaml(self.save_path)
+
+    def _get_partial_raw_config(self) -> "RawConfig":
+        def filter_keys(
+            data: "RawConfig",
+            key: str,
+            model: Union[Type[ConfigPanelModel], Type[PanelModel], Type[SectionModel]],
+        ) -> "RawConfig":
+            # filter in keys defined in model, filter out panels/sections/options that aren't `key`
+            return OrderedDict(
+                {k: v for k, v in data.items() if k in model.__fields__ or k == key}
             )
 
-        if not os.path.exists(self.config_path):
-            logger.debug(f"Config panel {self.config_path} doesn't exists")
-            return None
+        raw_config = self._get_raw_config()
 
-        toml_config_panel = self._get_raw_config()
+        panel_id, section_id, option_id = self.filter_key
+        if panel_id:
+            raw_config = filter_keys(raw_config, panel_id, ConfigPanelModel)
 
-        # Check TOML config panel is in a supported version
-        if float(toml_config_panel["version"]) < CONFIG_PANEL_VERSION_SUPPORTED:
-            logger.error(
-                f"Config panels version {toml_config_panel['version']} are not supported"
-            )
-            return None
+            if section_id:
+                raw_config[panel_id] = filter_keys(
+                    raw_config[panel_id], section_id, PanelModel
+                )
 
-        # Transform toml format into internal format
-        format_description = {
-            "root": {
-                "properties": ["version", "i18n"],
-                "defaults": {"version": 1.0},
-            },
-            "panels": {
-                "properties": ["name", "services", "actions", "help"],
-                "defaults": {
-                    "services": [],
-                    "actions": {"apply": {"en": "Apply"}},
-                },
-            },
-            "sections": {
-                "properties": ["name", "services", "optional", "help", "visible"],
-                "defaults": {
-                    "name": "",
-                    "services": [],
-                    "optional": True,
-                    "is_action_section": False,
-                },
-            },
-            "options": {
-                "properties": [
-                    "ask",
-                    "type",
-                    "bind",
-                    "help",
-                    "example",
-                    "default",
-                    "style",
-                    "icon",
-                    "placeholder",
-                    "visible",
-                    "optional",
-                    "choices",
-                    "yes",
-                    "no",
-                    "pattern",
-                    "limit",
-                    "min",
-                    "max",
-                    "step",
-                    "accept",
-                    "redact",
-                    "filter",
-                    "readonly",
-                    "enabled",
-                    "add_yunohost_portal_to_choices",
-                    # "confirm", # TODO: to ask confirmation before running an action
-                ],
-                "defaults": {},
-            },
-        }
-
-        def _build_internal_config_panel(raw_infos, level):
-            """Convert TOML in internal format ('full' mode used by webadmin)
-            Here are some properties of 1.0 config panel in toml:
-            - node properties and node children are mixed,
-            - text are in english only
-            - some properties have default values
-            This function detects all children nodes and put them in a list
-            """
-
-            defaults = format_description[level]["defaults"]
-            properties = format_description[level]["properties"]
-
-            # Start building the ouput (merging the raw infos + defaults)
-            out = {key: raw_infos.get(key, value) for key, value in defaults.items()}
-
-            # Now fill the sublevels (+ apply filter_key)
-            i = list(format_description).index(level)
-            sublevel = list(format_description)[i + 1] if level != "options" else None
-            search_key = filter_key[i] if len(filter_key) > i else False
-
-            for key, value in raw_infos.items():
-                # Key/value are a child node
-                if (
-                    isinstance(value, OrderedDict)
-                    and key not in properties
-                    and sublevel
-                ):
-                    # We exclude all nodes not referenced by the filter_key
-                    if search_key and key != search_key:
-                        continue
-                    subnode = _build_internal_config_panel(value, sublevel)
-                    subnode["id"] = key
-                    if level == "root":
-                        subnode.setdefault("name", {"en": key.capitalize()})
-                    elif level == "sections":
-                        subnode["name"] = key  # legacy
-                        subnode.setdefault("optional", raw_infos.get("optional", True))
-                        # If this section contains at least one button, it becomes an "action" section
-                        if subnode.get("type") == OptionType.button:
-                            out["is_action_section"] = True
-                    out.setdefault(sublevel, []).append(subnode)
-                # Key/value are a property
-                else:
-                    if key not in properties:
-                        logger.warning(f"Unknown key '{key}' found in config panel")
-                    # Todo search all i18n keys
-                    out[key] = (
-                        value
-                        if key not in ["ask", "help", "name"] or isinstance(value, dict)
-                        else {"en": value}
+                if option_id:
+                    raw_config[panel_id][section_id] = filter_keys(
+                        raw_config[panel_id][section_id], option_id, SectionModel
                     )
-            return out
 
-        self.config = _build_internal_config_panel(toml_config_panel, "root")
+        return raw_config
+
+    def _get_partial_raw_settings_and_mutate_config(
+        self, config: ConfigPanelModel
+    ) -> tuple[ConfigPanelModel, "RawSettings"]:
+        raw_settings = self._get_raw_settings(config)
+        values = {}
+
+        for _, section, option in config.iter_children():
+            value = data = raw_settings.get(option.id, getattr(option, "default", None))
+
+            if isinstance(data, dict):
+                # Settings data if gathered from bash "ynh_app_config_show"
+                # may be a custom getter that returns a dict with `value` or `current_value`
+                # and other attributes meant to override those of the option.
+
+                if "value" in data:
+                    value = data.pop("value")
+
+                # Allow to use value instead of current_value in app config script.
+                # e.g. apps may write `echo 'value: "foobar"'` in the config file (which is more intuitive that `echo 'current_value: "foobar"'`
+                # For example hotspot used it...
+                # See https://github.com/YunoHost/yunohost/pull/1546
+                # FIXME do we still need the `current_value`?
+                if "current_value" in data:
+                    value = data.pop("current_value")
+
+                # Mutate other possible option attributes
+                for k, v in data.items():
+                    setattr(option, k, v)
+
+            if isinstance(option, BaseInputOption):  # or option.bind == "null":
+                values[option.id] = value
+
+        return (config, values)
+
+    def _get_config_panel(
+        self, prevalidate: bool = False
+    ) -> tuple[ConfigPanelModel, FormModel]:
+        raw_config = self._get_partial_raw_config()
+        config = ConfigPanelModel(**raw_config)
+        config, raw_settings = self._get_partial_raw_settings_and_mutate_config(config)
+        config.translate()
+        Settings = build_form(config.options)
+        settings = (
+            Settings(**raw_settings)
+            if prevalidate
+            else Settings.construct(**raw_settings)
+        )
 
         try:
-            self.config["panels"][0]["sections"][0]["options"][0]
+            config.panels[0].sections[0].options[0]
         except (KeyError, IndexError):
             raise YunohostValidationError(
                 "config_unknown_filter_key", filter_key=self.filter_key
             )
 
-        return self.config
-
-    def _get_default_values(self):
-        return {
-            option["id"]: option["default"]
-            for _, _, option in self._iterate()
-            if "default" in option
-        }
-
-    def _get_raw_settings(self):
-        """
-        Retrieve entries in YAML file
-        And set default values if needed
-        """
-
-        # Inject defaults if needed (using the magic .update() ;))
-        self.values = self._get_default_values()
-
-        # Retrieve entries in the YAML
-        if os.path.exists(self.save_path) and os.path.isfile(self.save_path):
-            self.values.update(read_yaml(self.save_path) or {})
-
-    def _hydrate(self):
-        # Hydrating config panel with current value
-        for _, section, option in self._iterate():
-            if option["id"] not in self.values:
-                allowed_empty_types = {
-                    OptionType.alert,
-                    OptionType.display_text,
-                    OptionType.markdown,
-                    OptionType.file,
-                    OptionType.button,
-                }
-
-                if section["is_action_section"] and option.get("default") is not None:
-                    self.values[option["id"]] = option["default"]
-                elif (
-                    option["type"] in allowed_empty_types
-                    or option.get("bind") == "null"
-                ):
-                    continue
-                else:
-                    raise YunohostError(
-                        f"Config panel question '{option['id']}' should be initialized with a value during install or upgrade.",
-                        raw_msg=True,
-                    )
-            value = self.values[option["id"]]
-
-            # Allow to use value instead of current_value in app config script.
-            # e.g. apps may write `echo 'value: "foobar"'` in the config file (which is more intuitive that `echo 'current_value: "foobar"'`
-            # For example hotspot used it...
-            # See https://github.com/YunoHost/yunohost/pull/1546
-            if (
-                isinstance(value, dict)
-                and "value" in value
-                and "current_value" not in value
-            ):
-                value["current_value"] = value["value"]
-
-            # In general, the value is just a simple value.
-            # Sometimes it could be a dict used to overwrite the option itself
-            value = value if isinstance(value, dict) else {"current_value": value}
-            option.update(value)
-
-            self.values[option["id"]] = value.get("current_value")
-
-        return self.values
+        return (config, settings)
 
     def _ask(self, action=None):
         logger.debug("Ask unanswered question and prevalidate data")
@@ -781,19 +688,6 @@ class ConfigPanel:
                 }
             )
 
-    @property
-    def future_values(self):
-        return {**self.values, **self.new_values}
-
-    def __getattr__(self, name):
-        if "new_values" in self.__dict__ and name in self.new_values:
-            return self.new_values[name]
-
-        if "values" in self.__dict__ and name in self.values:
-            return self.values[name]
-
-        return self.__dict__[name]
-
     def _parse_pre_answered(self, args, value, args_file):
         args = urllib.parse.parse_qs(args or "", keep_blank_values=True)
         self.args = {key: ",".join(value_) for key, value_ in args.items()}
@@ -836,14 +730,3 @@ class ConfigPanel:
             if hasattr(self, "entity"):
                 service = service.replace("__APP__", self.entity)
             service_reload_or_restart(service)
-
-    def _iterate(self, trigger=["option"]):
-        for panel in self.config.get("panels", []):
-            if "panel" in trigger:
-                yield (panel, None, panel)
-            for section in panel.get("sections", []):
-                if "section" in trigger:
-                    yield (panel, section, section)
-                if "option" in trigger:
-                    for option in section.get("options", []):
-                        yield (panel, section, option)
