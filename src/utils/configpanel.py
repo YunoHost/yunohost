@@ -450,31 +450,6 @@ class ConfigPanel:
                 "config_unknown_filter_key", filter_key=self.filter_key
             )
 
-        # List forbidden keywords from helpers and sections toml (to avoid conflict)
-        forbidden_keywords = [
-            "old",
-            "app",
-            "changed",
-            "file_hash",
-            "binds",
-            "types",
-            "formats",
-            "getter",
-            "setter",
-            "short_setting",
-            "type",
-            "bind",
-            "nothing_changed",
-            "changes_validated",
-            "result",
-            "max_progression",
-        ]
-        forbidden_keywords += format_description["sections"]
-
-        for _, _, option in self._iterate():
-            if option["id"] in forbidden_keywords:
-                raise YunohostError("config_forbidden_keyword", keyword=option["id"])
-
         return self.config
 
     def _get_default_values(self):
