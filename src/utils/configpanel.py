@@ -43,6 +43,7 @@ from yunohost.utils.form import (
     ask_questions_and_parse_answers,
     build_form,
     evaluate_simple_js_expression,
+    parse_prefilled_values,
 )
 from yunohost.utils.i18n import _value_for_locale
 
@@ -397,7 +398,10 @@ class ConfigPanel:
 
         # Import and parse pre-answered options
         logger.debug("Import and parse pre-answered options")
-        self._parse_pre_answered(args, value, args_file)
+        if option_id and value is not None:
+            self.args = {option_id: value}
+        else:
+            self.args = parse_prefilled_values(args, value, args_file)
 
         # Read or get values and hydrate the config
         self._get_raw_settings()
@@ -468,7 +472,7 @@ class ConfigPanel:
 
         # Import and parse pre-answered options
         logger.debug("Import and parse pre-answered options")
-        self._parse_pre_answered(args, None, args_file)
+        self.args = parse_prefilled_values(args, args_file)
 
         # Read or get values and hydrate the config
         self._get_raw_settings()
@@ -677,17 +681,6 @@ class ConfigPanel:
                     if question.value is not None
                 }
             )
-
-    def _parse_pre_answered(self, args, value, args_file):
-        args = urllib.parse.parse_qs(args or "", keep_blank_values=True)
-        self.args = {key: ",".join(value_) for key, value_ in args.items()}
-
-        if args_file:
-            # Import YAML / JSON file but keep --args values
-            self.args = {**read_yaml(args_file), **self.args}
-
-        if value is not None:
-            self.args = {self.filter_key.split(".")[-1]: value}
 
     def _apply(self):
         logger.info("Saving the new configuration...")
