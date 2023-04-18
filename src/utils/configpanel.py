@@ -19,7 +19,6 @@
 import glob
 import os
 import re
-import urllib.parse
 from collections import OrderedDict
 from typing import TYPE_CHECKING, Any, Literal, Sequence, Type, Union
 
@@ -36,19 +35,20 @@ from yunohost.utils.form import (
     BaseOption,
     BaseReadonlyOption,
     FileOption,
-    FormModel,
     OptionsModel,
     OptionType,
     Translation,
-    ask_questions_and_parse_answers,
     build_form,
     evaluate_simple_js_expression,
     parse_prefilled_values,
+    prompt_or_validate_form,
 )
 from yunohost.utils.i18n import _value_for_locale
 
 if TYPE_CHECKING:
     from pydantic.fields import ModelField
+
+    from yunohost.utils.form import FormModel, Hooks
 
 logger = getActionLogger("yunohost.configpanel")
 
@@ -279,7 +279,8 @@ class ConfigPanel:
     save_mode = "full"
     filter_key: "FilterKey" = (None, None, None)
     config: Union[ConfigPanelModel, None] = None
-    form: Union[FormModel, None] = None
+    form: Union["FormModel", None] = None
+    hooks: "Hooks" = {}
 
     @classmethod
     def list(cls):
@@ -602,7 +603,7 @@ class ConfigPanel:
 
     def _get_config_panel(
         self, prevalidate: bool = False
-    ) -> tuple[ConfigPanelModel, FormModel]:
+    ) -> tuple[ConfigPanelModel, "FormModel"]:
         raw_config = self._get_partial_raw_config()
         config = ConfigPanelModel(**raw_config)
         config, raw_settings = self._get_partial_raw_settings_and_mutate_config(config)
@@ -623,75 +624,62 @@ class ConfigPanel:
 
         return (config, settings)
 
-    def _ask(self, action=None):
+    def ask(
+        self,
+        config: ConfigPanelModel,
+        settings: "FormModel",
+        prefilled_answers: dict[str, Any] = {},
+        action_id: Union[str, None] = None,
+        hooks: "Hooks" = {},
+    ) -> "FormModel":
+        # FIXME could be turned into a staticmethod
         logger.debug("Ask unanswered question and prevalidate data")
 
-        if "i18n" in self.config:
-            for panel, section, option in self._iterate():
-                if "ask" not in option:
-                    option["ask"] = m18n.n(self.config["i18n"] + "_" + option["id"])
-                # auto add i18n help text if present in locales
-                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
-                    option["help"] = m18n.n(
-                        self.config["i18n"] + "_" + option["id"] + "_help"
-                    )
+        interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
-        def display_header(message):
-            """CLI panel/section header display"""
-            if Moulinette.interface.type == "cli" and self.filter_key.count(".") < 2:
-                Moulinette.display(colorize(message, "purple"))
+        if interactive:
+            config.translate()
 
-        for panel, section, obj in self._iterate(["panel", "section"]):
-            if (
-                section
-                and section.get("visible")
-                and not evaluate_simple_js_expression(
-                    section["visible"], context=self.future_values
+        for panel in config.panels:
+            if interactive:
+                Moulinette.display(
+                    colorize(f"\n{'='*40}\n>>>> {panel.name}\n{'='*40}", "purple")
                 )
-            ):
-                continue
 
-            # Ugly hack to skip action section ... except when when explicitly running actions
-            if not action:
-                if section and section["is_action_section"]:
+            # A section or option may only evaluate its conditions (`visible`
+            # and `enabled`) with its panel's local context that is built
+            # prompt after prompt.
+            # That means that a condition can only reference options of its
+            # own panel and options that are previously defined.
+            context: dict[str, Any] = {}
+
+            for section in panel.sections:
+                if (
+                    action_id is None and section.is_action_section
+                ) or not section.is_visible(context):
+                    # FIXME useless?
+                    Moulinette.display("Skipping section '{panel.id}.{section.id}'…")
                     continue
 
-                if panel == obj:
-                    name = _value_for_locale(panel["name"])
-                    display_header(f"\n{'='*40}\n>>>> {name}\n{'='*40}")
-                else:
-                    name = _value_for_locale(section["name"])
-                    if name:
-                        display_header(f"\n# {name}")
-            elif section:
+                if interactive and section.name:
+                    Moulinette.display(colorize(f"\n# {section.name}", "purple"))
+
                 # filter action section options in case of multiple buttons
-                section["options"] = [
+                options = [
                     option
-                    for option in section["options"]
-                    if option.get("type", OptionType.string) != OptionType.button
-                    or option["id"] == action
+                    for option in section.options
+                    if option.type is not OptionType.button or option.id == action_id
                 ]
 
-            if panel == obj:
-                continue
+                settings = prompt_or_validate_form(
+                    options,
+                    settings,
+                    prefilled_answers=prefilled_answers,
+                    context=context,
+                    hooks=hooks,
+                )
 
-            # Check and ask unanswered questions
-            prefilled_answers = self.args.copy()
-            prefilled_answers.update(self.new_values)
-
-            questions = ask_questions_and_parse_answers(
-                {question["id"]: question for question in section["options"]},
-                prefilled_answers=prefilled_answers,
-                current_values=self.values,
-                hooks=self.hooks,
-            )
-            self.new_values.update(
-                {
-                    question.id: question.value
-                    for question in questions
-                    if question.value is not None
-                }
-            )
+        return settings
 
     def _apply(self):
         logger.info("Saving the new configuration...")
