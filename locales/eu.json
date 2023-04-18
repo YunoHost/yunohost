@@ -230,7 +230,7 @@
     "certmanager_attempt_to_replace_valid_cert": "{domain} domeinurako egokia eta baliogarria den ziurtagiri bat ordezkatzen saiatzen ari zara! (Erabili --force mezu hau deuseztatu eta ziurtagiria ordezkatzeko)",
     "diagnosis_backports_in_sources_list": "Dirudienez apt (pakete kudeatzailea) backports biltegia erabiltzeko konfiguratuta dago. Zertan ari zaren ez badakizu, ez zenuke backports biltegietako aplikaziorik instalatu beharko, ezegonkortasun eta gatazkak eragin ditzaketelako sistemarekin.",
     "app_restore_failed": "Ezinezkoa izan da {app} lehengoratzea: {error}",
-    "diagnosis_apps_allgood": "Instalatutako aplikazioek oinarrizko pakete-jarraibideekin bat egiten dute",
+    "diagnosis_apps_allgood": "Instalatutako aplikazioak bat datoz oinarrizko pakete-jarraibideekin",
     "diagnosis_apps_bad_quality": "Aplikazio hau hondatuta dagoela dio YunoHosten aplikazioen katalogoak. Agian behin-behineko kontua da arduradunak arazoa konpondu bitartean. Oraingoz, ezin da aplikazioa eguneratu.",
     "diagnosis_apps_broken": "Aplikazio hau YunoHosten aplikazioen katalogoan hondatuta dagoela ageri da. Agian behin-behineko kontua da arduradunak konpondu bitartean. Oraingoz, ezin da aplikazioa eguneratu.",
     "diagnosis_apps_deprecated_practices": "Instalatutako aplikazio honen bertsioak oraindik darabiltza zaharkitutako pakete-jarraibideak. Eguneratzea hausnartu beharko zenuke.",
