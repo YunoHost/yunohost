@@ -19,7 +19,7 @@
 import os
 import time
 from pathlib import Path
-from typing import TYPE_CHECKING, List, Optional
+from typing import TYPE_CHECKING, Any, List, Optional, Union
 from collections import OrderedDict
 from logging import getLogger
 
@@ -48,7 +48,10 @@ from yunohost.utils.dns import is_yunohost_dyndns_domain
 from yunohost.log import is_unit_operation
 
 if TYPE_CHECKING:
+    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
+
     from yunohost.utils.configpanel import RawConfig
+    from yunohost.utils.form import FormModel
 
 logger = getLogger("yunohost.domain")
 
@@ -669,7 +672,7 @@ class DomainConfigPanel(ConfigPanel):
 
         # Portal settings are only available on "topest" domains
         if _get_parent_domain_of(self.entity, topest=True) is not None:
-            del toml["feature"]["portal"]
+            del raw_config["feature"]["portal"]
 
         # Optimize wether or not to load the DNS section,
         # e.g. we don't want to trigger the whole _get_registary_config_section
@@ -712,17 +715,23 @@ class DomainConfigPanel(ConfigPanel):
 
         return raw_config
 
-    def _apply(self):
-        if (
-            "default_app" in self.future_values
-            and self.future_values["default_app"] != self.values["default_app"]
-        ):
+    def _apply(
+        self,
+        form: "FormModel",
+        previous_settings: dict[str, Any],
+        exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+    ):
+        next_settings = {
+            k: v for k, v in form.dict().items() if previous_settings.get(k) != v
+        }
+
+        if "default_app" in next_settings:
             from yunohost.app import app_ssowatconf, app_map
 
             if "/" in app_map(raw=True).get(self.entity, {}):
                 raise YunohostValidationError(
                     "app_make_default_location_already_used",
-                    app=self.future_values["default_app"],
+                    app=next_settings["default_app"],
                     domain=self.entity,
                     other_app=app_map(raw=True)[self.entity]["/"]["id"],
                 )
@@ -735,8 +744,7 @@ class DomainConfigPanel(ConfigPanel):
             "portal_theme",
         ]
         if _get_parent_domain_of(self.entity, topest=True) is None and any(
-            option in self.future_values
-            and self.new_values[option] != self.values.get(option)
+            option in next_settings
             for option in portal_options
         ):
             from yunohost.portal import PORTAL_SETTINGS_DIR
@@ -744,9 +752,8 @@ class DomainConfigPanel(ConfigPanel):
             # Portal options are also saved in a `domain.portal.yml` file
             # that can be read by the portal API.
             # FIXME remove those from the config panel saved values?
-            portal_values = {
-                option: self.future_values[option] for option in portal_options
-            }
+
+            portal_values = form.dict(include=portal_options)
 
             portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{self.entity}.json")
             portal_settings = {"apps": {}}
@@ -760,38 +767,21 @@ class DomainConfigPanel(ConfigPanel):
                 str(portal_settings_path), portal_settings, sort_keys=True, indent=4
             )
 
-        super()._apply()
+        super()._apply(form, previous_settings)
 
         # Reload ssowat if default app changed
-        if (
-            "default_app" in self.future_values
-            and self.future_values["default_app"] != self.values["default_app"]
-        ):
+        if "default_app" in next_settings:
             app_ssowatconf()
 
-        stuff_to_regen_conf = []
-        if (
-            "xmpp" in self.future_values
-            and self.future_values["xmpp"] != self.values["xmpp"]
-        ):
-            stuff_to_regen_conf.append("nginx")
-            stuff_to_regen_conf.append("metronome")
+        stuff_to_regen_conf = set()
+        if "xmpp" in next_settings:
+            stuff_to_regen_conf.update({"nginx", "metronome"})
 
-        if (
-            "mail_in" in self.future_values
-            and self.future_values["mail_in"] != self.values["mail_in"]
-        ) or (
-            "mail_out" in self.future_values
-            and self.future_values["mail_out"] != self.values["mail_out"]
-        ):
-            if "nginx" not in stuff_to_regen_conf:
-                stuff_to_regen_conf.append("nginx")
-            stuff_to_regen_conf.append("postfix")
-            stuff_to_regen_conf.append("dovecot")
-            stuff_to_regen_conf.append("rspamd")
+        if "mail_in" in next_settings or "mail_out" in next_settings:
+            stuff_to_regen_conf.update({"nginx", "postfix", "dovecot", "rspamd"})
 
         if stuff_to_regen_conf:
-            regen_conf(names=stuff_to_regen_conf)
+            regen_conf(names=list(stuff_to_regen_conf))
 
 
 def domain_action_run(domain, action, args=None):

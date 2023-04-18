@@ -31,12 +31,15 @@ from yunohost.log import is_unit_operation
 from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_settings
 
 if TYPE_CHECKING:
+    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
+
     from yunohost.utils.configpanel import (
         ConfigPanelGetMode,
         ConfigPanelModel,
         RawConfig,
         RawSettings,
     )
+    from yunohost.utils.form import FormModel
 
 logger = getLogger("yunohost.settings")
 
@@ -217,19 +220,15 @@ class SettingsConfigPanel(ConfigPanel):
 
         return raw_settings
 
-    def _apply(self):
-        root_password = self.new_values.pop("root_password", None)
-        root_password_confirm = self.new_values.pop("root_password_confirm", None)
-        passwordless_sudo = self.new_values.pop("passwordless_sudo", None)
-
-        self.values = {
-            k: v for k, v in self.values.items() if k not in self.virtual_settings
-        }
-        self.new_values = {
-            k: v for k, v in self.new_values.items() if k not in self.virtual_settings
-        }
-
-        assert all(v not in self.future_values for v in self.virtual_settings)
+    def _apply(
+        self,
+        form: "FormModel",
+        previous_settings: dict[str, Any],
+        exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+    ):
+        root_password = form.get("root_password", None)
+        root_password_confirm = form.get("root_password_confirm", None)
+        passwordless_sudo = form.get("passwordless_sudo", None)
 
         if root_password and root_password.strip():
             if root_password != root_password_confirm:
@@ -248,15 +247,20 @@ class SettingsConfigPanel(ConfigPanel):
                 {"sudoOption": ["!authenticate"] if passwordless_sudo else []},
             )
 
-        super()._apply()
-
-        settings = {
-            k: v for k, v in self.future_values.items() if self.values.get(k) != v
+        # First save settings except virtual + default ones
+        super()._apply(form, previous_settings, exclude=self.virtual_settings)
+        next_settings = {
+            k: v
+            for k, v in form.dict(exclude=self.virtual_settings).items()
+            if previous_settings.get(k) != v
         }
-        for setting_name, value in settings.items():
+
+        for setting_name, value in next_settings.items():
             try:
+                # FIXME not sure to understand why we need the previous value if
+                # updated_settings has already been filtered
                 trigger_post_change_hook(
-                    setting_name, self.values.get(setting_name), value
+                    setting_name, previous_settings.get(setting_name), value
                 )
             except Exception as e:
                 logger.error(f"Post-change hook for setting failed : {e}")
