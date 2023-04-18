@@ -31,6 +31,7 @@ from moulinette.interfaces.cli import colorize
 from moulinette.utils.filesystem import mkdir, read_toml, read_yaml, write_to_yaml
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
+    AnyOption,
     BaseInputOption,
     BaseOption,
     BaseReadonlyOption,
@@ -190,6 +191,13 @@ class ConfigPanelModel(BaseModel):
             for option in section.options:
                 yield option
 
+    def get_option(self, option_id) -> Union[AnyOption, None]:
+        for option in self.options:
+            if option.id == option_id:
+                return option
+        # FIXME raise error?
+        return None
+
 
     def iter_children(
         self,
@@ -236,6 +244,7 @@ if TYPE_CHECKING:
     FilterKey = Sequence[Union[str, None]]
     RawConfig = OrderedDict[str, Any]
     RawSettings = dict[str, Any]
+    ConfigPanelGetMode = Literal["classic", "full", "export"]
 
 
 def parse_filter_key(key: Union[str, None] = None) -> "FilterKey":
@@ -310,78 +319,59 @@ class ConfigPanel:
             and re.match("^(validate|post_ask)__", func)
         }
 
-    def get(self, key="", mode="classic"):
-        self.filter_key = key or ""
+    def get(
+        self, key: Union[str, None] = None, mode: "ConfigPanelGetMode" = "classic"
+    ) -> Any:
+        self.filter_key = parse_filter_key(key)
+        self.config, self.form = self._get_config_panel(prevalidate=False)
 
-        # Read config panel toml
-        self._get_config_panel()
-
-        if not self.config:
-            raise YunohostValidationError("config_no_panel")
-
-        # Read or get values and hydrate the config
-        self._get_raw_settings()
-        self._hydrate()
+        panel_id, section_id, option_id = self.filter_key
 
         # In 'classic' mode, we display the current value if key refer to an option
-        if self.filter_key.count(".") == 2 and mode == "classic":
-            option = self.filter_key.split(".")[-1]
-            value = self.values.get(option, None)
+        if option_id and mode == "classic":
+            option = self.config.get_option(option_id)
 
-            option_type = None
-            for _, _, option_ in self._iterate():
-                if option_["id"] == option:
-                    option_type = OPTIONS[option_["type"]]
-                    break
+            if option is None:
+                # FIXME i18n
+                raise YunohostValidationError(
+                    f"Couldn't find any option with id {option_id}"
+                )
 
-            return option_type.normalize(value) if option_type else value
+            if isinstance(option, BaseReadonlyOption):
+                return None
+
+            return self.form[option_id]
 
         # Format result in 'classic' or 'export' mode
+        self.config.translate()
         logger.debug(f"Formating result in '{mode}' mode")
-        result = {}
-        for panel, section, option in self._iterate():
-            if section["is_action_section"] and mode != "full":
-                continue
+        result = OrderedDict()
+        for panel in self.config.panels:
+            for section in panel.sections:
+                if section.is_action_section and mode != "full":
+                    continue
 
-            key = f"{panel['id']}.{section['id']}.{option['id']}"
-            if mode == "export":
-                result[option["id"]] = option.get("current_value")
-                continue
+                for option in section.options:
+                    if mode == "export":
+                        if isinstance(option, BaseInputOption):
+                            result[option.id] = self.form[option.id]
+                        continue
 
-            ask = None
-            if "ask" in option:
-                ask = _value_for_locale(option["ask"])
-            elif "i18n" in self.config:
-                ask = m18n.n(self.config["i18n"] + "_" + option["id"])
+                    if mode == "classic":
+                        key = f"{panel.id}.{section.id}.{option.id}"
+                        result[key] = {"ask": option.ask}
 
-            if mode == "full":
-                option["ask"] = ask
-                question_class = OPTIONS[option.get("type", OptionType.string)]
-                # FIXME : maybe other properties should be taken from the question, not just choices ?.
-                if issubclass(question_class, BaseChoicesOption):
-                    option["choices"] = question_class(option).choices
-                if issubclass(question_class, BaseInputOption):
-                    option["default"] = question_class(option).default
-                    option["pattern"] = question_class(option).pattern
-            else:
-                result[key] = {"ask": ask}
-                if "current_value" in option:
-                    question_class = OPTIONS[option.get("type", OptionType.string)]
-                    if hasattr(question_class, "humanize"):
-                        result[key]["value"] = question_class.humanize(
-                            option["current_value"], option
-                        )
-                    else:
-                        result[key]["value"] = option["current_value"]
-
-                    # FIXME: semantics, technically here this is not about a prompt...
-                    if getattr(question_class, "hide_user_input_in_prompt", None):
-                        result[key][
-                            "value"
-                        ] = "**************"  # Prevent displaying password in `config get`
+                        if isinstance(option, BaseInputOption):
+                            result[key]["value"] = option.humanize(
+                                self.form[option.id], option
+                            )
+                            if option.type is OptionType.password:
+                                result[key][
+                                    "value"
+                                ] = "**************"  # Prevent displaying password in `config get`
 
         if mode == "full":
-            return self.config
+            return self.config.dict(exclude_none=True)
         else:
             return result
 
