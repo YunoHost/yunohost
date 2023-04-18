@@ -541,22 +541,9 @@ class DomainConfigPanel(ConfigPanel):
     save_path_tpl = f"{DOMAIN_SETTINGS_DIR}/{{entity}}.yml"
     save_mode = "diff"
 
-    def get(self, key="", mode="classic"):
-        result = super().get(key=key, mode=mode)
-
-        if mode == "full":
-            for panel, section, option in self._iterate():
-                # This injects:
-                # i18n: domain_config_cert_renew_help
-                # i18n: domain_config_default_app_help
-                # i18n: domain_config_xmpp_help
-                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
-                    option["help"] = m18n.n(
-                        self.config["i18n"] + "_" + option["id"] + "_help"
-                    )
-            return self.config
-
-        return result
+    # i18n: domain_config_cert_renew_help
+    # i18n: domain_config_default_app_help
+    # i18n: domain_config_xmpp_help
 
     def _get_raw_config(self) -> "RawConfig":
         # TODO add mechanism to share some settings with other domains on the same zone

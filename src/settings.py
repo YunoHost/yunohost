@@ -18,7 +18,7 @@
 #
 import os
 import subprocess
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Union
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -31,7 +31,12 @@ from yunohost.log import is_unit_operation
 from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_settings
 
 if TYPE_CHECKING:
-    from yunohost.utils.configpanel import ConfigPanelModel, RawConfig, RawSettings
+    from yunohost.utils.configpanel import (
+        ConfigPanelGetMode,
+        ConfigPanelModel,
+        RawConfig,
+        RawSettings,
+    )
 
 logger = getActionLogger("yunohost.settings")
 
@@ -129,16 +134,10 @@ class SettingsConfigPanel(ConfigPanel):
     def __init__(self, config_path=None, save_path=None, creation=False):
         super().__init__("settings")
 
-    def get(self, key="", mode="classic"):
+    def get(
+        self, key: Union[str, None] = None, mode: "ConfigPanelGetMode" = "classic"
+    ) -> Any:
         result = super().get(key=key, mode=mode)
-
-        if mode == "full":
-            for panel, section, option in self._iterate():
-                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
-                    option["help"] = m18n.n(
-                        self.config["i18n"] + "_" + option["id"] + "_help"
-                    )
-            return self.config
 
         # Dirty hack to let settings_get() to work from a python script
         if isinstance(result, str) and result in ["True", "False"]:
