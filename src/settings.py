@@ -132,7 +132,7 @@ class SettingsConfigPanel(ConfigPanel):
     entity_type = "global"
     save_path_tpl = SETTINGS_PATH
     save_mode = "diff"
-    virtual_settings = ["root_password", "root_password_confirm", "passwordless_sudo"]
+    virtual_settings = {"root_password", "root_password_confirm", "passwordless_sudo"}
 
     def __init__(self, config_path=None, save_path=None, creation=False):
         super().__init__("settings")

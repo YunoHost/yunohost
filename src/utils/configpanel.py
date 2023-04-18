@@ -50,6 +50,7 @@ if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from yunohost.utils.form import FormModel, Hooks
+    from yunohost.log import OperationLogger
 
 logger = getLogger("yunohost.configpanel")
 
@@ -390,15 +391,15 @@ class ConfigPanel:
             return result
 
     def set(
-        self, key=None, value=None, args=None, args_file=None, operation_logger=None
+        self,
+        key: Union[str, None] = None,
+        value: Any = None,
+        args: Union[str, None] = None,
+        args_file: Union[str, None] = None,
+        operation_logger: Union["OperationLogger", None] = None,
     ):
-        self.filter_key = key or ""
-
-        # Read config panel toml
-        self._get_config_panel()
-
-        if not self.config:
-            raise YunohostValidationError("config_no_panel")
+        self.filter_key = parse_filter_key(key)
+        panel_id, section_id, option_id = self.filter_key
 
         if (args is not None or args_file is not None) and value is not None:
             raise YunohostValidationError(
@@ -406,27 +407,35 @@ class ConfigPanel:
                 raw_msg=True,
             )
 
-        if self.filter_key.count(".") != 2 and value is not None:
+        if not option_id and value is not None:
             raise YunohostValidationError("config_cant_set_value_on_section")
 
         # Import and parse pre-answered options
         logger.debug("Import and parse pre-answered options")
         if option_id and value is not None:
-            self.args = {option_id: value}
+            prefilled_answers = {option_id: value}
         else:
-            self.args = parse_prefilled_values(args, value, args_file)
+            prefilled_answers = parse_prefilled_values(args, args_file)
 
-        # Read or get values and hydrate the config
-        self._get_raw_settings()
-        self._hydrate()
-        BaseOption.operation_logger = operation_logger
-        self._ask()
+        self.config, self.form = self._get_config_panel()
+        # FIXME find a better way to exclude previous settings
+        previous_settings = self.form.dict()
+
+        # FIXME Not sure if this is need (redact call to operation logger does it on all the instances)
+        # BaseOption.operation_logger = operation_logger
+
+        self.form = self._ask(
+            self.config,
+            self.form,
+            prefilled_answers=prefilled_answers,
+            hooks=self.hooks,
+        )
 
         if operation_logger:
             operation_logger.start()
 
         try:
-            self._apply()
+            self._apply(self.form, previous_settings)
         except YunohostError:
             raise
         # Script got manually interrupted ...
@@ -452,7 +461,9 @@ class ConfigPanel:
         self._reload_services()
 
         logger.success("Config updated as expected")
-        operation_logger.success()
+
+        if operation_logger:
+            operation_logger.success()
 
     def list_actions(self):
         actions = {}
@@ -625,7 +636,7 @@ class ConfigPanel:
 
         return (config, settings)
 
-    def ask(
+    def _ask(
         self,
         config: ConfigPanelModel,
         settings: "FormModel",
