@@ -199,6 +199,17 @@ class ConfigPanelModel(BaseModel):
         # FIXME raise error?
         return None
 
+    @property
+    def services(self) -> list[str]:
+        services = set()
+        for panel in self.panels:
+            services |= set(panel.services)
+            for section in panel.sections:
+                services |= set(section.services)
+
+        services_ = list(services)
+        services_.sort(key="nginx".__eq__)
+        return services_
 
     def iter_children(
         self,
@@ -701,12 +712,8 @@ class ConfigPanel:
     def _reload_services(self):
         from yunohost.service import service_reload_or_restart
 
-        services_to_reload = set()
-        for panel, section, obj in self._iterate(["panel", "section", "option"]):
-            services_to_reload |= set(obj.get("services", []))
+        services_to_reload = self.config.services
 
-        services_to_reload = list(services_to_reload)
-        services_to_reload.sort(key="nginx".__eq__)
         if services_to_reload:
             logger.info("Reloading services...")
         for service in services_to_reload:
