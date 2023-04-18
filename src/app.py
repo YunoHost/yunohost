@@ -29,7 +29,7 @@ import subprocess
 import tempfile
 import copy
 from collections import OrderedDict
-from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Iterator, Optional
+from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Iterator, Optional, Union
 from packaging import version
 
 from moulinette import Moulinette, m18n
@@ -75,7 +75,10 @@ from yunohost.app_catalog import (  # noqa
 )
 
 if TYPE_CHECKING:
+    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
+
     from yunohost.utils.configpanel import ConfigPanelModel, RawSettings
+    from yunohost.utils.form import FormModel
 
 logger = getActionLogger("yunohost.app")
 
@@ -1884,8 +1887,13 @@ class AppConfigPanel(ConfigPanel):
     def _get_raw_settings(self, config: "ConfigPanelModel") -> "RawSettings":
         return self._call_config_script("show")
 
-    def _apply(self):
-        env = {key: str(value) for key, value in self.new_values.items()}
+    def _apply(
+        self,
+        form: "FormModel",
+        previous_settings: dict[str, Any],
+        exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+    ):
+        env = {key: str(value) for key, value in form.dict().items()}
         return_content = self._call_config_script("apply", env=env)
 
         # If the script returned validation error

@@ -47,6 +47,7 @@ from yunohost.utils.i18n import _value_for_locale
 
 if TYPE_CHECKING:
     from pydantic.fields import ModelField
+    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from yunohost.utils.form import FormModel, Hooks
 
@@ -681,21 +682,30 @@ class ConfigPanel:
 
         return settings
 
-    def _apply(self):
+    def _apply(
+        self,
+        form: "FormModel",
+        previous_settings: dict[str, Any],
+        exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+    ) -> dict[str, Any]:
+        """
+        Save settings in yaml file.
+        If `save_mode` is `"diff"` (which is the default), only values that are
+        different from their default value will be saved.
+        """
         logger.info("Saving the new configuration...")
+
         dir_path = os.path.dirname(os.path.realpath(self.save_path))
         if not os.path.exists(dir_path):
             mkdir(dir_path, mode=0o700)
 
-        values_to_save = self.future_values
-        if self.save_mode == "diff":
-            defaults = self._get_default_values()
-            values_to_save = {
-                k: v for k, v in values_to_save.items() if defaults.get(k) != v
-            }
+        exclude_defaults = self.save_mode == "diff"
+        settings = form.dict(exclude_defaults=exclude_defaults, exclude=exclude)  # type: ignore
 
         # Save the settings to the .yaml file
-        write_to_yaml(self.save_path, values_to_save)
+        write_to_yaml(self.save_path, settings)
+
+        return settings
 
     def _reload_services(self):
         from yunohost.service import service_reload_or_restart
