@@ -470,12 +470,12 @@ class ConfigPanel:
 
         # FIXME : meh, loading the entire config panel is again going to cause
         # stupid issues for domain (e.g loading registrar stuff when willing to just list available actions ...)
-        self.filter_key = ""
-        self._get_config_panel()
-        for panel, section, option in self._iterate():
-            if option["type"] == OptionType.button:
-                key = f"{panel['id']}.{section['id']}.{option['id']}"
-                actions[key] = _value_for_locale(option["ask"])
+        self.config, self.form = self._get_config_panel()
+
+        for panel, section, option in self.config.iter_children():
+            if option.type == OptionType.button:
+                key = f"{panel.id}.{section.id}.{option.id}"
+                actions[key] = _value_for_locale(option.ask)
 
         return actions
 
