@@ -44,7 +44,6 @@ from pydantic import (
     Extra,
     ValidationError,
     create_model,
-    root_validator,
     validator,
 )
 from pydantic.color import Color
@@ -324,7 +323,7 @@ class BaseOption(BaseModel):
         return value
 
     # FIXME Legacy, is `name` still needed?
-    @validator("name", pre=True, always=True)
+    @validator("name")
     def apply_legacy_name(cls, value: Union[str, None], values: Values) -> str:
         if value is None:
             return values["id"]
@@ -1096,21 +1095,30 @@ class DomainOption(BaseChoicesOption):
     type: Literal[OptionType.domain] = OptionType.domain
     choices: Union[dict[str, str], None]
 
-    @root_validator()
-    def inject_domains_choices_and_default(cls, values: Values) -> Values:
+    @validator("choices", pre=True, always=True)
+    def inject_domains_choices(
+        cls, value: Union[dict[str, str], None], values: Values
+    ) -> dict[str, str]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.domain import domain_list
 
         data = domain_list()
-        values["choices"] = {
+        return {
             domain: domain + " ★" if domain == data["main"] else domain
             for domain in data["domains"]
         }
 
-        if values["default"] is None:
-            values["default"] = data["main"]
+    @validator("default")
+    def inject_default(
+        cls, value: Union[str, None], values: Values
+    ) -> Union[str, None]:
+        # TODO remove calls to resources in validators (pydantic V2 should adress this)
+        from yunohost.domain import _get_maindomain
 
-        return values
+        if value is None:
+            return _get_maindomain()
+
+        return value
 
     @staticmethod
     def normalize(value, option={}):
@@ -1131,8 +1139,11 @@ class AppOption(BaseChoicesOption):
     add_yunohost_portal_to_choices: bool = False
     filter: Union[str, None] = None
 
-    @root_validator()
-    def inject_apps_choices(cls, values: Values) -> Values:
+    @validator("choices", pre=True, always=True)
+    def inject_apps_choices(
+        cls, value: Union[dict[str, str], None], values: Values
+    ) -> dict[str, str]:
+        # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.app import app_list
 
         apps = app_list(full=True)["apps"]
@@ -1143,61 +1154,77 @@ class AppOption(BaseChoicesOption):
                 for app in apps
                 if evaluate_simple_js_expression(values["filter"], context=app)
             ]
-        values["choices"] = {"_none": "---"}
+
+        value = {"_none": "---"}
 
         if values.get("add_yunohost_portal_to_choices", False):
-            values["choices"]["_yunohost_portal_with_public_apps"] = "YunoHost's portal with public apps"
+            value["_yunohost_portal_with_public_apps"] = "YunoHost's portal with public apps"
 
-        values["choices"].update(
+        value.update(
             {
                 app["id"]: f"{app['label']} ({app.get('domain_path', app['id'])})"
                 for app in apps
             }
         )
 
-        return values
+        return value
 
 
 class UserOption(BaseChoicesOption):
     type: Literal[OptionType.user] = OptionType.user
     choices: Union[dict[str, str], None]
 
-    @root_validator()
-    def inject_users_choices_and_default(cls, values: dict[str, Any]) -> dict[str, Any]:
-        from yunohost.domain import _get_maindomain
-        from yunohost.user import user_info, user_list
+    @validator("choices", pre=True, always=True)
+    def inject_users_choices(
+        cls, value: Union[dict[str, str], None], values: Values
+    ) -> dict[str, str]:
+        # TODO remove calls to resources in validators (pydantic V2 should adress this)
+        from yunohost.user import user_list
 
-        values["choices"] = {
+        value = {
             username: f"{infos['fullname']} ({infos['mail']})"
             for username, infos in user_list()["users"].items()
         }
 
         # FIXME keep this to test if any user, do not raise error if no admin?
-        if not values["choices"]:
+        if not value:
             raise YunohostValidationError(
                 "app_argument_invalid",
                 name=values["id"],
                 error="You should create a YunoHost user first.",
             )
 
-        if values["default"] is None:
+        return value
+
+    @validator("default")
+    def inject_default(
+        cls, value: Union[str, None], values: Values
+    ) -> Union[str, None]:
+        # TODO remove calls to resources in validators (pydantic V2 should adress this)
+        from yunohost.domain import _get_maindomain
+        from yunohost.user import user_info
+
+        if value is None:
             # FIXME: this code is obsolete with the new admins group
             # Should be replaced by something like "any first user we find in the admin group"
             root_mail = "root@%s" % _get_maindomain()
             for user in values["choices"].keys():
                 if root_mail in user_info(user).get("mail-aliases", []):
-                    values["default"] = user
-                    break
+                    return user
 
-        return values
+        return value
 
 
 class GroupOption(BaseChoicesOption):
     type: Literal[OptionType.group] = OptionType.group
     choices: Union[dict[str, str], None]
+    default: Union[Literal["visitors", "all_users", "admins"], None] = "all_users"
 
-    @root_validator()
-    def inject_groups_choices_and_default(cls, values: Values) -> Values:
+    @validator("choices", pre=True, always=True)
+    def inject_groups_choices(
+        cls, value: Union[dict[str, str], None], values: Values
+    ) -> dict[str, str]:
+        # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.user import user_group_list
 
         groups = user_group_list(short=True, include_primary_groups=False)["groups"]
@@ -1212,14 +1239,7 @@ class GroupOption(BaseChoicesOption):
                 else groupname
             )
 
-        values["choices"] = {
-            groupname: _human_readable_group(groupname) for groupname in groups
-        }
-
-        if values["default"] is None:
-            values["default"] = "all_users"
-
-        return values
+        return {groupname: _human_readable_group(groupname) for groupname in groups}
 
 
 OPTIONS = {
@@ -1293,7 +1313,7 @@ class OptionsModel(BaseModel):
                 "id": id_,
                 "type": option.get("type", "string"),
                 # ConfigPanel options needs to be set as optional by default
-                "optional": option.get("optional", optional)
+                "optional": option.get("optional", optional),
             }
             for id_, option in options.items()
         ]
