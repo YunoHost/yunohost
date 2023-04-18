@@ -48,10 +48,11 @@ from moulinette.utils.filesystem import (
     chmod,
 )
 
-from yunohost.utils.configpanel import ConfigPanel, ask_questions_and_parse_answers
+from yunohost.utils.configpanel import ConfigPanel
 from yunohost.utils.form import (
     DomainOption,
     WebPathOption,
+    ask_questions_and_parse_answers,
     hydrate_questions_with_choices,
 )
 from yunohost.utils.i18n import _value_for_locale
@@ -1880,10 +1881,6 @@ class AppConfigPanel(ConfigPanel):
     save_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/settings.yml")
     config_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/config_panel.toml")
 
-    def _run_action(self, action):
-        env = {key: str(value) for key, value in self.new_values.items()}
-        self._call_config_script(action, env=env)
-
     def _get_raw_settings(self, config: "ConfigPanelModel") -> "RawSettings":
         return self._call_config_script("show")
 
@@ -1906,6 +1903,10 @@ class AppConfigPanel(ConfigPanel):
                     name=key,
                     error=message,
                 )
+
+    def _run_action(self, form: "FormModel", action_id: str):
+        env = {key: str(value) for key, value in form.dict().items()}
+        self._call_config_script(action_id, env=env)
 
     def _call_config_script(self, action, env=None):
         from yunohost.hook import hook_exec

@@ -479,30 +479,41 @@ class ConfigPanel:
 
         return actions
 
-    def run_action(self, action=None, args=None, args_file=None, operation_logger=None):
+    def run_action(
+        self,
+        key: Union[str, None] = None,
+        args: Union[str, None] = None,
+        args_file: Union[str, None] = None,
+        operation_logger: Union["OperationLogger", None] = None,
+    ):
         #
         # FIXME : this stuff looks a lot like set() ...
         #
+        panel_id, section_id, action_id = parse_filter_key(key)
+        # since an action may require some options from its section,
+        # remove the action_id from the filter
+        self.filter_key = (panel_id, section_id, None)
 
-        self.filter_key = ".".join(action.split(".")[:2])
-        action_id = action.split(".")[2]
-
-        # Read config panel toml
-        self._get_config_panel()
+        self.config, self.form = self._get_config_panel()
 
         # FIXME: should also check that there's indeed a key called action
-        if not self.config:
-            raise YunohostValidationError(f"No action named {action}", raw_msg=True)
+        if not action_id or not self.config.get_option(action_id):
+            raise YunohostValidationError(f"No action named {action_id}", raw_msg=True)
 
         # Import and parse pre-answered options
         logger.debug("Import and parse pre-answered options")
-        self.args = parse_prefilled_values(args, args_file)
+        prefilled_answers = parse_prefilled_values(args, args_file)
 
-        # Read or get values and hydrate the config
-        self._get_raw_settings()
-        self._hydrate()
-        BaseOption.operation_logger = operation_logger
-        self._ask(action=action_id)
+        self.form = self._ask(
+            self.config,
+            self.form,
+            prefilled_answers=prefilled_answers,
+            action_id=action_id,
+            hooks=self.hooks,
+        )
+
+        # FIXME Not sure if this is need (redact call to operation logger does it on all the instances)
+        # BaseOption.operation_logger = operation_logger
 
         # FIXME: here, we could want to check constrains on
         # the action's visibility / requirements wrt to the answer to questions ...
@@ -511,21 +522,21 @@ class ConfigPanel:
             operation_logger.start()
 
         try:
-            self._run_action(action_id)
+            self._run_action(self.form, action_id)
         except YunohostError:
             raise
         # Script got manually interrupted ...
         # N.B. : KeyboardInterrupt does not inherit from Exception
         except (KeyboardInterrupt, EOFError):
             error = m18n.n("operation_interrupted")
-            logger.error(m18n.n("config_action_failed", action=action, error=error))
+            logger.error(m18n.n("config_action_failed", action=key, error=error))
             raise
         # Something wrong happened in Yunohost's code (most probably hook_exec)
         except Exception:
             import traceback
 
             error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-            logger.error(m18n.n("config_action_failed", action=action, error=error))
+            logger.error(m18n.n("config_action_failed", action=key, error=error))
             raise
         finally:
             # Delete files uploaded from API
@@ -536,7 +547,9 @@ class ConfigPanel:
 
         # FIXME: i18n
         logger.success(f"Action {action_id} successful")
-        operation_logger.success()
+
+        if operation_logger:
+            operation_logger.success()
 
     def _get_raw_config(self) -> "RawConfig":
         if not os.path.exists(self.config_path):
@@ -648,12 +661,13 @@ class ConfigPanel:
         logger.debug("Ask unanswered question and prevalidate data")
 
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
+        verbose = action_id is None or len(list(config.options)) > 1
 
         if interactive:
             config.translate()
 
         for panel in config.panels:
-            if interactive:
+            if interactive and verbose:
                 Moulinette.display(
                     colorize(f"\n{'='*40}\n>>>> {panel.name}\n{'='*40}", "purple")
                 )
@@ -669,11 +683,9 @@ class ConfigPanel:
                 if (
                     action_id is None and section.is_action_section
                 ) or not section.is_visible(context):
-                    # FIXME useless?
-                    Moulinette.display("Skipping section '{panel.id}.{section.id}'…")
                     continue
 
-                if interactive and section.name:
+                if interactive and verbose and section.name:
                     Moulinette.display(colorize(f"\n# {section.name}", "purple"))
 
                 # filter action section options in case of multiple buttons
@@ -717,6 +729,9 @@ class ConfigPanel:
         write_to_yaml(self.save_path, settings)
 
         return settings
+
+    def _run_action(self, form: "FormModel", action_id: str):
+        raise NotImplementedError()
 
     def _reload_services(self):
         from yunohost.service import service_reload_or_restart
