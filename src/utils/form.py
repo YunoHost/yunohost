@@ -951,6 +951,7 @@ ChoosableOptions = Literal[
 
 class BaseChoicesOption(BaseInputOption):
     # FIXME probably forbid choices to be None?
+    filter: Union[JSExpression, None] = None  # filter before choices
     choices: Union[dict[str, Any], list[Any], None]
 
     @validator("choices", pre=True)
@@ -1093,6 +1094,7 @@ class TagsOption(BaseChoicesOption):
 
 class DomainOption(BaseChoicesOption):
     type: Literal[OptionType.domain] = OptionType.domain
+    filter: Literal[None] = None
     choices: Union[dict[str, str], None]
 
     @validator("choices", pre=True, always=True)
@@ -1108,17 +1110,14 @@ class DomainOption(BaseChoicesOption):
             for domain in data["domains"]
         }
 
-    @validator("default")
+    @validator("default", pre=True, always=True)
     def inject_default(
         cls, value: Union[str, None], values: Values
     ) -> Union[str, None]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.domain import _get_maindomain
 
-        if value is None:
-            return _get_maindomain()
-
-        return value
+        return _get_maindomain()
 
     @staticmethod
     def normalize(value, option={}):
@@ -1135,8 +1134,8 @@ class DomainOption(BaseChoicesOption):
 
 class AppOption(BaseChoicesOption):
     type: Literal[OptionType.app] = OptionType.app
+    filter: Union[JSExpression, None] = None
     choices: Union[dict[str, str], None]
-    filter: Union[str, None] = None
 
     @validator("choices", pre=True, always=True)
     def inject_apps_choices(
@@ -1167,6 +1166,7 @@ class AppOption(BaseChoicesOption):
 
 class UserOption(BaseChoicesOption):
     type: Literal[OptionType.user] = OptionType.user
+    filter: Literal[None] = None
     choices: Union[dict[str, str], None]
 
     @validator("choices", pre=True, always=True)
@@ -1191,19 +1191,19 @@ class UserOption(BaseChoicesOption):
 
         return value
 
-    @validator("default")
+    @validator("default", pre=True, always=True)
     def inject_default(
         cls, value: Union[str, None], values: Values
     ) -> Union[str, None]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.domain import _get_maindomain
-        from yunohost.user import user_info
+        from yunohost.user import user_list, user_info
 
         if value is None:
             # FIXME: this code is obsolete with the new admins group
             # Should be replaced by something like "any first user we find in the admin group"
             root_mail = "root@%s" % _get_maindomain()
-            for user in values["choices"].keys():
+            for user in user_list()["users"].keys():
                 if root_mail in user_info(user).get("mail-aliases", []):
                     return user
 
@@ -1212,6 +1212,7 @@ class UserOption(BaseChoicesOption):
 
 class GroupOption(BaseChoicesOption):
     type: Literal[OptionType.group] = OptionType.group
+    filter: Literal[None] = None
     choices: Union[dict[str, str], None]
     default: Union[Literal["visitors", "all_users", "admins"], None] = "all_users"
 
@@ -1235,6 +1236,13 @@ class GroupOption(BaseChoicesOption):
             )
 
         return {groupname: _human_readable_group(groupname) for groupname in groups}
+
+    @validator("default", pre=True, always=True)
+    def inject_default(cls, value: Union[str, None], values: Values) -> str:
+        # FIXME do we really want to default to something all the time?
+        if value is None:
+            return "all_users"
+        return value
 
 
 OPTIONS = {

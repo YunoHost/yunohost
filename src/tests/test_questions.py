@@ -1803,9 +1803,7 @@ class TestGroup(BaseTest):
             "scenarios": [
                 ("custom_group", "custom_group"),
                 *all_as("", None, output="visitors", raw_option={"default": "visitors"}),
-                *xpass(scenarios=[
-                    ("", "custom_group", {"default": "custom_group"}),
-                ], reason="Should throw 'default must be in (None, 'all_users', 'visitors', 'admins')"),
+                ("", FAIL, {"default": "custom_group"}),  # Not allowed to set a default which is not a default group
                 # readonly
                 ("admins", FAIL, {"readonly": True}),  # readonly is forbidden
             ]
@@ -1822,13 +1820,6 @@ class TestGroup(BaseTest):
                 prefill_data={
                     "raw_option": {"default": "admins"},
                     "prefill": "admins",
-                }
-            )
-            # FIXME This should fail, not allowed to set a default which is not a default group
-            super().test_options_prompted_with_ask_help(
-                prefill_data={
-                    "raw_option": {"default": "custom_group"},
-                    "prefill": "custom_group",
                 }
             )
 
