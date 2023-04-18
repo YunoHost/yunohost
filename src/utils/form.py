@@ -53,7 +53,7 @@ from pydantic.types import constr
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
-from moulinette.utils.filesystem import read_file, write_to_file
+from moulinette.utils.filesystem import read_file, read_yaml, write_to_file
 from yunohost.log import OperationLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.i18n import _value_for_locale
@@ -1431,6 +1431,31 @@ def hydrate_option_type(raw_option: dict[str, Any]) -> dict[str, Any]:
 Hooks = dict[str, Callable[[BaseInputOption], Any]]
 
 
+def parse_prefilled_values(
+    args: Union[str, None] = None,
+    args_file: Union[str, None] = None,
+    method: Literal["parse_qs", "parse_qsl"] = "parse_qs",
+) -> dict[str, Any]:
+    """
+    Retrieve form values from yaml file or query string.
+    """
+    values: Values = {}
+    if args_file:
+        # Import YAML / JSON file
+        values |= read_yaml(args_file)
+    if args:
+        # FIXME See `ask_questions_and_parse_answers`
+        parsed = getattr(urllib.parse, method)(args, keep_blank_values=True)
+        if isinstance(parsed, dict):  # parse_qs
+            # FIXME could do the following to get a list directly?
+            # k: None if not len(v) else (v if len(v) > 1 else v[0])
+            values |= {k: ",".join(v) for k, v in parsed.items()}
+        else:
+            values |= dict(parsed)
+
+    return values
+
+
 def prompt_or_validate_form(
     options: list[AnyOption],
     form: FormModel,
@@ -1561,9 +1586,7 @@ def ask_questions_and_parse_answers(
         # whereas parse.qs return list of values (which is useful for tags, etc)
         # For now, let's not migrate this piece of code to parse_qs
         # Because Aleks believes some bits of the app CI rely on overriding values (e.g. foo=foo&...&foo=bar)
-        answers = dict(
-            urllib.parse.parse_qsl(prefilled_answers or "", keep_blank_values=True)
-        )
+        answers = parse_prefilled_values(prefilled_answers, method="parse_qsl")
     elif isinstance(prefilled_answers, Mapping):
         answers = {**prefilled_answers}
     else:
