@@ -26,6 +26,7 @@ from yunohost.utils.form import (
     FileOption,
     evaluate_simple_js_expression,
 )
+from yunohost.utils import form
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
 
@@ -91,6 +92,12 @@ def patch_no_tty():
 @pytest.fixture
 def patch_with_tty():
     with patch_isatty(True):
+        yield
+
+
+@pytest.fixture
+def patch_cli_retries():
+    with patch.object(form, "MAX_RETRIES", 0):
         yield
 
 
@@ -405,6 +412,7 @@ def _test_intake_may_fail(raw_option, intake, expected_output):
         _test_intake(raw_option, intake, expected_output)
 
 
+@pytest.mark.usefixtures("patch_cli_retries")  # To avoid chain error logging
 class BaseTest:
     raw_option: dict[str, Any] = {}
     prefill: dict[Literal["raw_option", "prefill", "intake"], Any]
