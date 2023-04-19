@@ -720,7 +720,7 @@ class DomainConfigPanel(ConfigPanel):
         form: "FormModel",
         previous_settings: dict[str, Any],
         exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
-    ):
+    ) -> None:
         next_settings = {
             k: v for k, v in form.dict().items() if previous_settings.get(k) != v
         }

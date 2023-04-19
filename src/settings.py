@@ -136,7 +136,7 @@ class SettingsConfigPanel(ConfigPanel):
     save_mode = "diff"
     virtual_settings = {"root_password", "root_password_confirm", "passwordless_sudo"}
 
-    def __init__(self, config_path=None, save_path=None, creation=False):
+    def __init__(self, config_path=None, save_path=None, creation=False) -> None:
         super().__init__("settings")
 
     def get(
@@ -150,7 +150,11 @@ class SettingsConfigPanel(ConfigPanel):
 
         return result
 
-    def reset(self, key: Union[str, None] = None, operation_logger: Union["OperationLogger", None] = None,):
+    def reset(
+        self,
+        key: Union[str, None] = None,
+        operation_logger: Union["OperationLogger", None] = None,
+    ) -> None:
         self.filter_key = parse_filter_key(key)
 
         # Read config panel toml
@@ -160,8 +164,11 @@ class SettingsConfigPanel(ConfigPanel):
         previous_settings = self.form.dict()
 
         for option in self.config.options:
-            if not option.readonly and (option.optional or option.default not in {None, ""}):
-                self.form[option.id] = option.normalize(option.default, option)
+            if not option.readonly and (
+                option.optional or option.default not in {None, ""}
+            ):
+                # FIXME Mypy complains about option.default not being a valid type for normalize but this should be ok
+                self.form[option.id] = option.normalize(option.default, option)  # type: ignore
 
         # FIXME Not sure if this is need (redact call to operation logger does it on all the instances)
         # BaseOption.operation_logger = operation_logger
@@ -230,7 +237,7 @@ class SettingsConfigPanel(ConfigPanel):
         form: "FormModel",
         previous_settings: dict[str, Any],
         exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
-    ):
+    ) -> None:
         root_password = form.get("root_password", None)
         root_password_confirm = form.get("root_password_confirm", None)
         passwordless_sudo = form.get("passwordless_sudo", None)

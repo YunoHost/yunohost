@@ -469,7 +469,7 @@ class OperationLogger:
     This class record logs and metadata like context or start time/end time.
     """
 
-    _instances: List[object] = []
+    _instances: List["OperationLogger"] = []
 
     def __init__(self, operation, related_to=None, **kwargs):
         # TODO add a way to not save password on app installation
