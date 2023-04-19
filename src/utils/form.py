@@ -938,18 +938,6 @@ class FileOption(BaseInputOption):
 # ─ CHOICES ───────────────────────────────────────────────
 
 
-ChoosableOptions = Literal[
-    OptionType.string,
-    OptionType.color,
-    OptionType.number,
-    OptionType.date,
-    OptionType.time,
-    OptionType.email,
-    OptionType.path,
-    OptionType.url,
-]
-
-
 class BaseChoicesOption(BaseInputOption):
     # FIXME probably forbid choices to be None?
     filter: Union[JSExpression, None] = None  # filter before choices
