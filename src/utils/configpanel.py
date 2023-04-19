@@ -355,7 +355,7 @@ class ConfigPanel:
             if isinstance(option, BaseReadonlyOption):
                 return None
 
-            return self.form[option_id]
+            return option.normalize(self.form[option_id], option)
 
         # Format result in 'classic' or 'export' mode
         self.config.translate()
