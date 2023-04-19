@@ -125,9 +125,9 @@ def test_app_config_get_nonexistentstuff(config_app):
     with pytest.raises(YunohostValidationError):
         app_config_get(config_app, "main.components.nonexistent")
 
-    app_setting(config_app, "boolean", delete=True)
+    app_setting(config_app, "number", delete=True)
     with pytest.raises(YunohostError):
-        app_config_get(config_app, "main.components.boolean")
+        app_config_get(config_app, "main.components.number")
 
 
 def test_app_config_regular_setting(config_app):
