@@ -1459,6 +1459,9 @@ def parse_prefilled_values(
     return values
 
 
+MAX_RETRIES = 4
+
+
 def prompt_or_validate_form(
     options: list[AnyOption],
     form: FormModel,
@@ -1538,7 +1541,7 @@ def prompt_or_validate_form(
                 context[option.id] = form[option.id]
             except (ValidationError, YunohostValidationError) as e:
                 # If in interactive cli, re-ask the current question
-                if i < 4 and interactive:
+                if i < MAX_RETRIES and interactive:
                     logger.error(str(e))
                     value = None
                     continue
