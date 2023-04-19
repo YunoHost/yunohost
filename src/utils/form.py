@@ -31,7 +31,7 @@ from typing import (
     Annotated,
     Any,
     Callable,
-    List,
+    Iterable,
     Literal,
     Mapping,
     Type,
@@ -207,7 +207,7 @@ def js_to_python(expr):
     return py_expr
 
 
-def evaluate_simple_js_expression(expr, context={}):
+def evaluate_simple_js_expression(expr: str, context: dict[str, Any] = {}) -> bool:
     if not expr.strip():
         return False
     node = ast.parse(js_to_python(expr), mode="eval").body
@@ -650,7 +650,7 @@ class NumberOption(BaseInputOption):
     _none_as_empty_str = False
 
     @staticmethod
-    def normalize(value, option={}):
+    def normalize(value, option={}) -> Union[int, None]:
         if isinstance(value, int):
             return value
 
@@ -704,7 +704,7 @@ class BooleanOption(BaseInputOption):
     _none_as_empty_str = False
 
     @staticmethod
-    def humanize(value, option={}):
+    def humanize(value, option={}) -> str:
         option = option.dict() if isinstance(option, BaseOption) else option
 
         yes = option.get("yes", 1)
@@ -727,7 +727,7 @@ class BooleanOption(BaseInputOption):
         )
 
     @staticmethod
-    def normalize(value, option={}):
+    def normalize(value, option={}) -> Any:
         option = option.dict() if isinstance(option, BaseOption) else option
 
         if isinstance(value, str):
@@ -844,7 +844,7 @@ class WebPathOption(BaseInputOption):
     _annotation = str
 
     @staticmethod
-    def normalize(value, option={}):
+    def normalize(value, option={}) -> str:
         option = option.dict() if isinstance(option, BaseOption) else option
 
         if value is None:
@@ -892,14 +892,14 @@ class FileOption(BaseInputOption):
     _upload_dirs: set[str] = set()
 
     @classmethod
-    def clean_upload_dirs(cls):
+    def clean_upload_dirs(cls) -> None:
         # Delete files uploaded from API
         for upload_dir in cls._upload_dirs:
             if os.path.exists(upload_dir):
                 shutil.rmtree(upload_dir)
 
     @classmethod
-    def _value_post_validator(cls, value: Any, field: "ModelField") -> Any:
+    def _value_post_validator(cls, value: Any, field: "ModelField") -> str:
         from base64 import b64decode
 
         if not value:
@@ -967,7 +967,6 @@ class BaseChoicesOption(BaseInputOption):
             choices = (
                 self.choices if isinstance(self.choices, list) else self.choices.keys()
             )
-            # FIXME in case of dict, try to parse keys with `item_type` (at least number)
             return Literal[tuple(choices)]
 
         return self._annotation
@@ -1006,6 +1005,7 @@ class BaseChoicesOption(BaseInputOption):
 
 class SelectOption(BaseChoicesOption):
     type: Literal[OptionType.select] = OptionType.select
+    filter: Literal[None] = None
     choices: Union[dict[str, Any], list[Any]]
     default: Union[str, None]
     _annotation = str
@@ -1013,13 +1013,14 @@ class SelectOption(BaseChoicesOption):
 
 class TagsOption(BaseChoicesOption):
     type: Literal[OptionType.tags] = OptionType.tags
+    filter: Literal[None] = None
     choices: Union[list[str], None] = None
     pattern: Union[Pattern, None] = None
     default: Union[str, list[str], None]
     _annotation = str
 
     @staticmethod
-    def humanize(value, option={}):
+    def humanize(value, option={}) -> str:
         if isinstance(value, list):
             return ",".join(str(v) for v in value)
         if not value:
@@ -1027,7 +1028,7 @@ class TagsOption(BaseChoicesOption):
         return value
 
     @staticmethod
-    def normalize(value, option={}):
+    def normalize(value, option={}) -> str:
         if isinstance(value, list):
             return ",".join(str(v) for v in value)
         if isinstance(value, str):
@@ -1037,7 +1038,7 @@ class TagsOption(BaseChoicesOption):
         return value
 
     @property
-    def _dynamic_annotation(self):
+    def _dynamic_annotation(self) -> Type[str]:
         # TODO use Literal when serialization is seperated from validation
         # if self.choices is not None:
         #     return Literal[tuple(self.choices)]
@@ -1120,7 +1121,7 @@ class DomainOption(BaseChoicesOption):
         return _get_maindomain()
 
     @staticmethod
-    def normalize(value, option={}):
+    def normalize(value, option={}) -> str:
         if value.startswith("https://"):
             value = value[len("https://") :]
         elif value.startswith("http://"):
@@ -1309,7 +1310,9 @@ class OptionsModel(BaseModel):
     options: list[Annotated[AnyOption, Field(discriminator="type")]]
 
     @staticmethod
-    def options_dict_to_list(options: dict[str, Any], optional: bool = False):
+    def options_dict_to_list(
+        options: dict[str, Any], optional: bool = False
+    ) -> list[dict[str, Any]]:
         return [
             option
             | {
@@ -1324,7 +1327,7 @@ class OptionsModel(BaseModel):
     def __init__(self, **kwargs) -> None:
         super().__init__(options=self.options_dict_to_list(kwargs))
 
-    def translate_options(self, i18n_key: Union[str, None] = None):
+    def translate_options(self, i18n_key: Union[str, None] = None) -> None:
         """
         Mutate in place translatable attributes of options to their translations
         """
@@ -1354,7 +1357,7 @@ class FormModel(BaseModel):
         validate_assignment = True
         extra = Extra.ignore
 
-    def __getitem__(self, name: str):
+    def __getitem__(self, name: str) -> Any:
         # FIXME
         # if a FormModel's required field is not instancied with a value, it is
         # not available as an attr and therefor triggers an `AttributeError`
@@ -1367,7 +1370,7 @@ class FormModel(BaseModel):
 
         return getattr(self, name)
 
-    def __setitem__(self, name: str, value: Any):
+    def __setitem__(self, name: str, value: Any) -> None:
         setattr(self, name, value)
 
     def get(self, attr: str, default: Any = None) -> Any:
@@ -1377,7 +1380,9 @@ class FormModel(BaseModel):
             return default
 
 
-def build_form(options: list[AnyOption], name: str = "DynamicForm") -> Type[FormModel]:
+def build_form(
+    options: Iterable[AnyOption], name: str = "DynamicForm"
+) -> Type[FormModel]:
     """
     Returns a dynamic pydantic model class that can be used as a form.
     Parsing/validation occurs at instanciation and assignements.
@@ -1463,7 +1468,7 @@ MAX_RETRIES = 4
 
 
 def prompt_or_validate_form(
-    options: list[AnyOption],
+    options: Iterable[AnyOption],
     form: FormModel,
     prefilled_answers: dict[str, Any] = {},
     context: Context = {},
@@ -1498,7 +1503,6 @@ def prompt_or_validate_form(
 
         if isinstance(option, BaseReadonlyOption) or option.readonly:
             if isinstance(option, BaseInputOption):
-                # FIXME normalized needed, form[option.id] should already be normalized
                 # only update the context with the value
                 context[option.id] = option.normalize(form[option.id])
 
@@ -1618,7 +1622,7 @@ def ask_questions_and_parse_answers(
     return (model.options, form)
 
 
-def hydrate_questions_with_choices(raw_questions: List) -> List:
+def hydrate_questions_with_choices(raw_questions: list[dict[str, Any]]) -> list[dict[str, Any]]:
     out = []
 
     for raw_question in raw_questions:

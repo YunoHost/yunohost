@@ -1889,26 +1889,29 @@ class AppConfigPanel(ConfigPanel):
         form: "FormModel",
         previous_settings: dict[str, Any],
         exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
-    ):
+    ) -> None:
         env = {key: str(value) for key, value in form.dict().items()}
         return_content = self._call_config_script("apply", env=env)
 
         # If the script returned validation error
         # raise a ValidationError exception using
         # the first key
-        if return_content:
-            for key, message in return_content.get("validation_errors").items():
+        errors = return_content.get("validation_errors")
+        if errors:
+            for key, message in errors.items():
                 raise YunohostValidationError(
                     "app_argument_invalid",
                     name=key,
                     error=message,
                 )
 
-    def _run_action(self, form: "FormModel", action_id: str):
+    def _run_action(self, form: "FormModel", action_id: str) -> None:
         env = {key: str(value) for key, value in form.dict().items()}
         self._call_config_script(action_id, env=env)
 
-    def _call_config_script(self, action, env=None):
+    def _call_config_script(
+        self, action: str, env: Union[dict[str, Any], None] = None
+    ) -> dict[str, Any]:
         from yunohost.hook import hook_exec
 
         if env is None:
@@ -2375,9 +2378,7 @@ def _set_default_ask_questions(questions, script_name="install"):
             for question_with_default in questions_with_default
         ):
             # The key is for example "app_manifest_install_ask_domain"
-            question["ask"] = m18n.n(
-                f"app_manifest_{script_name}_ask_{question['id']}"
-            )
+            question["ask"] = m18n.n(f"app_manifest_{script_name}_ask_{question['id']}")
 
             # Also it in fact doesn't make sense for any of those questions to have an example value nor a default value...
             if question.get("type") in ["domain", "user", "password"]:

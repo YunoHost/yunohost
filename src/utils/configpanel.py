@@ -20,7 +20,7 @@ import glob
 import os
 import re
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Literal, Sequence, Type, Union
+from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union
 
 from pydantic import BaseModel, Extra, validator
 
@@ -32,7 +32,6 @@ from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
     AnyOption,
     BaseInputOption,
-    BaseOption,
     BaseReadonlyOption,
     FileOption,
     OptionsModel,
@@ -70,7 +69,7 @@ class ContainerModel(BaseModel):
     services: list[str] = []
     help: Union[Translation, None] = None
 
-    def translate(self, i18n_key: Union[str, None] = None):
+    def translate(self, i18n_key: Union[str, None] = None) -> None:
         """
         Translate `ask` and `name` attributes of panels and section.
         This is in place mutation.
@@ -111,16 +110,16 @@ class SectionModel(ContainerModel, OptionsModel):
         )
 
     @property
-    def is_action_section(self):
+    def is_action_section(self) -> bool:
         return any([option.type is OptionType.button for option in self.options])
 
-    def is_visible(self, context: dict[str, Any]):
+    def is_visible(self, context: dict[str, Any]) -> bool:
         if isinstance(self.visible, bool):
             return self.visible
 
         return evaluate_simple_js_expression(self.visible, context=context)
 
-    def translate(self, i18n_key: Union[str, None] = None):
+    def translate(self, i18n_key: Union[str, None] = None) -> None:
         """
         Call to `Container`'s `translate` for self translation
         + Call to `OptionsContainer`'s `translate_options` for options translation
@@ -151,7 +150,7 @@ class PanelModel(ContainerModel):
             id=id, name=name, services=services, help=help, sections=sections
         )
 
-    def translate(self, i18n_key: Union[str, None] = None):
+    def translate(self, i18n_key: Union[str, None] = None) -> None:
         """
         Recursivly mutate translatable attributes to their translation
         """
@@ -181,14 +180,14 @@ class ConfigPanelModel(BaseModel):
         super().__init__(version=version, i18n=i18n, panels=panels)
 
     @property
-    def sections(self):
+    def sections(self) -> Iterator[SectionModel]:
         """Convinient prop to iter on all sections"""
         for panel in self.panels:
             for section in panel.sections:
                 yield section
 
     @property
-    def options(self):
+    def options(self) -> Iterator[AnyOption]:
         """Convinient prop to iter on all options"""
         for section in self.sections:
             for option in section.options:
@@ -231,7 +230,7 @@ class ConfigPanelModel(BaseModel):
                     for option in section.options:
                         yield (panel, section, option)
 
-    def translate(self):
+    def translate(self) -> None:
         """
         Recursivly mutate translatable attributes to their translation
         """
@@ -239,7 +238,7 @@ class ConfigPanelModel(BaseModel):
             panel.translate(self.i18n)
 
     @validator("version", always=True)
-    def check_version(cls, value, field: "ModelField"):
+    def check_version(cls, value: float, field: "ModelField") -> float:
         if value < CONFIG_PANEL_VERSION_SUPPORTED:
             raise ValueError(
                 f"Config panels version '{value}' are no longer supported."
@@ -302,7 +301,9 @@ class ConfigPanel:
             entities = []
         return entities
 
-    def __init__(self, entity, config_path=None, save_path=None, creation=False):
+    def __init__(
+        self, entity, config_path=None, save_path=None, creation=False
+    ) -> None:
         self.entity = entity
         self.config_path = config_path
         if not config_path:
@@ -350,7 +351,7 @@ class ConfigPanel:
             if option is None:
                 # FIXME i18n
                 raise YunohostValidationError(
-                    f"Couldn't find any option with id {option_id}"
+                    f"Couldn't find any option with id {option_id}", raw_msg=True
                 )
 
             if isinstance(option, BaseReadonlyOption):
@@ -398,7 +399,7 @@ class ConfigPanel:
         args: Union[str, None] = None,
         args_file: Union[str, None] = None,
         operation_logger: Union["OperationLogger", None] = None,
-    ):
+    ) -> None:
         self.filter_key = parse_filter_key(key)
         panel_id, section_id, option_id = self.filter_key
 
@@ -466,7 +467,7 @@ class ConfigPanel:
         if operation_logger:
             operation_logger.success()
 
-    def list_actions(self):
+    def list_actions(self) -> dict[str, str]:
         actions = {}
 
         # FIXME : meh, loading the entire config panel is again going to cause
@@ -486,7 +487,7 @@ class ConfigPanel:
         args: Union[str, None] = None,
         args_file: Union[str, None] = None,
         operation_logger: Union["OperationLogger", None] = None,
-    ):
+    ) -> None:
         #
         # FIXME : this stuff looks a lot like set() ...
         #
@@ -666,7 +667,7 @@ class ConfigPanel:
     def _ask(
         self,
         config: ConfigPanelModel,
-        settings: "FormModel",
+        form: "FormModel",
         prefilled_answers: dict[str, Any] = {},
         action_id: Union[str, None] = None,
         hooks: "Hooks" = {},
@@ -709,22 +710,22 @@ class ConfigPanel:
                     if option.type is not OptionType.button or option.id == action_id
                 ]
 
-                settings = prompt_or_validate_form(
+                form = prompt_or_validate_form(
                     options,
-                    settings,
+                    form,
                     prefilled_answers=prefilled_answers,
                     context=context,
                     hooks=hooks,
                 )
 
-        return settings
+        return form
 
     def _apply(
         self,
         form: "FormModel",
         previous_settings: dict[str, Any],
         exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
-    ) -> dict[str, Any]:
+    ) -> None:
         """
         Save settings in yaml file.
         If `save_mode` is `"diff"` (which is the default), only values that are
@@ -764,15 +765,13 @@ class ConfigPanel:
         # Save the settings to the .yaml file
         write_to_yaml(self.save_path, current_settings)
 
-        return current_settings
-
-    def _run_action(self, form: "FormModel", action_id: str):
+    def _run_action(self, form: "FormModel", action_id: str) -> None:
         raise NotImplementedError()
 
-    def _reload_services(self):
+    def _reload_services(self) -> None:
         from yunohost.service import service_reload_or_restart
 
-        services_to_reload = self.config.services
+        services_to_reload = self.config.services if self.config else []
 
         if services_to_reload:
             logger.info("Reloading services...")
