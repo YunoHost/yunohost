@@ -53,7 +53,7 @@ from yunohost.utils.form import (
     DomainOption,
     WebPathOption,
     ask_questions_and_parse_answers,
-    hydrate_questions_with_choices,
+    parse_raw_options,
 )
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -960,8 +960,7 @@ def app_upgrade(
 def app_manifest(app, with_screenshot=False):
     manifest, extracted_app_folder = _extract_app(app)
 
-    raw_questions = manifest.get("install", {}).values()
-    manifest["install"] = hydrate_questions_with_choices(raw_questions)
+    manifest["install"] = parse_raw_options(manifest.get("install", {}), serialize=True)
 
     # Add a base64 image to be displayed in web-admin
     if with_screenshot and Moulinette.interface.type == "api":

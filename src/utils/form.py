@@ -28,6 +28,7 @@ from enum import Enum
 from typing import (
     TYPE_CHECKING,
     cast,
+    overload,
     Annotated,
     Any,
     Callable,
@@ -1604,6 +1605,33 @@ def ask_questions_and_parse_answers(
 
     context = {**current_values, **answers}
 
+    model_options = parse_raw_options(raw_options, serialize=False)
+    # Build the form from those questions and instantiate it without
+    # parsing/validation (construct) since it may contains required questions.
+    form = build_form(model_options).construct()
+    form = prompt_or_validate_form(
+        model_options, form, prefilled_answers=answers, context=context, hooks=hooks
+    )
+    return (model_options, form)
+
+
+@overload
+def parse_raw_options(
+    raw_options: dict[str, Any], serialize: Literal[True]
+) -> list[dict[str, Any]]:
+    ...
+
+
+@overload
+def parse_raw_options(
+    raw_options: dict[str, Any], serialize: Literal[False] = False
+) -> list[AnyOption]:
+    ...
+
+
+def parse_raw_options(
+    raw_options: dict[str, Any], serialize: bool = False
+) -> Union[list[dict[str, Any]], list[AnyOption]]:
     # Validate/parse the options attributes
     try:
         model = OptionsModel(**raw_options)
@@ -1613,24 +1641,8 @@ def ask_questions_and_parse_answers(
         raise YunohostValidationError(error, raw_msg=True)
 
     model.translate_options()
-    # Build the form from those questions and instantiate it without
-    # parsing/validation (construct) since it may contains required questions.
-    form = build_form(model.options).construct()
-    form = prompt_or_validate_form(
-        model.options, form, prefilled_answers=answers, context=context, hooks=hooks
-    )
-    return (model.options, form)
 
+    if serialize:
+        return model.dict()["options"]
 
-def hydrate_questions_with_choices(raw_questions: list[dict[str, Any]]) -> list[dict[str, Any]]:
-    out = []
-
-    for raw_question in raw_questions:
-        raw_question = hydrate_option_type(raw_question)
-        question = OPTIONS[raw_question["type"]](**raw_question)
-        if isinstance(question, BaseChoicesOption) and question.choices:
-            raw_question["choices"] = question.choices
-            raw_question["default"] = question.default
-        out.append(raw_question)
-
-    return out
+    return model.options
