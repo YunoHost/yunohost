@@ -601,6 +601,17 @@ class ConfigPanel:
         for _, section, option in config.iter_children():
             value = data = raw_settings.get(option.id, getattr(option, "default", None))
 
+            if isinstance(option, BaseInputOption) and option.id not in raw_settings:
+                if option.default is not None:
+                    value = option.default
+                elif option.type is OptionType.file or option.bind == "null":
+                    continue
+                else:
+                    raise YunohostError(
+                        f"Config panel question '{option.id}' should be initialized with a value during install or upgrade.",
+                        raw_msg=True,
+                    )
+
             if isinstance(data, dict):
                 # Settings data if gathered from bash "ynh_app_config_show"
                 # may be a custom getter that returns a dict with `value` or `current_value`
