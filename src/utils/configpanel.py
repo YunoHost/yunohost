@@ -282,6 +282,7 @@ class ConfigPanel:
     filter_key: "FilterKey" = (None, None, None)
     config: Union[ConfigPanelModel, None] = None
     form: Union["FormModel", None] = None
+    raw_settings: "RawSettings" = {}
     hooks: "Hooks" = {}
 
     @classmethod
@@ -596,6 +597,8 @@ class ConfigPanel:
         self, config: ConfigPanelModel
     ) -> tuple[ConfigPanelModel, "RawSettings"]:
         raw_settings = self._get_raw_settings(config)
+        # Save `raw_settings` for diff at `_apply`
+        self.raw_settings = raw_settings
         values = {}
 
         for _, section, option in config.iter_children():
@@ -734,12 +737,34 @@ class ConfigPanel:
             mkdir(dir_path, mode=0o700)
 
         exclude_defaults = self.save_mode == "diff"
-        settings = form.dict(exclude_defaults=exclude_defaults, exclude=exclude)  # type: ignore
+        # get settings keys filtered by filter_key
+        partial_settings_keys = form.__fields__.keys()
+        # get filtered settings
+        partial_settings = form.dict(exclude_defaults=exclude_defaults, exclude=exclude)  # type: ignore
+        # get previous settings that we will updated with new settings
+        current_settings = self.raw_settings.copy()
+
+        if exclude:
+            current_settings = {
+                key: value
+                for key, value in current_settings.items()
+                if key not in exclude
+            }
+
+        for key in partial_settings_keys:
+            if (
+                exclude_defaults
+                and key not in partial_settings
+                and key in current_settings
+            ):
+                del current_settings[key]
+            elif key in partial_settings:
+                current_settings[key] = partial_settings[key]
 
         # Save the settings to the .yaml file
-        write_to_yaml(self.save_path, settings)
+        write_to_yaml(self.save_path, current_settings)
 
-        return settings
+        return current_settings
 
     def _run_action(self, form: "FormModel", action_id: str):
         raise NotImplementedError()

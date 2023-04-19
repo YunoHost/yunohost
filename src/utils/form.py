@@ -1488,7 +1488,7 @@ def prompt_or_validate_form(
                 # - we doesn't want to give a specific value
                 # - we want to keep the previous value
                 # - we want the default value
-                context[option.id] = form[option.id] = None
+                context[option.id] = None
 
             continue
 
