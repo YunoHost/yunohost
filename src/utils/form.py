@@ -1466,9 +1466,6 @@ def prompt_or_validate_form(
     context: Context = {},
     hooks: Hooks = {},
 ) -> FormModel:
-    answers = {**prefilled_answers}
-    values = {}
-
     for option in options:
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
@@ -1500,7 +1497,7 @@ def prompt_or_validate_form(
             if isinstance(option, BaseInputOption):
                 # FIXME normalized needed, form[option.id] should already be normalized
                 # only update the context with the value
-                context[option.id] = form[option.id]
+                context[option.id] = option.normalize(form[option.id])
 
                 # FIXME here we could error out
                 if option.id in prefilled_answers:
@@ -1537,7 +1534,8 @@ def prompt_or_validate_form(
 
             try:
                 # Normalize and validate
-                values[option.id] = form[option.id] = option.normalize(value, option)
+                form[option.id] = option.normalize(value, option)
+                context[option.id] = form[option.id]
             except (ValidationError, YunohostValidationError) as e:
                 # If in interactive cli, re-ask the current question
                 if i < 4 and interactive:
@@ -1557,11 +1555,13 @@ def prompt_or_validate_form(
         # Search for post actions in hooks
         post_hook = f"post_ask__{option.id}"
         if post_hook in hooks:
-            values.update(hooks[post_hook](option))
-            # FIXME reapply new values to form to validate it
-
-        answers.update(values)
-        context.update(values)
+            # Hooks looks like they can return multiple values, validate those
+            values = hooks[post_hook](option)
+            for option_id, value in values.items():
+                option = next(opt for opt in options if option.id == option_id)
+                if option and isinstance(option, BaseInputOption):
+                    form[option.id] = option.normalize(value, option)
+                    context[option.id] = form[option.id]
 
     return form
 
