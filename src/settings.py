@@ -22,7 +22,7 @@ from typing import TYPE_CHECKING, Any, Union
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.configpanel import ConfigPanel
+from yunohost.utils.configpanel import ConfigPanel, parse_filter_key
 from yunohost.utils.form import BaseOption
 from moulinette.utils.log import getActionLogger
 from yunohost.regenconf import regen_conf
@@ -31,6 +31,8 @@ from yunohost.log import is_unit_operation
 from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_settings
 
 if TYPE_CHECKING:
+    from yunohost.log import OperationLogger
+
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
     from yunohost.utils.configpanel import (
@@ -148,25 +150,26 @@ class SettingsConfigPanel(ConfigPanel):
 
         return result
 
-    def reset(self, key="", operation_logger=None):
-        self.filter_key = key
+    def reset(self, key: Union[str, None] = None, operation_logger: Union["OperationLogger", None] = None,):
+        self.filter_key = parse_filter_key(key)
 
         # Read config panel toml
-        self._get_config_panel()
+        self.config, self.form = self._get_config_panel(prevalidate=True)
 
-        if not self.config:
-            raise YunohostValidationError("config_no_panel")
+        # FIXME find a better way to exclude previous settings
+        previous_settings = self.form.dict()
 
-        # Replace all values with default values
-        self.values = self._get_default_values()
+        for option in self.config.options:
+            if not option.readonly and (option.optional or option.default not in {None, ""}):
+                self.form[option.id] = option.normalize(option.default, option)
 
-        BaseOption.operation_logger = operation_logger
+        # FIXME Not sure if this is need (redact call to operation logger does it on all the instances)
+        # BaseOption.operation_logger = operation_logger
 
         if operation_logger:
             operation_logger.start()
-
         try:
-            self._apply()
+            self._apply(self.form, previous_settings)
         except YunohostError:
             raise
         # Script got manually interrupted ...
@@ -184,7 +187,9 @@ class SettingsConfigPanel(ConfigPanel):
             raise
 
         logger.success(m18n.n("global_settings_reset_success"))
-        operation_logger.success()
+
+        if operation_logger:
+            operation_logger.success()
 
     def _get_raw_config(self) -> "RawConfig":
         raw_config = super()._get_raw_config()
