@@ -16,7 +16,7 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , python3-toml, python3-packaging, python3-publicsuffix2
  , python3-ldap, python3-zeroconf (>= 0.47), python3-lexicon,
  , python3-cryptography, python3-jwt
- , python-is-python3
+ , python-is-python3, python3-pydantic, python3-email-validator
  , nginx, nginx-extras (>=1.22)
  , apt, apt-transport-https, apt-utils, dirmngr
  , openssh-server, iptables, fail2ban, bind9-dnsutils
