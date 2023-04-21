@@ -396,6 +396,7 @@ class AlertOption(BaseReadonlyOption):
 
 class ButtonOption(BaseReadonlyOption):
     type: Literal[OptionType.button] = OptionType.button
+    bind: Literal["null"] = "null"
     help: Union[Translation, None] = None
     style: State = State.success
     icon: Union[str, None] = None
@@ -839,10 +840,8 @@ class EmailOption(BaseInputOption):
     _annotation = EmailStr
 
 
-class WebPathOption(BaseInputOption):
+class WebPathOption(BaseStringOption):
     type: Literal[OptionType.path] = OptionType.path
-    default: Union[str, None]
-    _annotation = str
 
     @staticmethod
     def normalize(value, option={}) -> str:
@@ -876,7 +875,6 @@ class WebPathOption(BaseInputOption):
 
 class URLOption(BaseStringOption):
     type: Literal[OptionType.url] = OptionType.url
-    default: Union[str, None]
     _annotation = HttpUrl
 
 
