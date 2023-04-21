@@ -298,6 +298,76 @@ class Pattern(BaseModel):
 
 
 class BaseOption(BaseModel):
+    """
+    ##### Examples
+
+    ```toml
+    [my_option_id]
+    type = "string"
+    # ask as `str`
+    ask = "The text in english"
+    # ask as `dict`
+    ask.en = "The text in english"
+    ask.fr = "Le texte en français"
+    # advanced props
+    visible = "my_other_option_id != 'success'"
+    readonly = true
+    # much advanced: config panel only?
+    bind = "null"
+    ```
+
+    ##### Properties
+
+    - `type`:
+        - readonly types:
+            -  [`display_text`](#option-display_text)
+            -  [`markdown`](#option-markdown)
+            -  [`alert`](#option-alert)
+            -  [`button`](#option-button)
+        - inputs types:
+            -  [`string`](#option-string)
+            -  [`text`](#option-text)
+            -  [`password`](#option-password)
+            -  [`color`](#option-color)
+            -  [`number`](#option-number)
+            -  [`range`](#option-range)
+            -  [`boolean`](#option-boolean)
+            -  [`date`](#option-date)
+            -  [`time`](#option-time)
+            -  [`email`](#option-email)
+            -  [`path`](#option-path)
+            -  [`url`](#option-url)
+            -  [`file`](#option-file)
+            -  [`select`](#option-select)
+            -  [`tags`](#option-tags)
+            -  [`domain`](#option-domain)
+            -  [`app`](#option-app)
+            -  [`user`](#option-user)
+            -  [`group`](#option-group)
+    - `ask`: `Translation` (default to the option's `id` if not defined):
+        - text to display as the option's label for inputs or text to display for readonly options
+    - `visible` (optional): `bool` or `JSExpression` (default: `true`)
+        - define if the option is diplayed/asked
+        - if `false` and used alongside `readonly = true`, you get a context only value that can still be used in `JSExpression`s
+    - `readonly` (optional): `bool` (default: `false`, forced to `true` for readonly types):
+        - If `true` for input types: forbid mutation of its value
+    - `bind` (optional): `Binding` (default: `None`):
+        - (config panels only!) allow to choose where an option's is gathered/stored:
+        - if not specified, the value will be gathered/stored in the `settings.yml`
+        - if `"null"`:
+            - the value will not be stored at all (can still be used in context evaluations)
+            - if in `scripts/config` there's a function named:
+                - `get__my_option_id`: the value will be gathered from this custom getter
+                - `set__my_option_id`: the value will be passed to this custom setter where you can do whatever you want with the value
+                - `validate__my_option_id`: the value will be passed to this custom validator before any custom setter
+        - if `bind` is a file path:
+            - if the path starts with `:`, the value be saved as its id's variable/property counterpart
+                - this only works for first level variables/properties and simple types (no array)
+            - else the value will be stored as the whole content of the file
+            - you can use `__FINALPATH__` in your path to point to dynamic install paths
+                - FIXME are other global variables accessible?
+    """
+
     type: OptionType
     id: str
     ask: Union[Translation, None]
@@ -364,10 +434,34 @@ class BaseReadonlyOption(BaseOption):
 
 
 class DisplayTextOption(BaseReadonlyOption):
+    """
+    Display simple multi-line content.
+
+    ##### Examples
+
+    ```toml
+    [my_option_id]
+    type = "display_text"
+    ask = "Simple text rendered as is."
+    ```
+    """
+
     type: Literal[OptionType.display_text] = OptionType.display_text
 
 
 class MarkdownOption(BaseReadonlyOption):
+    """
+    Display markdown multi-line content.
+    Markdown is currently only rendered in the web-admin
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "display_text"
+    ask = "Text **rendered** in markdown."
+    ```
+    """
+
     type: Literal[OptionType.markdown] = OptionType.markdown
 
 
@@ -379,6 +473,27 @@ class State(str, Enum):
 
 
 class AlertOption(BaseReadonlyOption):
+    """
+    Alerts displays a important message with a level of severity.
+    You can use markdown in `ask` but will only be rendered in the web-admin.
+
+    ##### Examples
+
+    ```toml
+    [my_option_id]
+    type = "alert"
+    ask = "The configuration seems to be manually modified..."
+    style = "warning"
+    icon = "warning"
+    ```
+    ##### Properties
+
+    - [common properties](#common-option-properties)
+    - `style`: any of `"success|info|warning|danger"` (default: `"info"`)
+    - `icon` (optional): any icon name from [Fork Awesome](https://forkaweso.me/Fork-Awesome/icons/)
+        - Currently only displayed in the web-admin
+    """
+
     type: Literal[OptionType.alert] = OptionType.alert
     style: State = State.info
     icon: Union[str, None] = None
@@ -395,6 +510,45 @@ class AlertOption(BaseReadonlyOption):
 
 
 class ButtonOption(BaseReadonlyOption):
+    """
+    Triggers actions.
+    Available only in config panels.
+    Renders as a `button` in the web-admin and can be called with `yunohost [app|domain|settings] action run <action_id>` in CLI.
+
+    Every options defined in an action section (a config panel section with at least one `button`) is guaranted to be shown/asked to the user and available in `scripts/config`'s scope.
+    [check examples in advanced use cases](#actions).
+
+    ##### Examples
+
+    ```toml
+    [my_action_id]
+    type = "button"
+    ask = "Break the system"
+    style = "danger"
+    icon = "bug"
+    # enabled only if another option's value (a `boolean` for example) is positive
+    enabled = "aknowledged"
+    ```
+
+    To be able to trigger an action we have to add a bash function starting with `run__` in your `scripts/config`
+
+    ```bash
+    run__my_action_id() {
+        ynh_print_info "Running 'my_action_id' action"
+    }
+    ```
+
+    ##### Properties
+
+    - [common properties](#common-option-properties)
+        - `bind`: forced to `"null"`
+    - `style`: any of `"success|info|warning|danger"` (default: `"success"`)
+    - `enabled`: `Binding` or `bool` (default: `true`)
+        - when used with `Binding` you can enable/disable the button depending on context
+    - `icon` (optional): any icon name from [Fork Awesome](https://forkaweso.me/Fork-Awesome/icons/)
+        - Currently only displayed in the web-admin
+    """
+
     type: Literal[OptionType.button] = OptionType.button
     bind: Literal["null"] = "null"
     help: Union[Translation, None] = None
@@ -415,6 +569,35 @@ class ButtonOption(BaseReadonlyOption):
 
 
 class BaseInputOption(BaseOption):
+    """
+    Rest of the option types available are considered `inputs`.
+
+    ##### Examples
+
+    ```toml
+    [my_option_id]
+    type = "string"
+    # …any common props… +
+    optional = false
+    redact = False
+    default = "some default string"
+    help = "You can enter almost anything!"
+    example = "an example string"
+    placeholder = "write something…"
+    ```
+
+    ##### Properties
+
+    - [common properties](#common-option-properties)
+    - `optional`: `bool` (default: `false`, but `true` in config panels)
+    - `redact`: `bool` (default: `false`), to redact the value in the logs when the value contain private information
+    - `default`: depends on `type`, the default value to assign to the option
+        - in case of readonly values, you can use this `default` to assign a value (or return a dynamic `default` from a custom getter)
+    - `help` (optional): `Translation`, to display a short help message in cli and web-admin
+    - `example` (optional): `str`, to display an example value in web-admin only
+    - `placeholder` (optional): `str`, shown in the web-admin fields only
+    """
+
     help: Union[Translation, None] = None
     example: Union[str, None] = None
     placeholder: Union[str, None] = None
@@ -563,10 +746,44 @@ class BaseStringOption(BaseInputOption):
 
 
 class StringOption(BaseStringOption):
+    """
+    Ask for a simple string.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "string"
+    default = "E10"
+    pattern.regexp = "^[A-F]\d\d$"
+    pattern.error = "Provide a room like F12 : one uppercase and 2 numbers"
+    ```
+
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `""`
+    - `pattern` (optional): `Pattern`, a regex to match the value against
+    """
+
     type: Literal[OptionType.string] = OptionType.string
 
 
 class TextOption(BaseStringOption):
+    """
+    Ask for a multiline string.
+    Renders as a `textarea` in the web-admin and by opening a text editor on the CLI.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "text"
+    default = "multi\\nline\\ncontent"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `""`
+    - `pattern` (optional): `Pattern`, a regex to match the value against
+    """
+
     type: Literal[OptionType.text] = OptionType.text
 
 
@@ -574,6 +791,22 @@ FORBIDDEN_PASSWORD_CHARS = r"{}"
 
 
 class PasswordOption(BaseInputOption):
+    """
+    Ask for a password.
+    The password is tested as a regular user password (at least 8 chars)
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "password"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: forced to `""`
+        - `redact`: forced to `true`
+        - `example`: forbidden
+    """
+
     type: Literal[OptionType.password] = OptionType.password
     example: Literal[None] = None
     default: Literal[None] = None
@@ -610,6 +843,21 @@ class PasswordOption(BaseInputOption):
 
 
 class ColorOption(BaseInputOption):
+    """
+    Ask for a color represented as a hex value (with possibly an alpha channel).
+    Renders as color picker in the web-admin and as a prompt that accept named color like `yellow` in CLI.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "color"
+    default = "#ff0"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `""`
+    """
+
     type: Literal[OptionType.color] = OptionType.color
     default: Union[str, None]
     _annotation = Color
@@ -642,6 +890,26 @@ class ColorOption(BaseInputOption):
 
 
 class NumberOption(BaseInputOption):
+    """
+    Ask for a number (an integer).
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "number"
+    default = 100
+    min = 50
+    max = 200
+    step = 5
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `type`: `number` or `range` (input or slider in the web-admin)
+    - `min` (optional): minimal int value inclusive
+    - `max` (optional): maximal int value inclusive
+    - `step` (optional): currently only used in the webadmin as the `<input/>` step jump
+    """
+
     # `number` and `range` are exactly the same, but `range` does render as a slider in web-admin
     type: Literal[OptionType.number, OptionType.range] = OptionType.number
     default: Union[int, None]
@@ -696,6 +964,27 @@ class NumberOption(BaseInputOption):
 
 
 class BooleanOption(BaseInputOption):
+    """
+    Ask for a boolean.
+    Renders as a switch in the web-admin and a yes/no prompt in CLI.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "boolean"
+    default = 1
+    yes = "agree"
+    no = "disagree"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `0`
+    - `yes` (optional): (default: `1`) define as what the thruthy value should output
+        - can be `true`, `True`, `"yes"`, etc.
+    - `no` (optional): (default: `0`) define as what the thruthy value should output
+        - can be `0`, `"false"`, `"n"`, etc.
+    """
+
     type: Literal[OptionType.boolean] = OptionType.boolean
     yes: Any = 1
     no: Any = 0
@@ -801,6 +1090,23 @@ class BooleanOption(BaseInputOption):
 
 
 class DateOption(BaseInputOption):
+    """
+    Ask for a date in the form `"2025-06-14"`.
+    Renders as a date-picker in the web-admin and a regular prompt in CLI.
+
+    Can also take a timestamp as value that will output as an ISO date string.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "date"
+    default = "2070-12-31"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `""`
+    """
+
     type: Literal[OptionType.date] = OptionType.date
     default: Union[str, None]
     _annotation = datetime.date
@@ -816,6 +1122,21 @@ class DateOption(BaseInputOption):
 
 
 class TimeOption(BaseInputOption):
+    """
+    Ask for an hour in the form `"22:35"`.
+    Renders as a date-picker in the web-admin and a regular prompt in CLI.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "time"
+    default = "12:26"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `""`
+    """
+
     type: Literal[OptionType.time] = OptionType.time
     default: Union[str, int, None]
     _annotation = datetime.time
@@ -835,12 +1156,41 @@ class TimeOption(BaseInputOption):
 
 
 class EmailOption(BaseInputOption):
+    """
+    Ask for an email. Validation made with [python-email-validator](https://github.com/JoshData/python-email-validator)
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "email"
+    default = "Abc.123@test-example.com"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `""`
+    """
+
     type: Literal[OptionType.email] = OptionType.email
     default: Union[EmailStr, None]
     _annotation = EmailStr
 
 
 class WebPathOption(BaseStringOption):
+    """
+    Ask for an web path (the part of an url after the domain). Used by default in app install to define from where the app will be accessible.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "path"
+    default = "/"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `""`
+    - `pattern` (optional): `Pattern`, a regex to match the value against
+    """
+
     type: Literal[OptionType.path] = OptionType.path
 
     @staticmethod
@@ -874,6 +1224,21 @@ class WebPathOption(BaseStringOption):
 
 
 class URLOption(BaseStringOption):
+    """
+    Ask for any url.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "url"
+    default = "https://example.xn--zfr164b/@handle/"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `""`
+    - `pattern` (optional): `Pattern`, a regex to match the value against
+    """
+
     type: Literal[OptionType.url] = OptionType.url
     _annotation = HttpUrl
 
@@ -882,6 +1247,25 @@ class URLOption(BaseStringOption):
 
 
 class FileOption(BaseInputOption):
+    """
+    Ask for file.
+    Renders a file prompt in the web-admin and ask for a path in CLI.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "file"
+    accept = ".json"
+    # bind the file to a location to save the file there
+    bind = "/tmp/my_file.json"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `""`
+    - `accept`: a comma separated list of extension to accept like `".conf, .ini`
+        - /!\ currently only work on the web-admin
+    """
+
     type: Literal[OptionType.file] = OptionType.file
     # `FilePath` for CLI (path must exists and must be a file)
     # `bytes` for API (a base64 encoded file actually)
@@ -991,6 +1375,24 @@ class BaseChoicesOption(BaseInputOption):
 
 
 class SelectOption(BaseChoicesOption):
+    """
+    Ask for value from a limited set of values.
+    Renders as a regular `<select/>` in the web-admin and as a regular prompt in CLI with autocompletion of `choices`.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "select"
+    choices = ["one", "two", "three"]
+    choices = "one,two,three"
+    default = "two"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `""`, obviously the default has to be empty or an available `choices` item.
+    - `choices`: a (coma separated) list of values
+    """
+
     type: Literal[OptionType.select] = OptionType.select
     filter: Literal[None] = None
     choices: Union[dict[str, Any], list[Any]]
@@ -999,6 +1401,31 @@ class SelectOption(BaseChoicesOption):
 
 
 class TagsOption(BaseChoicesOption):
+    """
+    Ask for series of values. Optionally from a limited set of values.
+    Renders as a multi select in the web-admin and as a regular prompt in CLI without autocompletion of `choices`.
+
+    This output as a coma separated list of strings `"one,two,three"`
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "tags"
+    default = "word,another word"
+
+    [my_other_option_id]
+    type = "tags"
+    choices = ["one", "two", "three"]
+    # choices = "one,two,three"
+    default = "two,three"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `""`, obviously the default has to be empty or an available `choices` item.
+    - `pattern` (optional): `Pattern`, a regex to match all the values against
+    - `choices` (optional): a (coma separated) list of values
+    """
+
     type: Literal[OptionType.tags] = OptionType.tags
     filter: Literal[None] = None
     choices: Union[list[str], None] = None
@@ -1081,6 +1508,20 @@ class TagsOption(BaseChoicesOption):
 
 
 class DomainOption(BaseChoicesOption):
+    """
+    Ask for a user domain.
+    Renders as a select in the web-admin and as a regular prompt in CLI with autocompletion of registered domains.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "domain"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: forced to the instance main domain
+    """
+
     type: Literal[OptionType.domain] = OptionType.domain
     filter: Literal[None] = None
     choices: Union[dict[str, str], None]
@@ -1121,6 +1562,22 @@ class DomainOption(BaseChoicesOption):
 
 
 class AppOption(BaseChoicesOption):
+    """
+    Ask for a user app.
+    Renders as a select in the web-admin and as a regular prompt in CLI with autocompletion of installed apps.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "app"
+    filter = "is_webapp"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `""`
+    - `filter` (optional): `JSExpression` with what `yunohost app info <app_id> --full` returns as context (only first level keys)
+    """
+
     type: Literal[OptionType.app] = OptionType.app
     filter: Union[JSExpression, None] = None
     add_yunohost_portal_to_choices: bool = False
@@ -1158,6 +1615,20 @@ class AppOption(BaseChoicesOption):
 
 
 class UserOption(BaseChoicesOption):
+    """
+    Ask for a user.
+    Renders as a select in the web-admin and as a regular prompt in CLI with autocompletion of available usernames.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "user"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: the first admin user found
+    """
+
     type: Literal[OptionType.user] = OptionType.user
     filter: Literal[None] = None
     choices: Union[dict[str, str], None]
@@ -1204,6 +1675,21 @@ class UserOption(BaseChoicesOption):
 
 
 class GroupOption(BaseChoicesOption):
+    """
+    Ask for a group.
+    Renders as a select in the web-admin and as a regular prompt in CLI with autocompletion of available groups.
+
+    ##### Examples
+    ```toml
+    [my_option_id]
+    type = "group"
+    default = "visitors"
+    ```
+    ##### Properties
+    - [common inputs properties](#common-inputs-properties)
+        - `default`: `"all_users"`, `"visitors"` or `"admins"` (default: `"all_users"`)
+    """
+
     type: Literal[OptionType.group] = OptionType.group
     filter: Literal[None] = None
     choices: Union[dict[str, str], None]
