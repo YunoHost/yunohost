@@ -299,10 +299,20 @@ class Pattern(BaseModel):
 
 class BaseOption(BaseModel):
     """
+    Options are fields declaration that renders as form items, button, alerts or text in the web-admin and printed or prompted in CLI.
+    They are used in app manifests to declare the before installation form and in config panels.
+
+    [Have a look at the app config panel doc](/packaging_apps_config_panels) for details about Panels and Sections.
+
+    ----------------
+    IMPORTANT: as for Panels and Sections you have to choose an id, but this one should be unique in all this document, even if the question is in an other panel.
+
+    ----------------
+
     ##### Examples
 
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "string"
     # ask as `str`
     ask = "The text in english"
@@ -346,14 +356,14 @@ class BaseOption(BaseModel):
             -  [`group`](#option-group)
     - `ask`: `Translation` (default to the option's `id` if not defined):
         - text to display as the option's label for inputs or text to display for readonly options
+        - in config panels, questions are displayed on the left side and therefore have not much space to be rendered. Therefore, it is better to use a short question, and use the `help` property to provide additional details if necessary.
     - `visible` (optional): `bool` or `JSExpression` (default: `true`)
         - define if the option is diplayed/asked
         - if `false` and used alongside `readonly = true`, you get a context only value that can still be used in `JSExpression`s
     - `readonly` (optional): `bool` (default: `false`, forced to `true` for readonly types):
         - If `true` for input types: forbid mutation of its value
-    - `bind` (optional): `Binding` (default: `None`):
-        - (config panels only!) allow to choose where an option's is gathered/stored:
-        - if not specified, the value will be gathered/stored in the `settings.yml`
+    - `bind` (optional): `Binding`, config panels only! A powerful feature that let you configure how and where the setting will be read, validated and written
+        - if not specified, the value will be read/written in the app `settings.yml`
         - if `"null"`:
             - the value will not be stored at all (can still be used in context evaluations)
             - if in `scripts/config` there's a function named:
@@ -440,7 +450,7 @@ class DisplayTextOption(BaseReadonlyOption):
     ##### Examples
 
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "display_text"
     ask = "Simple text rendered as is."
     ```
@@ -456,7 +466,7 @@ class MarkdownOption(BaseReadonlyOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "display_text"
     ask = "Text **rendered** in markdown."
     ```
@@ -480,7 +490,7 @@ class AlertOption(BaseReadonlyOption):
     ##### Examples
 
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "alert"
     ask = "The configuration seems to be manually modified..."
     style = "warning"
@@ -521,7 +531,7 @@ class ButtonOption(BaseReadonlyOption):
     ##### Examples
 
     ```toml
-    [my_action_id]
+    [section.my_option_id]
     type = "button"
     ask = "Break the system"
     style = "danger"
@@ -575,7 +585,7 @@ class BaseInputOption(BaseOption):
     ##### Examples
 
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "string"
     # …any common props… +
     optional = false
@@ -751,7 +761,7 @@ class StringOption(BaseStringOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "string"
     default = "E10"
     pattern.regexp = "^[A-F]\d\d$"
@@ -774,7 +784,7 @@ class TextOption(BaseStringOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "text"
     default = "multi\\nline\\ncontent"
     ```
@@ -797,7 +807,7 @@ class PasswordOption(BaseInputOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "password"
     ```
     ##### Properties
@@ -849,7 +859,7 @@ class ColorOption(BaseInputOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "color"
     default = "#ff0"
     ```
@@ -895,7 +905,7 @@ class NumberOption(BaseInputOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "number"
     default = 100
     min = 50
@@ -970,7 +980,7 @@ class BooleanOption(BaseInputOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "boolean"
     default = 1
     yes = "agree"
@@ -1098,7 +1108,7 @@ class DateOption(BaseInputOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "date"
     default = "2070-12-31"
     ```
@@ -1128,7 +1138,7 @@ class TimeOption(BaseInputOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "time"
     default = "12:26"
     ```
@@ -1161,7 +1171,7 @@ class EmailOption(BaseInputOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "email"
     default = "Abc.123@test-example.com"
     ```
@@ -1181,7 +1191,7 @@ class WebPathOption(BaseStringOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "path"
     default = "/"
     ```
@@ -1229,7 +1239,7 @@ class URLOption(BaseStringOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "url"
     default = "https://example.xn--zfr164b/@handle/"
     ```
@@ -1253,7 +1263,7 @@ class FileOption(BaseInputOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "file"
     accept = ".json"
     # bind the file to a location to save the file there
@@ -1381,7 +1391,7 @@ class SelectOption(BaseChoicesOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "select"
     choices = ["one", "two", "three"]
     choices = "one,two,three"
@@ -1409,7 +1419,7 @@ class TagsOption(BaseChoicesOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "tags"
     default = "word,another word"
 
@@ -1514,7 +1524,7 @@ class DomainOption(BaseChoicesOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "domain"
     ```
     ##### Properties
@@ -1568,7 +1578,7 @@ class AppOption(BaseChoicesOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "app"
     filter = "is_webapp"
     ```
@@ -1621,7 +1631,7 @@ class UserOption(BaseChoicesOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "user"
     ```
     ##### Properties
@@ -1681,7 +1691,7 @@ class GroupOption(BaseChoicesOption):
 
     ##### Examples
     ```toml
-    [my_option_id]
+    [section.my_option_id]
     type = "group"
     default = "visitors"
     ```
