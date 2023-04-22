@@ -95,9 +95,10 @@ class SectionModel(ContainerModel, OptionsModel):
         services: list[str] = [],
         help: Union[Translation, None] = None,
         visible: Union[bool, str] = True,
+        optional: bool = True,
         **kwargs,
     ) -> None:
-        options = self.options_dict_to_list(kwargs, optional=True)
+        options = self.options_dict_to_list(kwargs, optional=optional)
 
         ContainerModel.__init__(
             self,
