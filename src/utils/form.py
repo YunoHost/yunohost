@@ -1308,9 +1308,8 @@ class OptionsModel(BaseModel):
         return [
             option
             | {
-                "id": id_,
+                "id": option.get("id", id_),
                 "type": option.get("type", "string"),
-                # ConfigPanel options needs to be set as optional by default
                 "optional": option.get("optional", optional),
             }
             for id_, option in options.items()
