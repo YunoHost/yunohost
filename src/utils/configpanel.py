@@ -86,6 +86,7 @@ class ContainerModel(BaseModel):
 class SectionModel(ContainerModel, OptionsModel):
     visible: Union[bool, str] = True
     optional: bool = True
+    is_action_section: bool = False
 
     # Don't forget to pass arguments to super init
     def __init__(
@@ -99,7 +100,7 @@ class SectionModel(ContainerModel, OptionsModel):
         **kwargs,
     ) -> None:
         options = self.options_dict_to_list(kwargs, optional=optional)
-
+        is_action_section = any([option["type"] == OptionType.button for option in options])
         ContainerModel.__init__(
             self,
             id=id,
@@ -108,11 +109,8 @@ class SectionModel(ContainerModel, OptionsModel):
             help=help,
             visible=visible,
             options=options,
+            is_action_section=is_action_section,
         )
-
-    @property
-    def is_action_section(self) -> bool:
-        return any([option.type is OptionType.button for option in self.options])
 
     def is_visible(self, context: dict[str, Any]) -> bool:
         if isinstance(self.visible, bool):
