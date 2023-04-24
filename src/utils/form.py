@@ -1537,7 +1537,11 @@ def prompt_or_validate_form(
             except (ValidationError, YunohostValidationError) as e:
                 # If in interactive cli, re-ask the current question
                 if i < MAX_RETRIES and interactive:
-                    logger.error(str(e))
+                    logger.error(
+                        "\n".join([err["msg"] for err in e.errors()])
+                        if isinstance(e, ValidationError)
+                        else str(e)
+                    )
                     value = None
                     continue
 
@@ -1627,8 +1631,7 @@ def parse_raw_options(
         model = OptionsModel(**raw_options)
     except ValidationError as e:
         error = "\n".join([err["msg"] for err in e.errors()])
-        # FIXME use YunohostError instead since it is not really a user mistake?
-        raise YunohostValidationError(error, raw_msg=True)
+        raise YunohostError(error, raw_msg=True)
 
     model.translate_options()
 
