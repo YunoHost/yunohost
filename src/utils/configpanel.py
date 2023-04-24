@@ -20,7 +20,7 @@ import glob
 import os
 import re
 from collections import OrderedDict
-from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union
+from typing import TYPE_CHECKING, Any, Iterator, Literal, Sequence, Type, Union, cast
 
 from pydantic import BaseModel, Extra, validator
 
@@ -100,7 +100,9 @@ class SectionModel(ContainerModel, OptionsModel):
         **kwargs,
     ) -> None:
         options = self.options_dict_to_list(kwargs, optional=optional)
-        is_action_section = any([option["type"] == OptionType.button for option in options])
+        is_action_section = any(
+            [option["type"] == OptionType.button for option in options]
+        )
         ContainerModel.__init__(
             self,
             id=id,
@@ -370,7 +372,9 @@ class ConfigPanel:
                     for opt in section["options"]:
                         instance = self.config.get_option(opt["id"])
                         if isinstance(instance, BaseInputOption):
-                            opt["value"] = instance.normalize(self.form[opt["id"]], instance)
+                            opt["value"] = instance.normalize(
+                                self.form[opt["id"]], instance
+                            )
             return result
 
         result = OrderedDict()
@@ -381,6 +385,9 @@ class ConfigPanel:
                     continue
 
                 for option in section.options:
+                    # FIXME not sure why option resolves as possibly `None`
+                    option = cast(AnyOption, option)
+
                     if mode == "export":
                         if isinstance(option, BaseInputOption):
                             result[option.id] = self.form[option.id]
