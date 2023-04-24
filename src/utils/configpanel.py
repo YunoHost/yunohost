@@ -363,7 +363,20 @@ class ConfigPanel:
         # Format result in 'classic' or 'export' mode
         self.config.translate()
         logger.debug(f"Formating result in '{mode}' mode")
+
+        if mode == "full":
+            result = self.config.dict(exclude_none=True)
+
+            for panel in result["panels"]:
+                for section in panel["sections"]:
+                    for opt in section["options"]:
+                        instance = self.config.get_option(opt["id"])
+                        if isinstance(instance, BaseInputOption):
+                            opt["value"] = instance.normalize(self.form[opt["id"]], instance)
+            return result
+
         result = OrderedDict()
+
         for panel in self.config.panels:
             for section in panel.sections:
                 if section.is_action_section and mode != "full":
@@ -388,10 +401,7 @@ class ConfigPanel:
                                     "value"
                                 ] = "**************"  # Prevent displaying password in `config get`
 
-        if mode == "full":
-            return self.config.dict(exclude_none=True)
-        else:
-            return result
+        return result
 
     def set(
         self,
