@@ -168,7 +168,7 @@
     "diagnosis_failed": "Ezinezkoa izan da '{category}' ataleko diagnostikoa lortzea: {error}",
     "diagnosis_ip_weird_resolvconf": "DNS ebazpena badabilela dirudi, baina antza denez moldatutako <code>/etc/resolv.conf</code> fitxategia erabiltzen ari zara.",
     "diagnosis_dns_bad_conf": "DNS balio batzuk falta dira edo ez dira zuzenak {domain} domeinurako ({category} atala)",
-    "diagnosis_diskusage_ok": "<code>{mountpoint}</code> fitxategi-sistemak (<code>{device}</code> euskarrian) edukieraren {free} (%{free_percent}a) ditu erabilgarri oraindik ({total} orotara)!",
+    "diagnosis_diskusage_ok": "<code>{mountpoint}</code> fitxategi-sistemak (<code>{device}</code> euskarrian) edukieraren {free} (%{free_percent}a) ditu oraindik erabilgarri ({total} orotara)!",
     "apps_catalog_update_success": "Aplikazioen katalogoa eguneratu da!",
     "certmanager_warning_subdomain_dns_record": "'{subdomain}' azpidomeinuak ez dauka '{domain}'(e)k duen IP bera. Ezaugarri batzuk ez dira erabilgarri egongo hau zuzendu arte eta ziurtagiri bat birsortu arte.",
     "app_argument_choice_invalid": "Hautatu ({choices}) aukeretako bat '{name}' argumenturako: '{value}' ez dago aukera horien artean",
