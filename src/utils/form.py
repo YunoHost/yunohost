@@ -1304,7 +1304,7 @@ class OptionsModel(BaseModel):
             option
             | {
                 "id": option.get("id", id_),
-                "type": option.get("type", "string"),
+                "type": option.get("type", "select" if "choices" in option else "string"),
                 "optional": option.get("optional", optional),
             }
             for id_, option in options.items()
