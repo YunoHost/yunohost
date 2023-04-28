@@ -1989,10 +1989,10 @@ def test_option_default_type_with_choices_is_select():
     }
     answers = {"some_choices": "a", "some_legacy": "a"}
 
-    options = ask_questions_and_parse_answers(questions, answers)
+    options, form = ask_questions_and_parse_answers(questions, answers)
     for option in options:
         assert option.type == "select"
-        assert option.value == "a"
+        assert form[option.id] == "a"
 
 
 @pytest.mark.skip  # we should do something with this example

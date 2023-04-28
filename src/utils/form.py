@@ -1305,15 +1305,25 @@ class OptionsModel(BaseModel):
     def options_dict_to_list(
         options: dict[str, Any], optional: bool = False
     ) -> list[dict[str, Any]]:
-        return [
-            option
-            | {
-                "id": option.get("id", id_),
-                "type": option.get("type", "select" if "choices" in option else "string"),
-                "optional": option.get("optional", optional),
+        options_list = []
+
+        for id_, data in options.items():
+            option = data | {
+                "id": data.get("id", id_),
+                "type": data.get("type", OptionType.select if "choices" in data else OptionType.string),
+                "optional": data.get("optional", optional),
             }
-            for id_, option in options.items()
-        ]
+
+            # LEGACY (`choices` in option `string` used to be valid)
+            if "choices" in option and option["type"] == OptionType.string:
+                logger.warning(
+                    f"Packagers: option {id_} has 'choices' but has type 'string', use 'select' instead to remove this warning."
+                )
+                option["type"] = OptionType.select
+
+            options_list.append(option)
+
+        return options_list
 
     def __init__(self, **kwargs) -> None:
         super().__init__(options=self.options_dict_to_list(kwargs))
