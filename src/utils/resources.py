@@ -571,7 +571,7 @@ class PermissionsResource(AppResource):
                 infos["url"] = _hydrate_app_template(infos["url"], settings)
 
             if infos.get("additional_urls"):
-                infos["additional_urls"] = [_hydrate_app_template(url) for url in infos["additional_urls"]]
+                infos["additional_urls"] = [_hydrate_app_template(url, settings) for url in infos["additional_urls"]]
 
     def provision_or_update(self, context: Dict = {}):
         from yunohost.permission import (
