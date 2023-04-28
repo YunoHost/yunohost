@@ -50,8 +50,8 @@ from moulinette.utils.filesystem import (
 
 from yunohost.utils.configpanel import ConfigPanel, ask_questions_and_parse_answers
 from yunohost.utils.form import (
-    DomainQuestion,
-    PathQuestion,
+    DomainOption,
+    WebPathOption,
     hydrate_questions_with_choices,
 )
 from yunohost.utils.i18n import _value_for_locale
@@ -430,10 +430,10 @@ def app_change_url(operation_logger, app, domain, path):
 
     # Normalize path and domain format
 
-    domain = DomainQuestion.normalize(domain)
-    old_domain = DomainQuestion.normalize(old_domain)
-    path = PathQuestion.normalize(path)
-    old_path = PathQuestion.normalize(old_path)
+    domain = DomainOption.normalize(domain)
+    old_domain = DomainOption.normalize(old_domain)
+    path = WebPathOption.normalize(path)
+    old_path = WebPathOption.normalize(old_path)
 
     if (domain, path) == (old_domain, old_path):
         raise YunohostValidationError(
@@ -1660,8 +1660,8 @@ def app_register_url(app, domain, path):
         permission_sync_to_user,
     )
 
-    domain = DomainQuestion.normalize(domain)
-    path = PathQuestion.normalize(path)
+    domain = DomainOption.normalize(domain)
+    path = WebPathOption.normalize(path)
 
     # We cannot change the url of an app already installed simply by changing
     # the settings...
@@ -1878,12 +1878,12 @@ class AppConfigPanel(ConfigPanel):
     save_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/settings.yml")
     config_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/config_panel.toml")
 
-    def _load_current_values(self):
-        self.values = self._call_config_script("show")
-
     def _run_action(self, action):
         env = {key: str(value) for key, value in self.new_values.items()}
         self._call_config_script(action, env=env)
+
+    def _get_raw_settings(self):
+        self.values = self._call_config_script("show")
 
     def _apply(self):
         env = {key: str(value) for key, value in self.new_values.items()}
@@ -2853,8 +2853,8 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
 
     from yunohost.domain import _assert_domain_exists
 
-    domain = DomainQuestion.normalize(domain)
-    path = PathQuestion.normalize(path)
+    domain = DomainOption.normalize(domain)
+    path = WebPathOption.normalize(path)
 
     # Abort if domain is unknown
     _assert_domain_exists(domain)

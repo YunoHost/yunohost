@@ -34,7 +34,7 @@ from yunohost.app import (
 )
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
 from yunohost.utils.configpanel import ConfigPanel
-from yunohost.utils.form import Question
+from yunohost.utils.form import BaseOption
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation
 
@@ -528,7 +528,7 @@ def domain_config_set(
     """
     Apply a new domain configuration
     """
-    Question.operation_logger = operation_logger
+    BaseOption.operation_logger = operation_logger
     config = DomainConfigPanel(domain)
     return config.set(key, value, args, args_file, operation_logger=operation_logger)
 
@@ -537,6 +537,83 @@ class DomainConfigPanel(ConfigPanel):
     entity_type = "domain"
     save_path_tpl = f"{DOMAIN_SETTINGS_DIR}/{{entity}}.yml"
     save_mode = "diff"
+
+    def get(self, key="", mode="classic"):
+        result = super().get(key=key, mode=mode)
+
+        if mode == "full":
+            for panel, section, option in self._iterate():
+                # This injects:
+                # i18n: domain_config_cert_renew_help
+                # i18n: domain_config_default_app_help
+                # i18n: domain_config_xmpp_help
+                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
+                    option["help"] = m18n.n(
+                        self.config["i18n"] + "_" + option["id"] + "_help"
+                    )
+            return self.config
+
+        return result
+
+    def _get_raw_config(self):
+        toml = super()._get_raw_config()
+
+        toml["feature"]["xmpp"]["xmpp"]["default"] = (
+            1 if self.entity == _get_maindomain() else 0
+        )
+
+        # Optimize wether or not to load the DNS section,
+        # e.g. we don't want to trigger the whole _get_registary_config_section
+        # when just getting the current value from the feature section
+        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
+        if not filter_key or filter_key[0] == "dns":
+            from yunohost.dns import _get_registrar_config_section
+
+            toml["dns"]["registrar"] = _get_registrar_config_section(self.entity)
+
+            # FIXME: Ugly hack to save the registar id/value and reinject it in _get_raw_settings ...
+            self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
+            del toml["dns"]["registrar"]["registrar"]["value"]
+
+        # Cert stuff
+        if not filter_key or filter_key[0] == "cert":
+            from yunohost.certificate import certificate_status
+
+            status = certificate_status([self.entity], full=True)["certificates"][
+                self.entity
+            ]
+
+            toml["cert"]["cert"]["cert_summary"]["style"] = status["style"]
+
+            # i18n: domain_config_cert_summary_expired
+            # i18n: domain_config_cert_summary_selfsigned
+            # i18n: domain_config_cert_summary_abouttoexpire
+            # i18n: domain_config_cert_summary_ok
+            # i18n: domain_config_cert_summary_letsencrypt
+            toml["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(
+                f"domain_config_cert_summary_{status['summary']}"
+            )
+
+            # FIXME: Ugly hack to save the cert status and reinject it in _get_raw_settings ...
+            self.cert_status = status
+
+        return toml
+
+    def _get_raw_settings(self):
+        # TODO add mechanism to share some settings with other domains on the same zone
+        super()._get_raw_settings()
+
+        # FIXME: Ugly hack to save the registar id/value and reinject it in _get_raw_settings ...
+        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
+        if not filter_key or filter_key[0] == "dns":
+            self.values["registrar"] = self.registar_id
+
+        # FIXME: Ugly hack to save the cert status and reinject it in _get_raw_settings ...
+        if not filter_key or filter_key[0] == "cert":
+            self.values["cert_validity"] = self.cert_status["validity"]
+            self.values["cert_issuer"] = self.cert_status["CA_type"]
+            self.values["acme_eligible"] = self.cert_status["ACME_eligible"]
+            self.values["summary"] = self.cert_status["summary"]
 
     def _apply(self):
         if (
@@ -585,83 +662,6 @@ class DomainConfigPanel(ConfigPanel):
 
         if stuff_to_regen_conf:
             regen_conf(names=stuff_to_regen_conf)
-
-    def _get_toml(self):
-        toml = super()._get_toml()
-
-        toml["feature"]["xmpp"]["xmpp"]["default"] = (
-            1 if self.entity == _get_maindomain() else 0
-        )
-
-        # Optimize wether or not to load the DNS section,
-        # e.g. we don't want to trigger the whole _get_registary_config_section
-        # when just getting the current value from the feature section
-        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
-        if not filter_key or filter_key[0] == "dns":
-            from yunohost.dns import _get_registrar_config_section
-
-            toml["dns"]["registrar"] = _get_registrar_config_section(self.entity)
-
-            # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
-            self.registar_id = toml["dns"]["registrar"]["registrar"]["value"]
-            del toml["dns"]["registrar"]["registrar"]["value"]
-
-        # Cert stuff
-        if not filter_key or filter_key[0] == "cert":
-            from yunohost.certificate import certificate_status
-
-            status = certificate_status([self.entity], full=True)["certificates"][
-                self.entity
-            ]
-
-            toml["cert"]["cert"]["cert_summary"]["style"] = status["style"]
-
-            # i18n: domain_config_cert_summary_expired
-            # i18n: domain_config_cert_summary_selfsigned
-            # i18n: domain_config_cert_summary_abouttoexpire
-            # i18n: domain_config_cert_summary_ok
-            # i18n: domain_config_cert_summary_letsencrypt
-            toml["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(
-                f"domain_config_cert_summary_{status['summary']}"
-            )
-
-            # FIXME: Ugly hack to save the cert status and reinject it in _load_current_values ...
-            self.cert_status = status
-
-        return toml
-
-    def get(self, key="", mode="classic"):
-        result = super().get(key=key, mode=mode)
-
-        if mode == "full":
-            for panel, section, option in self._iterate():
-                # This injects:
-                # i18n: domain_config_cert_renew_help
-                # i18n: domain_config_default_app_help
-                # i18n: domain_config_xmpp_help
-                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
-                    option["help"] = m18n.n(
-                        self.config["i18n"] + "_" + option["id"] + "_help"
-                    )
-            return self.config
-
-        return result
-
-    def _load_current_values(self):
-        # TODO add mechanism to share some settings with other domains on the same zone
-        super()._load_current_values()
-
-        # FIXME: Ugly hack to save the registar id/value and reinject it in _load_current_values ...
-        filter_key = self.filter_key.split(".") if self.filter_key != "" else []
-        if not filter_key or filter_key[0] == "dns":
-            self.values["registrar"] = self.registar_id
-
-        # FIXME: Ugly hack to save the cert status and reinject it in _load_current_values ...
-        if not filter_key or filter_key[0] == "cert":
-            self.values["cert_validity"] = self.cert_status["validity"]
-            self.values["cert_issuer"] = self.cert_status["CA_type"]
-            self.values["acme_eligible"] = self.cert_status["ACME_eligible"]
-            self.values["summary"] = self.cert_status["summary"]
 
 
 def domain_action_run(domain, action, args=None):

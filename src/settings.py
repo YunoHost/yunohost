@@ -22,7 +22,7 @@ import subprocess
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.configpanel import ConfigPanel
-from yunohost.utils.form import Question
+from yunohost.utils.form import BaseOption
 from moulinette.utils.log import getActionLogger
 from yunohost.regenconf import regen_conf
 from yunohost.firewall import firewall_reload
@@ -82,7 +82,7 @@ def settings_set(operation_logger, key=None, value=None, args=None, args_file=No
         value -- New value
 
     """
-    Question.operation_logger = operation_logger
+    BaseOption.operation_logger = operation_logger
     settings = SettingsConfigPanel()
     key = translate_legacy_settings_to_configpanel_settings(key)
     return settings.set(key, value, args, args_file, operation_logger=operation_logger)
@@ -124,6 +124,93 @@ class SettingsConfigPanel(ConfigPanel):
 
     def __init__(self, config_path=None, save_path=None, creation=False):
         super().__init__("settings")
+
+    def get(self, key="", mode="classic"):
+        result = super().get(key=key, mode=mode)
+
+        if mode == "full":
+            for panel, section, option in self._iterate():
+                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
+                    option["help"] = m18n.n(
+                        self.config["i18n"] + "_" + option["id"] + "_help"
+                    )
+            return self.config
+
+        # Dirty hack to let settings_get() to work from a python script
+        if isinstance(result, str) and result in ["True", "False"]:
+            result = bool(result == "True")
+
+        return result
+
+    def reset(self, key="", operation_logger=None):
+        self.filter_key = key
+
+        # Read config panel toml
+        self._get_config_panel()
+
+        if not self.config:
+            raise YunohostValidationError("config_no_panel")
+
+        # Replace all values with default values
+        self.values = self._get_default_values()
+
+        BaseOption.operation_logger = operation_logger
+
+        if operation_logger:
+            operation_logger.start()
+
+        try:
+            self._apply()
+        except YunohostError:
+            raise
+        # Script got manually interrupted ...
+        # N.B. : KeyboardInterrupt does not inherit from Exception
+        except (KeyboardInterrupt, EOFError):
+            error = m18n.n("operation_interrupted")
+            logger.error(m18n.n("config_apply_failed", error=error))
+            raise
+        # Something wrong happened in Yunohost's code (most probably hook_exec)
+        except Exception:
+            import traceback
+
+            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
+            logger.error(m18n.n("config_apply_failed", error=error))
+            raise
+
+        logger.success(m18n.n("global_settings_reset_success"))
+        operation_logger.success()
+
+    def _get_raw_config(self):
+        toml = super()._get_raw_config()
+
+        # Dynamic choice list for portal themes
+        THEMEDIR = "/usr/share/ssowat/portal/assets/themes/"
+        try:
+            themes = [d for d in os.listdir(THEMEDIR) if os.path.isdir(THEMEDIR + d)]
+        except Exception:
+            themes = ["unsplash", "vapor", "light", "default", "clouds"]
+        toml["misc"]["portal"]["portal_theme"]["choices"] = themes
+
+        return toml
+
+    def _get_raw_settings(self):
+        super()._get_raw_settings()
+
+        # Specific logic for those settings who are "virtual" settings
+        # and only meant to have a custom setter mapped to tools_rootpw
+        self.values["root_password"] = ""
+        self.values["root_password_confirm"] = ""
+
+        # Specific logic for virtual setting "passwordless_sudo"
+        try:
+            from yunohost.utils.ldap import _get_ldap_interface
+
+            ldap = _get_ldap_interface()
+            self.values["passwordless_sudo"] = "!authenticate" in ldap.search(
+                "ou=sudo", "cn=admins", ["sudoOption"]
+            )[0].get("sudoOption", [])
+        except Exception:
+            self.values["passwordless_sudo"] = False
 
     def _apply(self):
         root_password = self.new_values.pop("root_password", None)
@@ -169,93 +256,6 @@ class SettingsConfigPanel(ConfigPanel):
             except Exception as e:
                 logger.error(f"Post-change hook for setting failed : {e}")
                 raise
-
-    def _get_toml(self):
-        toml = super()._get_toml()
-
-        # Dynamic choice list for portal themes
-        THEMEDIR = "/usr/share/ssowat/portal/assets/themes/"
-        try:
-            themes = [d for d in os.listdir(THEMEDIR) if os.path.isdir(THEMEDIR + d)]
-        except Exception:
-            themes = ["unsplash", "vapor", "light", "default", "clouds"]
-        toml["misc"]["portal"]["portal_theme"]["choices"] = themes
-
-        return toml
-
-    def _load_current_values(self):
-        super()._load_current_values()
-
-        # Specific logic for those settings who are "virtual" settings
-        # and only meant to have a custom setter mapped to tools_rootpw
-        self.values["root_password"] = ""
-        self.values["root_password_confirm"] = ""
-
-        # Specific logic for virtual setting "passwordless_sudo"
-        try:
-            from yunohost.utils.ldap import _get_ldap_interface
-
-            ldap = _get_ldap_interface()
-            self.values["passwordless_sudo"] = "!authenticate" in ldap.search(
-                "ou=sudo", "cn=admins", ["sudoOption"]
-            )[0].get("sudoOption", [])
-        except Exception:
-            self.values["passwordless_sudo"] = False
-
-    def get(self, key="", mode="classic"):
-        result = super().get(key=key, mode=mode)
-
-        if mode == "full":
-            for panel, section, option in self._iterate():
-                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
-                    option["help"] = m18n.n(
-                        self.config["i18n"] + "_" + option["id"] + "_help"
-                    )
-            return self.config
-
-        # Dirty hack to let settings_get() to work from a python script
-        if isinstance(result, str) and result in ["True", "False"]:
-            result = bool(result == "True")
-
-        return result
-
-    def reset(self, key="", operation_logger=None):
-        self.filter_key = key
-
-        # Read config panel toml
-        self._get_config_panel()
-
-        if not self.config:
-            raise YunohostValidationError("config_no_panel")
-
-        # Replace all values with default values
-        self.values = self._get_default_values()
-
-        Question.operation_logger = operation_logger
-
-        if operation_logger:
-            operation_logger.start()
-
-        try:
-            self._apply()
-        except YunohostError:
-            raise
-        # Script got manually interrupted ...
-        # N.B. : KeyboardInterrupt does not inherit from Exception
-        except (KeyboardInterrupt, EOFError):
-            error = m18n.n("operation_interrupted")
-            logger.error(m18n.n("config_apply_failed", error=error))
-            raise
-        # Something wrong happened in Yunohost's code (most probably hook_exec)
-        except Exception:
-            import traceback
-
-            error = m18n.n("unexpected_error", error="\n" + traceback.format_exc())
-            logger.error(m18n.n("config_apply_failed", error=error))
-            raise
-
-        logger.success(m18n.n("global_settings_reset_success"))
-        operation_logger.success()
 
 
 # Meant to be a dict of setting_name -> function to call
