@@ -595,7 +595,7 @@ class TestAlert(TestDisplayText):
         (None, None, {"ask": "Some text\na new line"}),
         (None, None, {"ask": {"en": "Some text\na new line", "fr": "Un peu de texte\nune nouvelle ligne"}}),
         *[(None, None, {"ask": "question", "style": style}) for style in ("success", "info", "warning", "danger")],
-        (None, FAIL, {"ask": "question", "style": "nimp"}),
+        (None, YunohostError, {"ask": "question", "style": "nimp"}),
     ]
     # fmt: on
 
@@ -737,7 +737,7 @@ class TestPassword(BaseTest):
         *all_fails([], ["one"], {}, raw_option={"optional": True}, error=AttributeError),  # FIXME those fails with AttributeError
         *all_fails("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", "value\n", raw_option={"optional": True}),
         *nones(None, "", output=""),
-        ("s3cr3t!!", FAIL, {"default": "SUPAs3cr3t!!"}),  # default is forbidden
+        ("s3cr3t!!", YunohostError, {"default": "SUPAs3cr3t!!"}),  # default is forbidden
         *xpass(scenarios=[
             ("s3cr3t!!", "s3cr3t!!", {"example": "SUPAs3cr3t!!"}),  # example is forbidden
         ], reason="Should fail; example is forbidden"),
@@ -749,7 +749,7 @@ class TestPassword(BaseTest):
         ("secret", FAIL),
         *[("supersecret" + char, FAIL) for char in FORBIDDEN_PASSWORD_CHARS],  # FIXME maybe add ` \n` to the list?
         # readonly
-        ("s3cr3t!!", FAIL, {"readonly": True}),  # readonly is forbidden
+        ("s3cr3t!!", YunohostError, {"readonly": True}),  # readonly is forbidden
     ]
     # fmt: on
 
@@ -1474,10 +1474,10 @@ class TestTags(BaseTest):
         # basic types (not in a list) should fail
         *all_fails(True, False, -1, 0, 1, 1337, 13.37, {}),
         # Mixed choices should fail
-        ([False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}], FAIL, {"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
-        ("False,True,-1,0,1,1337,13.37,[],['one'],{}", FAIL, {"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
-        *all_fails(*([t] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
-        *all_fails(*([str(t)] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        ([False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}], YunohostError, {"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        ("False,True,-1,0,1,1337,13.37,[],['one'],{}", YunohostError, {"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
+        *all_fails(*([t] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}, error=YunohostError),
+        *all_fails(*([str(t)] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}, error=YunohostError),
         # readonly
         ("one", "one,two", {"readonly": True, "choices": ["one", "two"], "default": "one,two"}),
     ]
@@ -1527,7 +1527,7 @@ class TestDomain(BaseTest):
                 ("doesnt_exist.pouet", FAIL, {}),
                 ("fake.com", FAIL, {"choices": ["fake.com"]}),
                 # readonly
-                (domains1[0], FAIL, {"readonly": True}),  # readonly is forbidden
+                (domains1[0], YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
         {
@@ -1627,7 +1627,7 @@ class TestApp(BaseTest):
                 (installed_non_webapp["id"], installed_non_webapp["id"]),
                 (installed_non_webapp["id"], FAIL, {"filter": "is_webapp"}),
                 # readonly
-                (installed_non_webapp["id"], FAIL, {"readonly": True}),  # readonly is forbidden
+                (installed_non_webapp["id"], YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]
@@ -1744,7 +1744,7 @@ class TestUser(BaseTest):
                     ("", regular_username, {"default": regular_username})
                 ], reason="Should throw 'no default allowed'"),
                 # readonly
-                (admin_username, FAIL, {"readonly": True}),  # readonly is forbidden
+                (admin_username, YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]
@@ -1824,9 +1824,9 @@ class TestGroup(BaseTest):
             "scenarios": [
                 ("custom_group", "custom_group"),
                 *all_as("", None, output="visitors", raw_option={"default": "visitors"}),
-                ("", FAIL, {"default": "custom_group"}),  # Not allowed to set a default which is not a default group
+                ("", YunohostError, {"default": "custom_group"}),  # Not allowed to set a default which is not a default group
                 # readonly
-                ("admins", FAIL, {"readonly": True}),  # readonly is forbidden
+                ("admins", YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]
