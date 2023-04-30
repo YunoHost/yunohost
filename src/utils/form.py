@@ -1305,7 +1305,10 @@ class OptionsModel(BaseModel):
         for id_, data in options.items():
             option = data | {
                 "id": data.get("id", id_),
-                "type": data.get("type", OptionType.select if "choices" in data else OptionType.string),
+                "type": data.get(
+                    "type",
+                    OptionType.select if "choices" in data else OptionType.string,
+                ),
                 "optional": data.get("optional", optional),
             }
 
@@ -1407,22 +1410,6 @@ def build_form(
             **options_as_fields,
         ),
     )
-
-
-def hydrate_option_type(raw_option: dict[str, Any]) -> dict[str, Any]:
-    type_ = raw_option.get(
-        "type", OptionType.select if "choices" in raw_option else OptionType.string
-    )
-    # LEGACY (`choices` in option `string` used to be valid)
-    if "choices" in raw_option and type_ == OptionType.string:
-        logger.warning(
-            f"Packagers: option {raw_option['id']} has 'choices' but has type 'string', use 'select' instead to remove this warning."
-        )
-        type_ = OptionType.select
-
-    raw_option["type"] = type_
-
-    return raw_option
 
 
 # ╭───────────────────────────────────────────────────────╮
