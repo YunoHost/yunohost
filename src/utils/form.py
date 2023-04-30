@@ -1014,6 +1014,22 @@ OPTIONS = {
 }
 
 
+def hydrate_option_type(raw_option: dict[str, Any]) -> dict[str, Any]:
+    type_ = raw_option.get(
+        "type", OptionType.select if "choices" in raw_option else OptionType.string
+    )
+    # LEGACY (`choices` in option `string` used to be valid)
+    if "choices" in raw_option and type_ == OptionType.string:
+        logger.warning(
+            f"Packagers: option {raw_option['id']} has 'choices' but has type 'string', use 'select' instead to remove this warning."
+        )
+        type_ = OptionType.select
+
+    raw_option["type"] = type_
+
+    return raw_option
+
+
 # ╭───────────────────────────────────────────────────────╮
 # │  ╷ ╷╶┬╴╶┬╴╷  ╭─╴                                      │
 # │  │ │ │  │ │  ╰─╮                                      │
@@ -1036,8 +1052,8 @@ def prompt_or_validate_form(
     for id_, raw_option in raw_options.items():
         raw_option["id"] = id_
         raw_option["value"] = answers.get(id_)
-        question_class = OPTIONS[raw_option.get("type", "string")]
-        option = question_class(raw_option)
+        raw_option = hydrate_option_type(raw_option)
+        option = OPTIONS[raw_option["type"]](raw_option)
 
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
@@ -1178,7 +1194,8 @@ def hydrate_questions_with_choices(raw_questions: List) -> List:
     out = []
 
     for raw_question in raw_questions:
-        question = OPTIONS[raw_question.get("type", OptionType.string)](raw_question)
+        raw_question = hydrate_option_type(raw_question)
+        question = OPTIONS[raw_question["type"]](raw_question)
         if isinstance(question, BaseChoicesOption) and question.choices:
             raw_question["choices"] = question.choices
             raw_question["default"] = question.default

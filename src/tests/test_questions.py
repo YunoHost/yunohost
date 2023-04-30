@@ -1950,6 +1950,21 @@ def test_question_string_default_type():
     assert out.value == "some_value"
 
 
+def test_option_default_type_with_choices_is_select():
+    questions = {
+        "some_choices": {"choices": ["a", "b"]},
+        # LEGACY (`choices` in option `string` used to be valid)
+        # make sure this result as a `select` option
+        "some_legacy": {"type": "string", "choices": ["a", "b"]}
+    }
+    answers = {"some_choices": "a", "some_legacy": "a"}
+
+    options = ask_questions_and_parse_answers(questions, answers)
+    for option in options:
+        assert option.type == "select"
+        assert option.value == "a"
+
+
 @pytest.mark.skip  # we should do something with this example
 def test_question_string_input_test_ask_with_example():
     ask_text = "some question"
