@@ -3131,6 +3131,7 @@ def _notification_is_dismissed(name, settings):
 
 def _filter_and_hydrate_notifications(notifications, current_version=None, data={}):
     def is_version_more_recent_than_current_version(name):
+        current_version = str(current_version)
         # Boring code to handle the fact that "0.1 < 9999~ynh1" is False
 
         if "~" in name:
