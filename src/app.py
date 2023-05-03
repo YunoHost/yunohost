@@ -1645,6 +1645,26 @@ def app_setting(app, key, value=None, delete=False):
     _set_app_settings(app, app_settings)
 
 
+def app_shell(app):
+    """
+    Open an interactive shell with the app environment already loaded
+
+    Keyword argument:
+        app -- App ID
+
+    """
+    app_settings = _get_app_settings(app) or {}
+
+   #TODO init a env_dict
+   #TODO load the app's environment, parsed from:
+   #TODO   - its settings (phpversion, ...)
+   #TODO   - its service configuration (PATH, NodeJS production mode...)
+   #TODO     this one could be performed in Bash, directly after initiating the subprocess:
+   #TODO     - "Environment" clause: `systemctl show $app.service -p "Environment" --value`
+   #TODO     - Source "EnvironmentFile" clauses
+   #TODO
+   #TODO find out how to open an interactive Bash shell from Python
+
 def app_register_url(app, domain, path):
     """
     Book/register a web path for a given app
