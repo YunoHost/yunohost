@@ -402,7 +402,13 @@ def firewall_upnp(action="status", no_refresh=False):
 
         # Discover UPnP device(s)
         logger.debug("discovering UPnP devices...")
-        nb_dev = upnpc.discover()
+        try:
+            nb_dev = upnpc.discover()
+        except Exception as e:
+            logger.warning("Failed to find any UPnP device on the network")
+            nb_dev = -1
+            enabled = False
+
         logger.debug("found %d UPnP device(s)", int(nb_dev))
         if nb_dev < 1:
             logger.error(m18n.n("upnp_dev_not_found"))
