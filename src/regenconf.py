@@ -139,6 +139,7 @@ def regen_conf(
         env["YNH_MAIN_DOMAINS"] = " ".join(
             domain_list(exclude_subdomains=True)["domains"]
         )
+    env["YNH_CONTEXT"] = "regenconf"
 
     pre_result = hook_callback("conf_regen", names, pre_callback=_pre_call, env=env)
 
