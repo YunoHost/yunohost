@@ -1,7 +1,7 @@
 .install_debs: &install_debs
     - apt-get update -o Acquire::Retries=3
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
-    - pip3 install -U mock pip pytest pytest-cov pytest-mock pytest-sugar requests-mock tox ansi2html black jinja2 "packaging<22 --break-system-packages" # for bookworm
+    - pip3 install -U mock pip pytest pytest-cov pytest-mock pytest-sugar requests-mock tox ansi2html black jinja2 "packaging<22"
 
 .test-stage:
   stage: test
