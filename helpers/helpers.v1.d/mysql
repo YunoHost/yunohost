@@ -227,6 +227,9 @@ ynh_mysql_setup_db() {
     # If $db_pwd is not provided, use new_db_pwd instead for db_pwd
     db_pwd="${db_pwd:-$new_db_pwd}"
 
+    # Dirty patch for super-legacy apps
+    dpkg --list | grep -q "^ii  mariadb-server" || { ynh_print_warn "Packager: you called ynh_mysql_setup_db without declaring a dependency to mariadb-server. Please add it to your apt dependencies !"; apt install mariadb-server --no-install-recommends -y; }
+
     ynh_mysql_create_db "$db_name" "$db_user" "$db_pwd"
     ynh_app_setting_set --app=$app --key=mysqlpwd --value=$db_pwd
 }
