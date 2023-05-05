@@ -267,7 +267,7 @@ class MyMigration(Migration):
         cmd = (
             "apt show '*-ynh-deps' 2>/dev/null"
             "  | grep Depends"
-            f" | grep -o -E \"php7.4-({'|'.join(php73packages_suffixes)})\""
+            f" | grep -o -E \"php7.4-({'|'.join(php74packages_suffixes)})\""
             "  | sort | uniq"
             "  | sed 's/php7.4/php8.2/g'"
             "  || true"
@@ -284,7 +284,7 @@ class MyMigration(Migration):
             "php-php-gettext",
         ]
 
-        php74packages_to_install = basephp74packages_to_install + [
+        php74packages_to_install = basephp82packages_to_install + [
             f.strip() for f in check_output(cmd).split("\n") if f.strip()
         ]
 
