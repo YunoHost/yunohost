@@ -2012,7 +2012,7 @@ def _get_app_settings(app):
         ):
             settings["path"] = "/" + settings["path"].strip("/")
             _set_app_settings(app, settings)
-            
+
         # Make the app id available as $app too
         settings["app"] = app
 
@@ -3044,10 +3044,10 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     services = manifest.get("services", [])
 
-    # Some apps use php-fpm, php5-fpm or php7.x-fpm which is now php7.4-fpm
+    # Some apps use php-fpm, php5-fpm or php7.x-fpm which is now php8.2-fpm
     def replace_alias(service):
-        if service in ["php-fpm", "php5-fpm", "php7.0-fpm", "php7.3-fpm"]:
-            return "php7.4-fpm"
+        if service in ["php-fpm", "php5-fpm", "php7.0-fpm", "php7.3-fpm", "php7.4-fpm"]:
+            return "php8.2-fpm"
         else:
             return service
 
@@ -3056,7 +3056,7 @@ def _assert_system_is_sane_for_app(manifest, when):
     # We only check those, mostly to ignore "custom" services
     # (added by apps) and because those are the most popular
     # services
-    service_filter = ["nginx", "php7.4-fpm", "mysql", "postfix"]
+    service_filter = ["nginx", "php8.2-fpm", "mysql", "postfix"]
     services = [str(s) for s in services if s in service_filter]
 
     if "nginx" not in services:

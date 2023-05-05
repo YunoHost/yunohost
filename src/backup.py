@@ -1204,7 +1204,7 @@ class RestoreManager:
 
     def _patch_legacy_php_versions_in_csv_file(self):
         """
-        Apply dirty patch to redirect php5 and php7.0 files to php7.4
+        Apply dirty patch to redirect php5 and php7.x files to php8.2
         """
         from yunohost.utils.legacy import LEGACY_PHP_VERSION_REPLACEMENTS
 
