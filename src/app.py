@@ -1999,20 +1999,6 @@ def _get_app_settings(app):
             logger.error(m18n.n("app_not_correctly_installed", app=app))
             return {}
 
-        # Stupid fix for legacy bullshit
-        # In the past, some setups did not have proper normalization for app domain/path
-        # Meaning some setups (as of January 2021) still have path=/foobar/ (with a trailing slash)
-        # resulting in stupid issue unless apps using ynh_app_normalize_path_stuff
-        # So we yolofix the settings if such an issue is found >_>
-        # A simple call  to `yunohost app list` (which happens quite often) should be enough
-        # to migrate all app settings ... so this can probably be removed once we're past Bullseye...
-        if settings.get("path") != "/" and (
-            settings.get("path", "").endswith("/")
-            or not settings.get("path", "/").startswith("/")
-        ):
-            settings["path"] = "/" + settings["path"].strip("/")
-            _set_app_settings(app, settings)
-
         # Make the app id available as $app too
         settings["app"] = app
 
