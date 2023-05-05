@@ -9,5 +9,5 @@ source /usr/share/yunohost/helpers
 # Backup destination
 backup_dir="${1}/data/xmpp"
 
-ynh_backup /var/lib/metronome "${backup_dir}/var_lib_metronome"
-ynh_backup /var/xmpp-upload/ "${backup_dir}/var_xmpp-upload"
+ynh_backup /var/lib/metronome "${backup_dir}/var_lib_metronome" --not_mandatory
+ynh_backup /var/xmpp-upload/ "${backup_dir}/var_xmpp-upload" --not_mandatory
