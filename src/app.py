@@ -2012,7 +2012,7 @@ def _get_app_settings(app):
         ):
             settings["path"] = "/" + settings["path"].strip("/")
             _set_app_settings(app, settings)
-            
+
         # Make the app id available as $app too
         settings["app"] = app
 
