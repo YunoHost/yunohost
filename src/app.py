@@ -1655,15 +1655,8 @@ def app_shell(app):
     """
     app_settings = _get_app_settings(app) or {}
 
-   #TODO init a env_dict
-   #TODO load the app's environment, parsed from:
-   #TODO   - its settings (phpversion, ...)
-   #TODO   - its service configuration (PATH, NodeJS production mode...)
-   #TODO     this one could be performed in Bash, directly after initiating the subprocess:
-   #TODO     - "Environment" clause: `systemctl show $app.service -p "Environment" --value`
-   #TODO     - Source "EnvironmentFile" clauses
-   #TODO
-   #TODO find out how to open an interactive Bash shell from Python
+   #TODO Find out how to open an interactive Bash shell from Python
+   #TODO run `ynh_load_app_environment --app=$app` helper in there
 
 def app_register_url(app, domain, path):
     """

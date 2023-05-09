@@ -111,3 +111,61 @@ ynh_remove_apps() {
 		done
 	fi
 }
+
+# Load an app environment in the current Bash shell
+#
+# usage: ynh_install_apps --app="app"
+#     | arg: -a, --app=     - the app ID
+#
+# Requires YunoHost version 11.0.* or higher.
+ynh_load_app_environment() {
+        # Declare an array to define the options of this helper.
+        local legacy_args=a
+        local -A args_array=([a]=app=)
+        local app
+        # Manage arguments with getopts
+        ynh_handle_getopts_args "$@"
+
+        # Retrieve the list of installed apps
+        local installed_apps_list=($(yunohost app list --output-as json --quiet | jq -r .apps[].id))
+
+        # Force Bash to be used to run this helper
+        if [ $0 != "bash" ]
+        then
+            ynh_print_err --message="Please use Bash as shell"
+            exit 1
+        fi
+
+        # Make sure the app is installed
+        if [[ " ${installed_apps_list[*]} " != *" ${app} "* ]]
+        then
+            ynh_print_err --message="$app is not in the apps list"
+            exit 1
+        fi
+
+        # Make sure the app has an install_dir setting
+        install_dir="$(yunohost app setting $app install_dir)"
+        if [ -z "$install_dir" ]
+        then
+            ynh_print_err --message="$app has no install_dir setting (does it use packaging format >=2?)"
+            exit 1
+        fi
+
+        # Load the Environment variables from the app's service
+        env_var=`systemctl show $app.service -p "Environment" --value`
+        [ -n "$env_var" ] && export $env_var;
+        export HOME=$install_dir;
+
+        # Source the EnvironmentFiles from the app's service
+        env_files=(`systemctl show $app.service -p "EnvironmentFiles" --value`)
+        if [ ${#env_files[*]} -gt 0 ]
+        then
+            for file in ${env_files[*]}
+            do
+                [[ $file = /* ]] && source $file
+            done
+        fi
+
+        # Open the app shell
+        su -s /bin/bash $app
+}
