@@ -253,5 +253,11 @@
     "log_help_to_get_failed_log": "Akciu '{desc}' sa nepodarilo dokončiť. Ak potrebujete pomoc, zdieľajte, prosím, úplný záznam tejto operácie pomocou príkazu 'yunohost log share {name}'",
     "operation_interrupted": "Bola akcia manuálne prerušená?",
     "log_link_to_failed_log": "Akciu '{desc}' sa nepodarilo dokončiť. Ak potrebujete pomoc, poskytnite, prosím, úplný záznam tejto operácie <a href=\"#/tools/logs/{name}\">kliknutím sem</a>",
-    "app_change_url_failed": "Nepodarilo sa zmeniť URL adresu aplikácie {app}: {error}"
+    "app_change_url_failed": "Nepodarilo sa zmeniť URL adresu aplikácie {app}: {error}",
+    "app_yunohost_version_not_supported": "Táto aplikácia vyžaduje YunoHost >= {required}, ale aktuálne nainštalovaná verzia je {current}",
+    "config_action_failed": "Nepodarilo sa spustiť operáciu '{action}': {error}",
+    "app_change_url_script_failed": "Vo skripte na zmenu URL adresy sa vyskytla chyba",
+    "app_not_enough_disk": "Táto aplikácia vyžaduje {required} voľného miesta.",
+    "app_not_enough_ram": "Táto aplikácia vyžaduje {required} pamäte na inštaláciu/aktualizáciu, ale k dispozícii je momentálne iba {current}.",
+    "apps_failed_to_upgrade": "Nasledovné aplikácie nebolo možné aktualizovať: {apps}"
 }
