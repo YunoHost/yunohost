@@ -248,5 +248,10 @@
     "ask_fullname": "Celé meno",
     "all_users": "Všetci používatelia YunoHost",
     "app_manifest_install_ask_init_main_permission": "Kto má mať prístup k tejto aplikácii? (Nastavenie môžete neskôr zmeniť)",
-    "certmanager_cert_install_failed": "Inštalácia Let's Encrypt certifikátu pre {domains} skončila s chybou"
+    "certmanager_cert_install_failed": "Inštalácia Let's Encrypt certifikátu pre {domains} skončila s chybou",
+    "app_arch_not_supported": "Túto aplikáciu možno nainštalovať iba na architektúrach {required}, ale Váš server beží na architektúre {current}",
+    "log_help_to_get_failed_log": "Akciu '{desc}' sa nepodarilo dokončiť. Ak potrebujete pomoc, zdieľajte, prosím, úplný záznam tejto operácie pomocou príkazu 'yunohost log share {name}'",
+    "operation_interrupted": "Bola akcia manuálne prerušená?",
+    "log_link_to_failed_log": "Akciu '{desc}' sa nepodarilo dokončiť. Ak potrebujete pomoc, poskytnite, prosím, úplný záznam tejto operácie <a href=\"#/tools/logs/{name}\">kliknutím sem</a>",
+    "app_change_url_failed": "Nepodarilo sa zmeniť URL adresu aplikácie {app}: {error}"
 }
