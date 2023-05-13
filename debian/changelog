@@ -4,6 +4,19 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
 
+yunohost (11.1.19) stable; urgency=low
+
+  - helpers: Upgrade n to version 9.1.0 ([#1646](https://github.com/yunohost/yunohost/pull/1646))
+  - appsv2: in perm resource, fix handling of additional urls containing vars to replace (8fbdd228)
+  - appsv2: fix version-specific upgrade notification hydration ([#1655](https://github.com/yunohost/yunohost/pull/1655))
+  - appsv2/regenconf: prevent set -u to be enabled during regen-conf triggered from inside appsv2 scripts (a7350a7e)
+  - refactoring: various renaming in configpanel ([#1649](https://github.com/yunohost/yunohost/pull/1649))
+  - i18n: Translations updated for Arabic, Basque, Indonesian
+
+  Thanks to all contributors <3 ! (axolotle, ButterflyOfFire, Kayou, Neko Nekowazarashi, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 08 May 2023 16:04:06 +0200
+
 yunohost (11.1.18) stable; urgency=low
 
   - appsv2: always set an 'app' setting equal to app id to be able to use __APP__ in markdown templates ([#1645](https://github.com/yunohost/yunohost/pull/1645))
