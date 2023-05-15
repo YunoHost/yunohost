@@ -271,9 +271,9 @@ ynh_setup_source() {
         if ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
         then
             local actual_sum="$(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1)"
-            local actual_size="$(du -hs ${src_filename} | cut --delimiter=' ' --fields=1)"
+            local actual_size="$(du -hs ${src_filename} | cut --fields=1)"
             rm -f ${src_filename}
-            ynh_die --message="Corrupt source for ${src_filename}: Expected ${src_sum} but got ${actual_sum} (size: ${actual_size})."
+            ynh_die --message="Corrupt source for ${src_url}: Expected sha256sum to be ${src_sum} but got ${actual_sum} (size: ${actual_size})."
         fi
     fi
 
