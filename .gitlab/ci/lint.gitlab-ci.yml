@@ -6,7 +6,7 @@
 ########################################
 # later we must fix lint and format-check jobs and remove "allow_failure"
 
-lint39:
+lint311:
   stage: lint
   image: "before-install"
   needs: []
@@ -14,16 +14,16 @@ lint39:
   before_script:
     - *install_tox
   script:
-    - tox -e py39-lint
+    - tox -e py311-lint
 
-invalidcode39:
+invalidcode311:
   stage: lint
   image: "before-install"
   needs: []
   before_script:
     - *install_tox
   script:
-    - tox -e py39-invalidcode
+    - tox -e py311-invalidcode
 
 mypy:
   stage: lint
@@ -32,7 +32,7 @@ mypy:
   before_script:
     - *install_tox
   script:
-    - tox -e py39-mypy
+    - tox -e py311-mypy
 
 black:
   stage: lint
@@ -49,7 +49,7 @@ black:
   script:
     # create a local branch that will overwrite distant one
     - git checkout -b "ci-format-${CI_COMMIT_REF_NAME}" --no-track
-    - tox -e py39-black-run
+    - tox -e py311-black-run
     - '[ $(git diff | wc -l) != 0 ] || exit 0'  # stop if there is nothing to commit
     - git commit -am "[CI] Format code with Black" || true
     - git push -f origin "ci-format-${CI_COMMIT_REF_NAME}":"ci-format-${CI_COMMIT_REF_NAME}"
