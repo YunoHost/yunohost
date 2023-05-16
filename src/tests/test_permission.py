@@ -806,7 +806,7 @@ def test_permission_main_url_regex():
 
 def test_permission_main_url_bad_regex(mocker):
     with raiseYunohostError(mocker, "invalid_regex"):
-        permission_url("blog.main", url="re:/[a-z]++reboy/.*")
+        permission_url("blog.main", url="re:/[a-z]+++reboy/.*")
 
 
 @pytest.mark.other_domains(number=1)
@@ -837,7 +837,7 @@ def test_permission_add_additional_regex():
 
 def test_permission_add_additional_bad_regex(mocker):
     with raiseYunohostError(mocker, "invalid_regex"):
-        permission_url("blog.main", add_url=["re:/[a-z]++reboy/.*"])
+        permission_url("blog.main", add_url=["re:/[a-z]+++reboy/.*"])
 
 
 def test_permission_remove_additional_url():
