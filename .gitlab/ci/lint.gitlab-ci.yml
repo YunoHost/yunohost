@@ -1,6 +1,3 @@
-.install_tox: &install_tox
-    - pip3 install -U tox --break-system-packages
-
 ########################################
 # LINTER
 ########################################
@@ -11,8 +8,6 @@ lint311:
   image: "before-install"
   needs: []
   allow_failure: true
-  before_script:
-    - *install_tox
   script:
     - tox -e py311-lint
 
@@ -20,8 +15,6 @@ invalidcode311:
   stage: lint
   image: "before-install"
   needs: []
-  before_script:
-    - *install_tox
   script:
     - tox -e py311-invalidcode
 
@@ -29,8 +22,6 @@ mypy:
   stage: lint
   image: "before-install"
   needs: []
-  before_script:
-    - *install_tox
   script:
     - tox -e py311-mypy
 
@@ -38,8 +29,6 @@ black:
   stage: lint
   image: "before-install"
   needs: []
-  before_script:
-    - *install_tox
   before_script:
     - apt-get update -y && apt-get install git hub -y
     - git config --global user.email "yunohost@yunohost.org"
