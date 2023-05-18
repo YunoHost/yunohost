@@ -1653,9 +1653,7 @@ def app_shell(app):
         app -- App ID
 
     """
-
-   #TODO Find out how to open an interactive Bash shell from Python
-   #TODO run `ynh_load_app_environment --app=$app` helper in there
+    subprocess.run(['/bin/bash', '-c', 'source /usr/share/yunohost/helpers && ynh_load_app_environment '+app])
 
 def app_register_url(app, domain, path):
     """
