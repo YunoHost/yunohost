@@ -1544,6 +1544,10 @@ class TestDomain(BaseTest):
     ]
     # fmt: on
 
+    def test_options_prompted_with_ask_help(self, prefill_data=None):
+        with patch_domains(domains=[main_domain], main_domain=main_domain):
+            super().test_options_prompted_with_ask_help(prefill_data=prefill_data)
+
     def test_scenarios(self, intake, expected_output, raw_option, data):
         with patch_domains(**data):
             super().test_scenarios(intake, expected_output, raw_option, data)
@@ -1750,6 +1754,15 @@ class TestUser(BaseTest):
         },
     ]
     # fmt: on
+
+    @pytest.mark.usefixtures("patch_no_tty")
+    def test_basic_attrs(self):
+        with patch_users(
+            users={admin_username: admin_user},
+            admin_username=admin_username,
+            main_domain=main_domain,
+        ):
+            self._test_basic_attrs()
 
     def test_options_prompted_with_ask_help(self, prefill_data=None):
         with patch_users(
