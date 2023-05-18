@@ -1653,7 +1653,6 @@ def app_shell(app):
         app -- App ID
 
     """
-    app_settings = _get_app_settings(app) or {}
 
    #TODO Find out how to open an interactive Bash shell from Python
    #TODO run `ynh_load_app_environment --app=$app` helper in there
