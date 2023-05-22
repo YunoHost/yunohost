@@ -4,6 +4,19 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
 
+yunohost (11.1.20) stable; urgency=low
+
+  - appsv2: fix funky current_version not being defined when hydrating pre-upgrade notifications (8fa823b4)
+  - helpers: using YNH_APP_ID instead of YNH_APP_INSTANCE_NAME during ynh_setup_source download, for more consistency and because tests was actually failing since a while because of this (e59a4f84)
+  - helpers: improve error message for corrupt source in ynh_setup_source, it's more relevant to cite the source url rather than the downloaded output path (d698c4c3)
+  - nginx: Update "worker" Content-Security-Policy header when in experimental security mode ([#1664](https://github.com/yunohost/yunohost/pull/1664))
+  - i18n: Translations updated for French, Indonesian, Russian, Slovak
+
+  Thanks to all contributors <3 ! (axolotle, Éric Gaspar, Ilya, Jose Riha, Neko Nekowazarashi, Yann Autissier)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 20 May 2023 18:57:26 +0200
+>>>>>>> origin/dev
+
 yunohost (11.1.19) stable; urgency=low
 
   - helpers: Upgrade n to version 9.1.0 ([#1646](https://github.com/yunohost/yunohost/pull/1646))

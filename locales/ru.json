@@ -325,5 +325,8 @@
     "global_settings_setting_ssh_port": "SSH порт",
     "global_settings_setting_webadmin_allowlist_help": "IP-адреса, разрешенные для доступа к веб-интерфейсу администратора. Разделенные запятыми.",
     "global_settings_setting_webadmin_allowlist_enabled_help": "Разрешите доступ к веб-интерфейсу администратора только некоторым IP-адресам.",
-    "global_settings_setting_smtp_allow_ipv6_help": "Разрешить использование IPv6 для получения и отправки почты"
+    "global_settings_setting_smtp_allow_ipv6_help": "Разрешить использование IPv6 для получения и отправки почты",
+    "admins": "Администраторы",
+    "all_users": "Все пользователи YunoHost",
+    "app_action_failed": "Не удалось выполнить действие {action} для приложения {app}"
 }
