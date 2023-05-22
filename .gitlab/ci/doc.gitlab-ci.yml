@@ -7,7 +7,6 @@ generate-helpers-doc:
   image: "before-install"
   needs: []
   before_script:
-    - apt-get update -y && apt-get install git hub -y
     - git config --global user.email "yunohost@yunohost.org"
     - git config --global user.name "$GITHUB_USER"
   script:
