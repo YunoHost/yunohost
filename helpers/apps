@@ -190,7 +190,7 @@ ynh_spawn_app_shell() {
         fi
 
         # cd into the WorkingDirectory set in the service, or default to the install_dir
-        local env_dir = $(systemctl show $service.service -p "WorkingDirectory" --value)
+        local env_dir=$(systemctl show $service.service -p "WorkingDirectory" --value)
         [ -z $env_dir ] && env_dir=$install_dir;
         cd $env_dir
 
