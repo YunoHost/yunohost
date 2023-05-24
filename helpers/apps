@@ -117,6 +117,10 @@ ynh_remove_apps() {
 # usage: ynh_install_apps --app="app"
 #     | arg: -a, --app=     - the app ID
 #
+# examples:
+#   ynh_load_app_environment --app="APP" <<< 'echo "$USER"'
+#   ynh_load_app_environment --app="APP" < /tmp/some_script.bash
+# 
 # Requires YunoHost version 11.0.* or higher.
 ynh_load_app_environment() {
         # Declare an array to define the options of this helper.
