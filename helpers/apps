@@ -152,7 +152,7 @@ ynh_spawn_app_shell() {
         fi
 
         # Make sure the app has an install_dir setting
-        local install_dir="$(yunohost app setting $app install_dir)"
+        local install_dir=$(ynh_app_setting_get --app=$app --key=install_dir)
         if [ -z "$install_dir" ]
         then
             ynh_print_err --message="$app has no install_dir setting (does it use packaging format >=2?)"
@@ -185,13 +185,11 @@ ynh_spawn_app_shell() {
             set +a
         fi
 
-        # Open the app shell
+        # cd into the WorkingDirectory set in the service, or default to the install_dir
         local env_dir = $(systemctl show $app.service -p "WorkingDirectory" --value)
-        if [[ $env_dir = "" ]];
-        then
-            env_dir = $install_dir
-        fi
-
+        [ -z $env_dir ] && env_dir=$install_dir;
         cd $env_dir
+
+        # Spawn the app shell
         su -s /bin/bash $app
 }
