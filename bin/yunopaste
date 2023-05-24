@@ -1,77 +1,98 @@
-#!/bin/bash
+#!/usr/bin/env python
 
-set -e
-set -u
+import sys
+import requests
+import json
+import subprocess
+import re
 
-PASTE_URL="https://paste.yunohost.org"
+SERVER_URL = "https://paste.yunohost.org"
+TIMEOUT = 3
 
-_die() {
-  printf "Error: %s\n" "$*"
-  exit 1
-}
+def create_snippet(data):
+    try:
+        url = SERVER_URL + "/documents"
+        response = requests.post(url, data=data.encode('utf-8'), timeout=TIMEOUT)
+        response.raise_for_status()
+        dockey = json.loads(response.text)['key']
+        return SERVER_URL + "/" + dockey
+    except requests.exceptions.RequestException as e:
+        print("\033[31mError: {}\033[0m".format(e))
+        sys.exit(1)
 
-check_dependencies() {
-  curl -V > /dev/null 2>&1 || _die "This script requires curl."
-}
+def execute_command(command):
+    try:
+        process = subprocess.Popen(
+            command,
+            shell=True,
+            executable="/bin/bash",
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+            universal_newlines=True
+        )
 
-paste_data() {
-  json=$(curl -X POST -s -d "$1" "${PASTE_URL}/documents")
-  [[ -z "$json" ]] && _die "Unable to post the data to the server."
+        output = ""
+        while True:
+            line = process.stdout.readline()
+            if line == "" and process.poll() is not None:
+                break
+            sys.stdout.write(line)
+            sys.stdout.flush()
+            output += line
 
-  key=$(echo "$json" \
-    | python3 -c 'import json,sys;o=json.load(sys.stdin);print(o["key"])' \
-        2>/dev/null)
-  [[ -z "$key" ]] && _die "Unable to parse the server response."
+        return output.strip()
+    except subprocess.CalledProcessError as e:
+        print("\033[31mError executing command: {}\033[0m".format(e))
+        sys.exit(1)
 
-  echo "${PASTE_URL}/${key}"
-}
+def anonymize_output(output):
+    # Replace IPv4 addresses
+    output = re.sub(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", "[IPv4]", output)
+    # Replace IPv6 addresses
+    output = re.sub(r"\b(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}\b", "[IPv6]", output)
+    # Replace domain names
+    output = re.sub(r"\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b", "[DOMAIN]", output)
+    
+    return output
 
-usage() {
-  printf "Usage: ${0} [OPTION]...
+def print_usage():
+    print("\033[33mUsage:")
+    print("\033[34m  yunopaste 'command' [-na|--no-anonymize]\033[0m")
+    print("\033[33mDescription:")
+    print("\033[36m  Executes the provided command and captures all of its output.")
+    print("  Pastes the output to the YunoHost Haste server and prints the URL of the created snippet.\033[0m")
+    print("\033[33mOptions:")
+    print("\033[35m  -na, --no-anonymize\t\033[0mDo not anonymize the output")
+    print("\033[33mExample:")
+    print("\033[35m  yunopaste '\033[32msudo yunohost diagnosis show\033[35m'\033[0m")
+    print("\033[35m  yunopaste '\033[32msudo yunohost diagnosis show\033[35m' -na\033[0m")
 
-Read from input stream and paste the data to the YunoHost
-Haste server.
+def main():
+    if len(sys.argv) < 2:
+        print_usage()
+        sys.exit(0)
 
-For example, to paste the output of the YunoHost diagnosis, you
-can simply execute the following:
-  yunohost diagnosis show | ${0}
+    command_args = sys.argv[1:]
+    anonymize_output_flag = True
 
-It will return the URL where you can access the pasted data.
+    if "-na" in command_args or "--no-anonymize" in command_args:
+        command_args = [arg for arg in command_args if arg not in ("-na", "--no-anonymize")]
+        anonymize_output_flag = False
 
-Options:
-  -h, --help   show this help message and exit
-"
-}
+    command = " ".join(command_args)
+    output = execute_command(command)
 
-main() {
-  # parse options
-  while (( ${#} )); do
-    case "${1}" in
-      --help|-h)
-        usage
-        exit 0
-        ;;
-      *)
-        echo "Unknown parameter detected: ${1}" >&2
-        echo >&2
-        usage >&2
-        exit 1
-        ;;
-    esac
+    if not output:
+        print("\033[31mError: Command didn't produce any output.\033[0m")
+        sys.exit(1)
 
-    shift 1
-  done
+    if anonymize_output_flag:
+        anonymized_output = anonymize_output(output)
+        url = create_snippet(anonymized_output)
+    else:
+        url = create_snippet(output)
 
-  # check input stream
-  read -t 0 || {
-    echo -e "Invalid usage: No input is provided.\n" >&2
-    usage
-    exit 1
-  }
+    print("\033[32mURL: {}\033[0m".format(url))
 
-  paste_data "$(cat)"
-}
-
-check_dependencies
-
-main "${@}"
+if __name__ == "__main__":
+    main()
