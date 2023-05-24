@@ -1653,7 +1653,7 @@ def app_shell(app):
         app -- App ID
 
     """
-    subprocess.run(['/bin/bash', '-c', 'source /usr/share/yunohost/helpers && ynh_load_app_environment '+app])
+    subprocess.run(['/bin/bash', '-c', 'source /usr/share/yunohost/helpers && ynh_spawn_app_shell '+app])
 
 def app_register_url(app, domain, path):
     """

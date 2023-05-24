@@ -118,11 +118,11 @@ ynh_remove_apps() {
 #     | arg: -a, --app=     - the app ID
 #
 # examples:
-#   ynh_load_app_environment --app="APP" <<< 'echo "$USER"'
-#   ynh_load_app_environment --app="APP" < /tmp/some_script.bash
-# 
+#   ynh_spawn_app_shell --app="APP" <<< 'echo "$USER"'
+#   ynh_spawn_app_shell --app="APP" < /tmp/some_script.bash
+#
 # Requires YunoHost version 11.0.* or higher.
-ynh_load_app_environment() {
+ynh_spawn_app_shell() {
         # Declare an array to define the options of this helper.
         local legacy_args=a
         local -A args_array=([a]=app=)
