@@ -178,5 +178,12 @@ ynh_spawn_app_shell() {
         fi
 
         # Open the app shell
+        local env_dir = $(systemctl show $app.service -p "WorkingDirectory" --value)
+        if [[ $env_dir = "" ]];
+        then
+            env_dir = $install_dir
+        fi
+
+        cd $env_dir
         su -s /bin/bash $app
 }
