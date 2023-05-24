@@ -164,6 +164,14 @@ ynh_spawn_app_shell() {
         [ -n "$env_var" ] && export $env_var;
         export HOME=$install_dir;
 
+        # Force `php` to its intended version
+        local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+        if [ -n "$phpversion" ]
+        then
+            eval "php() { php${phpversion} \"\$@\"; }"
+            export -f php
+        fi
+
         # Source the EnvironmentFiles from the app's service
         local env_files=(`systemctl show $app.service -p "EnvironmentFiles" --value`)
         if [ ${#env_files[*]} -gt 0 ]
