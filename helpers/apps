@@ -112,16 +112,19 @@ ynh_remove_apps() {
 	fi
 }
 
-# Load an app environment in the current Bash shell
+# Spawn a Bash shell with the app environment loaded
 #
-# usage: ynh_install_apps --app="app"
+# usage: ynh_spawn_app_shell --app="app"
 #     | arg: -a, --app=     - the app ID
 #
 # examples:
 #   ynh_spawn_app_shell --app="APP" <<< 'echo "$USER"'
 #   ynh_spawn_app_shell --app="APP" < /tmp/some_script.bash
 #
-# Requires YunoHost version 11.0.* or higher.
+# Requires YunoHost version 11.0.* or higher, and that the app relies on packaging v2 or higher.
+# The spawned shell will have environment variables loaded and environment files sourced
+# from the app's service configuration file (defaults to $app.service, overridable by the packager with `service` setting).
+# If the app relies on a specific PHP version, then `php` will be aliased that version.
 ynh_spawn_app_shell() {
         # Declare an array to define the options of this helper.
         local legacy_args=a
