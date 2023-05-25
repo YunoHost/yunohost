@@ -148,7 +148,7 @@ ynh_spawn_app_shell() {
             exit 1
         fi
 
-        # Make sure the app is installed
+        # Make sure the app has its own user
         if ! id -u "$app" &>/dev/null; then
             ynh_print_err --message="There is no \"$app\" system user"
             exit 1
