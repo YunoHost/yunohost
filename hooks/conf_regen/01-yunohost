@@ -97,7 +97,7 @@ EOF
     # Cron job that upgrade the app list everyday
     cat >$pending_dir/etc/cron.daily/yunohost-fetch-apps-catalog <<EOF
 #!/bin/bash
-(sleep \$((RANDOM%3600)); yunohost tools update --apps > /dev/null) &
+sleep \$((RANDOM%3600)); yunohost tools update apps > /dev/null
 EOF
 
     # Cron job that renew lets encrypt certificates if there's any that needs renewal
