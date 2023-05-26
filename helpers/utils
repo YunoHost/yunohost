@@ -1071,8 +1071,10 @@ _ynh_apply_default_permissions() {
         fi
     fi
 
-    # Crons should be owned by root otherwise they probably don't run
-    if echo "$target" | grep -q '^/etc/cron'
+    # Crons should be owned by root
+    # Also we don't want systemd conf, nginx conf or others stuff to be owned by the app,
+    # otherwise they could self-edit their own systemd conf and escalate privilege
+    if echo "$target" | grep -q '^/etc/cron\|/etc/php\|/etc/nginx/conf.d\|/etc/fail2ban\|/etc/systemd/system'
     then
         chmod 400 $target
         chown root:root $target
