@@ -54,10 +54,9 @@ def main():
         sys.exit(1)
 
     if anonymize_output_flag:
-        anonymized_output = anonymize_output(command_output)
-        url = create_snippet(anonymized_output)
-    else:
-        url = create_snippet(command_output)
+        output = anonymize_output(output)
+        
+    url = create_snippet(output)
 
     print("\033[32mURL: {}\033[0m".format(url))
 
