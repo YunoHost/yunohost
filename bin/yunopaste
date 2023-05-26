@@ -1,9 +1,8 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import sys
 import requests
 import json
-import subprocess
 import re
 
 SERVER_URL = "https://paste.yunohost.org"
@@ -20,31 +19,6 @@ def create_snippet(data):
         print("\033[31mError: {}\033[0m".format(e))
         sys.exit(1)
 
-def execute_command(command):
-    try:
-        process = subprocess.Popen(
-            command,
-            shell=True,
-            executable="/bin/bash",
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            universal_newlines=True
-        )
-
-        output = ""
-        while True:
-            line = process.stdout.readline()
-            if line == "" and process.poll() is not None:
-                break
-            sys.stdout.write(line)
-            sys.stdout.flush()
-            output += line
-
-        return output.strip()
-    except subprocess.CalledProcessError as e:
-        print("\033[31mError executing command: {}\033[0m".format(e))
-        sys.exit(1)
-
 def anonymize_output(output):
     # Replace IPv4 addresses
     output = re.sub(r"\b(?:\d{1,3}\.){3}\d{1,3}\b", "[IPv4]", output)
@@ -52,45 +26,38 @@ def anonymize_output(output):
     output = re.sub(r"\b(?:[A-Fa-f0-9]{1,4}:){7}[A-Fa-f0-9]{1,4}\b", "[IPv6]", output)
     # Replace domain names
     output = re.sub(r"\b(?:[a-zA-Z0-9-]+\.)+[a-zA-Z]{2,}\b", "[DOMAIN]", output)
-    
+
     return output
 
 def print_usage():
     print("\033[33mUsage:")
-    print("\033[34m  yunopaste 'command' [-na|--no-anonymize]\033[0m")
+    print("\033[34m  yunopaste [-na|--no-anonymize]\033[0m")
     print("\033[33mDescription:")
-    print("\033[36m  Executes the provided command and captures all of its output.")
-    print("  Pastes the output to the YunoHost Haste server and prints the URL of the created snippet.\033[0m")
+    print("\033[36m  Reads the command output from stdin and pastes it to the YunoHost Haste server.")
+    print("  Prints the URL of the created snippet.\033[0m")
     print("\033[33mOptions:")
     print("\033[35m  -na, --no-anonymize\t\033[0mDo not anonymize the output")
     print("\033[33mExample:")
-    print("\033[35m  yunopaste '\033[32msudo yunohost diagnosis show\033[35m'\033[0m")
-    print("\033[35m  yunopaste '\033[32msudo yunohost diagnosis show\033[35m' -na\033[0m")
+    print("\033[35m  yunohost diagnosis show | yunopaste\033[0m")
+    print("\033[35m  yunohost diagnosis show | yunopaste -na\033[0m")
 
 def main():
-    if len(sys.argv) < 2:
-        print_usage()
-        sys.exit(0)
-
-    command_args = sys.argv[1:]
-    anonymize_output_flag = True
-
-    if "-na" in command_args or "--no-anonymize" in command_args:
-        command_args = [arg for arg in command_args if arg not in ("-na", "--no-anonymize")]
+    if "-na" in sys.argv or "--no-anonymize" in sys.argv:
         anonymize_output_flag = False
+    else:
+        anonymize_output_flag = True
 
-    command = " ".join(command_args)
-    output = execute_command(command)
+    command_output = sys.stdin.read()
 
-    if not output:
-        print("\033[31mError: Command didn't produce any output.\033[0m")
+    if not command_output:
+        print("\033[31mError: No input received from stdin.\033[0m")
         sys.exit(1)
 
     if anonymize_output_flag:
-        anonymized_output = anonymize_output(output)
+        anonymized_output = anonymize_output(command_output)
         url = create_snippet(anonymized_output)
     else:
-        url = create_snippet(output)
+        url = create_snippet(command_output)
 
     print("\033[32mURL: {}\033[0m".format(url))
 
