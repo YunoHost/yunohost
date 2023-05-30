@@ -167,7 +167,7 @@ ynh_spawn_app_shell() {
         [ -z "$service" ] && service=$app;
 
         # Load the Environment variables from the app's service
-        local env_var=`systemctl show $service.service -p "Environment" --value`
+        local env_var=$(systemctl show $service.service -p "Environment" --value)
         [ -n "$env_var" ] && export $env_var;
         export HOME=$install_dir;
 
@@ -180,7 +180,7 @@ ynh_spawn_app_shell() {
         fi
 
         # Source the EnvironmentFiles from the app's service
-        local env_files=(`systemctl show $service.service -p "EnvironmentFiles" --value`)
+        local env_files=($(systemctl show $service.service -p "EnvironmentFiles" --value))
         if [ ${#env_files[*]} -gt 0 ]
         then
             # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
