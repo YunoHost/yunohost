@@ -954,6 +954,12 @@ app:
                     help: Delete the key
                     action: store_true
 
+        ### app_shell()
+        shell:
+            action_help: Open an interactive shell with the app environment already loaded
+            arguments:
+                app:
+                    help: App ID
 
         ### app_register_url()
         register-url:
