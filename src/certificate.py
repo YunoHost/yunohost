@@ -41,8 +41,8 @@ from yunohost.log import OperationLogger
 logger = getActionLogger("yunohost.certmanager")
 
 CERT_FOLDER = "/etc/yunohost/certs/"
-TMP_FOLDER = "/tmp/acme-challenge-private/"
-WEBROOT_FOLDER = "/tmp/acme-challenge-public/"
+TMP_FOLDER = "/var/www/.well-known/acme-challenge-private/"
+WEBROOT_FOLDER = "/var/www/.well-known/acme-challenge-public/"
 
 SELF_CA_FILE = "/etc/ssl/certs/ca-yunohost_crt.pem"
 ACCOUNT_KEY_FILE = "/etc/yunohost/letsencrypt_account.pem"
