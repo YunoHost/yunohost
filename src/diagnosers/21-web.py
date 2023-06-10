@@ -60,9 +60,9 @@ class MyDiagnoser(Diagnoser):
                 domains_to_check.append(domain)
 
         self.nonce = "".join(random.choice("0123456789abcedf") for i in range(16))
-        rm("/tmp/.well-known/ynh-diagnosis/", recursive=True, force=True)
-        mkdir("/tmp/.well-known/ynh-diagnosis/", parents=True)
-        os.system("touch /tmp/.well-known/ynh-diagnosis/%s" % self.nonce)
+        rm("/var/www/.well-known/ynh-diagnosis/", recursive=True, force=True)
+        mkdir("/var/www/.well-known/ynh-diagnosis/", parents=True)
+        os.system("touch /var/www/.well-known/ynh-diagnosis/%s" % self.nonce)
 
         if not domains_to_check:
             return

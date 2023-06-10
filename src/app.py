@@ -1645,6 +1645,16 @@ def app_setting(app, key, value=None, delete=False):
     _set_app_settings(app, app_settings)
 
 
+def app_shell(app):
+    """
+    Open an interactive shell with the app environment already loaded
+
+    Keyword argument:
+        app -- App ID
+
+    """
+    subprocess.run(['/bin/bash', '-c', 'source /usr/share/yunohost/helpers && ynh_spawn_app_shell '+app])
+
 def app_register_url(app, domain, path):
     """
     Book/register a web path for a given app
