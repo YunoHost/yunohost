@@ -1,3 +1,9 @@
+yunohost (11.1.21.1) stable; urgency=low
+
+  - Fix stupid issue with code that changes /dev/null perms... (e6f134bc)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 12 Jun 2023 00:02:47 +0200
+
 yunohost (11.1.21) stable; urgency=low
 
   - users: more verbose logs for user_group_update operations ([#1668](https://github.com/yunohost/yunohost/pull/1668))
