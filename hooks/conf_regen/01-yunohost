@@ -184,8 +184,8 @@ do_post_regen() {
     # Stupid fix for a previous commit that changed /dev/null perms because some files in /etc/systemd/system are symlinks >_>
     chown 666 /dev/null
 
-    find /etc/systemd/system/*.service -type f | xargs -r0 chown root:root
-    find /etc/systemd/system/*.service -type f | xargs -r0 chmod 0644
+    find /etc/systemd/system/*.service -type f | xargs -r chown root:root
+    find /etc/systemd/system/*.service -type f | xargs -r chmod 0644
 
     if ls -l /etc/php/*/fpm/pool.d/*.conf
     then
