@@ -181,8 +181,11 @@ do_post_regen() {
     # NB: x permission for 'others' is important for ssl-cert (and maybe mdns), otherwise slapd will fail to start because can't access the certs
     chmod 755 /etc/yunohost
 
-    chown root:root /etc/systemd/system/*.service
-    chmod 644 /etc/systemd/system/*.service
+    # Stupid fix for a previous commit that changed /dev/null perms because some files in /etc/systemd/system are symlinks >_>
+    chown 666 /dev/null
+
+    find /etc/systemd/system/*.service -type f | xargs -r0 chown root:root
+    find /etc/systemd/system/*.service -type f | xargs -r0 chmod 0644
 
     if ls -l /etc/php/*/fpm/pool.d/*.conf
     then
