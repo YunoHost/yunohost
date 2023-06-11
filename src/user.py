@@ -1259,7 +1259,9 @@ def user_group_update(
                 )
             if mail in new_group_mail:
                 new_group_mail.remove(mail)
-                logger.info(m18n.n("group_mailalias_remove", group=groupname, mail=mail))
+                logger.info(
+                    m18n.n("group_mailalias_remove", group=groupname, mail=mail)
+                )
             else:
                 raise YunohostValidationError("mail_alias_remove_failed", mail=mail)
 
