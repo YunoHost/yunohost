@@ -1,3 +1,9 @@
+yunohost (11.1.21.3) stable; urgency=low
+
+  - Fix again /var/www/.well-known/ynh-diagnosis/ perms which are too broad and could be exploited to serve malicious files x_x (84984ad8)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 12 Jun 2023 17:41:26 +0200
+
 yunohost (11.1.21.2) stable; urgency=low
 
   - Aleks loves xargs syntax >_> (313a1647)
