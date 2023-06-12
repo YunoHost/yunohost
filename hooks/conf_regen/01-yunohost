@@ -178,6 +178,8 @@ do_post_regen() {
     chown root:admins /home/yunohost.backup/archives
     chown root:root /var/cache/yunohost
 
+    [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
+
     # NB: x permission for 'others' is important for ssl-cert (and maybe mdns), otherwise slapd will fail to start because can't access the certs
     chmod 755 /etc/yunohost
 
