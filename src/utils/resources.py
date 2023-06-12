@@ -22,7 +22,7 @@ import shutil
 import random
 import tempfile
 import subprocess
-from typing import Dict, Any, List
+from typing import Tuple, Dict, Any, List
 
 from moulinette import m18n
 from moulinette.utils.process import check_output
@@ -147,14 +147,22 @@ class AppResource:
         self.manager = manager
 
         for key, value in self.default_properties.items():
-            if isinstance(value, str):
-                value = value.replace("__APP__", self.app)
+            value = self.fill_args_placeholders(value)
             setattr(self, key, value)
 
         for key, value in properties.items():
-            if isinstance(value, str):
-                value = value.replace("__APP__", self.app)
+            value = self.fill_args_placeholders(value)
             setattr(self, key, value)
+
+    def fill_args_placeholders(value: Any) -> str:
+        if isinstance(value, str):
+            return string.replace("__APP__", self.app)
+
+        if isinstance(value, list):
+            return [self.fill_args_placeholders(subval) for subval in value]
+
+        if isinstance(value, dict):
+            return {key: self.fill_args_placeholders(subval) for key, subval in value.items()}
 
     def get_setting(self, key):
         from yunohost.app import app_setting
@@ -1335,6 +1343,88 @@ class DatabaseAppResource(AppResource):
         self.delete_setting("db_name")
         self.delete_setting("db_user")
         self.delete_setting("db_pwd")
+
+
+class LogrotateAppResource(AppResource):
+    """
+    Use Logrotate to manage the app's log file. It
+
+    ##### Example
+    ```toml
+    [resources.logrotate]
+    logfile = "/var/log/myapp"
+    user = "app_user"
+    ```
+
+    Or an array of logrotates:
+    ```toml
+    [[resources.logrotate]]
+    logfile = "/var/log/myapp/log1.log"
+
+    [[resources.logrotate]]
+    logfile = "/var/log/myapp/log2.log"
+    user = "app_user"
+    ```
+
+    ##### Properties
+    - `logfile`: The log file or directory
+    - `user`: The database type, either `mysql` or `postgresql`
+
+    nonappend is not exposed because you can define a list of logrotates.
+
+    ##### Provision/Update
+    - Creates /etc/logrotate.d/$app
+
+    ##### Deprovision
+    - Deletes /etc/logrotate.d/$app
+    """
+
+    # Notes for future?
+    # Remove support for the non-list syntax ?
+    # deep_clean  -> ..
+    # backup -> backup /etc/logrotate.d/$app
+    # restore -> restore /etc/logrotate.d/$app
+
+    type = "logrotate"
+    priority = 80
+
+    default_properties: Dict[str, Any] = {
+        "logfile": "/var/log/__APP__",
+        "user": None,
+    }
+
+    logrotates: List[Dict[str, Any]] = []
+
+    def __init__(self, properties: Tuple[Dict[str, Any], List[Dict[str, Any]]], *args, **kwargs):
+        # Do not provide properties, we will set them afterwards
+        super().__init__({}, *args, **kwargs)
+
+        # A dict is just a one-element list
+        if isinstance(properties, dict):
+            properties = [properties]
+
+        if len(self.logrotates) < 1:
+            raise YunohostError("resources.logrotate is an empty array, need at least one element!")
+
+        for logrotate in properties:
+            self.logrotate += self.default_properties | self.fill_args_placeholders(logrotate)
+
+    @staticmethod()
+    def use_logrotate_for(data: Dict[str, Any], append: bool) -> str:
+        command = f"ynh_use_logrotate --logfile={data['logfile']}"
+        if data["user"]:
+            command += f"--specific_user={data['user']}"
+        if not append:
+            command += "--nonappend"
+
+    def provision_or_update(self, context: Dict = {}):
+        script = [self.use_logrotate_for(self.logrotates[0], False)]
+        script += [self.use_logrotate_for(logrotate, True) for logrotate in self.logrotates[1:]]
+        self._run_script("provision_or_update", "\n".join(script))
+
+    def deprovision(self, context: Dict = {}):
+        script = "ynh_remove_logrotate"
+        self._run_script("deprovision", script)
 
 
 AppResourceClassesByType = {c.type: c for c in AppResource.__subclasses__()}
