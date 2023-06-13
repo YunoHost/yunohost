@@ -1204,7 +1204,7 @@ class RestoreManager:
 
     def _patch_legacy_php_versions_in_csv_file(self):
         """
-        Apply dirty patch to redirect php5 and php7.0 files to php7.4
+        Apply dirty patch to redirect php5 and php7.x files to php8.2
         """
         from yunohost.utils.legacy import LEGACY_PHP_VERSION_REPLACEMENTS
 
@@ -1528,6 +1528,7 @@ class RestoreManager:
             AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
+                action="restore",
             )
 
         # Execute the app install script
@@ -2375,6 +2376,7 @@ def backup_list(with_info=False, human_readable=False):
     # (we do a realpath() to resolve symlinks)
     archives = glob(f"{ARCHIVES_PATH}/*.tar.gz") + glob(f"{ARCHIVES_PATH}/*.tar")
     archives = {os.path.realpath(archive) for archive in archives}
+    archives = {archive for archive in archives if os.path.exists(archive)}
     archives = sorted(archives, key=lambda x: os.path.getctime(x))
     # Extract only filename without the extension
 

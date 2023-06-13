@@ -21,6 +21,7 @@ import copy
 import shutil
 import random
 import tempfile
+import subprocess
 from typing import Dict, Any, List
 
 from moulinette import m18n
@@ -30,7 +31,7 @@ from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
 from moulinette.utils.filesystem import (
     rm,
 )
-
+from yunohost.utils.system import system_arch
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
 logger = getActionLogger("yunohost.app_resources")
@@ -258,6 +259,201 @@ ynh_abort_if_errors
         # print(ret)
 
 
+class SourcesResource(AppResource):
+    """
+    Declare what are the sources / assets used by this app. Typically, this corresponds to some tarball published by the upstream project, that needs to be downloaded and extracted in the install dir using the ynh_setup_source helper.
+
+    This resource is intended both to declare the assets, which will be parsed by ynh_setup_source during the app script runtime, AND to prefetch and validate the sha256sum of those asset before actually running the script, to be able to report an error early when the asset turns out to not be available for some reason.
+
+    Various options are available to accomodate the behavior according to the asset structure
+
+    ##### Example
+
+    ```toml
+    [resources.sources]
+
+        [resources.sources.main]
+        url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.tar.gz"
+        sha256 = "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+
+        autoupdate.strategy = "latest_github_tag"
+    ```
+
+    Or more complex examples with several element, including one with asset that depends on the arch
+
+    ```toml
+    [resources.sources]
+
+        [resources.sources.main]
+        in_subdir = false
+        amd64.url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.amd64.tar.gz"
+        amd64.sha256 = "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b"
+        i386.url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.386.tar.gz"
+        i386.sha256 = "53c234e5e8472b6ac51c1ae1cab3fe06fad053beb8ebfd8977b010655bfdd3c3"
+        armhf.url = "https://github.com/foo/bar/archive/refs/tags/v1.2.3.arm.tar.gz"
+        armhf.sha256 = "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+
+        autoupdate.strategy = "latest_github_release"
+        autoupdate.asset.amd64 = ".*\\.amd64.tar.gz"
+        autoupdate.asset.i386 = ".*\\.386.tar.gz"
+        autoupdate.asset.armhf = ".*\\.arm.tar.gz"
+
+        [resources.sources.zblerg]
+        url = "https://zblerg.com/download/zblerg"
+        sha256 = "1121cfccd5913f0a63fec40a6ffd44ea64f9dc135c66634ba001d10bcf4302a2"
+        format = "script"
+        rename = "zblerg.sh"
+
+    ```
+
+    ##### Properties (for each source)
+
+    - `prefetch` : `true` (default) or `false`, wether or not to pre-fetch this asset during the provisioning phase of the resource. If several arch-dependent url are provided, YunoHost will only prefetch the one for the current system architecture.
+    - `url` : the asset's URL
+        - If the asset's URL depend on the architecture, you may instead provide `amd64.url`, `i386.url`, `armhf.url` and `arm64.url` (depending on what architectures are supported), using the same `dpkg --print-architecture` nomenclature as for the supported architecture key in the manifest
+    - `sha256` : the asset's sha256sum. This is used both as an integrity check, and as a layer of security to protect against malicious actors which could have injected malicious code inside the asset...
+        - Same as `url` : if the asset's URL depend on the architecture, you may instead provide `amd64.sha256`, `i386.sha256`, ...
+    - `format` : The "format" of the asset. It is typically automatically guessed from the extension of the URL (or the mention of "tarball", "zipball" in the URL), but can be set explicitly:
+        - `tar.gz`, `tar.xz`, `tar.bz2` : will use `tar` to extract the archive
+        - `zip` : will use `unzip` to extract the archive
+        - `docker` : useful to extract files from an already-built docker image (instead of rebuilding them locally). Will use `docker-image-extract`
+        - `whatever`: whatever arbitrary value, not really meaningful except to imply that the file won't be extracted (eg because it's a .deb to be manually installed with dpkg/apt, or a script, or ...)
+    - `in_subdir`: `true` (default) or `false`, depending on if there's an intermediate subdir in the archive before accessing the actual files. Can also be `N` (an integer) to handle special cases where there's `N` level of subdir to get rid of to actually access the files
+    - `extract` : `true` or `false`. Defaults to `true` for archives such as `zip`, `tar.gz`, `tar.bz2`, ... Or defaults to `false` when `format` is not something that should be extracted. When `extract = false`, the file will only be `mv`ed to the location, possibly renamed using the `rename` value
+    - `rename`: some string like `whatever_your_want`, to be used for convenience when `extract` is `false` and the default name of the file is not practical
+    - `platform`: for example `linux/amd64` (defaults to `linux/$YNH_ARCH`) to be used in conjonction with `format = "docker"` to specify which architecture to extract for
+
+    ###### Regarding `autoupdate`
+
+    Strictly speaking, this has nothing to do with the actual app install. `autoupdate` is expected to contain metadata for automatic maintenance / update of the app sources info in the manifest. It is meant to be a simpler replacement for "autoupdate" Github workflow mechanism.
+
+    The infos are used by this script : https://github.com/YunoHost/apps/blob/master/tools/autoupdate_app_sources/autoupdate_app_sources.py which is ran by the YunoHost infrastructure periodically and will create the corresponding pull request automatically.
+
+    The script will rely on the code repo specified in the upstream section of the manifest.
+
+    `autoupdate.strategy` is expected to be one of :
+    - `latest_github_tag` : look for the latest tag (by sorting tags and finding the "largest" version). Then using the corresponding tar.gz url. Tags containing `rc`, `beta`, `alpha`, `start` are ignored, and actually any tag which doesn't look like `x.y.z` or `vx.y.z`
+    - `latest_github_release` : similar to `latest_github_tags`, but starting from the list of releases. Pre- or draft releases are ignored. Releases may have assets attached to them, in which case you can define:
+        - `autoupdate.asset = "some regex"` (when there's only one asset to use). The regex is used to find the appropriate asset among the list of all assets
+        - or several `autoupdate.asset.$arch = "some_regex"` (when the asset is arch-specific). The regex is used to find the appropriate asset for the specific arch among the list of assets
+    - `latest_github_commit` : will use the latest commit on github, and the corresponding tarball. If this is used for the 'main' source, it will also assume that the version is YYYY.MM.DD corresponding to the date of the commit.
+
+    It is also possible to define `autoupdate.upstream` to use a different Git(hub) repository instead of the code repository from the upstream section of the manifest. This can be useful when, for example, the app uses other assets such as plugin from a different repository.
+
+    ##### Provision/Update
+    - For elements with `prefetch = true`, will download the asset (for the appropriate architecture) and store them in `/var/cache/yunohost/download/$app/$source_id`, to be later picked up by `ynh_setup_source`. (NB: this only happens during install and upgrade, not restore)
+
+    ##### Deprovision
+    - Nothing (just cleanup the cache)
+    """
+
+    type = "sources"
+    priority = 10
+
+    default_sources_properties: Dict[str, Any] = {
+        "prefetch": True,
+        "url": None,
+        "sha256": None,
+    }
+
+    sources: Dict[str, Dict[str, Any]] = {}
+
+    def __init__(self, properties: Dict[str, Any], *args, **kwargs):
+        for source_id, infos in properties.items():
+            properties[source_id] = copy.copy(self.default_sources_properties)
+            properties[source_id].update(infos)
+
+        super().__init__({"sources": properties}, *args, **kwargs)
+
+    def deprovision(self, context: Dict = {}):
+        if os.path.isdir(f"/var/cache/yunohost/download/{self.app}/"):
+            rm(f"/var/cache/yunohost/download/{self.app}/", recursive=True)
+
+    def provision_or_update(self, context: Dict = {}):
+        # Don't prefetch stuff during restore
+        if context.get("action") == "restore":
+            return
+
+        for source_id, infos in self.sources.items():
+            if not infos["prefetch"]:
+                continue
+
+            if infos["url"] is None:
+                arch = system_arch()
+                if (
+                    arch in infos
+                    and isinstance(infos[arch], dict)
+                    and isinstance(infos[arch].get("url"), str)
+                    and isinstance(infos[arch].get("sha256"), str)
+                ):
+                    self.prefetch(source_id, infos[arch]["url"], infos[arch]["sha256"])
+                else:
+                    raise YunohostError(
+                        f"In resources.sources: it looks like you forgot to define url/sha256 or {arch}.url/{arch}.sha256",
+                        raw_msg=True,
+                    )
+            else:
+                if infos["sha256"] is None:
+                    raise YunohostError(
+                        f"In resources.sources: it looks like the sha256 is missing for {source_id}",
+                        raw_msg=True,
+                    )
+                self.prefetch(source_id, infos["url"], infos["sha256"])
+
+    def prefetch(self, source_id, url, expected_sha256):
+        logger.debug(f"Prefetching asset {source_id}: {url} ...")
+
+        if not os.path.isdir(f"/var/cache/yunohost/download/{self.app}/"):
+            mkdir(f"/var/cache/yunohost/download/{self.app}/", parents=True)
+        filename = f"/var/cache/yunohost/download/{self.app}/{source_id}"
+
+        # NB: we use wget and not requests.get() because we want to output to a file (ie avoid ending up with the full archive in RAM)
+        # AND the nice --tries, --no-dns-cache, --timeout options ...
+        p = subprocess.Popen(
+            [
+                "/usr/bin/wget",
+                "--tries=3",
+                "--no-dns-cache",
+                "--timeout=900",
+                "--no-verbose",
+                "--output-document=" + filename,
+                url,
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.STDOUT,
+        )
+        out, _ = p.communicate()
+        returncode = p.returncode
+        if returncode != 0:
+            if os.path.exists(filename):
+                rm(filename)
+            raise YunohostError(
+                "app_failed_to_download_asset",
+                source_id=source_id,
+                url=url,
+                app=self.app,
+                out=out.decode(),
+            )
+
+        assert os.path.exists(
+            filename
+        ), f"For some reason, wget worked but {filename} doesnt exists?"
+
+        computed_sha256 = check_output(f"sha256sum {filename}").split()[0]
+        if computed_sha256 != expected_sha256:
+            size = check_output(f"du -hs {filename}").split()[0]
+            rm(filename)
+            raise YunohostError(
+                "app_corrupt_source",
+                source_id=source_id,
+                url=url,
+                app=self.app,
+                expected_sha256=expected_sha256,
+                computed_sha256=computed_sha256,
+                size=size,
+            )
+
+
 class PermissionsResource(AppResource):
     """
     Configure the SSO permissions/tiles. Typically, webapps are expected to have a 'main' permission mapped to '/', meaning that a tile pointing to the `$domain/$path` will be available in the SSO for users allowed to access that app.
@@ -266,7 +462,7 @@ class PermissionsResource(AppResource):
 
     The list of allowed user/groups may be initialized using the content of the `init_{perm}_permission` question from the manifest, hence `init_main_permission` replaces the `is_public` question and shall contain a group name (typically, `all_users` or `visitors`).
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.permissions]
     main.url = "/"
@@ -277,7 +473,7 @@ class PermissionsResource(AppResource):
     admin.allowed = "admins"   # Assuming the "admins" group exists (cf future developments ;))
     ```
 
-    ##### Properties (for each perm name):
+    ##### Properties (for each perm name)
     - `url`: The relative URI corresponding to this permission. Typically `/` or `/something`. This property may be omitted for non-web permissions.
     - `show_tile`: (default: `true` if `url` is defined) Wether or not a tile should be displayed for that permission in the user portal
     - `allowed`: (default: nobody) The group initially allowed to access this perm, if `init_{perm}_permission` is not defined in the manifest questions. Note that the admin may tweak who is allowed/unallowed on that permission later on, this is only meant to **initialize** the permission.
@@ -285,14 +481,14 @@ class PermissionsResource(AppResource):
     - `protected`: (default: `false`) Define if this permission is protected. If it is protected the administrator won't be able to add or remove the visitors group of this permission. Defaults to 'false'.
     - `additional_urls`: (default: none) List of additional URL for which access will be allowed/forbidden
 
-    ##### Provision/Update:
+    ##### Provision/Update
     - Delete any permissions that may exist and be related to this app yet is not declared anymore
     - Loop over the declared permissions and create them if needed or update them with the new values
 
-    ##### Deprovision:
+    ##### Deprovision
     - Delete all permission related to this app
 
-    ##### Legacy management:
+    ##### Legacy management
     - Legacy `is_public` setting will be deleted if it exists
     """
 
@@ -320,32 +516,65 @@ class PermissionsResource(AppResource):
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
         # FIXME : if url != None, we should check that there's indeed a domain/path defined ? ie that app is a webapp
 
+        # Validate packager-provided infos
+        for perm, infos in properties.items():
+            if "auth_header" in infos and not isinstance(
+                infos.get("auth_header"), bool
+            ):
+                raise YunohostError(
+                    f"In manifest, for permission '{perm}', 'auth_header' should be a boolean",
+                    raw_msg=True,
+                )
+            if "show_tile" in infos and not isinstance(infos.get("show_tile"), bool):
+                raise YunohostError(
+                    f"In manifest, for permission '{perm}', 'show_tile' should be a boolean",
+                    raw_msg=True,
+                )
+            if "protected" in infos and not isinstance(infos.get("protected"), bool):
+                raise YunohostError(
+                    f"In manifest, for permission '{perm}', 'protected' should be a boolean",
+                    raw_msg=True,
+                )
+            if "additional_urls" in infos and not isinstance(
+                infos.get("additional_urls"), list
+            ):
+                raise YunohostError(
+                    f"In manifest, for permission '{perm}', 'additional_urls' should be a list",
+                    raw_msg=True,
+                )
+
+        if "main" not in properties:
+            properties["main"] = copy.copy(self.default_perm_properties)
+
         for perm, infos in properties.items():
             properties[perm] = copy.copy(self.default_perm_properties)
             properties[perm].update(infos)
             if properties[perm]["show_tile"] is None:
                 properties[perm]["show_tile"] = bool(properties[perm]["url"])
 
-        if (
+        if properties["main"]["url"] is not None and (
             not isinstance(properties["main"].get("url"), str)
             or properties["main"]["url"] != "/"
         ):
             raise YunohostError(
-                "URL for the 'main' permission should be '/' for webapps (or undefined/None for non-webapps). Note that / refers to the install url of the app, i.e $domain.tld/$path/",
+                "URL for the 'main' permission should be '/' for webapps (or left undefined for non-webapps). Note that / refers to the install url of the app, i.e $domain.tld/$path/",
                 raw_msg=True,
             )
 
         super().__init__({"permissions": properties}, *args, **kwargs)
 
+        from yunohost.app import _get_app_settings, _hydrate_app_template
+
+        settings = _get_app_settings(self.app)
         for perm, infos in self.permissions.items():
-            if infos.get("url") and "__DOMAIN__" in infos.get("url", ""):
-                infos["url"] = infos["url"].replace(
-                    "__DOMAIN__", self.get_setting("domain")
-                )
-            infos["additional_urls"] = [
-                u.replace("__DOMAIN__", self.get_setting("domain"))
-                for u in infos.get("additional_urls", [])
-            ]
+            if infos.get("url") and "__" in infos.get("url"):
+                infos["url"] = _hydrate_app_template(infos["url"], settings)
+
+            if infos.get("additional_urls"):
+                infos["additional_urls"] = [
+                    _hydrate_app_template(url, settings)
+                    for url in infos["additional_urls"]
+                ]
 
     def provision_or_update(self, context: Dict = {}):
         from yunohost.permission import (
@@ -441,22 +670,22 @@ class SystemuserAppResource(AppResource):
     """
     Provision a system user to be used by the app. The username is exactly equal to the app id
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.system_user]
     # (empty - defaults are usually okay)
     ```
 
-    ##### Properties:
+    ##### Properties
     - `allow_ssh`: (default: False) Adds the user to the ssh.app group, allowing SSH connection via this user
     - `allow_sftp`: (default: False) Adds the user to the sftp.app group, allowing SFTP connection via this user
     - `home`: (default: `/var/www/__APP__`) Defines the home property for this user. NB: unfortunately you can't simply use `__INSTALL_DIR__` or `__DATA_DIR__` for now
 
-    ##### Provision/Update:
+    ##### Provision/Update
     - will create the system user if it doesn't exists yet
     - will add/remove the ssh/sftp.app groups
 
-    ##### Deprovision:
+    ##### Deprovision
     - deletes the user and group
     """
 
@@ -549,28 +778,28 @@ class InstalldirAppResource(AppResource):
     """
     Creates a directory to be used by the app as the installation directory, typically where the app sources and assets are located. The corresponding path is stored in the settings as `install_dir`
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.install_dir]
     # (empty - defaults are usually okay)
     ```
 
-    ##### Properties:
+    ##### Properties
     - `dir`: (default: `/var/www/__APP__`) The full path of the install dir
     - `owner`: (default: `__APP__:rwx`) The owner (and owner permissions) for the install dir
     - `group`: (default: `__APP__:rx`) The group (and group permissions) for the install dir
 
-    ##### Provision/Update:
+    ##### Provision/Update
     - during install, the folder will be deleted if it already exists (FIXME: is this what we want?)
     - if the dir path changed and a folder exists at the old location, the folder will be `mv`'ed to the new location
     - otherwise, creates the directory if it doesn't exists yet
     - (re-)apply permissions (only on the folder itself, not recursively)
     - save the value of `dir` as `install_dir` in the app's settings, which can be then used by the app scripts (`$install_dir`) and conf templates (`__INSTALL_DIR__`)
 
-    ##### Deprovision:
+    ##### Deprovision
     - recursively deletes the directory if it exists
 
-    ##### Legacy management:
+    ##### Legacy management
     - In the past, the setting was called `final_path`. The code will automatically rename it as `install_dir`.
     - As explained in the 'Provision/Update' section, the folder will also be moved if the location changed
 
@@ -664,28 +893,30 @@ class DatadirAppResource(AppResource):
     """
     Creates a directory to be used by the app as the data store directory, typically where the app multimedia or large assets added by users are located. The corresponding path is stored in the settings as `data_dir`. This resource behaves very similarly to install_dir.
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.data_dir]
     # (empty - defaults are usually okay)
     ```
 
-    ##### Properties:
+    ##### Properties
     - `dir`: (default: `/home/yunohost.app/__APP__`) The full path of the data dir
+    - `subdirs`: (default: empty list) A list of subdirs to initialize inside the data dir. For example, `['foo', 'bar']`
     - `owner`: (default: `__APP__:rwx`) The owner (and owner permissions) for the data dir
     - `group`: (default: `__APP__:rx`) The group (and group permissions) for the data dir
 
-    ##### Provision/Update:
+    ##### Provision/Update
     - if the dir path changed and a folder exists at the old location, the folder will be `mv`'ed to the new location
     - otherwise, creates the directory if it doesn't exists yet
-    - (re-)apply permissions (only on the folder itself, not recursively)
+    - create each subdir declared and which do not exist already
+    - (re-)apply permissions (only on the folder itself and declared subdirs, not recursively)
     - save the value of `dir` as `data_dir` in the app's settings, which can be then used by the app scripts (`$data_dir`) and conf templates (`__DATA_DIR__`)
 
-    ##### Deprovision:
+    ##### Deprovision
     - (only if the purge option is chosen by the user) recursively deletes the directory if it exists
     - also delete the corresponding setting
 
-    ##### Legacy management:
+    ##### Legacy management
     - In the past, the setting may have been called `datadir`. The code will automatically rename it as `data_dir`.
     - As explained in the 'Provision/Update' section, the folder will also be moved if the location changed
 
@@ -701,11 +932,13 @@ class DatadirAppResource(AppResource):
 
     default_properties: Dict[str, Any] = {
         "dir": "/home/yunohost.app/__APP__",
+        "subdirs": [],
         "owner": "__APP__:rwx",
         "group": "__APP__:rx",
     }
 
     dir: str = ""
+    subdirs: list = []
     owner: str = ""
     group: str = ""
 
@@ -727,7 +960,12 @@ class DatadirAppResource(AppResource):
                 )
                 shutil.move(current_data_dir, self.dir)
             else:
-                mkdir(self.dir)
+                mkdir(self.dir, parents=True)
+
+        for subdir in self.subdirs:
+            full_path = os.path.join(self.dir, subdir)
+            if not os.path.isdir(full_path):
+                mkdir(full_path, parents=True)
 
         owner, owner_perm = self.owner.split(":")
         group, group_perm = self.group.split(":")
@@ -747,6 +985,10 @@ class DatadirAppResource(AppResource):
         # in which case we want to apply the perm to the pointed dir, not to the symlink
         chmod(os.path.realpath(self.dir), perm_octal)
         chown(os.path.realpath(self.dir), owner, group)
+        for subdir in self.subdirs:
+            full_path = os.path.join(self.dir, subdir)
+            chmod(os.path.realpath(full_path), perm_octal)
+            chown(os.path.realpath(full_path), owner, group)
 
         self.set_setting("data_dir", self.dir)
         self.delete_setting("datadir")  # Legacy
@@ -766,7 +1008,7 @@ class AptDependenciesAppResource(AppResource):
     """
     Create a virtual package in apt, depending on the list of specified packages that the app needs. The virtual packages is called `$app-ynh-deps` (with `_` being replaced by `-` in the app name, see `ynh_install_app_dependencies`)
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.apt]
     packages = "nyancat, lolcat, sl"
@@ -777,16 +1019,16 @@ class AptDependenciesAppResource(AppResource):
     extras.yarn.packages = "yarn"
     ```
 
-    ##### Properties:
+    ##### Properties
     - `packages`: Comma-separated list of packages to be installed via `apt`
     - `packages_from_raw_bash`: A multi-line bash snippet (using triple quotes as open/close) which should echo additional packages to be installed. Meant to be used for packages to be conditionally installed depending on architecture, debian version, install questions, or other logic.
     - `extras`: A dict of (repo, key, packages) corresponding to "extra" repositories to fetch dependencies from
 
-    ##### Provision/Update:
+    ##### Provision/Update
     - The code literally calls the bash helpers `ynh_install_app_dependencies` and `ynh_install_extra_app_dependencies`, similar to what happens in v1.
     - Note that when `packages` contains some phpX.Y-foobar dependencies, this will automagically define a `phpversion` setting equal to `X.Y` which can therefore be used in app scripts ($phpversion) or templates (`__PHPVERSION__`)
 
-    ##### Deprovision:
+    ##### Deprovision
     - The code literally calls the bash helper `ynh_remove_app_dependencies`
     """
 
@@ -845,7 +1087,7 @@ class PortsResource(AppResource):
 
     Note that because multiple ports can be booked, each properties is prefixed by the name of the port. `main` is a special name and will correspond to the setting `$port`, whereas for example `xmpp_client` will correspond to the setting `$port_xmpp_client`.
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.ports]
     # (empty should be fine for most apps... though you can customize stuff if absolutely needed)
@@ -857,21 +1099,21 @@ class PortsResource(AppResource):
     xmpp_client.exposed = "TCP" # here, we're telling that the port needs to be publicly exposed on TCP on the firewall
     ```
 
-    ##### Properties (for every port name):
+    ##### Properties (for every port name)
     - `default`: The prefered value for the port. If this port is already being used by another process right now, or is booked in another app's setting, the code will increment the value until it finds a free port and store that value as the setting. If no value is specified, a random value between 10000 and 60000 is used.
     - `exposed`: (default: `false`) Wether this port should be opened on the firewall and be publicly reachable. This should be kept to `false` for the majority of apps than only need a port for internal reverse-proxying! Possible values: `false`, `true`(=`Both`), `Both`, `TCP`, `UDP`. This will result in the port being opened on the firewall, and the diagnosis checking that a program answers on that port.
     - `fixed`: (default: `false`) Tells that the app absolutely needs the specific value provided in `default`, typically because it's needed for a specific protocol
 
-    ##### Provision/Update (for every port name):
+    ##### Provision/Update (for every port name)
     - If not already booked, look for a free port, starting with the `default` value (or a random value between 10000 and 60000 if no `default` set)
     - If `exposed` is not `false`, open the port in the firewall accordingly - otherwise make sure it's closed.
     - The value of the port is stored in the `$port` setting for the `main` port, or `$port_NAME` for other `NAME`s
 
-    ##### Deprovision:
+    ##### Deprovision
     - Close the ports on the firewall if relevant
     - Deletes all the port settings
 
-    ##### Legacy management:
+    ##### Legacy management
     - In the past, some settings may have been named `NAME_port` instead of `port_NAME`, in which case the code will automatically rename the old setting.
     """
 
@@ -913,8 +1155,8 @@ class PortsResource(AppResource):
             % port
         )
         # This second command is mean to cover (most) case where an app is using a port yet ain't currently using it for some reason (typically service ain't up)
-        cmd2 = f"grep --quiet \"port: '{port}'\" /etc/yunohost/apps/*/settings.yml"
-        return os.system(cmd1) == 0 and os.system(cmd2) == 0
+        cmd2 = f"grep --quiet --extended-regexp \"port: '?{port}'?\" /etc/yunohost/apps/*/settings.yml"
+        return os.system(cmd1) == 0 or os.system(cmd2) == 0
 
     def provision_or_update(self, context: Dict = {}):
         from yunohost.firewall import firewall_allow, firewall_disallow
@@ -974,25 +1216,25 @@ class DatabaseAppResource(AppResource):
 
     NB2: no automagic migration will happen in an suddenly change `type` from `mysql` to `postgresql` or viceversa in its life
 
-    ##### Example:
+    ##### Example
     ```toml
     [resources.database]
     type = "mysql"   # or : "postgresql". Only these two values are supported
     ```
 
-    ##### Properties:
+    ##### Properties
     - `type`: The database type, either `mysql` or `postgresql`
 
-    ##### Provision/Update:
+    ##### Provision/Update
     - (Re)set the `$db_name` and `$db_user` settings with the sanitized app name (replacing `-` and `.` with `_`)
     - If `$db_pwd` doesn't already exists, pick a random database password and store it in that setting
     - If the database doesn't exists yet, create the SQL user and DB using `ynh_mysql_create_db` or `ynh_psql_create_db`.
 
-    ##### Deprovision:
+    ##### Deprovision
     - Drop the DB using `ynh_mysql_remove_db` or `ynh_psql_remove_db`
     - Deletes the `db_name`, `db_user` and `db_pwd` settings
 
-    ##### Legacy management:
+    ##### Legacy management
     - In the past, the sql passwords may have been named `mysqlpwd` or `psqlpwd`, in which case it will automatically be renamed as `db_pwd`
     """
 

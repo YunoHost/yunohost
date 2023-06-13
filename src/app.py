@@ -48,11 +48,10 @@ from moulinette.utils.filesystem import (
     chmod,
 )
 
-from yunohost.utils.config import (
-    ConfigPanel,
-    ask_questions_and_parse_answers,
-    DomainQuestion,
-    PathQuestion,
+from yunohost.utils.configpanel import ConfigPanel, ask_questions_and_parse_answers
+from yunohost.utils.form import (
+    DomainOption,
+    WebPathOption,
     hydrate_questions_with_choices,
 )
 from yunohost.utils.i18n import _value_for_locale
@@ -431,10 +430,10 @@ def app_change_url(operation_logger, app, domain, path):
 
     # Normalize path and domain format
 
-    domain = DomainQuestion.normalize(domain)
-    old_domain = DomainQuestion.normalize(old_domain)
-    path = PathQuestion.normalize(path)
-    old_path = PathQuestion.normalize(old_path)
+    domain = DomainOption.normalize(domain)
+    old_domain = DomainOption.normalize(old_domain)
+    path = WebPathOption.normalize(path)
+    old_path = WebPathOption.normalize(old_path)
 
     if (domain, path) == (old_domain, old_path):
         raise YunohostValidationError(
@@ -534,7 +533,14 @@ def app_change_url(operation_logger, app, domain, path):
             hook_callback("post_app_change_url", env=env_dict)
 
 
-def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False, continue_on_failure=False):
+def app_upgrade(
+    app=[],
+    url=None,
+    file=None,
+    force=False,
+    no_safety_backup=False,
+    continue_on_failure=False,
+):
     """
     Upgrade app
 
@@ -748,6 +754,7 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
             ).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
+                action="upgrade",
             )
 
             # Boring stuff : the resource upgrade may have added/remove/updated setting
@@ -857,8 +864,16 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
 
                 else:
                     operation_logger.close()
-                    logger.error(m18n.n("app_failed_to_upgrade_but_continue", failed_app=app_instance_name, operation_logger_name=operation_logger.name))
-                    failed_to_upgrade_apps.append((app_instance_name, operation_logger.name))
+                    logger.error(
+                        m18n.n(
+                            "app_failed_to_upgrade_but_continue",
+                            failed_app=app_instance_name,
+                            operation_logger_name=operation_logger.name,
+                        )
+                    )
+                    failed_to_upgrade_apps.append(
+                        (app_instance_name, operation_logger.name)
+                    )
 
             # Otherwise we're good and keep going !
             now = int(time.time())
@@ -923,7 +938,11 @@ def app_upgrade(app=[], url=None, file=None, force=False, no_safety_backup=False
     if failed_to_upgrade_apps:
         apps = ""
         for app_id, operation_logger_name in failed_to_upgrade_apps:
-            apps += m18n.n("apps_failed_to_upgrade_line", app_id=app_id, operation_logger_name=operation_logger_name)
+            apps += m18n.n(
+                "apps_failed_to_upgrade_line",
+                app_id=app_id,
+                operation_logger_name=operation_logger_name,
+            )
 
         logger.warning(m18n.n("apps_failed_to_upgrade", apps=apps))
 
@@ -1153,6 +1172,7 @@ def app_install(
             AppResourceManager(app_instance_name, wanted=manifest, current={}).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
+                action="install",
             )
         except (KeyboardInterrupt, EOFError, Exception) as e:
             shutil.rmtree(app_setting_path)
@@ -1284,7 +1304,7 @@ def app_install(
 
                 AppResourceManager(
                     app_instance_name, wanted={}, current=manifest
-                ).apply(rollback_and_raise_exception_if_failure=False)
+                ).apply(rollback_and_raise_exception_if_failure=False, action="remove")
             else:
                 # Remove all permission in LDAP
                 for permission_name in user_permission_list()["permissions"].keys():
@@ -1423,7 +1443,9 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
         from yunohost.utils.resources import AppResourceManager
 
         AppResourceManager(app, wanted={}, current=manifest).apply(
-            rollback_and_raise_exception_if_failure=False, purge_data_dir=purge
+            rollback_and_raise_exception_if_failure=False,
+            purge_data_dir=purge,
+            action="remove",
         )
     else:
         # Remove all permission in LDAP
@@ -1508,6 +1530,23 @@ def app_setting(app, key, value=None, delete=False):
     _set_app_settings(app, app_settings)
 
 
+def app_shell(app):
+    """
+    Open an interactive shell with the app environment already loaded
+
+    Keyword argument:
+        app -- App ID
+
+    """
+    subprocess.run(
+        [
+            "/bin/bash",
+            "-c",
+            "source /usr/share/yunohost/helpers && ynh_spawn_app_shell " + app,
+        ]
+    )
+
+
 def app_register_url(app, domain, path):
     """
     Book/register a web path for a given app
@@ -1523,8 +1562,8 @@ def app_register_url(app, domain, path):
         permission_sync_to_user,
     )
 
-    domain = DomainQuestion.normalize(domain)
-    path = PathQuestion.normalize(path)
+    domain = DomainOption.normalize(domain)
+    path = WebPathOption.normalize(path)
 
     # We cannot change the url of an app already installed simply by changing
     # the settings...
@@ -1741,12 +1780,12 @@ class AppConfigPanel(ConfigPanel):
     save_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/settings.yml")
     config_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/config_panel.toml")
 
-    def _load_current_values(self):
-        self.values = self._call_config_script("show")
-
     def _run_action(self, action):
         env = {key: str(value) for key, value in self.new_values.items()}
         self._call_config_script(action, env=env)
+
+    def _get_raw_settings(self):
+        self.values = self._call_config_script("show")
 
     def _apply(self):
         env = {key: str(value) for key, value in self.new_values.items()}
@@ -1862,19 +1901,8 @@ def _get_app_settings(app):
             logger.error(m18n.n("app_not_correctly_installed", app=app))
             return {}
 
-        # Stupid fix for legacy bullshit
-        # In the past, some setups did not have proper normalization for app domain/path
-        # Meaning some setups (as of January 2021) still have path=/foobar/ (with a trailing slash)
-        # resulting in stupid issue unless apps using ynh_app_normalize_path_stuff
-        # So we yolofix the settings if such an issue is found >_>
-        # A simple call  to `yunohost app list` (which happens quite often) should be enough
-        # to migrate all app settings ... so this can probably be removed once we're past Bullseye...
-        if settings.get("path") != "/" and (
-            settings.get("path", "").endswith("/")
-            or not settings.get("path", "/").startswith("/")
-        ):
-            settings["path"] = "/" + settings["path"].strip("/")
-            _set_app_settings(app, settings)
+        # Make the app id available as $app too
+        settings["app"] = app
 
         if app == settings["id"]:
             return settings
@@ -2099,7 +2127,7 @@ def _hydrate_app_template(template, data):
         varname = stuff.strip("_").lower()
 
         if varname in data:
-            template = template.replace(stuff, data[varname])
+            template = template.replace(stuff, str(data[varname]))
 
     return template
 
@@ -2713,8 +2741,8 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
 
     from yunohost.domain import _assert_domain_exists
 
-    domain = DomainQuestion.normalize(domain)
-    path = PathQuestion.normalize(path)
+    domain = DomainOption.normalize(domain)
+    path = WebPathOption.normalize(path)
 
     # Abort if domain is unknown
     _assert_domain_exists(domain)
@@ -2904,10 +2932,10 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     services = manifest.get("services", [])
 
-    # Some apps use php-fpm, php5-fpm or php7.x-fpm which is now php7.4-fpm
+    # Some apps use php-fpm, php5-fpm or php7.x-fpm which is now php8.2-fpm
     def replace_alias(service):
-        if service in ["php-fpm", "php5-fpm", "php7.0-fpm", "php7.3-fpm"]:
-            return "php7.4-fpm"
+        if service in ["php-fpm", "php5-fpm", "php7.0-fpm", "php7.3-fpm", "php7.4-fpm"]:
+            return "php8.2-fpm"
         else:
             return service
 
@@ -2916,7 +2944,7 @@ def _assert_system_is_sane_for_app(manifest, when):
     # We only check those, mostly to ignore "custom" services
     # (added by apps) and because those are the most popular
     # services
-    service_filter = ["nginx", "php7.4-fpm", "mysql", "postfix"]
+    service_filter = ["nginx", "php8.2-fpm", "mysql", "postfix"]
     services = [str(s) for s in services if s in service_filter]
 
     if "nginx" not in services:
@@ -2990,7 +3018,8 @@ def _notification_is_dismissed(name, settings):
 
 
 def _filter_and_hydrate_notifications(notifications, current_version=None, data={}):
-    def is_version_more_recent_than_current_version(name):
+    def is_version_more_recent_than_current_version(name, current_version):
+        current_version = str(current_version)
         # Boring code to handle the fact that "0.1 < 9999~ynh1" is False
 
         if "~" in name:
@@ -3004,7 +3033,7 @@ def _filter_and_hydrate_notifications(notifications, current_version=None, data=
         for name, content_per_lang in notifications.items()
         if current_version is None
         or name == "main"
-        or is_version_more_recent_than_current_version(name)
+        or is_version_more_recent_than_current_version(name, current_version)
     }
 
 

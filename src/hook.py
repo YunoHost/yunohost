@@ -452,6 +452,8 @@ def _hook_exec_bash(path, args, chdir, env, user, return_format, loggers):
     logger.debug("Executing command '%s'" % command)
 
     _env = os.environ.copy()
+    if "YNH_CONTEXT" in _env:
+        del _env["YNH_CONTEXT"]
     _env.update(env)
 
     # Remove the 'HOME' var which is causing some inconsistencies between

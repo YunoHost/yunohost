@@ -97,7 +97,7 @@ EOF
     # Cron job that upgrade the app list everyday
     cat >$pending_dir/etc/cron.daily/yunohost-fetch-apps-catalog <<EOF
 #!/bin/bash
-(sleep \$((RANDOM%3600)); yunohost tools update --apps > /dev/null) &
+sleep \$((RANDOM%3600)); yunohost tools update apps > /dev/null
 EOF
 
     # Cron job that renew lets encrypt certificates if there's any that needs renewal
@@ -178,8 +178,19 @@ do_post_regen() {
     chown root:admins /home/yunohost.backup/archives
     chown root:root /var/cache/yunohost
 
+    [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
+
     # NB: x permission for 'others' is important for ssl-cert (and maybe mdns), otherwise slapd will fail to start because can't access the certs
     chmod 755 /etc/yunohost
+
+    find /etc/systemd/system/*.service -type f | xargs -r chown root:root
+    find /etc/systemd/system/*.service -type f | xargs -r chmod 0644
+
+    if ls -l /etc/php/*/fpm/pool.d/*.conf
+    then
+        chown root:root /etc/php/*/fpm/pool.d/*.conf
+        chmod 644 /etc/php/*/fpm/pool.d/*.conf
+    fi
 
     # Certs
     # We do this with find because there could be a lot of them...

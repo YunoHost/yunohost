@@ -752,5 +752,15 @@
     "domain_config_xmpp_help": "Nota: algunhas características de XMPP para ser utilizadas precisan que teñas ao día os rexistros DNS e rexeneres os certificados Lets Encrypt",
     "app_change_url_failed": "Non se cambiou o url para {app}: {error}",
     "app_change_url_require_full_domain": "{app} non se pode mover a este novo URL porque require un dominio completo propio (ex. con ruta = /)",
-    "app_change_url_script_failed": "Algo fallou ao executar o script de cambio de url"
+    "app_change_url_script_failed": "Algo fallou ao executar o script de cambio de url",
+    "apps_failed_to_upgrade_line": "\n * {app_id} (para ver o rexistro correspondente executa 'yunohost log show {operation_logger_name}')",
+    "app_failed_to_upgrade_but_continue": "Fallou a actualización de {failed_app}, seguimos coas demáis actualizacións. Executa 'yunohost log show {operation_logger_name}' para ver o rexistro do fallo",
+    "app_not_upgraded_broken_system": "Fallou a actualización de '{failed_app}' e estragou o sistema, como consecuencia cancelouse a actualización das seguintes apps: {apps}",
+    "app_not_upgraded_broken_system_continue": "Fallou a actualización de '{failed_app}' e estragou o sistema (polo que ignórase --continue-on-failure), como consecuencia cancelouse a actualización das seguintes apps: {apps}",
+    "apps_failed_to_upgrade": "Fallou a actualización das seguintes aplicacións:{apps}",
+    "invalid_shell": "Intérprete de ordes non válido: {shell}",
+    "log_resource_snippet": "Aprovisionamento/desaprovisionamento/actualización dun recurso",
+    "app_resource_failed": "Fallou o aprovisionamento, desaprovisionamento ou actualización de recursos para {app}: {error}",
+    "app_failed_to_download_asset": "Fallou a descarga do recurso '{source_id}' ({url}) para {app}: {out}",
+    "app_corrupt_source": "YunoHost foi quen de descargar o recurso '{source_id}' ({url}) para {app}, pero a suma de comprobación para o recurso non concorda. Pode significar que houbo un fallo temporal na conexión do servidor á rede, OU que o recurso sufreu, dalgún xeito, cambios desde que os desenvolvedores orixinais (ou unha terceira parte maliciosa?), o equipo de YunoHost ten que investigar e actualizar o manifesto da app para mostrar este cambio.\n    Suma sha256 agardada:  {expected_sha256} \n    Suma sha256 do descargado:  {computed_sha256}\n    Tamaño do ficheiro: {size}"
 }

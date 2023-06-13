@@ -204,10 +204,6 @@ def test_normalize_permission_path_with_bad_regex():
     # Full Regex
     with pytest.raises(YunohostError):
         _validate_and_sanitize_permission_url(
-            "re:" + maindomain + "/yolo?+/", maindomain + "/path", "test_permission"
-        )
-    with pytest.raises(YunohostError):
-        _validate_and_sanitize_permission_url(
             "re:" + maindomain + "/yolo[1-9]**/",
             maindomain + "/path",
             "test_permission",

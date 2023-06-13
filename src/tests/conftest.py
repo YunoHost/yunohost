@@ -1,5 +1,6 @@
 import os
 import pytest
+from unittest.mock import Mock
 
 import moulinette
 from moulinette import m18n, Moulinette
@@ -23,11 +24,15 @@ def get_test_apps_dir():
 
 
 @contextmanager
-def message(mocker, key, **kwargs):
-    mocker.spy(m18n, "n")
+def message(key, **kwargs):
+    m = Mock(wraps=m18n.n)
+    old_m18n = m18n.n
+    m18n.n = m
     yield
-    m18n.n.assert_any_call(key, **kwargs)
-
+    try:
+        m.assert_any_call(key, **kwargs)
+    finally:
+        m18n.n = old_m18n
 
 @contextmanager
 def raiseYunohostError(mocker, key, **kwargs):

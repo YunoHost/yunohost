@@ -631,7 +631,7 @@ def user_info(username):
             has_value = re.search(r"Value=(\d+)", cmd_result)
 
             if has_value:
-                storage_use = int(has_value.group(1))
+                storage_use = int(has_value.group(1)) * 1000
                 storage_use = binary_to_human(storage_use)
 
                 if is_limited:
@@ -1189,6 +1189,7 @@ def user_group_update(
                 )
             else:
                 operation_logger.related_to.append(("user", user))
+                logger.info(m18n.n("group_user_add", group=groupname, user=user))
 
         new_group_members += users_to_add
 
@@ -1202,6 +1203,7 @@ def user_group_update(
                 )
             else:
                 operation_logger.related_to.append(("user", user))
+                logger.info(m18n.n("group_user_remove", group=groupname, user=user))
 
         # Remove users_to_remove from new_group_members
         # Kinda like a new_group_members -= users_to_remove
@@ -1237,6 +1239,7 @@ def user_group_update(
                     "mail_domain_unknown", domain=mail[mail.find("@") + 1 :]
                 )
             new_group_mail.append(mail)
+            logger.info(m18n.n("group_mailalias_add", group=groupname, mail=mail))
 
     if remove_mailalias:
         from yunohost.domain import _get_maindomain
@@ -1256,6 +1259,9 @@ def user_group_update(
                 )
             if mail in new_group_mail:
                 new_group_mail.remove(mail)
+                logger.info(
+                    m18n.n("group_mailalias_remove", group=groupname, mail=mail)
+                )
             else:
                 raise YunohostValidationError("mail_alias_remove_failed", mail=mail)
 
