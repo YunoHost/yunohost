@@ -404,7 +404,7 @@ def firewall_upnp(action="status", no_refresh=False):
         logger.debug("discovering UPnP devices...")
         try:
             nb_dev = upnpc.discover()
-        except Exception as e:
+        except Exception:
             logger.warning("Failed to find any UPnP device on the network")
             nb_dev = -1
             enabled = False
