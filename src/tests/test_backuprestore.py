@@ -439,7 +439,8 @@ def test_backup_using_copy_method():
 # App restore                                                                #
 #
 
-
+# FIXME : switch to a backup from 11.x
+@pytest.mark.skip
 @pytest.mark.with_wordpress_archive_from_4p2
 @pytest.mark.with_custom_domain("yolo.test")
 def test_restore_app_wordpress_from_Ynh4p2():
@@ -504,6 +505,8 @@ def test_restore_app_not_in_backup(mocker):
     assert not _is_installed("yoloswag")
 
 
+# FIXME : switch to a backup from 11.x
+@pytest.mark.skip
 @pytest.mark.with_wordpress_archive_from_4p2
 @pytest.mark.with_custom_domain("yolo.test")
 def test_restore_app_already_installed(mocker):
