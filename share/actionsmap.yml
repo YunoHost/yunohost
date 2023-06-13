@@ -537,17 +537,6 @@ domain:
                     full: --force
                     help: Do not ask confirmation to remove apps
                     action: store_true
-
-
-        ### domain_dns_conf()
-        dns-conf:
-            deprecated: true
-            action_help: Generate sample DNS configuration for a domain
-            arguments:
-                domain:
-                    help: Target domain
-                    extra:
-                        pattern: *pattern_domain
         
         ### domain_maindomain()
         main-domain:

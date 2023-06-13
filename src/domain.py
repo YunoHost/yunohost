@@ -718,10 +718,6 @@ def domain_cert_renew(domain_list, force=False, no_checks=False, email=False):
     return certificate_renew(domain_list, force, no_checks, email)
 
 
-def domain_dns_conf(domain):
-    return domain_dns_suggest(domain)
-
-
 def domain_dns_suggest(domain):
     from yunohost.dns import domain_dns_suggest
 
