@@ -61,7 +61,7 @@ class MyDiagnoser(Diagnoser):
 
         self.nonce = "".join(random.choice("0123456789abcedf") for i in range(16))
         rm("/var/www/.well-known/ynh-diagnosis/", recursive=True, force=True)
-        mkdir("/var/www/.well-known/ynh-diagnosis/", parents=True)
+        mkdir("/var/www/.well-known/ynh-diagnosis/", parents=True, mode=0o0775)
         os.system("touch /var/www/.well-known/ynh-diagnosis/%s" % self.nonce)
 
         if not domains_to_check:

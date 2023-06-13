@@ -112,7 +112,7 @@ def app_expected_files(domain, app):
     if app.startswith("legacy_app"):
         yield "/var/www/%s/index.html" % app
     yield "/etc/yunohost/apps/%s/settings.yml" % app
-    if "manifestv2" in app:
+    if "manifestv2" in app or "my_webapp" in app:
         yield "/etc/yunohost/apps/%s/manifest.toml" % app
     else:
         yield "/etc/yunohost/apps/%s/manifest.json" % app

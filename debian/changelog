@@ -4,6 +4,38 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
 
+yunohost (11.1.21.3) stable; urgency=low
+
+  - Fix again /var/www/.well-known/ynh-diagnosis/ perms which are too broad and could be exploited to serve malicious files x_x (84984ad8)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 12 Jun 2023 17:41:26 +0200
+
+yunohost (11.1.21.2) stable; urgency=low
+
+  - Aleks loves xargs syntax >_> (313a1647)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 12 Jun 2023 00:25:44 +0200
+
+yunohost (11.1.21.1) stable; urgency=low
+
+  - Fix stupid issue with code that changes /dev/null perms... (e6f134bc)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 12 Jun 2023 00:02:47 +0200
+
+yunohost (11.1.21) stable; urgency=low
+
+  - users: more verbose logs for user_group_update operations ([#1668](https://github.com/yunohost/yunohost/pull/1668))
+  - apps: fix auto-catalog update cron job which was broken because --apps doesnt exist anymore (1552944f)
+  - apps: Add a 'yunohost app shell' command to open a shell into an app environment ([#1656](https://github.com/yunohost/yunohost/pull/1656))
+  - security/regenconf: fix security issue where apps' system conf would be owned by the app, which can enable priviledge escalation (daf51e94)
+  - security/regenconf: force systemd, nginx, php and fail2ban conf to be owned by root (e649c092)
+  - security/nginx: use /var/www/.well-known folder for ynh diagnosis and acme challenge, because /tmp/ could be manipulated by user to serve maliciously crafted files (d42c9983)
+  - i18n: Translations updated for French, Polish, Ukrainian
+
+  Thanks to all contributors <3 ! (Kay0u, Kuba Bazan, ppr, sudo, Tagada, tituspijean, Tymofii-Lytvynenko)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 11 Jun 2023 19:20:27 +0200
+
 yunohost (11.1.20) stable; urgency=low
 
   - appsv2: fix funky current_version not being defined when hydrating pre-upgrade notifications (8fa823b4)
