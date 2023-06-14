@@ -1209,7 +1209,8 @@ def app_install(
     for question in questions:
         # Or should it be more generally question.redact ?
         if question.type == "password":
-            del env_dict_for_logging[f"YNH_APP_ARG_{question.name.upper()}"]
+            if f"YNH_APP_ARG_{question.name.upper()}" in env_dict_for_logging:
+                del env_dict_for_logging[f"YNH_APP_ARG_{question.name.upper()}"]
             if question.name in env_dict_for_logging:
                 del env_dict_for_logging[question.name]
 
