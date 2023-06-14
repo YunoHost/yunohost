@@ -141,33 +141,20 @@ def user_create(
     domain,
     password,
     fullname=None,
-    firstname=None,
-    lastname=None,
     mailbox_quota="0",
     admin=False,
     from_import=False,
     loginShell=None,
 ):
-    if firstname or lastname:
-        logger.warning(
-            "Options --firstname / --lastname of 'yunohost user create' are deprecated. We recommend using --fullname instead."
-        )
-
     if not fullname or not fullname.strip():
-        if not firstname.strip():
-            raise YunohostValidationError(
-                "You should specify the fullname of the user using option -F"
-            )
-        lastname = (
-            lastname or " "
-        )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
-        fullname = f"{firstname} {lastname}".strip()
-    else:
-        fullname = fullname.strip()
-        firstname = fullname.split()[0]
-        lastname = (
-            " ".join(fullname.split()[1:]) or " "
-        )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
+        raise YunohostValidationError(
+            "You should specify the fullname of the user using option -F"
+        )
+    fullname = fullname.strip()
+    firstname = fullname.split()[0]
+    lastname = (
+        " ".join(fullname.split()[1:]) or " "
+    )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
 
     from yunohost.domain import domain_list, _get_maindomain, _assert_domain_exists
     from yunohost.hook import hook_callback
@@ -364,8 +351,6 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
 def user_update(
     operation_logger,
     username,
-    firstname=None,
-    lastname=None,
     mail=None,
     change_password=None,
     add_mailforward=None,
@@ -377,17 +362,15 @@ def user_update(
     fullname=None,
     loginShell=None,
 ):
-    if firstname or lastname:
-        logger.warning(
-            "Options --firstname / --lastname of 'yunohost user create' are deprecated. We recommend using --fullname instead."
-        )
-
     if fullname and fullname.strip():
         fullname = fullname.strip()
         firstname = fullname.split()[0]
         lastname = (
             " ".join(fullname.split()[1:]) or " "
         )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
+    else:
+        firstname = None
+        lastname = None
 
     from yunohost.domain import domain_list
     from yunohost.app import app_ssowatconf
@@ -884,8 +867,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
 
         user_update(
             new_infos["username"],
-            firstname=new_infos["firstname"],
-            lastname=new_infos["lastname"],
+            fullname=(new_infos["firstname"] + " " + new_infos["lastname"]).strip(),
             change_password=new_infos["password"],
             mailbox_quota=new_infos["mailbox-quota"],
             mail=new_infos["mail"],
@@ -930,8 +912,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
                 user["password"],
                 user["mailbox-quota"],
                 from_import=True,
-                firstname=user["firstname"],
-                lastname=user["lastname"],
+                fullname=(user["firstname"] + " " + user["lastname"]).strip(),
             )
             update(user)
             result["created"] += 1

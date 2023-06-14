@@ -154,11 +154,12 @@ def domain_info(domain):
 
     from yunohost.app import app_info
     from yunohost.dns import _get_registar_settings
+    from yunohost.certificate import certificate_status
 
     _assert_domain_exists(domain)
 
     registrar, _ = _get_registar_settings(domain)
-    certificate = domain_cert_status([domain], full=True)["certificates"][domain]
+    certificate = certificate_status([domain], full=True)["certificates"][domain]
 
     apps = []
     for app in _installed_apps():
