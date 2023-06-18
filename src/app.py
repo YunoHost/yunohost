@@ -241,8 +241,8 @@ def _app_upgradable(app_infos):
     # Determine upgradability
 
     app_in_catalog = app_infos.get("from_catalog")
-    installed_version = version.parse(app_infos.get("version", "0~ynh0"))
-    version_in_catalog = version.parse(
+    installed_version = _parse_app_version(app_infos.get("version", "0~ynh0"))
+    version_in_catalog = _parse_app_version(
         app_infos.get("from_catalog", {}).get("manifest", {}).get("version", "0~ynh0")
     )
 
@@ -257,25 +257,7 @@ def _app_upgradable(app_infos):
     ):
         return "bad_quality"
 
-    # If the app uses the standard version scheme, use it to determine
-    # upgradability
-    if "~ynh" in str(installed_version) and "~ynh" in str(version_in_catalog):
-        if installed_version < version_in_catalog:
-            return "yes"
-        else:
-            return "no"
-
-    # Legacy stuff for app with old / non-standard version numbers...
-
-    # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
-    if not app_infos["from_catalog"].get("lastUpdate") or not app_infos[
-        "from_catalog"
-    ].get("git"):
-        return "url_required"
-
-    settings = app_infos["settings"]
-    local_update_time = settings.get("update_time", settings.get("install_time", 0))
-    if app_infos["from_catalog"]["lastUpdate"] > local_update_time:
+    if installed_version < version_in_catalog:
         return "yes"
     else:
         return "no"
@@ -620,9 +602,11 @@ def app_upgrade(
         # Manage upgrade type and avoid any upgrade if there is nothing to do
         upgrade_type = "UNKNOWN"
         # Get current_version and new version
-        app_new_version = version.parse(manifest.get("version", "?"))
-        app_current_version = version.parse(app_dict.get("version", "?"))
-        if "~ynh" in str(app_current_version) and "~ynh" in str(app_new_version):
+        app_new_version_raw = manifest.get("version", "?")
+        app_current_version_raw = app_dict.get("version", "?")
+        app_new_version = _parse_app_version(app_new_version_raw)
+        app_current_version = _parse_app_version(app_current_version_raw)
+        if "~ynh" in str(app_current_version_raw) and "~ynh" in str(app_new_version_raw):
             if app_current_version >= app_new_version and not force:
                 # In case of upgrade from file or custom repository
                 # No new version available
@@ -642,10 +626,10 @@ def app_upgrade(
                 upgrade_type = "UPGRADE_FORCED"
             else:
                 app_current_version_upstream, app_current_version_pkg = str(
-                    app_current_version
+                    app_current_version_raw
                 ).split("~ynh")
                 app_new_version_upstream, app_new_version_pkg = str(
-                    app_new_version
+                    app_new_version_raw
                 ).split("~ynh")
                 if app_current_version_upstream == app_new_version_upstream:
                     upgrade_type = "UPGRADE_PACKAGE"
@@ -675,7 +659,7 @@ def app_upgrade(
             settings = _get_app_settings(app_instance_name)
             notifications = _filter_and_hydrate_notifications(
                 manifest["notifications"]["PRE_UPGRADE"],
-                current_version=app_current_version,
+                current_version=app_current_version_raw,
                 data=settings,
             )
             _display_notifications(notifications, force=force)
@@ -732,8 +716,8 @@ def app_upgrade(
 
         env_dict_more = {
             "YNH_APP_UPGRADE_TYPE": upgrade_type,
-            "YNH_APP_MANIFEST_VERSION": str(app_new_version),
-            "YNH_APP_CURRENT_VERSION": str(app_current_version),
+            "YNH_APP_MANIFEST_VERSION": str(app_new_version_raw),
+            "YNH_APP_CURRENT_VERSION": str(app_current_version_raw),
         }
 
         if manifest["packaging_format"] < 2:
@@ -916,7 +900,7 @@ def app_upgrade(
                 settings = _get_app_settings(app_instance_name)
                 notifications = _filter_and_hydrate_notifications(
                     manifest["notifications"]["POST_UPGRADE"],
-                    current_version=app_current_version,
+                    current_version=app_current_version_raw,
                     data=settings,
                 )
                 if Moulinette.interface.type == "cli":
@@ -2054,6 +2038,20 @@ def _set_app_settings(app, settings):
         yaml.safe_dump(settings, f, default_flow_style=False)
 
 
+def _parse_app_version(v):
+
+    if v == "?":
+        return (0,0)
+
+    try:
+        if "~" in v:
+            return (version.parse(v.split("~")[0]), int(v.split("~")[1].replace("ynh", "")))
+        else:
+            return (version.parse(v), 0)
+    except Exception as e:
+        raise YunohostError(f"Failed to parse app version '{v}' : {e}", raw_msg=True)
+
+
 def _get_manifest_of_app(path):
     "Get app manifest stored in json or in toml"
 
@@ -3158,12 +3156,7 @@ def _notification_is_dismissed(name, settings):
 def _filter_and_hydrate_notifications(notifications, current_version=None, data={}):
     def is_version_more_recent_than_current_version(name, current_version):
         current_version = str(current_version)
-        # Boring code to handle the fact that "0.1 < 9999~ynh1" is False
-
-        if "~" in name:
-            return version.parse(name) > version.parse(current_version)
-        else:
-            return version.parse(name) > version.parse(current_version.split("~")[0])
+        return _parse_app_version(name) > _parse_app_version(current_version)
 
     return {
         # Should we render the markdown maybe? idk
