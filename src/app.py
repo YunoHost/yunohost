@@ -2792,6 +2792,7 @@ def _make_environment_for_app_script(
     app_id, app_instance_nb = _parse_app_instance_name(app)
 
     env_dict = {
+        "YNH_DEFAULT_PHP_VERSION": "8.2",
         "YNH_APP_ID": app_id,
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
