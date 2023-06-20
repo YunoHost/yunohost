@@ -3173,7 +3173,9 @@ def regen_mail_app_user_config_for_dovecot_and_postfix(only=None):
             hashed_password = _hash_user_password(settings["mail_pwd"])
             dovecot_passwd.append(f"{app}:{hashed_password}::::::allow_nets=127.0.0.1/24")
         if postfix:
-            postfix_map.append(f"{app}@{settings['domain']} {app}")
+            mail_user = settings.get("mail_user", app)
+            mail_domain = settings.get("mail_domain", settings["domain"])
+            postfix_map.append(f"{mail_user}@{mail_domain} {app}")
 
     if dovecot:
         app_senders_passwd = "/etc/dovecot/app-senders-passwd"
