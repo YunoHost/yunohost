@@ -124,7 +124,7 @@ ynh_remove_apps() {
 # Requires YunoHost version 11.0.* or higher, and that the app relies on packaging v2 or higher.
 # The spawned shell will have environment variables loaded and environment files sourced
 # from the app's service configuration file (defaults to $app.service, overridable by the packager with `service` setting).
-# If the app relies on a specific PHP version, then `php` will be aliased that version.
+# If the app relies on a specific PHP version, then `php` will be aliased that version. The PHP command will also be appended with the `phpflags` settings.
 ynh_spawn_app_shell() {
         # Declare an array to define the options of this helper.
         local legacy_args=a
@@ -176,9 +176,10 @@ ynh_spawn_app_shell() {
         # Force `php` to its intended version
         # We use `eval`+`export` since `alias` is not propagated to subshells, even with `export`
         local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+        local phpflags=$(ynh_app_setting_get --app=$app --key=phpflags)
         if [ -n "$phpversion" ]
         then
-            eval "php() { php${phpversion} \"\$@\"; }"
+            eval "php() { php${phpversion} ${phpflags} \"\$@\"; }"
             export -f php
         fi
 

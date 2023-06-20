@@ -957,6 +957,8 @@ app:
         ### app_shell()
         shell:
             action_help: Open an interactive shell with the app environment already loaded
+            # Here we set a GET only not to lock the command line. There is no actual API endpoint for app_shell()
+            api: GET /apps/<app>/shell
             arguments:
                 app:
                     help: App ID
