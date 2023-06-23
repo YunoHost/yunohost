@@ -22,7 +22,7 @@ import shutil
 import random
 import tempfile
 import subprocess
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Union
 
 from moulinette import m18n
 from moulinette.utils.process import check_output
@@ -1044,7 +1044,7 @@ class AptDependenciesAppResource(AppResource):
 
     packages: List = []
     packages_from_raw_bash: str = ""
-    extras: Dict[str, Dict[str, str]] = {}
+    extras: Dict[str, Dict[str, Union[str, List]]] = {}
 
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
         super().__init__(properties, *args, **kwargs)
