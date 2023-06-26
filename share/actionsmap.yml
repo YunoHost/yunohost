@@ -474,6 +474,171 @@ user:
                         key:
                             help: The key to be removed
 
+        subscription:
+            subcategory_help: Manage subscriptions
+            actions:
+
+                ### user_subscription_list()
+                list:
+                    action_help: Show pending subscriptions
+                    api: GET /users/subscriptions
+
+                ### user_subscription_accept()
+                accept:
+                    action_help: Accept a subscriptions
+                    api: POST /users/subscriptions/<login>/accept
+                    arguments:
+                        login:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_subscription_deny()
+                deny:
+                    action_help: Deny a subscriptions
+                    api: DELETE /users/subscriptions/<login>
+                    arguments:
+                        login:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_subscription_invite_list()
+                invite:
+                    action_help: List the current ephemereal invitation code(s)
+                    api: GET /users/subscriptions/invite
+
+                ### user_subscription_invite_create()
+                invite:
+                    action_help: Create an ephemereal invitation code
+                    api: POST /users/subscriptions/invite/create
+                    arguments:
+                        --send-to:
+                            help: Email recipient of the invitation link
+                            extra:
+                                pattern: *pattern_email
+                        -q:
+                            full: --mailbox-quota
+                            help: Mailbox size quota
+                            default: "0"
+                            metavar: "{SIZE|0}"
+                            extra:
+                            pattern: &pattern_mailbox_quota
+                                - !!str ^(\d+[bkMGT])|0$
+                        -g:
+                            full: --groups
+                            help: Group(s) to which the user will be added
+                            nargs: "*"
+                            metavar: GROUPNAME
+                            extra:
+                                pattern: *pattern_groupname
+                        -n:
+                            help: Number of registrations the invitation link will allow
+                            type: int
+                            default: "1"
+
+                ### user_subscription_invite_delete()
+                invite:
+                    action_help: Delete an ephemereal invitation code
+                    api: DELETE /users/subscriptions/invite/<code>
+                    arguments:
+                        code:
+                            help: Invitation code to be deleted
+
+                ### user_subscription_captcha()
+                captcha:
+                    action_help: CAPTCHA validation for registration
+                    authentication:
+                    # We need to be able to register without being authenticated
+                        api: null
+                    api:
+                      - GET /users/subscriptions/captcha
+
+                ### user_subscription_register()
+                register:
+                    action_help: Register a new user
+                    authentication:
+                    # We need to be able to register without being authenticated
+                        api: null
+                    api:
+                      - POST /users/subscriptions
+                    arguments:
+                        username:
+                            help: The unique username to create
+                            extra:
+                                pattern: &pattern_username
+                                    - !!str ^[a-z0-9_]+$
+                                    - "pattern_username"
+                        -F:
+                            full: --fullname
+                            help: The full name of the user. For example 'Camille Dupont'
+                            extra:
+                                ask: ask_fullname
+                                required: False
+                                pattern: &pattern_fullname
+                                    - !!str ^([^\W_]{1,30}[ ,.'-]{0,3})+$
+                                    - "pattern_fullname"
+                        -p:
+                            full: --password
+                            help: User password
+                            extra:
+                                password: ask_password
+                                required: True
+                                pattern: &pattern_password
+                                    - !!str ^.{3,}$
+                                    - "pattern_password"
+                                comment: good_practices_about_user_password
+#TODO: let the admin or the user decide that?
+#                        -d:
+#                            full: --domain
+#                            help: Domain for the email address and xmpp account
+#                            extra:
+#                                pattern: &pattern_domain
+#                                    - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+#                                    - "pattern_domain"
+#TODO: this should not be let up to the user
+#                        -q:
+#                            full: --mailbox-quota
+#                            help: Mailbox size quota
+#                            default: "0"
+#                            metavar: "{SIZE|0}"
+#                            extra:
+#                                pattern: &pattern_mailbox_quota
+#                                    - !!str ^(\d+[bkMGT])|0$
+#                                    - "pattern_mailbox_quota"
+#TODO: let's keep it simple and let it default?
+#                        -s:
+#                            full: --loginShell
+#                            help: The login shell used
+#                            default: "/bin/bash"
+                        -c:
+                            full: --code
+                            help: Invitation code
+
+                ### user_subscription_resend()
+                resend:
+                    action_help: Resend a subscription email
+                    api: POST /users/subscriptions/<login>/resend
+                    arguments:
+                        login:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+
+                ### user_subscription_validate()
+                validate:
+                    action_help: Validate a subscription
+                    api:
+                      - POST /users/subscriptions/<login>/accept
+                      - POST /users/subscriptions/<login>/validate/<code>
+                    arguments:
+                        login:
+                            help: Username of the user
+                            extra:
+                                pattern: *pattern_username
+                        code:
+                            help: Validation code
+
 #############################
 #          Domain           #
 #############################

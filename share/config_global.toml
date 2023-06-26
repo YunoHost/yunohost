@@ -63,6 +63,20 @@ name = "Security"
         choices.modern = "Modern (TLS 1.3 only)"
         default = "intermediate"
 
+    [security.registration]
+    name = "User registration"
+        [security.registration.mode]
+        type = "select"
+        choices.disabled = "Disabled"
+        choices.invitation_link_only = "Invitation link only"
+        choices.admin_validation = "Public, with admin validation"
+        choices.public = "Public"
+        default = "disabled"
+
+        [security.registration.email_validation]
+        type = "boolean"
+        default = "true"
+
     [security.webadmin]
     name = "Webadmin"
         [security.webadmin.webadmin_allowlist_enabled]
