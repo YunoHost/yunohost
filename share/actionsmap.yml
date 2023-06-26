@@ -523,8 +523,7 @@ user:
                             default: "0"
                             metavar: "{SIZE|0}"
                             extra:
-                            pattern: &pattern_mailbox_quota
-                                - !!str ^(\d+[bkMGT])|0$
+                            pattern: *pattern_mailbox_quota
                         -g:
                             full: --groups
                             help: Group(s) to which the user will be added
@@ -566,36 +565,28 @@ user:
                         username:
                             help: The unique username to create
                             extra:
-                                pattern: &pattern_username
-                                    - !!str ^[a-z0-9_]+$
-                                    - "pattern_username"
+                                pattern: *pattern_username
                         -F:
                             full: --fullname
                             help: The full name of the user. For example 'Camille Dupont'
                             extra:
                                 ask: ask_fullname
                                 required: False
-                                pattern: &pattern_fullname
-                                    - !!str ^([^\W_]{1,30}[ ,.'-]{0,3})+$
-                                    - "pattern_fullname"
+                                pattern: *pattern_fullname
                         -p:
                             full: --password
                             help: User password
                             extra:
                                 password: ask_password
                                 required: True
-                                pattern: &pattern_password
-                                    - !!str ^.{3,}$
-                                    - "pattern_password"
+                                pattern: *pattern_password
                                 comment: good_practices_about_user_password
 #TODO: let the admin or the user decide that?
 #                        -d:
 #                            full: --domain
 #                            help: Domain for the email address and xmpp account
 #                            extra:
-#                                pattern: &pattern_domain
-#                                    - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
-#                                    - "pattern_domain"
+#                                pattern: *pattern_domain
 #TODO: this should not be let up to the user
 #                        -q:
 #                            full: --mailbox-quota
@@ -603,9 +594,7 @@ user:
 #                            default: "0"
 #                            metavar: "{SIZE|0}"
 #                            extra:
-#                                pattern: &pattern_mailbox_quota
-#                                    - !!str ^(\d+[bkMGT])|0$
-#                                    - "pattern_mailbox_quota"
+#                                pattern: *pattern_mailbox_quota
 #TODO: let's keep it simple and let it default?
 #                        -s:
 #                            full: --loginShell
