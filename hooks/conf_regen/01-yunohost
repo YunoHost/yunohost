@@ -52,6 +52,9 @@ do_init_regen() {
     # Empty service conf
     touch /etc/yunohost/services.yml
 
+    # Make sure the subscriptions file exists
+    touch /etc/yunohost/subscriptions.yml
+
     mkdir -p /var/cache/yunohost/repo
     chown root:root /var/cache/yunohost
     chmod 700 /var/cache/yunohost

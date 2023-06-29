@@ -25,10 +25,15 @@ import random
 import string
 import subprocess
 import copy
+import yaml
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
+from moulinette.utils.filesystem import (
+    read_yaml,
+    write_to_yaml,
+)
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.service import service_status
@@ -1440,6 +1445,66 @@ def user_ssh_remove_key(username, key):
 
 #
 # End SSH subcategory
+#
+
+#
+# Subcription subcategory
+#
+
+REGISTRATIONS = "/etc/yunohost/registrations.yml"
+
+def user_subscription_list():
+    """
+    List pending subscriptions
+    """
+
+    return read_yaml(REGISTRATIONS).get("subscriptions", None)
+
+#TODO: user_subscription_accept(username)
+
+def user_subscription_deny(username):
+    """
+    Deny a pending subscription
+    """
+
+    registrations = read_yaml(REGISTRATIONS)
+    for r in registrations["subscriptions"]:
+        if r["username"] == username:
+            registrations.remove(r)
+    write_to_yaml(registrations)
+    return True
+
+def user_subscription_invite_list():
+    """
+    List current invitations
+    """
+
+    return read_yaml(REGISTRATIONS).get("invitations", None)
+
+#TODO: user_subscription_invite_create(email, groups, quota, nb_account)
+
+def user_subscription_invite_delete(code):
+    """
+    Delete an invitation
+    """
+
+    registrations = read_yaml(REGISTRATIONS)
+    for r in registrations["invitations"]:
+        if r["code"] == code:
+            registrations.remove(r)
+    write_to_yaml(registrations)
+    return True
+
+#TODO: user_subscription_captcha(code)
+
+#TODO: user_subscription_register(username, code, firstname, lastname, password)
+
+#TODO: user_subscription_resend(code)
+
+#TODO: user_subscription_validate(username)
+
+#
+# End subcription subcategory
 #
 
 
