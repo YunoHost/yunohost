@@ -762,5 +762,9 @@
     "app_not_upgraded_broken_system_continue": "{failed_app} aplikazioaren bertsio-berritzeak huts egin du eta sistema hondatu du (beraz, --continue-on-failure aukerari muzin egin zaio) eta ondorengo aplikazioen bertsio-berritzeak ezeztatu dira: {apps}",
     "app_failed_to_download_asset": "{app} aplikaziorako '{source_id}' ({url}) baliabidea deskargatzeak huts egin du: {out}",
     "apps_failed_to_upgrade": "Aplikazio hauen bertsio-berritzeak huts egin du: {apps}",
-    "apps_failed_to_upgrade_line": "\n * {app_id} (dagokion erregistroa ikusteko, exekutatu 'yunohost log show {operation_logger_name}')"
+    "apps_failed_to_upgrade_line": "\n * {app_id} (dagokion erregistroa ikusteko, exekutatu 'yunohost log show {operation_logger_name}')",
+    "group_mailalias_add": "'{mail}' ePosta aliasa jarri zaio '{group}' taldeari",
+    "group_mailalias_remove": "'{mail}' ePosta aliasa kendu zaio '{group}' taldeari",
+    "group_user_remove": "'{user}' erabiltzailea '{group}' taldetik kenduko da",
+    "group_user_add": "'{user}' erabiltzailea '{group}' taldera gehituko da"
 }
