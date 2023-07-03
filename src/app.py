@@ -84,7 +84,7 @@ re_app_instance_name = re.compile(
 )
 
 APP_REPO_URL = re.compile(
-    r"^https://[a-zA-Z0-9-_.]+/[a-zA-Z0-9-_./~]+/[a-zA-Z0-9-_.]+_ynh(/?(-/)?(tree|src/branch)/[a-zA-Z0-9-_.]+)?(\.git)?/?$"
+    r"^https://[a-zA-Z0-9-_.]+/[a-zA-Z0-9-_./~]+/[a-zA-Z0-9-_.]+_ynh(/?(-/)?(tree|src/(branch|tag|commit))/[a-zA-Z0-9-_.]+)?(\.git)?/?$"
 )
 
 APP_FILES_TO_COPY = [
