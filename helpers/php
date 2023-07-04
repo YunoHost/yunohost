@@ -7,32 +7,43 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 
 # Create a dedicated PHP-FPM config
 #
-# usage 1: ynh_add_fpm_config [--phpversion=7.X] [--use_template] [--package=packages] [--dedicated_service]
-# | arg: -v, --phpversion=          - Version of PHP to use.
-# | arg: -t, --use_template         - Use this helper in template mode.
-# | arg: -p, --package=             - Additionnal PHP packages to install
-# | arg: -d, --dedicated_service    - Use a dedicated PHP-FPM service instead of the common one.
+# usage: ynh_add_fpm_config
 #
-# -----------------------------------------------------------------------------
+# Case 1 (recommended) : your provided a snippet conf/extra_php-fpm.conf
 #
-# usage 2: ynh_add_fpm_config [--phpversion=7.X] --usage=usage --footprint=footprint [--package=packages] [--dedicated_service]
-# | arg: -v, --phpversion=          - Version of PHP to use.
-# | arg: -f, --footprint=           - Memory footprint of the service (low/medium/high).
+# The actual PHP configuration will be automatically generated, 
+# and your extra_php-fpm.conf will be appended (typically contains PHP upload limits)
+#
+# The resulting configuration will be deployed to the appropriate place, /etc/php/$phpversion/fpm/pool.d/$app.conf
+#
+# Performance-related options in the PHP conf, such as : 
+# pm.max_children, pm.start_servers, pm.min_spare_servers pm.max_spare_servers
+# are computed from two parameters called "usage" and "footprint" which can be set to low/medium/high. (cf details below)
+#
+# If you wish to tweak those, please initialize the settings `fpm_usage` and `fpm_footprint` 
+# *prior* to calling this helper. Otherwise, "low" will be used as a default for both values.
+#
+# Otherwise, if you want the user to have control over these, we encourage to create a config panel 
+# (which should ultimately be standardized by the core ...)
+#
+# Case 2 (deprecate) : you provided an entire conf/php-fpm.conf
+#
+# The configuration will be hydrated, replacing __FOOBAR__ placeholders with $foobar values, etc.
+#
+# The resulting configuration will be deployed to the appropriate place, /etc/php/$phpversion/fpm/pool.d/$app.conf
+#
+# ----------------------
+# 
+# fpm_footprint: Memory footprint of the service (low/medium/high).
 # low    - Less than 20 MB of RAM by pool.
 # medium - Between 20 MB and 40 MB of RAM by pool.
 # high   - More than 40 MB of RAM by pool.
-# Or specify exactly the footprint, the load of the service as MB by pool instead of having a standard value.
-# To have this value, use the following command and stress the service.
-# watch -n0.5 ps -o user,cmd,%cpu,rss -u APP
+# N      - Or you can specify a quantitative footprint as MB by pool (use watch -n0.5 ps -o user,cmd,%cpu,rss -u APP)
 #
-# | arg: -u, --usage=               - Expected usage of the service (low/medium/high).
+# fpm_usage: Expected usage of the service (low/medium/high).
 # low    - Personal usage, behind the SSO.
 # medium - Low usage, few people or/and publicly accessible.
 # high   - High usage, frequently visited website.
-#
-# | arg: -p, --package=             - Additionnal PHP packages to install for a specific version of PHP
-# | arg: -d, --dedicated_service    - Use a dedicated PHP-FPM service instead of the common one.
-#
 #
 # The footprint of the service will be used to defined the maximum footprint we can allow, which is half the maximum RAM.
 # So it will be used to defined 'pm.max_children'
@@ -59,10 +70,9 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 ynh_add_fpm_config() {
     local _globalphpversion=${phpversion-:}
     # Declare an array to define the options of this helper.
-    local legacy_args=vtufpd
-    local -A args_array=([v]=phpversion= [t]=use_template [u]=usage= [f]=footprint= [p]=package= [d]=dedicated_service)
+    local legacy_args=vufpd
+    local -A args_array=([v]=phpversion= [u]=usage= [f]=footprint= [p]=package= [d]=dedicated_service)
     local phpversion
-    local use_template
     local usage
     local footprint
     local package
@@ -72,11 +82,28 @@ ynh_add_fpm_config() {
     package=${package:-}
 
     # The default behaviour is to use the template.
-    use_template="${use_template:-1}"
+    local autogenconf=false
     usage="${usage:-}"
     footprint="${footprint:-}"
-    if [ -n "$usage" ] || [ -n "$footprint" ]; then
-        use_template=0
+    if [ -n "$usage" ] || [ -n "$footprint" ] || [[ -e $YNH_APP_BASEDIR/conf/extra_php-fpm.conf ]]; then
+        autogenconf=true
+
+        # If no usage provided, default to the value existing in setting ... or to low
+        local fpm_usage_in_setting=$(ynh_app_setting_get --app=$app --key=fpm_usage)
+        if [ -z "$usage" ]
+        then
+            usage=${fpm_usage_in_setting:-low}
+            ynh_app_setting_set --app=$app --key=fpm_usage --value=$usage
+        fi
+
+        # If no footprint provided, default to the value existing in setting ... or to low
+        local fpm_footprint_in_setting=$(ynh_app_setting_get --app=$app --key=fpm_footprint)
+        if [ -z "$footprint" ]
+        then
+            footprint=${fpm_footprint_in_setting:-low}
+            ynh_app_setting_set --app=$app --key=fpm_footprint --value=$footprint
+        fi
+
     fi
     # Do not use a dedicated service by default
     dedicated_service=${dedicated_service:-0}
@@ -111,6 +138,7 @@ ynh_add_fpm_config() {
     fi
 
     if [ $dedicated_service -eq 1 ]; then
+        ynh_print_warn --message "Argument --dedicated_service of ynh_add_fpm_config is deprecated and to be removed in the future"
         local fpm_service="${app}-phpfpm"
         local fpm_config_dir="/etc/php/$phpversion/dedicated-fpm"
     else
@@ -141,17 +169,13 @@ ynh_add_fpm_config() {
         fi
     fi
 
-    if [ $use_template -eq 1 ]; then
+    if [ $autogenconf == "false" ]; then
         # Usage 1, use the template in conf/php-fpm.conf
         local phpfpm_path="$YNH_APP_BASEDIR/conf/php-fpm.conf"
         # Make sure now that the template indeed exists
         [ -e "$phpfpm_path" ] || ynh_die --message="Unable to find template to configure PHP-FPM."
     else
         # Usage 2, generate a PHP-FPM config file with ynh_get_scalable_phpfpm
-
-        # Store settings
-        ynh_app_setting_set --app=$app --key=fpm_footprint --value=$footprint
-        ynh_app_setting_set --app=$app --key=fpm_usage --value=$usage
 
         # Define the values to use for the configuration of PHP.
         ynh_get_scalable_phpfpm --usage=$usage --footprint=$footprint
