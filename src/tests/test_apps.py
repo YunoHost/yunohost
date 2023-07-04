@@ -330,7 +330,7 @@ def test_app_from_catalog():
 
     app_install(
         "my_webapp",
-        args=f"domain={main_domain}&path=/site&with_sftp=0&password=superpassword&is_public=1&with_mysql=0&phpversion=none",
+        args=f"domain={main_domain}&path=/site&with_sftp=0&password=superpassword&init_main_permission=visitors&with_mysql=0&phpversion=none",
     )
     app_map_ = app_map(raw=True)
     assert main_domain in app_map_
@@ -339,7 +339,7 @@ def test_app_from_catalog():
     assert app_map_[main_domain]["/site"]["id"] == "my_webapp"
 
     assert app_is_installed(main_domain, "my_webapp")
-    assert app_is_exposed_on_http(main_domain, "/site", "Custom Web App")
+    assert app_is_exposed_on_http(main_domain, "/site", "you have just installed My Webapp")
 
     # Try upgrade, should do nothing
     app_upgrade("my_webapp")
