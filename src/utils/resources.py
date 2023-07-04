@@ -1063,7 +1063,7 @@ class AptDependenciesAppResource(AppResource):
 
         for key, values in self.extras.items():
             if isinstance(values.get("packages"), str):
-                values["packages"] = [value.strip() for value in values["packages"].split(",")]
+                values["packages"] = [value.strip() for value in values["packages"].split(",")]  # type: ignore
 
             if not isinstance(values.get("repo"), str) \
                or not isinstance(values.get("key"), str) \
