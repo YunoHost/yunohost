@@ -1175,7 +1175,7 @@ class PortsResource(AppResource):
             port_value = self.get_setting(setting_name)
             if not port_value and name != "main":
                 # Automigrate from legacy setting foobar_port (instead of port_foobar)
-                legacy_setting_name = "{name}_port"
+                legacy_setting_name = f"{name}_port"
                 port_value = self.get_setting(legacy_setting_name)
                 if port_value:
                     self.set_setting(setting_name, port_value)
