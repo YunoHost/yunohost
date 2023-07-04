@@ -1076,7 +1076,7 @@ class AptDependenciesAppResource(AppResource):
     def provision_or_update(self, context: Dict = {}):
         script = " ".join(["ynh_install_app_dependencies", *self.packages])
         for repo, values in self.extras.items():
-            script += " ".join([
+            script += "\n" + " ".join([
                 "ynh_install_extra_app_dependencies",
                 f"--repo='{values['repo']}'",
                 f"--key='{values['key']}'",
@@ -1084,7 +1084,7 @@ class AptDependenciesAppResource(AppResource):
             ])
             # FIXME : we're feeding the raw value of values['packages'] to the helper .. if we want to be consistent, may they should be comma-separated, though in the majority of cases, only a single package is installed from an extra repo..
 
-        self._run_script("provision_or_update", "\n".join(script))
+        self._run_script("provision_or_update", script)
 
     def deprovision(self, context: Dict = {}):
         self._run_script("deprovision", "ynh_remove_app_dependencies")
