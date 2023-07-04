@@ -4,6 +4,13 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
 
+yunohost (11.1.21.4) stable; urgency=low
+
+  - regenconf: Get rid of previous tmp hack about /dev/null for people that went through the very first 11.1.21, because it's causing issue in unpriviledged LXC or similar context (8242cab7)
+  - apps: don't attempt to del password key if it doesn't exist (29338f79)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 14 Jun 2023 15:48:33 +0200
+
 yunohost (11.1.21.3) stable; urgency=low
 
   - Fix again /var/www/.well-known/ynh-diagnosis/ perms which are too broad and could be exploited to serve malicious files x_x (84984ad8)
