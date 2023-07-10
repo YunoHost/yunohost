@@ -4,7 +4,6 @@ import time
 import random
 
 from moulinette.core import MoulinetteError
-from yunohost.utils.dns import is_yunohost_dyndns_domain
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.domain import (
@@ -41,7 +40,7 @@ def setup_function(function):
     for domain in domains:
         if (domain not in TEST_DOMAINS or domain == TEST_DOMAINS[2]) and domain != TEST_DYNDNS_DOMAIN:
             # Clean domains not used for testing
-            domain_remove(domain, no_unsubscribe=is_yunohost_dyndns_domain(domain))
+            domain_remove(domain)
         elif domain in TEST_DOMAINS:
             # Reset settings if any
             os.system(f"rm -rf {DOMAIN_SETTINGS_DIR}/{domain}.yml")
