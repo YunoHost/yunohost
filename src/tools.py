@@ -144,13 +144,14 @@ def _set_hostname(hostname, pretty_hostname=None):
             logger.debug(out)
 
 
-@is_unit_operation()
+@is_unit_operation(exclude=["dyndns_recovery_password", "password"])
 def tools_postinstall(
     operation_logger,
     domain,
     username,
     fullname,
     password,
+    dyndns_recovery_password=None,
     ignore_dyndns=False,
     force_diskspace=False,
     overwrite_root_password=True,
@@ -203,9 +204,8 @@ def tools_postinstall(
     assert_password_is_strong_enough("admin", password)
 
     # If this is a nohost.me/noho.st, actually check for availability
-    if not ignore_dyndns and is_yunohost_dyndns_domain(domain):
-        available = None
-
+    dyndns = not ignore_dyndns and is_yunohost_dyndns_domain(domain)
+    if dyndns:
         # Check if the domain is available...
         try:
             available = _dyndns_available(domain)
@@ -213,17 +213,10 @@ def tools_postinstall(
         # connectivity or something. Assume that this domain isn't manageable
         # and inform the user that we could not contact the dyndns host server.
         except Exception:
-            logger.warning(
-                m18n.n("dyndns_provider_unreachable", provider="dyndns.yunohost.org")
-            )
-
-        if available:
-            dyndns = True
-        # If not, abort the postinstall
+            raise YunohostValidationError("dyndns_provider_unreachable", provider="dyndns.yunohost.org")
         else:
-            raise YunohostValidationError("dyndns_unavailable", domain=domain)
-    else:
-        dyndns = False
+            if not available:
+                raise YunohostValidationError("dyndns_unavailable", domain=domain)
 
     if os.system("iptables -V >/dev/null 2>/dev/null") != 0:
         raise YunohostValidationError(
@@ -235,7 +228,7 @@ def tools_postinstall(
     logger.info(m18n.n("yunohost_installing"))
 
     # New domain config
-    domain_add(domain, dyndns)
+    domain_add(domain, dyndns_recovery_password=dyndns_recovery_password, ignore_dyndns=ignore_dyndns)
     domain_main_domain(domain)
 
     # First user
