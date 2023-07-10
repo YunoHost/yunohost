@@ -84,7 +84,7 @@ re_app_instance_name = re.compile(
 )
 
 APP_REPO_URL = re.compile(
-    r"^https://[a-zA-Z0-9-_.]+/[a-zA-Z0-9-_./~]+/[a-zA-Z0-9-_.]+_ynh(/?(-/)?tree/[a-zA-Z0-9-_.]+)?(\.git)?/?$"
+    r"^https://[a-zA-Z0-9-_.]+/[a-zA-Z0-9-_./~]+/[a-zA-Z0-9-_.]+_ynh(/?(-/)?(tree|src/(branch|tag|commit))/[a-zA-Z0-9-_.]+)?(\.git)?/?$"
 )
 
 APP_FILES_TO_COPY = [
@@ -1209,7 +1209,8 @@ def app_install(
     for question in questions:
         # Or should it be more generally question.redact ?
         if question.type == "password":
-            del env_dict_for_logging[f"YNH_APP_ARG_{question.id.upper()}"]
+            if f"YNH_APP_ARG_{question.id.upper()}" in env_dict_for_logging:
+                del env_dict_for_logging[f"YNH_APP_ARG_{question.id.upper()}"]
             if question.id in env_dict_for_logging:
                 del env_dict_for_logging[question.id]
 
@@ -1645,6 +1646,23 @@ def app_setting(app, key, value=None, delete=False):
     _set_app_settings(app, app_settings)
 
 
+def app_shell(app):
+    """
+    Open an interactive shell with the app environment already loaded
+
+    Keyword argument:
+        app -- App ID
+
+    """
+    subprocess.run(
+        [
+            "/bin/bash",
+            "-c",
+            "source /usr/share/yunohost/helpers && ynh_spawn_app_shell " + app,
+        ]
+    )
+
+
 def app_register_url(app, domain, path):
     """
     Book/register a web path for a given app
@@ -2012,7 +2030,7 @@ def _get_app_settings(app):
         ):
             settings["path"] = "/" + settings["path"].strip("/")
             _set_app_settings(app, settings)
-            
+
         # Make the app id available as $app too
         settings["app"] = app
 
@@ -2764,10 +2782,21 @@ def _check_manifest_requirements(
         ram_requirement["runtime"]
     )
 
+    # Some apps have a higher runtime value than build ...
+    if ram_requirement["build"] != "?" and ram_requirement["runtime"] != "?":
+        max_build_runtime = (
+            ram_requirement["build"]
+            if human_to_binary(ram_requirement["build"])
+            > human_to_binary(ram_requirement["runtime"])
+            else ram_requirement["runtime"]
+        )
+    else:
+        max_build_runtime = ram_requirement["build"]
+
     yield (
         "ram",
         can_build and can_run,
-        {"current": binary_to_human(ram), "required": ram_requirement["build"]},
+        {"current": binary_to_human(ram), "required": max_build_runtime},
         "app_not_enough_ram",  # i18n: app_not_enough_ram
     )
 
@@ -3130,7 +3159,8 @@ def _notification_is_dismissed(name, settings):
 
 
 def _filter_and_hydrate_notifications(notifications, current_version=None, data={}):
-    def is_version_more_recent_than_current_version(name):
+    def is_version_more_recent_than_current_version(name, current_version):
+        current_version = str(current_version)
         # Boring code to handle the fact that "0.1 < 9999~ynh1" is False
 
         if "~" in name:
@@ -3144,7 +3174,7 @@ def _filter_and_hydrate_notifications(notifications, current_version=None, data=
         for name, content_per_lang in notifications.items()
         if current_version is None
         or name == "main"
-        or is_version_more_recent_than_current_version(name)
+        or is_version_more_recent_than_current_version(name, current_version)
     }
 
 

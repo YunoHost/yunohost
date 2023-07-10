@@ -24,6 +24,12 @@ do_pre_regen() {
 do_post_regen() {
     regen_conf_files=$1
 
+    if ls -l /etc/fail2ban/jail.d/*.conf
+    then
+        chown root:root /etc/fail2ban/jail.d/*.conf
+        chmod 644 /etc/fail2ban/jail.d/*.conf
+    fi
+
     [[ -z "$regen_conf_files" ]] \
         || systemctl reload fail2ban
 }

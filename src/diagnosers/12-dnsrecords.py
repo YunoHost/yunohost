@@ -182,6 +182,10 @@ class MyDiagnoser(Diagnoser):
         if success != "ok":
             return None
         else:
+            if type_ == "TXT" and isinstance(answers, list):
+                for part in answers:
+                    if part.startswith('"v=spf1'):
+                        return part
             return answers[0] if len(answers) == 1 else answers
 
     def current_record_match_expected(self, r):

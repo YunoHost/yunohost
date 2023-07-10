@@ -144,6 +144,12 @@ do_pre_regen() {
 do_post_regen() {
     regen_conf_files=$1
 
+    if ls -l /etc/nginx/conf.d/*.d/*.conf
+    then
+        chown root:root /etc/nginx/conf.d/*.d/*.conf
+        chmod 644 /etc/nginx/conf.d/*.d/*.conf
+    fi
+
     [ -z "$regen_conf_files" ] && exit 0
 
     # create NGINX conf directories for domains

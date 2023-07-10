@@ -331,7 +331,7 @@ def firewall_reload(skip_upnp=False):
         # Refresh port forwarding with UPnP
         firewall_upnp(no_refresh=False)
 
-    _run_service_command("reload", "fail2ban")
+    _run_service_command("restart", "fail2ban")
 
     if errors:
         logger.warning(m18n.n("firewall_rules_cmd_failed"))
