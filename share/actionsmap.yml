@@ -1610,8 +1610,7 @@ dyndns:
         
         ### dyndns_update()
         update:
-            action_help: Update IP on DynDNS platform ( deprecated, use 'yunohost domain dns push DOMAIN' instead )
-            deprecated: true
+            action_help: Update IP on DynDNS platform
             arguments:
                 -d:
                     full: --domain
