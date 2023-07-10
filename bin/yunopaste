@@ -13,7 +13,7 @@ def create_snippet(data):
         response = requests.post(url, data=data.encode('utf-8'), timeout=TIMEOUT)
         response.raise_for_status()
         dockey = json.loads(response.text)['key']
-        return SERVER_URL + "/" + dockey
+        return SERVER_URL + "/raw/" + dockey
     except requests.exceptions.RequestException as e:
         print("\033[31mError: {}\033[0m".format(e))
         sys.exit(1)
