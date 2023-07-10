@@ -15,14 +15,14 @@ from _pytest.mark.structures import ParameterSet
 from moulinette import Moulinette
 from yunohost import app, domain, user
 from yunohost.utils.form import (
-    ARGUMENTS_TYPE_PARSERS,
+    OPTIONS,
     ask_questions_and_parse_answers,
-    DisplayTextQuestion,
-    PasswordQuestion,
-    DomainQuestion,
-    PathQuestion,
-    BooleanQuestion,
-    FileQuestion,
+    DisplayTextOption,
+    PasswordOption,
+    DomainOption,
+    WebPathOption,
+    BooleanOption,
+    FileOption,
     evaluate_simple_js_expression,
 )
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -438,9 +438,9 @@ class BaseTest:
         id_ = raw_option["id"]
         option, value = _fill_or_prompt_one_option(raw_option, None)
 
-        is_special_readonly_option = isinstance(option, DisplayTextQuestion)
+        is_special_readonly_option = isinstance(option, DisplayTextOption)
 
-        assert isinstance(option, ARGUMENTS_TYPE_PARSERS[raw_option["type"]])
+        assert isinstance(option, OPTIONS[raw_option["type"]])
         assert option.type == raw_option["type"]
         assert option.name == id_
         assert option.ask == {"en": id_}
@@ -734,7 +734,7 @@ class TestPassword(BaseTest):
         ], reason="Should output exactly the same"),
         ("s3cr3t!!", "s3cr3t!!"),
         ("secret", FAIL),
-        *[("supersecret" + char, FAIL) for char in PasswordQuestion.forbidden_chars],  # FIXME maybe add ` \n` to the list?
+        *[("supersecret" + char, FAIL) for char in PasswordOption.forbidden_chars],  # FIXME maybe add ` \n` to the list?
         # readonly
         *xpass(scenarios=[
             ("s3cr3t!!", "s3cr3t!!", {"readonly": True}),
@@ -1225,9 +1225,9 @@ class TestUrl(BaseTest):
 
 @pytest.fixture
 def file_clean():
-    FileQuestion.clean_upload_dirs()
+    FileOption.clean_upload_dirs()
     yield
-    FileQuestion.clean_upload_dirs()
+    FileOption.clean_upload_dirs()
 
 
 @contextmanager
@@ -1263,7 +1263,7 @@ def _test_file_intake_may_fail(raw_option, intake, expected_output):
     with open(value) as f:
         assert f.read() == expected_output
 
-    FileQuestion.clean_upload_dirs()
+    FileOption.clean_upload_dirs()
 
     assert not os.path.exists(value)
 
@@ -1544,6 +1544,10 @@ class TestDomain(BaseTest):
     ]
     # fmt: on
 
+    def test_options_prompted_with_ask_help(self, prefill_data=None):
+        with patch_domains(domains=[main_domain], main_domain=main_domain):
+            super().test_options_prompted_with_ask_help(prefill_data=prefill_data)
+
     def test_scenarios(self, intake, expected_output, raw_option, data):
         with patch_domains(**data):
             super().test_scenarios(intake, expected_output, raw_option, data)
@@ -1750,6 +1754,15 @@ class TestUser(BaseTest):
         },
     ]
     # fmt: on
+
+    @pytest.mark.usefixtures("patch_no_tty")
+    def test_basic_attrs(self):
+        with patch_users(
+            users={admin_username: admin_user},
+            admin_username=admin_username,
+            main_domain=main_domain,
+        ):
+            self._test_basic_attrs()
 
     def test_options_prompted_with_ask_help(self, prefill_data=None):
         with patch_users(
@@ -2138,88 +2151,88 @@ def test_question_number_input_test_ask_with_example():
 
 
 def test_normalize_boolean_nominal():
-    assert BooleanQuestion.normalize("yes") == 1
-    assert BooleanQuestion.normalize("Yes") == 1
-    assert BooleanQuestion.normalize(" yes  ") == 1
-    assert BooleanQuestion.normalize("y") == 1
-    assert BooleanQuestion.normalize("true") == 1
-    assert BooleanQuestion.normalize("True") == 1
-    assert BooleanQuestion.normalize("on") == 1
-    assert BooleanQuestion.normalize("1") == 1
-    assert BooleanQuestion.normalize(1) == 1
+    assert BooleanOption.normalize("yes") == 1
+    assert BooleanOption.normalize("Yes") == 1
+    assert BooleanOption.normalize(" yes  ") == 1
+    assert BooleanOption.normalize("y") == 1
+    assert BooleanOption.normalize("true") == 1
+    assert BooleanOption.normalize("True") == 1
+    assert BooleanOption.normalize("on") == 1
+    assert BooleanOption.normalize("1") == 1
+    assert BooleanOption.normalize(1) == 1
 
-    assert BooleanQuestion.normalize("no") == 0
-    assert BooleanQuestion.normalize("No") == 0
-    assert BooleanQuestion.normalize(" no  ") == 0
-    assert BooleanQuestion.normalize("n") == 0
-    assert BooleanQuestion.normalize("false") == 0
-    assert BooleanQuestion.normalize("False") == 0
-    assert BooleanQuestion.normalize("off") == 0
-    assert BooleanQuestion.normalize("0") == 0
-    assert BooleanQuestion.normalize(0) == 0
+    assert BooleanOption.normalize("no") == 0
+    assert BooleanOption.normalize("No") == 0
+    assert BooleanOption.normalize(" no  ") == 0
+    assert BooleanOption.normalize("n") == 0
+    assert BooleanOption.normalize("false") == 0
+    assert BooleanOption.normalize("False") == 0
+    assert BooleanOption.normalize("off") == 0
+    assert BooleanOption.normalize("0") == 0
+    assert BooleanOption.normalize(0) == 0
 
-    assert BooleanQuestion.normalize("") is None
-    assert BooleanQuestion.normalize("   ") is None
-    assert BooleanQuestion.normalize(" none   ") is None
-    assert BooleanQuestion.normalize("None") is None
-    assert BooleanQuestion.normalize("noNe") is None
-    assert BooleanQuestion.normalize(None) is None
+    assert BooleanOption.normalize("") is None
+    assert BooleanOption.normalize("   ") is None
+    assert BooleanOption.normalize(" none   ") is None
+    assert BooleanOption.normalize("None") is None
+    assert BooleanOption.normalize("noNe") is None
+    assert BooleanOption.normalize(None) is None
 
 
 def test_normalize_boolean_humanize():
-    assert BooleanQuestion.humanize("yes") == "yes"
-    assert BooleanQuestion.humanize("true") == "yes"
-    assert BooleanQuestion.humanize("on") == "yes"
+    assert BooleanOption.humanize("yes") == "yes"
+    assert BooleanOption.humanize("true") == "yes"
+    assert BooleanOption.humanize("on") == "yes"
 
-    assert BooleanQuestion.humanize("no") == "no"
-    assert BooleanQuestion.humanize("false") == "no"
-    assert BooleanQuestion.humanize("off") == "no"
+    assert BooleanOption.humanize("no") == "no"
+    assert BooleanOption.humanize("false") == "no"
+    assert BooleanOption.humanize("off") == "no"
 
 
 def test_normalize_boolean_invalid():
     with pytest.raises(YunohostValidationError):
-        BooleanQuestion.normalize("yesno")
+        BooleanOption.normalize("yesno")
     with pytest.raises(YunohostValidationError):
-        BooleanQuestion.normalize("foobar")
+        BooleanOption.normalize("foobar")
     with pytest.raises(YunohostValidationError):
-        BooleanQuestion.normalize("enabled")
+        BooleanOption.normalize("enabled")
 
 
 def test_normalize_boolean_special_yesno():
     customyesno = {"yes": "enabled", "no": "disabled"}
 
-    assert BooleanQuestion.normalize("yes", customyesno) == "enabled"
-    assert BooleanQuestion.normalize("true", customyesno) == "enabled"
-    assert BooleanQuestion.normalize("enabled", customyesno) == "enabled"
-    assert BooleanQuestion.humanize("yes", customyesno) == "yes"
-    assert BooleanQuestion.humanize("true", customyesno) == "yes"
-    assert BooleanQuestion.humanize("enabled", customyesno) == "yes"
+    assert BooleanOption.normalize("yes", customyesno) == "enabled"
+    assert BooleanOption.normalize("true", customyesno) == "enabled"
+    assert BooleanOption.normalize("enabled", customyesno) == "enabled"
+    assert BooleanOption.humanize("yes", customyesno) == "yes"
+    assert BooleanOption.humanize("true", customyesno) == "yes"
+    assert BooleanOption.humanize("enabled", customyesno) == "yes"
 
-    assert BooleanQuestion.normalize("no", customyesno) == "disabled"
-    assert BooleanQuestion.normalize("false", customyesno) == "disabled"
-    assert BooleanQuestion.normalize("disabled", customyesno) == "disabled"
-    assert BooleanQuestion.humanize("no", customyesno) == "no"
-    assert BooleanQuestion.humanize("false", customyesno) == "no"
-    assert BooleanQuestion.humanize("disabled", customyesno) == "no"
+    assert BooleanOption.normalize("no", customyesno) == "disabled"
+    assert BooleanOption.normalize("false", customyesno) == "disabled"
+    assert BooleanOption.normalize("disabled", customyesno) == "disabled"
+    assert BooleanOption.humanize("no", customyesno) == "no"
+    assert BooleanOption.humanize("false", customyesno) == "no"
+    assert BooleanOption.humanize("disabled", customyesno) == "no"
 
 
 def test_normalize_domain():
-    assert DomainQuestion.normalize("https://yolo.swag/") == "yolo.swag"
-    assert DomainQuestion.normalize("http://yolo.swag") == "yolo.swag"
-    assert DomainQuestion.normalize("yolo.swag/") == "yolo.swag"
+    assert DomainOption.normalize("https://yolo.swag/") == "yolo.swag"
+    assert DomainOption.normalize("http://yolo.swag") == "yolo.swag"
+    assert DomainOption.normalize("yolo.swag/") == "yolo.swag"
 
 
 def test_normalize_path():
-    assert PathQuestion.normalize("") == "/"
-    assert PathQuestion.normalize("") == "/"
-    assert PathQuestion.normalize("macnuggets") == "/macnuggets"
-    assert PathQuestion.normalize("/macnuggets") == "/macnuggets"
-    assert PathQuestion.normalize("   /macnuggets      ") == "/macnuggets"
-    assert PathQuestion.normalize("/macnuggets") == "/macnuggets"
-    assert PathQuestion.normalize("mac/nuggets") == "/mac/nuggets"
-    assert PathQuestion.normalize("/macnuggets/") == "/macnuggets"
-    assert PathQuestion.normalize("macnuggets/") == "/macnuggets"
-    assert PathQuestion.normalize("////macnuggets///") == "/macnuggets"
+    assert WebPathOption.normalize("") == "/"
+    assert WebPathOption.normalize("") == "/"
+    assert WebPathOption.normalize("macnuggets") == "/macnuggets"
+    assert WebPathOption.normalize("/macnuggets") == "/macnuggets"
+    assert WebPathOption.normalize("   /macnuggets      ") == "/macnuggets"
+    assert WebPathOption.normalize("/macnuggets") == "/macnuggets"
+    assert WebPathOption.normalize("mac/nuggets") == "/mac/nuggets"
+    assert WebPathOption.normalize("/macnuggets/") == "/macnuggets"
+    assert WebPathOption.normalize("macnuggets/") == "/macnuggets"
+    assert WebPathOption.normalize("////macnuggets///") == "/macnuggets"
 
 
 def test_simple_evaluate():

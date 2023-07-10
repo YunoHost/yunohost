@@ -1,6 +1,6 @@
 location ^~ '/.well-known/acme-challenge/'
 {
         default_type "text/plain";
-        alias /tmp/acme-challenge-public/;
+        alias /var/www/.well-known/acme-challenge-public/;
         gzip off;
 }

@@ -16,6 +16,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+import pwd
 import re
 import os
 import subprocess
@@ -174,6 +175,12 @@ def tools_postinstall(
             "It looks like you're trying to re-postinstall a system that was already working previously ... If you recently had some bug or issues with your installation, please first discuss with the team on how to fix the situation instead of savagely re-running the postinstall ...",
             raw_msg=True,
         )
+
+    # Crash early if the username is already a system user, which is
+    # a common confusion. We don't want to crash later and end up in an half-configured state.
+    all_existing_usernames = {x.pw_name for x in pwd.getpwall()}
+    if username in all_existing_usernames:
+        raise YunohostValidationError("system_username_exists")
 
     if username in ADMIN_ALIASES:
         raise YunohostValidationError(

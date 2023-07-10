@@ -55,7 +55,7 @@ def setup_function(function):
 
     if "with_legacy_app_installed" in markers:
         assert not app_is_installed("legacy_app")
-        install_app("legacy_app_ynh", "/yolo")
+        install_app("legacy_app_ynh", "/yolo", "&is_public=true")
         assert app_is_installed("legacy_app")
 
     if "with_backup_recommended_app_installed" in markers:
