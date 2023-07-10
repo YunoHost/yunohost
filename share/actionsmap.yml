@@ -1596,7 +1596,7 @@ dyndns:
                     full: --recovery-password
                     nargs: "?"
                     const: 0
-                    help: Password used to later delete the domain
+                    help: Password used to later recover the domain if needed
                     extra:
                         pattern: *pattern_password
         
@@ -1687,14 +1687,14 @@ tools:
                         pattern: *pattern_password
                         required: True
                         comment: good_practices_about_admin_password
-                --ingnore-dyndns:
+                --ignore-dyndns:
                     help: If adding a DynDNS domain, only add the domain, without subscribing to the DynDNS service
                     action: store_true
                 --dyndns-recovery-password:
                     metavar: PASSWORD
                     nargs: "?"
                     const: 0
-                    help: If adding a DynDNS domain, subscribe to the DynDNS service with a password, used to later delete the domain
+                    help: If adding a DynDNS domain, subscribe to the DynDNS service with a password, used to later recover the domain if needed
                     extra:
                         pattern: *pattern_password
                 --force-diskspace:
