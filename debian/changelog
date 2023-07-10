@@ -1,3 +1,21 @@
+yunohost (11.1.22) stable; urgency=low
+
+  - security: replace $http_host by $host in nginx conf, cf https://github.com/yandex/gixy/blob/master/docs/en/plugins/hostspoofing.md / Credit to A.Wolski (3957b10e)
+  - security: keep fail2ban rule when reloading firewall ([#1661](https://github.com/yunohost/yunohost/pull/1661))
+  - regenconf: fix a stupid bug using chown instead of chmod ... (af93524c)
+  - postinstall: crash early if the username already exists on the system (e87ee09b)
+  - diagnosis: Support multiple TXT entries for TLD ([#1680](https://github.com/yunohost/yunohost/pull/1680))
+  - apps: Support gitea's URL format ([#1683](https://github.com/yunohost/yunohost/pull/1683))
+  - apps: fix a bug where YunoHost would complain that 'it needs X RAM but only Y left' with Y > X because some apps have a higher runtime RAM requirement than build time ... (4152cb0d)
+  - apps: Enhance app_shell() : prevent from taking the lock + improve php context with a 'phpflags' setting ([#1681](https://github.com/yunohost/yunohost/pull/1681))
+  - apps resources: Allow passing an actual list in the manifest.toml for the apt resource packages ([#1670](https://github.com/yunohost/yunohost/pull/1670))
+  - apps resources: fix a bug where port automigration between v1->v2 wouldnt work (36a17dfd)
+  - i18n: Translations updated for Basque, Galician, Japanese, Polish
+
+  Thanks to all contributors <3 ! (Félix Piédallu, Grzegorz Cichocki, José M, Kayou, motcha, Nicolas Palix, orhtej2, tituspijean, xabirequejo, Yann Autissier)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 10 Jul 2023 17:43:56 +0200
+
 yunohost (11.1.21.4) stable; urgency=low
 
   - regenconf: Get rid of previous tmp hack about /dev/null for people that went through the very first 11.1.21, because it's causing issue in unpriviledged LXC or similar context (8242cab7)
