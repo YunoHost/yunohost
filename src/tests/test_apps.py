@@ -339,7 +339,9 @@ def test_app_from_catalog():
     assert app_map_[main_domain]["/site"]["id"] == "my_webapp"
 
     assert app_is_installed(main_domain, "my_webapp")
-    assert app_is_exposed_on_http(main_domain, "/site", "you have just installed My Webapp")
+    assert app_is_exposed_on_http(
+        main_domain, "/site", "you have just installed My Webapp"
+    )
 
     # Try upgrade, should do nothing
     app_upgrade("my_webapp")

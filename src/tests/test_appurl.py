@@ -71,10 +71,14 @@ def test_repo_url_definition():
 
     ### Gitea
     assert _is_app_repo_url("https://gitea.instance.tld/user/repo_ynh")
-    assert _is_app_repo_url("https://gitea.instance.tld/user/repo_ynh/src/branch/branch_name")
+    assert _is_app_repo_url(
+        "https://gitea.instance.tld/user/repo_ynh/src/branch/branch_name"
+    )
     assert _is_app_repo_url("https://gitea.instance.tld/user/repo_ynh/src/tag/tag_name")
-    assert _is_app_repo_url("https://gitea.instance.tld/user/repo_ynh/src/commit/abcd1234")
-    
+    assert _is_app_repo_url(
+        "https://gitea.instance.tld/user/repo_ynh/src/commit/abcd1234"
+    )
+
     ### Invalid patterns
 
     # no schema

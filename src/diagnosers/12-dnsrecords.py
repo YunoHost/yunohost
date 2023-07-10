@@ -182,7 +182,7 @@ class MyDiagnoser(Diagnoser):
         if success != "ok":
             return None
         else:
-            if type_ == "TXT" and isinstance(answers,list):
+            if type_ == "TXT" and isinstance(answers, list):
                 for part in answers:
                     if part.startswith('"v=spf1'):
                         return part
