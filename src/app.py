@@ -1636,6 +1636,9 @@ def app_setting(app, key, value=None, delete=False):
     if delete:
         if key in app_settings:
             del app_settings[key]
+        else:
+            # Don't call _set_app_settings to avoid unecessary writes...
+            return
 
     # SET
     else:
@@ -3234,3 +3237,47 @@ def _ask_confirmation(
 
     if not answer:
         raise YunohostError("aborting")
+
+
+def regen_mail_app_user_config_for_dovecot_and_postfix(only=None):
+
+    dovecot = True if only in [None, "dovecot"] else False
+    postfix = True if only in [None, "postfix"] else False
+
+    from yunohost.user import _hash_user_password
+
+    postfix_map = []
+    dovecot_passwd = []
+    for app in _installed_apps():
+
+        settings = _get_app_settings(app)
+
+        if "domain" not in settings or "mail_pwd" not in settings:
+            continue
+
+        if dovecot:
+            hashed_password = _hash_user_password(settings["mail_pwd"])
+            dovecot_passwd.append(f"{app}:{hashed_password}::::::allow_nets=127.0.0.1/24")
+        if postfix:
+            mail_user = settings.get("mail_user", app)
+            mail_domain = settings.get("mail_domain", settings["domain"])
+            postfix_map.append(f"{mail_user}@{mail_domain} {app}")
+
+    if dovecot:
+        app_senders_passwd = "/etc/dovecot/app-senders-passwd"
+        content = "# This file is regenerated automatically.\n# Please DO NOT edit manually ... changes will be overwritten!"
+        content += '\n' + '\n'.join(dovecot_passwd)
+        write_to_file(app_senders_passwd, content)
+        chmod(app_senders_passwd, 0o440)
+        chown(app_senders_passwd, "root", "dovecot")
+
+    if postfix:
+        app_senders_map = "/etc/postfix/app_senders_login_maps"
+        content = "# This file is regenerated automatically.\n# Please DO NOT edit manually ... changes will be overwritten!"
+        content += '\n' + '\n'.join(postfix_map)
+        write_to_file(app_senders_map, content)
+        chmod(app_senders_map, 0o440)
+        chown(app_senders_map, "postfix", "root")
+        os.system(f"postmap {app_senders_map} 2>/dev/null")
+        chmod(app_senders_map + ".db", 0o640)
+        chown(app_senders_map + ".db", "postfix", "root")

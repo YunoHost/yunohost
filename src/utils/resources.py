@@ -25,6 +25,7 @@ import subprocess
 from typing import Dict, Any, List, Union
 
 from moulinette import m18n
+from moulinette.utils.text import random_ascii
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
@@ -679,6 +680,7 @@ class SystemuserAppResource(AppResource):
     ##### Properties
     - `allow_ssh`: (default: False) Adds the user to the ssh.app group, allowing SSH connection via this user
     - `allow_sftp`: (default: False) Adds the user to the sftp.app group, allowing SFTP connection via this user
+    - `allow_email`: (default: False) Enable authentication on the mail stack for the system user and send mail using `__APP__@__DOMAIN__`. A `mail_pwd` setting is automatically defined (similar to `db_pwd` for databases). You can then configure the app to use `__APP__` and `__MAIL_PWD__` as SMTP credentials (with host 127.0.0.1). You can also tweak the user-part of the domain-part of the email used by manually defining a custom setting `mail_user` or `mail_domain`
     - `home`: (default: `/var/www/__APP__`) Defines the home property for this user. NB: unfortunately you can't simply use `__INSTALL_DIR__` or `__DATA_DIR__` for now
 
     ##### Provision/Update
@@ -702,6 +704,7 @@ class SystemuserAppResource(AppResource):
     default_properties: Dict[str, Any] = {
         "allow_ssh": False,
         "allow_sftp": False,
+        "allow_email": False,
         "home": "/var/www/__APP__",
     }
 
@@ -709,9 +712,13 @@ class SystemuserAppResource(AppResource):
 
     allow_ssh: bool = False
     allow_sftp: bool = False
+    allow_email: bool = False
     home: str = ""
 
     def provision_or_update(self, context: Dict = {}):
+
+        from yunohost.app import regen_mail_app_user_config_for_dovecot_and_postfix
+
         # FIXME : validate that no yunohost user exists with that name?
         # and/or that no system user exists during install ?
 
@@ -756,7 +763,25 @@ class SystemuserAppResource(AppResource):
                     f"sed -i 's@{raw_user_line_in_etc_passwd}@{new_raw_user_line_in_etc_passwd}@g' /etc/passwd"
                 )
 
+        # Update mail-related stuff
+        if self.allow_email:
+            mail_pwd = self.get_setting("mail_pwd")
+            if not mail_pwd:
+                mail_pwd = random_ascii(24)
+                self.set_setting("mail_pwd", mail_pwd)
+
+            regen_mail_app_user_config_for_dovecot_and_postfix()
+        else:
+            self.delete_setting("mail_pwd")
+            if os.system(f"grep --quiet ' {self.app}$' /etc/postfix/app_senders_login_maps") == 0 \
+                or os.system(f"grep --quiet '^{self.app}:' /etc/dovecot/app-senders-passwd") == 0:
+                regen_mail_app_user_config_for_dovecot_and_postfix()
+
+
     def deprovision(self, context: Dict = {}):
+
+        from yunohost.app import regen_mail_app_user_config_for_dovecot_and_postfix
+
         if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") == 0:
             os.system(f"deluser {self.app} >/dev/null")
         if os.system(f"getent passwd {self.app} >/dev/null 2>/dev/null") == 0:
@@ -770,6 +795,11 @@ class SystemuserAppResource(AppResource):
             raise YunohostError(
                 f"Failed to delete system user for {self.app}", raw_msg=True
             )
+
+        self.delete_setting("mail_pwd")
+        if os.system(f"grep --quiet ' {self.app}$' /etc/postfix/app_senders_login_maps") == 0 \
+            or os.system(f"grep --quiet '^{self.app}:' /etc/dovecot/app-senders-passwd") == 0:
+            regen_mail_app_user_config_for_dovecot_and_postfix()
 
         # FIXME : better logging and error handling, add stdout/stderr from the deluser/delgroup commands...
 
@@ -1315,8 +1345,6 @@ class DatabaseAppResource(AppResource):
                 self.set_setting("db_pwd", db_pwd)
 
         if not db_pwd:
-            from moulinette.utils.text import random_ascii
-
             db_pwd = random_ascii(24)
             self.set_setting("db_pwd", db_pwd)
 
