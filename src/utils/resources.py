@@ -1065,9 +1065,11 @@ class AptDependenciesAppResource(AppResource):
             if isinstance(values.get("packages"), str):
                 values["packages"] = [value.strip() for value in values["packages"].split(",")]  # type: ignore
 
-            if not isinstance(values.get("repo"), str) \
-               or not isinstance(values.get("key"), str) \
-               or not isinstance(values.get("packages"), list):
+            if (
+                not isinstance(values.get("repo"), str)
+                or not isinstance(values.get("key"), str)
+                or not isinstance(values.get("packages"), list)
+            ):
                 raise YunohostError(
                     "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' defined as strings and 'packages' defined as list",
                     raw_msg=True,
@@ -1076,12 +1078,14 @@ class AptDependenciesAppResource(AppResource):
     def provision_or_update(self, context: Dict = {}):
         script = " ".join(["ynh_install_app_dependencies", *self.packages])
         for repo, values in self.extras.items():
-            script += "\n" + " ".join([
-                "ynh_install_extra_app_dependencies",
-                f"--repo='{values['repo']}'",
-                f"--key='{values['key']}'",
-                f"--package='{' '.join(values['packages'])}'"
-            ])
+            script += "\n" + " ".join(
+                [
+                    "ynh_install_extra_app_dependencies",
+                    f"--repo='{values['repo']}'",
+                    f"--key='{values['key']}'",
+                    f"--package='{' '.join(values['packages'])}'",
+                ]
+            )
             # FIXME : we're feeding the raw value of values['packages'] to the helper .. if we want to be consistent, may they should be comma-separated, though in the majority of cases, only a single package is installed from an extra repo..
 
         self._run_script("provision_or_update", script)

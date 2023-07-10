@@ -2784,9 +2784,12 @@ def _check_manifest_requirements(
 
     # Some apps have a higher runtime value than build ...
     if ram_requirement["build"] != "?" and ram_requirement["runtime"] != "?":
-        max_build_runtime = (ram_requirement["build"]
-                            if human_to_binary(ram_requirement["build"]) > human_to_binary(ram_requirement["runtime"])
-                            else ram_requirement["runtime"])
+        max_build_runtime = (
+            ram_requirement["build"]
+            if human_to_binary(ram_requirement["build"])
+            > human_to_binary(ram_requirement["runtime"])
+            else ram_requirement["runtime"]
+        )
     else:
         max_build_runtime = ram_requirement["build"]
 
