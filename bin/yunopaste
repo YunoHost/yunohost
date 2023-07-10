@@ -47,9 +47,9 @@ def main():
     else:
         anonymize_output_flag = True
 
-    command_output = sys.stdin.read()
+    output = sys.stdin.read()
 
-    if not command_output:
+    if not output:
         print("\033[31mError: No input received from stdin.\033[0m")
         sys.exit(1)
 
