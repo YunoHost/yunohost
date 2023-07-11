@@ -11,7 +11,7 @@ do_pre_regen() {
 
     # Add sury
     mkdir -p ${pending_dir}/etc/apt/sources.list.d/
-    echo "deb https://packages.sury.org/php/ $(lsb_release --codename --short) main" > "${pending_dir}/etc/apt/sources.list.d/extra_php_version.list"
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/extra_php_version.gpg] https://packages.sury.org/php/ $(lsb_release --codename --short) main" > "${pending_dir}/etc/apt/sources.list.d/extra_php_version.list"
 
     # Ban some packages from sury
     echo "
@@ -28,7 +28,7 @@ Pin-Priority: -1" >>"${pending_dir}/etc/apt/preferences.d/extra_php_version"
     done
 
     # Add yarn
-    echo "deb https://dl.yarnpkg.com/debian/ stable main" > "${pending_dir}/etc/apt/sources.list.d/yarn.list"
+    echo "deb [signed-by=/etc/apt/trusted.gpg.d/yarn.gpg] https://dl.yarnpkg.com/debian/ stable main" > "${pending_dir}/etc/apt/sources.list.d/yarn.list"
 
     # Ban everything from Yarn except Yarn
     echo "
