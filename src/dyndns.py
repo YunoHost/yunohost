@@ -237,7 +237,7 @@ def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
             timeout=30,
         )
     except Exception as e:
-        raise YunohostError("dyndns_unregistration_failed", error=str(e))
+        raise YunohostError("dyndns_unsubscribe_failed", error=str(e))
 
     if r.status_code == 200:  # Deletion was successful
         for key_file in glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*.key"):
