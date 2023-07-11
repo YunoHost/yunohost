@@ -32,24 +32,17 @@ logger = getActionLogger("yunohostportal.user")
 def portal_me():
     """
     Get user informations
-
-    Keyword argument:
-        username -- Username to get informations
-
     """
 
-    import pdb; pdb.set_trace()
-
-    auth = Auth().get_session_cookie()
+    auth = Auth().get_session_cookie(decrypt_pwd=True)
     username = auth["user"]
-    password = auth["password"]
 
-    ldap = LDAPInterface(username, password)
+    ldap = LDAPInterface(username, auth["pwd"])
 
     user_attrs = ["cn", "mail", "uid", "maildrop", "givenName", "sn", "mailuserquota"]
 
     filter = "uid=" + username
-    result = ldap.search("ou=users,dc=yunohost,dc=org", filter, user_attrs)
+    result = ldap.search("ou=users", filter, user_attrs)
 
     if result:
         user = result[0]

@@ -5,6 +5,13 @@ import logging
 import ldap
 import ldap.sasl
 import datetime
+import base64
+import os
+
+from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
+from cryptography.hazmat.primitives import padding
+from cryptography.hazmat.backends import default_backend
+
 
 from moulinette import m18n
 from moulinette.authentication import BaseAuthenticator
@@ -13,12 +20,51 @@ from yunohost.utils.error import YunohostError, YunohostAuthenticationError
 
 # FIXME : we shall generate this somewhere if it doesnt exists yet
 # FIXME : fix permissions
-session_secret = open("/etc/yunohost/.ssowat_cookie_secret").read()
+session_secret = open("/etc/yunohost/.ssowat_cookie_secret").read().strip()
 
 logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
 
 URI = "ldap://localhost:389"
 USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
+
+# We want to save the password in the cookie, but we should do so in an encrypted fashion
+# This is needed because the SSO later needs to possibly inject the Basic Auth header
+# which includes the user's password
+# It's also needed because we need to be able to open LDAP sessions, authenticated as the user,
+# which requires the user's password
+#
+# To do so, we use AES-256-CBC. As it's a block encryption algorithm, it requires an IV,
+# which we need to keep around for decryption on SSOwat'side.
+#
+# session_secret is used as the encryption key, which implies it must be exactly 32-char long (256/8)
+#
+# The result is a string formatted as <password_enc_b64>|<iv_b64>
+# For example: ctl8kk5GevYdaA5VZ2S88Q==|yTAzCx0Gd1+MCit4EQl9lA==
+def encrypt(data):
+
+    alg = algorithms.AES(session_secret.encode())
+    iv = os.urandom(int(alg.block_size / 8))
+
+    E = Cipher(alg, modes.CBC(iv), default_backend()).encryptor()
+    p = padding.PKCS7(alg.block_size).padder()
+    data_padded = p.update(data.encode()) + p.finalize()
+    data_enc = E.update(data_padded) + E.finalize()
+    data_enc_b64 = base64.b64encode(data_enc).decode()
+    iv_b64 = base64.b64encode(iv).decode()
+    return data_enc_b64 + "|" + iv_b64
+
+def decrypt(data_enc_and_iv_b64):
+
+    data_enc_b64, iv_b64 = data_enc_and_iv_b64.split("|")
+    data_enc = base64.b64decode(data_enc_b64)
+    iv = base64.b64decode(iv_b64)
+
+    alg = algorithms.AES(session_secret.encode())
+    D = Cipher(alg, modes.CBC(iv), default_backend()).decryptor()
+    p = padding.PKCS7(alg.block_size).unpadder()
+    data_padded = D.update(data_enc)
+    data = p.update(data_padded) + p.finalize()
+    return data.decode()
 
 
 class Authenticator(BaseAuthenticator):
@@ -64,23 +110,7 @@ class Authenticator(BaseAuthenticator):
             if con:
                 con.unbind_s()
 
-
-
-
-
-
-
-        # FIXME FIXME FIXME : the password is to be encrypted to not expose it in the JWT cookie which is only signed and base64 encoded but not encrypted
-
-
-
-
-
-
-
-
-
-        return {"user": username, "password": password}
+        return {"user": username, "pwd": encrypt(password)}
 
     def set_session_cookie(self, infos):
 
@@ -101,7 +131,7 @@ class Authenticator(BaseAuthenticator):
 
         response.set_cookie(
             "yunohost.portal",
-            jwt.encode(new_infos, session_secret, algorithm="HS256").decode(),
+            jwt.encode(new_infos, session_secret, algorithm="HS256"),
             secure=True,
             httponly=True,
             path="/",
@@ -109,7 +139,7 @@ class Authenticator(BaseAuthenticator):
             # FIXME : add Expire clause
         )
 
-    def get_session_cookie(self, raise_if_no_session_exists=True):
+    def get_session_cookie(self, raise_if_no_session_exists=True, decrypt_pwd=False):
 
         from bottle import request
 
@@ -126,6 +156,9 @@ class Authenticator(BaseAuthenticator):
 
         if "id" not in infos:
             infos["id"] = random_ascii()
+
+        if decrypt_pwd:
+            infos["pwd"] = decrypt(infos["pwd"])
 
         # FIXME: Here, maybe we want to re-authenticate the session via the authenticator
         # For example to check that the username authenticated is still in the admin group...

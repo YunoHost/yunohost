@@ -177,7 +177,8 @@ do_post_regen() {
 
     getent passwd ynh-portal &>/dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group ynh-portal
     if [ ! -e /etc/yunohost/.ssowat_cookie_secret ]; then
-        dd if=/dev/urandom bs=1 count=1000 2>/dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.ssowat_cookie_secret
+        # NB: we need this to be exactly 32 char long, because it is later used as a key for AES256
+        dd if=/dev/urandom bs=1 count=1000 2>/dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 32 > /etc/yunohost/.ssowat_cookie_secret
     fi
     chown ynh-portal:root /etc/yunohost/.ssowat_cookie_secret
     chmod 400 /etc/yunohost/.ssowat_cookie_secret
