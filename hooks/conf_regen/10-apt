@@ -23,19 +23,33 @@ Pin-Priority: 500" >>"${pending_dir}/etc/apt/preferences.d/extra_php_version"
     for package in $packages_to_refuse_from_sury; do
         echo "
 Package: $package
-Pin: origin \"packages.sury.org\" 
+Pin: origin \"packages.sury.org\"
 Pin-Priority: -1" >>"${pending_dir}/etc/apt/preferences.d/extra_php_version"
     done
 
+    # Add yarn
+    echo "deb https://dl.yarnpkg.com/debian/ stable main" > "${pending_dir}/etc/apt/sources.list.d/yarn.list"
+
+    # Ban everything from Yarn except Yarn
+    echo "
+Package: *
+Pin: origin \"dl.yarnpkg.com\"
+Pin-Priority: -1
+
+Package: yarn
+Pin: origin \"dl.yarnpkg.com\"
+Pin-Priority: 500" >>"${pending_dir}/etc/apt/preferences.d/yarn"
+
+    # Ban apache2, bind9
     echo "
 
 # PLEASE READ THIS WARNING AND DON'T EDIT THIS FILE
 
-# You are probably reading this file because you tried to install apache2 or 
+# You are probably reading this file because you tried to install apache2 or
 # bind9. These 2 packages conflict with YunoHost.
 
 # Installing apache2 will break nginx and break the entire YunoHost ecosystem
-# on your server, therefore don't remove those lines! 
+# on your server, therefore don't remove those lines!
 
 # You have been warned.
 
@@ -67,6 +81,12 @@ do_post_regen() {
     if [[ ! -s /etc/apt/trusted.gpg.d/extra_php_version.gpg ]]
     then
         wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"
+    fi
+
+    # Similar to Sury
+    if [[ ! -s /etc/apt/trusted.gpg.d/yarn.gpg ]]
+    then
+        wget --timeout 900 --quiet "https://dl.yarnpkg.com/debian/pubkey.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/yarn.gpg"
     fi
 
     # Make sure php7.4 is the default version when using php in cli
