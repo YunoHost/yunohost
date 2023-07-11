@@ -30,8 +30,11 @@ from moulinette.utils.log import getActionLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
     OPTIONS,
+    BaseChoicesOption,
+    BaseInputOption,
     BaseOption,
     FileOption,
+    OptionType,
     ask_questions_and_parse_answers,
     evaluate_simple_js_expression,
 )
@@ -146,15 +149,17 @@ class ConfigPanel:
 
             if mode == "full":
                 option["ask"] = ask
-                question_class = OPTIONS[option.get("type", "string")]
+                question_class = OPTIONS[option.get("type", OptionType.string)]
                 # FIXME : maybe other properties should be taken from the question, not just choices ?.
-                option["choices"] = question_class(option).choices
-                option["default"] = question_class(option).default
-                option["pattern"] = question_class(option).pattern
+                if issubclass(question_class, BaseChoicesOption):
+                    option["choices"] = question_class(option).choices
+                if issubclass(question_class, BaseInputOption):
+                    option["default"] = question_class(option).default
+                    option["pattern"] = question_class(option).pattern
             else:
                 result[key] = {"ask": ask}
                 if "current_value" in option:
-                    question_class = OPTIONS[option.get("type", "string")]
+                    question_class = OPTIONS[option.get("type", OptionType.string)]
                     result[key]["value"] = question_class.humanize(
                         option["current_value"], option
                     )
@@ -239,7 +244,7 @@ class ConfigPanel:
         self.filter_key = ""
         self._get_config_panel()
         for panel, section, option in self._iterate():
-            if option["type"] == "button":
+            if option["type"] == OptionType.button:
                 key = f"{panel['id']}.{section['id']}.{option['id']}"
                 actions[key] = _value_for_locale(option["ask"])
 
@@ -421,7 +426,7 @@ class ConfigPanel:
                         subnode["name"] = key  # legacy
                         subnode.setdefault("optional", raw_infos.get("optional", True))
                         # If this section contains at least one button, it becomes an "action" section
-                        if subnode.get("type") == "button":
+                        if subnode.get("type") == OptionType.button:
                             out["is_action_section"] = True
                     out.setdefault(sublevel, []).append(subnode)
                 # Key/value are a property
@@ -465,20 +470,10 @@ class ConfigPanel:
             "max_progression",
         ]
         forbidden_keywords += format_description["sections"]
-        forbidden_readonly_types = ["password", "app", "domain", "user", "file"]
 
         for _, _, option in self._iterate():
             if option["id"] in forbidden_keywords:
                 raise YunohostError("config_forbidden_keyword", keyword=option["id"])
-            if (
-                option.get("readonly", False)
-                and option.get("type", "string") in forbidden_readonly_types
-            ):
-                raise YunohostError(
-                    "config_forbidden_readonly_type",
-                    type=option["type"],
-                    id=option["id"],
-                )
 
         return self.config
 
@@ -506,13 +501,13 @@ class ConfigPanel:
         # Hydrating config panel with current value
         for _, section, option in self._iterate():
             if option["id"] not in self.values:
-                allowed_empty_types = [
-                    "alert",
-                    "display_text",
-                    "markdown",
-                    "file",
-                    "button",
-                ]
+                allowed_empty_types = {
+                    OptionType.alert,
+                    OptionType.display_text,
+                    OptionType.markdown,
+                    OptionType.file,
+                    OptionType.button,
+                }
 
                 if section["is_action_section"] and option.get("default") is not None:
                     self.values[option["id"]] = option["default"]
@@ -526,7 +521,7 @@ class ConfigPanel:
                         f"Config panel question '{option['id']}' should be initialized with a value during install or upgrade.",
                         raw_msg=True,
                     )
-            value = self.values[option["name"]]
+            value = self.values[option["id"]]
 
             # Allow to use value instead of current_value in app config script.
             # e.g. apps may write `echo 'value: "foobar"'` in the config file (which is more intuitive that `echo 'current_value: "foobar"'`
@@ -593,7 +588,7 @@ class ConfigPanel:
                 section["options"] = [
                     option
                     for option in section["options"]
-                    if option.get("type", "string") != "button"
+                    if option.get("type", OptionType.string) != OptionType.button
                     or option["id"] == action
                 ]
 
@@ -605,14 +600,14 @@ class ConfigPanel:
             prefilled_answers.update(self.new_values)
 
             questions = ask_questions_and_parse_answers(
-                {question["name"]: question for question in section["options"]},
+                {question["id"]: question for question in section["options"]},
                 prefilled_answers=prefilled_answers,
                 current_values=self.values,
                 hooks=self.hooks,
             )
             self.new_values.update(
                 {
-                    question.name: question.value
+                    question.id: question.value
                     for question in questions
                     if question.value is not None
                 }
