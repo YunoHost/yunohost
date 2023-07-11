@@ -1,3 +1,21 @@
+#
+# Copyright (c) 2023 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import re
 import glob
@@ -61,6 +79,32 @@ LEGACY_PERMISSION_LABEL = {
         "skipped",
     ): "api",  # $excaped_domain$excaped_path/[%w-.]*/[%w-.]*/git%-receive%-pack,$excaped_domain$excaped_path/[%w-.]*/[%w-.]*/git%-upload%-pack,$excaped_domain$excaped_path/[%w-.]*/[%w-.]*/info/refs
 }
+
+LEGACY_SETTINGS = {
+    "security.password.admin.strength": "security.password.admin_strength",
+    "security.password.user.strength": "security.password.user_strength",
+    "security.ssh.compatibility": "security.ssh.ssh_compatibility",
+    "security.ssh.port": "security.ssh.ssh_port",
+    "security.ssh.password_authentication": "security.ssh.ssh_password_authentication",
+    "security.nginx.redirect_to_https": "security.nginx.nginx_redirect_to_https",
+    "security.nginx.compatibility": "security.nginx.nginx_compatibility",
+    "security.postfix.compatibility": "security.postfix.postfix_compatibility",
+    "pop3.enabled": "email.pop3.pop3_enabled",
+    "smtp.allow_ipv6": "email.smtp.smtp_allow_ipv6",
+    "smtp.relay.host": "email.smtp.smtp_relay_host",
+    "smtp.relay.port": "email.smtp.smtp_relay_port",
+    "smtp.relay.user": "email.smtp.smtp_relay_user",
+    "smtp.relay.password": "email.smtp.smtp_relay_password",
+    "backup.compress_tar_archives": "misc.backup.backup_compress_tar_archives",
+    "ssowat.panel_overlay.enabled": "misc.portal.ssowat_panel_overlay_enabled",
+    "security.webadmin.allowlist.enabled": "security.webadmin.webadmin_allowlist_enabled",
+    "security.webadmin.allowlist": "security.webadmin.webadmin_allowlist",
+    "security.experimental.enabled": "security.experimental.security_experimental_enabled",
+}
+
+
+def translate_legacy_settings_to_configpanel_settings(settings):
+    return LEGACY_SETTINGS.get(settings, settings)
 
 
 def legacy_permission_label(app, permission_type):
@@ -149,7 +193,6 @@ LEGACY_PHP_VERSION_REPLACEMENTS = [
 
 
 def _patch_legacy_php_versions(app_folder):
-
     files_to_patch = []
     files_to_patch.extend(glob.glob("%s/conf/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
@@ -159,7 +202,6 @@ def _patch_legacy_php_versions(app_folder):
     files_to_patch.append("%s/manifest.toml" % app_folder)
 
     for filename in files_to_patch:
-
         # Ignore non-regular files
         if not os.path.isfile(filename):
             continue
@@ -173,7 +215,6 @@ def _patch_legacy_php_versions(app_folder):
 
 
 def _patch_legacy_php_versions_in_settings(app_folder):
-
     settings = read_yaml(os.path.join(app_folder, "settings.yml"))
 
     if settings.get("fpm_config_dir") in ["/etc/php/7.0/fpm", "/etc/php/7.3/fpm"]:
@@ -199,7 +240,6 @@ def _patch_legacy_php_versions_in_settings(app_folder):
 
 
 def _patch_legacy_helpers(app_folder):
-
     files_to_patch = []
     files_to_patch.extend(glob.glob("%s/scripts/*" % app_folder))
     files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
@@ -209,6 +249,11 @@ def _patch_legacy_helpers(app_folder):
         "yunohost app checkport": {"important": True},
         "yunohost tools port-available": {"important": True},
         "yunohost app checkurl": {"important": True},
+        "yunohost user create": {
+            "pattern": r"yunohost user create (\S+) (-f|--firstname) (\S+) (-l|--lastname) \S+ (.*)",
+            "replace": r"yunohost user create \1 --fullname \3 \5",
+            "important": False,
+        },
         # Remove
         #    Automatic diagnosis data from YunoHost
         #    __PRE_TAG1__$(yunohost tools diagnosis | ...)__PRE_TAG2__"
@@ -242,7 +287,6 @@ def _patch_legacy_helpers(app_folder):
         infos["replace"] = infos.get("replace")
 
     for filename in files_to_patch:
-
         # Ignore non-regular files
         if not os.path.isfile(filename):
             continue
@@ -256,7 +300,6 @@ def _patch_legacy_helpers(app_folder):
         show_warning = False
 
         for helper, infos in stuff_to_replace.items():
-
             # Ignore if not relevant for this file
             if infos.get("only_for") and not any(
                 filename.endswith(f) for f in infos["only_for"]
@@ -280,7 +323,6 @@ def _patch_legacy_helpers(app_folder):
                 )
 
         if replaced_stuff:
-
             # Check the app do load the helper
             # If it doesn't, add the instruction ourselve (making sure it's after the #!/bin/bash if it's there...
             if filename.split("/")[-1] in [

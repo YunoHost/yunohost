@@ -1,24 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2019 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
+#
+# Copyright (c) 2023 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import yaml
 import shutil
@@ -80,7 +77,6 @@ def regen_conf(
 
         for category, conf_files in pending_conf.items():
             for system_path, pending_path in conf_files.items():
-
                 pending_conf[category][system_path] = {
                     "pending_conf": pending_path,
                     "diff": _get_files_diff(system_path, pending_path, True),
@@ -143,6 +139,7 @@ def regen_conf(
         env["YNH_MAIN_DOMAINS"] = " ".join(
             domain_list(exclude_subdomains=True)["domains"]
         )
+    env["YNH_CONTEXT"] = "regenconf"
 
     pre_result = hook_callback("conf_regen", names, pre_callback=_pre_call, env=env)
 
@@ -598,7 +595,6 @@ def _update_conf_hashes(category, hashes):
 
 
 def _force_clear_hashes(paths):
-
     categories = _get_regenconf_infos()
     for path in paths:
         for category in categories.keys():
@@ -678,7 +674,6 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
 
 
 def manually_modified_files():
-
     output = []
     regenconf_categories = _get_regenconf_infos()
     for category, infos in regenconf_categories.items():
@@ -693,7 +688,6 @@ def manually_modified_files():
 def manually_modified_files_compared_to_debian_default(
     ignore_handled_by_regenconf=False,
 ):
-
     # from https://serverfault.com/a/90401
     files = check_output(
         "dpkg-query -W -f='${Conffiles}\n' '*' \

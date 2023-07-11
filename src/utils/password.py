@@ -1,29 +1,26 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2018 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
+#
+# Copyright (c) 2023 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import sys
 import os
-import json
 import string
 import subprocess
+import yaml
 
 SMALL_PWD_LIST = [
     "yunohost",
@@ -36,7 +33,14 @@ SMALL_PWD_LIST = [
     "rpi",
 ]
 
-MOST_USED_PASSWORDS = "/usr/share/yunohost/100000-most-used-passwords.txt"
+#
+# 100k firsts "most used password" with length 8+
+#
+# List obtained with:
+# curl -L https://github.com/danielmiessler/SecLists/raw/master/Passwords/Common-Credentials/10-million-password-list-top-1000000.txt \
+# | grep -v -E "^[a-zA-Z0-9]{1,7}$" | head -n 100000 | gzip > 100000-most-used-passwords-length8plus.txt.gz
+#
+MOST_USED_PASSWORDS = "/usr/share/yunohost/100000-most-used-passwords-length8plus.txt"
 
 # Length, digits, lowers, uppers, others
 STRENGTH_LEVELS = [
@@ -54,18 +58,16 @@ def assert_password_is_compatible(password):
     """
 
     if len(password) >= 127:
-
         # Note that those imports are made here and can't be put
         # on top (at least not the moulinette ones)
         # because the moulinette needs to be correctly initialized
         # as well as modules available in python's path.
         from yunohost.utils.error import YunohostValidationError
 
-        raise YunohostValidationError("admin_password_too_long")
+        raise YunohostValidationError("password_too_long")
 
 
 def assert_password_is_strong_enough(profile, password):
-
     PasswordValidator(profile).validate(password)
 
 
@@ -76,7 +78,7 @@ class PasswordValidator:
 
         The profile shall be either "user" or "admin"
         and will correspond to a validation strength
-        defined via the setting "security.password.<profile>.strength"
+        defined via the setting "security.password.<profile>_strength"
         """
 
         self.profile = profile
@@ -85,9 +87,9 @@ class PasswordValidator:
             # from settings.py because this file is also meant to be
             # use as a script by ssowat.
             # (or at least that's my understanding -- Alex)
-            settings = json.load(open("/etc/yunohost/settings.json", "r"))
-            setting_key = "security.password." + profile + ".strength"
-            self.validation_strength = int(settings[setting_key]["value"])
+            settings = yaml.safe_load(open("/etc/yunohost/settings.yml", "r"))
+            setting_key = profile + "_strength"
+            self.validation_strength = int(settings[setting_key])
         except Exception:
             # Fallback to default value if we can't fetch settings for some reason
             self.validation_strength = 1
@@ -193,7 +195,6 @@ class PasswordValidator:
         return strength_level
 
     def is_in_most_used_list(self, password):
-
         # Decompress file if compressed
         if os.path.exists("%s.gz" % MOST_USED_PASSWORDS):
             os.system("gzip -fd %s.gz" % MOST_USED_PASSWORDS)

@@ -1,5 +1,21 @@
-#!/usr/bin/env python
-
+#
+# Copyright (c) 2023 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import re
 from typing import List
@@ -27,13 +43,11 @@ logger = log.getActionLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 600
     dependencies: List[str] = ["ip"]
 
     def run(self):
-
         main_domain = _get_maindomain()
 
         major_domains = domain_list(exclude_subdomains=True)["domains"]
@@ -61,7 +75,6 @@ class MyDiagnoser(Diagnoser):
             yield report
 
     def check_domain(self, domain, is_main_domain):
-
         if is_special_use_tld(domain):
             yield dict(
                 meta={"domain": domain},
@@ -81,13 +94,11 @@ class MyDiagnoser(Diagnoser):
         categories = ["basic", "mail", "xmpp", "extra"]
 
         for category in categories:
-
             records = expected_configuration[category]
             discrepancies = []
             results = {}
 
             for r in records:
-
                 id_ = r["type"] + ":" + r["name"]
                 fqdn = r["name"] + "." + base_dns_zone if r["name"] != "@" else domain
 
@@ -105,7 +116,7 @@ class MyDiagnoser(Diagnoser):
                 if r["value"] == "@":
                     r["value"] = domain + "."
                 elif r["type"] == "CNAME":
-                    r["value"] = r["value"] + f".{base_dns_zone}."
+                    r["value"] = r["value"]  # + f".{base_dns_zone}."
 
                 if self.current_record_match_expected(r):
                     results[id_] = "OK"
@@ -166,12 +177,15 @@ class MyDiagnoser(Diagnoser):
             yield output
 
     def get_current_record(self, fqdn, type_):
-
         success, answers = dig(fqdn, type_, resolvers="force_external")
 
         if success != "ok":
             return None
         else:
+            if type_ == "TXT" and isinstance(answers, list):
+                for part in answers:
+                    if part.startswith('"v=spf1'):
+                        return part
             return answers[0] if len(answers) == 1 else answers
 
     def current_record_match_expected(self, r):
@@ -204,6 +218,11 @@ class MyDiagnoser(Diagnoser):
             return expected == current
         elif r["type"] == "MX":
             # For MX, we want to ignore the priority
+            expected = r["value"].split()[-1]
+            current = r["current"].split()[-1]
+            return expected == current
+        elif r["type"] == "CAA":
+            # For CAA, check only the last item, ignore the 0 / 128 nightmare
             expected = r["value"].split()[-1]
             current = r["current"].split()[-1]
             return expected == current

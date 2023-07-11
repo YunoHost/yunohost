@@ -1,29 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2013 YunoHost
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
-
-""" yunohost_service.py
-
-    Manage services
-"""
-
+#
+# Copyright (c) 2023 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import re
 import os
 import time
@@ -257,12 +249,10 @@ def service_reload_or_restart(names, test_conf=True):
     services = _get_services()
 
     for name in names:
-
         logger.debug(f"Reloading service {name}")
 
         test_conf_cmd = services.get(name, {}).get("test_conf")
         if test_conf and test_conf_cmd:
-
             p = subprocess.Popen(
                 test_conf_cmd,
                 shell=True,
@@ -401,7 +391,6 @@ def _get_service_information_from_systemd(service):
 
 
 def _get_and_format_service_status(service, infos):
-
     systemd_service = infos.get("actual_systemd_service", service)
     raw_status, raw_service = _get_service_information_from_systemd(systemd_service)
 
@@ -422,7 +411,6 @@ def _get_and_format_service_status(service, infos):
 
     # If no description was there, try to get it from the .json locales
     if not description:
-
         translation_key = f"service_description_{service}"
         if m18n.key_exists(translation_key):
             description = m18n.n(translation_key)
@@ -529,7 +517,6 @@ def service_log(name, number=50):
     result["journalctl"] = _get_journalctl_logs(name, number).splitlines()
 
     for log_path in log_list:
-
         if not os.path.exists(log_path):
             continue
 
@@ -628,7 +615,6 @@ def _run_service_command(action, service):
 
 
 def _give_lock(action, service, p):
-
     # Depending of the action, systemctl calls the PID differently :/
     if action == "start" or action == "restart":
         systemctl_PID_name = "MainPID"
@@ -720,6 +706,10 @@ def _get_services():
             "category": "web",
         }
 
+    # Ignore metronome entirely if XMPP was disabled on all domains
+    if "metronome" in services and not glob("/etc/metronome/conf.d/*.cfg.lua"):
+        del services["metronome"]
+
     # Remove legacy /var/log/daemon.log and /var/log/syslog from log entries
     # because they are too general. Instead, now the journalctl log is
     # returned by default which is more relevant.
@@ -748,7 +738,6 @@ def _save_services(services):
     diff = {}
 
     for service_name, service_infos in services.items():
-
         # Ignore php-fpm services, they are to be added dynamically by the core,
         # but not actually saved
         if service_name.startswith("php") and service_name.endswith("-fpm"):
@@ -786,7 +775,7 @@ def _tail(file, n):
             f = gzip.open(file)
             lines = f.read().splitlines()
         else:
-            f = open(file)
+            f = open(file, errors="replace")
             pos = 1
             lines = []
             while len(lines) < to_read and pos > 0:

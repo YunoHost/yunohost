@@ -10,7 +10,7 @@ Package: yunohost
 Essential: yes
 Architecture: all
 Depends: ${python3:Depends}, ${misc:Depends}
- , moulinette (>= 11.0), ssowat (>= 11.0)
+ , moulinette (>= 11.1), ssowat (>= 11.1)
  , python3-psutil, python3-requests, python3-dnspython, python3-openssl
  , python3-miniupnpc, python3-dbus, python3-jinja2
  , python3-toml, python3-packaging, python3-publicsuffix2
@@ -28,7 +28,7 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , rspamd, opendkim-tools, postsrsd, procmail, mailutils
  , redis-server
  , acl
- , git, curl, wget, cron, unzip, jq, bc, at
+ , git, curl, wget, cron, unzip, jq, bc, at, procps
  , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping

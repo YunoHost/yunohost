@@ -56,7 +56,7 @@ EOF
 
 echo "$LOGO_AND_FINGERPRINTS" > /etc/issue
 
-if [[ ! -f /etc/yunohost/installed ]]
+if ! groups | grep -q all_users && [[ ! -f /etc/yunohost/installed ]]
 then
     chvt 2
 

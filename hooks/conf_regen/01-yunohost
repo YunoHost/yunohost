@@ -42,7 +42,7 @@ do_init_regen() {
     # Backup folders
     mkdir -p /home/yunohost.backup/archives
     chmod 750 /home/yunohost.backup/archives
-    chown root:root /home/yunohost.backup/archives # This is later changed to admin:root once admin user exists
+    chown root:root /home/yunohost.backup/archives # This is later changed to root:admins once the admins group exists
 
     # Empty ssowat json persistent conf
     echo "{}" >'/etc/ssowat/conf.json.persistent'
@@ -104,7 +104,7 @@ EOF
     # Cron job that upgrade the app list everyday
     cat >$pending_dir/etc/cron.daily/yunohost-fetch-apps-catalog <<EOF
 #!/bin/bash
-(sleep \$((RANDOM%3600)); yunohost tools update --apps > /dev/null) &
+sleep \$((RANDOM%3600)); yunohost tools update apps > /dev/null
 EOF
 
     # Cron job that renew lets encrypt certificates if there's any that needs renewal
@@ -132,12 +132,15 @@ EOF
     fi
 
     # Skip ntp if inside a container (inspired from the conf of systemd-timesyncd)
-    mkdir -p ${pending_dir}/etc/systemd/system/ntp.service.d/
-    cat >${pending_dir}/etc/systemd/system/ntp.service.d/ynh-override.conf <<EOF
+    if systemctl | grep -q 'ntp.service'
+    then
+        mkdir -p ${pending_dir}/etc/systemd/system/ntp.service.d/
+        cat >${pending_dir}/etc/systemd/system/ntp.service.d/ynh-override.conf <<EOF
 [Unit]
 ConditionCapability=CAP_SYS_TIME
 ConditionVirtualization=!container
 EOF
+    fi
 
     # Make nftable conflict with yunohost-firewall
     mkdir -p ${pending_dir}/etc/systemd/system/nftables.service.d/
@@ -187,16 +190,26 @@ do_post_regen() {
     # Enfore permissions #
     ######################
 
-    chmod 750 /home/admin
-    chmod 750 /home/yunohost.backup
-    chmod 750 /home/yunohost.backup/archives
+    chmod 770 /home/yunohost.backup
+    chmod 770 /home/yunohost.backup/archives
     chmod 700 /var/cache/yunohost
-    chown admin:root /home/yunohost.backup
-    chown admin:root /home/yunohost.backup/archives
+    chown root:admins /home/yunohost.backup
+    chown root:admins /home/yunohost.backup/archives
     chown root:root /var/cache/yunohost
+
+    [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
 
     # NB: x permission for 'others' is important for ssl-cert (and maybe mdns), otherwise slapd will fail to start because can't access the certs
     chmod 755 /etc/yunohost
+
+    find /etc/systemd/system/*.service -type f | xargs -r chown root:root
+    find /etc/systemd/system/*.service -type f | xargs -r chmod 0644
+
+    if ls -l /etc/php/*/fpm/pool.d/*.conf
+    then
+        chown root:root /etc/php/*/fpm/pool.d/*.conf
+        chmod 644 /etc/php/*/fpm/pool.d/*.conf
+    fi
 
     # Certs
     # We do this with find because there could be a lot of them...
@@ -222,7 +235,7 @@ do_post_regen() {
     mkdir -p /etc/yunohost/domains
 
     # Misc configuration / state files
-    chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
+    chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null | grep -vw mdns.yml)
     chmod 600 $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
 
     # Apps folder, custom hooks folder
@@ -235,13 +248,19 @@ do_post_regen() {
     grep -q '^sftp.app:' /etc/group || groupadd sftp.app
 
     # Propagates changes in systemd service config overrides
-    [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || {
-        systemctl daemon-reload
-        systemctl restart ntp
-    }
-
+    if systemctl | grep -q 'ntp.service'
+    then
+        [[ ! "$regen_conf_files" =~ "ntp.service.d/ynh-override.conf" ]] || {
+            systemctl daemon-reload
+            systemctl restart ntp
+        }
+    fi
+    
     [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || systemctl daemon-reload
-    [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] || systemctl daemon-reload
+    [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] ||  {
+        systemctl daemon-reload
+        systemctl restart systemd-logind
+    }
     [[ ! "$regen_conf_files" =~ "yunohost-firewall.service" ]] || systemctl daemon-reload
     [[ ! "$regen_conf_files" =~ "yunohost-api.service" ]] || systemctl daemon-reload
     [[ ! "$regen_conf_files" =~ "yunohost-portal-api.service" ]] || systemctl daemon-reload
@@ -266,6 +285,11 @@ do_post_regen() {
     then
         rm -f /etc/dpkg/origins/default
         ln -s /etc/dpkg/origins/yunohost /etc/dpkg/origins/default
+    fi
+
+    if test -e /etc/yunohost/installed && test -e /etc/profile.d/check_yunohost_is_installed.sh
+    then
+        rm /etc/profile.d/check_yunohost_is_installed.sh
     fi
 }
 

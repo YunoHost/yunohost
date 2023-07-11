@@ -20,7 +20,7 @@ ynh_add_nginx_config() {
 
     local finalnginxconf="/etc/nginx/conf.d/$domain.d/$app.conf"
 
-    ynh_add_config --template="$YNH_APP_BASEDIR/conf/nginx.conf" --destination="$finalnginxconf"
+    ynh_add_config --template="nginx.conf" --destination="$finalnginxconf"
 
     if [ "${path_url:-}" != "/" ]; then
         ynh_replace_string --match_string="^#sub_path_only" --replace_string="" --target_file="$finalnginxconf"
@@ -42,3 +42,37 @@ ynh_remove_nginx_config() {
     ynh_secure_remove --file="/etc/nginx/conf.d/$domain.d/$app.conf"
     ynh_systemd_action --service_name=nginx --action=reload
 }
+
+
+# Move / regen the nginx config in a change url context
+#
+# usage: ynh_change_url_nginx_config
+#
+# Requires YunoHost version 11.1.9 or higher.
+ynh_change_url_nginx_config() {
+    local old_nginx_conf_path=/etc/nginx/conf.d/$old_domain.d/$app.conf
+    local new_nginx_conf_path=/etc/nginx/conf.d/$new_domain.d/$app.conf
+
+    # Change the path in the NGINX config file
+    if [ $change_path -eq 1 ]
+    then
+        # Make a backup of the original NGINX config file if modified
+        ynh_backup_if_checksum_is_different --file="$old_nginx_conf_path"
+        # Set global variables for NGINX helper
+        domain="$old_domain"
+        path="$new_path"
+        path_url="$new_path"
+        # Create a dedicated NGINX config
+        ynh_add_nginx_config
+    fi
+
+    # Change the domain for NGINX
+    if [ $change_domain -eq 1 ]
+    then
+        ynh_delete_file_checksum --file="$old_nginx_conf_path"
+        mv "$old_nginx_conf_path" "$new_nginx_conf_path"
+        ynh_store_file_checksum --file="$new_nginx_conf_path"
+    fi
+    ynh_systemd_action --service_name=nginx --action=reload
+}
+

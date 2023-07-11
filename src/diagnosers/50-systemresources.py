@@ -1,4 +1,21 @@
-#!/usr/bin/env python
+#
+# Copyright (c) 2023 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import psutil
 import datetime
@@ -11,13 +28,11 @@ from yunohost.diagnosis import Diagnoser
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
     dependencies: List[str] = []
 
     def run(self):
-
         MB = 1024**2
         GB = MB * 1024
 
@@ -172,7 +187,6 @@ class MyDiagnoser(Diagnoser):
             return []
 
         def analyzed_kern_log():
-
             cmd = 'tail -n 10000 /var/log/kern.log | grep "oom_reaper: reaped process" || true'
             out = check_output(cmd)
             lines = out.split("\n") if out else []

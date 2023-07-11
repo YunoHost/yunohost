@@ -78,6 +78,7 @@ def _permission_create_with_dummy_app(
                     "name": app,
                     "id": app,
                     "description": {"en": "Dummy app to test permissions"},
+                    "arguments": {"install": []},
                 },
                 f,
             )
@@ -108,7 +109,7 @@ def clean_user_groups_permission():
         user_delete(u)
 
     for g in user_group_list()["groups"]:
-        if g not in ["all_users", "visitors"]:
+        if g not in ["all_users", "visitors", "admins"]:
             user_group_delete(g)
 
     for p in user_permission_list()["permissions"]:
@@ -157,8 +158,8 @@ def setup_function(function):
 
     socket.getaddrinfo = new_getaddrinfo
 
-    user_create("alice", "Alice", "White", maindomain, dummy_password)
-    user_create("bob", "Bob", "Snow", maindomain, dummy_password)
+    user_create("alice", maindomain, dummy_password, fullname="Alice White")
+    user_create("bob", maindomain, dummy_password, fullname="Bob Snow")
     _permission_create_with_dummy_app(
         permission="wiki.main",
         url="/",
@@ -257,7 +258,7 @@ def check_LDAP_db_integrity():
 
     for user in user_search:
         user_dn = "uid=" + user["uid"][0] + ",ou=users,dc=yunohost,dc=org"
-        group_list = [_ldap_path_extract(m, "cn") for m in user["memberOf"]]
+        group_list = [_ldap_path_extract(m, "cn") for m in user.get("memberOf", [])]
         permission_list = [
             _ldap_path_extract(m, "cn") for m in user.get("permission", [])
         ]
@@ -353,7 +354,6 @@ def check_permission_for_apps():
 
 
 def can_access_webpage(webpath, logged_as=None):
-
     webpath = webpath.rstrip("/")
     sso_url = "https://" + maindomain + "/yunohost/sso/"
 
@@ -1093,7 +1093,6 @@ def test_permission_protection_management_by_helper():
 
 @pytest.mark.other_domains(number=1)
 def test_permission_app_propagation_on_ssowat():
-
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
@@ -1130,7 +1129,6 @@ def test_permission_app_propagation_on_ssowat():
 
 @pytest.mark.other_domains(number=1)
 def test_permission_legacy_app_propagation_on_ssowat():
-
     app_install(
         os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=1"

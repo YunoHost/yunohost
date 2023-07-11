@@ -9,7 +9,7 @@ source /usr/share/yunohost/helpers
 # Backup destination
 backup_dir="${1}/data/multimedia"
 
-if [ -e "/home/yunohost.multimedia/.nobackup" ]; then
+if [ ! -e "/home/yunohost.multimedia" ] || [ -e "/home/yunohost.multimedia/.nobackup" ]; then
     exit 0
 fi
 

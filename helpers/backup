@@ -285,6 +285,14 @@ ynh_restore_file() {
     else
         mv "$archive_path" "${dest_path}"
     fi
+
+    # Boring hack for nginx conf file mapped to php7.3
+    # Note that there's no need to patch the fpm config because most php apps
+    # will call "ynh_add_fpm_config" during restore, effectively recreating the file from scratch
+    if [[ "${dest_path}" == "/etc/nginx/conf.d/"* ]] && grep 'php7.3.*sock' "${dest_path}"
+    then
+        sed -i 's/php7.3/php7.4/g' "${dest_path}"
+    fi
 }
 
 # Calculate and store a file checksum into the app settings
@@ -318,6 +326,13 @@ ynh_store_file_checksum() {
     fi
 
     ynh_app_setting_set --app=$app --key=$checksum_setting_name --value=$(md5sum "$file" | cut --delimiter=' ' --fields=1)
+
+    if [ ${PACKAGE_CHECK_EXEC:-0} -eq 1 ]; then
+        # Using a base64 is in fact more reversible than "replace / and space by _" ... So we can in fact obtain the original file path in an easy reliable way ...
+        local file_path_base64=$(echo "$file" | base64 -w0)
+        mkdir -p /var/cache/yunohost/appconfbackup/
+        cat $file > /var/cache/yunohost/appconfbackup/original_${file_path_base64}
+    fi
 
     # If backup_file_checksum isn't empty, ynh_backup_if_checksum_is_different has made a backup
     if [ -n "${backup_file_checksum-}" ]; then
@@ -353,11 +368,20 @@ ynh_backup_if_checksum_is_different() {
     backup_file_checksum=""
     if [ -n "$checksum_value" ]; then                                                     # Proceed only if a value was stored into the app settings
         if [ -e $file ] && ! echo "$checksum_value $file" | md5sum --check --status; then # If the checksum is now different
+
             backup_file_checksum="/var/cache/yunohost/appconfbackup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
             mkdir --parents "$(dirname "$backup_file_checksum")"
             cp --archive "$file" "$backup_file_checksum" # Backup the current file
             ynh_print_warn "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file_checksum"
             echo "$backup_file_checksum" # Return the name of the backup file
+            if [ ${PACKAGE_CHECK_EXEC:-0} -eq 1 ]; then
+                local file_path_base64=$(echo "$file" | base64 -w0)
+                if test -e /var/cache/yunohost/appconfbackup/original_${file_path_base64}
+                then
+                    ynh_print_warn "Diff with the original file:"
+                    diff --report-identical-files --unified --color=always /var/cache/yunohost/appconfbackup/original_${file_path_base64} $file >&2 || true
+                fi
+            fi
         fi
     fi
 }

@@ -1,31 +1,9 @@
 #!/bin/bash
 
-n_version=8.2.0
-n_checksum=75efd9e583836f3e6cc6d793df1501462fdceeb3460d5a2dbba99993997383b9
 n_install_dir="/opt/node_n"
 node_version_path="$n_install_dir/n/versions/node"
 # N_PREFIX is the directory of n, it needs to be loaded as a environment variable.
 export N_PREFIX="$n_install_dir"
-
-# Install Node version management
-#
-# [internal]
-#
-# usage: ynh_install_n
-#
-# Requires YunoHost version 2.7.12 or higher.
-ynh_install_n() {
-    # Build an app.src for n
-    echo "SOURCE_URL=https://github.com/tj/n/archive/v${n_version}.tar.gz
-SOURCE_SUM=${n_checksum}" >"$YNH_APP_BASEDIR/conf/n.src"
-    # Download and extract n
-    ynh_setup_source --dest_dir="$n_install_dir/git" --source_id=n
-    # Install n
-    (
-        cd "$n_install_dir/git"
-        PREFIX=$N_PREFIX make install 2>&1
-    )
-}
 
 # Load the version of node for an app, and set variables.
 #
@@ -133,14 +111,10 @@ ynh_install_nodejs() {
     test -x /usr/bin/node && mv /usr/bin/node /usr/bin/node_n
     test -x /usr/bin/npm && mv /usr/bin/npm /usr/bin/npm_n
 
-    # If n is not previously setup, install it
-    if ! $n_install_dir/bin/n --version >/dev/null 2>&1; then
-        ynh_install_n
-    elif dpkg --compare-versions "$($n_install_dir/bin/n --version)" lt $n_version; then
-        ynh_install_n
-    fi
-
-    # Modify the default N_PREFIX in n script
+    # Install (or update if YunoHost vendor/ folder updated since last install) n
+    mkdir -p $n_install_dir/bin/
+    cp /usr/share/yunohost/helpers.d/vendor/n/n $n_install_dir/bin/n
+    # Tweak for n to understand it's installed in $N_PREFIX
     ynh_replace_string --match_string="^N_PREFIX=\${N_PREFIX-.*}$" --replace_string="N_PREFIX=\${N_PREFIX-$N_PREFIX}" --target_file="$n_install_dir/bin/n"
 
     # Restore /usr/local/bin in PATH

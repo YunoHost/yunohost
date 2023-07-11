@@ -17,7 +17,7 @@ upgrade:
   image: "after-install"
   script:
     - apt-get update -o Acquire::Retries=3
-    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./$YNH_BUILD_DIR/*.deb
+    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
 
 
 install-postinstall:
@@ -25,5 +25,5 @@ install-postinstall:
   image: "before-install"
   script:
     - apt-get update -o Acquire::Retries=3
-    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ./$YNH_BUILD_DIR/*.deb
-    - yunohost tools postinstall -d domain.tld -p the_password --ignore-dyndns --force-diskspace
+    - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
+    - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace

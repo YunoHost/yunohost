@@ -4,7 +4,7 @@ location /yunohost/api/ {
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
-    proxy_set_header Host $http_host;
+    proxy_set_header Host $host;
 
     {% if webadmin_allowlist_enabled == "True" %}
     {% for ip in webadmin_allowlist.split(',') %}

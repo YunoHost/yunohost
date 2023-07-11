@@ -15,8 +15,8 @@ from yunohost.tools import (
 )
 from yunohost.app import unstable_apps
 from yunohost.regenconf import manually_modified_files, _force_clear_hashes
-from yunohost.utils.filesystem import free_space_in_directory
-from yunohost.utils.packages import (
+from yunohost.utils.system import (
+    free_space_in_directory,
     get_ynh_package_version,
     _list_upgradable_apt_packages,
 )
@@ -26,9 +26,6 @@ logger = getActionLogger("yunohost.migration")
 
 N_CURRENT_DEBIAN = 10
 N_CURRENT_YUNOHOST = 4
-
-N_NEXT_DEBAN = 11
-N_NEXT_YUNOHOST = 11
 
 VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bullseye_upgrade.txt"
 
@@ -42,8 +39,11 @@ def _get_all_venvs(dir, level=0, maxlevel=3):
         maxlevel - the depth of the recursion
         level - do not edit this, used as an iterator
     """
-    # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
+    if not os.path.exists(dir):
+        return []
+
     result = []
+    # Using os functions instead of glob, because glob doesn't support hidden folders, and we need recursion with a fixed depth
     for file in os.listdir(dir):
         path = os.path.join(dir, file)
         if os.path.isdir(path):
@@ -66,17 +66,17 @@ def _backup_pip_freeze_for_python_app_venvs():
     venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
     for venv in venvs:
         # Generate a requirements file from venv
-        os.system(f"{venv}/bin/pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX}")
+        os.system(
+            f"{venv}/bin/pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX} 2>/dev/null"
+        )
 
 
 class MyMigration(Migration):
-
     "Upgrade the system to Debian Bullseye and Yunohost 11.x"
 
     mode = "manual"
 
     def run(self):
-
         self.check_assertions()
 
         logger.info(m18n.n("migration_0021_start"))
@@ -94,6 +94,9 @@ class MyMigration(Migration):
         logger.info(m18n.n("migration_0021_patching_sources_list"))
         self.patch_apt_sources_list()
 
+        # Stupid OVH has some repo configured which dont work with bullseye and break apt ...
+        os.system("sudo rm -f /etc/apt/sources.list.d/ovh-*.list")
+
         # Force add sury if it's not there yet
         # This is to solve some weird issue with php-common breaking php7.3-common,
         # hence breaking many php7.3-deps
@@ -104,9 +107,17 @@ class MyMigration(Migration):
             open("/etc/apt/sources.list.d/extra_php_version.list", "w").write(
                 "deb https://packages.sury.org/php/ bullseye main"
             )
-            os.system(
-                'wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"'
-            )
+
+        # Add Sury key even if extra_php_version.list was already there,
+        # because some old system may be using an outdated key not valid for Bullseye
+        # and that'll block the migration
+        os.system(
+            'wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"'
+        )
+
+        # Remove legacy, duplicated sury entry if it exists
+        if os.path.exists("/etc/apt/sources.list.d/sury.list"):
+            os.system("rm -rf /etc/apt/sources.list.d/sury.list")
 
         #
         # Get requirements of the different venvs from python apps
@@ -184,6 +195,47 @@ class MyMigration(Migration):
         if "postgresql" in services:
             del services["postgresql"]
             _save_services(services)
+
+        #
+        # Critical fix for RPI otherwise network is down after rebooting
+        # https://forum.yunohost.org/t/20652
+        #
+        if os.system("systemctl | grep -q dhcpcd") == 0:
+            logger.info("Applying fix for DHCPCD ...")
+            os.system("mkdir -p /etc/systemd/system/dhcpcd.service.d")
+            write_to_file(
+                "/etc/systemd/system/dhcpcd.service.d/wait.conf",
+                "[Service]\nExecStart=\nExecStart=/usr/sbin/dhcpcd -w",
+            )
+
+        #
+        # Another boring fix for the super annoying libc6-dev: Breaks libgcc-8-dev
+        # https://forum.yunohost.org/t/20617
+        #
+        if (
+            os.system("dpkg --list | grep '^ii' | grep -q ' libgcc-8-dev'") == 0
+            and os.system(
+                "LC_ALL=C apt policy libgcc-8-dev | grep Candidate | grep -q rpi"
+            )
+            == 0
+        ):
+            logger.info(
+                "Attempting to fix the build-essential / libc6-dev / libgcc-8-dev hell ..."
+            )
+            os.system("cp /var/lib/dpkg/status /root/dpkg_status.bkp")
+            # This removes the dependency to build-essential from $app-ynh-deps
+            os.system(
+                "perl -i~ -0777 -pe 's/(Package: .*-ynh-deps\\n(.+:.+\\n)+Depends:.*)(build-essential, ?)(.*)/$1$4/g' /var/lib/dpkg/status"
+            )
+            self.apt_install(
+                "build-essential-"
+            )  # Note the '-' suffix to mean that we actually want to remove the packages
+            os.system(
+                "LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt autoremove --assume-yes"
+            )
+            self.apt_install(
+                "gcc-8- libgcc-8-dev- equivs"
+            )  # Note the '-' suffix to mean that we actually want to remove the packages .. we also explicitly add 'equivs' to the list because sometimes apt is dumb and will derp about it
 
         #
         # Main upgrade
@@ -277,8 +329,18 @@ class MyMigration(Migration):
 
         # Clean the mess
         logger.info(m18n.n("migration_0021_cleaning_up"))
-        os.system("apt autoremove --assume-yes")
+        os.system(
+            "LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none apt autoremove --assume-yes"
+        )
         os.system("apt clean --assume-yes")
+
+        #
+        # Stupid hack for stupid dnsmasq not picking up its new init.d script then breaking everything ...
+        # https://forum.yunohost.org/t/20676
+        #
+        if os.path.exists("/etc/init.d/dnsmasq.dpkg-dist"):
+            logger.info("Copying new version for /etc/init.d/dnsmasq ...")
+            os.system("cp /etc/init.d/dnsmasq.dpkg-dist /etc/init.d/dnsmasq")
 
         #
         # Yunohost upgrade
@@ -325,7 +387,6 @@ class MyMigration(Migration):
         return int(get_ynh_package_version("yunohost")["version"].split(".")[0])
 
     def check_assertions(self):
-
         # Be on buster (10.x) and yunohost 4.x
         # NB : we do both check to cover situations where the upgrade crashed
         # in the middle and debian version could be > 9.x but yunohost package
@@ -334,11 +395,31 @@ class MyMigration(Migration):
             not self.debian_major_version() == N_CURRENT_DEBIAN
             and not self.yunohost_major_version() == N_CURRENT_YUNOHOST
         ):
-            raise YunohostError("migration_0021_not_buster")
+            try:
+                # Here we try to find the previous migration log, which should be somewhat recent and be at least 10k (we keep the biggest one)
+                maybe_previous_migration_log_id = check_output(
+                    "cd /var/log/yunohost/categories/operation && find -name '*migrate*.log' -size +10k -mtime -100 -exec ls -s {} \\; | sort -n | tr './' ' ' | awk '{print $2}' | tail -n 1"
+                )
+                if maybe_previous_migration_log_id:
+                    logger.info(
+                        f"NB: the previous migration log id seems to be {maybe_previous_migration_log_id}. You can share it with the support team with : sudo yunohost log share {maybe_previous_migration_log_id}"
+                    )
+            except Exception:
+                # Yeah it's not that important ... it's to simplify support ...
+                pass
+
+            raise YunohostError("migration_0021_not_buster2")
 
         # Have > 1 Go free space on /var/ ?
         if free_space_in_directory("/var/") / (1024**3) < 1.0:
             raise YunohostError("migration_0021_not_enough_free_space")
+
+        # Have > 70 MB free space on /var/ ?
+        if free_space_in_directory("/boot/") / (1024**2) < 70.0:
+            raise YunohostError(
+                "/boot/ has less than 70MB available. This will probably trigger a crash during the upgrade because a new kernel needs to be installed. Please look for advice on the forum on how to remove old, unused kernels to free up some space in /boot/.",
+                raw_msg=True,
+            )
 
         # Check system is up to date
         # (but we don't if 'bullseye' is already in the sources.list ...
@@ -369,7 +450,6 @@ class MyMigration(Migration):
 
     @property
     def disclaimer(self):
-
         # Avoid having a super long disclaimer + uncessary check if we ain't
         # on buster / yunohost 4.x anymore
         # NB : we do both check to cover situations where the upgrade crashed
@@ -410,7 +490,6 @@ class MyMigration(Migration):
         return message
 
     def patch_apt_sources_list(self):
-
         sources_list = glob.glob("/etc/apt/sources.list.d/*.list")
         if os.path.exists("/etc/apt/sources.list"):
             sources_list.append("/etc/apt/sources.list")
@@ -432,7 +511,6 @@ class MyMigration(Migration):
             os.system(command)
 
     def get_apps_equivs_packages(self):
-
         command = (
             "dpkg --get-selections"
             " | grep -v deinstall"

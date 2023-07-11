@@ -16,19 +16,16 @@ SSHD_CONFIG = "/etc/ssh/sshd_config"
 
 
 def setup_function(function):
-
     _force_clear_hashes([TEST_DOMAIN_NGINX_CONFIG])
     clean()
 
 
 def teardown_function(function):
-
     clean()
     _force_clear_hashes([TEST_DOMAIN_NGINX_CONFIG])
 
 
 def clean():
-
     assert os.system("pgrep slapd >/dev/null") == 0
     assert os.system("pgrep nginx >/dev/null") == 0
 
@@ -48,7 +45,6 @@ def clean():
 
 
 def test_add_domain():
-
     domain_add(TEST_DOMAIN)
 
     assert TEST_DOMAIN in domain_list()["domains"]
@@ -60,7 +56,6 @@ def test_add_domain():
 
 
 def test_add_and_edit_domain_conf():
-
     domain_add(TEST_DOMAIN)
 
     assert os.path.exists(TEST_DOMAIN_NGINX_CONFIG)
@@ -73,7 +68,6 @@ def test_add_and_edit_domain_conf():
 
 
 def test_add_domain_conf_already_exists():
-
     os.system("echo ' ' >> %s" % TEST_DOMAIN_NGINX_CONFIG)
 
     domain_add(TEST_DOMAIN)
@@ -84,7 +78,6 @@ def test_add_domain_conf_already_exists():
 
 
 def test_ssh_conf_unmanaged():
-
     _force_clear_hashes([SSHD_CONFIG])
 
     assert SSHD_CONFIG not in _get_conf_hashes("ssh")
@@ -95,7 +88,6 @@ def test_ssh_conf_unmanaged():
 
 
 def test_ssh_conf_unmanaged_and_manually_modified(mocker):
-
     _force_clear_hashes([SSHD_CONFIG])
     os.system("echo ' ' >> %s" % SSHD_CONFIG)
 

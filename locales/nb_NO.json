@@ -1,9 +1,6 @@
 {
     "aborting": "Avbryter…",
     "admin_password": "Administrasjonspassord",
-    "admin_password_change_failed": "Kan ikke endre passord",
-    "admin_password_changed": "Administrasjonspassord endret",
-    "admin_password_too_long": "Velg et passord kortere enn 127 tegn",
     "app_already_installed": "{app} er allerede installert",
     "app_already_up_to_date": "{app} er allerede oppdatert",
     "app_argument_invalid": "Velg en gydlig verdi for argumentet '{name}': {error}",
@@ -32,7 +29,6 @@
     "downloading": "Laster ned…",
     "dyndns_could_not_check_available": "Kunne ikke sjekke om {domain} er tilgjengelig på {provider}.",
     "mail_domain_unknown": "Ukjent e-postadresse for domenet '{domain}'",
-    "log_remove_on_failed_restore": "Fjern '{}' etter mislykket gjenoppretting fra sikkerhetskopiarkiv",
     "log_letsencrypt_cert_install": "Installer et Let's Encrypt-sertifikat på '{}'-domenet",
     "log_letsencrypt_cert_renew": "Forny '{}'-Let's Encrypt-sertifikat",
     "log_user_update": "Oppdater brukerinfo for '{}'",
@@ -86,9 +82,7 @@
     "dyndns_key_generating": "Oppretter DNS-nøkkel… Dette kan ta en stund.",
     "dyndns_no_domain_registered": "Inget domene registrert med DynDNS",
     "dyndns_registered": "DynDNS-domene registrert",
-    "global_settings_setting_security_password_admin_strength": "Admin-passordets styrke",
     "dyndns_registration_failed": "Kunne ikke registrere DynDNS-domene: {error}",
-    "global_settings_setting_security_password_user_strength": "Brukerpassordets styrke",
     "log_backup_restore_app": "Gjenopprett '{}' fra sikkerhetskopiarkiv",
     "log_remove_on_failed_install": "Fjern '{}' etter mislykket installasjon",
     "log_selfsigned_cert_install": "Installer selvsignert sertifikat på '{}'-domenet",
@@ -100,8 +94,6 @@
     "app_upgrade_failed": "Kunne ikke oppgradere {app}",
     "app_upgrade_some_app_failed": "Noen programmer kunne ikke oppgraderes",
     "app_upgraded": "{app} oppgradert",
-    "ask_firstname": "Fornavn",
-    "ask_lastname": "Etternavn",
     "ask_main_domain": "Hoveddomene",
     "ask_new_admin_password": "Nytt administrasjonspassord",
     "app_upgrade_several_apps": "Følgende programmer vil oppgraderes: {apps}",
@@ -115,5 +107,7 @@
     "log_help_to_get_log": "For å vise loggen for operasjonen '{desc}', bruk kommandoen 'yunohost log show {name}'",
     "log_user_create": "Legg til '{}' bruker",
     "app_change_url_success": "{app} nettadressen er nå {domain}{path}",
-    "app_install_failed": "Kunne ikke installere {app}: {error}"
+    "app_install_failed": "Kunne ikke installere {app}: {error}",
+    "global_settings_setting_admin_strength": "Admin-passordets styrke",
+    "global_settings_setting_user_strength": "Brukerpassordets styrke"
 }

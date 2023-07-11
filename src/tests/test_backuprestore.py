@@ -6,6 +6,8 @@ from mock import patch
 
 from .conftest import message, raiseYunohostError, get_test_apps_dir
 
+from moulinette.utils.text import random_ascii
+
 from yunohost.app import app_install, app_remove, app_ssowatconf
 from yunohost.app import _is_installed
 from yunohost.backup import (
@@ -30,7 +32,6 @@ maindomain = ""
 
 
 def setup_function(function):
-
     global maindomain
     maindomain = _get_maindomain()
 
@@ -54,7 +55,7 @@ def setup_function(function):
 
     if "with_legacy_app_installed" in markers:
         assert not app_is_installed("legacy_app")
-        install_app("legacy_app_ynh", "/yolo")
+        install_app("legacy_app_ynh", "/yolo", "&is_public=true")
         assert app_is_installed("legacy_app")
 
     if "with_backup_recommended_app_installed" in markers:
@@ -77,7 +78,7 @@ def setup_function(function):
 
     if "with_permission_app_installed" in markers:
         assert not app_is_installed("permissions_app")
-        user_create("alice", "Alice", "White", maindomain, "test123Ynh")
+        user_create("alice", maindomain, "test123Ynh", fullname="Alice White")
         with patch.object(os, "isatty", return_value=False):
             install_app("permissions_app_ynh", "/urlpermissionapp" "&admin=alice")
         assert app_is_installed("permissions_app")
@@ -89,7 +90,6 @@ def setup_function(function):
 
 
 def teardown_function(function):
-
     assert tmp_backup_directory_is_empty()
 
     reset_ssowat_conf()
@@ -133,7 +133,6 @@ def check_permission_for_apps_call():
 
 
 def app_is_installed(app):
-
     if app == "permissions_app":
         return _is_installed(app)
 
@@ -147,7 +146,6 @@ def app_is_installed(app):
 
 
 def backup_test_dependencies_are_met():
-
     # Dummy test apps (or backup archives)
     assert os.path.exists(
         os.path.join(get_test_apps_dir(), "backup_wordpress_from_4p2")
@@ -161,7 +159,6 @@ def backup_test_dependencies_are_met():
 
 
 def tmp_backup_directory_is_empty():
-
     if not os.path.exists("/home/yunohost.backup/tmp/"):
         return True
     else:
@@ -169,7 +166,6 @@ def tmp_backup_directory_is_empty():
 
 
 def clean_tmp_backup_directory():
-
     if tmp_backup_directory_is_empty():
         return
 
@@ -191,27 +187,23 @@ def clean_tmp_backup_directory():
 
 
 def reset_ssowat_conf():
-
     # Make sure we have a ssowat
     os.system("mkdir -p /etc/ssowat/")
     app_ssowatconf()
 
 
 def delete_all_backups():
-
     for archive in backup_list()["archives"]:
         backup_delete(archive)
 
 
 def uninstall_test_apps_if_needed():
-
     for app in ["legacy_app", "backup_recommended_app", "wordpress", "permissions_app"]:
         if _is_installed(app):
             app_remove(app)
 
 
 def install_app(app, path, additionnal_args=""):
-
     app_install(
         os.path.join(get_test_apps_dir(), app),
         args="domain={}&path={}{}".format(maindomain, path, additionnal_args),
@@ -220,7 +212,6 @@ def install_app(app, path, additionnal_args=""):
 
 
 def add_archive_wordpress_from_4p2():
-
     os.system("mkdir -p /home/yunohost.backup/archives")
 
     os.system(
@@ -231,7 +222,6 @@ def add_archive_wordpress_from_4p2():
 
 
 def add_archive_system_from_4p2():
-
     os.system("mkdir -p /home/yunohost.backup/archives")
 
     os.system(
@@ -247,10 +237,10 @@ def add_archive_system_from_4p2():
 
 
 def test_backup_only_ldap(mocker):
-
     # Create the backup
-    with message(mocker, "backup_created"):
-        backup_create(system=["conf_ldap"], apps=None)
+    name = random_ascii(8)
+    with message(mocker, "backup_created", name=name):
+        backup_create(name=name, system=["conf_ldap"], apps=None)
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -262,7 +252,6 @@ def test_backup_only_ldap(mocker):
 
 
 def test_backup_system_part_that_does_not_exists(mocker):
-
     # Create the backup
     with message(mocker, "backup_hook_unknown", hook="doesnt_exist"):
         with raiseYunohostError(mocker, "backup_nothings_done"):
@@ -275,10 +264,10 @@ def test_backup_system_part_that_does_not_exists(mocker):
 
 
 def test_backup_and_restore_all_sys(mocker):
-
+    name = random_ascii(8)
     # Create the backup
-    with message(mocker, "backup_created"):
-        backup_create(system=[], apps=None)
+    with message(mocker, "backup_created", name=name):
+        backup_create(name=name, system=[], apps=None)
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -309,10 +298,10 @@ def test_backup_and_restore_all_sys(mocker):
 
 @pytest.mark.with_system_archive_from_4p2
 def test_restore_system_from_Ynh4p2(monkeypatch, mocker):
-
+    name = random_ascii(8)
     # Backup current system
-    with message(mocker, "backup_created"):
-        backup_create(system=[], apps=None)
+    with message(mocker, "backup_created", name=name):
+        backup_create(name=name, system=[], apps=None)
     archives = backup_list()["archives"]
     assert len(archives) == 2
 
@@ -337,7 +326,6 @@ def test_restore_system_from_Ynh4p2(monkeypatch, mocker):
 @pytest.mark.with_backup_recommended_app_installed
 def test_backup_script_failure_handling(monkeypatch, mocker):
     def custom_hook_exec(name, *args, **kwargs):
-
         if os.path.basename(name).startswith("backup_"):
             raise Exception
         else:
@@ -355,13 +343,15 @@ def test_backup_script_failure_handling(monkeypatch, mocker):
 
 @pytest.mark.with_backup_recommended_app_installed
 def test_backup_not_enough_free_space(monkeypatch, mocker):
-    def custom_disk_usage(path):
+    def custom_space_used_by_directory(path, *args, **kwargs):
         return 99999999999999999
 
     def custom_free_space_in_directory(dirpath):
         return 0
 
-    monkeypatch.setattr("yunohost.backup.disk_usage", custom_disk_usage)
+    monkeypatch.setattr(
+        "yunohost.backup.space_used_by_directory", custom_space_used_by_directory
+    )
     monkeypatch.setattr(
         "yunohost.backup.free_space_in_directory", custom_free_space_in_directory
     )
@@ -371,7 +361,6 @@ def test_backup_not_enough_free_space(monkeypatch, mocker):
 
 
 def test_backup_app_not_installed(mocker):
-
     assert not _is_installed("wordpress")
 
     with message(mocker, "unbackup_app", app="wordpress"):
@@ -381,7 +370,6 @@ def test_backup_app_not_installed(mocker):
 
 @pytest.mark.with_backup_recommended_app_installed
 def test_backup_app_with_no_backup_script(mocker):
-
     backup_script = "/etc/yunohost/apps/backup_recommended_app/scripts/backup"
     os.system("rm %s" % backup_script)
     assert not os.path.exists(backup_script)
@@ -395,7 +383,6 @@ def test_backup_app_with_no_backup_script(mocker):
 
 @pytest.mark.with_backup_recommended_app_installed
 def test_backup_app_with_no_restore_script(mocker):
-
     restore_script = "/etc/yunohost/apps/backup_recommended_app/scripts/restore"
     os.system("rm %s" % restore_script)
     assert not os.path.exists(restore_script)
@@ -411,17 +398,17 @@ def test_backup_app_with_no_restore_script(mocker):
 
 @pytest.mark.clean_opt_dir
 def test_backup_with_different_output_directory(mocker):
-
+    name = random_ascii(8)
     # Create the backup
-    with message(mocker, "backup_created"):
+    with message(mocker, "backup_created", name=name):
         backup_create(
             system=["conf_ynh_settings"],
             apps=None,
             output_directory="/opt/test_backup_output_directory",
-            name="backup",
+            name=name,
         )
 
-    assert os.path.exists("/opt/test_backup_output_directory/backup.tar")
+    assert os.path.exists(f"/opt/test_backup_output_directory/{name}.tar")
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -434,15 +421,15 @@ def test_backup_with_different_output_directory(mocker):
 
 @pytest.mark.clean_opt_dir
 def test_backup_using_copy_method(mocker):
-
     # Create the backup
-    with message(mocker, "backup_created"):
+    name = random_ascii(8)
+    with message(mocker, "backup_created", name=name):
         backup_create(
             system=["conf_ynh_settings"],
             apps=None,
             output_directory="/opt/test_backup_output_directory",
             methods=["copy"],
-            name="backup",
+            name=name,
         )
 
     assert os.path.exists("/opt/test_backup_output_directory/info.json")
@@ -456,7 +443,6 @@ def test_backup_using_copy_method(mocker):
 @pytest.mark.with_wordpress_archive_from_4p2
 @pytest.mark.with_custom_domain("yolo.test")
 def test_restore_app_wordpress_from_Ynh4p2(mocker):
-
     with message(mocker, "restore_complete"):
         backup_restore(
             system=None, name=backup_list()["archives"][0], apps=["wordpress"]
@@ -505,7 +491,6 @@ def test_restore_app_not_enough_free_space(monkeypatch, mocker):
 
 @pytest.mark.with_wordpress_archive_from_4p2
 def test_restore_app_not_in_backup(mocker):
-
     assert not _is_installed("wordpress")
     assert not _is_installed("yoloswag")
 
@@ -522,7 +507,6 @@ def test_restore_app_not_in_backup(mocker):
 @pytest.mark.with_wordpress_archive_from_4p2
 @pytest.mark.with_custom_domain("yolo.test")
 def test_restore_app_already_installed(mocker):
-
     assert not _is_installed("wordpress")
 
     with message(mocker, "restore_complete"):
@@ -542,25 +526,21 @@ def test_restore_app_already_installed(mocker):
 
 @pytest.mark.with_legacy_app_installed
 def test_backup_and_restore_legacy_app(mocker):
-
     _test_backup_and_restore_app(mocker, "legacy_app")
 
 
 @pytest.mark.with_backup_recommended_app_installed
 def test_backup_and_restore_recommended_app(mocker):
-
     _test_backup_and_restore_app(mocker, "backup_recommended_app")
 
 
 @pytest.mark.with_backup_recommended_app_installed_with_ynh_restore
 def test_backup_and_restore_with_ynh_restore(mocker):
-
     _test_backup_and_restore_app(mocker, "backup_recommended_app")
 
 
 @pytest.mark.with_permission_app_installed
 def test_backup_and_restore_permission_app(mocker):
-
     res = user_permission_list(full=True)["permissions"]
     assert "permissions_app.main" in res
     assert "permissions_app.admin" in res
@@ -591,10 +571,10 @@ def test_backup_and_restore_permission_app(mocker):
 
 
 def _test_backup_and_restore_app(mocker, app):
-
     # Create a backup of this app
-    with message(mocker, "backup_created"):
-        backup_create(system=None, apps=[app])
+    name = random_ascii(8)
+    with message(mocker, "backup_created", name=name):
+        backup_create(name=name, system=None, apps=[app])
 
     archives = backup_list()["archives"]
     assert len(archives) == 1
@@ -626,7 +606,6 @@ def _test_backup_and_restore_app(mocker, app):
 
 
 def test_restore_archive_with_no_json(mocker):
-
     # Create a backup with no info.json associated
     os.system("touch /tmp/afile")
     os.system("tar -cvf /home/yunohost.backup/archives/badbackup.tar /tmp/afile")
@@ -639,7 +618,6 @@ def test_restore_archive_with_no_json(mocker):
 
 @pytest.mark.with_wordpress_archive_from_4p2
 def test_restore_archive_with_bad_archive(mocker):
-
     # Break the archive
     os.system(
         "head -n 1000 /home/yunohost.backup/archives/backup_wordpress_from_4p2.tar > /home/yunohost.backup/archives/backup_wordpress_from_4p2_bad.tar"
@@ -654,13 +632,13 @@ def test_restore_archive_with_bad_archive(mocker):
 
 
 def test_restore_archive_with_custom_hook(mocker):
-
     custom_restore_hook_folder = os.path.join(CUSTOM_HOOK_FOLDER, "restore")
     os.system("touch %s/99-yolo" % custom_restore_hook_folder)
 
     # Backup with custom hook system
-    with message(mocker, "backup_created"):
-        backup_create(system=[], apps=None)
+    name = random_ascii(8)
+    with message(mocker, "backup_created", name=name):
+        backup_create(name=name, system=[], apps=None)
     archives = backup_list()["archives"]
     assert len(archives) == 1
 
@@ -697,5 +675,6 @@ def test_backup_binds_are_readonly(mocker, monkeypatch):
     )
 
     # Create the backup
-    with message(mocker, "backup_created"):
-        backup_create(system=[])
+    name = random_ascii(8)
+    with message(mocker, "backup_created", name=name):
+        backup_create(name=name, system=[])

@@ -26,8 +26,14 @@ do_pre_regen() {
         | sed "s/{{ main_domain }}/${main_domain}/g" \
             >"${metronome_dir}/metronome.cfg.lua"
 
-    # add domain conf files
+    # Trick such that old conf files are flagged as to remove
     for domain in $YNH_DOMAINS; do
+        touch "${metronome_conf_dir}/${domain}.cfg.lua"
+    done
+
+    # add domain conf files
+    domain_list="$(yunohost domain list --features xmpp --output-as json | jq -r ".domains[]")"
+    for domain in $domain_list; do
         cat domain.tpl.cfg.lua \
             | sed "s/{{ domain }}/${domain}/g" \
                 >"${metronome_conf_dir}/${domain}.cfg.lua"
@@ -68,8 +74,22 @@ do_post_regen() {
     chown -R metronome: /var/lib/metronome/
     chown -R metronome: /etc/metronome/conf.d/
 
-    [[ -z "$regen_conf_files" ]] \
-        || systemctl restart metronome
+    if [[ -z "$(ls /etc/metronome/conf.d/*.cfg.lua 2>/dev/null)" ]]
+    then
+        if systemctl is-enabled metronome &>/dev/null
+        then
+            systemctl disable metronome --now 2>/dev/null
+        fi
+    else
+        if ! systemctl is-enabled metronome &>/dev/null
+        then
+            systemctl enable metronome --now 2>/dev/null
+            sleep 3
+        fi
+
+        [[ -z "$regen_conf_files" ]] \
+            || systemctl restart metronome
+    fi
 }
 
 do_$1_regen ${@:2}

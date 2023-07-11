@@ -501,6 +501,15 @@
     [pointhq.auth_token]
     type = "string"
     redact = true
+
+[porkbun]
+    [porkbun.auth_key]
+    type = "string"
+    redact = true
+    
+    [porkbun.auth_secret]
+    type = "string"
+    redact = true
     
 [powerdns]
     [powerdns.auth_token]
@@ -622,7 +631,14 @@
     [vultr.auth_token]
     type = "string"
     redact = true
-    
+
+[webgo]
+    [webgo.auth_username]
+    type = "string"
+
+    [webgo.auth_password]
+    type = "password"
+
 [yandex]
     [yandex.auth_token]
     type = "string"

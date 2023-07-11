@@ -56,8 +56,8 @@ do_pre_regen() {
     # install / update plain conf files
     cp plain/* "$nginx_conf_dir"
     # remove the panel overlay if this is specified in settings
-    panel_overlay=$(yunohost settings get 'ssowat.panel_overlay.enabled')
-    if [ "$panel_overlay" == "false" ] || [ "$panel_overlay" == "False" ]; then
+    panel_overlay=$(yunohost settings get 'misc.portal.ssowat_panel_overlay_enabled' | int_to_bool)
+    if [ "$panel_overlay" == "False" ]; then
         echo "#" >"${nginx_conf_dir}/yunohost_panel.conf.inc"
     fi
 
@@ -65,14 +65,16 @@ do_pre_regen() {
     main_domain=$(cat /etc/yunohost/current_host)
 
     # Support different strategy for security configurations
-    export redirect_to_https="$(yunohost settings get 'security.nginx.redirect_to_https')"
-    export compatibility="$(yunohost settings get 'security.nginx.compatibility')"
-    export experimental="$(yunohost settings get 'security.experimental.enabled')"
+    export redirect_to_https="$(yunohost settings get 'security.nginx.nginx_redirect_to_https' | int_to_bool)"
+    export compatibility="$(yunohost settings get 'security.nginx.nginx_compatibility')"
+    export experimental="$(yunohost settings get 'security.experimental.security_experimental_enabled' | int_to_bool)"
     ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
 
     cert_status=$(yunohost domain cert status --json)
 
     # add domain conf files
+    xmpp_domain_list="$(yunohost domain list --features xmpp --output-as json | jq -r ".domains[]")"
+    mail_domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]")"
     for domain in $YNH_DOMAINS; do
         domain_conf_dir="${nginx_conf_dir}/${domain}.d"
         mkdir -p "$domain_conf_dir"
@@ -84,17 +86,32 @@ do_pre_regen() {
         export domain_cert_ca=$(echo $cert_status \
             | jq ".certificates.\"$domain\".CA_type" \
             | tr -d '"')
+        if echo "$xmpp_domain_list" | grep -q "^$domain$"
+        then
+            export xmpp_enabled="True"
+        else
+            export xmpp_enabled="False"
+        fi
+        if echo "$mail_domain_list" | grep -q "^$domain$"
+        then
+            export mail_enabled="True"
+        else
+            export mail_enabled="False"
+        fi
 
         ynh_render_template "server.tpl.conf" "${nginx_conf_dir}/${domain}.conf"
-        ynh_render_template "autoconfig.tpl.xml" "${mail_autoconfig_dir}/config-v1.1.xml"
+        if [ $mail_enabled == "True" ]
+        then
+            ynh_render_template "autoconfig.tpl.xml" "${mail_autoconfig_dir}/config-v1.1.xml"
+        fi
 
         touch "${domain_conf_dir}/yunohost_local.conf" # Clean legacy conf files
 
     done
 
-    export webadmin_allowlist_enabled=$(yunohost settings get security.webadmin.allowlist.enabled)
+    export webadmin_allowlist_enabled=$(yunohost settings get security.webadmin.webadmin_allowlist_enabled | int_to_bool)
     if [ "$webadmin_allowlist_enabled" == "True" ]; then
-        export webadmin_allowlist=$(yunohost settings get security.webadmin.allowlist)
+        export webadmin_allowlist=$(yunohost settings get security.webadmin.webadmin_allowlist)
     fi
     ynh_render_template "yunohost_admin.conf.inc" "${nginx_conf_dir}/yunohost_admin.conf.inc"
     ynh_render_template "yunohost_api.conf.inc" "${nginx_conf_dir}/yunohost_api.conf.inc"
@@ -126,6 +143,12 @@ do_pre_regen() {
 
 do_post_regen() {
     regen_conf_files=$1
+
+    if ls -l /etc/nginx/conf.d/*.d/*.conf
+    then
+        chown root:root /etc/nginx/conf.d/*.d/*.conf
+        chmod 644 /etc/nginx/conf.d/*.d/*.conf
+    fi
 
     [ -z "$regen_conf_files" ] && exit 0
 

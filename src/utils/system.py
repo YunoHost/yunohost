@@ -1,37 +1,112 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2015 YUNOHOST.ORG
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
+#
+# Copyright (c) 2023 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import re
 import os
 import logging
 
 from moulinette.utils.process import check_output
-from packaging import version
+from yunohost.utils.error import YunohostError
 
 logger = logging.getLogger("yunohost.utils.packages")
 
 YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "moulinette", "ssowat"]
 
 
-def get_ynh_package_version(package):
+def debian_version():
+    return check_output('grep "^VERSION_CODENAME=" /etc/os-release | cut -d= -f2')
 
+
+def system_arch():
+    return check_output("dpkg --print-architecture")
+
+
+def system_virt():
+    """
+    Returns the output of systemd-detect-virt (so e.g. 'none' or 'lxc' or ...)
+    You can check the man of the command to have a list of possible outputs...
+    """
+    # Detect virt technology (if not bare metal) and arch
+    # Gotta have this "|| true" because it systemd-detect-virt return 'none'
+    # with an error code on bare metal ~.~
+    return check_output("systemd-detect-virt || true")
+
+
+def free_space_in_directory(dirpath):
+    stat = os.statvfs(dirpath)
+    return stat.f_frsize * stat.f_bavail
+
+
+def space_used_by_directory(dirpath, follow_symlinks=True):
+    if not follow_symlinks:
+        du_output = check_output(["du", "-sb", dirpath], shell=False)
+        return int(du_output.split()[0])
+
+    stat = os.statvfs(dirpath)
+    return (
+        stat.f_frsize * stat.f_blocks
+    )  # FIXME : this doesnt do what the function name suggest this does ...
+
+
+def human_to_binary(size: str) -> int:
+    symbols = ("K", "M", "G", "T", "P", "E", "Z", "Y")
+    factor = {}
+    for i, s in enumerate(symbols):
+        factor[s] = 1 << (i + 1) * 10
+
+    suffix = size[-1]
+    size = size[:-1]
+
+    if suffix not in symbols:
+        raise YunohostError(
+            f"Invalid size suffix '{suffix}', expected one of {symbols}"
+        )
+
+    try:
+        size_ = float(size)
+    except Exception:
+        raise YunohostError(f"Failed to convert size {size} to float")
+
+    return int(size_ * factor[suffix])
+
+
+def binary_to_human(n: int) -> str:
+    """
+    Convert bytes or bits into human readable format with binary prefix
+    """
+    symbols = ("K", "M", "G", "T", "P", "E", "Z", "Y")
+    prefix = {}
+    for i, s in enumerate(symbols):
+        prefix[s] = 1 << (i + 1) * 10
+    for s in reversed(symbols):
+        if n >= prefix[s]:
+            value = float(n) / prefix[s]
+            return "%.1f%s" % (value, s)
+    return "%s" % n
+
+
+def ram_available():
+    import psutil
+
+    return (psutil.virtual_memory().available, psutil.swap_memory().free)
+
+
+def get_ynh_package_version(package):
     # Returns the installed version and release version ('stable' or 'testing'
     # or 'unstable')
 
@@ -40,49 +115,12 @@ def get_ynh_package_version(package):
     # may handle changelog differently !
 
     changelog = "/usr/share/doc/%s/changelog.gz" % package
-    cmd = "gzip -cd %s 2>/dev/null | head -n1" % changelog
+    cmd = "gzip -cd %s 2>/dev/null | grep -v 'BASH_XTRACEFD' | head -n1" % changelog
     if not os.path.exists(changelog):
         return {"version": "?", "repo": "?"}
     out = check_output(cmd).split()
     # Output looks like : "yunohost (1.2.3) testing; urgency=medium"
     return {"version": out[1].strip("()"), "repo": out[2].strip(";")}
-
-
-def meets_version_specifier(pkg_name, specifier):
-    """
-    Check if a package installed version meets specifier
-
-    specifier is something like ">> 1.2.3"
-    """
-
-    # In practice, this function is only used to check the yunohost version
-    # installed.
-    # We'll trim any ~foobar in the current installed version because it's not
-    # handled correctly by version.parse, but we don't care so much in that
-    # context
-    assert pkg_name in YUNOHOST_PACKAGES
-    pkg_version = get_ynh_package_version(pkg_name)["version"]
-    pkg_version = re.split(r"\~|\+|\-", pkg_version)[0]
-    pkg_version = version.parse(pkg_version)
-
-    # Extract operator and version specifier
-    op, req_version = re.search(r"(<<|<=|=|>=|>>) *([\d\.]+)", specifier).groups()
-    req_version = version.parse(req_version)
-
-    # Python2 had a builtin that returns (-1, 0, 1) depending on comparison
-    # c.f. https://stackoverflow.com/a/22490617
-    def cmp(a, b):
-        return (a > b) - (a < b)
-
-    deb_operators = {
-        "<<": lambda v1, v2: cmp(v1, v2) in [-1],
-        "<=": lambda v1, v2: cmp(v1, v2) in [-1, 0],
-        "=": lambda v1, v2: cmp(v1, v2) in [0],
-        ">=": lambda v1, v2: cmp(v1, v2) in [0, 1],
-        ">>": lambda v1, v2: cmp(v1, v2) in [1],
-    }
-
-    return deb_operators[op](pkg_version, req_version)
 
 
 def ynh_packages_version(*args, **kwargs):
@@ -114,7 +152,6 @@ def dpkg_lock_available():
 
 
 def _list_upgradable_apt_packages():
-
     # List upgradable packages
     # LC_ALL=C is here to make sure the results are in english
     upgradable_raw = check_output("LC_ALL=C apt list --upgradable")
@@ -124,7 +161,6 @@ def _list_upgradable_apt_packages():
         line.strip() for line in upgradable_raw.split("\n") if line.strip()
     ]
     for line in upgradable_raw:
-
         # Remove stupid warning and verbose messages >.>
         if "apt does not have a stable CLI interface" in line or "Listing..." in line:
             continue
@@ -144,7 +180,6 @@ def _list_upgradable_apt_packages():
 
 
 def _dump_sources_list():
-
     from glob import glob
 
     filenames = glob("/etc/apt/sources.list") + glob("/etc/apt/sources.list.d/*")

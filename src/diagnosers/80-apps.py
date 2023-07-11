@@ -1,5 +1,21 @@
-#!/usr/bin/env python
-
+#
+# Copyright (c) 2023 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 from typing import List
 
@@ -9,13 +25,11 @@ from yunohost.diagnosis import Diagnoser
 
 
 class MyDiagnoser(Diagnoser):
-
     id_ = os.path.splitext(os.path.basename(__file__))[0].split("-")[1]
     cache_duration = 300
     dependencies: List[str] = []
 
     def run(self):
-
         apps = app_list(full=True)["apps"]
         for app in apps:
             app["issues"] = list(self.issues(app))
@@ -28,7 +42,6 @@ class MyDiagnoser(Diagnoser):
             )
         else:
             for app in apps:
-
                 if not app["issues"]:
                     continue
 
@@ -46,16 +59,15 @@ class MyDiagnoser(Diagnoser):
                 )
 
     def issues(self, app):
-
         # Check quality level in catalog
 
         if not app.get("from_catalog") or app["from_catalog"].get("state") != "working":
-            yield ("error", "diagnosis_apps_not_in_app_catalog")
+            yield ("warning", "diagnosis_apps_not_in_app_catalog")
         elif (
             not isinstance(app["from_catalog"].get("level"), int)
             or app["from_catalog"]["level"] == 0
         ):
-            yield ("error", "diagnosis_apps_broken")
+            yield ("warning", "diagnosis_apps_broken")
         elif app["from_catalog"]["level"] <= 4:
             yield ("warning", "diagnosis_apps_bad_quality")
 
@@ -64,7 +76,9 @@ class MyDiagnoser(Diagnoser):
         yunohost_version_req = (
             app["manifest"].get("requirements", {}).get("yunohost", "").strip(">= ")
         )
-        if yunohost_version_req.startswith("2."):
+        if yunohost_version_req.startswith("2.") or yunohost_version_req.startswith(
+            "3."
+        ):
             yield ("error", "diagnosis_apps_outdated_ynh_requirement")
 
         deprecated_helpers = [

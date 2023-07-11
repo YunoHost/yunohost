@@ -48,7 +48,7 @@ ynh_multimedia_build_main_dir() {
     # Application de la même règle que précédemment, mais par défaut pour les nouveaux fichiers.
     setfacl -RnL -m d:g:$MEDIA_GROUP:rwX,g::rwX,o:r-X "$MEDIA_DIRECTORY"
     # Réglage du masque par défaut. Qui garantie (en principe...) un droit maximal à rwx. Donc pas de restriction de droits par l'acl.
-    setfacl -RL -m m::rwx "$MEDIA_DIRECTORY"
+    setfacl -RL -m m::rwx "$MEDIA_DIRECTORY" || true
 }
 
 # Add a directory in yunohost.multimedia

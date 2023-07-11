@@ -14,7 +14,6 @@ VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bullseye_upgrade.txt"
 
 
 def extract_app_from_venv_path(venv_path):
-
     venv_path = venv_path.replace("/var/www/", "")
     venv_path = venv_path.replace("/opt/yunohost/", "")
     venv_path = venv_path.replace("/opt/", "")
@@ -30,6 +29,9 @@ def _get_all_venvs(dir, level=0, maxlevel=3):
         maxlevel - the depth of the recursion
         level - do not edit this, used as an iterator
     """
+    if not os.path.exists(dir):
+        return []
+
     # Using os functions instead of glob, because glob doesn't support hidden
     # folders, and we need recursion with a fixed depth
     result = []
@@ -65,6 +67,7 @@ class MyMigration(Migration):
         "pgadmin",
         "tracim",
         "synapse",
+        "matrix-synapse",
         "weblate",
     ]
 
@@ -93,6 +96,10 @@ class MyMigration(Migration):
         # Avoid having a super long disclaimer to generate if migrations has
         # been done
         if not self.is_pending():
+            return None
+
+        # Disclaimer should be empty if in auto, otherwise it excepts the --accept-disclaimer option during debian postinst
+        if self.mode == "auto":
             return None
 
         ignored_apps = []
@@ -129,10 +136,11 @@ class MyMigration(Migration):
         return msg
 
     def run(self):
+        if self.mode == "auto":
+            return
 
         venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
         for venv in venvs:
-
             app_corresponding_to_venv = extract_app_from_venv_path(venv)
 
             # Search for ignore apps

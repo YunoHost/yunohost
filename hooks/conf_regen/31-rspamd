@@ -26,7 +26,8 @@ do_post_regen() {
     chown _rspamd /etc/dkim
 
     # create DKIM key for domains
-    for domain in $YNH_DOMAINS; do
+    domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]" | tr '\n' ' ')"
+    for domain in $domain_list; do
         domain_key="/etc/dkim/${domain}.mail.key"
         [ ! -f "$domain_key" ] && {
             # We use a 1024 bit size because nsupdate doesn't seem to be able to

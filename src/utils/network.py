@@ -1,23 +1,21 @@
-# -*- coding: utf-8 -*-
-
-""" License
-
-    Copyright (C) 2017 YUNOHOST.ORG
-
-    This program is free software; you can redistribute it and/or modify
-    it under the terms of the GNU Affero General Public License as published
-    by the Free Software Foundation, either version 3 of the License, or
-    (at your option) any later version.
-
-    This program is distributed in the hope that it will be useful,
-    but WITHOUT ANY WARRANTY; without even the implied warranty of
-    MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-    GNU Affero General Public License for more details.
-
-    You should have received a copy of the GNU Affero General Public License
-    along with this program; if not, see http://www.gnu.org/licenses
-
-"""
+#
+# Copyright (c) 2023 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import re
 import logging
@@ -31,7 +29,6 @@ logger = logging.getLogger("yunohost.utils.network")
 
 
 def get_public_ip(protocol=4):
-
     assert protocol in [4, 6], (
         "Invalid protocol version for get_public_ip: %s, expected 4 or 6" % protocol
     )
@@ -92,7 +89,6 @@ def get_public_ip_from_remote_server(protocol=4):
 
 
 def get_network_interfaces():
-
     # Get network devices and their addresses (raw infos from 'ip addr')
     devices_raw = {}
     output = check_output("ip addr show")
@@ -113,7 +109,6 @@ def get_network_interfaces():
 
 
 def get_gateway():
-
     output = check_output("ip route show")
     m = re.search(r"default via (.*) dev ([a-z]+[0-9]?)", output)
     if not m:

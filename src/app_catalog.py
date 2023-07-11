@@ -1,5 +1,24 @@
+#
+# Copyright (c) 2023 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 import os
 import re
+import hashlib
 
 from moulinette import m18n
 from moulinette.utils.log import getActionLogger
@@ -18,17 +37,18 @@ from yunohost.utils.error import YunohostError
 logger = getActionLogger("yunohost.app_catalog")
 
 APPS_CATALOG_CACHE = "/var/cache/yunohost/repo"
+APPS_CATALOG_LOGOS = "/usr/share/yunohost/applogos"
 APPS_CATALOG_CONF = "/etc/yunohost/apps_catalog.yml"
-APPS_CATALOG_API_VERSION = 2
+APPS_CATALOG_API_VERSION = 3
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
 
 
-def app_catalog(full=False, with_categories=False):
+def app_catalog(full=False, with_categories=False, with_antifeatures=False):
     """
     Return a dict of apps available to installation from Yunohost's app catalog
     """
 
-    from yunohost.app import _installed_apps, _set_default_ask_questions
+    from yunohost.app import _installed_apps
 
     # Get app list from catalog cache
     catalog = _load_apps_catalog()
@@ -47,28 +67,38 @@ def app_catalog(full=False, with_categories=False):
                 "description": infos["manifest"]["description"],
                 "level": infos["level"],
             }
-        else:
-            infos["manifest"]["arguments"] = _set_default_ask_questions(
-                infos["manifest"].get("arguments", {})
-            )
 
-    # Trim info for categories if not using --full
-    for category in catalog["categories"]:
-        category["title"] = _value_for_locale(category["title"])
-        category["description"] = _value_for_locale(category["description"])
-        for subtags in category.get("subtags", []):
-            subtags["title"] = _value_for_locale(subtags["title"])
+    _catalog = {"apps": catalog["apps"]}
 
-    if not full:
-        catalog["categories"] = [
-            {"id": c["id"], "description": c["description"]}
-            for c in catalog["categories"]
-        ]
+    if with_categories:
+        for category in catalog["categories"]:
+            category["title"] = _value_for_locale(category["title"])
+            category["description"] = _value_for_locale(category["description"])
+            for subtags in category.get("subtags", []):
+                subtags["title"] = _value_for_locale(subtags["title"])
 
-    if not with_categories:
-        return {"apps": catalog["apps"]}
-    else:
-        return {"apps": catalog["apps"], "categories": catalog["categories"]}
+        if not full:
+            catalog["categories"] = [
+                {"id": c["id"], "description": c["description"]}
+                for c in catalog["categories"]
+            ]
+
+        _catalog["categories"] = catalog["categories"]
+
+    if with_antifeatures:
+        for antifeature in catalog["antifeatures"]:
+            antifeature["title"] = _value_for_locale(antifeature["title"])
+            antifeature["description"] = _value_for_locale(antifeature["description"])
+
+        if not full:
+            catalog["antifeatures"] = [
+                {"id": a["id"], "description": a["description"]}
+                for a in catalog["antifeatures"]
+            ]
+
+        _catalog["antifeatures"] = catalog["antifeatures"]
+
+    return _catalog
 
 
 def app_search(string):
@@ -127,7 +157,6 @@ def _read_apps_catalog_list():
 
 
 def _actual_apps_catalog_api_url(base_url):
-
     return f"{base_url}/v{APPS_CATALOG_API_VERSION}/apps.json"
 
 
@@ -154,7 +183,13 @@ def _update_apps_catalog():
         logger.debug("Initialize folder for apps catalog cache")
         mkdir(APPS_CATALOG_CACHE, mode=0o750, parents=True, uid="root")
 
+    if not os.path.exists(APPS_CATALOG_LOGOS):
+        mkdir(APPS_CATALOG_LOGOS, mode=0o755, parents=True, uid="root")
+
     for apps_catalog in apps_catalog_list:
+        if apps_catalog["url"] is None:
+            continue
+
         apps_catalog_id = apps_catalog["id"]
         actual_api_url = _actual_apps_catalog_api_url(apps_catalog["url"])
 
@@ -181,6 +216,46 @@ def _update_apps_catalog():
                 raw_msg=True,
             )
 
+        # Download missing app logos
+        logos_to_download = []
+        for app, infos in apps_catalog_content["apps"].items():
+            logo_hash = infos.get("logo_hash")
+            if not logo_hash or os.path.exists(f"{APPS_CATALOG_LOGOS}/{logo_hash}.png"):
+                continue
+            logos_to_download.append(logo_hash)
+
+        if len(logos_to_download) > 20:
+            logger.info(
+                f"(Will fetch {len(logos_to_download)} logos, this may take a couple minutes)"
+            )
+
+        import requests
+        from multiprocessing.pool import ThreadPool
+
+        def fetch_logo(logo_hash):
+            try:
+                r = requests.get(
+                    f"{apps_catalog['url']}/v{APPS_CATALOG_API_VERSION}/logos/{logo_hash}.png",
+                    timeout=10,
+                )
+                assert (
+                    r.status_code == 200
+                ), f"Got status code {r.status_code}, expected 200"
+                if hashlib.sha256(r.content).hexdigest() != logo_hash:
+                    raise Exception(
+                        f"Found inconsistent hash while downloading logo {logo_hash}"
+                    )
+                open(f"{APPS_CATALOG_LOGOS}/{logo_hash}.png", "wb").write(r.content)
+                return True
+            except Exception as e:
+                logger.debug(f"Failed to download logo {logo_hash} : {e}")
+                return False
+
+        results = ThreadPool(8).imap_unordered(fetch_logo, logos_to_download)
+        for result in results:
+            # Is this even needed to iterate on the results ?
+            pass
+
     logger.success(m18n.n("apps_catalog_update_success"))
 
 
@@ -190,10 +265,9 @@ def _load_apps_catalog():
     corresponding to all known apps and categories
     """
 
-    merged_catalog = {"apps": {}, "categories": []}
+    merged_catalog = {"apps": {}, "categories": [], "antifeatures": []}
 
     for apps_catalog_id in [L["id"] for L in _read_apps_catalog_list()]:
-
         # Let's load the json from cache for this catalog
         cache_file = f"{APPS_CATALOG_CACHE}/{apps_catalog_id}.json"
 
@@ -222,7 +296,6 @@ def _load_apps_catalog():
 
         # Add apps from this catalog to the output
         for app, info in apps_catalog_content["apps"].items():
-
             # (N.B. : there's a small edge case where multiple apps catalog could be listing the same apps ...
             #         in which case we keep only the first one found)
             if app in merged_catalog["apps"]:
@@ -232,10 +305,17 @@ def _load_apps_catalog():
                 )
                 continue
 
+            if info.get("level") == "?":
+                info["level"] = -1
+
+            # FIXME: we may want to autoconvert all v0/v1 manifest to v2 here
+            # so that everything is consistent in terms of APIs, datastructure format etc
             info["repository"] = apps_catalog_id
             merged_catalog["apps"][app] = info
 
-        # Annnnd categories
-        merged_catalog["categories"] += apps_catalog_content["categories"]
+        # Annnnd categories + antifeatures
+        # (we use .get here, only because the dev catalog doesnt include the categories/antifeatures keys)
+        merged_catalog["categories"] += apps_catalog_content.get("categories", [])
+        merged_catalog["antifeatures"] += apps_catalog_content.get("antifeatures", [])
 
     return merged_catalog

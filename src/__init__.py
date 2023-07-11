@@ -1,5 +1,22 @@
 #! /usr/bin/python
-# -*- coding: utf-8 -*-
+#
+# Copyright (c) 2023 YunoHost Contributors
+#
+# This file is part of YunoHost (see https://yunohost.org)
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
 
 import os
 import sys
@@ -15,7 +32,6 @@ def is_installed():
 
 
 def cli(debug, quiet, output_as, timeout, args, parser):
-
     init_logging(interface="cli", debug=debug, quiet=quiet)
 
     # Check that YunoHost is installed
@@ -34,7 +50,6 @@ def cli(debug, quiet, output_as, timeout, args, parser):
 
 
 def api(debug, host, port):
-
     init_logging(interface="api", debug=debug)
 
     def is_installed_api():
@@ -68,7 +83,6 @@ def portalapi(debug, host, port):
 
 
 def check_command_is_valid_before_postinstall(args):
-
     allowed_if_not_postinstalled = [
         "tools postinstall",
         "tools versions",
@@ -106,7 +120,6 @@ def init_i18n():
 
 
 def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yunohost"):
-
     logfile = os.path.join(logdir, "yunohost-%s.log" % interface)
 
     if not os.path.isdir(logdir):

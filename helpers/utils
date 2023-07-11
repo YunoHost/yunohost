@@ -22,7 +22,10 @@ YNH_APP_BASEDIR=${YNH_APP_BASEDIR:-$(realpath ..)}
 ynh_exit_properly() {
     local exit_code=$?
 
-    rm -rf "/var/cache/yunohost/download/"
+    if [[ "${YNH_APP_ACTION:-}" =~ ^install$|^upgrade$|^restore$ ]]
+    then
+        rm -rf "/var/cache/yunohost/download/"
+    fi
 
     if [ "$exit_code" -eq 0 ]; then
         exit 0 # Exit without error if the script ended correctly
@@ -61,40 +64,89 @@ ynh_abort_if_errors() {
     trap ynh_exit_properly EXIT # Capturing exit signals on shell script
 }
 
+# When running an app script with packaging format >= 2, auto-enable ynh_abort_if_errors except for remove script
+if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} ge 2 && [[ ${YNH_APP_ACTION} != "remove" ]]
+then
+    ynh_abort_if_errors
+fi
+
 # Download, check integrity, uncompress and patch the source from app.src
 #
-# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"]
-# | arg: -d, --dest_dir=    - Directory where to setup sources
-# | arg: -s, --source_id=   - Name of the source, defaults to `app`
-# | arg: -k, --keep=        - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs/'
+# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"] [--full_replace]
+# | arg: -d, --dest_dir=     - Directory where to setup sources
+# | arg: -s, --source_id=    - Name of the source, defaults to `main` (when the sources resource exists in manifest.toml) or (legacy) `app` otherwise
+# | arg: -k, --keep=         - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs/'
+# | arg: -r, --full_replace= - Remove previous sources before installing new sources
+#
+# #### New 'sources' resources
+#
+# (See also the resources documentation which may be more complete?)
+#
+# This helper will read infos from the 'sources' resources in the manifest.toml of the app
+# and expect a structure like:
+#
+# ```toml
+# [resources.sources]
+#     [resources.sources.main]
+#     url = "https://some.address.to/download/the/app/archive"
+#     sha256 = "0123456789abcdef"    # The sha256 sum of the asset obtained from the URL
+# ```
+#
+# ##### Optional flags
+#
+# ```text
+# format    = "tar.gz"/xz/bz2    # automatically guessed from the extension of the URL, but can be set explicitly. Will use `tar` to extract
+#             "zip"              # automatically guessed from the extension of the URL, but can be set explicitly. Will use `unzip` to extract
+#             "docker"           # useful to extract files from an already-built docker image (instead of rebuilding them locally). Will use `docker-image-extract` to extract
+#             "whatever"         # an arbitrary value, not really meaningful except to imply that the file won't be extracted
+#
+# in_subdir = true    # default, there's an intermediate subdir in the archive before accessing the actual files
+#             false   # sources are directly in the archive root
+#             n       # (special cases) an integer representing a number of subdirs levels to get rid of
+#
+# extract   = true    # default if file is indeed an archive such as .zip, .tar.gz, .tar.bz2, ...
+#           = false   # default if file 'format' is not set and the file is not to be extracted because it is not an archive but a script or binary or whatever asset.
+#                     #    in which case the file will only be `mv`ed to the location possibly renamed using the `rename` value
+#
+# rename    = "whatever_your_want"   # to be used for convenience when `extract` is false and the default name of the file is not practical
+# platform  = "linux/amd64"          # (defaults to "linux/$YNH_ARCH") to be used in conjonction with `format = "docker"` to specify which architecture to extract for
+# ```
+#
+# You may also define assets url and checksum per-architectures such as:
+# ```toml
+# [resources.sources]
+#     [resources.sources.main]
+#     amd64.url = "https://some.address.to/download/the/app/archive/when/amd64"
+#     amd64.sha256 = "0123456789abcdef"
+#     armhf.url = "https://some.address.to/download/the/app/archive/when/armhf"
+#     armhf.sha256 = "fedcba9876543210"
+# ```
+#
+# In which case ynh_setup_source --dest_dir="$install_dir" will automatically pick the appropriate source depending on the arch
+#
+#
+#
+# #### Legacy format '.src'
 #
 # This helper will read `conf/${source_id}.src`, download and install the sources.
 #
 # The src file need to contains:
 # ```
 # SOURCE_URL=Address to download the app archive
-# SOURCE_SUM=Control sum
-# # (Optional) Program to check the integrity (sha256sum, md5sum...). Default: sha256
-# SOURCE_SUM_PRG=sha256
-# # (Optional) Archive format. Default: tar.gz
+# SOURCE_SUM=Sha256 sum
 # SOURCE_FORMAT=tar.gz
-# # (Optional) Put false if sources are directly in the archive root. Default: true
-# # Instead of true, SOURCE_IN_SUBDIR could be the number of sub directories to remove.
 # SOURCE_IN_SUBDIR=false
-# # (Optionnal) Name of the local archive (offline setup support). Default: ${src_id}.${src_format}
 # SOURCE_FILENAME=example.tar.gz
-# # (Optional) If it set as false don't extract the source. Default: true
-# # (Useful to get a debian package or a python wheel.)
 # SOURCE_EXTRACT=(true|false)
+# SOURCE_PLATFORM=linux/arm64/v8
 # ```
 #
 # The helper will:
-# - Check if there is a local source archive in `/opt/yunohost-apps-src/$APP_ID/$SOURCE_FILENAME`
-# - Download `$SOURCE_URL` if there is no local archive
-# - Check the integrity with `$SOURCE_SUM_PRG -c --status`
+# - Download the specific URL if there is no local archive
+# - Check the integrity with the specific sha256 sum
 # - Uncompress the archive to `$dest_dir`.
-#   - If `$SOURCE_IN_SUBDIR` is true, the first level directory of the archive will be removed.
-#   - If `$SOURCE_IN_SUBDIR` is a numeric value, the N first level directories will be removed.
+#   - If `in_subdir` is true, the first level directory of the archive will be removed.
+#   - If `in_subdir` is a numeric value, the N first level directories will be removed.
 # - Patches named `sources/patches/${src_id}-*.patch` will be applied to `$dest_dir`
 # - Extra files in `sources/extra_files/$src_id` will be copied to dest_dir
 #
@@ -102,26 +154,73 @@ ynh_abort_if_errors() {
 ynh_setup_source() {
     # Declare an array to define the options of this helper.
     local legacy_args=dsk
-    local -A args_array=([d]=dest_dir= [s]=source_id= [k]=keep=)
+    local -A args_array=([d]=dest_dir= [s]=source_id= [k]=keep= [r]=full_replace=)
     local dest_dir
     local source_id
     local keep
+    local full_replace
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    source_id="${source_id:-app}"
     keep="${keep:-}"
+    full_replace="${full_replace:-0}"
 
-    local src_file_path="$YNH_APP_BASEDIR/conf/${source_id}.src"
+    if test -e $YNH_APP_BASEDIR/manifest.toml && cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq -e '.resources.sources' >/dev/null
+    then
+        source_id="${source_id:-main}"
+        local sources_json=$(cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq ".resources.sources[\"$source_id\"]")
+        if jq -re ".url" <<< "$sources_json"
+        then
+            local arch_prefix=""
+        else
+            local arch_prefix=".$YNH_ARCH"
+        fi
 
-    # Load value from configuration file (see above for a small doc about this file
-    # format)
-    local src_url=$(grep 'SOURCE_URL=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_sum=$(grep 'SOURCE_SUM=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_format=$(grep 'SOURCE_FORMAT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_extract=$(grep 'SOURCE_EXTRACT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-    local src_filename=$(grep 'SOURCE_FILENAME=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_url="$(jq -r "$arch_prefix.url" <<< "$sources_json" | sed 's/^null$//')"
+        local src_sum="$(jq -r "$arch_prefix.sha256" <<< "$sources_json" | sed 's/^null$//')"
+        local src_sumprg="sha256sum"
+        local src_format="$(jq -r ".format" <<< "$sources_json" | sed 's/^null$//')"
+        local src_in_subdir="$(jq -r ".in_subdir" <<< "$sources_json" | sed 's/^null$//')"
+        local src_extract="$(jq -r ".extract" <<< "$sources_json" | sed 's/^null$//')"
+        local src_platform="$(jq -r ".platform" <<< "$sources_json" | sed 's/^null$//')"
+        local src_rename="$(jq -r ".rename" <<< "$sources_json" | sed 's/^null$//')"
+
+        [[ -n "$src_url" ]] || ynh_die "No URL defined for source $source_id$arch_prefix ?"
+        [[ -n "$src_sum" ]] || ynh_die "No sha256 sum defined for source $source_id$arch_prefix ?"
+
+        if [[ -z "$src_format" ]]
+        then
+            if [[ "$src_url" =~ ^.*\.zip$ ]] || [[ "$src_url" =~ ^.*/zipball/.*$ ]]
+            then
+                src_format="zip"
+            elif [[ "$src_url" =~ ^.*\.tar\.gz$ ]] || [[ "$src_url" =~ ^.*\.tgz$ ]] || [[ "$src_url" =~ ^.*/tar\.gz/.*$ ]] || [[ "$src_url" =~ ^.*/tarball/.*$ ]]
+            then
+                src_format="tar.gz"
+            elif [[ "$src_url" =~ ^.*\.tar\.xz$ ]]
+            then
+                src_format="tar.xz"
+            elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]
+            then
+                src_format="tar.bz2"
+            elif [[ -z "$src_extract" ]]
+            then
+                src_extract="false"
+            fi
+        fi
+    else
+        source_id="${source_id:-app}"
+        local src_file_path="$YNH_APP_BASEDIR/conf/${source_id}.src"
+
+        # Load value from configuration file (see above for a small doc about this file
+        # format)
+        local src_url=$(grep 'SOURCE_URL=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_sum=$(grep 'SOURCE_SUM=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_format=$(grep 'SOURCE_FORMAT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_rename=$(grep 'SOURCE_FILENAME=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_extract=$(grep 'SOURCE_EXTRACT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local src_platform=$(grep 'SOURCE_PLATFORM=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+    fi
 
     # Default value
     src_sumprg=${src_sumprg:-sha256sum}
@@ -129,33 +228,54 @@ ynh_setup_source() {
     src_format=${src_format:-tar.gz}
     src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
     src_extract=${src_extract:-true}
-    if [ "$src_filename" = "" ]; then
-        src_filename="${source_id}.${src_format}"
+
+    if [[ "$src_extract" != "true" ]] && [[ "$src_extract" != "false" ]]
+    then
+        ynh_die "For source $source_id, expected either 'true' or 'false' for the extract parameter"
     fi
 
+
     # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
-    local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${src_filename}"
+    local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${source_id}"
 
-    mkdir -p /var/cache/yunohost/download/${YNH_APP_ID}/
-    src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${src_filename}"
+    # Gotta use this trick with 'dirname' because source_id may contain slashes x_x
+    mkdir -p $(dirname /var/cache/yunohost/download/${YNH_APP_ID}/${source_id})
+    src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${source_id}"
 
-    if test -e "$local_src"; then
+    if [ "$src_format" = "docker" ]; then
+        src_platform="${src_platform:-"linux/$YNH_ARCH"}"
+    elif test -e "$local_src"; then
         cp $local_src $src_filename
     else
         [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
 
-        # NB. we have to declare the var as local first,
-        # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
-        # because local always return 0 ...
-        local out
-        # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-        out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$src_filename $src_url 2>&1) \
-            || ynh_die --message="$out"
-    fi
+        # If the file was prefetched but somehow doesn't match the sum, rm and redownload it
+        if [ -e "$src_filename" ] && ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
+        then
+            rm -f "$src_filename"
+        fi
 
-    # Check the control sum
-    echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status \
-        || ynh_die --message="Corrupt source"
+        # Only redownload the file if it wasnt prefetched
+        if [ ! -e "$src_filename" ]
+        then
+            # NB. we have to declare the var as local first,
+            # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
+            # because local always return 0 ...
+            local out
+            # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
+            out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$src_filename $src_url 2>&1) \
+                || ynh_die --message="$out"
+        fi
+
+        # Check the control sum
+        if ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
+        then
+            local actual_sum="$(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1)"
+            local actual_size="$(du -hs ${src_filename} | cut --fields=1)"
+            rm -f ${src_filename}
+            ynh_die --message="Corrupt source for ${src_url}: Expected sha256sum to be ${src_sum} but got ${actual_sum} (size: ${actual_size})."
+        fi
+    fi
 
     # Keep files to be backup/restored at the end of the helper
     # Assuming $dest_dir already exists
@@ -172,16 +292,30 @@ ynh_setup_source() {
         done
     fi
 
+    if [ "$full_replace" -eq 1 ]; then
+        ynh_secure_remove --file="$dest_dir"
+    fi
+
     # Extract source into the app dir
     mkdir --parents "$dest_dir"
 
+    if [ -n "${install_dir:-}" ] && [ "$dest_dir" == "$install_dir" ]; then
+        _ynh_apply_default_permissions $dest_dir
+    fi
     if [ -n "${final_path:-}" ] && [ "$dest_dir" == "$final_path" ]; then
         _ynh_apply_default_permissions $dest_dir
     fi
 
-    if ! "$src_extract"; then
-        mv $src_filename $dest_dir
-    elif [ "$src_format" = "zip" ]; then
+    if [[ "$src_extract" == "false" ]]; then
+        if [[ -z "$src_rename" ]]
+        then
+            mv $src_filename $dest_dir
+        else
+            mv $src_filename $dest_dir/$src_rename
+        fi
+    elif [[ "$src_format" == "docker" ]]; then
+        /usr/share/yunohost/helpers.d/vendor/docker-image-extract/docker-image-extract -p $src_platform -o $dest_dir $src_url 2>&1
+    elif [[ "$src_format" == "zip" ]]; then
         # Zip format
         # Using of a temp directory, because unzip doesn't manage --strip-components
         if $src_in_subdir; then
@@ -311,7 +445,7 @@ ynh_local_curl() {
 # | arg: -d, --destination=    - Destination of the config file
 #
 # examples:
-#    ynh_add_config --template=".env" --destination="$final_path/.env" use the template file "../conf/.env"
+#    ynh_add_config --template=".env" --destination="$install_dir/.env" use the template file "../conf/.env"
 #    ynh_add_config --template="/etc/nginx/sites-available/default" --destination="etc/nginx/sites-available/mydomain.conf"
 #
 # The template can be by default the name of a file in the conf directory
@@ -326,7 +460,7 @@ ynh_local_curl() {
 #   __NAMETOCHANGE__        by $app
 #   __USER__                by $app
 #   __FINALPATH__           by $final_path
-#   __PHPVERSION__          by $YNH_PHP_VERSION
+#   __PHPVERSION__          by $YNH_PHP_VERSION (packaging v1 only, packaging v2 uses phpversion setting implicitly set by apt resource)
 #   __YNH_NODE_LOAD_PATH__  by $ynh_node_load_PATH
 # ```
 # And any dynamic variables that should be defined before calling this helper like:
@@ -395,7 +529,7 @@ ynh_add_config() {
 #   __NAMETOCHANGE__        by $app
 #   __USER__                by $app
 #   __FINALPATH__           by $final_path
-#   __PHPVERSION__          by $YNH_PHP_VERSION
+#   __PHPVERSION__          by $YNH_PHP_VERSION (packaging v1 only, packaging v2 uses phpversion setting implicitly set by apt resource)
 #   __YNH_NODE_LOAD_PATH__  by $ynh_node_load_PATH
 #
 # And any dynamic variables that should be defined before calling this helper like:
@@ -425,10 +559,13 @@ ynh_replace_vars() {
         ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$file"
         ynh_replace_string --match_string="__USER__" --replace_string="$app" --target_file="$file"
     fi
+    # Legacy
     if test -n "${final_path:-}"; then
         ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$file"
+        ynh_replace_string --match_string="__INSTALL_DIR__" --replace_string="$final_path" --target_file="$file"
     fi
-    if test -n "${YNH_PHP_VERSION:-}"; then
+    # Legacy / Packaging v1 only
+    if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} lt 2 && test -n "${YNH_PHP_VERSION:-}"; then
         ynh_replace_string --match_string="__PHPVERSION__" --replace_string="$YNH_PHP_VERSION" --target_file="$file"
     fi
     if test -n "${ynh_node_load_PATH:-}"; then
@@ -513,7 +650,7 @@ ynh_read_var_in_file() {
     # Get the line number after which we search for the variable
     local line_number=1
     if [[ -n "$after" ]]; then
-        line_number=$(grep -n $after $file | cut -d: -f1)
+        line_number=$(grep -m1 -n $after $file | cut -d: -f1)
         if [[ -z "$line_number" ]]; then
             set -o xtrace # set -x
             return 1
@@ -543,7 +680,7 @@ ynh_read_var_in_file() {
     var_part+='\s*'
 
     # Extract the part after assignation sign
-    local expression_with_comment="$(tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL | head -n1)"
+    local expression_with_comment="$((tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL) | head -n1)"
     if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
         set -o xtrace # set -x
         echo YNH_NULL
@@ -589,15 +726,14 @@ ynh_write_var_in_file() {
     set +o xtrace # set +x
 
     # Get the line number after which we search for the variable
-    local line_number=1
+    local after_line_number=1
     if [[ -n "$after" ]]; then
-        line_number=$(grep -n $after $file | cut -d: -f1)
-        if [[ -z "$line_number" ]]; then
+        after_line_number=$(grep -m1 -n $after $file | cut -d: -f1)
+        if [[ -z "$after_line_number" ]]; then
             set -o xtrace # set -x
             return 1
         fi
     fi
-    local range="${line_number},\$ "
 
     local filename="$(basename -- "$file")"
     local ext="${filename##*.}"
@@ -622,17 +758,21 @@ ynh_write_var_in_file() {
     var_part+='\s*'
 
     # Extract the part after assignation sign
-    local expression_with_comment="$(tail +$line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL | head -n1)"
+    local expression_with_comment="$((tail +$after_line_number ${file} | grep -i -o -P $var_part'\K.*$' || echo YNH_NULL) | head -n1)"
     if [[ "$expression_with_comment" == "YNH_NULL" ]]; then
         set -o xtrace # set -x
         return 1
     fi
+    local value_line_number="$(tail +$after_line_number ${file} | grep -m1 -n -i -P $var_part'\K.*$' | cut -d: -f1)"
+    value_line_number=$((after_line_number + value_line_number))
+    local range="${after_line_number},${value_line_number} "
 
     # Remove comments if needed
     local expression="$(echo "$expression_with_comment" | sed "s@${comments}[^$string]*\$@@g" | sed "s@\s*[$endline]*\s*]*\$@@")"
     endline=${expression_with_comment#"$expression"}
     endline="$(echo "$endline" | sed 's/\\/\\\\/g')"
     value="$(echo "$value" | sed 's/\\/\\\\/g')"
+    value=${value//&/"\&"}
     local first_char="${expression:0:1}"
     delimiter=$'\001'
     if [[ "$first_char" == '"' ]]; then
@@ -694,7 +834,7 @@ _acceptable_path_to_delete() {
     local forbidden_paths=$(ls -d / /* /{var,home,usr}/* /etc/{default,sudoers.d,yunohost,cron*})
 
     # Legacy : A couple apps still have data in /home/$app ...
-    if [[ -n "$app" ]]
+    if [[ -n "${app:-}" ]]
     then
         forbidden_paths=$(echo "$forbidden_paths" | grep -v "/home/$app")
     fi
@@ -758,12 +898,25 @@ ynh_read_manifest() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    if [ ! -e "$manifest" ]; then
+    if [ ! -e "${manifest:-}" ]; then
         # If the manifest isn't found, try the common place for backup and restore script.
-        manifest="$YNH_APP_BASEDIR/manifest.json"
+        if [ -e "$YNH_APP_BASEDIR/manifest.json" ]
+        then
+            manifest="$YNH_APP_BASEDIR/manifest.json"
+        elif [ -e "$YNH_APP_BASEDIR/manifest.toml" ]
+        then
+            manifest="$YNH_APP_BASEDIR/manifest.toml"
+        else
+            ynh_die --message "No manifest found !?"
+        fi
     fi
 
-    jq ".$manifest_key" "$manifest" --raw-output
+    if echo "$manifest" | grep -q '\.json$'
+    then
+        jq ".$manifest_key" "$manifest" --raw-output
+    else
+        cat "$manifest" | python3 -c 'import json, toml, sys; print(json.dumps(toml.load(sys.stdin)))' | jq ".$manifest_key" --raw-output
+    fi
 }
 
 # Read the upstream version from the manifest or `$YNH_APP_MANIFEST_VERSION`
@@ -907,9 +1060,9 @@ ynh_compare_current_package_version() {
 _ynh_apply_default_permissions() {
     local target=$1
 
-    local ynh_requirement=$(jq -r '.requirements.yunohost' $YNH_APP_BASEDIR/manifest.json | tr -d '>= ')
+    local ynh_requirement=$(ynh_read_manifest --manifest_key="requirements.yunohost" | tr -d '<>= ')
 
-    if [ -z "$ynh_requirement" ] || [ "$ynh_requirement" == "null" ] || dpkg --compare-versions $ynh_requirement ge 4.2; then
+    if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} ge 2 || [ -z "$ynh_requirement" ] || [ "$ynh_requirement" == "null" ] || dpkg --compare-versions $ynh_requirement ge 4.2; then
         chmod o-rwx $target
         chmod g-w $target
         chown -R root:root $target
@@ -918,10 +1071,20 @@ _ynh_apply_default_permissions() {
         fi
     fi
 
-    # Crons should be owned by root otherwise they probably don't run
-    if echo "$target" | grep -q '^/etc/cron'
+    # Crons should be owned by root
+    # Also we don't want systemd conf, nginx conf or others stuff to be owned by the app,
+    # otherwise they could self-edit their own systemd conf and escalate privilege
+    if echo "$target" | grep -q '^/etc/cron\|/etc/php\|/etc/nginx/conf.d\|/etc/fail2ban\|/etc/systemd/system'
     then
         chmod 400 $target
         chown root:root $target
     fi
+}
+
+int_to_bool() {
+    sed -e 's/^1$/True/g' -e 's/^0$/False/g'
+}
+
+toml_to_json() {
+    python3 -c 'import toml, json, sys; print(json.dumps(toml.load(sys.stdin)))'
 }

@@ -20,6 +20,7 @@ do_configure() {
         fi
     else
         echo "Regenerating configuration, this might take a while..."
+        yunohost app ssowatconf
         yunohost tools regen-conf --output-as none
 
         echo "Launching migrations..."
@@ -27,6 +28,9 @@ do_configure() {
 
         echo "Re-diagnosing server health..."
         yunohost diagnosis run --force
+
+        echo "Refreshing app catalog..."
+        yunohost tools update apps --output-as none || true
     fi
 
     systemctl restart yunohost-portal-api
@@ -40,6 +44,23 @@ do_configure() {
             systemctl restart yunohost-api
         else
             echo "(Delaying the restart of yunohost-api, this should automatically happen after the end of this upgrade)"
+            cat << EOF | at -M now >/dev/null 2>&1
+# Wait for apt / dpkg / yunohost to not be up anymore, hence the upgrade finished
+
+while pgrep -x apt || pgrep -x apt-get || pgrep dpkg || test -e /var/run/moulinette_yunohost.lock;
+do
+   sleep 3
+done
+
+# Restart yunohost-api, though only if it wasnt already restarted by something else in the last 60 secs
+
+API_START_TIMESTAMP="\$(date --date="\$(systemctl show yunohost-api | grep ExecMainStartTimestamp= | awk -F= '{print \$2}')" +%s)"
+
+if [ "\$(( \$(date +%s) - \$API_START_TIMESTAMP ))" -ge 60 ];
+then
+    systemctl restart yunohost-api
+fi
+EOF
         fi
     fi
 }
