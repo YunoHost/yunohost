@@ -70,12 +70,11 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 ynh_add_fpm_config() {
     local _globalphpversion=${phpversion-:}
     # Declare an array to define the options of this helper.
-    local legacy_args=vufd
-    local -A args_array=([v]=phpversion= [u]=usage= [f]=footprint= [d]=dedicated_service)
+    local legacy_args=vuf
+    local -A args_array=([v]=phpversion= [u]=usage= [f]=footprint=)
     local phpversion
     local usage
     local footprint
-    local dedicated_service
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
@@ -103,8 +102,6 @@ ynh_add_fpm_config() {
         fi
 
     fi
-    # Do not use a dedicated service by default
-    dedicated_service=${dedicated_service:-0}
 
     # Set the default PHP-FPM version by default
     if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} lt 2; then
@@ -128,37 +125,15 @@ ynh_add_fpm_config() {
         fi
     fi
 
-    if [ $dedicated_service -eq 1 ]; then
-        ynh_print_warn --message "Argument --dedicated_service of ynh_add_fpm_config is deprecated and to be removed in the future"
-        local fpm_service="${app}-phpfpm"
-        local fpm_config_dir="/etc/php/$phpversion/dedicated-fpm"
-    else
-        local fpm_service="php${phpversion}-fpm"
-        local fpm_config_dir="/etc/php/$phpversion/fpm"
-    fi
+    local fpm_service="php${phpversion}-fpm"
+    local fpm_config_dir="/etc/php/$phpversion/fpm"
 
     # Create the directory for FPM pools
     mkdir --parents "$fpm_config_dir/pool.d"
 
     ynh_app_setting_set --app=$app --key=fpm_config_dir --value="$fpm_config_dir"
     ynh_app_setting_set --app=$app --key=fpm_service --value="$fpm_service"
-    ynh_app_setting_set --app=$app --key=fpm_dedicated_service --value="$dedicated_service"
     ynh_app_setting_set --app=$app --key=phpversion --value=$phpversion
-
-    # Migrate from mutual PHP service to dedicated one.
-    if [ $dedicated_service -eq 1 ]; then
-        local old_fpm_config_dir="/etc/php/$phpversion/fpm"
-        # If a config file exist in the common pool, move it.
-        if [ -e "$old_fpm_config_dir/pool.d/$app.conf" ]; then
-            ynh_print_info --message="Migrate to a dedicated php-fpm service for $app."
-            # Create a backup of the old file before migration
-            ynh_backup_if_checksum_is_different --file="$old_fpm_config_dir/pool.d/$app.conf"
-            # Remove the old PHP config file
-            ynh_secure_remove --file="$old_fpm_config_dir/pool.d/$app.conf"
-            # Reload PHP to release the socket and allow the dedicated service to use it
-            ynh_systemd_action --service_name=php${phpversion}-fpm --action=reload
-        fi
-    fi
 
     if [ $autogenconf == "false" ]; then
         # Usage 1, use the template in conf/php-fpm.conf
@@ -212,51 +187,13 @@ pm.process_idle_timeout = 10s
     local finalphpconf="$fpm_config_dir/pool.d/$app.conf"
     ynh_add_config --template="$phpfpm_path" --destination="$finalphpconf"
 
-    if [ $dedicated_service -eq 1 ]; then
-        # Create a dedicated php-fpm.conf for the service
-        local globalphpconf=$fpm_config_dir/php-fpm-$app.conf
-
-        echo "[global]
-pid = /run/php/php__PHPVERSION__-fpm-__APP__.pid
-error_log = /var/log/php/fpm-php.__APP__.log
-syslog.ident = php-fpm-__APP__
-include = __FINALPHPCONF__
-" >$YNH_APP_BASEDIR/conf/php-fpm-$app.conf
-
-        ynh_add_config --template="php-fpm-$app.conf" --destination="$globalphpconf"
-
-        # Create a config for a dedicated PHP-FPM service for the app
-        echo "[Unit]
-Description=PHP __PHPVERSION__ FastCGI Process Manager for __APP__
-After=network.target
-
-[Service]
-Type=notify
-PIDFile=/run/php/php__PHPVERSION__-fpm-__APP__.pid
-ExecStart=/usr/sbin/php-fpm__PHPVERSION__ --nodaemonize --fpm-config __GLOBALPHPCONF__
-ExecReload=/bin/kill -USR2 \$MAINPID
-
-[Install]
-WantedBy=multi-user.target
-" >$YNH_APP_BASEDIR/conf/$fpm_service
-
-        # Create this dedicated PHP-FPM service
-        ynh_add_systemd_config --service=$fpm_service --template=$fpm_service
-        # Integrate the service in YunoHost admin panel
-        yunohost service add $fpm_service --log /var/log/php/fpm-php.$app.log --description "Php-fpm dedicated to $app"
-        # Configure log rotate
-        ynh_use_logrotate --logfile=/var/log/php
-        # Restart the service, as this service is either stopped or only for this app
-        ynh_systemd_action --service_name=$fpm_service --action=restart
-    else
-        # Validate that the new php conf doesn't break php-fpm entirely
-        if ! php-fpm${phpversion} --test 2>/dev/null; then
-            php-fpm${phpversion} --test || true
-            ynh_secure_remove --file="$finalphpconf"
-            ynh_die --message="The new configuration broke php-fpm?"
-        fi
-        ynh_systemd_action --service_name=$fpm_service --action=reload
+    # Validate that the new php conf doesn't break php-fpm entirely
+    if ! php-fpm${phpversion} --test 2>/dev/null; then
+        php-fpm${phpversion} --test || true
+        ynh_secure_remove --file="$finalphpconf"
+        ynh_die --message="The new configuration broke php-fpm?"
     fi
+    ynh_systemd_action --service_name=$fpm_service --action=reload
 }
 
 # Remove the dedicated PHP-FPM config
@@ -267,8 +204,6 @@ WantedBy=multi-user.target
 ynh_remove_fpm_config() {
     local fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
     local fpm_service=$(ynh_app_setting_get --app=$app --key=fpm_service)
-    local dedicated_service=$(ynh_app_setting_get --app=$app --key=fpm_dedicated_service)
-    dedicated_service=${dedicated_service:-0}
     # Get the version of PHP used by this app
     local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
 
@@ -282,17 +217,7 @@ ynh_remove_fpm_config() {
     fi
 
     ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
-
-    if [ $dedicated_service -eq 1 ]; then
-        # Remove the dedicated service PHP-FPM service for the app
-        ynh_remove_systemd_config --service=$fpm_service
-        # Remove the global PHP-FPM conf
-        ynh_secure_remove --file="$fpm_config_dir/php-fpm-$app.conf"
-        # Remove the service from the list of services known by YunoHost
-        yunohost service remove $fpm_service
-    elif ynh_package_is_installed --package="php${phpversion}-fpm"; then
-        ynh_systemd_action --service_name=$fpm_service --action=reload
-    fi
+    ynh_systemd_action --service_name=$fpm_service --action=reload
 }
 
 # Define the values to configure PHP-FPM
