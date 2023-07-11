@@ -64,7 +64,7 @@ PasswordAuthentication no
 {% endif %}
 
 # Post-login stuff
-Banner /etc/issue.net
+# Banner none
 PrintMotd no
 PrintLastLog yes
 ClientAliveInterval 60

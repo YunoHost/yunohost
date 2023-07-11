@@ -1,5 +1,7 @@
 import pytest
 import os
+import time
+import random
 
 from moulinette.core import MoulinetteError
 
@@ -16,6 +18,8 @@ from yunohost.domain import (
 )
 
 TEST_DOMAINS = ["example.tld", "sub.example.tld", "other-example.com"]
+TEST_DYNDNS_DOMAIN = "ci-test-" + "".join(chr(random.randint(ord("a"), ord("z"))) for x in range(12)) + random.choice([".noho.st", ".ynh.fr", ".nohost.me"])
+TEST_DYNDNS_PASSWORD = "astrongandcomplicatedpassphrasethatisverysecure"
 
 
 def setup_function(function):
@@ -34,7 +38,7 @@ def setup_function(function):
 
     # Clear other domains
     for domain in domains:
-        if domain not in TEST_DOMAINS or domain == TEST_DOMAINS[2]:
+        if (domain not in TEST_DOMAINS or domain == TEST_DOMAINS[2]) and domain != TEST_DYNDNS_DOMAIN:
             # Clean domains not used for testing
             domain_remove(domain)
         elif domain in TEST_DOMAINS:
@@ -65,6 +69,14 @@ def test_domain_add():
     assert TEST_DOMAINS[2] in domain_list()["domains"]
 
 
+def test_domain_add_subscribe():
+
+    time.sleep(35)  # Dynette blocks requests that happen too frequently
+    assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
+    domain_add(TEST_DYNDNS_DOMAIN, dyndns_recovery_password=TEST_DYNDNS_PASSWORD)
+    assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
+
+
 def test_domain_add_existing_domain():
     with pytest.raises(MoulinetteError):
         assert TEST_DOMAINS[1] in domain_list()["domains"]
@@ -75,6 +87,14 @@ def test_domain_remove():
     assert TEST_DOMAINS[1] in domain_list()["domains"]
     domain_remove(TEST_DOMAINS[1])
     assert TEST_DOMAINS[1] not in domain_list()["domains"]
+
+
+def test_domain_remove_unsubscribe():
+
+    time.sleep(35)  # Dynette blocks requests that happen too frequently
+    assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
+    domain_remove(TEST_DYNDNS_DOMAIN, dyndns_recovery_password=TEST_DYNDNS_PASSWORD)
+    assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
 
 
 def test_main_domain():

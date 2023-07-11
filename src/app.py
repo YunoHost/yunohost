@@ -1083,7 +1083,7 @@ def app_install(
     raw_questions = manifest["install"]
     questions = ask_questions_and_parse_answers(raw_questions, prefilled_answers=args)
     args = {
-        question.name: question.value
+        question.id: question.value
         for question in questions
         if question.value is not None
     }
@@ -1131,7 +1131,7 @@ def app_install(
             if question.type == "password":
                 continue
 
-            app_settings[question.name] = question.value
+            app_settings[question.id] = question.value
 
     _set_app_settings(app_instance_name, app_settings)
 
@@ -1186,17 +1186,17 @@ def app_install(
             # Reinject user-provider passwords which are not in the app settings
             # (cf a few line before)
             if question.type == "password":
-                env_dict[question.name] = question.value
+                env_dict[question.id] = question.value
 
     # We want to hav the env_dict in the log ... but not password values
     env_dict_for_logging = env_dict.copy()
     for question in questions:
         # Or should it be more generally question.redact ?
         if question.type == "password":
-            if f"YNH_APP_ARG_{question.name.upper()}" in env_dict_for_logging:
-                del env_dict_for_logging[f"YNH_APP_ARG_{question.name.upper()}"]
-            if question.name in env_dict_for_logging:
-                del env_dict_for_logging[question.name]
+            if f"YNH_APP_ARG_{question.id.upper()}" in env_dict_for_logging:
+                del env_dict_for_logging[f"YNH_APP_ARG_{question.id.upper()}"]
+            if question.id in env_dict_for_logging:
+                del env_dict_for_logging[question.id]
 
     operation_logger.extra.update({"env": env_dict_for_logging})
 
@@ -1507,6 +1507,9 @@ def app_setting(app, key, value=None, delete=False):
     if delete:
         if key in app_settings:
             del app_settings[key]
+        else:
+            # Don't call _set_app_settings to avoid unecessary writes...
+            return
 
     # SET
     else:
@@ -2245,17 +2248,17 @@ def _set_default_ask_questions(questions, script_name="install"):
         ),  # i18n: app_manifest_install_ask_init_admin_permission
     ]
 
-    for question_name, question in questions.items():
-        question["name"] = question_name
+    for question_id, question in questions.items():
+        question["id"] = question_id
 
         # If this question corresponds to a question with default ask message...
         if any(
-            (question.get("type"), question["name"]) == question_with_default
+            (question.get("type"), question["id"]) == question_with_default
             for question_with_default in questions_with_default
         ):
             # The key is for example "app_manifest_install_ask_domain"
             question["ask"] = m18n.n(
-                f"app_manifest_{script_name}_ask_{question['name']}"
+                f"app_manifest_{script_name}_ask_{question['id']}"
             )
 
             # Also it in fact doesn't make sense for any of those questions to have an example value nor a default value...
@@ -2651,10 +2654,21 @@ def _check_manifest_requirements(
         ram_requirement["runtime"]
     )
 
+    # Some apps have a higher runtime value than build ...
+    if ram_requirement["build"] != "?" and ram_requirement["runtime"] != "?":
+        max_build_runtime = (
+            ram_requirement["build"]
+            if human_to_binary(ram_requirement["build"])
+            > human_to_binary(ram_requirement["runtime"])
+            else ram_requirement["runtime"]
+        )
+    else:
+        max_build_runtime = ram_requirement["build"]
+
     yield (
         "ram",
         can_build and can_run,
-        {"current": binary_to_human(ram), "required": ram_requirement["build"]},
+        {"current": binary_to_human(ram), "required": max_build_runtime},
         "app_not_enough_ram",  # i18n: app_not_enough_ram
     )
 
@@ -3088,3 +3102,47 @@ def _ask_confirmation(
 
     if not answer:
         raise YunohostError("aborting")
+
+
+def regen_mail_app_user_config_for_dovecot_and_postfix(only=None):
+
+    dovecot = True if only in [None, "dovecot"] else False
+    postfix = True if only in [None, "postfix"] else False
+
+    from yunohost.user import _hash_user_password
+
+    postfix_map = []
+    dovecot_passwd = []
+    for app in _installed_apps():
+
+        settings = _get_app_settings(app)
+
+        if "domain" not in settings or "mail_pwd" not in settings:
+            continue
+
+        if dovecot:
+            hashed_password = _hash_user_password(settings["mail_pwd"])
+            dovecot_passwd.append(f"{app}:{hashed_password}::::::allow_nets=127.0.0.1/24")
+        if postfix:
+            mail_user = settings.get("mail_user", app)
+            mail_domain = settings.get("mail_domain", settings["domain"])
+            postfix_map.append(f"{mail_user}@{mail_domain} {app}")
+
+    if dovecot:
+        app_senders_passwd = "/etc/dovecot/app-senders-passwd"
+        content = "# This file is regenerated automatically.\n# Please DO NOT edit manually ... changes will be overwritten!"
+        content += '\n' + '\n'.join(dovecot_passwd)
+        write_to_file(app_senders_passwd, content)
+        chmod(app_senders_passwd, 0o440)
+        chown(app_senders_passwd, "root", "dovecot")
+
+    if postfix:
+        app_senders_map = "/etc/postfix/app_senders_login_maps"
+        content = "# This file is regenerated automatically.\n# Please DO NOT edit manually ... changes will be overwritten!"
+        content += '\n' + '\n'.join(postfix_map)
+        write_to_file(app_senders_map, content)
+        chmod(app_senders_map, 0o440)
+        chown(app_senders_map, "postfix", "root")
+        os.system(f"postmap {app_senders_map} 2>/dev/null")
+        chmod(app_senders_map + ".db", 0o640)
+        chown(app_senders_map + ".db", "postfix", "root")
