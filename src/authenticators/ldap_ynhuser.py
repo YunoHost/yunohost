@@ -27,11 +27,10 @@ class Authenticator(BaseAuthenticator):
 
     def _authenticate_credentials(self, credentials=None):
 
-        # FIXME ':' should a legit char in the password ? shall we encode the password as base64 or something idk
-        if ":" not in credentials or len(credentials.split(":")) != 2:
-            raise YunohostError("invalid_credentials_format")
-
-        username, password = credentials.split(":")
+        try:
+            username, password = credentials.split(":", 1)
+        except ValueError:
+            raise YunohostError("invalid_credentials")
 
         def _reconnect():
             con = ldap.ldapobject.ReconnectLDAPObject(
