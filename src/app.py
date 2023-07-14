@@ -1964,31 +1964,6 @@ ynh_app_config_run $1
         return values
 
 
-def _get_app_actions(app_id):
-    "Get app config panel stored in json or in toml"
-    actions_toml_path = os.path.join(APPS_SETTING_PATH, app_id, "actions.toml")
-    actions_json_path = os.path.join(APPS_SETTING_PATH, app_id, "actions.json")
-
-    if os.path.exists(actions_toml_path):
-        toml_actions = toml.load(open(actions_toml_path, "r"), _dict=OrderedDict)
-
-        # transform toml format into json format
-        actions = []
-
-        for key, value in toml_actions.items():
-            action = dict(**value)
-            action["id"] = key
-            action["arguments"] = value.get("arguments", {})
-            actions.append(action)
-
-        return actions
-
-    elif os.path.exists(actions_json_path):
-        return json.load(open(actions_json_path))
-
-    return None
-
-
 def _get_app_settings(app):
     """
     Get settings of an installed app
