@@ -744,5 +744,8 @@
     "global_settings_setting_dns_exposure": "Bei DNS-Konfiguration und -Diagnose zu berücksichtigende IP-Versionen",
     "global_settings_setting_root_access_explain": "Auf Linux-Systemen ist 'root' der absolute Administrator. Im Kontext von YunoHost ist der direkte 'root'-SSH-Login standardmässig deaktiviert - ausgenommen des lokalen Netzwerks des Servers. Mitglieder der 'admins'-Gruppe sind in der Lage mit dem 'sudo'-Befehl in der Kommandozeile (CLI) als root zu agieren. Nun kann es hilfreich sein, ein (robustes) root-Passwort zu haben um das System zu debuggen oder für den Fall, dass sich die regulären Administratoren nicht mehr einloggen können.",
     "global_settings_setting_ssh_password_authentication": "Authentifizieren mit Passwort",
-    "group_mailalias_add": "Der E-Mail-Alias '{mail}' wird der Gruppe '{group}' hinzugefügt"
+    "group_mailalias_add": "Der E-Mail-Alias '{mail}' wird der Gruppe '{group}' hinzugefügt",
+    "group_user_remove": "Der Benutzer '{user}' wird von der Gruppe '{group}' entfernt werden",
+    "invalid_credentials": "Ungültiges Passwort oder Benutzername",
+    "invalid_shell": "Ungültiger Shell: {shell}"
 }
