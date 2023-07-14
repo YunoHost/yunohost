@@ -704,5 +704,14 @@
     "app_not_enough_ram": "Diese App benötigt {required} RAM um installiert/aktualisiert zu werden, aber es sind aktuell nur {current} verfügbar.",
     "app_change_url_failed": "Kann die URL für {app} nicht ändern: {error}",
     "app_change_url_script_failed": "Es ist ein Fehler im URL-Änderungs-Script aufgetreten",
-    "app_resource_failed": "Automatische Ressourcen-Allokation (provisioning), die Unterbindung des Zugriffts auf Ressourcen (deprovisioning) oder die Aktualisierung der Ressourcen für {app} schlug fehl: {error}"
+    "app_resource_failed": "Automatische Ressourcen-Allokation (provisioning), die Unterbindung des Zugriffts auf Ressourcen (deprovisioning) oder die Aktualisierung der Ressourcen für {app} schlug fehl: {error}",
+    "domain_config_cert_validity": "Validität",
+    "confirm_notifications_read": "WARNUNG: Sie sollten die App-Benachrichtigungen anschauen bevor sie weitermachen. Es könnte da Dinge geben, die gut zu wissen sein könnten. [{answers}]",
+    "domain_cannot_add_muc_upload": "Domänen, welche mit 'muc.' beginnen, können/dürfen Sie nicht hinzufügen. Dieser Namens-Typ ist reserviert für das in YunoHost integrierte XMPP-Multiuser-Chat-Feature.",
+    "domain_config_cert_summary_selfsigned": "WARNUNG: Aktuelles Zertifikat ist selbstssigniert. Browser werden neuen Besuchern eine furchteinflössende Warnung anzeigen!",
+    "app_failed_to_download_asset": "Konnte die Ressource '{source_id}' ({url}) für {app} nicht herunterladen: {out}",
+    "apps_failed_to_upgrade_line": "\n * {app_id} (um den zugehörigen Log anzuzeigen, führen Sie ein 'yunohost log show {operation_logger_name}' aus)",
+    "confirm_app_insufficient_ram": "GEFAHR! Diese App braucht {required} RAM um zu installieren/upgraden wobei momentan aber nur {current} vorhanden sind. Auch wenn diese App laufen könnte, würde ihr Installations- bzw. ihr Upgrade-Prozess eine grosse Menge an RAM brauchen, so dass Ihr Server anhalten und schrecklich versagen würde. Wenn Sie dieses Risiko einfach hinnehmen möchten, tippen Sie '{answers}'",
+    "diagnosis_ip_no_ipv6_tip_important": "IPv6 sollte, sofern verfügbar, üblicherweise automatisch durch das System oder Ihren Provider konfiguriert werden. Andernfalls kann es notwendig sein, dass Sie ein paar Dinge selbst, händisch konfigurieren, wie es die Dokumentation erklärt: <a href='https://yunohost.org/#/ipv6'>https://yunohost.org/#/ipv6</a>.",
+    "app_corrupt_source": "YunoHost konnte die Ressource '{source_id}' ({url}) für {app} herunterladen, aber die Ressource stimmt mit der erwarteten Checksum nicht überein. Dies könnte entweder bedeuten, dass Ihr Server einfach ein vorübergehendes Netzwerkproblem hatte ODER dass der Upstream-Betreuer (oder ein schädlicher/arglistiger Akteur) die Ressource auf eine bestimmte Art verändert hat und dass die YunoHost-Paketierer das App-Manifest untersuchen und so aktualisieren müssen, dass es diese Veränderung reflektiert.\n    Erwartete sha256-Prüfsumme: {expected_sha256}\n    Heruntergeladene sha256-Prüfsumme: {computed_sha256}\n    Heruntergeladene Dateigrösse: {size}"
 }
