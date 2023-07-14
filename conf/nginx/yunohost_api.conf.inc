@@ -43,7 +43,7 @@ location /yunohost/portalapi/ {
     proxy_http_version 1.1;
     proxy_set_header Upgrade $http_upgrade;
     proxy_set_header Connection "upgrade";
-    proxy_set_header Host $http;
+    proxy_set_header Host $host;
 
     # Custom 502 error page
     error_page 502 /yunohost/portalapi/error/502;
