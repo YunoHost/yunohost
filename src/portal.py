@@ -19,14 +19,14 @@
 
 """
 
-# from moulinette import Moulinette, m18n
 from moulinette.utils.log import getActionLogger
+from moulinette.utils.filesystem import read_json
 
 from yunohost.authenticators.ldap_ynhuser import Authenticator as Auth
 from yunohost.utils.ldap import LDAPInterface
 from yunohost.utils.error import YunohostValidationError
 
-logger = getActionLogger("yunohostportal.user")
+logger = getActionLogger("portal")
 
 
 def portal_me():
@@ -39,48 +39,43 @@ def portal_me():
 
     ldap = LDAPInterface(username, auth["pwd"])
 
-    user_attrs = ["cn", "mail", "uid", "maildrop", "givenName", "sn", "mailuserquota"]
+    user_attrs = ["cn", "mail", "maildrop", "mailuserquota", "memberOf", "permission"]
 
-    filter = "uid=" + username
-    result = ldap.search("ou=users", filter, user_attrs)
+    result = ldap.search("ou=users", f"uid={username}", user_attrs)
 
     if result:
         user = result[0]
     else:
         raise YunohostValidationError("user_unknown", user=username)
 
-    result_dict = {
-        "username": user["uid"][0],
-        "fullname": user["cn"][0],
-        "firstname": user["givenName"][0],
-        "lastname": user["sn"][0],
-        "mail": user["mail"][0],
-        "mail-aliases": [],
-        "mail-forward": [],
+    groups = [g.replace("cn=", "").replace(",ou=groups,dc=yunohost,dc=org", "") for g in user["memberOf"]]
+    groups = [g for g in groups if g not in [username, "all_users"]]
+
+    permissions = [p.replace("cn=", "").replace(",ou=permission,dc=yunohost,dc=org", "") for p in user["permission"]]
+
+    ssowat_conf = read_json("/etc/ssowat/conf.json")
+    apps = {
+        perm.replace(".main", ""): {"label": infos["label"], "url": infos["uris"][0]}
+        for perm, infos in ssowat_conf["permissions"].items()
+        if perm in permissions and infos["show_tile"] and username in infos["users"]
     }
 
-    if len(user["mail"]) > 1:
-        result_dict["mail-aliases"] = user["mail"][1:]
+    result_dict = {
+        "username": username,
+        "fullname": user["cn"][0],
+        "mail": user["mail"][0],
+        "mail-aliases": user["mail"][1:],
+        "mail-forward": user["maildrop"][1:],
+        "groups": groups,
+        "apps": apps
+    }
 
-    if len(user["maildrop"]) > 1:
-        result_dict["mail-forward"] = user["maildrop"][1:]
-
-    if "mailuserquota" in user:
-        pass
-        #  FIXME
-        #  result_dict["mailbox-quota"] = {
-        #      "limit": userquota if is_limited else m18n.n("unlimit"),
-        #      "use": storage_use,
-        #  }
-
-    # FIXME : should also parse "permission" key in ldap maybe ?
-    #          and list of groups / memberof ?
-    # (in particular to have e.g. the mail / xmpp / ssh / ... perms)
+    # FIXME / TODO : add mail quota status ?
+    #  result_dict["mailbox-quota"] = {
+    #      "limit": userquota if is_limited else m18n.n("unlimit"),
+    #      "use": storage_use,
+    #  }
+    # Could use : doveadm -c /dev/null -f flow quota recalc -u johndoe
+    # But this requires to be in the mail group ...
 
     return result_dict
-
-
-def apps(username):
-    return {"foo": "bar"}
-    #  FIXME: should list available apps and corresponding infos ?
-    # from /etc/ssowat/conf.json ?
