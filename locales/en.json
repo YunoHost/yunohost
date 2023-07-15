@@ -1,8 +1,8 @@
 {
     "aborting": "Aborting.",
     "action_invalid": "Invalid action '{action}'",
-    "additional_urls_already_added": "Additionnal URL '{url}' already added in the additional URL for permission '{permission}'",
-    "additional_urls_already_removed": "Additionnal URL '{url}' already removed in the additional URL for permission '{permission}'",
+    "additional_urls_already_added": "Additional URL '{url}' already added in the additional URL for permission '{permission}'",
+    "additional_urls_already_removed": "Additional URL '{url}' already removed in the additional URL for permission '{permission}'",
     "admin_password": "Administration password",
     "admins": "Admins",
     "all_users": "All YunoHost users",
