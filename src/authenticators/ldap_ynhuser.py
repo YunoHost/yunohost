@@ -88,6 +88,7 @@ class Authenticator(BaseAuthenticator):
         try:
             con = _reconnect()
         except ldap.INVALID_CREDENTIALS:
+            # FIXME FIXME FIXME : this should be properly logged and caught by Fail2ban ! !  ! ! ! ! !
             raise YunohostError("invalid_password")
         except ldap.SERVER_DOWN:
             logger.warning(m18n.n("ldap_server_down"))
@@ -125,7 +126,7 @@ class Authenticator(BaseAuthenticator):
             # See https://pyjwt.readthedocs.io/en/latest/usage.html#registered-claim-names
             # for explanations regarding nbf, exp
             "nbf": int(datetime.datetime.now().timestamp()),
-            "exp": int(datetime.datetime.now().timestamp()) + (7 * 24 * 3600)  # One week validity
+            "exp": int(datetime.datetime.now().timestamp()) + (7 * 24 * 3600)  # One week validity   # FIXME : does it mean the session suddenly expires after a week ? Can we somehow auto-renew it at every usage or something ?
         }
         new_infos.update(infos)
 
@@ -149,6 +150,7 @@ class Authenticator(BaseAuthenticator):
         except Exception:
             if not raise_if_no_session_exists:
                 return {"id": random_ascii()}
+            # FIXME FIXME FIXME : we might also want this to be caught by fail2ban ? Idk ...
             raise YunohostAuthenticationError("unable_authenticate")
 
         if not infos and raise_if_no_session_exists:
@@ -160,8 +162,9 @@ class Authenticator(BaseAuthenticator):
         if decrypt_pwd:
             infos["pwd"] = decrypt(infos["pwd"])
 
-        # FIXME: Here, maybe we want to re-authenticate the session via the authenticator
-        # For example to check that the username authenticated is still in the admin group...
+        # FIXME : maybe check expiration here ? Or is it already done in jwt.decode ?
+
+        # FIXME: also a valid cookie ain't everything ... i.e. maybe we should validate that the user still exists
 
         return infos
 
