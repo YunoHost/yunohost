@@ -1712,7 +1712,7 @@ def app_ssowatconf():
 
 
     """
-    from yunohost.domain import domain_list, _get_maindomain, domain_config_get
+    from yunohost.domain import domain_list, _get_maindomain, domain_config_get, _get_domain_portal_dict
     from yunohost.permission import user_permission_list
     from yunohost.settings import settings_get
 
@@ -1740,6 +1740,8 @@ def app_ssowatconf():
             ],
         }
     }
+
+    # FIXME : what's the reason we do this only for the maindomain ? x_X
     redirected_regex = {
         main_domain + r"/yunohost[\/]?$": "https://" + main_domain + "/yunohost/sso/"
     }
@@ -1808,17 +1810,9 @@ def app_ssowatconf():
         "cookie_secret_file": "/etc/yunohost/.ssowat_cookie_secret",
         "cookie_name": "yunohost.portal",
         "theme": settings_get("misc.portal.portal_theme"),
-        "portal_domain": main_domain,
-        "portal_path": "/yunohost/sso/",
-        "additional_headers": {
-            "Auth-User": "uid",
-            "Remote-User": "uid",
-            "Name": "cn",
-            "Email": "mail",
-        },
-        "domains": domains,
         "redirected_urls": redirected_urls,
         "redirected_regex": redirected_regex,
+        "domain_portal_urls": _get_domain_portal_dict(),
         "permissions": permissions,
     }
 

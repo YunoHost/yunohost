@@ -99,6 +99,26 @@ def _get_domains(exclude_subdomains=False):
     return domain_list_cache
 
 
+def _get_domain_portal_dict():
+
+    domains = _get_domains()
+    out = OrderedDict()
+
+    for domain in domains:
+
+        parent = None
+
+        # Use the topest parent domain if any
+        for d in out.keys():
+            if domain.endswith(f".{d}"):
+                parent = d
+                break
+
+        out[domain] = f'{parent or domain}/yunohost/sso'
+
+    return dict(out)
+
+
 def domain_list(exclude_subdomains=False, tree=False, features=[]):
     """
     List domains
