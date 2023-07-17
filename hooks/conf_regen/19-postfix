@@ -80,6 +80,8 @@ do_post_regen() {
 
     postmap -F hash:/etc/postfix/sni
 
+    python3 -c 'from yunohost.app import regen_mail_app_user_config_for_dovecot_and_postfix as r; r(only="postfix")'
+
     [[ -z "$regen_conf_files" ]] \
         || { systemctl restart postfix && systemctl restart postsrsd; }
 

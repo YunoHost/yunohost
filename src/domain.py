@@ -36,6 +36,7 @@ from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_c
 from yunohost.utils.configpanel import ConfigPanel
 from yunohost.utils.form import BaseOption
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.dns import is_yunohost_dyndns_domain
 from yunohost.log import is_unit_operation
 
 logger = getActionLogger("yunohost.domain")
@@ -210,20 +211,25 @@ def _get_parent_domain_of(domain, return_self=False, topest=False):
     return domain if return_self else None
 
 
-@is_unit_operation()
-def domain_add(operation_logger, domain, dyndns=False):
+@is_unit_operation(exclude=["dyndns_recovery_password"])
+def domain_add(operation_logger, domain, dyndns_recovery_password=None, ignore_dyndns=False):
     """
     Create a custom domain
 
     Keyword argument:
         domain -- Domain name to add
         dyndns -- Subscribe to DynDNS
-
+        dyndns_recovery_password -- Password used to later unsubscribe from DynDNS
+        ignore_dyndns -- If we want to just add the DynDNS domain to the list, without subscribing
     """
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf
     from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.utils.password import assert_password_is_strong_enough
     from yunohost.certificate import _certificate_install_selfsigned
+
+    if dyndns_recovery_password:
+        operation_logger.data_to_redact.append(dyndns_recovery_password)
 
     if domain.startswith("xmpp-upload."):
         raise YunohostValidationError("domain_cannot_add_xmpp_upload")
@@ -245,27 +251,20 @@ def domain_add(operation_logger, domain, dyndns=False):
     # Non-latin characters (e.g. café.com => xn--caf-dma.com)
     domain = domain.encode("idna").decode("utf-8")
 
-    # DynDNS domain
+    # Detect if this is a DynDNS domain ( and not a subdomain of a DynDNS domain )
+    dyndns = not ignore_dyndns and is_yunohost_dyndns_domain(domain) and len(domain.split(".")) == 3
     if dyndns:
-        from yunohost.utils.dns import is_yunohost_dyndns_domain
-        from yunohost.dyndns import _guess_current_dyndns_domain
-
+        from yunohost.dyndns import is_subscribing_allowed
         # Do not allow to subscribe to multiple dyndns domains...
-        if _guess_current_dyndns_domain() != (None, None):
+        if not is_subscribing_allowed():
             raise YunohostValidationError("domain_dyndns_already_subscribed")
-
-        # Check that this domain can effectively be provided by
-        # dyndns.yunohost.org. (i.e. is it a nohost.me / noho.st)
-        if not is_yunohost_dyndns_domain(domain):
-            raise YunohostValidationError("domain_dyndns_root_unknown")
+        if dyndns_recovery_password:
+            assert_password_is_strong_enough("admin", dyndns_recovery_password)
 
     operation_logger.start()
 
     if dyndns:
-        from yunohost.dyndns import dyndns_subscribe
-
-        # Actually subscribe
-        dyndns_subscribe(domain=domain)
+        domain_dyndns_subscribe(domain=domain, recovery_password=dyndns_recovery_password)
 
     _certificate_install_selfsigned([domain], True)
 
@@ -314,8 +313,8 @@ def domain_add(operation_logger, domain, dyndns=False):
     logger.success(m18n.n("domain_created"))
 
 
-@is_unit_operation()
-def domain_remove(operation_logger, domain, remove_apps=False, force=False):
+@is_unit_operation(exclude=["dyndns_recovery_password"])
+def domain_remove(operation_logger, domain, remove_apps=False, force=False, dyndns_recovery_password=None, ignore_dyndns=False):
     """
     Delete domains
 
@@ -324,11 +323,15 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
         remove_apps -- Remove applications installed on the domain
         force -- Force the domain removal and don't not ask confirmation to
                  remove apps if remove_apps is specified
-
+        dyndns_recovery_password -- Recovery password used at the creation of the DynDNS domain
+        ignore_dyndns -- If we just remove the DynDNS domain, without unsubscribing
     """
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf, app_info, app_remove
     from yunohost.utils.ldap import _get_ldap_interface
+
+    if dyndns_recovery_password:
+        operation_logger.data_to_redact.append(dyndns_recovery_password)
 
     # the 'force' here is related to the exception happening in domain_add ...
     # we don't want to check the domain exists because the ldap add may have
@@ -390,6 +393,9 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
                 apps="\n".join([x[1] for x in apps_on_that_domain]),
             )
 
+    # Detect if this is a DynDNS domain ( and not a subdomain of a DynDNS domain )
+    dyndns = not ignore_dyndns and is_yunohost_dyndns_domain(domain) and len(domain.split(".")) == 3
+
     operation_logger.start()
 
     ldap = _get_ldap_interface()
@@ -436,7 +442,57 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False):
 
     hook_callback("post_domain_remove", args=[domain])
 
+    # If a password is provided, delete the DynDNS record
+    if dyndns:
+        # Actually unsubscribe
+        domain_dyndns_unsubscribe(domain=domain, recovery_password=dyndns_recovery_password)
+
     logger.success(m18n.n("domain_deleted"))
+
+
+def domain_dyndns_subscribe(*args, **kwargs):
+    """
+    Subscribe to a DynDNS domain
+    """
+    from yunohost.dyndns import dyndns_subscribe
+
+    dyndns_subscribe(*args, **kwargs)
+
+
+def domain_dyndns_unsubscribe(*args, **kwargs):
+    """
+    Unsubscribe from a DynDNS domain
+    """
+    from yunohost.dyndns import dyndns_unsubscribe
+
+    dyndns_unsubscribe(*args, **kwargs)
+
+
+def domain_dyndns_list():
+    """
+    Returns all currently subscribed DynDNS domains
+    """
+    from yunohost.dyndns import dyndns_list
+
+    return dyndns_list()
+
+
+def domain_dyndns_update(*args, **kwargs):
+    """
+    Update a DynDNS domain
+    """
+    from yunohost.dyndns import dyndns_update
+
+    dyndns_update(*args, **kwargs)
+
+
+def domain_dyndns_set_recovery_password(*args, **kwargs):
+    """
+    Set a recovery password for an already registered dyndns domain
+    """
+    from yunohost.dyndns import dyndns_set_recovery_password
+
+    dyndns_set_recovery_password(*args, **kwargs)
 
 
 @is_unit_operation()
