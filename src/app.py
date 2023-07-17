@@ -1157,6 +1157,10 @@ def app_install(
                 recursive=True,
             )
 
+    # Hotfix for bug in the webadmin while we fix the actual issue :D
+    if label == "undefined":
+        label = None
+
     # Override manifest name by given label
     # This info is also later picked-up by the 'permission' resource initialization
     if label:
