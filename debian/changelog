@@ -1,3 +1,10 @@
+yunohost (11.2.1) stable; urgency=low
+
+  - doc: fix resource doc generation .. not sure why this line that removed legit indent was there (ced222ea)
+  - apps: hotfix for funky issue, apps getting named 'undefined' (781f924e)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 17 Jul 2023 21:13:54 +0200
+
 yunohost (11.2) stable; urgency=low
 
   - dyndns: add support for recovery passwords ([#1475](https://github.com/YunoHost/yunohost/pull/1475))
