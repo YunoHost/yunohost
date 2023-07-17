@@ -62,7 +62,6 @@ for c in ResourceClasses:
 
 
 for resource_id, doc in sorted(ResourceDocString.items()):
-
     print("----------------")
     print("")
     print(f"## {resource_id.replace('_', ' ').title()}")
