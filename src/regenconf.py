@@ -20,12 +20,12 @@ import os
 import yaml
 import shutil
 import hashlib
-
+from logging import getLogger
 from difflib import unified_diff
 from datetime import datetime
 
 from moulinette import m18n
-from moulinette.utils import log, filesystem
+from moulinette.utils.filesystem import mkdir
 from moulinette.utils.process import check_output
 
 from yunohost.utils.error import YunohostError
@@ -37,7 +37,7 @@ BACKUP_CONF_DIR = os.path.join(BASE_CONF_PATH, "backup")
 PENDING_CONF_DIR = os.path.join(BASE_CONF_PATH, "pending")
 REGEN_CONF_FILE = "/etc/yunohost/regenconf.yml"
 
-logger = log.getActionLogger("yunohost.regenconf")
+logger = getLogger("yunohost.regenconf")
 
 
 # FIXME : those ain't just services anymore ... what are we supposed to do with this ...
@@ -102,7 +102,7 @@ def regen_conf(
             for name in names:
                 shutil.rmtree(os.path.join(PENDING_CONF_DIR, name), ignore_errors=True)
     else:
-        filesystem.mkdir(PENDING_CONF_DIR, 0o755, True)
+        mkdir(PENDING_CONF_DIR, 0o755, True)
 
     # Execute hooks for pre-regen
     # element 2 and 3 with empty string is because of legacy...
@@ -111,7 +111,7 @@ def regen_conf(
     def _pre_call(name, priority, path, args):
         # create the pending conf directory for the category
         category_pending_path = os.path.join(PENDING_CONF_DIR, name)
-        filesystem.mkdir(category_pending_path, 0o755, True, uid="root")
+        mkdir(category_pending_path, 0o755, True, uid="root")
 
         # return the arguments to pass to the script
         return pre_args + [
@@ -622,7 +622,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
         backup_dir = os.path.dirname(backup_path)
 
         if not os.path.isdir(backup_dir):
-            filesystem.mkdir(backup_dir, 0o755, True)
+            mkdir(backup_dir, 0o755, True)
 
         shutil.copy2(system_conf, backup_path)
         logger.debug(
@@ -637,7 +637,7 @@ def _process_regen_conf(system_conf, new_conf=None, save=True):
             system_dir = os.path.dirname(system_conf)
 
             if not os.path.isdir(system_dir):
-                filesystem.mkdir(system_dir, 0o755, True)
+                mkdir(system_dir, 0o755, True)
 
             shutil.copyfile(new_conf, system_conf)
             logger.debug(m18n.n("regenconf_file_updated", conf=system_conf))

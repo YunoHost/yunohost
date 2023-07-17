@@ -20,10 +20,10 @@ import os
 import time
 from typing import List, Optional
 from collections import OrderedDict
+from logging import getLogger
 
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import write_to_file, read_yaml, write_to_yaml, rm
 
 from yunohost.app import (
@@ -39,7 +39,7 @@ from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.dns import is_yunohost_dyndns_domain
 from yunohost.log import is_unit_operation
 
-logger = getActionLogger("yunohost.domain")
+logger = getLogger("yunohost.domain")
 
 DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 

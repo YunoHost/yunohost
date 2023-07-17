@@ -23,16 +23,16 @@ import tempfile
 import mimetypes
 from glob import iglob
 from importlib import import_module
+from logging import getLogger
 
 from moulinette import m18n, Moulinette
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from moulinette.utils import log
 from moulinette.utils.filesystem import read_yaml, cp
 
 HOOK_FOLDER = "/usr/share/yunohost/hooks/"
 CUSTOM_HOOK_FOLDER = "/etc/yunohost/hooks.d/"
 
-logger = log.getActionLogger("yunohost.hook")
+logger = getLogger("yunohost.hook")
 
 
 def hook_add(app, file):

@@ -25,16 +25,16 @@ import tempfile
 import urllib.parse
 from enum import Enum
 from typing import Any, Callable, Dict, List, Literal, Mapping, Optional, Union
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
 from moulinette.utils.filesystem import read_file, write_to_file
-from moulinette.utils.log import getActionLogger
 from yunohost.log import OperationLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.i18n import _value_for_locale
 
-logger = getActionLogger("yunohost.form")
+logger = getLogger("yunohost.form")
 
 Context = dict[str, Any]
 

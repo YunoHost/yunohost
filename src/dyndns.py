@@ -22,10 +22,10 @@ import glob
 import base64
 import subprocess
 import hashlib
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import write_to_file, rm, chown, chmod
 from moulinette.utils.network import download_json
 
@@ -36,7 +36,7 @@ from yunohost.utils.dns import dig, is_yunohost_dyndns_domain
 from yunohost.log import is_unit_operation
 from yunohost.regenconf import regen_conf
 
-logger = getActionLogger("yunohost.dyndns")
+logger = getLogger("yunohost.dyndns")
 
 DYNDNS_PROVIDER = "dyndns.yunohost.org"
 DYNDNS_DNS_AUTH = ["ns0.yunohost.org", "ns1.yunohost.org"]

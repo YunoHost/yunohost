@@ -28,9 +28,9 @@ import tempfile
 import copy
 from typing import List, Tuple, Dict, Any, Iterator, Optional
 from packaging import version
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import run_commands, check_output
 from moulinette.utils.filesystem import (
     read_file,
@@ -71,7 +71,7 @@ from yunohost.app_catalog import (  # noqa
     APPS_CATALOG_LOGOS,
 )
 
-logger = getActionLogger("yunohost.app")
+logger = getLogger("yunohost.app")
 
 APPS_SETTING_PATH = "/etc/yunohost/apps/"
 APP_TMP_WORKDIRS = "/var/cache/yunohost/app_tmp_work_dirs"

@@ -115,17 +115,11 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
         "version": 1,
         "disable_existing_loggers": True,
         "formatters": {
-            "console": {
-                "format": "%(relativeCreated)-5d %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s"
+            "tty-debug": {
+                "format": "%(relativeCreated)-4d %(level_with_color)s %(message)s"
             },
-            "tty-debug": {"format": "%(relativeCreated)-4d %(fmessage)s"},
             "precise": {
-                "format": "%(asctime)-15s %(levelname)-8s %(name)s %(funcName)s - %(fmessage)s"
-            },
-        },
-        "filters": {
-            "action": {
-                "()": "moulinette.utils.log.ActionFilter",
+                "format": "%(asctime)-15s %(levelname)-8s %(name)s.%(funcName)s - %(message)s"
             },
         },
         "handlers": {
@@ -142,7 +136,6 @@ def init_logging(interface="cli", debug=False, quiet=False, logdir="/var/log/yun
                 "class": "logging.FileHandler",
                 "formatter": "precise",
                 "filename": logfile,
-                "filters": ["action"],
             },
         },
         "loggers": {

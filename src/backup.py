@@ -30,10 +30,10 @@ from glob import glob
 from collections import OrderedDict
 from functools import reduce
 from packaging import version
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.text import random_ascii
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
     read_file,
     mkdir,
@@ -84,7 +84,7 @@ APP_MARGIN_SPACE_SIZE = 100  # In MB
 CONF_MARGIN_SPACE_SIZE = 10  # IN MB
 POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
 MB_ALLOWED_TO_ORGANIZE = 10
-logger = getActionLogger("yunohost.backup")
+logger = getLogger("yunohost.backup")
 
 
 class BackupRestoreTargetsManager:

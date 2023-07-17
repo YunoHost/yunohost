@@ -19,8 +19,9 @@
 import os
 import re
 import glob
+from logging import getLogger
+
 from moulinette.core import MoulinetteError
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
     read_file,
     write_to_file,
@@ -32,7 +33,7 @@ from moulinette.utils.filesystem import (
 from yunohost.utils.error import YunohostValidationError
 
 
-logger = getActionLogger("yunohost.legacy")
+logger = getLogger("yunohost.utils.legacy")
 
 LEGACY_PERMISSION_LABEL = {
     ("nextcloud", "skipped"): "api",  # .well-known
