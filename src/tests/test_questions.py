@@ -17,7 +17,9 @@ from yunohost import app, domain, user
 from yunohost.utils.form import (
     OPTIONS,
     ask_questions_and_parse_answers,
-    DisplayTextOption,
+    BaseChoicesOption,
+    BaseInputOption,
+    BaseReadonlyOption,
     PasswordOption,
     DomainOption,
     WebPathOption,
@@ -31,7 +33,7 @@ from yunohost.utils.error import YunohostError, YunohostValidationError
 """
 Argument default format:
 {
-    "the_name": {
+    "the_id": {
         "type": "one_of_the_available_type",  // "sting" is not specified
         "ask": {
             "en": "the question in english",
@@ -48,7 +50,7 @@ Argument default format:
 }
 
 User answers:
-{"the_name": "value", ...}
+{"the_id": "value", ...}
 """
 
 
@@ -377,8 +379,7 @@ def _fill_or_prompt_one_option(raw_option, intake):
     answers = {id_: intake} if intake is not None else {}
 
     option = ask_questions_and_parse_answers(options, answers)[0]
-
-    return (option, option.value)
+    return (option, option.value if isinstance(option, BaseInputOption) else None)
 
 
 def _test_value_is_expected_output(value, expected_output):
@@ -438,14 +439,14 @@ class BaseTest:
         id_ = raw_option["id"]
         option, value = _fill_or_prompt_one_option(raw_option, None)
 
-        is_special_readonly_option = isinstance(option, DisplayTextOption)
+        is_special_readonly_option = isinstance(option, BaseReadonlyOption)
 
         assert isinstance(option, OPTIONS[raw_option["type"]])
         assert option.type == raw_option["type"]
-        assert option.name == id_
+        assert option.id == id_
         assert option.ask == {"en": id_}
         assert option.readonly is (True if is_special_readonly_option else False)
-        assert option.visible is None
+        assert option.visible is True
         # assert option.bind is None
 
         if is_special_readonly_option:
@@ -489,14 +490,12 @@ class BaseTest:
             option, value = _fill_or_prompt_one_option(raw_option, None)
 
             expected_message = option.ask["en"]
+            choices = []
 
-            if option.choices:
-                choices = (
-                    option.choices
-                    if isinstance(option.choices, list)
-                    else option.choices.keys()
-                )
-                expected_message += f" [{' | '.join(choices)}]"
+            if isinstance(option, BaseChoicesOption):
+                choices = option.choices
+                if choices:
+                    expected_message += f" [{' | '.join(choices)}]"
             if option.type == "boolean":
                 expected_message += " [yes | no]"
 
@@ -506,7 +505,7 @@ class BaseTest:
                 confirm=False,  # FIXME no confirm?
                 prefill=prefill,
                 is_multiline=option.type == "text",
-                autocomplete=option.choices or [],
+                autocomplete=choices,
                 help=option.help["en"],
             )
 
@@ -661,9 +660,7 @@ class TestString(BaseTest):
             (" ##value \n \tvalue\n  ", "##value \n \tvalue"),
         ], reason=r"should fail or without `\n`?"),
         # readonly
-        *xfail(scenarios=[
-            ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),
-        ], reason="Should not be overwritten"),
+        ("overwrite", "expected value", {"readonly": True, "current_value": "expected value"}),
     ]
     # fmt: on
 
@@ -700,9 +697,7 @@ class TestText(BaseTest):
             (r" ##value \n \tvalue\n  ", r"##value \n \tvalue\n"),
         ], reason="Should not be stripped"),
         # readonly
-        *xfail(scenarios=[
-            ("overwrite", "expected value", {"readonly": True, "default": "expected value"}),
-        ], reason="Should not be overwritten"),
+        ("overwrite", "expected value", {"readonly": True, "current_value": "expected value"}),
     ]
     # fmt: on
 
@@ -736,9 +731,7 @@ class TestPassword(BaseTest):
         ("secret", FAIL),
         *[("supersecret" + char, FAIL) for char in PasswordOption.forbidden_chars],  # FIXME maybe add ` \n` to the list?
         # readonly
-        *xpass(scenarios=[
-            ("s3cr3t!!", "s3cr3t!!", {"readonly": True}),
-        ], reason="Should fail since readonly is forbidden"),
+        ("s3cr3t!!", YunohostError, {"readonly": True, "current_value": "isforbidden"}),  # readonly is forbidden
     ]
     # fmt: on
 
@@ -779,9 +772,7 @@ class TestColor(BaseTest):
             ("yellow", "#ffff00"),
         ], reason="Should work with pydantic"),
         # readonly
-        *xfail(scenarios=[
-            ("#ffff00", "#fe100", {"readonly": True, "default": "#fe100"}),
-        ], reason="Should not be overwritten"),
+        ("#ffff00", "#fe100", {"readonly": True, "current_value": "#fe100"}),
     ]
     # fmt: on
 
@@ -823,9 +814,7 @@ class TestNumber(BaseTest):
         (-10, -10, {"default": 10}),
         (-10, -10, {"default": 10, "optional": True}),
         # readonly
-        *xfail(scenarios=[
-            (1337, 10000, {"readonly": True, "default": 10000}),
-        ], reason="Should not be overwritten"),
+        (1337, 10000, {"readonly": True, "current_value": 10000}),
     ]
     # fmt: on
     # FIXME should `step` be some kind of "multiple of"?
@@ -890,9 +879,7 @@ class TestBoolean(BaseTest):
             "scenarios": all_fails("", "y", "n", error=AssertionError),
         },
         # readonly
-        *xfail(scenarios=[
-            (1, 0, {"readonly": True, "default": 0}),
-        ], reason="Should not be overwritten"),
+        (1, 0, {"readonly": True, "current_value": 0}),
     ]
 
 
@@ -930,9 +917,7 @@ class TestDate(BaseTest):
         ("12-01-10", FAIL),
         ("2022-02-29", FAIL),
         # readonly
-        *xfail(scenarios=[
-            ("2070-12-31", "2024-02-29", {"readonly": True, "default": "2024-02-29"}),
-        ], reason="Should not be overwritten"),
+        ("2070-12-31", "2024-02-29", {"readonly": True, "current_value": "2024-02-29"}),
     ]
     # fmt: on
 
@@ -965,9 +950,7 @@ class TestTime(BaseTest):
         ("23:1", FAIL),
         ("23:005", FAIL),
         # readonly
-        *xfail(scenarios=[
-            ("00:00", "08:00", {"readonly": True, "default": "08:00"}),
-        ], reason="Should not be overwritten"),
+        ("00:00", "08:00", {"readonly": True, "current_value": "08:00"}),
     ]
     # fmt: on
 
@@ -991,9 +974,7 @@ class TestEmail(BaseTest):
         *nones(None, "", output=""),
         ("\n Abc@example.tld  ", "Abc@example.tld"),
         # readonly
-        *xfail(scenarios=[
-            ("Abc@example.tld", "admin@ynh.local", {"readonly": True, "default": "admin@ynh.local"}),
-        ], reason="Should not be overwritten"),
+        ("Abc@example.tld", "admin@ynh.local", {"readonly": True, "current_value": "admin@ynh.local"}),
 
         # Next examples are from https://github.com/JoshData/python-email-validator/blob/main/tests/test_syntax.py
         # valid email values
@@ -1106,9 +1087,7 @@ class TestWebPath(BaseTest):
             ("https://example.com/folder", "/https://example.com/folder")
         ], reason="Should fail or scheme+domain removed"),
         # readonly
-        *xfail(scenarios=[
-            ("/overwrite", "/value", {"readonly": True, "default": "/value"}),
-        ], reason="Should not be overwritten"),
+        ("/overwrite", "/value", {"readonly": True, "current_value": "/value"}),
         # FIXME should path have forbidden_chars?
     ]
     # fmt: on
@@ -1133,9 +1112,7 @@ class TestUrl(BaseTest):
         *nones(None, "", output=""),
         ("http://some.org/folder/file.txt", "http://some.org/folder/file.txt"),
         # readonly
-        *xfail(scenarios=[
-            ("https://overwrite.org", "https://example.org", {"readonly": True, "default": "https://example.org"}),
-        ], reason="Should not be overwritten"),
+        ("https://overwrite.org", "https://example.org", {"readonly": True, "current_value": "https://example.org"}),
         # rest is taken from https://github.com/pydantic/pydantic/blob/main/tests/test_networks.py
         # valid
         *unchanged(
@@ -1425,9 +1402,7 @@ class TestSelect(BaseTest):
             ]
         },
         # readonly
-        *xfail(scenarios=[
-            ("one", "two", {"readonly": True, "choices": ["one", "two"], "default": "two"}),
-        ], reason="Should not be overwritten"),
+        ("one", "two", {"readonly": True, "choices": ["one", "two"], "current_value": "two"}),
     ]
     # fmt: on
 
@@ -1475,9 +1450,7 @@ class TestTags(BaseTest):
         *all_fails(*([t] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
         *all_fails(*([str(t)] for t in [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]), raw_option={"choices": [False, True, -1, 0, 1, 1337, 13.37, [], ["one"], {}]}),
         # readonly
-        *xfail(scenarios=[
-            ("one", "one,two", {"readonly": True, "choices": ["one", "two"], "default": "one,two"}),
-        ], reason="Should not be overwritten"),
+        ("one", "one,two", {"readonly": True, "choices": ["one", "two"], "current_value": "one,two"}),
     ]
     # fmt: on
 
@@ -1525,9 +1498,7 @@ class TestDomain(BaseTest):
                 ("doesnt_exist.pouet", FAIL, {}),
                 ("fake.com", FAIL, {"choices": ["fake.com"]}),
                 # readonly
-                *xpass(scenarios=[
-                    (domains1[0], domains1[0], {"readonly": True}),
-                ], reason="Should fail since readonly is forbidden"),
+                (domains1[0], YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
         {
@@ -1628,9 +1599,7 @@ class TestApp(BaseTest):
                 (installed_non_webapp["id"], installed_non_webapp["id"]),
                 (installed_non_webapp["id"], FAIL, {"filter": "is_webapp"}),
                 # readonly
-                *xpass(scenarios=[
-                    (installed_non_webapp["id"], installed_non_webapp["id"], {"readonly": True}),
-                ], reason="Should fail since readonly is forbidden"),
+                (installed_non_webapp["id"], YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]
@@ -1747,9 +1716,7 @@ class TestUser(BaseTest):
                     ("", regular_username, {"default": regular_username})
                 ], reason="Should throw 'no default allowed'"),
                 # readonly
-                *xpass(scenarios=[
-                    (admin_username, admin_username, {"readonly": True}),
-                ], reason="Should fail since readonly is forbidden"),
+                (admin_username, YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]
@@ -1833,9 +1800,7 @@ class TestGroup(BaseTest):
                     ("", "custom_group", {"default": "custom_group"}),
                 ], reason="Should throw 'default must be in (None, 'all_users', 'visitors', 'admins')"),
                 # readonly
-                *xpass(scenarios=[
-                    ("admins", "admins", {"readonly": True}),
-                ], reason="Should fail since readonly is forbidden"),
+                ("admins", YunohostError, {"readonly": True}),  # readonly is forbidden
             ]
         },
     ]
@@ -1961,7 +1926,7 @@ def test_options_query_string():
         )
 
     def _assert_correct_values(options, raw_options):
-        form = {option.name: option.value for option in options}
+        form = {option.id: option.value for option in options}
 
         for k, v in results.items():
             if k == "file_id":
@@ -1993,9 +1958,24 @@ def test_question_string_default_type():
 
     out = ask_questions_and_parse_answers(questions, answers)[0]
 
-    assert out.name == "some_string"
+    assert out.id == "some_string"
     assert out.type == "string"
     assert out.value == "some_value"
+
+
+def test_option_default_type_with_choices_is_select():
+    questions = {
+        "some_choices": {"choices": ["a", "b"]},
+        # LEGACY (`choices` in option `string` used to be valid)
+        # make sure this result as a `select` option
+        "some_legacy": {"type": "string", "choices": ["a", "b"]},
+    }
+    answers = {"some_choices": "a", "some_legacy": "a"}
+
+    options = ask_questions_and_parse_answers(questions, answers)
+    for option in options:
+        assert option.type == "select"
+        assert option.value == "a"
 
 
 @pytest.mark.skip  # we should do something with this example
@@ -2016,75 +1996,6 @@ def test_question_string_input_test_ask_with_example():
         ask_questions_and_parse_answers(questions, answers)
         assert ask_text in prompt.call_args[1]["message"]
         assert example_text in prompt.call_args[1]["message"]
-
-
-def test_question_string_with_choice():
-    questions = {"some_string": {"type": "string", "choices": ["fr", "en"]}}
-    answers = {"some_string": "fr"}
-    out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "fr"
-
-
-def test_question_string_with_choice_prompt():
-    questions = {"some_string": {"type": "string", "choices": ["fr", "en"]}}
-    answers = {"some_string": "fr"}
-    with patch.object(Moulinette, "prompt", return_value="fr"), patch.object(
-        os, "isatty", return_value=True
-    ):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "fr"
-
-
-def test_question_string_with_choice_bad():
-    questions = {"some_string": {"type": "string", "choices": ["fr", "en"]}}
-    answers = {"some_string": "bad"}
-
-    with pytest.raises(YunohostError), patch.object(os, "isatty", return_value=False):
-        ask_questions_and_parse_answers(questions, answers)
-
-
-def test_question_string_with_choice_ask():
-    ask_text = "some question"
-    choices = ["fr", "en", "es", "it", "ru"]
-    questions = {
-        "some_string": {
-            "ask": ask_text,
-            "choices": choices,
-        }
-    }
-    answers = {}
-
-    with patch.object(Moulinette, "prompt", return_value="ru") as prompt, patch.object(
-        os, "isatty", return_value=True
-    ):
-        ask_questions_and_parse_answers(questions, answers)
-        assert ask_text in prompt.call_args[1]["message"]
-
-        for choice in choices:
-            assert choice in prompt.call_args[1]["message"]
-
-
-def test_question_string_with_choice_default():
-    questions = {
-        "some_string": {
-            "type": "string",
-            "choices": ["fr", "en"],
-            "default": "en",
-        }
-    }
-    answers = {}
-    with patch.object(os, "isatty", return_value=False):
-        out = ask_questions_and_parse_answers(questions, answers)[0]
-
-    assert out.name == "some_string"
-    assert out.type == "string"
-    assert out.value == "en"
 
 
 @pytest.mark.skip  # we should do something with this example

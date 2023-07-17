@@ -515,10 +515,16 @@ domain:
                     help: Domain name to add
                     extra:
                         pattern: *pattern_domain
-                -d:
-                    full: --dyndns
-                    help: Subscribe to the DynDNS service
+                --ignore-dyndns:
+                    help: If adding a DynDNS domain, only add the domain, without subscribing to the DynDNS service
                     action: store_true
+                --dyndns-recovery-password:
+                    metavar: PASSWORD
+                    nargs: "?"
+                    const: 0
+                    help: If adding a DynDNS domain, subscribe to the DynDNS service with a password, used to later delete the domain
+                    extra:
+                        pattern: *pattern_password
 
         ### domain_remove()
         remove:
@@ -537,6 +543,16 @@ domain:
                     full: --force
                     help: Do not ask confirmation to remove apps
                     action: store_true
+                --ignore-dyndns:
+                    help: If removing a DynDNS domain, only remove the domain, without unsubscribing from the DynDNS service
+                    action: store_true
+                --dyndns-recovery-password:
+                    metavar: PASSWORD
+                    nargs: "?"
+                    const: 0
+                    help: If removing a DynDNS domain, unsubscribe from the DynDNS service with a password
+                    extra:
+                        pattern: *pattern_password
 
 
         ### domain_dns_conf()
@@ -622,6 +638,7 @@ domain:
                         pattern: *pattern_domain
                 path:
                     help: The path to check (e.g. /coffee)
+        
 
         ### domain_action_run()
         action-run:
@@ -638,11 +655,61 @@ domain:
                   help: Serialized arguments for action (i.e. "foo=bar&lorem=ipsum")
 
     subcategories:
+        dyndns:
+            subcategory_help: Subscribe and Update DynDNS Hosts
+            actions:
+                ### domain_dyndns_subscribe()
+                subscribe:
+                    action_help: Subscribe to a DynDNS service
+                    arguments:
+                        domain:
+                            help: Domain to subscribe to the DynDNS service
+                            extra:
+                                pattern: *pattern_domain
+                        -p:
+                            full: --recovery-password
+                            nargs: "?"
+                            const: 0
+                            help: Password used to later recover the domain if needed
+                            extra:
+                                pattern: *pattern_password
+                
+                ### domain_dyndns_unsubscribe()
+                unsubscribe:
+                    action_help: Unsubscribe from a DynDNS service
+                    arguments:
+                        domain:
+                            help: Domain to unsubscribe from the DynDNS service
+                            extra:
+                                pattern: *pattern_domain
+                                required: True
+                        -p:
+                            full: --recovery-password
+                            nargs: "?"
+                            const: 0
+                            help: Recovery password used to delete the domain
+                            extra:
+                                pattern: *pattern_password
+
+                ### domain_dyndns_set_recovery_password()
+                set-recovery-password:
+                    action_help: Set recovery password
+                    arguments:
+                        domain:
+                            help: Domain to set recovery password for
+                            extra:
+                                pattern: *pattern_domain
+                                required: True
+                        -p:
+                            full: --recovery-password
+                            help: The new recovery password
+                            extra:
+                                password: ask_dyndns_recovery_password
+                                pattern: *pattern_password
 
         config:
             subcategory_help: Domain settings
             actions:
-
                 ### domain_config_get()
                 get:
                     action_help: Display a domain configuration
@@ -1516,22 +1583,27 @@ firewall:
 #          DynDNS           #
 #############################
 dyndns:
-    category_help: Subscribe and Update DynDNS Hosts
+    category_help: Subscribe and Update DynDNS Hosts ( deprecated, use 'yunohost domain dyndns' instead )
     actions:
 
         ### dyndns_subscribe()
         subscribe:
             action_help: Subscribe to a DynDNS service
+            deprecated: true
             arguments:
                 -d:
                     full: --domain
-                    help: Full domain to subscribe with
+                    help: Full domain to subscribe with ( deprecated, use 'yunohost domain dyndns subscribe' instead )
                     extra:
                         pattern: *pattern_domain
-                -k:
-                    full: --key
-                    help: Public DNS key
-
+                -p:
+                    full: --recovery-password
+                    nargs: "?"
+                    const: 0
+                    help: Password used to later recover the domain if needed
+                    extra:
+                        pattern: *pattern_password
+        
         ### dyndns_update()
         update:
             action_help: Update IP on DynDNS platform
@@ -1619,8 +1691,15 @@ tools:
                         required: True
                         comment: good_practices_about_admin_password
                 --ignore-dyndns:
-                    help: Do not subscribe domain to a DynDNS service
+                    help: If adding a DynDNS domain, only add the domain, without subscribing to the DynDNS service
                     action: store_true
+                --dyndns-recovery-password:
+                    metavar: PASSWORD
+                    nargs: "?"
+                    const: 0
+                    help: If adding a DynDNS domain, subscribe to the DynDNS service with a password, used to later recover the domain if needed
+                    extra:
+                        pattern: *pattern_password
                 --force-diskspace:
                     help: Use this if you really want to install YunoHost on a setup with less than 10 GB on the root filesystem
                     action: store_true

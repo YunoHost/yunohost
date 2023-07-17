@@ -640,12 +640,14 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
 
     # FIXME: in the future, properly unify this with yunohost dyndns update
     if registrar == "yunohost":
-        logger.info(m18n.n("domain_dns_registrar_yunohost"))
+        from yunohost.dyndns import dyndns_update
+
+        dyndns_update(domain=domain, force=force)
         return {}
 
     if registrar == "parent_domain":
         parent_domain = _get_parent_domain_of(domain, topest=True)
-        registar, registrar_credentials = _get_registar_settings(parent_domain)
+        registrar, registrar_credentials = _get_registar_settings(parent_domain)
         if any(registrar_credentials.values()):
             raise YunohostValidationError(
                 "domain_dns_push_managed_in_parent_domain",
@@ -653,9 +655,18 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
                 parent_domain=parent_domain,
             )
         else:
-            raise YunohostValidationError(
-                "domain_registrar_is_not_configured", domain=parent_domain
-            )
+            new_parent_domain = ".".join(parent_domain.split(".")[-3:])
+            registrar, registrar_credentials = _get_registar_settings(new_parent_domain)
+            if registrar == "yunohost":
+                raise YunohostValidationError(
+                    "domain_dns_push_managed_in_parent_domain",
+                    domain=domain,
+                    parent_domain=new_parent_domain,
+                )
+            else:
+                raise YunohostValidationError(
+                    "domain_registrar_is_not_configured", domain=parent_domain
+                )
 
     if not all(registrar_credentials.values()):
         raise YunohostValidationError(
