@@ -641,6 +641,7 @@ def domain_dns_push(operation_logger, domain, dry_run=False, force=False, purge=
     # FIXME: in the future, properly unify this with yunohost dyndns update
     if registrar == "yunohost":
         from yunohost.dyndns import dyndns_update
+
         dyndns_update(domain=domain, force=force)
         return {}
 
