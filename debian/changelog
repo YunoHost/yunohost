@@ -1,3 +1,13 @@
+yunohost (11.2.2) stable; urgency=low
+
+  - domains: Gandi's `api_protocol` field should be a `select` type ([#1693](https://github.com/yunohost/yunohost/pull/1693))
+  - configpanel: fix .value call for readonly-type options (e1ceb084)
+  - i18n: Translations updated for French, Galician
+
+  Thanks to all contributors <3 ! (axolotle, José M, ppr, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jul 2023 02:35:28 +0200
+
 yunohost (11.2.1) stable; urgency=low
 
   - doc: fix resource doc generation .. not sure why this line that removed legit indent was there (ced222ea)
