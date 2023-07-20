@@ -19,8 +19,6 @@
 
 import glob
 import os
-import toml
-import json
 import shutil
 import yaml
 import time
@@ -28,7 +26,6 @@ import re
 import subprocess
 import tempfile
 import copy
-from collections import OrderedDict
 from typing import List, Tuple, Dict, Any, Iterator, Optional
 from packaging import version
 
@@ -1144,6 +1141,10 @@ def app_install(
                 recursive=True,
             )
 
+    # Hotfix for bug in the webadmin while we fix the actual issue :D
+    if label == "undefined":
+        label = None
+
     # Override manifest name by given label
     # This info is also later picked-up by the 'permission' resource initialization
     if label:
@@ -1836,31 +1837,6 @@ ynh_app_config_run $1
         return values
 
 
-def _get_app_actions(app_id):
-    "Get app config panel stored in json or in toml"
-    actions_toml_path = os.path.join(APPS_SETTING_PATH, app_id, "actions.toml")
-    actions_json_path = os.path.join(APPS_SETTING_PATH, app_id, "actions.json")
-
-    if os.path.exists(actions_toml_path):
-        toml_actions = toml.load(open(actions_toml_path, "r"), _dict=OrderedDict)
-
-        # transform toml format into json format
-        actions = []
-
-        for key, value in toml_actions.items():
-            action = dict(**value)
-            action["id"] = key
-            action["arguments"] = value.get("arguments", {})
-            actions.append(action)
-
-        return actions
-
-    elif os.path.exists(actions_json_path):
-        return json.load(open(actions_json_path))
-
-    return None
-
-
 def _get_app_settings(app):
     """
     Get settings of an installed app
@@ -2257,9 +2233,7 @@ def _set_default_ask_questions(questions, script_name="install"):
             for question_with_default in questions_with_default
         ):
             # The key is for example "app_manifest_install_ask_domain"
-            question["ask"] = m18n.n(
-                f"app_manifest_{script_name}_ask_{question['id']}"
-            )
+            question["ask"] = m18n.n(f"app_manifest_{script_name}_ask_{question['id']}")
 
             # Also it in fact doesn't make sense for any of those questions to have an example value nor a default value...
             if question.get("type") in ["domain", "user", "password"]:
@@ -3105,7 +3079,6 @@ def _ask_confirmation(
 
 
 def regen_mail_app_user_config_for_dovecot_and_postfix(only=None):
-
     dovecot = True if only in [None, "dovecot"] else False
     postfix = True if only in [None, "postfix"] else False
 
@@ -3114,7 +3087,6 @@ def regen_mail_app_user_config_for_dovecot_and_postfix(only=None):
     postfix_map = []
     dovecot_passwd = []
     for app in _installed_apps():
-
         settings = _get_app_settings(app)
 
         if "domain" not in settings or "mail_pwd" not in settings:
@@ -3122,7 +3094,9 @@ def regen_mail_app_user_config_for_dovecot_and_postfix(only=None):
 
         if dovecot:
             hashed_password = _hash_user_password(settings["mail_pwd"])
-            dovecot_passwd.append(f"{app}:{hashed_password}::::::allow_nets=127.0.0.1/24")
+            dovecot_passwd.append(
+                f"{app}:{hashed_password}::::::allow_nets=127.0.0.1/24"
+            )
         if postfix:
             mail_user = settings.get("mail_user", app)
             mail_domain = settings.get("mail_domain", settings["domain"])
@@ -3131,7 +3105,7 @@ def regen_mail_app_user_config_for_dovecot_and_postfix(only=None):
     if dovecot:
         app_senders_passwd = "/etc/dovecot/app-senders-passwd"
         content = "# This file is regenerated automatically.\n# Please DO NOT edit manually ... changes will be overwritten!"
-        content += '\n' + '\n'.join(dovecot_passwd)
+        content += "\n" + "\n".join(dovecot_passwd)
         write_to_file(app_senders_passwd, content)
         chmod(app_senders_passwd, 0o440)
         chown(app_senders_passwd, "root", "dovecot")
@@ -3139,7 +3113,7 @@ def regen_mail_app_user_config_for_dovecot_and_postfix(only=None):
     if postfix:
         app_senders_map = "/etc/postfix/app_senders_login_maps"
         content = "# This file is regenerated automatically.\n# Please DO NOT edit manually ... changes will be overwritten!"
-        content += '\n' + '\n'.join(postfix_map)
+        content += "\n" + "\n".join(postfix_map)
         write_to_file(app_senders_map, content)
         chmod(app_senders_map, 0o440)
         chown(app_senders_map, "postfix", "root")

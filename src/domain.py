@@ -213,7 +213,9 @@ def _get_parent_domain_of(domain, return_self=False, topest=False):
 
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
-def domain_add(operation_logger, domain, dyndns_recovery_password=None, ignore_dyndns=False):
+def domain_add(
+    operation_logger, domain, dyndns_recovery_password=None, ignore_dyndns=False
+):
     """
     Create a custom domain
 
@@ -253,9 +255,14 @@ def domain_add(operation_logger, domain, dyndns_recovery_password=None, ignore_d
     domain = domain.encode("idna").decode("utf-8")
 
     # Detect if this is a DynDNS domain ( and not a subdomain of a DynDNS domain )
-    dyndns = not ignore_dyndns and is_yunohost_dyndns_domain(domain) and len(domain.split(".")) == 3
+    dyndns = (
+        not ignore_dyndns
+        and is_yunohost_dyndns_domain(domain)
+        and len(domain.split(".")) == 3
+    )
     if dyndns:
         from yunohost.dyndns import is_subscribing_allowed
+
         # Do not allow to subscribe to multiple dyndns domains...
         if not is_subscribing_allowed():
             raise YunohostValidationError("domain_dyndns_already_subscribed")
@@ -265,7 +272,9 @@ def domain_add(operation_logger, domain, dyndns_recovery_password=None, ignore_d
     operation_logger.start()
 
     if dyndns:
-        domain_dyndns_subscribe(domain=domain, recovery_password=dyndns_recovery_password)
+        domain_dyndns_subscribe(
+            domain=domain, recovery_password=dyndns_recovery_password
+        )
 
     _certificate_install_selfsigned([domain], True)
 
@@ -315,7 +324,14 @@ def domain_add(operation_logger, domain, dyndns_recovery_password=None, ignore_d
 
 
 @is_unit_operation(exclude=["dyndns_recovery_password"])
-def domain_remove(operation_logger, domain, remove_apps=False, force=False, dyndns_recovery_password=None, ignore_dyndns=False):
+def domain_remove(
+    operation_logger,
+    domain,
+    remove_apps=False,
+    force=False,
+    dyndns_recovery_password=None,
+    ignore_dyndns=False,
+):
     """
     Delete domains
 
@@ -395,7 +411,11 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, dynd
             )
 
     # Detect if this is a DynDNS domain ( and not a subdomain of a DynDNS domain )
-    dyndns = not ignore_dyndns and is_yunohost_dyndns_domain(domain) and len(domain.split(".")) == 3
+    dyndns = (
+        not ignore_dyndns
+        and is_yunohost_dyndns_domain(domain)
+        and len(domain.split(".")) == 3
+    )
 
     operation_logger.start()
 
@@ -446,7 +466,9 @@ def domain_remove(operation_logger, domain, remove_apps=False, force=False, dynd
     # If a password is provided, delete the DynDNS record
     if dyndns:
         # Actually unsubscribe
-        domain_dyndns_unsubscribe(domain=domain, recovery_password=dyndns_recovery_password)
+        domain_dyndns_unsubscribe(
+            domain=domain, recovery_password=dyndns_recovery_password
+        )
 
     logger.success(m18n.n("domain_deleted"))
 

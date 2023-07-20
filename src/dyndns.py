@@ -106,9 +106,7 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
     if not recovery_password and Moulinette.interface.type == "cli":
         logger.warning(m18n.n("ask_dyndns_recovery_password_explain"))
         recovery_password = Moulinette.prompt(
-            m18n.n("ask_dyndns_recovery_password"),
-            is_password=True,
-            confirm=True
+            m18n.n("ask_dyndns_recovery_password"), is_password=True, confirm=True
         )
 
     if not recovery_password:
@@ -116,6 +114,7 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
 
     if recovery_password:
         from yunohost.utils.password import assert_password_is_strong_enough
+
         assert_password_is_strong_enough("admin", recovery_password)
         operation_logger.data_to_redact.append(recovery_password)
 
@@ -158,7 +157,9 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
         b64encoded_key = base64.b64encode(secret.encode()).decode()
         data = {"subdomain": domain}
         if recovery_password:
-            data["recovery_password"] = hashlib.sha256((domain + ":" + recovery_password.strip()).encode('utf-8')).hexdigest()
+            data["recovery_password"] = hashlib.sha256(
+                (domain + ":" + recovery_password.strip()).encode("utf-8")
+            ).hexdigest()
         r = requests.post(
             f"https://{DYNDNS_PROVIDER}/key/{b64encoded_key}?key_algo=hmac-sha512",
             data=data,
@@ -214,18 +215,23 @@ def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
     # Otherwise, ask for the recovery password
     else:
         if Moulinette.interface.type == "cli" and not recovery_password:
-            logger.warning(m18n.n("ask_dyndns_recovery_password_explain_during_unsubscribe"))
+            logger.warning(
+                m18n.n("ask_dyndns_recovery_password_explain_during_unsubscribe")
+            )
             recovery_password = Moulinette.prompt(
-                m18n.n("ask_dyndns_recovery_password"),
-                is_password=True
+                m18n.n("ask_dyndns_recovery_password"), is_password=True
             )
 
         if not recovery_password:
-            logger.error(f"Cannot unsubscribe the domain {domain}: no credential provided")
+            logger.error(
+                f"Cannot unsubscribe the domain {domain}: no credential provided"
+            )
             return
 
         secret = str(domain) + ":" + str(recovery_password).strip()
-        credential = {"recovery_password": hashlib.sha256(secret.encode('utf-8')).hexdigest()}
+        credential = {
+            "recovery_password": hashlib.sha256(secret.encode("utf-8")).hexdigest()
+        }
 
     operation_logger.start()
 
@@ -250,19 +256,22 @@ def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
     elif r.status_code == 409:
         raise YunohostError("dyndns_unsubscribe_already_unsubscribed")
     else:
-        raise YunohostError("dyndns_unsubscribe_failed", error=f"The server returned code {r.status_code}")
+        raise YunohostError(
+            "dyndns_unsubscribe_failed",
+            error=f"The server returned code {r.status_code}",
+        )
 
     logger.success(m18n.n("dyndns_unsubscribed"))
 
 
 def dyndns_set_recovery_password(domain, recovery_password):
-
     keys = glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*.key")
 
     if not keys:
         raise YunohostValidationError("dyndns_key_not_found")
 
     from yunohost.utils.password import assert_password_is_strong_enough
+
     assert_password_is_strong_enough("admin", recovery_password)
     secret = str(domain) + ":" + str(recovery_password).strip()
 
@@ -277,7 +286,10 @@ def dyndns_set_recovery_password(domain, recovery_password):
     try:
         r = requests.put(
             f"https://{DYNDNS_PROVIDER}/domains/{domain}/recovery_password",
-            data={"key": base64key, "recovery_password": hashlib.sha256(secret.encode('utf-8')).hexdigest()},
+            data={
+                "key": base64key,
+                "recovery_password": hashlib.sha256(secret.encode("utf-8")).hexdigest(),
+            },
             timeout=30,
         )
     except Exception as e:
@@ -292,7 +304,10 @@ def dyndns_set_recovery_password(domain, recovery_password):
     elif r.status_code == 409:
         raise YunohostError("dyndns_set_recovery_password_invalid_password")
     else:
-        raise YunohostError("dyndns_set_recovery_password_failed", error=f"The server returned code {r.status_code}")
+        raise YunohostError(
+            "dyndns_set_recovery_password_failed",
+            error=f"The server returned code {r.status_code}",
+        )
 
 
 def dyndns_list():
@@ -303,7 +318,12 @@ def dyndns_list():
     from yunohost.domain import domain_list
 
     domains = domain_list(exclude_subdomains=True)["domains"]
-    dyndns_domains = [d for d in domains if is_yunohost_dyndns_domain(d) and glob.glob(f"/etc/yunohost/dyndns/K{d}.+*.key")]
+    dyndns_domains = [
+        d
+        for d in domains
+        if is_yunohost_dyndns_domain(d)
+        and glob.glob(f"/etc/yunohost/dyndns/K{d}.+*.key")
+    ]
 
     return {"domains": dyndns_domains}
 
@@ -330,7 +350,6 @@ def dyndns_update(
 
     # If domain is not given, update all DynDNS domains
     if domain is None:
-
         dyndns_domains = dyndns_list()["domains"]
 
         if not dyndns_domains:

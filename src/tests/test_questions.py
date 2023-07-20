@@ -1968,7 +1968,7 @@ def test_option_default_type_with_choices_is_select():
         "some_choices": {"choices": ["a", "b"]},
         # LEGACY (`choices` in option `string` used to be valid)
         # make sure this result as a `select` option
-        "some_legacy": {"type": "string", "choices": ["a", "b"]}
+        "some_legacy": {"type": "string", "choices": ["a", "b"]},
     }
     answers = {"some_choices": "a", "some_legacy": "a"}
 

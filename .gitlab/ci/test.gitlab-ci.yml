@@ -36,8 +36,6 @@ full-tests:
     - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace
   script:
     - python3 -m pytest --cov=yunohost tests/ src/tests/ --junitxml=report.xml
-    - cd tests
-    - bash test_helpers.sh
   needs:
       - job: build-yunohost
         artifacts: true
@@ -63,9 +61,9 @@ test-helpers:
   script:
     - cd tests
     - bash test_helpers.sh
-  only:
-    changes:
-      - helpers/*
+#  only:
+#    changes:
+#      - helpers/*
 
 test-domains:
   extends: .test-stage

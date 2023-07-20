@@ -766,5 +766,21 @@
     "group_mailalias_add": "Vaise engadir o alias de correo '{mail}' ao grupo '{group}'",
     "group_mailalias_remove": "Vaise quitar o alias de email '{mail}' do grupo '{group}'",
     "group_user_add": "Vaise engadir a '{user}' ao grupo '{grupo}'",
-    "group_user_remove": "Vaise quitar a '{user}' do grupo '{grupo}'"
+    "group_user_remove": "Vaise quitar a '{user}' do grupo '{grupo}'",
+    "ask_dyndns_recovery_password_explain": "Elixe un contrasinal de recuperación para o teu dominio DynDNS, por se precisas restablecelo no futuro.",
+    "ask_dyndns_recovery_password": "Contrasinal de recuperación DynDNS",
+    "ask_dyndns_recovery_password_explain_during_unsubscribe": "Escribe o contrasinal de recuperación para este dominio DynDNS.",
+    "dyndns_no_recovery_password": "Non se estableceu un contrasinal de recuperación! Se perdes o control sobre dominio precisarás contactar coa administración do equipo YunoHost!",
+    "dyndns_subscribed": "Tes unha subscrición a un dominio DynDNS",
+    "dyndns_subscribe_failed": "Non te subscribiches ao dominio DynDNS: {error}",
+    "dyndns_unsubscribe_failed": "Non se retirou a subscrición ao dominio DynDNS: {error}",
+    "dyndns_unsubscribed": "Retirada a subscrición ao dominio DynDNS",
+    "dyndns_unsubscribe_denied": "Fallo ao intentar retirar subscrición: credenciais incorrectas",
+    "dyndns_unsubscribe_already_unsubscribed": "Non tes unha subscrición ao dominio",
+    "dyndns_set_recovery_password_denied": "Fallou o establecemento do contrasinal de recuperación: chave non válida",
+    "dyndns_set_recovery_password_unknown_domain": "Fallo ao establecer o contrasinal de recuperación: dominio non rexistrado",
+    "dyndns_set_recovery_password_invalid_password": "Fallo ao establecer contrasinal de recuperación: o contrasinal non é suficientemente forte",
+    "dyndns_set_recovery_password_failed": "Fallo ao establecer o contrasinal de recuperación: {error}",
+    "dyndns_set_recovery_password_success": "Estableceuse o contrasinal de recuperación!",
+    "log_dyndns_unsubscribe": "Retirar subscrición para o subdominio YunoHost '{}'"
 }

@@ -128,6 +128,7 @@ ynh_systemd_action() {
     if [[ -n "${line_match:-}" ]]; then
         set +x
         local i=0
+        local starttime=$(date +%s)
         for i in $(seq 1 $timeout); do
             # Read the log until the sentence is found, that means the app finished to start. Or run until the timeout
             if [ "$log_path" == "systemd" ]; then
@@ -144,6 +145,14 @@ ynh_systemd_action() {
             fi
             if [ $i -eq 30 ]; then
                 echo "(this may take some time)" >&2
+            fi
+            # Also check the timeout using actual timestamp, because sometimes for some reason,
+            # journalctl may take a huge time to run, and we end up waiting literally an entire hour
+            # instead of 5 min ...
+            if [[ "$(( $(date +%s) - $starttime))" -gt "$timeout" ]]
+            then
+                i=$timeout
+                break
             fi
             sleep 1
         done

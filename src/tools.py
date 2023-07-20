@@ -213,7 +213,9 @@ def tools_postinstall(
         # connectivity or something. Assume that this domain isn't manageable
         # and inform the user that we could not contact the dyndns host server.
         except Exception:
-            raise YunohostValidationError("dyndns_provider_unreachable", provider="dyndns.yunohost.org")
+            raise YunohostValidationError(
+                "dyndns_provider_unreachable", provider="dyndns.yunohost.org"
+            )
         else:
             if not available:
                 raise YunohostValidationError("dyndns_unavailable", domain=domain)
@@ -228,7 +230,11 @@ def tools_postinstall(
     logger.info(m18n.n("yunohost_installing"))
 
     # New domain config
-    domain_add(domain, dyndns_recovery_password=dyndns_recovery_password, ignore_dyndns=ignore_dyndns)
+    domain_add(
+        domain,
+        dyndns_recovery_password=dyndns_recovery_password,
+        ignore_dyndns=ignore_dyndns,
+    )
     domain_main_domain(domain)
 
     # First user

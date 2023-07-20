@@ -3,6 +3,39 @@ yunohost (12.0.0) unstable; urgency=low
   - Tmp changelog to prepare Bookworm
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
+ 
+yunohost (11.2.2) stable; urgency=low
+
+  - domains: Gandi's `api_protocol` field should be a `select` type ([#1693](https://github.com/yunohost/yunohost/pull/1693))
+  - configpanel: fix .value call for readonly-type options (e1ceb084)
+  - i18n: Translations updated for French, Galician
+
+  Thanks to all contributors <3 ! (axolotle, José M, ppr, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jul 2023 02:35:28 +0200
+
+yunohost (11.2.1) stable; urgency=low
+
+  - doc: fix resource doc generation .. not sure why this line that removed legit indent was there (ced222ea)
+  - apps: hotfix for funky issue, apps getting named 'undefined' (781f924e)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 17 Jul 2023 21:13:54 +0200
+
+yunohost (11.2) stable; urgency=low
+
+  - dyndns: add support for recovery passwords ([#1475](https://github.com/YunoHost/yunohost/pull/1475))
+  - mail/apps: allow system users to auth on the mail stack and send emails ([#815](https://github.com/YunoHost/yunohost/pull/815))
+  - nginx: fix OCSP stapling errors ([#1543](https://github.com/YunoHost/yunohost/pull/1534))
+  - ssh: disable banner by default ([#1605](https://github.com/YunoHost/yunohost/pull/1605))
+  - configpanels: another partial refactoring of config panels / questions, paving the way for Pydantic ([#1676](https://github.com/YunoHost/yunohost/pull/1676))
+  - misc: rewrite the `yunopaste` tool ([#1667](https://github.com/YunoHost/yunohost/pull/1667))
+  - apps: simplify the use of `ynh_add_fpm_config` ([#1684](https://github.com/YunoHost/yunohost/pull/1684))
+  - apps: in ynh_systemd_action, check the actual timestamp when checking for timeout, because for some reason journalctl may take a ridiculous amount of time to run (f3eef43d)
+  - i18n: Translations updated for German, Japanese
+
+  Thanks to all contributors <3 ! (André Théo LAURET, axolotle, Christian Wehrli, Éric Gaspar, ljf, motcha, theo-is-taken)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 17 Jul 2023 16:14:58 +0200
 
 yunohost (11.1.22) stable; urgency=low
 

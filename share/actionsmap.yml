@@ -606,10 +606,6 @@ domain:
                             extra:
                                 pattern: *pattern_password
 
-                ### domain_dyndns_list()
-                list:
-                    action_help: List all subscribed DynDNS domains
-
                 ### domain_dyndns_set_recovery_password()
                 set-recovery-password:
                     action_help: Set recovery password

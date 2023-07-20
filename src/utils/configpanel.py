@@ -609,7 +609,7 @@ class ConfigPanel:
                 {
                     question.id: question.value
                     for question in questions
-                    if question.value is not None
+                    if not question.readonly and question.value is not None
                 }
             )
 
