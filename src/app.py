@@ -1098,7 +1098,7 @@ def app_install(
     args = {
         question.id: question.value
         for question in questions
-        if question.value is not None
+        if not question.readonly and question.value is not None
     }
 
     # Validate domain / path availability for webapps
