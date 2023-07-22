@@ -1,3 +1,9 @@
+yunohost (11.2.3) stable; urgency=low
+
+  - apps: fix another case of no attribute 'value' due to config panels/questions refactoring (4fda8ed49)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 22 Jul 2023 16:48:22 +0200
+
 yunohost (11.2.2) stable; urgency=low
 
   - domains: Gandi's `api_protocol` field should be a `select` type ([#1693](https://github.com/yunohost/yunohost/pull/1693))
