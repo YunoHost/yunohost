@@ -172,5 +172,5 @@ class Authenticator(BaseAuthenticator):
 
         from bottle import response
 
-        response.set_cookie("yunohost.portal", "", max_age=-1)
+        response.set_cookie("yunohost.portal", "")
         response.delete_cookie("yunohost.portal")
