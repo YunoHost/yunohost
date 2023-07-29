@@ -50,6 +50,13 @@ def cli(debug, quiet, output_as, timeout, args, parser):
 
 
 def api(debug, host, port):
+
+    allowed_cors_origins = []
+    allowed_cors_origins_file = "/etc/yunohost/.admin-api-allowed-cors-origins"
+
+    if os.path.exists(allowed_cors_origins_file):
+        allowed_cors_origins = open(allowed_cors_origins_file).read().strip().split(",")
+
     init_logging(interface="api", debug=debug)
 
     def is_installed_api():
@@ -64,11 +71,18 @@ def api(debug, host, port):
         actionsmap="/usr/share/yunohost/actionsmap.yml",
         locales_dir="/usr/share/yunohost/locales/",
         routes={("GET", "/installed"): is_installed_api},
+        allowed_cors_origins=allowed_cors_origins,
     )
     sys.exit(ret)
 
 
 def portalapi(debug, host, port):
+
+    allowed_cors_origins = []
+    allowed_cors_origins_file = "/etc/yunohost/.portal-api-allowed-cors-origins"
+
+    if os.path.exists(allowed_cors_origins_file):
+        allowed_cors_origins = open(allowed_cors_origins_file).read().strip().split(",")
 
     # FIXME : is this the logdir we want ? (yolo to work around permission issue)
     init_logging(interface="portalapi", debug=debug, logdir="/var/log")
@@ -77,7 +91,8 @@ def portalapi(debug, host, port):
         host=host,
         port=port,
         actionsmap="/usr/share/yunohost/actionsmap-portal.yml",
-        locales_dir="/usr/share/yunohost/locales/"
+        locales_dir="/usr/share/yunohost/locales/",
+        allowed_cors_origins=allowed_cors_origins,
     )
     sys.exit(ret)
 

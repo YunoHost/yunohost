@@ -26,18 +26,6 @@ location = /yunohost/api/error/502 {
 
 location /yunohost/portalapi/ {
 
-    # FIXME FIXME FIXME : we should think about what we really want here ... 
-    more_set_headers "Access-Control-Allow-Origin: $http_origin";
-    more_set_headers "Access-Control-Allow-Methods: GET, HEAD, POST, OPTIONS, DELETE";
-    more_set_headers "Access-Control-Allow-Headers: Accept,Authorization,Cache-Control,Content-Type,DNT,If-Modified-Since,Keep-Alive,Origin,User-Agent,X-Requested-With";
-    more_set_headers "Access-Control-Allow-Credentials: true";
-
-    if ($request_method = 'OPTIONS') {
-        more_set_headers "Content-Type: text/plain; charset=utf-8";
-        more_set_headers "Content-Length: 0";
-        return 204;
-    }
-
     proxy_read_timeout 5s;
     proxy_pass http://127.0.0.1:6788/;
     proxy_http_version 1.1;
