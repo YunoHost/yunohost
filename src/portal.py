@@ -18,15 +18,18 @@
     along with this program; if not, see http://www.gnu.org/licenses
 
 """
+from typing import Union
 
 from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_json
 
 from yunohost.authenticators.ldap_ynhuser import Authenticator as Auth
 from yunohost.utils.ldap import LDAPInterface
-from yunohost.utils.error import YunohostValidationError
+from yunohost.utils.error import YunohostError, YunohostValidationError
 
 logger = getActionLogger("portal")
+
+ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
 
 def _get_user_infos(user_attrs: list[str]):
@@ -71,8 +74,8 @@ def portal_me():
         "username": username,
         "fullname": user["cn"][0],
         "mail": user["mail"][0],
-        "mail-aliases": user["mail"][1:],
-        "mail-forward": user["maildrop"][1:],
+        "mailalias": user["mail"][1:],
+        "mailforward": user["maildrop"][1:],
         "groups": groups,
         "apps": apps,
     }
@@ -86,3 +89,79 @@ def portal_me():
     # But this requires to be in the mail group ...
 
     return result_dict
+
+
+def portal_update(
+    fullname: Union[str, None] = None,
+    mailforward: Union[list[str], None] = None,
+    mailalias: Union[list[str], None] = None,
+):
+    from yunohost.domain import domain_list
+
+    domains = domain_list()["domains"]
+    username, current_user, ldap = _get_user_infos(
+        ["givenName", "sn", "cn", "mail", "maildrop", "memberOf"]
+    )
+    new_attr_dict = {}
+
+    if fullname is not None and fullname != current_user["cn"]:
+        fullname = fullname.strip()
+        firstname = fullname.split()[0]
+        lastname = (
+            " ".join(fullname.split()[1:]) or " "
+        )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
+        new_attr_dict["givenName"] = [firstname]  # TODO: Validate
+        new_attr_dict["sn"] = [lastname]  # TODO: Validate
+        new_attr_dict["cn"] = new_attr_dict["displayName"] = [
+            (firstname + " " + lastname).strip()
+        ]
+
+    if mailalias is not None:
+        mailalias = [mail.strip() for mail in mailalias if mail and mail.strip()]
+        # keep first current mail unaltered
+        mails = [current_user["mail"][0]]
+
+        for index, mail in enumerate(mailalias):
+            if mail in current_user["mail"]:
+                if mail != current_user["mail"][0]:
+                    mails.append(mail)
+                continue  # already in mails, skip validation
+
+            local_part, domain = mail.strip().split("@")
+            if local_part in ADMIN_ALIASES:
+                raise YunohostValidationError(
+                    "mail_unavailable", path="mailalias", index=index
+                )
+
+            try:
+                ldap.validate_uniqueness({"mail": mail})
+            except Exception as e:
+                raise YunohostError("user_update_failed", user=username, error=e)
+
+            if domain not in domains:
+                raise YunohostError("mail_domain_unknown", domain=domain)
+
+            mails.append(mail)
+
+        new_attr_dict["mail"] = mails
+
+    if mailforward is not None:
+        new_attr_dict["maildrop"] = [current_user["maildrop"][0]] + [
+            mail.strip()
+            for mail in mailforward
+            if mail and mail.strip() and mail != current_user["maildrop"][0]
+        ]
+
+    try:
+        ldap.update(f"uid={username},ou=users", new_attr_dict)
+    except Exception as e:
+        raise YunohostError("user_update_failed", user=username, error=e)
+
+    # FIXME: Here we could want to trigger "post_user_update" hook but hooks has to
+    # be run as root
+
+    return {
+        "fullname": new_attr_dict["cn"][0],
+        "mailalias": new_attr_dict["mail"][1:],
+        "mailforward": new_attr_dict["maildrop"][1:],
+    }

@@ -23,8 +23,32 @@ portal:
         ### portal_update()
         update:
             action_help: Allow user to update their infos (display name, mail aliases/forward, password, ...)
-            api: PUT /me
-            # FIXME: add args etc
+            api: PUT /update
+            arguments:
+                -F:
+                    full: --fullname
+                    help: The full name of the user. For example 'Camille Dupont'
+                    extra:
+                        pattern: &pattern_fullname
+                            - !!str ^([^\W_]{1,30}[ ,.'-]{0,3})+$
+                            - "pattern_fullname"
+                --mailforward:
+                    help: Mailforward addresses to add
+                    nargs: "*"
+                    metavar: MAIL
+                    extra:
+                        pattern: &pattern_email_forward
+                            - !!str ^[\w\+.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                            - "pattern_email_forward"
+                --mailalias:
+                    help: Mail aliases to add
+                    nargs: "*"
+                    metavar: MAIL
+                    extra:
+                        pattern: &pattern_email
+                            - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
+                            - "pattern_email"
+
 
         ### portal_reset_password()
         reset_password:
