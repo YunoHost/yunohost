@@ -26,6 +26,11 @@ from moulinette.utils.filesystem import read_json
 from yunohost.authenticators.ldap_ynhuser import Authenticator as Auth
 from yunohost.utils.ldap import LDAPInterface
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.password import (
+    assert_password_is_compatible,
+    assert_password_is_strong_enough,
+)
+from yunohost.user import _hash_user_password
 
 logger = getActionLogger("portal")
 
@@ -165,3 +170,22 @@ def portal_update(
         "mailalias": new_attr_dict["mail"][1:],
         "mailforward": new_attr_dict["maildrop"][1:],
     }
+
+
+def portal_update_password(current: str, password: str):
+    username, current_user, ldap = _get_user_infos(["userPassword", "memberOf"])
+    is_admin = "cn=admins,ou=groups,dc=yunohost,dc=org" in current_user["memberOf"]
+
+    # FIXME: Verify current password ?
+
+    # Ensure compatibility and sufficiently complex password
+    assert_password_is_compatible(password)
+    assert_password_is_strong_enough("admin" if is_admin else "user", password)
+
+    try:
+        ldap.update(
+            f"uid={username},ou=users",
+            {"userPassword": [_hash_user_password(password)]},
+        )
+    except Exception as e:
+        raise YunohostError("user_update_failed", user=username, error=e)
