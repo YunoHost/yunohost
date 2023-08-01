@@ -48,10 +48,16 @@ def portal_me():
     else:
         raise YunohostValidationError("user_unknown", user=username)
 
-    groups = [g.replace("cn=", "").replace(",ou=groups,dc=yunohost,dc=org", "") for g in user["memberOf"]]
+    groups = [
+        g.replace("cn=", "").replace(",ou=groups,dc=yunohost,dc=org", "")
+        for g in user["memberOf"]
+    ]
     groups = [g for g in groups if g not in [username, "all_users"]]
 
-    permissions = [p.replace("cn=", "").replace(",ou=permission,dc=yunohost,dc=org", "") for p in user["permission"]]
+    permissions = [
+        p.replace("cn=", "").replace(",ou=permission,dc=yunohost,dc=org", "")
+        for p in user["permission"]
+    ]
 
     ssowat_conf = read_json("/etc/ssowat/conf.json")
     apps = {
@@ -67,7 +73,7 @@ def portal_me():
         "mail-aliases": user["mail"][1:],
         "mail-forward": user["maildrop"][1:],
         "groups": groups,
-        "apps": apps
+        "apps": apps,
     }
 
     # FIXME / TODO : add mail quota status ?
