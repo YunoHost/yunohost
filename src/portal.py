@@ -29,24 +29,25 @@ from yunohost.utils.error import YunohostValidationError
 logger = getActionLogger("portal")
 
 
+def _get_user_infos(user_attrs: list[str]):
+    auth = Auth().get_session_cookie(decrypt_pwd=True)
+    username = auth["user"]
+    ldap = LDAPInterface(username, auth["pwd"])
+    result = ldap.search("ou=users", f"uid={username}", user_attrs)
+    if not result:
+        raise YunohostValidationError("user_unknown", user=username)
+
+    return username, result[0], ldap
+
+
 def portal_me():
     """
     Get user informations
     """
 
-    auth = Auth().get_session_cookie(decrypt_pwd=True)
-    username = auth["user"]
-
-    ldap = LDAPInterface(username, auth["pwd"])
-
-    user_attrs = ["cn", "mail", "maildrop", "mailuserquota", "memberOf", "permission"]
-
-    result = ldap.search("ou=users", f"uid={username}", user_attrs)
-
-    if result:
-        user = result[0]
-    else:
-        raise YunohostValidationError("user_unknown", user=username)
+    username, user, ldap = _get_user_infos(
+        ["cn", "mail", "maildrop", "mailuserquota", "memberOf", "permission"]
+    )
 
     groups = [
         g.replace("cn=", "").replace(",ou=groups,dc=yunohost,dc=org", "")
