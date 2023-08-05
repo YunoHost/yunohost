@@ -193,7 +193,7 @@
     "config_unknown_filter_key": "Klucz filtru '{filter_key}' jest niepoprawny.",
     "config_validate_email": "Proszę podać poprawny adres e-mail",
     "backup_hook_unknown": "Nieznany jest hook kopii zapasowej '{hook}'",
-    "backup_no_uncompress_archive_dir": "Nie istnieje taki katalog nieskompresowanego archiwum.",
+    "backup_no_uncompress_archive_dir": "Nie istnieje taki katalog nieskompresowanego archiwum",
     "backup_output_symlink_dir_broken": "Twój katalog archiwum ‘{path}’ to uszkodzony symlink. Być może zapomniałeś o ponownym zamontowaniu lub podłączeniu nośnika przechowującego, do którego on wskazuje.",
     "backup_system_part_failed": "Nie udało się wykonać kopii zapasowej części systemu ‘{part}’",
     "config_validate_color": "Powinien być poprawnym szesnastkowym kodem koloru RGB.",
