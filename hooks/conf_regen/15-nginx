@@ -68,6 +68,23 @@ do_pre_regen() {
     export redirect_to_https="$(yunohost settings get 'security.nginx.nginx_redirect_to_https' | int_to_bool)"
     export compatibility="$(yunohost settings get 'security.nginx.nginx_compatibility')"
     export experimental="$(yunohost settings get 'security.experimental.security_experimental_enabled' | int_to_bool)"
+    export sni_forward_enabled="$(yunohost settings get 'misc.sni_forward.sni_forward_enabled' | int_to_bool)"
+    export sni_forward_list="$(yunohost settings get 'misc.sni_forward.sni_forward_list')"
+
+    local sni_module="${pending_dir}/etc/nginx/modules-enabled/sni_forward.conf"
+    if [[ "$sni_forward_enabled" == "True" ]]
+    then
+        ynh_render_template "sni_forward.conf" "${sni_module}"
+        for sni_forward_domain_and_ip in $(echo "$sni_forward_list" | sed 's/,/\n/g')
+        do
+            export sni_forward_domain=$(echo $sni_forward_domain_and_ip | awk -F: '{print $1}')
+            export sni_forward_ip=$(echo $sni_forward_domain_and_ip | awk -F: '{print $2}')
+            ynh_render_template "sni_forward_server.conf" "${nginx_conf_dir}/${sni_forward_domain}.forward80.conf"
+        done
+    else
+        touch "${sni_module}"
+    fi
+
     ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
 
     cert_status=$(yunohost domain cert status --json)
@@ -124,6 +141,8 @@ do_pre_regen() {
         [[ $YNH_DOMAINS =~ $domain ]] \
             || touch "${nginx_conf_dir}/${file}"
     done
+
+    # FIXME : also add the .forward80 files
 
     # remove old mail-autoconfig files
     autoconfig_files=$(ls -1 /var/www/.well-known/*/autoconfig/mail/config-v1.1.xml 2> /dev/null || true)

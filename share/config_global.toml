@@ -180,3 +180,18 @@ name = "Other"
         choices.ipv4 = "IPv4 Only"
         choices.ipv6 = "IPv6 Only"
         default = "both"
+
+    [misc.sni_forward]
+    name = "SNI-based forwarding"
+
+        [misc.sni_forward.sni_forward_enabled]
+        type = "boolean"
+        default = false
+
+        [misc.sni_forward.sni_forward_list]
+        type = "tags"
+        # Regex is just <domain regex>:<ip regex>
+        pattern.regexp = '^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,}):((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$'
+        pattern.error = "You should specify a list of items formatted as DOMAIN:IPv4, such as yolo.test:12.34.56.78"
+        default = ""
+        visible = "sni_forward_enabled"
