@@ -72,6 +72,8 @@ do_pre_regen() {
     export sni_forward_list="$(yunohost settings get 'misc.sni_forward.sni_forward_list')"
 
     local sni_module="${pending_dir}/etc/nginx/modules-enabled/sni_forward.conf"
+    mkdir -p "${pending_dir}/etc/nginx/modules-enabled/"
+
     if [[ "$sni_forward_enabled" == "True" ]]
     then
         ynh_render_template "sni_forward.conf" "${sni_module}"
