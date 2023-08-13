@@ -138,6 +138,7 @@ class Authenticator(BaseAuthenticator):
             secure=True,
             secret=session_secret,
             httponly=True,
+            path="/"
             # samesite="strict", # Bottle 0.12 doesn't support samesite, to be added in next versions
         )
 
@@ -172,5 +173,4 @@ class Authenticator(BaseAuthenticator):
     def delete_session_cookie(self):
         from bottle import response
 
-        response.set_cookie("yunohost.admin", "", max_age=-1)
-        response.delete_cookie("yunohost.admin")
+        response.delete_cookie("yunohost.admin", path="/")
