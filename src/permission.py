@@ -356,7 +356,7 @@ def permission_create(
     allowed=None,
     url=None,
     additional_urls=None,
-    auth_header=True,
+    auth_header=False,
     label=None,
     show_tile=False,
     protected=False,
