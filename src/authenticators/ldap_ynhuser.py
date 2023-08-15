@@ -132,7 +132,7 @@ class Authenticator(BaseAuthenticator):
 
         response.set_cookie(
             "yunohost.portal",
-            jwt.encode(new_infos, session_secret, algorithm="HS256"),
+            jwt.encode(new_infos, session_secret, algorithm="HS256").decode(),
             secure=True,
             httponly=True,
             path="/",
