@@ -934,14 +934,14 @@ app:
                     help: Custom name for the app
                 -a:
                     full: --args
-                    help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path")
+                    help: Serialized arguments for app script (i.e. "domain=domain.tld&path=/path&init_main_permission=visitors")
                 -n:
                     full: --no-remove-on-failure
                     help: Debug option to avoid removing the app on a failed installation
                     action: store_true
                 -f:
                     full: --force
-                    help: Do not ask confirmation if the app is not safe to use (low quality, experimental or 3rd party)
+                    help: Do not ask confirmation if the app is not safe to use (low quality, experimental or 3rd party), or when the app displays a post-install notification
                     action: store_true
 
         ### app_remove()
