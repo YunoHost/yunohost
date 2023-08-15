@@ -13,5 +13,5 @@ location /yunohost/sso/ {
         more_set_headers "Cache-Control: no-store, no-cache, must-revalidate";
     }
 
-    more_set_headers "Content-Security-Policy: upgrade-insecure-requests; default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; object-src 'none'; img-src 'self' data:;";
+    more_set_headers "Content-Security-Policy: upgrade-insecure-requests; default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; img-src 'self' data:;";
 }
