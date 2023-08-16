@@ -186,11 +186,17 @@ def app_info(app, full=False, upgradable=False):
     ret["from_catalog"] = from_catalog
 
     # Hydrate app notifications and doc
+    rendered_doc = {}
     for pagename, content_per_lang in ret["manifest"]["doc"].items():
         for lang, content in content_per_lang.items():
-            ret["manifest"]["doc"][pagename][lang] = _hydrate_app_template(
-                content, settings
-            )
+            rendered_content = _hydrate_app_template(content, settings)
+            # Rendered content may be empty because of conditional blocks
+            if not rendered_content:
+                continue
+            if pagename not in rendered_doc:
+                rendered_doc[pagename] = {}
+            rendered_doc[pagename][lang] = rendered_content
+    ret["manifest"]["doc"] = rendered_doc
 
     # Filter dismissed notification
     ret["manifest"]["notifications"] = {
@@ -201,9 +207,16 @@ def app_info(app, full=False, upgradable=False):
 
     # Hydrate notifications (also filter uneeded post_upgrade notification based on version)
     for step, notifications in ret["manifest"]["notifications"].items():
+        rendered_notifications = {}
         for name, content_per_lang in notifications.items():
             for lang, content in content_per_lang.items():
-                notifications[name][lang] = _hydrate_app_template(content, settings)
+                rendered_content = _hydrate_app_template(content, settings)
+                if not rendered_content:
+                    continue
+                if name not in rendered_notifications:
+                    rendered_notifications[name] = {}
+                rendered_notifications[name][lang] = rendered_content
+        ret["manifest"]["notifications"][step] = rendered_notifications
 
     ret["is_webapp"] = "domain" in settings and "path" in settings
 
@@ -2230,6 +2243,13 @@ def _parse_app_doc_and_notifications(path):
 
 
 def _hydrate_app_template(template, data):
+
+    # Apply jinja for stuff like {% if .. %} blocks,
+    # but only if there's indeed an if block (to try to reduce overhead or idk)
+    if "{%" in template:
+        from jinja2 import Template
+        template = Template(template).render(**data)
+
     stuff_to_replace = set(re.findall(r"__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__", template))
 
     for stuff in stuff_to_replace:
@@ -2238,7 +2258,7 @@ def _hydrate_app_template(template, data):
         if varname in data:
             template = template.replace(stuff, str(data[varname]))
 
-    return template
+    return template.strip()
 
 
 def _convert_v1_manifest_to_v2(manifest):
@@ -3145,7 +3165,7 @@ def _filter_and_hydrate_notifications(notifications, current_version=None, data=
         else:
             return version.parse(name) > version.parse(current_version.split("~")[0])
 
-    return {
+    out = {
         # Should we render the markdown maybe? idk
         name: _hydrate_app_template(_value_for_locale(content_per_lang), data)
         for name, content_per_lang in notifications.items()
@@ -3153,6 +3173,9 @@ def _filter_and_hydrate_notifications(notifications, current_version=None, data=
         or name == "main"
         or is_version_more_recent_than_current_version(name, current_version)
     }
+
+    # Filter out empty notifications (notifications may be empty because of if blocks)
+    return {name:content for name, content in out.items() if content and content.strip()}
 
 
 def _display_notifications(notifications, force=False):
