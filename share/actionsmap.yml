@@ -980,7 +980,7 @@ app:
                     action: store_true
                 -c:
                     full: --continue-on-failure
-                    help: Continue to upgrade apps event if one or more upgrade failed
+                    help: Continue to upgrade apps even if one or more upgrade failed
                     action: store_true
 
         ### app_change_url()
