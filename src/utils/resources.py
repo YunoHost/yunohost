@@ -1338,7 +1338,7 @@ class DatabaseAppResource(AppResource):
     def provision_or_update(self, context: Dict = {}):
         # This is equivalent to ynh_sanitize_dbid
         db_user = self.app.replace("-", "_").replace(".", "_")
-        db_name = self.get_setting("db_name") || db_user
+        db_name = self.get_setting("db_name") or db_user
         self.set_setting("db_name", db_name)
         self.set_setting("db_user", db_user)
 
