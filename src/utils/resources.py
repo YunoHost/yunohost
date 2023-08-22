@@ -1373,7 +1373,7 @@ class DatabaseAppResource(AppResource):
 
     def deprovision(self, context: Dict = {}):
         db_user = self.app.replace("-", "_").replace(".", "_")
-        db_name = self.get_setting("db_name") || db_user
+        db_name = self.get_setting("db_name") or db_user
 
         if self.dbtype == "mysql":
             self._run_script(
