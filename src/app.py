@@ -707,9 +707,17 @@ def app_upgrade(
                     safety_backup_name = f"{app_instance_name}-pre-upgrade2"
                     other_safety_backup_name = f"{app_instance_name}-pre-upgrade1"
 
-                backup_create(
-                    name=safety_backup_name, apps=[app_instance_name], system=None
-                )
+                tweaked_backup_core_only = False
+                if "BACKUP_CORE_ONLY" not in os.environ:
+                    tweaked_backup_core_only = True
+                    os.environ["BACKUP_CORE_ONLY"] = "1"
+                try:
+                    backup_create(
+                        name=safety_backup_name, apps=[app_instance_name], system=None
+                    )
+                finally:
+                    if tweaked_backup_core_only:
+                        del os.environ["BACKUP_CORE_ONLY"]
 
                 if safety_backup_name in backup_list()["archives"]:
                     # if the backup suceeded, delete old safety backup to save space
