@@ -142,7 +142,16 @@ for panel_name, panel in loaded_toml.items():
     bind_panel = panel.get('bind')
     for section_name, section in panel.items():
         if not isinstance(section, dict): continue
-        bind_section = section.get('bind', bind_panel)
+        bind_section = section.get('bind')
+        if not bind_section:
+            bind_section = bind_panel
+        elif bind_section[-1] == ":" and bind_panel and ":" in bind_panel:
+            regex, bind_panel_file = bind_panel.split(":")
+            if ">" in bind_section:
+                bind_section = bind_section + bind_panel_file
+            else:
+                bind_section = regex + bind_section + bind_panel_file
+            
         for name, param in section.items():
             if not isinstance(param, dict):
                 continue
