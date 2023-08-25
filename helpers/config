@@ -153,13 +153,16 @@ for panel_name, panel in loaded_toml.items():
                 if bind_section:
                     bind = bind_section
                 else:
-                    bind = 'settings' if param.get('type', 'string') != 'file' else 'null'
+                    bind = 'settings'
             elif bind[-1] == ":" and bind_section and ":" in bind_section:
                 regex, bind_file = bind_section.split(":")
                 if ">" in bind:
                     bind = bind + bind_file
                 else:
                     bind = regex + bind + bind_file
+            if bind == "settings" and param.get('type', 'string') == 'file':
+                bind = 'null'
+
             print(';'.join([
                 name,
                 param.get('type', 'string'),
