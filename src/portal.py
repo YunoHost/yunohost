@@ -20,17 +20,17 @@
 """
 from typing import Union
 
-from moulinette.utils.log import getActionLogger
+import ldap
 from moulinette.utils.filesystem import read_json
-
-from yunohost.authenticators.ldap_ynhuser import Authenticator as Auth
-from yunohost.utils.ldap import LDAPInterface
+from moulinette.utils.log import getActionLogger
+from yunohost.authenticators.ldap_ynhuser import URI, USERDN, Authenticator as Auth
+from yunohost.user import _hash_user_password
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.ldap import LDAPInterface
 from yunohost.utils.password import (
     assert_password_is_compatible,
     assert_password_is_strong_enough,
 )
-from yunohost.user import _hash_user_password
 
 logger = getActionLogger("portal")
 
@@ -40,12 +40,12 @@ ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 def _get_user_infos(user_attrs: list[str]):
     auth = Auth().get_session_cookie(decrypt_pwd=True)
     username = auth["user"]
-    ldap = LDAPInterface(username, auth["pwd"])
-    result = ldap.search("ou=users", f"uid={username}", user_attrs)
+    ldap_interface = LDAPInterface(username, auth["pwd"])
+    result = ldap_interface.search("ou=users", f"uid={username}", user_attrs)
     if not result:
         raise YunohostValidationError("user_unknown", user=username)
 
-    return username, result[0], ldap
+    return username, result[0], ldap_interface
 
 
 def portal_me():
@@ -53,7 +53,7 @@ def portal_me():
     Get user informations
     """
 
-    username, user, ldap = _get_user_infos(
+    username, user, _ = _get_user_infos(
         ["cn", "mail", "maildrop", "mailuserquota", "memberOf", "permission"]
     )
 
@@ -100,11 +100,13 @@ def portal_update(
     fullname: Union[str, None] = None,
     mailforward: Union[list[str], None] = None,
     mailalias: Union[list[str], None] = None,
+    currentpassword: Union[str, None] = None,
+    newpassword: Union[str, None] = None,
 ):
     from yunohost.domain import domain_list
 
     domains = domain_list()["domains"]
-    username, current_user, ldap = _get_user_infos(
+    username, current_user, ldap_interface = _get_user_infos(
         ["givenName", "sn", "cn", "mail", "maildrop", "memberOf"]
     )
     new_attr_dict = {}
@@ -128,23 +130,25 @@ def portal_update(
 
         for index, mail in enumerate(mailalias):
             if mail in current_user["mail"]:
-                if mail != current_user["mail"][0]:
+                if mail != current_user["mail"][0] and mail not in mails:
                     mails.append(mail)
                 continue  # already in mails, skip validation
 
-            local_part, domain = mail.strip().split("@")
+            local_part, domain = mail.split("@")
             if local_part in ADMIN_ALIASES:
                 raise YunohostValidationError(
-                    "mail_unavailable", path="mailalias", index=index
+                    "mail_unavailable", path=f"mailalias[{index}]"
                 )
 
             try:
-                ldap.validate_uniqueness({"mail": mail})
+                ldap_interface.validate_uniqueness({"mail": mail})
             except Exception as e:
                 raise YunohostError("user_update_failed", user=username, error=e)
 
             if domain not in domains:
-                raise YunohostError("mail_domain_unknown", domain=domain)
+                raise YunohostValidationError(
+                    "mail_domain_unknown", domain=domain, path=f"mailalias[{index}]"
+                )
 
             mails.append(mail)
 
@@ -157,8 +161,31 @@ def portal_update(
             if mail and mail.strip() and mail != current_user["maildrop"][0]
         ]
 
+    if newpassword:
+        # Check that current password is valid
+        try:
+            con = ldap.ldapobject.ReconnectLDAPObject(URI, retry_max=0)
+            con.simple_bind_s(USERDN.format(username=username), currentpassword)
+        except ldap.INVALID_CREDENTIALS:
+            raise YunohostValidationError("invalid_password", path="currentpassword")
+        finally:
+            # Free the connection, we don't really need it to keep it open as the point is only to check authentication...
+            if con:
+                con.unbind_s()
+
+        # Ensure compatibility and sufficiently complex password
+        try:
+            assert_password_is_compatible(newpassword)
+            is_admin = "cn=admins,ou=groups,dc=yunohost,dc=org" in current_user["memberOf"]
+            assert_password_is_strong_enough("admin" if is_admin else "user", newpassword)
+        except YunohostValidationError as e:
+            raise YunohostValidationError(e.key, path="newpassword")
+
+        Auth().delete_session_cookie()
+        new_attr_dict["userPassword"] = [_hash_user_password(newpassword)]
+
     try:
-        ldap.update(f"uid={username},ou=users", new_attr_dict)
+        ldap_interface.update(f"uid={username},ou=users", new_attr_dict)
     except Exception as e:
         raise YunohostError("user_update_failed", user=username, error=e)
 
@@ -170,22 +197,3 @@ def portal_update(
         "mailalias": new_attr_dict["mail"][1:],
         "mailforward": new_attr_dict["maildrop"][1:],
     }
-
-
-def portal_update_password(current: str, password: str):
-    username, current_user, ldap = _get_user_infos(["userPassword", "memberOf"])
-    is_admin = "cn=admins,ou=groups,dc=yunohost,dc=org" in current_user["memberOf"]
-
-    # FIXME: Verify current password ?
-
-    # Ensure compatibility and sufficiently complex password
-    assert_password_is_compatible(password)
-    assert_password_is_strong_enough("admin" if is_admin else "user", password)
-
-    try:
-        ldap.update(
-            f"uid={username},ou=users",
-            {"userPassword": [_hash_user_password(password)]},
-        )
-    except Exception as e:
-        raise YunohostError("user_update_failed", user=username, error=e)

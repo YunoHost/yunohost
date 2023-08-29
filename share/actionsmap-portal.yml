@@ -25,8 +25,7 @@ portal:
             action_help: Allow user to update their infos (display name, mail aliases/forward, password, ...)
             api: PUT /update
             arguments:
-                -F:
-                    full: --fullname
+                --fullname:
                     help: The full name of the user. For example 'Camille Dupont'
                     extra:
                         pattern: &pattern_fullname
@@ -48,18 +47,24 @@ portal:
                         pattern: &pattern_email
                             - !!str ^[\w.-]+@([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
                             - "pattern_email"
+                --currentpassword:
+                    help: Current password
+                    nargs: "?"
+                --newpassword:
+                    help: New password to set
+                    nargs: "?"
 
         ### portal_update_password()
-        update_password:
-            action_help: Allow user to change their password
-            api: PUT /me/update_password
-            arguments:
-                -c:
-                    full: --current
-                    help: Current password
-                -p:
-                    full: --password
-                    help: New password to set
+        # update_password:
+        #     action_help: Allow user to change their password
+        #     api: PUT /me/update_password
+        #     arguments:
+        #         -c:
+        #             full: --current
+        #             help: Current password
+        #         -p:
+        #             full: --password
+        #             help: New password to set
 
         ### portal_reset_password()
         reset_password:
