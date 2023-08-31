@@ -43,7 +43,7 @@ class MyDiagnoser(Diagnoser):
     dependencies: List[str] = ["ip"]
 
     def run(self):
-        self.ehlo_domain = _get_maindomain()
+        self.ehlo_domain = _get_maindomain().lower()
         self.mail_domains = domain_list()["domains"]
         self.ipversions, self.ips = self.get_ips_checked()
 
@@ -132,7 +132,7 @@ class MyDiagnoser(Diagnoser):
                     summary=summary,
                     details=[summary + "_details"],
                 )
-            elif r["helo"] != self.ehlo_domain:
+            elif r["helo"].lower() != self.ehlo_domain:
                 yield dict(
                     meta={"test": "mail_ehlo", "ipversion": ipversion},
                     data={"wrong_ehlo": r["helo"], "right_ehlo": self.ehlo_domain},
@@ -185,7 +185,7 @@ class MyDiagnoser(Diagnoser):
             rdns_domain = ""
             if len(value) > 0:
                 rdns_domain = value[0][:-1] if value[0].endswith(".") else value[0]
-            if rdns_domain != self.ehlo_domain:
+            if rdns_domain.lower() != self.ehlo_domain:
                 details = [
                     "diagnosis_mail_fcrdns_different_from_ehlo_domain_details"
                 ] + details
@@ -194,7 +194,7 @@ class MyDiagnoser(Diagnoser):
                     data={
                         "ip": ip,
                         "ehlo_domain": self.ehlo_domain,
-                        "rdns_domain": rdns_domain,
+                        "rdns_domain": rdns_domain.lower(),
                     },
                     status="ERROR",
                     summary="diagnosis_mail_fcrdns_different_from_ehlo_domain",
