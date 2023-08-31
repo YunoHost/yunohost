@@ -70,8 +70,9 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 ynh_add_fpm_config() {
     local _globalphpversion=${phpversion-:}
     # Declare an array to define the options of this helper.
-    local legacy_args=vufpd
-    local -A args_array=([v]=phpversion= [u]=usage= [f]=footprint= [p]=package= [d]=dedicated_service)
+    local legacy_args=vufpdg
+    local -A args_array=([v]=phpversion= [u]=usage= [f]=footprint= [p]=package= [d]=dedicated_service [g]=group=)
+    local group
     local phpversion
     local usage
     local footprint
@@ -80,6 +81,7 @@ ynh_add_fpm_config() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     package=${package:-}
+    group=${group:-}
 
     # The default behaviour is to use the template.
     local autogenconf=false
@@ -180,12 +182,13 @@ ynh_add_fpm_config() {
         # Define the values to use for the configuration of PHP.
         ynh_get_scalable_phpfpm --usage=$usage --footprint=$footprint
 
+        local phpfpm_group=$([[ -n "$group" ]] && echo "$group" || echo "$app")
         local phpfpm_path="$YNH_APP_BASEDIR/conf/php-fpm.conf"
         echo "
 [__APP__]
 
 user = __APP__
-group = __APP__
+group = __PHPFPM_GROUP__
 
 chdir = __INSTALL_DIR__
 
