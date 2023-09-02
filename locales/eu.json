@@ -766,5 +766,13 @@
     "group_mailalias_add": "'{mail}' ePosta aliasa jarri zaio '{group}' taldeari",
     "group_mailalias_remove": "'{mail}' ePosta aliasa kendu zaio '{group}' taldeari",
     "group_user_remove": "'{user}' erabiltzailea '{group}' taldetik kenduko da",
-    "group_user_add": "'{user}' erabiltzailea '{group}' taldera gehituko da"
+    "group_user_add": "'{user}' erabiltzailea '{group}' taldera gehituko da",
+    "ask_dyndns_recovery_password_explain": "Aukeratu DynDNS domeinua berreskuratzeko pasahitza, etorkizunean berrezarri beharko bazenu.",
+    "ask_dyndns_recovery_password_explain_during_unsubscribe": "Sartu DynDNS domeinurako berreskuraketa pasahitza.",
+    "dyndns_no_recovery_password": "Ez da berreskurapen pasahitzik zehaztu! Domeinuaren gaineko kontrola galduz gero, YunoHost taldeko administrariarekin jarri beharko zara harremanetan!",
+    "ask_dyndns_recovery_password": "DynDNS berreskuratzeko pasahitza",
+    "dyndns_subscribed": "DynDNS domeinua harpidetu da",
+    "dyndns_subscribe_failed": "Ezin izan da DynDNS domeinua harpidetu: {error}",
+    "dyndns_unsubscribe_failed": "Ezin izan da DynDNS domeinuaren harpidetza utzi: {error}",
+    "dyndns_unsubscribed": "DynDNS domeinuaren harpidetza utzi da"
 }
