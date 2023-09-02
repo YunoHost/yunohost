@@ -172,7 +172,7 @@ for panel_name, panel in loaded_toml.items():
             if bind == "settings" and param.get('type', 'string') == 'file':
                 bind = 'null'
 
-            print(';'.join([
+            print('|'.join([
                 name,
                 param.get('type', 'string'),
                 bind
@@ -181,7 +181,7 @@ EOL
     )
     for line in $lines; do
         # Split line into short_setting, type and bind
-        IFS=';' read short_setting type bind <<<"$line"
+        IFS='|' read short_setting type bind <<<"$line"
         binds[${short_setting}]="$bind"
         types[${short_setting}]="$type"
         file_hash[${short_setting}]=""
