@@ -914,6 +914,7 @@ class AppOption(BaseChoicesOption):
 
         super().__init__(question)
         self.filter = question.get("filter", None)
+        self.list_portal = question.get("list_portal", False)
 
         apps = app_list(full=True)["apps"]
 
@@ -929,6 +930,8 @@ class AppOption(BaseChoicesOption):
             return app["label"] + domain_path_or_id
 
         self.choices = {"_none": "---"}
+        if self.list_portal:
+            self.choices["portal_public_apps"] = "Portal"
         self.choices.update({app["id"]: _app_display(app) for app in apps})
 
 

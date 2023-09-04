@@ -382,6 +382,7 @@ class ConfigPanel:
                     "filter",
                     "readonly",
                     "enabled",
+                    "list_portal",
                     # "confirm", # TODO: to ask confirmation before running an action
                 ],
                 "defaults": {},
