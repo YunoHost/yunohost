@@ -1554,6 +1554,12 @@ class RestoreManager:
             if not restore_failed:
                 self.targets.set_result("apps", app_instance_name, "Success")
                 operation_logger.success()
+
+                # Call post_app_restore hook
+                env_dict = _make_environment_for_app_script(
+                    app_instance_name
+                )
+                hook_callback("post_app_restore", env=env_dict)
             else:
                 self.targets.set_result("apps", app_instance_name, "Error")
 
