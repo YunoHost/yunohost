@@ -18,7 +18,7 @@
     along with this program; if not, see http://www.gnu.org/licenses
 
 """
-from typing import Union
+from typing import Any, Union
 
 import ldap
 from moulinette.utils.filesystem import read_json
@@ -37,7 +37,9 @@ logger = getActionLogger("portal")
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
 
-def _get_user_infos(user_attrs: list[str]):
+def _get_user_infos(
+    user_attrs: list[str],
+) -> tuple[str, str, dict[str, Any], LDAPInterface]:
     auth = Auth().get_session_cookie(decrypt_pwd=True)
     username = auth["user"]
     ldap_interface = LDAPInterface(username, auth["pwd"])
@@ -45,15 +47,14 @@ def _get_user_infos(user_attrs: list[str]):
     if not result:
         raise YunohostValidationError("user_unknown", user=username)
 
-    return username, result[0], ldap_interface
+    return username, auth["host"], result[0], ldap_interface
 
 
 def portal_me():
     """
     Get user informations
     """
-
-    username, user, _ = _get_user_infos(
+    username, domain, user, _ = _get_user_infos(
         ["cn", "mail", "maildrop", "mailuserquota", "memberOf", "permission"]
     )
 
@@ -106,7 +107,7 @@ def portal_update(
     from yunohost.domain import domain_list
 
     domains = domain_list()["domains"]
-    username, current_user, ldap_interface = _get_user_infos(
+    username, domain, current_user, ldap_interface = _get_user_infos(
         ["givenName", "sn", "cn", "mail", "maildrop", "memberOf"]
     )
     new_attr_dict = {}
@@ -176,8 +177,12 @@ def portal_update(
         # Ensure compatibility and sufficiently complex password
         try:
             assert_password_is_compatible(newpassword)
-            is_admin = "cn=admins,ou=groups,dc=yunohost,dc=org" in current_user["memberOf"]
-            assert_password_is_strong_enough("admin" if is_admin else "user", newpassword)
+            is_admin = (
+                "cn=admins,ou=groups,dc=yunohost,dc=org" in current_user["memberOf"]
+            )
+            assert_password_is_strong_enough(
+                "admin" if is_admin else "user", newpassword
+            )
         except YunohostValidationError as e:
             raise YunohostValidationError(e.key, path="newpassword")
 
