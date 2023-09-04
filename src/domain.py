@@ -737,6 +737,29 @@ class DomainConfigPanel(ConfigPanel):
         ):
             app_ssowatconf()
 
+        portal_options = [
+            "default_app",
+            "show_other_domains_apps",
+            "portal_title",
+            "portal_logo",
+            "portal_theme",
+        ]
+        if any(
+            option in self.future_values
+            and self.future_values[option] != self.values[option]
+            for option in portal_options
+        ):
+            # Portal options are also saved in a `domain.portal.yml` file
+            # that can be read by the portal API.
+            # FIXME remove those from the config panel saved values?
+            portal_values = {
+                option: self.future_values[option] for option in portal_options
+            }
+            # FIXME config file should be readable by the portal entity
+            write_to_yaml(
+                f"{DOMAIN_SETTINGS_DIR}/{self.entity}.portal.yml", portal_values
+            )
+
         stuff_to_regen_conf = []
         if (
             "xmpp" in self.future_values
