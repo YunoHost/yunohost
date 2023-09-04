@@ -18,10 +18,11 @@
     along with this program; if not, see http://www.gnu.org/licenses
 
 """
+from pathlib import Path
 from typing import Any, Union
 
 import ldap
-from moulinette.utils.filesystem import read_json
+from moulinette.utils.filesystem import read_json, read_yaml
 from moulinette.utils.log import getActionLogger
 from yunohost.authenticators.ldap_ynhuser import URI, USERDN, Authenticator as Auth
 from yunohost.user import _hash_user_password
@@ -50,6 +51,56 @@ def _get_user_infos(
     return username, auth["host"], result[0], ldap_interface
 
 
+def _get_portal_settings(domain: Union[str, None] = None):
+    from yunohost.domain import DOMAIN_SETTINGS_DIR
+
+    if not domain:
+        from bottle import request
+
+        domain = request.get_header("host")
+
+    if Path(f"{DOMAIN_SETTINGS_DIR}/{domain}.portal.yml").exists():
+        settings = read_yaml(f"{DOMAIN_SETTINGS_DIR}/{domain}.portal.yml")
+    else:
+        settings = {
+            "public": False,
+            "portal_logo": "",
+            "portal_theme": "system",
+            "portal_title": "YunoHost",
+            "show_other_domains_apps": 1,
+        }
+
+    settings["domain"] = domain
+
+    return settings
+
+
+def portal_public():
+    settings = _get_portal_settings()
+    settings["apps"] = {}
+    settings["public"] = settings.pop("default_app") == "portal_public_apps"
+
+    if settings["public"]:
+        ssowat_conf = read_json("/etc/ssowat/conf.json")
+        settings["apps"] = {
+            perm.replace(".main", ""): {
+                "label": infos["label"],
+                "url": infos["uris"][0],
+            }
+            for perm, infos in ssowat_conf["permissions"].items()
+            if infos["show_tile"] and infos["public"]
+        }
+
+        if not settings["show_other_domains_apps"]:
+            settings["apps"] = {
+                name: data
+                for name, data in settings["apps"].items()
+                if settings["domain"] in data["url"]
+            }
+
+    return settings
+
+
 def portal_me():
     """
     Get user informations
@@ -75,6 +126,10 @@ def portal_me():
         for perm, infos in ssowat_conf["permissions"].items()
         if perm in permissions and infos["show_tile"] and username in infos["users"]
     }
+
+    settings = _get_portal_settings(domain=domain)
+    if not settings["show_other_domains_apps"]:
+        apps = {name: data for name, data in apps.items() if domain in data["url"]}
 
     result_dict = {
         "username": username,
