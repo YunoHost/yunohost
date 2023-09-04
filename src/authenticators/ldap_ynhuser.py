@@ -115,7 +115,7 @@ class Authenticator(BaseAuthenticator):
 
     def set_session_cookie(self, infos):
 
-        from bottle import response
+        from bottle import response, request
 
         assert isinstance(infos, dict)
 
@@ -126,7 +126,8 @@ class Authenticator(BaseAuthenticator):
             # See https://pyjwt.readthedocs.io/en/latest/usage.html#registered-claim-names
             # for explanations regarding nbf, exp
             "nbf": int(datetime.datetime.now().timestamp()),
-            "exp": int(datetime.datetime.now().timestamp()) + (7 * 24 * 3600)  # One week validity   # FIXME : does it mean the session suddenly expires after a week ? Can we somehow auto-renew it at every usage or something ?
+            "exp": int(datetime.datetime.now().timestamp()) + (7 * 24 * 3600),  # One week validity   # FIXME : does it mean the session suddenly expires after a week ? Can we somehow auto-renew it at every usage or something ?
+            "host": request.get_header('host'),
         }
         new_infos.update(infos)
 
