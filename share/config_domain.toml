@@ -4,11 +4,34 @@ i18n = "domain_config"
 [feature]
 name = "Features"
 
+    [feature.portal]
+    name = "Portal"
+
+        [feature.portal.show_other_domains_apps]
+        type = "boolean"
+        default = 1
+
+        [feature.portal.portal_title]
+        type = "string"
+        default = "YunoHost"
+
+        [feature.portal.portal_logo]
+        type = "string"
+        default = ""
+
+        [feature.portal.portal_theme]
+        type = "select"
+        choices = ["system", "light", "dark", "cupcake", "bumblebee", "emerald", "corporate", "synthwave", "retro", "cyberpunk", "valentine", "halloween", "garden", "forest", "aqua", "lofi", "pastel", "fantasy", "wireframe", "black", "luxury", "dracula", "cmyk", "autumn", "business", "acid", "lemonade", "night", "coffee", "winter"]
+        default = "system"
+
+        # FIXME link to GCU
+
     [feature.app]
         [feature.app.default_app]
         type = "app"
         filter = "is_webapp"
         default = "_none"
+        list_portal = true
 
     [feature.mail]
 
