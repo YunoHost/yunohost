@@ -244,9 +244,11 @@ ynh_setup_source() {
 
     if [ "$src_format" = "docker" ]; then
         src_platform="${src_platform:-"linux/$YNH_ARCH"}"
-    elif test -e "$local_src"; then
-        cp $local_src $src_filename
     else
+        if test -e "$local_src"; then
+            cp $local_src $src_filename
+        fi
+        
         [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
 
         # If the file was prefetched but somehow doesn't match the sum, rm and redownload it
