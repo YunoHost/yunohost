@@ -728,15 +728,6 @@ class DomainConfigPanel(ConfigPanel):
                     other_app=app_map(raw=True)[self.entity]["/"]["id"],
                 )
 
-        super()._apply()
-
-        # Reload ssowat if default app changed
-        if (
-            "default_app" in self.future_values
-            and self.future_values["default_app"] != self.values["default_app"]
-        ):
-            app_ssowatconf()
-
         portal_options = [
             "default_app",
             "show_other_domains_apps",
@@ -755,10 +746,45 @@ class DomainConfigPanel(ConfigPanel):
             portal_values = {
                 option: self.future_values[option] for option in portal_options
             }
-            # FIXME config file should be readable by the portal entity
+            if portal_values["portal_logo"].startswith("/tmp/ynh_filequestion_"):
+                # FIXME rework this whole mess
+                # currently only handling API sent images, need to adapt FileOption
+                # to handle file extensions and file saving since "bind" is only
+                # done in bash helpers which are not executed in domain config
+                if "portal_logo[name]" in self.args or self.values["portal_logo"]:
+                    import mimetypes
+                    import base64
+
+                    if "portal_logo[name]" in self.args:
+                        # FIXME choose where to save the file
+                        filepath = os.path.join("/tmp", self.args["portal_logo[name]"])
+                        # move the temp file created by FileOption with proper name and extension
+                        os.rename(self.new_values["portal_logo"], filepath)
+                        mimetype = mimetypes.guess_type(filepath)
+                    else:
+                        # image has already been saved, do not overwrite it with the empty temp file created by the FileOption
+                        filepath = self.values["portal_logo"]
+                        mimetype = mimetypes.guess_type(filepath)
+
+                    # save the proper path to config panel settings
+                    self.new_values["portal_logo"] = filepath
+                    # save the base64 content with mimetype to portal settings
+                    with open(filepath, "rb") as f:
+                        portal_values["portal_logo"] = mimetype[0] + ":" + base64.b64encode(f.read()).decode("utf-8")
+
+            # FIXME config file should be readable by non-root portal entity
             write_to_yaml(
                 f"{DOMAIN_SETTINGS_DIR}/{self.entity}.portal.yml", portal_values
             )
+
+        super()._apply()
+
+        # Reload ssowat if default app changed
+        if (
+            "default_app" in self.future_values
+            and self.future_values["default_app"] != self.values["default_app"]
+        ):
+            app_ssowatconf()
 
         stuff_to_regen_conf = []
         if (
