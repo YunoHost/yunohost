@@ -809,7 +809,7 @@ def app_upgrade(
                 and not no_safety_backup
             ):
                 logger.warning(
-                    "Upgrade failed ... attempting to restore the satefy backup (Yunohost first need to remove the app for this) ..."
+                    "Upgrade failed ... attempting to restore the safety backup (Yunohost first need to remove the app for this) ..."
                 )
 
                 app_remove(app_instance_name, force_workdir=extracted_app_folder)
