@@ -72,7 +72,7 @@ def setup_function(function):
         )
         assert app_is_installed("backup_recommended_app")
 
-    if "with_system_archive_from11p2" in markers:
+    if "with_system_archive_from_11p2" in markers:
         add_archive_system_from_11p2()
         assert len(backup_list()["archives"]) == 1
 
