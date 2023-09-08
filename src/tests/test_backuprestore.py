@@ -49,8 +49,8 @@ def setup_function(function):
         for m in function.__dict__.get("pytestmark", [])
     }
 
-    if "with_wordpress_archive_from_4p2" in markers:
-        add_archive_wordpress_from_4p2()
+    if "with_wordpress_archive_from_11p2" in markers:
+        add_archive_wordpress_from_11p2()
         assert len(backup_list()["archives"]) == 1
 
     if "with_legacy_app_installed" in markers:
@@ -72,8 +72,8 @@ def setup_function(function):
         )
         assert app_is_installed("backup_recommended_app")
 
-    if "with_system_archive_from_4p2" in markers:
-        add_archive_system_from_4p2()
+    if "with_system_archive_from11p2" in markers:
+        add_archive_system_from_11p2()
         assert len(backup_list()["archives"]) == 1
 
     if "with_permission_app_installed" in markers:
@@ -148,7 +148,7 @@ def app_is_installed(app):
 def backup_test_dependencies_are_met():
     # Dummy test apps (or backup archives)
     assert os.path.exists(
-        os.path.join(get_test_apps_dir(), "backup_wordpress_from_4p2")
+        os.path.join(get_test_apps_dir(), "backup_wordpress_from_11p2")
     )
     assert os.path.exists(os.path.join(get_test_apps_dir(), "legacy_app_ynh"))
     assert os.path.exists(
@@ -211,23 +211,23 @@ def install_app(app, path, additionnal_args=""):
     )
 
 
-def add_archive_wordpress_from_4p2():
+def add_archive_wordpress_from_11p2():
     os.system("mkdir -p /home/yunohost.backup/archives")
 
     os.system(
         "cp "
-        + os.path.join(get_test_apps_dir(), "backup_wordpress_from_4p2/backup.tar")
-        + " /home/yunohost.backup/archives/backup_wordpress_from_4p2.tar"
+        + os.path.join(get_test_apps_dir(), "backup_wordpress_from_11p2/backup.tar")
+        + " /home/yunohost.backup/archives/backup_wordpress_from_11p2.tar"
     )
 
 
-def add_archive_system_from_4p2():
+def add_archive_system_from_11p2():
     os.system("mkdir -p /home/yunohost.backup/archives")
 
     os.system(
         "cp "
-        + os.path.join(get_test_apps_dir(), "backup_system_from_4p2/backup.tar")
-        + " /home/yunohost.backup/archives/backup_system_from_4p2.tar"
+        + os.path.join(get_test_apps_dir(), "backup_system_from_11p2/backup.tar")
+        + " /home/yunohost.backup/archives/backup_system_from_11p2.tar"
     )
 
 
@@ -292,12 +292,12 @@ def test_backup_and_restore_all_sys():
 
 
 #
-# System restore from 3.8                                                    #
+# System restore from 11.2                                                    #
 #
 
 
-@pytest.mark.with_system_archive_from_4p2
-def test_restore_system_from_Ynh4p2(monkeypatch):
+@pytest.mark.with_system_archive_from_11p2
+def test_restore_system_from_Ynh11p2(monkeypatch):
     name = random_ascii(8)
     # Backup current system
     with message("backup_created", name=name):
@@ -305,7 +305,7 @@ def test_restore_system_from_Ynh4p2(monkeypatch):
     archives = backup_list()["archives"]
     assert len(archives) == 2
 
-    # Restore system archive from 3.8
+    # Restore system archive from 11.2
     try:
         with message("restore_complete"):
             backup_restore(
@@ -439,18 +439,17 @@ def test_backup_using_copy_method():
 # App restore                                                                #
 #
 
-# FIXME : switch to a backup from 11.x
 @pytest.mark.skip
-@pytest.mark.with_wordpress_archive_from_4p2
+@pytest.mark.with_wordpress_archive_from_11p2
 @pytest.mark.with_custom_domain("yolo.test")
-def test_restore_app_wordpress_from_Ynh4p2():
+def test_restore_app_wordpress_from_Ynh11p2():
     with message("restore_complete"):
         backup_restore(
             system=None, name=backup_list()["archives"][0], apps=["wordpress"]
         )
 
 
-@pytest.mark.with_wordpress_archive_from_4p2
+@pytest.mark.with_wordpress_archive_from_11p2
 @pytest.mark.with_custom_domain("yolo.test")
 def test_restore_app_script_failure_handling(monkeypatch, mocker):
     def custom_hook_exec(name, *args, **kwargs):
@@ -471,7 +470,7 @@ def test_restore_app_script_failure_handling(monkeypatch, mocker):
     assert not _is_installed("wordpress")
 
 
-@pytest.mark.with_wordpress_archive_from_4p2
+@pytest.mark.with_wordpress_archive_from_11p2
 def test_restore_app_not_enough_free_space(monkeypatch, mocker):
     def custom_free_space_in_directory(dirpath):
         return 0
@@ -490,7 +489,7 @@ def test_restore_app_not_enough_free_space(monkeypatch, mocker):
     assert not _is_installed("wordpress")
 
 
-@pytest.mark.with_wordpress_archive_from_4p2
+@pytest.mark.with_wordpress_archive_from_11p2
 def test_restore_app_not_in_backup(mocker):
     assert not _is_installed("wordpress")
     assert not _is_installed("yoloswag")
@@ -505,9 +504,8 @@ def test_restore_app_not_in_backup(mocker):
     assert not _is_installed("yoloswag")
 
 
-# FIXME : switch to a backup from 11.x
 @pytest.mark.skip
-@pytest.mark.with_wordpress_archive_from_4p2
+@pytest.mark.with_wordpress_archive_from_11p2
 @pytest.mark.with_custom_domain("yolo.test")
 def test_restore_app_already_installed(mocker):
     assert not _is_installed("wordpress")
@@ -619,17 +617,17 @@ def test_restore_archive_with_no_json(mocker):
         backup_restore(name="badbackup", force=True)
 
 
-@pytest.mark.with_wordpress_archive_from_4p2
+@pytest.mark.with_wordpress_archive_from_11p2
 def test_restore_archive_with_bad_archive(mocker):
     # Break the archive
     os.system(
-        "head -n 1000 /home/yunohost.backup/archives/backup_wordpress_from_4p2.tar > /home/yunohost.backup/archives/backup_wordpress_from_4p2_bad.tar"
+        "head -n 1000 /home/yunohost.backup/archives/backup_wordpress_from_11p2.tar > /home/yunohost.backup/archives/backup_wordpress_from_11p2_bad.tar"
     )
 
-    assert "backup_wordpress_from_4p2_bad" in backup_list()["archives"]
+    assert "backup_wordpress_from_11p2_bad" in backup_list()["archives"]
 
     with raiseYunohostError(mocker, "backup_archive_corrupted"):
-        backup_restore(name="backup_wordpress_from_4p2_bad", force=True)
+        backup_restore(name="backup_wordpress_from_11p2_bad", force=True)
 
     clean_tmp_backup_directory()
 
