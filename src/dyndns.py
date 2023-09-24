@@ -63,19 +63,28 @@ def _dyndns_available(domain):
     Returns:
         True if the domain is available, False otherwise.
     """
+    import requests  # lazy loading this module for performance reasons
+
     logger.debug(f"Checking if domain {domain} is available on {DYNDNS_PROVIDER} ...")
 
     try:
-        r = download_json(
-            f"https://{DYNDNS_PROVIDER}/test/{domain}", expected_status_code=None
-        )
+        r = requests.get(f"https://{DYNDNS_PROVIDER}/test/{domain}", timeout=30)
     except MoulinetteError as e:
         logger.error(str(e))
         raise YunohostError(
             "dyndns_could_not_check_available", domain=domain, provider=DYNDNS_PROVIDER
         )
 
-    return r == f"Domain {domain} is available"
+    if r.status_code == 200:
+        return r == f"Domain {domain} is available"
+    elif r.status_code == 409:
+        return False
+    elif r.status_code == 429:
+        raise YunohostValidationError("dyndns_availability_too_many_requests")
+    else:
+        raise YunohostError(
+            "dyndns_could_not_check_available", domain=domain, provider=DYNDNS_PROVIDER
+        )
 
 
 @is_unit_operation(exclude=["recovery_password"])

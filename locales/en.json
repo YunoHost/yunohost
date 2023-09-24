@@ -396,6 +396,7 @@
     "downloading": "Downloading...",
     "dpkg_is_broken": "You cannot do this right now because dpkg/APT (the system package managers) seems to be in a broken state... You can try to solve this issue by connecting through SSH and running `sudo apt install --fix-broken` and/or `sudo dpkg --configure -a` and/or `sudo dpkg --audit`.",
     "dpkg_lock_not_available": "This command can't be run right now because another program seems to be using the lock of dpkg (the system package manager)",
+    "dyndns_availability_too_many_requests": "YunoHost's free domain service received too many requests from you, wait 1 minute or so before trying again.",
     "dyndns_could_not_check_available": "Could not check if {domain} is available on {provider}.",
     "dyndns_domain_not_provided": "DynDNS provider {provider} cannot provide domain {domain}.",
     "dyndns_ip_update_failed": "Could not update IP address to DynDNS",
