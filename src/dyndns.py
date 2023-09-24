@@ -273,9 +273,11 @@ def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
         # in /etc/yunohost/dyndns
         regen_conf(["yunohost"])
     elif r.status_code == 403:
-        raise YunohostError("dyndns_unsubscribe_denied")
+        raise YunohostValidationError("dyndns_unsubscribe_denied")
     elif r.status_code == 409:
-        raise YunohostError("dyndns_unsubscribe_already_unsubscribed")
+        raise YunohostValidationError("dyndns_unsubscribe_already_unsubscribed")
+    elif r.status_code == 429:
+        raise YunohostValidationError("dyndns_unsubscribe_too_many_requests")
     else:
         raise YunohostError(
             "dyndns_unsubscribe_failed",
