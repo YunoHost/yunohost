@@ -342,6 +342,7 @@ def domain_remove(
         dyndns_recovery_password -- Recovery password used at the creation of the DynDNS domain
         ignore_dyndns -- If we just remove the DynDNS domain, without unsubscribing
     """
+    import glob
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf, app_info, app_remove
     from yunohost.utils.ldap import _get_ldap_interface
@@ -427,15 +428,6 @@ def domain_remove(
         global domain_list_cache
         domain_list_cache = []
 
-    stuff_to_delete = [
-        f"/etc/yunohost/certs/{domain}",
-        f"/etc/yunohost/dyndns/K{domain}.+*",
-        f"{DOMAIN_SETTINGS_DIR}/{domain}.yml",
-    ]
-
-    for stuff in stuff_to_delete:
-        rm(stuff, force=True, recursive=True)
-
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...
     # There are a few ideas why this happens (like backup/restore nginx
@@ -468,6 +460,11 @@ def domain_remove(
         domain_dyndns_unsubscribe(
             domain=domain, recovery_password=dyndns_recovery_password
         )
+
+    rm(f"/etc/yunohost/certs/{domain}", force=True, recursive=True)
+    for key_file in glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*"):
+        rm(key_file, force=True)
+    rm(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml", force=True)
 
     logger.success(m18n.n("domain_deleted"))
 
