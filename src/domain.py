@@ -317,6 +317,11 @@ def domain_add(
             pass
         raise e
 
+    if dyndns and dyndns_recovery_password:
+        domain_config_set(
+            domain, "dns.registrar.recovery_password", dyndns_recovery_password
+        )
+
     hook_callback("post_domain_add", args=[domain])
 
     logger.success(m18n.n("domain_created"))
@@ -704,6 +709,14 @@ class DomainConfigPanel(ConfigPanel):
                     domain=self.entity,
                     other_app=app_map(raw=True)[self.entity]["/"]["id"],
                 )
+        if (
+            "recovery_password" in self.future_values
+            and self.future_values["recovery_password"]
+            != self.values["recovery_password"]
+        ):
+            domain_dyndns_set_recovery_password(
+                self.entity, self.future_values["recovery_password"]
+            )
 
         super()._apply()
 
