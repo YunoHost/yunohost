@@ -48,6 +48,9 @@ do_init_regen() {
     echo "{}" >'/etc/ssowat/conf.json.persistent'
     chmod 644 /etc/ssowat/conf.json.persistent
     chown root:root /etc/ssowat/conf.json.persistent
+    echo "{}" >'/etc/ssowat/conf.json'
+    chmod 644 /etc/ssowat/conf.json
+    chown root:root /etc/ssowat/conf.json
 
     # Empty service conf
     touch /etc/yunohost/services.yml
