@@ -156,8 +156,8 @@ def tools_postinstall(
     force_diskspace=False,
     overwrite_root_password=True,
 ):
-    from yunohost.dyndns import _dyndns_available
-    from yunohost.utils.dns import is_yunohost_dyndns_domain, dyndns_unsubscribe
+    from yunohost.dyndns import _dyndns_available, dyndns_unsubscribe
+    from yunohost.utils.dns import is_yunohost_dyndns_domain
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
         assert_password_is_compatible,
