@@ -186,11 +186,17 @@ def app_info(app, full=False, upgradable=False):
     ret["from_catalog"] = from_catalog
 
     # Hydrate app notifications and doc
+    rendered_doc = {}
     for pagename, content_per_lang in ret["manifest"]["doc"].items():
         for lang, content in content_per_lang.items():
-            ret["manifest"]["doc"][pagename][lang] = _hydrate_app_template(
-                content, settings
-            )
+            rendered_content = _hydrate_app_template(content, settings)
+            # Rendered content may be empty because of conditional blocks
+            if not rendered_content:
+                continue
+            if pagename not in rendered_doc:
+                rendered_doc[pagename] = {}
+            rendered_doc[pagename][lang] = rendered_content
+    ret["manifest"]["doc"] = rendered_doc
 
     # Filter dismissed notification
     ret["manifest"]["notifications"] = {
@@ -201,9 +207,16 @@ def app_info(app, full=False, upgradable=False):
 
     # Hydrate notifications (also filter uneeded post_upgrade notification based on version)
     for step, notifications in ret["manifest"]["notifications"].items():
+        rendered_notifications = {}
         for name, content_per_lang in notifications.items():
             for lang, content in content_per_lang.items():
-                notifications[name][lang] = _hydrate_app_template(content, settings)
+                rendered_content = _hydrate_app_template(content, settings)
+                if not rendered_content:
+                    continue
+                if name not in rendered_notifications:
+                    rendered_notifications[name] = {}
+                rendered_notifications[name][lang] = rendered_content
+        ret["manifest"]["notifications"][step] = rendered_notifications
 
     ret["is_webapp"] = "domain" in settings and "path" in settings
 
@@ -678,9 +691,17 @@ def app_upgrade(
                     safety_backup_name = f"{app_instance_name}-pre-upgrade2"
                     other_safety_backup_name = f"{app_instance_name}-pre-upgrade1"
 
-                backup_create(
-                    name=safety_backup_name, apps=[app_instance_name], system=None
-                )
+                tweaked_backup_core_only = False
+                if "BACKUP_CORE_ONLY" not in os.environ:
+                    tweaked_backup_core_only = True
+                    os.environ["BACKUP_CORE_ONLY"] = "1"
+                try:
+                    backup_create(
+                        name=safety_backup_name, apps=[app_instance_name], system=None
+                    )
+                finally:
+                    if tweaked_backup_core_only:
+                        del os.environ["BACKUP_CORE_ONLY"]
 
                 if safety_backup_name in backup_list()["archives"]:
                     # if the backup suceeded, delete old safety backup to save space
@@ -772,7 +793,7 @@ def app_upgrade(
                 and not no_safety_backup
             ):
                 logger.warning(
-                    "Upgrade failed ... attempting to restore the satefy backup (Yunohost first need to remove the app for this) ..."
+                    "Upgrade failed ... attempting to restore the safety backup (Yunohost first need to remove the app for this) ..."
                 )
 
                 app_remove(app_instance_name, force_workdir=extracted_app_folder)
@@ -1082,7 +1103,7 @@ def app_install(
     args = {
         question.id: question.value
         for question in questions
-        if question.value is not None
+        if not question.readonly and question.value is not None
     }
 
     # Validate domain / path availability for webapps
@@ -2099,6 +2120,13 @@ def _parse_app_doc_and_notifications(path):
 
 
 def _hydrate_app_template(template, data):
+
+    # Apply jinja for stuff like {% if .. %} blocks,
+    # but only if there's indeed an if block (to try to reduce overhead or idk)
+    if "{%" in template:
+        from jinja2 import Template
+        template = Template(template).render(**data)
+
     stuff_to_replace = set(re.findall(r"__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__", template))
 
     for stuff in stuff_to_replace:
@@ -2107,7 +2135,7 @@ def _hydrate_app_template(template, data):
         if varname in data:
             template = template.replace(stuff, str(data[varname]))
 
-    return template
+    return template.strip()
 
 
 def _convert_v1_manifest_to_v2(manifest):
@@ -3010,7 +3038,7 @@ def _filter_and_hydrate_notifications(notifications, current_version=None, data=
         current_version = str(current_version)
         return _parse_app_version(name) > _parse_app_version(current_version)
 
-    return {
+    out = {
         # Should we render the markdown maybe? idk
         name: _hydrate_app_template(_value_for_locale(content_per_lang), data)
         for name, content_per_lang in notifications.items()
@@ -3018,6 +3046,9 @@ def _filter_and_hydrate_notifications(notifications, current_version=None, data=
         or name == "main"
         or is_version_more_recent_than_current_version(name, current_version)
     }
+
+    # Filter out empty notifications (notifications may be empty because of if blocks)
+    return {name:content for name, content in out.items() if content and content.strip()}
 
 
 def _display_notifications(notifications, force=False):
@@ -3095,7 +3126,7 @@ def regen_mail_app_user_config_for_dovecot_and_postfix(only=None):
         if dovecot:
             hashed_password = _hash_user_password(settings["mail_pwd"])
             dovecot_passwd.append(
-                f"{app}:{hashed_password}::::::allow_nets=127.0.0.1/24"
+                f"{app}:{hashed_password}::::::allow_nets=::1,127.0.0.1/24,local"
             )
         if postfix:
             mail_user = settings.get("mail_user", app)

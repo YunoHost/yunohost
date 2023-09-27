@@ -215,6 +215,11 @@ class MyDiagnoser(Diagnoser):
                     for part in current
                     if not part.startswith("ip4:") and not part.startswith("ip6:")
                 }
+            if "v=DMARC1" in r["value"]:
+                for param in current:
+                    key, value = param.split("=")
+                    if key == "p":
+                        return value in ["none", "quarantine", "reject"]
             return expected == current
         elif r["type"] == "MX":
             # For MX, we want to ignore the priority
