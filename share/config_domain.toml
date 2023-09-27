@@ -9,7 +9,7 @@ name = "Features"
 
         [feature.portal.show_other_domains_apps]
         type = "boolean"
-        default = 1
+        default = false
 
         [feature.portal.portal_title]
         type = "string"

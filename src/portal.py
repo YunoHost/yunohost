@@ -59,18 +59,19 @@ def _get_portal_settings(domain: Union[str, None] = None):
 
         domain = request.get_header("host")
 
-    if Path(f"{DOMAIN_SETTINGS_DIR}/{domain}.portal.yml").exists():
-        settings = read_yaml(f"{DOMAIN_SETTINGS_DIR}/{domain}.portal.yml")
-    else:
-        settings = {
-            "public": False,
-            "portal_logo": "",
-            "portal_theme": "system",
-            "portal_title": "YunoHost",
-            "show_other_domains_apps": 1,
-        }
+    assert domain and "/" not in domain
 
-    settings["domain"] = domain
+    settings = {
+        "public": False,
+        "portal_logo": "",
+        "portal_theme": "system",
+        "portal_title": "YunoHost",
+        "show_other_domains_apps": false,
+        "domain": domain,
+    }
+
+    if Path(f"{DOMAIN_SETTINGS_DIR}/{domain}.portal.yml").exists():
+        settings.update(read_yaml(f"{DOMAIN_SETTINGS_DIR}/{domain}.portal.yml"))
 
     return settings
 
