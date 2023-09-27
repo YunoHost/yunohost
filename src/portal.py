@@ -66,7 +66,7 @@ def _get_portal_settings(domain: Union[str, None] = None):
         "portal_logo": "",
         "portal_theme": "system",
         "portal_title": "YunoHost",
-        "show_other_domains_apps": false,
+        "show_other_domains_apps": False,
         "domain": domain,
     }
 
