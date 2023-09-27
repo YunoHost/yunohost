@@ -435,8 +435,8 @@ def test_permission_list():
 #
 
 
-def test_permission_create_main(mocker):
-    with message(mocker, "permission_created", permission="site.main"):
+def test_permission_create_main():
+    with message("permission_created", permission="site.main"):
         permission_create("site.main", allowed=["all_users"], protected=False)
 
     res = user_permission_list(full=True)["permissions"]
@@ -446,8 +446,8 @@ def test_permission_create_main(mocker):
     assert res["site.main"]["protected"] is False
 
 
-def test_permission_create_extra(mocker):
-    with message(mocker, "permission_created", permission="site.test"):
+def test_permission_create_extra():
+    with message("permission_created", permission="site.test"):
         permission_create("site.test")
 
     res = user_permission_list(full=True)["permissions"]
@@ -466,8 +466,8 @@ def test_permission_create_with_specific_user():
     assert res["site.test"]["allowed"] == ["alice"]
 
 
-def test_permission_create_with_tile_management(mocker):
-    with message(mocker, "permission_created", permission="site.main"):
+def test_permission_create_with_tile_management():
+    with message("permission_created", permission="site.main"):
         _permission_create_with_dummy_app(
             "site.main",
             allowed=["all_users"],
@@ -483,8 +483,8 @@ def test_permission_create_with_tile_management(mocker):
     assert res["site.main"]["show_tile"] is False
 
 
-def test_permission_create_with_tile_management_with_main_default_value(mocker):
-    with message(mocker, "permission_created", permission="site.main"):
+def test_permission_create_with_tile_management_with_main_default_value():
+    with message("permission_created", permission="site.main"):
         _permission_create_with_dummy_app(
             "site.main",
             allowed=["all_users"],
@@ -500,8 +500,8 @@ def test_permission_create_with_tile_management_with_main_default_value(mocker):
     assert res["site.main"]["show_tile"] is True
 
 
-def test_permission_create_with_tile_management_with_not_main_default_value(mocker):
-    with message(mocker, "permission_created", permission="wiki.api"):
+def test_permission_create_with_tile_management_with_not_main_default_value():
+    with message("permission_created", permission="wiki.api"):
         _permission_create_with_dummy_app(
             "wiki.api",
             allowed=["all_users"],
@@ -517,8 +517,8 @@ def test_permission_create_with_tile_management_with_not_main_default_value(mock
     assert res["wiki.api"]["show_tile"] is True
 
 
-def test_permission_create_with_urls_management_without_url(mocker):
-    with message(mocker, "permission_created", permission="wiki.api"):
+def test_permission_create_with_urls_management_without_url():
+    with message("permission_created", permission="wiki.api"):
         _permission_create_with_dummy_app(
             "wiki.api", allowed=["all_users"], domain=maindomain, path="/site"
         )
@@ -530,8 +530,8 @@ def test_permission_create_with_urls_management_without_url(mocker):
     assert res["wiki.api"]["auth_header"] is True
 
 
-def test_permission_create_with_urls_management_simple_domain(mocker):
-    with message(mocker, "permission_created", permission="site.main"):
+def test_permission_create_with_urls_management_simple_domain():
+    with message("permission_created", permission="site.main"):
         _permission_create_with_dummy_app(
             "site.main",
             allowed=["all_users"],
@@ -553,8 +553,8 @@ def test_permission_create_with_urls_management_simple_domain(mocker):
 
 
 @pytest.mark.other_domains(number=2)
-def test_permission_create_with_urls_management_multiple_domain(mocker):
-    with message(mocker, "permission_created", permission="site.main"):
+def test_permission_create_with_urls_management_multiple_domain():
+    with message("permission_created", permission="site.main"):
         _permission_create_with_dummy_app(
             "site.main",
             allowed=["all_users"],
@@ -575,14 +575,14 @@ def test_permission_create_with_urls_management_multiple_domain(mocker):
     assert res["site.main"]["auth_header"] is True
 
 
-def test_permission_delete(mocker):
-    with message(mocker, "permission_deleted", permission="wiki.main"):
+def test_permission_delete():
+    with message("permission_deleted", permission="wiki.main"):
         permission_delete("wiki.main", force=True)
 
     res = user_permission_list()["permissions"]
     assert "wiki.main" not in res
 
-    with message(mocker, "permission_deleted", permission="blog.api"):
+    with message("permission_deleted", permission="blog.api"):
         permission_delete("blog.api", force=False)
 
     res = user_permission_list()["permissions"]
@@ -625,8 +625,8 @@ def test_permission_delete_main_without_force(mocker):
 # user side functions
 
 
-def test_permission_add_group(mocker):
-    with message(mocker, "permission_updated", permission="wiki.main"):
+def test_permission_add_group():
+    with message("permission_updated", permission="wiki.main"):
         user_permission_update("wiki.main", add="alice")
 
     res = user_permission_list(full=True)["permissions"]
@@ -634,8 +634,8 @@ def test_permission_add_group(mocker):
     assert set(res["wiki.main"]["corresponding_users"]) == {"alice", "bob"}
 
 
-def test_permission_remove_group(mocker):
-    with message(mocker, "permission_updated", permission="blog.main"):
+def test_permission_remove_group():
+    with message("permission_updated", permission="blog.main"):
         user_permission_update("blog.main", remove="alice")
 
     res = user_permission_list(full=True)["permissions"]
@@ -643,8 +643,8 @@ def test_permission_remove_group(mocker):
     assert res["blog.main"]["corresponding_users"] == []
 
 
-def test_permission_add_and_remove_group(mocker):
-    with message(mocker, "permission_updated", permission="wiki.main"):
+def test_permission_add_and_remove_group():
+    with message("permission_updated", permission="wiki.main"):
         user_permission_update("wiki.main", add="alice", remove="all_users")
 
     res = user_permission_list(full=True)["permissions"]
@@ -652,9 +652,9 @@ def test_permission_add_and_remove_group(mocker):
     assert res["wiki.main"]["corresponding_users"] == ["alice"]
 
 
-def test_permission_add_group_already_allowed(mocker):
+def test_permission_add_group_already_allowed():
     with message(
-        mocker, "permission_already_allowed", permission="blog.main", group="alice"
+        "permission_already_allowed", permission="blog.main", group="alice"
     ):
         user_permission_update("blog.main", add="alice")
 
@@ -663,9 +663,9 @@ def test_permission_add_group_already_allowed(mocker):
     assert res["blog.main"]["corresponding_users"] == ["alice"]
 
 
-def test_permission_remove_group_already_not_allowed(mocker):
+def test_permission_remove_group_already_not_allowed():
     with message(
-        mocker, "permission_already_disallowed", permission="blog.main", group="bob"
+        "permission_already_disallowed", permission="blog.main", group="bob"
     ):
         user_permission_update("blog.main", remove="bob")
 
@@ -674,8 +674,8 @@ def test_permission_remove_group_already_not_allowed(mocker):
     assert res["blog.main"]["corresponding_users"] == ["alice"]
 
 
-def test_permission_reset(mocker):
-    with message(mocker, "permission_updated", permission="blog.main"):
+def test_permission_reset():
+    with message("permission_updated", permission="blog.main"):
         user_permission_reset("blog.main")
 
     res = user_permission_list(full=True)["permissions"]
@@ -693,42 +693,42 @@ def test_permission_reset_idempotency():
     assert set(res["blog.main"]["corresponding_users"]) == {"alice", "bob"}
 
 
-def test_permission_change_label(mocker):
-    with message(mocker, "permission_updated", permission="wiki.main"):
+def test_permission_change_label():
+    with message("permission_updated", permission="wiki.main"):
         user_permission_update("wiki.main", label="New Wiki")
 
     res = user_permission_list(full=True)["permissions"]
     assert res["wiki.main"]["label"] == "New Wiki"
 
 
-def test_permission_change_label_with_same_value(mocker):
-    with message(mocker, "permission_updated", permission="wiki.main"):
+def test_permission_change_label_with_same_value():
+    with message("permission_updated", permission="wiki.main"):
         user_permission_update("wiki.main", label="Wiki")
 
     res = user_permission_list(full=True)["permissions"]
     assert res["wiki.main"]["label"] == "Wiki"
 
 
-def test_permission_switch_show_tile(mocker):
+def test_permission_switch_show_tile():
     # Note that from the actionmap the value is passed as string, not as bool
     # Try with lowercase
-    with message(mocker, "permission_updated", permission="wiki.main"):
+    with message("permission_updated", permission="wiki.main"):
         user_permission_update("wiki.main", show_tile="false")
 
     res = user_permission_list(full=True)["permissions"]
     assert res["wiki.main"]["show_tile"] is False
 
     # Try with uppercase
-    with message(mocker, "permission_updated", permission="wiki.main"):
+    with message("permission_updated", permission="wiki.main"):
         user_permission_update("wiki.main", show_tile="TRUE")
 
     res = user_permission_list(full=True)["permissions"]
     assert res["wiki.main"]["show_tile"] is True
 
 
-def test_permission_switch_show_tile_with_same_value(mocker):
+def test_permission_switch_show_tile_with_same_value():
     # Note that from the actionmap the value is passed as string, not as bool
-    with message(mocker, "permission_updated", permission="wiki.main"):
+    with message("permission_updated", permission="wiki.main"):
         user_permission_update("wiki.main", show_tile="True")
 
     res = user_permission_list(full=True)["permissions"]
@@ -806,7 +806,7 @@ def test_permission_main_url_regex():
 
 def test_permission_main_url_bad_regex(mocker):
     with raiseYunohostError(mocker, "invalid_regex"):
-        permission_url("blog.main", url="re:/[a-z]++reboy/.*")
+        permission_url("blog.main", url="re:/[a-z]+++reboy/.*")
 
 
 @pytest.mark.other_domains(number=1)
@@ -837,7 +837,7 @@ def test_permission_add_additional_regex():
 
 def test_permission_add_additional_bad_regex(mocker):
     with raiseYunohostError(mocker, "invalid_regex"):
-        permission_url("blog.main", add_url=["re:/[a-z]++reboy/.*"])
+        permission_url("blog.main", add_url=["re:/[a-z]+++reboy/.*"])
 
 
 def test_permission_remove_additional_url():
@@ -1131,7 +1131,7 @@ def test_permission_app_propagation_on_ssowat():
 def test_permission_legacy_app_propagation_on_ssowat():
     app_install(
         os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
-        args="domain=%s&domain_2=%s&path=%s&is_public=1"
+        args="domain=%s&domain_2=%s&path=%s&is_public=0"
         % (maindomain, other_domains[0], "/legacy"),
         force=True,
     )
@@ -1139,12 +1139,12 @@ def test_permission_legacy_app_propagation_on_ssowat():
     # App is configured as public by default using the legacy unprotected_uri mechanics
     # It should automatically be migrated during the install
     res = user_permission_list(full=True)["permissions"]
-    assert "visitors" in res["legacy_app.main"]["allowed"]
+    assert "visitors" not in res["legacy_app.main"]["allowed"]
     assert "all_users" in res["legacy_app.main"]["allowed"]
 
     app_webroot = "https://%s/legacy" % maindomain
 
-    assert can_access_webpage(app_webroot, logged_as=None)
+    assert not can_access_webpage(app_webroot, logged_as=None)
     assert can_access_webpage(app_webroot, logged_as="alice")
 
     # Try to update the permission and check that permissions are still consistent

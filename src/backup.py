@@ -30,10 +30,10 @@ from glob import glob
 from collections import OrderedDict
 from functools import reduce
 from packaging import version
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.text import random_ascii
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
     read_file,
     mkdir,
@@ -84,7 +84,7 @@ APP_MARGIN_SPACE_SIZE = 100  # In MB
 CONF_MARGIN_SPACE_SIZE = 10  # IN MB
 POSTINSTALL_ESTIMATE_SPACE_SIZE = 5  # In MB
 MB_ALLOWED_TO_ORGANIZE = 10
-logger = getActionLogger("yunohost.backup")
+logger = getLogger("yunohost.backup")
 
 
 class BackupRestoreTargetsManager:
@@ -1204,7 +1204,7 @@ class RestoreManager:
 
     def _patch_legacy_php_versions_in_csv_file(self):
         """
-        Apply dirty patch to redirect php5 and php7.0 files to php7.4
+        Apply dirty patch to redirect php5 and php7.x files to php8.2
         """
         from yunohost.utils.legacy import LEGACY_PHP_VERSION_REPLACEMENTS
 

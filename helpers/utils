@@ -75,7 +75,7 @@ fi
 # usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"] [--full_replace]
 # | arg: -d, --dest_dir=     - Directory where to setup sources
 # | arg: -s, --source_id=    - Name of the source, defaults to `main` (when the sources resource exists in manifest.toml) or (legacy) `app` otherwise
-# | arg: -k, --keep=         - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs/'
+# | arg: -k, --keep=         - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs' (no trailing `/` for folders)
 # | arg: -r, --full_replace= - Remove previous sources before installing new sources
 #
 # #### New 'sources' resources
@@ -244,9 +244,11 @@ ynh_setup_source() {
 
     if [ "$src_format" = "docker" ]; then
         src_platform="${src_platform:-"linux/$YNH_ARCH"}"
-    elif test -e "$local_src"; then
-        cp $local_src $src_filename
     else
+        if test -e "$local_src"; then
+            cp $local_src $src_filename
+        fi
+        
         [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
 
         # If the file was prefetched but somehow doesn't match the sum, rm and redownload it

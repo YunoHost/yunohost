@@ -24,9 +24,9 @@ import time
 from importlib import import_module
 from packaging import version
 from typing import List
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm, chown
 
@@ -55,7 +55,7 @@ from yunohost.log import is_unit_operation, OperationLogger
 
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
-logger = getActionLogger("yunohost.tools")
+logger = getLogger("yunohost.tools")
 
 
 def tools_versions():

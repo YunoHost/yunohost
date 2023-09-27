@@ -20,10 +20,10 @@ import os
 import time
 from typing import List, Optional
 from collections import OrderedDict
+from logging import getLogger
 
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import write_to_file, read_yaml, write_to_yaml, rm
 
 from yunohost.app import (
@@ -39,7 +39,7 @@ from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.dns import is_yunohost_dyndns_domain
 from yunohost.log import is_unit_operation
 
-logger = getActionLogger("yunohost.domain")
+logger = getLogger("yunohost.domain")
 
 DOMAIN_SETTINGS_DIR = "/etc/yunohost/domains"
 
@@ -175,11 +175,12 @@ def domain_info(domain):
 
     from yunohost.app import app_info
     from yunohost.dns import _get_registar_settings
+    from yunohost.certificate import certificate_status
 
     _assert_domain_exists(domain)
 
     registrar, _ = _get_registar_settings(domain)
-    certificate = domain_cert_status([domain], full=True)["certificates"][domain]
+    certificate = certificate_status([domain], full=True)["certificates"][domain]
 
     apps = []
     for app in _installed_apps():
@@ -863,10 +864,6 @@ def domain_cert_renew(domain_list, force=False, no_checks=False, email=False):
     from yunohost.certificate import certificate_renew
 
     return certificate_renew(domain_list, force, no_checks, email)
-
-
-def domain_dns_conf(domain):
-    return domain_dns_suggest(domain)
 
 
 def domain_dns_suggest(domain):

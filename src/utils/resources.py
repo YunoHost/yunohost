@@ -23,11 +23,11 @@ import random
 import tempfile
 import subprocess
 from typing import Dict, Any, List, Union
+from logging import getLogger
 
 from moulinette import m18n
 from moulinette.utils.text import random_ascii
 from moulinette.utils.process import check_output
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
 from moulinette.utils.filesystem import (
     rm,
@@ -35,7 +35,7 @@ from moulinette.utils.filesystem import (
 from yunohost.utils.system import system_arch
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
-logger = getActionLogger("yunohost.app_resources")
+logger = getLogger("yunohost.utils.resources")
 
 
 class AppResourceManager:
@@ -1337,8 +1337,8 @@ class DatabaseAppResource(AppResource):
 
     def provision_or_update(self, context: Dict = {}):
         # This is equivalent to ynh_sanitize_dbid
-        db_name = self.app.replace("-", "_").replace(".", "_")
-        db_user = db_name
+        db_user = self.app.replace("-", "_").replace(".", "_")
+        db_name = self.get_setting("db_name") or db_user
         self.set_setting("db_name", db_name)
         self.set_setting("db_user", db_user)
 
@@ -1372,8 +1372,8 @@ class DatabaseAppResource(AppResource):
                 )
 
     def deprovision(self, context: Dict = {}):
-        db_name = self.app.replace("-", "_").replace(".", "_")
-        db_user = db_name
+        db_user = self.app.replace("-", "_").replace(".", "_")
+        db_name = self.get_setting("db_name") or db_user
 
         if self.dbtype == "mysql":
             self._run_script(

@@ -18,18 +18,18 @@
 #
 import os
 import subprocess
+from logging import getLogger
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.configpanel import ConfigPanel
 from yunohost.utils.form import BaseOption
-from moulinette.utils.log import getActionLogger
 from yunohost.regenconf import regen_conf
 from yunohost.firewall import firewall_reload
 from yunohost.log import is_unit_operation
 from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_settings
 
-logger = getActionLogger("yunohost.settings")
+logger = getLogger("yunohost.settings")
 
 SETTINGS_PATH = "/etc/yunohost/settings.yml"
 

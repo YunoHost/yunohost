@@ -1,3 +1,47 @@
+yunohost (12.0.0) unstable; urgency=low
+
+  - Tmp changelog to prepare Bookworm
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
+ 
+yunohost (11.2.4) stable; urgency=low
+
+  - doc: Improve --help for 'yunohost app install' ([#1702](https://github.com/yunohost/yunohost/pull/1702))
+  - helpers: add new --group option for ynh_add_fpm_config to customize the Group parameter (65d25710)
+  - apps: allow to use jinja {% if foobar %} blocks in their notifications/doc pages (57699289)
+  - apps: BACKUP_CORE_ONLY was not set for pre-upgrade safety backups, resulting in unecessarily large pre-upgrade backups (07daa687)
+  - apps: Use the existing db_name setting for database provising to ease v1->v2 transition with specific db_name ([#1704](https://github.com/yunohost/yunohost/pull/1704))
+  - configpanels/forms: more edge cases with some questions not implementing some methods/attributes (b0fe49ae)
+  - diagnosis: reverse DNS check should be case-insensitive #2235 ([#1705](https://github.com/yunohost/yunohost/pull/1705))
+  - i18n: Translations updated for Galician, Indonesian, Polish, Spanish, Turkish
+
+  Thanks to all contributors <3 ! (Grzegorz Cichocki, José M, Kuba Bazan, ljf (zamentur), massyas, Neko Nekowazarashi, selfhoster1312, Suleyman Harmandar, taco, Tagada)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 31 Aug 2023 17:30:21 +0200
+
+yunohost (11.2.3) stable; urgency=low
+
+  - apps: fix another case of no attribute 'value' due to config panels/questions refactoring (4fda8ed49)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 22 Jul 2023 16:48:22 +0200
+
+yunohost (11.2.2) stable; urgency=low
+
+  - domains: Gandi's `api_protocol` field should be a `select` type ([#1693](https://github.com/yunohost/yunohost/pull/1693))
+  - configpanel: fix .value call for readonly-type options (e1ceb084)
+  - i18n: Translations updated for French, Galician
+
+  Thanks to all contributors <3 ! (axolotle, José M, ppr, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 19 Jul 2023 02:35:28 +0200
+
+yunohost (11.2.1) stable; urgency=low
+
+  - doc: fix resource doc generation .. not sure why this line that removed legit indent was there (ced222ea)
+  - apps: hotfix for funky issue, apps getting named 'undefined' (781f924e)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 17 Jul 2023 21:13:54 +0200
+
 yunohost (11.2) stable; urgency=low
 
   - dyndns: add support for recovery passwords ([#1475](https://github.com/YunoHost/yunohost/pull/1475))

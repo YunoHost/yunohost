@@ -22,11 +22,11 @@ import re
 import urllib.parse
 from collections import OrderedDict
 from typing import Union
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
 from moulinette.utils.filesystem import mkdir, read_toml, read_yaml, write_to_yaml
-from moulinette.utils.log import getActionLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.form import (
     OPTIONS,
@@ -40,7 +40,7 @@ from yunohost.utils.form import (
 )
 from yunohost.utils.i18n import _value_for_locale
 
-logger = getActionLogger("yunohost.configpanel")
+logger = getLogger("yunohost.configpanel")
 CONFIG_PANEL_VERSION_SUPPORTED = 1.0
 
 
@@ -160,11 +160,15 @@ class ConfigPanel:
                 result[key] = {"ask": ask}
                 if "current_value" in option:
                     question_class = OPTIONS[option.get("type", OptionType.string)]
-                    result[key]["value"] = question_class.humanize(
-                        option["current_value"], option
-                    )
+                    if hasattr(question_class, "humanize"):
+                        result[key]["value"] = question_class.humanize(
+                            option["current_value"], option
+                        )
+                    else:
+                        result[key]["value"] = option["current_value"]
+
                     # FIXME: semantics, technically here this is not about a prompt...
-                    if question_class.hide_user_input_in_prompt:
+                    if getattr(question_class, "hide_user_input_in_prompt", None):
                         result[key][
                             "value"
                         ] = "**************"  # Prevent displaying password in `config get`
@@ -610,7 +614,7 @@ class ConfigPanel:
                 {
                     question.id: question.value
                     for question in questions
-                    if question.value is not None
+                    if not question.readonly and question.value is not None
                 }
             )
 

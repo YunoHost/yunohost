@@ -28,9 +28,9 @@ import tempfile
 import copy
 from typing import List, Tuple, Dict, Any, Iterator, Optional
 from packaging import version
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import run_commands, check_output
 from moulinette.utils.filesystem import (
     read_file,
@@ -71,7 +71,7 @@ from yunohost.app_catalog import (  # noqa
     APPS_CATALOG_LOGOS,
 )
 
-logger = getActionLogger("yunohost.app")
+logger = getLogger("yunohost.app")
 
 APPS_SETTING_PATH = "/etc/yunohost/apps/"
 APP_TMP_WORKDIRS = "/var/cache/yunohost/app_tmp_work_dirs"
@@ -186,11 +186,17 @@ def app_info(app, full=False, upgradable=False):
     ret["from_catalog"] = from_catalog
 
     # Hydrate app notifications and doc
+    rendered_doc = {}
     for pagename, content_per_lang in ret["manifest"]["doc"].items():
         for lang, content in content_per_lang.items():
-            ret["manifest"]["doc"][pagename][lang] = _hydrate_app_template(
-                content, settings
-            )
+            rendered_content = _hydrate_app_template(content, settings)
+            # Rendered content may be empty because of conditional blocks
+            if not rendered_content:
+                continue
+            if pagename not in rendered_doc:
+                rendered_doc[pagename] = {}
+            rendered_doc[pagename][lang] = rendered_content
+    ret["manifest"]["doc"] = rendered_doc
 
     # Filter dismissed notification
     ret["manifest"]["notifications"] = {
@@ -201,9 +207,16 @@ def app_info(app, full=False, upgradable=False):
 
     # Hydrate notifications (also filter uneeded post_upgrade notification based on version)
     for step, notifications in ret["manifest"]["notifications"].items():
+        rendered_notifications = {}
         for name, content_per_lang in notifications.items():
             for lang, content in content_per_lang.items():
-                notifications[name][lang] = _hydrate_app_template(content, settings)
+                rendered_content = _hydrate_app_template(content, settings)
+                if not rendered_content:
+                    continue
+                if name not in rendered_notifications:
+                    rendered_notifications[name] = {}
+                rendered_notifications[name][lang] = rendered_content
+        ret["manifest"]["notifications"][step] = rendered_notifications
 
     ret["is_webapp"] = "domain" in settings and "path" in settings
 
@@ -238,8 +251,8 @@ def _app_upgradable(app_infos):
     # Determine upgradability
 
     app_in_catalog = app_infos.get("from_catalog")
-    installed_version = version.parse(app_infos.get("version", "0~ynh0"))
-    version_in_catalog = version.parse(
+    installed_version = _parse_app_version(app_infos.get("version", "0~ynh0"))
+    version_in_catalog = _parse_app_version(
         app_infos.get("from_catalog", {}).get("manifest", {}).get("version", "0~ynh0")
     )
 
@@ -254,25 +267,7 @@ def _app_upgradable(app_infos):
     ):
         return "bad_quality"
 
-    # If the app uses the standard version scheme, use it to determine
-    # upgradability
-    if "~ynh" in str(installed_version) and "~ynh" in str(version_in_catalog):
-        if installed_version < version_in_catalog:
-            return "yes"
-        else:
-            return "no"
-
-    # Legacy stuff for app with old / non-standard version numbers...
-
-    # In case there is neither update_time nor install_time, we assume the app can/has to be upgraded
-    if not app_infos["from_catalog"].get("lastUpdate") or not app_infos[
-        "from_catalog"
-    ].get("git"):
-        return "url_required"
-
-    settings = app_infos["settings"]
-    local_update_time = settings.get("update_time", settings.get("install_time", 0))
-    if app_infos["from_catalog"]["lastUpdate"] > local_update_time:
+    if installed_version < version_in_catalog:
         return "yes"
     else:
         return "no"
@@ -617,9 +612,11 @@ def app_upgrade(
         # Manage upgrade type and avoid any upgrade if there is nothing to do
         upgrade_type = "UNKNOWN"
         # Get current_version and new version
-        app_new_version = version.parse(manifest.get("version", "?"))
-        app_current_version = version.parse(app_dict.get("version", "?"))
-        if "~ynh" in str(app_current_version) and "~ynh" in str(app_new_version):
+        app_new_version_raw = manifest.get("version", "?")
+        app_current_version_raw = app_dict.get("version", "?")
+        app_new_version = _parse_app_version(app_new_version_raw)
+        app_current_version = _parse_app_version(app_current_version_raw)
+        if "~ynh" in str(app_current_version_raw) and "~ynh" in str(app_new_version_raw):
             if app_current_version >= app_new_version and not force:
                 # In case of upgrade from file or custom repository
                 # No new version available
@@ -639,10 +636,10 @@ def app_upgrade(
                 upgrade_type = "UPGRADE_FORCED"
             else:
                 app_current_version_upstream, app_current_version_pkg = str(
-                    app_current_version
+                    app_current_version_raw
                 ).split("~ynh")
                 app_new_version_upstream, app_new_version_pkg = str(
-                    app_new_version
+                    app_new_version_raw
                 ).split("~ynh")
                 if app_current_version_upstream == app_new_version_upstream:
                     upgrade_type = "UPGRADE_PACKAGE"
@@ -672,7 +669,7 @@ def app_upgrade(
             settings = _get_app_settings(app_instance_name)
             notifications = _filter_and_hydrate_notifications(
                 manifest["notifications"]["PRE_UPGRADE"],
-                current_version=app_current_version,
+                current_version=app_current_version_raw,
                 data=settings,
             )
             _display_notifications(notifications, force=force)
@@ -694,9 +691,17 @@ def app_upgrade(
                     safety_backup_name = f"{app_instance_name}-pre-upgrade2"
                     other_safety_backup_name = f"{app_instance_name}-pre-upgrade1"
 
-                backup_create(
-                    name=safety_backup_name, apps=[app_instance_name], system=None
-                )
+                tweaked_backup_core_only = False
+                if "BACKUP_CORE_ONLY" not in os.environ:
+                    tweaked_backup_core_only = True
+                    os.environ["BACKUP_CORE_ONLY"] = "1"
+                try:
+                    backup_create(
+                        name=safety_backup_name, apps=[app_instance_name], system=None
+                    )
+                finally:
+                    if tweaked_backup_core_only:
+                        del os.environ["BACKUP_CORE_ONLY"]
 
                 if safety_backup_name in backup_list()["archives"]:
                     # if the backup suceeded, delete old safety backup to save space
@@ -729,8 +734,8 @@ def app_upgrade(
 
         env_dict_more = {
             "YNH_APP_UPGRADE_TYPE": upgrade_type,
-            "YNH_APP_MANIFEST_VERSION": str(app_new_version),
-            "YNH_APP_CURRENT_VERSION": str(app_current_version),
+            "YNH_APP_MANIFEST_VERSION": str(app_new_version_raw),
+            "YNH_APP_CURRENT_VERSION": str(app_current_version_raw),
         }
 
         if manifest["packaging_format"] < 2:
@@ -788,7 +793,7 @@ def app_upgrade(
                 and not no_safety_backup
             ):
                 logger.warning(
-                    "Upgrade failed ... attempting to restore the satefy backup (Yunohost first need to remove the app for this) ..."
+                    "Upgrade failed ... attempting to restore the safety backup (Yunohost first need to remove the app for this) ..."
                 )
 
                 app_remove(app_instance_name, force_workdir=extracted_app_folder)
@@ -913,7 +918,7 @@ def app_upgrade(
                 settings = _get_app_settings(app_instance_name)
                 notifications = _filter_and_hydrate_notifications(
                     manifest["notifications"]["POST_UPGRADE"],
-                    current_version=app_current_version,
+                    current_version=app_current_version_raw,
                     data=settings,
                 )
                 if Moulinette.interface.type == "cli":
@@ -1098,7 +1103,7 @@ def app_install(
     args = {
         question.id: question.value
         for question in questions
-        if question.value is not None
+        if not question.readonly and question.value is not None
     }
 
     # Validate domain / path availability for webapps
@@ -1156,6 +1161,10 @@ def app_install(
                 f"{app_setting_path}/{file_to_copy}",
                 recursive=True,
             )
+
+    # Hotfix for bug in the webadmin while we fix the actual issue :D
+    if label == "undefined":
+        label = None
 
     # Override manifest name by given label
     # This info is also later picked-up by the 'permission' resource initialization
@@ -1512,119 +1521,6 @@ def app_setting(app, key, value=None, delete=False):
     """
     app_settings = _get_app_settings(app) or {}
 
-    #
-    # Legacy permission setting management
-    # (unprotected, protected, skipped_uri/regex)
-    #
-
-    is_legacy_permission_setting = any(
-        key.startswith(word + "_") for word in ["unprotected", "protected", "skipped"]
-    )
-
-    if is_legacy_permission_setting:
-        from yunohost.permission import (
-            user_permission_list,
-            user_permission_update,
-            permission_create,
-            permission_delete,
-            permission_url,
-        )
-
-        permissions = user_permission_list(full=True, apps=[app])["permissions"]
-        key_ = key.split("_")[0]
-        permission_name = f"{app}.legacy_{key_}_uris"
-        permission = permissions.get(permission_name)
-
-        # GET
-        if value is None and not delete:
-            return (
-                ",".join(permission.get("uris", []) + permission["additional_urls"])
-                if permission
-                else None
-            )
-
-        # DELETE
-        if delete:
-            # If 'is_public' setting still exists, we interpret this as
-            # coming from a legacy app (because new apps shouldn't manage the
-            # is_public state themselves anymore...)
-            #
-            # In that case, we interpret the request for "deleting
-            # unprotected/skipped" setting as willing to make the app
-            # private
-            if (
-                "is_public" in app_settings
-                and "visitors" in permissions[app + ".main"]["allowed"]
-            ):
-                if key.startswith("unprotected_") or key.startswith("skipped_"):
-                    user_permission_update(app + ".main", remove="visitors")
-
-            if permission:
-                permission_delete(permission_name)
-
-        # SET
-        else:
-            urls = value
-            # If the request is about the root of the app (/), ( = the vast majority of cases)
-            # we interpret this as a change for the main permission
-            # (i.e. allowing/disallowing visitors)
-            if urls == "/":
-                if key.startswith("unprotected_") or key.startswith("skipped_"):
-                    permission_url(app + ".main", url="/", sync_perm=False)
-                    user_permission_update(app + ".main", add="visitors")
-                else:
-                    user_permission_update(app + ".main", remove="visitors")
-            else:
-                urls = urls.split(",")
-                if key.endswith("_regex"):
-                    urls = ["re:" + url for url in urls]
-
-                if permission:
-                    # In case of new regex, save the urls, to add a new time in the additional_urls
-                    # In case of new urls, we do the same thing but inversed
-                    if key.endswith("_regex"):
-                        # List of urls to save
-                        current_urls_or_regex = [
-                            url
-                            for url in permission["additional_urls"]
-                            if not url.startswith("re:")
-                        ]
-                    else:
-                        # List of regex to save
-                        current_urls_or_regex = [
-                            url
-                            for url in permission["additional_urls"]
-                            if url.startswith("re:")
-                        ]
-
-                    new_urls = urls + current_urls_or_regex
-                    # We need to clear urls because in the old setting the new setting override the old one and dont just add some urls
-                    permission_url(permission_name, clear_urls=True, sync_perm=False)
-                    permission_url(permission_name, add_url=new_urls)
-                else:
-                    from yunohost.utils.legacy import legacy_permission_label
-
-                    # Let's create a "special" permission for the legacy settings
-                    permission_create(
-                        permission=permission_name,
-                        # FIXME find a way to limit to only the user allowed to the main permission
-                        allowed=["all_users"]
-                        if key.startswith("protected_")
-                        else ["all_users", "visitors"],
-                        url=None,
-                        additional_urls=urls,
-                        auth_header=not key.startswith("skipped_"),
-                        label=legacy_permission_label(app, key.split("_")[0]),
-                        show_tile=False,
-                        protected=True,
-                    )
-
-        return
-
-    #
-    # Regular setting management
-    #
-
     # GET
     if value is None and not delete:
         return app_settings.get(key, None)
@@ -1639,8 +1535,6 @@ def app_setting(app, key, value=None, delete=False):
 
     # SET
     else:
-        if key in ["redirected_urls", "redirected_regex"]:
-            value = yaml.safe_load(value)
         app_settings[key] = value
 
     _set_app_settings(app, app_settings)
@@ -1989,20 +1883,6 @@ def _get_app_settings(app):
             logger.error(m18n.n("app_not_correctly_installed", app=app))
             return {}
 
-        # Stupid fix for legacy bullshit
-        # In the past, some setups did not have proper normalization for app domain/path
-        # Meaning some setups (as of January 2021) still have path=/foobar/ (with a trailing slash)
-        # resulting in stupid issue unless apps using ynh_app_normalize_path_stuff
-        # So we yolofix the settings if such an issue is found >_>
-        # A simple call  to `yunohost app list` (which happens quite often) should be enough
-        # to migrate all app settings ... so this can probably be removed once we're past Bullseye...
-        if settings.get("path") != "/" and (
-            settings.get("path", "").endswith("/")
-            or not settings.get("path", "/").startswith("/")
-        ):
-            settings["path"] = "/" + settings["path"].strip("/")
-            _set_app_settings(app, settings)
-
         # Make the app id available as $app too
         settings["app"] = app
 
@@ -2024,6 +1904,20 @@ def _set_app_settings(app, settings):
     """
     with open(os.path.join(APPS_SETTING_PATH, app, "settings.yml"), "w") as f:
         yaml.safe_dump(settings, f, default_flow_style=False)
+
+
+def _parse_app_version(v):
+
+    if v == "?":
+        return (0,0)
+
+    try:
+        if "~" in v:
+            return (version.parse(v.split("~")[0]), int(v.split("~")[1].replace("ynh", "")))
+        else:
+            return (version.parse(v), 0)
+    except Exception as e:
+        raise YunohostError(f"Failed to parse app version '{v}' : {e}", raw_msg=True)
 
 
 def _get_manifest_of_app(path):
@@ -2223,6 +2117,13 @@ def _parse_app_doc_and_notifications(path):
 
 
 def _hydrate_app_template(template, data):
+
+    # Apply jinja for stuff like {% if .. %} blocks,
+    # but only if there's indeed an if block (to try to reduce overhead or idk)
+    if "{%" in template:
+        from jinja2 import Template
+        template = Template(template).render(**data)
+
     stuff_to_replace = set(re.findall(r"__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__", template))
 
     for stuff in stuff_to_replace:
@@ -2231,7 +2132,7 @@ def _hydrate_app_template(template, data):
         if varname in data:
             template = template.replace(stuff, str(data[varname]))
 
-    return template
+    return template.strip()
 
 
 def _convert_v1_manifest_to_v2(manifest):
@@ -2905,6 +2806,7 @@ def _make_environment_for_app_script(
     app_id, app_instance_nb = _parse_app_instance_name(app)
 
     env_dict = {
+        "YNH_DEFAULT_PHP_VERSION": "8.2",
         "YNH_APP_ID": app_id,
         "YNH_APP_INSTANCE_NAME": app,
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
@@ -3043,10 +2945,10 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     services = manifest.get("services", [])
 
-    # Some apps use php-fpm, php5-fpm or php7.x-fpm which is now php7.4-fpm
+    # Some apps use php-fpm, php5-fpm or php7.x-fpm which is now php8.2-fpm
     def replace_alias(service):
-        if service in ["php-fpm", "php5-fpm", "php7.0-fpm", "php7.3-fpm"]:
-            return "php7.4-fpm"
+        if service in ["php-fpm", "php5-fpm", "php7.0-fpm", "php7.3-fpm", "php7.4-fpm"]:
+            return "php8.2-fpm"
         else:
             return service
 
@@ -3055,7 +2957,7 @@ def _assert_system_is_sane_for_app(manifest, when):
     # We only check those, mostly to ignore "custom" services
     # (added by apps) and because those are the most popular
     # services
-    service_filter = ["nginx", "php7.4-fpm", "mysql", "postfix"]
+    service_filter = ["nginx", "php8.2-fpm", "mysql", "postfix"]
     services = [str(s) for s in services if s in service_filter]
 
     if "nginx" not in services:
@@ -3131,14 +3033,9 @@ def _notification_is_dismissed(name, settings):
 def _filter_and_hydrate_notifications(notifications, current_version=None, data={}):
     def is_version_more_recent_than_current_version(name, current_version):
         current_version = str(current_version)
-        # Boring code to handle the fact that "0.1 < 9999~ynh1" is False
+        return _parse_app_version(name) > _parse_app_version(current_version)
 
-        if "~" in name:
-            return version.parse(name) > version.parse(current_version)
-        else:
-            return version.parse(name) > version.parse(current_version.split("~")[0])
-
-    return {
+    out = {
         # Should we render the markdown maybe? idk
         name: _hydrate_app_template(_value_for_locale(content_per_lang), data)
         for name, content_per_lang in notifications.items()
@@ -3146,6 +3043,9 @@ def _filter_and_hydrate_notifications(notifications, current_version=None, data=
         or name == "main"
         or is_version_more_recent_than_current_version(name, current_version)
     }
+
+    # Filter out empty notifications (notifications may be empty because of if blocks)
+    return {name:content for name, content in out.items() if content and content.strip()}
 
 
 def _display_notifications(notifications, force=False):
@@ -3223,7 +3123,7 @@ def regen_mail_app_user_config_for_dovecot_and_postfix(only=None):
         if dovecot:
             hashed_password = _hash_user_password(settings["mail_pwd"])
             dovecot_passwd.append(
-                f"{app}:{hashed_password}::::::allow_nets=127.0.0.1/24"
+                f"{app}:{hashed_password}::::::allow_nets=::1,127.0.0.1/24,local"
             )
         if postfix:
             mail_user = settings.get("mail_user", app)

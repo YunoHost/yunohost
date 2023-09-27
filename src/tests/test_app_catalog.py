@@ -5,6 +5,8 @@ import requests_mock
 import glob
 import shutil
 
+from .conftest import message
+
 from moulinette import m18n
 from moulinette.utils.filesystem import read_json, write_to_json, write_to_yaml
 
@@ -258,13 +260,12 @@ def test_apps_catalog_load_with_conflicts_between_lists(mocker):
     assert "bar" in app_dict.keys()
 
 
-def test_apps_catalog_load_with_oudated_api_version(mocker):
+def test_apps_catalog_load_with_outdated_api_version():
     # Initialize ...
     _initialize_apps_catalog_system()
 
     # Update
     with requests_mock.Mocker() as m:
-        mocker.spy(m18n, "n")
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
         _update_apps_catalog()
 
@@ -282,10 +283,8 @@ def test_apps_catalog_load_with_oudated_api_version(mocker):
     with requests_mock.Mocker() as m:
         # Mock the server response with a dummy apps catalog
         m.register_uri("GET", APPS_CATALOG_DEFAULT_URL_FULL, text=DUMMY_APP_CATALOG)
-
-        mocker.spy(m18n, "n")
-        app_dict = _load_apps_catalog()["apps"]
-        m18n.n.assert_any_call("apps_catalog_update_success")
+        with message("apps_catalog_update_success"):
+            app_dict = _load_apps_catalog()["apps"]
 
     assert "foo" in app_dict.keys()
     assert "bar" in app_dict.keys()

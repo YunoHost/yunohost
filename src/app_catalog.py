@@ -19,9 +19,9 @@
 import os
 import re
 import hashlib
+from logging import getLogger
 
 from moulinette import m18n
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.network import download_json
 from moulinette.utils.filesystem import (
     read_json,
@@ -34,7 +34,7 @@ from moulinette.utils.filesystem import (
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError
 
-logger = getActionLogger("yunohost.app_catalog")
+logger = getLogger("yunohost.app_catalog")
 
 APPS_CATALOG_CACHE = "/var/cache/yunohost/repo"
 APPS_CATALOG_LOGOS = "/usr/share/yunohost/applogos"

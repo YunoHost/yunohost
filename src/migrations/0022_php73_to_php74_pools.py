@@ -1,15 +1,14 @@
 import os
 import glob
 from shutil import copy2
-
-from moulinette.utils.log import getActionLogger
+from logging import getLogger
 
 from yunohost.app import _is_installed
 from yunohost.utils.legacy import _patch_legacy_php_versions_in_settings
 from yunohost.tools import Migration
 from yunohost.service import _run_service_command
 
-logger = getActionLogger("yunohost.migration")
+logger = getLogger("yunohost.migration")
 
 OLDPHP_POOLS = "/etc/php/7.3/fpm/pool.d"
 NEWPHP_POOLS = "/etc/php/7.4/fpm/pool.d"

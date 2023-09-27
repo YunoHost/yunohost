@@ -1,14 +1,14 @@
 import os
+from logging import getLogger
 
 from moulinette import m18n
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import call_async_output
 
 from yunohost.tools import Migration, tools_migrations_state
 from moulinette.utils.filesystem import rm
 
 
-logger = getActionLogger("yunohost.migration")
+logger = getLogger("yunohost.migration")
 
 VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bullseye_upgrade.txt"
 

@@ -1,13 +1,13 @@
 import os
+from logging import getLogger
 
 from yunohost.utils.error import YunohostError
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_json, write_to_yaml
 
 from yunohost.tools import Migration
 from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_settings
 
-logger = getActionLogger("yunohost.migration")
+logger = getLogger("yunohost.migration")
 
 SETTINGS_PATH = "/etc/yunohost/settings.yml"
 OLD_SETTINGS_PATH = "/etc/yunohost/settings.json"

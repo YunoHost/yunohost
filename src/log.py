@@ -32,10 +32,9 @@ from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import get_ynh_package_version
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml
 
-logger = getActionLogger("yunohost.log")
+logger = getLogger("yunohost.log")
 
 CATEGORIES_PATH = "/var/log/yunohost/categories/"
 OPERATIONS_PATH = "/var/log/yunohost/categories/operation/"
