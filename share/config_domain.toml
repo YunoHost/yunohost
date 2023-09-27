@@ -30,7 +30,7 @@ name = "Features"
         type = "app"
         filter = "is_webapp"
         default = "_none"
-        list_portal = true
+        add_yunohost_portal_to_choices = true
 
     [feature.mail]
 

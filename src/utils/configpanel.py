@@ -386,7 +386,7 @@ class ConfigPanel:
                     "filter",
                     "readonly",
                     "enabled",
-                    "list_portal",
+                    "add_yunohost_portal_to_choices",
                     # "confirm", # TODO: to ask confirmation before running an action
                 ],
                 "defaults": {},
