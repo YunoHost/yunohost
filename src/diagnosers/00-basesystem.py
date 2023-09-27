@@ -19,9 +19,9 @@
 import os
 import json
 import subprocess
+import logging
 from typing import List
 
-from moulinette.utils import log
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file, read_json, write_to_json
 from yunohost.diagnosis import Diagnoser
@@ -31,7 +31,7 @@ from yunohost.utils.system import (
     system_arch,
 )
 
-logger = log.getActionLogger("yunohost.diagnosis")
+logger = logging.getLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):

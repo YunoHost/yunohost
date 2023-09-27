@@ -19,9 +19,9 @@
 import re
 import os
 import random
+import logging
 from typing import List
 
-from moulinette.utils import log
 from moulinette.utils.network import download_text
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file
@@ -30,7 +30,7 @@ from yunohost.diagnosis import Diagnoser
 from yunohost.utils.network import get_network_interfaces
 from yunohost.settings import settings_get
 
-logger = log.getActionLogger("yunohost.diagnosis")
+logger = logging.getLogger("yunohost.diagnosis")
 
 
 class MyDiagnoser(Diagnoser):
