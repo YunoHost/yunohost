@@ -19,12 +19,11 @@
 import os
 import re
 import time
-
+from logging import getLogger
 from difflib import SequenceMatcher
 from collections import OrderedDict
 
 from moulinette import m18n, Moulinette
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, write_to_file, read_toml, mkdir
 
 from yunohost.domain import (
@@ -42,7 +41,7 @@ from yunohost.settings import settings_get
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
 
-logger = getActionLogger("yunohost.domain")
+logger = getLogger("yunohost.domain")
 
 DOMAIN_REGISTRAR_LIST_PATH = "/usr/share/yunohost/registrar_list.toml"
 

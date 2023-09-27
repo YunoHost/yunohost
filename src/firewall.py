@@ -19,16 +19,16 @@
 import os
 import yaml
 import miniupnpc
+from logging import getLogger
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils import process
-from moulinette.utils.log import getActionLogger
 
 FIREWALL_FILE = "/etc/yunohost/firewall.yml"
 UPNP_CRON_JOB = "/etc/cron.d/yunohost-firewall-upnp"
 
-logger = getActionLogger("yunohost.firewall")
+logger = getLogger("yunohost.firewall")
 
 
 def firewall_allow(

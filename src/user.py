@@ -25,9 +25,9 @@ import random
 import string
 import subprocess
 import copy
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -35,7 +35,7 @@ from yunohost.service import service_status
 from yunohost.log import is_unit_operation
 from yunohost.utils.system import binary_to_human
 
-logger = getActionLogger("yunohost.user")
+logger = getLogger("yunohost.user")
 
 FIELDS_FOR_IMPORT = {
     "username": r"^[a-z0-9_]+$",
