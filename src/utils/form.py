@@ -914,6 +914,7 @@ class AppOption(BaseChoicesOption):
 
         super().__init__(question)
         self.filter = question.get("filter", None)
+        self.add_yunohost_portal_to_choices = question.get("add_yunohost_portal_to_choices", False)
 
         apps = app_list(full=True)["apps"]
 
@@ -929,6 +930,9 @@ class AppOption(BaseChoicesOption):
             return app["label"] + domain_path_or_id
 
         self.choices = {"_none": "---"}
+        if self.add_yunohost_portal_to_choices:
+            # FIXME: i18n
+            self.choices["_yunohost_portal_with_public_apps"] = "YunoHost's portal with public apps"
         self.choices.update({app["id"]: _app_display(app) for app in apps})
 
 

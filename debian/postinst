@@ -33,6 +33,8 @@ do_configure() {
         yunohost tools update apps --output-as none || true
     fi
 
+    systemctl restart yunohost-portal-api
+
     # Trick to let yunohost handle the restart of the API,
     # to prevent the webadmin from cutting the branch it's sitting on
     if systemctl is-enabled yunohost-api --quiet
