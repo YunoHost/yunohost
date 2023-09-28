@@ -456,10 +456,13 @@ def domain_remove(
 
     # If a password is provided, delete the DynDNS record
     if dyndns:
-        # Actually unsubscribe
-        domain_dyndns_unsubscribe(
-            domain=domain, recovery_password=dyndns_recovery_password
-        )
+        try:
+            # Actually unsubscribe
+            domain_dyndns_unsubscribe(
+                domain=domain, recovery_password=dyndns_recovery_password
+            )
+        except Exception as e:
+            logger.warning(str(e))
 
     rm(f"/etc/yunohost/certs/{domain}", force=True, recursive=True)
     for key_file in glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*"):

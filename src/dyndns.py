@@ -75,7 +75,7 @@ def _dyndns_available(domain):
         )
 
     if r.status_code == 200:
-        return r == f"Domain {domain} is available"
+        return r.text.strip('"') == f"Domain {domain} is available"
     elif r.status_code == 409:
         return False
     elif r.status_code == 429:
@@ -112,7 +112,7 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
         if not recovery_password and Moulinette.interface.type == "cli":
             logger.warning(m18n.n("ask_dyndns_recovery_password_explain_unavailable"))
             recovery_password = Moulinette.prompt(
-                m18n.n("ask_dyndns_recovery_password"), is_password=True, confirm=True
+                m18n.n("ask_dyndns_recovery_password"), is_password=True
             )
 
         if recovery_password:
