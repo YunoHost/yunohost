@@ -76,7 +76,7 @@ def test_domain_add():
 
 
 def test_domain_add_and_remove_dyndns():
-    time.sleep(35)  # Dynette blocks requests that happen too frequently
+    # Devs: if you get `too_many_request` errors, ask the team to add your IP to the rate limit excempt
     assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
     domain_add(TEST_DYNDNS_DOMAIN, dyndns_recovery_password=TEST_DYNDNS_PASSWORD)
     assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
@@ -85,7 +85,7 @@ def test_domain_add_and_remove_dyndns():
 
 
 def test_domain_dyndns_recovery():
-    # time.sleep(35)
+    # Devs: if you get `too_many_request` errors, ask the team to add your IP to the rate limit excempt
     assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
     # add domain without recovery password
     domain_add(TEST_DYNDNS_DOMAIN)
