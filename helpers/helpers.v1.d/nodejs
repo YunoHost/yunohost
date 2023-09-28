@@ -113,7 +113,7 @@ ynh_install_nodejs() {
 
     # Install (or update if YunoHost vendor/ folder updated since last install) n
     mkdir -p $n_install_dir/bin/
-    cp /usr/share/yunohost/helpers.d/vendor/n/n $n_install_dir/bin/n
+    cp "$YNH_APP_HELPERS_DIR/vendor/n/n" $n_install_dir/bin/n
     # Tweak for n to understand it's installed in $N_PREFIX
     ynh_replace_string --match_string="^N_PREFIX=\${N_PREFIX-.*}$" --replace_string="N_PREFIX=\${N_PREFIX-$N_PREFIX}" --target_file="$n_install_dir/bin/n"
 

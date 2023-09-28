@@ -1,0 +1,38 @@
+#!/usr/bin/env bash
+# Entrypoint for the helpers scripts
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+
+if [[ -n "${1:-}" ]]; then
+    # helpers version can be passed as first when sourcing.
+    YNH_APP_HELPERS_VERSION="$1"
+elif [[ -n "${YNH_APP_HELPERS_VERSION:-}" ]]; then
+    # ...or as environment variable
+    :
+elif [[ -n "${YNH_APP_PACKAGING_FORMAT:-}" ]]; then
+    # ...or default to packaging format version.
+    YNH_APP_HELPERS_VERSION="$YNH_APP_PACKAGING_FORMAT"
+else
+    # ...or default to 1
+    YNH_APP_HELPERS_VERSION=1
+fi
+
+
+YNH_APP_HELPERS_DIR="$SCRIPT_DIR/helpers.v${YNH_APP_HELPERS_VERSION}.d"
+if [[ ! -d "$YNH_APP_HELPERS_DIR" ]]; then
+    echo "Helpers are not available in version '$YNH_APP_HELPERS_VERSION'." >&2
+    exit 1
+fi
+
+
+# This is a trick to later only restore set -x if it was set when calling this script
+readonly XTRACE_ENABLE=$(set +o | grep xtrace)
+set +x
+
+readarray -t HELPERS < <(find "$YNH_APP_HELPERS_DIR" -mindepth 1 -maxdepth 1 -type f)
+
+for helper in "${HELPERS[@]}"; do
+    [ -r "$helper" ] && source "$helper"
+done
+
+eval "$XTRACE_ENABLE"
