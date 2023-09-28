@@ -75,12 +75,13 @@ def test_domain_add():
     assert TEST_DOMAINS[2] in domain_list()["domains"]
 
 
-def test_domain_add_subscribe():
+def test_domain_add_and_remove_dyndns():
     time.sleep(35)  # Dynette blocks requests that happen too frequently
     assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
     domain_add(TEST_DYNDNS_DOMAIN, dyndns_recovery_password=TEST_DYNDNS_PASSWORD)
     assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
-
+    domain_remove(TEST_DYNDNS_DOMAIN, dyndns_recovery_password=TEST_DYNDNS_PASSWORD)
+    assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
 
 def test_domain_add_existing_domain():
     with pytest.raises(MoulinetteError):
@@ -92,13 +93,6 @@ def test_domain_remove():
     assert TEST_DOMAINS[1] in domain_list()["domains"]
     domain_remove(TEST_DOMAINS[1])
     assert TEST_DOMAINS[1] not in domain_list()["domains"]
-
-
-def test_domain_remove_unsubscribe():
-    time.sleep(35)  # Dynette blocks requests that happen too frequently
-    assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
-    domain_remove(TEST_DYNDNS_DOMAIN, dyndns_recovery_password=TEST_DYNDNS_PASSWORD)
-    assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
 
 
 def test_main_domain():

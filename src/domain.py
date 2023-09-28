@@ -715,8 +715,10 @@ class DomainConfigPanel(ConfigPanel):
                 self.entity, self.new_values["recovery_password"]
             )
         # Do not save password in yaml settings
-        del self.values["recovery_password"]
-        del self.new_values["recovery_password"]
+        if "recovery_password" in self.values:
+            del self.values["recovery_password"]
+        if "recovery_password" in self.new_values:
+            del self.new_values["recovery_password"]
         assert "recovery_password" not in self.future_values
 
         super()._apply()
