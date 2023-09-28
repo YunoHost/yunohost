@@ -91,7 +91,7 @@
     "ask_new_path": "New path",
     "ask_password": "Password",
     "ask_dyndns_recovery_password_explain": "Please pick a recovery password for your DynDNS domain, in case you need to reset it later.",
-    "ask_dyndns_recovery_password_explain_unavailable": "This DynDNS domain is aleady registered. If you are the person who originally registered this domain, you may enter the recovery password to reclaim this domain.",
+    "ask_dyndns_recovery_password_explain_unavailable": "This DynDNS domain is already registered. If you are the person who originally registered this domain, you may enter the recovery password to reclaim this domain.",
     "ask_dyndns_recovery_password": "DynDNS recovery password",
     "ask_dyndns_recovery_password_explain_during_unsubscribe": "Please enter the recovery password for this DynDNS domain.",
     "ask_user_domain": "Domain to use for the user's email address and XMPP account",
