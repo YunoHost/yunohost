@@ -428,6 +428,21 @@ def domain_remove(
         global domain_list_cache
         domain_list_cache = []
 
+    # If a password is provided, delete the DynDNS record
+    if dyndns:
+        try:
+            # Actually unsubscribe
+            domain_dyndns_unsubscribe(
+                domain=domain, recovery_password=dyndns_recovery_password
+            )
+        except Exception as e:
+            logger.warning(str(e))
+
+    rm(f"/etc/yunohost/certs/{domain}", force=True, recursive=True)
+    for key_file in glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*"):
+        rm(key_file, force=True)
+    rm(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml", force=True)
+
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...
     # There are a few ideas why this happens (like backup/restore nginx
@@ -453,21 +468,6 @@ def domain_remove(
     app_ssowatconf()
 
     hook_callback("post_domain_remove", args=[domain])
-
-    # If a password is provided, delete the DynDNS record
-    if dyndns:
-        try:
-            # Actually unsubscribe
-            domain_dyndns_unsubscribe(
-                domain=domain, recovery_password=dyndns_recovery_password
-            )
-        except Exception as e:
-            logger.warning(str(e))
-
-    rm(f"/etc/yunohost/certs/{domain}", force=True, recursive=True)
-    for key_file in glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*"):
-        rm(key_file, force=True)
-    rm(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml", force=True)
 
     logger.success(m18n.n("domain_deleted"))
 
