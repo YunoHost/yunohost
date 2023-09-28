@@ -79,7 +79,7 @@ def _dyndns_available(domain):
     elif r.status_code == 409:
         return False
     elif r.status_code == 429:
-        raise YunohostValidationError("dyndns_availability_too_many_requests")
+        raise YunohostValidationError("dyndns_too_many_requests")
     else:
         raise YunohostError(
             "dyndns_could_not_check_available", domain=domain, provider=DYNDNS_PROVIDER
@@ -276,7 +276,7 @@ def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
     elif r.status_code == 409:
         raise YunohostValidationError("dyndns_unsubscribe_already_unsubscribed")
     elif r.status_code == 429:
-        raise YunohostValidationError("dyndns_unsubscribe_too_many_requests")
+        raise YunohostValidationError("dyndns_too_many_requests")
     else:
         raise YunohostError(
             "dyndns_unsubscribe_failed",
