@@ -1,8 +1,10 @@
 import pytest
 import os
-import time
 import random
 
+from mock import patch
+
+from moulinette import Moulinette
 from moulinette.core import MoulinetteError
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -87,25 +89,28 @@ def test_domain_add_and_remove_dyndns():
 def test_domain_dyndns_recovery():
     # Devs: if you get `too_many_request` errors, ask the team to add your IP to the rate limit excempt
     assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
-    # add domain without recovery password
-    domain_add(TEST_DYNDNS_DOMAIN)
-    assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
-    # set the recovery password with config panel
-    domain_config_set(TEST_DYNDNS_DOMAIN, "dns.registrar.recovery_password", TEST_DYNDNS_PASSWORD)
-    # remove domain without unsubscribing
-    domain_remove(TEST_DYNDNS_DOMAIN, ignore_dyndns=True)
-    assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
-    # readding domain with bad password should fail
-    with pytest.raises(YunohostValidationError):
-        domain_add(
-            TEST_DYNDNS_DOMAIN, dyndns_recovery_password="wrong" + TEST_DYNDNS_PASSWORD
-        )
-    assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
-    # readding domain with password should work
-    domain_add(TEST_DYNDNS_DOMAIN, dyndns_recovery_password=TEST_DYNDNS_PASSWORD)
-    assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
-    # remove the dyndns domain
-    domain_remove(TEST_DYNDNS_DOMAIN, dyndns_recovery_password=TEST_DYNDNS_PASSWORD)
+    # mocked as API call to avoid CLI prompts
+    with patch.object(Moulinette.interface, "type", "api"):
+        # add domain without recovery password
+        domain_add(TEST_DYNDNS_DOMAIN)
+        assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
+        # set the recovery password with config panel
+        domain_config_set(TEST_DYNDNS_DOMAIN, "dns.registrar.recovery_password", TEST_DYNDNS_PASSWORD)
+        # remove domain without unsubscribing
+        domain_remove(TEST_DYNDNS_DOMAIN, ignore_dyndns=True)
+        assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
+        # readding domain with bad password should fail
+        with pytest.raises(YunohostValidationError):
+            domain_add(
+                TEST_DYNDNS_DOMAIN, dyndns_recovery_password="wrong" + TEST_DYNDNS_PASSWORD
+            )
+        assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
+        # readding domain with password should work
+        domain_add(TEST_DYNDNS_DOMAIN, dyndns_recovery_password=TEST_DYNDNS_PASSWORD)
+        assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
+        # remove the dyndns domain
+        domain_remove(TEST_DYNDNS_DOMAIN, dyndns_recovery_password=TEST_DYNDNS_PASSWORD)
+
     assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
 
 
