@@ -117,6 +117,10 @@ def _get_domain_portal_dict():
 
         out[domain] = f'{parent or domain}/yunohost/sso'
 
+    # By default, redirect to $host/yunohost/admin for domains not listed in the dict
+    # maybe in the future, we can allow to tweak this
+    out["default"] = "/yunohost/admin"
+
     return dict(out)
 
 
