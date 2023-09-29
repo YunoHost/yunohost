@@ -237,6 +237,10 @@ def app_info(app, full=False, upgradable=False):
     ret["supports_config_panel"] = os.path.exists(
         os.path.join(setting_path, "config_panel.toml")
     )
+    ret["supports_purge"] = (
+        local_manifest["packaging_format"] >= 2
+        and local_manifest["resources"].get("data_dir") is not None
+    )
 
     ret["permissions"] = permissions
     ret["label"] = permissions.get(app + ".main", {}).get("label")
