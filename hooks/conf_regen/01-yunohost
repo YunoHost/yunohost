@@ -217,7 +217,7 @@ do_post_regen() {
     find /etc/systemd/system/*.service -type f | xargs -r chown root:root
     find /etc/systemd/system/*.service -type f | xargs -r chmod 0644
 
-    if ls -l /etc/php/*/fpm/pool.d/*.conf
+    if ls -l /etc/php/*/fpm/pool.d/*.conf 2>/dev/null
     then
         chown root:root /etc/php/*/fpm/pool.d/*.conf
         chmod 644 /etc/php/*/fpm/pool.d/*.conf
