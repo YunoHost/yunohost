@@ -545,6 +545,9 @@ def _get_registrar_config_section(domain):
                 "value": "yunohost",
             }
         )
+        registrar_infos["recovery_password"] = OrderedDict(
+            {"type": "password", "ask": m18n.n("ask_dyndns_recovery_password"), "default": ""}
+        )
         return OrderedDict(registrar_infos)
     elif is_special_use_tld(dns_zone):
         registrar_infos["registrar"] = OrderedDict(
