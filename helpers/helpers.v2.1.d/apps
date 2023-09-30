@@ -1,0 +1,169 @@
+#!/bin/bash
+
+ynh::apps::list() {
+    yunohost app list --output-as json --quiet | jq -r '.apps[].id'
+}
+
+
+# Install others YunoHost apps
+#
+# usage: ynh_install_apps --apps="appfoo?domain=domain.foo&path=/foo appbar?domain=domain.bar&path=/bar&admin=USER&language=fr&is_public=1&pass?word=pass&port=666"
+# | arg: -a, --apps=     - apps to install
+#
+# Requires YunoHost version *.*.* or higher.
+ynh::apps::install() {
+    local -a apps=()
+    arguments::parse \
+        "-a|--apps)apps;Array,R" \
+        -- "${@+$@}"
+
+    local -a installed_apps
+    mapfile -t installed_apps < <(ynh::apps::list)
+
+    for app_and_args in "${apps[@]}"; do
+        local app_name app_args
+        app_name="$(cut -d "?" -f1 <<< "$app_and_args")"
+        app_args="$(cut -d "?" -f2- -s <<< "$app_and_args")"
+        if string::empty "$app_name"; then
+            log::panic "You didn't provided a YunoHost app to install"
+        fi
+
+        yunohost tools update apps
+
+        if list::contains "$app_name" "${installed_apps[@]}"; then
+            # App already installed, upgrade it
+            yunohost app upgrade "$app_name"
+        else
+            # Install the app with its arguments
+            yunohost app install "$app_name" "$app_args"
+        fi
+    done
+
+    ynh::setting::set --key "apps_dependencies" --value "$(array::join ", " "${apps[@]}")"
+}
+
+# Remove other YunoHost apps
+#
+# Other YunoHost apps will be removed only if no other apps need them.
+#
+# usage: ynh_remove_apps
+#
+# Requires YunoHost version *.*.* or higher.
+ynh::apps::remove_deps() {
+    local -a to_remove
+    string::split_to to_remove ", " "$(ynh::setting::get --key "apps_dependencies")"
+    ynh::setting::delete --key "apps_dependencies"
+
+    # Make the array of reverse dependencies
+    local -A reverse_deps
+    for app in $(ynh::apps::list); do
+        local -a app_deps
+        string::split_to app_deps ", " "$(ynh::setting::get --app="$app" --key=apps_dependencies)"
+        for dep in "${app_deps[@]}"; do
+            reverse_deps[$dep]="${reverse_deps[$dep]}, $app"
+        done
+    done
+
+    # Now remove all deps that have no other reverse dependencies
+    for app in "${to_remove[@]}"; do
+        if string::empty "${reverse_deps[$app]}"; then
+            log::info "Removing $app..."
+            yunohost app remove "$app" --purge
+        else
+            log::info "$app was not removed because it's still required by ${reverse_deps[$app]}."
+        fi
+    done
+}
+
+# Spawn a Bash shell with the app environment loaded
+#
+# usage: ynh_spawn_app_shell --app="app"
+#     | arg: -a, --app=     - the app ID
+#
+# examples:
+#   ynh_spawn_app_shell --app="APP" <<< 'echo "$USER"'
+#   ynh_spawn_app_shell --app="APP" < /tmp/some_script.bash
+#
+# Requires YunoHost version 11.0.* or higher, and that the app relies on packaging v2 or higher.
+# The spawned shell will have environment variables loaded and environment files sourced
+# from the app's service configuration file (defaults to $app.service, overridable by the packager with `service` setting).
+# If the app relies on a specific PHP version, then `php` will be aliased that version. The PHP command will also be appended with the `phpflags` settings.
+ynh::apps::shell_into() {
+    local app
+    arguments::parse \
+        "-a|--app)apps;String,R" \
+        -- "${@+$@}"
+
+
+    # Force Bash to be used to run this helper
+    if [[ ! "$0" =~ \/?bash$ ]]; then
+        log::panic "Please use Bash as shell."
+    fi
+
+    # Make sure the app is installed
+    local installed_apps
+    mapfile -t installed_apps < <(ynh::apps::list)
+    if ! array::contains "$app" installed_apps; then
+        log::panic "$app is not in the apps list"
+    fi
+
+    # Make sure the app has its own user
+    if ! id -u "$app" &>/dev/null; then
+        log::panic "There is no '$app' system user"
+    fi
+
+    # Make sure the app has an install_dir setting
+    local install_dir
+    install_dir="$(ynh::setting::get --app "$app" --key install_dir)"
+    if string::empty "$install_dir"; then
+        log::panic "$app has no install_dir setting (does it use packaging format >=2?)"
+    fi
+
+    # Load the app's service name, or default to $app
+    local service
+    service="$(ynh::setting::get --app "$app" --key service)"
+    if string::empty "$service"; then
+        service="$app"
+    fi
+
+    # Load the service variables
+    local -a env_vars
+    string::split_to env_vars " " "$(systemctl show "$service.service" -p "Environment" --value)"
+
+    local -a env_files
+    string::split_to env_files " " "$(systemctl show "$service.service" -p "EnvironmentFiles" --value)"
+
+    local env_dir
+    env_dir="$(systemctl show "$service.service" -p "WorkingDirectory" --value)"
+
+    # Force `php` to its intended version
+    # We use `eval`+`export` since `alias` is not propagated to subshells, even with `export`
+    local phpversion phpflags
+    phpversion="$(ynh::setting::get --app "$app" --key phpversion)"
+    phpflags="$(ynh::setting::get --app "$app" --key phpflags)"
+    if ! string::empty "$phpversion"; then
+        phpstring="php() { php${phpversion} ${phpflags} \"\$@\"; }"
+    fi
+
+    (
+        export HOME="$install_dir"
+        for var in "${env_vars[@]}"; do
+            export "${var?}"
+        done
+        for file in "${env_files[@]}"; do
+            set -a
+            source "$file"
+            set +a
+        done
+
+        if ! string::empty "$phpstring"; then
+            eval "${phpstring:-}"
+            export -f php
+        fi
+
+        if ! string::empty "$env_dir"; then
+            cd "$env_dir"
+        fi
+        su -s /bin/bash "$app"
+    )
+}
