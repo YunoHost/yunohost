@@ -1,0 +1,137 @@
+#!/bin/bash
+
+# Create a dedicated fail2ban config (jail and filter conf files)
+#
+# usage 1: ynh_add_fail2ban_config --logpath=log_file --failregex=filter [--max_retry=max_retry] [--ports=ports]
+# | arg: -l, --logpath=   - Log file to be checked by fail2ban
+# | arg: -r, --failregex= - Failregex to be looked for by fail2ban
+# | arg: -m, --max_retry= - Maximum number of retries allowed before banning IP address - default: 3
+# | arg: -p, --ports=     - Ports blocked for a banned IP address - default: http,https
+#
+# -----------------------------------------------------------------------------
+#
+# usage 2: ynh_add_fail2ban_config --use_template
+# | arg: -t, --use_template - Use this helper in template mode
+#
+# This will use a template in `../conf/f2b_jail.conf` and `../conf/f2b_filter.conf`
+# See the documentation of `ynh_add_config` for a description of the template
+# format and how placeholders are replaced with actual variables.
+#
+# Generally your template will look like that by example (for synapse):
+# ```
+# f2b_jail.conf:
+#     [__APP__]
+#     enabled = true
+#     port = http,https
+#     filter = __APP__
+#     logpath = /var/log/__APP__/logfile.log
+#     maxretry = 3
+# ```
+# ```
+# f2b_filter.conf:
+#     [INCLUDES]
+#     before = common.conf
+#     [Definition]
+#
+#     # Part of regex definition (just used to make more easy to make the global regex)
+#     __synapse_start_line = .? \- synapse\..+ \-
+#
+#    # Regex definition.
+#    failregex = ^%(__synapse_start_line)s INFO \- POST\-(\d+)\- <HOST> \- \d+ \- Received request\: POST /_matrix/client/r0/login\??<SKIPLINES>%(__synapse_start_line)s INFO \- POST\-\1\- Got login request with identifier: \{u'type': u'm.id.user', u'user'\: u'(.+?)'\}, medium\: None, address: None, user\: u'\5'<SKIPLINES>%(__synapse_start_line)s WARNING \- \- (Attempted to login as @\5\:.+ but they do not exist|Failed password login for user @\5\:.+)$
+#
+#     ignoreregex =
+# ```
+#
+# -----------------------------------------------------------------------------
+#
+# Note about the "failregex" option:
+#
+# regex to match the password failure messages in the logfile. The host must be
+# matched by a group named "`host`". The tag "`<HOST>`" can be used for standard
+# IP/hostname matching and is only an alias for `(?:::f{4,6}:)?(?P<host>[\w\-.^_]+)`
+#
+# You can find some more explainations about how to make a regex here :
+# https://www.fail2ban.org/wiki/index.php/MANUAL_0_8#Filters
+#
+# Note that the logfile need to exist before to call this helper !!
+#
+# To validate your regex you can test with this command:
+# ```
+# fail2ban-regex /var/log/YOUR_LOG_FILE_PATH /etc/fail2ban/filter.d/YOUR_APP.conf
+# ```
+#
+# Requires YunoHost version 4.1.0 or higher.
+
+__FAIL2BAN_FILTER_TEMPLATE="[INCLUDES]
+before = common.conf
+[Definition]
+failregex = __FAILREGEX__
+ignoreregex =
+"
+
+__FAIL2BAN_JAIL_TEMPLATE="[__APP__]
+enabled = true
+port = __PORTS__
+filter = __APP__
+logpath = __LOGPATH__
+maxretry = __MAX_RETRY__
+"
+
+
+ynh::fail2ban::add() {
+    local logpath
+    local failregex
+    local max_retry=3
+    local ports="http,https"
+    local jail_template filter_template
+    arguments::parse \
+        "-l|--logpath)logpath;String" \
+        "-r|--failregex)failregex;String" \
+        "-m|--max_retries)max_retries;String" \
+        "-p|--ports)ports;String" \
+        "-t|--jail_template)jail_template;String" \
+        "-t|--filter_template)filter_template;String" \
+        -- "$@"
+
+    if string::empty "$filter_template"; then
+        filter_template="fail2ban_filter.conf"
+        # Mandatory arguments
+        if string::empty "failregex"; then
+            log::panic "No failregex was passed to ${FUNCNAME[0]}"
+        fi
+        echo "$__FAIL2BAN_FILTER_TEMPLATE" > "$YNH_APP_BASEDIR/conf/$filter_template"
+    fi
+
+    if string::empty "$jail_template"; then
+        jail_template="fail2ban_jail.conf"
+        # Mandatory arguments
+        if string::empty "logpath"; then
+            log::panic "No logpath was passed to ${FUNCNAME[0]}"
+        fi
+        echo "$__FAIL2BAN_JAIL_TEMPLATE" > "$YNH_APP_BASEDIR/conf/$jail_template"
+    fi
+
+    ynh::config::add --template="$filter_template" --destination="/etc/fail2ban/filter.d/$app.conf"
+    ynh::config::add --template="$jail_template" --destination="/etc/fail2ban/jail.d/$app.conf"
+
+    ynh::system::action --service_name=fail2ban --action=reload --line_match="(Started|Reloaded) Fail2Ban Service" --log_path=systemd
+
+    local fail2ban_error
+    fail2ban_error="$(journalctl --no-hostname --unit=fail2ban | tail --lines=50 | grep "WARNING.*$app.*")"
+    if ! string::empty "$fail2ban_error"; then
+        log::err "Fail2ban failed to load the jail for ${app}:"
+        log::warn "${fail2ban_error#*WARNING}"
+    fi
+
+}
+
+# Remove the dedicated fail2ban config (jail and filter conf files)
+#
+# usage: ynh_remove_fail2ban_config
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh::fail2ban::remove() {
+    ynh::fs::remove --file="/etc/fail2ban/filter.d/$app.conf"
+    ynh::fs::remove --file="/etc/fail2ban/jail.d/$app.conf"
+    ynh::systemd::action --service_name=fail2ban --action=reload
+}

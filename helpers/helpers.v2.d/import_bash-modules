@@ -1,0 +1,20 @@
+#!/usr/bin/env bash
+
+_modules=(
+    arguments
+    array
+    # cd_to_bindir
+    date
+    log
+    log_run
+    meta
+    # renice
+    settings
+    strict
+    string
+    # timestamped_log
+    # unit
+)
+
+BASH_MODULES_PATH="$YNH_APP_HELPERS_DIR/bash-modules"
+source "$BASH_MODULES_PATH/import.sh" "${_modules[@]}"

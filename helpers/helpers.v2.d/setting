@@ -1,0 +1,151 @@
+#!/bin/bash
+
+# Small "hard-coded" interface to avoid calling "yunohost app" directly each
+# time dealing with a setting is needed (which may be so slow on ARM boards)
+#
+# [internal]
+#
+ynh::_setting() {
+    python3 -c "$__YNH_SETTING_PYTHON_ACCESS" "$1" "$2" "$3" "${4:-}"
+}
+__YNH_SETTING_PYTHON_ACCESS=$(cat << EOF
+import os, sys, yaml
+_, app, action, key, value = sys.argv
+action = action.lower()
+
+setting_file = "/etc/yunohost/apps/%s/settings.yml" % app
+assert os.path.exists(setting_file), "Setting file %s does not exists ?" % setting_file
+with open(setting_file) as f:
+    settings = yaml.safe_load(f)
+if action == "get":
+    if key in settings:
+        print(settings[key])
+else:
+    if action == "delete":
+        if key in settings:
+            del settings[key]
+    elif action == "set":
+        if key in ['redirected_urls', 'redirected_regex']:
+            value = yaml.safe_load(value)
+        settings[key] = value
+    else:
+        raise ValueError("action should either be get, set or delete")
+    with open(setting_file, "w") as f:
+        yaml.safe_dump(settings, f, default_flow_style=False)
+EOF
+)
+
+# Get an application setting
+#
+# usage: ynh::setting::get [--app=app] --key=key
+# | arg: -a, --app=     - the application id
+# | arg: -k, --key=     - the setting to get
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh::setting::get() {
+    local app="$YNH_APP_ID"
+    local key
+    arguments::parse \
+        "-a|--app)app;String" \
+        "-k|--key)key;String,R" \
+        -- "$@"
+
+    if string::starts_with "$key" unprotected_ \
+    || string::starts_with "$key" protected_ \
+    || string::starts_with "$key" skipped_; then
+        yunohost app setting "$app" "$key"
+    else
+        ynh::_setting get "$app" "$key"
+    fi
+}
+
+# Set an application setting
+#
+# usage: ynh_app_setting_set --app=app --key=key --value=value
+# | arg: -a, --app=     - the application id
+# | arg: -k, --key=     - the setting name to set
+# | arg: -v, --value=   - the setting value to set
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh::setting::set() {
+    local app="$YNH_APP_ID"
+    local key value
+    arguments::parse \
+        "-a|--app)app;String" \
+        "-k|--key)key;String,R" \
+        "-v|--value)value;String,R" \
+        -- "$@"
+
+    if string::starts_with "$key" unprotected_ \
+    || string::starts_with "$key" protected_ \
+    || string::starts_with "$key" skipped_; then
+        yunohost app setting "$app" "$key" -v "$value"
+    else
+        ynh::_setting set "$app" "$key"
+    fi
+}
+
+# Get an application setting
+#
+# usage: ynh::setting::get [--app=app] --key=key
+# | arg: -a, --app=     - the application id
+# | arg: -k, --key=     - the setting to get
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh::setting::delete() {
+    local app="$YNH_APP_ID"
+    local key
+    arguments::parse \
+        "-a|--app)app;String" \
+        "-k|--key)key;String,R" \
+        -- "$@"
+
+    if string::starts_with "$key" unprotected_ \
+    || string::starts_with "$key" protected_ \
+    || string::starts_with "$key" skipped_; then
+        yunohost app setting "$app" "$key" -d
+    else
+        ynh::_setting delete "$app" "$key"
+    fi
+}
+
+# Check availability of a web path
+#
+# usage: ynh_webpath_available --domain=domain --path_url=path
+# | arg: -d, --domain=      - the domain/host of the url
+# | arg: -p, --path_url=    - the web path to check the availability of
+#
+# example: ynh_webpath_available --domain=some.domain.tld --path_url=/coffee
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh::webpath::is_available() {
+    local domain path
+    arguments::parse \
+        "-d|--domain)domain;String,R" \
+        "-p|--path)path;String,R" \
+        -- "$@"
+
+    yunohost domain url-available "$domain" "$path"
+}
+
+# Register/book a web path for an app
+#
+# usage: ynh_webpath_register --app=app --domain=domain --path_url=path
+# | arg: -a, --app=         - the app for which the domain should be registered
+# | arg: -d, --domain=      - the domain/host of the web path
+# | arg: -p, --path_url=    - the web path to be registered
+#
+# example: ynh_webpath_register --app=wordpress --domain=some.domain.tld --path_url=/coffee
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh::webpath::register() {
+    local app="$YNH_APP_ID"
+    local domain path
+    arguments::parse \
+        "-a|--app)app;String" \
+        "-d|--domain)domain;String,R" \
+        "-p|--path)path;String,R" \
+        -- "$@"
+
+    yunohost domain register-url "$app" "$domain" "$path"
+}

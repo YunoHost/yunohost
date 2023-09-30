@@ -1,0 +1,174 @@
+#!/bin/bash
+
+# Create a dedicated systemd config
+#
+# usage: ynh_add_systemd_config [--service=service] [--template=template]
+# | arg: -s, --service=     - Service name (optionnal, `$app` by default)
+# | arg: -t, --template=    - Name of template file (optionnal, this is 'systemd' by default, meaning `../conf/systemd.service` will be used as template)
+#
+# This will use the template `../conf/<templatename>.service`.
+#
+# See the documentation of `ynh_add_config` for a description of the template
+# format and how placeholders are replaced with actual variables.
+#
+# Requires YunoHost version 4.1.0 or higher.
+
+ynh::systemd::add_service() {
+    local service="$app"
+    local template=systemd.service
+    arguments::parse \
+        "-s|--service)service;String" \
+        "-t|--template)template;String" \
+        -- "$@"
+
+    ynh::config::add --template="$template" --destination="/etc/systemd/system/$service.service"
+    systemctl daemon-reload
+    systemctl enable "$service" --quiet
+}
+
+# Remove the dedicated systemd config
+#
+# usage: ynh_remove_systemd_config [--service=service]
+# | arg: -s, --service=     - Service name (optionnal, $app by default)
+#
+# Requires YunoHost version 2.7.2 or higher.
+ynh::systemd::remove_service() {
+    local service="$app"
+    arguments::parse \
+        "-s|--service)service;String" \
+        -- "$@"
+
+    local service_file="/etc/systemd/system/$service.service"
+    if [ -e "$service_file" ]; then
+        ynh_systemd_action --service="$service" --action=stop
+        systemctl disable "$service" --quiet
+        ynh::fs::remove --file="$service_file"
+        systemctl daemon-reload
+    fi
+}
+
+# Start (or other actions) a service,  print a log in case of failure and optionnaly wait until the service is completely started
+#
+# usage: ynh_systemd_action [--service_name=service_name] [--action=action] [ [--line_match="line to match"] [--log_path=log_path] [--timeout=300] [--length=20] ]
+# | arg: -n, --service_name= - Name of the service to start. Default : `$app`
+# | arg: -a, --action=       - Action to perform with systemctl. Default: start
+# | arg: -l, --line_match=   - Line to match - The line to find in the log to attest the service have finished to boot. If not defined it don't wait until the service is completely started.
+# | arg: -p, --log_path=     - Log file - Path to the log file. Default : `/var/log/$app/$app.log`
+# | arg: -t, --timeout=      - Timeout - The maximum time to wait before ending the watching. Default : 300 seconds.
+# | arg: -e, --length=       - Length of the error log displayed for debugging : Default : 20
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh::systemd::action() {
+    local service="$app"
+    local action
+    local line_match
+    local log_path="/var/log/$app/$app.log"
+    local timeout=300
+    local length=20
+    arguments::parse \
+        "-s|--service)service;String" \
+        "-a|--action)action;String,R" \
+        "-m|--line_match)line_match;String" \
+        "-p|--log_path)log_path;String" \
+        "-t|--timeout)timeout;String" \
+        "-l|--length)length;String" \
+
+
+    # Manage case of service already stopped
+    if [ "$action" == "stop" ] && ! systemctl is-active --quiet "$service"; then
+        return 0
+    fi
+
+    # Start to read the log
+    if ! string::empty "$line_match"; then
+        local templog
+        templog="$(mktemp)"
+        cleanup::add "Systemd action log file" "rm -f \"$templog\""
+        # Following the starting of the app in its log
+        if [ "$log_path" == "systemd" ]; then
+            # Read the systemd journal
+            journalctl --unit="$service" --follow --since=-0 --quiet >"$templog" &
+            local pid_tail=$!
+        else
+            # Read the specified log file
+            tail --follow=name --retry --lines=0 "$log_path" >"$templog" 2>&1 &
+            local pid_tail=$!
+        fi
+        cleanup::add "Systemd action log process" "kill -SIGTERM $pid_tail"
+    fi
+
+    # Use reload-or-restart instead of reload. So it wouldn't fail if the service isn't running.
+    if [ "$action" == "reload" ]; then
+        action="reload-or-restart"
+    fi
+
+    local time_start
+    time_start="$(date --utc --rfc-3339=seconds | cut -d+ -f1) UTC"
+
+    # If the service fails to perform the action
+    if ! systemctl "$action" "$service"; then
+        # Show syslog for this service
+        run::error journalctl --quiet --no-hostname --no-pager --lines="$length" --unit="$service"
+        # If a log is specified for this service, show also the content of this log
+        if ! string::empty "$log_path"; then
+            run::error tail --lines=$length "$log_path"
+        fi
+        ynh::systemd::_action_cleanup
+        return 1
+    fi
+
+    if ! string::empty "$line_match"; then
+        local start_time max_time long_time is_long timed_out
+        start_time=$(date +%s)
+        long_time=$(( start_time + 30 ))
+        max_time=$(( start_time + timeout ))
+        set +x
+        while true; do
+            # Read the log until the sentence is found, that means the app finished to start. Or run until the timeout
+            if [ "$log_path" == "systemd" ]; then
+                # For systemd services, we in fact dont rely on the templog, which for some reason is not reliable, but instead re-read journalctl every iteration, starting at the timestamp where we triggered the action
+                if journalctl --unit="$service" --since="$time_start" --quiet --no-pager --no-hostname | grep --extended-regexp --quiet "$line_match"; then
+                    log::info "The service $service has correctly executed the action $action."
+                    break
+                fi
+            else
+                if grep --extended-regexp --quiet "$line_match" "$templog"; then
+                    log::info "The service $service has correctly executed the action $action."
+                    break
+                fi
+            fi
+
+            if string::empty "$is_long" && (( $(date +%s) >= long_time )); then
+                is_long=true
+                log::warn "(this may take some time)"
+            fi
+            if (( $(date +%s) < max_time )); then
+                timed_out=true
+            fi
+            sleep 1
+        done
+        set -x
+
+        if [[ "$timed_out" == "true" ]]; then
+            log::warn "The service $service didn't fully executed the action ${action} before the timeout.\n"
+            log::warn "Please find here an extract of the end of the log of the service $service:"
+            run::warn journalctl --quiet --no-hostname --no-pager --lines="$length" --unit="$service"
+            if [ -e "$log_path" ]; then
+                log::warn --message="\-\-\-"
+                run::warn tail --lines=$length "$log_path"
+            fi
+        fi
+        ynh::systemd::_action_cleanup
+    fi
+}
+
+# Clean temporary process and file used by ynh_check_starting
+#
+# [internal]
+#
+# Requires YunoHost version 3.5.0 or higher.
+
+ynh::systemd::_action_cleanup() {
+    cleanup::pop "Systemd action log process"
+    cleanup::pop "Systemd action log file"
+}
