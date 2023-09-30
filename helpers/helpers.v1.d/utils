@@ -248,7 +248,7 @@ ynh_setup_source() {
         if test -e "$local_src"; then
             cp $local_src $src_filename
         fi
-        
+
         [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
 
         # If the file was prefetched but somehow doesn't match the sum, rm and redownload it
@@ -316,7 +316,7 @@ ynh_setup_source() {
             mv $src_filename $dest_dir/$src_rename
         fi
     elif [[ "$src_format" == "docker" ]]; then
-        /usr/share/yunohost/helpers.d/vendor/docker-image-extract/docker-image-extract -p $src_platform -o $dest_dir $src_url 2>&1
+        "$YNH_APP_HELPERS_DIR/vendor/docker-image-extract/docker-image-extract" -p $src_platform -o $dest_dir $src_url 2>&1
     elif [[ "$src_format" == "zip" ]]; then
         # Zip format
         # Using of a temp directory, because unzip doesn't manage --strip-components
