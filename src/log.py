@@ -745,7 +745,7 @@ class OperationLogger:
         # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
         # And we just want the part starting by "DEBUG - "
         lines = [line for line in lines if ":" in line.strip()]
-        lines = [line.strip().split(": ", 1)[1] for line in lines]
+        lines = [line.strip().split(": ", 1)[-1] for line in lines]
         # And we ignore boring/irrelevant lines
         # Annnnnnd we also ignore lines matching [number] + such as
         # 72971 [37m[1mDEBUG [m29739 + ynh_exit_properly
