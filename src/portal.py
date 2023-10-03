@@ -20,10 +20,10 @@
 """
 from pathlib import Path
 from typing import Any, Union
-
+import logging
 import ldap
+
 from moulinette.utils.filesystem import read_json, read_yaml
-from moulinette.utils.log import getActionLogger
 from yunohost.authenticators.ldap_ynhuser import URI, USERDN, Authenticator as Auth
 from yunohost.user import _hash_user_password
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -33,7 +33,7 @@ from yunohost.utils.password import (
     assert_password_is_strong_enough,
 )
 
-logger = getActionLogger("portal")
+logger = logging.getLogger("portal")
 
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
@@ -77,9 +77,10 @@ def _get_portal_settings(domain: Union[str, None] = None):
 
 
 def portal_public():
+
     portal_settings = _get_portal_settings()
     portal_settings["apps"] = {}
-    portal_settings["public"] = portal_settings.pop("default_app") == "_yunohost_portal_with_public_apps"
+    portal_settings["public"] = portal_settings.pop("default_app", None) == "_yunohost_portal_with_public_apps"
 
     if portal_settings["public"]:
         ssowat_conf = read_json("/etc/ssowat/conf.json")
@@ -219,6 +220,9 @@ def portal_update(
         ]
 
     if newpassword:
+
+        # FIXME: this ldap stuff should be handled in utils/ldap.py imho ?
+
         # Check that current password is valid
         try:
             con = ldap.ldapobject.ReconnectLDAPObject(URI, retry_max=0)
