@@ -186,6 +186,26 @@ ynh_exec_fully_quiet() {
     fi
 }
 
+# Execute a command and redirect stderr in /dev/null. Print stderr on error.
+#
+# usage: ynh_exec_stderr_on_error your command and args
+# | arg: command - command to execute
+#
+# Note that you should NOT quote the command but only prefix it with ynh_exec_stderr_on_error
+#
+# Requires YunoHost version 11.2 or higher.
+ynh_exec_stderr_on_error() {
+    logfile="$(mktemp)"
+    rc=0
+    # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+    "$@" 2> "$logfile" || rc="$?"
+    if (( rc != 0 )); then
+        ynh_exec_warn cat "$logfile"
+        ynh_secure_remove "$logfile"
+        return "$rc"
+    fi
+}
+
 # Remove any logs for all the following commands.
 #
 # usage: ynh_print_OFF
@@ -248,7 +268,7 @@ ynh_script_progression() {
     # Re-disable xtrace, ynh_handle_getopts_args set it back
     set +o xtrace # set +x
     weight=${weight:-1}
-    
+
     # Always activate time when running inside CI tests
     if [ ${PACKAGE_CHECK_EXEC:-0} -eq 1 ]; then
     	time=${time:-1}
