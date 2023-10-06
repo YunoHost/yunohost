@@ -1,6 +1,8 @@
 .install_debs: &install_debs
     - apt-get update -o Acquire::Retries=3
+    - systemctl restart nginx || journalctl -u nginx -n 50 --no-pager --no-hostname
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
+    - systemctl restart nginx || journalctl -u nginx -n 50 --no-pager --no-hostname
 
 .test-stage:
   stage: test
