@@ -114,55 +114,6 @@ def legacy_permission_label(app, permission_type):
     )
 
 
-def translate_legacy_default_app_in_ssowat_conf_json_persistent():
-    from yunohost.app import app_list
-    from yunohost.domain import domain_config_set
-
-    persistent_file_name = "/etc/ssowat/conf.json.persistent"
-    if not os.path.exists(persistent_file_name):
-        return
-
-    # Ugly hack because for some reason so many people have tabs in their conf.json.persistent ...
-    os.system(r"sed -i 's/\t/    /g' /etc/ssowat/conf.json.persistent")
-
-    # Ugly hack to try not to misarably fail migration
-    persistent = read_yaml(persistent_file_name)
-
-    if "redirected_urls" not in persistent:
-        return
-
-    redirected_urls = persistent["redirected_urls"]
-
-    if not any(
-        from_url.count("/") == 1 and from_url.endswith("/")
-        for from_url in redirected_urls
-    ):
-        return
-
-    apps = app_list()["apps"]
-
-    if not any(app.get("domain_path") in redirected_urls.values() for app in apps):
-        return
-
-    for from_url, dest_url in redirected_urls.copy().items():
-        # Not a root domain, skip
-        if from_url.count("/") != 1 or not from_url.endswith("/"):
-            continue
-        for app in apps:
-            if app.get("domain_path") != dest_url:
-                continue
-            domain_config_set(from_url.strip("/"), "feature.app.default_app", app["id"])
-            del redirected_urls[from_url]
-
-    persistent["redirected_urls"] = redirected_urls
-
-    write_to_json(persistent_file_name, persistent, sort_keys=True, indent=4)
-
-    logger.warning(
-        "YunoHost automatically translated some legacy redirections in /etc/ssowat/conf.json.persistent to match the new default application using domain configuration"
-    )
-
-
 LEGACY_PHP_VERSION_REPLACEMENTS = [
     ("/etc/php5", "/etc/php/8.2"),
     ("/etc/php/7.0", "/etc/php/8.2"),

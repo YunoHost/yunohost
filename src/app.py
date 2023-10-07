@@ -1619,8 +1619,6 @@ def app_ssowatconf():
     permissions = {
         "core_skipped": {
             "users": [],
-            "label": "Core permissions - skipped",
-            "show_tile": False,
             "auth_header": False,
             "public": True,
             "uris": [domain + "/yunohost/admin" for domain in domains]
@@ -1635,11 +1633,6 @@ def app_ssowatconf():
         }
     }
 
-    # FIXME : what's the reason we do this only for the maindomain ? x_X
-    redirected_regex = {
-        main_domain + r"/yunohost[\/]?$": "https://" + main_domain + "/yunohost/sso/"
-    }
-    redirected_urls = {}
 
     apps_using_remote_user_var_in_nginx = (
         check_output(
@@ -1649,19 +1642,8 @@ def app_ssowatconf():
         .split("\n")
     )
 
-    for app in _installed_apps():
-        app_settings = read_yaml(APPS_SETTING_PATH + app + "/settings.yml") or {}
-
-        # Redirected
-        redirected_urls.update(app_settings.get("redirected_urls", {}))
-        redirected_regex.update(app_settings.get("redirected_regex", {}))
-
-    from .utils.legacy import (
-        translate_legacy_default_app_in_ssowat_conf_json_persistent,
-    )
-
-    translate_legacy_default_app_in_ssowat_conf_json_persistent()
-
+    # FIXME : this could be handled by nginx's regen conf to further simplify ssowat's code ...
+    redirected_urls = {}
     for domain in domains:
         default_app = domain_config_get(domain, "feature.app.default_app")
         if default_app != "_none" and _is_installed(default_app):
@@ -1691,10 +1673,6 @@ def app_ssowatconf():
             "use_remote_user_var_in_nginx_conf": app_id
             in apps_using_remote_user_var_in_nginx,
             "users": perm_info["corresponding_users"],
-            "label": perm_info["label"],
-            "show_tile": perm_info["show_tile"]
-            and perm_info["url"]
-            and (not perm_info["url"].startswith("re:")),
             "auth_header": perm_info["auth_header"],
             "public": "visitors" in perm_info["allowed"],
             "uris": uris,
@@ -1703,9 +1681,7 @@ def app_ssowatconf():
     conf_dict = {
         "cookie_secret_file": "/etc/yunohost/.ssowat_cookie_secret",
         "cookie_name": "yunohost.portal",
-        "theme": settings_get("misc.portal.portal_theme"),
         "redirected_urls": redirected_urls,
-        "redirected_regex": redirected_regex,
         "domain_portal_urls": _get_domain_portal_dict(),
         "permissions": permissions,
     }
