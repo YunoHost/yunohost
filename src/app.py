@@ -1657,10 +1657,10 @@ def app_ssowatconf():
         redirected_regex.update(app_settings.get("redirected_regex", {}))
 
     from .utils.legacy import (
-        translate_legacy_default_app_in_ssowant_conf_json_persistent,
+        translate_legacy_default_app_in_ssowat_conf_json_persistent,
     )
 
-    translate_legacy_default_app_in_ssowant_conf_json_persistent()
+    translate_legacy_default_app_in_ssowat_conf_json_persistent()
 
     for domain in domains:
         default_app = domain_config_get(domain, "feature.app.default_app")

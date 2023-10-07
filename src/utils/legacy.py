@@ -114,7 +114,7 @@ def legacy_permission_label(app, permission_type):
     )
 
 
-def translate_legacy_default_app_in_ssowant_conf_json_persistent():
+def translate_legacy_default_app_in_ssowat_conf_json_persistent():
     from yunohost.app import app_list
     from yunohost.domain import domain_config_set
 
