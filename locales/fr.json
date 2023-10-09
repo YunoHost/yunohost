@@ -781,6 +781,8 @@
     "dyndns_set_recovery_password_unknown_domain": "Échec de la définition du mot de passe de récupération : le domaine n'est pas enregistré",
     "dyndns_set_recovery_password_invalid_password": "Échec de la définition du mot de passe de récupération : le mot de passe n'est pas assez fort/solide",
     "dyndns_set_recovery_password_failed": "Échec de la définition du mot de passe de récupération : {erreur}",
-    "dyndns_set_recovery_password_success": "Mot de passe de récupération défini/configuré !",
-    "log_dyndns_unsubscribe": "Se désabonner d'un sous-domaine YunoHost '{}'"
+    "dyndns_set_recovery_password_success": "Mot de passe de récupération changé !",
+    "log_dyndns_unsubscribe": "Se désabonner d'un sous-domaine YunoHost '{}'",
+    "dyndns_too_many_requests": "Le service dyndns de YunoHost a reçu trop de requêtes/demandes de votre part, attendez environ 1 heure avant de réessayer.",
+    "ask_dyndns_recovery_password_explain_unavailable": "Ce domaine DynDNS est déjà enregistré. Si vous êtes la personne qui a enregistré ce domaine lors de sa création, vous pouvez entrer le mot de passe de récupération pour récupérer ce domaine."
 }
