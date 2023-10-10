@@ -95,14 +95,17 @@ def test_domain_dyndns_recovery():
         domain_add(TEST_DYNDNS_DOMAIN)
         assert TEST_DYNDNS_DOMAIN in domain_list()["domains"]
         # set the recovery password with config panel
-        domain_config_set(TEST_DYNDNS_DOMAIN, "dns.registrar.recovery_password", TEST_DYNDNS_PASSWORD)
+        domain_config_set(
+            TEST_DYNDNS_DOMAIN, "dns.registrar.recovery_password", TEST_DYNDNS_PASSWORD
+        )
         # remove domain without unsubscribing
         domain_remove(TEST_DYNDNS_DOMAIN, ignore_dyndns=True)
         assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
         # readding domain with bad password should fail
         with pytest.raises(YunohostValidationError):
             domain_add(
-                TEST_DYNDNS_DOMAIN, dyndns_recovery_password="wrong" + TEST_DYNDNS_PASSWORD
+                TEST_DYNDNS_DOMAIN,
+                dyndns_recovery_password="wrong" + TEST_DYNDNS_PASSWORD,
             )
         assert TEST_DYNDNS_DOMAIN not in domain_list()["domains"]
         # readding domain with password should work
