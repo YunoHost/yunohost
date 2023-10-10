@@ -2255,11 +2255,11 @@ def _parse_app_doc_and_notifications(path):
 
 
 def _hydrate_app_template(template, data):
-
     # Apply jinja for stuff like {% if .. %} blocks,
     # but only if there's indeed an if block (to try to reduce overhead or idk)
     if "{%" in template:
         from jinja2 import Template
+
         template = Template(template).render(**data)
 
     stuff_to_replace = set(re.findall(r"__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__", template))
@@ -3187,7 +3187,9 @@ def _filter_and_hydrate_notifications(notifications, current_version=None, data=
     }
 
     # Filter out empty notifications (notifications may be empty because of if blocks)
-    return {name:content for name, content in out.items() if content and content.strip()}
+    return {
+        name: content for name, content in out.items() if content and content.strip()
+    }
 
 
 def _display_notifications(notifications, force=False):
