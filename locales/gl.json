@@ -782,5 +782,7 @@
     "dyndns_set_recovery_password_invalid_password": "Fallo ao establecer contrasinal de recuperación: o contrasinal non é suficientemente forte",
     "dyndns_set_recovery_password_failed": "Fallo ao establecer o contrasinal de recuperación: {error}",
     "dyndns_set_recovery_password_success": "Estableceuse o contrasinal de recuperación!",
-    "log_dyndns_unsubscribe": "Retirar subscrición para o subdominio YunoHost '{}'"
+    "log_dyndns_unsubscribe": "Retirar subscrición para o subdominio YunoHost '{}'",
+    "ask_dyndns_recovery_password_explain_unavailable": "Este dominio DynDNS xa está rexistrado. Se es a persoa que o rexistrou orixinalmente, podes escribir o código de recuperación para reclamar o dominio.",
+    "dyndns_too_many_requests": "O servicio dyndns de YunoHost recibeu demasiadas peticións do teu sistema, agarda 1 hora e volve intentalo."
 }
