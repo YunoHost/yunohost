@@ -218,8 +218,8 @@
     "diagnosis_ip_no_ipv6_tip": "Váš server bude fungovať aj bez IPv6, no pre celkové zdravie internetu je lepšie ho nastaviť. V prípade, že je IPv6 dostupné, systém alebo váš poskytovateľ by ho mal automaticky nakonfigurovať. V opačnom prípade budete možno musieť nastaviť zopár vecí ručne tak, ako je vysvetlené v dokumentácii na <a href='https://yunohost.org/#/ipv6'>https://yunohost.org/#/ipv6</a>. Ak nemôžete povoliť IPv6 alebo je to na vás príliš technicky náročné, môžete pokojne toto upozornenie ignorovať.",
     "diagnosis_ip_broken_dnsresolution": "Zdá sa, že z nejakého dôvodu nefunguje prekladanie názvov domén… Blokuje vaša brána firewall DNS požiadavky?",
     "diagnosis_ip_broken_resolvconf": "Zdá sa, že na vašom serveri nefunguje prekladanie názvov domén, čo môže súvisieť s tým, že <code>/etc/resolv.conf</code> neukazuje na <code>127.0.0.1</code>.",
-    "diagnosis_ip_connected_ipv4": "Server nie je pripojený k internetu prostredníctvom IPv4!",
-    "diagnosis_ip_connected_ipv6": "Server nie je pripojený k internetu prostredníctvom IPv6!",
+    "diagnosis_ip_connected_ipv4": "Server je pripojený k internetu prostredníctvom IPv4!",
+    "diagnosis_ip_connected_ipv6": "Server je pripojený k internetu prostredníctvom IPv6!",
     "diagnosis_ip_dnsresolution_working": "Preklad názvov domén nefunguje!",
     "diagnosis_ip_global": "Globálna IP adresa: <code>{global}</code>",
     "diagnosis_ip_local": "Miestna IP adresa: <code>{local}</code>",
@@ -259,5 +259,7 @@
     "app_change_url_script_failed": "Vo skripte na zmenu URL adresy sa vyskytla chyba",
     "app_not_enough_disk": "Táto aplikácia vyžaduje {required} voľného miesta.",
     "app_not_enough_ram": "Táto aplikácia vyžaduje {required} pamäte na inštaláciu/aktualizáciu, ale k dispozícii je momentálne iba {current}.",
-    "apps_failed_to_upgrade": "Nasledovné aplikácie nebolo možné aktualizovať: {apps}"
+    "apps_failed_to_upgrade": "Nasledovné aplikácie nebolo možné aktualizovať: {apps}",
+    "global_settings_setting_security_experimental_enabled": "Experimentálne bezpečnostné funkcie",
+    "global_settings_setting_security_experimental_enabled_help": "Povoliť experimentálne bezpečnostné funkcie (nezapínajte túto možnosť, ak neviete, čo môže spôsobiť!)"
 }
