@@ -114,7 +114,7 @@
     "certmanager_attempt_to_replace_valid_cert": "Chystáte sa prepísať správny a platný certifikát pre doménu {domain}! (Použite --force na vynútenie)",
     "certmanager_cannot_read_cert": "Počas otvárania aktuálneho certifikátu pre doménu {domain} došlo k neznámej chybe (súbor: {file}), príčina: {reason}",
     "certmanager_cert_install_success": "Pre doménu '{domain}' bol práve nainštalovaný certifikát od Let's Encrypt",
-    "certmanager_cert_install_success_selfsigned": "Pre doménu '{domain}' bol práve nainštalovaný vlastnoručne podpísany (self-signed) certifikát",
+    "certmanager_cert_install_success_selfsigned": "Pre doménu '{domain}' bol práve nainštalovaný vlastnoručne podpísaný (self-signed) certifikát",
     "certmanager_cert_renew_success": "Certifikát od Let's Encrypt pre doménu '{domain}' bol úspešne obnovený",
     "certmanager_cert_signing_failed": "Nepodarilo sa podpísať nový certifikát",
     "certmanager_domain_cert_not_selfsigned": "Certifikát pre doménu {domain} nie je vlastnoručne podpísaný (self-signed). Naozaj ho chcete nahradiť? (Použite '--force', ak to chcete urobiť.)",
@@ -261,5 +261,8 @@
     "app_not_enough_ram": "Táto aplikácia vyžaduje {required} pamäte na inštaláciu/aktualizáciu, ale k dispozícii je momentálne iba {current}.",
     "apps_failed_to_upgrade": "Nasledovné aplikácie nebolo možné aktualizovať: {apps}",
     "global_settings_setting_security_experimental_enabled": "Experimentálne bezpečnostné funkcie",
-    "global_settings_setting_security_experimental_enabled_help": "Povoliť experimentálne bezpečnostné funkcie (nezapínajte túto možnosť, ak neviete, čo môže spôsobiť!)"
+    "global_settings_setting_security_experimental_enabled_help": "Povoliť experimentálne bezpečnostné funkcie (nezapínajte túto možnosť, ak neviete, čo môže spôsobiť!)",
+    "service_description_rspamd": "Filtruje spam a iné funkcie týkajúce sa e-mailu",
+    "log_letsencrypt_cert_renew": "Obnoviť '{}' certifikát Let's Encrypt",
+    "domain_config_cert_summary_selfsigned": "UPOZORNENIE: Aktuálny certifikát je vlastnoručne podpísaný. Prehliadače budú návštevníkom zobrazovať strašidelné varovanie!"
 }
