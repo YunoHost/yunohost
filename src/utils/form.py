@@ -940,7 +940,7 @@ class AppOption(BaseChoicesOption):
         self.choices.update({app["id"]: _app_display(app) for app in apps})
 
 
-class AppsOption(AppOption, TagsOptions):
+class AppsOption(AppOption, TagsOption):
     type: Literal[OptionType.apps] = OptionType.apps
 
 
@@ -975,7 +975,7 @@ class UserOption(BaseChoicesOption):
                     break
 
 
-class UsersOption(UserOption, TagsOptions):
+class UsersOption(UserOption, TagsOption):
     type: Literal[OptionType.users] = OptionType.users
 
 
