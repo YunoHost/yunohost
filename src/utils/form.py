@@ -227,16 +227,24 @@ class OptionType(str, Enum):
     # entity
     domain = "domain"
     app = "app"
+    apps = "apps"
     user = "user"
+    users = "users"
     group = "group"
+    groups = "groups"
+    users_and_groups = "users_and_groups"
 
 
 FORBIDDEN_READONLY_TYPES = {
     OptionType.password,
     OptionType.app,
+    OptionType.apps,
     OptionType.domain,
     OptionType.user,
+    OptionType.users,
+    OptionType.users_and_groups,
     OptionType.group,
+    OptionType.groups,
 }
 
 
@@ -932,6 +940,10 @@ class AppOption(BaseChoicesOption):
         self.choices.update({app["id"]: _app_display(app) for app in apps})
 
 
+class AppsOption(AppOption, TagsOptions):
+    type: Literal[OptionType.apps] = OptionType.apps
+
+
 class UserOption(BaseChoicesOption):
     type: Literal[OptionType.user] = OptionType.user
 
@@ -963,6 +975,10 @@ class UserOption(BaseChoicesOption):
                     break
 
 
+class UsersOption(UserOption, TagsOptions):
+    type: Literal[OptionType.users] = OptionType.users
+
+
 class GroupOption(BaseChoicesOption):
     type: Literal[OptionType.group] = OptionType.group
 
@@ -985,6 +1001,37 @@ class GroupOption(BaseChoicesOption):
 
         if self.default is None:
             self.default = "all_users"
+
+
+class GroupsOption(GroupOption, TagsOption):
+    type: Literal[OptionType.groups] = OptionType.groups
+
+
+class UsersAndGroupsOption(TagsOption):
+    type: Literal[OptionType.users_and_groups] = OptionType.users_and_groups
+
+    def __init__(self, question):
+        from yunohost.user import user_group_list
+
+        super().__init__(question)
+        
+        users = {
+            username: f"{infos['fullname']} ({infos['mail']})"
+            for username, infos in user_list()["users"].items()
+        }
+
+        def _human_readable_group(g):
+            # i18n: visitors
+            # i18n: all_users
+            # i18n: admins
+            return m18n.n(g) if g in ["visitors", "all_users", "admins"] else g
+
+        groups = {
+            group: _human_readable_group(group)
+            for group in user_group_list(short=True, include_primary_groups=False)["groups"]
+        }
+
+        self.choices = {**users, **groups}
 
 
 OPTIONS = {
@@ -1011,6 +1058,10 @@ OPTIONS = {
     OptionType.app: AppOption,
     OptionType.user: UserOption,
     OptionType.group: GroupOption,
+    OptionType.apps: AppsOption,
+    OptionType.users: UsersOption,
+    OptionType.groups: GroupsOption,
+    OptionType.users_and_groups: UsersAndGroupsOption,
 }
 
 
