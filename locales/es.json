@@ -737,7 +737,7 @@
     "migration_0024_rebuild_python_venv_disclaimer_base": "Tras la actualización a Debian Bullseye, algunas aplicaciones Python necesitan ser parcialmente reconstruidas para ser convertidas a la nueva versión de Python distribuida en Debian (en términos técnicos: lo que se llama el 'virtualenv' necesita ser recreado). Mientras tanto, esas aplicaciones Python pueden no funcionar. YunoHost puede intentar reconstruir el virtualenv para algunas de ellas, como se detalla a continuación. Para otras aplicaciones, o si el intento de reconstrucción falla, necesitarás forzar manualmente una actualización para esas aplicaciones.",
     "migration_description_0024_rebuild_python_venv": "Reparar la aplicación Python tras la migración a bullseye",
     "global_settings_setting_smtp_relay_enabled": "Activar el relé SMTP",
-    "domain_config_acme_eligible": "Elegibilidad ACME",
+    "domain_config_acme_eligible": "Requisitos ACME",
     "global_settings_setting_ssh_password_authentication": "Autenticación por contraseña",
     "domain_config_cert_issuer": "Autoridad de certificación",
     "invalid_shell": "Shell inválido: {shell}",
