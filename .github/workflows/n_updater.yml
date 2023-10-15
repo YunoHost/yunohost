@@ -20,9 +20,11 @@ jobs:
           # Setting up Git user
           git config --global user.name 'yunohost-bot'
           git config --global user.email 'yunohost-bot@users.noreply.github.com'
-          # Run the updater script
+          # Download n
           wget https://raw.githubusercontent.com/tj/n/master/bin/n --output-document=helpers/vendor/n/n
+          # Proceed only if there is a change
           [[ -z "$(git diff helpers/vendor/n/n)" ]] || echo "PROCEED=true" >> $GITHUB_ENV
+          echo "VERSION=$(sed -n 's/^VERSION=\"\(.*\)\"/\1/p' < n)" >> $GITHUB_ENV
       - name: Commit changes
         id: commit
         if: ${{ env.PROCEED == 'true' }}
@@ -34,14 +36,14 @@ jobs:
         uses: peter-evans/create-pull-request@v3
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
-          commit-message: Update n to version ${{ env.VERSION }}
+          commit-message: Update n to ${{ env.VERSION }}
           committer: 'yunohost-bot <yunohost-bot@users.noreply.github.com>'
           author: 'yunohost-bot <yunohost-bot@users.noreply.github.com>'
           signoff: false
           base: dev
           branch: ci-auto-update-n-v${{ env.VERSION }}
           delete-branch: true
-          title: 'Upgrade n to version ${{ env.VERSION }}'
+          title: 'Upgrade n to ${{ env.VERSION }}'
           body: |
-            Upgrade `n` to v${{ env.VERSION }}
+            Upgrade `n` to ${{ env.VERSION }}
           draft: false
