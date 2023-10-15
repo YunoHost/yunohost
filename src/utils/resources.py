@@ -1086,7 +1086,6 @@ class AptDependenciesAppResource(AppResource):
     packages: List = []
     packages_from_raw_bash: str = ""
     extras: Dict[str, Dict[str, Union[str, List]]] = {}
-
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
         super().__init__(properties, *args, **kwargs)
 
@@ -1106,13 +1105,25 @@ class AptDependenciesAppResource(AppResource):
             if isinstance(values.get("packages"), str):
                 values["packages"] = [value.strip() for value in values["packages"].split(",")]  # type: ignore
 
+            if isinstance(values.get("packages_from_raw_bash"), str):
+                out, err = self.check_output_bash_snippet(values.get("packages_from_raw_bash"))
+                if err:
+                    logger.error(
+                        "Error while running apt resource packages_from_raw_bash snippet for '" + str(key) + "' extras:"
+                    )
+                    logger.error(err)
+                values["packages"] = [value.strip() for value in out.split("\n")]
+
             if (
                 not isinstance(values.get("repo"), str)
                 or not isinstance(values.get("key"), str)
-                or not isinstance(values.get("packages"), list)
+                or (
+                    not isinstance(values.get("packages"), list)
+                    and not isinstance(values.get("packages_from_raw_bash"), str)
+                )
             ):
                 raise YunohostError(
-                    "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' defined as strings and 'packages' defined as list",
+                    "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' defined as strings, 'packages' defined as list or 'packages_from_raw_bash' defined as string",
                     raw_msg=True,
                 )
 
