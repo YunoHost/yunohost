@@ -1109,10 +1109,10 @@ class AptDependenciesAppResource(AppResource):
                 out, err = self.check_output_bash_snippet(values.get("packages_from_raw_bash"))
                 if err:
                     logger.error(
-                        "Error while running apt resource packages_from_raw_bash snippet for '" + str(key) + "' extras:"
+                        f"Error while running apt resource packages_from_raw_bash snippet for '{key}' extras:"
                     )
                     logger.error(err)
-                values["packages"] = [value.strip() for value in out.split("\n")]
+                values["packages"] = values.get("packages", []) + [value.strip() for value in out.split("\n")]
 
             if (
                 not isinstance(values.get("repo"), str)
@@ -1126,6 +1126,9 @@ class AptDependenciesAppResource(AppResource):
                     "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' defined as strings, 'packages' defined as list or 'packages_from_raw_bash' defined as string",
                     raw_msg=True,
                 )
+   
+            # Drop 'extras' entries associated to no packages             
+            self.extras = {key: value for key, values in self.extras.items() if values["packages"]}
 
     def provision_or_update(self, context: Dict = {}):
         script = " ".join(["ynh_install_app_dependencies", *self.packages])
