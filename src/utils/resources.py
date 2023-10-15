@@ -1117,10 +1117,7 @@ class AptDependenciesAppResource(AppResource):
             if (
                 not isinstance(values.get("repo"), str)
                 or not isinstance(values.get("key"), str)
-                or (
-                    not isinstance(values.get("packages"), list)
-                    and not isinstance(values.get("packages_from_raw_bash"), str)
-                )
+                or not isinstance(values.get("packages"), list)
             ):
                 raise YunohostError(
                     "In apt resource in the manifest: 'extras' repo should have the keys 'repo', 'key' defined as strings, 'packages' defined as list or 'packages_from_raw_bash' defined as string",
