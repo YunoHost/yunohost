@@ -18,16 +18,16 @@
     along with this program; if not, see http://www.gnu.org/licenses
 
 """
+import logging
 from pathlib import Path
 from typing import Any, Union
-import logging
-import ldap
 
-from moulinette.utils.filesystem import read_json, read_yaml
+import ldap
+from moulinette.utils.filesystem import read_yaml
 from yunohost.authenticators.ldap_ynhuser import URI, USERDN, Authenticator as Auth
 from yunohost.user import _hash_user_password
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.ldap import LDAPInterface
+from yunohost.utils.ldap import LDAPInterface, _ldap_path_extract
 from yunohost.utils.password import (
     assert_password_is_compatible,
     assert_password_is_strong_enough,
@@ -49,6 +49,49 @@ def _get_user_infos(
         raise YunohostValidationError("user_unknown", user=username)
 
     return username, auth["host"], result[0], ldap_interface
+
+
+def _get_apps(username: Union[str, None] = None):
+    """Get public + user's authorized apps.
+    If `username` is not given, returns only public apps
+    (e.g. with `visitors` in group permissions)
+    """
+    SYSTEM_PERMS = ("mail", "xmpp", "sftp", "ssh")
+
+    ldap_interface = LDAPInterface("root")
+    permissions_infos = ldap_interface.search(
+        "ou=permission",
+        "(objectclass=permissionYnh)",
+        [
+            "cn",
+            "groupPermission",
+            "inheritPermission",
+            "URL",
+            "label",
+            "showTile",
+        ],
+    )
+
+    apps = {}
+
+    for perm in permissions_infos:
+        name = perm["cn"][0].replace(".main", "")
+
+        if name in SYSTEM_PERMS or not perm.get("showTile", [False])[0]:
+            continue
+
+        groups = [_ldap_path_extract(g, "cn") for g in perm["groupPermission"]]
+        users = [
+            _ldap_path_extract(u, "uid") for u in perm.get("inheritPermission", [])
+        ]
+
+        if username in users or "visitors" in groups:
+            apps[name] = {
+                "label": perm["label"][0],
+                "url": perm["URL"][0],
+            }
+
+    return apps
 
 
 def _get_portal_settings(domain: Union[str, None] = None):
@@ -80,18 +123,12 @@ def portal_public():
 
     portal_settings = _get_portal_settings()
     portal_settings["apps"] = {}
-    portal_settings["public"] = portal_settings.pop("default_app", None) == "_yunohost_portal_with_public_apps"
+    portal_settings["public"] = (
+        portal_settings.pop("default_app", None) == "_yunohost_portal_with_public_apps"
+    )
 
     if portal_settings["public"]:
-        ssowat_conf = read_json("/etc/ssowat/conf.json")
-        portal_settings["apps"] = {
-            perm.replace(".main", ""): {
-                "label": infos["label"],
-                "url": infos["uris"][0],
-            }
-            for perm, infos in ssowat_conf["permissions"].items()
-            if infos["show_tile"] and infos["public"]
-        }
+        portal_settings["apps"] = _get_apps()
 
         if not portal_settings["show_other_domains_apps"]:
             portal_settings["apps"] = {
@@ -111,23 +148,9 @@ def portal_me():
         ["cn", "mail", "maildrop", "mailuserquota", "memberOf", "permission"]
     )
 
-    groups = [
-        g.replace("cn=", "").replace(",ou=groups,dc=yunohost,dc=org", "")
-        for g in user["memberOf"]
-    ]
+    groups = [_ldap_path_extract(g, "cn") for g in user["memberOf"]]
     groups = [g for g in groups if g not in [username, "all_users"]]
-
-    permissions = [
-        p.replace("cn=", "").replace(",ou=permission,dc=yunohost,dc=org", "")
-        for p in user["permission"]
-    ]
-
-    ssowat_conf = read_json("/etc/ssowat/conf.json")
-    apps = {
-        perm.replace(".main", ""): {"label": infos["label"], "url": infos["uris"][0]}
-        for perm, infos in ssowat_conf["permissions"].items()
-        if perm in permissions and infos["show_tile"] and username in infos["users"]
-    }
+    apps = _get_apps(username)
 
     settings = _get_portal_settings(domain=domain)
     if not settings["show_other_domains_apps"]:
