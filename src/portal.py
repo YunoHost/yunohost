@@ -109,7 +109,7 @@ def _get_portal_settings(domain: Union[str, None] = None):
         "portal_logo": "",
         "portal_theme": "system",
         "portal_title": "YunoHost",
-        "show_other_domains_apps": False,
+        # "show_other_domains_apps": False,
         "domain": domain,
     }
 
@@ -130,12 +130,13 @@ def portal_public():
     if portal_settings["public"]:
         portal_settings["apps"] = _get_apps()
 
-        if not portal_settings["show_other_domains_apps"]:
-            portal_settings["apps"] = {
-                name: data
-                for name, data in portal_settings["apps"].items()
-                if portal_settings["domain"] in data["url"]
-            }
+        # FIXME/TODO; See: filter apps that are available on specified domain
+        # if not portal_settings["show_other_domains_apps"]:
+        #     portal_settings["apps"] = {
+        #         name: data
+        #         for name, data in portal_settings["apps"].items()
+        #         if portal_settings["domain"] in data["url"]
+        #     }
 
     return portal_settings
 
@@ -152,9 +153,13 @@ def portal_me():
     groups = [g for g in groups if g not in [username, "all_users"]]
     apps = _get_apps(username)
 
-    settings = _get_portal_settings(domain=domain)
-    if not settings["show_other_domains_apps"]:
-        apps = {name: data for name, data in apps.items() if domain in data["url"]}
+    # FIXME / TODO: filter apps that are available on specified domain
+    #   settings = _get_portal_settings(domain=domain)
+    #   if not settings["show_other_domains_apps"]:
+    #       apps = {name: data for name, data in apps.items() if domain in data["url"]}
+    # App's `domain` info is not available in LDAP data, we need another config file
+    # that would be readable by the `ynh-portal` user. This conf file could be generated
+    # in `app_ssowatconf()`
 
     result_dict = {
         "username": username,

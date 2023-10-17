@@ -735,7 +735,7 @@ class DomainConfigPanel(ConfigPanel):
 
         portal_options = [
             "default_app",
-            "show_other_domains_apps",
+            # "show_other_domains_apps",
             "portal_title",
             "portal_logo",
             "portal_theme",
