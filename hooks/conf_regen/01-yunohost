@@ -29,6 +29,11 @@ do_init_regen() {
     chown -R root:ssl-cert /etc/yunohost/certs
     chmod 750 /etc/yunohost/certs
 
+    # Portal folder
+    mkdir -p /etc/yunohost/portal
+    chmod 500 /etc/yunohost/portal
+    chown ynh-portal:ynh-portal /etc/yunohost/portal
+
     # App folders
     mkdir -p /etc/yunohost/apps
     chmod 700 /etc/yunohost/apps
@@ -243,6 +248,11 @@ do_post_regen() {
         [ ! -e "/home/$USER" ] || setfacl -m g:all_users:--- /home/$USER
     done
 
+    # Portal settings
+    mkdir -p /etc/yunohost/portal
+    [[ ! -e /etc/yunohost/portal ]] || (chown ynh-portal:ynh-portal /etc/yunohost/portal && chmod 500 /etc/yunohost/portal)
+    chmod g+s /etc/yunohost/portal
+
     # Domain settings
     mkdir -p /etc/yunohost/domains
 
@@ -267,7 +277,7 @@ do_post_regen() {
             systemctl restart ntp
         }
     fi
-    
+
     [[ ! "$regen_conf_files" =~ "nftables.service.d/ynh-override.conf" ]] || systemctl daemon-reload
     [[ ! "$regen_conf_files" =~ "login.conf.d/ynh-override.conf" ]] ||  {
         systemctl daemon-reload
