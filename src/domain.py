@@ -18,13 +18,21 @@
 #
 import os
 import time
+from pathlib import Path
 from typing import List, Optional
 from collections import OrderedDict
 from logging import getLogger
 
 from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
-from moulinette.utils.filesystem import write_to_file, read_yaml, write_to_yaml, rm
+from moulinette.utils.filesystem import (
+    read_json,
+    read_yaml,
+    rm,
+    write_to_file,
+    write_to_json,
+    write_to_yaml,
+)
 
 from yunohost.app import (
     app_ssowatconf,
@@ -735,16 +743,18 @@ class DomainConfigPanel(ConfigPanel):
 
         portal_options = [
             "default_app",
-            # "show_other_domains_apps",
+            "show_other_domains_apps",
             "portal_title",
             "portal_logo",
             "portal_theme",
         ]
         if any(
             option in self.future_values
-            and self.future_values[option] != self.values[option]
+            and self.future_values[option] != self.values.get(option)
             for option in portal_options
         ):
+            from yunohost.portal import PORTAL_SETTINGS_DIR
+
             # Portal options are also saved in a `domain.portal.yml` file
             # that can be read by the portal API.
             # FIXME remove those from the config panel saved values?
@@ -775,11 +785,22 @@ class DomainConfigPanel(ConfigPanel):
                     self.new_values["portal_logo"] = filepath
                     # save the base64 content with mimetype to portal settings
                     with open(filepath, "rb") as f:
-                        portal_values["portal_logo"] = mimetype[0] + ":" + base64.b64encode(f.read()).decode("utf-8")
+                        portal_values["portal_logo"] = (
+                            mimetype[0]
+                            + ":"
+                            + base64.b64encode(f.read()).decode("utf-8")
+                        )
 
-            # FIXME config file should be readable by non-root portal entity
-            write_to_yaml(
-                f"{DOMAIN_SETTINGS_DIR}/{self.entity}.portal.yml", portal_values
+            portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{self.entity}.json")
+            portal_settings = {"apps": {}}
+
+            if portal_settings_path.exists():
+                portal_settings.update(read_json(str(portal_settings_path)))
+
+            # Merge settings since this config file is shared with `app_ssowatconf()` which populate the `apps` key.
+            portal_settings.update(portal_values)
+            write_to_json(
+                str(portal_settings_path), portal_settings, sort_keys=True, indent=4
             )
 
         super()._apply()

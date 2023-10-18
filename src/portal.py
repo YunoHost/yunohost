@@ -35,6 +35,7 @@ from yunohost.utils.password import (
 
 logger = logging.getLogger("portal")
 
+PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
 
