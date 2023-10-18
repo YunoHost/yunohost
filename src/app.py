@@ -29,6 +29,7 @@ import copy
 from typing import List, Tuple, Dict, Any, Iterator, Optional
 from packaging import version
 from logging import getLogger
+from pathlib import Path
 
 from moulinette import Moulinette, m18n
 from moulinette.utils.process import run_commands, check_output
@@ -36,7 +37,6 @@ from moulinette.utils.filesystem import (
     read_file,
     read_json,
     read_toml,
-    read_yaml,
     write_to_file,
     write_to_json,
     cp,
@@ -1606,12 +1606,16 @@ def app_ssowatconf():
 
 
     """
-    from yunohost.domain import domain_list, _get_maindomain, domain_config_get, _get_domain_portal_dict
+    from yunohost.domain import (
+        domain_list,
+        domain_config_get,
+        _get_domain_portal_dict,
+    )
     from yunohost.permission import user_permission_list
-    from yunohost.settings import settings_get
+    from yunohost.portal import PORTAL_SETTINGS_DIR
 
-    main_domain = _get_maindomain()
     domains = domain_list()["domains"]
+    portal_domains = domain_list(exclude_subdomains=True)["domains"]
     all_permissions = user_permission_list(
         full=True, ignore_system_perms=True, absolute_urls=True
     )["permissions"]
@@ -1633,7 +1637,6 @@ def app_ssowatconf():
         }
     }
 
-
     apps_using_remote_user_var_in_nginx = (
         check_output(
             "grep -nri '$remote_user' /etc/yunohost/apps/*/conf/*nginx*conf | awk -F/ '{print $5}' || true"
@@ -1654,6 +1657,9 @@ def app_ssowatconf():
             # Prevent infinite redirect loop...
             if domain + "/" != app_domain + app_path:
                 redirected_urls[domain + "/"] = app_domain + app_path
+
+    # Will organize apps by portal domain
+    portal_domains_apps = {domain: {} for domain in portal_domains}
 
     # New permission system
     for perm_name, perm_info in all_permissions.items():
@@ -1678,6 +1684,23 @@ def app_ssowatconf():
             "uris": uris,
         }
 
+        # Next: portal related
+        # No need to keep apps that aren't supposed to be displayed in portal
+        if not perm_info.get("show_tile", False):
+            continue
+
+        app_domain = uris[0].split("/")[0]
+        # get "topest" domain
+        app_portal_domain = next(
+            domain for domain in portal_domains if domain in app_domain
+        )
+        portal_domains_apps[app_portal_domain][app_id] = {
+            "label": perm_info["label"],
+            "users": perm_info["corresponding_users"],
+            "public": "visitors" in perm_info["allowed"],
+            "url": uris[0],
+        }
+
     conf_dict = {
         "cookie_secret_file": "/etc/yunohost/.ssowat_cookie_secret",
         "cookie_name": "yunohost.portal",
@@ -1687,6 +1710,22 @@ def app_ssowatconf():
     }
 
     write_to_json("/etc/ssowat/conf.json", conf_dict, sort_keys=True, indent=4)
+
+    # Generate a file per possible portal with available apps
+    for domain, apps in portal_domains_apps.items():
+        portal_settings = {}
+
+        portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{domain}.json")
+        if portal_settings_path.exists():
+            portal_settings.update(read_json(str(portal_settings_path)))
+
+        # Do no override anything else than "apps" since the file is shared
+        # with domain's config panel "portal" options
+        portal_settings["apps"] = apps
+
+        write_to_json(
+            str(portal_settings_path), portal_settings, sort_keys=True, indent=4
+        )
 
     logger.debug(m18n.n("ssowat_conf_generated"))
 
