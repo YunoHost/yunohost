@@ -23,7 +23,7 @@ from pathlib import Path
 from typing import Any, Union
 
 import ldap
-from moulinette.utils.filesystem import read_yaml
+from moulinette.utils.filesystem import read_json
 from yunohost.authenticators.ldap_ynhuser import URI, USERDN, Authenticator as Auth
 from yunohost.user import _hash_user_password
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -52,51 +52,13 @@ def _get_user_infos(
     return username, auth["host"], result[0], ldap_interface
 
 
-def _get_apps(username: Union[str, None] = None):
-    """Get public + user's authorized apps.
-    If `username` is not given, returns only public apps
-    (e.g. with `visitors` in group permissions)
+def _get_portal_settings(
+    domain: Union[str, None] = None, username: Union[str, None] = None
+):
     """
-    SYSTEM_PERMS = ("mail", "xmpp", "sftp", "ssh")
-
-    ldap_interface = LDAPInterface("root")
-    permissions_infos = ldap_interface.search(
-        "ou=permission",
-        "(objectclass=permissionYnh)",
-        [
-            "cn",
-            "groupPermission",
-            "inheritPermission",
-            "URL",
-            "label",
-            "showTile",
-        ],
-    )
-
-    apps = {}
-
-    for perm in permissions_infos:
-        name = perm["cn"][0].replace(".main", "")
-
-        if name in SYSTEM_PERMS or not perm.get("showTile", [False])[0]:
-            continue
-
-        groups = [_ldap_path_extract(g, "cn") for g in perm["groupPermission"]]
-        users = [
-            _ldap_path_extract(u, "uid") for u in perm.get("inheritPermission", [])
-        ]
-
-        if username in users or "visitors" in groups:
-            apps[name] = {
-                "label": perm["label"][0],
-                "url": perm["URL"][0],
-            }
-
-    return apps
-
-
-def _get_portal_settings(domain: Union[str, None] = None):
-    from yunohost.domain import DOMAIN_SETTINGS_DIR
+    Returns domain's portal settings which are a combo of domain's portal config panel options
+    and the list of apps availables on this domain computed by `app.app_ssowatconf()`.
+    """
 
     if not domain:
         from bottle import request
@@ -105,41 +67,56 @@ def _get_portal_settings(domain: Union[str, None] = None):
 
     assert domain and "/" not in domain
 
-    settings = {
+    settings: dict[str, Any] = {
+        "apps": {},
         "public": False,
         "portal_logo": "",
         "portal_theme": "system",
         "portal_title": "YunoHost",
-        # "show_other_domains_apps": False,
+        "show_other_domains_apps": False,
         "domain": domain,
     }
 
-    if Path(f"{DOMAIN_SETTINGS_DIR}/{domain}.portal.yml").exists():
-        settings.update(read_yaml(f"{DOMAIN_SETTINGS_DIR}/{domain}.portal.yml"))
+    portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{domain}.json")
+
+    if portal_settings_path.exists():
+        settings.update(read_json(str(portal_settings_path)))
+        # Portal may be public (no login required)
+        settings["public"] = (
+            settings.pop("default_app", None) == "_yunohost_portal_with_public_apps"
+        )
+
+    # First clear apps since it may contains private apps
+    apps: dict[str, Any] = settings.pop("apps", {})
+    settings["apps"] = {}
+
+    if settings["show_other_domains_apps"]:
+        # Enhanced apps with all other domain's apps
+        import glob
+
+        for path in glob.glob(f"{PORTAL_SETTINGS_DIR}/*.json"):
+            if path != str(portal_settings_path):
+                apps.update(read_json(path)["apps"])
+
+    if username:
+        # Add user allowed or public apps
+        settings["apps"] = {
+            name: app
+            for name, app in apps.items()
+            if username in app["users"] or app["public"]
+        }
+    elif settings["public"]:
+        # Add public apps (e.g. with "visitors" in group permission)
+        settings["apps"] = {name: app for name, app in apps.items() if app["public"]}
 
     return settings
 
 
 def portal_public():
-
-    portal_settings = _get_portal_settings()
-    portal_settings["apps"] = {}
-    portal_settings["public"] = (
-        portal_settings.pop("default_app", None) == "_yunohost_portal_with_public_apps"
-    )
-
-    if portal_settings["public"]:
-        portal_settings["apps"] = _get_apps()
-
-        # FIXME/TODO; See: filter apps that are available on specified domain
-        # if not portal_settings["show_other_domains_apps"]:
-        #     portal_settings["apps"] = {
-        #         name: data
-        #         for name, data in portal_settings["apps"].items()
-        #         if portal_settings["domain"] in data["url"]
-        #     }
-
-    return portal_settings
+    """Get public settings
+    If the portal is set as public, it will include the list of public apps
+    """
+    return _get_portal_settings()
 
 
 def portal_me():
@@ -152,15 +129,8 @@ def portal_me():
 
     groups = [_ldap_path_extract(g, "cn") for g in user["memberOf"]]
     groups = [g for g in groups if g not in [username, "all_users"]]
-    apps = _get_apps(username)
-
-    # FIXME / TODO: filter apps that are available on specified domain
-    #   settings = _get_portal_settings(domain=domain)
-    #   if not settings["show_other_domains_apps"]:
-    #       apps = {name: data for name, data in apps.items() if domain in data["url"]}
-    # App's `domain` info is not available in LDAP data, we need another config file
-    # that would be readable by the `ynh-portal` user. This conf file could be generated
-    # in `app_ssowatconf()`
+    # Get user allowed apps
+    apps = _get_portal_settings(domain, username)["apps"]
 
     result_dict = {
         "username": username,
