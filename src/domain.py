@@ -673,6 +673,10 @@ class DomainConfigPanel(ConfigPanel):
             1 if self.entity == _get_maindomain() else 0
         )
 
+        # Portal settings are only available on "topest" domains
+        if _get_parent_domain_of(self.entity, topest=True) is not None:
+            del toml["feature"]["portal"]
+
         # Optimize wether or not to load the DNS section,
         # e.g. we don't want to trigger the whole _get_registary_config_section
         # when just getting the current value from the feature section
@@ -748,7 +752,7 @@ class DomainConfigPanel(ConfigPanel):
             # "portal_logo",
             "portal_theme",
         ]
-        if any(
+        if _get_parent_domain_of(self.entity, topest=True) is None and any(
             option in self.future_values
             and self.new_values[option] != self.values.get(option)
             for option in portal_options
