@@ -248,10 +248,10 @@ do_post_regen() {
         [ ! -e "/home/$USER" ] || setfacl -m g:all_users:--- /home/$USER
     done
 
-    # Portal settings
+    # Portal folder
     mkdir -p /etc/yunohost/portal
-    [[ ! -e /etc/yunohost/portal ]] || (chown ynh-portal:ynh-portal /etc/yunohost/portal && chmod 500 /etc/yunohost/portal)
-    chmod g+s /etc/yunohost/portal
+    chmod 500 /etc/yunohost/portal
+    chown ynh-portal:ynh-portal /etc/yunohost/portal
 
     # Domain settings
     mkdir -p /etc/yunohost/domains
