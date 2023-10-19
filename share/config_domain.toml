@@ -7,16 +7,16 @@ name = "Features"
     [feature.portal]
     name = "Portal"
 
-        # [feature.portal.show_other_domains_apps]
-        # type = "boolean"
-        # default = false
+        [feature.portal.show_other_domains_apps]
+        type = "boolean"
+        default = false
 
         [feature.portal.portal_title]
         type = "string"
         default = "YunoHost"
 
-        [feature.portal.portal_logo]
-        type = "file"
+        # [feature.portal.portal_logo]
+        # type = "file"
 
         [feature.portal.portal_theme]
         type = "select"
