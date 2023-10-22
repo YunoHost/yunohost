@@ -61,10 +61,10 @@ class AppResourceManager:
             try:
                 if todo == "deprovision":
                     # FIXME : i18n, better info strings
-                    logger.info(f"Deprovisionning {name}...")
+                    logger.info(f"Deprovisioning {name}...")
                     old.deprovision(context=context)
                 elif todo == "provision":
-                    logger.info(f"Provisionning {name}...")
+                    logger.info(f"Provisioning {name}...")
                     new.provision_or_update(context=context)
                 elif todo == "update":
                     logger.info(f"Updating {name}...")
@@ -90,14 +90,14 @@ class AppResourceManager:
                     # (NB. here we want to undo the todo)
                     if todo == "deprovision":
                         # FIXME : i18n, better info strings
-                        logger.info(f"Reprovisionning {name}...")
+                        logger.info(f"Reprovisioning {name}...")
                         old.provision_or_update(context=context)
                     elif todo == "provision":
-                        logger.info(f"Deprovisionning {name}...")
+                        logger.info(f"Deprovisioning {name}...")
                         new.deprovision(context=context)
                     elif todo == "update":
                         logger.info(f"Reverting {name}...")
-                        old.provision_or_update(context=context)
+                        old.sion_or_update(context=context)
                 except (KeyboardInterrupt, Exception) as e:
                     if isinstance(e, KeyboardInterrupt):
                         logger.error(m18n.n("operation_interrupted"))
