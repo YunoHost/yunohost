@@ -279,6 +279,7 @@ class ConfigPanel:
     save_path_tpl: Union[str, None] = None
     config_path_tpl = "/usr/share/yunohost/config_{entity_type}.toml"
     save_mode = "full"
+    settings_must_be_defined: bool = False
     filter_key: "FilterKey" = (None, None, None)
     config: Union[ConfigPanelModel, None] = None
     form: Union["FormModel", None] = None
@@ -627,7 +628,7 @@ class ConfigPanel:
                     value = option.default
                 elif option.type is OptionType.file or option.bind == "null":
                     continue
-                else:
+                elif self.settings_must_be_defined:
                     raise YunohostError(
                         f"Config panel question '{option.id}' should be initialized with a value during install or upgrade.",
                         raw_msg=True,
