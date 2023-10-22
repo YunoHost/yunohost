@@ -753,10 +753,10 @@ class DomainConfigPanel(ConfigPanel):
             # that can be read by the portal API.
             # FIXME remove those from the config panel saved values?
 
-            portal_values = form.dict(include=portal_options)
+            portal_values = form.dict(include=set(portal_options))
 
             portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{self.entity}.json")
-            portal_settings = {"apps": {}}
+            portal_settings: dict[str, Any] = {"apps": {}}
 
             if portal_settings_path.exists():
                 portal_settings.update(read_json(str(portal_settings_path)))
