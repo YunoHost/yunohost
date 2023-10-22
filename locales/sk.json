@@ -30,7 +30,7 @@
     "app_manifest_install_ask_domain": "Vyberte doménu, kam bude táto aplikácia nainštalovaná",
     "app_manifest_install_ask_is_public": "Má byť táto aplikácia viditeľná pre anonymných návštevníkov?",
     "app_manifest_install_ask_password": "Vyberte heslo pre správu tejto aplikácie",
-    "app_manifest_install_ask_path": "Vyberte cestu adresy URL (po názve domény), kde bude táto aplikácia nainštalovaná",
+    "app_manifest_install_ask_path": "Vyberte cestu adresy URL (po názve domény), kam bude táto aplikácia nainštalovaná",
     "app_not_correctly_installed": "Zdá sa, že {app} nie je správne nainštalovaná",
     "app_not_properly_removed": "{app} nebola správne odstránená",
     "app_packaging_format_not_supported": "Túto aplikáciu nie je možné nainštalovať, pretože formát balíčkov, ktorý používa, nie je podporovaný Vašou verziou YunoHost. Mali by ste zvážiť aktualizovanie Vášho systému.",
