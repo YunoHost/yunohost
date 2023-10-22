@@ -97,7 +97,7 @@ class AppResourceManager:
                         new.deprovision(context=context)
                     elif todo == "update":
                         logger.info(f"Reverting {name}...")
-                        old.sion_or_update(context=context)
+                        old.provision_or_update(context=context)
                 except (KeyboardInterrupt, Exception) as e:
                     if isinstance(e, KeyboardInterrupt):
                         logger.error(m18n.n("operation_interrupted"))
