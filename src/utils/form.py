@@ -553,8 +553,8 @@ class ButtonOption(BaseReadonlyOption):
     - [common properties](#common-option-properties)
         - `bind`: forced to `"null"`
     - `style`: any of `"success|info|warning|danger"` (default: `"success"`)
-    - `enabled`: `Binding` or `bool` (default: `true`)
-        - when used with `Binding` you can enable/disable the button depending on context
+    - `enabled`: `JSExpression` or `bool` (default: `true`)
+        - when used with `JSExpression` you can enable/disable the button depending on context
     - `icon` (optional): any icon name from [Fork Awesome](https://forkaweso.me/Fork-Awesome/icons/)
         - Currently only displayed in the web-admin
     """
@@ -764,7 +764,7 @@ class StringOption(BaseStringOption):
     [section.my_option_id]
     type = "string"
     default = "E10"
-    pattern.regexp = "^[A-F]\d\d$"
+    pattern.regexp = '^[A-F]\d\d$'
     pattern.error = "Provide a room like F12 : one uppercase and 2 numbers"
     ```
 
