@@ -132,83 +132,60 @@ print(
     """
 ----------------
 
-## Advanced use cases
+## Read and write values: the `bind` property
 
-### `visible` & `enabled` expression evaluation
+! Config panels only
 
-Sometimes we may want to conditionaly display a message or prompt for a value, for this we have the `visible` prop.
-And we may want to allow a user to trigger an action only if some condition are met, for this we have the `enabled` prop.
+You can read and write values with 2 mechanisms: the `bind` property in the `config_panel.toml` and for complex use cases the getter/setter in a `config` script.
 
-Expressions are evaluated against a context containing previous values of the current section's options. This quite limited current design exists because on the web-admin or on the CLI we cannot guarantee that a value will be present in the form if the user queried only a single panel/section/option.
-In the case of an action, the user will be shown or asked for each of the options of the section in which the button is present.
-
-The expression has to be written in javascript (this has been designed for the web-admin first and is converted to python on the fly on the cli).
-
-Available operators are: `==`, `!=`, `>`, `>=`, `<`, `<=`, `!`, `&&`, `||`, `+`, `-`, `*`, `/`, `%` and `match()`.
-
-##### Examples
-
-```toml
-# simple "my_option_id" is thruthy/falsy
-visible = "my_option_id"
-visible = "!my_option_id"
-# misc
-visible = "my_value >= 10"
-visible = "-(my_value + 1) < 0"
-visible = "!!my_value || my_other_value"
-```
-For a more complete set of examples, [check the tests at the end of the file](https://github.com/YunoHost/yunohost/blob/dev/src/tests/test_questions.py).
-
-##### match()
-
-For more complex evaluation we can use regex matching.
-
-```toml
-[my_string]
-default = "Lorem ipsum dolor et si qua met!"
-
-[my_boolean]
-type = "boolean"
-visible = "my_string && match(my_string, '^Lorem [ia]psumE?')"
-```
-
-Match the content of a file.
-
-```toml
-[my_file]
-type = "file"
-accept = ".txt"
-bind = "/etc/random/lorem.txt"
-
-[my_boolean]
-type = "boolean"
-visible = "my_file && match(my_file, '^Lorem [ia]psumE?')"
-```
-
-with a file with content like:
-```txt
-Lorem ipsum dolor et si qua met!
-```
-
-
-### `bind`
-
-Config panels only
-
-`bind` allows us to alter the generic behavior of option's values which is: get from and set in the app `settings.yml`.
+`bind` allows us to alter the default behavior of applying option's values, which is: get from and set in the app `settings.yml`.
 
 We can:
-- alter the source the value comes from with getters or binds to file.
-- alter the destination with setters or binds to file.
+- alter the source the value comes from wit binds to file or custom getters.
+- alter the destination with binds to file or settings.
 - parse/validate the value before destination with validators
 
-----------------
-IMPORTANT: with the exception of `bind = "null"` options, options ids should almost **always** correspond to an app setting initialized / reused during install/upgrade.
+! IMPORTANT: with the exception of `bind = "null"` options, options ids should almost **always** correspond to an app setting initialized / reused during install/upgrade.
 Not doing so may result in inconsistencies between the config panel mechanism and the use of ynh_add_config
 
-----------------
 
-##### bind to file
+### Read / write into a var of a configuration file
+
+Settings usually correspond to key/values in actual app configurations. Hence, a more useful mode is to have `bind = ":FILENAME"` with a colon `:` before. In that case, YunoHost will automagically find a line with `KEY=VALUE` in `FILENAME` (with the adequate separator between `KEY` and `VALUE`).
+
+YunoHost will then use this value for the read/get operation. During write/set operations, YunoHost will overwrite the value in **both** FILENAME and in the app's settings.yml
+
+Configuration file format supported: `yaml`, `toml`, `json`, `ini`, `env`, `php`, `python`.
+The feature probably works with others formats, but should be tested carefully.
+
+Note that this feature only works with relatively simple cases such as `KEY: VALUE`, but won't properly work with complex data structures like multiline array/lists or dictionnaries.
+It also doesn't work with XML format, custom config function call, php define(), …
+If you need to save complex/multiline content in a configuration variable, you should do it via a specific getter/setter.
+
+```toml
+[panel.section.config_value]
+# Do not use `file` for this since we only want to insert/save a value
+type = "string"
+bind = ":__FINALPATH__/config.ini"
+default = ""
+```
+
+By default, `bind = ":FILENAME"` will use the option id as `KEY` but the option id may sometime not be the exact same `KEY` name in the configuration file.
+For example, [In pepettes app](https://github.com/YunoHost-Apps/pepettes_ynh/blob/5cc2d3ffd6529cc7356ff93af92dbb6785c3ab9a/conf/settings.py##L11), the python variable is `name` and not `project_name`. In that case, the key name can be specified before the colon `:`.
+
+```toml
+[panel.section.project_name]
+bind = "name:__FINALPATH__/config.ini"
+
+```
+
+Sometimes, you want to read and save a value in a variable name that appears several time in the configuration file (for example variables called `max`). The `bind` property allows you to change the value on the variable following a regex in a the file:
+
+```toml
+bind = "importExportRateLimiting>max:__INSTALL_DIR__/conf.json"
+```
+
+### Read / write an entire file
 
 You can bind a `text` or directly a `file` to a specific file by using `bind = "FILEPATH`.
 
@@ -225,142 +202,183 @@ bind = "__FINALPATH__/config.ini"
 default = "key: 'value'"
 ```
 
-##### bind a value inside a file
+## Advanced use cases
 
-Settings usually correspond to key/values in actual app configurations. Hence, a more useful mode is to have `bind = ":FILENAME"` with a colon `:` before. In that case, YunoHost will automagically find a line with `KEY=VALUE` in `FILENAME` (with the adequate separator between `KEY` and `VALUE`).
+Sometimes the `bind` mechanism is not enough:
+ * the config file format is not supported (e.g. xml, csv)
+ * the data is not contained in a config file (e.g. database, directory, web resources...)
+ * the data should be writen but not read (e.g. password)
+ * the data should be read but not writen (e.g. status information)
+ * we want to change other things than the value (e.g. the choices list of a select)
+ * the question answer contains several values to dispatch in several places
+ * and so on
 
-YunoHost will then use this value for the read/get operation. During write/set operations, YunoHost will overwrite the value in **both** FILENAME and in the app's settings.yml
+For all of those use cases, there are the specific getter or setter mechanism for an option!
 
-Configuration file format supported: `yaml`, `toml`, `json`, `ini`, `env`, `php`, `python`.
-The feature probably works with others formats, but should be tested carefully.
+To create specific getter/setter, you first need to create a `config` script inside the `scripts` directory
 
-Note that this feature only works with relatively simple cases such as `KEY: VALUE`, but won't properly work with complex data structures like multilin array/lists or dictionnaries.
-It also doesn't work with XML format, custom config function call, php define(), …
+`scripts/config`
+```bash
+#!/bin/bash
+source /usr/share/yunohost/helpers
 
+ynh_abort_if_errors
 
-```toml
-[panel.section.config_value]
-# Do not use `file` for this since we only want to insert/save a value
-type = "string"
-bind = ":__FINALPATH__/config.ini"
-default = ""
+# Put your getter, setter, validator or action here
+
+# Keep this last line
+ynh_app_config_run $1
 ```
 
-By default, `bind = ":FILENAME"` will use the option id as `KEY` but the option id may sometime not be the exact same `KEY` name in the configuration file.
-For example, [In pepettes app](https://github.com/YunoHost-Apps/pepettes_ynh/blob/5cc2d3ffd6529cc7356ff93af92dbb6785c3ab9a/conf/settings.py##L11), the python variable is `name` and not `project_name`. In that case, the key name can be specified before the colon `:`.
-
-```toml
-[panel.section.project_name]
-bind = "name:__FINALPATH__/config.ini"
-```
-
-##### Getters
+### Getters
 
 Define an option's custom getter in a bash script `script/config`.
-It has to be named after an option's id prepended by `get__`.
+It has to be named after an option's `id` prepended by `get__`.
 
-To display a custom alert message for example. We setup a base option in `config_panel.toml`.
+The function should returns one of these two formats:
+ * a raw format, in this case the return is binded directly to the value of the question
+ * a yaml format, in this case you can rewrite several properties of your option (like the `style` of an `alert`, the list of `choices` of a `select`, etc.)
 
-```toml
-[panel.section.alert]
-type = "alert"
-# bind to "null" to inform there's something in `scripts/config`
-bind = "null"
-# `ask` & `style` will be injected by a custom getter
+
+[details summary="<i>Basic example : Get the login inside the first line of a file </i>" class="helper-card-subtitle text-muted"]
+scripts/config
+```bash
+get__login_user() {
+    if [ -s /etc/openvpn/keys/credentials ]
+    then
+        echo "$(sed -n 1p /etc/openvpn/keys/credentials)"
+    else
+        echo ""
+    fi
+}
 ```
 
-Then add a custom getter that output yaml, every properties defined here will override any property previously declared.
+config_panel.toml
+```toml
+[main.auth.login_user]
+ask = "Username"
+type = "string"
+```
+[/details]
 
+[details summary="<i>Advanced example 1 : Display a list of available plugins</i>" class="helper-card-subtitle text-muted"]
+scripts/config
 ```bash
-get__alert() {
-    if [ "$whatever" ]; then
-        cat << EOF
+get__plugins() {
+    echo "choices: [$(ls $install_dir/plugins/ | tr '\n' ',')]"
+}
+```
+
+config_panel.toml
+```toml
+[main.plugins.plugins]
+ask = "Plugin to activate"
+type = "tags"
+choices = []
+```
+[/details]
+
+[details summary="<i>Example 2 : Display the status of a VPN</i>" class="helper-card-subtitle text-muted"]
+scripts/config
+```bash
+get__status() {
+    if [ -f "/sys/class/net/tun0/operstate" ] && [ "$(cat /sys/class/net/tun0/operstate)" == "up" ]
+    then
+    cat << EOF
 style: success
-ask: Your VPN is running :)
+ask:
+  en: Your VPN is running :)
 EOF
     else
-        cat << EOF
+    cat << EOF
 style: danger
-ask: Your VPN is down
+ask:
+  en: Your VPN is down
 EOF
     fi
 }
 ```
 
-Or to inject a custom value:
-
+config_panel.toml
 ```toml
-[panel.section.my_hidden_value]
-type = "number"
-bind = "null"
-# option will act as an hidden variable that can be used in context evaluation
-# (ie: `visible` or `enabled`)
-readonly = true
-visible = false
-# `default` injected by a custom getter
+[main.cube.status]
+ask = "Custom getter alert"
+type = "alert"
+style = "info"
+bind = "null" # no behaviour on
 ```
+[/details]
 
-```bash
-get__my_hidden_value() {
-    if [ "$whatever" ]; then
-        # if only a value is needed
-        echo "10"
-    else
-        # or if we need to override some other props
-        # (use `default` or `value` to inject the value)
-        cat << EOF
-ask: Here's a number
-visible: true
-default: 0
-EOF
-    fi
-}
-```
 
-##### Setters
+### Setters
 
 Define an option's custom setter in a bash script `script/config`.
 It has to be named after an option's id prepended by `set__`.
 
-```toml
-[panel.section.my_value]
-type = "string"
-bind = "null"
-ask = "gimme complex string"
-```
+This function could access new values defined by the users by using bash variable with the same name as the short key of a question.
 
+You probably should use `ynh_print_info` in order to display info for user about change that has been made to help them to understand a bit what's going.
+
+
+[details summary="<i>Basic example : Set the login into the first line of a file </i>" class="helper-card-subtitle text-muted"]
+scripts/config
 ```bash
-set__my_value() {
-    if [ -n "$my_value" ]; then
-        # split the string into multiple elements or idk
+set__login_user() {
+    if [ -z "${login_user}" ]
+    then
+        echo "${login_user}" > /etc/openvpn/keys/credentials
+        ynh_print_info "The user login has been registered in /etc/openvpn/keys/credentials"
     fi
-    # To save the value or modified value as a setting:
-    ynh_app_setting_set --app=$app --key=my_value --value="$my_value"
 }
 ```
 
-##### Validators
+config_panel.toml
+```toml
+[main.auth.login_user]
+ask = "Username"
+type = "string"
+```
+[/details]
 
+
+#### Validation
+
+You will often need to validate data answered by the user before to save it somewhere.
+
+Validation can be made with regex through `pattern` argument
+```toml
+pattern.regexp = '^.+@.+$'
+pattern.error = 'An email is required for this field'
+```
+
+You can also restrict several types with a choices list.
+```toml
+choices.option1 = "Plop1"
+choices.option2 = "Plop2"
+choices.option3 = "Plop3"
+```
+
+Some other type specific argument exist like
+| type | validation arguments |
+| -----  | --------------------------- |
+| `number`, `range` | `min`, `max`, `step` |
+| `file` | `accept` |
+| `boolean` | `yes` `no` |
+
+
+If you need more control over validation, you can use custom validators.
 Define an option's custom validator in a bash script `script/config`.
 It has to be named after an option's id prepended by `validate__`.
 
 Validators allows us to return custom error messages depending on the value.
 
-```toml
-[panel.section.my_value]
-type = "string"
-bind = "null"
-ask = "Gimme a long string"
-default = "too short"
-```
-
 ```bash
-validate__my_value() {
-    if [[ "${#my_value}" -lt 12 ]]; then echo 'Too short!'; fi
+validate__login_user() {
+    if [[ "${#login_user}" -lt 4 ]]; then echo 'Too short user login'; fi
 }
 ```
 
-##### Actions
+### Actions
 
 Define an option's action in a bash script `script/config`.
 It has to be named after a `button`'s id prepended by `run__`.
@@ -406,6 +424,62 @@ run__my_action() {
     cd /tmp
     git clone "$my_repo" "$my_repo_name"
 }
+```
+
+### `visible` & `enabled` expression evaluation
+
+Sometimes we may want to conditionaly display a message or prompt for a value, for this we have the `visible` prop.
+And we may want to allow a user to trigger an action only if some condition are met, for this we have the `enabled` prop.
+
+Expressions are evaluated against a context containing previous values of the current section's options. This quite limited current design exists because on the web-admin or on the CLI we cannot guarantee that a value will be present in the form if the user queried only a single panel/section/option.
+In the case of an action, the user will be shown or asked for each of the options of the section in which the button is present.
+
+The expression has to be written in javascript (this has been designed for the web-admin first and is converted to python on the fly on the cli).
+
+Available operators are: `==`, `!=`, `>`, `>=`, `<`, `<=`, `!`, `&&`, `||`, `+`, `-`, `*`, `/`, `%` and `match()`.
+
+#### Examples
+
+```toml
+# simple "my_option_id" is thruthy/falsy
+visible = "my_option_id"
+visible = "!my_option_id"
+# misc
+visible = "my_value >= 10"
+visible = "-(my_value + 1) < 0"
+visible = "!!my_value || my_other_value"
+```
+For a more complete set of examples, [check the tests at the end of the file](https://github.com/YunoHost/yunohost/blob/dev/src/tests/test_questions.py).
+
+#### match()
+
+For more complex evaluation we can use regex matching.
+
+```toml
+[my_string]
+default = "Lorem ipsum dolor et si qua met!"
+
+[my_boolean]
+type = "boolean"
+visible = "my_string && match(my_string, '^Lorem [ia]psumE?')"
+```
+
+Match the content of a file.
+
+```toml
+[my_file]
+type = "file"
+accept = ".txt"
+bind = "/etc/random/lorem.txt"
+
+[my_boolean]
+type = "boolean"
+visible = "my_file && match(my_file, '^Lorem [ia]psumE?')"
+```
+
+with a file with content like:
+```txt
+Lorem ipsum dolor et si qua met!
 ```
 """
 )

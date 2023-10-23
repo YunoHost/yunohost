@@ -374,8 +374,9 @@ class BaseOption(BaseModel):
             - if the path starts with `:`, the value be saved as its id's variable/property counterpart
                 - this only works for first level variables/properties and simple types (no array)
             - else the value will be stored as the whole content of the file
-            - you can use `__FINALPATH__` in your path to point to dynamic install paths
+            - you can use `__FINALPATH__` or `__INSTALL_DIR__` in your path to point to dynamic install paths
                 - FIXME are other global variables accessible?
+        - [refer to `bind` doc for explaination and examples](#read-and-write-values-the)
     """
 
     type: OptionType

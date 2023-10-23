@@ -215,17 +215,36 @@ class PanelModel(ContainerModel):
 
 class ConfigPanelModel(BaseModel):
     """
-    Configuration panels are descriptive format in TOML to bind settings to form items so that a user can alter some of the app's configuration without manually editing files from the command line.
+    Configuration panels allows instances adminitrators to manage some parameters or runs some actions for which the app's upstream doesn't provide any configuration panels itself. It's a good way to reduce manual change on config files and avoid conflicts on it.
+
+    Those panels could also be used as interface generator to extend quickly capabilities of YunoHost (e.g. VPN Client, Hotspost, Borg, etc.).
 
     From a packager perspective, this `config_panel.toml` is coupled to the `scripts/config` script, which may be used to define custom getters/setters. However, most use cases should be covered automagically by the core, thus it may not be necessary to define a scripts/config at all!
 
     ! IMPORTANT: Please: Keep in mind the YunoHost spirit, and try to build your panels in such a way as to expose only really useful parameters, and if there are many of them, to relegate those corresponding to rarer use cases to "Advanced" sub-sections.
 
-    Config panels are structured as a series of panels (that renders as tabs in the web-admin) that contains a series of sections that contains options.
-    Options can be directly binded to settings, or captured by custom bash setters/getter, `button` Options can trigger "actions" (e.g. custom bash functions).
+    ### How does `config_panel.toml` work
+    Basically, configuration panels for apps uses at least a `config_panel.toml` at the root of your package. For advanced usecases, this TOML file could also be paired with a `scripts/config` to define custom getters/setters/validators/actions. However, most use cases should be covered automagically by the core, thus it may not be necessary to define a `scripts/config` at all!
 
-    - [Learn more about Options](/dev/forms) in their dedicated doc page as those are also used in app install forms.
-    - [Check the basic toml example](https://github.com/YunoHost/example_ynh/blob/master/config_panel.toml.example) and the [basic `scripts/config` example](https://github.com/YunoHost/example_ynh/blob/master/scripts/config)
+    The `config_panel.toml` file describes one or several panels, containing some sections, containing some options generally binded to a params in a configuration file.
+
+    ### Options short keys have to be unique
+    For performance reasons, questions short keys should be unique in all the `config_panel.toml` file, not just inside its panel or its section.
+
+    So you can't have
+    ```toml
+    [manual.vpn.server_ip]
+    [advanced.dns.server_ip]
+    ```
+    Indeed the real variable name is server_ip and here you have a conflict.
+
+    ### Options
+
+    [Learn more about Options](/dev/forms) in their dedicated doc page as those are also used in app install forms and core config panels.
+
+    ### YunoHost community examples
+    - [Check the basic example at the end of this doc](#basic-example)
+    - [Check the example_ynh app toml](https://github.com/YunoHost/example_ynh/blob/master/config_panel.toml.example) and the [basic `scripts/config` example](https://github.com/YunoHost/example_ynh/blob/master/scripts/config)
     - [Check config panels of other apps](https://grep.app/search?q=version&filter[repo.pattern][0]=YunoHost-Apps&filter[lang][0]=TOML)
     - [Check `scripts/config` of other apps](https://grep.app/search?q=ynh_app_config_apply&filter[repo.pattern][0]=YunoHost-Apps&filter[lang][0]=Shell)
 
