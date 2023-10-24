@@ -88,41 +88,41 @@ print(
     """
 ## Full example
 
-We supposed we have an upstream app with this simple config.yml file:
+Let's imagine that the upstream app is configured using this simple `config.yml` file stored in the app's install directory (typically `/var/www/$app/config.yml`):
 ```yaml
-title: 'My dummy apps'
+title: 'My dummy app'
 theme: 'white'
 max_rate: 10
 max_age: 365
 ```
 
-We could for example create a simple configuration panel for it like this one, by following the syntax `\[PANEL.SECTION.QUESTION\]`:
+We could for example create a simple configuration panel for it like this one, by following the syntax `[PANEL.SECTION.QUESTION]`:
 ```toml
 version = "1.0"
 [main]
 
-[main.main]
-[main.main.title]
-ask.en = "Title"
-type = "string"
-bind = ":__INSTALL_DIR__/config.yml"
+    [main.main]
+        [main.main.title]
+        ask.en = "Title"
+        type = "string"
+        bind = ":__INSTALL_DIR__/config.yml"
 
-[main.main.theme]
-ask.en = "Theme"
-type = "select"
-choices = ["white", "dark"]
-bind = ":__INSTALL_DIR__/config.yml"
+        [main.main.theme]
+        ask.en = "Theme"
+        type = "select"
+        choices = ["white", "dark"]
+        bind = ":__INSTALL_DIR__/config.yml"
 
-[main.limits]
-[main.limits.max_rate]
-ask.en = "Maximum display rate"
-type = "number"
-bind = ":__INSTALL_DIR__/config.yml"
+        [main.limits]
+        [main.limits.max_rate]
+        ask.en = "Maximum display rate"
+        type = "number"
+        bind = ":__INSTALL_DIR__/config.yml"
 
-[main.limits.max_age]
-ask.en = "Duration of a dummy"
-type = "number"
-bind = ":__INSTALL_DIR__/config.yml"
+        [main.limits.max_age]
+        ask.en = "Duration of a dummy"
+        type = "number"
+        bind = ":__INSTALL_DIR__/config.yml"
 ```
 
 Here we have created one `main` panel, containing the `main` and `limits` sections, containing questions according to params name of our `config.yml` file. Thanks to the `bind` properties, all those questions are bind to their values in the `config.yml` file.
@@ -147,13 +147,13 @@ ynh_app_config_apply() {
 }
 ```
 
-List of main configuration helpers
-* ynh_app_config_get
-* ynh_app_config_show
-* ynh_app_config_validate
-* ynh_app_config_apply
-* ynh_app_config_run
+List of main configuration helpers:
+ * `ynh_app_config_get`
+ * `ynh_app_config_show`
+ * `ynh_app_config_validate`
+ * `ynh_app_config_apply`
+ * `ynh_app_config_run`
 
-More info on this could be found by reading [vpnclient_ynh config script](https://github.com/YunoHost-Apps/vpnclient_ynh/blob/master/scripts/config)
+More info on this can be found by reading [vpnclient_ynh config script](https://github.com/YunoHost-Apps/vpnclient_ynh/blob/master/scripts/config)
 """
 )

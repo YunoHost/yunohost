@@ -217,30 +217,30 @@ class PanelModel(ContainerModel):
 
 class ConfigPanelModel(BaseModel):
     """
-    Configuration panels allows instances adminitrators to manage some parameters or runs some actions for which the app's upstream doesn't provide any configuration panels itself. It's a good way to reduce manual change on config files and avoid conflicts on it.
+    Configuration panels allows admins to manage parameters or runs actions for which the upstream's app doesn't provide any appropriate UI itself. It's a good way to reduce manual change on config files and avoid conflicts on it.
 
-    Those panels could also be used as interface generator to extend quickly capabilities of YunoHost (e.g. VPN Client, Hotspost, Borg, etc.).
+    Those panels can also be used to quickly create interfaces that extend the capabilities of YunoHost (e.g. VPN Client, Hotspost, Borg, etc.).
 
     From a packager perspective, this `config_panel.toml` is coupled to the `scripts/config` script, which may be used to define custom getters/setters/validations/actions. However, most use cases should be covered automagically by the core, thus it may not be necessary to define a scripts/config at all!
 
-    ! IMPORTANT: Please: Keep in mind the YunoHost spirit, and try to build your panels in such a way as to expose only really useful parameters, and if there are many of them, to relegate those corresponding to rarer use cases to "Advanced" sub-sections.
+    ! Please: Keep in mind the YunoHost spirit, and try to build your panels in such a way as to expose only really useful, "high-level" parameters, and if there are many of them, to relegate those corresponding to rarer use cases to "Advanced" sub-sections. Keep it simple, focus on common needs, don't expect the admins to have 3 PhDs in computer science.
 
-    ### How does `config_panel.toml` work
-    Basically, configuration panels for apps uses at least a `config_panel.toml` at the root of your package. For advanced usecases, this TOML file could also be paired with a `scripts/config` to define custom getters/setters/validators/actions. However, most use cases should be covered automagically by the core, thus it may not be necessary to define a `scripts/config` at all!
+    ### `config_panel.toml`'s principle and general format
+    To create configuration panels for apps, you should at least create a `config_panel.toml` at the root of the package. For more complex cases, this TOML file can be paired with a `config` script inside the scripts directory of your package, which will handle specific controller logic.
 
-    The `config_panel.toml` file describes one or several panels, containing some sections, containing some options generally binded to a params in a configuration file.
+    The `config_panel.toml` describes one or several panels, containing sections, each containing questions generally binded to a params in the app's actual configuration files.
 
     ### Options short keys have to be unique
-    For performance reasons, questions short keys should be unique in all the `config_panel.toml` file, not just inside its panel or its section.
-
-    So you can't have
+    For performance reasons, questions short keys have to be unique in all the `config_panel.toml` file, not just inside its panel or its section. Hence it's not possible to have:
     ```toml
     [manual.vpn.server_ip]
     [advanced.dns.server_ip]
     ```
-    Indeed the real variable name is server_ip and here you have a conflict.
+    In which two questions have "real variable name" `is server_ip` and therefore conflict with each other.
 
-    ### Options
+    ! Some short keys are forbidden cause it can interfer with config scripts (`old`, `file_hash`, `types`, `binds`, `formats`, `changed`) and you probably should avoid to use common settings name to avoid to bind your question to this settings (e.g. `id`, `install_time`, `mysql_pwd`, `path`, `domain`, `port`, `db_name`, `current_revision`, `admin`)
+
+    ### Supported questions types and properties
 
     [Learn more about Options](/dev/forms) in their dedicated doc page as those are also used in app install forms and core config panels.
 

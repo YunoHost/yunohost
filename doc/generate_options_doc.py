@@ -132,62 +132,70 @@ print(
     """
 ----------------
 
-## Read and write values: the `bind` property
+## Reading and writing values
 
 ! Config panels only
 
 You can read and write values with 2 mechanisms: the `bind` property in the `config_panel.toml` and for complex use cases the getter/setter in a `config` script.
 
-`bind` allows us to alter the default behavior of applying option's values, which is: get from and set in the app `settings.yml`.
+If you did not define a specific getter/setter (see below), and no `bind` argument was defined, YunoHost will read/write the value from/to the app's `/etc/yunohost/$app/settings.yml` file.
 
-We can:
+With `bind`, we can:
 - alter the source the value comes from with binds to file or custom getters.
-- alter the destination with binds to file or settings.
+- alter the destination with binds to file or custom setters.
 - parse/validate the value before destination with validators
 
-! IMPORTANT: with the exception of `bind = "null"` options, options ids should almost **always** correspond to an app setting initialized / reused during install/upgrade.
+! IMPORTANT: with the exception of `bind = "null"` options, options ids should almost **always** correspond to an app setting initialized/reused during install/upgrade.
 Not doing so may result in inconsistencies between the config panel mechanism and the use of ynh_add_config
 
 
-### Read / write into a var of a configuration file
+### Read / write into a var of an actual configuration file
 
 Settings usually correspond to key/values in actual app configurations. Hence, a more useful mode is to have `bind = ":FILENAME"` with a colon `:` before. In that case, YunoHost will automagically find a line with `KEY=VALUE` in `FILENAME` (with the adequate separator between `KEY` and `VALUE`).
 
 YunoHost will then use this value for the read/get operation. During write/set operations, YunoHost will overwrite the value in **both** FILENAME and in the app's settings.yml
 
-Configuration file format supported: `yaml`, `toml`, `json`, `ini`, `env`, `php`, `python`.
+Configuration file format supported: `YAML`, `TOML`, `JSON`, `INI`, `PHP`, `.env`-like, `.py`.
 The feature probably works with others formats, but should be tested carefully.
 
-Note that this feature only works with relatively simple cases such as `KEY: VALUE`, but won't properly work with complex data structures like multiline array/lists or dictionnaries.
-It also doesn't work with XML format, custom config function call, php define(), …
-If you need to save complex/multiline content in a configuration variable, you should do it via a specific getter/setter.
-
 ```toml
-[panel.section.config_value]
+[main.main.theme]
 # Do not use `file` for this since we only want to insert/save a value
 type = "string"
-bind = ":__FINALPATH__/config.ini"
-default = ""
+bind = ":__INSTALL_DIR__/config.yml"
+```
+In which case, YunoHost will look for something like a key/value, with the key being `theme`.
+
+If the question id in the config panel (here, `theme`) differs from the key in the actual conf file (let's say it's not `theme` but `css_theme`), then you can write:
+```toml
+[main.main.theme]
+type = "string"
+bind = "css_theme:__FINALPATH__/config.yml"
 ```
 
-By default, `bind = ":FILENAME"` will use the option id as `KEY` but the option id may sometime not be the exact same `KEY` name in the configuration file.
-For example, [In pepettes app](https://github.com/YunoHost-Apps/pepettes_ynh/blob/5cc2d3ffd6529cc7356ff93af92dbb6785c3ab9a/conf/settings.py##L11), the python variable is `name` and not `project_name`. In that case, the key name can be specified before the colon `:`.
+!!!! Note: This mechanism is quasi language agnostic and will use regexes to find something that looks like a key=value or common variants. However, it does assume that the key and value are stored on the same line. It doesn't support multiline text or file in a variable with this method. If you need to save multiline content in a configuration variable, you should create a custom getter/setter (see below).
 
-```toml
-[panel.section.project_name]
-bind = "name:__FINALPATH__/config.ini"
-
+Nested syntax is also supported, which may be useful for example to remove ambiguities about stuff looking like:
+```json
+{
+    "foo": {
+        "max": 123
+    },
+    "bar": {
+        "max": 456
+    }
+}
 ```
 
-Sometimes, you want to read and save a value in a variable name that appears several time in the configuration file (for example variables called `max`). The `bind` property allows you to change the value on the variable following a regex in a the file:
+which we can `bind` to using:
 
 ```toml
-bind = "importExportRateLimiting>max:__INSTALL_DIR__/conf.json"
+bind = "foo>max:__INSTALL_DIR__/conf.json"
 ```
 
 ### Read / write an entire file
 
-You can bind a `text` or directly a `file` to a specific file by using `bind = "FILEPATH`.
+Useful when using a question `file` or `text` for which you want to save the raw content directly as a file on the system.
 
 ```toml
 [panel.section.config_file]
@@ -207,17 +215,14 @@ default = "key: 'value'"
 Sometimes the `bind` mechanism is not enough:
  * the config file format is not supported (e.g. xml, csv)
  * the data is not contained in a config file (e.g. database, directory, web resources...)
- * the data should be writen but not read (e.g. password)
- * the data should be read but not writen (e.g. status information)
+ * the data should be written but not read (e.g. password)
+ * the data should be read but not written (e.g. fetching status information)
  * we want to change other things than the value (e.g. the choices list of a select)
  * the question answer contains several values to dispatch in several places
  * and so on
 
-For all of those use cases, there are the specific getter or setter mechanism for an option!
+You can create specific getter/setters functions inside the `scripts/config` of your app to customize how the information is read/written.
 
-To create specific getter/setter, you first need to create a `config` script inside the `scripts` directory
-
-`scripts/config`
 ```bash
 #!/bin/bash
 source /usr/share/yunohost/helpers
@@ -232,54 +237,65 @@ ynh_app_config_run $1
 
 ### Getters
 
-Define an option's custom getter in a bash script `script/config`.
-It has to be named after an option's `id` prepended by `get__`.
+A question's getter is the function used to read the current value/state. Custom getters are defined using bash functions called `getter__QUESTION_SHORT_KEY()` which returns data through stdout.
 
-The function should returns one of these two formats:
- * a raw format, in this case the return is binded directly to the value of the question
- * a yaml format, in this case you can rewrite several properties of your option (like the `style` of an `alert`, the list of `choices` of a `select`, etc.)
+Stdout can generated using one of those formats:
+ 1) either a raw format, in which case the return is binded directly to the value of the question
+ 2) or a yaml format, in this case you dynamically provide properties for your question (for example the `style` of an `alert`, the list of available `choices` of a `select`, etc.)
 
 
-[details summary="<i>Basic example : Get the login inside the first line of a file </i>" class="helper-card-subtitle text-muted"]
-scripts/config
-```bash
-get__login_user() {
-    if [ -s /etc/openvpn/keys/credentials ]
-    then
-        echo "$(sed -n 1p /etc/openvpn/keys/credentials)"
-    else
-        echo ""
-    fi
-}
+[details summary="<i>Basic example with raw stdout: get the timezone on the system</i>" class="helper-card-subtitle text-muted"]
+
+`config_panel.toml`
+
+```toml
+[main.main.timezone]
+ask = "Timezone"
+type = "string"
 ```
 
-config_panel.toml
-```toml
-[main.auth.login_user]
-ask = "Username"
-type = "string"
+`scripts/config`
+
+```bash
+get__timezone() {
+    echo "$(cat /etc/timezone)"
+}
 ```
 [/details]
 
-[details summary="<i>Advanced example 1 : Display a list of available plugins</i>" class="helper-card-subtitle text-muted"]
-scripts/config
-```bash
-get__plugins() {
-    echo "choices: [$(ls $install_dir/plugins/ | tr '\n' ',')]"
-}
-```
+[details summary="<i>Basic example with yaml-formated stdout : Display a list of available plugins</i>" class="helper-card-subtitle text-muted"]
 
-config_panel.toml
+`config_panel.toml`
 ```toml
 [main.plugins.plugins]
 ask = "Plugin to activate"
 type = "tags"
 choices = []
 ```
+
+`scripts/config`
+
+```bash
+get__plugins() {
+    echo "choices: [$(ls $install_dir/plugins/ | tr '\n' ',')]"
+}
+```
+
 [/details]
 
-[details summary="<i>Example 2 : Display the status of a VPN</i>" class="helper-card-subtitle text-muted"]
-scripts/config
+[details summary="<i>Advanced example with yaml-formated stdout : Display the status of a VPN</i>" class="helper-card-subtitle text-muted"]
+
+`config_panel.toml`
+
+```toml
+[main.cube.status]
+ask = "Custom getter alert"
+type = "alert"
+style = "info"
+bind = "null" # no behaviour on
+```
+
+`scripts/config`
 ```bash
 get__status() {
     if [ -f "/sys/class/net/tun0/operstate" ] && [ "$(cat /sys/class/net/tun0/operstate)" == "up" ]
@@ -298,50 +314,38 @@ EOF
     fi
 }
 ```
-
-config_panel.toml
-```toml
-[main.cube.status]
-ask = "Custom getter alert"
-type = "alert"
-style = "info"
-bind = "null" # no behaviour on
-```
 [/details]
 
 
 ### Setters
 
-Define an option's custom setter in a bash script `script/config`.
-It has to be named after an option's id prepended by `set__`.
+A question's setter is the function used to set new value/state. Custom setters are defined using bash functions called `setter__QUESTION_SHORT_KEY()`. In the context of the setter function, variables named with the various quetion's short keys are avaible ... for example the user-specified date for question `[main.main.theme]` is available as `$theme`.
 
-This function could access new values defined by the users by using bash variable with the same name as the short key of a question.
-
-You probably should use `ynh_print_info` in order to display info for user about change that has been made to help them to understand a bit what's going.
+When doing non-trivial operations to set a value, you may want to use `ynh_print_info` to inform the admin about what's going on.
 
 
-[details summary="<i>Basic example : Set the login into the first line of a file </i>" class="helper-card-subtitle text-muted"]
-scripts/config
-```bash
-set__login_user() {
-    if [ -z "${login_user}" ]
-    then
-        echo "${login_user}" > /etc/openvpn/keys/credentials
-        ynh_print_info "The user login has been registered in /etc/openvpn/keys/credentials"
-    fi
-}
+[details summary="<i>Basic example : Set the system timezone</i>" class="helper-card-subtitle text-muted"]
+
+`config_panel.toml`
+
+```toml
+[main.main.timezone]
+ask = "Timezone"
+type = "string"
 ```
 
-config_panel.toml
-```toml
-[main.auth.login_user]
-ask = "Username"
-type = "string"
+`scripts/config`
+
+```bash
+set__timezone() {
+    echo "$timezone" > /etc/timezone
+    ynh_print_info "The timezone has been changed to $timezone"
+}
 ```
 [/details]
 
 
-#### Validation
+### Validation
 
 You will often need to validate data answered by the user before to save it somewhere.
 
@@ -353,9 +357,9 @@ pattern.error = 'An email is required for this field'
 
 You can also restrict several types with a choices list.
 ```toml
-choices.option1 = "Plop1"
-choices.option2 = "Plop2"
-choices.option3 = "Plop3"
+choices.foo = "Foo (some explanation)"
+choices.bar = "Bar (moar explanation)"
+choices.loremipsum = "Lorem Ipsum Dolor Sit Amet"
 ```
 
 Some other type specific argument exist like
@@ -366,15 +370,12 @@ Some other type specific argument exist like
 | `boolean` | `yes` `no` |
 
 
-If you need more control over validation, you can use custom validators.
-Define an option's custom validator in a bash script `script/config`.
-It has to be named after an option's id prepended by `validate__`.
-
+Finally, if you need specific or multi variable validation, you can use custom validators function.
 Validators allows us to return custom error messages depending on the value.
 
 ```bash
 validate__login_user() {
-    if [[ "${#login_user}" -lt 4 ]]; then echo 'Too short user login'; fi
+    if [[ "${#login_user}" -lt 4 ]]; then echo 'User login is too short, should be at least 4 chars'; fi
 }
 ```
 
