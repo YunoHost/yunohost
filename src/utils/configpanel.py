@@ -88,9 +88,10 @@ class SectionModel(ContainerModel, OptionsModel):
     Group options. Sections are `dict`s defined inside a Panel and require a unique id (in the below example, the id is `customization` prepended by the panel's id `main`). Keep in mind that this combined id will be used in CLI to refer to the section, so choose something short and meaningfull. Also make sure to not make a typo in the panel id, which would implicitly create an other entire panel.
 
     If at least one `button` is present it then become an action section.
-    Options in action sections are not considered settings and therefor are not saved, they are more like parameters that exists only during the execution of an action. FIXME i'm not sure we have this in code.
+    Options in action sections are not considered settings and therefor are not saved, they are more like parameters that exists only during the execution of an action.
+    FIXME i'm not sure we have this in code.
 
-    ##### Examples
+    ### Examples
     ```toml
     [main]
 
@@ -100,18 +101,19 @@ class SectionModel(ContainerModel, OptionsModel):
         help = "Every form items in this section are not saved."
         services = ["__APP__", "nginx"]
 
-            [config.advanced.option]
+            [main.customization.option_id]
             type = "string"
             # …refer to Options doc
     ```
-    ##### Properties
+
+    ### Properties
     - `name` (optional): `Translation` or `str`, displayed as the section's title if any
     - `help`: `Translation` or `str`, text to display before the first option
-    - `services` (optional): `list` of services names to reload when any option's value contained in the section changes
+    - `services` (optional): `list` of services names to `reload-or-restart` when any option's value contained in the section changes
         - `"__APP__` will refer to the app instance name
     - `optional`: `bool` (default: `true`), set the default `optional` prop of all Options in the section
     - `visible`: `bool` or `JSExpression` (default: `true`), allow to conditionally display a section depending on user's answers to previous questions.
-        - Be careful that the `visible` property should only refer to **previous** questions. Hence, it should not make sense to have a `visible` property on the very first section.
+        - Be careful that the `visible` property should only refer to **previous** options's value. Hence, it should not make sense to have a `visible` property on the very first section.
     """
 
     visible: Union[bool, str] = True
@@ -163,7 +165,7 @@ class PanelModel(ContainerModel):
     """
     Group sections. Panels are `dict`s defined inside a ConfigPanel file and require a unique id (in the below example, the id is `main`). Keep in mind that this id will be used in CLI to refer to the panel, so choose something short and meaningfull.
 
-    ##### Examples
+    ### Examples
     ```toml
     [main]
     name.en = "Main configuration"
@@ -174,10 +176,10 @@ class PanelModel(ContainerModel):
         [main.customization]
         # …refer to Sections doc
     ```
-    ##### Properties
+    ### Properties
     - `name`: `Translation` or `str`, displayed as the panel title
     - `help` (optional): `Translation` or `str`, text to display before the first section
-    - `services` (optional): `list` of services names to `reload-or-restart when any option's value contained in the panel changes
+    - `services` (optional): `list` of services names to `reload-or-restart` when any option's value contained in the panel changes
         - `"__APP__` will refer to the app instance name
     - `actions`: FIXME not sure what this does
     """
@@ -219,7 +221,7 @@ class ConfigPanelModel(BaseModel):
 
     Those panels could also be used as interface generator to extend quickly capabilities of YunoHost (e.g. VPN Client, Hotspost, Borg, etc.).
 
-    From a packager perspective, this `config_panel.toml` is coupled to the `scripts/config` script, which may be used to define custom getters/setters. However, most use cases should be covered automagically by the core, thus it may not be necessary to define a scripts/config at all!
+    From a packager perspective, this `config_panel.toml` is coupled to the `scripts/config` script, which may be used to define custom getters/setters/validations/actions. However, most use cases should be covered automagically by the core, thus it may not be necessary to define a scripts/config at all!
 
     ! IMPORTANT: Please: Keep in mind the YunoHost spirit, and try to build your panels in such a way as to expose only really useful parameters, and if there are many of them, to relegate those corresponding to rarer use cases to "Advanced" sub-sections.
 
@@ -248,19 +250,19 @@ class ConfigPanelModel(BaseModel):
     - [Check config panels of other apps](https://grep.app/search?q=version&filter[repo.pattern][0]=YunoHost-Apps&filter[lang][0]=TOML)
     - [Check `scripts/config` of other apps](https://grep.app/search?q=ynh_app_config_apply&filter[repo.pattern][0]=YunoHost-Apps&filter[lang][0]=Shell)
 
-    ##### Examples
+    ### Examples
     ```toml
     version = 1.0
 
     [config]
     # …refer to Panels doc
     ```
-    ##### Properties
+    ### Properties
     - `version`: `float` (default: `1.0`), version that the config panel supports in terms of features.
     - `i18n` (optional): `str`, an i18n property that let you internationalize options text.
         - However this feature is only available in core configuration panel (like `yunohost domain config`), prefer the use `Translation` in `name`, `help`, etc.
 
-    ###### Version
+    #### Version
     Here a small reminder to associate config panel version with YunoHost version.
 
     | Config | YNH    | Config panel small change log                           |

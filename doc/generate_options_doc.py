@@ -141,7 +141,7 @@ You can read and write values with 2 mechanisms: the `bind` property in the `con
 `bind` allows us to alter the default behavior of applying option's values, which is: get from and set in the app `settings.yml`.
 
 We can:
-- alter the source the value comes from wit binds to file or custom getters.
+- alter the source the value comes from with binds to file or custom getters.
 - alter the destination with binds to file or settings.
 - parse/validate the value before destination with validators
 
