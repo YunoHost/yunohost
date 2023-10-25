@@ -88,6 +88,14 @@ class SectionModel(ContainerModel, OptionsModel):
     optional: bool = True
     is_action_section: bool = False
 
+    class Config:
+        @staticmethod
+        def schema_extra(schema: dict[str, Any]) -> None:
+            del schema["properties"]["id"]
+            options = schema["properties"].pop("options")
+            del schema["required"]
+            schema["additionalProperties"] = options["items"]
+
     # Don't forget to pass arguments to super init
     def __init__(
         self,
@@ -137,6 +145,13 @@ class PanelModel(ContainerModel):
     class Config:
         extra = Extra.allow
 
+        @staticmethod
+        def schema_extra(schema: dict[str, Any]) -> None:
+            del schema["properties"]["id"]
+            del schema["properties"]["sections"]
+            del schema["required"]
+            schema["additionalProperties"] = {"$ref": "#/definitions/SectionModel"}
+
     # Don't forget to pass arguments to super init
     def __init__(
         self,
@@ -169,6 +184,26 @@ class ConfigPanelModel(BaseModel):
     class Config:
         arbitrary_types_allowed = True
         extra = Extra.allow
+
+        @staticmethod
+        def schema_extra(schema: dict[str, Any]) -> None:
+            """Update the schema to the expected input
+            In actual TOML definition, schema is like:
+            ```toml
+            [panel_1]
+                [panel_1.section_1]
+                    [panel_1.section_1.option_1]
+            ```
+            Which is equivalent to `{"panel_1": {"section_1": {"option_1": {}}}}`
+            so `section_id` (and `option_id`) are additional property of `panel_id`,
+            which is convinient to write but not ideal to iterate.
+            In ConfigPanelModel we gather additional properties of panels, sections
+            and options as lists so that structure looks like:
+            `{"panels`: [{"id": "panel_1", "sections": [{"id": "section_1", "options": [{"id": "option_1"}]}]}]
+            """
+            del schema["properties"]["panels"]
+            del schema["required"]
+            schema["additionalProperties"] = {"$ref": "#/definitions/PanelModel"}
 
     # Don't forget to pass arguments to super init
     def __init__(

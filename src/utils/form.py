@@ -319,10 +319,14 @@ class BaseOption(BaseModel):
         extra = Extra.forbid
 
         @staticmethod
-        def schema_extra(schema: dict[str, Any], model: Type["BaseOption"]) -> None:
-            # FIXME Do proper doctstring for Options
-            del schema["description"]
-            schema["additionalProperties"] = False
+        def schema_extra(schema: dict[str, Any]) -> None:
+            del schema["properties"]["id"]
+            del schema["properties"]["name"]
+            schema["required"] = [
+                required for required in schema.get("required", []) if required != "id"
+            ]
+            if not schema["required"]:
+                del schema["required"]
 
     @validator("id", pre=True)
     def check_id_is_not_forbidden(cls, value: str) -> str:
