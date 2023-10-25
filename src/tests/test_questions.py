@@ -16,6 +16,7 @@ from yunohost import app, domain, user
 from yunohost.utils.form import (
     OPTIONS,
     FORBIDDEN_PASSWORD_CHARS,
+    READONLY_TYPES,
     ask_questions_and_parse_answers,
     BaseChoicesOption,
     BaseInputOption,
@@ -443,6 +444,9 @@ class BaseTest:
     @classmethod
     def _test_basic_attrs(self):
         raw_option = self.get_raw_option(optional=True)
+
+        if raw_option["type"] in READONLY_TYPES:
+            del raw_option["optional"]
 
         if raw_option["type"] == "select":
             raw_option["choices"] = ["one"]

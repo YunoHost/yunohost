@@ -258,6 +258,12 @@ class OptionType(str, Enum):
     group = "group"
 
 
+READONLY_TYPES = {
+    OptionType.display_text,
+    OptionType.markdown,
+    OptionType.alert,
+    OptionType.button,
+}
 FORBIDDEN_READONLY_TYPES = {
     OptionType.password,
     OptionType.app,
@@ -310,6 +316,7 @@ class BaseOption(BaseModel):
         arbitrary_types_allowed = True
         use_enum_values = True
         validate_assignment = True
+        extra = Extra.forbid
 
         @staticmethod
         def schema_extra(schema: dict[str, Any], model: Type["BaseOption"]) -> None:
@@ -1314,8 +1321,10 @@ class OptionsModel(BaseModel):
                     "type",
                     OptionType.select if "choices" in data else OptionType.string,
                 ),
-                "optional": data.get("optional", optional),
             }
+
+            if option["type"] not in READONLY_TYPES:
+                option["optional"] = option.get("optional", optional)
 
             # LEGACY (`choices` in option `string` used to be valid)
             if "choices" in option and option["type"] == OptionType.string:
