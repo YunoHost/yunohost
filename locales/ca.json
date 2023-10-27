@@ -546,7 +546,7 @@
     "global_settings_setting_admin_strength": "Robustesa de la contrasenya d'administrador",
     "global_settings_setting_user_strength": "Robustesa de la contrasenya de l'usuari",
     "global_settings_setting_postfix_compatibility_help": "Solució de compromís entre compatibilitat i seguretat pel servidor Postfix. Afecta els criptògrafs (i altres aspectes relacionats amb la seguretat)",
-    "global_settings_setting_ssh_compatibility_help": "Solució de compromís entre compatibilitat i seguretat pel servidor SSH. Afecta els criptògrafs (i altres aspectes relacionats amb la seguretat)",
+    "global_settings_setting_ssh_compatibility_help": "Solució de compromís entre compatibilitat i seguretat pel servidor SSH. Afecta els criptògrafs (i altres aspectes relacionats amb la seguretat). Visita https://infosec.mozilla.org/guidelines/openssh (anglés) per mes informació.",
     "global_settings_setting_smtp_allow_ipv6_help": "Permet l'ús de IPv6 per rebre i enviar correus electrònics",
     "global_settings_setting_smtp_relay_enabled_help": "L'amfitrió de tramesa SMTP que s'ha d'utilitzar per enviar correus electrònics en lloc d'aquesta instància de YunoHost. És útil si esteu en una de les següents situacions: el port 25 està bloquejat per el vostre proveïdor d'accés a internet o proveïdor de servidor privat virtual, si teniu una IP residencial llistada a DUHL, si no podeu configurar el DNS invers o si el servidor no està directament exposat a internet i voleu utilitzar-ne un altre per enviar correus electrònics."
 }

@@ -718,7 +718,7 @@
     "domain_config_cert_summary_expired": "ATTENTION : Le certificat actuel n'est pas valide ! HTTPS ne fonctionnera pas du tout !",
     "domain_config_cert_summary_letsencrypt": "Bravo ! Vous utilisez un certificat Let's Encrypt valide !",
     "domain_config_cert_summary_ok": "Bien, le certificat actuel semble bon !",
-    "domain_config_cert_summary_selfsigned": "AVERTISSEMENT : Le certificat actuel est auto-signé. Les navigateurs afficheront un avertissement effrayant aux nouveaux visiteurs !",
+    "domain_config_cert_summary_selfsigned": "AVERTISSEMENT : Le certificat actuel est auto-signé. Les navigateurs afficheront un avertissement alarmiste aux nouveaux visiteurs !",
     "domain_config_cert_validity": "Validité",
     "global_settings_setting_admin_strength_help": "Ces paramètres ne seront appliqués que lors de l'initialisation ou de la modification du mot de passe",
     "global_settings_setting_nginx_compatibility": "Compatibilité NGINX",

@@ -714,7 +714,7 @@
     "visitors": "Visitantes",
     "global_settings_setting_security_experimental_enabled": "Ferramentas experimentais de seguridade",
     "diagnosis_using_stable_codename": "<cmd>apt</cmd> (o xestor de paquetes do sistema) está configurado para instalar paquetes co nome de código 'stable', no lugar do nome de código da versión actual de Debian (bullseye).",
-    "diagnosis_using_stable_codename_details": "Normalmente esto é debido a unha configuración incorrecta do teu provedor de hospedaxe. Esto é perigoso, porque tan pronto como a nova versión de Debian se convirta en 'stable', <cmd>apt</cmd> vai querer actualizar tódolos paquetes do sistema se realizar o procedemento de migración requerido. É recomendable arranxar isto editando a fonte de apt ao repositorio base de Debian, e substituir a palabra <cmd>stable</cmd> por <cmd>bullseye</cmd>. O ficheiro de configuración correspondente debería ser <cmd>/etc/sources.list</cmd>, ou ficheiro dentro de <cmd>/etc/apt/sources.list.d/</cmd>.",
+    "diagnosis_using_stable_codename_details": "Normalmente isto débese a unha configuración incorrecta do teu provedor de hospedaxe. Isoto é perigoso, porque tan pronto como a nova versión de Debian se convirta en 'stable', <cmd>apt</cmd> vai querer actualizar todos os paquetes do sistema sen realizar o procedemento de migración axeitado. É recomendable arranxar isto editando a fonte de apt ao repositorio base de Debian, e substituir a palabra <cmd>stable</cmd> por <cmd>bullseye</cmd>. O ficheiro de configuración correspondente debería ser <cmd>/etc/sources.list</cmd>, ou ficheiro dentro de <cmd>/etc/apt/sources.list.d/</cmd>.",
     "diagnosis_using_yunohost_testing": "<cmd>apt</cmd> (o xestor de paquetes do sistema) está configurado actualmente para instalar calquera actualización 'testing' para o núcleo YunoHost.",
     "diagnosis_using_yunohost_testing_details": "Isto probablemente sexa correcto se sabes o que estás a facer, pero pon coidado e le as notas de publicación antes de realizar actualizacións de YunoHost! Se queres desactivar as actualizacións 'testing', deberías eliminar a palabra <cmd>testing</cmd> de <cmd>/etc/apt/sources.list.d/yunohost.list</cmd>.",
     "global_settings_setting_backup_compress_tar_archives": "Comprimir copias de apoio",
@@ -782,5 +782,7 @@
     "dyndns_set_recovery_password_invalid_password": "Fallo ao establecer contrasinal de recuperación: o contrasinal non é suficientemente forte",
     "dyndns_set_recovery_password_failed": "Fallo ao establecer o contrasinal de recuperación: {error}",
     "dyndns_set_recovery_password_success": "Estableceuse o contrasinal de recuperación!",
-    "log_dyndns_unsubscribe": "Retirar subscrición para o subdominio YunoHost '{}'"
+    "log_dyndns_unsubscribe": "Retirar subscrición para o subdominio YunoHost '{}'",
+    "ask_dyndns_recovery_password_explain_unavailable": "Este dominio DynDNS xa está rexistrado. Se es a persoa que o rexistrou orixinalmente, podes escribir o código de recuperación para reclamar o dominio.",
+    "dyndns_too_many_requests": "O servicio dyndns de YunoHost recibeu demasiadas peticións do teu sistema, agarda 1 hora e volve intentalo."
 }
