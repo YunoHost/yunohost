@@ -26,7 +26,7 @@ import re
 import subprocess
 import tempfile
 import copy
-from typing import List, Tuple, Dict, Any, Iterator, Optional
+from typing import TYPE_CHECKING, List, Tuple, Dict, Any, Iterator, Optional, Union
 from packaging import version
 from logging import getLogger
 from pathlib import Path
@@ -45,11 +45,12 @@ from moulinette.utils.filesystem import (
     chmod,
 )
 
-from yunohost.utils.configpanel import ConfigPanel, ask_questions_and_parse_answers
+from yunohost.utils.configpanel import ConfigPanel
 from yunohost.utils.form import (
     DomainOption,
     WebPathOption,
-    hydrate_questions_with_choices,
+    ask_questions_and_parse_answers,
+    parse_raw_options,
 )
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -70,6 +71,12 @@ from yunohost.app_catalog import (  # noqa
     _load_apps_catalog,
     APPS_CATALOG_LOGOS,
 )
+
+if TYPE_CHECKING:
+    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
+
+    from yunohost.utils.configpanel import ConfigPanelModel, RawSettings
+    from yunohost.utils.form import FormModel
 
 logger = getLogger("yunohost.app")
 
@@ -121,8 +128,8 @@ def app_info(app, full=False, upgradable=False):
     """
     Get info for a specific app
     """
-    from yunohost.permission import user_permission_list
     from yunohost.domain import domain_config_get
+    from yunohost.permission import user_permission_list
 
     _assert_is_installed(app)
 
@@ -955,8 +962,7 @@ def app_upgrade(
 def app_manifest(app, with_screenshot=False):
     manifest, extracted_app_folder = _extract_app(app)
 
-    raw_questions = manifest.get("install", {}).values()
-    manifest["install"] = hydrate_questions_with_choices(raw_questions)
+    manifest["install"] = parse_raw_options(manifest.get("install", {}), serialize=True)
 
     # Add a base64 image to be displayed in web-admin
     if with_screenshot and Moulinette.interface.type == "api":
@@ -1098,13 +1104,9 @@ def app_install(
     app_setting_path = os.path.join(APPS_SETTING_PATH, app_instance_name)
 
     # Retrieve arguments list for install script
-    raw_questions = manifest["install"]
-    questions = ask_questions_and_parse_answers(raw_questions, prefilled_answers=args)
-    args = {
-        question.id: question.value
-        for question in questions
-        if not question.readonly and question.value is not None
-    }
+    raw_options = manifest["install"]
+    options, form = ask_questions_and_parse_answers(raw_options, prefilled_answers=args)
+    args = form.dict(exclude_none=True)
 
     # Validate domain / path availability for webapps
     # (ideally this should be handled by the resource system for manifest v >= 2
@@ -1141,15 +1143,15 @@ def app_install(
         "current_revision": manifest.get("remote", {}).get("revision", "?"),
     }
 
-    # If packaging_format v2+, save all install questions as settings
+    # If packaging_format v2+, save all install options as settings
     if packaging_format >= 2:
-        for question in questions:
+        for option in options:
             # Except user-provider passwords
             # ... which we need to reinject later in the env_dict
-            if question.type == "password":
+            if option.type == "password":
                 continue
 
-            app_settings[question.id] = question.value
+            app_settings[option.id] = form[option.id]
 
     _set_app_settings(app_instance_name, app_settings)
 
@@ -1202,23 +1204,23 @@ def app_install(
         app_instance_name, args=args, workdir=extracted_app_folder, action="install"
     )
 
-    # If packaging_format v2+, save all install questions as settings
+    # If packaging_format v2+, save all install options as settings
     if packaging_format >= 2:
-        for question in questions:
+        for option in options:
             # Reinject user-provider passwords which are not in the app settings
             # (cf a few line before)
-            if question.type == "password":
-                env_dict[question.id] = question.value
+            if option.type == "password":
+                env_dict[option.id] = form[option.id]
 
     # We want to hav the env_dict in the log ... but not password values
     env_dict_for_logging = env_dict.copy()
-    for question in questions:
-        # Or should it be more generally question.redact ?
-        if question.type == "password":
-            if f"YNH_APP_ARG_{question.id.upper()}" in env_dict_for_logging:
-                del env_dict_for_logging[f"YNH_APP_ARG_{question.id.upper()}"]
-            if question.id in env_dict_for_logging:
-                del env_dict_for_logging[question.id]
+    for option in options:
+        # Or should it be more generally option.redact ?
+        if option.type == "password":
+            if f"YNH_APP_ARG_{option.id.upper()}" in env_dict_for_logging:
+                del env_dict_for_logging[f"YNH_APP_ARG_{option.id.upper()}"]
+            if option.id in env_dict_for_logging:
+                del env_dict_for_logging[option.id]
 
     operation_logger.extra.update({"env": env_dict_for_logging})
 
@@ -1801,30 +1803,39 @@ class AppConfigPanel(ConfigPanel):
     entity_type = "app"
     save_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/settings.yml")
     config_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/config_panel.toml")
+    settings_must_be_defined: bool = True
 
-    def _run_action(self, action):
-        env = {key: str(value) for key, value in self.new_values.items()}
-        self._call_config_script(action, env=env)
+    def _get_raw_settings(self, config: "ConfigPanelModel") -> "RawSettings":
+        return self._call_config_script("show")
 
-    def _get_raw_settings(self):
-        self.values = self._call_config_script("show")
-
-    def _apply(self):
-        env = {key: str(value) for key, value in self.new_values.items()}
+    def _apply(
+        self,
+        form: "FormModel",
+        previous_settings: dict[str, Any],
+        exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+    ) -> None:
+        env = {key: str(value) for key, value in form.dict().items()}
         return_content = self._call_config_script("apply", env=env)
 
         # If the script returned validation error
         # raise a ValidationError exception using
         # the first key
-        if return_content:
-            for key, message in return_content.get("validation_errors").items():
+        errors = return_content.get("validation_errors")
+        if errors:
+            for key, message in errors.items():
                 raise YunohostValidationError(
                     "app_argument_invalid",
                     name=key,
                     error=message,
                 )
 
-    def _call_config_script(self, action, env=None):
+    def _run_action(self, form: "FormModel", action_id: str) -> None:
+        env = {key: str(value) for key, value in form.dict().items()}
+        self._call_config_script(action_id, env=env)
+
+    def _call_config_script(
+        self, action: str, env: Union[dict[str, Any], None] = None
+    ) -> dict[str, Any]:
         from yunohost.hook import hook_exec
 
         if env is None:

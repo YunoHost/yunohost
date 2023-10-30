@@ -17,6 +17,7 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 import ast
+import datetime
 import operator as op
 import os
 import re
@@ -24,19 +25,45 @@ import shutil
 import tempfile
 import urllib.parse
 from enum import Enum
-from typing import Any, Callable, Dict, List, Literal, Mapping, Optional, Union
 from logging import getLogger
+from typing import (
+    TYPE_CHECKING,
+    cast,
+    overload,
+    Annotated,
+    Any,
+    Callable,
+    Iterable,
+    Literal,
+    Mapping,
+    Type,
+    Union,
+)
+
+from pydantic import (
+    BaseModel,
+    Extra,
+    ValidationError,
+    create_model,
+    validator,
+)
+from pydantic.color import Color
+from pydantic.fields import Field
+from pydantic.networks import EmailStr, HttpUrl
+from pydantic.types import constr
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
-from moulinette.utils.filesystem import read_file, write_to_file
+from moulinette.utils.filesystem import read_file, read_yaml, write_to_file
 from yunohost.log import OperationLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.i18n import _value_for_locale
 
+if TYPE_CHECKING:
+    from pydantic.fields import ModelField, FieldInfo
+
 logger = getLogger("yunohost.form")
 
-Context = dict[str, Any]
 
 # ╭───────────────────────────────────────────────────────╮
 # │  ┌─╴╷ ╷╭─┐╷                                           │
@@ -181,7 +208,7 @@ def js_to_python(expr):
     return py_expr
 
 
-def evaluate_simple_js_expression(expr, context={}):
+def evaluate_simple_js_expression(expr: str, context: dict[str, Any] = {}) -> bool:
     if not expr.strip():
         return False
     node = ast.parse(js_to_python(expr), mode="eval").body
@@ -231,6 +258,12 @@ class OptionType(str, Enum):
     group = "group"
 
 
+READONLY_TYPES = {
+    OptionType.display_text,
+    OptionType.markdown,
+    OptionType.alert,
+    OptionType.button,
+}
 FORBIDDEN_READONLY_TYPES = {
     OptionType.password,
     OptionType.app,
@@ -238,29 +271,87 @@ FORBIDDEN_READONLY_TYPES = {
     OptionType.user,
     OptionType.group,
 }
+FORBIDDEN_KEYWORDS = {
+    "old",
+    "app",
+    "changed",
+    "file_hash",
+    "binds",
+    "types",
+    "formats",
+    "getter",
+    "setter",
+    "short_setting",
+    "type",
+    "bind",
+    "nothing_changed",
+    "changes_validated",
+    "result",
+    "max_progression",
+    "properties",
+    "defaults",
+}
+
+Context = dict[str, Any]
+Translation = Union[dict[str, str], str]
+JSExpression = str
+Values = dict[str, Any]
 
 
-class BaseOption:
-    def __init__(
-        self,
-        question: Dict[str, Any],
-    ):
-        self.id = question["id"]
-        self.type = question.get("type", OptionType.string)
-        self.visible = question.get("visible", True)
+class Pattern(BaseModel):
+    regexp: str
+    error: Translation = "error_pattern"  # FIXME add generic i18n key
 
-        self.readonly = question.get("readonly", False)
-        if self.readonly and self.type in FORBIDDEN_READONLY_TYPES:
-            # FIXME i18n
-            raise YunohostError(
-                "config_forbidden_readonly_type",
-                type=self.type,
-                id=self.id,
+
+class BaseOption(BaseModel):
+    type: OptionType
+    id: str
+    ask: Union[Translation, None]
+    readonly: bool = False
+    visible: Union[JSExpression, bool] = True
+    bind: Union[str, None] = None
+    name: Union[str, None] = None  # LEGACY (replaced by `id`)
+
+    class Config:
+        arbitrary_types_allowed = True
+        use_enum_values = True
+        validate_assignment = True
+        extra = Extra.forbid
+
+        @staticmethod
+        def schema_extra(schema: dict[str, Any]) -> None:
+            del schema["properties"]["id"]
+            del schema["properties"]["name"]
+            schema["required"] = [
+                required for required in schema.get("required", []) if required != "id"
+            ]
+            if not schema["required"]:
+                del schema["required"]
+
+    @validator("id", pre=True)
+    def check_id_is_not_forbidden(cls, value: str) -> str:
+        if value in FORBIDDEN_KEYWORDS:
+            raise ValueError(m18n.n("config_forbidden_keyword", keyword=value))
+        return value
+
+    # FIXME Legacy, is `name` still needed?
+    @validator("name")
+    def apply_legacy_name(cls, value: Union[str, None], values: Values) -> str:
+        if value is None:
+            return values["id"]
+        return value
+
+    @validator("readonly", pre=True)
+    def can_be_readonly(cls, value: bool, values: Values) -> bool:
+        if value is True and values["type"] in FORBIDDEN_READONLY_TYPES:
+            raise ValueError(
+                m18n.n(
+                    "config_forbidden_readonly_type",
+                    type=values["type"],
+                    id=values["id"],
+                )
             )
-
-        self.ask = question.get("ask", self.id)
-        if not isinstance(self.ask, dict):
-            self.ask = {"en": self.ask}
+        return value
 
     def is_visible(self, context: Context) -> bool:
         if isinstance(self.visible, bool):
@@ -268,8 +359,10 @@ class BaseOption:
 
         return evaluate_simple_js_expression(self.visible, context=context)
 
-    def _get_prompt_message(self) -> str:
-        return _value_for_locale(self.ask)
+    def _get_prompt_message(self, value: None) -> str:
+        # force type to str
+        # `OptionsModel.translate_options()` should have been called before calling this method
+        return cast(str, self.ask)
 
 
 # ╭───────────────────────────────────────────────────────╮
@@ -278,9 +371,7 @@ class BaseOption:
 
 
 class BaseReadonlyOption(BaseOption):
-    def __init__(self, question):
-        super().__init__(question)
-        self.readonly = True
+    readonly: Literal[True] = True
 
 
 class DisplayTextOption(BaseReadonlyOption):
@@ -291,38 +382,36 @@ class MarkdownOption(BaseReadonlyOption):
     type: Literal[OptionType.markdown] = OptionType.markdown
 
 
+class State(str, Enum):
+    success = "success"
+    info = "info"
+    warning = "warning"
+    danger = "danger"
+
+
 class AlertOption(BaseReadonlyOption):
     type: Literal[OptionType.alert] = OptionType.alert
+    style: State = State.info
+    icon: Union[str, None] = None
 
-    def __init__(self, question):
-        super().__init__(question)
-        self.style = question.get("style", "info")
-
-    def _get_prompt_message(self) -> str:
-        text = _value_for_locale(self.ask)
-
-        if self.style in ["success", "info", "warning", "danger"]:
-            color = {
-                "success": "green",
-                "info": "cyan",
-                "warning": "yellow",
-                "danger": "red",
-            }
-            prompt = m18n.g(self.style) if self.style != "danger" else m18n.n("danger")
-            return colorize(prompt, color[self.style]) + f" {text}"
-        else:
-            return text
+    def _get_prompt_message(self, value: None) -> str:
+        colors = {
+            State.success: "green",
+            State.info: "cyan",
+            State.warning: "yellow",
+            State.danger: "red",
+        }
+        message = m18n.g(self.style) if self.style != State.danger else m18n.n("danger")
+        return f"{colorize(message, colors[self.style])} {self.ask}"
 
 
 class ButtonOption(BaseReadonlyOption):
     type: Literal[OptionType.button] = OptionType.button
-    enabled = True
-
-    def __init__(self, question):
-        super().__init__(question)
-        self.help = question.get("help")
-        self.style = question.get("style", "success")
-        self.enabled = question.get("enabled", True)
+    bind: Literal["null"] = "null"
+    help: Union[Translation, None] = None
+    style: State = State.success
+    icon: Union[str, None] = None
+    enabled: Union[JSExpression, bool] = True
 
     def is_enabled(self, context: Context) -> bool:
         if isinstance(self.enabled, bool):
@@ -337,29 +426,25 @@ class ButtonOption(BaseReadonlyOption):
 
 
 class BaseInputOption(BaseOption):
-    hide_user_input_in_prompt = False
-    pattern: Optional[Dict] = None
+    help: Union[Translation, None] = None
+    example: Union[str, None] = None
+    placeholder: Union[str, None] = None
+    redact: bool = False
+    optional: bool = False  # FIXME keep required as default?
+    default: Any = None
+    _annotation = Any
+    _none_as_empty_str: bool = True
 
-    def __init__(self, question: Dict[str, Any]):
-        super().__init__(question)
-        self.default = question.get("default", None)
-        self.optional = question.get("optional", False)
-        self.pattern = question.get("pattern", self.pattern)
-        self.help = question.get("help")
-        self.redact = question.get("redact", False)
-        # .current_value is the currently stored value
-        self.current_value = question.get("current_value")
-        # .value is the "proposed" value which we got from the user
-        self.value = question.get("value")
-        # Use to return several values in case answer is in mutipart
-        self.values: Dict[str, Any] = {}
-
-        # Empty value is parsed as empty string
-        if self.default == "":
-            self.default = None
+    @validator("default", pre=True)
+    def check_empty_default(value: Any) -> Any:
+        if value == "":
+            return None
+        return value
 
     @staticmethod
-    def humanize(value, option={}):
+    def humanize(value: Any, option={}) -> str:
+        if value is None:
+            return ""
         return str(value)
 
     @staticmethod
@@ -368,40 +453,90 @@ class BaseInputOption(BaseOption):
             value = value.strip()
         return value
 
-    def _get_prompt_message(self) -> str:
-        message = super()._get_prompt_message()
+    @property
+    def _dynamic_annotation(self) -> Any:
+        """
+        Returns the expected type of an Option's value.
+        This may be dynamic based on constraints.
+        """
+        return self._annotation
+
+    def _get_field_attrs(self) -> dict[str, Any]:
+        """
+        Returns attributes to build a `pydantic.Field`.
+        This may contains non `Field` attrs that will end up in `Field.extra`.
+        Those extra can be used as constraints in custom validators and ends up
+        in the JSON Schema.
+        """
+        # TODO
+        # - help
+        # - placeholder
+        attrs: dict[str, Any] = {
+            "redact": self.redact,  # extra
+            "none_as_empty_str": self._none_as_empty_str,
+        }
+
+        if self.readonly:
+            attrs["allow_mutation"] = False
+
+        if self.example:
+            attrs["examples"] = [self.example]
+
+        if self.default is not None:
+            attrs["default"] = self.default
+        else:
+            attrs["default"] = ... if not self.optional else None
+
+        return attrs
+
+    def _as_dynamic_model_field(self) -> tuple[Any, "FieldInfo"]:
+        """
+        Return a tuple of a type and a Field instance to be injected in a
+        custom form declaration.
+        """
+        attrs = self._get_field_attrs()
+        anno = (
+            self._dynamic_annotation
+            if not self.optional
+            else Union[self._dynamic_annotation, None]
+        )
+        field = Field(default=attrs.pop("default", None), **attrs)
+
+        return (anno, field)
+
+    def _get_prompt_message(self, value: Any) -> str:
+        message = super()._get_prompt_message(value)
 
         if self.readonly:
             message = colorize(message, "purple")
-            return f"{message} {self.humanize(self.current_value)}"
+            return f"{message} {self.humanize(value, self)}"
 
         return message
 
-    def _value_pre_validator(self):
-        if self.value in [None, ""] and not self.optional:
-            raise YunohostValidationError("app_argument_required", name=self.id)
+    @classmethod
+    def _value_pre_validator(cls, value: Any, field: "ModelField") -> Any:
+        if value == "":
+            return None
 
-        # we have an answer, do some post checks
-        if self.value not in [None, ""]:
-            if self.pattern and not re.match(self.pattern["regexp"], str(self.value)):
-                raise YunohostValidationError(
-                    self.pattern["error"],
-                    name=self.id,
-                    value=self.value,
-                )
+        return value
 
-    def _value_post_validator(self):
-        if not self.redact:
-            return self.value
+    @classmethod
+    def _value_post_validator(cls, value: Any, field: "ModelField") -> Any:
+        extras = field.field_info.extra
+
+        if value is None and extras["none_as_empty_str"]:
+            value = ""
+
+        if not extras.get("redact"):
+            return value
 
         # Tell the operation_logger to redact all password-type / secret args
         # Also redact the % escaped version of the password that might appear in
         # the 'args' section of metadata (relevant for password with non-alphanumeric char)
         data_to_redact = []
-        if self.value and isinstance(self.value, str):
-            data_to_redact.append(self.value)
-        if self.current_value and isinstance(self.current_value, str):
-            data_to_redact.append(self.current_value)
+        if value and isinstance(value, str):
+            data_to_redact.append(value)
+
         data_to_redact += [
             urllib.parse.quote(data)
             for data in data_to_redact
@@ -411,14 +546,31 @@ class BaseInputOption(BaseOption):
         for operation_logger in OperationLogger._instances:
             operation_logger.data_to_redact.extend(data_to_redact)
 
-        return self.value
+        return value
 
 
 # ─ STRINGS ───────────────────────────────────────────────
 
 
 class BaseStringOption(BaseInputOption):
-    default_value = ""
+    default: Union[str, None]
+    pattern: Union[Pattern, None] = None
+    _annotation = str
+
+    @property
+    def _dynamic_annotation(self) -> Type[str]:
+        if self.pattern:
+            return constr(regex=self.pattern.regexp)
+
+        return self._annotation
+
+    def _get_field_attrs(self) -> dict[str, Any]:
+        attrs = super()._get_field_attrs()
+
+        if self.pattern:
+            attrs["regex_error"] = self.pattern.error  # extra
+
+        return attrs
 
 
 class StringOption(BaseStringOption):
@@ -429,58 +581,89 @@ class TextOption(BaseStringOption):
     type: Literal[OptionType.text] = OptionType.text
 
 
+FORBIDDEN_PASSWORD_CHARS = r"{}"
+
+
 class PasswordOption(BaseInputOption):
     type: Literal[OptionType.password] = OptionType.password
-    hide_user_input_in_prompt = True
-    default_value = ""
-    forbidden_chars = "{}"
+    example: Literal[None] = None
+    default: Literal[None] = None
+    redact: Literal[True] = True
+    _annotation = str
+    _forbidden_chars: str = FORBIDDEN_PASSWORD_CHARS
 
-    def __init__(self, question):
-        super().__init__(question)
-        self.redact = True
-        if self.default is not None:
-            raise YunohostValidationError(
-                "app_argument_password_no_default", name=self.id
-            )
+    def _get_field_attrs(self) -> dict[str, Any]:
+        attrs = super()._get_field_attrs()
 
-    def _value_pre_validator(self):
-        super()._value_pre_validator()
+        attrs["forbidden_chars"] = self._forbidden_chars  # extra
 
-        if self.value not in [None, ""]:
-            if any(char in self.value for char in self.forbidden_chars):
+        return attrs
+
+    @classmethod
+    def _value_pre_validator(
+        cls, value: Union[str, None], field: "ModelField"
+    ) -> Union[str, None]:
+        value = super()._value_pre_validator(value, field)
+
+        if value is not None and value != "":
+            forbidden_chars: str = field.field_info.extra["forbidden_chars"]
+            if any(char in value for char in forbidden_chars):
                 raise YunohostValidationError(
-                    "pattern_password_app", forbidden_chars=self.forbidden_chars
+                    "pattern_password_app", forbidden_chars=forbidden_chars
                 )
 
             # If it's an optional argument the value should be empty or strong enough
             from yunohost.utils.password import assert_password_is_strong_enough
 
-            assert_password_is_strong_enough("user", self.value)
+            assert_password_is_strong_enough("user", value)
+
+        return value
 
 
-class ColorOption(BaseStringOption):
+class ColorOption(BaseInputOption):
     type: Literal[OptionType.color] = OptionType.color
-    pattern = {
-        "regexp": r"^#[ABCDEFabcdef\d]{3,6}$",
-        "error": "config_validate_color",  # i18n: config_validate_color
-    }
+    default: Union[str, None]
+    _annotation = Color
+
+    @staticmethod
+    def humanize(value: Union[Color, str, None], option={}) -> str:
+        if isinstance(value, Color):
+            value.as_named(fallback=True)
+
+        return super(ColorOption, ColorOption).humanize(value, option)
+
+    @staticmethod
+    def normalize(value: Union[Color, str, None], option={}) -> str:
+        if isinstance(value, Color):
+            return value.as_hex()
+
+        return super(ColorOption, ColorOption).normalize(value, option)
+
+    @classmethod
+    def _value_post_validator(
+        cls, value: Union[Color, None], field: "ModelField"
+    ) -> Union[str, None]:
+        if isinstance(value, Color):
+            return value.as_hex()
+
+        return super()._value_post_validator(value, field)
 
 
 # ─ NUMERIC ───────────────────────────────────────────────
 
 
 class NumberOption(BaseInputOption):
+    # `number` and `range` are exactly the same, but `range` does render as a slider in web-admin
     type: Literal[OptionType.number, OptionType.range] = OptionType.number
-    default_value = None
-
-    def __init__(self, question):
-        super().__init__(question)
-        self.min = question.get("min", None)
-        self.max = question.get("max", None)
-        self.step = question.get("step", None)
+    default: Union[int, None]
+    min: Union[int, None] = None
+    max: Union[int, None] = None
+    step: Union[int, None] = None
+    _annotation = int
+    _none_as_empty_str = False
 
     @staticmethod
-    def normalize(value, option={}):
+    def normalize(value, option={}) -> Union[int, None]:
         if isinstance(value, int):
             return value
 
@@ -493,31 +676,31 @@ class NumberOption(BaseInputOption):
         if value in [None, ""]:
             return None
 
-        option = option.__dict__ if isinstance(option, BaseOption) else option
+        option = option.dict() if isinstance(option, BaseOption) else option
         raise YunohostValidationError(
             "app_argument_invalid",
             name=option.get("id"),
             error=m18n.n("invalid_number"),
         )
 
-    def _value_pre_validator(self):
-        super()._value_pre_validator()
-        if self.value in [None, ""]:
-            return
+    def _get_field_attrs(self) -> dict[str, Any]:
+        attrs = super()._get_field_attrs()
+        attrs["ge"] = self.min
+        attrs["le"] = self.max
+        attrs["step"] = self.step  # extra
 
-        if self.min is not None and int(self.value) < self.min:
-            raise YunohostValidationError(
-                "app_argument_invalid",
-                name=self.id,
-                error=m18n.n("invalid_number_min", min=self.min),
-            )
+        return attrs
 
-        if self.max is not None and int(self.value) > self.max:
-            raise YunohostValidationError(
-                "app_argument_invalid",
-                name=self.id,
-                error=m18n.n("invalid_number_max", max=self.max),
-            )
+    @classmethod
+    def _value_pre_validator(
+        cls, value: Union[int, None], field: "ModelField"
+    ) -> Union[int, None]:
+        value = super()._value_pre_validator(value, field)
+
+        if value is None:
+            return None
+
+        return value
 
 
 # ─ BOOLEAN ───────────────────────────────────────────────
@@ -525,20 +708,17 @@ class NumberOption(BaseInputOption):
 
 class BooleanOption(BaseInputOption):
     type: Literal[OptionType.boolean] = OptionType.boolean
-    default_value = 0
-    yes_answers = ["1", "yes", "y", "true", "t", "on"]
-    no_answers = ["0", "no", "n", "false", "f", "off"]
-
-    def __init__(self, question):
-        super().__init__(question)
-        self.yes = question.get("yes", 1)
-        self.no = question.get("no", 0)
-        if self.default is None:
-            self.default = self.no
+    yes: Any = 1
+    no: Any = 0
+    default: Union[bool, int, str, None] = 0
+    _annotation = Union[bool, int, str]
+    _yes_answers: set[str] = {"1", "yes", "y", "true", "t", "on"}
+    _no_answers: set[str] = {"0", "no", "n", "false", "f", "off"}
+    _none_as_empty_str = False
 
     @staticmethod
-    def humanize(value, option={}):
-        option = option.__dict__ if isinstance(option, BaseOption) else option
+    def humanize(value, option={}) -> str:
+        option = option.dict() if isinstance(option, BaseOption) else option
 
         yes = option.get("yes", 1)
         no = option.get("no", 0)
@@ -560,8 +740,8 @@ class BooleanOption(BaseInputOption):
         )
 
     @staticmethod
-    def normalize(value, option={}):
-        option = option.__dict__ if isinstance(option, BaseOption) else option
+    def normalize(value, option={}) -> Any:
+        option = option.dict() if isinstance(option, BaseOption) else option
 
         if isinstance(value, str):
             value = value.strip()
@@ -569,8 +749,8 @@ class BooleanOption(BaseInputOption):
         technical_yes = option.get("yes", 1)
         technical_no = option.get("no", 0)
 
-        no_answers = BooleanOption.no_answers
-        yes_answers = BooleanOption.yes_answers
+        no_answers = BooleanOption._no_answers
+        yes_answers = BooleanOption._yes_answers
 
         assert (
             str(technical_yes).lower() not in no_answers
@@ -579,8 +759,8 @@ class BooleanOption(BaseInputOption):
             str(technical_no).lower() not in yes_answers
         ), f"'no' value can't be in {yes_answers}"
 
-        no_answers += [str(technical_no).lower()]
-        yes_answers += [str(technical_yes).lower()]
+        no_answers.add(str(technical_no).lower())
+        yes_answers.add(str(technical_yes).lower())
 
         strvalue = str(value).lower()
 
@@ -602,63 +782,84 @@ class BooleanOption(BaseInputOption):
     def get(self, key, default=None):
         return getattr(self, key, default)
 
-    def _get_prompt_message(self):
-        message = super()._get_prompt_message()
+    def _get_field_attrs(self) -> dict[str, Any]:
+        attrs = super()._get_field_attrs()
+        attrs["parse"] = {  # extra
+            True: self.yes,
+            False: self.no,
+        }
+        return attrs
+
+    def _get_prompt_message(self, value: Union[bool, None]) -> str:
+        message = super()._get_prompt_message(value)
 
         if not self.readonly:
             message += " [yes | no]"
 
         return message
 
+    @classmethod
+    def _value_post_validator(
+        cls, value: Union[bool, None], field: "ModelField"
+    ) -> Any:
+        if isinstance(value, bool):
+            return field.field_info.extra["parse"][value]
+
+        return super()._value_post_validator(value, field)
+
 
 # ─ TIME ──────────────────────────────────────────────────
 
 
-class DateOption(BaseStringOption):
+class DateOption(BaseInputOption):
     type: Literal[OptionType.date] = OptionType.date
-    pattern = {
-        "regexp": r"^\d{4}-\d\d-\d\d$",
-        "error": "config_validate_date",  # i18n: config_validate_date
-    }
+    default: Union[str, None]
+    _annotation = datetime.date
 
-    def _value_pre_validator(self):
-        from datetime import datetime
+    @classmethod
+    def _value_post_validator(
+        cls, value: Union[datetime.date, None], field: "ModelField"
+    ) -> Union[str, None]:
+        if isinstance(value, datetime.date):
+            return value.isoformat()
 
-        super()._value_pre_validator()
-
-        if self.value not in [None, ""]:
-            try:
-                datetime.strptime(self.value, "%Y-%m-%d")
-            except ValueError:
-                raise YunohostValidationError("config_validate_date")
+        return super()._value_post_validator(value, field)
 
 
-class TimeOption(BaseStringOption):
+class TimeOption(BaseInputOption):
     type: Literal[OptionType.time] = OptionType.time
-    pattern = {
-        "regexp": r"^(?:\d|[01]\d|2[0-3]):[0-5]\d$",
-        "error": "config_validate_time",  # i18n: config_validate_time
-    }
+    default: Union[str, int, None]
+    _annotation = datetime.time
+
+    @classmethod
+    def _value_post_validator(
+        cls, value: Union[datetime.date, None], field: "ModelField"
+    ) -> Union[str, None]:
+        if isinstance(value, datetime.time):
+            # FIXME could use `value.isoformat()` to get `%H:%M:%S`
+            return value.strftime("%H:%M")
+
+        return super()._value_post_validator(value, field)
 
 
 # ─ LOCATIONS ─────────────────────────────────────────────
 
 
-class EmailOption(BaseStringOption):
+class EmailOption(BaseInputOption):
     type: Literal[OptionType.email] = OptionType.email
-    pattern = {
-        "regexp": r"^.+@.+",
-        "error": "config_validate_email",  # i18n: config_validate_email
-    }
+    default: Union[EmailStr, None]
+    _annotation = EmailStr
 
 
-class WebPathOption(BaseInputOption):
+class WebPathOption(BaseStringOption):
     type: Literal[OptionType.path] = OptionType.path
-    default_value = ""
 
     @staticmethod
-    def normalize(value, option={}):
-        option = option.__dict__ if isinstance(option, BaseOption) else option
+    def normalize(value, option={}) -> str:
+        option = option.dict() if isinstance(option, BaseOption) else option
+
+        if value is None:
+            value = ""
 
         if not isinstance(value, str):
             raise YunohostValidationError(
@@ -685,10 +886,7 @@ class WebPathOption(BaseInputOption):
 
 class URLOption(BaseStringOption):
     type: Literal[OptionType.url] = OptionType.url
-    pattern = {
-        "regexp": r"^https?://.*$",
-        "error": "config_validate_url",  # i18n: config_validate_url
-    }
+    _annotation = HttpUrl
 
 
 # ─ FILE ──────────────────────────────────────────────────
@@ -696,90 +894,89 @@ class URLOption(BaseStringOption):
 
 class FileOption(BaseInputOption):
     type: Literal[OptionType.file] = OptionType.file
-    upload_dirs: List[str] = []
-
-    def __init__(self, question):
-        super().__init__(question)
-        self.accept = question.get("accept", "")
+    # `FilePath` for CLI (path must exists and must be a file)
+    # `bytes` for API (a base64 encoded file actually)
+    accept: Union[str, None] = ""  # currently only used by the web-admin
+    default: Union[str, None]
+    _annotation = str  # TODO could be Path at some point
+    _upload_dirs: set[str] = set()
 
     @classmethod
-    def clean_upload_dirs(cls):
+    def clean_upload_dirs(cls) -> None:
         # Delete files uploaded from API
-        for upload_dir in cls.upload_dirs:
+        for upload_dir in cls._upload_dirs:
             if os.path.exists(upload_dir):
                 shutil.rmtree(upload_dir)
 
-    def _value_pre_validator(self):
-        if self.value is None:
-            self.value = self.current_value
-
-        super()._value_pre_validator()
-
-        # Validation should have already failed if required
-        if self.value in [None, ""]:
-            return self.value
-
-        if Moulinette.interface.type != "api":
-            if not os.path.exists(str(self.value)) or not os.path.isfile(
-                str(self.value)
-            ):
-                raise YunohostValidationError(
-                    "app_argument_invalid",
-                    name=self.id,
-                    error=m18n.n("file_does_not_exist", path=str(self.value)),
-                )
-
-    def _value_post_validator(self):
+    @classmethod
+    def _value_post_validator(cls, value: Any, field: "ModelField") -> str:
         from base64 import b64decode
 
-        if not self.value:
+        if not value:
             return ""
+
+        def is_file_path(s):
+            return (
+                isinstance(s, str)
+                and s.startswith("/")
+                and os.path.exists(s)
+                and os.path.isfile(s)
+            )
+
+        file_exists = is_file_path(value)
+        if Moulinette.interface.type != "api" and not file_exists:
+            # FIXME error
+            raise YunohostValidationError("File doesn't exists", raw_msg=True)
+        elif file_exists:
+            content = read_file(str(value), file_mode="rb")
+        else:
+            content = b64decode(value)
 
         upload_dir = tempfile.mkdtemp(prefix="ynh_filequestion_")
         _, file_path = tempfile.mkstemp(dir=upload_dir)
 
-        FileOption.upload_dirs += [upload_dir]
+        FileOption._upload_dirs.add(upload_dir)
 
-        logger.debug(f"Saving file {self.id} for file question into {file_path}")
-
-        def is_file_path(s):
-            return isinstance(s, str) and s.startswith("/") and os.path.exists(s)
-
-        if Moulinette.interface.type != "api" or is_file_path(self.value):
-            content = read_file(str(self.value), file_mode="rb")
-        else:
-            content = b64decode(self.value)
+        logger.debug(f"Saving file {field.name} for file question into {file_path}")
 
         write_to_file(file_path, content, file_mode="wb")
 
-        self.value = file_path
-
-        return self.value
+        return file_path
 
 
 # ─ CHOICES ───────────────────────────────────────────────
 
 
 class BaseChoicesOption(BaseInputOption):
-    def __init__(
-        self,
-        question: Dict[str, Any],
-    ):
-        super().__init__(question)
-        # Don't restrict choices if there's none specified
-        self.choices = question.get("choices", None)
+    # FIXME probably forbid choices to be None?
+    filter: Union[JSExpression, None] = None  # filter before choices
+    choices: Union[dict[str, Any], list[Any], None]
 
-    def _get_prompt_message(self) -> str:
-        message = super()._get_prompt_message()
+    @validator("choices", pre=True)
+    def parse_comalist_choices(value: Any) -> Union[dict[str, Any], list[Any], None]:
+        if isinstance(value, str):
+            values = [value.strip() for value in value.split(",")]
+            return [value for value in values if value]
+        return value
+
+    @property
+    def _dynamic_annotation(self) -> Union[object, Type[str]]:
+        if self.choices is not None:
+            choices = (
+                self.choices if isinstance(self.choices, list) else self.choices.keys()
+            )
+            return Literal[tuple(choices)]
+
+        return self._annotation
+
+    def _get_prompt_message(self, value: Any) -> str:
+        message = super()._get_prompt_message(value)
 
         if self.readonly:
-            message = message
-            choice = self.current_value
+            if isinstance(self.choices, dict) and value is not None:
+                value = self.choices[value]
 
-            if isinstance(self.choices, dict) and choice is not None:
-                choice = self.choices[choice]
-
-            return f"{colorize(message, 'purple')} {choice}"
+            return f"{colorize(message, 'purple')} {value}"
 
         if self.choices:
             # Prevent displaying a shitload of choices
@@ -789,89 +986,106 @@ class BaseChoicesOption(BaseInputOption):
                 if isinstance(self.choices, dict)
                 else self.choices
             )
-            choices_to_display = choices[:20]
+            splitted_choices = choices[:20]
             remaining_choices = len(choices[20:])
 
             if remaining_choices > 0:
-                choices_to_display += [
+                splitted_choices += [
                     m18n.n("other_available_options", n=remaining_choices)
                 ]
 
-            choices_to_display = " | ".join(
-                str(choice) for choice in choices_to_display
-            )
+            choices_to_display = " | ".join(str(choice) for choice in splitted_choices)
 
             return f"{message} [{choices_to_display}]"
 
         return message
 
-    def _value_pre_validator(self):
-        super()._value_pre_validator()
-
-        # we have an answer, do some post checks
-        if self.value not in [None, ""]:
-            if self.choices and self.value not in self.choices:
-                raise YunohostValidationError(
-                    "app_argument_choice_invalid",
-                    name=self.id,
-                    value=self.value,
-                    choices=", ".join(str(choice) for choice in self.choices),
-                )
-
 
 class SelectOption(BaseChoicesOption):
     type: Literal[OptionType.select] = OptionType.select
-    default_value = ""
+    filter: Literal[None] = None
+    choices: Union[dict[str, Any], list[Any]]
+    default: Union[str, None]
+    _annotation = str
 
 
 class TagsOption(BaseChoicesOption):
     type: Literal[OptionType.tags] = OptionType.tags
-    default_value = ""
+    filter: Literal[None] = None
+    choices: Union[list[str], None] = None
+    pattern: Union[Pattern, None] = None
+    default: Union[str, list[str], None]
+    _annotation = str
 
     @staticmethod
-    def humanize(value, option={}):
+    def humanize(value, option={}) -> str:
         if isinstance(value, list):
             return ",".join(str(v) for v in value)
+        if not value:
+            return ""
         return value
 
     @staticmethod
-    def normalize(value, option={}):
+    def normalize(value, option={}) -> str:
         if isinstance(value, list):
             return ",".join(str(v) for v in value)
         if isinstance(value, str):
-            value = value.strip()
+            value = value.strip().strip(",")
+        if value is None or value == "":
+            return ""
         return value
 
-    def _value_pre_validator(self):
-        values = self.value
-        if isinstance(values, str):
-            values = values.split(",")
-        elif values is None:
-            values = []
+    @property
+    def _dynamic_annotation(self) -> Type[str]:
+        # TODO use Literal when serialization is seperated from validation
+        # if self.choices is not None:
+        #     return Literal[tuple(self.choices)]
 
-        if not isinstance(values, list):
-            if self.choices:
-                raise YunohostValidationError(
-                    "app_argument_choice_invalid",
-                    name=self.id,
-                    value=self.value,
-                    choices=", ".join(str(choice) for choice in self.choices),
-                )
+        # Repeat pattern stuff since we can't call the bare class `_dynamic_annotation` prop without instantiating it
+        if self.pattern:
+            return constr(regex=self.pattern.regexp)
+
+        return self._annotation
+
+    def _get_field_attrs(self) -> dict[str, Any]:
+        attrs = super()._get_field_attrs()
+
+        if self.choices:
+            attrs["choices"] = self.choices  # extra
+
+        return attrs
+
+    @classmethod
+    def _value_pre_validator(
+        cls, value: Union[list, str, None], field: "ModelField"
+    ) -> Union[str, None]:
+        if value is None or value == "":
+            return None
+
+        if not isinstance(value, (list, str, type(None))):
             raise YunohostValidationError(
                 "app_argument_invalid",
-                name=self.id,
-                error=f"'{str(self.value)}' is not a list",
+                name=field.name,
+                error=f"'{str(value)}' is not a list",
             )
 
-        for value in values:
-            self.value = value
-            super()._value_pre_validator()
-        self.value = values
+        if isinstance(value, str):
+            value = [v.strip() for v in value.split(",")]
+            value = [v for v in value if v]
 
-    def _value_post_validator(self):
-        if isinstance(self.value, list):
-            self.value = ",".join(self.value)
-        return super()._value_post_validator()
+        if isinstance(value, list):
+            choices = field.field_info.extra.get("choices")
+            if choices:
+                if not all(v in choices for v in value):
+                    raise YunohostValidationError(
+                        "app_argument_choice_invalid",
+                        name=field.name,
+                        value=value,
+                        choices=", ".join(str(choice) for choice in choices),
+                    )
+
+            return ",".join(str(v) for v in value)
+        return value
 
 
 # ─ ENTITIES ──────────────────────────────────────────────
@@ -879,22 +1093,33 @@ class TagsOption(BaseChoicesOption):
 
 class DomainOption(BaseChoicesOption):
     type: Literal[OptionType.domain] = OptionType.domain
+    filter: Literal[None] = None
+    choices: Union[dict[str, str], None]
 
-    def __init__(self, question):
-        from yunohost.domain import domain_list, _get_maindomain
+    @validator("choices", pre=True, always=True)
+    def inject_domains_choices(
+        cls, value: Union[dict[str, str], None], values: Values
+    ) -> dict[str, str]:
+        # TODO remove calls to resources in validators (pydantic V2 should adress this)
+        from yunohost.domain import domain_list
 
-        super().__init__(question)
-
-        if self.default is None:
-            self.default = _get_maindomain()
-
-        self.choices = {
-            domain: domain + " ★" if domain == self.default else domain
-            for domain in domain_list()["domains"]
+        data = domain_list()
+        return {
+            domain: domain + " ★" if domain == data["main"] else domain
+            for domain in data["domains"]
         }
 
+    @validator("default", pre=True, always=True)
+    def inject_default(
+        cls, value: Union[str, None], values: Values
+    ) -> Union[str, None]:
+        # TODO remove calls to resources in validators (pydantic V2 should adress this)
+        from yunohost.domain import _get_maindomain
+
+        return _get_maindomain()
+
     @staticmethod
-    def normalize(value, option={}):
+    def normalize(value, option={}) -> str:
         if value.startswith("https://"):
             value = value[len("https://") :]
         elif value.startswith("http://"):
@@ -908,87 +1133,120 @@ class DomainOption(BaseChoicesOption):
 
 class AppOption(BaseChoicesOption):
     type: Literal[OptionType.app] = OptionType.app
+    filter: Union[JSExpression, None] = None
+    add_yunohost_portal_to_choices: bool = False
+    choices: Union[dict[str, str], None]
 
-    def __init__(self, question):
+    @validator("choices", pre=True, always=True)
+    def inject_apps_choices(
+        cls, value: Union[dict[str, str], None], values: Values
+    ) -> dict[str, str]:
+        # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.app import app_list
-
-        super().__init__(question)
-        self.filter = question.get("filter", None)
-        self.add_yunohost_portal_to_choices = question.get("add_yunohost_portal_to_choices", False)
 
         apps = app_list(full=True)["apps"]
 
-        if self.filter:
+        if values.get("filter", None):
             apps = [
                 app
                 for app in apps
-                if evaluate_simple_js_expression(self.filter, context=app)
+                if evaluate_simple_js_expression(values["filter"], context=app)
             ]
 
-        def _app_display(app):
-            domain_path_or_id = f" ({app.get('domain_path', app['id'])})"
-            return app["label"] + domain_path_or_id
+        value = {"_none": "---"}
 
-        self.choices = {"_none": "---"}
-        if self.add_yunohost_portal_to_choices:
-            # FIXME: i18n
-            self.choices["_yunohost_portal_with_public_apps"] = "YunoHost's portal with public apps"
-        self.choices.update({app["id"]: _app_display(app) for app in apps})
+        if values.get("add_yunohost_portal_to_choices", False):
+            value["_yunohost_portal_with_public_apps"] = "YunoHost's portal with public apps"
+
+        value.update(
+            {
+                app["id"]: f"{app['label']} ({app.get('domain_path', app['id'])})"
+                for app in apps
+            }
+        )
+
+        return value
 
 
 class UserOption(BaseChoicesOption):
     type: Literal[OptionType.user] = OptionType.user
+    filter: Literal[None] = None
+    choices: Union[dict[str, str], None]
 
-    def __init__(self, question):
-        from yunohost.user import user_list, user_info
-        from yunohost.domain import _get_maindomain
+    @validator("choices", pre=True, always=True)
+    def inject_users_choices(
+        cls, value: Union[dict[str, str], None], values: Values
+    ) -> dict[str, str]:
+        # TODO remove calls to resources in validators (pydantic V2 should adress this)
+        from yunohost.user import user_list
 
-        super().__init__(question)
-
-        self.choices = {
+        value = {
             username: f"{infos['fullname']} ({infos['mail']})"
             for username, infos in user_list()["users"].items()
         }
 
-        if not self.choices:
+        # FIXME keep this to test if any user, do not raise error if no admin?
+        if not value:
             raise YunohostValidationError(
                 "app_argument_invalid",
-                name=self.id,
+                name=values["id"],
                 error="You should create a YunoHost user first.",
             )
 
-        if self.default is None:
+        return value
+
+    @validator("default", pre=True, always=True)
+    def inject_default(
+        cls, value: Union[str, None], values: Values
+    ) -> Union[str, None]:
+        # TODO remove calls to resources in validators (pydantic V2 should adress this)
+        from yunohost.domain import _get_maindomain
+        from yunohost.user import user_list, user_info
+
+        if value is None:
             # FIXME: this code is obsolete with the new admins group
             # Should be replaced by something like "any first user we find in the admin group"
             root_mail = "root@%s" % _get_maindomain()
-            for user in self.choices.keys():
+            for user in user_list()["users"].keys():
                 if root_mail in user_info(user).get("mail-aliases", []):
-                    self.default = user
-                    break
+                    return user
+
+        return value
 
 
 class GroupOption(BaseChoicesOption):
     type: Literal[OptionType.group] = OptionType.group
+    filter: Literal[None] = None
+    choices: Union[dict[str, str], None]
+    default: Union[Literal["visitors", "all_users", "admins"], None] = "all_users"
 
-    def __init__(self, question):
+    @validator("choices", pre=True, always=True)
+    def inject_groups_choices(
+        cls, value: Union[dict[str, str], None], values: Values
+    ) -> dict[str, str]:
+        # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.user import user_group_list
 
-        super().__init__(question)
+        groups = user_group_list(short=True, include_primary_groups=False)["groups"]
 
-        self.choices = list(
-            user_group_list(short=True, include_primary_groups=False)["groups"]
-        )
-
-        def _human_readable_group(g):
+        def _human_readable_group(groupname):
             # i18n: visitors
             # i18n: all_users
             # i18n: admins
-            return m18n.n(g) if g in ["visitors", "all_users", "admins"] else g
+            return (
+                m18n.n(groupname)
+                if groupname in ["visitors", "all_users", "admins"]
+                else groupname
+            )
 
-        self.choices = {g: _human_readable_group(g) for g in self.choices}
+        return {groupname: _human_readable_group(groupname) for groupname in groups}
 
-        if self.default is None:
-            self.default = "all_users"
+    @validator("default", pre=True, always=True)
+    def inject_default(cls, value: Union[str, None], values: Values) -> str:
+        # FIXME do we really want to default to something all the time?
+        if value is None:
+            return "all_users"
+        return value
 
 
 OPTIONS = {
@@ -997,7 +1255,7 @@ OPTIONS = {
     OptionType.alert: AlertOption,
     OptionType.button: ButtonOption,
     OptionType.string: StringOption,
-    OptionType.text: StringOption,
+    OptionType.text: TextOption,
     OptionType.password: PasswordOption,
     OptionType.color: ColorOption,
     OptionType.number: NumberOption,
@@ -1017,21 +1275,159 @@ OPTIONS = {
     OptionType.group: GroupOption,
 }
 
+AnyOption = Union[
+    DisplayTextOption,
+    MarkdownOption,
+    AlertOption,
+    ButtonOption,
+    StringOption,
+    TextOption,
+    PasswordOption,
+    ColorOption,
+    NumberOption,
+    BooleanOption,
+    DateOption,
+    TimeOption,
+    EmailOption,
+    WebPathOption,
+    URLOption,
+    FileOption,
+    SelectOption,
+    TagsOption,
+    DomainOption,
+    AppOption,
+    UserOption,
+    GroupOption,
+]
 
-def hydrate_option_type(raw_option: dict[str, Any]) -> dict[str, Any]:
-    type_ = raw_option.get(
-        "type", OptionType.select if "choices" in raw_option else OptionType.string
+
+# ╭───────────────────────────────────────────────────────╮
+# │  ┌─╴╭─╮┌─╮╭╮╮                                         │
+# │  ├─╴│ │├┬╯│││                                         │
+# │  ╵  ╰─╯╵ ╰╵╵╵                                         │
+# ╰───────────────────────────────────────────────────────╯
+
+
+class OptionsModel(BaseModel):
+    # Pydantic will match option types to their models class based on the "type" attribute
+    options: list[Annotated[AnyOption, Field(discriminator="type")]]
+
+    @staticmethod
+    def options_dict_to_list(
+        options: dict[str, Any], optional: bool = False
+    ) -> list[dict[str, Any]]:
+        options_list = []
+
+        for id_, data in options.items():
+            option = data | {
+                "id": data.get("id", id_),
+                "type": data.get(
+                    "type",
+                    OptionType.select if "choices" in data else OptionType.string,
+                ),
+            }
+
+            if option["type"] not in READONLY_TYPES:
+                option["optional"] = option.get("optional", optional)
+
+            # LEGACY (`choices` in option `string` used to be valid)
+            if "choices" in option and option["type"] == OptionType.string:
+                logger.warning(
+                    f"Packagers: option {id_} has 'choices' but has type 'string', use 'select' instead to remove this warning."
+                )
+                option["type"] = OptionType.select
+
+            options_list.append(option)
+
+        return options_list
+
+    def __init__(self, **kwargs) -> None:
+        super().__init__(options=self.options_dict_to_list(kwargs))
+
+    def translate_options(self, i18n_key: Union[str, None] = None) -> None:
+        """
+        Mutate in place translatable attributes of options to their translations
+        """
+        for option in self.options:
+            for key in ("ask", "help"):
+                if not hasattr(option, key):
+                    continue
+
+                value = getattr(option, key)
+                if value:
+                    setattr(option, key, _value_for_locale(value))
+                elif key == "ask" and m18n.key_exists(f"{i18n_key}_{option.id}"):
+                    setattr(option, key, m18n.n(f"{i18n_key}_{option.id}"))
+                elif key == "help" and m18n.key_exists(f"{i18n_key}_{option.id}_help"):
+                    setattr(option, key, m18n.n(f"{i18n_key}_{option.id}_help"))
+                elif key == "ask":
+                    # FIXME warn?
+                    option.ask = option.id
+
+
+class FormModel(BaseModel):
+    """
+    Base form on which dynamic forms are built upon Options.
+    """
+
+    class Config:
+        validate_assignment = True
+        extra = Extra.ignore
+
+    def __getitem__(self, name: str) -> Any:
+        # FIXME
+        # if a FormModel's required field is not instancied with a value, it is
+        # not available as an attr and therefor triggers an `AttributeError`
+        # Also since `BaseReadonlyOption`s do not end up in form,
+        # `form[AlertOption.id]` would also triggers an error
+        # For convinience in those 2 cases, we return `None`
+        if not hasattr(self, name):
+            # Return None to trigger a validation error instead for required fields
+            return None
+
+        return getattr(self, name)
+
+    def __setitem__(self, name: str, value: Any) -> None:
+        setattr(self, name, value)
+
+    def get(self, attr: str, default: Any = None) -> Any:
+        try:
+            return getattr(self, attr)
+        except AttributeError:
+            return default
+
+
+def build_form(
+    options: Iterable[AnyOption], name: str = "DynamicForm"
+) -> Type[FormModel]:
+    """
+    Returns a dynamic pydantic model class that can be used as a form.
+    Parsing/validation occurs at instanciation and assignements.
+    To avoid validation at instanciation, use `my_form.construct(**values)`
+    """
+    options_as_fields: Any = {}
+    validators: dict[str, Any] = {}
+
+    for option in options:
+        if not isinstance(option, BaseInputOption):
+            continue  # filter out non input options
+
+        options_as_fields[option.id] = option._as_dynamic_model_field()
+
+        for step in ("pre", "post"):
+            validators[f"{option.id}_{step}_validator"] = validator(
+                option.id, allow_reuse=True, pre=step == "pre"
+            )(getattr(option, f"_value_{step}_validator"))
+
+    return cast(
+        Type[FormModel],
+        create_model(
+            name,
+            __base__=FormModel,
+            __validators__=validators,
+            **options_as_fields,
+        ),
     )
-    # LEGACY (`choices` in option `string` used to be valid)
-    if "choices" in raw_option and type_ == OptionType.string:
-        logger.warning(
-            f"Packagers: option {raw_option['id']} has 'choices' but has type 'string', use 'select' instead to remove this warning."
-        )
-        type_ = OptionType.select
-
-    raw_option["type"] = type_
-
-    return raw_option
 
 
 # ╭───────────────────────────────────────────────────────╮
@@ -1044,21 +1440,42 @@ def hydrate_option_type(raw_option: dict[str, Any]) -> dict[str, Any]:
 Hooks = dict[str, Callable[[BaseInputOption], Any]]
 
 
+def parse_prefilled_values(
+    args: Union[str, None] = None,
+    args_file: Union[str, None] = None,
+    method: Literal["parse_qs", "parse_qsl"] = "parse_qs",
+) -> dict[str, Any]:
+    """
+    Retrieve form values from yaml file or query string.
+    """
+    values: Values = {}
+    if args_file:
+        # Import YAML / JSON file
+        values |= read_yaml(args_file)
+    if args:
+        # FIXME See `ask_questions_and_parse_answers`
+        parsed = getattr(urllib.parse, method)(args, keep_blank_values=True)
+        if isinstance(parsed, dict):  # parse_qs
+            # FIXME could do the following to get a list directly?
+            # k: None if not len(v) else (v if len(v) > 1 else v[0])
+            values |= {k: ",".join(v) for k, v in parsed.items()}
+        else:
+            values |= dict(parsed)
+
+    return values
+
+
+MAX_RETRIES = 4
+
+
 def prompt_or_validate_form(
-    raw_options: dict[str, Any],
+    options: Iterable[AnyOption],
+    form: FormModel,
     prefilled_answers: dict[str, Any] = {},
     context: Context = {},
     hooks: Hooks = {},
-) -> list[BaseOption]:
-    options = []
-    answers = {**prefilled_answers}
-
-    for id_, raw_option in raw_options.items():
-        raw_option["id"] = id_
-        raw_option["value"] = answers.get(id_)
-        raw_option = hydrate_option_type(raw_option)
-        option = OPTIONS[raw_option["type"]](raw_option)
-
+) -> FormModel:
+    for option in options:
         interactive = Moulinette.interface.type == "cli" and os.isatty(1)
 
         if isinstance(option, ButtonOption):
@@ -1068,11 +1485,8 @@ def prompt_or_validate_form(
                 raise YunohostValidationError(
                     "config_action_disabled",
                     action=option.id,
-                    help=_value_for_locale(option.help),
+                    help=option.help,
                 )
-
-        # FIXME not sure why we do not append Buttons to returned options
-        options.append(option)
 
         if not option.is_visible(context):
             if isinstance(option, BaseInputOption):
@@ -1080,80 +1494,88 @@ def prompt_or_validate_form(
                 # - we doesn't want to give a specific value
                 # - we want to keep the previous value
                 # - we want the default value
-                option.value = context[option.id] = None
+                context[option.id] = None
 
             continue
 
-        message = option._get_prompt_message()
+        # if we try to get a `BaseReadonlyOption` value, which doesn't exists in the form,
+        # we get `None`
+        value = form[option.id]
 
-        if option.readonly:
-            if interactive:
-                Moulinette.display(message)
-
+        if isinstance(option, BaseReadonlyOption) or option.readonly:
             if isinstance(option, BaseInputOption):
-                option.value = context[option.id] = option.current_value
+                # only update the context with the value
+                context[option.id] = option.normalize(form[option.id])
+
+                # FIXME here we could error out
+                if option.id in prefilled_answers:
+                    logger.warning(
+                        f"'{option.id}' is readonly, value '{prefilled_answers[option.id]}' is then ignored."
+                    )
+
+            if interactive:
+                Moulinette.display(option._get_prompt_message(value))
 
             continue
 
-        if isinstance(option, BaseInputOption):
-            for i in range(5):
-                if interactive and option.value is None:
-                    prefill = ""
-                    choices = (
-                        option.choices if isinstance(option, BaseChoicesOption) else []
+        for i in range(5):
+            if option.id in prefilled_answers:
+                value = prefilled_answers[option.id]
+            elif interactive:
+                value = option.humanize(value, option)
+                choices = (
+                    option.choices if isinstance(option, BaseChoicesOption) else []
+                )
+                value = Moulinette.prompt(
+                    message=option._get_prompt_message(value),
+                    is_password=isinstance(option, PasswordOption),
+                    confirm=False,
+                    prefill=value,
+                    is_multiline=isinstance(option, TextOption),
+                    autocomplete=choices,
+                    help=option.help,
+                )
+
+            # Apply default value if none
+            if value is None or value == "" and option.default is not None:
+                value = option.default
+
+            try:
+                # Normalize and validate
+                form[option.id] = option.normalize(value, option)
+                context[option.id] = form[option.id]
+            except (ValidationError, YunohostValidationError) as e:
+                # If in interactive cli, re-ask the current question
+                if i < MAX_RETRIES and interactive:
+                    logger.error(
+                        "\n".join([err["msg"] for err in e.errors()])
+                        if isinstance(e, ValidationError)
+                        else str(e)
                     )
+                    value = None
+                    continue
 
-                    if option.current_value is not None:
-                        prefill = option.humanize(option.current_value, option)
-                    elif option.default is not None:
-                        prefill = option.humanize(option.default, option)
+                if isinstance(e, ValidationError):
+                    error = "\n".join([err["msg"] for err in e.errors()])
+                    raise YunohostValidationError(error, raw_msg=True)
 
-                    option.value = Moulinette.prompt(
-                        message=message,
-                        is_password=isinstance(option, PasswordOption),
-                        confirm=False,
-                        prefill=prefill,
-                        is_multiline=(option.type == "text"),
-                        autocomplete=choices,
-                        help=_value_for_locale(option.help),
-                    )
+                # Otherwise raise the ValidationError
+                raise e
 
-                # Apply default value
-                class_default = getattr(option, "default_value", None)
-                if option.value in [None, ""] and (
-                    option.default is not None or class_default is not None
-                ):
-                    option.value = (
-                        class_default if option.default is None else option.default
-                    )
+            break
 
-                try:
-                    # Normalize and validate
-                    option.value = option.normalize(option.value, option)
-                    option._value_pre_validator()
-                except YunohostValidationError as e:
-                    # If in interactive cli, re-ask the current question
-                    if i < 4 and interactive:
-                        logger.error(str(e))
-                        option.value = None
-                        continue
+        # Search for post actions in hooks
+        post_hook = f"post_ask__{option.id}"
+        if post_hook in hooks:
+            # Hooks looks like they can return multiple values, validate those
+            values = hooks[post_hook](option)
+            for option_id, value in values.items():
+                option = next(opt for opt in options if option.id == option_id)
+                if option and isinstance(option, BaseInputOption):
+                    form[option.id] = option.normalize(value, option)
+                    context[option.id] = form[option.id]
 
-                    # Otherwise raise the ValidationError
-                    raise
-
-                break
-
-            option.value = option.values[option.id] = option._value_post_validator()
-
-            # Search for post actions in hooks
-            post_hook = f"post_ask__{option.id}"
-            if post_hook in hooks:
-                option.values.update(hooks[post_hook](option))
-
-            answers.update(option.values)
-            context.update(option.values)
-
-    return options
+    return form
 
 
 def ask_questions_and_parse_answers(
@@ -1161,7 +1583,7 @@ def ask_questions_and_parse_answers(
     prefilled_answers: Union[str, Mapping[str, Any]] = {},
     current_values: Mapping[str, Any] = {},
     hooks: Hooks = {},
-) -> list[BaseOption]:
+) -> tuple[list[AnyOption], FormModel]:
     """Parse arguments store in either manifest.json or actions.json or from a
     config panel against the user answers when they are present.
 
@@ -1179,9 +1601,7 @@ def ask_questions_and_parse_answers(
         # whereas parse.qs return list of values (which is useful for tags, etc)
         # For now, let's not migrate this piece of code to parse_qs
         # Because Aleks believes some bits of the app CI rely on overriding values (e.g. foo=foo&...&foo=bar)
-        answers = dict(
-            urllib.parse.parse_qsl(prefilled_answers or "", keep_blank_values=True)
-        )
+        answers = parse_prefilled_values(prefilled_answers, method="parse_qsl")
     elif isinstance(prefilled_answers, Mapping):
         answers = {**prefilled_answers}
     else:
@@ -1189,20 +1609,43 @@ def ask_questions_and_parse_answers(
 
     context = {**current_values, **answers}
 
-    return prompt_or_validate_form(
-        raw_options, prefilled_answers=answers, context=context, hooks=hooks
+    model_options = parse_raw_options(raw_options, serialize=False)
+    # Build the form from those questions and instantiate it without
+    # parsing/validation (construct) since it may contains required questions.
+    form = build_form(model_options).construct()
+    form = prompt_or_validate_form(
+        model_options, form, prefilled_answers=answers, context=context, hooks=hooks
     )
+    return (model_options, form)
 
 
-def hydrate_questions_with_choices(raw_questions: List) -> List:
-    out = []
+@overload
+def parse_raw_options(
+    raw_options: dict[str, Any], serialize: Literal[True]
+) -> list[dict[str, Any]]:
+    ...
 
-    for raw_question in raw_questions:
-        raw_question = hydrate_option_type(raw_question)
-        question = OPTIONS[raw_question["type"]](raw_question)
-        if isinstance(question, BaseChoicesOption) and question.choices:
-            raw_question["choices"] = question.choices
-            raw_question["default"] = question.default
-        out.append(raw_question)
 
-    return out
+@overload
+def parse_raw_options(
+    raw_options: dict[str, Any], serialize: Literal[False] = False
+) -> list[AnyOption]:
+    ...
+
+
+def parse_raw_options(
+    raw_options: dict[str, Any], serialize: bool = False
+) -> Union[list[dict[str, Any]], list[AnyOption]]:
+    # Validate/parse the options attributes
+    try:
+        model = OptionsModel(**raw_options)
+    except ValidationError as e:
+        error = "\n".join([err["msg"] for err in e.errors()])
+        raise YunohostError(error, raw_msg=True)
+
+    model.translate_options()
+
+    if serialize:
+        return model.dict()["options"]
+
+    return model.options

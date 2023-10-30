@@ -19,15 +19,29 @@
 import os
 import subprocess
 from logging import getLogger
+from typing import TYPE_CHECKING, Any, Union
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.configpanel import ConfigPanel
+from yunohost.utils.configpanel import ConfigPanel, parse_filter_key
 from yunohost.utils.form import BaseOption
 from yunohost.regenconf import regen_conf
 from yunohost.firewall import firewall_reload
 from yunohost.log import is_unit_operation
 from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_settings
+
+if TYPE_CHECKING:
+    from yunohost.log import OperationLogger
+
+    from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
+
+    from yunohost.utils.configpanel import (
+        ConfigPanelGetMode,
+        ConfigPanelModel,
+        RawConfig,
+        RawSettings,
+    )
+    from yunohost.utils.form import FormModel
 
 logger = getLogger("yunohost.settings")
 
@@ -120,21 +134,15 @@ class SettingsConfigPanel(ConfigPanel):
     entity_type = "global"
     save_path_tpl = SETTINGS_PATH
     save_mode = "diff"
-    virtual_settings = ["root_password", "root_password_confirm", "passwordless_sudo"]
+    virtual_settings = {"root_password", "root_password_confirm", "passwordless_sudo"}
 
-    def __init__(self, config_path=None, save_path=None, creation=False):
+    def __init__(self, config_path=None, save_path=None, creation=False) -> None:
         super().__init__("settings")
 
-    def get(self, key="", mode="classic"):
+    def get(
+        self, key: Union[str, None] = None, mode: "ConfigPanelGetMode" = "classic"
+    ) -> Any:
         result = super().get(key=key, mode=mode)
-
-        if mode == "full":
-            for panel, section, option in self._iterate():
-                if m18n.key_exists(self.config["i18n"] + "_" + option["id"] + "_help"):
-                    option["help"] = m18n.n(
-                        self.config["i18n"] + "_" + option["id"] + "_help"
-                    )
-            return self.config
 
         # Dirty hack to let settings_get() to work from a python script
         if isinstance(result, str) and result in ["True", "False"]:
@@ -142,25 +150,33 @@ class SettingsConfigPanel(ConfigPanel):
 
         return result
 
-    def reset(self, key="", operation_logger=None):
-        self.filter_key = key
+    def reset(
+        self,
+        key: Union[str, None] = None,
+        operation_logger: Union["OperationLogger", None] = None,
+    ) -> None:
+        self.filter_key = parse_filter_key(key)
 
         # Read config panel toml
-        self._get_config_panel()
+        self.config, self.form = self._get_config_panel(prevalidate=True)
 
-        if not self.config:
-            raise YunohostValidationError("config_no_panel")
+        # FIXME find a better way to exclude previous settings
+        previous_settings = self.form.dict()
 
-        # Replace all values with default values
-        self.values = self._get_default_values()
+        for option in self.config.options:
+            if not option.readonly and (
+                option.optional or option.default not in {None, ""}
+            ):
+                # FIXME Mypy complains about option.default not being a valid type for normalize but this should be ok
+                self.form[option.id] = option.normalize(option.default, option)  # type: ignore
 
-        BaseOption.operation_logger = operation_logger
+        # FIXME Not sure if this is need (redact call to operation logger does it on all the instances)
+        # BaseOption.operation_logger = operation_logger
 
         if operation_logger:
             operation_logger.start()
-
         try:
-            self._apply()
+            self._apply(self.form, previous_settings)
         except YunohostError:
             raise
         # Script got manually interrupted ...
@@ -178,10 +194,12 @@ class SettingsConfigPanel(ConfigPanel):
             raise
 
         logger.success(m18n.n("global_settings_reset_success"))
-        operation_logger.success()
 
-    def _get_raw_config(self):
-        toml = super()._get_raw_config()
+        if operation_logger:
+            operation_logger.success()
+
+    def _get_raw_config(self) -> "RawConfig":
+        raw_config = super()._get_raw_config()
 
         # Dynamic choice list for portal themes
         THEMEDIR = "/usr/share/ssowat/portal/assets/themes/"
@@ -189,42 +207,40 @@ class SettingsConfigPanel(ConfigPanel):
             themes = [d for d in os.listdir(THEMEDIR) if os.path.isdir(THEMEDIR + d)]
         except Exception:
             themes = ["unsplash", "vapor", "light", "default", "clouds"]
-        toml["misc"]["portal"]["portal_theme"]["choices"] = themes
+        raw_config["misc"]["portal"]["portal_theme"]["choices"] = themes
 
-        return toml
+        return raw_config
 
-    def _get_raw_settings(self):
-        super()._get_raw_settings()
+    def _get_raw_settings(self, config: "ConfigPanelModel") -> "RawSettings":
+        raw_settings = super()._get_raw_settings(config)
 
         # Specific logic for those settings who are "virtual" settings
         # and only meant to have a custom setter mapped to tools_rootpw
-        self.values["root_password"] = ""
-        self.values["root_password_confirm"] = ""
+        raw_settings["root_password"] = ""
+        raw_settings["root_password_confirm"] = ""
 
         # Specific logic for virtual setting "passwordless_sudo"
         try:
             from yunohost.utils.ldap import _get_ldap_interface
 
             ldap = _get_ldap_interface()
-            self.values["passwordless_sudo"] = "!authenticate" in ldap.search(
+            raw_settings["passwordless_sudo"] = "!authenticate" in ldap.search(
                 "ou=sudo", "cn=admins", ["sudoOption"]
             )[0].get("sudoOption", [])
         except Exception:
-            self.values["passwordless_sudo"] = False
+            raw_settings["passwordless_sudo"] = False
 
-    def _apply(self):
-        root_password = self.new_values.pop("root_password", None)
-        root_password_confirm = self.new_values.pop("root_password_confirm", None)
-        passwordless_sudo = self.new_values.pop("passwordless_sudo", None)
+        return raw_settings
 
-        self.values = {
-            k: v for k, v in self.values.items() if k not in self.virtual_settings
-        }
-        self.new_values = {
-            k: v for k, v in self.new_values.items() if k not in self.virtual_settings
-        }
-
-        assert all(v not in self.future_values for v in self.virtual_settings)
+    def _apply(
+        self,
+        form: "FormModel",
+        previous_settings: dict[str, Any],
+        exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+    ) -> None:
+        root_password = form.get("root_password", None)
+        root_password_confirm = form.get("root_password_confirm", None)
+        passwordless_sudo = form.get("passwordless_sudo", None)
 
         if root_password and root_password.strip():
             if root_password != root_password_confirm:
@@ -243,15 +259,20 @@ class SettingsConfigPanel(ConfigPanel):
                 {"sudoOption": ["!authenticate"] if passwordless_sudo else []},
             )
 
-        super()._apply()
-
-        settings = {
-            k: v for k, v in self.future_values.items() if self.values.get(k) != v
+        # First save settings except virtual + default ones
+        super()._apply(form, previous_settings, exclude=self.virtual_settings)
+        next_settings = {
+            k: v
+            for k, v in form.dict(exclude=self.virtual_settings).items()
+            if previous_settings.get(k) != v
         }
-        for setting_name, value in settings.items():
+
+        for setting_name, value in next_settings.items():
             try:
+                # FIXME not sure to understand why we need the previous value if
+                # updated_settings has already been filtered
                 trigger_post_change_hook(
-                    setting_name, self.values.get(setting_name), value
+                    setting_name, previous_settings.get(setting_name), value
                 )
             except Exception as e:
                 logger.error(f"Post-change hook for setting failed : {e}")

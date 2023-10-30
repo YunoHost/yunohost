@@ -502,11 +502,26 @@ def _get_relative_name_for_dns_zone(domain, base_dns_zone):
 def _get_registrar_config_section(domain):
     from lexicon.providers.auto import _relevant_provider_for_domain
 
-    registrar_infos = {
-        "name": m18n.n(
-            "registrar_infos"
-        ),  # This is meant to name the config panel section, for proper display in the webadmin
-    }
+    registrar_infos = OrderedDict(
+        {
+            "name": m18n.n(
+                "registrar_infos"
+            ),  # This is meant to name the config panel section, for proper display in the webadmin
+            "registrar": OrderedDict(
+                {
+                    "readonly": True,
+                    "visible": False,
+                    "default": None,
+                }
+            ),
+            "infos": OrderedDict(
+                {
+                    "type": "alert",
+                    "style": "info",
+                }
+            ),
+        }
+    )
 
     dns_zone = _get_dns_zone_for_domain(domain)
 
@@ -519,61 +534,35 @@ def _get_registrar_config_section(domain):
         else:
             parent_domain_link = parent_domain
 
-        registrar_infos["registrar"] = OrderedDict(
-            {
-                "type": "alert",
-                "style": "info",
-                "ask": m18n.n(
-                    "domain_dns_registrar_managed_in_parent_domain",
-                    parent_domain=parent_domain,
-                    parent_domain_link=parent_domain_link,
-                ),
-                "value": "parent_domain",
-            }
+        registrar_infos["registrar"]["default"] = "parent_domain"
+        registrar_infos["infos"]["ask"] = m18n.n(
+            "domain_dns_registrar_managed_in_parent_domain",
+            parent_domain=parent_domain,
+            parent_domain_link=parent_domain_link,
         )
-        return OrderedDict(registrar_infos)
+        return registrar_infos
 
     # TODO big project, integrate yunohost's dynette as a registrar-like provider
     # TODO big project, integrate other dyndns providers such as netlib.re, or cf the list of dyndns providers supported by cloudron...
     if is_yunohost_dyndns_domain(dns_zone):
-        registrar_infos["registrar"] = OrderedDict(
-            {
-                "type": "alert",
-                "style": "success",
-                "ask": m18n.n("domain_dns_registrar_yunohost"),
-                "value": "yunohost",
-            }
-        )
-        return OrderedDict(registrar_infos)
+        registrar_infos["registrar"]["default"] = "yunohost"
+        registrar_infos["infos"]["style"] = "success"
+        registrar_infos["infos"]["ask"] = m18n.n("domain_dns_registrar_yunohost")
+
+        return registrar_infos
     elif is_special_use_tld(dns_zone):
-        registrar_infos["registrar"] = OrderedDict(
-            {
-                "type": "alert",
-                "style": "info",
-                "ask": m18n.n("domain_dns_conf_special_use_tld"),
-                "value": None,
-            }
-        )
+        registrar_infos["infos"]["ask"] = m18n.n("domain_dns_conf_special_use_tld")
 
     try:
         registrar = _relevant_provider_for_domain(dns_zone)[0]
     except ValueError:
-        registrar_infos["registrar"] = OrderedDict(
-            {
-                "type": "alert",
-                "style": "warning",
-                "ask": m18n.n("domain_dns_registrar_not_supported"),
-                "value": None,
-            }
-        )
+        registrar_infos["registrar"]["default"] = None
+        registrar_infos["infos"]["ask"] = m18n.n("domain_dns_registrar_not_supported")
+        registrar_infos["infos"]["style"] = "warning"
     else:
-        registrar_infos["registrar"] = OrderedDict(
-            {
-                "type": "alert",
-                "style": "info",
-                "ask": m18n.n("domain_dns_registrar_supported", registrar=registrar),
-                "value": registrar,
-            }
+        registrar_infos["registrar"]["default"] = registrar
+        registrar_infos["infos"]["ask"] = m18n.n(
+            "domain_dns_registrar_supported", registrar=registrar
         )
 
         TESTED_REGISTRARS = ["ovh", "gandi"]
@@ -601,7 +590,7 @@ def _get_registrar_config_section(domain):
             infos["optional"] = infos.get("optional", "False")
         registrar_infos.update(registrar_credentials)
 
-    return OrderedDict(registrar_infos)
+    return registrar_infos
 
 
 def _get_registar_settings(domain):
