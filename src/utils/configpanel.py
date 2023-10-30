@@ -345,14 +345,14 @@ class ConfigPanel:
                 "defaults": {"version": 1.0},
             },
             "panels": {
-                "properties": ["name", "services", "actions", "help"],
+                "properties": ["name", "services", "actions", "help", "bind"],
                 "defaults": {
                     "services": [],
                     "actions": {"apply": {"en": "Apply"}},
                 },
             },
             "sections": {
-                "properties": ["name", "services", "optional", "help", "visible"],
+                "properties": ["name", "services", "optional", "help", "visible", "bind"],
                 "defaults": {
                     "name": "",
                     "services": [],
