@@ -306,7 +306,7 @@ class BaseOption(BaseModel):
 
     ! IMPORTANT: as for Panels and Sections you have to choose an id, but this one should be unique in all this document, even if the question is in an other panel.
 
-    #### Examples
+    #### Example
 
     ```toml
     [section.my_option_id]
@@ -325,32 +325,7 @@ class BaseOption(BaseModel):
 
     #### Properties
 
-    - `type`:
-        - readonly types:
-            -  [`display_text`](#option-display_text)
-            -  [`markdown`](#option-markdown)
-            -  [`alert`](#option-alert)
-            -  [`button`](#option-button)
-        - inputs types:
-            -  [`string`](#option-string)
-            -  [`text`](#option-text)
-            -  [`password`](#option-password)
-            -  [`color`](#option-color)
-            -  [`number`](#option-number)
-            -  [`range`](#option-range)
-            -  [`boolean`](#option-boolean)
-            -  [`date`](#option-date)
-            -  [`time`](#option-time)
-            -  [`email`](#option-email)
-            -  [`path`](#option-path)
-            -  [`url`](#option-url)
-            -  [`file`](#option-file)
-            -  [`select`](#option-select)
-            -  [`tags`](#option-tags)
-            -  [`domain`](#option-domain)
-            -  [`app`](#option-app)
-            -  [`user`](#option-user)
-            -  [`group`](#option-group)
+    - `type`: the actual type of the option, such as 'markdown', 'password', 'number', 'email', ...
     - `ask`: `Translation` (default to the option's `id` if not defined):
         - text to display as the option's label for inputs or text to display for readonly options
         - in config panels, questions are displayed on the left side and therefore have not much space to be rendered. Therefore, it is better to use a short question, and use the `help` property to provide additional details if necessary.
@@ -445,7 +420,7 @@ class DisplayTextOption(BaseReadonlyOption):
     """
     Display simple multi-line content.
 
-    #### Examples
+    #### Example
 
     ```toml
     [section.my_option_id]
@@ -462,7 +437,7 @@ class MarkdownOption(BaseReadonlyOption):
     Display markdown multi-line content.
     Markdown is currently only rendered in the web-admin
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "display_text"
@@ -485,7 +460,7 @@ class AlertOption(BaseReadonlyOption):
     Alerts displays a important message with a level of severity.
     You can use markdown in `ask` but will only be rendered in the web-admin.
 
-    #### Examples
+    #### Example
 
     ```toml
     [section.my_option_id]
@@ -496,7 +471,7 @@ class AlertOption(BaseReadonlyOption):
     ```
     #### Properties
 
-    - [common properties](#common-option-properties)
+    - [common properties](#common-properties)
     - `style`: any of `"success|info|warning|danger"` (default: `"info"`)
     - `icon` (optional): any icon name from [Fork Awesome](https://forkaweso.me/Fork-Awesome/icons/)
         - Currently only displayed in the web-admin
@@ -526,7 +501,7 @@ class ButtonOption(BaseReadonlyOption):
     Every options defined in an action section (a config panel section with at least one `button`) is guaranted to be shown/asked to the user and available in `scripts/config`'s scope.
     [check examples in advanced use cases](#actions).
 
-    #### Examples
+    #### Example
 
     ```toml
     [section.my_option_id]
@@ -548,7 +523,7 @@ class ButtonOption(BaseReadonlyOption):
 
     #### Properties
 
-    - [common properties](#common-option-properties)
+    - [common properties](#common-properties)
         - `bind`: forced to `"null"`
     - `style`: any of `"success|info|warning|danger"` (default: `"success"`)
     - `enabled`: `JSExpression` or `bool` (default: `true`)
@@ -580,14 +555,14 @@ class BaseInputOption(BaseOption):
     """
     Rest of the option types available are considered `inputs`.
 
-    #### Examples
+    #### Example
 
     ```toml
     [section.my_option_id]
     type = "string"
     # …any common props… +
     optional = false
-    redact = False
+    redact = false
     default = "some default string"
     help = "You can enter almost anything!"
     example = "an example string"
@@ -596,7 +571,7 @@ class BaseInputOption(BaseOption):
 
     #### Properties
 
-    - [common properties](#common-option-properties)
+    - [common properties](#common-properties)
     - `optional`: `bool` (default: `false`, but `true` in config panels)
     - `redact`: `bool` (default: `false`), to redact the value in the logs when the value contain private information
     - `default`: depends on `type`, the default value to assign to the option
@@ -757,7 +732,7 @@ class StringOption(BaseStringOption):
     """
     Ask for a simple string.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "string"
@@ -780,7 +755,7 @@ class TextOption(BaseStringOption):
     Ask for a multiline string.
     Renders as a `textarea` in the web-admin and by opening a text editor on the CLI.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "text"
@@ -803,7 +778,7 @@ class PasswordOption(BaseInputOption):
     Ask for a password.
     The password is tested as a regular user password (at least 8 chars)
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "password"
@@ -855,7 +830,7 @@ class ColorOption(BaseInputOption):
     Ask for a color represented as a hex value (with possibly an alpha channel).
     Renders as color picker in the web-admin and as a prompt that accept named color like `yellow` in CLI.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "color"
@@ -901,7 +876,7 @@ class NumberOption(BaseInputOption):
     """
     Ask for a number (an integer).
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "number"
@@ -976,7 +951,7 @@ class BooleanOption(BaseInputOption):
     Ask for a boolean.
     Renders as a switch in the web-admin and a yes/no prompt in CLI.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "boolean"
@@ -1104,7 +1079,7 @@ class DateOption(BaseInputOption):
 
     Can also take a timestamp as value that will output as an ISO date string.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "date"
@@ -1134,7 +1109,7 @@ class TimeOption(BaseInputOption):
     Ask for an hour in the form `"22:35"`.
     Renders as a date-picker in the web-admin and a regular prompt in CLI.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "time"
@@ -1167,7 +1142,7 @@ class EmailOption(BaseInputOption):
     """
     Ask for an email. Validation made with [python-email-validator](https://github.com/JoshData/python-email-validator)
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "email"
@@ -1187,7 +1162,7 @@ class WebPathOption(BaseStringOption):
     """
     Ask for an web path (the part of an url after the domain). Used by default in app install to define from where the app will be accessible.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "path"
@@ -1235,7 +1210,7 @@ class URLOption(BaseStringOption):
     """
     Ask for any url.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "url"
@@ -1259,7 +1234,7 @@ class FileOption(BaseInputOption):
     Ask for file.
     Renders a file prompt in the web-admin and ask for a path in CLI.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "file"
@@ -1387,7 +1362,7 @@ class SelectOption(BaseChoicesOption):
     Ask for value from a limited set of values.
     Renders as a regular `<select/>` in the web-admin and as a regular prompt in CLI with autocompletion of `choices`.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "select"
@@ -1415,7 +1390,7 @@ class TagsOption(BaseChoicesOption):
 
     This output as a coma separated list of strings `"one,two,three"`
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "tags"
@@ -1520,7 +1495,7 @@ class DomainOption(BaseChoicesOption):
     Ask for a user domain.
     Renders as a select in the web-admin and as a regular prompt in CLI with autocompletion of registered domains.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "domain"
@@ -1574,7 +1549,7 @@ class AppOption(BaseChoicesOption):
     Ask for a user app.
     Renders as a select in the web-admin and as a regular prompt in CLI with autocompletion of installed apps.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "app"
@@ -1627,7 +1602,7 @@ class UserOption(BaseChoicesOption):
     Ask for a user.
     Renders as a select in the web-admin and as a regular prompt in CLI with autocompletion of available usernames.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "user"
@@ -1687,7 +1662,7 @@ class GroupOption(BaseChoicesOption):
     Ask for a group.
     Renders as a select in the web-admin and as a regular prompt in CLI with autocompletion of available groups.
 
-    #### Examples
+    #### Example
     ```toml
     [section.my_option_id]
     type = "group"

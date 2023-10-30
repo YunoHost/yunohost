@@ -85,13 +85,13 @@ class ContainerModel(BaseModel):
 
 class SectionModel(ContainerModel, OptionsModel):
     """
-    Group options. Sections are `dict`s defined inside a Panel and require a unique id (in the below example, the id is `customization` prepended by the panel's id `main`). Keep in mind that this combined id will be used in CLI to refer to the section, so choose something short and meaningfull. Also make sure to not make a typo in the panel id, which would implicitly create an other entire panel.
+    Sections are, basically, options grouped together. Sections are `dict`s defined inside a Panel and require a unique id (in the below example, the id is `customization` prepended by the panel's id `main`). Keep in mind that this combined id will be used in CLI to refer to the section, so choose something short and meaningfull. Also make sure to not make a typo in the panel id, which would implicitly create an other entire panel.
 
     If at least one `button` is present it then become an action section.
     Options in action sections are not considered settings and therefor are not saved, they are more like parameters that exists only during the execution of an action.
     FIXME i'm not sure we have this in code.
 
-    ### Examples
+    #### Examples
     ```toml
     [main]
 
@@ -106,7 +106,7 @@ class SectionModel(ContainerModel, OptionsModel):
             # …refer to Options doc
     ```
 
-    ### Properties
+    #### Properties
     - `name` (optional): `Translation` or `str`, displayed as the section's title if any
     - `help`: `Translation` or `str`, text to display before the first option
     - `services` (optional): `list` of services names to `reload-or-restart` when any option's value contained in the section changes
@@ -163,9 +163,9 @@ class SectionModel(ContainerModel, OptionsModel):
 
 class PanelModel(ContainerModel):
     """
-    Group sections. Panels are `dict`s defined inside a ConfigPanel file and require a unique id (in the below example, the id is `main`). Keep in mind that this id will be used in CLI to refer to the panel, so choose something short and meaningfull.
+    Panels are, basically, sections grouped together. Panels are `dict`s defined inside a ConfigPanel file and require a unique id (in the below example, the id is `main`). Keep in mind that this id will be used in CLI to refer to the panel, so choose something short and meaningfull.
 
-    ### Examples
+    #### Examples
     ```toml
     [main]
     name.en = "Main configuration"
@@ -176,7 +176,7 @@ class PanelModel(ContainerModel):
         [main.customization]
         # …refer to Sections doc
     ```
-    ### Properties
+    #### Properties
     - `name`: `Translation` or `str`, displayed as the panel title
     - `help` (optional): `Translation` or `str`, text to display before the first section
     - `services` (optional): `list` of services names to `reload-or-restart` when any option's value contained in the panel changes
@@ -217,58 +217,23 @@ class PanelModel(ContainerModel):
 
 class ConfigPanelModel(BaseModel):
     """
-    Configuration panels allows admins to manage parameters or runs actions for which the upstream's app doesn't provide any appropriate UI itself. It's a good way to reduce manual change on config files and avoid conflicts on it.
+    This is the 'root' level of the config panel toml file
 
-    Those panels can also be used to quickly create interfaces that extend the capabilities of YunoHost (e.g. VPN Client, Hotspost, Borg, etc.).
+    #### Examples
 
-    From a packager perspective, this `config_panel.toml` is coupled to the `scripts/config` script, which may be used to define custom getters/setters/validations/actions. However, most use cases should be covered automagically by the core, thus it may not be necessary to define a scripts/config at all!
-
-    ! Please: Keep in mind the YunoHost spirit, and try to build your panels in such a way as to expose only really useful, "high-level" parameters, and if there are many of them, to relegate those corresponding to rarer use cases to "Advanced" sub-sections. Keep it simple, focus on common needs, don't expect the admins to have 3 PhDs in computer science.
-
-    ### `config_panel.toml`'s principle and general format
-    To create configuration panels for apps, you should at least create a `config_panel.toml` at the root of the package. For more complex cases, this TOML file can be paired with a `config` script inside the scripts directory of your package, which will handle specific controller logic.
-
-    The `config_panel.toml` describes one or several panels, containing sections, each containing questions generally binded to a params in the app's actual configuration files.
-
-    ### Options short keys have to be unique
-    For performance reasons, questions short keys have to be unique in all the `config_panel.toml` file, not just inside its panel or its section. Hence it's not possible to have:
-    ```toml
-    [manual.vpn.server_ip]
-    [advanced.dns.server_ip]
-    ```
-    In which two questions have "real variable name" `is server_ip` and therefore conflict with each other.
-
-    ! Some short keys are forbidden cause it can interfer with config scripts (`old`, `file_hash`, `types`, `binds`, `formats`, `changed`) and you probably should avoid to use common settings name to avoid to bind your question to this settings (e.g. `id`, `install_time`, `mysql_pwd`, `path`, `domain`, `port`, `db_name`, `current_revision`, `admin`)
-
-    ### Supported questions types and properties
-
-    [Learn more about Options](/dev/forms) in their dedicated doc page as those are also used in app install forms and core config panels.
-
-    ### YunoHost community examples
-    - [Check the basic example at the end of this doc](#basic-example)
-    - [Check the example_ynh app toml](https://github.com/YunoHost/example_ynh/blob/master/config_panel.toml.example) and the [basic `scripts/config` example](https://github.com/YunoHost/example_ynh/blob/master/scripts/config)
-    - [Check config panels of other apps](https://grep.app/search?q=version&filter[repo.pattern][0]=YunoHost-Apps&filter[lang][0]=TOML)
-    - [Check `scripts/config` of other apps](https://grep.app/search?q=ynh_app_config_apply&filter[repo.pattern][0]=YunoHost-Apps&filter[lang][0]=Shell)
-
-    ### Examples
     ```toml
     version = 1.0
 
     [config]
     # …refer to Panels doc
     ```
-    ### Properties
+
+    #### Properties
+
     - `version`: `float` (default: `1.0`), version that the config panel supports in terms of features.
     - `i18n` (optional): `str`, an i18n property that let you internationalize options text.
         - However this feature is only available in core configuration panel (like `yunohost domain config`), prefer the use `Translation` in `name`, `help`, etc.
 
-    #### Version
-    Here a small reminder to associate config panel version with YunoHost version.
-
-    | Config | YNH    | Config panel small change log                           |
-    | ------ | ---    | ------------------------------------------------------- |
-    | 0.1    | 3.x    | 0.1 config script not compatible with YNH >= 4.3        |
-    | 1.0    | 4.3.x  | The new config panel system with 'bind' property        |
     """
 
     version: float = CONFIG_PANEL_VERSION_SUPPORTED
