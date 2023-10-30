@@ -188,13 +188,13 @@ ynh_exec_fully_quiet() {
 
 # Execute a command and redirect stderr in /dev/null. Print stderr on error.
 #
-# usage: ynh_exec_stderr_on_error your command and args
+# usage: ynh_exec_and_print_stderr_only_if_error your command and args
 # | arg: command - command to execute
 #
-# Note that you should NOT quote the command but only prefix it with ynh_exec_stderr_on_error
+# Note that you should NOT quote the command but only prefix it with ynh_exec_and_print_stderr_only_if_error
 #
 # Requires YunoHost version 11.2 or higher.
-ynh_exec_stderr_on_error() {
+ynh_exec_and_print_stderr_only_if_error() {
     logfile="$(mktemp)"
     rc=0
     # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
