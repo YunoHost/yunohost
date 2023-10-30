@@ -558,6 +558,7 @@ def _get_registrar_config_section(domain):
     except ValueError:
         registrar_infos["registrar"]["default"] = None
         registrar_infos["infos"]["ask"] = m18n.n("domain_dns_registrar_not_supported")
+        registrar_infos["infos"]["style"] = "warning"
     else:
         registrar_infos["registrar"]["default"] = registrar
         registrar_infos["infos"]["ask"] = m18n.n(
