@@ -84,6 +84,38 @@ class ContainerModel(BaseModel):
 
 
 class SectionModel(ContainerModel, OptionsModel):
+    """
+    Sections are, basically, options grouped together. Sections are `dict`s defined inside a Panel and require a unique id (in the below example, the id is `customization` prepended by the panel's id `main`). Keep in mind that this combined id will be used in CLI to refer to the section, so choose something short and meaningfull. Also make sure to not make a typo in the panel id, which would implicitly create an other entire panel.
+
+    If at least one `button` is present it then become an action section.
+    Options in action sections are not considered settings and therefor are not saved, they are more like parameters that exists only during the execution of an action.
+    FIXME i'm not sure we have this in code.
+
+    #### Examples
+    ```toml
+    [main]
+
+        [main.customization]
+        name.en = "Advanced configuration"
+        name.fr = "Configuration avancée"
+        help = "Every form items in this section are not saved."
+        services = ["__APP__", "nginx"]
+
+            [main.customization.option_id]
+            type = "string"
+            # …refer to Options doc
+    ```
+
+    #### Properties
+    - `name` (optional): `Translation` or `str`, displayed as the section's title if any
+    - `help`: `Translation` or `str`, text to display before the first option
+    - `services` (optional): `list` of services names to `reload-or-restart` when any option's value contained in the section changes
+        - `"__APP__` will refer to the app instance name
+    - `optional`: `bool` (default: `true`), set the default `optional` prop of all Options in the section
+    - `visible`: `bool` or `JSExpression` (default: `true`), allow to conditionally display a section depending on user's answers to previous questions.
+        - Be careful that the `visible` property should only refer to **previous** options's value. Hence, it should not make sense to have a `visible` property on the very first section.
+    """
+
     visible: Union[bool, str] = True
     optional: bool = True
     is_action_section: bool = False
@@ -138,6 +170,28 @@ class SectionModel(ContainerModel, OptionsModel):
 
 
 class PanelModel(ContainerModel):
+    """
+    Panels are, basically, sections grouped together. Panels are `dict`s defined inside a ConfigPanel file and require a unique id (in the below example, the id is `main`). Keep in mind that this id will be used in CLI to refer to the panel, so choose something short and meaningfull.
+
+    #### Examples
+    ```toml
+    [main]
+    name.en = "Main configuration"
+    name.fr = "Configuration principale"
+    help = ""
+    services = ["__APP__", "nginx"]
+
+        [main.customization]
+        # …refer to Sections doc
+    ```
+    #### Properties
+    - `name`: `Translation` or `str`, displayed as the panel title
+    - `help` (optional): `Translation` or `str`, text to display before the first section
+    - `services` (optional): `list` of services names to `reload-or-restart` when any option's value contained in the panel changes
+        - `"__APP__` will refer to the app instance name
+    - `actions`: FIXME not sure what this does
+    """
+
     # FIXME what to do with `actions?
     actions: dict[str, Translation] = {"apply": {"en": "Apply"}}
     sections: list[SectionModel]
@@ -177,6 +231,26 @@ class PanelModel(ContainerModel):
 
 
 class ConfigPanelModel(BaseModel):
+    """
+    This is the 'root' level of the config panel toml file
+
+    #### Examples
+
+    ```toml
+    version = 1.0
+
+    [config]
+    # …refer to Panels doc
+    ```
+
+    #### Properties
+
+    - `version`: `float` (default: `1.0`), version that the config panel supports in terms of features.
+    - `i18n` (optional): `str`, an i18n property that let you internationalize options text.
+        - However this feature is only available in core configuration panel (like `yunohost domain config`), prefer the use `Translation` in `name`, `help`, etc.
+
+    """
+
     version: float = CONFIG_PANEL_VERSION_SUPPORTED
     i18n: Union[str, None] = None
     panels: list[PanelModel]
