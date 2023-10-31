@@ -250,7 +250,7 @@ ynh_install_app_dependencies() {
     # Check for specific php dependencies which requires sury
     # This grep will for example return "7.4" if dependencies is "foo bar php7.4-pwet php-gni"
     # The (?<=php) syntax corresponds to lookbehind ;)
-    local specific_php_version=$(echo $dependencies | grep -oP '(?<=php)[0-9.]+(?=-|\>)' | sort -u)
+    local specific_php_version=$(echo $dependencies | grep -oP '(?<=php)[0-9.]+(?=-|\>|)' | sort -u)
 
     if [[ -n "$specific_php_version" ]]
     then

@@ -381,6 +381,7 @@ def domain_remove(
         dyndns_recovery_password -- Recovery password used at the creation of the DynDNS domain
         ignore_dyndns -- If we just remove the DynDNS domain, without unsubscribing
     """
+    import glob
     from yunohost.hook import hook_callback
     from yunohost.app import app_ssowatconf, app_info, app_remove
     from yunohost.utils.ldap import _get_ldap_interface
@@ -466,14 +467,20 @@ def domain_remove(
         global domain_list_cache
         domain_list_cache = []
 
-    stuff_to_delete = [
-        f"/etc/yunohost/certs/{domain}",
-        f"/etc/yunohost/dyndns/K{domain}.+*",
-        f"{DOMAIN_SETTINGS_DIR}/{domain}.yml",
-    ]
+    # If a password is provided, delete the DynDNS record
+    if dyndns:
+        try:
+            # Actually unsubscribe
+            domain_dyndns_unsubscribe(
+                domain=domain, recovery_password=dyndns_recovery_password
+            )
+        except Exception as e:
+            logger.warning(str(e))
 
-    for stuff in stuff_to_delete:
-        rm(stuff, force=True, recursive=True)
+    rm(f"/etc/yunohost/certs/{domain}", force=True, recursive=True)
+    for key_file in glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*"):
+        rm(key_file, force=True)
+    rm(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml", force=True)
 
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...
@@ -500,13 +507,6 @@ def domain_remove(
     app_ssowatconf()
 
     hook_callback("post_domain_remove", args=[domain])
-
-    # If a password is provided, delete the DynDNS record
-    if dyndns:
-        # Actually unsubscribe
-        domain_dyndns_unsubscribe(
-            domain=domain, recovery_password=dyndns_recovery_password
-        )
 
     logger.success(m18n.n("domain_deleted"))
 
@@ -735,6 +735,19 @@ class DomainConfigPanel(ConfigPanel):
                     domain=self.entity,
                     other_app=app_map(raw=True)[self.entity]["/"]["id"],
                 )
+        if (
+            "recovery_password" in self.new_values
+            and self.new_values["recovery_password"]
+        ):
+            domain_dyndns_set_recovery_password(
+                self.entity, self.new_values["recovery_password"]
+            )
+        # Do not save password in yaml settings
+        if "recovery_password" in self.values:
+            del self.values["recovery_password"]
+        if "recovery_password" in self.new_values:
+            del self.new_values["recovery_password"]
+        assert "recovery_password" not in self.future_values
 
         portal_options = [
             "default_app",

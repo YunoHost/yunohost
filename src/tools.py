@@ -156,7 +156,7 @@ def tools_postinstall(
     force_diskspace=False,
     overwrite_root_password=True,
 ):
-    from yunohost.dyndns import _dyndns_available
+    from yunohost.dyndns import _dyndns_available, dyndns_unsubscribe
     from yunohost.utils.dns import is_yunohost_dyndns_domain
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
@@ -218,7 +218,14 @@ def tools_postinstall(
             )
         else:
             if not available:
-                raise YunohostValidationError("dyndns_unavailable", domain=domain)
+                if dyndns_recovery_password:
+                    # Try to unsubscribe the domain so it can be subscribed again
+                    # If successful, it will be resubscribed with the same recovery password
+                    dyndns_unsubscribe(
+                        domain=domain, recovery_password=dyndns_recovery_password
+                    )
+                else:
+                    raise YunohostValidationError("dyndns_unavailable", domain=domain)
 
     if os.system("iptables -V >/dev/null 2>/dev/null") != 0:
         raise YunohostValidationError(

@@ -21,7 +21,7 @@ from typing import List
 
 from moulinette.utils.filesystem import read_file
 
-SPECIAL_USE_TLDS = ["local", "localhost", "onion", "test"]
+SPECIAL_USE_TLDS = ["home.arpa", "local", "localhost", "onion", "test"]
 
 YNH_DYNDNS_DOMAINS = ["nohost.me", "noho.st", "ynh.fr"]
 

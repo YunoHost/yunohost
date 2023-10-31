@@ -27,7 +27,6 @@ from logging import getLogger
 from moulinette import Moulinette, m18n
 from moulinette.core import MoulinetteError
 from moulinette.utils.filesystem import write_to_file, rm, chown, chmod
-from moulinette.utils.network import download_json
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.domain import _get_maindomain
@@ -63,19 +62,28 @@ def _dyndns_available(domain):
     Returns:
         True if the domain is available, False otherwise.
     """
+    import requests  # lazy loading this module for performance reasons
+
     logger.debug(f"Checking if domain {domain} is available on {DYNDNS_PROVIDER} ...")
 
     try:
-        r = download_json(
-            f"https://{DYNDNS_PROVIDER}/test/{domain}", expected_status_code=None
-        )
+        r = requests.get(f"https://{DYNDNS_PROVIDER}/test/{domain}", timeout=30)
     except MoulinetteError as e:
         logger.error(str(e))
         raise YunohostError(
             "dyndns_could_not_check_available", domain=domain, provider=DYNDNS_PROVIDER
         )
 
-    return r == f"Domain {domain} is available"
+    if r.status_code == 200:
+        return r.text.strip('"') == f"Domain {domain} is available"
+    elif r.status_code == 409:
+        return False
+    elif r.status_code == 429:
+        raise YunohostValidationError("dyndns_too_many_requests")
+    else:
+        raise YunohostError(
+            "dyndns_could_not_check_available", domain=domain, provider=DYNDNS_PROVIDER
+        )
 
 
 @is_unit_operation(exclude=["recovery_password"])
@@ -94,13 +102,25 @@ def dyndns_subscribe(operation_logger, domain=None, recovery_password=None):
             "dyndns_domain_not_provided", domain=domain, provider=DYNDNS_PROVIDER
         )
 
-    # Verify if domain is available
-    if not _dyndns_available(domain):
-        raise YunohostValidationError("dyndns_unavailable", domain=domain)
-
     # Check adding another dyndns domain is still allowed
     if not is_subscribing_allowed():
         raise YunohostValidationError("domain_dyndns_already_subscribed")
+
+    # Verify if domain is available
+    if not _dyndns_available(domain):
+        # Prompt for a password if running in CLI and no password provided
+        if not recovery_password and Moulinette.interface.type == "cli":
+            logger.warning(m18n.n("ask_dyndns_recovery_password_explain_unavailable"))
+            recovery_password = Moulinette.prompt(
+                m18n.n("ask_dyndns_recovery_password"), is_password=True
+            )
+
+        if recovery_password:
+            # Try to unsubscribe the domain so it can be subscribed again
+            # If successful, it will be resubscribed with the same recovery password
+            dyndns_unsubscribe(domain=domain, recovery_password=recovery_password)
+        else:
+            raise YunohostValidationError("dyndns_unavailable", domain=domain)
 
     # Prompt for a password if running in CLI and no password provided
     if not recovery_password and Moulinette.interface.type == "cli":
@@ -252,9 +272,11 @@ def dyndns_unsubscribe(operation_logger, domain, recovery_password=None):
         # in /etc/yunohost/dyndns
         regen_conf(["yunohost"])
     elif r.status_code == 403:
-        raise YunohostError("dyndns_unsubscribe_denied")
+        raise YunohostValidationError("dyndns_unsubscribe_denied")
     elif r.status_code == 409:
-        raise YunohostError("dyndns_unsubscribe_already_unsubscribed")
+        raise YunohostValidationError("dyndns_unsubscribe_already_unsubscribed")
+    elif r.status_code == 429:
+        raise YunohostValidationError("dyndns_too_many_requests")
     else:
         raise YunohostError(
             "dyndns_unsubscribe_failed",

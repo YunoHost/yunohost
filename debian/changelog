@@ -4,6 +4,24 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
  
+yunohost (11.2.5) stable; urgency=low
+
+  - debian: fix conflict with openssl that is too harsh, openssl version on bullseye is now 1.1.1w, bookworm has 3.x (e8700bfe7)
+  - dyndns: tweak dyndns subscribe/unsubscribe for dyndns recovery password integration in webadmin ([#1715](https://github.com/yunohost/yunohost/pull/1715))
+  - helpers: ynh_setup_source: check and re-download a prefetched file that doesn't match the checksum (3dfab89c1)
+  - helpers: ynh_setup_source: fix misleading example ([#1714](https://github.com/yunohost/yunohost/pull/1714))
+  - helpers: php/apt: allow `phpX.Y` as sole dependency for `$phpversion=X.Y` ([#1722](https://github.com/yunohost/yunohost/pull/1722))
+  - apps: fix typo in log statement ([#1709](https://github.com/yunohost/yunohost/pull/1709))
+  - apps: allow system users to send mails from IPv6 localhost. ([#1710](https://github.com/yunohost/yunohost/pull/1710))
+  - apps: add "support_purge" to app info for webadmin integration ([#1719](https://github.com/yunohost/yunohost/pull/1719))
+  - diagnosis: be more flexible regarding accepted values for DMARC DNS records ([#1713](https://github.com/yunohost/yunohost/pull/1713))
+  - dns: add home.arpa as special TLD (#1718) (bb097fedc)
+  - i18n: Translations updated for Basque, French
+
+  Thanks to all contributors <3 ! (axolotle, Florian, Kayou, orhtej2, Pierre de La Morinerie, ppr, stanislas, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 09 Oct 2023 23:16:13 +0200
+
 yunohost (11.2.4) stable; urgency=low
 
   - doc: Improve --help for 'yunohost app install' ([#1702](https://github.com/yunohost/yunohost/pull/1702))
