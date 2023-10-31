@@ -31,10 +31,12 @@ from yunohost.log import is_unit_operation
 from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_settings
 
 if TYPE_CHECKING:
-    from yunohost.log import OperationLogger
+    from typing import cast
 
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
+    from moulinette.utils.log import MoulinetteLogger
+    from yunohost.log import OperationLogger
     from yunohost.utils.configpanel import (
         ConfigPanelGetMode,
         ConfigPanelModel,
@@ -43,7 +45,9 @@ if TYPE_CHECKING:
     )
     from yunohost.utils.form import FormModel
 
-logger = getLogger("yunohost.settings")
+    logger = cast(MoulinetteLogger, getLogger("yunohost.settings"))
+else:
+    logger = getLogger("yunohost.settings")
 
 SETTINGS_PATH = "/etc/yunohost/settings.yml"
 

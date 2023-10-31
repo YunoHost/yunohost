@@ -51,7 +51,11 @@ if TYPE_CHECKING:
     from yunohost.utils.form import FormModel, Hooks
     from yunohost.log import OperationLogger
 
-logger = getLogger("yunohost.configpanel")
+if TYPE_CHECKING:
+    from moulinette.utils.log import MoulinetteLogger
+    logger = cast(MoulinetteLogger, getLogger("yunohost.configpanel"))
+else:
+    logger = getLogger("yunohost.configpanel")
 
 
 # ╭───────────────────────────────────────────────────────╮
@@ -145,7 +149,7 @@ class SectionModel(ContainerModel, OptionsModel):
         is_action_section = any(
             [option["type"] == OptionType.button for option in options]
         )
-        ContainerModel.__init__(
+        ContainerModel.__init__(  # type: ignore
             self,
             id=id,
             name=name,
@@ -221,7 +225,7 @@ class PanelModel(ContainerModel):
         **kwargs,
     ) -> None:
         sections = [data | {"id": name} for name, data in kwargs.items()]
-        super().__init__(
+        super().__init__(  # type: ignore
             id=id, name=name, services=services, help=help, bind=bind, sections=sections
         )
 
