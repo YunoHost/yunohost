@@ -108,11 +108,11 @@ _ynh_app_config_apply_one() {
         else
             local bind_after=""
             local bind_key_="$(echo "$bind" | cut -d: -f1)"
-            bind_key_=${bind_key_:-$short_setting}
             if [[ "$bind_key_" == *">"* ]]; then
                 bind_after="$(echo "${bind_key_}" | cut -d'>' -f1)"
                 bind_key_="$(echo "${bind_key_}" | cut -d'>' -f2)"
             fi
+            bind_key_=${bind_key_:-$short_setting}
             local bind_file="$(echo "$bind" | cut -d: -f2 | sed s@__INSTALL_DIR__@$install_dir@ | sed s@__FINALPATH__@$final_path@ | sed s/__APP__/$app/)"
 
             ynh_backup_if_checksum_is_different --file="$bind_file"
@@ -139,21 +139,49 @@ loaded_toml = toml.loads(file_content, _dict=OrderedDict)
 
 for panel_name, panel in loaded_toml.items():
     if not isinstance(panel, dict): continue
+    bind_panel = panel.get('bind')
     for section_name, section in panel.items():
         if not isinstance(section, dict): continue
+        bind_section = section.get('bind')
+        if not bind_section:
+            bind_section = bind_panel
+        elif bind_section[-1] == ":" and bind_panel and ":" in bind_panel:
+            regex, bind_panel_file = bind_panel.split(":")
+            if ">" in bind_section:
+                bind_section = bind_section + bind_panel_file
+            else:
+                bind_section = regex + bind_section + bind_panel_file
+            
         for name, param in section.items():
             if not isinstance(param, dict):
                 continue
-            print(';'.join([
+
+            bind = param.get('bind')
+
+            if not bind:
+                if bind_section:
+                    bind = bind_section
+                else:
+                    bind = 'settings'
+            elif bind[-1] == ":" and bind_section and ":" in bind_section:
+                regex, bind_file = bind_section.split(":")
+                if ">" in bind:
+                    bind = bind + bind_file
+                else:
+                    bind = regex + bind + bind_file
+            if bind == "settings" and param.get('type', 'string') == 'file':
+                bind = 'null'
+
+            print('|'.join([
                 name,
                 param.get('type', 'string'),
-                param.get('bind', 'settings' if param.get('type', 'string') != 'file' else 'null')
+                bind
                 ]))
 EOL
     )
     for line in $lines; do
         # Split line into short_setting, type and bind
-        IFS=';' read short_setting type bind <<<"$line"
+        IFS='|' read short_setting type bind <<<"$line"
         binds[${short_setting}]="$bind"
         types[${short_setting}]="$type"
         file_hash[${short_setting}]=""

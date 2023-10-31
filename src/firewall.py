@@ -256,7 +256,7 @@ def firewall_reload(skip_upnp=False):
 
     # IPv4
     try:
-        process.check_output("iptables -w -L")
+        process.check_output("iptables -n -w -L")
     except process.CalledProcessError as e:
         logger.debug(
             "iptables seems to be not available, it outputs:\n%s",
@@ -289,7 +289,7 @@ def firewall_reload(skip_upnp=False):
 
     # IPv6
     try:
-        process.check_output("ip6tables -L")
+        process.check_output("ip6tables -n -L")
     except process.CalledProcessError as e:
         logger.debug(
             "ip6tables seems to be not available, it outputs:\n%s",
