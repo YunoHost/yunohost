@@ -119,6 +119,7 @@ class SectionModel(ContainerModel, OptionsModel):
     visible: Union[bool, str] = True
     optional: bool = True
     is_action_section: bool = False
+    bind: Union[str, None] = None
 
     class Config:
         @staticmethod
@@ -137,6 +138,7 @@ class SectionModel(ContainerModel, OptionsModel):
         help: Union[Translation, None] = None,
         visible: Union[bool, str] = True,
         optional: bool = True,
+        bind: Union[str, None] = None,
         **kwargs,
     ) -> None:
         options = self.options_dict_to_list(kwargs, optional=optional)
@@ -150,6 +152,7 @@ class SectionModel(ContainerModel, OptionsModel):
             services=services,
             help=help,
             visible=visible,
+            bind=bind,
             options=options,
             is_action_section=is_action_section,
         )
@@ -194,6 +197,7 @@ class PanelModel(ContainerModel):
 
     # FIXME what to do with `actions?
     actions: dict[str, Translation] = {"apply": {"en": "Apply"}}
+    bind: Union[str, None] = None
     sections: list[SectionModel]
 
     class Config:
@@ -213,11 +217,12 @@ class PanelModel(ContainerModel):
         name: Union[Translation, None] = None,
         services: list[str] = [],
         help: Union[Translation, None] = None,
+        bind: Union[str, None] = None,
         **kwargs,
     ) -> None:
         sections = [data | {"id": name} for name, data in kwargs.items()]
         super().__init__(
-            id=id, name=name, services=services, help=help, sections=sections
+            id=id, name=name, services=services, help=help, bind=bind, sections=sections
         )
 
     def translate(self, i18n_key: Union[str, None] = None) -> None:
