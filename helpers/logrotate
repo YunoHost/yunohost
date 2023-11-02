@@ -99,6 +99,7 @@ $logfile {
 EOF
     mkdir --parents $(dirname "$logfile")                              # Create the log directory, if not exist
     cat ${app}-logrotate | $customtee /etc/logrotate.d/$app >/dev/null # Append this config to the existing config file, or replace the whole config file (depending on $customtee)
+	chmod 644 "$logfile"                                               # Make sure permissions are correct (otherwise the config file could be ignored and the corresponding logs never rotated)
 }
 
 # Remove the app's logrotate config.
