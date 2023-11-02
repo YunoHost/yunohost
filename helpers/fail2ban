@@ -102,6 +102,11 @@ ignoreregex =
     ynh_add_config --template="f2b_jail.conf" --destination="/etc/fail2ban/jail.d/$app.conf"
     ynh_add_config --template="f2b_filter.conf" --destination="/etc/fail2ban/filter.d/$app.conf"
 
+    # Create the logfile if it doesn't exist, as fail2ban require an existing file
+    if [ ! -f "$logpath" ]; then
+        touch "$logpath"
+    fi
+
     ynh_systemd_action --service_name=fail2ban --action=reload --line_match="(Started|Reloaded) Fail2Ban Service" --log_path=systemd
 
     local fail2ban_error="$(journalctl --no-hostname --unit=fail2ban | tail --lines=50 | grep "WARNING.*$app.*")"
