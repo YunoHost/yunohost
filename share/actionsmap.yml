@@ -617,7 +617,7 @@ domain:
                     help: Domains for which to renew the certificates
                     nargs: "*"
                 --force:
-                    help: Ignore the validity threshold (30 days)
+                    help: Ignore the validity threshold (15 days)
                     action: store_true
                 --email:
                     help: Send an email to root with logs if some renewing fails
