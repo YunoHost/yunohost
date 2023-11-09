@@ -735,19 +735,11 @@ class DomainConfigPanel(ConfigPanel):
                     domain=self.entity,
                     other_app=app_map(raw=True)[self.entity]["/"]["id"],
                 )
-        if (
-            "recovery_password" in self.new_values
-            and self.new_values["recovery_password"]
-        ):
+
+        if next_settings.get("recovery_password", None):
             domain_dyndns_set_recovery_password(
-                self.entity, self.new_values["recovery_password"]
+                self.entity, form["recovery_password"]
             )
-        # Do not save password in yaml settings
-        if "recovery_password" in self.values:
-            del self.values["recovery_password"]
-        if "recovery_password" in self.new_values:
-            del self.new_values["recovery_password"]
-        assert "recovery_password" not in self.future_values
 
         portal_options = [
             "default_app",
@@ -780,7 +772,7 @@ class DomainConfigPanel(ConfigPanel):
                 str(portal_settings_path), portal_settings, sort_keys=True, indent=4
             )
 
-        super()._apply(form, previous_settings)
+        super()._apply(form, previous_settings, exclude={"recovery_password"})
 
         # Reload ssowat if default app changed
         if "default_app" in next_settings:
