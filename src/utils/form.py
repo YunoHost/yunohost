@@ -1418,12 +1418,15 @@ class TagsOption(BaseChoicesOption):
         - `default`: `""`, obviously the default has to be empty or an available `choices` item.
     - `pattern` (optional): `Pattern`, a regex to match all the values against
     - `choices` (optional): a (coma separated) list of values
+    - `icon` (optional): any icon name from [Fork Awesome](https://forkaweso.me/Fork-Awesome/icons/)
+        - Currently only displayed in the web-admin
     """
 
     type: Literal[OptionType.tags] = OptionType.tags
     filter: Literal[None] = None
     choices: Union[list[str], None] = None
     pattern: Union[Pattern, None] = None
+    icon: Union[str, None] = None
     default: Union[str, list[str], None]
     _annotation = str
 
