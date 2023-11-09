@@ -215,8 +215,8 @@ class SettingsConfigPanel(ConfigPanel):
 
         return raw_config
 
-    def _get_raw_settings(self, config: "ConfigPanelModel") -> "RawSettings":
-        raw_settings = super()._get_raw_settings(config)
+    def _get_raw_settings(self) -> "RawSettings":
+        raw_settings = super()._get_raw_settings()
 
         # Specific logic for those settings who are "virtual" settings
         # and only meant to have a custom setter mapped to tools_rootpw

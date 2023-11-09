@@ -694,7 +694,7 @@ class ConfigPanel:
 
         return read_toml(self.config_path)
 
-    def _get_raw_settings(self, config: ConfigPanelModel) -> "RawSettings":
+    def _get_raw_settings(self) -> "RawSettings":
         if not self.save_path or not os.path.exists(self.save_path):
             return {}
             # raise YunohostValidationError("config_no_settings")
@@ -733,7 +733,7 @@ class ConfigPanel:
     def _get_partial_raw_settings_and_mutate_config(
         self, config: ConfigPanelModel
     ) -> tuple[ConfigPanelModel, "RawSettings"]:
-        raw_settings = self._get_raw_settings(config)
+        raw_settings = self._get_raw_settings()
         # Save `raw_settings` for diff at `_apply`
         self.raw_settings = raw_settings
         values = {}

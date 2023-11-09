@@ -75,7 +75,7 @@ from yunohost.app_catalog import (  # noqa
 if TYPE_CHECKING:
     from pydantic.typing import AbstractSetIntStr, MappingIntStrAny
 
-    from yunohost.utils.configpanel import ConfigPanelModel, RawSettings
+    from yunohost.utils.configpanel import RawSettings
     from yunohost.utils.form import FormModel
 
 logger = getLogger("yunohost.app")
@@ -1809,7 +1809,7 @@ class AppConfigPanel(ConfigPanel):
     config_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/config_panel.toml")
     settings_must_be_defined: bool = True
 
-    def _get_raw_settings(self, config: "ConfigPanelModel") -> "RawSettings":
+    def _get_raw_settings(self) -> "RawSettings":
         return self._call_config_script("show")
 
     def _apply(
