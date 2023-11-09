@@ -617,6 +617,19 @@ def domain_url_available(domain, path):
     return len(_get_conflicting_apps(domain, path)) == 0
 
 
+def _get_raw_domain_settings(domain):
+    """Get domain settings directly from file.
+    Be carefull, domain settings are saved in `"diff"` mode (i.e. default settings are not saved)
+    so the file may be completely empty
+    """
+    _assert_domain_exists(domain)
+    path = DomainConfigPanel.save_path_tpl.format(entity=domain)
+    if os.path.exists(path):
+        return read_yaml(path)
+
+    return {}
+
+
 def domain_config_get(domain, key="", full=False, export=False):
     """
     Display a domain configuration
@@ -738,7 +751,7 @@ class DomainConfigPanel(ConfigPanel):
 
         if next_settings.get("recovery_password", None):
             domain_dyndns_set_recovery_password(
-                self.entity, form["recovery_password"]
+                self.entity, next_settings["recovery_password"]
             )
 
         portal_options = [
@@ -749,8 +762,7 @@ class DomainConfigPanel(ConfigPanel):
             "portal_theme",
         ]
         if _get_parent_domain_of(self.entity, topest=True) is None and any(
-            option in next_settings
-            for option in portal_options
+            option in next_settings for option in portal_options
         ):
             from yunohost.portal import PORTAL_SETTINGS_DIR
 

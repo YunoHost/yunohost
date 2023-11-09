@@ -128,7 +128,7 @@ def app_info(app, full=False, upgradable=False):
     """
     Get info for a specific app
     """
-    from yunohost.domain import domain_config_get
+    from yunohost.domain import _get_raw_domain_settings
     from yunohost.permission import user_permission_list
 
     _assert_is_installed(app)
@@ -229,7 +229,7 @@ def app_info(app, full=False, upgradable=False):
 
     if ret["is_webapp"]:
         ret["is_default"] = (
-            domain_config_get(settings["domain"], "feature.app.default_app") == app
+            _get_raw_domain_settings(settings["domain"]).get("default_app") == app
         )
 
     ret["supports_change_url"] = os.path.exists(
