@@ -225,7 +225,7 @@ def app_info(app, full=False, upgradable=False):
                 rendered_notifications[name][lang] = rendered_content
         ret["manifest"]["notifications"][step] = rendered_notifications
 
-    ret["is_webapp"] = "domain" in settings and "path" in settings
+    ret["is_webapp"] = "domain" in settings and settings["domain"] and "path" in settings
 
     if ret["is_webapp"]:
         ret["is_default"] = (
