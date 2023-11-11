@@ -199,8 +199,10 @@ def portal_update(
 
             try:
                 ldap_interface.validate_uniqueness({"mail": mail})
-            except Exception as e:
-                raise YunohostError("user_update_failed", user=username, error=e)
+            except YunohostError:
+                raise YunohostValidationError(
+                    "mail_already_exists", mail=mail, path=f"mailalias[{index}]"
+                )
 
             if domain not in domains:
                 raise YunohostValidationError(
