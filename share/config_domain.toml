@@ -15,8 +15,8 @@ name = "Features"
         type = "string"
         default = "YunoHost"
 
-        # [feature.portal.portal_logo]
-        # type = "file"
+        [feature.portal.portal_logo]
+        type = "file"
 
         [feature.portal.portal_theme]
         type = "select"
