@@ -39,7 +39,7 @@ def _get_ldap_interface():
     global _ldap_interface
 
     if _ldap_interface is None:
-        _ldap_interface = LDAPInterface(user="root")
+        _ldap_interface = LDAPInterface()
 
     return _ldap_interface
 
@@ -76,12 +76,17 @@ USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
 
 class LDAPInterface:
 
-    def __init__(self, user="root", password=None):
+    def __init__(self, user=None, password=None):
 
-        if user == "root":
-            logger.debug("initializing root ldap interface")
-            self.userdn = ROOTDN
-            self._connect = lambda con: con.sasl_non_interactive_bind_s("EXTERNAL")
+        if user is None:
+            if os.getuid() == 0:
+                logger.debug(f"initializing root ldap interface")
+                self.userdn = ROOTDN
+                self._connect = lambda con: con.sasl_non_interactive_bind_s("EXTERNAL")
+            else:
+                logger.debug(f"initializing anonymous ldap interface")
+                self.userdn = ""
+                self._connect = lambda con: None
         else:
             logger.debug("initializing user ldap interface")
             self.userdn = USERDN.format(username=user)
