@@ -1317,9 +1317,10 @@ class FileOption(BaseInputOption):
 class BaseChoicesOption(BaseInputOption):
     # FIXME probably forbid choices to be None?
     filter: Union[JSExpression, None] = None  # filter before choices
-    choices: Union[dict[str, Any], list[Any], None]
+    # We do not declare `choices` here to be able to declare other fields before `choices` and acces their values in `choices` validators
+    # choices: Union[dict[str, Any], list[Any], None]
 
-    @validator("choices", pre=True)
+    @validator("choices", pre=True, check_fields=False)
     def parse_comalist_choices(value: Any) -> Union[dict[str, Any], list[Any], None]:
         if isinstance(value, str):
             values = [value.strip() for value in value.split(",")]
