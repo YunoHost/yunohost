@@ -1277,6 +1277,24 @@ class FileOption(BaseInputOption):
     _annotation = str  # TODO could be Path at some point
     _upload_dirs: set[str] = set()
 
+    @property
+    def _validators(self) -> dict[str, Callable]:
+        return {
+            "pre": self._value_pre_validator,
+            "post": (
+                self._bash_value_post_validator
+                if self.mode == "bash"
+                else self._python_value_post_validator
+            ),
+        }
+
+    def _get_field_attrs(self) -> dict[str, Any]:
+        attrs = super()._get_field_attrs()
+
+        attrs["bind"] = self.bind
+
+        return attrs
+
     @classmethod
     def clean_upload_dirs(cls) -> None:
         # Delete files uploaded from API
@@ -1285,28 +1303,33 @@ class FileOption(BaseInputOption):
                 shutil.rmtree(upload_dir)
 
     @classmethod
-    def _value_post_validator(cls, value: Any, field: "ModelField") -> str:
+    def _base_value_post_validator(cls, value: Any, field: "ModeField") -> str:
+        import mimetypes
+        from pathlib import Path
+        from magic import Magic
         from base64 import b64decode
 
+        if Moulinette.interface.type != "api":
+            path = Path(value)
+            if not (path.exists() or path.is_absolute() or path.is_file()):
+                raise YunohostValidationError("File doesn't exists", raw_msg=True)
+            content = path.read_bytes()
+        else:
+            content = b64decode(value)
+
+        mimetype = Magic(mime=True).from_buffer(content)
+
+        ext = mimetypes.guess_extension(mimetype)
+
+        return content, ext
+
+    @classmethod
+    def _bash_value_post_validator(cls, value: Any, field: "ModelField") -> str:
+        """File handling for "bash" config panels (app)"""
         if not value:
             return ""
 
-        def is_file_path(s):
-            return (
-                isinstance(s, str)
-                and s.startswith("/")
-                and os.path.exists(s)
-                and os.path.isfile(s)
-            )
-
-        file_exists = is_file_path(value)
-        if Moulinette.interface.type != "api" and not file_exists:
-            # FIXME error
-            raise YunohostValidationError("File doesn't exists", raw_msg=True)
-        elif file_exists:
-            content = read_file(str(value), file_mode="rb")
-        else:
-            content = b64decode(value)
+        content, _ = cls._base_value_post_validator(value, field)
 
         upload_dir = tempfile.mkdtemp(prefix="ynh_filequestion_")
         _, file_path = tempfile.mkstemp(dir=upload_dir)
@@ -1318,6 +1341,27 @@ class FileOption(BaseInputOption):
         write_to_file(file_path, content, file_mode="wb")
 
         return file_path
+
+    @classmethod
+    def _python_value_post_validator(cls, value: Any, field: "ModelField") -> str:
+        """File handling for "python" config panels"""
+
+        from pathlib import Path
+        import hashlib
+
+        if not value:
+            return ""
+
+        content, ext = cls._base_value_post_validator(value, field)
+        bind = field.field_info.extra["bind"]
+
+        m = hashlib.sha256()
+        m.update(content)
+        sha256sum = m.hexdigest()
+        filename = Path(bind.format(filename=sha256sum, ext=ext))
+        filename.write_bytes(content)
+
+        return str(filename)
 
 
 # ─ CHOICES ───────────────────────────────────────────────
