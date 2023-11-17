@@ -1272,7 +1272,7 @@ class FileOption(BaseInputOption):
     type: Literal[OptionType.file] = OptionType.file
     # `FilePath` for CLI (path must exists and must be a file)
     # `bytes` for API (a base64 encoded file actually)
-    accept: Union[str, None] = ""  # currently only used by the web-admin
+    accept: Union[list[str], None] = None  # currently only used by the web-admin
     default: Union[str, None]
     _annotation = str  # TODO could be Path at some point
     _upload_dirs: set[str] = set()
@@ -1290,6 +1290,9 @@ class FileOption(BaseInputOption):
 
     def _get_field_attrs(self) -> dict[str, Any]:
         attrs = super()._get_field_attrs()
+
+        if self.accept:
+            attrs["accept"] = self.accept  # extra
 
         attrs["bind"] = self.bind
 
@@ -1317,7 +1320,13 @@ class FileOption(BaseInputOption):
         else:
             content = b64decode(value)
 
+        accept_list = field.field_info.extra.get("accept")
         mimetype = Magic(mime=True).from_buffer(content)
+
+        if accept_list and mimetype not in accept_list:
+            raise YunohostValidationError(
+                f"Unsupported image type : {mimetype}", raw=True
+            )
 
         ext = mimetypes.guess_extension(mimetype)
 
