@@ -296,6 +296,7 @@ Context = dict[str, Any]
 Translation = Union[dict[str, str], str]
 JSExpression = str
 Values = dict[str, Any]
+Mode = Literal["python", "bash"]
 
 
 class Pattern(BaseModel):
@@ -359,6 +360,7 @@ class BaseOption(BaseModel):
 
     type: OptionType
     id: str
+    mode: Mode = "bash"  # TODO use "python" as default mode with AppConfigPanel setuping it to "bash"
     ask: Union[Translation, None]
     readonly: bool = False
     visible: Union[JSExpression, bool] = True
@@ -626,6 +628,13 @@ class BaseInputOption(BaseOption):
         This may be dynamic based on constraints.
         """
         return self._annotation
+
+    @property
+    def _validators(self) -> dict[str, Callable]:
+        return {
+            "pre": self._value_pre_validator,
+            "post": self._value_post_validator,
+        }
 
     def _get_field_attrs(self) -> dict[str, Any]:
         """
@@ -1886,11 +1895,12 @@ def build_form(
             continue  # filter out non input options
 
         options_as_fields[option.id] = option._as_dynamic_model_field()
+        option_validators = option._validators
 
         for step in ("pre", "post"):
             validators[f"{option.id}_{step}_validator"] = validator(
                 option.id, allow_reuse=True, pre=step == "pre"
-            )(getattr(option, f"_value_{step}_validator"))
+            )(option_validators[step])
 
     return cast(
         Type[FormModel],
