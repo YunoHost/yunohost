@@ -5,6 +5,7 @@ i18n = "domain_config"
 name = "Features"
 
     [feature.portal]
+    # Only available for "topest" domains
     name = "Portal"
 
         [feature.portal.show_other_domains_apps]
@@ -17,6 +18,9 @@ name = "Features"
 
         [feature.portal.portal_logo]
         type = "file"
+        accept = ["image/png", "image/jpeg", "image/svg+xml"]
+        mode = "python"
+        bind = "/usr/share/yunohost/portallogos/{filename}{ext}"
 
         [feature.portal.portal_theme]
         type = "select"

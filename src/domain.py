@@ -762,26 +762,6 @@ class DomainConfigPanel(ConfigPanel):
             "portal_theme",
         ]
 
-        if "portal_logo" in next_settings:
-
-            import magic, hashlib
-            with open(next_settings["portal_logo"], "rb") as f:
-                file_content = f.read()
-            mimetype = magic.Magic(mime=True).from_buffer(file_content)
-            if mimetype not in ["image/png", "image/jpeg"]:
-                raise YunohostValidationError(f"Unsupported image type : {mimetype}", raw=True)
-            ext = mimetype.split("/")[-1]
-            m = hashlib.sha256()
-            m.update(file_content)
-            sha256sum = m.hexdigest()
-            filename = f"/usr/share/yunohost/portallogos/{sha256sum}.{ext}"
-            with open(filename, "wb") as f:
-                f.write(file_content)
-            next_settings["portal_logo"] = filename
-            # FIXME : the previous line doesn't actually set anything in the actual form ...
-            # ... and calling `form.portal_logo = filename` would actually make it sort of "re-upload" the file to another place ...
-            # not sure how to address this issue ...
-
         if _get_parent_domain_of(self.entity, topest=True) is None and any(
             option in next_settings for option in portal_options
         ):
@@ -792,6 +772,27 @@ class DomainConfigPanel(ConfigPanel):
             # FIXME remove those from the config panel saved values?
 
             portal_values = form.dict(include=set(portal_options))
+
+            if "portal_logo" in next_settings:
+                if previous_settings.get("portal_logo"):
+                    try:
+                        os.remove(previous_settings["portal_logo"])
+                    except:
+                        logger.warning(
+                            f"Coulnd't remove previous logo file, maybe the file was already deleted, path: {previous_settings['portal_logo']}"
+                        )
+
+                if next_settings["portal_logo"]:
+                    # Save the file content as `{mimetype}:{base64content}` in portal settings
+                    # while keeping the file path in the domain settings
+                    from base64 import b64encode
+                    from magic import Magic
+
+                    file_content = Path(portal_values["portal_logo"]).read_bytes()
+                    mimetype = Magic(mime=True).from_buffer(file_content)
+                    portal_values["portal_logo"] = (
+                        mimetype + ":" + b64encode(file_content).decode("utf-8")
+                    )
 
             portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{self.entity}.json")
             portal_settings: dict[str, Any] = {"apps": {}}
