@@ -105,8 +105,8 @@ ignoreregex =
     mkdir -p "/var/log/$app"
     if [ ! -f "$logpath" ]; then
         touch "$logpath"
-        chown -R "$app:$app" "$logpath"
-        chmod -R u=rwX,g=rX,o= "$logpath"
+        chown -R "$app:$app" "/var/log/$app"
+        chmod -R u=rwX,g=rX,o= "/var/log/$app"
     fi
 
     ynh_systemd_action --service_name=fail2ban --action=reload --line_match="(Started|Reloaded) Fail2Ban Service" --log_path=systemd
