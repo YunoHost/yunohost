@@ -23,7 +23,7 @@
     "ask_password": "Mot de passe",
     "backup_app_failed": "Impossible de sauvegarder {app}",
     "backup_archive_app_not_found": "{app} n'a pas été trouvée dans l'archive de la sauvegarde",
-    "backup_archive_name_exists": "Une archive de sauvegarde avec ce nom existe déjà.",
+    "backup_archive_name_exists": "Une archive de sauvegarde avec le nom '{name}' existe déjà.",
     "backup_archive_name_unknown": "L'archive locale de sauvegarde nommée '{name}' est inconnue",
     "backup_archive_open_failed": "Impossible d'ouvrir l'archive de la sauvegarde",
     "backup_cleaning_failed": "Impossible de nettoyer le dossier temporaire de sauvegarde",
