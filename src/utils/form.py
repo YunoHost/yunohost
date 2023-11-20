@@ -941,9 +941,11 @@ class UserOption(BaseChoicesOption):
 
         super().__init__(question)
 
+        users = user_list(fields = ["username", "fullname", "mail", "mail-alias"])["users"]
+
         self.choices = {
             username: f"{infos['fullname']} ({infos['mail']})"
-            for username, infos in user_list()["users"].items()
+            for username, infos in users.items()
         }
 
         if not self.choices:
@@ -958,7 +960,7 @@ class UserOption(BaseChoicesOption):
             # Should be replaced by something like "any first user we find in the admin group"
             root_mail = "root@%s" % _get_maindomain()
             for user in self.choices.keys():
-                if root_mail in user_info(user).get("mail-aliases", []):
+                if root_mail in users[user].get("mail-aliases", []):
                     self.default = user
                     break
 
