@@ -53,8 +53,6 @@
 # You can find some more explainations about how to make a regex here :
 # https://www.fail2ban.org/wiki/index.php/MANUAL_0_8#Filters
 #
-# Note that the logfile need to exist before to call this helper !!
-#
 # To validate your regex you can test with this command:
 # ```
 # fail2ban-regex /var/log/YOUR_LOG_FILE_PATH /etc/fail2ban/filter.d/YOUR_APP.conf
@@ -101,6 +99,15 @@ ignoreregex =
 
     ynh_add_config --template="f2b_jail.conf" --destination="/etc/fail2ban/jail.d/$app.conf"
     ynh_add_config --template="f2b_filter.conf" --destination="/etc/fail2ban/filter.d/$app.conf"
+
+    # Create the folder and logfile if they doesn't exist,
+    # as fail2ban require an existing logfile before configuration
+    mkdir -p "/var/log/$app"
+    if [ ! -f "$logpath" ]; then
+        touch "$logpath"
+        chown -R "$app:$app" "/var/log/$app"
+        chmod -R u=rwX,g=rX,o= "/var/log/$app"
+    fi
 
     ynh_systemd_action --service_name=fail2ban --action=reload --line_match="(Started|Reloaded) Fail2Ban Service" --log_path=systemd
 
