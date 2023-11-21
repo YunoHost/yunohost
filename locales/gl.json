@@ -21,7 +21,7 @@
     "backup_archive_cant_retrieve_info_json": "Non se puido cargar a info do arquivo '{archive}'... Non se obtivo o ficheiro info.json (ou é un json non válido).",
     "backup_archive_open_failed": "Non se puido abrir o arquivo de copia de apoio",
     "backup_archive_name_unknown": "Arquivo local de copia de apoio descoñecido con nome '{name}'",
-    "backup_archive_name_exists": "Xa existe un arquivo de copia con este nome.",
+    "backup_archive_name_exists": "Xa existe un ficheiro de copia con nome '{name}'.",
     "backup_archive_broken_link": "Non se puido acceder ao arquivo da copia (ligazón rota a {path})",
     "backup_archive_app_not_found": "Non se atopa {app} no arquivo da copia",
     "backup_applying_method_tar": "Creando o arquivo TAR da copia...",
