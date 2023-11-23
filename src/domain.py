@@ -760,6 +760,8 @@ class DomainConfigPanel(ConfigPanel):
             "portal_title",
             "portal_logo",
             "portal_theme",
+            "portal_user_intro",
+            "portal_public_intro",
         ]
 
         if _get_parent_domain_of(self.entity, topest=True) is None and any(
