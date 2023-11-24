@@ -4,6 +4,27 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
  
+yunohost (11.2.6) stable; urgency=low
+
+  - mail: Improve dovecots rspamd integration wrt junk/spam folder naming ([#1731](https://github.com/yunohost/yunohost/pull/1731))
+  - mail: add redis database configuration in rspamd ([#1730](https://github.com/yunohost/yunohost/pull/1730))
+  - mail: let dovecot create folders on first login ([#1735](https://github.com/yunohost/yunohost/pull/1735))
+  - apps: Support packages_from_raw_bash in extra packages ([#1729](https://github.com/yunohost/yunohost/pull/1729))
+  - apps/configpanel: support bind 'heritage', avoid repeating the same bind statement for multiple options ([#1706](https://github.com/yunohost/yunohost/pull/1706))
+  - helpers: Upgrade n to version 9.2.0 ([#1727](https://github.com/yunohost/yunohost/pull/1727))
+  - helpers: Update docker-image-extract to support more recent docker images ([#1733](https://github.com/yunohost/yunohost/pull/1733))
+  - helpers: Add ynh_exec_and_print_stderr_only_if_error that only prints stderr when command fails ([#1723](https://github.com/yunohost/yunohost/pull/1723))
+  - helpers: fix logrotate config file permission ([#1736](https://github.com/yunohost/yunohost/pull/1736))
+  - helpers: make sure logfile exist when calling fail2ban helper ([#1737](https://github.com/yunohost/yunohost/pull/1737))
+  - backup: Add post_app_restore hook ([#1708](https://github.com/yunohost/yunohost/pull/1708))
+  - perf: speedup firewall reload ([#1734](https://github.com/yunohost/yunohost/pull/1734))
+  - perf: prevent unecessary queries when building UserOption form ([#1738](https://github.com/yunohost/yunohost/pull/1738))
+  - i18n: Translations updated for Basque, Catalan, French, Galician, Italian, Slovak, Spanish
+
+  Thanks to all contributors <3 ! (chri2, Chris Vogel, cristian amoyao, Éric Gaspar, Félix Piédallu, Jorge-vitrubio.net, José M, Jose Riha, ljf, mh4ckt3mh4ckt1c4s, OniriCorpe, Sebastian Gumprich, selfhoster1312, Tharyrok, Thomas, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 24 Nov 2023 22:01:50 +0100
+
 yunohost (11.2.5) stable; urgency=low
 
   - debian: fix conflict with openssl that is too harsh, openssl version on bullseye is now 1.1.1w, bookworm has 3.x (e8700bfe7)
