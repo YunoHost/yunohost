@@ -941,7 +941,9 @@ class UserOption(BaseChoicesOption):
 
         super().__init__(question)
 
-        users = user_list(fields = ["username", "fullname", "mail", "mail-alias"])["users"]
+        users = user_list(fields=["username", "fullname", "mail", "mail-alias"])[
+            "users"
+        ]
 
         self.choices = {
             username: f"{infos['fullname']} ({infos['mail']})"

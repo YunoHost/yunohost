@@ -352,7 +352,14 @@ class ConfigPanel:
                 },
             },
             "sections": {
-                "properties": ["name", "services", "optional", "help", "visible", "bind"],
+                "properties": [
+                    "name",
+                    "services",
+                    "optional",
+                    "help",
+                    "visible",
+                    "bind",
+                ],
                 "defaults": {
                     "name": "",
                     "services": [],
