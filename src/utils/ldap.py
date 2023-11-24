@@ -80,11 +80,11 @@ class LDAPInterface:
 
         if user is None:
             if os.getuid() == 0:
-                logger.debug(f"initializing root ldap interface")
+                logger.debug("initializing root ldap interface")
                 self.userdn = ROOTDN
                 self._connect = lambda con: con.sasl_non_interactive_bind_s("EXTERNAL")
             else:
-                logger.debug(f"initializing anonymous ldap interface")
+                logger.debug("initializing anonymous ldap interface")
                 self.userdn = ""
                 self._connect = lambda con: None
         else:

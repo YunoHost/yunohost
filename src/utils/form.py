@@ -54,7 +54,7 @@ from pydantic.types import constr
 
 from moulinette import Moulinette, m18n
 from moulinette.interfaces.cli import colorize
-from moulinette.utils.filesystem import read_file, read_yaml, write_to_file
+from moulinette.utils.filesystem import read_yaml, write_to_file
 from yunohost.log import OperationLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.i18n import _value_for_locale
@@ -749,7 +749,7 @@ class BaseStringOption(BaseInputOption):
 
 
 class StringOption(BaseStringOption):
-    """
+    r"""
     Ask for a simple string.
 
     #### Example
@@ -1250,7 +1250,7 @@ class URLOption(BaseStringOption):
 
 
 class FileOption(BaseInputOption):
-    """
+    r"""
     Ask for file.
     Renders a file prompt in the web-admin and ask for a path in CLI.
 
@@ -1306,7 +1306,7 @@ class FileOption(BaseInputOption):
                 shutil.rmtree(upload_dir)
 
     @classmethod
-    def _base_value_post_validator(cls, value: Any, field: "ModeField") -> str:
+    def _base_value_post_validator(cls, value: Any, field: "ModelField") -> str:
         import mimetypes
         from pathlib import Path
         from magic import Magic
