@@ -1306,7 +1306,9 @@ class FileOption(BaseInputOption):
                 shutil.rmtree(upload_dir)
 
     @classmethod
-    def _base_value_post_validator(cls, value: Any, field: "ModelField") -> str:
+    def _base_value_post_validator(
+        cls, value: Any, field: "ModelField"
+    ) -> tuple[bytes, str | None]:
         import mimetypes
         from pathlib import Path
         from magic import Magic
