@@ -105,7 +105,7 @@
     "backup_archive_broken_link": "Could not access the backup archive (broken link to {path})",
     "backup_archive_cant_retrieve_info_json": "Could not load info for archive '{archive}'... The info.json file cannot be retrieved (or is not a valid json).",
     "backup_archive_corrupted": "It looks like the backup archive '{archive}' is corrupted : {error}",
-    "backup_archive_name_exists": "A backup archive with this name already exists.",
+    "backup_archive_name_exists": "A backup archive with the name '{name}' already exists.",
     "backup_archive_name_unknown": "Unknown local backup archive named '{name}'",
     "backup_archive_open_failed": "Could not open the backup archive",
     "backup_archive_system_part_not_available": "System part '{part}' unavailable in this backup",

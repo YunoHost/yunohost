@@ -1722,16 +1722,14 @@ class UserOption(BaseChoicesOption):
         cls, value: Union[str, None], values: Values
     ) -> Union[str, None]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        from yunohost.domain import _get_maindomain
-        from yunohost.user import user_list, user_info
+        #from yunohost.domain import _get_maindomain
+        #from yunohost.user import user_list, user_info
 
         if value is None:
-            # FIXME: this code is obsolete with the new admins group
+            # FIXME : in the past we looked for the user holding the "root@" alias
+            # but it's now obsolete...
             # Should be replaced by something like "any first user we find in the admin group"
-            root_mail = "root@%s" % _get_maindomain()
-            for user in user_list()["users"].keys():
-                if root_mail in user_info(user).get("mail-aliases", []):
-                    return user
+            pass
 
         return value
 

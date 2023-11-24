@@ -2208,7 +2208,7 @@ def backup_create(
 
     # Validate there is no archive with the same name
     if name and name in backup_list()["archives"]:
-        raise YunohostValidationError("backup_archive_name_exists")
+        raise YunohostValidationError("backup_archive_name_exists", name=name)
 
     # By default we backup using the tar method
     if not methods:
