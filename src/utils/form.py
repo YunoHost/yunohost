@@ -936,7 +936,7 @@ class UserOption(BaseChoicesOption):
     type: Literal[OptionType.user] = OptionType.user
 
     def __init__(self, question):
-        from yunohost.user import user_list, user_info
+        from yunohost.user import user_list
         from yunohost.domain import _get_maindomain
 
         super().__init__(question)
