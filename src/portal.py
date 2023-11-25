@@ -221,7 +221,6 @@ def portal_update(
         ]
 
     if newpassword:
-
         # FIXME: this ldap stuff should be handled in utils/ldap.py imho ?
 
         # Check that current password is valid
@@ -257,9 +256,11 @@ def portal_update(
 
     # FIXME: Here we could want to trigger "post_user_update" hook but hooks has to
     # be run as root
-
-    return {
-        "fullname": new_attr_dict["cn"][0],
-        "mailalias": new_attr_dict["mail"][1:],
-        "mailforward": new_attr_dict["maildrop"][1:],
-    }
+    if all(field is not None for field in (fullname, mailalias, mailforward)):
+        return {
+            "fullname": new_attr_dict["cn"][0],
+            "mailalias": new_attr_dict["mail"][1:],
+            "mailforward": new_attr_dict["maildrop"][1:],
+        }
+    else:
+        return {}
