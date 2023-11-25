@@ -1363,8 +1363,18 @@ class FileOption(BaseInputOption):
         if not value:
             return ""
 
-        content, ext = cls._base_value_post_validator(value, field)
         bind = field.field_info.extra["bind"]
+
+        # to avoid "filename too long" with b64 content
+        if len(value.encode("utf-8")) < 255:
+            # Check if value is an already hashed and saved filepath
+            path = Path(value)
+            if path.exists() and value == bind.format(
+                filename=path.stem, ext=path.suffix
+            ):
+                return value
+
+        content, ext = cls._base_value_post_validator(value, field)
 
         m = hashlib.sha256()
         m.update(content)
