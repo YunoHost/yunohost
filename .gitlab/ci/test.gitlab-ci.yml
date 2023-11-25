@@ -3,6 +3,7 @@
     - systemctl restart nginx || journalctl -u nginx -n 50 --no-pager --no-hostname
     - DEBIAN_FRONTEND=noninteractive SUDO_FORCE_REMOVE=yes apt --assume-yes -o Dpkg::Options::="--force-confold" --allow-downgrades install ${CI_PROJECT_DIR}/*.deb
     - systemctl restart nginx || journalctl -u nginx -n 50 --no-pager --no-hostname
+    - pip3 install pytest-profiling --break-system-packages # Tmp stuff to profile tests idk
 
 .test-stage:
   stage: test
@@ -37,7 +38,7 @@ full-tests:
     - *install_debs
     - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace
   script:
-    - python3 -m pytest --cov=yunohost tests/ src/tests/ --junitxml=report.xml
+    - python3 -m pytest --profile --cov=yunohost tests/ src/tests/ --junitxml=report.xml
   needs:
       - job: build-yunohost
         artifacts: true
@@ -53,7 +54,7 @@ full-tests:
 test-actionmap:
   extends: .test-stage
   script:
-    - python3 -m pytest tests/test_actionmap.py
+    - python3 -m pytest --profile tests/test_actionmap.py
   only:
     changes:
       - share/actionsmap.yml
@@ -70,7 +71,7 @@ test-helpers:
 test-domains:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_domains.py
+    - python3 -m pytest --profile src/tests/test_domains.py
   only:
     changes:
       - src/domain.py
@@ -78,7 +79,7 @@ test-domains:
 test-dns:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_dns.py
+    - python3 -m pytest --profile src/tests/test_dns.py
   only:
     changes:
       - src/dns.py
@@ -87,7 +88,7 @@ test-dns:
 test-apps:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_apps.py
+    - python3 -m pytest --profile src/tests/test_apps.py
   only:
     changes:
       - src/app.py
@@ -95,7 +96,7 @@ test-apps:
 test-appscatalog:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_app_catalog.py
+    - python3 -m pytest --profile src/tests/test_app_catalog.py
   only:
     changes:
       - src/app_calalog.py
@@ -103,7 +104,7 @@ test-appscatalog:
 test-appurl:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_appurl.py
+    - python3 -m pytest --profile src/tests/test_appurl.py
   only:
     changes:
       - src/app.py
@@ -111,7 +112,7 @@ test-appurl:
 test-questions:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_questions.py
+    - python3 -m pytest --profile src/tests/test_questions.py
   only:
     changes:
       - src/utils/config.py
@@ -119,7 +120,7 @@ test-questions:
 test-app-config:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_app_config.py
+    - python3 -m pytest --profile src/tests/test_app_config.py
   only:
     changes:
       - src/app.py
@@ -128,7 +129,7 @@ test-app-config:
 test-app-resources:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_app_resources.py
+    - python3 -m pytest --profile src/tests/test_app_resources.py
   only:
     changes:
       - src/app.py
@@ -137,7 +138,7 @@ test-app-resources:
 test-changeurl:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_changeurl.py
+    - python3 -m pytest --profile src/tests/test_changeurl.py
   only:
     changes:
       - src/app.py
@@ -145,7 +146,7 @@ test-changeurl:
 test-backuprestore:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_backuprestore.py
+    - python3 -m pytest --profile src/tests/test_backuprestore.py
   only:
     changes:
       - src/backup.py
@@ -153,7 +154,7 @@ test-backuprestore:
 test-permission:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_permission.py
+    - python3 -m pytest --profile src/tests/test_permission.py
   only:
     changes:
       - src/permission.py
@@ -161,7 +162,7 @@ test-permission:
 test-settings:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_settings.py
+    - python3 -m pytest --profile src/tests/test_settings.py
   only:
     changes:
       - src/settings.py
@@ -169,7 +170,7 @@ test-settings:
 test-user-group:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_user-group.py
+    - python3 -m pytest --profile src/tests/test_user-group.py
   only:
     changes:
       - src/user.py
@@ -177,7 +178,7 @@ test-user-group:
 test-regenconf:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_regenconf.py
+    - python3 -m pytest --profile src/tests/test_regenconf.py
   only:
     changes:
       - src/regenconf.py
@@ -185,7 +186,7 @@ test-regenconf:
 test-service:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_service.py
+    - python3 -m pytest --profile src/tests/test_service.py
   only:
     changes:
       - src/service.py
@@ -193,7 +194,7 @@ test-service:
 test-ldapauth:
   extends: .test-stage
   script:
-    - python3 -m pytest src/tests/test_ldapauth.py
+    - python3 -m pytest --profile src/tests/test_ldapauth.py
   only:
     changes:
       - src/authenticators/*.py
