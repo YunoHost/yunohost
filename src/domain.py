@@ -774,11 +774,14 @@ class DomainConfigPanel(ConfigPanel):
             # FIXME remove those from the config panel saved values?
 
             portal_values = form.dict(include=set(portal_options))
+            # Remove logo from values else filename will replace b64 content
+            portal_values.pop("portal_logo")
 
             if "portal_logo" in next_settings:
                 if previous_settings.get("portal_logo"):
                     try:
                         os.remove(previous_settings["portal_logo"])
+                        portal_values["portal_logo"] = ''
                     except:
                         logger.warning(
                             f"Coulnd't remove previous logo file, maybe the file was already deleted, path: {previous_settings['portal_logo']}"
@@ -790,7 +793,7 @@ class DomainConfigPanel(ConfigPanel):
                     from base64 import b64encode
                     from magic import Magic
 
-                    file_content = Path(portal_values["portal_logo"]).read_bytes()
+                    file_content = Path(next_settings["portal_logo"]).read_bytes()
                     mimetype = Magic(mime=True).from_buffer(file_content)
                     portal_values["portal_logo"] = (
                         mimetype + ":" + b64encode(file_content).decode("utf-8")
