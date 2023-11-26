@@ -120,11 +120,11 @@ def evaluate_simple_ast(node, context=None):
     ):  # <left> <operator> <right>
         left = evaluate_simple_ast(node.left, context)
         right = evaluate_simple_ast(node.right, context)
-        if type(node.op) == ast.Add:
+        if type(node.op) is ast.Add:
             if isinstance(left, str) or isinstance(right, str):  # support 'I am ' + 42
                 left = str(left)
                 right = str(right)
-        elif type(left) != type(right):  # support "111" - "1" -> 110
+        elif type(left) is type(right):  # support "111" - "1" -> 110
             left = float(left)
             right = float(right)
 
@@ -144,7 +144,7 @@ def evaluate_simple_ast(node, context=None):
                 left = float(left)
                 right = float(right)
             except ValueError:
-                return type(operator) == ast.NotEq
+                return type(operator) is ast.NotEq
         try:
             return operators[type(operator)](left, right)
         except TypeError:  # support "e" > 1 -> False like in JS
@@ -1732,8 +1732,8 @@ class UserOption(BaseChoicesOption):
         cls, value: Union[str, None], values: Values
     ) -> Union[str, None]:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        #from yunohost.domain import _get_maindomain
-        #from yunohost.user import user_list, user_info
+        # from yunohost.domain import _get_maindomain
+        # from yunohost.user import user_list, user_info
 
         if value is None:
             # FIXME : in the past we looked for the user holding the "root@" alias

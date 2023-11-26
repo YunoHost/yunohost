@@ -1,4 +1,3 @@
-import sys
 import ast
 import datetime
 import subprocess
@@ -22,8 +21,8 @@ def get_current_commit():
 
 current_commit = get_current_commit()
 
-def print_config_panel_docs():
 
+def print_config_panel_docs():
     fname = "../src/utils/configpanel.py"
     content = open(fname).read()
 
@@ -40,7 +39,6 @@ def print_config_panel_docs():
         ]
     )
 
-
     print("## Configuration panel structure")
 
     for c in ConfigPanelClasses:
@@ -54,7 +52,6 @@ def print_config_panel_docs():
 
 
 def print_form_doc():
-
     fname = "../src/utils/form.py"
     content = open(fname).read()
 
@@ -63,7 +60,9 @@ def print_form_doc():
     tree = ast.parse(content)
 
     OptionClasses = [
-        c for c in tree.body if isinstance(c, ast.ClassDef) and c.name.endswith("Option")
+        c
+        for c in tree.body
+        if isinstance(c, ast.ClassDef) and c.name.endswith("Option")
     ]
 
     OptionDocString = {}
@@ -80,7 +79,11 @@ def print_form_doc():
         elif c.body[1].target.id == "type":
             option_type = c.body[1].value.attr
 
-        generaltype = c.bases[0].id.replace("Option", "").replace("Base", "").lower() if c.bases else None
+        generaltype = (
+            c.bases[0].id.replace("Option", "").replace("Base", "").lower()
+            if c.bases
+            else None
+        )
 
         docstring = ast.get_docstring(c)
         if docstring:
@@ -89,7 +92,10 @@ def print_form_doc():
 #### Properties
 
 - [common properties](#common-properties)"""
-            OptionDocString[option_type] = {"doc": docstring, "generaltype": generaltype}
+            OptionDocString[option_type] = {
+                "doc": docstring,
+                "generaltype": generaltype,
+            }
 
     # Dirty hack to have "BaseOption" as first and "BaseInputOption" as 2nd in list
 
@@ -111,14 +117,18 @@ def print_form_doc():
         elif option_type == "BaseInputOption":
             print("### Common inputs properties")
         else:
-            print(f"### `{option_type}`" + (f" ({infos['generaltype']})" if infos["generaltype"] else ""))
+            print(
+                f"### `{option_type}`"
+                + (f" ({infos['generaltype']})" if infos["generaltype"] else "")
+            )
         print("")
         print(infos["doc"])
         print("")
         print("---")
 
+
 print(
-    f"""---
+    rf"""---
 title: Technical details for config panel structure and form option types
 template: docs
 taxonomy:

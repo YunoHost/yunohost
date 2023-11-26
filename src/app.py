@@ -1939,7 +1939,7 @@ def _set_app_settings(app, settings):
 def _parse_app_version(v):
 
     if v == "?":
-        return (0,0)
+        return (0, 0)
 
     try:
         if "~" in v:

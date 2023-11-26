@@ -27,6 +27,7 @@ logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
 URI = "ldap://localhost:389"
 USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
 
+
 # We want to save the password in the cookie, but we should do so in an encrypted fashion
 # This is needed because the SSO later needs to possibly inject the Basic Auth header
 # which includes the user's password
@@ -41,7 +42,6 @@ USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
 # The result is a string formatted as <password_enc_b64>|<iv_b64>
 # For example: ctl8kk5GevYdaA5VZ2S88Q==|yTAzCx0Gd1+MCit4EQl9lA==
 def encrypt(data):
-
     alg = algorithms.AES(session_secret.encode())
     iv = os.urandom(int(alg.block_size / 8))
 
@@ -53,8 +53,8 @@ def encrypt(data):
     iv_b64 = base64.b64encode(iv).decode()
     return data_enc_b64 + "|" + iv_b64
 
-def decrypt(data_enc_and_iv_b64):
 
+def decrypt(data_enc_and_iv_b64):
     data_enc_b64, iv_b64 = data_enc_and_iv_b64.split("|")
     data_enc = base64.b64decode(data_enc_b64)
     iv = base64.b64decode(iv_b64)
@@ -68,20 +68,16 @@ def decrypt(data_enc_and_iv_b64):
 
 
 class Authenticator(BaseAuthenticator):
-
     name = "ldap_ynhuser"
 
     def _authenticate_credentials(self, credentials=None):
-
         try:
             username, password = credentials.split(":", 1)
         except ValueError:
             raise YunohostError("invalid_credentials")
 
         def _reconnect():
-            con = ldap.ldapobject.ReconnectLDAPObject(
-                URI, retry_max=2, retry_delay=0.5
-            )
+            con = ldap.ldapobject.ReconnectLDAPObject(URI, retry_max=2, retry_delay=0.5)
             con.simple_bind_s(USERDN.format(username=username), password)
             return con
 
@@ -114,7 +110,6 @@ class Authenticator(BaseAuthenticator):
         return {"user": username, "pwd": encrypt(password)}
 
     def set_session_cookie(self, infos):
-
         from bottle import response, request
 
         assert isinstance(infos, dict)
@@ -126,8 +121,10 @@ class Authenticator(BaseAuthenticator):
             # See https://pyjwt.readthedocs.io/en/latest/usage.html#registered-claim-names
             # for explanations regarding nbf, exp
             "nbf": int(datetime.datetime.now().timestamp()),
-            "exp": int(datetime.datetime.now().timestamp()) + (7 * 24 * 3600),  # One week validity   # FIXME : does it mean the session suddenly expires after a week ? Can we somehow auto-renew it at every usage or something ?
-            "host": request.get_header('host'),
+            # FIXME : does it mean the session suddenly expires after a week ? Can we somehow auto-renew it at every usage or something ?
+            "exp": int(datetime.datetime.now().timestamp())
+            + (7 * 24 * 3600),  # One week validity
+            "host": request.get_header("host"),
         }
         new_infos.update(infos)
 
@@ -142,12 +139,16 @@ class Authenticator(BaseAuthenticator):
         )
 
     def get_session_cookie(self, raise_if_no_session_exists=True, decrypt_pwd=False):
-
         from bottle import request
 
         try:
             token = request.get_cookie("yunohost.portal", default="").encode()
-            infos = jwt.decode(token, session_secret, algorithms="HS256", options={"require": ["id", "user", "exp", "nbf"]})
+            infos = jwt.decode(
+                token,
+                session_secret,
+                algorithms="HS256",
+                options={"require": ["id", "user", "exp", "nbf"]},
+            )
         except Exception:
             if not raise_if_no_session_exists:
                 return {"id": random_ascii()}
@@ -170,7 +171,6 @@ class Authenticator(BaseAuthenticator):
         return infos
 
     def delete_session_cookie(self):
-
         from bottle import response
 
         response.delete_cookie("yunohost.portal", path="/")
