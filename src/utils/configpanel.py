@@ -53,6 +53,7 @@ if TYPE_CHECKING:
 
 if TYPE_CHECKING:
     from moulinette.utils.log import MoulinetteLogger
+
     logger = cast(MoulinetteLogger, getLogger("yunohost.configpanel"))
 else:
     logger = getLogger("yunohost.configpanel")
@@ -715,18 +716,25 @@ class ConfigPanel:
         raw_config = self._get_raw_config()
 
         panel_id, section_id, option_id = self.filter_key
-        if panel_id:
-            raw_config = filter_keys(raw_config, panel_id, ConfigPanelModel)
 
-            if section_id:
-                raw_config[panel_id] = filter_keys(
-                    raw_config[panel_id], section_id, PanelModel
-                )
+        try:
+            if panel_id:
+                raw_config = filter_keys(raw_config, panel_id, ConfigPanelModel)
 
-                if option_id:
-                    raw_config[panel_id][section_id] = filter_keys(
-                        raw_config[panel_id][section_id], option_id, SectionModel
+                if section_id:
+                    raw_config[panel_id] = filter_keys(
+                        raw_config[panel_id], section_id, PanelModel
                     )
+
+                    if option_id:
+                        raw_config[panel_id][section_id] = filter_keys(
+                            raw_config[panel_id][section_id], option_id, SectionModel
+                        )
+        except KeyError:
+            raise YunohostValidationError(
+                "config_unknown_filter_key",
+                filter_key=".".join([k for k in self.filter_key if k]),
+            )
 
         return raw_config
 
