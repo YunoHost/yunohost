@@ -781,11 +781,12 @@ class DomainConfigPanel(ConfigPanel):
                 if previous_settings.get("portal_logo"):
                     try:
                         os.remove(previous_settings["portal_logo"])
-                        portal_values["portal_logo"] = ''
-                    except:
+                    except FileNotFoundError:
                         logger.warning(
                             f"Coulnd't remove previous logo file, maybe the file was already deleted, path: {previous_settings['portal_logo']}"
                         )
+                    finally:
+                        portal_values["portal_logo"] = ""
 
                 if next_settings["portal_logo"]:
                     # Save the file content as `{mimetype}:{base64content}` in portal settings
