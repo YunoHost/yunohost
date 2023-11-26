@@ -1449,6 +1449,7 @@ class TestSelect(BaseTest):
 # │ TAGS                                                  │
 # ╰───────────────────────────────────────────────────────╯
 
+
 #  [], ["one"], {}
 class TestTags(BaseTest):
     raw_option = {"type": "tags", "id": "tags_id"}
@@ -1678,47 +1679,29 @@ class TestApp(BaseTest):
 
 admin_username = "admin_user"
 admin_user = {
-    "ssh_allowed": False,
     "username": admin_username,
-    "mailbox-quota": "0",
     "mail": "a@ynh.local",
-    "mail-aliases": [f"root@{main_domain}"],  # Faking "admin"
     "fullname": "john doe",
-    "group": [],
+    "groups": ["admins"],
 }
 regular_username = "normal_user"
 regular_user = {
-    "ssh_allowed": False,
     "username": regular_username,
-    "mailbox-quota": "0",
     "mail": "z@ynh.local",
     "fullname": "john doe",
-    "group": [],
+    "groups": [],
 }
 
 
 @contextmanager
-def patch_users(
-    *,
-    users,
-    admin_username,
-    main_domain,
-):
+def patch_users(*, users):
     """
     Data mocking for UserOption:
     - yunohost.user.user_list
     - yunohost.user.user_info
     - yunohost.domain._get_maindomain
     """
-    admin_info = next(
-        (user for user in users.values() if user["username"] == admin_username),
-        {"mail-aliases": []},
-    )
-    with patch.object(user, "user_list", return_value={"users": users}), patch.object(
-        user,
-        "user_info",
-        return_value=admin_info,  # Faking admin user
-    ), patch.object(domain, "_get_maindomain", return_value=main_domain):
+    with patch.object(user, "user_list", return_value={"users": users}):
         yield
 
 
@@ -1729,8 +1712,8 @@ class TestUser(BaseTest):
         # No tests for empty users since it should not happens
         {
             "data": [
-                {"users": {admin_username: admin_user}, "admin_username": admin_username, "main_domain": main_domain},
-                {"users": {admin_username: admin_user, regular_username: regular_user}, "admin_username": admin_username, "main_domain": main_domain},
+                {"users": {admin_username: admin_user}},
+                {"users": {admin_username: admin_user, regular_username: regular_user}},
             ],
             "scenarios": [
                 # FIXME User option is not really nullable, even if optional
@@ -1741,7 +1724,7 @@ class TestUser(BaseTest):
         },
         {
             "data": [
-                {"users": {admin_username: admin_user, regular_username: regular_user}, "admin_username": admin_username, "main_domain": main_domain},
+                {"users": {admin_username: admin_user, regular_username: regular_user}},
             ],
             "scenarios": [
                 *xpass(scenarios=[
@@ -1756,18 +1739,12 @@ class TestUser(BaseTest):
 
     @pytest.mark.usefixtures("patch_no_tty")
     def test_basic_attrs(self):
-        with patch_users(
-            users={admin_username: admin_user},
-            admin_username=admin_username,
-            main_domain=main_domain,
-        ):
+        with patch_users(users={admin_username: admin_user}):
             self._test_basic_attrs()
 
     def test_options_prompted_with_ask_help(self, prefill_data=None):
         with patch_users(
-            users={admin_username: admin_user, regular_username: regular_user},
-            admin_username=admin_username,
-            main_domain=main_domain,
+            users={admin_username: admin_user, regular_username: regular_user}
         ):
             super().test_options_prompted_with_ask_help(
                 prefill_data={"raw_option": {}, "prefill": admin_username}

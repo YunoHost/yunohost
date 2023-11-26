@@ -46,6 +46,7 @@ from pydantic import (
     ValidationError,
     create_model,
     validator,
+    root_validator,
 )
 from pydantic.color import Color
 from pydantic.fields import Field
@@ -1705,43 +1706,34 @@ class UserOption(BaseChoicesOption):
     filter: Literal[None] = None
     choices: Union[dict[str, str], None]
 
-    @validator("choices", pre=True, always=True)
-    def inject_users_choices(
-        cls, value: Union[dict[str, str], None], values: Values
-    ) -> dict[str, str]:
+    @root_validator(pre=True)
+    def inject_users_choices_and_default(cls, values: Values) -> Values:
         # TODO remove calls to resources in validators (pydantic V2 should adress this)
         from yunohost.user import user_list
 
-        value = {
+        users = user_list(fields=["username", "fullname", "mail", "groups"])["users"]
+
+        values["choices"] = {
             username: f"{infos['fullname']} ({infos['mail']})"
-            for username, infos in user_list()["users"].items()
+            for username, infos in users.items()
         }
 
         # FIXME keep this to test if any user, do not raise error if no admin?
-        if not value:
+        if not values["choices"]:
             raise YunohostValidationError(
                 "app_argument_invalid",
                 name=values["id"],
                 error="You should create a YunoHost user first.",
             )
 
-        return value
+        if not values.get("default"):
+            values["default"] = next(
+                username
+                for username, infos in users.items()
+                if "admins" in infos["groups"]
+            )
 
-    @validator("default", pre=True, always=True)
-    def inject_default(
-        cls, value: Union[str, None], values: Values
-    ) -> Union[str, None]:
-        # TODO remove calls to resources in validators (pydantic V2 should adress this)
-        # from yunohost.domain import _get_maindomain
-        # from yunohost.user import user_list, user_info
-
-        if value is None:
-            # FIXME : in the past we looked for the user holding the "root@" alias
-            # but it's now obsolete...
-            # Should be replaced by something like "any first user we find in the admin group"
-            pass
-
-        return value
+        return values
 
 
 class GroupOption(BaseChoicesOption):
