@@ -100,6 +100,15 @@ ignoreregex =
     ynh_add_config --template="f2b_jail.conf" --destination="/etc/fail2ban/jail.d/$app.conf"
     ynh_add_config --template="f2b_filter.conf" --destination="/etc/fail2ban/filter.d/$app.conf"
 
+    # if "$logpath" doesn't exist (as if using --use_template argument), assign
+    # "$logpath" using the one in the package's conf/f2b_jail.conf template
+    if [ -z "$logpath" ]; then
+        # the first sed deleteds possibles spaces and the second one extract the path
+        logpath=$(grep logpath "$YNH_APP_BASEDIR/conf/f2b_jail.conf" | sed "s/ //g" | sed "s/logpath=//g")
+        # replace the '__APP__' by the real app name in the path
+        logpath=$(sed "s/__APP__/$app/g")
+    fi
+
     # Create the folder and logfile if they doesn't exist,
     # as fail2ban require an existing logfile before configuration
     mkdir -p "/var/log/$app"
