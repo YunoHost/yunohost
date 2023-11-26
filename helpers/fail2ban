@@ -103,10 +103,15 @@ ignoreregex =
     # if "$logpath" doesn't exist (as if using --use_template argument), assign
     # "$logpath" using the one in the package's conf/f2b_jail.conf template
     if [ -z "$logpath" ]; then
-        # the first sed deleteds possibles spaces and the second one extract the path
+        # the first sed deletes possibles spaces and the second one extract the path
         logpath=$(grep logpath "$YNH_APP_BASEDIR/conf/f2b_jail.conf" | sed "s/ //g" | sed "s/logpath=//g")
-        # replace the '__APP__' by the real app name in the path
-        logpath=${logpath//__APP__/$app}
+        # replace any '__VAR__' by their real variable using ynh_replace_vars
+        # in some hacky way because ynh_replace_vars supports only files ^^'
+        tempdir="$(mktemp -d)"
+        echo "$logpath" > "$tempdir/process-logpath"
+        ynh_replace_vars --file="$tempdir/process-logpath"
+        logpath="$(cat "$tempdir/process-logpath")"
+        rm -r "$tempdir"
     fi
 
     # Create the folder and logfile if they doesn't exist,
@@ -114,9 +119,10 @@ ignoreregex =
     mkdir -p "/var/log/$app"
     if [ ! -f "$logpath" ]; then
         touch "$logpath"
-        chown -R "$app:$app" "/var/log/$app"
-        chmod -R u=rwX,g=rX,o= "/var/log/$app"
     fi
+    # Make sure log folder's permissions are correct
+    chown -R "$app:$app" "/var/log/$app"
+    chmod -R u=rwX,g=rX,o= "/var/log/$app"
 
     ynh_systemd_action --service_name=fail2ban --action=reload --line_match="(Started|Reloaded) Fail2Ban Service" --log_path=systemd
 
