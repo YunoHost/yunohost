@@ -74,7 +74,7 @@ ynh_add_fail2ban_config() {
     ports=${ports:-http,https}
     use_template="${use_template:-0}"
 
-    if [ $use_template -ne 1 ]; then
+    if [ "$use_template" -ne 1 ]; then
         # Usage 1, no template. Build a config file from scratch.
         test -n "$logpath" || ynh_die --message="ynh_add_fail2ban_config expects a logfile path as first argument and received nothing."
         test -n "$failregex" || ynh_die --message="ynh_add_fail2ban_config expects a failure regex as second argument and received nothing."
@@ -86,7 +86,7 @@ port = __PORTS__
 filter = __APP__
 logpath = __LOGPATH__
 maxretry = __MAX_RETRY__
-" >$YNH_APP_BASEDIR/conf/f2b_jail.conf
+" >"$YNH_APP_BASEDIR/conf/f2b_jail.conf"
 
         echo "
 [INCLUDES]
@@ -94,7 +94,7 @@ before = common.conf
 [Definition]
 failregex = __FAILREGEX__
 ignoreregex =
-" >$YNH_APP_BASEDIR/conf/f2b_filter.conf
+" >"$YNH_APP_BASEDIR/conf/f2b_filter.conf"
     fi
 
     ynh_add_config --template="f2b_jail.conf" --destination="/etc/fail2ban/jail.d/$app.conf"
