@@ -74,7 +74,7 @@ ynh_add_fail2ban_config() {
     ports=${ports:-http,https}
     use_template="${use_template:-0}"
 
-    if [ $use_template -ne 1 ]; then
+    if [ "$use_template" -ne 1 ]; then
         # Usage 1, no template. Build a config file from scratch.
         test -n "$logpath" || ynh_die --message="ynh_add_fail2ban_config expects a logfile path as first argument and received nothing."
         test -n "$failregex" || ynh_die --message="ynh_add_fail2ban_config expects a failure regex as second argument and received nothing."
@@ -86,7 +86,7 @@ port = __PORTS__
 filter = __APP__
 logpath = __LOGPATH__
 maxretry = __MAX_RETRY__
-" >$YNH_APP_BASEDIR/conf/f2b_jail.conf
+" >"$YNH_APP_BASEDIR/conf/f2b_jail.conf"
 
         echo "
 [INCLUDES]
@@ -94,20 +94,28 @@ before = common.conf
 [Definition]
 failregex = __FAILREGEX__
 ignoreregex =
-" >$YNH_APP_BASEDIR/conf/f2b_filter.conf
+" >"$YNH_APP_BASEDIR/conf/f2b_filter.conf"
     fi
 
     ynh_add_config --template="f2b_jail.conf" --destination="/etc/fail2ban/jail.d/$app.conf"
     ynh_add_config --template="f2b_filter.conf" --destination="/etc/fail2ban/filter.d/$app.conf"
+
+    # if "$logpath" doesn't exist (as if using --use_template argument), assign
+    # "$logpath" using the one in the previously generated fail2ban conf file
+    if [ -z "${logpath:-}" ]; then
+        # the first sed deletes possibles spaces and the second one extract the path
+        logpath=$(grep logpath "/etc/fail2ban/jail.d/$app.conf" | sed "s/ //g" | sed "s/logpath=//g")
+    fi
 
     # Create the folder and logfile if they doesn't exist,
     # as fail2ban require an existing logfile before configuration
     mkdir -p "/var/log/$app"
     if [ ! -f "$logpath" ]; then
         touch "$logpath"
-        chown -R "$app:$app" "/var/log/$app"
-        chmod -R u=rwX,g=rX,o= "/var/log/$app"
     fi
+    # Make sure log folder's permissions are correct
+    chown -R "$app:$app" "/var/log/$app"
+    chmod -R u=rwX,g=rX,o= "/var/log/$app"
 
     ynh_systemd_action --service_name=fail2ban --action=reload --line_match="(Started|Reloaded) Fail2Ban Service" --log_path=systemd
 
