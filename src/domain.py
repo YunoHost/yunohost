@@ -34,17 +34,8 @@ from moulinette.utils.filesystem import (
     write_to_yaml,
 )
 
-from yunohost.app import (
-    app_ssowatconf,
-    _installed_apps,
-    _get_app_settings,
-    _get_conflicting_apps,
-)
 from yunohost.regenconf import regen_conf, _force_clear_hashes, _process_regen_conf
-from yunohost.utils.configpanel import ConfigPanel
-from yunohost.utils.form import BaseOption
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.dns import is_yunohost_dyndns_domain
 from yunohost.log import is_unit_operation
 
 if TYPE_CHECKING:
@@ -191,7 +182,7 @@ def domain_info(domain):
         domain     -- Domain to be checked
     """
 
-    from yunohost.app import app_info
+    from yunohost.app import app_info, _installed_apps, _get_app_settings
     from yunohost.dns import _get_registar_settings
     from yunohost.certificate import certificate_status
 
@@ -268,6 +259,7 @@ def domain_add(
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.utils.password import assert_password_is_strong_enough
     from yunohost.certificate import _certificate_install_selfsigned
+    from yunohost.utils.dns import is_yunohost_dyndns_domain
 
     if dyndns_recovery_password:
         operation_logger.data_to_redact.append(dyndns_recovery_password)
@@ -383,8 +375,15 @@ def domain_remove(
     """
     import glob
     from yunohost.hook import hook_callback
-    from yunohost.app import app_ssowatconf, app_info, app_remove
+    from yunohost.app import (
+        app_ssowatconf,
+        app_info,
+        app_remove,
+        _get_app_settings,
+        _installed_apps,
+    )
     from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.utils.dns import is_yunohost_dyndns_domain
 
     if dyndns_recovery_password:
         operation_logger.data_to_redact.append(dyndns_recovery_password)
@@ -566,6 +565,7 @@ def domain_main_domain(operation_logger, new_main_domain=None):
 
     """
     from yunohost.tools import _set_hostname
+    from yunohost.app import app_ssowatconf
 
     # If no new domain specified, we return the current main domain
     if not new_main_domain:
@@ -614,6 +614,8 @@ def domain_url_available(domain, path):
         path -- The path to check (e.g. /coffee)
     """
 
+    from yunohost.app import _get_conflicting_apps
+
     return len(_get_conflicting_apps(domain, path)) == 0
 
 
@@ -623,7 +625,8 @@ def _get_raw_domain_settings(domain):
     so the file may be completely empty
     """
     _assert_domain_exists(domain)
-    path = DomainConfigPanel.save_path_tpl.format(entity=domain)
+    # NB: this corresponds to save_path_tpl in DomainConfigPanel
+    path = f"{DOMAIN_SETTINGS_DIR}/{domain}.yml"
     if os.path.exists(path):
         return read_yaml(path)
 
@@ -647,6 +650,7 @@ def domain_config_get(domain, key="", full=False, export=False):
     else:
         mode = "classic"
 
+    DomainConfigPanel = _get_DomainConfigPanel()
     config = DomainConfigPanel(domain)
     return config.get(key, mode)
 
@@ -658,175 +662,189 @@ def domain_config_set(
     """
     Apply a new domain configuration
     """
+    from yunohost.utils.form import BaseOption
+
+    DomainConfigPanel = _get_DomainConfigPanel()
     BaseOption.operation_logger = operation_logger
     config = DomainConfigPanel(domain)
     return config.set(key, value, args, args_file, operation_logger=operation_logger)
 
 
-class DomainConfigPanel(ConfigPanel):
-    entity_type = "domain"
-    save_path_tpl = f"{DOMAIN_SETTINGS_DIR}/{{entity}}.yml"
-    save_mode = "diff"
+def _get_DomainConfigPanel():
+    from yunohost.utils.configpanel import ConfigPanel
 
-    # i18n: domain_config_cert_renew_help
-    # i18n: domain_config_default_app_help
-    # i18n: domain_config_xmpp_help
+    class DomainConfigPanel(ConfigPanel):
+        entity_type = "domain"
+        save_path_tpl = f"{DOMAIN_SETTINGS_DIR}/{{entity}}.yml"
+        save_mode = "diff"
 
-    def _get_raw_config(self) -> "RawConfig":
-        # TODO add mechanism to share some settings with other domains on the same zone
-        raw_config = super()._get_raw_config()
+        # i18n: domain_config_cert_renew_help
+        # i18n: domain_config_default_app_help
+        # i18n: domain_config_xmpp_help
 
-        any_filter = all(self.filter_key)
-        panel_id, section_id, option_id = self.filter_key
+        def _get_raw_config(self) -> "RawConfig":
+            # TODO add mechanism to share some settings with other domains on the same zone
+            raw_config = super()._get_raw_config()
 
-        raw_config["feature"]["xmpp"]["xmpp"]["default"] = (
-            1 if self.entity == _get_maindomain() else 0
-        )
+            any_filter = all(self.filter_key)
+            panel_id, section_id, option_id = self.filter_key
 
-        # Portal settings are only available on "topest" domains
-        if _get_parent_domain_of(self.entity, topest=True) is not None:
-            del raw_config["feature"]["portal"]
-
-        # Optimize wether or not to load the DNS section,
-        # e.g. we don't want to trigger the whole _get_registary_config_section
-        # when just getting the current value from the feature section
-        if not any_filter or panel_id == "dns":
-            from yunohost.dns import _get_registrar_config_section
-
-            raw_config["dns"]["registrar"] = _get_registrar_config_section(self.entity)
-
-        # Cert stuff
-        if not any_filter or panel_id == "cert":
-            from yunohost.certificate import certificate_status
-
-            status = certificate_status([self.entity], full=True)["certificates"][
-                self.entity
-            ]
-
-            raw_config["cert"]["cert"]["cert_summary"]["style"] = status["style"]
-
-            # i18n: domain_config_cert_summary_expired
-            # i18n: domain_config_cert_summary_selfsigned
-            # i18n: domain_config_cert_summary_abouttoexpire
-            # i18n: domain_config_cert_summary_ok
-            # i18n: domain_config_cert_summary_letsencrypt
-            raw_config["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(
-                f"domain_config_cert_summary_{status['summary']}"
+            raw_config["feature"]["xmpp"]["xmpp"]["default"] = (
+                1 if self.entity == _get_maindomain() else 0
             )
 
-            for option_id, status_key in [
-                ("cert_validity", "validity"),
-                ("cert_issuer", "CA_type"),
-                ("acme_eligible", "ACME_eligible"),
-                # FIXME not sure why "summary" was injected in settings values
-                # ("summary", "summary")
-            ]:
-                raw_config["cert"]["cert"][option_id]["default"] = status[status_key]
+            # Portal settings are only available on "topest" domains
+            if _get_parent_domain_of(self.entity, topest=True) is not None:
+                del raw_config["feature"]["portal"]
 
-            # Other specific strings used in config panels
-            # i18n: domain_config_cert_renew_help
+            # Optimize wether or not to load the DNS section,
+            # e.g. we don't want to trigger the whole _get_registary_config_section
+            # when just getting the current value from the feature section
+            if not any_filter or panel_id == "dns":
+                from yunohost.dns import _get_registrar_config_section
 
-        return raw_config
-
-    def _apply(
-        self,
-        form: "FormModel",
-        previous_settings: dict[str, Any],
-        exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
-    ) -> None:
-        next_settings = {
-            k: v for k, v in form.dict().items() if previous_settings.get(k) != v
-        }
-
-        if "default_app" in next_settings:
-            from yunohost.app import app_ssowatconf, app_map
-
-            if "/" in app_map(raw=True).get(self.entity, {}):
-                raise YunohostValidationError(
-                    "app_make_default_location_already_used",
-                    app=next_settings["default_app"],
-                    domain=self.entity,
-                    other_app=app_map(raw=True)[self.entity]["/"]["id"],
+                raw_config["dns"]["registrar"] = _get_registrar_config_section(
+                    self.entity
                 )
 
-        if next_settings.get("recovery_password", None):
-            domain_dyndns_set_recovery_password(
-                self.entity, next_settings["recovery_password"]
-            )
+            # Cert stuff
+            if not any_filter or panel_id == "cert":
+                from yunohost.certificate import certificate_status
 
-        portal_options = [
-            "default_app",
-            "show_other_domains_apps",
-            "portal_title",
-            "portal_logo",
-            "portal_theme",
-            "portal_user_intro",
-            "portal_public_intro",
-        ]
+                status = certificate_status([self.entity], full=True)["certificates"][
+                    self.entity
+                ]
 
-        if _get_parent_domain_of(self.entity, topest=True) is None and any(
-            option in next_settings for option in portal_options
-        ):
-            from yunohost.portal import PORTAL_SETTINGS_DIR
+                raw_config["cert"]["cert"]["cert_summary"]["style"] = status["style"]
 
-            # Portal options are also saved in a `domain.portal.yml` file
-            # that can be read by the portal API.
-            # FIXME remove those from the config panel saved values?
+                # i18n: domain_config_cert_summary_expired
+                # i18n: domain_config_cert_summary_selfsigned
+                # i18n: domain_config_cert_summary_abouttoexpire
+                # i18n: domain_config_cert_summary_ok
+                # i18n: domain_config_cert_summary_letsencrypt
+                raw_config["cert"]["cert"]["cert_summary"]["ask"] = m18n.n(
+                    f"domain_config_cert_summary_{status['summary']}"
+                )
 
-            portal_values = form.dict(include=set(portal_options))
-            # Remove logo from values else filename will replace b64 content
-            portal_values.pop("portal_logo")
+                for option_id, status_key in [
+                    ("cert_validity", "validity"),
+                    ("cert_issuer", "CA_type"),
+                    ("acme_eligible", "ACME_eligible"),
+                    # FIXME not sure why "summary" was injected in settings values
+                    # ("summary", "summary")
+                ]:
+                    raw_config["cert"]["cert"][option_id]["default"] = status[
+                        status_key
+                    ]
 
-            if "portal_logo" in next_settings:
-                if previous_settings.get("portal_logo"):
-                    try:
-                        os.remove(previous_settings["portal_logo"])
-                    except FileNotFoundError:
-                        logger.warning(
-                            f"Coulnd't remove previous logo file, maybe the file was already deleted, path: {previous_settings['portal_logo']}"
-                        )
-                    finally:
-                        portal_values["portal_logo"] = ""
+                # Other specific strings used in config panels
+                # i18n: domain_config_cert_renew_help
 
-                if next_settings["portal_logo"]:
-                    # Save the file content as `{mimetype}:{base64content}` in portal settings
-                    # while keeping the file path in the domain settings
-                    from base64 import b64encode
-                    from magic import Magic
+            return raw_config
 
-                    file_content = Path(next_settings["portal_logo"]).read_bytes()
-                    mimetype = Magic(mime=True).from_buffer(file_content)
-                    portal_values["portal_logo"] = (
-                        mimetype + ":" + b64encode(file_content).decode("utf-8")
+        def _apply(
+            self,
+            form: "FormModel",
+            previous_settings: dict[str, Any],
+            exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+        ) -> None:
+            next_settings = {
+                k: v for k, v in form.dict().items() if previous_settings.get(k) != v
+            }
+
+            if "default_app" in next_settings:
+                from yunohost.app import app_map
+
+                if "/" in app_map(raw=True).get(self.entity, {}):
+                    raise YunohostValidationError(
+                        "app_make_default_location_already_used",
+                        app=next_settings["default_app"],
+                        domain=self.entity,
+                        other_app=app_map(raw=True)[self.entity]["/"]["id"],
                     )
 
-            portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{self.entity}.json")
-            portal_settings: dict[str, Any] = {"apps": {}}
+            if next_settings.get("recovery_password", None):
+                domain_dyndns_set_recovery_password(
+                    self.entity, next_settings["recovery_password"]
+                )
 
-            if portal_settings_path.exists():
-                portal_settings.update(read_json(str(portal_settings_path)))
+            portal_options = [
+                "default_app",
+                "show_other_domains_apps",
+                "portal_title",
+                "portal_logo",
+                "portal_theme",
+                "portal_user_intro",
+                "portal_public_intro",
+            ]
 
-            # Merge settings since this config file is shared with `app_ssowatconf()` which populate the `apps` key.
-            portal_settings.update(portal_values)
-            write_to_json(
-                str(portal_settings_path), portal_settings, sort_keys=True, indent=4
-            )
+            if _get_parent_domain_of(self.entity, topest=True) is None and any(
+                option in next_settings for option in portal_options
+            ):
+                from yunohost.portal import PORTAL_SETTINGS_DIR
 
-        super()._apply(form, previous_settings, exclude={"recovery_password"})
+                # Portal options are also saved in a `domain.portal.yml` file
+                # that can be read by the portal API.
+                # FIXME remove those from the config panel saved values?
 
-        # Reload ssowat if default app changed
-        if "default_app" in next_settings:
-            app_ssowatconf()
+                portal_values = form.dict(include=set(portal_options))
+                # Remove logo from values else filename will replace b64 content
+                portal_values.pop("portal_logo")
 
-        stuff_to_regen_conf = set()
-        if "xmpp" in next_settings:
-            stuff_to_regen_conf.update({"nginx", "metronome"})
+                if "portal_logo" in next_settings:
+                    if previous_settings.get("portal_logo"):
+                        try:
+                            os.remove(previous_settings["portal_logo"])
+                        except FileNotFoundError:
+                            logger.warning(
+                                f"Coulnd't remove previous logo file, maybe the file was already deleted, path: {previous_settings['portal_logo']}"
+                            )
+                        finally:
+                            portal_values["portal_logo"] = ""
 
-        if "mail_in" in next_settings or "mail_out" in next_settings:
-            stuff_to_regen_conf.update({"nginx", "postfix", "dovecot", "rspamd"})
+                    if next_settings["portal_logo"]:
+                        # Save the file content as `{mimetype}:{base64content}` in portal settings
+                        # while keeping the file path in the domain settings
+                        from base64 import b64encode
+                        from magic import Magic
 
-        if stuff_to_regen_conf:
-            regen_conf(names=list(stuff_to_regen_conf))
+                        file_content = Path(next_settings["portal_logo"]).read_bytes()
+                        mimetype = Magic(mime=True).from_buffer(file_content)
+                        portal_values["portal_logo"] = (
+                            mimetype + ":" + b64encode(file_content).decode("utf-8")
+                        )
+
+                portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{self.entity}.json")
+                portal_settings: dict[str, Any] = {"apps": {}}
+
+                if portal_settings_path.exists():
+                    portal_settings.update(read_json(str(portal_settings_path)))
+
+                # Merge settings since this config file is shared with `app_ssowatconf()` which populate the `apps` key.
+                portal_settings.update(portal_values)
+                write_to_json(
+                    str(portal_settings_path), portal_settings, sort_keys=True, indent=4
+                )
+
+            super()._apply(form, previous_settings, exclude={"recovery_password"})
+
+            # Reload ssowat if default app changed
+            if "default_app" in next_settings:
+                from yunohost.app import app_ssowatconf
+
+                app_ssowatconf()
+
+            stuff_to_regen_conf = set()
+            if "xmpp" in next_settings:
+                stuff_to_regen_conf.update({"nginx", "metronome"})
+
+            if "mail_in" in next_settings or "mail_out" in next_settings:
+                stuff_to_regen_conf.update({"nginx", "postfix", "dovecot", "rspamd"})
+
+            if stuff_to_regen_conf:
+                regen_conf(names=list(stuff_to_regen_conf))
+
+    return DomainConfigPanel
 
 
 def domain_action_run(domain, action, args=None):
