@@ -1086,6 +1086,7 @@ class AptDependenciesAppResource(AppResource):
     packages: List = []
     packages_from_raw_bash: str = ""
     extras: Dict[str, Dict[str, Union[str, List]]] = {}
+
     def __init__(self, properties: Dict[str, Any], *args, **kwargs):
         super().__init__(properties, *args, **kwargs)
 
@@ -1106,7 +1107,9 @@ class AptDependenciesAppResource(AppResource):
                 values["packages"] = [value.strip() for value in values["packages"].split(",")]  # type: ignore
 
             if isinstance(values.get("packages_from_raw_bash"), str):
-                out, err = self.check_output_bash_snippet(values.get("packages_from_raw_bash"))
+                out, err = self.check_output_bash_snippet(
+                    values.get("packages_from_raw_bash")
+                )
                 if err:
                     logger.error(
                         f"Error while running apt resource packages_from_raw_bash snippet for '{key}' extras:"
@@ -1125,7 +1128,9 @@ class AptDependenciesAppResource(AppResource):
                 )
 
             # Drop 'extras' entries associated to no packages
-            self.extras = {key: values for key, values in self.extras.items() if values["packages"]}
+            self.extras = {
+                key: values for key, values in self.extras.items() if values["packages"]
+            }
 
     def provision_or_update(self, context: Dict = {}):
         script = " ".join(["ynh_install_app_dependencies", *self.packages])
