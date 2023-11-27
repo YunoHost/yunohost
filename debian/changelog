@@ -1,3 +1,12 @@
+yunohost (11.2.7) stable; urgency=low
+
+  - helpers: fix fail2ban helper when using using --use_template arg ([#1743](https://github.com/yunohost/yunohost/pull/1743))
+  - i18n: Translations updated for Basque, French, Galician
+
+  Thanks to all contributors <3 ! (José M, OniriCorpe, ppr, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 27 Nov 2023 14:13:54 +0100
+
 yunohost (11.2.6) stable; urgency=low
 
   - mail: Improve dovecots rspamd integration wrt junk/spam folder naming ([#1731](https://github.com/yunohost/yunohost/pull/1731))
