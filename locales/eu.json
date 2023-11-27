@@ -389,7 +389,7 @@
     "group_already_exist_on_system_but_removing_it": "{group} taldea existitzen da sistemaren taldeetan, baina YunoHostek ezabatuko du…",
     "diagnosis_mail_fcrdns_nok_details": "Lehenik eta behin zure routerraren konfigurazio gunean edo hostingaren enpresaren aukeretan alderantzizko DNSa konfiguratzen saiatu beharko zinateke <code>{ehlo_domain}</code> erabiliz. (Hosting enpresaren arabera, ezinbestekoa da beraiekin harremanetan jartzea).",
     "diagnosis_mail_outgoing_port_25_ok": "SMTP posta zerbitzaria posta elektronikoa bidaltzeko gai da (25. atakaren irteera ez dago blokeatuta).",
-    "diagnosis_ports_partially_unreachable": "{port}. ataka ez dago eskuragarri kanpotik Pv{failed} erabiliz.",
+    "diagnosis_ports_partially_unreachable": "{port}. ataka ez dago eskuragarri kanpotik IPv{failed} erabiliz.",
     "diagnosis_ports_forwarding_tip": "Arazoa konpontzeko, litekeena da operadorearen routerrean ataken birbideraketa konfiguratu behar izatea, <a href='https://yunohost.org/isp_box_config'>https://yunohost.org/isp_box_config</a>-n agertzen den bezala",
     "domain_creation_failed": "Ezinezkoa izan da {domain} domeinua sortzea: {error}",
     "domains_available": "Erabilgarri dauden domeinuak:",
