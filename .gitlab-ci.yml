@@ -4,8 +4,7 @@ stages:
   - install
   - test
   - lint
-  - doc
-  - translation
+  - bot
 
 default:
   tags:
