@@ -104,7 +104,7 @@ ignoreregex =
     # "$logpath" using the one in the previously generated fail2ban conf file
     if [ -z "${logpath:-}" ]; then
         # the first sed deletes possibles spaces and the second one extract the path
-        logpath=$(grep logpath "/etc/fail2ban/jail.d/$app.conf" | sed "s/ //g" | sed "s/logpath=//g")
+        logpath=$(grep "^logpath" "/etc/fail2ban/jail.d/$app.conf" | sed "s/ //g" | sed "s/logpath=//g")
     fi
 
     # Create the folder and logfile if they doesn't exist,
