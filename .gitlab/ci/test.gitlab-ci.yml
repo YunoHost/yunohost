@@ -29,35 +29,35 @@
 # TESTS
 ########################################
 
-full-tests:
-  stage: test
-  image: "before-install"
-  variables:
-    PYTEST_ADDOPTS: "--color=yes"
-  before_script:
-    - *install_debs
-    - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace
-  script:
-    - python3 -m pytest --profile --cov=yunohost tests/ src/tests/ --junitxml=report.xml
-  needs:
-      - job: build-yunohost
-        artifacts: true
-      - job: build-ssowat
-        artifacts: true
-      - job: build-moulinette
-        artifacts: true
-  coverage: '/TOTAL.*\s+(\d+%)/'
-  artifacts:
-    reports:
-      junit: report.xml
+#full-tests:
+#  stage: test
+#  image: "before-install"
+#  variables:
+#    PYTEST_ADDOPTS: "--color=yes"
+#  before_script:
+#    - *install_debs
+#    - yunohost tools postinstall -d domain.tld -u syssa -F 'Syssa Mine' -p the_password --ignore-dyndns --force-diskspace
+#  script:
+#    - python3 -m pytest --profile --cov=yunohost tests/ src/tests/ --junitxml=report.xml
+#  needs:
+#      - job: build-yunohost
+#        artifacts: true
+#      - job: build-ssowat
+#        artifacts: true
+#      - job: build-moulinette
+#        artifacts: true
+#  coverage: '/TOTAL.*\s+(\d+%)/'
+#  artifacts:
+#    reports:
+#      junit: report.xml
 
 test-actionmap:
   extends: .test-stage
   script:
     - python3 -m pytest --profile tests/test_actionmap.py
-  only:
-    changes:
-      - share/actionsmap.yml
+#  only:
+#    changes:
+#      - share/actionsmap.yml
 
 test-helpers:
   extends: .test-stage
@@ -72,129 +72,129 @@ test-domains:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_domains.py
-  only:
-    changes:
-      - src/domain.py
+#  only:
+#    changes:
+#      - src/domain.py
 
 test-dns:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_dns.py
-  only:
-    changes:
-      - src/dns.py
-      - src/utils/dns.py
+#  only:
+#    changes:
+#      - src/dns.py
+#      - src/utils/dns.py
 
 test-apps:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_apps.py
-  only:
-    changes:
-      - src/app.py
+#  only:
+#    changes:
+#      - src/app.py
 
 test-appscatalog:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_app_catalog.py
-  only:
-    changes:
-      - src/app_calalog.py
+#  only:
+#    changes:
+#      - src/app_calalog.py
 
 test-appurl:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_appurl.py
-  only:
-    changes:
-      - src/app.py
+#  only:
+#    changes:
+#      - src/app.py
 
 test-questions:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_questions.py
-  only:
-    changes:
-      - src/utils/config.py
+#  only:
+#    changes:
+#      - src/utils/config.py
 
 test-app-config:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_app_config.py
-  only:
-    changes:
-      - src/app.py
-      - src/utils/config.py
+#  only:
+#    changes:
+#      - src/app.py
+#      - src/utils/config.py
 
 test-app-resources:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_app_resources.py
-  only:
-    changes:
-      - src/app.py
-      - src/utils/resources.py
+#  only:
+#    changes:
+#      - src/app.py
+#      - src/utils/resources.py
 
 test-changeurl:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_changeurl.py
-  only:
-    changes:
-      - src/app.py
+#  only:
+#    changes:
+#      - src/app.py
 
 test-backuprestore:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_backuprestore.py
-  only:
-    changes:
-      - src/backup.py
+#  only:
+#    changes:
+#      - src/backup.py
 
 test-permission:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_permission.py
-  only:
-    changes:
-      - src/permission.py
+#  only:
+#    changes:
+#      - src/permission.py
 
 test-settings:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_settings.py
-  only:
-    changes:
-      - src/settings.py
+#  only:
+#    changes:
+#      - src/settings.py
 
 test-user-group:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_user-group.py
-  only:
-    changes:
-      - src/user.py
+#  only:
+#    changes:
+#      - src/user.py
 
 test-regenconf:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_regenconf.py
-  only:
-    changes:
-      - src/regenconf.py
+#  only:
+#    changes:
+#      - src/regenconf.py
 
 test-service:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_service.py
-  only:
-    changes:
-      - src/service.py
+#  only:
+#    changes:
+#      - src/service.py
 
 test-ldapauth:
   extends: .test-stage
   script:
     - python3 -m pytest --profile src/tests/test_ldapauth.py
-  only:
-    changes:
-      - src/authenticators/*.py
+#  only:
+#    changes:
+#      - src/authenticators/*.py
