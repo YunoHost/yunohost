@@ -355,7 +355,7 @@ def check_permission_for_apps():
 
 def can_access_webpage(webpath, logged_as=None):
     webpath = webpath.rstrip("/")
-    sso_url = "https://" + maindomain + "/yunohost/sso/"
+    sso_url = "https://" + maindomain + "/yunohost/portalapi/login"
 
     # Anonymous access
     if not logged_as:
@@ -365,7 +365,7 @@ def can_access_webpage(webpath, logged_as=None):
         with requests.Session() as session:
             session.post(
                 sso_url,
-                data={"user": logged_as, "password": dummy_password},
+                data={"credentials": f"{logged_as}:{dummy_password}"},
                 headers={
                     "Referer": sso_url,
                     "Content-Type": "application/x-www-form-urlencoded",
