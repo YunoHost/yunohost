@@ -1,9 +1,9 @@
 ---
 stages:
+  - lint
   - build
   - install
   - test
-  - lint
   - bot
 
 default:

@@ -1,5 +1,8 @@
 .build-stage:
   stage: build
+  needs:
+    - job: actionsmap
+    - job: invalidcode311
   image: "before-install"
   variables:
     YNH_SOURCE: "https://github.com/yunohost"
