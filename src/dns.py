@@ -37,7 +37,6 @@ from yunohost.domain import (
 from yunohost.utils.dns import dig, is_yunohost_dyndns_domain, is_special_use_tld
 from yunohost.utils.error import YunohostValidationError, YunohostError
 from yunohost.utils.network import get_public_ip
-from yunohost.settings import settings_get
 from yunohost.log import is_unit_operation
 from yunohost.hook import hook_callback
 
@@ -144,6 +143,8 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
         ],
     }
     """
+
+    from yunohost.settings import settings_get
 
     basic = []
     mail = []

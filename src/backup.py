@@ -76,7 +76,6 @@ from yunohost.utils.system import (
     binary_to_human,
     space_used_by_directory,
 )
-from yunohost.settings import settings_get
 
 BACKUP_PATH = "/home/yunohost.backup"
 ARCHIVES_PATH = f"{BACKUP_PATH}/archives"
@@ -1926,6 +1925,7 @@ class TarBackupMethod(BackupMethod):
 
     @property
     def _archive_file(self):
+        from yunohost.settings import settings_get
         if isinstance(self.manager, BackupManager) and settings_get(
             "misc.backup.backup_compress_tar_archives"
         ):

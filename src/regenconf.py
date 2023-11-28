@@ -20,6 +20,7 @@ import os
 import yaml
 import shutil
 import hashlib
+import json
 from logging import getLogger
 from difflib import unified_diff
 from datetime import datetime
@@ -62,6 +63,8 @@ def regen_conf(
         list_pending -- List pending configuration files and exit
 
     """
+
+    from yunohost.settings import settings_get
 
     if names is None:
         names = []
@@ -140,6 +143,10 @@ def regen_conf(
             domain_list(exclude_subdomains=True)["domains"]
         )
     env["YNH_CONTEXT"] = "regenconf"
+    # perf: Export all global settings as a environment variable
+    # so that scripts dont have to call 'yunohost settings get' manually
+    # which is painful performance-wise
+    env["YNH_SETTINGS"] = json.dumps(settings_get("", export=True))
 
     pre_result = hook_callback("conf_regen", names, pre_callback=_pre_call, env=env)
 
