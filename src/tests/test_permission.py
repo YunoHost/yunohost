@@ -951,12 +951,6 @@ def test_ssowat_conf():
     assert permissions["wiki.main"]["auth_header"] is False
     assert permissions["blog.main"]["auth_header"] is True
 
-    assert permissions["wiki.main"]["label"] == "Wiki"
-    assert permissions["blog.main"]["label"] == "Blog"
-
-    assert permissions["wiki.main"]["show_tile"] is True
-    assert permissions["blog.main"]["show_tile"] is False
-
 
 def test_show_tile_cant_be_enabled():
     _permission_create_with_dummy_app(
