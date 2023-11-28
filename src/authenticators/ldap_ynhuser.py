@@ -5,7 +5,6 @@ import jwt
 import logging
 import ldap
 import ldap.sasl
-import datetime
 import base64
 import os
 import hashlib
@@ -142,7 +141,7 @@ class Authenticator(BaseAuthenticator):
         os.system(f'touch "{session_file}"')
 
     def get_session_cookie(self, decrypt_pwd=False):
-        from bottle import request
+        from bottle import request, response
 
         try:
             token = request.get_cookie("yunohost.portal", default="").encode()
