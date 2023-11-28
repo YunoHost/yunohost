@@ -17,11 +17,11 @@
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
 
+import time
 import glob
 import os
 import shutil
 import yaml
-import time
 import re
 import subprocess
 import tempfile
@@ -45,13 +45,6 @@ from moulinette.utils.filesystem import (
     chmod,
 )
 
-from yunohost.utils.configpanel import ConfigPanel
-from yunohost.utils.form import (
-    DomainOption,
-    WebPathOption,
-    ask_questions_and_parse_answers,
-    parse_raw_options,
-)
 from yunohost.utils.i18n import _value_for_locale
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import (
@@ -414,6 +407,7 @@ def app_change_url(operation_logger, app, domain, path):
         path -- New path at which the application will be move
 
     """
+    from yunohost.utils.form import DomainOption, WebPathOption
     from yunohost.hook import hook_exec_with_script_debug_if_failure, hook_callback
     from yunohost.service import service_reload_or_restart
 
@@ -964,6 +958,8 @@ def app_upgrade(
 
 
 def app_manifest(app, with_screenshot=False):
+    from yunohost.utils.form import parse_raw_options
+
     manifest, extracted_app_folder = _extract_app(app)
 
     manifest["install"] = parse_raw_options(manifest.get("install", {}), serialize=True)
@@ -1060,6 +1056,7 @@ def app_install(
     )
     from yunohost.regenconf import manually_modified_files
     from yunohost.utils.legacy import _patch_legacy_php_versions, _patch_legacy_helpers
+    from yunohost.utils.form import ask_questions_and_parse_answers
 
     # Check if disk space available
     if free_space_in_directory("/") <= 512 * 1000 * 1000:
@@ -1393,7 +1390,7 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
         permission_delete,
         permission_sync_to_user,
     )
-    from yunohost.domain import domain_list, domain_config_get, domain_config_set
+    from yunohost.domain import domain_list, domain_config_set, _get_raw_domain_settings
 
     if not _is_installed(app):
         raise YunohostValidationError(
@@ -1471,7 +1468,7 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
     hook_remove(app)
 
     for domain in domain_list()["domains"]:
-        if domain_config_get(domain, "feature.app.default_app") == app:
+        if _get_raw_domain_settings(domain).get("default_app") == app:
             domain_config_set(domain, "feature.app.default_app", "_none")
 
     if ret == 0:
@@ -1572,6 +1569,7 @@ def app_register_url(app, domain, path):
         domain -- The domain on which the app should be registered (e.g. your.domain.tld)
         path -- The path to be registered (e.g. /coffee)
     """
+    from yunohost.utils.form import DomainOption, WebPathOption
     from yunohost.permission import (
         permission_url,
         user_permission_update,
@@ -1614,7 +1612,7 @@ def app_ssowatconf():
     """
     from yunohost.domain import (
         domain_list,
-        domain_config_get,
+        _get_raw_domain_settings,
         _get_domain_portal_dict,
     )
     from yunohost.permission import user_permission_list
@@ -1654,8 +1652,8 @@ def app_ssowatconf():
     # FIXME : this could be handled by nginx's regen conf to further simplify ssowat's code ...
     redirected_urls = {}
     for domain in domains:
-        default_app = domain_config_get(domain, "feature.app.default_app")
-        if default_app != "_none" and _is_installed(default_app):
+        default_app = _get_raw_domain_settings(domain).get("default_app")
+        if default_app not in ["_none", None] and _is_installed(default_app):
             app_settings = _get_app_settings(default_app)
             app_domain = app_settings["domain"]
             app_path = app_settings["path"]
@@ -1753,11 +1751,13 @@ def app_change_label(app, new_label):
 
 
 def app_action_list(app):
+    AppConfigPanel = _get_AppConfigPanel()
     return AppConfigPanel(app).list_actions()
 
 
 @is_unit_operation()
 def app_action_run(operation_logger, app, action, args=None, args_file=None):
+    AppConfigPanel = _get_AppConfigPanel()
     return AppConfigPanel(app).run_action(
         action, args=args, args_file=args_file, operation_logger=operation_logger
     )
@@ -1779,6 +1779,7 @@ def app_config_get(app, key="", full=False, export=False):
     else:
         mode = "classic"
 
+    AppConfigPanel = _get_AppConfigPanel()
     try:
         config_ = AppConfigPanel(app)
         return config_.get(key, mode)
@@ -1798,91 +1799,97 @@ def app_config_set(
     Apply a new app configuration
     """
 
+    AppConfigPanel = _get_AppConfigPanel()
     config_ = AppConfigPanel(app)
 
     return config_.set(key, value, args, args_file, operation_logger=operation_logger)
 
 
-class AppConfigPanel(ConfigPanel):
-    entity_type = "app"
-    save_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/settings.yml")
-    config_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/config_panel.toml")
-    settings_must_be_defined: bool = True
+def _get_AppConfigPanel():
+    from yunohost.utils.configpanel import ConfigPanel
 
-    def _get_raw_settings(self) -> "RawSettings":
-        return self._call_config_script("show")
+    class AppConfigPanel(ConfigPanel):
+        entity_type = "app"
+        save_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/settings.yml")
+        config_path_tpl = os.path.join(APPS_SETTING_PATH, "{entity}/config_panel.toml")
+        settings_must_be_defined: bool = True
 
-    def _apply(
-        self,
-        form: "FormModel",
-        previous_settings: dict[str, Any],
-        exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
-    ) -> None:
-        env = {key: str(value) for key, value in form.dict().items()}
-        return_content = self._call_config_script("apply", env=env)
+        def _get_raw_settings(self) -> "RawSettings":
+            return self._call_config_script("show")
 
-        # If the script returned validation error
-        # raise a ValidationError exception using
-        # the first key
-        errors = return_content.get("validation_errors")
-        if errors:
-            for key, message in errors.items():
-                raise YunohostValidationError(
-                    "app_argument_invalid",
-                    name=key,
-                    error=message,
-                )
+        def _apply(
+            self,
+            form: "FormModel",
+            previous_settings: dict[str, Any],
+            exclude: Union["AbstractSetIntStr", "MappingIntStrAny", None] = None,
+        ) -> None:
+            env = {key: str(value) for key, value in form.dict().items()}
+            return_content = self._call_config_script("apply", env=env)
 
-    def _run_action(self, form: "FormModel", action_id: str) -> None:
-        env = {key: str(value) for key, value in form.dict().items()}
-        self._call_config_script(action_id, env=env)
+            # If the script returned validation error
+            # raise a ValidationError exception using
+            # the first key
+            errors = return_content.get("validation_errors")
+            if errors:
+                for key, message in errors.items():
+                    raise YunohostValidationError(
+                        "app_argument_invalid",
+                        name=key,
+                        error=message,
+                    )
 
-    def _call_config_script(
-        self, action: str, env: Union[dict[str, Any], None] = None
-    ) -> dict[str, Any]:
-        from yunohost.hook import hook_exec
+        def _run_action(self, form: "FormModel", action_id: str) -> None:
+            env = {key: str(value) for key, value in form.dict().items()}
+            self._call_config_script(action_id, env=env)
 
-        if env is None:
-            env = {}
+        def _call_config_script(
+            self, action: str, env: Union[dict[str, Any], None] = None
+        ) -> dict[str, Any]:
+            from yunohost.hook import hook_exec
 
-        # Add default config script if needed
-        config_script = os.path.join(
-            APPS_SETTING_PATH, self.entity, "scripts", "config"
-        )
-        if not os.path.exists(config_script):
-            logger.debug("Adding a default config script")
-            default_script = """#!/bin/bash
+            if env is None:
+                env = {}
+
+            # Add default config script if needed
+            config_script = os.path.join(
+                APPS_SETTING_PATH, self.entity, "scripts", "config"
+            )
+            if not os.path.exists(config_script):
+                logger.debug("Adding a default config script")
+                default_script = """#!/bin/bash
 source /usr/share/yunohost/helpers
 ynh_abort_if_errors
 ynh_app_config_run $1
 """
-            write_to_file(config_script, default_script)
+                write_to_file(config_script, default_script)
 
-        # Call config script to extract current values
-        logger.debug(f"Calling '{action}' action from config script")
-        app = self.entity
-        app_id, app_instance_nb = _parse_app_instance_name(app)
-        settings = _get_app_settings(app)
-        env.update(
-            {
-                "app_id": app_id,
-                "app": app,
-                "app_instance_nb": str(app_instance_nb),
-                "final_path": settings.get("final_path", ""),
-                "install_dir": settings.get("install_dir", ""),
-                "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, app),
-            }
-        )
+            # Call config script to extract current values
+            logger.debug(f"Calling '{action}' action from config script")
+            app = self.entity
+            app_id, app_instance_nb = _parse_app_instance_name(app)
+            settings = _get_app_settings(app)
+            env.update(
+                {
+                    "app_id": app_id,
+                    "app": app,
+                    "app_instance_nb": str(app_instance_nb),
+                    "final_path": settings.get("final_path", ""),
+                    "install_dir": settings.get("install_dir", ""),
+                    "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, app),
+                }
+            )
 
-        ret, values = hook_exec(config_script, args=[action], env=env)
-        if ret != 0:
-            if action == "show":
-                raise YunohostError("app_config_unable_to_read")
-            elif action == "apply":
-                raise YunohostError("app_config_unable_to_apply")
-            else:
-                raise YunohostError("app_action_failed", action=action, app=app)
-        return values
+            ret, values = hook_exec(config_script, args=[action], env=env)
+            if ret != 0:
+                if action == "show":
+                    raise YunohostError("app_config_unable_to_read")
+                elif action == "apply":
+                    raise YunohostError("app_config_unable_to_apply")
+                else:
+                    raise YunohostError("app_action_failed", action=action, app=app)
+            return values
+
+    return AppConfigPanel
 
 
 def _get_app_settings(app):
@@ -2782,6 +2789,7 @@ def _get_conflicting_apps(domain, path, ignore_app=None):
     """
 
     from yunohost.domain import _assert_domain_exists
+    from yunohost.utils.form import DomainOption, WebPathOption
 
     domain = DomainOption.normalize(domain)
     path = WebPathOption.normalize(path)
