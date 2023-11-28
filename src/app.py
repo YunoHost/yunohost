@@ -1857,10 +1857,10 @@ def _get_AppConfigPanel():
             if not os.path.exists(config_script):
                 logger.debug("Adding a default config script")
                 default_script = """#!/bin/bash
-    source /usr/share/yunohost/helpers
-    ynh_abort_if_errors
-    ynh_app_config_run $1
-    """
+source /usr/share/yunohost/helpers
+ynh_abort_if_errors
+ynh_app_config_run $1
+"""
                 write_to_file(config_script, default_script)
 
             # Call config script to extract current values
