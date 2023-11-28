@@ -48,14 +48,6 @@
 #    reports:
 #      junit: report.xml
 
-test-actionmap:
-  extends: .test-stage
-  script:
-    - python3 -m pytest tests/test_actionmap.py
-#  only:
-#    changes:
-#      - share/actionsmap.yml
-
 test-helpers:
   extends: .test-stage
   script:

@@ -3,6 +3,14 @@
 ########################################
 # later we must fix lint and format-check jobs and remove "allow_failure"
 
+actionsmap:
+  stage: lint
+  image: "before-install"
+  needs: []
+  script:
+    - python -c 'import yaml; yaml.safe_load(open("share/actionsmap.yml"))'
+    - python -c 'import yaml; yaml.safe_load(open("share/actionsmap-portal.yml"))'
+
 lint311:
   stage: lint
   image: "before-install"
