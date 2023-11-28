@@ -246,13 +246,15 @@ def portal_update(
         except YunohostValidationError as e:
             raise YunohostValidationError(e.key, path="newpassword")
 
-        Auth().delete_session_cookie()
         new_attr_dict["userPassword"] = [_hash_user_password(newpassword)]
 
     try:
         ldap_interface.update(f"uid={username},ou=users", new_attr_dict)
     except Exception as e:
         raise YunohostError("user_update_failed", user=username, error=e)
+
+    if "userPassword" in new_attr_dict:
+        Auth.invalidate_all_sessions_for_user(username)
 
     # FIXME: Here we could want to trigger "post_user_update" hook but hooks has to
     # be run as root

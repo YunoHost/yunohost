@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+import time
 import jwt
 import logging
 import ldap
@@ -7,21 +8,21 @@ import ldap.sasl
 import datetime
 import base64
 import os
+import hashlib
+import glob
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
 from cryptography.hazmat.backends import default_backend
-
 
 from moulinette import m18n
 from moulinette.authentication import BaseAuthenticator
 from moulinette.utils.text import random_ascii
 from yunohost.utils.error import YunohostError, YunohostAuthenticationError
 
-# FIXME : we shall generate this somewhere if it doesnt exists yet
-# FIXME : fix permissions
-session_secret = open("/etc/yunohost/.ssowat_cookie_secret").read().strip()
-
+SESSION_SECRET = open("/etc/yunohost/.ssowat_cookie_secret").read().strip()
+SESSION_FOLDER = "/var/cache/yunohost-portal/sessions"
+SESSION_VALIDITY = 3 * 24 * 3600  # 3 days
 logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
 
 URI = "ldap://localhost:389"
@@ -37,12 +38,12 @@ USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
 # To do so, we use AES-256-CBC. As it's a block encryption algorithm, it requires an IV,
 # which we need to keep around for decryption on SSOwat'side.
 #
-# session_secret is used as the encryption key, which implies it must be exactly 32-char long (256/8)
+# SESSION_SECRET is used as the encryption key, which implies it must be exactly 32-char long (256/8)
 #
 # The result is a string formatted as <password_enc_b64>|<iv_b64>
 # For example: ctl8kk5GevYdaA5VZ2S88Q==|yTAzCx0Gd1+MCit4EQl9lA==
 def encrypt(data):
-    alg = algorithms.AES(session_secret.encode())
+    alg = algorithms.AES(SESSION_SECRET.encode())
     iv = os.urandom(int(alg.block_size / 8))
 
     E = Cipher(alg, modes.CBC(iv), default_backend()).encryptor()
@@ -59,12 +60,16 @@ def decrypt(data_enc_and_iv_b64):
     data_enc = base64.b64decode(data_enc_b64)
     iv = base64.b64decode(iv_b64)
 
-    alg = algorithms.AES(session_secret.encode())
+    alg = algorithms.AES(SESSION_SECRET.encode())
     D = Cipher(alg, modes.CBC(iv), default_backend()).decryptor()
     p = padding.PKCS7(alg.block_size).unpadder()
     data_padded = D.update(data_enc)
     data = p.update(data_padded) + p.finalize()
     return data.decode()
+
+
+def short_hash(data):
+    return hashlib.shake_256(data.encode()).hexdigest(20)
 
 
 class Authenticator(BaseAuthenticator):
@@ -113,64 +118,92 @@ class Authenticator(BaseAuthenticator):
         from bottle import response, request
 
         assert isinstance(infos, dict)
+        assert "user" in infos
+        assert "pwd" in infos
 
-        # This allows to generate a new session id or keep the existing one
-        current_infos = self.get_session_cookie(raise_if_no_session_exists=False)
-        new_infos = {
-            "id": current_infos["id"],
-            # See https://pyjwt.readthedocs.io/en/latest/usage.html#registered-claim-names
-            # for explanations regarding nbf, exp
-            "nbf": int(datetime.datetime.now().timestamp()),
-            # FIXME : does it mean the session suddenly expires after a week ? Can we somehow auto-renew it at every usage or something ?
-            "exp": int(datetime.datetime.now().timestamp())
-            + (7 * 24 * 3600),  # One week validity
-            "host": request.get_header("host"),
-        }
-        new_infos.update(infos)
+        # Create a session id, built as <user_hash> + some random ascii
+        # Prefixing with the user hash is meant to provide the ability to invalidate all this user's session
+        # (eg because the user gets deleted, or password gets changed)
+        # User hashing not really meant for security, just to sort of anonymize/pseudonymize the session file name
+        infos["id"] = short_hash(infos['user']) + random_ascii(20)
+        infos["host"] = request.get_header("host")
 
         response.set_cookie(
             "yunohost.portal",
-            jwt.encode(new_infos, session_secret, algorithm="HS256"),
+            jwt.encode(infos, SESSION_SECRET, algorithm="HS256"),
             secure=True,
             httponly=True,
             path="/",
-            # samesite="strict", # Bottle 0.12 doesn't support samesite, to be added in next versions
-            # FIXME : add Expire clause
+            samesite="strict",  # Doesn't this cause issues ? May cause issue if the portal is on different subdomain than the portal API ? Will surely cause issue for development similar to CORS ?
         )
 
-    def get_session_cookie(self, raise_if_no_session_exists=True, decrypt_pwd=False):
+        # Create the session file (expiration mechanism)
+        session_file = f'{SESSION_FOLDER}/{infos["id"]}'
+        os.system(f'touch "{session_file}"')
+
+    def get_session_cookie(self, decrypt_pwd=False):
         from bottle import request
 
         try:
             token = request.get_cookie("yunohost.portal", default="").encode()
             infos = jwt.decode(
                 token,
-                session_secret,
+                SESSION_SECRET,
                 algorithms="HS256",
-                options={"require": ["id", "user", "exp", "nbf"]},
+                options={"require": ["id", "host", "user", "pwd"]},
             )
         except Exception:
-            if not raise_if_no_session_exists:
-                return {"id": random_ascii()}
-            # FIXME FIXME FIXME : we might also want this to be caught by fail2ban ? Idk ...
             raise YunohostAuthenticationError("unable_authenticate")
 
-        if not infos and raise_if_no_session_exists:
+        if not infos:
             raise YunohostAuthenticationError("unable_authenticate")
 
-        if "id" not in infos:
-            infos["id"] = random_ascii()
+        if infos["host"] != request.get_header("host"):
+            raise YunohostAuthenticationError("unable_authenticate")
+
+        self.purge_expired_session_files()
+        session_file = f'{SESSION_FOLDER}/{infos["id"]}'
+        if not os.path.exists(session_file):
+            response.delete_cookie("yunohost.portal", path="/")
+            raise YunohostAuthenticationError("session_expired")
+
+        # Otherwise, we 'touch' the file to extend the validity
+        os.system(f'touch "{session_file}"')
 
         if decrypt_pwd:
             infos["pwd"] = decrypt(infos["pwd"])
-
-        # FIXME : maybe check expiration here ? Or is it already done in jwt.decode ?
-
-        # FIXME: also a valid cookie ain't everything ... i.e. maybe we should validate that the user still exists
 
         return infos
 
     def delete_session_cookie(self):
         from bottle import response
 
+        try:
+            infos = self.get_session_cookie()
+            session_file = f'{SESSION_FOLDER}/{infos["id"]}'
+            os.remove(session_file)
+        except Exception as e:
+            logger.debug(f"User logged out, but failed to properly invalidate the session : {e}")
+
+        session_file = f'{SESSION_FOLDER}/{infos["id"]}'
+        os.system(f'touch "{session_file}"')
         response.delete_cookie("yunohost.portal", path="/")
+
+    def purge_expired_session_files(self):
+
+        for session_id in os.listdir(SESSION_FOLDER):
+            session_file = f"{SESSION_FOLDER}/{session_id}"
+            if abs(os.path.getctime(session_file) - time.time()) > SESSION_VALIDITY:
+                try:
+                    os.remove(session_file)
+                except Exception as e:
+                    logger.debug(f"Failed to delete session file {session_file} ? {e}")
+
+    @staticmethod
+    def invalidate_all_sessions_for_user(user):
+
+        for path in glob.glob(f"{SESSION_FOLDER}/{short_hash(user)}*"):
+            try:
+                os.remove(path)
+            except Exception as e:
+                logger.debug(f"Failed to delete session file {path} ? {e}")

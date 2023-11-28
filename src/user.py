@@ -306,6 +306,7 @@ def user_create(
 def user_delete(operation_logger, username, purge=False, from_import=False):
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
 
     if username not in user_list()["users"]:
         raise YunohostValidationError("user_unknown", user=username)
@@ -333,6 +334,8 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
         ldap.remove(f"uid={username},ou=users")
     except Exception as e:
         raise YunohostError("user_deletion_failed", user=username, error=e)
+
+    PortalAuth.invalidate_all_sessions_for_user(username)
 
     # Invalidate passwd to take user deletion into account
     subprocess.call(["nscd", "-i", "passwd"])
@@ -531,6 +534,10 @@ def user_update(
         ldap.update(f"uid={username},ou=users", new_attr_dict)
     except Exception as e:
         raise YunohostError("user_update_failed", user=username, error=e)
+
+    if "userPassword" in new_attr_dict:
+        from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
+        PortalAuth.invalidate_all_sessions_for_user(username)
 
     # Invalidate passwd and group to update the loginShell
     subprocess.call(["nscd", "-i", "passwd"])

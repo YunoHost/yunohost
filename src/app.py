@@ -1707,6 +1707,7 @@ def app_ssowatconf():
 
     conf_dict = {
         "cookie_secret_file": "/etc/yunohost/.ssowat_cookie_secret",
+        "session_folder": "/var/cache/yunohost-portal/sessions",
         "cookie_name": "yunohost.portal",
         "redirected_urls": redirected_urls,
         "domain_portal_urls": _get_domain_portal_dict(),

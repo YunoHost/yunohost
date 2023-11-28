@@ -75,6 +75,12 @@ do_init_regen() {
     chmod 550 /usr/share/yunohost/portallogos
     chown ynh-portal:www-data /usr/share/yunohost/portallogos
 
+    mkdir -p /var/cache/yunohost-portal/sessions
+    chown ynh-portal /var/cache/yunohost-portal
+    chmod 500 /var/cache/yunohost-portal
+    chown ynh-portal /var/cache/yunohost-portal/sessions
+    chmod 700 /var/cache/yunohost-portal/sessions
+
     # YunoHost services
     cp yunohost-api.service /etc/systemd/system/yunohost-api.service
     cp yunohost-portal-api.service /etc/systemd/system/yunohost-portal-api.service
@@ -259,6 +265,12 @@ do_post_regen() {
     mkdir -p /usr/share/yunohost/portallogos
     chmod 550 /usr/share/yunohost/portallogos
     chown ynh-portal:www-data /usr/share/yunohost/portallogos
+
+    mkdir -p /var/cache/yunohost-portal/sessions
+    chown ynh-portal /var/cache/yunohost-portal
+    chmod 500 /var/cache/yunohost-portal
+    chown ynh-portal /var/cache/yunohost-portal/sessions
+    chmod 700 /var/cache/yunohost-portal/sessions
 
     # Domain settings
     mkdir -p /etc/yunohost/domains
