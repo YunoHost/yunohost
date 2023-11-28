@@ -25,22 +25,8 @@ mypy:
   script:
     - tox -e py311-mypy
 
-black:
+i18n-keys:
   stage: lint
-  image: "before-install"
   needs: []
-  before_script:
-    - git config --global user.email "yunohost@yunohost.org"
-    - git config --global user.name "$GITHUB_USER"
-    - hub clone --branch ${CI_COMMIT_REF_NAME} "https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/yunohost.git" github_repo
-    - cd github_repo
   script:
-    # create a local branch that will overwrite distant one
-    - git checkout -b "ci-format-${CI_COMMIT_REF_NAME}" --no-track
-    - tox -e py311-black-run
-    - '[ $(git diff | wc -l) != 0 ] || exit 0'  # stop if there is nothing to commit
-    - git commit -am "[CI] Format code with Black" || true
-    - git push -f origin "ci-format-${CI_COMMIT_REF_NAME}":"ci-format-${CI_COMMIT_REF_NAME}"
-    - hub pull-request -m "[CI] Format code with Black" -b Yunohost:dev -p || true # GITHUB_USER and GITHUB_TOKEN registered here https://gitlab.com/yunohost/yunohost/-/settings/ci_cd
-  only:
-    - tags
+    - python3 maintenance/missing_i18n_keys.py --check
