@@ -1298,7 +1298,7 @@ class TestFile(BaseTest):
     def test_basic_attrs(self):
         raw_option, option, value = self._test_basic_attrs()
 
-        accept = raw_option.get("accept", "")  # accept default
+        accept = raw_option.get("accept", None)  # accept default
         assert option.accept == accept
 
     def test_options_prompted_with_ask_help(self):

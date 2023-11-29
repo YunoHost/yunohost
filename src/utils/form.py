@@ -1317,7 +1317,7 @@ class FileOption(BaseInputOption):
 
         if Moulinette.interface.type != "api":
             path = Path(value)
-            if not (path.exists() or path.is_absolute() or path.is_file()):
+            if not (path.exists() and path.is_absolute() and path.is_file()):
                 raise YunohostValidationError("File doesn't exists", raw_msg=True)
             content = path.read_bytes()
         else:
