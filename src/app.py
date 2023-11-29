@@ -3264,14 +3264,15 @@ def regen_mail_app_user_config_for_dovecot_and_postfix(only=None):
         if "domain" not in settings or "mail_pwd" not in settings:
             continue
 
+        mail_user = settings.get("mail_user", app)
+        mail_domain = settings.get("mail_domain", settings["domain"])
+
         if dovecot:
             hashed_password = _hash_user_password(settings["mail_pwd"])
             dovecot_passwd.append(
                 f"{app}:{hashed_password}::::::allow_nets=::1,127.0.0.1/24,local,mail={mail_user}@{mail_domain}"
             )
         if postfix:
-            mail_user = settings.get("mail_user", app)
-            mail_domain = settings.get("mail_domain", settings["domain"])
             postfix_map.append(f"{mail_user}@{mail_domain} {app}")
 
     if dovecot:
