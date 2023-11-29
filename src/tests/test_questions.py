@@ -1841,8 +1841,6 @@ def patch_entities():
         apps=[installed_webapp, installed_non_webapp]
     ), patch_users(
         users={admin_username: admin_user, regular_username: regular_user},
-        admin_username=admin_username,
-        main_domain=main_domain,
     ), patch_groups(
         groups=groups2
     ):
