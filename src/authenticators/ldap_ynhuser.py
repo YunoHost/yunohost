@@ -9,6 +9,7 @@ import base64
 import os
 import hashlib
 import glob
+from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
 from cryptography.hazmat.primitives import padding
@@ -127,13 +128,16 @@ class Authenticator(BaseAuthenticator):
         infos["id"] = short_hash(infos['user']) + random_ascii(20)
         infos["host"] = request.get_header("host")
 
+        is_dev = Path("/etc/yunohost/.portal-api-allowed-cors-origins").exists()
+
         response.set_cookie(
             "yunohost.portal",
             jwt.encode(infos, SESSION_SECRET, algorithm="HS256"),
             secure=True,
             httponly=True,
             path="/",
-            samesite="strict",  # Doesn't this cause issues ? May cause issue if the portal is on different subdomain than the portal API ? Will surely cause issue for development similar to CORS ?
+            # Doesn't this cause issues ? May cause issue if the portal is on different subdomain than the portal API ? Will surely cause issue for development similar to CORS ?
+            samesite="strict" if not is_dev else None,
         )
 
         # Create the session file (expiration mechanism)
