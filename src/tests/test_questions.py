@@ -709,6 +709,8 @@ class TestText(BaseTest):
         *unchanged("none", "_none", "False", "True", "0", "1", "-1", "1337", "13.37", "[]", ",", "['one']", "one,two", r"{}", "value", raw_option={"optional": True}),
         ("value", "value"),
         ("value\n value", "value\n value"),
+        ("value", FAIL, {"pattern": {"regexp": r'^[A-F]\d\d$', "error": "Provide a room like F12 : one uppercase and 2 numbers"}}),
+        ("F12", "F12", {"pattern": {"regexp": r'^[A-F]\d\d$', "error": "Provide a room like F12 : one uppercase and 2 numbers"}}),
         # test no strip
         *xpass(scenarios=[
             ("value\n", "value"),
