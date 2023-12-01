@@ -302,7 +302,7 @@ Mode = Literal["python", "bash"]
 
 class Pattern(BaseModel):
     regexp: str
-    error: Translation = "error_pattern"  # FIXME add generic i18n key
+    error: Translation = "pydantic.value_error.str.regex"  # FIXME add generic i18n key
 
 
 class BaseOption(BaseModel):
@@ -2083,19 +2083,38 @@ def prompt_or_validate_form(
                 form[option.id] = option.normalize(value, option)
                 context[option.id] = form[option.id]
             except (ValidationError, YunohostValidationError) as e:
+                if isinstance(e, ValidationError):
+                    # TODO: handle multiple errors
+                    err = e.errors()[0]
+                    ctx = err.get("ctx", {})
+
+                    if "permitted" in ctx:
+                        ctx["permitted"] = ", ".join(
+                            f"'{choice}'" for choice in ctx["permitted"]
+                        )
+                    if (
+                        isinstance(option, (BaseStringOption, TagsOption))
+                        and "regex" in err["type"]
+                    ):
+                        err_text = option.pattern.error
+                    else:
+                        err_text = m18n.n(f"pydantic.{err['type']}", **ctx)
+                else:
+                    err_text = str(e)
+
                 # If in interactive cli, re-ask the current question
                 if i < MAX_RETRIES and interactive:
-                    logger.error(
-                        "\n".join([err["msg"] for err in e.errors()])
-                        if isinstance(e, ValidationError)
-                        else str(e)
-                    )
+                    logger.error(err_text)
                     value = None
                     continue
 
                 if isinstance(e, ValidationError):
-                    error = "\n".join([err["msg"] for err in e.errors()])
-                    raise YunohostValidationError(error, raw_msg=True)
+                    if not interactive:
+                        err_text = m18n.n(
+                            "app_argument_invalid", name=option.id, error=err_text
+                        )
+
+                    raise YunohostValidationError(err_text, raw_msg=True)
 
                 # Otherwise raise the ValidationError
                 raise e
