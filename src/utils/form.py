@@ -2095,6 +2095,7 @@ def prompt_or_validate_form(
                     if (
                         isinstance(option, (BaseStringOption, TagsOption))
                         and "regex" in err["type"]
+                        and option.pattern is not None
                     ):
                         err_text = option.pattern.error
                     else:
