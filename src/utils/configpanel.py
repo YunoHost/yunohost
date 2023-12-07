@@ -698,7 +698,6 @@ class ConfigPanel:
     def _get_raw_settings(self) -> "RawSettings":
         if not self.save_path or not os.path.exists(self.save_path):
             return {}
-            # raise YunohostValidationError("config_no_settings")
 
         return read_yaml(self.save_path)
 

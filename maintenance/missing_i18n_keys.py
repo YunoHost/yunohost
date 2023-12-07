@@ -135,6 +135,12 @@ def find_expected_string_keys():
 
     # Domain config panel
     domain_config = toml.load(open(ROOT + "share/config_domain.toml"))
+    domain_settings_with_help_key = [
+        "portal_logo",
+        "portal_public_intro",
+        "portal_theme",
+        "portal_user_intro",
+    ]
     for panel in domain_config.values():
         if not isinstance(panel, dict):
             continue
@@ -145,6 +151,8 @@ def find_expected_string_keys():
                 if not isinstance(values, dict):
                     continue
                 yield f"domain_config_{key}"
+                if key in domain_settings_with_help_key:
+                    yield f"domain_config_{key}_help"
 
     # Global settings
     global_config = toml.load(open(ROOT + "share/config_global.toml"))

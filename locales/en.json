@@ -758,6 +758,7 @@
     "service_description_ssh": "Allows you to connect remotely to your server via a terminal (SSH protocol)",
     "service_description_yunohost-api": "Manages interactions between the YunoHost web interface and the system",
     "service_description_yunohost-firewall": "Manages open and close connection ports to services",
+    "service_description_yunohost-portal-api": "Manages interactions between the different user portal web interfaces and the system",
     "service_description_yunomdns": "Allows you to reach your server using 'yunohost.local' in your local network",
     "service_disable_failed": "Could not make the service '{service}' not start at boot.\n\nRecent service logs:{logs}",
     "service_disabled": "The service '{service}' will not be started anymore when system boots.",
