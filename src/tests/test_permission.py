@@ -373,7 +373,7 @@ def can_access_webpage(webpath, logged_as=None):
                 verify=False,
             )
             # We should have some cookies related to authentication now
-            assert session.cookies, (session, session.text)
+            assert session.cookies, session
             r = session.get(webpath, verify=False)
 
     # If we can't access it, we got redirected to the SSO
@@ -989,12 +989,11 @@ def test_show_tile_cant_be_enabled():
 #
 
 
-@pytest.mark.other_domains(number=1)
 def test_permission_app_install():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=0&admin=%s"
-        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
 
@@ -1022,12 +1021,11 @@ def test_permission_app_install():
     assert maindomain + "/urlpermissionapp" in app_map(user="bob").keys()
 
 
-@pytest.mark.other_domains(number=1)
 def test_permission_app_remove():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=0&admin=%s"
-        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
     app_remove("permissions_app")
@@ -1037,12 +1035,11 @@ def test_permission_app_remove():
     assert not any(p.startswith("permissions_app.") for p in res.keys())
 
 
-@pytest.mark.other_domains(number=1)
 def test_permission_app_change_url():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
-        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
 
@@ -1060,12 +1057,11 @@ def test_permission_app_change_url():
     assert res["permissions_app.dev"]["url"] == "/dev"
 
 
-@pytest.mark.other_domains(number=1)
 def test_permission_protection_management_by_helper():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
-        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
 
@@ -1085,12 +1081,11 @@ def test_permission_protection_management_by_helper():
     assert res["permissions_app.dev"]["protected"] is True
 
 
-@pytest.mark.other_domains(number=1)
 def test_permission_app_propagation_on_ssowat():
     app_install(
         os.path.join(get_test_apps_dir(), "permissions_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=1&admin=%s"
-        % (maindomain, other_domains[0], "/urlpermissionapp", "alice"),
+        % (maindomain, maindomain, "/urlpermissionapp", "alice"),
         force=True,
     )
 
@@ -1121,12 +1116,11 @@ def test_permission_app_propagation_on_ssowat():
     assert not can_access_webpage(app_webroot + "/admin", logged_as="bob")
 
 
-@pytest.mark.other_domains(number=1)
 def test_permission_legacy_app_propagation_on_ssowat():
     app_install(
         os.path.join(get_test_apps_dir(), "legacy_app_ynh"),
         args="domain=%s&domain_2=%s&path=%s&is_public=0"
-        % (maindomain, other_domains[0], "/legacy"),
+        % (maindomain, maindomain, "/legacy"),
         force=True,
     )
 
