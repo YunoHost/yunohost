@@ -455,6 +455,8 @@ def test_restore_app_script_failure_handling(monkeypatch, mocker):
         if os.path.basename(name).startswith("restore"):
             monkeypatch.undo()
             return (1, None)
+        else:
+            return (0, {})
 
     monkeypatch.setattr("yunohost.hook.hook_exec", custom_hook_exec)
 
