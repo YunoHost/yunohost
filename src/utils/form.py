@@ -2003,6 +2003,22 @@ def parse_prefilled_values(
     return values
 
 
+# i18n: pydantic_type_error
+# i18n: pydantic_type_error_none_not_allowed
+# i18n: pydantic_type_error_str
+# i18n: pydantic_value_error_color
+# i18n: pydantic_value_error_const
+# i18n: pydantic_value_error_date
+# i18n: pydantic_value_error_email
+# i18n: pydantic_value_error_number_not_ge
+# i18n: pydantic_value_error_number_not_le
+# i18n: pydantic_value_error_str_regex
+# i18n: pydantic_value_error_time
+# i18n: pydantic_value_error_url_extra
+# i18n: pydantic_value_error_url_host
+# i18n: pydantic_value_error_url_port
+# i18n: pydantic_value_error_url_scheme
+
 MAX_RETRIES = 4
 
 
@@ -2099,7 +2115,9 @@ def prompt_or_validate_form(
                     ):
                         err_text = option.pattern.error
                     else:
-                        err_text = m18n.n(f"pydantic.{err['type']}", **ctx)
+                        err_text = m18n.n(
+                            f"pydantic.{err['type']}".replace(".", "_"), **ctx
+                        )
                 else:
                     err_text = str(e)
 
