@@ -373,7 +373,7 @@ def can_access_webpage(webpath, logged_as=None):
                 verify=False,
             )
             # We should have some cookies related to authentication now
-            assert session.cookies
+            assert session.cookies, (session, session.text)
             r = session.get(webpath, verify=False)
 
     # If we can't access it, we got redirected to the SSO
