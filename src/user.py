@@ -20,7 +20,6 @@ import os
 import re
 import pwd
 import grp
-import crypt
 import random
 import string
 import subprocess
@@ -1452,6 +1451,9 @@ def _hash_user_password(password):
     [2] https://docs.python.org/2/library/random.html
     [3] https://www.safaribooksonline.com/library/view/practical-unix-and/0596003234/ch04s03.html
     """
+
+    # FIXME: 'crypt' is deprecated and slated for removal in Python 3.13
+    import crypt
 
     char_set = string.ascii_uppercase + string.ascii_lowercase + string.digits + "./"
     salt = "".join([random.SystemRandom().choice(char_set) for x in range(16)])
