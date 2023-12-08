@@ -482,7 +482,7 @@ def _get_dns_zone_for_domain(domain):
         zone = parent_list[-1]
 
     # Adding this otherwise the CI is flooding about those ...
-    if domain not in ["example.tld", "sub.example.tld", "domain.tld"]:
+    if domain not in ["example.tld", "sub.example.tld", "domain.tld", "domain_a.dev", "domain_b.dev"]:
         logger.warning(
             f"Could not identify correctly the dns zone for domain {domain}, returning {zone}"
         )
