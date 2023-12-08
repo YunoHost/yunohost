@@ -355,7 +355,7 @@ def check_permission_for_apps():
 
 def can_access_webpage(webpath, logged_as=None):
     webpath = webpath.rstrip("/")
-    sso_url = "https://" + maindomain + "/yunohost/portalapi/login"
+    login_endpoint = "https://" + maindomain + "/yunohost/portalapi/login"
 
     # Anonymous access
     if not logged_as:
@@ -363,20 +363,28 @@ def can_access_webpage(webpath, logged_as=None):
     # Login as a user using dummy password
     else:
         with requests.Session() as session:
-            session.post(
-                sso_url,
+            r = session.post(
+                login_endpoint,
                 data={"credentials": f"{logged_as}:{dummy_password}"},
                 headers={
-                    "Referer": sso_url,
-                    "Content-Type": "application/x-www-form-urlencoded",
+                    "X-Requested-With": "",
                 },
                 verify=False,
             )
             # We should have some cookies related to authentication now
-            assert session.cookies, session
+            assert session.cookies
             r = session.get(webpath, verify=False)
 
     # If we can't access it, we got redirected to the SSO
+    # with `r=<base64_callback_url>` for anonymous access because they're encouraged to log-in,
+    # and `msg=access_denied` if we are logged but not allowed for this url
+    # with `r=
+    sso_url = "https://yolo.test/yunohost/sso/"
+    if not logged_as:
+        sso_url += "?r="
+    else:
+        sso_url += "?msg=access_denied"
+
     return not r.url.startswith(sso_url)
 
 

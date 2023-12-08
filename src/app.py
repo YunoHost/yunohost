@@ -1946,7 +1946,7 @@ def _set_app_settings(app, settings):
 
 def _parse_app_version(v):
 
-    if v == "?":
+    if v in ["?", "-"]:
         return (0, 0)
 
     try:
