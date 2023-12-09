@@ -305,7 +305,15 @@ def domain_add(
             # should identify the root of this bug...
             _force_clear_hashes([f"/etc/nginx/conf.d/{domain}.conf"])
             regen_conf(
-                names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd", "mdns", "dovecot"]
+                names=[
+                    "nginx",
+                    "metronome",
+                    "dnsmasq",
+                    "postfix",
+                    "rspamd",
+                    "mdns",
+                    "dovecot",
+                ]
             )
             app_ssowatconf()
 
