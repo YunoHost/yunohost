@@ -1,3 +1,9 @@
+yunohost (11.2.8.2) stable; urgency=low
+
+  - Aleks forgot to remove pdb.set_trace ... (54a6a1b3)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 09 Dec 2023 18:26:10 +0100
+
 yunohost (11.2.8.1) stable; urgency=low
 
   - apps: fix change_url again, otherwise the lack of path_url default to the old path and fucks up the nginx regen (169c9214)
