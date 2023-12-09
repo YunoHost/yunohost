@@ -501,10 +501,6 @@ def app_change_url(operation_logger, app, domain, path):
 
     change_url_script = os.path.join(tmp_workdir_for_app, "scripts/change_url")
 
-    import pdb
-
-    pdb.set_trace()
-
     # Execute App change_url script
     change_url_failed = True
     try:
