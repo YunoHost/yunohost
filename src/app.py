@@ -480,6 +480,7 @@ def app_change_url(operation_logger, app, domain, path):
     env_dict["new_path"] = path
     env_dict["domain"] = domain
     env_dict["path"] = path
+    env_dict["path_url"] = path
     env_dict["change_path"] = "1" if old_path != path else "0"
     env_dict["change_domain"] = "1" if old_domain != domain else "0"
 
@@ -499,6 +500,8 @@ def app_change_url(operation_logger, app, domain, path):
         old_nginx_conf_backup = read_file(old_nginx_conf_path)
 
     change_url_script = os.path.join(tmp_workdir_for_app, "scripts/change_url")
+
+    import pdb; pdb.set_trace()
 
     # Execute App change_url script
     change_url_failed = True
