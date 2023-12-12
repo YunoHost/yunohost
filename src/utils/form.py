@@ -1465,7 +1465,7 @@ class SelectOption(BaseChoicesOption):
 
     type: Literal[OptionType.select] = OptionType.select
     filter: Literal[None] = None
-    choices: Union[dict[str, Any], list[Any]]
+    choices: Union[list[Any], dict[str, Any]]
     default: Union[str, None]
     _annotation = str
 
