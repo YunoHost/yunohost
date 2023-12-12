@@ -4,6 +4,31 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
  
+yunohost (11.2.8.2) stable; urgency=low
+
+  - Aleks forgot to remove pdb.set_trace ... (54a6a1b3)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 09 Dec 2023 18:26:10 +0100
+
+yunohost (11.2.8.1) stable; urgency=low
+
+  - apps: fix change_url again, otherwise the lack of path_url default to the old path and fucks up the nginx regen (169c9214)
+  - i18n: Translations updated for German
+
+  Thanks to all contributors <3 ! (Christian Wehrli)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 09 Dec 2023 15:56:20 +0100
+
+yunohost (11.2.8) stable; urgency=low
+
+  - domains: also regen dovecot configuration when adding a domain (59875cae)
+  - helpers/fail2ban: grep logpath is likely to match comments in the file that contain the word logpath... (26796807)
+  - helpers: Further simplify the change url helper ([#1746](https://github.com/yunohost/yunohost/pull/1746))
+
+  Thanks to all contributors <3 ! (Josué Tille)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 05 Dec 2023 19:21:38 +0100
+
 yunohost (11.2.7) stable; urgency=low
 
   - helpers: fix fail2ban helper when using using --use_template arg ([#1743](https://github.com/yunohost/yunohost/pull/1743))

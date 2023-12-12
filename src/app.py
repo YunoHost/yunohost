@@ -461,6 +461,9 @@ def app_change_url(operation_logger, app, domain, path):
     env_dict["old_path"] = old_path
     env_dict["new_domain"] = domain
     env_dict["new_path"] = path
+    env_dict["domain"] = domain
+    env_dict["path"] = path
+    env_dict["path_url"] = path
     env_dict["change_path"] = "1" if old_path != path else "0"
     env_dict["change_domain"] = "1" if old_domain != domain else "0"
 
