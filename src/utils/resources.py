@@ -34,6 +34,7 @@ from moulinette.utils.filesystem import (
 )
 from yunohost.utils.system import system_arch
 from yunohost.utils.error import YunohostError, YunohostValidationError
+from yunohost.utils.algorithms import recursive_apply
 
 logger = getActionLogger("yunohost.app_resources")
 
@@ -146,15 +147,20 @@ class AppResource:
     def __init__(self, properties: Dict[str, Any], app: str, manager=None):
         self.app = app
         self.manager = manager
+        properties = self.default_properties | properties
 
-        for key, value in self.default_properties.items():
-            if isinstance(value, str):
-                value = value.replace("__APP__", self.app)
-            setattr(self, key, value)
+        replacements: dict[str, str] = {
+            "__APP__": self.app,
+        }
+
+        def replace_tokens_in_strings(data: Any):
+            if not isinstance(data, str):
+                return
+            for token, replacement in replacements.items():
+                data = data.replace(token, replacement)
+        recursive_apply(replace_tokens_in_strings, properties)
 
         for key, value in properties.items():
-            if isinstance(value, str):
-                value = value.replace("__APP__", self.app)
             setattr(self, key, value)
 
     def get_setting(self, key):
