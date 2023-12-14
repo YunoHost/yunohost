@@ -32,7 +32,7 @@ from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
 from moulinette.utils.filesystem import (
     rm,
 )
-from yunohost.utils.system import system_arch
+from yunohost.utils.system import system_arch, debian_version
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.algorithms import recursive_apply
 
@@ -151,6 +151,8 @@ class AppResource:
 
         replacements: dict[str, str] = {
             "__APP__": self.app,
+            "__YNH_ARCH__": system_arch(),
+            "__YNH_DEBIAN_VERSION__": debian_version(),
         }
 
         def replace_tokens_in_strings(data: Any):
