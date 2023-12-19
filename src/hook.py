@@ -377,6 +377,8 @@ def hook_exec(
             r"pg_ctlcluster \d\d main start",
             r"Ver\s*Cluster\s*Port\s*Status\s*Owner\s*Data\s*directory",
             r"/var/lib/postgresql/\d\d/main /var/log/postgresql/postgresql-\d\d-main.log",
+            # Java boring messages
+            r"cannot open '/etc/ssl/certs/java/cacerts'",
         ]
         return all(not re.search(w, msg) for w in irrelevant_warnings)
 

@@ -38,7 +38,7 @@ from yunohost.utils.system import binary_to_human
 logger = getActionLogger("yunohost.user")
 
 FIELDS_FOR_IMPORT = {
-    "username": r"^[a-z0-9_]+$",
+    "username": r"^[a-z0-9_.]+$",
     "firstname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
     "lastname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
     "password": r"^|(.{3,})$",

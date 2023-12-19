@@ -351,13 +351,12 @@ ynh_setup_source() {
     if [ -d "$YNH_APP_BASEDIR/sources/patches/" ]; then
         local patches_folder=$(realpath $YNH_APP_BASEDIR/sources/patches/)
         if (($(find $patches_folder -type f -name "${source_id}-*.patch" 2>/dev/null | wc --lines) > "0")); then
-            (
-                cd "$dest_dir"
-                for p in $patches_folder/${source_id}-*.patch; do
-                    echo $p
-                    patch --strip=1 <$p
-                done
-            ) || ynh_die --message="Unable to apply patches"
+            pushd "$dest_dir"
+            for p in $patches_folder/${source_id}-*.patch; do
+                echo $p
+                patch --strip=1 <$p || ynh_die --message="Unable to apply patches"
+            done
+            popd
         fi
     fi
 
@@ -374,7 +373,13 @@ ynh_setup_source() {
         for stuff_to_keep in $keep; do
             if [ -e "$keep_dir/$stuff_to_keep" ]; then
                 mkdir --parents "$(dirname "$dest_dir/$stuff_to_keep")"
-                cp --archive "$keep_dir/$stuff_to_keep" "$dest_dir/$stuff_to_keep"
+
+                # We add "--no-target-directory" (short option is -T) to handle the special case
+                # when we "keep" a folder, but then the new setup already contains the same dir (but possibly empty)
+                # in which case a regular "cp" will create a copy of the directory inside the directory ...
+                # resulting in something like /var/www/$app/data/data instead of /var/www/$app/data
+                # cf https://unix.stackexchange.com/q/94831 for a more elaborate explanation on the option
+                cp --archive --no-target-directory "$keep_dir/$stuff_to_keep" "$dest_dir/$stuff_to_keep"
             fi
         done
     fi
