@@ -135,7 +135,7 @@ class Authenticator(BaseAuthenticator):
         return {"user": uid}
 
     def set_session_cookie(self, infos):
-        from bottle import response, request
+        from bottle import response
 
         assert isinstance(infos, dict)
         assert "user" in infos
