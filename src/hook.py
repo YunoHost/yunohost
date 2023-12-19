@@ -379,6 +379,8 @@ def hook_exec(
             r"/var/lib/postgresql/\d\d/main /var/log/postgresql/postgresql-\d\d-main.log",
             # Java boring messages
             r"cannot open '/etc/ssl/certs/java/cacerts'",
+            # Misc
+            r"update-binfmts: warning:",
         ]
         return all(not re.search(w, msg) for w in irrelevant_warnings)
 
