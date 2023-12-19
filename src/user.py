@@ -306,6 +306,7 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
+    from yunohost.authenticators.ldap_admin import Authenticator as AdminAuth
 
     if username not in user_list()["users"]:
         raise YunohostValidationError("user_unknown", user=username)
@@ -335,6 +336,7 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
         raise YunohostError("user_deletion_failed", user=username, error=e)
 
     PortalAuth.invalidate_all_sessions_for_user(username)
+    AdminAuth.invalidate_all_sessions_for_user(username)
 
     # Invalidate passwd to take user deletion into account
     subprocess.call(["nscd", "-i", "passwd"])
@@ -535,6 +537,7 @@ def user_update(
         raise YunohostError("user_update_failed", user=username, error=e)
 
     if "userPassword" in new_attr_dict:
+        logger.info("Invalidating sessions")
         from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
         PortalAuth.invalidate_all_sessions_for_user(username)
 
@@ -1272,6 +1275,11 @@ def user_group_update(
             ldap.update(f"cn={groupname},ou=groups", new_attr_dict)
         except Exception as e:
             raise YunohostError("group_update_failed", group=groupname, error=e)
+
+    if groupname == "admins" and remove:
+        from yunohost.authenticators.ldap_admin import Authenticator as AdminAuth
+        for user in users_to_remove:
+            AdminAuth.invalidate_all_sessions_for_user(user)
 
     if sync_perm:
         permission_sync_to_user()

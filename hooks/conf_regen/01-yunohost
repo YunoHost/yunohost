@@ -60,12 +60,6 @@ do_init_regen() {
     chmod 700 /var/cache/yunohost
 
     getent passwd ynh-portal &>/dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group ynh-portal
-    if [ ! -e /etc/yunohost/.ssowat_cookie_secret ]; then
-        # NB: we need this to be exactly 32 char long, because it is later used as a key for AES256
-        dd if=/dev/urandom bs=1 count=1000 2>/dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 32 > /etc/yunohost/.ssowat_cookie_secret
-    fi
-    chown ynh-portal:root /etc/yunohost/.ssowat_cookie_secret
-    chmod 400 /etc/yunohost/.ssowat_cookie_secret
 
     # Portal folder
     mkdir -p /etc/yunohost/portal
@@ -80,6 +74,11 @@ do_init_regen() {
     chmod 510 /var/cache/yunohost-portal
     chown ynh-portal:www-data /var/cache/yunohost-portal/sessions
     chmod 710 /var/cache/yunohost-portal/sessions
+
+    # Admin sessions
+    mkdir -p /var/cache/yunohost/sessions
+    chown root:root /var/cache/yunohost/sessions
+    chmod 700 /var/cache/yunohost/sessions
 
     # YunoHost services
     cp yunohost-api.service /etc/systemd/system/yunohost-api.service
@@ -201,6 +200,12 @@ EOF
 do_post_regen() {
     regen_conf_files=$1
 
+    if [ ! -e /etc/yunohost/.admin_cookie_secret ]; then
+        dd if=/dev/urandom bs=1 count=1000 2>/dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.admin_cookie_secret
+    fi
+    chown root:root /etc/yunohost/.admin_cookie_secret
+    chmod 400 /etc/yunohost/.admin_cookie_secret
+
     getent passwd ynh-portal &>/dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group ynh-portal
     if [ ! -e /etc/yunohost/.ssowat_cookie_secret ]; then
         # NB: we need this to be exactly 32 char long, because it is later used as a key for AES256
@@ -271,6 +276,11 @@ do_post_regen() {
     chmod 510 /var/cache/yunohost-portal
     chown ynh-portal:www-data /var/cache/yunohost-portal/sessions
     chmod 710 /var/cache/yunohost-portal/sessions
+
+    # Admin sessions
+    mkdir -p /var/cache/yunohost/sessions
+    chown root:root /var/cache/yunohost/sessions
+    chmod 700 /var/cache/yunohost/sessions
 
     # Domain settings
     mkdir -p /etc/yunohost/domains

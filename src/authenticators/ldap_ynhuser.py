@@ -20,10 +20,11 @@ from moulinette.authentication import BaseAuthenticator
 from moulinette.utils.text import random_ascii
 from yunohost.utils.error import YunohostError, YunohostAuthenticationError
 
+logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
+
 SESSION_SECRET = open("/etc/yunohost/.ssowat_cookie_secret").read().strip()
 SESSION_FOLDER = "/var/cache/yunohost-portal/sessions"
 SESSION_VALIDITY = 3 * 24 * 3600  # 3 days
-logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
 
 URI = "ldap://localhost:389"
 USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
