@@ -23,7 +23,18 @@ from yunohost.utils.ldap import _get_ldap_interface
 
 logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
 
-SESSION_SECRET = open("/etc/yunohost/.ssowat_cookie_secret").read().strip()
+
+def SESSION_SECRET():
+    # Only load this once actually requested to avoid boring issues like
+    # "secret doesnt exists yet" (before postinstall) and therefore service
+    # miserably fail to start
+    if not SESSION_SECRET.value:
+        SESSION_SECRET.value = open("/etc/yunohost/.ssowat_cookie_secret").read().strip()
+    assert SESSION_SECRET.value
+    return SESSION_SECRET.value
+
+
+SESSION_SECRET.value = None
 SESSION_FOLDER = "/var/cache/yunohost-portal/sessions"
 SESSION_VALIDITY = 3 * 24 * 3600  # 3 days
 
@@ -87,7 +98,7 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
 # The result is a string formatted as <password_enc_b64>|<iv_b64>
 # For example: ctl8kk5GevYdaA5VZ2S88Q==|yTAzCx0Gd1+MCit4EQl9lA==
 def encrypt(data):
-    alg = algorithms.AES(SESSION_SECRET.encode())
+    alg = algorithms.AES(SESSION_SECRET().encode())
     iv = os.urandom(int(alg.block_size / 8))
 
     E = Cipher(alg, modes.CBC(iv), default_backend()).encryptor()
@@ -104,7 +115,7 @@ def decrypt(data_enc_and_iv_b64):
     data_enc = base64.b64decode(data_enc_b64)
     iv = base64.b64decode(iv_b64)
 
-    alg = algorithms.AES(SESSION_SECRET.encode())
+    alg = algorithms.AES(SESSION_SECRET().encode())
     D = Cipher(alg, modes.CBC(iv), default_backend()).decryptor()
     p = padding.PKCS7(alg.block_size).unpadder()
     data_padded = D.update(data_enc)
@@ -181,7 +192,7 @@ class Authenticator(BaseAuthenticator):
 
         response.set_cookie(
             "yunohost.portal",
-            jwt.encode(infos, SESSION_SECRET, algorithm="HS256"),
+            jwt.encode(infos, SESSION_SECRET(), algorithm="HS256"),
             secure=True,
             httponly=True,
             path="/",
@@ -200,7 +211,7 @@ class Authenticator(BaseAuthenticator):
             token = request.get_cookie("yunohost.portal", default="").encode()
             infos = jwt.decode(
                 token,
-                SESSION_SECRET,
+                SESSION_SECRET(),
                 algorithms="HS256",
                 options={"require": ["id", "host", "user", "pwd"]},
             )

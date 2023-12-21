@@ -96,6 +96,8 @@ APP_FILES_TO_COPY = [
     "doc",
 ]
 
+PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
+
 
 def app_list(full=False, upgradable=False):
     """
@@ -1619,7 +1621,6 @@ def app_ssowatconf():
         _get_domain_portal_dict,
     )
     from yunohost.permission import user_permission_list
-    from yunohost.portal import PORTAL_SETTINGS_DIR
 
     domains = domain_list()["domains"]
     portal_domains = domain_list(exclude_subdomains=True)["domains"]

@@ -34,7 +34,18 @@ from yunohost.utils.ldap import _get_ldap_interface
 
 logger = logging.getLogger("yunohost.authenticators.ldap_admin")
 
-SESSION_SECRET = open("/etc/yunohost/.admin_cookie_secret").read().strip()
+
+def SESSION_SECRET():
+    # Only load this once actually requested to avoid boring issues like
+    # "secret doesnt exists yet" (before postinstall) and therefore service
+    # miserably fail to start
+    if not SESSION_SECRET.value:
+        SESSION_SECRET.value = open("/etc/yunohost/.admin_cookie_secret").read().strip()
+    assert SESSION_SECRET.value
+    return SESSION_SECRET.value
+
+
+SESSION_SECRET.value = None
 SESSION_FOLDER = "/var/cache/yunohost/sessions"
 SESSION_VALIDITY = 3 * 24 * 3600  # 3 days
 
@@ -148,7 +159,7 @@ class Authenticator(BaseAuthenticator):
 
         response.set_cookie(
             "yunohost.admin",
-            jwt.encode(infos, SESSION_SECRET, algorithm="HS256"),
+            jwt.encode(infos, SESSION_SECRET(), algorithm="HS256"),
             secure=True,
             httponly=True,
             path="/",
@@ -166,7 +177,7 @@ class Authenticator(BaseAuthenticator):
             token = request.get_cookie("yunohost.admin", default="").encode()
             infos = jwt.decode(
                 token,
-                SESSION_SECRET,
+                SESSION_SECRET(),
                 algorithms="HS256",
                 options={"require": ["id", "user"]},
             )
