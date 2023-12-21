@@ -34,7 +34,7 @@ def SESSION_SECRET():
     return SESSION_SECRET.value
 
 
-SESSION_SECRET.value = None
+SESSION_SECRET.value = None  # type: ignore
 SESSION_FOLDER = "/var/cache/yunohost-portal/sessions"
 SESSION_VALIDITY = 3 * 24 * 3600  # 3 days
 
