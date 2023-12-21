@@ -63,7 +63,7 @@ user:
                     help: The unique username to create
                     extra:
                         pattern: &pattern_username
-                            - !!str ^[a-z0-9_]+$
+                            - !!str ^[a-z0-9_\.]+$
                             - "pattern_username"
                 -F:
                     full: --fullname
