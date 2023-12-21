@@ -18,6 +18,7 @@ from cryptography.hazmat.backends import default_backend
 from moulinette import m18n
 from moulinette.authentication import BaseAuthenticator
 from moulinette.utils.text import random_ascii
+from moulinette.utils.filesystem import read_json
 from yunohost.utils.error import YunohostError, YunohostAuthenticationError
 
 logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
@@ -28,6 +29,34 @@ SESSION_VALIDITY = 3 * 24 * 3600  # 3 days
 
 URI = "ldap://localhost:389"
 USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
+
+DOMAIN_USER_ACL_DICT: dict[str, dict] = {}
+PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
+
+
+def user_is_allowed_on_domain(user: str, domain: str) -> bool:
+
+    assert "/" not in domain
+
+    portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
+
+    if not portal_settings_path.exists():
+        if "." not in domain:
+            return False
+        else:
+            parent_domain = domain.split(".", 1)[-1]
+            return user_is_allowed_on_domain(user, domain)
+
+    ctime = portal_settings_path.stat().st_ctime
+    if domain not in DOMAIN_USER_ACL_DICT or DOMAIN_USER_ACL_DICT[domain]["ctime"] < time.time():
+        users = set()
+        for infos in read_json(str(portal_settings_path))["apps"].values():
+            users = users.union(infos["users"])
+        DOMAIN_USER_ACL_DICT[domain] = {}
+        DOMAIN_USER_ACL_DICT[domain]["ctime"] = ctime
+        DOMAIN_USER_ACL_DICT[domain]["users"] = users
+
+    return user in DOMAIN_USER_ACL_DICT[domain]["users"]
 
 
 # We want to save the password in the cookie, but we should do so in an encrypted fashion
@@ -77,6 +106,8 @@ class Authenticator(BaseAuthenticator):
     name = "ldap_ynhuser"
 
     def _authenticate_credentials(self, credentials=None):
+        from bottle import request
+
         try:
             username, password = credentials.split(":", 1)
         except ValueError:
@@ -112,6 +143,9 @@ class Authenticator(BaseAuthenticator):
             # Free the connection, we don't really need it to keep it open as the point is only to check authentication...
             if con:
                 con.unbind_s()
+
+        if not user_is_allowed_on_domain(username, request.get_header("host")):
+            raise YunohostAuthenticationError("unable_authenticate")
 
         return {"user": username, "pwd": encrypt(password)}
 
@@ -163,6 +197,9 @@ class Authenticator(BaseAuthenticator):
             raise YunohostAuthenticationError("unable_authenticate")
 
         if infos["host"] != request.get_header("host"):
+            raise YunohostAuthenticationError("unable_authenticate")
+
+        if not user_is_allowed_on_domain(infos["user"], infos["host"]):
             raise YunohostAuthenticationError("unable_authenticate")
 
         self.purge_expired_session_files()

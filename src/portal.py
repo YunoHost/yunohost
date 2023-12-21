@@ -24,7 +24,7 @@ from typing import Any, Union
 
 import ldap
 from moulinette.utils.filesystem import read_json
-from yunohost.authenticators.ldap_ynhuser import URI, USERDN, Authenticator as Auth
+from yunohost.authenticators.ldap_ynhuser import URI, USERDN, Authenticator as Auth, user_is_allowed_on_domain
 from yunohost.user import _hash_user_password
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.ldap import LDAPInterface, _ldap_path_extract
@@ -204,9 +204,9 @@ def portal_update(
                     "mail_already_exists", mail=mail, path=f"mailalias[{index}]"
                 )
 
-            if domain not in domains:
+            if domain not in domains or not user_is_allowed_on_domain(username, domain):
                 raise YunohostValidationError(
-                    "mail_domain_unknown", domain=domain, path=f"mailalias[{index}]"
+                    "mail_alias_unauthorized", domain=domain
                 )
 
             mails.append(mail)

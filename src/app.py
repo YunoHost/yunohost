@@ -1723,7 +1723,7 @@ def app_ssowatconf():
     for domain, apps in portal_domains_apps.items():
         portal_settings = {}
 
-        portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{domain}.json")
+        portal_settings_path = Path(PORTAL_SETTINGS_DIR) / f"{domain}.json"
         if portal_settings_path.exists():
             portal_settings.update(read_json(str(portal_settings_path)))
 
@@ -1734,6 +1734,13 @@ def app_ssowatconf():
         write_to_json(
             str(portal_settings_path), portal_settings, sort_keys=True, indent=4
         )
+
+    # Cleanup old files from possibly old domains
+    for setting_file in Path(PORTAL_SETTINGS_DIR).iterdir():
+        if setting_file.name.endswith(".json"):
+            domain = setting_file.name[:-len(".json")]
+            if domain not in portal_domains_apps:
+                setting_file.unlink()
 
     logger.debug(m18n.n("ssowat_conf_generated"))
 
