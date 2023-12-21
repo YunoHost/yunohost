@@ -8,7 +8,6 @@ import ldap.sasl
 import base64
 import os
 import hashlib
-import glob
 from pathlib import Path
 
 from cryptography.hazmat.primitives.ciphers import Cipher, algorithms, modes
@@ -50,7 +49,7 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
 
     ctime = portal_settings_path.stat().st_ctime
     if domain not in DOMAIN_USER_ACL_DICT or DOMAIN_USER_ACL_DICT[domain]["ctime"] < time.time():
-        users = set()
+        users: set[str] = set()
         for infos in read_json(str(portal_settings_path))["apps"].values():
             users = users.union(infos["users"])
         DOMAIN_USER_ACL_DICT[domain] = {}
