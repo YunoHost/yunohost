@@ -166,13 +166,13 @@ class Authenticator(BaseAuthenticator):
             raise YunohostAuthenticationError("unable_authenticate")
 
         self.purge_expired_session_files()
-        session_file = f'{SESSION_FOLDER}/{infos["id"]}'
-        if not os.path.exists(session_file):
+        session_file = Path(SESSION_FOLDER) / infos["id"]
+        if not session_file.exists():
             response.delete_cookie("yunohost.portal", path="/")
             raise YunohostAuthenticationError("session_expired")
 
         # Otherwise, we 'touch' the file to extend the validity
-        os.system(f'touch "{session_file}"')
+        session_file.touch()
 
         if decrypt_pwd:
             infos["pwd"] = decrypt(infos["pwd"])
@@ -184,8 +184,8 @@ class Authenticator(BaseAuthenticator):
 
         try:
             infos = self.get_session_cookie()
-            session_file = f'{SESSION_FOLDER}/{infos["id"]}'
-            os.remove(session_file)
+            session_file = Path(SESSION_FOLDER) / infos["id"]
+            session_file.unlink()
         except Exception as e:
             logger.debug(f"User logged out, but failed to properly invalidate the session : {e}")
 
@@ -193,19 +193,18 @@ class Authenticator(BaseAuthenticator):
 
     def purge_expired_session_files(self):
 
-        for session_id in os.listdir(SESSION_FOLDER):
-            session_file = f"{SESSION_FOLDER}/{session_id}"
-            if abs(os.path.getctime(session_file) - time.time()) > SESSION_VALIDITY:
+        for session_file in Path(SESSION_FOLDER).iterdir():
+            if abs(session_file.stat().st_ctime - time.time()) > SESSION_VALIDITY:
                 try:
-                    os.remove(session_file)
+                    session_file.unlink()
                 except Exception as e:
                     logger.debug(f"Failed to delete session file {session_file} ? {e}")
 
     @staticmethod
     def invalidate_all_sessions_for_user(user):
 
-        for path in glob.glob(f"{SESSION_FOLDER}/{short_hash(user)}*"):
+        for file in Path(SESSION_FOLDER).glob(f"{short_hash(user)}*"):
             try:
-                os.remove(path)
+                file.unlink()
             except Exception as e:
-                logger.debug(f"Failed to delete session file {path} ? {e}")
+                logger.debug(f"Failed to delete session file {file} ? {e}")
