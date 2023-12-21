@@ -45,7 +45,7 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
             return False
         else:
             parent_domain = domain.split(".", 1)[-1]
-            return user_is_allowed_on_domain(user, domain)
+            return user_is_allowed_on_domain(user, parent_domain)
 
     ctime = portal_settings_path.stat().st_ctime
     if domain not in DOMAIN_USER_ACL_DICT or DOMAIN_USER_ACL_DICT[domain]["ctime"] < time.time():
