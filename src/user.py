@@ -616,9 +616,7 @@ def user_info(username):
         if service_status("dovecot")["status"] != "running":
             logger.warning(m18n.n("mailbox_used_space_dovecot_down"))
         elif username not in user_permission_info("mail.main")["corresponding_users"]:
-            # Only warn that mailbox is disabled when the user is an admin
-            if username in user_group_info("admins")["members"]:
-                logger.warning(m18n.n("mailbox_disabled", user=username))
+            logger.debug(m18n.n("mailbox_disabled", user=username))
         else:
             try:
                 uid_ = user["uid"][0]
