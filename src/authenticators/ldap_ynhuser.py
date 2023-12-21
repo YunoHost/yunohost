@@ -20,6 +20,7 @@ from moulinette.authentication import BaseAuthenticator
 from moulinette.utils.text import random_ascii
 from moulinette.utils.filesystem import read_json
 from yunohost.utils.error import YunohostError, YunohostAuthenticationError
+from yunohost.utils.ldap import _get_ldap_interface
 
 logger = logging.getLogger("yunohostportal.authenticators.ldap_ynhuser")
 
@@ -56,8 +57,22 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
         DOMAIN_USER_ACL_DICT[domain]["ctime"] = ctime
         DOMAIN_USER_ACL_DICT[domain]["users"] = users
 
-    return user in DOMAIN_USER_ACL_DICT[domain]["users"]
+    if user in DOMAIN_USER_ACL_DICT[domain]["users"]:
+        return True
+    else:
+        # Admins can access everything
+        ADMIN_GROUP = "cn=admins,ou=groups"
+        try:
+            admins = (
+                _get_ldap_interface()
+                .search(ADMIN_GROUP, attrs=["memberUid"])[0]
+                .get("memberUid", [])
+            )
+        except Exception as e:
+            logger.error(f"Failed to list admin users: {e}")
+            return False
 
+        return user in admins
 
 # We want to save the password in the cookie, but we should do so in an encrypted fashion
 # This is needed because the SSO later needs to possibly inject the Basic Auth header
