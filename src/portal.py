@@ -24,10 +24,10 @@ from typing import Any, Union
 
 import ldap
 from moulinette.utils.filesystem import read_json
-from yunohost.authenticators.ldap_ynhuser import URI, USERDN, Authenticator as Auth, user_is_allowed_on_domain
+from yunohost.authenticators.ldap_ynhuser import Authenticator as Auth, user_is_allowed_on_domain
 from yunohost.user import _hash_user_password
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from yunohost.utils.ldap import LDAPInterface, _ldap_path_extract
+from yunohost.utils.ldap import _get_ldap_interface, _ldap_path_extract, LDAPInterface
 from yunohost.utils.password import (
     assert_password_is_compatible,
     assert_password_is_strong_enough,
@@ -41,15 +41,14 @@ ADMIN_ALIASES = ["root", "admin", "admins", "webmaster", "postmaster", "abuse"]
 
 def _get_user_infos(
     user_attrs: list[str],
-) -> tuple[str, str, dict[str, Any], LDAPInterface]:
-    auth = Auth().get_session_cookie(decrypt_pwd=True)
+) -> tuple[str, str, dict[str, Any]]:
+    auth = Auth().get_session_cookie()
     username = auth["user"]
-    ldap_interface = LDAPInterface(username, auth["pwd"])
-    result = ldap_interface.search("ou=users", f"uid={username}", user_attrs)
+    result = _get_ldap_interface().search("ou=users", f"uid={username}", user_attrs)
     if not result:
         raise YunohostValidationError("user_unknown", user=username)
 
-    return username, auth["host"], result[0], ldap_interface
+    return username, auth["host"], result[0]
 
 
 def _get_portal_settings(
@@ -123,7 +122,7 @@ def portal_me():
     """
     Get user informations
     """
-    username, domain, user, _ = _get_user_infos(
+    username, domain, user = _get_user_infos(
         ["cn", "mail", "maildrop", "mailuserquota", "memberOf", "permission"]
     )
 
@@ -163,7 +162,7 @@ def portal_update(
     from yunohost.domain import domain_list
 
     domains = domain_list()["domains"]
-    username, domain, current_user, ldap_interface = _get_user_infos(
+    username, domain, current_user = _get_user_infos(
         ["givenName", "sn", "cn", "mail", "maildrop", "memberOf"]
     )
     new_attr_dict = {}
@@ -198,7 +197,7 @@ def portal_update(
                 )
 
             try:
-                ldap_interface.validate_uniqueness({"mail": mail})
+                _get_ldap_interface().validate_uniqueness({"mail": mail})
             except YunohostError:
                 raise YunohostValidationError(
                     "mail_already_exists", mail=mail, path=f"mailalias[{index}]"
@@ -221,19 +220,6 @@ def portal_update(
         ]
 
     if newpassword:
-        # FIXME: this ldap stuff should be handled in utils/ldap.py imho ?
-
-        # Check that current password is valid
-        try:
-            con = ldap.ldapobject.ReconnectLDAPObject(URI, retry_max=0)
-            con.simple_bind_s(USERDN.format(username=username), currentpassword)
-        except ldap.INVALID_CREDENTIALS:
-            raise YunohostValidationError("invalid_password", path="currentpassword")
-        finally:
-            # Free the connection, we don't really need it to keep it open as the point is only to check authentication...
-            if con:
-                con.unbind_s()
-
         # Ensure compatibility and sufficiently complex password
         try:
             assert_password_is_compatible(newpassword)
@@ -248,10 +234,24 @@ def portal_update(
 
         new_attr_dict["userPassword"] = [_hash_user_password(newpassword)]
 
+    # Check that current password is valid
+    # To be able to edit the user info, an authenticated ldap session is needed
+    if newpassword:
+        # When setting the password, check the user provided the valid current password
+        try:
+            ldap_interface = LDAPInterface(username, currentpassword)
+        except ldap.INVALID_CREDENTIALS:
+            raise YunohostValidationError("invalid_password", path="currentpassword")
+    else:
+        # Otherwise we use the encrypted password stored in the cookie
+        ldap_interface = LDAPInterface(username, Auth().get_session_cookie(decrypt_pwd=True)["pwd"])
+
     try:
         ldap_interface.update(f"uid={username},ou=users", new_attr_dict)
     except Exception as e:
         raise YunohostError("user_update_failed", user=username, error=e)
+    finally:
+        del ldap_interface
 
     if "userPassword" in new_attr_dict:
         Auth.invalidate_all_sessions_for_user(username)
