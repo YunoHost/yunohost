@@ -1637,10 +1637,10 @@ def app_ssowatconf():
             + [domain + "/yunohost/api" for domain in domains]
             + [domain + "/yunohost/portalapi" for domain in domains]
             + [
-                "re:^[^/]/502%.html$",
-                "re:^[^/]*/%.well%-known/ynh%-diagnosis/.*$",
-                "re:^[^/]*/%.well%-known/acme%-challenge/.*$",
-                "re:^[^/]*/%.well%-known/autoconfig/mail/config%-v1%.1%.xml.*$",
+                r"re:^[^/]*/502\.html$",
+                r"re:^[^/]*/\.well-known/ynh-diagnosis/.*$",
+                r"re:^[^/]*/\.well-known/acme-challenge/.*$",
+                r"re:^[^/]*/\.well-known/autoconfig/mail/config-v1\.1\.xml.*$",
             ],
         }
     }
