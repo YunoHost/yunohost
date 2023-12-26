@@ -355,7 +355,7 @@ def check_permission_for_apps():
 
 def can_access_webpage(webpath, logged_as=None):
     webpath = webpath.rstrip("/")
-    login_endpoint = "https://" + maindomain + "/yunohost/portalapi/login"
+    login_endpoint = f"https://{maindomain}/yunohost/portalapi/login"
 
     # Anonymous access
     if not logged_as:
@@ -379,7 +379,7 @@ def can_access_webpage(webpath, logged_as=None):
     # with `r=<base64_callback_url>` for anonymous access because they're encouraged to log-in,
     # and `msg=access_denied` if we are logged but not allowed for this url
     # with `r=
-    sso_url = "https://yolo.test/yunohost/sso/"
+    sso_url = f"https://{maindomain}/yunohost/sso/"
     if not logged_as:
         sso_url += "?r="
     else:
