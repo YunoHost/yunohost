@@ -43,6 +43,7 @@ redis-server:
 rspamd:
   log: /var/log/rspamd/rspamd.log
   category: email
+  ignore_if_package_is_not_installed: rspamd
 slapd:
   category: database
   test_conf: slapd -Tt

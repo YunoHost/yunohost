@@ -2,6 +2,12 @@
 
 set -e
 
+if ! dpkg --list | grep -q 'ii *rspamd '
+then
+    echo 'rspamd is not installed, skipping'
+    exit 0
+fi
+
 do_pre_regen() {
     pending_dir=$1
 
