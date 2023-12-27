@@ -84,6 +84,7 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
 
         return user in admins
 
+
 # We want to save the password in the cookie, but we should do so in an encrypted fashion
 # This is needed because the SSO later needs to possibly inject the Basic Auth header
 # which includes the user's password
