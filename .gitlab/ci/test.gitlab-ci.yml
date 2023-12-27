@@ -187,3 +187,8 @@ test-ldapauth:
 #  only:
 #    changes:
 #      - src/authenticators/*.py
+
+test-sso-and-portalapi:
+  extends: .test-stage
+  script:
+    - python3 -m pytest src/tests/test_sso_and_portalapi.py

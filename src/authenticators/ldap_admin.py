@@ -22,8 +22,8 @@ import logging
 import ldap
 import ldap.sasl
 import time
-import glob
 import hashlib
+from pathlib import Path
 
 from moulinette import m18n
 from moulinette.authentication import BaseAuthenticator
@@ -212,21 +212,18 @@ class Authenticator(BaseAuthenticator):
 
     def purge_expired_session_files(self):
 
-        for session_id in os.listdir(SESSION_FOLDER):
-            session_file = f"{SESSION_FOLDER}/{session_id}"
-            if abs(os.path.getctime(session_file) - time.time()) > SESSION_VALIDITY:
+        for session_file in Path(SESSION_FOLDER).iterdir():
+            if abs(session_file.stat().st_mtime - time.time()) > SESSION_VALIDITY:
                 try:
-                    os.remove(session_file)
+                    session_file.unlink()
                 except Exception as e:
                     logger.debug(f"Failed to delete session file {session_file} ? {e}")
 
     @staticmethod
     def invalidate_all_sessions_for_user(user):
-        for path in glob.glob(f"{SESSION_FOLDER}/{short_hash(user)}*"):
-            try:
-                logger.info(path)
-                os.remove(path)
-            except Exception as e:
-                logger.debug(f"Failed to delete session file {path} ? {e}")
 
-        logger.info(str(glob.glob(f"{SESSION_FOLDER}/*")))
+        for file in Path(SESSION_FOLDER).glob(f"{short_hash(user)}*"):
+            try:
+                file.unlink()
+            except Exception as e:
+                logger.debug(f"Failed to delete session file {file} ? {e}")

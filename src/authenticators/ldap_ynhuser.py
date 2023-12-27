@@ -58,13 +58,13 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
             parent_domain = domain.split(".", 1)[-1]
             return user_is_allowed_on_domain(user, parent_domain)
 
-    ctime = portal_settings_path.stat().st_ctime
-    if domain not in DOMAIN_USER_ACL_DICT or DOMAIN_USER_ACL_DICT[domain]["ctime"] < time.time():
+    mtime = portal_settings_path.stat().st_mtime
+    if domain not in DOMAIN_USER_ACL_DICT or DOMAIN_USER_ACL_DICT[domain]["mtime"] < time.time():
         users: set[str] = set()
         for infos in read_json(str(portal_settings_path))["apps"].values():
             users = users.union(infos["users"])
         DOMAIN_USER_ACL_DICT[domain] = {}
-        DOMAIN_USER_ACL_DICT[domain]["ctime"] = ctime
+        DOMAIN_USER_ACL_DICT[domain]["mtime"] = mtime
         DOMAIN_USER_ACL_DICT[domain]["users"] = users
 
     if user in DOMAIN_USER_ACL_DICT[domain]["users"]:
@@ -256,7 +256,8 @@ class Authenticator(BaseAuthenticator):
     def purge_expired_session_files(self):
 
         for session_file in Path(SESSION_FOLDER).iterdir():
-            if abs(session_file.stat().st_ctime - time.time()) > SESSION_VALIDITY:
+            print(session_file.stat().st_mtime - time.time())
+            if abs(session_file.stat().st_mtime - time.time()) > SESSION_VALIDITY:
                 try:
                     session_file.unlink()
                 except Exception as e:
