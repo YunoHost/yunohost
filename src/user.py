@@ -21,7 +21,6 @@ import re
 import pwd
 import grp
 import random
-import string
 import subprocess
 import copy
 from logging import getLogger
