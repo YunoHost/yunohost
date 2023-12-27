@@ -164,6 +164,7 @@ def test_public_routes_not_blocked_by_ssowat():
     # Or : on the CI, the yunohost-api is likely to be down (to save resources)
     assert r.status_code in [405, 502]
 
+    os.system("mkdir -p /var/www/.well-known/acme-challenge-public")
     Path("/var/www/.well-known/acme-challenge-public/toto").touch()
     r = request(f"http://{maindomain}/.well-known/acme-challenge/toto")
     assert r.status_code == 200
