@@ -161,7 +161,8 @@ def test_public_routes_not_blocked_by_ssowat():
     r = request(f"https://{maindomain}/yunohost/api/whatever")
     # Getting code 405, Method not allowed, which means the API does answer,
     # meaning it's not blocked by ssowat
-    assert r.status_code == 405
+    # Or : on the CI, the yunohost-api is likely to be down (to save resources)
+    assert r.status_code in [405, 502]
 
     Path("/var/www/.well-known/acme-challenge-public/toto").touch()
     r = request(f"http://{maindomain}/.well-known/acme-challenge/toto")
