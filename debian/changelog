@@ -1,3 +1,18 @@
+yunohost (11.2.9) stable; urgency=low
+
+  - users: Allow dots in usernames ([#1750](https://github.com/yunohost/yunohost/pull/1750))
+  - ynh_setup_source: properly handle --keep for directories when the dir already exists in the new setup (8e3e78884)
+  - ynh_setup_source: fix first source patches failure not triggering an error (770fdb686)
+  - ynh_use_logrotate: Refactor this madness (308ed0e17)
+  - systemutils: when checking debian version and system arch, redirect stderr to /dev/null to prevent stupid issues (830d7b47e)
+  - mail/apps: add mailbox/IMAP support for apps that declared a system user with mail enabled (#1745)
+  - mail: fix edge case bug with the postfix sni file when no domain has mail enabled (155418409)
+  - i18n: Translations updated for Basque, Polish
+
+  Thanks to all contributors <3 ! (Josue-T, Kuba Bazan, ljf, selfhoster1312, xabirequejo, YapWC)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 27 Dec 2023 18:45:30 +0100
+
 yunohost (11.2.8.2) stable; urgency=low
 
   - Aleks forgot to remove pdb.set_trace ... (54a6a1b3)
