@@ -63,10 +63,10 @@ def tools_versions():
 
 
 def tools_rootpw(new_password, check_strength=True):
-    from yunohost.user import _hash_user_password
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
         assert_password_is_compatible,
+        _hash_user_password,
     )
     import spwd
 

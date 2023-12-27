@@ -160,6 +160,7 @@ def user_create(
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
         assert_password_is_compatible,
+        _hash_user_password,
     )
     from yunohost.utils.ldap import _get_ldap_interface
 
@@ -381,6 +382,7 @@ def user_update(
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
         assert_password_is_compatible,
+        _hash_user_password,
     )
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_callback
@@ -1436,39 +1438,6 @@ def user_ssh_remove_key(username, key):
 #
 # End SSH subcategory
 #
-
-
-def _hash_user_password(password):
-    """
-    This function computes and return a salted hash for the password in input.
-    This implementation is inspired from [1].
-
-    The hash follows SHA-512 scheme from Linux/glibc.
-    Hence the {CRYPT} and $6$ prefixes
-    - {CRYPT} means it relies on the OS' crypt lib
-    - $6$ corresponds to SHA-512, the strongest hash available on the system
-
-    The salt is generated using random.SystemRandom(). It is the crypto-secure
-    pseudo-random number generator according to the python doc [2] (c.f. the
-    red square). It internally relies on /dev/urandom
-
-    The salt is made of 16 characters from the set [./a-zA-Z0-9]. This is the
-    max sized allowed for salts according to [3]
-
-    [1] https://www.redpill-linpro.com/techblog/2016/08/16/ldap-password-hash.html
-    [2] https://docs.python.org/2/library/random.html
-    [3] https://www.safaribooksonline.com/library/view/practical-unix-and/0596003234/ch04s03.html
-    """
-
-    # FIXME: 'crypt' is deprecated and slated for removal in Python 3.13
-    import crypt
-
-    char_set = string.ascii_uppercase + string.ascii_lowercase + string.digits + "./"
-    salt = "".join([random.SystemRandom().choice(char_set) for x in range(16)])
-
-    salt = "$6$" + salt + "$"
-    return "{CRYPT}" + crypt.crypt(str(password), salt)
-
 
 def _update_admins_group_aliases(old_main_domain, new_main_domain):
     current_admin_aliases = user_group_info("admins")["mail-aliases"]

@@ -16,11 +16,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
-import sys
+
 import os
 import string
 import subprocess
 import yaml
+import passlib.hash
 
 SMALL_PWD_LIST = [
     "yunohost",
@@ -69,6 +70,14 @@ def assert_password_is_compatible(password):
 
 def assert_password_is_strong_enough(profile, password):
     PasswordValidator(profile).validate(password)
+
+
+def _hash_user_password(password):
+    import passlib
+    # passlib will returns something like:
+    # $6$rounds=656000$AwCIMolbTAyQhtev$46UvYfVgs.k0Bt6fLTekBHyCcCFkix/NNfgAWiICX.9YUPVYZ3PsIAwY99yP5/tXhg2sYBaAhKj6W3kuYWaR3.
+    # cf https://passlib.readthedocs.io/en/stable/modular_crypt_format.html#modular-crypt-format
+    return "{CRYPT}" + passlib.hash.sha512_crypt.hash(password)
 
 
 class PasswordValidator:

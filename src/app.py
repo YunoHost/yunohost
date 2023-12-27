@@ -3162,7 +3162,7 @@ def regen_mail_app_user_config_for_dovecot_and_postfix(only=None):
     dovecot = True if only in [None, "dovecot"] else False
     postfix = True if only in [None, "postfix"] else False
 
-    from yunohost.user import _hash_user_password
+    from yunohost.utils.password import _hash_user_password
 
     postfix_map = []
     dovecot_passwd = []
