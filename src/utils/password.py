@@ -206,19 +206,3 @@ class PasswordValidator:
         p = subprocess.Popen(command.split(), stdin=subprocess.PIPE)
         p.communicate(input=password.encode("utf-8"))
         return not bool(p.returncode)
-
-
-# This file is also meant to be used as an executable by
-# SSOwat to validate password from the portal when an user
-# change its password.
-if __name__ == "__main__":
-    if len(sys.argv) < 2:
-        import getpass
-
-        pwd = getpass.getpass("")
-        # print("usage: password.py PASSWORD")
-    else:
-        pwd = sys.argv[1]
-    status, msg = PasswordValidator("user").validation_summary(pwd)
-    print(msg)
-    sys.exit(0)
