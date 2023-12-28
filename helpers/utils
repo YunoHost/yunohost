@@ -354,7 +354,7 @@ ynh_setup_source() {
             pushd "$dest_dir"
             for p in $patches_folder/${source_id}-*.patch; do
                 echo $p
-                patch --strip=1 <$p || ynh_die --message="Unable to apply patches"
+                patch --strip=1 <$p || ynh_print_warn --message="Packagers /!\\ patch $p failed to apply"
             done
             popd
         fi
