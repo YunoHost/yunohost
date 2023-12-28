@@ -1,3 +1,9 @@
+yunohost (11.2.9.1) stable; urgency=low
+
+  - helpers/utils: replace the damn ynh_die with a warning when patch fails to apply ... (0ed6769fc)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 28 Dec 2023 02:45:33 +0100
+
 yunohost (11.2.9) stable; urgency=low
 
   - users: Allow dots in usernames ([#1750](https://github.com/yunohost/yunohost/pull/1750))
