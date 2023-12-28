@@ -1,105 +1,92 @@
 #!/bin/bash
 
+FIRST_CALL_TO_LOGROTATE="true"
+
 # Use logrotate to manage the logfile
 #
-# usage: ynh_use_logrotate [--logfile=/log/file] [--nonappend] [--specific_user=user/group]
+# usage: ynh_use_logrotate [--logfile=/log/file] [--specific_user=user/group]
 # | arg: -l, --logfile=         - absolute path of logfile
-# | arg: -n, --nonappend        - (optional) Replace the config file instead of appending this new config.
 # | arg: -u, --specific_user=   - run logrotate as the specified user and group. If not specified logrotate is runned as root.
 #
 # If no `--logfile` is provided, `/var/log/$app` will be used as default.
 # `logfile` can point to a directory or a file.
 #
-# It's possible to use this helper multiple times, each config will be added to
-# the same logrotate config file. Unless you use the option `--non-append`
-#
 # Requires YunoHost version 2.6.4 or higher.
-# Requires YunoHost version 3.2.0 or higher for the argument `--specific_user`
 ynh_use_logrotate() {
 
-    # Stupid patch to remplace --non-append by --nonappend
-    # Because for some reason --non-append was supposed to be legacy
-    # (why is it legacy ? Idk maybe because getopts cant parse args with - in their names..)
-    # but there was no good communication about this, and now --non-append
-    # is still the most-used option, yet it was parsed with batshit stupid code
-    # So instead this loops over the positional args, and replace --non-append
-    # with --nonappend so it's transperent for the rest of the function...
+    # Stupid patch to ignore legacy --non-append and --nonappend
+    # which was never properly understood and improperly used and kind of bullshit
     local all_args=( ${@} )
     for I in $(seq 0 $(($# - 1)))
     do
-        if [[ "${all_args[$I]}" == "--non-append" ]]
+        if [[ "${all_args[$I]}" == "--non-append" ]] || [[ "${all_args[$I]}" == "--nonappend" ]]
         then
-            all_args[$I]="--nonappend"
+            unset all_args[$I]
         fi
     done
     set -- "${all_args[@]}"
 
-    # Declare an array to define the options of this helper.
-    local legacy_args=lnu
-    local -A args_array=([l]=logfile= [n]=nonappend [u]=specific_user=)
+    # Argument parsing
+    local legacy_args=lu
+    local -A args_array=([l]=logfile= [u]=specific_user=)
     local logfile
-    local nonappend
     local specific_user
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     logfile="${logfile:-}"
-    nonappend="${nonappend:-0}"
     specific_user="${specific_user:-}"
 
-    # LEGACY CODE - PRE GETOPTS
-    if [ $# -gt 0 ] && [ "$(echo ${1:0:1})" != "-" ]; then
-        # If the given logfile parameter already exists as a file, or if it ends up with ".log",
-        # we just want to manage a single file
-        if [ -f "$1" ] || [ "$(echo ${1##*.})" == "log" ]; then
-            local logfile=$1
-        # Otherwise we assume we want to manage a directory and all its .log file inside
-        else
-            local logfile=$1/*.log
-        fi
+    set -o noglob
+    if [[ -z "$logfile" ]]; then
+        logfile="/var/log/${app}/*.log"
+    elif [[ "${logfile##*.}" != "log" ]] && [[ "${logfile##*.}" != "txt" ]]; then
+        logfile="$logfile/*.log"
     fi
-    # LEGACY CODE
+    set +o noglob
 
-    local customtee="tee --append"
-    if [ "$nonappend" -eq 1 ]; then
-        customtee="tee"
-    fi
-    if [ -n "$logfile" ]; then
-        if [ ! -f "$1" ] && [ "$(echo ${logfile##*.})" != "log" ]; then # Keep only the extension to check if it's a logfile
-            local logfile="$logfile/*.log"                              # Else, uses the directory and all logfile into it.
-        fi
-    else
-        logfile="/var/log/${app}/*.log" # Without argument, use a defaut directory in /var/log
-    fi
+    for stuff in $logfile
+    do
+        mkdir --parents $(dirname "$stuff")
+    done
+
     local su_directive=""
-    if [[ -n $specific_user ]]; then
-        su_directive="	# Run logorotate as specific user - group
-    su ${specific_user%/*} ${specific_user#*/}"
+    if [[ -n "$specific_user" ]]; then
+        su_directive="su ${specific_user%/*} ${specific_user#*/}"
     fi
 
-    cat >./${app}-logrotate <<EOF # Build a config file for logrotate
+    local tempconf="$(mktemp)"
+    cat << EOF >$tempconf
 $logfile {
-        # Rotate if the logfile exceeds 100Mo
+    # Rotate if the logfile exceeds 100Mo
     size 100M
-        # Keep 12 old log maximum
+    # Keep 12 old log maximum
     rotate 12
-        # Compress the logs with gzip
+    # Compress the logs with gzip
     compress
-        # Compress the log at the next cycle. So keep always 2 non compressed logs
+    # Compress the log at the next cycle. So keep always 2 non compressed logs
     delaycompress
-        # Copy and truncate the log to allow to continue write on it. Instead of move the log.
+    # Copy and truncate the log to allow to continue write on it. Instead of moving the log.
     copytruncate
-        # Do not do an error if the log is missing
+    # Do not trigger an error if the log is missing
     missingok
-        # Not rotate if the log is empty
+    # Do not rotate if the log is empty
     notifempty
-        # Keep old logs in the same dir
+    # Keep old logs in the same dir
     noolddir
     $su_directive
 }
 EOF
-    mkdir --parents $(dirname "$logfile")                              # Create the log directory, if not exist
-    cat ${app}-logrotate | $customtee /etc/logrotate.d/$app >/dev/null # Append this config to the existing config file, or replace the whole config file (depending on $customtee)
-    chmod 644 "/etc/logrotate.d/$app"                                  # Make sure permissions are correct (otherwise the config file could be ignored and the corresponding logs never rotated)
+
+    if [[ "$FIRST_CALL_TO_LOGROTATE" == "true" ]]
+    then
+        cat $tempconf > /etc/logrotate.d/$app
+    else
+        cat $tempconf >> /etc/logrotate.d/$app
+    fi
+
+    FIRST_CALL_TO_LOGROTATE="false"
+
+    # Make sure permissions are correct (otherwise the config file could be ignored and the corresponding logs never rotated)
+    chmod 644 "/etc/logrotate.d/$app"
 }
 
 # Remove the app's logrotate config.

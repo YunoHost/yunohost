@@ -36,7 +36,7 @@ from yunohost.utils.system import binary_to_human
 logger = getLogger("yunohost.user")
 
 FIELDS_FOR_IMPORT = {
-    "username": r"^[a-z0-9_]+$",
+    "username": r"^[a-z0-9_.]+$",
     "firstname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
     "lastname": r"^([^\W\d_]{1,30}[ ,.\'-]{0,3})+$",
     "password": r"^|(.{3,})$",
@@ -609,7 +609,7 @@ def user_info(username):
         if service_status("dovecot")["status"] != "running":
             logger.warning(m18n.n("mailbox_used_space_dovecot_down"))
         elif username not in user_permission_info("mail.main")["corresponding_users"]:
-            logger.warning(m18n.n("mailbox_disabled", user=username))
+            logger.debug(m18n.n("mailbox_disabled", user=username))
         else:
             try:
                 uid_ = user["uid"][0]

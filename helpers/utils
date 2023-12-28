@@ -351,13 +351,12 @@ ynh_setup_source() {
     if [ -d "$YNH_APP_BASEDIR/sources/patches/" ]; then
         local patches_folder=$(realpath $YNH_APP_BASEDIR/sources/patches/)
         if (($(find $patches_folder -type f -name "${source_id}-*.patch" 2>/dev/null | wc --lines) > "0")); then
-            (
-                cd "$dest_dir"
-                for p in $patches_folder/${source_id}-*.patch; do
-                    echo $p
-                    patch --strip=1 <$p
-                done
-            ) || ynh_die --message="Unable to apply patches"
+            pushd "$dest_dir"
+            for p in $patches_folder/${source_id}-*.patch; do
+                echo $p
+                patch --strip=1 <$p || ynh_print_warn --message="Packagers /!\\ patch $p failed to apply"
+            done
+            popd
         fi
     fi
 

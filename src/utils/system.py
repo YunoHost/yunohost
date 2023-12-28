@@ -29,11 +29,13 @@ YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "moulinette", "ssowat"]
 
 
 def debian_version():
-    return check_output('grep "^VERSION_CODENAME=" /etc/os-release | cut -d= -f2')
+    return check_output(
+        'grep "^VERSION_CODENAME=" /etc/os-release 2>/dev/null | cut -d= -f2'
+    )
 
 
 def system_arch():
-    return check_output("dpkg --print-architecture")
+    return check_output("dpkg --print-architecture 2>/dev/null")
 
 
 def system_virt():
@@ -44,7 +46,7 @@ def system_virt():
     # Detect virt technology (if not bare metal) and arch
     # Gotta have this "|| true" because it systemd-detect-virt return 'none'
     # with an error code on bare metal ~.~
-    return check_output("systemd-detect-virt || true")
+    return check_output("systemd-detect-virt 2>/dev/null || true")
 
 
 def free_space_in_directory(dirpath):
