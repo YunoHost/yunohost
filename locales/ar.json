@@ -257,5 +257,8 @@
     "diagnosis_ip_dnsresolution_working": "تحليل اسم النطاق يعمل!",
     "diagnosis_mail_blacklist_listed_by": "إن عنوان الـ IP الخاص بك أو نطاقك <code>{item}</code> مُدرَج ضمن قائمة سوداء على {blacklist_name}",
     "diagnosis_mail_outgoing_port_25_ok": "خادم بريد SMTP قادر على إرسال رسائل البريد الإلكتروني (منفذ البريد الصادر 25 غير محظور).",
-    "user_already_exists": "المستخدم '{user}' موجود مِن قَبل"
+    "user_already_exists": "المستخدم '{user}' موجود مِن قَبل",
+    "backup_archive_name_unknown": "أرشيف نسخ احتياطي محلي غير معروف باسم '{name}'",
+    "custom_app_url_required": "يجب عليك تقديم عنوان URL لتحديث تطبيقك المخصص {app}",
+    "backup_copying_to_organize_the_archive": "نسخ {size} ميغا بايت لتنظيم الأرشيف"
 }
