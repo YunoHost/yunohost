@@ -4,6 +4,10 @@ set -e
 
 do_configure() {
 
+    mkdir -p /etc/yunohost
+    mkdir -p /etc/yunohost/apps
+    mkdir -p /etc/yunohost/portal
+
     if [ ! -f /etc/yunohost/installed ]; then
         # If apps/ is not empty, we're probably already installed in the past and
         # something funky happened ...
