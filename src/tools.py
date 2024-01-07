@@ -623,6 +623,36 @@ def tools_shell(command=None):
         shell = code.InteractiveConsole(vars)
         shell.interact()
 
+def tools_basic_space_cleanup():
+    """
+    Basic space cleanup.
+
+    apt autoremove
+    apt clean
+    archived logs removal
+    journalctl vacuum (leaves 50M of logs)
+    """
+    subprocess.run(
+        [
+            "/bin/bash",
+            "-c",
+            "apt autoremove && apt autoclean",
+        ]
+    )
+    subprocess.run(
+        [
+            "/bin/bash",
+            "-c",
+            "journalctl --vacuum-size=50M",
+        ]
+    )
+    subprocess.run(
+        [
+            "/bin/bash",
+            "-c",
+            "rm /var/log/*.gz && rm /var/log/*/*.gz && rm /var/log/*.? && rm /var/log/*/*.?",
+        ]
+    )
 
 # ############################################ #
 #                                              #

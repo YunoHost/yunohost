@@ -1739,6 +1739,10 @@ tools:
                     help: python command to execute
                     full: --command
 
+        ### tools_basic_space_cleanup()
+        basic-space-cleanup:
+            action_help: Basic space cleanup (apt, journalctl, logs, ...)
+
         ### tools_shutdown()
         shutdown:
             action_help: Shutdown the server
