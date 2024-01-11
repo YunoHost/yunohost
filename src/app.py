@@ -653,23 +653,18 @@ def app_upgrade(
                     manifest.get("remote", {}).get("revision", "?"),
                 )
                 continue
-            elif app_current_version > app_new_version:
-                upgrade_type = "DOWNGRADE_FORCED"
+
+            if app_current_version > app_new_version:
+                upgrade_type = "DOWNGRADE"
             elif app_current_version == app_new_version:
-                upgrade_type = "UPGRADE_FORCED"
+                upgrade_type = "UPGRADE_SAME"
             else:
-                app_current_version_upstream, app_current_version_pkg = str(
-                    app_current_version
-                ).split("~ynh")
-                app_new_version_upstream, app_new_version_pkg = str(
-                    app_new_version
-                ).split("~ynh")
+                app_current_version_upstream, _ = str(app_current_version).split("~ynh")
+                app_new_version_upstream, _ = str(app_new_version).split("~ynh")
                 if app_current_version_upstream == app_new_version_upstream:
                     upgrade_type = "UPGRADE_PACKAGE"
-                elif app_current_version_pkg == app_new_version_pkg:
-                    upgrade_type = "UPGRADE_APP"
                 else:
-                    upgrade_type = "UPGRADE_FULL"
+                    upgrade_type = "UPGRADE_APP"
 
         # Check requirements
         for name, passed, values, err in _check_manifest_requirements(
