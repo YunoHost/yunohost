@@ -196,6 +196,15 @@ ynh_spawn_app_shell() {
             set +a
         fi
 
+        # Activate the Python environment, if it exists
+        if [ -f $install_dir/venv/bin/activate ]
+        then
+            # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
+            set -a
+            source $install_dir/venv/bin/activate
+            set +a
+        fi
+
         # cd into the WorkingDirectory set in the service, or default to the install_dir
         local env_dir=$(systemctl show $service.service -p "WorkingDirectory" --value)
         [ -z $env_dir ] && env_dir=$install_dir;
