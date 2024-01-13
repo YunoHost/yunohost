@@ -628,31 +628,13 @@ def tools_basic_space_cleanup():
     Basic space cleanup.
 
     apt autoremove
-    apt clean
-    archived logs removal
+    apt autoclean
     journalctl vacuum (leaves 50M of logs)
+    archived logs removal
     """
-    subprocess.run(
-        [
-            "/bin/bash",
-            "-c",
-            "apt autoremove && apt autoclean",
-        ]
-    )
-    subprocess.run(
-        [
-            "/bin/bash",
-            "-c",
-            "journalctl --vacuum-size=50M",
-        ]
-    )
-    subprocess.run(
-        [
-            "/bin/bash",
-            "-c",
-            "rm /var/log/*.gz && rm /var/log/*/*.gz && rm /var/log/*.? && rm /var/log/*/*.?",
-        ]
-    )
+    subprocess.run("apt autoremove && apt autoclean", shell=True)
+    subprocess.run("journalctl --vacuum-size=50M", shell=True)
+    subprocess.run("rm /var/log/*.gz && rm /var/log/*/*.gz && rm /var/log/*.? && rm /var/log/*/*.?", shell=True)
 
 # ############################################ #
 #                                              #
