@@ -28,7 +28,6 @@ from yunohost.utils.form import BaseOption
 from yunohost.regenconf import regen_conf
 from yunohost.firewall import firewall_reload
 from yunohost.log import is_unit_operation
-from yunohost.utils.legacy import translate_legacy_settings_to_configpanel_settings
 
 if TYPE_CHECKING:
     from typing import cast
@@ -71,7 +70,6 @@ def settings_get(key="", full=False, export=False):
         mode = "classic"
 
     settings = SettingsConfigPanel()
-    key = translate_legacy_settings_to_configpanel_settings(key)
     return settings.get(key, mode)
 
 
@@ -100,7 +98,6 @@ def settings_set(operation_logger, key=None, value=None, args=None, args_file=No
     """
     BaseOption.operation_logger = operation_logger
     settings = SettingsConfigPanel()
-    key = translate_legacy_settings_to_configpanel_settings(key)
     return settings.set(key, value, args, args_file, operation_logger=operation_logger)
 
 
@@ -115,7 +112,6 @@ def settings_reset(operation_logger, key):
     """
 
     settings = SettingsConfigPanel()
-    key = translate_legacy_settings_to_configpanel_settings(key)
     return settings.reset(key, operation_logger=operation_logger)
 
 
