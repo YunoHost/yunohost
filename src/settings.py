@@ -39,7 +39,6 @@ if TYPE_CHECKING:
     from yunohost.log import OperationLogger
     from yunohost.utils.configpanel import (
         ConfigPanelGetMode,
-        RawConfig,
         RawSettings,
     )
     from yunohost.utils.form import FormModel
