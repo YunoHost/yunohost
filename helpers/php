@@ -200,19 +200,19 @@ pm = __PHP_PM__
 pm.max_children = __PHP_MAX_CHILDREN__
 pm.max_requests = 500
 request_terminate_timeout = 1d
-" >$phpfpm_path
+" >"$phpfpm_path"
 
         if [ "$php_pm" = "dynamic" ]; then
             echo "
 pm.start_servers = __PHP_START_SERVERS__
 pm.min_spare_servers = __PHP_MIN_SPARE_SERVERS__
 pm.max_spare_servers = __PHP_MAX_SPARE_SERVERS__
-" >>$phpfpm_path
+" >>"$phpfpm_path"
 
         elif [ "$php_pm" = "ondemand" ]; then
             echo "
 pm.process_idle_timeout = 10s
-" >>$phpfpm_path
+" >>"$phpfpm_path"
         fi
 
         # Concatene the extra config.
