@@ -34,85 +34,6 @@ from yunohost.utils.error import YunohostValidationError
 
 logger = getLogger("yunohost.utils.legacy")
 
-LEGACY_PERMISSION_LABEL = {
-    ("nextcloud", "skipped"): "api",  # .well-known
-    ("libreto", "skipped"): "pad access",  # /[^/]+
-    ("leed", "skipped"): "api",  # /action.php, for cron task ...
-    ("mailman", "protected"): "admin",  # /admin
-    ("prettynoemiecms", "protected"): "admin",  # /admin
-    ("etherpad_mypads", "skipped"): "admin",  # /admin
-    ("baikal", "protected"): "admin",  # /admin/
-    ("couchpotato", "unprotected"): "api",  # /api
-    ("freshrss", "skipped"): "api",  # /api/,
-    ("portainer", "skipped"): "api",  # /api/webhooks/
-    ("jeedom", "unprotected"): "api",  # /core/api/jeeApi.php
-    ("bozon", "protected"): "user interface",  # /index.php
-    (
-        "limesurvey",
-        "protected",
-    ): "admin",  # /index.php?r=admin,/index.php?r=plugins,/scripts
-    ("kanboard", "unprotected"): "api",  # /jsonrpc.php
-    ("seafile", "unprotected"): "medias",  # /media
-    ("ttrss", "skipped"): "api",  # /public.php,/api,/opml.php?op=publish
-    ("libreerp", "protected"): "admin",  # /web/database/manager
-    ("z-push", "skipped"): "api",  # $domain/[Aa]uto[Dd]iscover/.*
-    ("radicale", "skipped"): "?",  # $domain$path_url
-    (
-        "jirafeau",
-        "protected",
-    ): "user interface",  # $domain$path_url/$","$domain$path_url/admin.php.*$
-    ("opensondage", "protected"): "admin",  # $domain$path_url/admin/
-    (
-        "lstu",
-        "protected",
-    ): "user interface",  # $domain$path_url/login$","$domain$path_url/logout$","$domain$path_url/api$","$domain$path_url/extensions$","$domain$path_url/stats$","$domain$path_url/d/.*$","$domain$path_url/a$","$domain$path_url/$
-    (
-        "lutim",
-        "protected",
-    ): "user interface",  # $domain$path_url/stats/?$","$domain$path_url/manifest.webapp/?$","$domain$path_url/?$","$domain$path_url/[d-m]/.*$
-    (
-        "lufi",
-        "protected",
-    ): "user interface",  # $domain$path_url/stats$","$domain$path_url/manifest.webapp$","$domain$path_url/$","$domain$path_url/d/.*$","$domain$path_url/m/.*$
-    (
-        "gogs",
-        "skipped",
-    ): "api",  # $excaped_domain$excaped_path/[%w-.]*/[%w-.]*/git%-receive%-pack,$excaped_domain$excaped_path/[%w-.]*/[%w-.]*/git%-upload%-pack,$excaped_domain$excaped_path/[%w-.]*/[%w-.]*/info/refs
-}
-
-LEGACY_SETTINGS = {
-    "security.password.admin.strength": "security.password.admin_strength",
-    "security.password.user.strength": "security.password.user_strength",
-    "security.ssh.compatibility": "security.ssh.ssh_compatibility",
-    "security.ssh.port": "security.ssh.ssh_port",
-    "security.ssh.password_authentication": "security.ssh.ssh_password_authentication",
-    "security.nginx.redirect_to_https": "security.nginx.nginx_redirect_to_https",
-    "security.nginx.compatibility": "security.nginx.nginx_compatibility",
-    "security.postfix.compatibility": "security.postfix.postfix_compatibility",
-    "pop3.enabled": "email.pop3.pop3_enabled",
-    "smtp.allow_ipv6": "email.smtp.smtp_allow_ipv6",
-    "smtp.relay.host": "email.smtp.smtp_relay_host",
-    "smtp.relay.port": "email.smtp.smtp_relay_port",
-    "smtp.relay.user": "email.smtp.smtp_relay_user",
-    "smtp.relay.password": "email.smtp.smtp_relay_password",
-    "backup.compress_tar_archives": "misc.backup.backup_compress_tar_archives",
-    "ssowat.panel_overlay.enabled": "misc.portal.ssowat_panel_overlay_enabled",
-    "security.webadmin.allowlist.enabled": "security.webadmin.webadmin_allowlist_enabled",
-    "security.webadmin.allowlist": "security.webadmin.webadmin_allowlist",
-    "security.experimental.enabled": "security.experimental.security_experimental_enabled",
-}
-
-
-def translate_legacy_settings_to_configpanel_settings(settings):
-    return LEGACY_SETTINGS.get(settings, settings)
-
-
-def legacy_permission_label(app, permission_type):
-    return LEGACY_PERMISSION_LABEL.get(
-        (app, permission_type), "Legacy %s urls" % permission_type
-    )
-
-
 LEGACY_PHP_VERSION_REPLACEMENTS = [
     ("/etc/php5", "/etc/php/8.2"),
     ("/etc/php/7.0", "/etc/php/8.2"),
@@ -210,10 +131,6 @@ def _patch_legacy_helpers(app_folder):
     files_to_patch.extend(glob.glob("%s/scripts/.*" % app_folder))
 
     stuff_to_replace = {
-        "yunohost app initdb": {"important": True},
-        "yunohost app checkport": {"important": True},
-        "yunohost tools port-available": {"important": True},
-        "yunohost app checkurl": {"important": True},
         "yunohost user create": {
             "pattern": r"yunohost user create (\S+) (-f|--firstname) (\S+) (-l|--lastname) \S+ (.*)",
             "replace": r"yunohost user create \1 --fullname \3 \5",
@@ -228,21 +145,6 @@ def _patch_legacy_helpers(app_folder):
             "replace": r"",
             "important": False,
         },
-        # Old $1, $2 in backup/restore scripts...
-        "app=$2": {
-            "only_for": ["scripts/backup", "scripts/restore"],
-            "important": True,
-        },
-        # Old $1, $2 in backup/restore scripts...
-        "backup_dir=$1": {
-            "only_for": ["scripts/backup", "scripts/restore"],
-            "important": True,
-        },
-        # Old $1, $2 in backup/restore scripts...
-        "restore_dir=$1": {"only_for": ["scripts/restore"], "important": True},
-        # Old $1, $2 in install scripts...
-        # We ain't patching that shit because it ain't trivial to patch all args...
-        "domain=$1": {"only_for": ["scripts/install"], "important": True},
     }
 
     for helper, infos in stuff_to_replace.items():
