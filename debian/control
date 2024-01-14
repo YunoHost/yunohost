@@ -38,6 +38,8 @@ Recommends: yunohost-admin, yunohost-portal (>= 12.0)
 Conflicts: iptables-persistent
  , apache2
  , bind9
+ , openresolv
+ , systemd-resolved
  , nginx-extras (>= 1.23)
  , openssl (>= 3.1)
  , slapd (>= 2.6)
