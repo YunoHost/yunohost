@@ -367,7 +367,6 @@ def reconfigure_postfix(setting_name, old_value, new_value):
 
 @post_change_hook("pop3_enabled")
 def reconfigure_dovecot(setting_name, old_value, new_value):
-    dovecot_package = "dovecot-pop3d"
 
     environment = os.environ.copy()
     environment.update({"DEBIAN_FRONTEND": "noninteractive"})
@@ -381,7 +380,7 @@ def reconfigure_dovecot(setting_name, old_value, new_value):
             "-o Dpkg::Options::=--force-confdef",
             "-o Dpkg::Options::=--force-confold",
             "install",
-            dovecot_package,
+            "dovecot-pop3d",
         ]
         subprocess.call(command, env=environment)
         if old_value != new_value:
@@ -389,5 +388,32 @@ def reconfigure_dovecot(setting_name, old_value, new_value):
     else:
         if old_value != new_value:
             regen_conf(names=["dovecot"])
-        command = ["apt-get", "-y", "remove", dovecot_package]
+        command = ["apt-get", "-y", "remove", "dovecot-pop3d"]
+        subprocess.call(command, env=environment)
+
+
+@post_change_hook("antispam_enabled")
+def reconfigure_rspamd(setting_name, old_value, new_value):
+
+    environment = os.environ.copy()
+    environment.update({"DEBIAN_FRONTEND": "noninteractive"})
+
+    # Depending on how consistent the config panel is, it may spit 1 or True or ..? ...
+    if new_value:
+        command = [
+            "apt-get",
+            "-y",
+            "--no-remove",
+            "-o Dpkg::Options::=--force-confdef",
+            "-o Dpkg::Options::=--force-confold",
+            "install",
+            "rspamd",
+        ]
+        subprocess.call(command, env=environment)
+        if old_value != new_value:
+            regen_conf(names=["rspamd"])
+    else:
+        if old_value != new_value:
+            regen_conf(names=["rspamd"])
+        command = ["apt-get", "-y", "remove", "rspamd"]
         subprocess.call(command, env=environment)

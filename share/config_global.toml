@@ -107,7 +107,13 @@ name = "Email"
         [email.pop3.pop3_enabled]
         type = "boolean"
         default = false
-    
+
+    [email.antispam]
+    name = "Antispam"
+        [email.antispam.antispam_enabled]
+        type = "boolean"
+        default = false
+
     [email.smtp]
     name = "SMTP"
         [email.smtp.smtp_allow_ipv6]
