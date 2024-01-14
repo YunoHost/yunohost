@@ -152,10 +152,6 @@ name = "Email"
 name = "Other"
     [misc.portal]
     name = "User portal"
-        [misc.portal.ssowat_panel_overlay_enabled]
-        type = "boolean"
-        default = true
-
         [misc.portal.portal_theme]
         type = "select"
         # Choices are loaded dynamically in the python code
