@@ -248,7 +248,7 @@ ynh_setup_source() {
         if test -e "$local_src"; then
             cp $local_src $src_filename
         fi
-        
+
         [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
 
         # If the file was prefetched but somehow doesn't match the sum, rm and redownload it
@@ -611,6 +611,7 @@ ynh_replace_vars() {
 # usage: ynh_read_var_in_file --file=PATH --key=KEY
 # | arg: -f, --file=     - the path to the file
 # | arg: -k, --key=     - the key to get
+# | arg: -a, --after=     - the line just before the key (in case of multiple lines with the name of the key in the file)
 #
 # This helpers match several var affectation use case in several languages
 # We don't use jq or equivalent to keep comments and blank space in files
@@ -714,6 +715,7 @@ ynh_read_var_in_file() {
 # | arg: -f, --file=     - the path to the file
 # | arg: -k, --key=     - the key to set
 # | arg: -v, --value=     - the value to set
+# | arg: -a, --after=     - the line just before the key (in case of multiple lines with the name of the key in the file)
 #
 # Requires YunoHost version 4.3 or higher.
 ynh_write_var_in_file() {
@@ -988,15 +990,11 @@ ynh_app_package_version() {
 # This helper should be used to avoid an upgrade of an app, or the upstream part
 # of it, when it's not needed
 #
-# You can force an upgrade, even if the package is up to date, with the `--force` (or `-F`) argument :
-# ```
-# sudo yunohost app upgrade <appname> --force
-# ```
 # Requires YunoHost version 3.5.0 or higher.
 ynh_check_app_version_changed() {
     local return_value=${YNH_APP_UPGRADE_TYPE}
 
-    if [ "$return_value" == "UPGRADE_FULL" ] || [ "$return_value" == "UPGRADE_FORCED" ] || [ "$return_value" == "DOWNGRADE_FORCED" ]; then
+    if [ "$return_value" == "UPGRADE_SAME" ] || [ "$return_value" == "DOWNGRADE" ]; then
         return_value="UPGRADE_APP"
     fi
 

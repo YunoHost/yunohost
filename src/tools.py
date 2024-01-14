@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023 YunoHost Contributors
+# Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -623,6 +623,18 @@ def tools_shell(command=None):
         shell = code.InteractiveConsole(vars)
         shell.interact()
 
+def tools_basic_space_cleanup():
+    """
+    Basic space cleanup.
+
+    apt autoremove
+    apt autoclean
+    journalctl vacuum (leaves 50M of logs)
+    archived logs removal
+    """
+    subprocess.run("apt autoremove && apt autoclean", shell=True)
+    subprocess.run("journalctl --vacuum-size=50M", shell=True)
+    subprocess.run("rm /var/log/*.gz && rm /var/log/*/*.gz && rm /var/log/*.? && rm /var/log/*/*.?", shell=True)
 
 # ############################################ #
 #                                              #

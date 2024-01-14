@@ -1,5 +1,5 @@
 #
-# Copyright (c) 2023 YunoHost Contributors
+# Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
 #
@@ -576,9 +576,16 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
             or {}
         )
         sanlist = []
+
+        # Handle the boring case where the domain is not the root of the dns zone etc...
+        from yunohost.dns import _get_relative_name_for_dns_zone, _get_dns_zone_for_domain
+        base_dns_zone = _get_dns_zone_for_domain(domain)
+        basename = _get_relative_name_for_dns_zone(domain, base_dns_zone)
+        suffix = f".{basename}" if basename != "@" else ""
+        
         for sub in ("xmpp-upload", "muc"):
             subdomain = sub + "." + domain
-            if xmpp_records.get("CNAME:" + sub) == "OK":
+            if xmpp_records.get("CNAME:" + sub + suffix) == "OK":
                 sanlist.append(("DNS:" + subdomain))
             else:
                 logger.warning(
