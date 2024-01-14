@@ -554,6 +554,8 @@ ynh_replace_vars() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
+    set +o xtrace # set +x
+
     # Replace specific YunoHost variables
     if test -n "${path_url:-}"; then
         # path_url_slash_less is path_url, or a blank value if path_url is only '/'
@@ -604,6 +606,7 @@ ynh_replace_vars() {
         # Actually replace (sed is used instead of ynh_replace_string to avoid triggering an epic amount of debug logs)
         sed --in-place "s${delimit}${match_string}${delimit}${replace_string}${delimit}g" "$file"
     done
+    set -o xtrace # set -x
 }
 
 # Get a value from heterogeneous file (yaml, json, php, python...)
