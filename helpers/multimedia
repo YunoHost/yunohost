@@ -44,9 +44,9 @@ ynh_multimedia_build_main_dir() {
 
     ## Application des droits étendus sur le dossier multimedia.
     # Droit d'écriture pour le groupe et le groupe multimedia en acl et droit de lecture pour other:
-    setfacl -RnL -m g:$MEDIA_GROUP:rwX,g::rwX,o:r-X "$MEDIA_DIRECTORY"
+    setfacl -RnL -m g:$MEDIA_GROUP:rwX,g::rwX,o:r-X "$MEDIA_DIRECTORY" || true
     # Application de la même règle que précédemment, mais par défaut pour les nouveaux fichiers.
-    setfacl -RnL -m d:g:$MEDIA_GROUP:rwX,g::rwX,o:r-X "$MEDIA_DIRECTORY"
+    setfacl -RnL -m d:g:$MEDIA_GROUP:rwX,g::rwX,o:r-X "$MEDIA_DIRECTORY" || true
     # Réglage du masque par défaut. Qui garantie (en principe...) un droit maximal à rwx. Donc pas de restriction de droits par l'acl.
     setfacl -RL -m m::rwx "$MEDIA_DIRECTORY" || true
 }
