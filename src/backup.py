@@ -1188,9 +1188,6 @@ class RestoreManager:
         try:
             self._postinstall_if_needed()
 
-            # Apply dirty patch to redirect php5 file on php7
-            self._patch_legacy_php_versions_in_csv_file()
-
             self._restore_system()
             self._restore_apps()
         except Exception as e:
@@ -1200,39 +1197,6 @@ class RestoreManager:
             )
         finally:
             self.clean()
-
-    def _patch_legacy_php_versions_in_csv_file(self):
-        """
-        Apply dirty patch to redirect php5 and php7.x files to php8.2
-        """
-        from yunohost.utils.legacy import LEGACY_PHP_VERSION_REPLACEMENTS
-
-        backup_csv = os.path.join(self.work_dir, "backup.csv")
-
-        if not os.path.isfile(backup_csv):
-            return
-
-        replaced_something = False
-        with open(backup_csv) as csvfile:
-            reader = csv.DictReader(csvfile, fieldnames=["source", "dest"])
-            newlines = []
-            for row in reader:
-                for pattern, replace in LEGACY_PHP_VERSION_REPLACEMENTS:
-                    if pattern in row["source"]:
-                        replaced_something = True
-                        row["source"] = row["source"].replace(pattern, replace)
-
-                newlines.append(row)
-
-        if not replaced_something:
-            return
-
-        with open(backup_csv, "w") as csvfile:
-            writer = csv.DictWriter(
-                csvfile, fieldnames=["source", "dest"], quoting=csv.QUOTE_ALL
-            )
-            for row in newlines:
-                writer.writerow(row)
 
     def _restore_system(self):
         """Restore user and system parts"""
@@ -1368,8 +1332,6 @@ class RestoreManager:
                              name should be already install)
         """
         from yunohost.utils.legacy import (
-            _patch_legacy_php_versions,
-            _patch_legacy_php_versions_in_settings,
             _patch_legacy_helpers,
         )
         from yunohost.user import user_group_list
@@ -1407,10 +1369,6 @@ class RestoreManager:
 
         # Attempt to patch legacy helpers...
         _patch_legacy_helpers(app_settings_in_archive)
-
-        # Apply dirty patch to make php5 apps compatible with php7
-        _patch_legacy_php_versions(app_settings_in_archive)
-        _patch_legacy_php_versions_in_settings(app_settings_in_archive)
 
         # Delete _common.sh file in backup
         common_file = os.path.join(app_backup_in_archive, "_common.sh")

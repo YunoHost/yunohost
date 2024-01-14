@@ -561,7 +561,7 @@ def app_upgrade(
     )
     from yunohost.permission import permission_sync_to_user
     from yunohost.regenconf import manually_modified_files
-    from yunohost.utils.legacy import _patch_legacy_php_versions, _patch_legacy_helpers
+    from yunohost.utils.legacy import _patch_legacy_helpers
     from yunohost.backup import (
         backup_list,
         backup_create,
@@ -728,9 +728,6 @@ def app_upgrade(
 
         # Attempt to patch legacy helpers ...
         _patch_legacy_helpers(extracted_app_folder)
-
-        # Apply dirty patch to make php5 apps compatible with php7
-        _patch_legacy_php_versions(extracted_app_folder)
 
         # Prepare env. var. to pass to script
         env_dict = _make_environment_for_app_script(
@@ -1055,7 +1052,7 @@ def app_install(
         permission_sync_to_user,
     )
     from yunohost.regenconf import manually_modified_files
-    from yunohost.utils.legacy import _patch_legacy_php_versions, _patch_legacy_helpers
+    from yunohost.utils.legacy import _patch_legacy_helpers
     from yunohost.utils.form import ask_questions_and_parse_answers
 
     # Check if disk space available
@@ -1117,9 +1114,6 @@ def app_install(
     if packaging_format < 2:
         # Attempt to patch legacy helpers ...
         _patch_legacy_helpers(extracted_app_folder)
-
-    # Apply dirty patch to make php5 apps compatible with php7
-    _patch_legacy_php_versions(extracted_app_folder)
 
     # We'll check that the app didn't brutally edit some system configuration
     manually_modified_files_before_install = manually_modified_files()
@@ -1383,7 +1377,7 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
         purge -- Remove with all app data
         force_workdir -- Special var to force the working directoy to use, in context such as remove-after-failed-upgrade or remove-after-failed-restore
     """
-    from yunohost.utils.legacy import _patch_legacy_php_versions, _patch_legacy_helpers
+    from yunohost.utils.legacy import _patch_legacy_helpers
     from yunohost.hook import hook_exec, hook_remove, hook_callback
     from yunohost.permission import (
         user_permission_list,
@@ -1404,10 +1398,6 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
 
     # Attempt to patch legacy helpers ...
     _patch_legacy_helpers(app_setting_path)
-
-    # Apply dirty patch to make php5 apps compatible with php7 (e.g. the remove
-    # script might date back from jessie install)
-    _patch_legacy_php_versions(app_setting_path)
 
     if force_workdir:
         # This is when e.g. calling app_remove() from the upgrade-failed case
