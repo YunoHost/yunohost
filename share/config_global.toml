@@ -150,12 +150,6 @@ name = "Email"
 
 [misc]
 name = "Other"
-    [misc.portal]
-    name = "User portal"
-        [misc.portal.portal_theme]
-        type = "select"
-        # Choices are loaded dynamically in the python code
-        default = "default"
 
     [misc.backup]
     name = "Backup"

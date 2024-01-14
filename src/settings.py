@@ -201,19 +201,6 @@ class SettingsConfigPanel(ConfigPanel):
         if operation_logger:
             operation_logger.success()
 
-    def _get_raw_config(self) -> "RawConfig":
-        raw_config = super()._get_raw_config()
-
-        # Dynamic choice list for portal themes
-        THEMEDIR = "/usr/share/ssowat/portal/assets/themes/"
-        try:
-            themes = [d for d in os.listdir(THEMEDIR) if os.path.isdir(THEMEDIR + d)]
-        except Exception:
-            themes = ["unsplash", "vapor", "light", "default", "clouds"]
-        raw_config["misc"]["portal"]["portal_theme"]["choices"] = themes
-
-        return raw_config
-
     def _get_raw_settings(self) -> "RawSettings":
         raw_settings = super()._get_raw_settings()
 
@@ -316,15 +303,6 @@ def trigger_post_change_hook(setting_name, old_value, new_value):
 # ===========================================
 
 
-@post_change_hook("portal_theme")
-def regen_ssowatconf(setting_name, old_value, new_value):
-    if old_value != new_value:
-        from yunohost.app import app_ssowatconf
-
-        app_ssowatconf()
-
-
-@post_change_hook("ssowat_panel_overlay_enabled")
 @post_change_hook("nginx_redirect_to_https")
 @post_change_hook("nginx_compatibility")
 @post_change_hook("webadmin_allowlist_enabled")
