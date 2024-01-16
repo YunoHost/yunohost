@@ -780,5 +780,6 @@
     "dyndns_set_recovery_password_success": "Mot de passe de récupération changé !",
     "log_dyndns_unsubscribe": "Se désabonner d'un sous-domaine YunoHost '{}'",
     "dyndns_too_many_requests": "Le service dyndns de YunoHost a reçu trop de requêtes/demandes de votre part, attendez environ 1 heure avant de réessayer.",
-    "ask_dyndns_recovery_password_explain_unavailable": "Ce domaine DynDNS est déjà enregistré. Si vous êtes la personne qui a enregistré ce domaine lors de sa création, vous pouvez entrer le mot de passe de récupération pour récupérer ce domaine."
+    "ask_dyndns_recovery_password_explain_unavailable": "Ce domaine DynDNS est déjà enregistré. Si vous êtes la personne qui a enregistré ce domaine lors de sa création, vous pouvez entrer le mot de passe de récupération pour récupérer ce domaine.",
+    "global_settings_setting_ssh_port_help": "Il est préférable d'utiliser un port inférieur à 1024 pour éviter les tentatives d'usurpation par des services non administrateurs sur la machine distante. Vous devez également éviter d'utiliser un port déjà utilisé tel que le 80 ou le 443."
 }
