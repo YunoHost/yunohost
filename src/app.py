@@ -1653,6 +1653,7 @@ def app_ssowatconf():
 
     # Will organize apps by portal domain
     portal_domains_apps = {domain: {} for domain in portal_domains}
+    apps_catalog = _load_apps_catalog()["apps"]
 
     # New permission system
     for perm_name, perm_info in all_permissions.items():
@@ -1687,12 +1688,20 @@ def app_ssowatconf():
         app_portal_domain = next(
             domain for domain in portal_domains if domain in app_domain
         )
-        portal_domains_apps[app_portal_domain][app_id] = {
+        app_portal_info = {
             "label": perm_info["label"],
             "users": perm_info["corresponding_users"],
             "public": "visitors" in perm_info["allowed"],
             "url": uris[0],
         }
+
+        app_catalog_info = apps_catalog.get(app_id.split("__")[0])
+
+        if app_catalog_info:
+            app_portal_info["description"] = app_catalog_info["manifest"]["description"]
+            app_portal_info["logo"] = f"//{app_portal_domain}/yunohost/admin/applogos/{app_catalog_info['logo_hash']}.png"
+
+        portal_domains_apps[app_portal_domain][app_id] = app_portal_info
 
     conf_dict = {
         "cookie_secret_file": "/etc/yunohost/.ssowat_cookie_secret",
