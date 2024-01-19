@@ -699,7 +699,7 @@ class ConfigPanel:
         if not self.save_path or not os.path.exists(self.save_path):
             return {}
 
-        return read_yaml(self.save_path)
+        return read_yaml(self.save_path) or {}
 
     def _get_partial_raw_config(self) -> "RawConfig":
         def filter_keys(
