@@ -1246,6 +1246,14 @@ class URLOption(BaseStringOption):
     type: Literal[OptionType.url] = OptionType.url
     _annotation = HttpUrl
 
+    @classmethod
+    def _value_post_validator(
+        cls, value: Union[HttpUrl, None], field: "ModelField"
+    ) -> Union[str, None]:
+        if isinstance(value, HttpUrl):
+            return str(value)
+
+        return super()._value_post_validator(value, field)
 
 # ─ FILE ──────────────────────────────────────────────────
 
