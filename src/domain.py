@@ -782,6 +782,8 @@ def _get_DomainConfigPanel():
                 "portal_title",
                 "portal_logo",
                 "portal_theme",
+                "search_engine",
+                "search_engine_name",
                 "portal_user_intro",
                 "portal_public_intro",
             ]
@@ -797,7 +799,8 @@ def _get_DomainConfigPanel():
 
                 portal_values = form.dict(include=set(portal_options))
                 # Remove logo from values else filename will replace b64 content
-                portal_values.pop("portal_logo")
+                if "portal_logo" in portal_values:
+                    portal_values.pop("portal_logo")
 
                 if "portal_logo" in next_settings:
                     if previous_settings.get("portal_logo"):

@@ -27,6 +27,14 @@ name = "Features"
         choices = ["system", "light", "dark", "cupcake", "bumblebee", "emerald", "corporate", "synthwave", "retro", "cyberpunk", "valentine", "halloween", "garden", "forest", "aqua", "lofi", "pastel", "fantasy", "wireframe", "black", "luxury", "dracula", "cmyk", "autumn", "business", "acid", "lemonade", "night", "coffee", "winter"]
         default = "system"
 
+        [feature.portal.search_engine]
+        type = "url"
+        default = ""
+
+        [feature.portal.search_engine_name]
+        type = "string"
+        visible = "search_engine"
+
         [feature.portal.portal_user_intro]
         type = "text"
 
