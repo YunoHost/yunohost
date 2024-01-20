@@ -224,7 +224,7 @@
     "log_app_remove": "Entferne die Applikation '{}'",
     "log_app_install": "Installiere die Applikation '{}'",
     "log_app_upgrade": "Upgrade der Applikation '{}'",
-    "good_practices_about_admin_password": "Die sind nun dabei, ein neues Administratorpasswort zu definieren. Das Passwort sollte mindestens 8 Zeichen lang sein - es ist jedoch empfehlenswert, ein längeres Passwort (z.B. eine Passphrase) und/oder verschiedene Arten von Zeichen (Groß- und Kleinschreibung, Ziffern und Sonderzeichen) zu verwenden.",
+    "good_practices_about_admin_password": "Sie sind nun dabei, ein neues Administratorpasswort zu definieren. Das Passwort sollte mindestens 8 Zeichen lang sein - es ist jedoch empfehlenswert, ein längeres Passwort (z.B. eine Passphrase) und/oder verschiedene Arten von Zeichen (Groß- und Kleinschreibung, Ziffern und Sonderzeichen) zu verwenden.",
     "log_corrupted_md_file": "Die mit Protokollen verknüpfte YAML-Metadatendatei ist beschädigt: '{md_file}\nFehler: {error}''",
     "log_help_to_get_failed_log": "Der Vorgang'{desc}' konnte nicht abgeschlossen werden. Bitte teile das vollständige Protokoll dieser Operation mit dem Befehl 'yunohost log share {name}', um Hilfe zu erhalten",
     "backup_no_uncompress_archive_dir": "Dieses unkomprimierte Archivverzeichnis gibt es nicht",
