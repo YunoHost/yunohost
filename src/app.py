@@ -1068,6 +1068,7 @@ def app_install(
     )
     from yunohost.regenconf import manually_modified_files
     from yunohost.utils.legacy import _patch_legacy_php_versions, _patch_legacy_helpers
+    from yunohost.user import user_list
 
     # Check if disk space available
     if free_space_in_directory("/") <= 512 * 1000 * 1000:
@@ -1090,6 +1091,9 @@ def app_install(
         raise YunohostValidationError("app_id_invalid")
 
     app_id = manifest["id"]
+
+    if app_id in user_list()["users"].keys():
+        raise YunohostValidationError(f"There is already a YunoHost user called {app_id} ...", raw_msg=True)
 
     # Check requirements
     for name, passed, values, err in _check_manifest_requirements(
