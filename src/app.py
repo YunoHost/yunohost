@@ -2987,27 +2987,12 @@ def _assert_system_is_sane_for_app(manifest, when):
 
     logger.debug("Checking that required services are up and running...")
 
-    services = manifest.get("services", [])
+    # FIXME: in the past we had more elaborate checks about mariadb/php/postfix
+    # though they werent very formalized. Ideally we should rework this in the
+    # context of packaging v2, which implies deriving what services are
+    # relevant to check from the manifst
 
-    # Some apps use php-fpm, php5-fpm or php7.x-fpm which is now php8.2-fpm
-    def replace_alias(service):
-        if service in ["php-fpm", "php5-fpm", "php7.0-fpm", "php7.3-fpm", "php7.4-fpm"]:
-            return "php8.2-fpm"
-        else:
-            return service
-
-    services = [replace_alias(s) for s in services]
-
-    # We only check those, mostly to ignore "custom" services
-    # (added by apps) and because those are the most popular
-    # services
-    service_filter = ["nginx", "php8.2-fpm", "mysql", "postfix"]
-    services = [str(s) for s in services if s in service_filter]
-
-    if "nginx" not in services:
-        services = ["nginx"] + services
-    if "fail2ban" not in services:
-        services.append("fail2ban")
+    services = ["nginx", "fail2ban"]
 
     # Wait if a service is reloading
     test_nb = 0
