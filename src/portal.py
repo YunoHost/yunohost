@@ -115,7 +115,16 @@ def portal_public():
     """Get public settings
     If the portal is set as public, it will include the list of public apps
     """
-    return _get_portal_settings()
+
+    portal_settings = _get_portal_settings()
+
+    del portal_settings["portal_user_intro"]
+
+    # Prevent leaking the list of users
+    for infos in portal_settings["apps"].values():
+        del infos["users"]
+
+    return portal_settings
 
 
 def portal_me():
@@ -130,6 +139,10 @@ def portal_me():
     groups = [g for g in groups if g not in [username, "all_users"]]
     # Get user allowed apps
     apps = _get_portal_settings(domain, username)["apps"]
+
+    # Prevent leaking the list of users
+    for infos in apps.values():
+        del infos["users"]
 
     result_dict = {
         "username": username,
