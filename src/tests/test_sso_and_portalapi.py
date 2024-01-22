@@ -8,6 +8,9 @@ from .conftest import message, raiseYunohostError, get_test_apps_dir
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
 from yunohost.user import user_create, user_list, user_delete
 from yunohost.authenticators.ldap_ynhuser import Authenticator, SESSION_FOLDER, short_hash
+from yunohost.app import app_install, app_remove
+from yunohost.permission import user_permission_list, user_permission_update
+
 
 # Get main domain
 maindomain = open("/etc/yunohost/current_host").read().strip()
@@ -27,12 +30,22 @@ def setup_module(module):
 
     assert os.system("systemctl is-active yunohost-portal-api >/dev/null") == 0
 
-    user_create("alice", maindomain, dummy_password, fullname="Alice White", admin=True)
+    if not "alice" in user_list()["users"]:
+        user_create("alice", maindomain, dummy_password, fullname="Alice White", admin=True)
+
+    app_install(
+        os.path.join(get_test_apps_dir(), "hellopy_ynh"),
+        args=f"domain={maindomain}&init_main_permission=visitors",
+        force=True,
+    )
+
 
 
 def teardown_module(module):
     if "alice" in user_list()["users"]:
         user_delete("alice")
+
+    app_remove("hellopy")
 
 
 def login(session, logged_as):
@@ -93,6 +106,8 @@ def request(webpath, logged_as=None, session=None):
 
 
 def test_api_public_as_anonymous():
+
+    # FIXME : should list apps only if the domain option is enabled
 
     r = request(f"https://{maindomain}/yunohost/portalapi/public")
     assert r.status_code == 200 and "apps" in r.json()
@@ -173,6 +188,45 @@ def test_public_routes_not_blocked_by_ssowat():
     assert r.status_code == 404
 
 
+def test_permission_propagation_on_ssowat():
+
+    res = user_permission_list(full=True)["permissions"]
+    assert "visitors" in res["hellopy.main"]["allowed"]
+    assert "all_users" in res["hellopy.main"]["allowed"]
+
+    r = request(f"https://{maindomain}/")
+    assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
+
+    r = request(f"https://{maindomain}/", logged_as="alice")
+    assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
+
+    user_permission_update(
+        "hellopy.main", remove=["visitors", "all_users"], add="alice"
+    )
+
+    r = request(f"https://{maindomain}/")
+    assert r.status_code == 302
+
+    r = request(f"https://{maindomain}/", logged_as="alice")
+    assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
+
+    return
+
+    res = user_permission_list(full=True)["permissions"]
+
+    assert not can_access_webpage(app_webroot, logged_as=None)
+    assert not can_access_webpage(app_webroot, logged_as="alice")
+    assert can_access_webpage(app_webroot, logged_as="bob")
+
+    # Test admin access, as configured during install, only alice should be able to access it
+
+    # alice gotta be allowed on the main permission to access the admin tho
+    user_permission_update("hellopy.main", remove="bob", add="all_users")
+
+    assert not can_access_webpage(app_webroot + "/admin", logged_as=None)
+    assert can_access_webpage(app_webroot + "/admin", logged_as="alice")
+    assert not can_access_webpage(app_webroot + "/admin", logged_as="bob")
+
 # app privée pour alice
 # - pas d'accès si pas loggué
 #     -> redirection ?
@@ -186,9 +240,9 @@ def test_public_routes_not_blocked_by_ssowat():
     #    /update
 
 
-# accès à une url autorisée mais qui 502 ?
-
 # dummy app qui montre le header remote_user / authentication ?
+
+# attempt to inject auth header
 
 # accès aux trucs précédent meme avec une app installée sur la racine ?
 # ou une app par défaut ?
