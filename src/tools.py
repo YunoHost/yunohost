@@ -30,13 +30,6 @@ from moulinette import Moulinette, m18n
 from moulinette.utils.process import call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm, chown
 
-from yunohost.app import (
-    app_upgrade,
-    app_list,
-    _list_upgradable_apps,
-)
-from yunohost.firewall import firewall_upnp
-from yunohost.service import service_start, service_enable
 from yunohost.utils.system import (
     _dump_sources_list,
     _list_upgradable_apt_packages,
@@ -159,6 +152,9 @@ def tools_postinstall(
     from yunohost.domain import domain_main_domain, domain_add
     from yunohost.user import user_create, ADMIN_ALIASES
     from yunohost.app_catalog import _update_apps_catalog
+    from yunohost.firewall import firewall_upnp
+    from yunohost.service import service_start, service_enable
+
     import psutil
 
     # Do some checks at first
@@ -300,6 +296,7 @@ def tools_update(target=None):
     Update apps & system package cache
     """
     from yunohost.app_catalog import _update_apps_catalog
+    from yunohost.app import _list_upgradable_apps
 
     if not target:
         target = "all"
@@ -405,6 +402,8 @@ def tools_upgrade(operation_logger, target=None):
        apps -- List of apps to upgrade (or [] to update all apps)
        system -- True to upgrade system
     """
+
+    from yunohost.app import app_upgrade, app_list
 
     if dpkg_is_broken():
         raise YunohostValidationError("dpkg_is_broken")
