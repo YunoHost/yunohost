@@ -12,7 +12,6 @@ from moulinette.utils.filesystem import read_json, write_to_json, write_to_yaml
 
 from yunohost.utils.error import YunohostError
 from yunohost.app_catalog import (
-    _initialize_apps_catalog_system,
     _read_apps_catalog_list,
     _update_apps_catalog,
     _actual_apps_catalog_api_url,
@@ -66,44 +65,17 @@ def teardown_function(function):
 #
 
 
-def test_apps_catalog_init(mocker):
-    # Cache is empty
-    assert not glob.glob(APPS_CATALOG_CACHE + "/*")
-    # Conf doesn't exist yet
-    assert not os.path.exists(APPS_CATALOG_CONF)
-
-    # Initialize ...
-    mocker.spy(m18n, "n")
-    _initialize_apps_catalog_system()
-    m18n.n.assert_any_call("apps_catalog_init_success")
-
-    # And a conf with at least one list
-    assert os.path.exists(APPS_CATALOG_CONF)
-    apps_catalog_list = _read_apps_catalog_list()
-    assert len(apps_catalog_list)
-
-    # Cache is expected to still be empty though
-    # (if we did update the apps_catalog during init,
-    # we couldn't differentiate easily exceptions
-    # related to lack of network connectivity)
-    assert not glob.glob(APPS_CATALOG_CACHE + "/*")
-
-
 def test_apps_catalog_emptylist():
-    # Initialize ...
-    _initialize_apps_catalog_system()
 
     # Let's imagine somebody removed the default apps catalog because uh idk they dont want to use our default apps catalog
     os.system("rm %s" % APPS_CATALOG_CONF)
     os.system("touch %s" % APPS_CATALOG_CONF)
 
     apps_catalog_list = _read_apps_catalog_list()
-    assert not len(apps_catalog_list)
+    assert len(apps_catalog_list)
 
 
 def test_apps_catalog_update_nominal(mocker):
-    # Initialize ...
-    _initialize_apps_catalog_system()
 
     # Cache is empty
     assert not glob.glob(APPS_CATALOG_CACHE + "/*")
@@ -135,8 +107,6 @@ def test_apps_catalog_update_nominal(mocker):
 
 
 def test_apps_catalog_update_404(mocker):
-    # Initialize ...
-    _initialize_apps_catalog_system()
 
     with requests_mock.Mocker() as m:
         # 404 error
@@ -149,8 +119,6 @@ def test_apps_catalog_update_404(mocker):
 
 
 def test_apps_catalog_update_timeout(mocker):
-    # Initialize ...
-    _initialize_apps_catalog_system()
 
     with requests_mock.Mocker() as m:
         # Timeout
@@ -165,8 +133,6 @@ def test_apps_catalog_update_timeout(mocker):
 
 
 def test_apps_catalog_update_sslerror(mocker):
-    # Initialize ...
-    _initialize_apps_catalog_system()
 
     with requests_mock.Mocker() as m:
         # SSL error
@@ -181,8 +147,6 @@ def test_apps_catalog_update_sslerror(mocker):
 
 
 def test_apps_catalog_update_corrupted(mocker):
-    # Initialize ...
-    _initialize_apps_catalog_system()
 
     with requests_mock.Mocker() as m:
         # Corrupted json
@@ -197,8 +161,6 @@ def test_apps_catalog_update_corrupted(mocker):
 
 
 def test_apps_catalog_load_with_empty_cache(mocker):
-    # Initialize ...
-    _initialize_apps_catalog_system()
 
     # Cache is empty
     assert not glob.glob(APPS_CATALOG_CACHE + "/*")
@@ -223,8 +185,6 @@ def test_apps_catalog_load_with_empty_cache(mocker):
 
 
 def test_apps_catalog_load_with_conflicts_between_lists(mocker):
-    # Initialize ...
-    _initialize_apps_catalog_system()
 
     conf = [
         {"id": "default", "url": APPS_CATALOG_DEFAULT_URL},
@@ -261,8 +221,6 @@ def test_apps_catalog_load_with_conflicts_between_lists(mocker):
 
 
 def test_apps_catalog_load_with_outdated_api_version():
-    # Initialize ...
-    _initialize_apps_catalog_system()
 
     # Update
     with requests_mock.Mocker() as m:

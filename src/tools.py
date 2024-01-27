@@ -253,10 +253,7 @@ def tools_postinstall(
     # Enable UPnP silently and reload firewall
     firewall_upnp("enable", no_refresh=True)
 
-    # Initialize the apps catalog system
-    _initialize_apps_catalog_system()
-
-    # Try to update the apps catalog ...
+    # Try to fetch the apps catalog ...
     # we don't fail miserably if this fails,
     # because that could be for example an offline installation...
     try:

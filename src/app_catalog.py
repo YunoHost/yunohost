@@ -41,6 +41,7 @@ APPS_CATALOG_LOGOS = "/usr/share/yunohost/applogos"
 APPS_CATALOG_CONF = "/etc/yunohost/apps_catalog.yml"
 APPS_CATALOG_API_VERSION = 3
 APPS_CATALOG_DEFAULT_URL = "https://app.yunohost.org/default"
+DEFAULT_APPS_CATALOG_LIST = [{"id": "default", "url": APPS_CATALOG_DEFAULT_URL}]
 
 
 def app_catalog(full=False, with_categories=False, with_antifeatures=False):
@@ -120,33 +121,21 @@ def app_search(string):
     return matching_apps
 
 
-def _initialize_apps_catalog_system():
-    """
-    This function is meant to intialize the apps_catalog system with YunoHost's default app catalog.
-    """
-
-    default_apps_catalog_list = [{"id": "default", "url": APPS_CATALOG_DEFAULT_URL}]
-
-    try:
-        logger.debug(
-            "Initializing apps catalog system with YunoHost's default app list"
-        )
-        write_to_yaml(APPS_CATALOG_CONF, default_apps_catalog_list)
-    except Exception as e:
-        raise YunohostError(
-            f"Could not initialize the apps catalog system... : {e}", raw_msg=True
-        )
-
-    logger.success(m18n.n("apps_catalog_init_success"))
-
-
 def _read_apps_catalog_list():
     """
     Read the json corresponding to the list of apps catalogs
     """
 
+    if not os.path.exists(APPS_CATALOG_CONF):
+        return DEFAULT_APPS_CATALOG_LIST
+
     try:
         list_ = read_yaml(APPS_CATALOG_CONF)
+        if list_ == DEFAULT_APPS_CATALOG_LIST:
+            try:
+                os.remove(APPS_CATALOG_CONF)
+            except Exception:
+                pass
         # Support the case where file exists but is empty
         # by returning [] if list_ is None
         return list_ if list_ else []

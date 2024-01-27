@@ -76,7 +76,6 @@
     "app_yunohost_version_not_supported": "This app requires YunoHost >= {required} but current installed version is {current}",
     "apps_already_up_to_date": "All apps are already up-to-date",
     "apps_catalog_failed_to_download": "Unable to download the {apps_catalog} app catalog: {error}",
-    "apps_catalog_init_success": "App catalog system initialized!",
     "apps_catalog_obsolete_cache": "The app catalog cache is empty or obsolete.",
     "apps_catalog_update_success": "The application catalog has been updated!",
     "apps_catalog_updating": "Updating application catalog...",
