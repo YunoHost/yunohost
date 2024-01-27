@@ -573,7 +573,6 @@ def domain_main_domain(operation_logger, new_main_domain=None):
 
     """
     from yunohost.tools import _set_hostname
-    from yunohost.app import app_ssowatconf
 
     # If no new domain specified, we return the current main domain
     if not new_main_domain:

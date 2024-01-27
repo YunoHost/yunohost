@@ -27,7 +27,6 @@ from moulinette.utils.filesystem import (
     read_json,
     read_yaml,
     write_to_json,
-    write_to_yaml,
     mkdir,
 )
 
