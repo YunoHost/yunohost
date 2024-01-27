@@ -35,14 +35,8 @@ from yunohost.app import (
     app_list,
     _list_upgradable_apps,
 )
-from yunohost.app_catalog import (
-    _initialize_apps_catalog_system,
-    _update_apps_catalog,
-)
-from yunohost.domain import domain_add
 from yunohost.firewall import firewall_upnp
 from yunohost.service import service_start, service_enable
-from yunohost.regenconf import regen_conf
 from yunohost.utils.system import (
     _dump_sources_list,
     _list_upgradable_apt_packages,
@@ -162,8 +156,9 @@ def tools_postinstall(
         assert_password_is_strong_enough,
         assert_password_is_compatible,
     )
-    from yunohost.domain import domain_main_domain
+    from yunohost.domain import domain_main_domain, domain_add
     from yunohost.user import user_create, ADMIN_ALIASES
+    from yunohost.app_catalog import _update_apps_catalog
     import psutil
 
     # Do some checks at first
@@ -270,7 +265,7 @@ def tools_postinstall(
     service_enable("yunohost-firewall")
     service_start("yunohost-firewall")
 
-    regen_conf(names=["ssh"], force=True)
+    tools_regen_conf(names=["ssh"], force=True)
 
     # Restore original ssh conf, as chosen by the
     # admin during the initial install
@@ -285,7 +280,7 @@ def tools_postinstall(
     if os.path.exists(original_sshd_conf):
         os.rename(original_sshd_conf, "/etc/ssh/sshd_config")
 
-    regen_conf(force=True)
+    tools_regen_conf(force=True)
 
     logger.success(m18n.n("yunohost_configured"))
 
@@ -295,6 +290,9 @@ def tools_postinstall(
 def tools_regen_conf(
     names=[], with_diff=False, force=False, dry_run=False, list_pending=False
 ):
+
+    from yunohost.regenconf import regen_conf
+
     # Make sure the settings are migrated before running the migration,
     # which may otherwise fuck things up such as the ssh config ...
     # We do this here because the regen-conf is called before the migration in debian/postinst
@@ -313,6 +311,7 @@ def tools_update(target=None):
     """
     Update apps & system package cache
     """
+    from yunohost.app_catalog import _update_apps_catalog
 
     if not target:
         target = "all"
