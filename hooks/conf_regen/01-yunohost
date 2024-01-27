@@ -218,6 +218,13 @@ do_post_regen() {
     chown ynh-portal:root /var/log/yunohost-portalapi.log
     chmod 600 /var/log/yunohost-portalapi.log
 
+    # Legacy log tree structure
+    if [ ! -e /var/log/yunohost/operations ] && [ -d /var/log/yunohost/categories/operation ] && [ ! -L /var/log/yunohost/categories/operation ]
+    then
+        mv /var/log/yunohost/categories/operation /var/log/yunohost/operations
+        ln -s /var/log/yunohost/operations /var/log/yunohost/categories/operation
+    fi
+
     ######################
     # Enfore permissions #
     ######################

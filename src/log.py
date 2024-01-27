@@ -1,4 +1,3 @@
-#
 # Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
@@ -36,8 +35,7 @@ from moulinette.utils.filesystem import read_file, read_yaml
 
 logger = getLogger("yunohost.log")
 
-CATEGORIES_PATH = "/var/log/yunohost/categories/"
-OPERATIONS_PATH = "/var/log/yunohost/categories/operation/"
+OPERATIONS_PATH = "/var/log/yunohost/operations/"
 METADATA_FILE_EXT = ".yml"
 LOG_FILE_EXT = ".log"
 
@@ -214,7 +212,7 @@ def log_show(
     infos = {}
 
     # If it's a unit operation, display the name and the description
-    if base_path.startswith(CATEGORIES_PATH):
+    if base_path.startswith(OPERATIONS_PATH):
         infos["description"] = _get_description_from_name(base_filename)
         infos["name"] = base_filename
 
