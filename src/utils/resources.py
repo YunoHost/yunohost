@@ -1217,7 +1217,7 @@ class PortsResource(AppResource):
                 properties[port]["default"] = random.randint(10000, 60000)
 
         # This is to prevent using twice the same port during provisionning.
-        self.used_ports: list[int] = []
+        self.ports_used_by_self: list[int] = []
 
         super().__init__({"ports": properties}, *args, **kwargs)
 
@@ -1231,7 +1231,7 @@ class PortsResource(AppResource):
         used_by_app = os.system(
             f"grep --quiet --extended-regexp \"port: '?{port}'?\" /etc/yunohost/apps/*/settings.yml"
         ) == 0
-        used_by_self_provisioning = port in self.used_ports
+        used_by_self_provisioning = port in self.ports_used_by_self
 
         return used_by_process or used_by_app or used_by_self_provisioning
 
@@ -1263,7 +1263,7 @@ class PortsResource(AppResource):
                     while self._port_is_used(port_value):
                         port_value += 1
 
-            self.used_ports.append(port_value)
+            self.ports_used_by_self.append(port_value)
             self.set_setting(setting_name, port_value)
 
             if infos["exposed"]:
