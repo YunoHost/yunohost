@@ -780,5 +780,6 @@
     "dyndns_set_recovery_password_denied": "Konnte Wiederherstellungspasswort nicht einstellen: ungültiges Passwort",
     "dyndns_set_recovery_password_unknown_domain": "Konnte Wiederherstellungspasswort nicht einstellen: Domäne nicht registriert",
     "dyndns_set_recovery_password_failed": "Konnte Wiederherstellungspasswort nicht einstellen: {error}",
-    "dyndns_set_recovery_password_success": "Wiederherstellungspasswort eingestellt!"
+    "dyndns_set_recovery_password_success": "Wiederherstellungspasswort eingestellt!",
+    "global_settings_setting_ssh_port_help": "Ein Port unter 1024 wird bevorzugt, um Kaperversuche durch Nicht-Administratordienste auf dem Remote-Computer zu verhindern. Sie sollten auch vermeiden, einen bereits verwendeten Port zu verwenden, z. B. 80 oder 443."
 }
