@@ -658,7 +658,7 @@
     "global_settings_setting_ssh_compatibility_help": "Compromis 'compatibilité versus sécurité' pour le serveur SSH. Affecte les cryptogrammes utilisés (et d'autres aspects liés à la sécurité).",
     "global_settings_setting_ssh_password_authentication_help": "Autoriser l'authentification par mot de passe pour SSH",
     "global_settings_setting_ssh_port": "Port SSH",
-    "global_settings_setting_webadmin_allowlist_help": "Adresses IP autorisées à accéder à la webadmin. Elles doivent être séparées par une virgule.",
+    "global_settings_setting_webadmin_allowlist_help": "Adresses IP autorisées à accéder à la webadmin. La notation CIDR est autorisée.",
     "global_settings_setting_webadmin_allowlist_enabled_help": "Autoriser seulement certaines IP à accéder à la webadmin.",
     "global_settings_setting_smtp_allow_ipv6_help": "Autoriser l'utilisation d'IPv6 pour recevoir et envoyer du courrier",
     "global_settings_setting_smtp_relay_enabled_help": "Un relais SMTP permet d'envoyer du courrier à la place de cette instance YunoHost. Cela est utile si vous êtes dans l'une de ces situations : le port 25 est bloqué par votre FAI ou par votre fournisseur VPS ; vous avez une IP résidentielle répertoriée sur DUHL ; vous ne pouvez pas configurer le DNS inversé ; ou le serveur n'est pas directement accessible depuis Internet et vous voulez en utiliser un autre pour envoyer des mails.",
