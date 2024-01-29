@@ -653,7 +653,7 @@
     "global_settings_setting_ssh_compatibility_help": "Compromiso entre compatibilidade e seguridade para o servidor SSH. Aféctalle ao cifrado (e outros aspectos da seguridade). Le https://infosec.mozilla.org/guidelines/openssh for more info.",
     "global_settings_setting_ssh_password_authentication_help": "Permitir autenticación con contrasinal para SSH",
     "global_settings_setting_ssh_port": "Porto SSH",
-    "global_settings_setting_webadmin_allowlist_help": "Enderezos IP con permiso para acceder á webadmin. Separados por vírgulas.",
+    "global_settings_setting_webadmin_allowlist_help": "Enderezos IP con permiso para acceder á webadmin. Permítese a notación CIDR.",
     "global_settings_setting_webadmin_allowlist_enabled_help": "Permitir que só algúns IPs accedan á webadmin.",
     "global_settings_setting_smtp_allow_ipv6_help": "Permitir o uso de IPv6 para recibir e enviar emais",
     "global_settings_setting_smtp_relay_enabled_help": "Servidor repetidor SMTP para enviar emails no lugar da túa instancia yunohost. É útil se estás nunha destas situacións: o teu porto 25 está bloqueado polo teu provedor ISP u VPN, se tes unha IP residencial nunha lista DUHL, se non podes configurar DNS inversa ou se este servidor non ten conexión directa a internet e queres utilizar outro para enviar os emails.",
