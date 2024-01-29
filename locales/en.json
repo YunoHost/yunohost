@@ -467,7 +467,7 @@
     "global_settings_setting_webadmin_allowlist": "Webadmin IP allowlist",
     "global_settings_setting_webadmin_allowlist_enabled": "Enable Webadmin IP allowlist",
     "global_settings_setting_webadmin_allowlist_enabled_help": "Allow only some IPs to access the webadmin.",
-    "global_settings_setting_webadmin_allowlist_help": "IP adresses allowed to access the webadmin.",
+    "global_settings_setting_webadmin_allowlist_help": "IP adresses allowed to access the webadmin. CIDR notation is allowed.",
     "good_practices_about_admin_password": "You are now about to define a new administration password. The password should be at least 8 characters long—though it is good practice to use a longer password (i.e. a passphrase) and/or to use a variation of characters (uppercase, lowercase, digits and special characters).",
     "good_practices_about_user_password": "You are now about to define a new user password. The password should be at least 8 characters long—though it is good practice to use a longer password (i.e. a passphrase) and/or to a variation of characters (uppercase, lowercase, digits and special characters).",
     "group_already_exist": "Group {group} already exists",
