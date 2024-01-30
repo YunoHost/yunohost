@@ -81,26 +81,16 @@ def request(webpath, logged_as=None, session=None):
 
     # Anonymous access
     if session:
-        r = session.get(webpath, verify=False)
+        r = session.get(webpath, verify=False, allow_redirects=False)
     elif not logged_as:
-        r = requests.get(webpath, verify=False)
+        r = requests.get(webpath, verify=False, allow_redirects=False)
     # Login as a user using dummy password
     else:
         with requests.Session() as session:
             r = login(session, logged_as)
             # We should have some cookies related to authentication now
             assert session.cookies
-            r = session.get(webpath, verify=False)
-
-    # If we can't access it, we got redirected to the SSO
-    # with `r=<base64_callback_url>` for anonymous access because they're encouraged to log-in,
-    # and `msg=access_denied` if we are logged but not allowed for this url
-    # with `r=
-    #sso_url = f"https://{maindomain}/yunohost/sso/"
-    #if not logged_as:
-    #    sso_url += "?r="
-    #else:
-    #    sso_url += "?msg=access_denied"
+            r = session.get(webpath, verify=False, allow_redirects=False)
 
     return r
 
