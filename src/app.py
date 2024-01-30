@@ -1630,14 +1630,6 @@ def app_ssowatconf():
         }
     }
 
-    apps_using_remote_user_var_in_nginx = (
-        check_output(
-            "grep -nri '$remote_user' /etc/yunohost/apps/*/conf/*nginx*conf | awk -F/ '{print $5}' || true"
-        )
-        .strip()
-        .split("\n")
-    )
-
     # FIXME : this could be handled by nginx's regen conf to further simplify ssowat's code ...
     redirected_urls = {}
     for domain in domains:
