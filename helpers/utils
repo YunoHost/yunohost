@@ -1065,15 +1065,11 @@ ynh_compare_current_package_version() {
 _ynh_apply_default_permissions() {
     local target=$1
 
-    local ynh_requirement=$(ynh_read_manifest --manifest_key="requirements.yunohost" | tr -d '<>= ')
-
-    if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} ge 2 || [ -z "$ynh_requirement" ] || [ "$ynh_requirement" == "null" ] || dpkg --compare-versions $ynh_requirement ge 4.2; then
-        chmod o-rwx $target
-        chmod g-w $target
-        chown -R root:root $target
-        if ynh_system_user_exists $app; then
-            chown $app:$app $target
-        fi
+    chmod o-rwx $target
+    chmod g-w $target
+    chown -R root:root $target
+    if ynh_system_user_exists $app; then
+        chown $app:$app $target
     fi
 
     # Crons should be owned by root
