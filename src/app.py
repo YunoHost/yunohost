@@ -1668,15 +1668,33 @@ def app_ssowatconf():
             continue
 
         app_id = perm_name.split(".")[0]
+        app_settings = _get_app_settings(app_id)
+
+        # Stupid hard-coded hack until we properly propagate this to apps ...
+        apps_that_need_password_in_auth_header = ["nextcloud"]
+
+        if perm_info["auth_header"]:
+            if app_id in apps_that_need_password_in_auth_header:
+                auth_header = "basic-with-password"
+            elif app_settings.get("auth_header"):
+                auth_header = app_settings.get("auth_header")
+                assert auth_header in ["basic-with-password", "basic-without-password"]
+            else:
+                auth_header = "basic-without-password"
+        else:
+            auth_header = None
 
         permissions[perm_name] = {
-            "use_remote_user_var_in_nginx_conf": app_id
-            in apps_using_remote_user_var_in_nginx,
             "users": perm_info["corresponding_users"],
-            "auth_header": perm_info["auth_header"],
+            "auth_header": auth_header,
             "public": "visitors" in perm_info["allowed"],
             "uris": uris,
         }
+
+        # Apps can opt out of the auth spoofing protection using this if they really need to,
+        # but that's a huge security hole and ultimately should never happen...
+        if app_settings.get("protect_against_basic_auth_spoofing", True) in [False, "False", "false", "0", 0]:
+            permissions[perm_name]["protect_against_basic_auth_spoofing"] = False
 
         # Next: portal related
         # No need to keep apps that aren't supposed to be displayed in portal
