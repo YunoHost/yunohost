@@ -1,3 +1,4 @@
+import base64
 import time
 import requests
 from pathlib import Path
@@ -8,7 +9,7 @@ from .conftest import message, raiseYunohostError, get_test_apps_dir
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
 from yunohost.user import user_create, user_list, user_delete
 from yunohost.authenticators.ldap_ynhuser import Authenticator, SESSION_FOLDER, short_hash
-from yunohost.app import app_install, app_remove
+from yunohost.app import app_install, app_remove, app_setting, app_ssowatconf
 from yunohost.permission import user_permission_list, user_permission_update
 
 
@@ -20,6 +21,8 @@ dummy_password = "test123Ynh"
 def setup_function(function):
     Authenticator.invalidate_all_sessions_for_user("alice")
     assert number_of_active_session_for_user("alice") == 0
+    Authenticator.invalidate_all_sessions_for_user("bob")
+    assert number_of_active_session_for_user("bob") == 0
 
 
 def teardown_function(function):
@@ -30,8 +33,10 @@ def setup_module(module):
 
     assert os.system("systemctl is-active yunohost-portal-api >/dev/null") == 0
 
-    if not "alice" in user_list()["users"]:
+    if "alice" not in user_list()["users"]:
         user_create("alice", maindomain, dummy_password, fullname="Alice White", admin=True)
+    if "bob" not in user_list()["users"]:
+        user_create("bob", maindomain, dummy_password, fullname="Bob Marley")
 
     app_install(
         os.path.join(get_test_apps_dir(), "hellopy_ynh"),
@@ -44,6 +49,8 @@ def setup_module(module):
 def teardown_module(module):
     if "alice" in user_list()["users"]:
         user_delete("alice")
+    if "bob" in user_list()["users"]:
+        user_delete("bob")
 
     app_remove("hellopy")
 
@@ -58,7 +65,9 @@ def login(session, logged_as):
         },
         verify=False,
     )
+
     return r
+
 
 def logout(session):
     logout_endpoint = f"https://{maindomain}/yunohost/portalapi/logout"
@@ -71,26 +80,31 @@ def logout(session):
     )
     return r
 
+
 def number_of_active_session_for_user(user):
+    return len(list(Path(SESSION_FOLDER).glob(f"{short_hash(user)}*")))
 
-    return len(list(Path(SESSION_FOLDER).glob(f"{short_hash('alice')}*")))
 
-
-def request(webpath, logged_as=None, session=None):
+def request(webpath, logged_as=None, session=None, inject_auth=None):
     webpath = webpath.rstrip("/")
+
+    headers = {}
+    if inject_auth:
+        b64loginpassword = base64.b64encode((inject_auth[0] + ":" + inject_auth[1]).encode()).decode()
+        headers["Authorization"] = f"Basic {b64loginpassword}"
 
     # Anonymous access
     if session:
-        r = session.get(webpath, verify=False, allow_redirects=False)
+        r = session.get(webpath, verify=False, allow_redirects=False, headers=headers)
     elif not logged_as:
-        r = requests.get(webpath, verify=False, allow_redirects=False)
+        r = requests.get(webpath, verify=False, allow_redirects=False, headers=headers)
     # Login as a user using dummy password
     else:
         with requests.Session() as session:
             r = login(session, logged_as)
             # We should have some cookies related to authentication now
             assert session.cookies
-            r = session.get(webpath, verify=False, allow_redirects=False)
+            r = session.get(webpath, verify=False, allow_redirects=False, headers=headers)
 
     return r
 
@@ -132,7 +146,6 @@ def test_api_login_nonexistinguser():
 
 
 def test_api_public_and_me_logged_in():
-
 
     r = request(f"https://{maindomain}/yunohost/portalapi/public", logged_as="alice")
     assert r.status_code == 200 and "apps" in r.json()
@@ -190,38 +203,59 @@ def test_permission_propagation_on_ssowat():
     r = request(f"https://{maindomain}/", logged_as="alice")
     assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
 
+    r = request(f"https://{maindomain}/", logged_as="bob")
+    assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
+
     user_permission_update(
         "hellopy.main", remove=["visitors", "all_users"], add="alice"
     )
 
     r = request(f"https://{maindomain}/")
     assert r.status_code == 302
+    assert r.headers['Location'].startswith(f"https://{maindomain}/yunohost/sso?r=")
 
     r = request(f"https://{maindomain}/", logged_as="alice")
     assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
 
-    return
+    # Bob can't even login because doesnt has access to any app on the domain
+    # (that's debattable tho)
+    with requests.Session() as session:
+        r = login(session, "bob")
+        assert not session.cookies
 
-    res = user_permission_list(full=True)["permissions"]
 
-    assert not can_access_webpage(app_webroot, logged_as=None)
-    assert not can_access_webpage(app_webroot, logged_as="alice")
-    assert can_access_webpage(app_webroot, logged_as="bob")
+def test_sso_basic_auth_header():
 
-    # Test admin access, as configured during install, only alice should be able to access it
+    r = request(f"https://{maindomain}/show-auth")
+    assert r.status_code == 200 and r.content.decode().strip() == "User: None\nPwd: None"
 
-    # alice gotta be allowed on the main permission to access the admin tho
-    user_permission_update("hellopy.main", remove="bob", add="all_users")
+    r = request(f"https://{maindomain}/show-auth", logged_as="alice")
+    assert r.status_code == 200 and r.content.decode().strip() == "User: alice\nPwd: -"
 
-    assert not can_access_webpage(app_webroot + "/admin", logged_as=None)
-    assert can_access_webpage(app_webroot + "/admin", logged_as="alice")
-    assert not can_access_webpage(app_webroot + "/admin", logged_as="bob")
+    app_setting("hellopy", "auth_header", value="basic-with-password")
+    app_ssowatconf()
 
-# app privée pour alice
-# - pas d'accès si pas loggué
-#     -> redirection ?
-# - accès si loggué si alice
-# - pas d'accès même si loggué en tant que bob
+    r = request(f"https://{maindomain}/show-auth", logged_as="alice")
+    assert r.status_code == 200 and r.content.decode().strip() == f"User: alice\nPwd: {dummy_password}"
+
+
+def test_sso_basic_auth_header_spoofing():
+
+    r = request(f"https://{maindomain}/show-auth")
+    assert r.status_code == 200 and r.content.decode().strip() == "User: None\nPwd: None"
+
+    r = request(f"https://{maindomain}/show-auth", inject_auth=("foo", "bar"))
+    assert r.status_code == 200 and r.content.decode().strip() == "User: None\nPwd: None"
+
+    app_setting("hellopy", "protect_against_basic_auth_spoofing", value="false")
+    app_ssowatconf()
+
+    r = request(f"https://{maindomain}/show-auth", inject_auth=("foo", "bar"))
+    assert r.status_code == 200 and r.content.decode().strip() == "User: foo\nPwd: bar"
+
+
+
+
 
 # accès à l'api portal
     # -> test des routes
@@ -229,10 +263,6 @@ def test_permission_propagation_on_ssowat():
     #    /me
     #    /update
 
-
-# dummy app qui montre le header remote_user / authentication ?
-
-# attempt to inject auth header
 
 # accès aux trucs précédent meme avec une app installée sur la racine ?
 # ou une app par défaut ?
