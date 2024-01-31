@@ -44,6 +44,7 @@ def setup_function(function):
     os.system("echo 'id: testapp' > /etc/yunohost/apps/testapp/settings.yml")
     os.system("echo 'packaging_format = 2' > /etc/yunohost/apps/testapp/manifest.toml")
     os.system("echo 'id = \"testapp\"' >> /etc/yunohost/apps/testapp/manifest.toml")
+    os.system("echo 'description.en = \"A dummy app to test app resources\"' >> /etc/yunohost/apps/testapp/manifest.toml")
 
 
 def teardown_function(function):
