@@ -1693,6 +1693,9 @@ def app_ssowatconf():
         if not perm_info.get("show_tile", False):
             continue
 
+        setting_path = os.path.join(APPS_SETTING_PATH, app_id)
+        local_manifest = _get_manifest_of_app(setting_path)
+
         app_domain = uris[0].split("/")[0]
         # get "topest" domain
         app_portal_domain = next(
@@ -1703,12 +1706,14 @@ def app_ssowatconf():
             "users": perm_info["corresponding_users"],
             "public": "visitors" in perm_info["allowed"],
             "url": uris[0],
+            "description": local_manifest["description"],
         }
 
+        # FIXME : find a smarter way to get this info ? (in the settings maybe..)
+        # Also ideally we should not rely on the webadmin route for this, maybe expose these through a different route in nginx idk
+        # Also related to "people will want to customize those.."
         app_catalog_info = apps_catalog.get(app_id.split("__")[0])
-
-        if app_catalog_info:
-            app_portal_info["description"] = app_catalog_info["manifest"]["description"]
+        if app_catalog_info and "logo_hash" in app_catalog_info:
             app_portal_info["logo"] = f"//{app_portal_domain}/yunohost/admin/applogos/{app_catalog_info['logo_hash']}.png"
 
         portal_domains_apps[app_portal_domain][app_id] = app_portal_info
