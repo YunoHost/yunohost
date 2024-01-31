@@ -582,7 +582,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
         base_dns_zone = _get_dns_zone_for_domain(domain)
         basename = _get_relative_name_for_dns_zone(domain, base_dns_zone)
         suffix = f".{basename}" if basename != "@" else ""
-        
+
         for sub in ("xmpp-upload", "muc"):
             subdomain = sub + "." + domain
             if xmpp_records.get("CNAME:" + sub + suffix) == "OK":

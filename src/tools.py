@@ -606,6 +606,7 @@ def tools_shell(command=None):
         shell = code.InteractiveConsole(vars)
         shell.interact()
 
+
 def tools_basic_space_cleanup():
     """
     Basic space cleanup.
