@@ -956,8 +956,8 @@ def test_ssowat_conf():
     assert permissions["wiki.main"]["public"] is False
     assert permissions["blog.main"]["public"] is False
 
-    assert permissions["wiki.main"]["auth_header"] is False
-    assert permissions["blog.main"]["auth_header"] is True
+    assert permissions["wiki.main"]["auth_header"] is None
+    assert permissions["blog.main"]["auth_header"] is "basic-without-password"
 
 
 def test_show_tile_cant_be_enabled():
