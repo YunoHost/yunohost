@@ -9,12 +9,14 @@ from .conftest import message, raiseYunohostError, get_test_apps_dir
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
 from yunohost.user import user_create, user_list, user_delete
 from yunohost.authenticators.ldap_ynhuser import Authenticator, SESSION_FOLDER, short_hash
-from yunohost.app import app_install, app_remove, app_setting, app_ssowatconf
+from yunohost.app import app_install, app_remove, app_setting, app_ssowatconf, app_change_url
 from yunohost.permission import user_permission_list, user_permission_update
 
 
 # Get main domain
 maindomain = open("/etc/yunohost/current_host").read().strip()
+subdomain = f"sub.{maindomain}"
+secondarydomain = "secondary.test"
 dummy_password = "test123Ynh"
 
 
@@ -23,6 +25,14 @@ def setup_function(function):
     assert number_of_active_session_for_user("alice") == 0
     Authenticator.invalidate_all_sessions_for_user("bob")
     assert number_of_active_session_for_user("bob") == 0
+
+    user_permission_update(
+        "hellopy.main", add=["visitors", "all_users"], remove=["alice", "bob"]
+    )
+
+    app_setting("hellopy", "auth_header", delete=True)
+    app_setting("hellopy", "protect_against_basic_auth_spoofing", delete=True)
+    app_ssowatconf()
 
 
 def teardown_function(function):
@@ -45,7 +55,6 @@ def setup_module(module):
     )
 
 
-
 def teardown_module(module):
     if "alice" in user_list()["users"]:
         user_delete("alice")
@@ -54,9 +63,18 @@ def teardown_module(module):
 
     app_remove("hellopy")
 
+    if subdomain in domain_list()["domains"]:
+        domain_remove(subdomain)
+    if secondarydomain in domain_list()["domains"]:
+        domain_remove(secondarydomain)
 
-def login(session, logged_as):
-    login_endpoint = f"https://{maindomain}/yunohost/portalapi/login"
+
+def login(session, logged_as, logged_on=None):
+
+    if not logged_on:
+        logged_on = maindomain
+
+    login_endpoint = f"https://{logged_on}/yunohost/portalapi/login"
     r = session.post(
         login_endpoint,
         data={"credentials": f"{logged_as}:{dummy_password}"},
@@ -85,7 +103,7 @@ def number_of_active_session_for_user(user):
     return len(list(Path(SESSION_FOLDER).glob(f"{short_hash(user)}*")))
 
 
-def request(webpath, logged_as=None, session=None, inject_auth=None):
+def request(webpath, logged_as=None, session=None, inject_auth=None, logged_on=None):
     webpath = webpath.rstrip("/")
 
     headers = {}
@@ -101,7 +119,7 @@ def request(webpath, logged_as=None, session=None, inject_auth=None):
     # Login as a user using dummy password
     else:
         with requests.Session() as session:
-            r = login(session, logged_as)
+            r = login(session, logged_as, logged_on)
             # We should have some cookies related to authentication now
             assert session.cookies
             r = session.get(webpath, verify=False, allow_redirects=False, headers=headers)
@@ -136,6 +154,7 @@ def test_api_login_and_logout():
         r = logout(session)
 
         assert number_of_active_session_for_user("alice") == 0
+
 
 def test_api_login_nonexistinguser():
 
@@ -252,6 +271,44 @@ def test_sso_basic_auth_header_spoofing():
 
     r = request(f"https://{maindomain}/show-auth", inject_auth=("foo", "bar"))
     assert r.status_code == 200 and r.content.decode().strip() == "User: foo\nPwd: bar"
+
+
+def test_sso_on_subdomain():
+
+    if subdomain not in domain_list()["domains"]:
+        domain_add(subdomain)
+
+    app_change_url("hellopy", domain=subdomain, path="/")
+
+    r = request(f"https://{subdomain}/")
+    assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
+
+    r = request(f"https://{subdomain}/", logged_as="alice")
+    assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
+
+    r = request(f"https://{subdomain}/show-auth", logged_as="alice")
+    assert r.status_code == 200 and r.content.decode().strip().startswith("User: alice")
+
+
+def test_sso_on_secondary_domain():
+
+    if secondarydomain not in domain_list()["domains"]:
+        domain_add(secondarydomain)
+
+    app_change_url("hellopy", domain=secondarydomain, path="/")
+
+    r = request(f"https://{secondarydomain}/")
+    assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
+
+    r = request(f"https://{secondarydomain}/", logged_as="alice")
+    assert r.status_code == 200 and r.content.decode().strip() == "Hello world!"
+
+    r = request(f"https://{secondarydomain}/show-auth", logged_as="alice")
+    # Getting 'User: None despite being logged on the main domain
+    assert r.status_code == 200 and r.content.decode().strip().startswith("User: None")
+
+    r = request(f"https://{secondarydomain}/show-auth", logged_as="alice", logged_on=secondarydomain)
+    assert r.status_code == 200 and r.content.decode().strip().startswith("User: alice")
 
 
 
