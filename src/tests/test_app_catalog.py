@@ -72,7 +72,7 @@ def test_apps_catalog_emptylist():
     os.system("touch %s" % APPS_CATALOG_CONF)
 
     apps_catalog_list = _read_apps_catalog_list()
-    assert len(apps_catalog_list)
+    assert len(apps_catalog_list) == 0
 
 
 def test_apps_catalog_update_nominal(mocker):
