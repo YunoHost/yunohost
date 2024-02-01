@@ -502,7 +502,7 @@
     "restore_running_app_script": "Restablecendo a app '{app}'...",
     "restore_removing_tmp_dir_failed": "Non se puido eliminar o directorio temporal antigo",
     "restore_nothings_done": "Nada foi restablecido",
-    "restore_not_enough_disk_space": "Non hai espazo abondo (espazo: {free_space.d} B, espazo necesario: {needed_space} B, marxe de seguridade: {margin} B)",
+    "restore_not_enough_disk_space": "Non hai espazo abondo (espazo: {free_space} B, espazo necesario: {needed_space} B, marxe de seguridade: {margin} B)",
     "restore_may_be_not_enough_disk_space": "O teu sistema semella que non ten espazo abondo (libre: {free_space} B, espazo necesario: {needed_space} B, marxe de seguridade {margin} B)",
     "restore_hook_unavailable": "O script de restablecemento para '{part}' non está dispoñible no teu sistema nin no arquivo",
     "ldap_server_is_down_restart_it": "O servidor LDAP está caído, intenta reinicialo...",
