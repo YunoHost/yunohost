@@ -23,7 +23,6 @@ do_init_regen() {
     cp global.conf "$nginx_conf_dir"
     cp ssowat.conf "$nginx_conf_dir"
     cp yunohost_http_errors.conf.inc "$nginx_conf_dir"
-    cp yunohost_panel.conf.inc "$nginx_conf_dir"
     cp yunohost_sso.conf.inc "$nginx_conf_dir"
 
 
@@ -66,14 +65,10 @@ do_pre_regen() {
     cp global.conf "$nginx_conf_dir"
     cp ssowat.conf "$nginx_conf_dir"
     cp yunohost_http_errors.conf.inc "$nginx_conf_dir"
-    cp yunohost_panel.conf.inc "$nginx_conf_dir"
     cp yunohost_sso.conf.inc "$nginx_conf_dir"
 
-    # remove the panel overlay if this is specified in settings
-    panel_overlay="$(jq -r '.ssowat_panel_overlay_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
-    if [ "$panel_overlay" == "False" ]; then
-        echo "#" >"${nginx_conf_dir}/yunohost_panel.conf.inc"
-    fi
+    # Legacy file to remove
+    touch "$nginx_conf_dir"/yunohost_panel.conf.inc
 
     # retrieve variables
     main_domain=$(cat /etc/yunohost/current_host)
