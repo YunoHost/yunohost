@@ -32,7 +32,7 @@ base_folder_and_perm_init() {
 
     mkdir -p /usr/share/yunohost/portal/customassets
     chmod 775 /usr/share/yunohost/portal/customassets
-    chown root:root /usr/share/yunohost/customassets
+    chown root:root /usr/share/yunohost/portal/customassets
 
     touch /var/log/yunohost-portalapi.log
     chown ynh-portal:root /var/log/yunohost-portalapi.log
