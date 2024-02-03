@@ -3,10 +3,6 @@
 set -e
 
 do_init_regen() {
-    if [[ $EUID -ne 0 ]]; then
-        echo "You must be root to run this script" 1>&2
-        exit 1
-    fi
 
     cd /usr/share/yunohost/conf/yunohost
 
