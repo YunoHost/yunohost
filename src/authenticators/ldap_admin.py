@@ -162,7 +162,7 @@ class Authenticator(BaseAuthenticator):
             jwt.encode(infos, SESSION_SECRET(), algorithm="HS256"),
             secure=True,
             httponly=True,
-            path="/",
+            path="/yunohost/api",
             samesite="strict",
         )
 
@@ -190,7 +190,7 @@ class Authenticator(BaseAuthenticator):
         self.purge_expired_session_files()
         session_file = f'{SESSION_FOLDER}/{infos["id"]}'
         if not os.path.exists(session_file):
-            response.delete_cookie("yunohost.admin", path="/")
+            response.delete_cookie("yunohost.admin", path="/yunohost/api")
             raise YunohostAuthenticationError("session_expired")
 
         # Otherwise, we 'touch' the file to extend the validity

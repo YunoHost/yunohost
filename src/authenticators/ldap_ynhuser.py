@@ -196,7 +196,7 @@ class Authenticator(BaseAuthenticator):
             jwt.encode(infos, SESSION_SECRET(), algorithm="HS256"),
             secure=True,
             httponly=True,
-            path="/",
+            path="/yunohost/portalapi",
             # Doesn't this cause issues ? May cause issue if the portal is on different subdomain than the portal API ? Will surely cause issue for development similar to CORS ?
             samesite="strict" if not is_dev else None,
         )
@@ -252,7 +252,7 @@ class Authenticator(BaseAuthenticator):
         except Exception as e:
             logger.debug(f"User logged out, but failed to properly invalidate the session : {e}")
 
-        response.delete_cookie("yunohost.portal", path="/")
+        response.delete_cookie("yunohost.portal", path="/yunohost/portalapi")
 
     def purge_expired_session_files(self):
 
