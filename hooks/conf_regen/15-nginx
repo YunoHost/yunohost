@@ -4,6 +4,8 @@ set -e
 
 . /usr/share/yunohost/helpers
 
+
+
 do_init_regen() {
     if [[ $EUID -ne 0 ]]; then
         echo "You must be root to run this script" 1>&2
@@ -17,7 +19,13 @@ do_init_regen() {
     mkdir -p "$nginx_conf_dir"
 
     # install plain conf files
-    cp plain/* "$nginx_conf_dir"
+    cp acme-challenge.conf.in "$nginx_conf_dir"
+    cp global.conf "$nginx_conf_dir"
+    cp ssowat.conf "$nginx_conf_dir"
+    cp yunohost_http_errors.conf.inc "$nginx_conf_dir"
+    cp yunohost_panel.conf.inc "$nginx_conf_dir"
+    cp yunohost_sso.conf.inc "$nginx_conf_dir"
+
 
     # probably run with init: just disable default site, restart NGINX and exit
     rm -f "${nginx_dir}/sites-enabled/default"
@@ -54,7 +62,13 @@ do_pre_regen() {
     mkdir -p "$nginx_conf_dir"
 
     # install / update plain conf files
-    cp plain/* "$nginx_conf_dir"
+    cp acme-challenge.conf.in "$nginx_conf_dir"
+    cp global.conf "$nginx_conf_dir"
+    cp ssowat.conf "$nginx_conf_dir"
+    cp yunohost_http_errors.conf.inc "$nginx_conf_dir"
+    cp yunohost_panel.conf.inc "$nginx_conf_dir"
+    cp yunohost_sso.conf.inc "$nginx_conf_dir"
+
     # remove the panel overlay if this is specified in settings
     panel_overlay="$(jq -r '.ssowat_panel_overlay_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
     if [ "$panel_overlay" == "False" ]; then
