@@ -12,7 +12,7 @@ do_base_regen() {
     mkdir -p "$nginx_conf_dir"
 
     # install plain conf files
-    cp acme-challenge.conf.in "$nginx_conf_dir"
+    cp acme-challenge.conf.inc "$nginx_conf_dir"
     cp global.conf "$nginx_conf_dir"
     cp ssowat.conf "$nginx_conf_dir"
     cp yunohost_http_errors.conf.inc "$nginx_conf_dir"
