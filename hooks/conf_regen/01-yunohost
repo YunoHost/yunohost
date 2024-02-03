@@ -2,11 +2,131 @@
 
 set -e
 
+base_folder_and_perm_init() {
+
+    #############################
+    # Base yunohost conf folder #
+    #############################
+
+    mkdir -p /etc/yunohost
+    # NB: x permission for 'others' is important for ssl-cert (and maybe mdns), otherwise slapd will fail to start because can't access the certs
+    chmod 755 /etc/yunohost
+
+    ################
+    # Logs folders #
+    ################
+
+    mkdir -p /var/log/yunohost
+    chown root:root /var/log/yunohost
+    chmod 750 /var/log/yunohost
+
+    ##################
+    # Portal folders #
+    ##################
+
+    mkdir -p /etc/yunohost/portal
+    chmod 500 /etc/yunohost/portal
+    chown ynh-portal:ynh-portal /etc/yunohost/portal
+
+    mkdir -p /usr/share/yunohost/portallogos
+    chmod 550 /usr/share/yunohost/portallogos
+    chown ynh-portal:www-data /usr/share/yunohost/portallogos
+
+    touch /var/log/yunohost-portalapi.log
+    chown ynh-portal:root /var/log/yunohost-portalapi.log
+    chmod 600 /var/log/yunohost-portalapi.log
+
+    ###################
+    # Sessions folder #
+    ###################
+
+    # Portal
+    mkdir -p /var/cache/yunohost-portal/sessions
+    chown ynh-portal:www-data /var/cache/yunohost-portal
+    chmod 510 /var/cache/yunohost-portal
+    chown ynh-portal:www-data /var/cache/yunohost-portal/sessions
+    chmod 710 /var/cache/yunohost-portal/sessions
+
+    # Webadmin
+    mkdir -p /var/cache/yunohost/sessions
+    chown root:root /var/cache/yunohost/sessions
+    chmod 700 /var/cache/yunohost/sessions
+
+    ##################
+    # Domain folders #
+    ##################
+
+    mkdir -p /etc/yunohost/domains
+    chown root /etc/yunohost/domains
+    chmod 700 /etc/yunohost/domains
+
+    ###############
+    # App folders #
+    ###############
+
+    mkdir -p /etc/yunohost/apps
+    chown root /etc/yunohost/apps
+    chmod 700 /etc/yunohost/apps
+
+    #####################
+    # Apps data folders #
+    #####################
+
+    mkdir -p /home/yunohost.app
+    chmod 755 /home/yunohost.app
+
+    ################
+    # Certs folder #
+    ################
+
+    mkdir -p /etc/yunohost/certs
+    chown -R root:ssl-cert /etc/yunohost/certs
+    chmod 750 /etc/yunohost/certs
+    # We do this with find because there could be a lot of them...
+    find /etc/yunohost/certs/ -type f -exec chmod 640 {} \;
+    find /etc/yunohost/certs/ -type d -exec chmod 750 {} \;
+
+    ##################
+    # Backup folders #
+    ##################
+
+    mkdir -p /home/yunohost.backup/archives
+    chmod 770 /home/yunohost.backup
+    chmod 770 /home/yunohost.backup/archives
+    chown root:root /home/yunohost.backup/archives # This is later changed to root:admins once the admins group exists
+
+    ########
+    # Misc #
+    ########
+
+    mkdir -p /etc/yunohost/hooks.d
+    chown root /etc/yunohost/hooks.d
+    chmod 700 /etc/yunohost/hooks.d
+
+    mkdir -p /var/cache/yunohost/repo
+    chown root:root /var/cache/yunohost
+    chmod 700 /var/cache/yunohost
+
+}
+
 do_init_regen() {
 
     cd /usr/share/yunohost/conf/yunohost
 
-    [[ -d /etc/yunohost ]] || mkdir -p /etc/yunohost
+    getent passwd ynh-portal &>/dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group ynh-portal
+
+    base_folder_and_perm_init
+
+    # Empty ssowat json persistent conf
+    echo "{}" >'/etc/ssowat/conf.json.persistent'
+    chmod 644 /etc/ssowat/conf.json.persistent
+    chown root:root /etc/ssowat/conf.json.persistent
+    echo "{}" >'/etc/ssowat/conf.json'
+    chmod 644 /etc/ssowat/conf.json
+    chown root:root /etc/ssowat/conf.json
+
+    # Empty service conf
+    touch /etc/yunohost/services.yml
 
     # set default current_host
     [[ -f /etc/yunohost/current_host ]] \
@@ -20,62 +140,6 @@ do_init_regen() {
     [[ -d /etc/skel/media ]] \
         || (mkdir -p /media && ln -s /media /etc/skel/media)
 
-    # Cert folders
-    mkdir -p /etc/yunohost/certs
-    chown -R root:ssl-cert /etc/yunohost/certs
-    chmod 750 /etc/yunohost/certs
-
-    # App folders
-    mkdir -p /etc/yunohost/apps
-    chmod 700 /etc/yunohost/apps
-    mkdir -p /home/yunohost.app
-    chmod 755 /home/yunohost.app
-
-    # Domain settings
-    mkdir -p /etc/yunohost/domains
-    chmod 700 /etc/yunohost/domains
-
-    # Backup folders
-    mkdir -p /home/yunohost.backup/archives
-    chmod 750 /home/yunohost.backup/archives
-    chown root:root /home/yunohost.backup/archives # This is later changed to root:admins once the admins group exists
-
-    # Empty ssowat json persistent conf
-    echo "{}" >'/etc/ssowat/conf.json.persistent'
-    chmod 644 /etc/ssowat/conf.json.persistent
-    chown root:root /etc/ssowat/conf.json.persistent
-    echo "{}" >'/etc/ssowat/conf.json'
-    chmod 644 /etc/ssowat/conf.json
-    chown root:root /etc/ssowat/conf.json
-
-    # Empty service conf
-    touch /etc/yunohost/services.yml
-
-    mkdir -p /var/cache/yunohost/repo
-    chown root:root /var/cache/yunohost
-    chmod 700 /var/cache/yunohost
-
-    getent passwd ynh-portal &>/dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group ynh-portal
-
-    # Portal folder
-    mkdir -p /etc/yunohost/portal
-    chmod 500 /etc/yunohost/portal
-    chown ynh-portal:ynh-portal /etc/yunohost/portal
-    mkdir -p /usr/share/yunohost/portallogos
-    chmod 550 /usr/share/yunohost/portallogos
-    chown ynh-portal:www-data /usr/share/yunohost/portallogos
-
-    mkdir -p /var/cache/yunohost-portal/sessions
-    chown ynh-portal:www-data /var/cache/yunohost-portal
-    chmod 510 /var/cache/yunohost-portal
-    chown ynh-portal:www-data /var/cache/yunohost-portal/sessions
-    chmod 710 /var/cache/yunohost-portal/sessions
-
-    # Admin sessions
-    mkdir -p /var/cache/yunohost/sessions
-    chown root:root /var/cache/yunohost/sessions
-    chmod 700 /var/cache/yunohost/sessions
-
     # YunoHost services
     cp yunohost-api.service /etc/systemd/system/yunohost-api.service
     cp yunohost-portal-api.service /etc/systemd/system/yunohost-portal-api.service
@@ -86,8 +150,6 @@ do_init_regen() {
 
     systemctl enable yunohost-api.service --quiet
     systemctl start yunohost-api.service
-
-
 
     systemctl enable yunohost-portal-api.service
     systemctl start yunohost-portal-api.service
@@ -196,6 +258,8 @@ EOF
 do_post_regen() {
     regen_conf_files=$1
 
+    # Initialize session secrets
+    # Obviously we only do this in the post_regen, ie during the postinstall, because we don't want every pre-installed instance to have the same secret
     if [ ! -e /etc/yunohost/.admin_cookie_secret ]; then
         dd if=/dev/urandom bs=1 count=1000 2>/dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.admin_cookie_secret
     fi
@@ -210,9 +274,20 @@ do_post_regen() {
     chown ynh-portal:root /etc/yunohost/.ssowat_cookie_secret
     chmod 400 /etc/yunohost/.ssowat_cookie_secret
 
-    touch /var/log/yunohost-portalapi.log
-    chown ynh-portal:root /var/log/yunohost-portalapi.log
-    chmod 600 /var/log/yunohost-portalapi.log
+    # Re-mkdir / apply permission to all basic folders etc
+    base_folder_and_perm_init
+
+    # Only doing this once postinstall is done such that the admins group exist
+    chown root:admins /home/yunohost.backup
+    chown root:admins /home/yunohost.backup/archives
+
+    # Same here, all_users only exist after posinstall
+    setfacl -m g:all_users:--- /var/www
+    setfacl -m g:all_users:--- /var/log/nginx
+    setfacl -m g:all_users:--- /etc/yunohost
+    setfacl -m g:all_users:--- /etc/ssowat
+
+    [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
 
     # Legacy log tree structure
     if [ ! -e /var/log/yunohost/operations ] && [ -d /var/log/yunohost/categories/operation ] && [ ! -L /var/log/yunohost/categories/operation ]
@@ -221,22 +296,7 @@ do_post_regen() {
         ln -s /var/log/yunohost/operations /var/log/yunohost/categories/operation
     fi
 
-    ######################
-    # Enfore permissions #
-    ######################
-
-    chmod 770 /home/yunohost.backup
-    chmod 770 /home/yunohost.backup/archives
-    chmod 700 /var/cache/yunohost
-    chown root:admins /home/yunohost.backup
-    chown root:admins /home/yunohost.backup/archives
-    chown root:root /var/cache/yunohost
-
-    [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
-
-    # NB: x permission for 'others' is important for ssl-cert (and maybe mdns), otherwise slapd will fail to start because can't access the certs
-    chmod 755 /etc/yunohost
-
+    # Make sure conf files why may be created by apps are owned and writable only by root
     find /etc/systemd/system/*.service -type f | xargs -r chown root:root
     find /etc/systemd/system/*.service -type f | xargs -r chmod 0644
 
@@ -246,56 +306,18 @@ do_post_regen() {
         chmod 644 /etc/php/*/fpm/pool.d/*.conf
     fi
 
-    # Certs
-    # We do this with find because there could be a lot of them...
-    chown -R root:ssl-cert /etc/yunohost/certs
-    chmod 750 /etc/yunohost/certs
-    find /etc/yunohost/certs/ -type f -exec chmod 640 {} \;
-    find /etc/yunohost/certs/ -type d -exec chmod 750 {} \;
-
     find /etc/cron.*/yunohost-* -type f -exec chmod 755 {} \;
     find /etc/cron.d/yunohost-* -type f -exec chmod 644 {} \;
     find /etc/cron.*/yunohost-* -type f -exec chown root:root {} \;
 
-    setfacl -m g:all_users:--- /var/www
-    setfacl -m g:all_users:--- /var/log/nginx
-    setfacl -m g:all_users:--- /etc/yunohost
-    setfacl -m g:all_users:--- /etc/ssowat
 
     for USER in $(yunohost user list --quiet --output-as json | jq -r '.users | .[] | .username'); do
         [ ! -e "/home/$USER" ] || setfacl -m g:all_users:--- /home/$USER
     done
 
-    # Portal folder
-    mkdir -p /etc/yunohost/portal
-    chmod 500 /etc/yunohost/portal
-    chown ynh-portal:ynh-portal /etc/yunohost/portal
-    mkdir -p /usr/share/yunohost/portallogos
-    chmod 550 /usr/share/yunohost/portallogos
-    chown ynh-portal:www-data /usr/share/yunohost/portallogos
-
-    mkdir -p /var/cache/yunohost-portal/sessions
-    chown ynh-portal:www-data /var/cache/yunohost-portal
-    chmod 510 /var/cache/yunohost-portal
-    chown ynh-portal:www-data /var/cache/yunohost-portal/sessions
-    chmod 710 /var/cache/yunohost-portal/sessions
-
-    # Admin sessions
-    mkdir -p /var/cache/yunohost/sessions
-    chown root:root /var/cache/yunohost/sessions
-    chmod 700 /var/cache/yunohost/sessions
-
-    # Domain settings
-    mkdir -p /etc/yunohost/domains
-
     # Misc configuration / state files
     chown root:root $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null | grep -vw mdns.yml)
     chmod 600 $(ls /etc/yunohost/{*.yml,*.yaml,*.json,mysql,psql} 2>/dev/null)
-
-    # Apps folder, custom hooks folder
-    [[ ! -e /etc/yunohost/hooks.d ]] || (chown root /etc/yunohost/hooks.d && chmod 700 /etc/yunohost/hooks.d)
-    [[ ! -e /etc/yunohost/apps ]] || (chown root /etc/yunohost/apps && chmod 700 /etc/yunohost/apps)
-    [[ ! -e /etc/yunohost/domains ]] || (chown root /etc/yunohost/domains && chmod 700 /etc/yunohost/domains)
 
     # Create ssh.app and sftp.app groups if they don't exist yet
     grep -q '^ssh.app:' /etc/group || groupadd ssh.app
