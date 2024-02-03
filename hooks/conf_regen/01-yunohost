@@ -24,6 +24,8 @@ base_folder_and_perm_init() {
     # Portal folders #
     ##################
 
+    getent passwd ynh-portal &>/dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group ynh-portal
+
     mkdir -p /etc/yunohost/portal
     chmod 500 /etc/yunohost/portal
     chown ynh-portal:ynh-portal /etc/yunohost/portal
@@ -36,9 +38,9 @@ base_folder_and_perm_init() {
     chown ynh-portal:root /var/log/yunohost-portalapi.log
     chmod 600 /var/log/yunohost-portalapi.log
 
-    ###################
-    # Sessions folder #
-    ###################
+    ###############################
+    # Sessions folder and secrets #
+    ###############################
 
     # Portal
     mkdir -p /var/cache/yunohost-portal/sessions
@@ -51,6 +53,24 @@ base_folder_and_perm_init() {
     mkdir -p /var/cache/yunohost/sessions
     chown root:root /var/cache/yunohost/sessions
     chmod 700 /var/cache/yunohost/sessions
+
+    if test -e /etc/yunohost/installed
+    then
+        # Initialize session secrets
+        # Obviously we only do this in the post_regen, ie during the postinstall, because we don't want every pre-installed instance to have the same secret
+        if [ ! -e /etc/yunohost/.admin_cookie_secret ]; then
+            dd if=/dev/urandom bs=1 count=1000 2>/dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.admin_cookie_secret
+        fi
+        chown root:root /etc/yunohost/.admin_cookie_secret
+        chmod 400 /etc/yunohost/.admin_cookie_secret
+
+        if [ ! -e /etc/yunohost/.ssowat_cookie_secret ]; then
+            # NB: we need this to be exactly 32 char long, because it is later used as a key for AES256
+            dd if=/dev/urandom bs=1 count=1000 2>/dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 32 > /etc/yunohost/.ssowat_cookie_secret
+        fi
+        chown ynh-portal:root /etc/yunohost/.ssowat_cookie_secret
+        chmod 400 /etc/yunohost/.ssowat_cookie_secret
+    fi
 
     ##################
     # Domain folders #
@@ -93,7 +113,16 @@ base_folder_and_perm_init() {
     mkdir -p /home/yunohost.backup/archives
     chmod 770 /home/yunohost.backup
     chmod 770 /home/yunohost.backup/archives
-    chown root:root /home/yunohost.backup/archives # This is later changed to root:admins once the admins group exists
+
+    if test -e /etc/yunohost/installed
+    then
+        # The admins group only exist after the postinstall
+        chown root:admins /home/yunohost.backup
+        chown root:admins /home/yunohost.backup/archives
+    else
+        chown root:root /home/yunohost.backup
+        chown root:root /home/yunohost.backup/archives
+    fi
 
     ########
     # Misc #
@@ -107,13 +136,20 @@ base_folder_and_perm_init() {
     chown root:root /var/cache/yunohost
     chmod 700 /var/cache/yunohost
 
+    [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
+
+    if test -e /etc/yunohost/installed
+    then
+        setfacl -m g:all_users:--- /var/www
+        setfacl -m g:all_users:--- /var/log/nginx
+        setfacl -m g:all_users:--- /etc/yunohost
+        setfacl -m g:all_users:--- /etc/ssowat
+    fi
 }
 
 do_init_regen() {
 
     cd /usr/share/yunohost/conf/yunohost
-
-    getent passwd ynh-portal &>/dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group ynh-portal
 
     base_folder_and_perm_init
 
@@ -258,36 +294,8 @@ EOF
 do_post_regen() {
     regen_conf_files=$1
 
-    # Initialize session secrets
-    # Obviously we only do this in the post_regen, ie during the postinstall, because we don't want every pre-installed instance to have the same secret
-    if [ ! -e /etc/yunohost/.admin_cookie_secret ]; then
-        dd if=/dev/urandom bs=1 count=1000 2>/dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 64 > /etc/yunohost/.admin_cookie_secret
-    fi
-    chown root:root /etc/yunohost/.admin_cookie_secret
-    chmod 400 /etc/yunohost/.admin_cookie_secret
-
-    getent passwd ynh-portal &>/dev/null || useradd --no-create-home --shell /usr/sbin/nologin --system --user-group ynh-portal
-    if [ ! -e /etc/yunohost/.ssowat_cookie_secret ]; then
-        # NB: we need this to be exactly 32 char long, because it is later used as a key for AES256
-        dd if=/dev/urandom bs=1 count=1000 2>/dev/null | tr --complement --delete 'A-Za-z0-9' | head -c 32 > /etc/yunohost/.ssowat_cookie_secret
-    fi
-    chown ynh-portal:root /etc/yunohost/.ssowat_cookie_secret
-    chmod 400 /etc/yunohost/.ssowat_cookie_secret
-
     # Re-mkdir / apply permission to all basic folders etc
     base_folder_and_perm_init
-
-    # Only doing this once postinstall is done such that the admins group exist
-    chown root:admins /home/yunohost.backup
-    chown root:admins /home/yunohost.backup/archives
-
-    # Same here, all_users only exist after posinstall
-    setfacl -m g:all_users:--- /var/www
-    setfacl -m g:all_users:--- /var/log/nginx
-    setfacl -m g:all_users:--- /etc/yunohost
-    setfacl -m g:all_users:--- /etc/ssowat
-
-    [ ! -e /var/www/.well-known/ynh-diagnosis/ ] || chmod 775 /var/www/.well-known/ynh-diagnosis/
 
     # Legacy log tree structure
     if [ ! -e /var/log/yunohost/operations ] && [ -d /var/log/yunohost/categories/operation ] && [ ! -L /var/log/yunohost/categories/operation ]
