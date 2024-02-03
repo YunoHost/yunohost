@@ -1714,7 +1714,7 @@ def app_ssowatconf():
         # Also related to "people will want to customize those.."
         app_catalog_info = apps_catalog.get(app_id.split("__")[0])
         if app_catalog_info and "logo_hash" in app_catalog_info:
-            app_portal_info["logo"] = f"//{app_portal_domain}/yunohost/admin/applogos/{app_catalog_info['logo_hash']}.png"
+            app_portal_info["logo"] = f"//{app_portal_domain}/yunohost/sso/applogos/{app_catalog_info['logo_hash']}.png"
 
         portal_domains_apps[app_portal_domain][app_id] = app_portal_info
 

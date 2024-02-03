@@ -13,5 +13,12 @@ location /yunohost/sso/ {
         more_set_headers "Cache-Control: no-store, no-cache, must-revalidate";
     }
 
+    location /yunohost/sso/applogos/ {
+        alias /usr/share/yunohost/applogos/;
+        expires 1M;
+        # max-age in seconds, one month
+        add_header Cache-Control "max-age=2629746, public";
+    }
+
     more_set_headers "Content-Security-Policy: upgrade-insecure-requests; default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline'; object-src 'none'; img-src 'self' data:;";
 }
