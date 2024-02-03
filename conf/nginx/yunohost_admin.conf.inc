@@ -23,6 +23,9 @@ location /yunohost/admin/ {
 
     location /yunohost/admin/applogos/ {
         alias /usr/share/yunohost/applogos/;
+        expires 1M;
+        # max-age in seconds, one month
+        add_header Cache-Control "max-age=2629746, public";
     }
 
     more_set_headers "Content-Security-Policy: upgrade-insecure-requests; default-src 'self'; connect-src 'self' https://paste.yunohost.org wss://$host; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-eval'; object-src 'none'; img-src 'self' data:;";
