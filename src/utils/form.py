@@ -2224,8 +2224,7 @@ def parse_raw_options(
     try:
         model = OptionsModel(**raw_options)
     except ValidationError as e:
-        error = "\n".join([err["msg"] for err in e.errors()])
-        raise YunohostError(error, raw_msg=True)
+        raise YunohostError("While parsing manifest: " + str(e), raw_msg=True)
 
     model.translate_options()
 
