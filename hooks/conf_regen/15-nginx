@@ -4,13 +4,10 @@ set -e
 
 . /usr/share/yunohost/helpers
 
+do_base_regen() {
 
-
-do_init_regen() {
-
-    cd /usr/share/yunohost/conf/nginx
-
-    nginx_dir="/etc/nginx"
+    pending_dir=$1
+    nginx_dir="${pending_dir}/etc/nginx"
     nginx_conf_dir="${nginx_dir}/conf.d"
     mkdir -p "$nginx_conf_dir"
 
@@ -21,11 +18,6 @@ do_init_regen() {
     cp yunohost_http_errors.conf.inc "$nginx_conf_dir"
     cp yunohost_sso.conf.inc "$nginx_conf_dir"
 
-
-    # probably run with init: just disable default site, restart NGINX and exit
-    rm -f "${nginx_dir}/sites-enabled/default"
-
-    export compatibility="intermediate"
     ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
     ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
     ynh_render_template "yunohost_admin.conf.inc" "${nginx_conf_dir}/yunohost_admin.conf.inc"
@@ -33,6 +25,17 @@ do_init_regen() {
 
     mkdir -p $nginx_conf_dir/default.d/
     cp "redirect_to_admin.conf" $nginx_conf_dir/default.d/
+}
+
+do_init_regen() {
+
+    cd /usr/share/yunohost/conf/nginx
+
+    export compatibility="intermediate"
+    do_base_regen ""
+
+    # probably run with init: just disable default site, restart NGINX and exit
+    rm -f "${nginx_dir}/sites-enabled/default"
 
     # Restart nginx if conf looks good, otherwise display error and exit unhappy
     nginx -t 2>/dev/null || {
@@ -56,24 +59,17 @@ do_pre_regen() {
     nginx_conf_dir="${nginx_dir}/conf.d"
     mkdir -p "$nginx_conf_dir"
 
-    # install / update plain conf files
-    cp acme-challenge.conf.in "$nginx_conf_dir"
-    cp global.conf "$nginx_conf_dir"
-    cp ssowat.conf "$nginx_conf_dir"
-    cp yunohost_http_errors.conf.inc "$nginx_conf_dir"
-    cp yunohost_sso.conf.inc "$nginx_conf_dir"
-
-    # Legacy file to remove
-    touch "$nginx_conf_dir"/yunohost_panel.conf.inc
-
-    # retrieve variables
-    main_domain=$(cat /etc/yunohost/current_host)
+    export webadmin_allowlist_enabled="$(jq -r '.webadmin_allowlist_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
+    if [ "$webadmin_allowlist_enabled" == "True" ]; then
+        export webadmin_allowlist="$(jq -r '.webadmin_allowlist' <<< "$YNH_SETTINGS" | sed 's/^null$//g')"
+    fi
 
     # Support different strategy for security configurations
     export redirect_to_https="$(jq -r '.nginx_redirect_to_https' <<< "$YNH_SETTINGS" | int_to_bool)"
     export compatibility="$(jq -r '.nginx_compatibility' <<< "$YNH_SETTINGS" | int_to_bool)"
     export experimental="$(jq -r '.security_experimental_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
-    ynh_render_template "security.conf.inc" "${nginx_conf_dir}/security.conf.inc"
+
+    do_base_regen "${pending_dir}"
 
     cert_status=$(yunohost domain cert status --json)
 
@@ -114,15 +110,8 @@ do_pre_regen() {
 
     done
 
-    export webadmin_allowlist_enabled="$(jq -r '.webadmin_allowlist_enabled' <<< "$YNH_SETTINGS" | int_to_bool)"
-    if [ "$webadmin_allowlist_enabled" == "True" ]; then
-        export webadmin_allowlist="$(jq -r '.webadmin_allowlist' <<< "$YNH_SETTINGS" | sed 's/^null$//g')"
-    fi
-    ynh_render_template "yunohost_admin.conf.inc" "${nginx_conf_dir}/yunohost_admin.conf.inc"
-    ynh_render_template "yunohost_api.conf.inc" "${nginx_conf_dir}/yunohost_api.conf.inc"
-    ynh_render_template "yunohost_admin.conf" "${nginx_conf_dir}/yunohost_admin.conf"
-    mkdir -p $nginx_conf_dir/default.d/
-    cp "redirect_to_admin.conf" $nginx_conf_dir/default.d/
+    # Legacy file to remove
+    touch "$nginx_conf_dir"/yunohost_panel.conf.inc
 
     # remove old domain conf files
     conf_files=$(ls -1 /etc/nginx/conf.d \
