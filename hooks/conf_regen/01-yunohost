@@ -30,9 +30,9 @@ base_folder_and_perm_init() {
     chmod 500 /etc/yunohost/portal
     chown ynh-portal:ynh-portal /etc/yunohost/portal
 
-    mkdir -p /usr/share/yunohost/portallogos
-    chmod 550 /usr/share/yunohost/portallogos
-    chown ynh-portal:www-data /usr/share/yunohost/portallogos
+    mkdir -p /usr/share/yunohost/portal/customassets
+    chmod 775 /usr/share/yunohost/portal/customassets
+    chown root:root /usr/share/yunohost/customassets
 
     touch /var/log/yunohost-portalapi.log
     chown ynh-portal:root /var/log/yunohost-portalapi.log

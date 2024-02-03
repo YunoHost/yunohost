@@ -810,16 +810,7 @@ def _get_DomainConfigPanel():
                             portal_values["portal_logo"] = ""
 
                     if next_settings["portal_logo"]:
-                        # Save the file content as `{mimetype}:{base64content}` in portal settings
-                        # while keeping the file path in the domain settings
-                        from base64 import b64encode
-                        from magic import Magic
-
-                        file_content = Path(next_settings["portal_logo"]).read_bytes()
-                        mimetype = Magic(mime=True).from_buffer(file_content)
-                        portal_values["portal_logo"] = (
-                            mimetype + ":" + b64encode(file_content).decode("utf-8")
-                        )
+                        portal_values["portal_logo"] = Path(next_settings["portal_logo"]).name
 
                 portal_settings_path = Path(f"{PORTAL_SETTINGS_DIR}/{self.entity}.json")
                 portal_settings: dict[str, Any] = {"apps": {}}

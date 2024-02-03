@@ -20,7 +20,7 @@ name = "Features"
         type = "file"
         accept = ["image/png", "image/jpeg", "image/svg+xml"]
         mode = "python"
-        bind = "/usr/share/yunohost/portallogos/{filename}{ext}"
+        bind = "/usr/share/yunohost/portal/customassets/{filename}{ext}"
 
         [feature.portal.portal_theme]
         type = "select"
