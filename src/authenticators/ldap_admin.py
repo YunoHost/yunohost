@@ -208,7 +208,7 @@ class Authenticator(BaseAuthenticator):
         except Exception as e:
             logger.debug(f"User logged out, but failed to properly invalidate the session : {e}")
 
-        response.delete_cookie("yunohost.admin", path="/")
+        response.delete_cookie("yunohost.admin", path="/yunohost/api")
 
     def purge_expired_session_files(self):
 
