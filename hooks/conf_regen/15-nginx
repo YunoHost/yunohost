@@ -111,7 +111,7 @@ do_pre_regen() {
     done
 
     # Legacy file to remove, but we can't really remove it because it may be included by app confs...
-    echo "# The old yunohost panel/tile/button doesn't exists anymore" "$nginx_conf_dir"/yunohost_panel.conf.inc
+    echo "# The old yunohost panel/tile/button doesn't exists anymore" > "$nginx_conf_dir"/yunohost_panel.conf.inc
 
     # remove old domain conf files
     conf_files=$(ls -1 /etc/nginx/conf.d \
