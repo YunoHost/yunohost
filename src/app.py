@@ -1995,6 +1995,8 @@ ynh_app_config_run $1
                 "YNH_APP_PACKAGING_FORMAT": str(manifest["packaging_format"]),
             }
         )
+        app_script_env = _make_environment_for_app_script(app)
+        env.update(app_script_env)
 
         ret, values = hook_exec(config_script, args=[action], env=env)
         if ret != 0:
