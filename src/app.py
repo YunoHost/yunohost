@@ -1973,6 +1973,10 @@ ynh_app_config_run $1
         app = self.entity
         app_id, app_instance_nb = _parse_app_instance_name(app)
         settings = _get_app_settings(app)
+        app_setting_path = os.path.join(APPS_SETTING_PATH, self.entity)
+        manifest = _get_manifest_of_app(app_setting_path)
+        # FIXME: this is inconsistent with other script call ...
+        # this should be based on _make_environment_for_app_script ...
         env.update(
             {
                 "app_id": app_id,
@@ -1981,6 +1985,7 @@ ynh_app_config_run $1
                 "final_path": settings.get("final_path", ""),
                 "install_dir": settings.get("install_dir", ""),
                 "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, app),
+                "YNH_APP_PACKAGING_FORMAT": str(manifest["packaging_format"]),
             }
         )
 
