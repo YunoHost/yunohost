@@ -990,9 +990,9 @@ def app_manifest(app, with_screenshot=False):
                     if entry.is_file() and ext in ("png", "jpg", "jpeg", "webp", "gif"):
                         with open(entry.path, "rb") as img_file:
                             data = base64.b64encode(img_file.read()).decode("utf-8")
-                            manifest[
-                                "screenshot"
-                            ] = f"data:image/{ext};charset=utf-8;base64,{data}"
+                            manifest["screenshot"] = (
+                                f"data:image/{ext};charset=utf-8;base64,{data}"
+                            )
                         break
 
     shutil.rmtree(extracted_app_folder)
@@ -1093,7 +1093,9 @@ def app_install(
     app_id = manifest["id"]
 
     if app_id in user_list()["users"].keys():
-        raise YunohostValidationError(f"There is already a YunoHost user called {app_id} ...", raw_msg=True)
+        raise YunohostValidationError(
+            f"There is already a YunoHost user called {app_id} ...", raw_msg=True
+        )
 
     # Check requirements
     for name, passed, values, err in _check_manifest_requirements(
@@ -1639,9 +1641,11 @@ def app_setting(app, key, value=None, delete=False):
                     permission_create(
                         permission=permission_name,
                         # FIXME find a way to limit to only the user allowed to the main permission
-                        allowed=["all_users"]
-                        if key.startswith("protected_")
-                        else ["all_users", "visitors"],
+                        allowed=(
+                            ["all_users"]
+                            if key.startswith("protected_")
+                            else ["all_users", "visitors"]
+                        ),
                         url=None,
                         additional_urls=urls,
                         auth_header=not key.startswith("skipped_"),

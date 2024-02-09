@@ -73,9 +73,11 @@ class MyDiagnoser(Diagnoser):
             yield dict(
                 meta={"test": "dnsresolv"},
                 status="ERROR",
-                summary="diagnosis_ip_broken_dnsresolution"
-                if good_resolvconf
-                else "diagnosis_ip_broken_resolvconf",
+                summary=(
+                    "diagnosis_ip_broken_dnsresolution"
+                    if good_resolvconf
+                    else "diagnosis_ip_broken_resolvconf"
+                ),
             )
             return
         # Otherwise, if the resolv conf is bad but we were able to resolve domain name,
@@ -123,11 +125,9 @@ class MyDiagnoser(Diagnoser):
         yield dict(
             meta={"test": "ipv4"},
             data={"global": ipv4, "local": get_local_ip("ipv4")},
-            status="SUCCESS"
-            if ipv4
-            else "ERROR"
-            if is_ipvx_important(4)
-            else "WARNING",
+            status=(
+                "SUCCESS" if ipv4 else "ERROR" if is_ipvx_important(4) else "WARNING"
+            ),
             summary="diagnosis_ip_connected_ipv4" if ipv4 else "diagnosis_ip_no_ipv4",
             details=["diagnosis_ip_global", "diagnosis_ip_local"] if ipv4 else None,
         )
@@ -135,19 +135,27 @@ class MyDiagnoser(Diagnoser):
         yield dict(
             meta={"test": "ipv6"},
             data={"global": ipv6, "local": get_local_ip("ipv6")},
-            status="SUCCESS"
-            if ipv6
-            else "ERROR"
-            if settings_get("misc.network.dns_exposure") == "ipv6"
-            else "WARNING",
+            status=(
+                "SUCCESS"
+                if ipv6
+                else (
+                    "ERROR"
+                    if settings_get("misc.network.dns_exposure") == "ipv6"
+                    else "WARNING"
+                )
+            ),
             summary="diagnosis_ip_connected_ipv6" if ipv6 else "diagnosis_ip_no_ipv6",
-            details=["diagnosis_ip_global", "diagnosis_ip_local"]
-            if ipv6
-            else [
-                "diagnosis_ip_no_ipv6_tip_important"
-                if is_ipvx_important(6)
-                else "diagnosis_ip_no_ipv6_tip"
-            ],
+            details=(
+                ["diagnosis_ip_global", "diagnosis_ip_local"]
+                if ipv6
+                else [
+                    (
+                        "diagnosis_ip_no_ipv6_tip_important"
+                        if is_ipvx_important(6)
+                        else "diagnosis_ip_no_ipv6_tip"
+                    )
+                ]
+            ),
         )
 
         # TODO / FIXME : add some attempt to detect ISP (using whois ?) ?
