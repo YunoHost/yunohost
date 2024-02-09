@@ -1,3 +1,27 @@
+yunohost (11.2.10) stable; urgency=low
+
+  - helpers: document --after= in for ynh_read_var_in_file and ynh_write_var_in_file ([#1758](https://github.com/yunohost/yunohost/pull/1758))
+  - resources: document changelog link for latest_github_release ([#1760](https://github.com/yunohost/yunohost/pull/1760))
+  - apps/helpers: Reword YNH_APP_UPGRADE_TYPE ([#1762](https://github.com/yunohost/yunohost/pull/1762))
+  - app shells: auto-source venv for python apps ([#1756](https://github.com/yunohost/yunohost/pull/1756))
+  - tools: Add a 'yunohost tools basic-space-cleanup' command ([#1761](https://github.com/yunohost/yunohost/pull/1761))
+  - certs/xmpp: Fix DNS suffix edge case during XMPP certificate setup ([#1763](https://github.com/yunohost/yunohost/pull/1763))
+  - helpers/php: quote vars to avoid stupid issues with name in path which may happen in backup restore context... (05f7c3a3b)
+  - multimedia: fix again edgecase where setfacl crashes because of broken symlinks.. (1ce606d46)
+  - helpers: disable super verbose logging during ynh_replace_vars poluting logs, it's kinda stable now... (981956051, c2af17667)
+  - apps: people insist on trying to install Nextcloud after creating a user called nextcloud ... So let's check this stupid case (fc12cb198)
+  - apps: fix port reuse during provisionning ([#1769](https://github.com/yunohost/yunohost/pull/1769))
+  - configpanels: some helpers behavior depend on YNH_APP_PACKAGING_FORMAT which is not set when calling the config script... (077b745d6)
+  - global settings: Add warning regarding ssh ports below 1024 ([#1765](https://github.com/yunohost/yunohost/pull/1765))
+  - global settings: mention cidr notation support in webadmin allowlist help ([#1770](https://github.com/yunohost/yunohost/pull/1770))
+  - chores: update copyright headers to 2024 using maintenance/update_copyright_headers.sh (a44ea1414)
+  - i18n: remove stale i18n strings, fix format inconsistencies (890fcee05, [#1764](https://github.com/yunohost/yunohost/pull/1764))
+  - i18n: Translations updated for Arabic, Basque, Catalan, French, Galician, German, Slovak, Spanish, Ukrainian
+
+  Thanks to all contributors <3 ! (Bram, Carlos Solís, Christian Wehrli, cube, Éric Gaspar, Félix Piédallu, Francescc, José M, Jose Riha, Lasse Gismo, ljf (zamentur), OniriCorpe, ppr, Saeba Ryo, tituspijean, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Fri, 09 Feb 2024 20:05:36 +0100
+
 yunohost (11.2.9.1) stable; urgency=low
 
   - helpers/utils: replace the damn ynh_die with a warning when patch fails to apply ... (0ed6769fc)
