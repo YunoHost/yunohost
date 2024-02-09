@@ -387,9 +387,11 @@ def hook_exec(
     # Define output loggers and call command
     loggers = (
         lambda l: logger.debug(l.rstrip() + "\r"),
-        lambda l: logger.warning(l.rstrip())
-        if is_relevant_warning(l.rstrip())
-        else logger.debug(l.rstrip()),
+        lambda l: (
+            logger.warning(l.rstrip())
+            if is_relevant_warning(l.rstrip())
+            else logger.debug(l.rstrip())
+        ),
         lambda l: logger.info(l.rstrip()),
     )
 

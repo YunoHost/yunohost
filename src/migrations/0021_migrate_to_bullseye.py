@@ -535,12 +535,16 @@ class MyMigration(Migration):
             return "Reading database ..." not in line.rstrip()
 
         callbacks = (
-            lambda l: logger.info("+ " + l.rstrip() + "\r")
-            if _apt_log_line_is_relevant(l)
-            else logger.debug(l.rstrip() + "\r"),
-            lambda l: logger.warning(l.rstrip())
-            if _apt_log_line_is_relevant(l)
-            else logger.debug(l.rstrip()),
+            lambda l: (
+                logger.info("+ " + l.rstrip() + "\r")
+                if _apt_log_line_is_relevant(l)
+                else logger.debug(l.rstrip() + "\r")
+            ),
+            lambda l: (
+                logger.warning(l.rstrip())
+                if _apt_log_line_is_relevant(l)
+                else logger.debug(l.rstrip())
+            ),
         )
 
         cmd = (

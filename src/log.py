@@ -460,7 +460,6 @@ class RedactingFormatter(Formatter):
 
 
 class OperationLogger:
-
     """
     Instances of this class represents unit operation done on the ynh instance.
 

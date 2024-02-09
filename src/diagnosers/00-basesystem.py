@@ -118,9 +118,11 @@ class MyDiagnoser(Diagnoser):
                 "repo": ynh_packages["yunohost"]["repo"],
             },
             status="INFO" if consistent_versions else "ERROR",
-            summary="diagnosis_basesystem_ynh_main_version"
-            if consistent_versions
-            else "diagnosis_basesystem_ynh_inconsistent_versions",
+            summary=(
+                "diagnosis_basesystem_ynh_main_version"
+                if consistent_versions
+                else "diagnosis_basesystem_ynh_inconsistent_versions"
+            ),
             details=ynh_version_details,
         )
 

@@ -1223,14 +1223,20 @@ class PortsResource(AppResource):
 
     def _port_is_used(self, port):
         # FIXME : this could be less brutal than two os.system...
-        used_by_process = os.system(
-            "ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ':%s$'"
-            % port
-        ) == 0
+        used_by_process = (
+            os.system(
+                "ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ':%s$'"
+                % port
+            )
+            == 0
+        )
         # This second command is mean to cover (most) case where an app is using a port yet ain't currently using it for some reason (typically service ain't up)
-        used_by_app = os.system(
-            f"grep --quiet --extended-regexp \"port: '?{port}'?\" /etc/yunohost/apps/*/settings.yml"
-        ) == 0
+        used_by_app = (
+            os.system(
+                f"grep --quiet --extended-regexp \"port: '?{port}'?\" /etc/yunohost/apps/*/settings.yml"
+            )
+            == 0
+        )
         used_by_self_provisioning = port in self.ports_used_by_self
 
         return used_by_process or used_by_app or used_by_self_provisioning
