@@ -328,18 +328,27 @@ class SourcesResource(AppResource):
 
     Strictly speaking, this has nothing to do with the actual app install. `autoupdate` is expected to contain metadata for automatic maintenance / update of the app sources info in the manifest. It is meant to be a simpler replacement for "autoupdate" Github workflow mechanism.
 
-    The infos are used by this script : https://github.com/YunoHost/apps/blob/master/tools/autoupdate_app_sources/autoupdate_app_sources.py which is ran by the YunoHost infrastructure periodically and will create the corresponding pull request automatically.
+    The infos are used by this script : <https://github.com/YunoHost/apps/blob/master/tools/autoupdate_app_sources/autoupdate_app_sources.py> which is ran by the YunoHost infrastructure periodically and will create the corresponding pull request automatically.
 
-    The script will rely on the code repo specified in the upstream section of the manifest.
+    The script will rely on the code repo specified in `code` in the upstream section of the manifest.
 
-    `autoupdate.strategy` is expected to be one of :
-    - `latest_github_tag` : look for the latest tag (by sorting tags and finding the "largest" version). Then using the corresponding tar.gz url. Tags containing `rc`, `beta`, `alpha`, `start` are ignored, and actually any tag which doesn't look like `x.y.z` or `vx.y.z`
-    - `latest_github_release` : similar to `latest_github_tags`, but starting from the list of releases and provides the changelog link in PR message. Pre- or draft releases are ignored. Releases may have assets attached to them, in which case you can define:
-        - `autoupdate.asset = "some regex"` (when there's only one asset to use). The regex is used to find the appropriate asset among the list of all assets
-        - or several `autoupdate.asset.$arch = "some_regex"` (when the asset is arch-specific). The regex is used to find the appropriate asset for the specific arch among the list of assets
-    - `latest_github_commit` : will use the latest commit on github, and the corresponding tarball. If this is used for the 'main' source, it will also assume that the version is YYYY.MM.DD corresponding to the date of the commit.
+    The `autoupdate.strategy` is expected to be constructed like this: `latest_<gitforge>_<strategy>`
 
-    It is also possible to define `autoupdate.upstream` to use a different Git(hub) repository instead of the code repository from the upstream section of the manifest. This can be useful when, for example, the app uses other assets such as plugin from a different repository.
+    You need to replace the `<gitforge>` in the strategy name by either `github`, `gitlab`, `gitea` or `forgejo`, as the autoupdater supports:
+
+    - GitHub
+    - GitLab (official and self-hosted instances)
+    - Gitea & Forgejo instances
+
+    And choose one strategy in the following ones:
+
+    - `latest_<gitforge>_release` : similar to `latest_<gitforge>_tag`, but starting from the list of releases. Note that it's the only strategy that provides the changelog link in the PR message. Pre- or draft releases are ignored. Releases may have assets attached to them, in which case you can define:
+      - `autoupdate.asset = "some regex"` (when there's only one asset to use). The regex is used to find the appropriate asset among the list of all assets
+      - or several `autoupdate.asset.$arch = "some_regex"` (when the asset is arch-specific). The regex is used to find the appropriate asset for the specific arch among the list of assets
+    - `latest_<gitforge>_tag` : look for the latest tag (by sorting tags and finding the "largest" version). Then using the corresponding tar.gz url. Tags containing `rc`, `beta`, `alpha`, `start` are ignored, and actually any tag which doesn't look like `x.y.z` or `vx.y.z`
+    - `latest_<gitforge>_commit` : will use the latest commit on github, and the corresponding tarball. If this is used for the 'main' source, it will also assume that the version is YYYY.MM.DD corresponding to the date of the commit.
+
+    It is also possible to define `autoupdate.upstream` to use a different Git repository instead of the code repository from the upstream section of the manifest. This can be useful when, for example, the app uses other assets such as plugin from a different repository.
 
     ##### Provision/Update
     - For elements with `prefetch = true`, will download the asset (for the appropriate architecture) and store them in `/var/cache/yunohost/download/$app/$source_id`, to be later picked up by `ynh_setup_source`. (NB: this only happens during install and upgrade, not restore)
