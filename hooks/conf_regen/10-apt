@@ -69,6 +69,12 @@ do_post_regen() {
         wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"
     fi
 
+    # Update sury apt key if 95BD4743 is present
+    if apt-key list | grep -q "95BD4743"; then
+        echo "Updating sury apt key..."
+        apt-key del 95BD4743; wget -nv -O - "https://packages.sury.org/php/apt.gpg" | apt-key add -
+    fi
+
     # Make sure php7.4 is the default version when using php in cli
     if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION
     then
