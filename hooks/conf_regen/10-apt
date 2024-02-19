@@ -62,6 +62,10 @@ Pin-Priority: -1
 do_post_regen() {
     regen_conf_files=$1
 
+    # Purge expired keys (such as sury 95BD4743)
+    EXPIRED_KEYS="$(LC_ALL='en_US.UTF-8' apt-key list 2>/dev/null | grep -A1 'expired:' | grep -v 'expired\|^-' | sed 's/\s//g')"
+    for KEY in $EXPIRED_KEYS; do apt-key del $KEY 2>/dev/null; done
+
     # Add sury key
     # We do this only at the post regen and if the key doesn't already exists, because we don't want the regenconf to fuck everything up if the regenconf runs while the network is down
     if [[ ! -s /etc/apt/trusted.gpg.d/extra_php_version.gpg ]]
@@ -69,9 +73,6 @@ do_post_regen() {
         wget --timeout 900 --quiet "https://packages.sury.org/php/apt.gpg" --output-document=- | gpg --dearmor >"/etc/apt/trusted.gpg.d/extra_php_version.gpg"
     fi
 
-    # Purge expired keys (such as sury 95BD4743)
-    EXPIRED_KEYS="$(LC_ALL='en_US.UTF-8' apt-key list 2>/dev/null | grep -A1 'expired:' | grep -v 'expired\|^-' | sed 's/\s//g')"
-    for KEY in $EXPIRED_KEYS; do apt-key del $KEY 2>/dev/null; done
     # Make sure php7.4 is the default version when using php in cli
     if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION
     then
