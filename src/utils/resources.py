@@ -350,6 +350,15 @@ class SourcesResource(AppResource):
 
     It is also possible to define `autoupdate.upstream` to use a different Git repository instead of the code repository from the upstream section of the manifest. This can be useful when, for example, the app uses other assets such as plugin from a different repository.
 
+    If the upstream project provides non-standard tag or release names, you can fix this, with a regex with a matching group.  
+    For example, if tags look like `release-v4.1`, put:
+
+    ```toml
+    autoupdate.version_regex = "^release-v(.*)$"
+    ```
+    
+    And the autoupdater will use the matched group (here: `4.1`) as the version.
+
     ##### Provision/Update
     - For elements with `prefetch = true`, will download the asset (for the appropriate architecture) and store them in `/var/cache/yunohost/download/$app/$source_id`, to be later picked up by `ynh_setup_source`. (NB: this only happens during install and upgrade, not restore)
 
