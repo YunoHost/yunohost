@@ -201,6 +201,9 @@ ynh_setup_source() {
             elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]
             then
                 src_format="tar.bz2"
+            elif [[ "$src_url" =~ ^.*\.xz$ ]]
+            then
+                src_format="xz"
             elif [[ -z "$src_extract" ]]
             then
                 src_extract="false"
@@ -329,6 +332,13 @@ ynh_setup_source() {
             unzip -quo $src_filename -d "$dest_dir"
         fi
         ynh_secure_remove --file="$src_filename"
+    elif [[ "$src_format" == "xz" ]]; then
+        if [[ -z "$src_rename" ]]; then
+            xz -d --stdout $src_filename > "$dest_dir/$(basename $src_filename)"
+        else
+            xz -d --stdout $src_filename > "$dest_dir/$src_rename"
+        fi
+
     else
         local strip=""
         if [ "$src_in_subdir" != "false" ]; then
