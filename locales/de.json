@@ -653,7 +653,7 @@
     "global_settings_setting_ssh_compatibility_help": "Kompatibilitäts- vs. Sicherheits-Kompromiss für den SSH-Server. Betrifft die Ciphers (und andere sicherheitsrelevante Aspekte). Bei Bedarf können Sie in https://infosec.mozilla.org/guidelines/openssh die Informationen nachlesen.",
     "global_settings_setting_ssh_password_authentication_help": "Passwort-Authentifizierung für SSH zulassen",
     "global_settings_setting_ssh_port": "SSH-Port",
-    "global_settings_setting_webadmin_allowlist_help": "IP-Adressen, die auf die Verwaltungsseite zugreifen dürfen. Kommasepariert.",
+    "global_settings_setting_webadmin_allowlist_help": "IP-Adressen, die auf die Verwaltungsseite zugreifen dürfen. CIDR Notation ist erlaubt.",
     "global_settings_setting_webadmin_allowlist_enabled_help": "Erlaube nur bestimmten IP-Adressen den Zugriff auf die Verwaltungsseite.",
     "global_settings_setting_smtp_allow_ipv6_help": "Erlaube die Nutzung von IPv6 um Mails zu empfangen und zu versenden",
     "global_settings_setting_smtp_relay_enabled_help": "Zu verwendender SMTP-Relay-Host um E-Mails zu versenden. Er wird anstelle dieser YunoHost-Instanz verwendet. Nützlich, wenn du in einer der folgenden Situationen bist: Dein ISP- oder VPS-Provider hat deinen Port 25 geblockt, eine deinen residentiellen IPs ist auf DUHL gelistet, du kannst keinen Reverse-DNS konfigurieren oder dieser Server ist nicht direkt mit dem Internet verbunden und du möchtest einen anderen verwenden, um E-Mails zu versenden.",
