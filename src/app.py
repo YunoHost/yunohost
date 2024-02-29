@@ -1168,6 +1168,9 @@ def app_install(
     # If packaging_format v2+, save all install questions as settings
     if packaging_format >= 2:
         for question in questions:
+            # Except readonly "questions" that don't even have a value
+            if question.readonly:
+                continue
             # Except user-provider passwords
             # ... which we need to reinject later in the env_dict
             if question.type == "password":
