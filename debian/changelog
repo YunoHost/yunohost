@@ -1,3 +1,17 @@
+yunohost (11.2.10.2) testing; urgency=low
+
+  - docs: add autoupdate.version_regex to the doc ([#1781](http://github.com/YunoHost/yunohost/pull/1781))
+  - chores: update actions/checkout & peter-evans/create-pull-request to nodejs20 ([#1784](http://github.com/YunoHost/yunohost/pull/1784))
+  - apps: fix readonly questions at install (display_text, etc) ([#1786](http://github.com/YunoHost/yunohost/pull/1786))
+  - chores: upgrade n to v9.2.1 ([#1783](http://github.com/YunoHost/yunohost/pull/1783))
+  - helpers/logrotate: fix logs folder permissions ([#1787](http://github.com/YunoHost/yunohost/pull/1787))
+  - fix: list root ssh keys ([#1788](http://github.com/YunoHost/yunohost/pull/1788))
+  - [i18n] Translations updated for German
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, Félix Piédallu, Kay0u, ljf (zamentur), Tagada, tituspijean, YunoHost Bot)
+
+ -- OniriCorpe <oniricorpe@yunohost.org>  Thu, 29 Feb 2024 23:49:11 +0100
+
 yunohost (11.2.10.1) stable; urgency=low
 
   - apps/autoupdate: update docs ([#1776](http://github.com/YunoHost/yunohost/pull/1776))
