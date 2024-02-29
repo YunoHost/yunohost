@@ -1,4 +1,12 @@
-yunohost (11.2.10.2) testing; urgency=low
+yunohost (11.2.10.3) stable; urgency=low
+
+  - fix: latest release was tagged 'testing' by error
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, Tagada, OniriCorpe)
+
+ -- OniriCorpe <oniricorpe@yunohost.org>  Thu, 29 Feb 2024 23:49:11 +0100
+
+yunohost (11.2.10.2) stable; urgency=low
 
   - docs: add autoupdate.version_regex to the doc ([#1781](http://github.com/YunoHost/yunohost/pull/1781))
   - chores: update actions/checkout & peter-evans/create-pull-request to nodejs20 ([#1784](http://github.com/YunoHost/yunohost/pull/1784))
