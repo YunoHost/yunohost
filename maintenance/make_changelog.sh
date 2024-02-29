@@ -2,8 +2,8 @@ VERSION="?"
 RELEASE="testing"
 REPO=$(basename $(git rev-parse --show-toplevel))
 REPO_URL=$(git remote get-url origin)
-ME=$(git config --global --get user.name)
-EMAIL=$(git config --global --get user.email)
+ME=$(git config --get user.name)
+EMAIL=$(git config --get user.email)
 
 LAST_RELEASE=$(git tag --list 'debian/11.*'  --sort="v:refname" | tail -n 1)
 
