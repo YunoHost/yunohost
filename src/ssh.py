@@ -172,7 +172,7 @@ def _get_user_for_ssh(username, attrs=None):
             "username": "root",
             "fullname": "",
             "mail": "",
-            "home_path": root_unix.pw_dir,
+            "homeDirectory": root_unix.pw_dir,
         }
 
     # TODO escape input using https://www.python-ldap.org/doc/html/ldap-filter.html
