@@ -351,6 +351,7 @@ class SourcesResource(AppResource):
     It is also possible to define `autoupdate.upstream` to use a different Git repository instead of the code repository from the upstream section of the manifest. This can be useful when, for example, the app uses other assets such as plugin from a different repository.
 
     If the upstream project provides non-standard tag or release names, you can fix this, with a regex with a matching group.
+
     For example, if tags look like `release-v4.1`, put:
 
     ```toml
