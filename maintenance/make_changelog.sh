@@ -12,6 +12,7 @@ echo ""
 
 git log $LAST_RELEASE.. -n 10000 --first-parent --pretty=tformat:'  - %b%s (%h)' \
 | sed -E "s&Merge .*#([0-9]+).*\$& \([#\1]\(http://github.com/YunoHost/$REPO/pull/\1\)\)&g" \
+| sed -E "/Co-authored-by: .* <.*>/d" \
 | grep -v "Translations update from Weblate" \
 | tac
 
