@@ -138,6 +138,7 @@ def app_info(app, full=False, upgradable=False):
         "description": _value_for_locale(local_manifest["description"]),
         "name": permissions.get(app + ".main", {}).get("label", local_manifest["name"]),
         "version": local_manifest.get("version", "-"),
+        "settings": settings,
     }
 
     if "domain" in settings and "path" in settings:
@@ -168,8 +169,6 @@ def app_info(app, full=False, upgradable=False):
 
             ret["current_version"] = f" ({current_revision})"
             ret["new_version"] = f" ({new_revision})"
-
-    ret["settings"] = settings
 
     if not full:
         return ret
