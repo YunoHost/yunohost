@@ -26,7 +26,7 @@
     "app_change_url_success": "{app} URL is now {domain}{path}",
     "app_config_unable_to_apply": "Failed to apply config panel values.",
     "app_config_unable_to_read": "Failed to read config panel values.",
-    "app_corrupt_source": "YunoHost was able to download the asset '{source_id}' ({url}) for {app}, but the asset doesn't match the expected checksum. This could mean that some temporary network failure happened on your server, OR the asset was somehow changed by the upstream maintainer (or a malicious actor?) and YunoHost packagers need to investigate and update the app manifest to reflect this change.\n    Expected sha256 checksum: {expected_sha256}\n    Downloaded sha256 checksum: {computed_sha256}\n    Downloaded file size: {size}",
+    "app_corrupt_source": "YunoHost was able to download the asset '{source_id}' ({url}) for {app}, but the asset doesn't match the expected checksum. This could mean that some temporary network failure happened on your server, OR the asset was somehow changed by the upstream maintainer (or a malicious actor?) and YunoHost packagers need to investigate and perhaps update the app manifest to take this change into account.\n    Expected sha256 checksum: {expected_sha256}\n    Downloaded sha256 checksum: {computed_sha256}\n    Downloaded file size: {size}",
     "app_extraction_failed": "Could not extract the installation files",
     "app_failed_to_download_asset": "Failed to download asset '{source_id}' ({url}) for {app}: {out}",
     "app_failed_to_upgrade_but_continue": "App {failed_app} failed to upgrade, continue to next upgrades as requested. Run 'yunohost log show {operation_logger_name}' to see failure log",
