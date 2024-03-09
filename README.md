@@ -5,12 +5,14 @@
 <h1 align="center">YunoHost</h1>
 
 <div align="center">
+    
 ![Version](https://img.shields.io/github/v/tag/yunohost/yunohost?label=version&sort=semver)
 [![Pipeline status](https://gitlab.com/yunohost/yunohost/badges/dev/pipeline.svg)](https://gitlab.com/yunohost/yunohost/-/pipelines)
 ![Test coverage](https://gitlab.com/yunohost/yunohost/badges/dev/coverage.svg)
 [![Project license](https://img.shields.io/gitlab/license/yunohost/yunohost)](https://github.com/YunoHost/yunohost/blob/dev/LICENSE)
 [![CodeQL](https://github.com/yunohost/yunohost/workflows/CodeQL/badge.svg)](https://github.com/YunoHost/yunohost/security/code-scanning)
 [![Mastodon Follow](https://img.shields.io/mastodon/follow/28084)](https://mastodon.social/@yunohost)
+
 </div>
 
 YunoHost is an operating system aiming to simplify as much as possible the administration of a server.
