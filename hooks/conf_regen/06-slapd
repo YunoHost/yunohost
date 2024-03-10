@@ -38,6 +38,9 @@ EOF
     # Enforce permissions
     chown -R openldap:openldap /etc/ldap/schema/
     usermod -aG ssl-cert openldap
+    # if those aren't done slapd won't start
+    chmod o+x /host-certificates/live/
+    chmod o+x /host-certificates/archive/
 
     # (Re-)init data according to default ldap entries
     echo '  Initializing LDAP with YunoHost DB structure'
