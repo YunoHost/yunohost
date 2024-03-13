@@ -187,25 +187,22 @@ ynh_setup_source() {
         [[ -n "$src_url" ]] || ynh_die "No URL defined for source $source_id$arch_prefix ?"
         [[ -n "$src_sum" ]] || ynh_die "No sha256 sum defined for source $source_id$arch_prefix ?"
 
-        if [[ -z "$src_format" ]]
-        then
-            if [[ "$src_url" =~ ^.*\.zip$ ]] || [[ "$src_url" =~ ^.*/zipball/.*$ ]]
-            then
+        if [[ -z "$src_format" ]]; then
+            if [[ "$src_url" =~ ^.*\.zip$ ]] || [[ "$src_url" =~ ^.*/zipball/.*$ ]]; then
                 src_format="zip"
-            elif [[ "$src_url" =~ ^.*\.tar\.gz$ ]] || [[ "$src_url" =~ ^.*\.tgz$ ]] || [[ "$src_url" =~ ^.*/tar\.gz/.*$ ]] || [[ "$src_url" =~ ^.*/tarball/.*$ ]]
-            then
+            elif [[ "$src_url" =~ ^.*\.tar\.gz$ ]] || [[ "$src_url" =~ ^.*\.tgz$ ]] || [[ "$src_url" =~ ^.*/tar\.gz/.*$ ]] || [[ "$src_url" =~ ^.*/tarball/.*$ ]]; then
                 src_format="tar.gz"
-            elif [[ "$src_url" =~ ^.*\.tar\.xz$ ]]
-            then
+            elif [[ "$src_url" =~ ^.*\.tar\.xz$ ]]; then
                 src_format="tar.xz"
-            elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]
-            then
+            elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]; then
                 src_format="tar.bz2"
-            elif [[ "$src_url" =~ ^.*\.xz$ ]]
-            then
+            elif [[ "$src_url" =~ ^.*\.gz$ ]]; then
+                src_format="gz"
+            elif [[ "$src_url" =~ ^.*\.xz$ ]]; then
                 src_format="xz"
-            elif [[ -z "$src_extract" ]]
-            then
+            elif [[ "$src_url" =~ ^.*\.bz2$ ]]; then
+                src_format="bz2"
+            elif [[ -z "$src_extract" ]]; then
                 src_extract="false"
             fi
         fi
@@ -332,13 +329,22 @@ ynh_setup_source() {
             unzip -quo $src_filename -d "$dest_dir"
         fi
         ynh_secure_remove --file="$src_filename"
-    elif [[ "$src_format" == "xz" ]]; then
+    elif [[ "$src_format" =~ ^gz|xz|bz2$ ]]; then
         if [[ -z "$src_rename" ]]; then
-            xz -d --stdout $src_filename > "$dest_dir/$(basename $src_filename)"
-        else
-            xz -d --stdout $src_filename > "$dest_dir/$src_rename"
+            if [[ "$source_id" == "main" ]]; then
+                local src_rename=$app
+            else
+                local src_rename=$source_id
+            fi
         fi
-
+        if [[ "$src_format" == "gz" ]]; then
+            gunzip --stdout $src_filename > "$dest_dir/$src_rename"
+        elif [[ "$src_format" == "xz" ]]; then
+            xz -d --stdout $src_filename > "$dest_dir/$src_rename"
+        elif [[ "$src_format" == "bz2" ]]; then
+            bunzip2 --stdout $src_filename > "$dest_dir/$src_rename"
+        fi
+        _ynh_apply_default_permissions "$dest_dir/$src_rename"
     else
         local strip=""
         if [ "$src_in_subdir" != "false" ]; then
