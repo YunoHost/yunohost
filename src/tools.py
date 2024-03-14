@@ -332,9 +332,11 @@ def tools_update(target=None):
             # stdout goes to debug
             lambda l: logger.debug(l.rstrip()),
             # stderr goes to warning except for the boring apt messages
-            lambda l: logger.warning(l.rstrip())
-            if is_legit_warning(l)
-            else logger.debug(l.rstrip()),
+            lambda l: (
+                logger.warning(l.rstrip())
+                if is_legit_warning(l)
+                else logger.debug(l.rstrip())
+            ),
         )
 
         logger.info(m18n.n("updating_apt_cache"))
@@ -473,12 +475,16 @@ def tools_upgrade(operation_logger, target=None):
         logger.debug("Running apt command :\n{}".format(dist_upgrade))
 
         callbacks = (
-            lambda l: logger.info("+ " + l.rstrip() + "\r")
-            if _apt_log_line_is_relevant(l)
-            else logger.debug(l.rstrip() + "\r"),
-            lambda l: logger.warning(l.rstrip())
-            if _apt_log_line_is_relevant(l)
-            else logger.debug(l.rstrip()),
+            lambda l: (
+                logger.info("+ " + l.rstrip() + "\r")
+                if _apt_log_line_is_relevant(l)
+                else logger.debug(l.rstrip() + "\r")
+            ),
+            lambda l: (
+                logger.warning(l.rstrip())
+                if _apt_log_line_is_relevant(l)
+                else logger.debug(l.rstrip())
+            ),
         )
         returncode = call_async_output(dist_upgrade, callbacks, shell=True)
 
@@ -618,7 +624,11 @@ def tools_basic_space_cleanup():
     """
     subprocess.run("apt autoremove && apt autoclean", shell=True)
     subprocess.run("journalctl --vacuum-size=50M", shell=True)
-    subprocess.run("rm /var/log/*.gz && rm /var/log/*/*.gz && rm /var/log/*.? && rm /var/log/*/*.?", shell=True)
+    subprocess.run(
+        "rm /var/log/*.gz && rm /var/log/*/*.gz && rm /var/log/*.? && rm /var/log/*/*.?",
+        shell=True,
+    )
+
 
 # ############################################ #
 #                                              #
@@ -954,9 +964,9 @@ class Migration:
     # Those are to be implemented by daughter classes
 
     mode = "auto"
-    dependencies: List[
-        str
-    ] = []  # List of migration ids required before running this migration
+    dependencies: List[str] = (
+        []
+    )  # List of migration ids required before running this migration
 
     @property
     def disclaimer(self):

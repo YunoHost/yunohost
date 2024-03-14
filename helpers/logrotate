@@ -87,6 +87,8 @@ EOF
 
     # Make sure permissions are correct (otherwise the config file could be ignored and the corresponding logs never rotated)
     chmod 644 "/etc/logrotate.d/$app"
+    mkdir -p "/var/log/$app"
+    chmod 750 "/var/log/$app"
 }
 
 # Remove the app's logrotate config.

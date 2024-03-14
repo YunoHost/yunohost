@@ -975,9 +975,9 @@ def app_manifest(app, with_screenshot=False):
                     if entry.is_file() and ext in ("png", "jpg", "jpeg", "webp", "gif"):
                         with open(entry.path, "rb") as img_file:
                             data = base64.b64encode(img_file.read()).decode("utf-8")
-                            manifest[
-                                "screenshot"
-                            ] = f"data:image/{ext};charset=utf-8;base64,{data}"
+                            manifest["screenshot"] = (
+                                f"data:image/{ext};charset=utf-8;base64,{data}"
+                            )
                         break
 
     shutil.rmtree(extracted_app_folder)
@@ -1054,6 +1054,7 @@ def app_install(
     from yunohost.regenconf import manually_modified_files
     from yunohost.utils.legacy import _patch_legacy_helpers
     from yunohost.utils.form import ask_questions_and_parse_answers
+    from yunohost.user import user_list
 
     # Check if disk space available
     if free_space_in_directory("/") <= 512 * 1000 * 1000:
@@ -1076,6 +1077,11 @@ def app_install(
         raise YunohostValidationError("app_id_invalid")
 
     app_id = manifest["id"]
+
+    if app_id in user_list()["users"].keys():
+        raise YunohostValidationError(
+            f"There is already a YunoHost user called {app_id} ...", raw_msg=True
+        )
 
     # Check requirements
     for name, passed, values, err in _check_manifest_requirements(
@@ -1141,6 +1147,9 @@ def app_install(
     # If packaging_format v2+, save all install options as settings
     if packaging_format >= 2:
         for option in options:
+            # Except readonly "questions" that don't even have a value
+            if option.readonly:
+                continue
             # Except user-provider passwords
             # ... which we need to reinject later in the env_dict
             if option.type == "password":
@@ -1889,6 +1898,8 @@ ynh_app_config_run $1
             app = self.entity
             app_id, app_instance_nb = _parse_app_instance_name(app)
             settings = _get_app_settings(app)
+            app_setting_path = os.path.join(APPS_SETTING_PATH, self.entity)
+            manifest = _get_manifest_of_app(app_setting_path)
             env.update(
                 {
                     "app_id": app_id,
@@ -1897,8 +1908,14 @@ ynh_app_config_run $1
                     "final_path": settings.get("final_path", ""),
                     "install_dir": settings.get("install_dir", ""),
                     "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, app),
+                    "YNH_APP_PACKAGING_FORMAT": str(manifest["packaging_format"]),
                 }
             )
+            app_script_env = _make_environment_for_app_script(app)
+            # Note that we only need to update settings wich are not already set
+            # The settings from config panel should be keep as it is
+            app_script_env.update(env)
+            env = app_script_env
 
             ret, values = hook_exec(config_script, args=[action], env=env)
             if ret != 0:

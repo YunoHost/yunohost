@@ -264,5 +264,6 @@
     "global_settings_setting_security_experimental_enabled_help": "Povoliť experimentálne bezpečnostné funkcie (nezapínajte túto možnosť, ak neviete, čo môže spôsobiť!)",
     "service_description_rspamd": "Filtruje spam a iné funkcie týkajúce sa e-mailu",
     "log_letsencrypt_cert_renew": "Obnoviť '{}' certifikát Let's Encrypt",
-    "domain_config_cert_summary_selfsigned": "UPOZORNENIE: Aktuálny certifikát je vlastnoručne podpísaný. Prehliadače budú návštevníkom zobrazovať strašidelné varovanie!"
+    "domain_config_cert_summary_selfsigned": "UPOZORNENIE: Aktuálny certifikát je vlastnoručne podpísaný. Prehliadače budú návštevníkom zobrazovať strašidelné varovanie!",
+    "global_settings_setting_ssowat_panel_overlay_enabled": "Povoliť malú štvorcovú ikonu portálu „YunoHost“ na aplikáciach"
 }

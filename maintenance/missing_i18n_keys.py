@@ -163,7 +163,6 @@ def find_expected_string_keys():
         "smtp_relay_password",
         "smtp_relay_port",
         "smtp_relay_user",
-        "ssh_port",
         "ssowat_panel_overlay_enabled",
         "root_password",
         "root_access_explain",

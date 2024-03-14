@@ -224,9 +224,11 @@ def generate_test_name(intake, output, raw_option, data):
         "=".join(
             [
                 key,
-                str(raw_option[key])
-                if not isinstance(raw_option[key], str)
-                else f"'{raw_option[key]}'",
+                (
+                    str(raw_option[key])
+                    if not isinstance(raw_option[key], str)
+                    else f"'{raw_option[key]}'"
+                ),
             ]
         )
         for key in raw_option.keys()
@@ -263,9 +265,11 @@ def pytest_generate_tests(metafunc):
                         [metafunc.cls.raw_option], metafunc.cls.scenarios
                     )
                     ids += [
-                        generate_test_name(*args.values)
-                        if isinstance(args, ParameterSet)
-                        else generate_test_name(*args)
+                        (
+                            generate_test_name(*args.values)
+                            if isinstance(args, ParameterSet)
+                            else generate_test_name(*args)
+                        )
                         for args in argvalues
                     ]
                 elif params[1] == "expected_normalized":

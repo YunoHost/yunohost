@@ -502,7 +502,7 @@
     "restore_running_app_script": "Restablecendo a app '{app}'...",
     "restore_removing_tmp_dir_failed": "Non se puido eliminar o directorio temporal antigo",
     "restore_nothings_done": "Nada foi restablecido",
-    "restore_not_enough_disk_space": "Non hai espazo abondo (espazo: {free_space.d} B, espazo necesario: {needed_space} B, marxe de seguridade: {margin} B)",
+    "restore_not_enough_disk_space": "Non hai espazo abondo (espazo: {free_space} B, espazo necesario: {needed_space} B, marxe de seguridade: {margin} B)",
     "restore_may_be_not_enough_disk_space": "O teu sistema semella que non ten espazo abondo (libre: {free_space} B, espazo necesario: {needed_space} B, marxe de seguridade {margin} B)",
     "restore_hook_unavailable": "O script de restablecemento para '{part}' non está dispoñible no teu sistema nin no arquivo",
     "ldap_server_is_down_restart_it": "O servidor LDAP está caído, intenta reinicialo...",
@@ -653,7 +653,7 @@
     "global_settings_setting_ssh_compatibility_help": "Compromiso entre compatibilidade e seguridade para o servidor SSH. Aféctalle ao cifrado (e outros aspectos da seguridade). Le https://infosec.mozilla.org/guidelines/openssh for more info.",
     "global_settings_setting_ssh_password_authentication_help": "Permitir autenticación con contrasinal para SSH",
     "global_settings_setting_ssh_port": "Porto SSH",
-    "global_settings_setting_webadmin_allowlist_help": "Enderezos IP con permiso para acceder á webadmin. Separados por vírgulas.",
+    "global_settings_setting_webadmin_allowlist_help": "Enderezos IP con permiso para acceder á webadmin. Permítese a notación CIDR.",
     "global_settings_setting_webadmin_allowlist_enabled_help": "Permitir que só algúns IPs accedan á webadmin.",
     "global_settings_setting_smtp_allow_ipv6_help": "Permitir o uso de IPv6 para recibir e enviar emais",
     "global_settings_setting_smtp_relay_enabled_help": "Servidor repetidor SMTP para enviar emails no lugar da túa instancia yunohost. É útil se estás nunha destas situacións: o teu porto 25 está bloqueado polo teu provedor ISP u VPN, se tes unha IP residencial nunha lista DUHL, se non podes configurar DNS inversa ou se este servidor non ten conexión directa a internet e queres utilizar outro para enviar os emails.",
@@ -758,7 +758,7 @@
     "log_resource_snippet": "Aprovisionamento/desaprovisionamento/actualización dun recurso",
     "app_resource_failed": "Fallou o aprovisionamento, desaprovisionamento ou actualización de recursos para {app}: {error}",
     "app_failed_to_download_asset": "Fallou a descarga do recurso '{source_id}' ({url}) para {app}: {out}",
-    "app_corrupt_source": "YunoHost foi quen de descargar o recurso '{source_id}' ({url}) para {app}, pero a suma de comprobación para o recurso non concorda. Pode significar que houbo un fallo temporal na conexión do servidor á rede, OU que o recurso sufreu, dalgún xeito, cambios desde que os desenvolvedores orixinais (ou unha terceira parte maliciosa?), o equipo de YunoHost ten que investigar e actualizar o manifesto da app para mostrar este cambio.\n    Suma sha256 agardada:  {expected_sha256} \n    Suma sha256 do descargado:  {computed_sha256}\n    Tamaño do ficheiro: {size}",
+    "app_corrupt_source": "YunoHost foi quen de descargar o recurso '{source_id}' ({url}) para {app}, pero a suma de comprobación para o recurso non concorda. Pode significar que houbo un fallo temporal na conexión do servidor á rede, OU que o recurso sufreu, dalgún xeito, cambios desde que os desenvolvedores orixinais (ou unha terceira parte maliciosa?), o equipo de YunoHost ten que investigar e podería ter que actualizar o manifesto da app para ter este cambio en conta.\n    Suma sha256 agardada:  {expected_sha256} \n    Suma sha256 do descargado:  {computed_sha256}\n    Tamaño do ficheiro: {size}",
     "group_mailalias_add": "Vaise engadir o alias de correo '{mail}' ao grupo '{group}'",
     "group_mailalias_remove": "Vaise quitar o alias de email '{mail}' do grupo '{group}'",
     "group_user_add": "Vaise engadir a '{user}' ao grupo '{group}'",
@@ -780,5 +780,6 @@
     "dyndns_set_recovery_password_success": "Estableceuse o contrasinal de recuperación!",
     "log_dyndns_unsubscribe": "Retirar subscrición para o subdominio YunoHost '{}'",
     "ask_dyndns_recovery_password_explain_unavailable": "Este dominio DynDNS xa está rexistrado. Se es a persoa que o rexistrou orixinalmente, podes escribir o código de recuperación para reclamar o dominio.",
-    "dyndns_too_many_requests": "O servicio dyndns de YunoHost recibeu demasiadas peticións do teu sistema, agarda 1 hora e volve intentalo."
+    "dyndns_too_many_requests": "O servicio dyndns de YunoHost recibeu demasiadas peticións do teu sistema, agarda 1 hora e volve intentalo.",
+    "global_settings_setting_ssh_port_help": "É recomendable un porto inferior a 1024 para evitar os intentos de apropiación por parte de servizos de non-administración na máquina remota. Tamén deberías evitar elexir un porto que xa está sendo utilizado, como 80 ou 443."
 }

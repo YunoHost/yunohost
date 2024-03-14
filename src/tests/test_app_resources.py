@@ -348,7 +348,7 @@ def test_resource_permissions():
     conf = {
         "main": {
             "url": "/",
-            "allowed": "visitors"
+            "allowed": "visitors",
             # TODO: test protected?
         },
     }

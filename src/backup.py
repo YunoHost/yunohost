@@ -87,7 +87,6 @@ logger = getLogger("yunohost.backup")
 
 
 class BackupRestoreTargetsManager:
-
     """
     BackupRestoreTargetsManager manage the targets
     in BackupManager and RestoreManager
@@ -210,7 +209,6 @@ class BackupRestoreTargetsManager:
 
 
 class BackupManager:
-
     """
     This class collect files to backup in a list and apply one or several
     backup method on it.
@@ -824,7 +822,6 @@ class BackupManager:
 
 
 class RestoreManager:
-
     """
     RestoreManager allow to restore a past backup archive
 
@@ -1291,9 +1288,11 @@ class RestoreManager:
                     url=permission_infos["url"],
                     additional_urls=permission_infos["additional_urls"],
                     auth_header=permission_infos["auth_header"],
-                    label=permission_infos["label"]
-                    if perm_name == "main"
-                    else permission_infos["sublabel"],
+                    label=(
+                        permission_infos["label"]
+                        if perm_name == "main"
+                        else permission_infos["sublabel"]
+                    ),
                     show_tile=permission_infos["show_tile"],
                     protected=permission_infos["protected"],
                     sync_perm=False,
@@ -1425,9 +1424,11 @@ class RestoreManager:
                     url=permission_infos.get("url"),
                     additional_urls=permission_infos.get("additional_urls"),
                     auth_header=permission_infos.get("auth_header"),
-                    label=permission_infos.get("label")
-                    if perm_name == "main"
-                    else permission_infos.get("sublabel"),
+                    label=(
+                        permission_infos.get("label")
+                        if perm_name == "main"
+                        else permission_infos.get("sublabel")
+                    ),
                     show_tile=permission_infos.get("show_tile", True),
                     protected=permission_infos.get("protected", False),
                     sync_perm=False,
@@ -1527,7 +1528,6 @@ class RestoreManager:
 # Backup methods                                                            #
 #
 class BackupMethod:
-
     """
     BackupMethod is an abstract class that represents a way to backup and
     restore a list of files.
@@ -1818,7 +1818,6 @@ class BackupMethod:
 
 
 class CopyBackupMethod(BackupMethod):
-
     """
     This class just do an uncompress copy of each file in a location, and
     could be the inverse for restoring
@@ -2051,7 +2050,6 @@ class TarBackupMethod(BackupMethod):
 
 
 class CustomBackupMethod(BackupMethod):
-
     """
     This class use a bash script/hook "backup_method" to do the
     backup/restore operations. A user can add his own hook inside

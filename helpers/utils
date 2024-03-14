@@ -584,6 +584,8 @@ ynh_replace_vars() {
     # List other unique (__ __) variables in $file
     local uniques_vars=($(grep -oP '__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__' $file | sort --unique | sed "s@__\([^.]*\)__@\L\1@g"))
 
+    set +o xtrace # set +x
+
     # Do the replacement
     local delimit=@
     for one_var in "${uniques_vars[@]}"; do
@@ -604,6 +606,7 @@ ynh_replace_vars() {
         # Actually replace (sed is used instead of ynh_replace_string to avoid triggering an epic amount of debug logs)
         sed --in-place "s${delimit}${match_string}${delimit}${replace_string}${delimit}g" "$file"
     done
+    set -o xtrace # set -x
 }
 
 # Get a value from heterogeneous file (yaml, json, php, python...)

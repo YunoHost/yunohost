@@ -428,9 +428,11 @@ def domain_remove(
             apps_on_that_domain.append(
                 (
                     app,
-                    f"    - {app} \"{label}\" on https://{domain}{settings['path']}"
-                    if "path" in settings
-                    else app,
+                    (
+                        f"    - {app} \"{label}\" on https://{domain}{settings['path']}"
+                        if "path" in settings
+                        else app
+                    ),
                 )
             )
 

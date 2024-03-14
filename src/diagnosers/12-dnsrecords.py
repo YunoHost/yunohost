@@ -291,9 +291,9 @@ class MyDiagnoser(Diagnoser):
                 yield dict(
                     meta=meta,
                     data={},
-                    status=alert_type.upper()
-                    if alert_type != "not_found"
-                    else "WARNING",
+                    status=(
+                        alert_type.upper() if alert_type != "not_found" else "WARNING"
+                    ),
                     summary="diagnosis_domain_expiration_" + alert_type,
                     details=details[alert_type],
                 )
