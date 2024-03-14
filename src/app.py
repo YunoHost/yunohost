@@ -1896,26 +1896,8 @@ ynh_app_config_run $1
             # Call config script to extract current values
             logger.debug(f"Calling '{action}' action from config script")
             app = self.entity
-            app_id, app_instance_nb = _parse_app_instance_name(app)
-            settings = _get_app_settings(app)
             app_setting_path = os.path.join(APPS_SETTING_PATH, self.entity)
-            manifest = _get_manifest_of_app(app_setting_path)
-            env.update(
-                {
-                    "app_id": app_id,
-                    "app": app,
-                    "app_instance_nb": str(app_instance_nb),
-                    "final_path": settings.get("final_path", ""),
-                    "install_dir": settings.get("install_dir", ""),
-                    "YNH_APP_BASEDIR": os.path.join(APPS_SETTING_PATH, app),
-                    "YNH_APP_PACKAGING_FORMAT": str(manifest["packaging_format"]),
-                }
-            )
-            app_script_env = _make_environment_for_app_script(app)
-            # Note that we only need to update settings wich are not already set
-            # The settings from config panel should be keep as it is
-            app_script_env.update(env)
-            env = app_script_env
+            env = _make_environment_for_app_script(app, workdir=app_setting_path)
 
             ret, values = hook_exec(config_script, args=[action], env=env)
             if ret != 0:
