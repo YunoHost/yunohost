@@ -317,6 +317,9 @@ class SourcesResource(AppResource):
     - `format` : The "format" of the asset. It is typically automatically guessed from the extension of the URL (or the mention of "tarball", "zipball" in the URL), but can be set explicitly:
         - `tar.gz`, `tar.xz`, `tar.bz2` : will use `tar` to extract the archive
         - `zip` : will use `unzip` to extract the archive
+        - `gz`  : will use `gunzip` to extract
+        - `bz2` : will use `bunzip2` to extract
+        - `xz`  : will use `xz -d` to extract
         - `docker` : useful to extract files from an already-built docker image (instead of rebuilding them locally). Will use `docker-image-extract`
         - `whatever`: whatever arbitrary value, not really meaningful except to imply that the file won't be extracted (eg because it's a .deb to be manually installed with dpkg/apt, or a script, or ...)
     - `in_subdir`: `true` (default) or `false`, depending on if there's an intermediate subdir in the archive before accessing the actual files. Can also be `N` (an integer) to handle special cases where there's `N` level of subdir to get rid of to actually access the files
