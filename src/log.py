@@ -173,6 +173,16 @@ def log_show(
         share
     """
 
+    match_path = re.match(r"last(?:-(?P<position>[0-9]{1,6}))?$", path)
+
+    if match_path:
+        if match_path.group("position") == None:
+            position = 1
+        else:
+            position = int(match_path.group("position")) + 1
+        logs = log_list()
+        path = list(logs["operation"])[-position]["path"]
+
     if share:
         filter_irrelevant = True
 
