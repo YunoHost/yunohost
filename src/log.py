@@ -173,15 +173,19 @@ def log_show(
         share
     """
 
-    match_path = re.match(r"last(?:-(?P<position>[0-9]{1,6}))?$", path)
+    # Set up path with correct value if 'last' or 'last-X' magic keywords are used
+    last = re.match(r"last(?:-(?P<position>[0-9]{1,6}))?$", path)
+    if last:
+        position = 1
+        if last.group("position") is not None:
+            position += int(last.group("position"))
 
-    if match_path:
-        if match_path.group("position") == None:
-            position = 1
-        else:
-            position = int(match_path.group("position")) + 1
-        logs = log_list()
-        path = list(logs["operation"])[-position]["path"]
+        logs = list(log_list()["operation"])
+
+        if position > len(logs):
+            raise YunohostValidationError(f"There isn't that many logs", raw_msg=True)
+
+        path = logs[-position]["path"]
 
     if share:
         filter_irrelevant = True
