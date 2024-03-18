@@ -1976,7 +1976,7 @@ log:
                 - display
             arguments:
                 path:
-                    help: Log file which to display the content, or 'last' or 'last-X' to get the log in last-X position
+                    help: Log file which to display the content. 'last' or 'last-X' selects the last but X log file
                 -n:
                     full: --number
                     help: Number of lines to display
