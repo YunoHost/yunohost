@@ -1,4 +1,3 @@
-#
 # Copyright (c) 2024 YunoHost Contributors
 #
 # This file is part of YunoHost (see https://yunohost.org)
@@ -32,13 +31,11 @@ from moulinette import m18n, Moulinette
 from moulinette.core import MoulinetteError
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.utils.system import get_ynh_package_version
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, read_yaml
 
-logger = getActionLogger("yunohost.log")
+logger = getLogger("yunohost.log")
 
-CATEGORIES_PATH = "/var/log/yunohost/categories/"
-OPERATIONS_PATH = "/var/log/yunohost/categories/operation/"
+OPERATIONS_PATH = "/var/log/yunohost/operations/"
 METADATA_FILE_EXT = ".yml"
 LOG_FILE_EXT = ".log"
 
@@ -215,7 +212,7 @@ def log_show(
     infos = {}
 
     # If it's a unit operation, display the name and the description
-    if base_path.startswith(CATEGORIES_PATH):
+    if base_path.startswith(OPERATIONS_PATH):
         infos["description"] = _get_description_from_name(base_filename)
         infos["name"] = base_filename
 
@@ -469,7 +466,7 @@ class OperationLogger:
     This class record logs and metadata like context or start time/end time.
     """
 
-    _instances: List[object] = []
+    _instances: List["OperationLogger"] = []
 
     def __init__(self, operation, related_to=None, **kwargs):
         # TODO add a way to not save password on app installation
@@ -745,7 +742,7 @@ class OperationLogger:
         # 2019-10-19 16:10:27,611: DEBUG - + mysql -u piwigo --password=********** -B piwigo
         # And we just want the part starting by "DEBUG - "
         lines = [line for line in lines if ":" in line.strip()]
-        lines = [line.strip().split(": ", 1)[1] for line in lines]
+        lines = [line.strip().split(": ", 1)[-1] for line in lines]
         # And we ignore boring/irrelevant lines
         # Annnnnnd we also ignore lines matching [number] + such as
         # 72971 [37m[1mDEBUG [m29739 + ynh_exit_properly

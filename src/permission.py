@@ -20,13 +20,13 @@ import re
 import copy
 import grp
 import random
+from logging import getLogger
 
 from moulinette import m18n
-from moulinette.utils.log import getActionLogger
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation
 
-logger = getActionLogger("yunohost.user")
+logger = getLogger("yunohost.user")
 
 SYSTEM_PERMS = ["mail", "xmpp", "sftp", "ssh"]
 

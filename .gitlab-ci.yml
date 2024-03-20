@@ -1,11 +1,10 @@
 ---
 stages:
+  - lint
   - build
   - install
   - test
-  - lint
-  - doc
-  - translation
+  - bot
 
 default:
   tags:

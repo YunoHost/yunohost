@@ -1,15 +1,15 @@
 import subprocess
 import time
 import os
+from logging import getLogger
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
-from moulinette.utils.log import getActionLogger
 
 from yunohost.tools import Migration
 from yunohost.utils.system import free_space_in_directory, space_used_by_directory
 
-logger = getActionLogger("yunohost.migration")
+logger = getLogger("yunohost.migration")
 
 
 class MyMigration(Migration):

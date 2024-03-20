@@ -43,6 +43,7 @@ redis-server:
 rspamd:
   log: /var/log/rspamd/rspamd.log
   category: email
+  ignore_if_package_is_not_installed: rspamd
 slapd:
   category: database
   test_conf: slapd -Tt
@@ -51,6 +52,9 @@ ssh:
   test_conf: sshd -t
   needs_exposed_ports: [22]
   category: admin
+yunohost-portal-api:
+  log: /var/log/yunohost-portal-api.log
+  category: userportal
 yunohost-api:
   log: /var/log/yunohost/yunohost-api.log
   category: admin

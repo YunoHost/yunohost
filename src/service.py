@@ -21,14 +21,13 @@ import os
 import time
 import yaml
 import subprocess
-
+from logging import getLogger
 from glob import glob
 from datetime import datetime
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.process import check_output
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import (
     read_file,
     append_to_file,
@@ -42,7 +41,7 @@ MOULINETTE_LOCK = "/var/run/moulinette_yunohost.lock"
 SERVICES_CONF = "/etc/yunohost/services.yml"
 SERVICES_CONF_BASE = "/usr/share/yunohost/conf/yunohost/services.yml"
 
-logger = getActionLogger("yunohost.service")
+logger = getLogger("yunohost.service")
 
 
 def service_add(

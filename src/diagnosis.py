@@ -21,9 +21,9 @@ import os
 import time
 import glob
 from importlib import import_module
+from logging import getLogger
 
 from moulinette import m18n, Moulinette
-from moulinette.utils import log
 from moulinette.utils.filesystem import (
     read_json,
     write_to_json,
@@ -33,7 +33,7 @@ from moulinette.utils.filesystem import (
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
-logger = log.getActionLogger("yunohost.diagnosis")
+logger = getLogger("yunohost.diagnosis")
 
 DIAGNOSIS_CACHE = "/var/cache/yunohost/diagnosis/"
 DIAGNOSIS_CONFIG_FILE = "/etc/yunohost/diagnosis.yml"

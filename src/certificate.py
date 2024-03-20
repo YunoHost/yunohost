@@ -21,11 +21,10 @@ import sys
 import shutil
 import subprocess
 from glob import glob
-
+from logging import getLogger
 from datetime import datetime
 
 from moulinette import m18n
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.filesystem import read_file, chown, chmod
 from moulinette.utils.process import check_output
 
@@ -38,7 +37,7 @@ from yunohost.service import _run_service_command
 from yunohost.regenconf import regen_conf
 from yunohost.log import OperationLogger
 
-logger = getActionLogger("yunohost.certmanager")
+logger = getLogger("yunohost.certmanager")
 
 CERT_FOLDER = "/etc/yunohost/certs/"
 TMP_FOLDER = "/var/www/.well-known/acme-challenge-private/"

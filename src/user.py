@@ -20,14 +20,12 @@ import os
 import re
 import pwd
 import grp
-import crypt
 import random
-import string
 import subprocess
 import copy
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output
 
 from yunohost.utils.error import YunohostError, YunohostValidationError
@@ -35,7 +33,7 @@ from yunohost.service import service_status
 from yunohost.log import is_unit_operation
 from yunohost.utils.system import binary_to_human
 
-logger = getActionLogger("yunohost.user")
+logger = getLogger("yunohost.user")
 
 FIELDS_FOR_IMPORT = {
     "username": r"^[a-z0-9_.]+$",
@@ -141,39 +139,27 @@ def user_create(
     domain,
     password,
     fullname=None,
-    firstname=None,
-    lastname=None,
     mailbox_quota="0",
     admin=False,
     from_import=False,
     loginShell=None,
 ):
-    if firstname or lastname:
-        logger.warning(
-            "Options --firstname / --lastname of 'yunohost user create' are deprecated. We recommend using --fullname instead."
-        )
-
     if not fullname or not fullname.strip():
-        if not firstname.strip():
-            raise YunohostValidationError(
-                "You should specify the fullname of the user using option -F"
-            )
-        lastname = (
-            lastname or " "
-        )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
-        fullname = f"{firstname} {lastname}".strip()
-    else:
-        fullname = fullname.strip()
-        firstname = fullname.split()[0]
-        lastname = (
-            " ".join(fullname.split()[1:]) or " "
-        )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
+        raise YunohostValidationError(
+            "You should specify the fullname of the user using option -F"
+        )
+    fullname = fullname.strip()
+    firstname = fullname.split()[0]
+    lastname = (
+        " ".join(fullname.split()[1:]) or " "
+    )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
 
     from yunohost.domain import domain_list, _get_maindomain, _assert_domain_exists
     from yunohost.hook import hook_callback
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
         assert_password_is_compatible,
+        _hash_user_password,
     )
     from yunohost.utils.ldap import _get_ldap_interface
 
@@ -319,6 +305,8 @@ def user_create(
 def user_delete(operation_logger, username, purge=False, from_import=False):
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
+    from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
+    from yunohost.authenticators.ldap_admin import Authenticator as AdminAuth
 
     if username not in user_list()["users"]:
         raise YunohostValidationError("user_unknown", user=username)
@@ -347,6 +335,9 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
     except Exception as e:
         raise YunohostError("user_deletion_failed", user=username, error=e)
 
+    PortalAuth.invalidate_all_sessions_for_user(username)
+    AdminAuth.invalidate_all_sessions_for_user(username)
+
     # Invalidate passwd to take user deletion into account
     subprocess.call(["nscd", "-i", "passwd"])
 
@@ -364,8 +355,6 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
 def user_update(
     operation_logger,
     username,
-    firstname=None,
-    lastname=None,
     mail=None,
     change_password=None,
     add_mailforward=None,
@@ -377,23 +366,22 @@ def user_update(
     fullname=None,
     loginShell=None,
 ):
-    if firstname or lastname:
-        logger.warning(
-            "Options --firstname / --lastname of 'yunohost user create' are deprecated. We recommend using --fullname instead."
-        )
-
     if fullname and fullname.strip():
         fullname = fullname.strip()
         firstname = fullname.split()[0]
         lastname = (
             " ".join(fullname.split()[1:]) or " "
         )  # Stupid hack because LDAP requires the sn/lastname attr, but it accepts a single whitespace...
+    else:
+        firstname = None
+        lastname = None
 
     from yunohost.domain import domain_list
     from yunohost.app import app_ssowatconf
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
         assert_password_is_compatible,
+        _hash_user_password,
     )
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.hook import hook_callback
@@ -548,6 +536,11 @@ def user_update(
         ldap.update(f"uid={username},ou=users", new_attr_dict)
     except Exception as e:
         raise YunohostError("user_update_failed", user=username, error=e)
+
+    if "userPassword" in new_attr_dict:
+        logger.info("Invalidating sessions")
+        from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
+        PortalAuth.invalidate_all_sessions_for_user(username)
 
     # Invalidate passwd and group to update the loginShell
     subprocess.call(["nscd", "-i", "passwd"])
@@ -884,8 +877,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
 
         user_update(
             new_infos["username"],
-            firstname=new_infos["firstname"],
-            lastname=new_infos["lastname"],
+            fullname=(new_infos["firstname"] + " " + new_infos["lastname"]).strip(),
             change_password=new_infos["password"],
             mailbox_quota=new_infos["mailbox-quota"],
             mail=new_infos["mail"],
@@ -930,8 +922,7 @@ def user_import(operation_logger, csvfile, update=False, delete=False):
                 user["password"],
                 user["mailbox-quota"],
                 from_import=True,
-                firstname=user["firstname"],
-                lastname=user["lastname"],
+                fullname=(user["firstname"] + " " + user["lastname"]).strip(),
             )
             update(user)
             result["created"] += 1
@@ -1286,6 +1277,11 @@ def user_group_update(
         except Exception as e:
             raise YunohostError("group_update_failed", group=groupname, error=e)
 
+    if groupname == "admins" and remove:
+        from yunohost.authenticators.ldap_admin import Authenticator as AdminAuth
+        for user in users_to_remove:
+            AdminAuth.invalidate_all_sessions_for_user(user)
+
     if sync_perm:
         permission_sync_to_user()
 
@@ -1441,36 +1437,6 @@ def user_ssh_remove_key(username, key):
 #
 # End SSH subcategory
 #
-
-
-def _hash_user_password(password):
-    """
-    This function computes and return a salted hash for the password in input.
-    This implementation is inspired from [1].
-
-    The hash follows SHA-512 scheme from Linux/glibc.
-    Hence the {CRYPT} and $6$ prefixes
-    - {CRYPT} means it relies on the OS' crypt lib
-    - $6$ corresponds to SHA-512, the strongest hash available on the system
-
-    The salt is generated using random.SystemRandom(). It is the crypto-secure
-    pseudo-random number generator according to the python doc [2] (c.f. the
-    red square). It internally relies on /dev/urandom
-
-    The salt is made of 16 characters from the set [./a-zA-Z0-9]. This is the
-    max sized allowed for salts according to [3]
-
-    [1] https://www.redpill-linpro.com/techblog/2016/08/16/ldap-password-hash.html
-    [2] https://docs.python.org/2/library/random.html
-    [3] https://www.safaribooksonline.com/library/view/practical-unix-and/0596003234/ch04s03.html
-    """
-
-    char_set = string.ascii_uppercase + string.ascii_lowercase + string.digits + "./"
-    salt = "".join([random.SystemRandom().choice(char_set) for x in range(16)])
-
-    salt = "$6$" + salt + "$"
-    return "{CRYPT}" + crypt.crypt(str(password), salt)
-
 
 def _update_admins_group_aliases(old_main_domain, new_main_domain):
     current_admin_aliases = user_group_info("admins")["mail-aliases"]

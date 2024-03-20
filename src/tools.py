@@ -24,25 +24,12 @@ import time
 from importlib import import_module
 from packaging import version
 from typing import List
+from logging import getLogger
 
 from moulinette import Moulinette, m18n
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import call_async_output
 from moulinette.utils.filesystem import read_yaml, write_to_yaml, cp, mkdir, rm, chown
 
-from yunohost.app import (
-    app_upgrade,
-    app_list,
-    _list_upgradable_apps,
-)
-from yunohost.app_catalog import (
-    _initialize_apps_catalog_system,
-    _update_apps_catalog,
-)
-from yunohost.domain import domain_add
-from yunohost.firewall import firewall_upnp
-from yunohost.service import service_start, service_enable
-from yunohost.regenconf import regen_conf
 from yunohost.utils.system import (
     _dump_sources_list,
     _list_upgradable_apt_packages,
@@ -55,7 +42,7 @@ from yunohost.log import is_unit_operation, OperationLogger
 
 MIGRATIONS_STATE_PATH = "/etc/yunohost/migrations.yaml"
 
-logger = getActionLogger("yunohost.tools")
+logger = getLogger("yunohost.tools")
 
 
 def tools_versions():
@@ -63,10 +50,10 @@ def tools_versions():
 
 
 def tools_rootpw(new_password, check_strength=True):
-    from yunohost.user import _hash_user_password
     from yunohost.utils.password import (
         assert_password_is_strong_enough,
         assert_password_is_compatible,
+        _hash_user_password,
     )
     import spwd
 
@@ -162,8 +149,12 @@ def tools_postinstall(
         assert_password_is_strong_enough,
         assert_password_is_compatible,
     )
-    from yunohost.domain import domain_main_domain
+    from yunohost.domain import domain_main_domain, domain_add
     from yunohost.user import user_create, ADMIN_ALIASES
+    from yunohost.app_catalog import _update_apps_catalog
+    from yunohost.firewall import firewall_upnp
+    from yunohost.service import service_start, service_enable
+
     import psutil
 
     # Do some checks at first
@@ -253,10 +244,7 @@ def tools_postinstall(
     # Enable UPnP silently and reload firewall
     firewall_upnp("enable", no_refresh=True)
 
-    # Initialize the apps catalog system
-    _initialize_apps_catalog_system()
-
-    # Try to update the apps catalog ...
+    # Try to fetch the apps catalog ...
     # we don't fail miserably if this fails,
     # because that could be for example an offline installation...
     try:
@@ -273,7 +261,7 @@ def tools_postinstall(
     service_enable("yunohost-firewall")
     service_start("yunohost-firewall")
 
-    regen_conf(names=["ssh"], force=True)
+    tools_regen_conf(names=["ssh"], force=True)
 
     # Restore original ssh conf, as chosen by the
     # admin during the initial install
@@ -288,7 +276,7 @@ def tools_postinstall(
     if os.path.exists(original_sshd_conf):
         os.rename(original_sshd_conf, "/etc/ssh/sshd_config")
 
-    regen_conf(force=True)
+    tools_regen_conf(force=True)
 
     logger.success(m18n.n("yunohost_configured"))
 
@@ -298,17 +286,8 @@ def tools_postinstall(
 def tools_regen_conf(
     names=[], with_diff=False, force=False, dry_run=False, list_pending=False
 ):
-    # Make sure the settings are migrated before running the migration,
-    # which may otherwise fuck things up such as the ssh config ...
-    # We do this here because the regen-conf is called before the migration in debian/postinst
-    if os.path.exists("/etc/yunohost/settings.json") and not os.path.exists(
-        "/etc/yunohost/settings.yml"
-    ):
-        try:
-            tools_migrations_run(["0025_global_settings_to_configpanel"])
-        except Exception as e:
-            logger.error(e)
 
+    from yunohost.regenconf import regen_conf
     return regen_conf(names, with_diff, force, dry_run, list_pending)
 
 
@@ -316,6 +295,8 @@ def tools_update(target=None):
     """
     Update apps & system package cache
     """
+    from yunohost.app_catalog import _update_apps_catalog
+    from yunohost.app import _list_upgradable_apps
 
     if not target:
         target = "all"
@@ -423,6 +404,8 @@ def tools_upgrade(operation_logger, target=None):
        apps -- List of apps to upgrade (or [] to update all apps)
        system -- True to upgrade system
     """
+
+    from yunohost.app import app_upgrade, app_list
 
     if dpkg_is_broken():
         raise YunohostValidationError("dpkg_is_broken")

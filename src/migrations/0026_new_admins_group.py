@@ -1,8 +1,8 @@
-from moulinette.utils.log import getActionLogger
+from logging import getLogger
 
 from yunohost.tools import Migration
 
-logger = getActionLogger("yunohost.migration")
+logger = getLogger("yunohost.migration")
 
 ###################################################
 # Tools used also for restoration

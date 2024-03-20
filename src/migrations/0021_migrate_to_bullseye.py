@@ -1,9 +1,9 @@
 import glob
 import os
+from logging import getLogger
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
-from moulinette.utils.log import getActionLogger
 from moulinette.utils.process import check_output, call_async_output
 from moulinette.utils.filesystem import read_file, rm, write_to_file
 
@@ -22,7 +22,7 @@ from yunohost.utils.system import (
 )
 from yunohost.service import _get_services, _save_services
 
-logger = getActionLogger("yunohost.migration")
+logger = getLogger("yunohost.migration")
 
 N_CURRENT_DEBIAN = 10
 N_CURRENT_YUNOHOST = 4

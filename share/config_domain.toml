@@ -4,11 +4,51 @@ i18n = "domain_config"
 [feature]
 name = "Features"
 
+    [feature.portal]
+    # Only available for "topest" domains
+    name = "Portal"
+
+        [feature.portal.show_other_domains_apps]
+        type = "boolean"
+        default = false
+
+        [feature.portal.portal_title]
+        type = "string"
+        default = "YunoHost"
+
+        [feature.portal.portal_logo]
+        type = "file"
+        accept = ["image/png", "image/jpeg", "image/svg+xml"]
+        mode = "python"
+        bind = "/usr/share/yunohost/portal/customassets/{filename}{ext}"
+
+        [feature.portal.portal_theme]
+        type = "select"
+        choices = ["system", "light", "dark", "cupcake", "bumblebee", "emerald", "corporate", "synthwave", "retro", "cyberpunk", "valentine", "halloween", "garden", "forest", "aqua", "lofi", "pastel", "fantasy", "wireframe", "black", "luxury", "dracula", "cmyk", "autumn", "business", "acid", "lemonade", "night", "coffee", "winter"]
+        default = "system"
+
+        [feature.portal.search_engine]
+        type = "url"
+        default = ""
+
+        [feature.portal.search_engine_name]
+        type = "string"
+        visible = "search_engine"
+
+        [feature.portal.portal_user_intro]
+        type = "text"
+
+        [feature.portal.portal_public_intro]
+        type = "text"
+
+        # FIXME link to GCU
+
     [feature.app]
         [feature.app.default_app]
         type = "app"
         filter = "is_webapp"
         default = "_none"
+        add_yunohost_portal_to_choices = true
 
     [feature.mail]
 
