@@ -151,7 +151,7 @@ for panel_name, panel in loaded_toml.items():
                 bind_section = bind_section + bind_panel_file
             else:
                 bind_section = regex + bind_section + bind_panel_file
-            
+
         for name, param in section.items():
             if not isinstance(param, dict):
                 continue
@@ -204,8 +204,7 @@ _ynh_app_config_show() {
                 ynh_return "${short_setting}:"
                 ynh_return "$(echo "${old[$short_setting]}" | sed 's/^/  /g')"
             else
-                ynh_return "${short_setting}: "'"'"$(echo "${old[$short_setting]}" | sed 's/"/\\"/g' | sed ':a;N;$!ba;s/\n/\n\n/g')"'"'
-
+                ynh_return "${short_setting}: '$(echo "${old[$short_setting]}" | sed "s/'/''/g" | sed ':a;N;$!ba;s/\n/\n\n/g')'"
             fi
         fi
     done
