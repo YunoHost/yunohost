@@ -19,7 +19,7 @@
     "app_not_properly_removed": "{app} удалены неправильно",
     "app_removed": "{app} удалено",
     "app_requirements_checking": "Проверка необходимых пакетов для {app}...",
-    "app_sources_fetch_failed": "Невозможно получить исходные файлы, проверьте правильность URL",
+    "app_sources_fetch_failed": "Невозможно получить исходные файлы, проверьте правильность URL?",
     "app_unknown": "Неизвестное приложение",
     "app_upgrade_app_name": "Обновление {app}...",
     "app_upgrade_failed": "Невозможно обновить {app}: {error}",
