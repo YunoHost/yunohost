@@ -376,7 +376,6 @@
     "diagnosis_swap_ok": "Lo sistèma a {total} d’escambi !",
     "diagnosis_regenconf_allgood": "Totes los fichièrs de configuracion son confòrmes a la configuracion recomandada !",
     "diagnosis_regenconf_manually_modified": "Lo fichièr de configuracion <code>{file}</code> foguèt modificat manualament.",
-    "diagnosis_regenconf_manually_modified_details": "",
     "diagnosis_security_vulnerable_to_meltdown": "Semblatz èsser vulnerable a la vulnerabilitat de seguretat critica de Meltdown",
     "diagnosis_description_basesystem": "Sistèma de basa",
     "diagnosis_description_ip": "Connectivitat Internet",
