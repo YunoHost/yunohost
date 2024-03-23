@@ -640,7 +640,7 @@
     "migration_0021_problematic_apps_warning": "Kontuan izan ziur asko gatazkatsuak izango diren odorengo aplikazioak aurkitu direla. Badirudi ez zirela YunoHost aplikazioen katalogotik instalatu, edo ez daude 'badabiltza' bezala etiketatuak. Ondorioz, ezin da bermatu eguneratu ondoren funtzionatzen jarraituko dutenik: {problematic_apps}",
     "migration_0023_not_enough_space": "{path}-en ez dago toki nahikorik migrazioa abiarazteko.",
     "migration_0023_postgresql_11_not_installed": "PostgreSQL ez zegoen zure isteman instalatuta. Ez dago egitekorik.",
-    "migration_0023_postgresql_13_not_installed": "PostgreSQL 11 dago instalatuta baina PostgreSQL 13 ez!? Zerbait arraroa gertatu omen zaio zure sistemari :( …",
+    "migration_0023_postgresql_13_not_installed": "PostgreSQL 11 dago instalatuta baina PostgreSQL 13 ez!? Zerbait arraroa gertatu omen zaio zure sistemari :(…",
     "migration_description_0022_php73_to_php74_pools": "Migratu php7.3-fpm 'pool' ezarpen-fitxategiak php7.4ra",
     "migration_description_0023_postgresql_11_to_13": "Migratu datubaseak PostgreSQL 11tik 13ra",
     "global_settings_setting_backup_compress_tar_archives_help": "Babeskopia berriak sortzean, konprimitu fitxategiak (.tar.gz) konprimitu gabeko fitxategien (.tar) ordez. Aukera hau gaitzean babeskopiek espazio gutxiago beharko dute, baina hasierako prozesua luzeagoa izango da eta CPUari lan handiagoa eragingo dio.",
