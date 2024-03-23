@@ -266,7 +266,7 @@
     "upnp_enabled": "UPnP已启用",
     "upnp_disabled": "UPnP已禁用",
     "yunohost_not_installed": "YunoHost没有正确安装，请运行 'yunohost tools postinstall'",
-    "yunohost_postinstall_end_tip": "后期安装完成! 为了最终完成您的设置，请考虑:\n -通过webadmin的“用户”部分添加第一个用户（或在命令行中'yunohost user create <username>' );\n -通过网络管理员的“诊断”部分（或命令行中的'yunohost diagnosis run'）诊断潜在问题；\n -阅读管理文档中的“完成安装设置”和“了解YunoHost”部分: https://yunohost.org/admindoc.",
+    "yunohost_postinstall_end_tip": "后期安装完成! 为了最终完成您的设置，请考虑:\n -通过网络管理员的“诊断”部分（或命令行中的'yunohost diagnosis run'）诊断潜在问题；\n -阅读管理文档中的“完成安装设置”和“了解YunoHost”部分: https://yunohost.org/admindoc.",
     "operation_interrupted": "该操作是否被手动中断？",
     "invalid_regex": "无效的正则表达式:'{regex}'",
     "installation_complete": "安装完成",
