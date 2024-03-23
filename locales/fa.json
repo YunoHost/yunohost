@@ -432,7 +432,7 @@
     "iptables_unavailable": "در اینجا نمی توانید با iptables بازی کنید. شما یا در ظرفی هستید یا هسته شما آن را پشتیبانی نمی کند",
     "ip6tables_unavailable": "در اینجا نمی توانید با جدول های ipv6 کار کنید. شما یا در کانتینتر هستید یا هسته شما آن را پشتیبانی نمی کند",
     "invalid_regex": "عبارت منظم نامعتبر: '{regex}'",
-    "yunohost_postinstall_end_tip": "پس از نصب کامل شد! برای نهایی کردن تنظیمات خود ، لطفاً موارد زیر را در نظر بگیرید:\n - افزودن اولین کاربر از طریق بخش \"کاربران\" webadmin (یا 'yunohost user create <username>' در خط فرمان) ؛\n - تشخیص مشکلات احتمالی از طریق بخش \"عیب یابی\" webadmin (یا 'yunohost diagnosis run' در خط فرمان) ؛\n - خواندن قسمت های \"نهایی کردن راه اندازی خود\" و \"آشنایی با YunoHost\" در اسناد مدیریت: https://yunohost.org/admindoc.",
+    "yunohost_postinstall_end_tip": "پس از نصب کامل شد! برای نهایی کردن تنظیمات خود ، لطفاً موارد زیر را در نظر بگیرید:\n - تشخیص مشکلات احتمالی از طریق بخش \"عیب یابی\" webadmin (یا 'yunohost diagnosis run' در خط فرمان) ؛\n - خواندن قسمت های \"نهایی کردن راه اندازی خود\" و \"آشنایی با YunoHost\" در اسناد مدیریت: https://yunohost.org/admindoc.",
     "yunohost_not_installed": "YunoHost به درستی نصب نشده است. لطفا 'yunohost tools postinstall' را اجرا کنید",
     "yunohost_installing": "در حال نصب YunoHost...",
     "yunohost_configured": "YunoHost اکنون پیکربندی شده است",
