@@ -230,7 +230,7 @@
     "root_password_desynchronized": "Heslo pre správu bolo zmenené, ale YunoHost nedokázal túto zmenu premietnuť do hesla používateľa root!",
     "main_domain_changed": "Hlavná doména bola zmenená",
     "user_updated": "Informácie o používateľovi boli zmenené",
-    "diagnosis_ram_verylow": "Systém má iba {available} ({available_percent} %) dostupnej pamäte RAM (z celkovej pamäte {total})!",
+    "diagnosis_ram_verylow": "Systém má iba {available} ({available_percent} %) dostupnej pamäte RAM (z celkovej pamäte {total})",
     "diagnosis_mail_queue_unavailable_details": "Chyba: {error}",
     "diagnosis_ram_ok": "Systém má ešte {available} ({available_percent} %) dostupnej pamäte RAM (z celkovej pamäte {total}).",
     "diagnosis_ram_low": "Systém má {available} ({available_percent} %) dostupnej pamäte RAM (z celkovej pamäte {total}). Buďte opatrný.",
