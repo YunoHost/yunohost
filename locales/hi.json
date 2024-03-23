@@ -13,7 +13,7 @@
     "app_not_properly_removed": "{app} ठीक ढंग से नहीं अनइन्सटॉल की गई",
     "app_removed": "{app} को अनइन्सटॉल कर दिया गया",
     "app_requirements_checking": "जरूरी पैकेजेज़ की जाँच हो रही है ....",
-    "app_sources_fetch_failed": "सोर्स फाइल्स प्राप्त करने में असमर्थ",
+    "app_sources_fetch_failed": "सोर्स फाइल्स प्राप्त करने में असमर्थ?",
     "app_unknown": "अनजान एप्लीकेशन",
     "app_unsupported_remote_type": "एप्लीकेशन के लिए उन्सुपपोर्टेड रिमोट टाइप इस्तेमाल किया गया",
     "app_upgrade_failed": "{app} अपडेट करने में असमर्थ",
