@@ -149,7 +149,7 @@
     "diagnosis_http_partially_unreachable": "Badirudi {domain} domeinua ezin dela bisitatu HTTP bidez IPv{failed} sare lokaletik kanpo, bai ordea IPv{passed} erabiliz.",
     "backup_archive_cant_retrieve_info_json": "Ezinezkoa izan da '{archive}' fitxategiko informazioa eskuratzea… info.json fitxategia ezin izan da eskuratu (edo ez da baliozko jsona).",
     "diagnosis_domain_expiration_not_found": "Ezinezkoa izan da domeinu batzuen iraungitze data egiaztatzea",
-    "diagnosis_domain_expiration_not_found_details": "Badirudi {domain} domeinuari buruzko WHOIS informazioak ez duela zehazten noiz iraungiko den.",
+    "diagnosis_domain_expiration_not_found_details": "Badirudi {domain} domeinuari buruzko WHOIS informazioak ez duela zehazten noiz iraungiko den?",
     "certmanager_domain_not_diagnosed_yet": "Oraindik ez dago {domain} domeinurako diagnostikorik. Berrabiarazi diagnostikoak 'DNS balioak' eta 'Web' ataletarako diagnostikoen gunean Let's Encrypt ziurtagirirako prest ote dagoen egiaztatzeko. (Edo zertan ari zaren baldin badakizu, erabili '--no-checks' egiaztatzea desgaitzeko.)",
     "diagnosis_domain_expiration_warning": "Domeinu batzuk iraungitzear daude!",
     "app_packaging_format_not_supported": "Aplikazio hau ezin da instalatu YunoHostek ez duelako paketea ezagutzen. Sistema eguneratzea hausnartu beharko zenuke ziur asko.",
