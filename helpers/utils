@@ -843,7 +843,7 @@ ynh_get_debian_release() {
 _acceptable_path_to_delete() {
     local file=$1
 
-    local forbidden_paths=$(ls -d / /* /{var,home,usr}/* /etc/{default,sudoers.d,yunohost,cron*} /etc/yunohost/{apps,domains,hook.d} /opt/yunohost)
+    local forbidden_paths=$(ls -d / /* /{var,home,usr}/* /etc/{default,sudoers.d,yunohost,cron*} /etc/yunohost/{apps,domains,hooks.d} /opt/yunohost)
 
     # Legacy : A couple apps still have data in /home/$app ...
     if [[ -n "${app:-}" ]]
