@@ -45,25 +45,19 @@ ynh_wait_dpkg_free() {
 #
 # example: ynh_package_is_installed --package=yunohost && echo "installed"
 #
-# usage: ynh_package_is_installed --package=name [--wait_dpkg_free]
-# | arg: -p, --package=          - the package name to check
-# | arg: -l, --wait_dpkg_free=   - wait for dpkg to be free.
-# |                                Note that waiting on dpkg free could take about 0.2s on quick platform
-# |                                and about 2 seconds on slow platform so in case of multiple call it could be slow
+# usage: ynh_package_is_installed --package=name
+# | arg: -p, --package=     - the package name to check
 # | ret: 0 if the package is installed, 1 else.
+#
+# Requires YunoHost version 2.2.4 or higher.
 ynh_package_is_installed() {
     # Declare an array to define the options of this helper.
-    local legacy_args=pl
-    local -A args_array=([p]=package= [l]=wait_dpkg_free=)
+    local legacy_args=p
+    local -A args_array=([p]=package=)
     local package
-    local wait_dpkg_free
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    wait_dpkg_free="${wait_dpkg_free:-0}"
 
-    if [ "$wait_dpkg_free" -eq 1 ]; then
-        ynh_wait_dpkg_free
-    fi
     dpkg-query --show --showformat='${Status}' "$package" 2>/dev/null \
         | grep --count "ok installed" &>/dev/null
 }
