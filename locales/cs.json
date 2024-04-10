@@ -41,7 +41,7 @@
     "group_cannot_edit_visitors": "Skupina 'visitors' nemůže být upravena. Jde o speciální skupinu představující anonymní (neregistrované na YunoHost) návštěvníky",
     "group_creation_failed": "Nelze založit skupinu '{group}': {error}",
     "group_created": "Skupina '{group}' vytvořena",
-    "group_already_exist_on_system_but_removing_it": "Skupina {group} se již nalézá v systémových skupinách, ale YunoHost ji odstraní...",
+    "group_already_exist_on_system_but_removing_it": "Skupina {group} se již nalézá v systémových skupinách, ale YunoHost ji odstraní…",
     "group_already_exist_on_system": "Skupina {group} se již nalézá v systémových skupinách",
     "group_already_exist": "Skupina {group} již existuje",
     "good_practices_about_user_password": "Nyní zvolte nové heslo uživatele. Heslo by mělo být minimálně 8 znaků dlouhé, avšak je dobrou taktikou jej mít delší (např. použít více slov) a použít kombinaci znaků (velké, malé, čísla a speciální znaky).",
@@ -54,7 +54,7 @@
     "global_settings_setting_admin_strength": "Síla administračního hesla",
     "global_settings_setting_user_strength": "Síla uživatelského hesla",
     "global_settings_setting_postfix_compatibility_help": "Kompromis mezi kompatibilitou a bezpečností Postfix serveru. Ovlivní šifry a další související bezpečnostní nastavení",
-    "global_settings_setting_ssh_compatibility_help": "Kompromis mezi kompatibilitou a bezpečností SSH serveru. Ovlivní šifry a další související bezpečnostní nastavení",
+    "global_settings_setting_ssh_compatibility_help": "Kompromis mezi kompatibilitou a bezpečností SSH serveru. Ovlivní šifry a další související bezpečnostní nastavení.",
     "global_settings_setting_ssh_port": "SSH port",
     "global_settings_setting_smtp_allow_ipv6_help": "Povolit použití IPv6 pro příjem a odesílání emailů",
     "global_settings_setting_smtp_relay_enabled_help": "Použít SMTP relay hostitele pro odesílání emailů místo této YunoHost instance. Užitečné v různých situacích: port 25 je blokován vaším ISP nebo VPS poskytovatelem, IP adresa je na blacklistu (např. DUHL), nemůžete nastavit reverzní DNS záznam nebo tento server není přímo připojen do internetu a vy chcete použít jiný server k odesílání emailů."

@@ -15,7 +15,7 @@
     "additional_urls_already_added": "Ek URL '{url}' zaten '{permission}' izni için ek URL'ye eklendi",
     "additional_urls_already_removed": "Ek URL '{url}', '{permission}' izni için ek URL'de zaten kaldırıldı",
     "app_action_cannot_be_ran_because_required_services_down": "Bu eylemi gerçekleştirmek için şu servisler çalışıyor olmalıdır: {services}. Devam etmek için onları yeniden başlatın (ve muhtemelen neden çalışmadığını araştırın).",
-    "app_arch_not_supported": "Bu uygulama yalnızca {required} işlemci mimarisi üzerine kurulabilir ancak sunucunuzun işlemci mimarisi {current}.",
+    "app_arch_not_supported": "Bu uygulama yalnızca {required} işlemci mimarisi üzerine kurulabilir ancak sunucunuzun işlemci mimarisi {current}",
     "app_argument_choice_invalid": "'{name}'' için geçerli bir değer giriniz '{value}' mevcut seçimlerin arasında değil ({choices})",
     "app_change_url_failed": "{app}: {error} için url değiştirilemedi",
     "app_argument_required": "'{name}' değeri gerekli",

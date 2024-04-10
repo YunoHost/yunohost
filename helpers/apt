@@ -58,7 +58,6 @@ ynh_package_is_installed() {
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
-    ynh_wait_dpkg_free
     dpkg-query --show --showformat='${Status}' "$package" 2>/dev/null \
         | grep --count "ok installed" &>/dev/null
 }
