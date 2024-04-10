@@ -36,6 +36,7 @@ from yunohost.utils.system import (
     ynh_packages_version,
     dpkg_is_broken,
     dpkg_lock_available,
+    _apt_log_line_is_relevant,
 )
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from yunohost.log import is_unit_operation, OperationLogger
@@ -511,32 +512,6 @@ def tools_upgrade(operation_logger, target=None):
 
         logger.success(m18n.n("system_upgraded"))
         operation_logger.success()
-
-
-def _apt_log_line_is_relevant(line):
-    irrelevants = [
-        "service sudo-ldap already provided",
-        "Reading database ...",
-        "Preparing to unpack",
-        "Selecting previously unselected package",
-        "Created symlink /etc/systemd",
-        "Replacing config file",
-        "Creating config file",
-        "Installing new version of config file",
-        "Installing new config file as you requested",
-        ", does not exist on system.",
-        "unable to delete old directory",
-        "update-alternatives:",
-        "Configuration file '/etc",
-        "==> Modified (by you or by a script) since installation.",
-        "==> Package distributor has shipped an updated version.",
-        "==> Keeping old config file as default.",
-        "is a disabled or a static unit",
-        " update-rc.d: warning: start and stop actions are no longer supported; falling back to defaults",
-        "insserv: warning: current stop runlevel",
-        "insserv: warning: current start runlevel",
-    ]
-    return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
 
 
 @is_unit_operation()
