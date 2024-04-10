@@ -22,7 +22,7 @@ import shutil
 import random
 import tempfile
 import subprocess
-from typing import Dict, Any, List, Union
+from typing import Dict, Any, List, Union, Callable
 
 from moulinette import m18n
 from moulinette.utils.text import random_ascii
@@ -32,7 +32,7 @@ from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
 from moulinette.utils.filesystem import (
     rm,
 )
-from yunohost.utils.system import system_arch
+from yunohost.utils.system import system_arch, debian_version
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
 logger = getActionLogger("yunohost.app_resources")
@@ -146,15 +146,32 @@ class AppResource:
     def __init__(self, properties: Dict[str, Any], app: str, manager=None):
         self.app = app
         self.manager = manager
+        properties = self.default_properties | properties
 
-        for key, value in self.default_properties.items():
-            if isinstance(value, str):
-                value = value.replace("__APP__", self.app)
-            setattr(self, key, value)
+        replacements: dict[str, str] = {
+            "__APP__": self.app,
+            "__YNH_ARCH__": system_arch(),
+            "__YNH_DEBIAN_VERSION__": debian_version(),
+        }
+
+        def recursive_apply(function: Callable, data: Any) -> Any:
+            if isinstance(data, dict):  # FIXME: hashable?
+                return {key: recursive_apply(value, function) for key, value in data.items()}
+
+            if isinstance(data, list):  # FIXME: iterable?
+                return [recursive_apply(value, function) for value in data]
+
+            return function(data)
+
+        def replace_tokens_in_strings(data: Any):
+            if not isinstance(data, str):
+                return
+            for token, replacement in replacements.items():
+                data = data.replace(token, replacement)
+
+        recursive_apply(replace_tokens_in_strings, properties)
 
         for key, value in properties.items():
-            if isinstance(value, str):
-                value = value.replace("__APP__", self.app)
             setattr(self, key, value)
 
     def get_setting(self, key):
