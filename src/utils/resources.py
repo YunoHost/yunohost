@@ -152,6 +152,7 @@ class AppResource:
             "__APP__": self.app,
             "__YNH_ARCH__": system_arch(),
             "__YNH_DEBIAN_VERSION__": debian_version(),
+            "__YNH_DEBIAN_VERSION_ID__": debian_version_id(),
             "__YNH_APP_UPSTREAM_VERSION__": (
                 manager.wanted["version"].split("~")[0]
                 if manager.wanted
