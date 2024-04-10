@@ -156,7 +156,9 @@ class AppResource:
 
         def recursive_apply(function: Callable, data: Any) -> Any:
             if isinstance(data, dict):  # FIXME: hashable?
-                return {key: recursive_apply(value, function) for key, value in data.items()}
+                return {
+                    key: recursive_apply(value, function) for key, value in data.items()
+                }
 
             if isinstance(data, list):  # FIXME: iterable?
                 return [recursive_apply(value, function) for value in data]
