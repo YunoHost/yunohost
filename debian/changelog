@@ -1,3 +1,9 @@
+yunohost (11.2.11.1) stable; urgency=low
+
+  - Missing import oopsi (29c597ed)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 11 Apr 2024 14:32:52 +0200
+
 yunohost (11.2.11) stable; urgency=low
 
   - maintenance: make_changelog.sh enhancements ([#1790](http://github.com/YunoHost/yunohost/pull/1790))
