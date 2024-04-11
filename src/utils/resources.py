@@ -32,7 +32,7 @@ from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
 from moulinette.utils.filesystem import (
     rm,
 )
-from yunohost.utils.system import system_arch, debian_version
+from yunohost.utils.system import system_arch, debian_version, debian_version_id
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
 logger = getLogger("yunohost.utils.resources")
