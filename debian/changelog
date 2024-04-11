@@ -1,3 +1,9 @@
+yunohost (11.2.11.2) stable; urgency=low
+
+  - More oopsies (22b30c79)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 11 Apr 2024 16:03:20 +0200
+
 yunohost (11.2.11.1) stable; urgency=low
 
   - Missing import oopsi (29c597ed)
