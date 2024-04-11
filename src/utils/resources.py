@@ -154,7 +154,7 @@ class AppResource:
             app_upstream_version = manager.wanted["version"].split("~")[0]
         elif maanger and manager.current and "version" in manager.current:
             app_upstream_version = manager.current["version"].split("~")[0]
-        
+
         replacements: dict[str, str] = {
             "__APP__": self.app,
             "__YNH_ARCH__": system_arch(),
