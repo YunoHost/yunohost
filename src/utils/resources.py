@@ -155,7 +155,7 @@ class AppResource:
             "__YNH_DEBIAN_VERSION_ID__": debian_version_id(),
             "__YNH_APP_UPSTREAM_VERSION__": (
                 manager.wanted["version"].split("~")[0]
-                if manager.wanted
+                if "version" in manager.wanted
                 else manager.current["version"].split("~")[0]
             ),
         }
