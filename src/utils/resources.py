@@ -152,7 +152,7 @@ class AppResource:
         app_upstream_version = ""
         if manager and manager.wanted and "version" in manager.wanted:
             app_upstream_version = manager.wanted["version"].split("~")[0]
-        elif maanger and manager.current and "version" in manager.current:
+        elif manager and manager.current and "version" in manager.current:
             app_upstream_version = manager.current["version"].split("~")[0]
 
         replacements: dict[str, str] = {
