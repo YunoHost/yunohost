@@ -143,7 +143,7 @@ class AppResource:
     type: str = ""
     default_properties: Dict[str, Any] = {}
 
-    def __init__(self, properties: Dict[str, Any], app: str, manager=None):
+    def __init__(self, properties: Dict[str, Any], app: str, manager: AppResourceManager):
         self.app = app
         self.manager = manager
         properties = self.default_properties | properties
