@@ -148,16 +148,19 @@ class AppResource:
         self.manager = manager
         properties = self.default_properties | properties
 
+        # It's not guaranteed that this info will be defined, e.g. during unit tests, only small resource snippets are used, not proper manifests
+        app_upstream_version = ""
+        if manager and manager.wanted and "version" in manager.wanted:
+            app_upstream_version = manager.wanted["version"].split("~")[0]
+        elif maanger and manager.current and "version" in manager.current:
+            app_upstream_version = manager.current["version"].split("~")[0]
+        
         replacements: dict[str, str] = {
             "__APP__": self.app,
             "__YNH_ARCH__": system_arch(),
             "__YNH_DEBIAN_VERSION__": debian_version(),
             "__YNH_DEBIAN_VERSION_ID__": debian_version_id(),
-            "__YNH_APP_UPSTREAM_VERSION__": (
-                manager.wanted["version"].split("~")[0]
-                if "version" in manager.wanted
-                else manager.current["version"].split("~")[0]
-            ),
+            "__YNH_APP_UPSTREAM_VERSION__": app_upstream_version,
         }
 
         def recursive_apply(function: Callable, data: Any) -> Any:
