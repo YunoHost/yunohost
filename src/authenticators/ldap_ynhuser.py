@@ -41,10 +41,15 @@ SESSION_VALIDITY = 3 * 24 * 3600  # 3 days
 URI = "ldap://localhost:389"
 USERDN = "uid={username},ou=users,dc=yunohost,dc=org"
 
+# Cache on-disk settings to RAM for faster access
 DOMAIN_USER_ACL_DICT: dict[str, dict] = {}
 PORTAL_SETTINGS_DIR = "/etc/yunohost/portal"
 
-
+# Should a user have *minimal* access to a domain?
+# - if the user has permission for an application with a URI on the domain, yes
+# - if the user is an admin, yes
+# - if the user has an email on the domain, yes
+# - otherwise, no
 def user_is_allowed_on_domain(user: str, domain: str) -> bool:
 
     assert "/" not in domain
@@ -54,12 +59,14 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
     if not portal_settings_path.exists():
         if "." not in domain:
             return False
-        else:
-            parent_domain = domain.split(".", 1)[-1]
-            return user_is_allowed_on_domain(user, parent_domain)
-
+        parent_domain = domain.split(".", 1)[-1]
+        return user_is_allowed_on_domain(user, parent_domain)
+    
+    # Check that the domain permissions haven't changed on-disk since we read them
+    # by comparing file mtime. If we haven't read the file yet, read it for the first time.
+    # We compare mtime by equality not superiority because maybe the system clock has changed.
     mtime = portal_settings_path.stat().st_mtime
-    if domain not in DOMAIN_USER_ACL_DICT or DOMAIN_USER_ACL_DICT[domain]["mtime"] < time.time():
+    if domain not in DOMAIN_USER_ACL_DICT or DOMAIN_USER_ACL_DICT[domain]["mtime"] != mtime:
         users: set[str] = set()
         for infos in read_json(str(portal_settings_path))["apps"].values():
             users = users.union(infos["users"])
@@ -68,22 +75,48 @@ def user_is_allowed_on_domain(user: str, domain: str) -> bool:
         DOMAIN_USER_ACL_DICT[domain]["users"] = users
 
     if user in DOMAIN_USER_ACL_DICT[domain]["users"]:
+        # A user with explicit permission to an application is certainly welcome
         return True
-    else:
+
+    ADMIN_GROUP = "cn=admins,ou=groups"
+    try:
+        admins = (
+            _get_ldap_interface()
+            .search(ADMIN_GROUP, attrs=["memberUid"])[0]
+            .get("memberUid", [])
+        )
+    except Exception as e:
+        logger.error(f"Failed to list admin users: {e}")
+        return False
+    if user in admins:
         # Admins can access everything
-        ADMIN_GROUP = "cn=admins,ou=groups"
-        try:
-            admins = (
-                _get_ldap_interface()
-                .search(ADMIN_GROUP, attrs=["memberUid"])[0]
-                .get("memberUid", [])
-            )
-        except Exception as e:
-            logger.error(f"Failed to list admin users: {e}")
+        return True
+
+    try:
+        user_result = _get_ldap_interface().search("ou=users", f"uid={user}", [ "mail" ])
+        if len(user_result) != 1:
+            logger.error(f"User not found or many users found for {user}. How is this possible after so much validation?")
             return False
 
-        return user in admins
+        user_mail = user_result[0]["mail"]
+        if len(user_mail) != 1:
+            logger.error(f"User {user} found, but has the wrong number of email addresses: {user_mail}")
+            return False
 
+        user_mail = user_mail[0]
+        if not "@" in user_mail:
+            logger.error(f"Invalid email address for {user}: {user_mail}")
+            return False
+
+        if user_mail.split("@")[1] == domain:
+            # A user from that domain is welcome
+            return True
+
+        # Users from other domains don't belong here
+        return False
+    except Exception as e:
+        logger.error(f"Failed to get email info for {user}: {e}")
+        return False
 
 # We want to save the password in the cookie, but we should do so in an encrypted fashion
 # This is needed because the SSO later needs to possibly inject the Basic Auth header
