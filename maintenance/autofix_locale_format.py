@@ -117,7 +117,8 @@ def autofix_orthotypography_and_standardized_words():
     transformations = {s: " " for s in godamn_spaces_of_hell}
     transformations.update(
         {
-            "…": "...",
+            "\.\.\.": "…",
+            "https ://": "https://",
         }
     )
 
