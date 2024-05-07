@@ -25,7 +25,7 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , dnsmasq, resolvconf, libnss-myhostname
  , postfix, postfix-ldap, postfix-policyd-spf-perl, postfix-pcre
  , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved, dovecot-antispam
- , opendkim-tools, postsrsd, procmail, mailutils
+ , opendkim-tools, opendkim, postsrsd, procmail, mailutils
  , redis-server
  , acl
  , git, curl, wget, cron, unzip, jq, bc, at, procps

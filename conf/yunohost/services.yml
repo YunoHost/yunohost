@@ -28,6 +28,9 @@ nginx:
 #  log: /var/log/php7.4-fpm.log
 #  test_conf: php-fpm7.4 --test
 #  category: web
+opendkim:
+  category: email
+  test_conf: opendkim -n
 postfix:
   log: [/var/log/mail.log,/var/log/mail.err]
   actual_systemd_service: postfix@-

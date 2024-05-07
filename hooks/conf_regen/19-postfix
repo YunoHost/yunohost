@@ -24,6 +24,9 @@ do_pre_regen() {
     # Support different strategy for security configurations
     export compatibility="$(jq -r '.postfix_compatibility' <<< "$YNH_SETTINGS")"
 
+    dpkg --list | grep -q 'ii *rspamd ' && rspamd_enable=true || rspamd_enable=false
+    export rspamd_enable
+
     # Add possibility to specify a relay
     # Could be useful with some isp with no 25 port open or more complex setup
     export relay_port=""

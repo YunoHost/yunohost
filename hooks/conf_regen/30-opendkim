@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -e
+
+do_pre_regen() {
+    pending_dir=$1
+
+    cd /usr/share/yunohost/conf/opendkim
+
+    install -D -m 644 opendkim.conf "${pending_dir}/etc/opendkim.conf"
+}
+
+do_post_regen() {
+    mkdir -p /etc/dkim
+
+    # Create / empty those files because we're force-regenerating them
+    echo "" > /etc/dkim/keytable
+    echo "" > /etc/dkim/signingtable
+
+    # create DKIM key for domains
+    domain_list="$(yunohost domain list --features mail_in mail_out --output-as json | jq -r ".domains[]" | tr '\n' ' ')"
+    for domain in $domain_list; do
+        domain_key="/etc/dkim/${domain}.mail.key"
+        [ ! -f "$domain_key" ] && {
+            # We use a 1024 bit size because nsupdate doesn't seem to be able to
+            # handle 2048...
+            opendkim-genkey --domain="$domain" \
+                --selector=mail --directory=/etc/dkim -b 1024
+            mv /etc/dkim/mail.private "$domain_key"
+            mv /etc/dkim/mail.txt "/etc/dkim/${domain}.mail.txt"
+        }
+
+        echo "mail._domainkey.${domain} ${domain}:mail:${domain_key}" >> /etc/dkim/keytable
+        echo "*@$domain mail._domainkey.${domain}" >> /etc/dkim/signingtable
+    done
+
+    chown -R opendkim /etc/dkim/
+    chmod 700 /etc/dkim/
+}
+
+do_$1_regen ${@:2}
