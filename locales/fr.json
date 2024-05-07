@@ -598,7 +598,7 @@
     "domain_dns_registrar_managed_in_parent_domain": "Ce domaine est un sous-domaine de {parent_domain_link}. La configuration du registrar DNS doit être gérée dans le panneau de configuration de {parent_domain}.",
     "domain_dns_registrar_not_supported": "YunoHost n'a pas pu détecter automatiquement le bureau d'enregistrement gérant ce domaine. Vous devez configurer manuellement vos enregistrements DNS en suivant la documentation sur https://yunohost.org/dns.",
     "domain_dns_registrar_experimental": "Jusqu'à présent, l'interface avec l'API de **{registrar}** n'a pas été correctement testée et revue par la communauté YunoHost. L'assistance est **très expérimentale** - soyez prudent !",
-    "domain_dns_push_failed_to_authenticate": "Échec de l'authentification sur l'API du registrar qui gère le nom de domaine '{domain}'. Les informations d'identification sont elles justes ? (Erreur : {error})",
+    "domain_dns_push_failed_to_authenticate": "Échec de l'authentification sur l'API du registrar pour le domaine '{domain}'. Les informations d'identification sont elles justes ? (Erreur : {error})",
     "domain_dns_push_failed_to_list": "Échec de la liste des enregistrements actuels à l'aide de l'API du registraire : {error}",
     "domain_dns_push_already_up_to_date": "Dossiers déjà à jour.",
     "domain_dns_pushing": "Transmission des enregistrements DNS…",
