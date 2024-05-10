@@ -122,7 +122,7 @@ def certificate_install(domain_list, force=False, no_checks=False, self_signed=F
         _certificate_install_letsencrypt(domain_list, force, no_checks)
 
 
-def _certificate_install_selfsigned(domain_list, force=False):
+def _certificate_install_selfsigned(domain_list, force=False, do_regen_conf=True):
     failed_cert_install = []
     for domain in domain_list:
         operation_logger = OperationLogger(
@@ -201,7 +201,7 @@ def _certificate_install_selfsigned(domain_list, force=False):
         _set_permissions(conf_file, "root", "root", 0o600)
 
         # Actually enable the certificate we created
-        _enable_certificate(domain, new_cert_folder)
+        _enable_certificate(domain, new_cert_folder, do_regen_conf=do_regen_conf)
 
         # Check new status indicate a recently created self-signed certificate
         status = _get_status(domain)
@@ -627,7 +627,7 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     with open(csr_file, "wb") as f:
         f.write(crypto.dump_certificate_request(crypto.FILETYPE_PEM, csr))
 
-def _cert_exists(domain): bool
+def _cert_exists(domain) -> bool:
     cert_file = os.path.join(CERT_FOLDER, domain, "crt.pem")
     return os.path.isfile(cert_file)
 
@@ -726,7 +726,7 @@ def _set_permissions(path, user, group, permissions):
     chmod(path, permissions)
 
 
-def _enable_certificate(domain, new_cert_folder):
+def _enable_certificate(domain, new_cert_folder, do_regen_conf=True):
     logger.debug("Enabling the certificate for domain %s ...", domain)
 
     live_link = os.path.join(CERT_FOLDER, domain)
@@ -743,6 +743,10 @@ def _enable_certificate(domain, new_cert_folder):
             os.remove(live_link)
 
     os.symlink(new_cert_folder, live_link)
+
+    # We are in a higher operation such as domains_add for bulk manipulation
+    # that will take care of service / hooks later
+    if not do_regen_conf: return
 
     logger.debug("Restarting services...")
 

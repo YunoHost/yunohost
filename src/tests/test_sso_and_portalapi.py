@@ -6,7 +6,7 @@ import os
 
 from .conftest import message, raiseYunohostError, get_test_apps_dir
 
-from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
+from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list, domains_add
 from yunohost.user import user_create, user_list, user_delete, User, users_add
 from yunohost.authenticators.ldap_ynhuser import Authenticator, SESSION_FOLDER, short_hash
 from yunohost.app import app_install, app_remove, app_setting, app_ssowatconf, app_change_url
@@ -52,8 +52,7 @@ def setup_module(module):
 
     domainlist = domain_list()["domains"]
     domains = [ domain for domain in [ subdomain, secondarydomain ] if domain not in domainlist ]
-    for domain in domains:
-        domain_add(domain)
+    domains_add(domains)
 
     app_install(
         os.path.join(get_test_apps_dir(), "hellopy_ynh"),
