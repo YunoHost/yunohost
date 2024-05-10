@@ -1025,6 +1025,7 @@ def app_install(
     args=None,
     no_remove_on_failure=False,
     force=False,
+    sync_perm=True,
 ):
     """
     Install apps
@@ -1201,6 +1202,7 @@ def app_install(
             label=manifest["name"],
             show_tile=False,
             protected=False,
+            sync_perm=sync_perm
         )
 
     # Prepare env. var. to pass to script
@@ -1377,7 +1379,7 @@ def app_install(
 
 
 @is_unit_operation()
-def app_remove(operation_logger, app, purge=False, force_workdir=None):
+def app_remove(operation_logger, app, purge=False, force_workdir=None, sync_perm=True):
     """
     Remove app
 
@@ -1476,7 +1478,8 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
     else:
         logger.warning(m18n.n("app_not_properly_removed", app=app))
 
-    permission_sync_to_user()
+    if sync_perm:
+        permission_sync_to_user()
     _assert_system_is_sane_for_app(manifest, "post")
 
 

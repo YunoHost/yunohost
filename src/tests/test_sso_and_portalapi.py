@@ -43,6 +43,18 @@ def setup_module(module):
 
     assert os.system("systemctl is-active yunohost-portal-api >/dev/null") == 0
 
+    domainlist = domain_list()["domains"]
+    domains = [ domain for domain in [ subdomain, secondarydomain ] if domain not in domainlist ]
+    domains_add(domains)
+
+    # Install app first, permissions will be synced after users_add
+    app_install(
+        os.path.join(get_test_apps_dir(), "hellopy_ynh"),
+        args=f"domain={maindomain}&init_main_permission=visitors",
+        force=True,
+        sync_perm=False,
+    )
+
     userlist = user_list()["users"]
     users_to_add = [ user for user in [
         User("alice", maindomain, dummy_password, fullname="Alice White", admin=True),
@@ -50,23 +62,14 @@ def setup_module(module):
     ] if user.name not in userlist ]
     users_add(users_to_add)
 
-    domainlist = domain_list()["domains"]
-    domains = [ domain for domain in [ subdomain, secondarydomain ] if domain not in domainlist ]
-    domains_add(domains)
-
-    app_install(
-        os.path.join(get_test_apps_dir(), "hellopy_ynh"),
-        args=f"domain={maindomain}&init_main_permission=visitors",
-        force=True,
-    )
-
 
 def teardown_module(module):
+    # Remove app first, permissions will be synced after users_remove
+    app_remove("hellopy", sync_perm=False)
+
     userlist = user_list()["users"]
     users = [ user for user in [ "alice", "bob" ] if user in userlist ]
     users_remove(users)
-
-    app_remove("hellopy")
 
     domainlist = domain_list()["domains"]
     domains = [ domain for domain in [ subdomain, secondarydomain ] if domain in domainlist ]
