@@ -7,7 +7,7 @@ import os
 from .conftest import message, raiseYunohostError, get_test_apps_dir
 
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list, domains_add, domains_remove
-from yunohost.user import user_create, user_list, user_delete, User, users_add
+from yunohost.user import user_create, user_list, user_delete, User, users_add, users_remove
 from yunohost.authenticators.ldap_ynhuser import Authenticator, SESSION_FOLDER, short_hash
 from yunohost.app import app_install, app_remove, app_setting, app_ssowatconf, app_change_url
 from yunohost.permission import user_permission_list, user_permission_update
@@ -63,8 +63,8 @@ def setup_module(module):
 
 def teardown_module(module):
     userlist = user_list()["users"]
-    for user in [ "alice", "bob" ]:
-        if user in userlist: user_delete(user)
+    users = [ user for user in [ "alice", "bob" ] if user in userlist ]
+    users_remove(users)
 
     app_remove("hellopy")
 

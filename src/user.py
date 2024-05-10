@@ -149,6 +149,28 @@ def shellexists(shell):
 # Used in tests to create many users at once.
 # The permissions are synchronized at the end of the entire operation.
 @is_unit_operation()
+def users_remove(
+    operation_logger,
+    users: List[str],
+):
+
+    for username in users:
+        user_delete(username, do_regen_conf=False)
+
+    from yunohost.permission import permission_sync_to_user
+    permission_sync_to_user()
+
+    # Invalidate passwd to take user deletion into account
+    subprocess.call(["nscd", "-i", "passwd"])
+
+    from yunohost.hook import hook_callback
+    for username in users:
+        hook_callback("post_user_delete", args=[username, False])
+        logger.success(m18n.n("user_deleted"))
+
+# Used in tests to create many users at once.
+# The permissions are synchronized at the end of the entire operation.
+@is_unit_operation()
 def users_add(
     operation_logger,
     users: List[User],
@@ -360,7 +382,7 @@ def user_create(
 
 
 @is_unit_operation([("username", "user")])
-def user_delete(operation_logger, username, purge=False, from_import=False):
+def user_delete(operation_logger, username, purge=False, from_import=False, do_regen_conf=True):
     from yunohost.hook import hook_callback
     from yunohost.utils.ldap import _get_ldap_interface
     from yunohost.authenticators.ldap_ynhuser import Authenticator as PortalAuth
@@ -372,7 +394,6 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
     if not from_import:
         operation_logger.start()
 
-    user_group_update("all_users", remove=username, force=True, sync_perm=False)
     for group, infos in user_group_list()["groups"].items():
         if group == "all_users":
             continue
@@ -385,7 +406,14 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
     # epic bug happened somewhere else and only a partial removal was
     # performed...)
     if username in user_group_list()["groups"].keys():
-        user_group_delete(username, force=True, sync_perm=True)
+        user_group_delete(username, force=True, sync_perm=False)
+
+    PortalAuth.invalidate_all_sessions_for_user(username)
+    AdminAuth.invalidate_all_sessions_for_user(username)
+
+    # Apparently ldap.remove uid removes from group all_users, but unless we have test we
+    # can't be too sure... so leave it here until we have tests for this!
+    user_group_update("all_users", remove=username, force=True, sync_perm=do_regen_conf)
 
     ldap = _get_ldap_interface()
     try:
@@ -393,8 +421,9 @@ def user_delete(operation_logger, username, purge=False, from_import=False):
     except Exception as e:
         raise YunohostError("user_deletion_failed", user=username, error=e)
 
-    PortalAuth.invalidate_all_sessions_for_user(username)
-    AdminAuth.invalidate_all_sessions_for_user(username)
+    if not do_regen_conf:
+        return
+
 
     # Invalidate passwd to take user deletion into account
     subprocess.call(["nscd", "-i", "passwd"])
