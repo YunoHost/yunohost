@@ -43,9 +43,10 @@ def setup_module(module):
 
     assert os.system("systemctl is-active yunohost-portal-api >/dev/null") == 0
 
-    if "alice" not in user_list()["users"]:
+    userlist = user_list()["users"]
+    if "alice" not in userlist:
         user_create("alice", maindomain, dummy_password, fullname="Alice White", admin=True)
-    if "bob" not in user_list()["users"]:
+    if "bob" not in userlist:
         user_create("bob", maindomain, dummy_password, fullname="Bob Marley")
 
     app_install(
@@ -56,10 +57,9 @@ def setup_module(module):
 
 
 def teardown_module(module):
-    if "alice" in user_list()["users"]:
-        user_delete("alice")
-    if "bob" in user_list()["users"]:
-        user_delete("bob")
+    userlist = user_list()["users"]
+    for user in [ "alice", "bob" ]:
+        if user in userlist: user_delete(user)
 
     app_remove("hellopy")
 
