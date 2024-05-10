@@ -627,6 +627,9 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     with open(csr_file, "wb") as f:
         f.write(crypto.dump_certificate_request(crypto.FILETYPE_PEM, csr))
 
+def _cert_exists(domain): bool
+    cert_file = os.path.join(CERT_FOLDER, domain, "crt.pem")
+    return os.path.isfile(cert_file)
 
 def _get_status(domain):
     cert_file = os.path.join(CERT_FOLDER, domain, "crt.pem")
