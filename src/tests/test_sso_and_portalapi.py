@@ -7,7 +7,7 @@ import os
 from .conftest import message, raiseYunohostError, get_test_apps_dir
 
 from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list
-from yunohost.user import user_create, user_list, user_delete
+from yunohost.user import user_create, user_list, user_delete, User, users_add
 from yunohost.authenticators.ldap_ynhuser import Authenticator, SESSION_FOLDER, short_hash
 from yunohost.app import app_install, app_remove, app_setting, app_ssowatconf, app_change_url
 from yunohost.permission import user_permission_list, user_permission_update
@@ -44,10 +44,11 @@ def setup_module(module):
     assert os.system("systemctl is-active yunohost-portal-api >/dev/null") == 0
 
     userlist = user_list()["users"]
-    if "alice" not in userlist:
-        user_create("alice", maindomain, dummy_password, fullname="Alice White", admin=True)
-    if "bob" not in userlist:
-        user_create("bob", maindomain, dummy_password, fullname="Bob Marley")
+    users_to_add = [ user for user in [
+        User("alice", maindomain, dummy_password, fullname="Alice White", admin=True),
+        User("bob", maindomain, dummy_password, fullname="Bob Marley"),
+    ] if user.name not in userlist ]
+    users_add(users_to_add)
 
     domainlist = domain_list()["domains"]
     domains = [ domain for domain in [ subdomain, secondarydomain ] if domain not in domainlist ]
