@@ -6,7 +6,7 @@ import os
 
 from .conftest import message, raiseYunohostError, get_test_apps_dir
 
-from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list, domains_add
+from yunohost.domain import _get_maindomain, domain_add, domain_remove, domain_list, domains_add, domains_remove
 from yunohost.user import user_create, user_list, user_delete, User, users_add
 from yunohost.authenticators.ldap_ynhuser import Authenticator, SESSION_FOLDER, short_hash
 from yunohost.app import app_install, app_remove, app_setting, app_ssowatconf, app_change_url
@@ -70,8 +70,7 @@ def teardown_module(module):
 
     domainlist = domain_list()["domains"]
     domains = [ domain for domain in [ subdomain, secondarydomain ] if domain in domainlist ]
-    for domain in domains:
-        domain_remove(domain)
+    domains_remove(domains)
 
 def login(session, logged_as, logged_on=None):
 

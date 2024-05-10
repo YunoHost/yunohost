@@ -274,6 +274,20 @@ def domains_regen(domains: List[str]):
         app_ssowatconf()
         _run_service_command("reload", "nginx")
 
+# Used in tests to delete many domains at once.
+# The permissions/configuration are synchronized at the end of the entire operation.
+@is_unit_operation()
+def domains_remove(operation_logger, domains: List[str]):
+    for domain in domains:
+        domain_remove(domain, do_regen_conf=False)
+
+    domains_regen(domains)
+
+    from yunohost.hook import hook_callback
+    for domain in domains:
+        hook_callback("post_domain_remove", args=[domain])
+        logger.success(m18n.n("domain_deleted"))
+
 # Used in tests to create many domains at once.
 # The permissions/configuration are synchronized at the end of the entire operation.
 @is_unit_operation()
@@ -419,6 +433,7 @@ def domain_remove(
     force=False,
     dyndns_recovery_password=None,
     ignore_dyndns=False,
+    do_regen_conf=True,
 ):
     """
     Delete domains
@@ -540,6 +555,10 @@ def domain_remove(
     for key_file in glob.glob(f"/etc/yunohost/dyndns/K{domain}.+*"):
         rm(key_file, force=True)
     rm(f"{DOMAIN_SETTINGS_DIR}/{domain}.yml", force=True)
+
+    # We are in a bulk domains_remove so don't regen_conf immediately
+    if not do_regen_conf:
+        return
 
     # Sometime we have weird issues with the regenconf where some files
     # appears as manually modified even though they weren't touched ...
