@@ -49,6 +49,11 @@ def setup_module(module):
     if "bob" not in userlist:
         user_create("bob", maindomain, dummy_password, fullname="Bob Marley")
 
+    domainlist = domain_list()["domains"]
+    domains = [ domain for domain in [ subdomain, secondarydomain ] if domain not in domainlist ]
+    for domain in domains:
+        domain_add(domain)
+
     app_install(
         os.path.join(get_test_apps_dir(), "hellopy_ynh"),
         args=f"domain={maindomain}&init_main_permission=visitors",
@@ -63,11 +68,10 @@ def teardown_module(module):
 
     app_remove("hellopy")
 
-    if subdomain in domain_list()["domains"]:
-        domain_remove(subdomain)
-    if secondarydomain in domain_list()["domains"]:
-        domain_remove(secondarydomain)
-
+    domainlist = domain_list()["domains"]
+    domains = [ domain for domain in [ subdomain, secondarydomain ] if domain in domainlist ]
+    for domain in domains:
+        domain_remove(domain)
 
 def login(session, logged_as, logged_on=None):
 
