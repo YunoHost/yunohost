@@ -2,6 +2,8 @@
 
 # Get the total or free amount of RAM+swap on the system
 #
+# [packagingv1]
+#
 # usage: ynh_get_ram [--free|--total] [--ignore_swap|--only_swap]
 # | arg: -f, --free         - Count free RAM+swap
 # | arg: -t, --total        - Count total RAM+swap
@@ -62,6 +64,8 @@ ynh_get_ram() {
 }
 
 # Return 0 or 1 depending if the system has a given amount of RAM+swap free or total
+#
+# [packagingv1]
 #
 # usage: ynh_require_ram --required=RAM [--free|--total] [--ignore_swap|--only_swap]
 # | arg: -r, --required=    - The amount to require, in MB

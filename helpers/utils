@@ -51,6 +51,8 @@ ynh_exit_properly() {
 
 # Exits if an error occurs during the execution of the script.
 #
+# [packagingv1]
+#
 # usage: ynh_abort_if_errors
 #
 # This configure the rest of the script execution such that, if an error occurs
@@ -832,6 +834,8 @@ ynh_render_template() {
 
 # Fetch the Debian release codename
 #
+# [packagingv1]
+#
 # usage: ynh_get_debian_release
 # | ret: The Debian release codename (i.e. jessie, stretch, ...)
 #
@@ -963,6 +967,8 @@ ynh_app_upstream_version() {
 }
 
 # Read package version from the manifest
+#
+# [internal]
 #
 # usage: ynh_app_package_version [--manifest="manifest.json"]
 # | arg: -m, --manifest=    - Path of the manifest to read
