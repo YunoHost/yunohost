@@ -568,7 +568,6 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     # If XMPP is enabled for this domain, add xmpp-upload and muc subdomains
     # in subject alternate names
     if domain_config_get(domain, key="feature.xmpp.xmpp") == 1:
-        subdomain = "xmpp-upload." + domain
         xmpp_records = (
             Diagnoser.get_cached_report(
                 "dnsrecords", item={"domain": domain, "category": "xmpp"}

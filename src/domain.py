@@ -264,12 +264,6 @@ def domain_add(
     if dyndns_recovery_password:
         operation_logger.data_to_redact.append(dyndns_recovery_password)
 
-    if domain.startswith("xmpp-upload."):
-        raise YunohostValidationError("domain_cannot_add_xmpp_upload")
-
-    if domain.startswith("muc."):
-        raise YunohostError("domain_cannot_add_muc_upload")
-
     ldap = _get_ldap_interface()
 
     try:
@@ -338,7 +332,6 @@ def domain_add(
             regen_conf(
                 names=[
                     "nginx",
-                    "metronome",
                     "dnsmasq",
                     "postfix",
                     "rspamd",
@@ -512,7 +505,7 @@ def domain_remove(
             f"/etc/nginx/conf.d/{domain}.conf", new_conf=None, save=True
         )
 
-    regen_conf(names=["nginx", "metronome", "dnsmasq", "postfix", "rspamd", "mdns"])
+    regen_conf(names=["nginx", "dnsmasq", "postfix", "rspamd", "mdns"])
     app_ssowatconf()
 
     hook_callback("post_domain_remove", args=[domain])
@@ -686,7 +679,6 @@ def _get_DomainConfigPanel():
 
         # i18n: domain_config_cert_renew_help
         # i18n: domain_config_default_app_help
-        # i18n: domain_config_xmpp_help
 
         def _get_raw_config(self) -> "RawConfig":
             # TODO add mechanism to share some settings with other domains on the same zone
@@ -694,10 +686,6 @@ def _get_DomainConfigPanel():
 
             any_filter = all(self.filter_key)
             panel_id, section_id, option_id = self.filter_key
-
-            raw_config["feature"]["xmpp"]["xmpp"]["default"] = (
-                1 if self.entity == _get_maindomain() else 0
-            )
 
             # Portal settings are only available on "topest" domains
             if _get_parent_domain_of(self.entity, topest=True) is not None:
@@ -835,9 +823,6 @@ def _get_DomainConfigPanel():
                 app_ssowatconf()
 
             stuff_to_regen_conf = set()
-            if "xmpp" in next_settings:
-                stuff_to_regen_conf.update({"nginx", "metronome"})
-
             if "mail_in" in next_settings or "mail_out" in next_settings:
                 stuff_to_regen_conf.update({"nginx", "postfix", "dovecot", "rspamd"})
 

@@ -60,12 +60,6 @@ name = "Features"
         type = "boolean"
         default = 1
 
-    [feature.xmpp]
-
-        [feature.xmpp.xmpp]
-        type = "boolean"
-        default = 0
-
 [dns]
 name = "DNS"
 

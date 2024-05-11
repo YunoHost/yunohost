@@ -167,7 +167,7 @@ def user_create(
     assert_password_is_compatible(password)
     assert_password_is_strong_enough("admin" if admin else "user", password)
 
-    # Validate domain used for email address/xmpp account
+    # Validate domain used for email address account
     if domain is None:
         if Moulinette.interface.type == "api":
             raise YunohostValidationError(
