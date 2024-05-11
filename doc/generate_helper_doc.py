@@ -119,7 +119,7 @@ class Parser:
 
                     # Then we keep this bloc and start a new one
                     # (we ignore helpers containing [internal] ...)
-                    if "[internal]" not in current_block["comments"]:
+                    if "[packagingv1]" not in current_block["comments"] and "[internal]" not in current_block["comments"]:
                         self.blocks.append(current_block)
                     current_block = {
                         "name": None,

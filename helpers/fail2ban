@@ -8,8 +8,6 @@
 # | arg: -m, --max_retry= - Maximum number of retries allowed before banning IP address - default: 3
 # | arg: -p, --ports=     - Ports blocked for a banned IP address - default: http,https
 #
-# -----------------------------------------------------------------------------
-#
 # usage 2: ynh_add_fail2ban_config --use_template
 # | arg: -t, --use_template - Use this helper in template mode
 #
