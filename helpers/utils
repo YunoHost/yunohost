@@ -78,7 +78,7 @@ fi
 # | arg: -d, --dest_dir=     - Directory where to setup sources
 # | arg: -s, --source_id=    - Name of the source, defaults to `main` (when the sources resource exists in manifest.toml) or (legacy) `app` otherwise
 # | arg: -k, --keep=         - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs' (no trailing `/` for folders)
-# | arg: -r, --full_replace= - Remove previous sources before installing new sources
+# | arg: -r, --full_replace= - Remove previous sources before installing new sources  (can be 1 or 0, default to 0)
 #
 # #### New 'sources' resources
 #
