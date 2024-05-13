@@ -437,7 +437,7 @@ ynh_install_extra_app_dependencies() {
     [ -z "$apps_auto_installed" ] || apt-mark auto $apps_auto_installed
 
     # Remove this extra repository after packages are installed
-    ynh_remove_extra_repo --name=$app
+    ynh_remove_extra_repo --name=$name
 }
 
 # Add an extra repository correctly, pin it and get the key.
