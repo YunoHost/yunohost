@@ -214,7 +214,7 @@ ynh_remove_go () {
 ynh_cleanup_go () {
 
     # List required Go versions
-    local installed_apps=$(yunohost app list | grep -oP 'id: \K.*$')
+    local installed_apps=$(yunohost app list --output-as json --quiet | jq -r .apps[].id)
     local required_go_versions=""
     for installed_app in $installed_apps
     do
