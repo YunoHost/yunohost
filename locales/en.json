@@ -781,5 +781,7 @@
     "yunohost_configured": "YunoHost is now configured",
     "yunohost_installing": "Installing YunoHost…",
     "yunohost_not_installed": "YunoHost is not correctly installed. Please run 'yunohost tools postinstall'",
-    "yunohost_postinstall_end_tip": "The post-install completed! To finalize your setup, please consider:\n    - diagnose potential issues through the 'Diagnosis' section of the webadmin (or 'yunohost diagnosis run' in command-line);\n    - reading the 'Finalizing your setup' and 'Getting to know YunoHost' parts in the admin documentation: https://yunohost.org/admindoc."
+    "yunohost_postinstall_end_tip": "The post-install completed! To finalize your setup, please consider:\n    - diagnose potential issues through the 'Diagnosis' section of the webadmin (or 'yunohost diagnosis run' in command-line);\n    - reading the 'Finalizing your setup' and 'Getting to know YunoHost' parts in the admin documentation: https://yunohost.org/admindoc.",
+    "diagnosis_rfkill_wifi": "The Wi-Fi card is disabled and a system warning might prevent app installations",
+    "diagnosis_rfkill_wifi_details": "This warning sneaks in many command outputs, breaking some apps. It is usually required to specify your country code with the command 'sudo raspi-config'. Here is the error:\n{rfkill_wifi_error}"
 }

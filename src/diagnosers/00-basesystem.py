@@ -192,6 +192,16 @@ class MyDiagnoser(Diagnoser):
                 summary="diagnosis_high_number_auth_failures",
             )
 
+        rfkill_wifi = self.rfkill_wifi()
+        if len(rfkill_wifi) > 0:
+            yield dict(
+                meta={"test": "rfkill_wifi"},
+                status="ERROR",
+                summary="diagnosis_rfkill_wifi",
+                details=["diagnosis_rfkill_wifi_details"],
+                data={"rfkill_wifi_error": rfkill_wifi}
+            )
+
     def bad_sury_packages(self):
         packages_to_check = ["openssl", "libssl1.1", "libssl-dev"]
         for package in packages_to_check:
@@ -301,3 +311,8 @@ class MyDiagnoser(Diagnoser):
         )
         write_to_json(cache_file, CVEs)
         return CVEs[0]["VULNERABLE"]
+
+    def rfkill_wifi(self):
+        if os.path.isfile("/etc/profile.d/wifi-check.sh"):
+            cmd = "bash /etc/profile.d/wifi-check.sh"
+            return check_output(cmd)
