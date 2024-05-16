@@ -316,3 +316,5 @@ class MyDiagnoser(Diagnoser):
         if os.path.isfile("/etc/profile.d/wifi-check.sh"):
             cmd = "bash /etc/profile.d/wifi-check.sh"
             return check_output(cmd)
+        else:
+            return ""
