@@ -783,5 +783,5 @@
     "ask_dyndns_recovery_password_explain_unavailable": "Ce domaine DynDNS est déjà enregistré. Si vous êtes la personne qui a enregistré ce domaine lors de sa création, vous pouvez entrer le mot de passe de récupération pour récupérer ce domaine.",
     "global_settings_setting_ssh_port_help": "Il est préférable d'utiliser un port inférieur à 1024 pour éviter les tentatives d'usurpation par des services non administrateurs sur la machine distante. Vous devez également éviter d'utiliser un port déjà utilisé tel que le 80 ou le 443.",
     "diagnosis_rfkill_wifi": "La carte Wi-Fi est désactivée et un avertissement du système pourrait empêcher d'installer des applications",
-    "diagnosis_rfkill_wifi_details": "Cet avertissement se glisse dans beaucoup de retours de commandes, cassant certaines applications. Il s'agit généralement de spécifier votre code pays avec la commande '`sudo raspi-config'. Voici l'erreur:\n{rfkill_wifi_error}"
+    "diagnosis_rfkill_wifi_details": "Cet avertissement se glisse dans beaucoup de retours de commandes, cassant certaines applications. Il s'agit généralement de spécifier votre code pays avec la commande <code>sudo raspi-config</code>. Voici l'erreur:<br>{rfkill_wifi_error}"
 }
