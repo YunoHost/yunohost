@@ -127,13 +127,28 @@ ynh_mysql_drop_db() {
 # Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_dump_db() {
     # Declare an array to define the options of this helper.
-    local legacy_args=d
-    local -A args_array=([d]=database=)
+    local legacy_args=dc
+    local -A args_array=( [d]=database= [c]=default_character_set= )
     local database
+    local default_character_set
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    default_character_set="${default_character_set:-}"
+    MYSQL_ROOT_PWD_FILE=/etc/yunohost/mysql
 
-    mysqldump --single-transaction --skip-dump-date --routines "$database"
+    if [ -n "$default_character_set" ]
+    then
+        default_character_set="--default-character-set=$default_character_set"
+    else
+        # By default, default character set is "latin1"
+        default_character_set="--default-character-set=latin1"
+    fi
+    
+    if [ -f "$MYSQL_ROOT_PWD_FILE" ]; then
+        mysqldump --user="root" --password="$(cat $MYSQL_ROOT_PWD_FILE)" --single-transaction --skip-dump-date "$default_character_set" "$database"
+    else
+        mysqldump --single-transaction --skip-dump-date "$default_character_set" "$database"
+    fi
 }
 
 # Create a user
