@@ -74,6 +74,8 @@ ynh_use_nodejs() {
     ynh_node_load_PATH="PATH=$node_PATH"
     # Same var but in lower case to be compatible with ynh_replace_vars...
     ynh_node_load_path="PATH=$node_PATH"
+    # Prevent yet another Node and Corepack madness, with Corepack wanting the user to confirm download of Yarn
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 }
 
 # Install a specific version of nodejs
