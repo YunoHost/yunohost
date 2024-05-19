@@ -788,7 +788,7 @@ def _check_domain_is_ready_for_ACME(domain):
         or {}
     )
 
-    parent_domain = _get_parent_domain_of(domain, return_self=True)
+    parent_domain = _get_parent_domain_of(domain, return_self=True, topest=True)
 
     dnsrecords = (
         Diagnoser.get_cached_report(

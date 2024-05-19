@@ -101,6 +101,8 @@ EOF
 
 # Check availability of a web path
 #
+# [packagingv1]
+#
 # usage: ynh_webpath_available --domain=domain --path_url=path
 # | arg: -d, --domain=      - the domain/host of the url
 # | arg: -p, --path_url=    - the web path to check the availability of
@@ -121,6 +123,8 @@ ynh_webpath_available() {
 }
 
 # Register/book a web path for an app
+#
+# [packagingv1]
 #
 # usage: ynh_webpath_register --app=app --domain=domain --path_url=path
 # | arg: -a, --app=         - the app for which the domain should be registered

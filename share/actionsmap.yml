@@ -1891,7 +1891,7 @@ log:
                 - display
             arguments:
                 path:
-                    help: Log file which to display the content
+                    help: Log file which to display the content. 'last' or 'last-X' selects the last but X log file
                 -n:
                     full: --number
                     help: Number of lines to display

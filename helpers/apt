@@ -66,6 +66,8 @@ ynh_package_is_installed() {
 #
 # example: version=$(ynh_package_version --package=yunohost)
 #
+# [internal]
+#
 # usage: ynh_package_version --package=name
 # | arg: -p, --package=     - the package name to get version
 # | ret: the version or an empty string
@@ -100,6 +102,8 @@ ynh_apt() {
 
 # Update package index files
 #
+# [internal]
+#
 # usage: ynh_package_update
 #
 # Requires YunoHost version 2.2.4 or higher.
@@ -108,6 +112,8 @@ ynh_package_update() {
 }
 
 # Install package(s)
+#
+# [internal]
 #
 # usage: ynh_package_install name [name [...]]
 # | arg: name - the package name to install
@@ -120,6 +126,8 @@ ynh_package_install() {
 
 # Remove package(s)
 #
+# [internal]
+#
 # usage: ynh_package_remove name [name [...]]
 # | arg: name - the package name to remove
 #
@@ -130,6 +138,8 @@ ynh_package_remove() {
 
 # Remove package(s) and their uneeded dependencies
 #
+# [internal]
+#
 # usage: ynh_package_autoremove name [name [...]]
 # | arg: name - the package name to remove
 #
@@ -139,6 +149,8 @@ ynh_package_autoremove() {
 }
 
 # Purge package(s) and their uneeded dependencies
+#
+# [internal]
 #
 # usage: ynh_package_autopurge name [name [...]]
 # | arg: name - the package name to autoremove and purge
@@ -211,6 +223,8 @@ ynh_package_install_from_equivs() {
 YNH_INSTALL_APP_DEPENDENCIES_REPLACE="true"
 
 # Define and install dependencies with a equivs control file
+#
+# [packagingv1]
 #
 # This helper can/should only be called once per app
 #
@@ -330,6 +344,8 @@ EOF
 
 # Add dependencies to install with ynh_install_app_dependencies
 #
+# [packagingv1]
+#
 # usage: ynh_add_app_dependencies --package=phpversion [--replace]
 # | arg: -p, --package=     - Packages to add as dependencies for the app.
 #
@@ -347,6 +363,8 @@ ynh_add_app_dependencies() {
 }
 
 # Remove fake package and its dependencies
+#
+# [packagingv1]
 #
 # Dependencies will removed only if no other package need them.
 #
@@ -379,6 +397,8 @@ ynh_remove_app_dependencies() {
 }
 
 # Install packages from an extra repository properly.
+#
+# [packagingv1]
 #
 # usage: ynh_install_extra_app_dependencies --repo="repo" --package="dep1 dep2" [--key=key_url] [--name=name]
 # | arg: -r, --repo=    - Complete url of the extra repository.
@@ -417,7 +437,7 @@ ynh_install_extra_app_dependencies() {
     [ -z "$apps_auto_installed" ] || apt-mark auto $apps_auto_installed
 
     # Remove this extra repository after packages are installed
-    ynh_remove_extra_repo --name=$app
+    ynh_remove_extra_repo --name=$name
 }
 
 # Add an extra repository correctly, pin it and get the key.

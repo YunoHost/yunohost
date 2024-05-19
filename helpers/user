@@ -56,6 +56,8 @@ ynh_user_list() {
 
 # Check if a user exists on the system
 #
+# [packagingv1]
+#
 # usage: ynh_system_user_exists --username=username
 # | arg: -u, --username=    - the username to check
 # | ret: 0 if the user exists, 1 otherwise.
@@ -74,6 +76,8 @@ ynh_system_user_exists() {
 
 # Check if a group exists on the system
 #
+# [packagingv1]
+#
 # usage: ynh_system_group_exists --group=group
 # | arg: -g, --group=   - the group to check
 # | ret: 0 if the group exists, 1 otherwise.
@@ -91,6 +95,8 @@ ynh_system_group_exists() {
 }
 
 # Create a system user
+#
+# [packagingv1]
 #
 # usage: ynh_system_user_create --username=user_name [--home_dir=home_dir] [--use_shell] [--groups="group1 group2"]
 # | arg: -u, --username=    - Name of the system user that will be create
@@ -145,6 +151,8 @@ ynh_system_user_create() {
 }
 
 # Delete a system user
+#
+# [packagingv1]
 #
 # usage: ynh_system_user_delete --username=user_name
 # | arg: -u, --username=    - Name of the system user that will be create

@@ -152,6 +152,8 @@ ynh_mysql_create_user() {
 
 # Check if a mysql user exists
 #
+# [internal]
+#
 # usage: ynh_mysql_user_exists --user=user
 # | arg: -u, --user=    - the user for which to check existence
 # | ret: 0 if the user exists, 1 otherwise.
@@ -186,6 +188,8 @@ ynh_mysql_drop_user() {
 
 # Create a database, an user and its password. Then store the password in the app's config
 #
+# [packagingv1]
+#
 # usage: ynh_mysql_setup_db --db_user=user --db_name=name [--db_pwd=pwd]
 # | arg: -u, --db_user=     - Owner of the database
 # | arg: -n, --db_name=     - Name of the database
@@ -218,6 +222,8 @@ ynh_mysql_setup_db() {
 }
 
 # Remove a database if it exists, and the associated user
+#
+# [packagingv1]
 #
 # usage: ynh_mysql_remove_db --db_user=user --db_name=name
 # | arg: -u, --db_user=     - Owner of the database

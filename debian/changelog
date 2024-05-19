@@ -4,7 +4,17 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
  
-yunohost (11.2.11.2) stable; urgency=low
+yunohost (11.2.11.3) stable; urgency=low
+
+  - fix: edge case when parsing app upstream version from resource manager (5e4e59a1, a5560c30)
+  - helpers: fix 'ls: cannot access <folder> No such file or directory' errors on CI (537699ca)
+  - maintenance: Upgrade n to 9.2.3 ([#1818](http://github.com/YunoHost/yunohost/pull/1818))
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, OniriCorpe)
+
+ -- tituspijean <titus+yunohost@pijean.ovh>  Sun, 21 Apr 2024 19:10:02 +0200
+
+ yunohost (11.2.11.2) stable; urgency=low
 
   - More oopsies (22b30c79)
 
