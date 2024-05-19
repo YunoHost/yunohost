@@ -30,7 +30,7 @@ export GOENV_ROOT="$goenv_install_dir"
 # However, $PATH is duplicated into $go_path to outlast any manipulation of $PATH
 # You can use the variable `$ynh_go_load_path` to quickly load your Go version
 #  in $PATH for an usage into a separate script.
-# Exemple: $ynh_go_load_path $install_dir/script_that_use_gem.sh`
+# Exemple: `$ynh_go_load_path $install_dir/script_that_use_gem.sh`
 #
 #
 # Finally, to start a Go service with the correct version, 2 solutions
