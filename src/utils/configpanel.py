@@ -479,8 +479,10 @@ class ConfigPanel:
             "changes_validated",
             "result",
             "max_progression",
+            # 'properties' and 'defaults' are used in format_description levels
+            "properties",
+            "defaults",
         ]
-        forbidden_keywords += format_description["sections"]
 
         for _, _, option in self._iterate():
             if option["id"] in forbidden_keywords:
