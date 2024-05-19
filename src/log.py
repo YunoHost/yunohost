@@ -183,7 +183,7 @@ def log_show(
         logs = list(log_list()["operation"])
 
         if position > len(logs):
-            raise YunohostValidationError(f"There isn't that many logs", raw_msg=True)
+            raise YunohostValidationError("There isn't that many logs", raw_msg=True)
 
         path = logs[-position]["path"]
 
