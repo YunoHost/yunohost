@@ -1153,9 +1153,7 @@ class AptDependenciesAppResource(AppResource):
 
         for key, values in self.extras.items():
             if isinstance(values.get("packages"), str):
-                values["packages"] = [
-                    value.strip() for value in values["packages"].split(",")
-                ]  # type: ignore
+                values["packages"] = [value.strip() for value in values["packages"].split(",")]  # type: ignore
 
             if isinstance(values.get("packages_from_raw_bash"), str):
                 out, err = self.check_output_bash_snippet(
@@ -1166,9 +1164,7 @@ class AptDependenciesAppResource(AppResource):
                         f"Error while running apt resource packages_from_raw_bash snippet for '{key}' extras:"
                     )
                     logger.error(err)
-                values["packages"] = values.get("packages", []) + [
-                    value.strip() for value in out.split("\n")
-                ]  # type: ignore
+                values["packages"] = values.get("packages", []) + [value.strip() for value in out.split("\n")]  # type: ignore
 
             if (
                 not isinstance(values.get("repo"), str)
