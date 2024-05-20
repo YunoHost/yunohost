@@ -1153,7 +1153,9 @@ class AptDependenciesAppResource(AppResource):
 
         for key, values in self.extras.items():
             if isinstance(values.get("packages"), str):
-                values["packages"] = [value.strip() for value in values["packages"].split(",")]  # type: ignore
+                values["packages"] = [
+                    value.strip() for value in values["packages"].split(",")
+                ]  # type: ignore
 
             if isinstance(values.get("packages_from_raw_bash"), str):
                 out, err = self.check_output_bash_snippet(
@@ -1164,7 +1166,9 @@ class AptDependenciesAppResource(AppResource):
                         f"Error while running apt resource packages_from_raw_bash snippet for '{key}' extras:"
                     )
                     logger.error(err)
-                values["packages"] = values.get("packages", []) + [value.strip() for value in out.split("\n")]  # type: ignore
+                values["packages"] = values.get("packages", []) + [
+                    value.strip() for value in out.split("\n")
+                ]  # type: ignore
 
             if (
                 not isinstance(values.get("repo"), str)
@@ -1291,7 +1295,14 @@ class PortsResource(AppResource):
         return used_by_process or used_by_app or used_by_self_provisioning
 
     def provision_or_update(self, context: Dict = {}):
-        from yunohost.firewall import firewall_allow, firewall_disallow
+        from yunohost.firewall import (
+            firewall_allow,
+            firewall_disallow,
+            firewall_list,
+            firewall_reload,
+        )
+
+        previous_ports = firewall_list(raw=True)
 
         for name, infos in self.ports.items():
             setting_name = f"port_{name}" if name != "main" else "port"
@@ -1322,11 +1333,12 @@ class PortsResource(AppResource):
             self.set_setting(setting_name, port_value)
 
             if infos["exposed"]:
-                firewall_allow(infos["exposed"], port_value, reload_only_if_change=True)
+                firewall_allow(infos["exposed"], port_value, no_reload=True)
             else:
-                firewall_disallow(
-                    infos["exposed"], port_value, reload_only_if_change=True
-                )
+                firewall_disallow(infos["exposed"], port_value, no_reload=True)
+
+        if firewall_list(raw=True) != previous_ports:
+            firewall_reload()
 
     def deprovision(self, context: Dict = {}):
         from yunohost.firewall import firewall_disallow
