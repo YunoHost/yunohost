@@ -63,10 +63,10 @@ def system_virt():
     return system_virt.cache
 
 
-debian_version.cache = None
-debian_version_id.cache = None
-system_arch.cache = None
-system_virt.cache = None
+debian_version.cache = None  # type: ignore[attr-defined]
+debian_version_id.cache = None  # type: ignore[attr-defined]
+system_arch.cache = None  # type: ignore[attr-defined]
+system_virt.cache = None  # type: ignore[attr-defined]
 
 
 def free_space_in_directory(dirpath):
