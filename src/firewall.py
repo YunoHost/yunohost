@@ -38,7 +38,6 @@ def firewall_allow(
     ipv6_only=False,
     no_upnp=False,
     no_reload=False,
-    reload_only_if_change=False,
 ):
     """
     Allow connections on a port
@@ -86,10 +85,7 @@ def firewall_allow(
                 changed = True
             else:
                 ipv = "IPv%s" % i[3]
-                if not reload_only_if_change:
-                    logger.warning(
-                        m18n.n("port_already_opened", port=port, ip_version=ipv)
-                    )
+                logger.warning(m18n.n("port_already_opened", port=port, ip_version=ipv))
         # Add port forwarding with UPnP
         if not no_upnp and port not in firewall["uPnP"][p]:
             firewall["uPnP"][p].append(port)
@@ -101,9 +97,7 @@ def firewall_allow(
 
     # Update and reload firewall
     _update_firewall_file(firewall)
-    if (not reload_only_if_change and not no_reload) or (
-        reload_only_if_change and changed
-    ):
+    if (not no_reload) or (changed):
         return firewall_reload()
 
 
@@ -114,7 +108,6 @@ def firewall_disallow(
     ipv6_only=False,
     upnp_only=False,
     no_reload=False,
-    reload_only_if_change=False,
 ):
     """
     Disallow connections on a port
@@ -169,10 +162,7 @@ def firewall_disallow(
                 changed = True
             else:
                 ipv = "IPv%s" % i[3]
-                if not reload_only_if_change:
-                    logger.warning(
-                        m18n.n("port_already_closed", port=port, ip_version=ipv)
-                    )
+                logger.warning(m18n.n("port_already_closed", port=port, ip_version=ipv))
         # Remove port forwarding with UPnP
         if upnp and port in firewall["uPnP"][p]:
             firewall["uPnP"][p].remove(port)
@@ -182,9 +172,7 @@ def firewall_disallow(
 
     # Update and reload firewall
     _update_firewall_file(firewall)
-    if (not reload_only_if_change and not no_reload) or (
-        reload_only_if_change and changed
-    ):
+    if (not no_reload) or (changed):
         return firewall_reload()
 
 
