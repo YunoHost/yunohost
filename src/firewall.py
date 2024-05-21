@@ -75,14 +75,11 @@ def firewall_allow(
             "ipv6",
         ]
 
-    changed = False
-
     for p in protocols:
         # Iterate over IP versions to add port
         for i in ipvs:
             if port not in firewall[i][p]:
                 firewall[i][p].append(port)
-                changed = True
             else:
                 ipv = "IPv%s" % i[3]
                 logger.warning(m18n.n("port_already_opened", port=port, ip_version=ipv))
@@ -97,7 +94,7 @@ def firewall_allow(
 
     # Update and reload firewall
     _update_firewall_file(firewall)
-    if (not no_reload) or (changed):
+    if not no_reload:
         return firewall_reload()
 
 
@@ -152,14 +149,11 @@ def firewall_disallow(
     elif upnp_only:
         ipvs = []
 
-    changed = False
-
     for p in protocols:
         # Iterate over IP versions to remove port
         for i in ipvs:
             if port in firewall[i][p]:
                 firewall[i][p].remove(port)
-                changed = True
             else:
                 ipv = "IPv%s" % i[3]
                 logger.warning(m18n.n("port_already_closed", port=port, ip_version=ipv))
@@ -172,7 +166,7 @@ def firewall_disallow(
 
     # Update and reload firewall
     _update_firewall_file(firewall)
-    if (not no_reload) or (changed):
+    if not no_reload:
         return firewall_reload()
 
 
