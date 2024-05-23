@@ -92,8 +92,9 @@ ynh_systemd_action() {
     fi
 
     # do not start a service disabled by the user
-    if [ "$action" == "start" ] || [ "$action" == "reload_or_restart" ] || [ "$action" == "restart" ] && \
-    ! yunohost service status $service_name | grep -q "start_on_boot: disabled"; then
+    if ([ "$action" == "start" ] || [ "$action" == "reload_or_restart" ] || [ "$action" == "restart" ]) && \
+    ! systemctl --quiet is-enabled $service_name; then
+        echo "$service_name is disabled, therefore skipping action $action"
         return 0
     fi
 
