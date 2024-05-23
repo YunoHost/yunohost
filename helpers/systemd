@@ -25,7 +25,10 @@ ynh_add_systemd_config() {
 
     ynh_add_config --template="$template" --destination="/etc/systemd/system/$service.service"
 
-    systemctl enable $service --quiet
+    if [[ ${YNH_APP_ACTION} == "install" ]]; then
+        systemctl enable $service --quiet
+    fi
+
     systemctl daemon-reload
 }
 
@@ -85,6 +88,13 @@ ynh_systemd_action() {
 
     # Manage case of service already stopped
     if [ "$action" == "stop" ] && ! systemctl is-active --quiet $service_name; then
+        return 0
+    fi
+
+    # do not start a service disabled by the user
+    if ([ "$action" == "start" ] || [ "$action" == "reload_or_restart" ] || [ "$action" == "restart" ]) && \
+    ! systemctl --quiet is-enabled $service_name; then
+        echo "$service_name is disabled, therefore skipping action $action"
         return 0
     fi
 
