@@ -25,10 +25,6 @@ ynh_add_systemd_config() {
 
     ynh_add_config --template="$template" --destination="/etc/systemd/system/$service.service"
 
-    # do not enable a service disabled by the user
-    if ! yunohost service status $service | grep -q "start_on_boot: disabled"; then
-        systemctl enable $service --quiet
-    fi
     systemctl daemon-reload
 }
 
