@@ -25,6 +25,10 @@ ynh_add_systemd_config() {
 
     ynh_add_config --template="$template" --destination="/etc/systemd/system/$service.service"
 
+    if [[ ${YNH_APP_ACTION} == "install" ]]; then
+        systemctl enable $service --quiet
+    fi
+
     systemctl daemon-reload
 }
 
