@@ -99,6 +99,9 @@ fi
 # ```text
 # format    = "tar.gz"/xz/bz2    # automatically guessed from the extension of the URL, but can be set explicitly. Will use `tar` to extract
 #             "zip"              # automatically guessed from the extension of the URL, but can be set explicitly. Will use `unzip` to extract
+#             "gz"               # automatically guessed from the extension of the URL, but can be set explicitly. Will use `gunzip` to extract
+#             "bz2"              # automatically guessed from the extension of the URL, but can be set explicitly. Will use `bunzip2` to extract
+#             "xz"               # automatically guessed from the extension of the URL, but can be set explicitly. Will use `xz -d` to extract
 #             "docker"           # useful to extract files from an already-built docker image (instead of rebuilding them locally). Will use `docker-image-extract` to extract
 #             "whatever"         # an arbitrary value, not really meaningful except to imply that the file won't be extracted
 #
@@ -106,11 +109,12 @@ fi
 #             false   # sources are directly in the archive root
 #             n       # (special cases) an integer representing a number of subdirs levels to get rid of
 #
-# extract   = true    # default if file is indeed an archive such as .zip, .tar.gz, .tar.bz2, ...
+# extract   = true    # default if file is indeed an archive such as .zip, .tar.gz, .tar.bz2, gz, ...
 #           = false   # default if file 'format' is not set and the file is not to be extracted because it is not an archive but a script or binary or whatever asset.
 #                     #    in which case the file will only be `mv`ed to the location possibly renamed using the `rename` value
 #
 # rename    = "whatever_your_want"   # to be used for convenience when `extract` is false and the default name of the file is not practical
+#                                    # also used for single file archives (gz, bz2, xz) to rename the extracted file (default : the source id, or the app name for main source)
 # platform  = "linux/amd64"          # (defaults to "linux/$YNH_ARCH") to be used in conjonction with `format = "docker"` to specify which architecture to extract for
 # ```
 #
@@ -189,22 +193,22 @@ ynh_setup_source() {
         [[ -n "$src_url" ]] || ynh_die "No URL defined for source $source_id$arch_prefix ?"
         [[ -n "$src_sum" ]] || ynh_die "No sha256 sum defined for source $source_id$arch_prefix ?"
 
-        if [[ -z "$src_format" ]]
-        then
-            if [[ "$src_url" =~ ^.*\.zip$ ]] || [[ "$src_url" =~ ^.*/zipball/.*$ ]]
-            then
+        if [[ -z "$src_format" ]]; then
+            if [[ "$src_url" =~ ^.*\.zip$ ]] || [[ "$src_url" =~ ^.*/zipball/.*$ ]]; then
                 src_format="zip"
-            elif [[ "$src_url" =~ ^.*\.tar\.gz$ ]] || [[ "$src_url" =~ ^.*\.tgz$ ]] || [[ "$src_url" =~ ^.*/tar\.gz/.*$ ]] || [[ "$src_url" =~ ^.*/tarball/.*$ ]]
-            then
+            elif [[ "$src_url" =~ ^.*\.tar\.gz$ ]] || [[ "$src_url" =~ ^.*\.tgz$ ]] || [[ "$src_url" =~ ^.*/tar\.gz/.*$ ]] || [[ "$src_url" =~ ^.*/tarball/.*$ ]]; then
                 src_format="tar.gz"
-            elif [[ "$src_url" =~ ^.*\.tar\.xz$ ]]
-            then
+            elif [[ "$src_url" =~ ^.*\.tar\.xz$ ]]; then
                 src_format="tar.xz"
-            elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]
-            then
+            elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]; then
                 src_format="tar.bz2"
-            elif [[ -z "$src_extract" ]]
-            then
+            elif [[ "$src_url" =~ ^.*\.gz$ ]]; then
+                src_format="gz"
+            elif [[ "$src_url" =~ ^.*\.xz$ ]]; then
+                src_format="xz"
+            elif [[ "$src_url" =~ ^.*\.bz2$ ]]; then
+                src_format="bz2"
+            elif [[ -z "$src_extract" ]]; then
                 src_extract="false"
             fi
         fi
@@ -331,6 +335,22 @@ ynh_setup_source() {
             unzip -quo $src_filename -d "$dest_dir"
         fi
         ynh_secure_remove --file="$src_filename"
+    elif [[ "$src_format" =~ ^gz|xz|bz2$ ]]; then
+        if [[ -z "$src_rename" ]]; then
+            if [[ "$source_id" == "main" ]]; then
+                local src_rename=$app
+            else
+                local src_rename=$source_id
+            fi
+        fi
+        if [[ "$src_format" == "gz" ]]; then
+            gunzip --stdout $src_filename > "$dest_dir/$src_rename"
+        elif [[ "$src_format" == "xz" ]]; then
+            xz -d --stdout $src_filename > "$dest_dir/$src_rename"
+        elif [[ "$src_format" == "bz2" ]]; then
+            bunzip2 --stdout $src_filename > "$dest_dir/$src_rename"
+        fi
+        _ynh_apply_default_permissions "$dest_dir/$src_rename"
     else
         local strip=""
         if [ "$src_in_subdir" != "false" ]; then
