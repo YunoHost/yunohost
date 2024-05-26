@@ -1363,12 +1363,12 @@ def user_group_remove(groupname, usernames, force=False, sync_perm=True):
     )
 
 
-def user_group_add_mailalias(groupname, aliases):
-    return user_group_update(groupname, add_mailalias=aliases, sync_perm=False)
+def user_group_add_mailalias(groupname, aliases, force=False):
+    return user_group_update(groupname, add_mailalias=aliases, force=force, sync_perm=False)
 
 
-def user_group_remove_mailalias(groupname, aliases):
-    return user_group_update(groupname, remove_mailalias=aliases, sync_perm=False)
+def user_group_remove_mailalias(groupname, aliases, force=False):
+    return user_group_update(groupname, remove_mailalias=aliases, force=force, sync_perm=False)
 
 
 #
