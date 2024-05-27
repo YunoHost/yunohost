@@ -72,7 +72,7 @@ then
     ynh_abort_if_errors
 fi
 
-# Download, check integrity, uncompress and patch the source from app.src
+# Download, check integrity, uncompress and patch upstream sources
 #
 # usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"] [--full_replace]
 # | arg: -d, --dest_dir=     - Directory where to setup sources
@@ -126,23 +126,6 @@ fi
 #
 # In which case ynh_setup_source --dest_dir="$install_dir" will automatically pick the appropriate source depending on the arch
 #
-#
-#
-# #### Legacy format '.src'
-#
-# This helper will read `conf/${source_id}.src`, download and install the sources.
-#
-# The src file need to contains:
-# ```
-# SOURCE_URL=Address to download the app archive
-# SOURCE_SUM=Sha256 sum
-# SOURCE_FORMAT=tar.gz
-# SOURCE_IN_SUBDIR=false
-# SOURCE_FILENAME=example.tar.gz
-# SOURCE_EXTRACT=(true|false)
-# SOURCE_PLATFORM=linux/arm64/v8
-# ```
-#
 # The helper will:
 # - Download the specific URL if there is no local archive
 # - Check the integrity with the specific sha256 sum
@@ -165,67 +148,48 @@ ynh_setup_source() {
     keep="${keep:-}"
     full_replace="${full_replace:-0}"
 
-    if test -e $YNH_APP_BASEDIR/manifest.toml && cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq -e '.resources.sources' >/dev/null
+    source_id="${source_id:-main}"
+    local sources_json=$(cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq ".resources.sources[\"$source_id\"]")
+    if jq -re ".url" <<< "$sources_json"
     then
-        source_id="${source_id:-main}"
-        local sources_json=$(cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq ".resources.sources[\"$source_id\"]")
-        if jq -re ".url" <<< "$sources_json"
-        then
-            local arch_prefix=""
-        else
-            local arch_prefix=".$YNH_ARCH"
-        fi
-
-        local src_url="$(jq -r "$arch_prefix.url" <<< "$sources_json" | sed 's/^null$//')"
-        local src_sum="$(jq -r "$arch_prefix.sha256" <<< "$sources_json" | sed 's/^null$//')"
-        local src_sumprg="sha256sum"
-        local src_format="$(jq -r ".format" <<< "$sources_json" | sed 's/^null$//')"
-        local src_in_subdir="$(jq -r ".in_subdir" <<< "$sources_json" | sed 's/^null$//')"
-        local src_extract="$(jq -r ".extract" <<< "$sources_json" | sed 's/^null$//')"
-        local src_platform="$(jq -r ".platform" <<< "$sources_json" | sed 's/^null$//')"
-        local src_rename="$(jq -r ".rename" <<< "$sources_json" | sed 's/^null$//')"
-
-        [[ -n "$src_url" ]] || ynh_die --message="No URL defined for source $source_id$arch_prefix ?"
-        [[ -n "$src_sum" ]] || ynh_die --message="No sha256 sum defined for source $source_id$arch_prefix ?"
-
-        if [[ -z "$src_format" ]]
-        then
-            if [[ "$src_url" =~ ^.*\.zip$ ]] || [[ "$src_url" =~ ^.*/zipball/.*$ ]]
-            then
-                src_format="zip"
-            elif [[ "$src_url" =~ ^.*\.tar\.gz$ ]] || [[ "$src_url" =~ ^.*\.tgz$ ]] || [[ "$src_url" =~ ^.*/tar\.gz/.*$ ]] || [[ "$src_url" =~ ^.*/tarball/.*$ ]]
-            then
-                src_format="tar.gz"
-            elif [[ "$src_url" =~ ^.*\.tar\.xz$ ]]
-            then
-                src_format="tar.xz"
-            elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]
-            then
-                src_format="tar.bz2"
-            elif [[ -z "$src_extract" ]]
-            then
-                src_extract="false"
-            fi
-        fi
+        local arch_prefix=""
     else
-        source_id="${source_id:-app}"
-        local src_file_path="$YNH_APP_BASEDIR/conf/${source_id}.src"
-
-        # Load value from configuration file (see above for a small doc about this file
-        # format)
-        local src_url=$(grep 'SOURCE_URL=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-        local src_sum=$(grep 'SOURCE_SUM=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-        local src_sumprg=$(grep 'SOURCE_SUM_PRG=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-        local src_format=$(grep 'SOURCE_FORMAT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-        local src_in_subdir=$(grep 'SOURCE_IN_SUBDIR=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-        local src_rename=$(grep 'SOURCE_FILENAME=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-        local src_extract=$(grep 'SOURCE_EXTRACT=' "$src_file_path" | cut --delimiter='=' --fields=2-)
-        local src_platform=$(grep 'SOURCE_PLATFORM=' "$src_file_path" | cut --delimiter='=' --fields=2-)
+        local arch_prefix=".$YNH_ARCH"
     fi
 
-    # Default value
-    src_sumprg=${src_sumprg:-sha256sum}
+    local src_url="$(jq -r "$arch_prefix.url" <<< "$sources_json" | sed 's/^null$//')"
+    local src_sum="$(jq -r "$arch_prefix.sha256" <<< "$sources_json" | sed 's/^null$//')"
+    local src_sumprg="sha256sum"
+    local src_format="$(jq -r ".format" <<< "$sources_json" | sed 's/^null$//')"
+    local src_in_subdir="$(jq -r ".in_subdir" <<< "$sources_json" | sed 's/^null$//')"
     src_in_subdir=${src_in_subdir:-true}
+    local src_extract="$(jq -r ".extract" <<< "$sources_json" | sed 's/^null$//')"
+    local src_platform="$(jq -r ".platform" <<< "$sources_json" | sed 's/^null$//')"
+    local src_rename="$(jq -r ".rename" <<< "$sources_json" | sed 's/^null$//')"
+
+    [[ -n "$src_url" ]] || ynh_die --message="No URL defined for source $source_id$arch_prefix ?"
+    [[ -n "$src_sum" ]] || ynh_die --message="No sha256 sum defined for source $source_id$arch_prefix ?"
+
+    if [[ -z "$src_format" ]]
+    then
+        if [[ "$src_url" =~ ^.*\.zip$ ]] || [[ "$src_url" =~ ^.*/zipball/.*$ ]]
+        then
+            src_format="zip"
+        elif [[ "$src_url" =~ ^.*\.tar\.gz$ ]] || [[ "$src_url" =~ ^.*\.tgz$ ]] || [[ "$src_url" =~ ^.*/tar\.gz/.*$ ]] || [[ "$src_url" =~ ^.*/tarball/.*$ ]]
+        then
+            src_format="tar.gz"
+        elif [[ "$src_url" =~ ^.*\.tar\.xz$ ]]
+        then
+            src_format="tar.xz"
+        elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]
+        then
+            src_format="tar.bz2"
+        elif [[ -z "$src_extract" ]]
+        then
+            src_extract="false"
+        fi
+    fi
+
     src_format=${src_format:-tar.gz}
     src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
     src_extract=${src_extract:-true}
@@ -234,7 +198,6 @@ ynh_setup_source() {
     then
         ynh_die --message="For source $source_id, expected either 'true' or 'false' for the extract parameter"
     fi
-
 
     # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
     local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${source_id}"
