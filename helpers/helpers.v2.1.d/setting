@@ -18,11 +18,7 @@ ynh_app_setting_get() {
     ynh_handle_getopts_args "$@"
     app="${app:-$_globalapp}"
 
-    if [[ $key =~ (unprotected|protected|skipped)_ ]]; then
-        yunohost app setting $app $key
-    else
-        ynh_app_setting "get" "$app" "$key"
-    fi
+    ynh_app_setting "get" "$app" "$key"
 }
 
 # Set an application setting
@@ -45,11 +41,7 @@ ynh_app_setting_set() {
     ynh_handle_getopts_args "$@"
     app="${app:-$_globalapp}"
 
-    if [[ $key =~ (unprotected|protected|skipped)_ ]]; then
-        yunohost app setting $app $key -v $value
-    else
-        ynh_app_setting "set" "$app" "$key" "$value"
-    fi
+    ynh_app_setting "set" "$app" "$key" "$value"
 }
 
 # Delete an application setting
@@ -70,11 +62,7 @@ ynh_app_setting_delete() {
     ynh_handle_getopts_args "$@"
     app="${app:-$_globalapp}"
 
-    if [[ "$key" =~ (unprotected|skipped|protected)_ ]]; then
-        yunohost app setting $app $key -d
-    else
-        ynh_app_setting "delete" "$app" "$key"
-    fi
+    ynh_app_setting "delete" "$app" "$key"
 }
 
 # Small "hard-coded" interface to avoid calling "yunohost app" directly each
