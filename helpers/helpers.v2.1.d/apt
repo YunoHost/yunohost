@@ -68,11 +68,11 @@ ynh_package_is_installed() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_package_version() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([p]=package=)
     local package
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     if ynh_package_is_installed "$package"; then
         dpkg-query --show --showformat='${Version}' "$package" 2>/dev/null
@@ -344,11 +344,11 @@ EOF
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_add_app_dependencies() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([p]=package= [r]=replace)
     local package
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     ynh_print_warn --message="Packagers: ynh_add_app_dependencies is deprecated and is now only an alias to ynh_install_app_dependencies"
     ynh_install_app_dependencies "${package}"
@@ -400,16 +400,16 @@ ynh_remove_app_dependencies() {
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_install_extra_app_dependencies() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([r]=repo= [p]=package= [k]=key= [n]=name=)
     local repo
     local package
     local key
     local name
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     name="${name:-$app}"
     key=${key:-}
+    # ===========================================
 
     # Set a key only if asked
     if [ -n "$key" ]; then
@@ -444,19 +444,19 @@ ynh_install_extra_app_dependencies() {
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_install_extra_repo() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([r]=repo= [k]=key= [p]=priority= [n]=name= [a]=append)
     local repo
     local key
     local priority
     local name
     local append
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     name="${name:-$app}"
     append=${append:-0}
     key=${key:-}
     priority=${priority:-}
+    # ===========================================
 
     if [ $append -eq 1 ]; then
         append="--append"
@@ -512,12 +512,12 @@ ynh_install_extra_repo() {
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_remove_extra_repo() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([n]=name=)
     local name
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     name="${name:-$app}"
+    # ===========================================
 
     ynh_secure_remove --file="/etc/apt/sources.list.d/$name.list"
     # Sury pinning is managed by the regenconf in the core...
@@ -552,17 +552,17 @@ ynh_remove_extra_repo() {
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_add_repo() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([u]=uri= [s]=suite= [c]=component= [n]=name= [a]=append)
     local uri
     local suite
     local component
     local name
     local append
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     name="${name:-$app}"
     append=${append:-0}
+    # ===========================================
 
     if [ $append -eq 1 ]; then
         append="tee --append"
@@ -591,19 +591,19 @@ ynh_add_repo() {
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_pin_repo() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([p]=package= [i]=pin= [r]=priority= [n]=name= [a]=append)
     local package
     local pin
     local priority
     local name
     local append
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     package="${package:-*}"
     priority=${priority:-50}
     name="${name:-$app}"
     append=${append:-0}
+    # ===========================================
 
     if [ $append -eq 1 ]; then
         append="tee --append"

@@ -13,14 +13,14 @@
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_connect_as() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([u]=user= [p]=password= [d]=database=)
     local user
     local password
     local database
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     database="${database:-}"
+    # ===========================================
 
     mysql --user="$user" --password="$password" --batch "$database"
 }
@@ -33,13 +33,13 @@ ynh_mysql_connect_as() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_execute_as_root() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([s]=sql= [d]=database=)
     local sql
     local database
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     database="${database:-}"
+    # ===========================================
 
     if [ -n "$database" ]; then
         database="--database=$database"
@@ -56,13 +56,13 @@ ynh_mysql_execute_as_root() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_execute_file_as_root() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([f]=file= [d]=database=)
     local file
     local database
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     database="${database:-}"
+    # ===========================================
 
     if [ -n "$database" ]; then
         database="--database=$database"
@@ -123,11 +123,11 @@ ynh_mysql_drop_db() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_dump_db() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([d]=database=)
     local database
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     mysqldump --single-transaction --skip-dump-date --routines "$database"
 }
@@ -156,11 +156,11 @@ ynh_mysql_create_user() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_user_exists() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([u]=user=)
     local user
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     if [[ -z $(ynh_mysql_execute_as_root --sql="SELECT User from mysql.user WHERE User = '$user';") ]]; then
         return 1
@@ -195,13 +195,13 @@ ynh_mysql_drop_user() {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_mysql_setup_db() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([u]=db_user= [n]=db_name= [p]=db_pwd=)
     local db_user
     local db_name
     db_pwd=""
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     # Generate a random password
     local new_db_pwd=$(ynh_string_random)
@@ -225,12 +225,12 @@ ynh_mysql_setup_db() {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_mysql_remove_db() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -Ar args_array=([u]=db_user= [n]=db_name=)
     local db_user
     local db_name
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     if mysqlshow | grep -q "^| $db_name "; then
         ynh_mysql_drop_db $db_name

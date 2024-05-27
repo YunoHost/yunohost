@@ -12,11 +12,11 @@
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_find_port() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([p]=port=)
     local port
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     test -n "$port" || ynh_die --message="The argument of ynh_find_port must be a valid port."
     while ! ynh_port_available --port=$port; do
@@ -37,11 +37,11 @@ ynh_find_port() {
 #
 # Requires YunoHost version 3.8.0 or higher.
 ynh_port_available() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([p]=port=)
     local port
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     # Check if the port is free
     if ss --numeric --listening --tcp --udp | awk '{print$5}' | grep --quiet --extended-regexp ":$port$"; then
@@ -67,12 +67,12 @@ ynh_port_available() {
 ynh_validate_ip() {
     # http://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python#319298
 
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([f]=family= [i]=ip_address=)
     local family
     local ip_address
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     [ "$family" == "4" ] || [ "$family" == "6" ] || return 1
 
@@ -98,11 +98,11 @@ EOF
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_validate_ip4() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([i]=ip_address=)
     local ip_address
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     ynh_validate_ip --family=4 --ip_address=$ip_address
 }
@@ -117,11 +117,11 @@ ynh_validate_ip4() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_validate_ip6() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([i]=ip_address=)
     local ip_address
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     ynh_validate_ip --family=6 --ip_address=$ip_address
 }

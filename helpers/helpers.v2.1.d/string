@@ -11,14 +11,14 @@
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_string_random() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([l]=length= [f]=filter=)
     local length
     local filter
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     length=${length:-24}
     filter=${filter:-'A-Za-z0-9'}
+    # ===========================================
 
     dd if=/dev/urandom bs=1 count=1000 2>/dev/null \
         | tr --complement --delete "$filter" \
@@ -37,13 +37,13 @@ ynh_string_random() {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_replace_string() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([m]=match_string= [r]=replace_string= [f]=target_file=)
     local match_string
     local replace_string
     local target_file
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
     set +o xtrace # set +x
 
     local delimit=$'\001'
@@ -67,13 +67,13 @@ ynh_replace_string() {
 #
 # Requires YunoHost version 2.7.7 or higher.
 ynh_replace_special_string() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([m]=match_string= [r]=replace_string= [f]=target_file=)
     local match_string
     local replace_string
     local target_file
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     # Escape any backslash to preserve them as simple backslash.
     match_string=${match_string//\\/"\\\\"}
@@ -100,11 +100,11 @@ ynh_replace_special_string() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_sanitize_dbid() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([n]=db_name=)
     local db_name
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     # We should avoid having - and . in the name of databases. They are replaced by _
     echo ${db_name//[-.]/_}
@@ -129,11 +129,11 @@ ynh_sanitize_dbid() {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_normalize_url_path() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([p]=path_url=)
     local path_url
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     test -n "$path_url" || ynh_die --message="ynh_normalize_url_path expect a URL path as first argument and received nothing."
     if [ "${path_url:0:1}" != "/" ]; then # If the first character is not a /

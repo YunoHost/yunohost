@@ -66,7 +66,7 @@
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_create() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([p]=permission= [u]=url= [A]=additional_urls= [h]=auth_header= [a]=allowed= [l]=label= [t]=show_tile= [P]=protected=)
     local permission
     local url
@@ -84,6 +84,7 @@ ynh_permission_create() {
     label=${label:-}
     show_tile=${show_tile:-}
     protected=${protected:-}
+    # ===========================================
 
     if [[ -n $url ]]; then
         url=",url='$url'"
@@ -153,10 +154,11 @@ ynh_permission_create() {
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_delete() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([p]=permission=)
     local permission
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     yunohost tools shell -c "from yunohost.permission import permission_delete; permission_delete('$app.$permission')"
 }
@@ -171,10 +173,11 @@ ynh_permission_delete() {
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_exists() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([p]=permission=)
     local permission
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     yunohost user permission list "$app" --output-as json --quiet \
         | jq -e --arg perm "$app.$permission" '.permissions[$perm]' >/dev/null
@@ -195,7 +198,7 @@ ynh_permission_exists() {
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_url() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([p]=permission= [u]=url= [a]=add_url= [r]=remove_url= [h]=auth_header= [c]=clear_urls)
     local permission
     local url
@@ -209,6 +212,7 @@ ynh_permission_url() {
     remove_url=${remove_url:-}
     auth_header=${auth_header:-}
     clear_urls=${clear_urls:-}
+    # ===========================================
 
     if [[ -n $url ]]; then
         url=",url='$url'"
@@ -264,7 +268,7 @@ ynh_permission_url() {
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_update() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([p]=permission= [a]=add= [r]=remove= [l]=label= [t]=show_tile= [P]=protected=)
     local permission
     local add
@@ -278,6 +282,7 @@ ynh_permission_update() {
     label=${label:-}
     show_tile=${show_tile:-}
     protected=${protected:-}
+    # ===========================================
 
     if [[ -n $add ]]; then
         # Convert a list from getopts to python list
@@ -332,12 +337,12 @@ ynh_permission_update() {
 #
 # Requires YunoHost version 3.7.1 or higher.
 ynh_permission_has_user() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([p]=permission= [u]=user=)
     local permission
     local user
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     if ! ynh_permission_exists --permission=$permission; then
         return 1

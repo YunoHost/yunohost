@@ -17,7 +17,7 @@
 #
 #
 ynh_mongo_exec() {
-	# Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
 	local -A args_array=( [u]=user= [p]=password= [a]=authenticationdatabase= [d]=database= [h]=host= [P]=port= [c]=command= [e]=eval )
 	local user
 	local password
@@ -27,7 +27,6 @@ ynh_mongo_exec() {
 	local port
 	local command
 	local eval
-	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 	user="${user:-}"
 	password="${password:-}"
@@ -36,6 +35,7 @@ ynh_mongo_exec() {
 	host="${host:-}"
 	port="${port:-}"
 	eval=${eval:-0}
+    # ===========================================
 
 	# If user is provided
 	if [ -n "$user" ]
@@ -113,11 +113,11 @@ EOF
 #
 #
 ynh_mongo_drop_db() {
-	# Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
 	local -A args_array=( [d]=database= )
 	local database
-	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
+    # ===========================================
 
 	ynh_mongo_exec --database="$database" --command='db.runCommand({dropDatabase: 1})'
 }
@@ -132,11 +132,11 @@ ynh_mongo_drop_db() {
 #
 #
 ynh_mongo_dump_db() {
-	# Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
 	local -A args_array=( [d]=database= )
 	local database
-	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
+    # ===========================================
 
 	mongodump --quiet --db="$database" --archive
 }
@@ -152,13 +152,13 @@ ynh_mongo_dump_db() {
 #
 #
 ynh_mongo_create_user() {
-	# Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
 	local -A args_array=( [u]=db_user= [n]=db_name= [p]=db_pwd= )
 	local db_user
 	local db_name
 	local db_pwd
-	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
+    # ===========================================
 
 	# Create the user and set the user as admin of the db
 	ynh_mongo_exec --database="$db_name" --command='db.createUser( { user: "'${db_user}'", pwd: "'${db_pwd}'", roles: [ { role: "readWrite", db: "'${db_name}'" } ] } );'
@@ -175,11 +175,11 @@ ynh_mongo_create_user() {
 #
 #
 ynh_mongo_database_exists() {
-	# Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
 	local -A args_array=([d]=database=)
 	local database
-	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
+    # ===========================================
 
 	if [ $(ynh_mongo_exec --command='db.getMongo().getDBNames().indexOf("'${database}'")' --eval) -lt 0 ]
 	then
@@ -198,11 +198,11 @@ ynh_mongo_database_exists() {
 #
 #
 ynh_mongo_restore_db() {
-	# Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
 	local -A args_array=( [d]=database= )
 	local database
-	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
+    # ===========================================
 
 	mongorestore --quiet --db="$database" --archive
 }
@@ -217,12 +217,12 @@ ynh_mongo_restore_db() {
 #
 #
 ynh_mongo_drop_user() {
-	# Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
 	local -A args_array=( [u]=db_user= [n]=db_name= )
 	local db_user
 	local db_name
-	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
+    # ===========================================
 
 	ynh_mongo_exec --database="$db_name" --command='db.dropUser("'$db_user'", {w: "majority", wtimeout: 5000})'
 }
@@ -239,13 +239,13 @@ ynh_mongo_drop_user() {
 #
 #
 ynh_mongo_setup_db() {
-	# Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
 	local -A args_array=( [u]=db_user= [n]=db_name= [p]=db_pwd= )
 	local db_user
 	local db_name
 	db_pwd=""
-	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
+    # ===========================================
 
 	local new_db_pwd=$(ynh_string_random) # Generate a random password
 	# If $db_pwd is not provided, use new_db_pwd instead for db_pwd
@@ -266,12 +266,12 @@ ynh_mongo_setup_db() {
 #
 #
 ynh_mongo_remove_db() {
-	# Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
 	local -A args_array=( [u]=db_user= [n]=db_name= )
 	local db_user
 	local db_name
-	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
+    # ===========================================
 
 	if ynh_mongo_database_exists --database=$db_name; then  # Check if the database exists
 		ynh_mongo_drop_db --database=$db_name  # Remove the database
@@ -290,12 +290,12 @@ ynh_mongo_remove_db() {
 #
 #
 ynh_install_mongo() {
-	# Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
 	local -A args_array=([m]=mongo_version=)
 	local mongo_version
-	# Manage arguments with getopts
 	ynh_handle_getopts_args "$@"
 	mongo_version="${mongo_version:-$YNH_MONGO_VERSION}"
+    # ===========================================
 
 	ynh_print_info --message="Installing MongoDB Community Edition ..."
 	local mongo_debian_release=$(ynh_get_debian_release)

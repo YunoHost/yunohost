@@ -13,14 +13,14 @@
 #
 # Requires YunoHost version 4.1.0 or higher.
 ynh_add_systemd_config() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([s]=service= [t]=template=)
     local service
     local template
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     service="${service:-$app}"
     template="${template:-systemd.service}"
+    # ===========================================
 
     ynh_add_config --template="$template" --destination="/etc/systemd/system/$service.service"
 
@@ -35,12 +35,12 @@ ynh_add_systemd_config() {
 #
 # Requires YunoHost version 2.7.2 or higher.
 ynh_remove_systemd_config() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([s]=service=)
     local service
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     local service="${service:-$app}"
+    # ===========================================
 
     local finalsystemdconf="/etc/systemd/system/$service.service"
     if [ -e "$finalsystemdconf" ]; then
@@ -63,7 +63,7 @@ ynh_remove_systemd_config() {
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_systemd_action() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([n]=service_name= [a]=action= [l]=line_match= [p]=log_path= [t]=timeout= [e]=length=)
     local service_name
     local action
@@ -71,7 +71,6 @@ ynh_systemd_action() {
     local length
     local log_path
     local timeout
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     service_name="${service_name:-$app}"
     action=${action:-start}
@@ -79,6 +78,7 @@ ynh_systemd_action() {
     length=${length:-20}
     log_path="${log_path:-/var/log/$service_name/$service_name.log}"
     timeout=${timeout:-300}
+    # ===========================================
 
     # Manage case of service already stopped
     if [ "$action" == "stop" ] && ! systemctl is-active --quiet $service_name; then

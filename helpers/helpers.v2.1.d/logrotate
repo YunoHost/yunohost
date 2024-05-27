@@ -26,13 +26,14 @@ ynh_use_logrotate() {
     done
     set -- "${all_args[@]}"
 
-    # Argument parsing
+    # ============ Argument parsing =============
     local -A args_array=([l]=logfile= [u]=specific_user=)
     local logfile
     local specific_user
     ynh_handle_getopts_args "$@"
     logfile="${logfile:-}"
     specific_user="${specific_user:-}"
+    # ===========================================
 
     set -o noglob
     if [[ -z "$logfile" ]]; then

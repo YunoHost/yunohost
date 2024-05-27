@@ -8,14 +8,14 @@
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_get() {
+    # ============ Argument parsing =============
     local _globalapp=${app-:}
-    # Declare an array to define the options of this helper.
     local -A args_array=([a]=app= [k]=key=)
     local app
     local key
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     app="${app:-$_globalapp}"
+    # ===========================================
 
     ynh_app_setting "get" "$app" "$key"
 }
@@ -29,15 +29,15 @@ ynh_app_setting_get() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_set() {
+    # ============ Argument parsing =============
     local _globalapp=${app-:}
-    # Declare an array to define the options of this helper.
     local -A args_array=([a]=app= [k]=key= [v]=value=)
     local app
     local key
     local value
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     app="${app:-$_globalapp}"
+    # ===========================================
 
     ynh_app_setting "set" "$app" "$key" "$value"
 }
@@ -50,14 +50,14 @@ ynh_app_setting_set() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_app_setting_delete() {
+    # ============ Argument parsing =============
     local _globalapp=${app-:}
-    # Declare an array to define the options of this helper.
     local -A args_array=([a]=app= [k]=key=)
     local app
     local key
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     app="${app:-$_globalapp}"
+    # ===========================================
 
     ynh_app_setting "delete" "$app" "$key"
 }
@@ -108,12 +108,12 @@ EOF
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_webpath_available() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([d]=domain= [p]=path_url=)
     local domain
     local path_url
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     yunohost domain url-available $domain $path_url
 }
@@ -131,13 +131,13 @@ ynh_webpath_available() {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_webpath_register() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([a]=app= [d]=domain= [p]=path_url=)
     local app
     local domain
     local path_url
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     yunohost app register-url $app $domain $path_url
 }

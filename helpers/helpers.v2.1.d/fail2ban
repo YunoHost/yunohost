@@ -58,18 +58,18 @@
 #
 # Requires YunoHost version 4.1.0 or higher.
 ynh_add_fail2ban_config() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([l]=logpath= [r]=failregex= [m]=max_retry= [p]=ports= [t]=use_template)
     local logpath
     local failregex
     local max_retry
     local ports
     local use_template
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     max_retry=${max_retry:-3}
     ports=${ports:-http,https}
     use_template="${use_template:-0}"
+    # ===========================================
 
     if [ "$use_template" -ne 1 ]; then
         # Usage 1, no template. Build a config file from scratch.

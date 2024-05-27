@@ -137,18 +137,18 @@ fi
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_setup_source() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([d]=dest_dir= [s]=source_id= [k]=keep= [r]=full_replace=)
     local dest_dir
     local source_id
     local keep
     local full_replace
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     keep="${keep:-}"
     full_replace="${full_replace:-0}"
-
     source_id="${source_id:-main}"
+    # ===========================================
+
     local sources_json=$(cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq ".resources.sources[\"$source_id\"]")
     if jq -re ".url" <<< "$sources_json"
     then
@@ -448,13 +448,13 @@ ynh_local_curl() {
 #
 # Requires YunoHost version 4.1.0 or higher.
 ynh_add_config() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([t]=template= [d]=destination=)
     local template
     local destination
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     local template_path
+    # ===========================================
 
     if [ -f "$YNH_APP_BASEDIR/conf/$template" ]; then
         template_path="$YNH_APP_BASEDIR/conf/$template"
@@ -506,11 +506,11 @@ ynh_add_config() {
 #
 # Requires YunoHost version 4.1.0 or higher.
 ynh_replace_vars() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([f]=file=)
     local file
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     # Replace specific YunoHost variables
     if test -n "${path_url:-}"; then
@@ -591,14 +591,14 @@ ynh_replace_vars() {
 #
 # Requires YunoHost version 4.3 or higher.
 ynh_read_var_in_file() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([f]=file= [k]=key= [a]=after=)
     local file
     local key
     local after
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     after="${after:-}"
+    # ===========================================
 
     [[ -f $file ]] || ynh_die --message="File $file does not exists"
 
@@ -668,15 +668,15 @@ ynh_read_var_in_file() {
 #
 # Requires YunoHost version 4.3 or higher.
 ynh_write_var_in_file() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([f]=file= [k]=key= [v]=value= [a]=after=)
     local file
     local key
     local value
     local after
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     after="${after:-}"
+    # ===========================================
 
     [[ -f $file ]] || ynh_die --message="File $file does not exists"
 
@@ -815,11 +815,11 @@ _acceptable_path_to_delete() {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_secure_remove() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([f]=file=)
     local file
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
     set +o xtrace # set +x
 
     if [ $# -ge 2 ]; then
@@ -848,12 +848,12 @@ ynh_secure_remove() {
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_read_manifest() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([m]=manifest= [k]=manifest_key=)
     local manifest
     local manifest_key
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     if [ ! -e "${manifest:-}" ]; then
         # If the manifest isn't found, try the common place for backup and restore script.
@@ -890,12 +890,12 @@ ynh_read_manifest() {
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_app_upstream_version() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([m]=manifest=)
     local manifest
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     manifest="${manifest:-}"
+    # ===========================================
 
     if [[ "$manifest" != "" ]] && [[ -e "$manifest" ]]; then
         version_key_=$(ynh_read_manifest --manifest="$manifest" --manifest_key="version")
@@ -920,11 +920,11 @@ ynh_app_upstream_version() {
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_app_package_version() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([m]=manifest=)
     local manifest
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     version_key_=$YNH_APP_MANIFEST_VERSION
     echo "${version_key_/*~ynh/}"
@@ -970,11 +970,12 @@ ynh_check_app_version_changed() {
 #
 # Requires YunoHost version 3.8.0 or higher.
 ynh_compare_current_package_version() {
-    declare -Ar args_array=([c]=comparison= [v]=version=)
+    # ============ Argument parsing =============
+    local -A args_array=([c]=comparison= [v]=version=)
     local version
     local comparison
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     local current_version=$YNH_APP_CURRENT_VERSION
 

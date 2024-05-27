@@ -96,11 +96,11 @@ ynh_use_ruby () {
 #
 # Requires YunoHost version 3.2.2 or higher.
 ynh_install_ruby () {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=( [v]=ruby_version= )
     local ruby_version
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     # Load rbenv path in PATH
     local CLEAR_PATH="$rbenv_install_dir/bin:$PATH"

@@ -63,12 +63,12 @@ ynh_multimedia_build_main_dir() {
 # Requires YunoHost version 4.2 or higher.
 ynh_multimedia_addfolder() {
 
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([s]=source_dir= [d]=dest_dir=)
     local source_dir
     local dest_dir
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     # Ajout d'un lien symbolique vers le dossier à partager
     ln -sfn "$source_dir" "$MEDIA_DIRECTORY/$dest_dir"
@@ -90,11 +90,12 @@ ynh_multimedia_addfolder() {
 #
 # Requires YunoHost version 4.2 or higher.
 ynh_multimedia_addaccess() {
-    # Declare an array to define the options of this helper.
-    declare -Ar args_array=([u]=user_name=)
+    
+    # ============ Argument parsing =============
+    local -A args_array=([u]=user_name=)
     local user_name
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     groupadd -f multimedia
     usermod -a -G multimedia $user_name

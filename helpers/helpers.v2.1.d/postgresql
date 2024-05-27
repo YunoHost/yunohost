@@ -16,14 +16,14 @@ PSQL_VERSION=13
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_psql_connect_as() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([u]=user= [p]=password= [d]=database=)
     local user
     local password
     local database
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     database="${database:-}"
+    # ===========================================
 
     sudo --login --user=postgres PGUSER="$user" PGPASSWORD="$password" psql "$database"
 }
@@ -36,13 +36,13 @@ ynh_psql_connect_as() {
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_psql_execute_as_root() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([s]=sql= [d]=database=)
     local sql
     local database
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     database="${database:-}"
+    # ===========================================
 
     if [ -n "$database" ]; then
         database="--database=$database"
@@ -60,13 +60,13 @@ ynh_psql_execute_as_root() {
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_psql_execute_file_as_root() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([f]=file= [d]=database=)
     local file
     local database
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     database="${database:-}"
+    # ===========================================
 
     if [ -n "$database" ]; then
         database="--database=$database"
@@ -130,11 +130,11 @@ ynh_psql_drop_db() {
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_psql_dump_db() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([d]=database=)
     local database
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     sudo --login --user=postgres pg_dump "$database"
 }
@@ -164,11 +164,11 @@ ynh_psql_create_user() {
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_psql_user_exists() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([u]=user=)
     local user
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     if ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT rolname FROM pg_roles WHERE rolname='$user';" | grep --quiet "$user"; then
         return 1
@@ -185,11 +185,11 @@ ynh_psql_user_exists() {
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_psql_database_exists() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([d]=database=)
     local database
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     # if psql is not there, we cannot check the db
     # though it could exists.
@@ -230,13 +230,13 @@ ynh_psql_drop_user() {
 #
 # Requires YunoHost version 2.7.13 or higher.
 ynh_psql_setup_db() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([u]=db_user= [n]=db_name= [p]=db_pwd=)
     local db_user
     local db_name
     db_pwd=""
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     if ! ynh_psql_user_exists --user=$db_user; then
         local new_db_pwd=$(ynh_string_random) # Generate a random password
@@ -262,12 +262,12 @@ ynh_psql_setup_db() {
 #
 # Requires YunoHost version 2.7.13 or higher.
 ynh_psql_remove_db() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([u]=db_user= [n]=db_name=)
     local db_user
     local db_name
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     if ynh_psql_database_exists --database=$db_name; then # Check if the database exists
         ynh_psql_drop_db $db_name                         # Remove the database

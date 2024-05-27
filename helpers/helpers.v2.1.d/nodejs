@@ -94,11 +94,11 @@ ynh_use_nodejs() {
 ynh_install_nodejs() {
     # Use n, https://github.com/tj/n to manage the nodejs versions
 
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([n]=nodejs_version=)
     local nodejs_version
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+    # ===========================================
 
     # Create $n_install_dir
     mkdir --parents "$n_install_dir"

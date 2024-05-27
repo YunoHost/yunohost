@@ -13,18 +13,18 @@
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_get_ram() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([f]=free [t]=total [s]=ignore_swap [o]=only_swap)
     local free
     local total
     local ignore_swap
     local only_swap
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     ignore_swap=${ignore_swap:-0}
     only_swap=${only_swap:-0}
     free=${free:-0}
     total=${total:-0}
+    # ===========================================
 
     if [ $free -eq $total ]; then
         ynh_print_warn --message="You have to choose --free or --total when using ynh_get_ram"
@@ -76,14 +76,13 @@ ynh_get_ram() {
 #
 # Requires YunoHost version 3.8.1 or higher.
 ynh_require_ram() {
-    # Declare an array to define the options of this helper.
+    # ============ Argument parsing =============
     local -A args_array=([r]=required= [f]=free [t]=total [s]=ignore_swap [o]=only_swap)
     local required
     local free
     local total
     local ignore_swap
     local only_swap
-    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     # Dunno if that's the right way to do, but that's some black magic to be able to
     # forward the bool args to ynh_get_ram easily?
@@ -92,6 +91,7 @@ ynh_require_ram() {
     total=${total:+--total}
     ignore_swap=${ignore_swap:+--ignore_swap}
     only_swap=${only_swap:+--only_swap}
+    # ===========================================
 
     local ram=$(ynh_get_ram $free $total $ignore_swap $only_swap)
 
