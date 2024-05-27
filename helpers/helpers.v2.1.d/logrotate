@@ -14,18 +14,6 @@ FIRST_CALL_TO_LOGROTATE="true"
 # Requires YunoHost version 2.6.4 or higher.
 ynh_use_logrotate() {
 
-    # Stupid patch to ignore legacy --non-append and --nonappend
-    # which was never properly understood and improperly used and kind of bullshit
-    local all_args=( ${@} )
-    for I in $(seq 0 $(($# - 1)))
-    do
-        if [[ "${all_args[$I]}" == "--non-append" ]] || [[ "${all_args[$I]}" == "--nonappend" ]]
-        then
-            unset all_args[$I]
-        fi
-    done
-    set -- "${all_args[@]}"
-
     # ============ Argument parsing =============
     local -A args_array=([l]=logfile= [u]=specific_user=)
     local logfile
