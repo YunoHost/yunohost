@@ -282,21 +282,3 @@ ynh_psql_remove_db() {
         ynh_print_warn --message="User $db_user not found"
     fi
 }
-
-# Create a master password and set up global settings
-#
-# [internal]
-#
-# usage: ynh_psql_test_if_first_run
-#
-# It also make sure that postgresql is installed and running
-# Please always call this script in install and restore scripts
-#
-# Requires YunoHost version 2.7.13 or higher.
-ynh_psql_test_if_first_run() {
-
-    # Make sure postgresql is indeed installed
-    dpkg --list | grep -q "ii  postgresql-$PSQL_VERSION" || ynh_die --message="postgresql-$PSQL_VERSION is not installed !?"
-
-    yunohost tools regen-conf postgresql
-}
