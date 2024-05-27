@@ -1,7 +1,7 @@
 bin/* /usr/bin/
 share/* /usr/share/yunohost/
 hooks/* /usr/share/yunohost/hooks/
-helpers/* /usr/share/yunohost/helpers.d/
+helpers/* /usr/share/yunohost/
 conf/* /usr/share/yunohost/conf/
 locales/* /usr/share/yunohost/locales/
 doc/yunohost.8.gz /usr/share/man/man8/
