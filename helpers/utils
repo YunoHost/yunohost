@@ -451,12 +451,17 @@ ynh_local_curl() {
 #
 # usage: ynh_add_config --template="template" --destination="destination"
 # | arg: -t, --template=     - Template config file to use
-# | arg: -d, --destination=    - Destination of the config file
+# | arg: -d, --destination=  - Destination of the config file
+# | arg: -j, --jinja         - Use jinja template instead of legacy __MY_VAR__
 #
 # examples:
 #    ynh_add_config --template=".env" --destination="$install_dir/.env" use the template file "../conf/.env"
+#    ynh_add_config --jinja --template="config.j2" --destination="$install_dir/config" use the template file "../conf/config.j2"
 #    ynh_add_config --template="/etc/nginx/sites-available/default" --destination="etc/nginx/sites-available/mydomain.conf"
 #
+##
+## How it works in "legacy" mode
+##
 # The template can be by default the name of a file in the conf directory
 # of a YunoHost Package, a relative path or an absolute path.
 #
@@ -479,6 +484,37 @@ ynh_local_curl() {
 #   __VAR_1__    by $var_1
 #   __VAR_2__    by $var_2
 # ```
+#
+##
+## When --jinja is enabled
+##
+# For a full documentation of the template you can refer to: https://jinja.palletsprojects.com/en/3.1.x/templates/
+# In Yunohost context there are no really some specificity except that all variable passed are of type string.
+# So here are some example of recommended usage:
+#
+# If you need a conditional block
+#
+# {% if should_my_block_be_shown == 'true' %}
+# ...
+# {% endif %}
+#
+# or
+#
+# {% if should_my_block_be_shown == '1' %}
+# ...
+# {% endif %}
+#
+# If you need to iterate with loop:
+#
+# {% for yolo in var_with_multiline_value.splitlines() %}
+# ...
+# {% endfor %}
+#
+# or
+#
+# {% for jail in my_var_with_coma.split(',') %}
+# ...
+# {% endfor %}
 #
 # The helper will verify the checksum and backup the destination file
 # if it's different before applying the new template.
