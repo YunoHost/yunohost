@@ -1,0 +1,103 @@
+#!/bin/bash
+
+FIRST_CALL_TO_LOGROTATE="true"
+
+# Use logrotate to manage the logfile
+#
+# usage: ynh_use_logrotate [--logfile=/log/file] [--specific_user=user/group]
+# | arg: -l, --logfile=         - absolute path of logfile
+# | arg: -u, --specific_user=   - run logrotate as the specified user and group. If not specified logrotate is runned as root.
+#
+# If no `--logfile` is provided, `/var/log/$app` will be used as default.
+# `logfile` can point to a directory or a file.
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_use_logrotate() {
+
+    # Stupid patch to ignore legacy --non-append and --nonappend
+    # which was never properly understood and improperly used and kind of bullshit
+    local all_args=( ${@} )
+    for I in $(seq 0 $(($# - 1)))
+    do
+        if [[ "${all_args[$I]}" == "--non-append" ]] || [[ "${all_args[$I]}" == "--nonappend" ]]
+        then
+            unset all_args[$I]
+        fi
+    done
+    set -- "${all_args[@]}"
+
+    # Argument parsing
+    local legacy_args=lu
+    local -A args_array=([l]=logfile= [u]=specific_user=)
+    local logfile
+    local specific_user
+    ynh_handle_getopts_args "$@"
+    logfile="${logfile:-}"
+    specific_user="${specific_user:-}"
+
+    set -o noglob
+    if [[ -z "$logfile" ]]; then
+        logfile="/var/log/${app}/*.log"
+    elif [[ "${logfile##*.}" != "log" ]] && [[ "${logfile##*.}" != "txt" ]]; then
+        logfile="$logfile/*.log"
+    fi
+    set +o noglob
+
+    for stuff in $logfile
+    do
+        mkdir --parents $(dirname "$stuff")
+    done
+
+    local su_directive=""
+    if [[ -n "$specific_user" ]]; then
+        su_directive="su ${specific_user%/*} ${specific_user#*/}"
+    fi
+
+    local tempconf="$(mktemp)"
+    cat << EOF >$tempconf
+$logfile {
+    # Rotate if the logfile exceeds 100Mo
+    size 100M
+    # Keep 12 old log maximum
+    rotate 12
+    # Compress the logs with gzip
+    compress
+    # Compress the log at the next cycle. So keep always 2 non compressed logs
+    delaycompress
+    # Copy and truncate the log to allow to continue write on it. Instead of moving the log.
+    copytruncate
+    # Do not trigger an error if the log is missing
+    missingok
+    # Do not rotate if the log is empty
+    notifempty
+    # Keep old logs in the same dir
+    noolddir
+    $su_directive
+}
+EOF
+
+    if [[ "$FIRST_CALL_TO_LOGROTATE" == "true" ]]
+    then
+        cat $tempconf > /etc/logrotate.d/$app
+    else
+        cat $tempconf >> /etc/logrotate.d/$app
+    fi
+
+    FIRST_CALL_TO_LOGROTATE="false"
+
+    # Make sure permissions are correct (otherwise the config file could be ignored and the corresponding logs never rotated)
+    chmod 644 "/etc/logrotate.d/$app"
+    mkdir -p "/var/log/$app"
+    chmod 750 "/var/log/$app"
+}
+
+# Remove the app's logrotate config.
+#
+# usage: ynh_remove_logrotate
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_remove_logrotate() {
+    if [ -e "/etc/logrotate.d/$app" ]; then
+        rm "/etc/logrotate.d/$app"
+    fi
+}

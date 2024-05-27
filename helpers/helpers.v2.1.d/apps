@@ -1,0 +1,215 @@
+#!/bin/bash
+
+# Install others YunoHost apps
+#
+# usage: ynh_install_apps --apps="appfoo?domain=domain.foo&path=/foo appbar?domain=domain.bar&path=/bar&admin=USER&language=fr&is_public=1&pass?word=pass&port=666"
+# | arg: -a, --apps=     - apps to install
+#
+# Requires YunoHost version *.*.* or higher.
+ynh_install_apps() {
+	# Declare an array to define the options of this helper.
+	local legacy_args=a
+	local -A args_array=([a]=apps=)
+	local apps
+	# Manage arguments with getopts
+	ynh_handle_getopts_args "$@"
+
+	# Split the list of apps in an array
+	local apps_list=($(echo $apps | tr " " "\n"))
+	local apps_dependencies=""
+	
+	# For each app
+	for one_app_and_its_args in "${apps_list[@]}"
+	do
+		# Retrieve the name of the app (part before ?)
+		local one_app=$(cut -d "?" -f1 <<< "$one_app_and_its_args")
+		[ -z "$one_app" ] && ynh_die --message="You didn't provided a YunoHost app to install"
+
+		yunohost tools update apps
+		
+		# Installing or upgrading the app depending if it's installed or not
+		if ! yunohost app list --output-as json --quiet | jq -e --arg id $one_app '.apps[] | select(.id == $id)' >/dev/null
+		then
+			# Retrieve the arguments of the app (part after ?)
+			local one_argument=""
+			if [[ "$one_app_and_its_args" == *"?"* ]]; then
+				one_argument=$(cut -d "?" -f2- <<< "$one_app_and_its_args")
+				one_argument="--args $one_argument"
+			fi
+			
+			# Install the app with its arguments
+			yunohost app install $one_app $one_argument
+		else
+			# Upgrade the app
+			yunohost app upgrade $one_app
+		fi
+
+		if [ ! -z "$apps_dependencies" ]
+		then
+			apps_dependencies="$apps_dependencies, $one_app"
+		else
+			apps_dependencies="$one_app"
+		fi
+	done
+
+	ynh_app_setting_set --app=$app --key=apps_dependencies --value="$apps_dependencies"
+}
+
+# Remove other YunoHost apps
+#
+# Other YunoHost apps will be removed only if no other apps need them.
+#
+# usage: ynh_remove_apps
+#
+# Requires YunoHost version *.*.* or higher.
+ynh_remove_apps() {
+	# Retrieve the apps dependencies of the app
+	local apps_dependencies=$(ynh_app_setting_get --app=$app --key=apps_dependencies)
+	ynh_app_setting_delete --app=$app --key=apps_dependencies
+
+	if [ ! -z "$apps_dependencies" ]
+	then
+		# Split the list of apps dependencies in an array
+		local apps_dependencies_list=($(echo $apps_dependencies | tr ", " "\n"))
+		
+		# For each apps dependencies
+		for one_app in "${apps_dependencies_list[@]}"
+		do
+			# Retrieve the list of installed apps
+			local installed_apps_list=$(yunohost app list --output-as json --quiet | jq -r .apps[].id)
+			local required_by=""
+			local installed_app_required_by=""
+
+			# For each other installed app
+			for one_installed_app in $installed_apps_list
+			do
+				# Retrieve the other apps dependencies
+				one_installed_apps_dependencies=$(ynh_app_setting_get --app=$one_installed_app --key=apps_dependencies)
+				if [ ! -z "$one_installed_apps_dependencies" ]
+				then
+					one_installed_apps_dependencies_list=($(echo $one_installed_apps_dependencies | tr ", " "\n"))
+
+					# For each dependency of the other apps
+					for one_installed_app_dependency in "${one_installed_apps_dependencies_list[@]}"
+					do
+						if [[ $one_installed_app_dependency == $one_app ]]; then
+							required_by="$required_by $one_installed_app"
+						fi
+					done
+				fi
+			done
+
+			# If $one_app is no more required
+			if [[ -z "$required_by" ]]
+			then
+				# Remove $one_app
+				ynh_print_info --message="Removing of $one_app"
+				yunohost app remove $one_app --purge
+			else
+				ynh_print_info --message="$one_app was not removed because it's still required by${required_by}"
+			fi
+		done
+	fi
+}
+
+# Spawn a Bash shell with the app environment loaded
+#
+# usage: ynh_spawn_app_shell --app="app"
+#     | arg: -a, --app=     - the app ID
+#
+# examples:
+#   ynh_spawn_app_shell --app="APP" <<< 'echo "$USER"'
+#   ynh_spawn_app_shell --app="APP" < /tmp/some_script.bash
+#
+# Requires YunoHost version 11.0.* or higher, and that the app relies on packaging v2 or higher.
+# The spawned shell will have environment variables loaded and environment files sourced
+# from the app's service configuration file (defaults to $app.service, overridable by the packager with `service` setting).
+# If the app relies on a specific PHP version, then `php` will be aliased that version. The PHP command will also be appended with the `phpflags` settings.
+ynh_spawn_app_shell() {
+        # Declare an array to define the options of this helper.
+        local legacy_args=a
+        local -A args_array=([a]=app=)
+        local app
+        # Manage arguments with getopts
+        ynh_handle_getopts_args "$@"
+
+        # Force Bash to be used to run this helper
+        if [[ ! $0 =~ \/?bash$ ]]
+        then
+            ynh_print_err --message="Please use Bash as shell"
+            exit 1
+        fi
+
+        # Make sure the app is installed
+        local installed_apps_list=($(yunohost app list --output-as json --quiet | jq -r .apps[].id))
+        if [[ " ${installed_apps_list[*]} " != *" ${app} "* ]]
+        then
+            ynh_print_err --message="$app is not in the apps list"
+            exit 1
+        fi
+
+        # Make sure the app has its own user
+        if ! id -u "$app" &>/dev/null; then
+            ynh_print_err --message="There is no \"$app\" system user"
+            exit 1
+        fi
+
+        # Make sure the app has an install_dir setting
+        local install_dir=$(ynh_app_setting_get --app=$app --key=install_dir)
+        if [ -z "$install_dir" ]
+        then
+            ynh_print_err --message="$app has no install_dir setting (does it use packaging format >=2?)"
+            exit 1
+        fi
+
+        # Load the app's service name, or default to $app
+        local service=$(ynh_app_setting_get --app=$app --key=service)
+        [ -z "$service" ] && service=$app;
+
+        # Export HOME variable
+        export HOME=$install_dir;
+
+        # Load the Environment variables from the app's service
+        local env_var=$(systemctl show $service.service -p "Environment" --value)
+        [ -n "$env_var" ] && export $env_var;
+
+        # Force `php` to its intended version
+        # We use `eval`+`export` since `alias` is not propagated to subshells, even with `export`
+        local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+        local phpflags=$(ynh_app_setting_get --app=$app --key=phpflags)
+        if [ -n "$phpversion" ]
+        then
+            eval "php() { php${phpversion} ${phpflags} \"\$@\"; }"
+            export -f php
+        fi
+
+        # Source the EnvironmentFiles from the app's service
+        local env_files=($(systemctl show $service.service -p "EnvironmentFiles" --value))
+        if [ ${#env_files[*]} -gt 0 ]
+        then
+            # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
+            set -a
+            for file in ${env_files[*]}
+            do
+                [[ $file = /* ]] && source $file
+            done
+            set +a
+        fi
+
+        # Activate the Python environment, if it exists
+        if [ -f $install_dir/venv/bin/activate ]
+        then
+            # set -/+a enables and disables new variables being automatically exported. Needed when using `source`.
+            set -a
+            source $install_dir/venv/bin/activate
+            set +a
+        fi
+
+        # cd into the WorkingDirectory set in the service, or default to the install_dir
+        local env_dir=$(systemctl show $service.service -p "WorkingDirectory" --value)
+        [ -z $env_dir ] && env_dir=$install_dir;
+        cd $env_dir
+
+        # Spawn the app shell
+        su -s /bin/bash $app
+}

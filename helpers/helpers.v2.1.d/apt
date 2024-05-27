@@ -1,0 +1,636 @@
+#!/bin/bash
+
+# Check if apt is free to use, or wait, until timeout.
+#
+# [internal]
+#
+# usage: ynh_wait_dpkg_free
+# | exit: Return 1 if dpkg is broken
+#
+# Requires YunoHost version 3.3.1 or higher.
+ynh_wait_dpkg_free() {
+    local try
+    set +o xtrace # set +x
+    # With seq 1 17, timeout will be almost 30 minutes
+    for try in $(seq 1 17); do
+        # Check if /var/lib/dpkg/lock is used by another process
+        if lsof /var/lib/dpkg/lock >/dev/null; then
+            echo "apt is already in use..."
+            # Sleep an exponential time at each round
+            sleep $((try * try))
+        else
+            # Check if dpkg hasn't been interrupted and is fully available.
+            # See this for more information: https://sources.debian.org/src/apt/1.4.9/apt-pkg/deb/debsystem.cc/#L141-L174
+            local dpkg_dir="/var/lib/dpkg/updates/"
+
+            # For each file in $dpkg_dir
+            while read dpkg_file <&9; do
+                # Check if the name of this file contains only numbers.
+                if echo "$dpkg_file" | grep --perl-regexp --quiet "^[[:digit:]]+$"; then
+                    # If so, that a remaining of dpkg.
+                    ynh_print_err "dpkg was interrupted, you must manually run 'sudo dpkg --configure -a' to correct the problem."
+                    set -o xtrace # set -x
+                    return 1
+                fi
+            done 9<<<"$(ls -1 $dpkg_dir)"
+            set -o xtrace # set -x
+            return 0
+        fi
+    done
+    echo "apt still used, but timeout reached !"
+    set -o xtrace # set -x
+}
+
+# Check either a package is installed or not
+#
+# example: ynh_package_is_installed --package=yunohost && echo "installed"
+#
+# usage: ynh_package_is_installed --package=name
+# | arg: -p, --package=     - the package name to check
+# | ret: 0 if the package is installed, 1 else.
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_package_is_installed() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=p
+    local -A args_array=([p]=package=)
+    local package
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    dpkg-query --show --showformat='${Status}' "$package" 2>/dev/null \
+        | grep --count "ok installed" &>/dev/null
+}
+
+# Get the version of an installed package
+#
+# example: version=$(ynh_package_version --package=yunohost)
+#
+# [internal]
+#
+# usage: ynh_package_version --package=name
+# | arg: -p, --package=     - the package name to get version
+# | ret: the version or an empty string
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_package_version() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=p
+    local -A args_array=([p]=package=)
+    local package
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    if ynh_package_is_installed "$package"; then
+        dpkg-query --show --showformat='${Version}' "$package" 2>/dev/null
+    else
+        echo ''
+    fi
+}
+
+# APT wrapper for non-interactive operation
+#
+# [internal]
+#
+# usage: ynh_apt update
+#
+# Requires YunoHost version 2.4.0.3 or higher.
+ynh_apt() {
+    ynh_wait_dpkg_free
+    LC_ALL=C DEBIAN_FRONTEND=noninteractive apt-get --assume-yes --quiet -o=Acquire::Retries=3 -o=Dpkg::Use-Pty=0 $@
+}
+
+# Update package index files
+#
+# [internal]
+#
+# usage: ynh_package_update
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_package_update() {
+    ynh_apt update
+}
+
+# Install package(s)
+#
+# [internal]
+#
+# usage: ynh_package_install name [name [...]]
+# | arg: name - the package name to install
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_package_install() {
+    ynh_apt --no-remove --option Dpkg::Options::=--force-confdef \
+        --option Dpkg::Options::=--force-confold install $@
+}
+
+# Remove package(s)
+#
+# [internal]
+#
+# usage: ynh_package_remove name [name [...]]
+# | arg: name - the package name to remove
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_package_remove() {
+    ynh_apt remove $@
+}
+
+# Remove package(s) and their uneeded dependencies
+#
+# [internal]
+#
+# usage: ynh_package_autoremove name [name [...]]
+# | arg: name - the package name to remove
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_package_autoremove() {
+    ynh_apt autoremove $@
+}
+
+# Purge package(s) and their uneeded dependencies
+#
+# [internal]
+#
+# usage: ynh_package_autopurge name [name [...]]
+# | arg: name - the package name to autoremove and purge
+#
+# Requires YunoHost version 2.7.2 or higher.
+ynh_package_autopurge() {
+    ynh_apt autoremove --purge $@
+}
+
+# Build and install a package from an equivs control file
+#
+# [internal]
+#
+# example: generate an empty control file with `equivs-control`, adjust its
+#          content and use helper to build and install the package:
+#              ynh_package_install_from_equivs /path/to/controlfile
+#
+# usage: ynh_package_install_from_equivs controlfile
+# | arg: controlfile - path of the equivs control file
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_package_install_from_equivs() {
+    local controlfile=$1
+
+    # retrieve package information
+    local pkgname=$(grep '^Package: ' $controlfile | cut --delimiter=' ' --fields=2)    # Retrieve the name of the debian package
+    local pkgversion=$(grep '^Version: ' $controlfile | cut --delimiter=' ' --fields=2) # And its version number
+    [[ -z "$pkgname" || -z "$pkgversion" ]] \
+        && ynh_die --message="Invalid control file" # Check if this 2 variables aren't empty.
+
+    # Update packages cache
+    ynh_package_update
+
+    # Build and install the package
+    local TMPDIR=$(mktemp --directory)
+
+    # Make sure to delete the legacy compat file
+    # It's now handle somewhat magically through the control file
+    rm -f /usr/share/equivs/template/debian/compat
+
+    # Note that the cd executes into a sub shell
+    # Create a fake deb package with equivs-build and the given control file
+    # Install the fake package without its dependencies with dpkg
+    # Install missing dependencies with ynh_package_install
+    ynh_wait_dpkg_free
+    cp "$controlfile" "${TMPDIR}/control"
+    (
+        cd "$TMPDIR"
+        LC_ALL=C equivs-build ./control 2>&1
+        LC_ALL=C dpkg --force-depends --install "./${pkgname}_${pkgversion}_all.deb" 2>&1 | tee ./dpkg_log
+    )
+
+    ynh_package_install --fix-broken \
+        || { # If the installation failed
+            # (the following is ran inside { } to not start a subshell otherwise ynh_die wouldnt exit the original process)
+            # Parse the list of problematic dependencies from dpkg's log ...
+            # (relevant lines look like: "foo-ynh-deps depends on bar; however:")
+            local problematic_dependencies="$(cat $TMPDIR/dpkg_log | grep -oP '(?<=-ynh-deps depends on ).*(?=; however)' | tr '\n' ' ')"
+            # Fake an install of those dependencies to see the errors
+            # The sed command here is, Print only from 'Reading state info' to the end.
+            [[ -n "$problematic_dependencies" ]] && ynh_package_install $problematic_dependencies --dry-run 2>&1 | sed --quiet '/Reading state info/,$p' | grep -v "fix-broken\|Reading state info" >&2
+            ynh_die --message="Unable to install dependencies"
+        }
+    [[ -n "$TMPDIR" ]] && rm --recursive --force $TMPDIR # Remove the temp dir.
+
+    # check if the package is actually installed
+    ynh_package_is_installed "$pkgname"
+}
+
+YNH_INSTALL_APP_DEPENDENCIES_REPLACE="true"
+
+# Define and install dependencies with a equivs control file
+#
+# [packagingv1]
+#
+# This helper can/should only be called once per app
+#
+# example : ynh_install_app_dependencies dep1 dep2 "dep3|dep4|dep5"
+#
+# usage: ynh_install_app_dependencies dep [dep [...]]
+# | arg: dep - the package name to install in dependence.
+# | arg: "dep1|dep2|…" - You can specify alternatives. It will require to install (dep1 or dep2, etc).
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_install_app_dependencies() {
+    local dependencies=$@
+    # Add a comma for each space between packages. But not add a comma if the space separate a version specification. (See  below)
+    dependencies="$(echo "$dependencies" | sed 's/\([^\<=\>]\)\ \([^(]\)/\1, \2/g')"
+    local dependencies=${dependencies//|/ | }
+
+    local version=$(ynh_read_manifest --manifest_key="version")
+    if [ -z "${version}" ] || [ "$version" == "null" ]; then
+        version="1.0"
+    fi
+    local dep_app=${app//_/-} # Replace all '_' by '-'
+
+    # Handle specific versions
+    if [[ "$dependencies" =~ [\<=\>] ]]; then
+        # Replace version specifications by relationships syntax
+        # https://www.debian.org/doc/debian-policy/ch-relationships.html
+        # Sed clarification
+        # [^(\<=\>] ignore if it begins by ( or < = >. To not apply twice.
+        # [\<=\>] matches < = or >
+        # \+ matches one or more occurence of the previous characters, for >= or >>.
+        # [^,]\+ matches all characters except ','
+        # Ex: 'package>=1.0' will be replaced by 'package (>= 1.0)'
+        dependencies="$(echo "$dependencies" | sed 's/\([^(\<=\>]\)\([\<=\>]\+\)\([^,]\+\)/\1 (\2 \3)/g')"
+    fi
+
+    # Check for specific php dependencies which requires sury
+    # This grep will for example return "7.4" if dependencies is "foo bar php7.4-pwet php-gni"
+    # The (?<=php) syntax corresponds to lookbehind ;)
+    local specific_php_version=$(echo $dependencies | grep -oP '(?<=php)[0-9.]+(?=-|\>|)' | sort -u)
+
+    if [[ -n "$specific_php_version" ]]
+    then
+        # Cover a small edge case where a packager could have specified "php7.4-pwet php5-gni" which is confusing
+        [[ $(echo $specific_php_version | wc -l) -eq 1 ]] \
+            || ynh_die --message="Inconsistent php versions in dependencies ... found : $specific_php_version"
+
+        dependencies+=", php${specific_php_version}, php${specific_php_version}-fpm, php${specific_php_version}-common"
+
+        local old_phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+
+        # If the PHP version changed, remove the old fpm conf
+        if [ -n "$old_phpversion" ] && [ "$old_phpversion" != "$specific_php_version" ]; then
+            local old_php_fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
+            local old_php_finalphpconf="$old_php_fpm_config_dir/pool.d/$app.conf"
+
+            if [[ -f "$old_php_finalphpconf" ]]
+            then
+                ynh_backup_if_checksum_is_different --file="$old_php_finalphpconf"
+                ynh_remove_fpm_config
+            fi
+        fi
+        # Store phpversion into the config of this app
+        ynh_app_setting_set --app=$app --key=phpversion --value=$specific_php_version
+
+        # Set the default php version back as the default version for php-cli.
+        if test -e /usr/bin/php$YNH_DEFAULT_PHP_VERSION
+        then
+            update-alternatives --set php /usr/bin/php$YNH_DEFAULT_PHP_VERSION
+        fi
+    elif grep --quiet 'php' <<< "$dependencies"; then
+        ynh_app_setting_set --app=$app --key=phpversion --value=$YNH_DEFAULT_PHP_VERSION
+    fi
+
+    local psql_installed="$(ynh_package_is_installed "postgresql-$PSQL_VERSION" && echo yes || echo no)"
+
+    # The first time we run ynh_install_app_dependencies, we will replace the
+    # entire control file (This is in particular meant to cover the case of
+    # upgrade script where ynh_install_app_dependencies is called with this
+    # expected effect) Otherwise, any subsequent call will add dependencies
+    # to those already present in the equivs control file.
+    if [[ $YNH_INSTALL_APP_DEPENDENCIES_REPLACE == "true" ]]
+    then
+        YNH_INSTALL_APP_DEPENDENCIES_REPLACE="false"
+    else
+        local current_dependencies=""
+        if ynh_package_is_installed --package="${dep_app}-ynh-deps"
+        then
+            current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${dep_app}-ynh-deps) "
+            current_dependencies=${current_dependencies// | /|}
+        fi
+        dependencies="$current_dependencies, $dependencies"
+    fi
+
+    cat >/tmp/${dep_app}-ynh-deps.control <<EOF # Make a control file for equivs-build
+Section: misc
+Priority: optional
+Package: ${dep_app}-ynh-deps
+Version: ${version}
+Depends: ${dependencies}
+Architecture: all
+Description: Fake package for ${app} (YunoHost app) dependencies
+ This meta-package is only responsible of installing its dependencies.
+EOF
+
+    ynh_package_install_from_equivs /tmp/${dep_app}-ynh-deps.control \
+        || ynh_die --message="Unable to install dependencies" # Install the fake package and its dependencies
+    rm /tmp/${dep_app}-ynh-deps.control
+
+    # Trigger postgresql regenconf if we may have just installed postgresql
+    local psql_installed2="$(ynh_package_is_installed "postgresql-$PSQL_VERSION" && echo yes || echo no)"
+    if [[ "$psql_installed" != "$psql_installed2" ]]
+    then
+        yunohost tools regen-conf postgresql
+    fi
+
+}
+
+# Add dependencies to install with ynh_install_app_dependencies
+#
+# [packagingv1]
+#
+# usage: ynh_add_app_dependencies --package=phpversion [--replace]
+# | arg: -p, --package=     - Packages to add as dependencies for the app.
+#
+# Requires YunoHost version 3.8.1 or higher.
+ynh_add_app_dependencies() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=pr
+    local -A args_array=([p]=package= [r]=replace)
+    local package
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    ynh_print_warn --message="Packagers: ynh_add_app_dependencies is deprecated and is now only an alias to ynh_install_app_dependencies"
+    ynh_install_app_dependencies "${package}"
+}
+
+# Remove fake package and its dependencies
+#
+# [packagingv1]
+#
+# Dependencies will removed only if no other package need them.
+#
+# usage: ynh_remove_app_dependencies
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_remove_app_dependencies() {
+    local dep_app=${app//_/-}	# Replace all '_' by '-'
+
+    local current_dependencies=""
+    if ynh_package_is_installed --package="${dep_app}-ynh-deps"; then
+        current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${dep_app}-ynh-deps) "
+        current_dependencies=${current_dependencies// | /|}
+    fi
+
+    # Edge case where the app dep may be on hold,
+    # cf https://forum.yunohost.org/t/migration-error-cause-of-ffsync/20675/4
+    if apt-mark showhold | grep -q -w ${dep_app}-ynh-deps
+    then
+        apt-mark unhold ${dep_app}-ynh-deps
+    fi
+
+    # Remove the fake package and its dependencies if they not still used.
+    # (except if dpkg doesn't know anything about the package,
+    # which should be symptomatic of a failed install, and we don't want bash to report an error)
+    if dpkg-query --show ${dep_app}-ynh-deps &>/dev/null
+    then
+        ynh_package_autopurge ${dep_app}-ynh-deps
+    fi
+}
+
+# Install packages from an extra repository properly.
+#
+# [packagingv1]
+#
+# usage: ynh_install_extra_app_dependencies --repo="repo" --package="dep1 dep2" [--key=key_url] [--name=name]
+# | arg: -r, --repo=    - Complete url of the extra repository.
+# | arg: -p, --package= - The packages to install from this extra repository
+# | arg: -k, --key=     - url to get the public key.
+# | arg: -n, --name=    - Name for the files for this repo, $app as default value.
+#
+# Requires YunoHost version 3.8.1 or higher.
+ynh_install_extra_app_dependencies() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=rpkn
+    local -A args_array=([r]=repo= [p]=package= [k]=key= [n]=name=)
+    local repo
+    local package
+    local key
+    local name
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    name="${name:-$app}"
+    key=${key:-}
+
+    # Set a key only if asked
+    if [ -n "$key" ]; then
+        key="--key=$key"
+    fi
+    # Add an extra repository for those packages
+    ynh_install_extra_repo --repo="$repo" $key --priority=995 --name=$name
+
+    # Install requested dependencies from this extra repository.
+    ynh_install_app_dependencies "$package"
+
+    # Force to upgrade to the last version...
+    # Without doing apt install, an already installed dep is not upgraded
+    local apps_auto_installed="$(apt-mark showauto $package)"
+    ynh_package_install "$package"
+    [ -z "$apps_auto_installed" ] || apt-mark auto $apps_auto_installed
+
+    # Remove this extra repository after packages are installed
+    ynh_remove_extra_repo --name=$name
+}
+
+# Add an extra repository correctly, pin it and get the key.
+#
+# [internal]
+#
+# usage: ynh_install_extra_repo --repo="repo" [--key=key_url] [--priority=priority_value] [--name=name] [--append]
+# | arg: -r, --repo=        - Complete url of the extra repository.
+# | arg: -k, --key=         - url to get the public key.
+# | arg: -p, --priority=    - Priority for the pin
+# | arg: -n, --name=        - Name for the files for this repo, $app as default value.
+# | arg: -a, --append       - Do not overwrite existing files.
+#
+# Requires YunoHost version 3.8.1 or higher.
+ynh_install_extra_repo() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=rkpna
+    local -A args_array=([r]=repo= [k]=key= [p]=priority= [n]=name= [a]=append)
+    local repo
+    local key
+    local priority
+    local name
+    local append
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    name="${name:-$app}"
+    append=${append:-0}
+    key=${key:-}
+    priority=${priority:-}
+
+    if [ $append -eq 1 ]; then
+        append="--append"
+        wget_append="tee --append"
+    else
+        append=""
+        wget_append="tee"
+    fi
+
+    # Split the repository into uri, suite and components.
+    # Remove "deb " at the beginning of the repo.
+    repo="${repo#deb }"
+
+    # Get the uri
+    local uri="$(echo "$repo" | awk '{ print $1 }')"
+
+    # Get the suite
+    local suite="$(echo "$repo" | awk '{ print $2 }')"
+
+    # Get the components
+    local component="${repo##$uri $suite }"
+
+    # Add the repository into sources.list.d
+    ynh_add_repo --uri="$uri" --suite="$suite" --component="$component" --name="$name" $append
+
+    # Pin the new repo with the default priority, so it won't be used for upgrades.
+    # Build $pin from the uri without http and any sub path
+    local pin="${uri#*://}"
+    pin="${pin%%/*}"
+    # Set a priority only if asked
+    if [ -n "$priority" ]; then
+        priority="--priority=$priority"
+    fi
+    ynh_pin_repo --package="*" --pin="origin \"$pin\"" $priority --name="$name" $append
+
+    # Get the public key for the repo
+    if [ -n "$key" ]; then
+        mkdir --parents "/etc/apt/trusted.gpg.d"
+        # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
+        wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor | $wget_append /etc/apt/trusted.gpg.d/$name.gpg >/dev/null
+    fi
+
+    # Update the list of package with the new repo
+    ynh_package_update
+}
+
+# Remove an extra repository and the assiociated configuration.
+#
+# [internal]
+#
+# usage: ynh_remove_extra_repo [--name=name]
+# | arg: -n, --name=    - Name for the files for this repo, $app as default value.
+#
+# Requires YunoHost version 3.8.1 or higher.
+ynh_remove_extra_repo() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=n
+    local -A args_array=([n]=name=)
+    local name
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    name="${name:-$app}"
+
+    ynh_secure_remove --file="/etc/apt/sources.list.d/$name.list"
+    # Sury pinning is managed by the regenconf in the core...
+    [[ "$name" == "extra_php_version" ]] || ynh_secure_remove "/etc/apt/preferences.d/$name"
+    if [ -e /etc/apt/trusted.gpg.d/$name.gpg ]; then
+        ynh_secure_remove --file="/etc/apt/trusted.gpg.d/$name.gpg"
+    fi
+
+    # (Do we even create a .asc file anywhere ...?)
+    if [ -e /etc/apt/trusted.gpg.d/$name.asc ]; then
+        ynh_secure_remove --file="/etc/apt/trusted.gpg.d/$name.asc"
+    fi
+
+    # Update the list of package to exclude the old repo
+    ynh_package_update
+}
+
+# Add a repository.
+#
+# [internal]
+#
+# usage: ynh_add_repo --uri=uri --suite=suite --component=component [--name=name] [--append]
+# | arg: -u, --uri=         - Uri of the repository.
+# | arg: -s, --suite=       - Suite of the repository.
+# | arg: -c, --component=   - Component of the repository.
+# | arg: -n, --name=        - Name for the files for this repo, $app as default value.
+# | arg: -a, --append       - Do not overwrite existing files.
+#
+# Example for a repo like deb http://forge.yunohost.org/debian/ stretch stable
+#                             uri                               suite   component
+# ynh_add_repo --uri=http://forge.yunohost.org/debian/ --suite=stretch --component=stable
+#
+# Requires YunoHost version 3.8.1 or higher.
+ynh_add_repo() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=uscna
+    local -A args_array=([u]=uri= [s]=suite= [c]=component= [n]=name= [a]=append)
+    local uri
+    local suite
+    local component
+    local name
+    local append
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    name="${name:-$app}"
+    append=${append:-0}
+
+    if [ $append -eq 1 ]; then
+        append="tee --append"
+    else
+        append="tee"
+    fi
+
+    mkdir --parents "/etc/apt/sources.list.d"
+    # Add the new repo in sources.list.d
+    echo "deb $uri $suite $component" \
+        | $append "/etc/apt/sources.list.d/$name.list"
+}
+
+# Pin a repository.
+#
+# [internal]
+#
+# usage: ynh_pin_repo --package=packages --pin=pin_filter [--priority=priority_value] [--name=name] [--append]
+# | arg: -p, --package=     - Packages concerned by the pin. Or all, *.
+# | arg: -i, --pin=         - Filter for the pin.
+# | arg: -p, --priority=    - Priority for the pin
+# | arg: -n, --name=        - Name for the files for this repo, $app as default value.
+# | arg: -a, --append       - Do not overwrite existing files.
+#
+# See https://manpages.debian.org/stretch/apt/apt_preferences.5.en.html#How_APT_Interprets_Priorities for information about pinning.
+#
+# Requires YunoHost version 3.8.1 or higher.
+ynh_pin_repo() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=pirna
+    local -A args_array=([p]=package= [i]=pin= [r]=priority= [n]=name= [a]=append)
+    local package
+    local pin
+    local priority
+    local name
+    local append
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+    package="${package:-*}"
+    priority=${priority:-50}
+    name="${name:-$app}"
+    append=${append:-0}
+
+    if [ $append -eq 1 ]; then
+        append="tee --append"
+    else
+        append="tee"
+    fi
+
+    # Sury pinning is managed by the regenconf in the core...
+    [[ "$name" != "extra_php_version" ]] || return 0
+
+    mkdir --parents "/etc/apt/preferences.d"
+    echo "Package: $package
+Pin: $pin
+Pin-Priority: $priority
+" \
+        | $append "/etc/apt/preferences.d/$name"
+}

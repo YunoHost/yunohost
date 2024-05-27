@@ -1,0 +1,1 @@
+This is taken from https://github.com/jjlin/docker-image-extract, under MIT license.
