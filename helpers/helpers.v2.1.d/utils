@@ -66,8 +66,8 @@ ynh_abort_if_errors() {
     trap ynh_exit_properly EXIT # Capturing exit signals on shell script
 }
 
-# When running an app script with packaging format >= 2, auto-enable ynh_abort_if_errors except for remove script
-if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} ge 2 && [[ ${YNH_APP_ACTION} != "remove" ]]
+# When running an app script, auto-enable ynh_abort_if_errors except for remove script
+if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && [[ "${YNH_APP_ACTION}" != "remove" ]]
 then
     ynh_abort_if_errors
 fi
@@ -505,10 +505,10 @@ ynh_check_app_version_changed() {
 
 # Compare the current package version is strictly lower than another version given as an argument
 #
-# example: if ynh_if_upgrading_from_version_prior_to 2.3.2~ynh1; then ...
+# example: if ynh_app_upgrading_from_version_prior_to 2.3.2~ynh1; then ...
 #
 # Requires YunoHost version 11.2 or higher.
-ynh_if_upgrading_from_version_prior_to() {
+ynh_app_upgrading_from_version_prior_to() {
     local version=$1
     [[ $version =~ '~ynh' ]] || ynh_die --message="Invalid argument for version, should include the ~ynhX prefix"
 
@@ -517,10 +517,10 @@ ynh_if_upgrading_from_version_prior_to() {
 
 # Compare the current package version is lower or equal to another version given as an argument
 #
-# example: if ynh_if_upgrading_from_version_prior_or_equal_to 2.3.2~ynh1; then ...
+# example: if ynh_app_upgrading_from_version_prior_or_equal_to 2.3.2~ynh1; then ...
 #
 # Requires YunoHost version 11.2 or higher.
-ynh_if_upgrading_from_version_prior_or_equal_to() {
+ynh_app_upgrading_from_version_prior_or_equal_to() {
     local version=$1
     [[ $version =~ '~ynh' ]] || ynh_die --message="Invalid argument for version, should include the ~ynhX prefix"
 
