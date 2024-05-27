@@ -77,7 +77,7 @@ ynh_backup() {
     not_mandatory="${not_mandatory:-0}"
 
     BACKUP_CORE_ONLY=${BACKUP_CORE_ONLY:-0}
-    test -n "${app:-}" && do_not_backup_data=$(ynh_app_setting_get --app=$app --key=do_not_backup_data)
+    test -n "${app:-}" && do_not_backup_data=$(ynh_app_setting_get --key=do_not_backup_data)
 
     # If backing up core only (used by ynh_backup_before_upgrade),
     # don't backup big data items
@@ -315,14 +315,14 @@ ynh_store_file_checksum() {
 
     # If update only, we don't save the new checksum if no old checksum exist
     if [ $update_only -eq 1 ]; then
-        local checksum_value=$(ynh_app_setting_get --app=$app --key=$checksum_setting_name)
+        local checksum_value=$(ynh_app_setting_get --key=$checksum_setting_name)
         if [ -z "${checksum_value}" ]; then
             unset backup_file_checksum
             return 0
         fi
     fi
 
-    ynh_app_setting_set --app=$app --key=$checksum_setting_name --value=$(md5sum "$file" | cut --delimiter=' ' --fields=1)
+    ynh_app_setting_set --key=$checksum_setting_name --value=$(md5sum "$file" | cut --delimiter=' ' --fields=1)
 
     if [ ${PACKAGE_CHECK_EXEC:-0} -eq 1 ]; then
         # Using a base64 is in fact more reversible than "replace / and space by _" ... So we can in fact obtain the original file path in an easy reliable way ...
@@ -359,7 +359,7 @@ ynh_backup_if_checksum_is_different() {
     ynh_handle_getopts_args "$@"
 
     local checksum_setting_name=checksum_${file//[\/ ]/_} # Replace all '/' and ' ' by '_'
-    local checksum_value=$(ynh_app_setting_get --app=$app --key=$checksum_setting_name)
+    local checksum_value=$(ynh_app_setting_get --key=$checksum_setting_name)
     # backup_file_checksum isn't declare as local, so it can be reuse by ynh_store_file_checksum
     backup_file_checksum=""
     if [ -n "$checksum_value" ]; then                                                     # Proceed only if a value was stored into the app settings
@@ -398,7 +398,7 @@ ynh_delete_file_checksum() {
     ynh_handle_getopts_args "$@"
 
     local checksum_setting_name=checksum_${file//[\/ ]/_} # Replace all '/' and ' ' by '_'
-    ynh_app_setting_delete --app=$app --key=$checksum_setting_name
+    ynh_app_setting_delete --key=$checksum_setting_name
 }
 
 # Checks a backup archive exists

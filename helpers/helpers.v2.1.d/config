@@ -90,7 +90,7 @@ _ynh_app_config_apply_one() {
 
         # Save value in app settings
         elif [[ "$bind" == "settings" ]]; then
-            ynh_app_setting_set --app=$app --key=$short_setting --value="${!short_setting}"
+            ynh_app_setting_set --key=$short_setting --value="${!short_setting}"
             ynh_print_info --message="Configuration key '$short_setting' edited in app settings"
 
         # Save multiline text in a file
@@ -120,7 +120,7 @@ _ynh_app_config_apply_one() {
             ynh_store_file_checksum --file="$bind_file" --update_only
 
             # We stored the info in settings in order to be able to upgrade the app
-            ynh_app_setting_set --app=$app --key=$short_setting --value="${!short_setting}"
+            ynh_app_setting_set --key=$short_setting --value="${!short_setting}"
             ynh_print_info --message="Configuration key '$bind_key_' edited into $bind_file"
 
         fi

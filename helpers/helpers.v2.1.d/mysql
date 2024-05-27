@@ -212,7 +212,7 @@ ynh_mysql_setup_db() {
     dpkg --list | grep -q "^ii  mariadb-server" || { ynh_print_warn --message="Packager: you called ynh_mysql_setup_db without declaring a dependency to mariadb-server. Please add it to your apt dependencies !"; ynh_apt install mariadb-server; }
 
     ynh_mysql_create_db "$db_name" "$db_user" "$db_pwd"
-    ynh_app_setting_set --app=$app --key=mysqlpwd --value=$db_pwd
+    ynh_app_setting_set --key=mysqlpwd --value=$db_pwd
 }
 
 # Remove a database if it exists, and the associated user

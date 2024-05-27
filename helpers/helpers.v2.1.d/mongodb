@@ -255,7 +255,7 @@ ynh_mongo_setup_db() {
 	ynh_mongo_create_user --db_user="$db_user" --db_pwd="$db_pwd" --db_name="$db_name"
 
 	# Store the password in the app's config
-	ynh_app_setting_set --app=$app --key=db_pwd --value=$db_pwd
+	ynh_app_setting_set --key=db_pwd --value=$db_pwd
 }
 
 # Remove a database if it exists, and the associated user
@@ -321,7 +321,7 @@ ynh_install_mongo() {
 	yunohost service add $mongodb_servicename --description="MongoDB daemon" --log="/var/log/mongodb/$mongodb_servicename.log"
 
 	# Store mongo_version into the config of this app
-	ynh_app_setting_set --app=$app --key=mongo_version --value=$mongo_version
+	ynh_app_setting_set --key=mongo_version --value=$mongo_version
 }
 
 # Remove MongoDB

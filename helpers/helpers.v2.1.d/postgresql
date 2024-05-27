@@ -249,7 +249,7 @@ ynh_psql_setup_db() {
     fi
 
     ynh_psql_create_db "$db_name" "$db_user"                     # Create the database
-    ynh_app_setting_set --app=$app --key=psqlpwd --value=$db_pwd # Store the password in the app's config
+    ynh_app_setting_set --key=psqlpwd --value=$db_pwd # Store the password in the app's config
 }
 
 # Remove a database if it exists, and the associated user

@@ -51,7 +51,7 @@ ynh_install_apps() {
 		fi
 	done
 
-	ynh_app_setting_set --app=$app --key=apps_dependencies --value="$apps_dependencies"
+	ynh_app_setting_set --key=apps_dependencies --value="$apps_dependencies"
 }
 
 # Remove other YunoHost apps
@@ -63,8 +63,8 @@ ynh_install_apps() {
 # Requires YunoHost version *.*.* or higher.
 ynh_remove_apps() {
 	# Retrieve the apps dependencies of the app
-	local apps_dependencies=$(ynh_app_setting_get --app=$app --key=apps_dependencies)
-	ynh_app_setting_delete --app=$app --key=apps_dependencies
+	local apps_dependencies=$(ynh_app_setting_get --key=apps_dependencies)
+	ynh_app_setting_delete --key=apps_dependencies
 
 	if [ ! -z "$apps_dependencies" ]
 	then
@@ -153,7 +153,7 @@ ynh_spawn_app_shell() {
         fi
 
         # Make sure the app has an install_dir setting
-        local install_dir=$(ynh_app_setting_get --app=$app --key=install_dir)
+        local install_dir=$(ynh_app_setting_get --key=install_dir)
         if [ -z "$install_dir" ]
         then
             ynh_print_err --message="$app has no install_dir setting (does it use packaging format >=2?)"
@@ -161,7 +161,7 @@ ynh_spawn_app_shell() {
         fi
 
         # Load the app's service name, or default to $app
-        local service=$(ynh_app_setting_get --app=$app --key=service)
+        local service=$(ynh_app_setting_get --key=service)
         [ -z "$service" ] && service=$app;
 
         # Export HOME variable
@@ -173,8 +173,8 @@ ynh_spawn_app_shell() {
 
         # Force `php` to its intended version
         # We use `eval`+`export` since `alias` is not propagated to subshells, even with `export`
-        local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
-        local phpflags=$(ynh_app_setting_get --app=$app --key=phpflags)
+        local phpversion=$(ynh_app_setting_get --key=phpversion)
+        local phpflags=$(ynh_app_setting_get --key=phpflags)
         if [ -n "$phpversion" ]
         then
             eval "php() { php${phpversion} ${phpflags} \"\$@\"; }"

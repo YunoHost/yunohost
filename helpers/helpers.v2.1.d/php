@@ -87,19 +87,19 @@ ynh_add_fpm_config() {
         autogenconf=true
 
         # If no usage provided, default to the value existing in setting ... or to low
-        local fpm_usage_in_setting=$(ynh_app_setting_get --app=$app --key=fpm_usage)
+        local fpm_usage_in_setting=$(ynh_app_setting_get --key=fpm_usage)
         if [ -z "$usage" ]
         then
             usage=${fpm_usage_in_setting:-low}
-            ynh_app_setting_set --app=$app --key=fpm_usage --value=$usage
+            ynh_app_setting_set --key=fpm_usage --value=$usage
         fi
 
         # If no footprint provided, default to the value existing in setting ... or to low
-        local fpm_footprint_in_setting=$(ynh_app_setting_get --app=$app --key=fpm_footprint)
+        local fpm_footprint_in_setting=$(ynh_app_setting_get --key=fpm_footprint)
         if [ -z "$footprint" ]
         then
             footprint=${fpm_footprint_in_setting:-low}
-            ynh_app_setting_set --app=$app --key=fpm_footprint --value=$footprint
+            ynh_app_setting_set --key=fpm_footprint --value=$footprint
         fi
 
     fi
@@ -111,12 +111,12 @@ ynh_add_fpm_config() {
         phpversion="${phpversion:-$_globalphpversion}"
     fi
 
-    local old_phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+    local old_phpversion=$(ynh_app_setting_get --key=phpversion)
 
     # If the PHP version changed, remove the old fpm conf
     # (NB: This stuff is also handled by the apt helper, which is usually triggered before this helper)
     if [ -n "$old_phpversion" ] && [ "$old_phpversion" != "$phpversion" ]; then
-        local old_php_fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
+        local old_php_fpm_config_dir=$(ynh_app_setting_get --key=fpm_config_dir)
         local old_php_finalphpconf="$old_php_fpm_config_dir/pool.d/$app.conf"
 
         if [[ -f "$old_php_finalphpconf" ]]
@@ -132,9 +132,9 @@ ynh_add_fpm_config() {
     # Create the directory for FPM pools
     mkdir --parents "$fpm_config_dir/pool.d"
 
-    ynh_app_setting_set --app=$app --key=fpm_config_dir --value="$fpm_config_dir"
-    ynh_app_setting_set --app=$app --key=fpm_service --value="$fpm_service"
-    ynh_app_setting_set --app=$app --key=phpversion --value=$phpversion
+    ynh_app_setting_set --key=fpm_config_dir --value="$fpm_config_dir"
+    ynh_app_setting_set --key=fpm_service --value="$fpm_service"
+    ynh_app_setting_set --key=phpversion --value=$phpversion
 
     if [ $autogenconf == "false" ]; then
         # Usage 1, use the template in conf/php-fpm.conf
@@ -204,10 +204,10 @@ pm.process_idle_timeout = 10s
 #
 # Requires YunoHost version 2.7.2 or higher.
 ynh_remove_fpm_config() {
-    local fpm_config_dir=$(ynh_app_setting_get --app=$app --key=fpm_config_dir)
-    local fpm_service=$(ynh_app_setting_get --app=$app --key=fpm_service)
+    local fpm_config_dir=$(ynh_app_setting_get --key=fpm_config_dir)
+    local fpm_service=$(ynh_app_setting_get --key=fpm_service)
     # Get the version of PHP used by this app
-    local phpversion=$(ynh_app_setting_get --app=$app --key=phpversion)
+    local phpversion=$(ynh_app_setting_get --key=phpversion)
 
     # Assume default PHP-FPM version by default
     phpversion="${phpversion:-$YNH_DEFAULT_PHP_VERSION}"
@@ -314,7 +314,7 @@ ynh_get_scalable_phpfpm() {
     fi
 
     # Get a potential forced value for php_max_children
-    local php_forced_max_children=$(ynh_app_setting_get --app=$app --key=php_forced_max_children)
+    local php_forced_max_children=$(ynh_app_setting_get --key=php_forced_max_children)
     if [ -n "$php_forced_max_children" ]; then
         php_max_children=$php_forced_max_children
     fi

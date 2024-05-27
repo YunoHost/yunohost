@@ -51,7 +51,7 @@ fi
 #
 # Requires YunoHost version 3.2.2 or higher.
 ynh_use_ruby () {
-    ruby_version=$(ynh_app_setting_get --app=$app --key=ruby_version)
+    ruby_version=$(ynh_app_setting_get --key=ruby_version)
 
     # Get the absolute path of this version of Ruby
     ruby_path="$ruby_version_path/$YNH_APP_INSTANCE_NAME/bin"
@@ -206,7 +206,7 @@ ynh_install_ruby () {
     RUBY_CONFIGURE_OPTS="--disable-install-doc --with-jemalloc" MAKE_OPTS="-j2" rbenv install --skip-existing $final_ruby_version > /dev/null 2>&1
 
     # Store ruby_version into the config of this app
-    ynh_app_setting_set --app=$YNH_APP_INSTANCE_NAME --key=ruby_version --value=$final_ruby_version
+    ynh_app_setting_set --key=ruby_version --value=$final_ruby_version
 
     # Remove app virtualenv
     if rbenv alias --list | grep --quiet "$YNH_APP_INSTANCE_NAME "
@@ -237,7 +237,7 @@ eval \"\$(rbenv init -)\"
 #
 # usage: ynh_remove_ruby
 ynh_remove_ruby () {
-    local ruby_version=$(ynh_app_setting_get --app=$YNH_APP_INSTANCE_NAME --key=ruby_version)
+    local ruby_version=$(ynh_app_setting_get --key=ruby_version)
 
     # Load rbenv path in PATH
     local CLEAR_PATH="$rbenv_install_dir/bin:$PATH"
@@ -248,7 +248,7 @@ ynh_remove_ruby () {
     rbenv alias $YNH_APP_INSTANCE_NAME --remove
 
     # Remove the line for this app
-    ynh_app_setting_delete --app=$YNH_APP_INSTANCE_NAME --key=ruby_version
+    ynh_app_setting_delete --key=ruby_version
 
     # Cleanup Ruby versions
     ynh_cleanup_ruby
