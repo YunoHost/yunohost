@@ -70,7 +70,6 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 ynh_add_fpm_config() {
     local _globalphpversion=${phpversion-:}
     # Declare an array to define the options of this helper.
-    local legacy_args=vufg
     local -A args_array=([v]=phpversion= [u]=usage= [f]=footprint= [g]=group=)
     local group
     local phpversion
@@ -243,7 +242,6 @@ ynh_remove_fpm_config() {
 #
 # | arg: -p, --print            - Print the result (intended for debug purpose only when packaging the app)
 ynh_get_scalable_phpfpm() {
-    local legacy_args=ufp
     # Declare an array to define the options of this helper.
     local -A args_array=([u]=usage= [f]=footprint= [p]=print)
     local usage
@@ -376,7 +374,6 @@ YNH_COMPOSER_VERSION=${YNH_COMPOSER_VERSION:-$YNH_DEFAULT_COMPOSER_VERSION}
 ynh_composer_exec() {
     local _globalphpversion=${phpversion-:}
     # Declare an array to define the options of this helper.
-    local legacy_args=vwc
     declare -Ar args_array=([v]=phpversion= [w]=workdir= [c]=commands=)
     local phpversion
     local workdir
@@ -408,7 +405,6 @@ ynh_composer_exec() {
 ynh_install_composer() {
     local _globalphpversion=${phpversion-:}
     # Declare an array to define the options of this helper.
-    local legacy_args=vwac
     declare -Ar args_array=([v]=phpversion= [w]=workdir= [a]=install_args= [c]=composerversion=)
     local phpversion
     local workdir

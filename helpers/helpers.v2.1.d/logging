@@ -9,7 +9,6 @@
 # Requires YunoHost version 2.4.0 or higher.
 ynh_die() {
     # Declare an array to define the options of this helper.
-    local legacy_args=mc
     local -A args_array=([m]=message= [c]=ret_code=)
     local message
     local ret_code
@@ -29,7 +28,6 @@ ynh_die() {
 # Requires YunoHost version 3.2.0 or higher.
 ynh_print_info() {
     # Declare an array to define the options of this helper.
-    local legacy_args=m
     local -A args_array=([m]=message=)
     local message
     # Manage arguments with getopts
@@ -55,7 +53,6 @@ ynh_print_log() {
 # Requires YunoHost version 3.2.0 or higher.
 ynh_print_warn() {
     # Declare an array to define the options of this helper.
-    local legacy_args=m
     local -A args_array=([m]=message=)
     local message
     # Manage arguments with getopts
@@ -72,7 +69,6 @@ ynh_print_warn() {
 # Requires YunoHost version 3.2.0 or higher.
 ynh_print_err() {
     # Declare an array to define the options of this helper.
-    local legacy_args=m
     local -A args_array=([m]=message=)
     local message
     # Manage arguments with getopts
@@ -201,7 +197,7 @@ ynh_exec_and_print_stderr_only_if_error() {
     "$@" 2> "$logfile" || rc="$?"
     if (( rc != 0 )); then
         ynh_exec_warn cat "$logfile"
-        ynh_secure_remove "$logfile"
+        ynh_secure_remove --file="$logfile"
         return "$rc"
     fi
 }
@@ -257,7 +253,6 @@ base_time=$(date +%s)
 ynh_script_progression() {
     set +o xtrace # set +x
     # Declare an array to define the options of this helper.
-    local legacy_args=mwtl
     local -A args_array=([m]=message= [w]=weight= [t]=time [l]=last)
     local message
     local weight
@@ -332,7 +327,7 @@ ynh_script_progression() {
         print_exec_time=" [$(bc <<< "scale=1; $exec_time / 60" ) minutes]"
     fi
 
-    ynh_print_info "[$progression_bar] > ${message}${print_exec_time}"
+    echo "[$progression_bar] > ${message}${print_exec_time}" >&$YNH_STDINFO
     set -o xtrace # set -x
 }
 

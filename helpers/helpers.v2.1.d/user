@@ -11,7 +11,6 @@
 # Requires YunoHost version 2.2.4 or higher.
 ynh_user_exists() {
     # Declare an array to define the options of this helper.
-    local legacy_args=u
     local -A args_array=([u]=username=)
     local username
     # Manage arguments with getopts
@@ -32,7 +31,6 @@ ynh_user_exists() {
 # Requires YunoHost version 2.2.4 or higher.
 ynh_user_get_info() {
     # Declare an array to define the options of this helper.
-    local legacy_args=uk
     local -A args_array=([u]=username= [k]=key=)
     local username
     local key
@@ -65,7 +63,6 @@ ynh_user_list() {
 # Requires YunoHost version 2.2.4 or higher.
 ynh_system_user_exists() {
     # Declare an array to define the options of this helper.
-    local legacy_args=u
     local -A args_array=([u]=username=)
     local username
     # Manage arguments with getopts
@@ -85,7 +82,6 @@ ynh_system_user_exists() {
 # Requires YunoHost version 3.5.0.2 or higher.
 ynh_system_group_exists() {
     # Declare an array to define the options of this helper.
-    local legacy_args=g
     local -A args_array=([g]=group=)
     local group
     # Manage arguments with getopts
@@ -116,7 +112,6 @@ ynh_system_group_exists() {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_system_user_create() {
     # Declare an array to define the options of this helper.
-    local legacy_args=uhs
     local -A args_array=([u]=username= [h]=home_dir= [s]=use_shell [g]=groups=)
     local username
     local home_dir
@@ -129,7 +124,7 @@ ynh_system_user_create() {
     home_dir="${home_dir:-}"
     groups="${groups:-}"
 
-    if ! ynh_system_user_exists "$username"; then # Check if the user exists on the system
+    if ! ynh_system_user_exists --username="$username"; then # Check if the user exists on the system
         # If the user doesn't exist
         if [ -n "$home_dir" ]; then # If a home dir is mentioned
             local user_home_dir="--home-dir $home_dir"
@@ -160,21 +155,20 @@ ynh_system_user_create() {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_system_user_delete() {
     # Declare an array to define the options of this helper.
-    local legacy_args=u
     local -A args_array=([u]=username=)
     local username
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
 
     # Check if the user exists on the system
-    if ynh_system_user_exists "$username"; then
+    if ynh_system_user_exists --username="$username"; then
         deluser $username
     else
         ynh_print_warn --message="The user $username was not found"
     fi
 
     # Check if the group exists on the system
-    if ynh_system_group_exists "$username"; then
+    if ynh_system_group_exists --group="$username"; then
         delgroup $username
     fi
 }

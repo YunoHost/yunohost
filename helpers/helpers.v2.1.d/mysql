@@ -14,7 +14,6 @@
 # Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_connect_as() {
     # Declare an array to define the options of this helper.
-    local legacy_args=upd
     local -A args_array=([u]=user= [p]=password= [d]=database=)
     local user
     local password
@@ -35,7 +34,6 @@ ynh_mysql_connect_as() {
 # Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_execute_as_root() {
     # Declare an array to define the options of this helper.
-    local legacy_args=sd
     local -A args_array=([s]=sql= [d]=database=)
     local sql
     local database
@@ -59,7 +57,6 @@ ynh_mysql_execute_as_root() {
 # Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_execute_file_as_root() {
     # Declare an array to define the options of this helper.
-    local legacy_args=fd
     local -A args_array=([f]=file= [d]=database=)
     local file
     local database
@@ -127,7 +124,6 @@ ynh_mysql_drop_db() {
 # Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_dump_db() {
     # Declare an array to define the options of this helper.
-    local legacy_args=d
     local -A args_array=([d]=database=)
     local database
     # Manage arguments with getopts
@@ -161,7 +157,6 @@ ynh_mysql_create_user() {
 # Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_user_exists() {
     # Declare an array to define the options of this helper.
-    local legacy_args=u
     local -A args_array=([u]=user=)
     local user
     # Manage arguments with getopts
@@ -201,7 +196,6 @@ ynh_mysql_drop_user() {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_mysql_setup_db() {
     # Declare an array to define the options of this helper.
-    local legacy_args=unp
     local -A args_array=([u]=db_user= [n]=db_name= [p]=db_pwd=)
     local db_user
     local db_name
@@ -215,7 +209,7 @@ ynh_mysql_setup_db() {
     db_pwd="${db_pwd:-$new_db_pwd}"
 
     # Dirty patch for super-legacy apps
-    dpkg --list | grep -q "^ii  mariadb-server" || { ynh_print_warn "Packager: you called ynh_mysql_setup_db without declaring a dependency to mariadb-server. Please add it to your apt dependencies !"; ynh_apt install mariadb-server; }
+    dpkg --list | grep -q "^ii  mariadb-server" || { ynh_print_warn --message="Packager: you called ynh_mysql_setup_db without declaring a dependency to mariadb-server. Please add it to your apt dependencies !"; ynh_apt install mariadb-server; }
 
     ynh_mysql_create_db "$db_name" "$db_user" "$db_pwd"
     ynh_app_setting_set --app=$app --key=mysqlpwd --value=$db_pwd
@@ -232,7 +226,6 @@ ynh_mysql_setup_db() {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_mysql_remove_db() {
     # Declare an array to define the options of this helper.
-    local legacy_args=un
     local -Ar args_array=([u]=db_user= [n]=db_name=)
     local db_user
     local db_name

@@ -12,7 +12,6 @@
 # Requires YunoHost version 2.2.4 or higher.
 ynh_string_random() {
     # Declare an array to define the options of this helper.
-    local legacy_args=lf
     local -A args_array=([l]=length= [f]=filter=)
     local length
     local filter
@@ -39,7 +38,6 @@ ynh_string_random() {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_replace_string() {
     # Declare an array to define the options of this helper.
-    local legacy_args=mrf
     local -A args_array=([m]=match_string= [r]=replace_string= [f]=target_file=)
     local match_string
     local replace_string
@@ -70,7 +68,6 @@ ynh_replace_string() {
 # Requires YunoHost version 2.7.7 or higher.
 ynh_replace_special_string() {
     # Declare an array to define the options of this helper.
-    local legacy_args=mrf
     local -A args_array=([m]=match_string= [r]=replace_string= [f]=target_file=)
     local match_string
     local replace_string
@@ -104,7 +101,6 @@ ynh_replace_special_string() {
 # Requires YunoHost version 2.2.4 or higher.
 ynh_sanitize_dbid() {
     # Declare an array to define the options of this helper.
-    local legacy_args=n
     local -A args_array=([n]=db_name=)
     local db_name
     # Manage arguments with getopts
@@ -134,7 +130,6 @@ ynh_sanitize_dbid() {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_normalize_url_path() {
     # Declare an array to define the options of this helper.
-    local legacy_args=p
     local -A args_array=([p]=path_url=)
     local path_url
     # Manage arguments with getopts

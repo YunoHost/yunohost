@@ -8,7 +8,6 @@
 # Requires YunoHost version *.*.* or higher.
 ynh_install_apps() {
 	# Declare an array to define the options of this helper.
-	local legacy_args=a
 	local -A args_array=([a]=apps=)
 	local apps
 	# Manage arguments with getopts
@@ -127,7 +126,6 @@ ynh_remove_apps() {
 # If the app relies on a specific PHP version, then `php` will be aliased that version. The PHP command will also be appended with the `phpflags` settings.
 ynh_spawn_app_shell() {
         # Declare an array to define the options of this helper.
-        local legacy_args=a
         local -A args_array=([a]=app=)
         local app
         # Manage arguments with getopts

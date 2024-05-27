@@ -28,7 +28,7 @@ ynh_wait_dpkg_free() {
                 # Check if the name of this file contains only numbers.
                 if echo "$dpkg_file" | grep --perl-regexp --quiet "^[[:digit:]]+$"; then
                     # If so, that a remaining of dpkg.
-                    ynh_print_err "dpkg was interrupted, you must manually run 'sudo dpkg --configure -a' to correct the problem."
+                    ynh_print_err --message="dpkg was interrupted, you must manually run 'sudo dpkg --configure -a' to correct the problem."
                     set -o xtrace # set -x
                     return 1
                 fi
@@ -43,21 +43,15 @@ ynh_wait_dpkg_free() {
 
 # Check either a package is installed or not
 #
-# example: ynh_package_is_installed --package=yunohost && echo "installed"
+# example: ynh_package_is_installed foobar && echo "installed"
 #
-# usage: ynh_package_is_installed --package=name
-# | arg: -p, --package=     - the package name to check
+# usage: ynh_package_is_installed name
+# | arg: name - the package name to check
 # | ret: 0 if the package is installed, 1 else.
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_package_is_installed() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=p
-    local -A args_array=([p]=package=)
-    local package
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-
+    local package=$1
     dpkg-query --show --showformat='${Status}' "$package" 2>/dev/null \
         | grep --count "ok installed" &>/dev/null
 }
@@ -75,7 +69,6 @@ ynh_package_is_installed() {
 # Requires YunoHost version 2.2.4 or higher.
 ynh_package_version() {
     # Declare an array to define the options of this helper.
-    local legacy_args=p
     local -A args_array=([p]=package=)
     local package
     # Manage arguments with getopts
@@ -310,7 +303,7 @@ ynh_install_app_dependencies() {
         YNH_INSTALL_APP_DEPENDENCIES_REPLACE="false"
     else
         local current_dependencies=""
-        if ynh_package_is_installed --package="${dep_app}-ynh-deps"
+        if ynh_package_is_installed "${dep_app}-ynh-deps"
         then
             current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${dep_app}-ynh-deps) "
             current_dependencies=${current_dependencies// | /|}
@@ -352,7 +345,6 @@ EOF
 # Requires YunoHost version 3.8.1 or higher.
 ynh_add_app_dependencies() {
     # Declare an array to define the options of this helper.
-    local legacy_args=pr
     local -A args_array=([p]=package= [r]=replace)
     local package
     # Manage arguments with getopts
@@ -375,7 +367,7 @@ ynh_remove_app_dependencies() {
     local dep_app=${app//_/-}	# Replace all '_' by '-'
 
     local current_dependencies=""
-    if ynh_package_is_installed --package="${dep_app}-ynh-deps"; then
+    if ynh_package_is_installed "${dep_app}-ynh-deps"; then
         current_dependencies="$(dpkg-query --show --showformat='${Depends}' ${dep_app}-ynh-deps) "
         current_dependencies=${current_dependencies// | /|}
     fi
@@ -409,7 +401,6 @@ ynh_remove_app_dependencies() {
 # Requires YunoHost version 3.8.1 or higher.
 ynh_install_extra_app_dependencies() {
     # Declare an array to define the options of this helper.
-    local legacy_args=rpkn
     local -A args_array=([r]=repo= [p]=package= [k]=key= [n]=name=)
     local repo
     local package
@@ -454,7 +445,6 @@ ynh_install_extra_app_dependencies() {
 # Requires YunoHost version 3.8.1 or higher.
 ynh_install_extra_repo() {
     # Declare an array to define the options of this helper.
-    local legacy_args=rkpna
     local -A args_array=([r]=repo= [k]=key= [p]=priority= [n]=name= [a]=append)
     local repo
     local key
@@ -523,7 +513,6 @@ ynh_install_extra_repo() {
 # Requires YunoHost version 3.8.1 or higher.
 ynh_remove_extra_repo() {
     # Declare an array to define the options of this helper.
-    local legacy_args=n
     local -A args_array=([n]=name=)
     local name
     # Manage arguments with getopts
@@ -532,7 +521,7 @@ ynh_remove_extra_repo() {
 
     ynh_secure_remove --file="/etc/apt/sources.list.d/$name.list"
     # Sury pinning is managed by the regenconf in the core...
-    [[ "$name" == "extra_php_version" ]] || ynh_secure_remove "/etc/apt/preferences.d/$name"
+    [[ "$name" == "extra_php_version" ]] || ynh_secure_remove --file="/etc/apt/preferences.d/$name"
     if [ -e /etc/apt/trusted.gpg.d/$name.gpg ]; then
         ynh_secure_remove --file="/etc/apt/trusted.gpg.d/$name.gpg"
     fi
@@ -564,7 +553,6 @@ ynh_remove_extra_repo() {
 # Requires YunoHost version 3.8.1 or higher.
 ynh_add_repo() {
     # Declare an array to define the options of this helper.
-    local legacy_args=uscna
     local -A args_array=([u]=uri= [s]=suite= [c]=component= [n]=name= [a]=append)
     local uri
     local suite
@@ -604,7 +592,6 @@ ynh_add_repo() {
 # Requires YunoHost version 3.8.1 or higher.
 ynh_pin_repo() {
     # Declare an array to define the options of this helper.
-    local legacy_args=pirna
     local -A args_array=([p]=package= [i]=pin= [r]=priority= [n]=name= [a]=append)
     local package
     local pin

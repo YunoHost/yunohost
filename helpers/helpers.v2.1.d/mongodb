@@ -18,7 +18,6 @@
 #
 ynh_mongo_exec() {
 	# Declare an array to define the options of this helper.
-	local legacy_args=upadhPce
 	local -A args_array=( [u]=user= [p]=password= [a]=authenticationdatabase= [d]=database= [h]=host= [P]=port= [c]=command= [e]=eval )
 	local user
 	local password
@@ -115,7 +114,6 @@ EOF
 #
 ynh_mongo_drop_db() {
 	# Declare an array to define the options of this helper.
-	local legacy_args=d
 	local -A args_array=( [d]=database= )
 	local database
 	# Manage arguments with getopts
@@ -135,7 +133,6 @@ ynh_mongo_drop_db() {
 #
 ynh_mongo_dump_db() {
 	# Declare an array to define the options of this helper.
-	local legacy_args=d
 	local -A args_array=( [d]=database= )
 	local database
 	# Manage arguments with getopts
@@ -156,7 +153,6 @@ ynh_mongo_dump_db() {
 #
 ynh_mongo_create_user() {
 	# Declare an array to define the options of this helper.
-	local legacy_args=unp
 	local -A args_array=( [u]=db_user= [n]=db_name= [p]=db_pwd= )
 	local db_user
 	local db_name
@@ -180,7 +176,6 @@ ynh_mongo_create_user() {
 #
 ynh_mongo_database_exists() {
 	# Declare an array to define the options of this helper.
-	local legacy_args=d
 	local -A args_array=([d]=database=)
 	local database
 	# Manage arguments with getopts
@@ -204,7 +199,6 @@ ynh_mongo_database_exists() {
 #
 ynh_mongo_restore_db() {
 	# Declare an array to define the options of this helper.
-	local legacy_args=d
 	local -A args_array=( [d]=database= )
 	local database
 	# Manage arguments with getopts
@@ -224,7 +218,6 @@ ynh_mongo_restore_db() {
 #
 ynh_mongo_drop_user() {
 	# Declare an array to define the options of this helper.
-	local legacy_args=un
 	local -A args_array=( [u]=db_user= [n]=db_name= )
 	local db_user
 	local db_name
@@ -247,7 +240,6 @@ ynh_mongo_drop_user() {
 #
 ynh_mongo_setup_db() {
 	# Declare an array to define the options of this helper.
-	local legacy_args=unp
 	local -A args_array=( [u]=db_user= [n]=db_name= [p]=db_pwd= )
 	local db_user
 	local db_name
@@ -275,7 +267,6 @@ ynh_mongo_setup_db() {
 #
 ynh_mongo_remove_db() {
 	# Declare an array to define the options of this helper.
-	local legacy_args=un
 	local -A args_array=( [u]=db_user= [n]=db_name= )
 	local db_user
 	local db_name
@@ -300,7 +291,6 @@ ynh_mongo_remove_db() {
 #
 ynh_install_mongo() {
 	# Declare an array to define the options of this helper.
-	local legacy_args=m
 	local -A args_array=([m]=mongo_version=)
 	local mongo_version
 	# Manage arguments with getopts
@@ -343,7 +333,7 @@ ynh_install_mongo() {
 #
 ynh_remove_mongo() {
 	# Only remove the mongodb service if it is not installed.
-	if ! ynh_package_is_installed --package="mongodb*"
+	if ! ynh_package_is_installed "mongodb*"
 	then
 		ynh_print_info --message="Removing MongoDB service..."
 		mongodb_servicename=mongod

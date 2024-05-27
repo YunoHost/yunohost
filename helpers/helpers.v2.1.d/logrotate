@@ -27,7 +27,6 @@ ynh_use_logrotate() {
     set -- "${all_args[@]}"
 
     # Argument parsing
-    local legacy_args=lu
     local -A args_array=([l]=logfile= [u]=specific_user=)
     local logfile
     local specific_user

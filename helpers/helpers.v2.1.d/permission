@@ -67,7 +67,6 @@
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_create() {
     # Declare an array to define the options of this helper.
-    local legacy_args=puAhaltP
     local -A args_array=([p]=permission= [u]=url= [A]=additional_urls= [h]=auth_header= [a]=allowed= [l]=label= [t]=show_tile= [P]=protected=)
     local permission
     local url
@@ -155,7 +154,6 @@ ynh_permission_create() {
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_delete() {
     # Declare an array to define the options of this helper.
-    local legacy_args=p
     local -A args_array=([p]=permission=)
     local permission
     ynh_handle_getopts_args "$@"
@@ -174,7 +172,6 @@ ynh_permission_delete() {
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_exists() {
     # Declare an array to define the options of this helper.
-    local legacy_args=p
     local -A args_array=([p]=permission=)
     local permission
     ynh_handle_getopts_args "$@"
@@ -199,7 +196,6 @@ ynh_permission_exists() {
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_url() {
     # Declare an array to define the options of this helper.
-    local legacy_args=puarhc
     local -A args_array=([p]=permission= [u]=url= [a]=add_url= [r]=remove_url= [h]=auth_header= [c]=clear_urls)
     local permission
     local url
@@ -269,7 +265,6 @@ ynh_permission_url() {
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_update() {
     # Declare an array to define the options of this helper.
-    local legacy_args=parltP
     local -A args_array=([p]=permission= [a]=add= [r]=remove= [l]=label= [t]=show_tile= [P]=protected=)
     local permission
     local add
@@ -337,7 +332,6 @@ ynh_permission_update() {
 #
 # Requires YunoHost version 3.7.1 or higher.
 ynh_permission_has_user() {
-    local legacy_args=pu
     # Declare an array to define the options of this helper.
     local -A args_array=([p]=permission= [u]=user=)
     local permission

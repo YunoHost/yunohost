@@ -97,7 +97,6 @@ ynh_use_ruby () {
 # Requires YunoHost version 3.2.2 or higher.
 ynh_install_ruby () {
     # Declare an array to define the options of this helper.
-    local legacy_args=v
     local -A args_array=( [v]=ruby_version= )
     local ruby_version
     # Manage arguments with getopts

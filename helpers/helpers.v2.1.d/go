@@ -95,7 +95,6 @@ ynh_use_go () {
 # Requires YunoHost version 3.2.2 or higher.
 ynh_install_go () {
     # Declare an array to define the options of this helper.
-    local legacy_args=v
     local -A args_array=( [v]=go_version= )
     local go_version
     # Manage arguments with getopts

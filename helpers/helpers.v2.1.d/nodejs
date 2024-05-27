@@ -95,7 +95,6 @@ ynh_install_nodejs() {
     # Use n, https://github.com/tj/n to manage the nodejs versions
 
     # Declare an array to define the options of this helper.
-    local legacy_args=n
     local -A args_array=([n]=nodejs_version=)
     local nodejs_version
     # Manage arguments with getopts

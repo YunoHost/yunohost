@@ -155,7 +155,6 @@ fi
 # Requires YunoHost version 2.6.4 or higher.
 ynh_setup_source() {
     # Declare an array to define the options of this helper.
-    local legacy_args=dsk
     local -A args_array=([d]=dest_dir= [s]=source_id= [k]=keep= [r]=full_replace=)
     local dest_dir
     local source_id
@@ -186,8 +185,8 @@ ynh_setup_source() {
         local src_platform="$(jq -r ".platform" <<< "$sources_json" | sed 's/^null$//')"
         local src_rename="$(jq -r ".rename" <<< "$sources_json" | sed 's/^null$//')"
 
-        [[ -n "$src_url" ]] || ynh_die "No URL defined for source $source_id$arch_prefix ?"
-        [[ -n "$src_sum" ]] || ynh_die "No sha256 sum defined for source $source_id$arch_prefix ?"
+        [[ -n "$src_url" ]] || ynh_die --message="No URL defined for source $source_id$arch_prefix ?"
+        [[ -n "$src_sum" ]] || ynh_die --message="No sha256 sum defined for source $source_id$arch_prefix ?"
 
         if [[ -z "$src_format" ]]
         then
@@ -233,7 +232,7 @@ ynh_setup_source() {
 
     if [[ "$src_extract" != "true" ]] && [[ "$src_extract" != "false" ]]
     then
-        ynh_die "For source $source_id, expected either 'true' or 'false' for the extract parameter"
+        ynh_die --message="For source $source_id, expected either 'true' or 'false' for the extract parameter"
     fi
 
 
@@ -251,7 +250,7 @@ ynh_setup_source() {
             cp $local_src $src_filename
         fi
 
-        [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
+        [ -n "$src_url" ] || ynh_die --message="Couldn't parse SOURCE_URL from $src_file_path ?"
 
         # If the file was prefetched but somehow doesn't match the sum, rm and redownload it
         if [ -e "$src_filename" ] && ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
@@ -436,14 +435,14 @@ ynh_local_curl() {
     # Temporarily enable visitors if needed...
     local visitors_enabled=$(ynh_permission_has_user "main" "visitors" && echo yes || echo no)
     if [[ $visitors_enabled == "no" ]]; then
-        ynh_permission_update --permission "main" --add "visitors"
+        ynh_permission_update --permission="main" --add="visitors"
     fi
 
     # Curl the URL
     curl --silent --show-error --insecure --location --header "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar $cookiefile --cookie $cookiefile
 
     if [[ $visitors_enabled == "no" ]]; then
-        ynh_permission_update --permission "main" --remove "visitors"
+        ynh_permission_update --permission="main" --remove="visitors"
     fi
 }
 
@@ -489,7 +488,6 @@ ynh_local_curl() {
 # Requires YunoHost version 4.1.0 or higher.
 ynh_add_config() {
     # Declare an array to define the options of this helper.
-    local legacy_args=tdv
     local -A args_array=([t]=template= [d]=destination=)
     local template
     local destination
@@ -550,7 +548,6 @@ ynh_add_config() {
 # Requires YunoHost version 4.1.0 or higher.
 ynh_replace_vars() {
     # Declare an array to define the options of this helper.
-    local legacy_args=f
     local -A args_array=([f]=file=)
     local file
     # Manage arguments with getopts
@@ -647,7 +644,6 @@ ynh_replace_vars() {
 # Requires YunoHost version 4.3 or higher.
 ynh_read_var_in_file() {
     # Declare an array to define the options of this helper.
-    local legacy_args=fka
     local -A args_array=([f]=file= [k]=key= [a]=after=)
     local file
     local key
@@ -725,7 +721,6 @@ ynh_read_var_in_file() {
 # Requires YunoHost version 4.3 or higher.
 ynh_write_var_in_file() {
     # Declare an array to define the options of this helper.
-    local legacy_args=fkva
     local -A args_array=([f]=file= [k]=key= [v]=value= [a]=after=)
     local file
     local key
@@ -873,7 +868,6 @@ _acceptable_path_to_delete() {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_secure_remove() {
     # Declare an array to define the options of this helper.
-    local legacy_args=f
     local -A args_array=([f]=file=)
     local file
     # Manage arguments with getopts
@@ -907,7 +901,6 @@ ynh_secure_remove() {
 # Requires YunoHost version 3.5.0 or higher.
 ynh_read_manifest() {
     # Declare an array to define the options of this helper.
-    local legacy_args=mk
     local -A args_array=([m]=manifest= [k]=manifest_key=)
     local manifest
     local manifest_key
@@ -923,7 +916,7 @@ ynh_read_manifest() {
         then
             manifest="$YNH_APP_BASEDIR/manifest.toml"
         else
-            ynh_die --message "No manifest found !?"
+            ynh_die --message="No manifest found !?"
         fi
     fi
 
@@ -950,7 +943,6 @@ ynh_read_manifest() {
 # Requires YunoHost version 3.5.0 or higher.
 ynh_app_upstream_version() {
     # Declare an array to define the options of this helper.
-    local legacy_args=m
     local -A args_array=([m]=manifest=)
     local manifest
     # Manage arguments with getopts
@@ -981,7 +973,6 @@ ynh_app_upstream_version() {
 # Requires YunoHost version 3.5.0 or higher.
 ynh_app_package_version() {
     # Declare an array to define the options of this helper.
-    local legacy_args=m
     local -A args_array=([m]=manifest=)
     local manifest
     # Manage arguments with getopts
@@ -1031,7 +1022,6 @@ ynh_check_app_version_changed() {
 #
 # Requires YunoHost version 3.8.0 or higher.
 ynh_compare_current_package_version() {
-    local legacy_args=cv
     declare -Ar args_array=([c]=comparison= [v]=version=)
     local version
     local comparison
@@ -1077,7 +1067,7 @@ _ynh_apply_default_permissions() {
     chmod o-rwx $target
     chmod g-w $target
     chown -R root:root $target
-    if ynh_system_user_exists $app; then
+    if ynh_system_user_exists --username=$app; then
         chown $app:$app $target
     fi
 

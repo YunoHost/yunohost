@@ -320,7 +320,7 @@ ynh_app_action_run() {
         #ynh_return "result:"
         #ynh_return "$(echo "${result}" | sed 's/^/  /g')"
     else
-        ynh_die "No handler defined in app's script for action $1. If you are the maintainer of this app, you should define '$runner'"
+        ynh_die --message="No handler defined in app's script for action $1. If you are the maintainer of this app, you should define '$runner'"
     fi
 }
 

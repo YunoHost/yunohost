@@ -10,7 +10,6 @@
 ynh_app_setting_get() {
     local _globalapp=${app-:}
     # Declare an array to define the options of this helper.
-    local legacy_args=ak
     local -A args_array=([a]=app= [k]=key=)
     local app
     local key
@@ -32,7 +31,6 @@ ynh_app_setting_get() {
 ynh_app_setting_set() {
     local _globalapp=${app-:}
     # Declare an array to define the options of this helper.
-    local legacy_args=akv
     local -A args_array=([a]=app= [k]=key= [v]=value=)
     local app
     local key
@@ -54,7 +52,6 @@ ynh_app_setting_set() {
 ynh_app_setting_delete() {
     local _globalapp=${app-:}
     # Declare an array to define the options of this helper.
-    local legacy_args=ak
     local -A args_array=([a]=app= [k]=key=)
     local app
     local key
@@ -112,7 +109,6 @@ EOF
 # Requires YunoHost version 2.6.4 or higher.
 ynh_webpath_available() {
     # Declare an array to define the options of this helper.
-    local legacy_args=dp
     local -A args_array=([d]=domain= [p]=path_url=)
     local domain
     local path_url
@@ -136,7 +132,6 @@ ynh_webpath_available() {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_webpath_register() {
     # Declare an array to define the options of this helper.
-    local legacy_args=adp
     local -A args_array=([a]=app= [d]=domain= [p]=path_url=)
     local app
     local domain

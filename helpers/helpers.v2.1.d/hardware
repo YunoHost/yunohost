@@ -14,7 +14,6 @@
 # Requires YunoHost version 3.8.1 or higher.
 ynh_get_ram() {
     # Declare an array to define the options of this helper.
-    local legacy_args=ftso
     local -A args_array=([f]=free [t]=total [s]=ignore_swap [o]=only_swap)
     local free
     local total
@@ -78,7 +77,6 @@ ynh_get_ram() {
 # Requires YunoHost version 3.8.1 or higher.
 ynh_require_ram() {
     # Declare an array to define the options of this helper.
-    local legacy_args=rftso
     local -A args_array=([r]=required= [f]=free [t]=total [s]=ignore_swap [o]=only_swap)
     local required
     local free
