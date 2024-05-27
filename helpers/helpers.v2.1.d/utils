@@ -937,48 +937,28 @@ ynh_check_app_version_changed() {
     echo $return_value
 }
 
-# Compare the current package version against another version given as an argument.
+# Compare the current package version is strictly lower than another version given as an argument
 #
-# usage: ynh_compare_current_package_version --comparison (lt|le|eq|ne|ge|gt) --version <X~ynhY>
-# | arg: --comparison - Comparison type. Could be : `lt` (lower than), `le` (lower or equal), `eq` (equal), `ne` (not equal), `ge` (greater or equal), `gt` (greater than)
-# | arg: --version - The version to compare. Need to be a version in the yunohost package version type (like `2.3.1~ynh4`)
-# | ret: 0 if the evaluation is true, 1 if false.
+# example: if ynh_if_upgrading_from_version_prior_to 2.3.2~ynh1; then ...
 #
-# example: ynh_compare_current_package_version --comparison lt --version 2.3.2~ynh1
-#
-# This helper is usually used when we need to do some actions only for some old package versions.
-#
-# Generally you might probably use it as follow in the upgrade script :
-# ```
-# if ynh_compare_current_package_version --comparison lt --version 2.3.2~ynh1
-# then
-#     # Do something that is needed for the package version older than 2.3.2~ynh1
-# fi
-# ```
-#
-# Requires YunoHost version 3.8.0 or higher.
-ynh_compare_current_package_version() {
-    # ============ Argument parsing =============
-    local -A args_array=([c]=comparison= [v]=version=)
-    local version
-    local comparison
-    ynh_handle_getopts_args "$@"
-    # ===========================================
+# Requires YunoHost version 11.2 or higher.
+ynh_if_upgrading_from_version_prior_to() {
+    local version=$1
+    [[ $version =~ '~ynh' ]] || ynh_die --message="Invalid argument for version, should include the ~ynhX prefix"
 
-    local current_version=$YNH_APP_CURRENT_VERSION
+    dpkg --compare-versions $YNH_APP_CURRENT_VERSION lt $version
+}
 
-    # Check the syntax of the versions
-    if [[ ! $version =~ '~ynh' ]] || [[ ! $current_version =~ '~ynh' ]]; then
-        ynh_die --message="Invalid argument for version."
-    fi
+# Compare the current package version is lower or equal to another version given as an argument
+#
+# example: if ynh_if_upgrading_from_version_prior_or_equal_to 2.3.2~ynh1; then ...
+#
+# Requires YunoHost version 11.2 or higher.
+ynh_if_upgrading_from_version_prior_or_equal_to() {
+    local version=$1
+    [[ $version =~ '~ynh' ]] || ynh_die --message="Invalid argument for version, should include the ~ynhX prefix"
 
-    # Check validity of the comparator
-    if [[ ! $comparison =~ (lt|le|eq|ne|ge|gt) ]]; then
-        ynh_die --message="Invalid comparator must be : lt, le, eq, ne, ge, gt"
-    fi
-
-    # Return the return value of dpkg --compare-versions
-    dpkg --compare-versions $current_version $comparison $version
+    dpkg --compare-versions $YNH_APP_CURRENT_VERSION le $version
 }
 
 # Check if we should enforce sane default permissions (= disable rwx for 'others')
