@@ -112,8 +112,6 @@ ynh_sanitize_dbid() {
 
 # Normalize the url path syntax
 #
-# [internal]
-#
 # Handle the slash at the beginning of path and its absence at ending
 # Return a normalized url path
 #
@@ -124,16 +122,11 @@ ynh_sanitize_dbid() {
 #     ynh_normalize_url_path /example/  # -> /example
 #     ynh_normalize_url_path /          # -> /
 #
-# usage: ynh_normalize_url_path --path_url=path_to_normalize
-# | arg: -p, --path_url=    - URL path to normalize before using it
+# usage: ynh_normalize_url_path path_to_normalize
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_normalize_url_path() {
-    # ============ Argument parsing =============
-    local -A args_array=([p]=path_url=)
-    local path_url
-    ynh_handle_getopts_args "$@"
-    # ===========================================
+    local path_url=$1
 
     test -n "$path_url" || ynh_die --message="ynh_normalize_url_path expect a URL path as first argument and received nothing."
     if [ "${path_url:0:1}" != "/" ]; then # If the first character is not a /
