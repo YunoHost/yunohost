@@ -1037,3 +1037,34 @@ int_to_bool() {
 toml_to_json() {
     python3 -c 'import toml, json, sys; print(json.dumps(toml.load(sys.stdin)))'
 }
+
+# Validate an IP address
+#
+# usage: ynh_validate_ip --family=family --ip_address=ip_address
+# | ret: 0 for valid ip addresses, 1 otherwise
+#
+# example: ynh_validate_ip 4 111.222.333.444
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_validate_ip() {
+    # ============ Argument parsing =============
+    local -A args_array=([f]=family= [i]=ip_address=)
+    local family
+    local ip_address
+    ynh_handle_getopts_args "$@"
+    # ===========================================
+
+    [ "$family" == "4" ] || [ "$family" == "6" ] || return 1
+
+    # http://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python#319298
+    python3 /dev/stdin <<EOF
+import socket
+import sys
+family = { "4" : socket.AF_INET, "6" : socket.AF_INET6 }
+try:
+    socket.inet_pton(family["$family"], "$ip_address")
+except socket.error:
+    sys.exit(1)
+sys.exit(0)
+EOF
+}
