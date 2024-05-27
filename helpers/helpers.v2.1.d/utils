@@ -775,18 +775,6 @@ ynh_render_template() {
                     ).render(os.environ));' <$template_path >$output_path
 }
 
-# Fetch the Debian release codename
-#
-# [packagingv1]
-#
-# usage: ynh_get_debian_release
-# | ret: The Debian release codename (i.e. jessie, stretch, ...)
-#
-# Requires YunoHost version 2.7.12 or higher.
-ynh_get_debian_release() {
-    echo $(lsb_release --codename --short)
-}
-
 _acceptable_path_to_delete() {
     local file=$1
 
