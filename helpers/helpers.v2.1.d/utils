@@ -1068,3 +1068,41 @@ except socket.error:
 sys.exit(0)
 EOF
 }
+
+# Get the total or free amount of RAM+swap on the system
+#
+# [packagingv1]
+#
+# usage: ynh_get_ram [--free|--total]
+# | arg: -f, --free         - Count free RAM+swap
+# | arg: -t, --total        - Count total RAM+swap
+# | ret: the amount of free ram, in MB (MegaBytes)
+#
+# Requires YunoHost version 3.8.1 or higher.
+ynh_get_ram() {
+    # ============ Argument parsing =============
+    local -A args_array=([f]=free [t]=total)
+    local free
+    local total
+    ynh_handle_getopts_args "$@"
+    free=${free:-0}
+    total=${total:-0}
+    # ===========================================
+
+    if [ $free -eq $total ]; then
+        ynh_print_warn --message="You have to choose --free or --total when using ynh_get_ram"
+        ram=0
+    elif [ $free -eq 1 ]; then
+        local free_ram=$(LC_ALL=C vmstat --stats --unit M | grep "free memory" | awk '{print $1}')
+        local free_swap=$(LC_ALL=C vmstat --stats --unit M | grep "free swap" | awk '{print $1}')
+        local free_ram_swap=$((free_ram + free_swap))
+        local ram=$free_ram_swap
+    elif [ $total -eq 1 ]; then
+        local total_ram=$(LC_ALL=C vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
+        local total_swap=$(LC_ALL=C vmstat --stats --unit M | grep "total swap" | awk '{print $1}')
+        local total_ram_swap=$((total_ram + total_swap))
+        local ram=$total_ram_swap
+    fi
+
+    echo $ram
+}
