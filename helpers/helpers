@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+# Entrypoint for the helpers scripts
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+# Helpers version can be specified via an environment variable or default to 1.
+YNH_HELPERS_VERSION=${YNH_HELPERS_VERSION:-1}
+
+# This is a trick to later only restore set -x if it was set when calling this script
+readonly XTRACE_ENABLE=$(set +o | grep xtrace)
+set +x
+
+YNH_HELPERS_DIR="$SCRIPT_DIR/helpers.v${YNH_HELPERS_VERSION}.d"
+case "$YNH_HELPERS_VERSION" in
+    1)
+        readarray -t HELPERS < <(find "$YNH_HELPERS_DIR" -mindepth 1 -maxdepth 1 -type f)
+        for helper in "${HELPERS[@]}"; do
+            [ -r "$helper" ] && source "$helper"
+        done
+        ;;
+    *)
+        echo "Helpers are not available in version '$YNH_HELPERS_VERSION'." >&2
+        exit 1
+esac
+
+eval "$XTRACE_ENABLE"
