@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # Internal helper design to allow helpers to use getopts to manage their arguments
 #
 # [internal]
