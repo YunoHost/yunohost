@@ -388,63 +388,160 @@ ynh_setup_source() {
     rm -rf /var/cache/yunohost/files_to_keep_during_setup_source/
 }
 
+ynh_local_curl() {
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
 #
-# usage: ynh_local_curl "page_uri" "key1=value1" "key2=value2" ...
-# | arg: page_uri    - Path (relative to `$path_url`) of the page where POST data will be sent
-# | arg: key1=value1 - (Optionnal) POST key and corresponding value
-# | arg: key2=value2 - (Optionnal) Another POST key and corresponding value
-# | arg: ...         - (Optionnal) More POST keys and values
+# usage: ynh_local_curl [--option [-other_option […]]] "page" "key1=value1" "key2=value2" ...
+# | arg: -l --line_match: check answer against an extended regex
+# | arg: -m --method:     request method to use: POST (default), PUT, GET, DELETE
+# | arg: -H --header:     add a header to the request (can be used multiple times)
+# | arg: -d --data:       data to be PUT or POSTed. Can be used multiple times.
+# | arg: -u --user:       login username (requires --password)
+# | arg: -p --password:   login password
+# | arg: -n --no_sleep:   don't sleep 2 seconds (background: https://github.com/YunoHost/yunohost/pull/547)
+# | arg: page        - either the PAGE part in 'https://$domain/$path/PAGE' or an URI
+# | arg: key1=value1 - (Optional, POST only) legacy version of '--data' as positional parameter
+# | arg: key2=value2 - (Optional, POST only) Another POST key and corresponding value
+# | arg: ...         - (Optional, POST only) More POST keys and values
 #
 # example: ynh_local_curl "/install.php?installButton" "foo=$var1" "bar=$var2"
+#   → will open a POST request to "https://$domain/$path/install.php?installButton" posting "foo=$var1" and "bar=$var2"
+# example: ynh_local_curl -m POST --header "Accept: application/json" \ 
+#   -H "Content-Type: application/json" \
+#   --data "{\"members\":{\"names\": [\"${app}\"],\"roles\": [\"editor\"]}}" -l '"ok":true' \
+#   "http://localhost:5984/"
+#   → will open a POST request to "http://localhost:5984/" adding headers with "Accept: application/json"
+#     and "Content-Type: application/json" sending the data from the "--data" argument. ynh_local_curl will
+#     return with an error if the servers response does not match the extended regex '"ok":true'.
 #
-# For multiple calls, cookies are persisted between each call for the same app
+# For multiple calls, cookies are persisted between each call for the same app.
 #
-# `$domain` and `$path_url` should be defined externally (and correspond to the domain.tld and the /path (of the app?))
+# `$domain` and `$path_url` need to be defined externally if the first form for the 'page' argument is used.
+# 
+# The return code of this function will vary depending of the use of --line_match:
+# 
+# If --line_match has been used the return code will be the one of the grep checking line_match
+# against the output of curl. The output of curl will not be returned.
+#
+# If --line_match has not been provided the return code will be the one of the curl command and
+# the output of curl will be echoed.
 #
 # Requires YunoHost version 2.6.4 or higher.
-ynh_local_curl() {
+
+    # Declare an array to define the options of this helper.a
+    local -A supported_methods=( [PUT]=1 [POST]=1 [GET]=1 [DELETE]=1 )
+    local legacy_args=Ld
+    local -A args_array=( [l]=line_match= [m]=method= [H]=header= [n]=no_sleep [L]=location= [d]=data= [u]=user= [p]=password= )
+    local line_match
+    local method
+    local -a header 
+    local no_sleep
+    local location
+    local user
+    local password
+    local -a data
+    local -a curl_opt_args # optional arguments to `curl`
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
+
+    # make sure method is a supported one
+    if ! [[ -v supported_methods[$method] ]]; then
+      ynh_die --message="method $method not supported by ynh_local_curl"
+    fi
+
     # Define url of page to curl
-    local local_page=$(ynh_normalize_url_path $1)
-    local full_path=$path_url$local_page
-
-    if [ "${path_url}" == "/" ]; then
-        full_path=$local_page
+    # $location contains either an URL or just a page
+    local full_page_url
+    if [[ "$location" =~ ^https?:// ]]; then
+        # if $location starts with an http-protocol use value as a complete URL
+        full_page_url="$location"
+    elif [ "${path_url}" == "/" ]; then
+        # if $path_url points to the webserver root just append $location to localhost URL
+        full_page_url="https://localhost$(ynh_normalize_url_path $location)"
+    else
+        # else append $path_url and $location to localhost URL
+        full_page_url="https://localhost${path_url}$(ynh_normalize_url_path $location)"
     fi
 
-    local full_page_url=https://localhost$full_path
+    # Concatenate data
+    # POST: all elements of array $data in one string seperated by '&'
+    # PUT:  all elements of $data concatenated in one string
+    # GET:  no data
+    # DELETE: no data
+    local seperator='&'
+    if [[ "$method" == 'PUT' ]]; then
+      seperator=''
+    fi
+    join_by() { local IFS="$1"; shift; echo "$*"; }
+    local P_DATA=$( join_by "$seperator" ${data[@]} )
+    if [[ "$P_DATA" != '' ]]; then curl_opt_args+=('--data'); curl_opt_args+=("$P_DATA"); fi
 
-    # Concatenate all other arguments with '&' to prepare POST data
-    local POST_data=""
-    local arg=""
-    for arg in "${@:2}"; do
-        POST_data="${POST_data}${arg}&"
+    # prepend every element in header array with " -H "
+    local seq=0
+    while [[ -v header ]] && [[ $seq -lt ${#header[@]} ]]; do
+      curl_opt_args+=('-H')
+      curl_opt_args+=("${header[$seq]}")
+      seq=$(( $seq + 1 ))
     done
-    if [ -n "$POST_data" ]; then
-        # Add --data arg and remove the last character, which is an unecessary '&'
-        POST_data="--data ${POST_data::-1}"
+
+    # build --user for curl 
+    if [[ -n "$user" ]] && [[ -n "$password" ]]; then
+      curl_opt_args+=('--user' "$user:$password")
+    elif [[ -n "$user" ]] && [[ -z "$password" ]]; then
+      ynh_die --message="user provided via '-u/--user' needs password specified via '-p/--password'"
     fi
 
-    # Wait untils nginx has fully reloaded (avoid curl fail with http2)
-    sleep 2
+    seq=0
+    while [[ $seq -lt ${#curl_opt_args[@]} ]]; do
+      seq=$(( $seq + 1 ))
+    done
 
+    # https://github.com/YunoHost/yunohost/pull/547
+    # Wait untils nginx has fully reloaded (avoid curl fail with http2) unless disabled
+    if ! [[ -v no_sleep ]]; then
+      sleep 2
+    fi
+
+    local app=${app:-testing}
     local cookiefile=/tmp/ynh-$app-cookie.txt
     touch $cookiefile
     chown root $cookiefile
     chmod 700 $cookiefile
 
     # Temporarily enable visitors if needed...
-    local visitors_enabled=$(ynh_permission_has_user "main" "visitors" && echo yes || echo no)
-    if [[ $visitors_enabled == "no" ]]; then
-        ynh_permission_update --permission "main" --add "visitors"
+    # TODO maybe there's a way to do this using --user and --password instead?
+    #   would improve security
+    if ! [[ "$app" == "testing" ]]; then
+        local visitors_enabled=$(ynh_permission_has_user "main" "visitors" && echo yes || echo no)
+        if [[ $visitors_enabled == "no" ]]; then
+            ynh_permission_update --permission "main" --add "visitors"
+        fi
     fi
 
+    curl --silent --show-error --insecure --location --resolve "$domain:443:127.0.0.1" \
+      --header "Host: $domain" --cookie-jar $cookiefile --cookie $cookiefile \
+      "${curl_opt_args[@]}" "$full_page_url"\'
     # Curl the URL
-    curl --silent --show-error --insecure --location --header "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar $cookiefile --cookie $cookiefile
-
-    if [[ $visitors_enabled == "no" ]]; then
-        ynh_permission_update --permission "main" --remove "visitors"
+    local curl_result=$( curl --request "$method" --silent --show-error --insecure --location \
+      --header "Host: $domain" --cookie-jar $cookiefile --cookie $cookiefile \
+      --resolve "$domain:443:127.0.0.1" "${curl_opt_args[@]}" "$full_page_url" )
+    local curl_error=$?
+    
+    # check result agains --line_match if provided
+    if [[ -v line_match ]] && [[ -n $line_match ]]; then
+      printf '%s' "$curl_result" | grep "$line_match" > /dev/null
+      # will return the error code of the above grep
+      curl_error=$?
+    else
+      # no --line_match, return curls error code and output
+      echo $curl_result
     fi
+
+    # re-enable security
+    if [[ -v visitor_enabled ]] && [[ $visitors_enabled == "no" ]]; then
+       ynh_permission_update --permission "main" --remove "visitors"
+    fi
+    return $curl_error
 }
 
 # Create a dedicated config file from a template
