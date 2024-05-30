@@ -106,8 +106,8 @@ ynh_require_ram() {
 
 # Add swap
 #
-# usage: ynh_add_swap --size=SWAP in MB
-# | arg: -s, --size= - Amount of SWAP to add in MB.
+# usage: ynh_add_swap --size=SWAP in MiB
+# | arg: -s, --size= - Amount of SWAP to add in MiB.
 ynh_add_swap () {
     # Declare an array to define the options of this helper.
     declare -Ar args_array=( [s]=size= )
@@ -121,7 +121,7 @@ ynh_add_swap () {
     # Because we don't want to fill the disk with a swap file, divide by 2 the available space.
     local usable_space=$(( $free_space / 2 ))
 
-     SD_CARD_CAN_SWAP=${SD_CARD_CAN_SWAP:-0}
+    SD_CARD_CAN_SWAP=${SD_CARD_CAN_SWAP:-0}
 
     # Swap on SD card only if it's is specified
     if ynh_is_main_device_a_sd_card && [ "$SD_CARD_CAN_SWAP" == "0" ]
@@ -134,21 +134,19 @@ ynh_add_swap () {
     # And set a acceptable size from the request
     if [ $usable_space -ge $swap_max_size ]
     then
-        local swap_size=$swap_max_size
+        swap_size=$swap_max_size
     elif [ $usable_space -ge $(( $swap_max_size / 2 )) ]
     then
-        local swap_size=$(( $swap_max_size / 2 ))
+        swap_size=$(( $swap_max_size / 2 ))
     elif [ $usable_space -ge $(( $swap_max_size / 3 )) ]
     then
-        local swap_size=$(( $swap_max_size / 3 ))
+        swap_size=$(( $swap_max_size / 3 ))
     elif [ $usable_space -ge $(( $swap_max_size / 4 )) ]
     then
-        local swap_size=$(( $swap_max_size / 4 ))
+        swap_size=$(( $swap_max_size / 4 ))
     else
         echo "Not enough space left for a swap file" >&2
-        local swap_size=0
-        # Store the swap size
-        yunohost settings set 'swap.swapfile.swapfile_size' -v ${swap_size}
+        swap_size=0
     fi
 
     # If there's enough space for a swap, and no existing swap here
@@ -158,7 +156,8 @@ ynh_add_swap () {
         truncate -s 0 /swap_file
 
         # set the No_COW attribute on the swapfile with chattr
-        chattr +C /swap_file
+        # let's not fail here, as some filesystems like ext4 do not support COW
+        chattr +C /swap_file || true
 
         # Preallocate space for the swap file, fallocate may sometime not be used, use dd instead in this case
         if ! fallocate -l ${swap_size}K /swap_file
@@ -172,8 +171,6 @@ ynh_add_swap () {
         swapon /swap_file
         # Then add an entry in fstab to load this swap at each boot.
         echo -e "/swap_file swap swap defaults 0 0 #Swap added by YunoHost config panel" >> /etc/fstab
-        # Store the swap size
-        yunohost settings set 'swap.swapfile.swapfile_size' -v ${swap_size}
     fi
 }
 
