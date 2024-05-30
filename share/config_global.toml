@@ -169,3 +169,26 @@ name = "Other"
         choices.ipv4 = "IPv4 Only"
         choices.ipv6 = "IPv6 Only"
         default = "both"
+[swap]
+name = "Swap"
+    [swap.swapfile]
+    name = "Swap file configuration"
+        [swap.swapfile.swapfile_enabled]
+        ask = "Do you need to create a swap file?"
+        help = "A swap file will extend the available RAM by using some of your storage space."
+        type = "boolean"
+        default = false
+        visible = "swapfile_enabled"
+
+        [swap.swapfile.swapfile_warning]
+        ask = "Absolutely do not create a swap file if your root partition is on a SD card!"
+        help = "The intensive writing on the SD card will degrade it fast."
+        type = "alert"
+        style = "danger"
+
+        [swap.swapfile.swapfile_size]
+        ask = "How many megabytes should the swap file be?"
+        help = "Only integers are accepted. Beware, if you reduce its current size, you may crash your server."
+        type = "number"
+        default = 1
+        visible = "swapfile_enabled"

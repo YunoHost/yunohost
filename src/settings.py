@@ -366,3 +366,9 @@ def reconfigure_dovecot(setting_name, old_value, new_value):
             regen_conf(names=["dovecot"])
         command = ["apt-get", "-y", "remove", dovecot_package]
         subprocess.call(command, env=environment)
+
+@post_change_hook("swapfile_enabled")
+@post_change_hook("swapfile_size")
+def reconfigure_swapfile(setting_name, old_value, new_value):
+    if old_value != new_value:
+        regen_conf(names=["swap"])
