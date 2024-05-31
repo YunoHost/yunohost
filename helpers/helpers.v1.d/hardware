@@ -167,29 +167,21 @@ ynh_add_swap () {
         sysctl --quiet --system
     fi
 
-    # If there's enough space for a swap, and no existing swap here
-    if [ $swap_size -ne 0 ] && [ ! -e /swap_file ]
-    then
-        # Create file
-        truncate -s 0 /swap_file
+    # Workaround for some copy-on-write filesystems like btrfs.
+    # Create the file
+    truncate -s 0 "$swapfile_path"
+    # Set the No_COW attribute on the swapfile with chattr
+    chattr +C "$swapfile_path" || true
+    # Set the final file size
+    dd if=/dev/zero of="$swapfile_path" bs=1024 count="$swap_size_kb"
+    chmod 0600 "$swapfile_path"
 
-        # set the No_COW attribute on the swapfile with chattr
-        # let's not fail here, as some filesystems like ext4 do not support COW
-        chattr +C /swap_file || true
-
-        # Preallocate space for the swap file, fallocate may sometime not be used, use dd instead in this case
-        if ! fallocate -l ${swap_size}K /swap_file
-        then
-            dd if=/dev/zero of=/swap_file bs=1024 count=${swap_size}
-        fi
-        chmod 0600 /swap_file
-        # Create the swap
-        mkswap /swap_file
-        # And activate it
-        swapon /swap_file
-        # Then add an entry in fstab to load this swap at each boot.
-        echo -e "/swap_file swap swap defaults 0 0 #Swap added by YunoHost config panel" >> /etc/fstab
-    fi
+    # Create the swap
+    mkswap "$swapfile_path"
+    # And activate it
+    swapon "$swapfile_path"
+    # Then add an entry in fstab to load this swap at each boot.
+    echo -e "$swapfile_path swap swap defaults 0 0 #Swap added by $app" >> /etc/fstab
 }
 
 # Delete the swap file created for the app by ynh_add_swap.
