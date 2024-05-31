@@ -114,25 +114,41 @@ ynh_require_ram() {
 # | arg: -s, --size= - Amount of SWAP to add in Mib.
 ynh_add_swap () {
     # Declare an array to define the options of this helper.
-    declare -Ar args_array=( [s]=size= )
+    local -A args_array=( [s]=size= )
     local size
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
+
+    # Could be moved to an argument
+    swapfile_dir="$(realpath /)"
+    swapfile_path="$(realpath "$swapfile_dir/swap_file")"
+
+    # Early warning exit: Can't swap inside LXD
+    if [[ "$(systemd-detect-virt)" == "lxc" ]]; then
+        ynh_print_warn --message="You are inside a LXC container, swap will not be added."
+        ynh_print_warn --message="That can cause troubles for $app. Please make sure you have more than $((size/1024))G of RAM/swap available."
+        return
+    fi
+
+    # Early warning exit: Preserve SD cards and do not swap on them
+    if ynh_is_on_sd_card --dir="$swapfile_dir" && [[ "${SD_CARD_CAN_SWAP:-0}" == "0" ]]; then
+        ynh_print_warn --message="Swap files on an SD card is not recommended, swap will not be added."
+        ynh_print_warn --message="That can cause troubles for $app. Please make sure you have more than $((size/1024))G of RAM/swap available."
+        ynh_print_warn --message="If you still want activate the swap, you can relaunch the command preceded by 'SD_CARD_CAN_SWAP=1'"
+        return
+    fi
+
+    # Early warning exit: swapfile already exists
+    if [ -f "$swapfile_path" ]; then
+        ynh_print_warn --message="Swap file $swapfile_path already exists!"
+        return
+    fi
 
     local swap_max_size=$(( $size * 1024 ))
 
     local free_space=$(df --output=avail / | sed 1d)
     # Because we don't want to fill the disk with a swap file, divide by 2 the available space.
     local usable_space=$(( $free_space / 2 ))
-
-    SD_CARD_CAN_SWAP=${SD_CARD_CAN_SWAP:-0}
-
-    # Swap on SD card only if it's is specified
-    if ynh_is_on_sd_card --dir="$swapfile_dir" && [ "$SD_CARD_CAN_SWAP" == "0" ]
-    then
-        ynh_print_warn --message="The main mountpoint of your system '/' is on an SD card, swap will not be added to prevent some damage to it. If you still want activate the swap, you can relaunch the command preceded by 'SD_CARD_CAN_SWAP=1'"
-        return
-    fi
 
     # Configure swappiness
     if [ ! -e /etc/sysctl.d/999-ynhswap.conf ]
