@@ -121,7 +121,7 @@ ynh_add_swap () {
 
     # Could be moved to an argument
     swapfile_dir="$(realpath /)"
-    swapfile_path="$(realpath "$swapfile_dir/swap_file")"
+    swapfile_path="$(realpath "$swapfile_dir/swap_yunohost")"
 
     # Early warning exit: Can't swap inside LXD
     if [[ "$(systemd-detect-virt)" == "lxc" ]]; then
@@ -161,8 +161,7 @@ ynh_add_swap () {
     swap_size_kb=$(( swap_max_size_kb / size_space_ratio ))
 
     # Configure swappiness
-    if [ ! -e /etc/sysctl.d/999-ynhswap.conf ]
-    then
+    if [ ! -f /etc/sysctl.d/999-yunohost-swap.conf ]; then
         echo "vm.swappiness=10" > /etc/sysctl.d/999-ynhswap.conf
         sysctl --quiet --system
     fi
@@ -191,7 +190,7 @@ ynh_add_swap () {
 ynh_del_swap () {
     # Could be moved to an argument
     swapfile_dir="$(realpath /)"
-    swapfile_path="$(realpath "$swapfile_dir/swap_file")"
+    swapfile_path="$(realpath "$swapfile_dir/swap_yunohost")"
 
     if [ ! -f "$swapfile_path" ]; then
         return
