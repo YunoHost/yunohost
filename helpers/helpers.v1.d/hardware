@@ -190,16 +190,20 @@ ynh_add_swap () {
 # [packagingv1]
 #
 ynh_del_swap () {
-    # If there a swap at this place
-    if [ -e /swap_file ]
-    then
-        # Clean the fstab
-        sed -i "/#Swap added by YunoHost config panel/d" /etc/fstab
-        # Desactive the swap file
-        swapoff /swap_file
-        # And remove it
-        rm /swap_file
+    # Could be moved to an argument
+    swapfile_dir="$(realpath /)"
+    swapfile_path="$(realpath "$swapfile_dir/swap_file")"
+
+    if [ ! -f "$swapfile_path" ]; then
+        return
     fi
+
+    # Clean the fstab...
+    sed -i "/#Swap added by $app/d" /etc/fstab
+    # Desactive the swap file...
+    swapoff "$swapfile_path"
+    # And remove it.
+    rm "$swapfile_path"
 }
 
 # Check if the device of the provided directory is an SD card
