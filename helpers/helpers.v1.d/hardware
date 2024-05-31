@@ -130,6 +130,13 @@ ynh_add_swap () {
         return
     fi
 
+    # Configure swappiness
+    if [ ! -e /etc/sysctl.d/999-ynhswap.conf ]
+    then
+        echo "vm.swappiness=10" > /etc/sysctl.d/999-ynhswap.conf
+        sysctl --quiet --system
+    fi
+
     # Compare the available space with the size of the swap.
     # And set a acceptable size from the request
     if [ $usable_space -ge $swap_max_size ]
