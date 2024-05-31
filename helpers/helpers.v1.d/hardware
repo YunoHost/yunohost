@@ -144,36 +144,27 @@ ynh_add_swap () {
         return
     fi
 
-    local swap_max_size=$(( $size * 1024 ))
+    local swap_max_size_kb=$(( size * 1024 ))
 
-    local free_space=$(df --output=avail / | sed 1d)
+    local free_space_kb
+    free_space_kb=$(df --block-size=K --output=avail "$swapfile_dir" | sed 1d | sed -e 's/K$//')
     # Because we don't want to fill the disk with a swap file, divide by 2 the available space.
-    local usable_space=$(( $free_space / 2 ))
+    local usable_space_kb=$(( free_space_kb / 2 ))
+
+    # Compare the available space with the size of the swap.
+    # And set a acceptable size from the request
+    size_space_ratio=$(( swap_max_size_kb / usable_space_kb + 1 ))
+    if (( size_space_ratio > 4)); then
+        ynh_print_warn --message="Not enough space for a swap file at $swapfile_path."
+        return
+    fi
+    swap_size_kb=$(( swap_max_size_kb / size_space_ratio ))
 
     # Configure swappiness
     if [ ! -e /etc/sysctl.d/999-ynhswap.conf ]
     then
         echo "vm.swappiness=10" > /etc/sysctl.d/999-ynhswap.conf
         sysctl --quiet --system
-    fi
-
-    # Compare the available space with the size of the swap.
-    # And set a acceptable size from the request
-    if [ $usable_space -ge $swap_max_size ]
-    then
-        swap_size=$swap_max_size
-    elif [ $usable_space -ge $(( $swap_max_size / 2 )) ]
-    then
-        swap_size=$(( $swap_max_size / 2 ))
-    elif [ $usable_space -ge $(( $swap_max_size / 3 )) ]
-    then
-        swap_size=$(( $swap_max_size / 3 ))
-    elif [ $usable_space -ge $(( $swap_max_size / 4 )) ]
-    then
-        swap_size=$(( $swap_max_size / 4 ))
-    else
-        echo "Not enough space left for a swap file" >&2
-        swap_size=0
     fi
 
     # If there's enough space for a swap, and no existing swap here
