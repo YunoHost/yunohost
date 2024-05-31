@@ -104,10 +104,14 @@ ynh_require_ram() {
     fi
 }
 
-# Add swap
+
+# Ask the creation of a swap file for the application.
+# The helper might or might not create the swap file, considering the machine's configuration.
 #
-# usage: ynh_add_swap --size=SWAP in MiB
-# | arg: -s, --size= - Amount of SWAP to add in MiB.
+# [packagingv1]
+#
+# usage: ynh_add_swap --size=SWAP in Mib
+# | arg: -s, --size= - Amount of SWAP to add in Mib.
 ynh_add_swap () {
     # Declare an array to define the options of this helper.
     declare -Ar args_array=( [s]=size= )
@@ -181,6 +185,10 @@ ynh_add_swap () {
     fi
 }
 
+# Delete the swap file created for the app by ynh_add_swap.
+#
+# [packagingv1]
+#
 ynh_del_swap () {
     # If there a swap at this place
     if [ -e /swap_file ]
