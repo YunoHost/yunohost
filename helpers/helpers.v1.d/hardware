@@ -128,7 +128,7 @@ ynh_add_swap () {
     SD_CARD_CAN_SWAP=${SD_CARD_CAN_SWAP:-0}
 
     # Swap on SD card only if it's is specified
-    if ynh_is_main_device_a_sd_card && [ "$SD_CARD_CAN_SWAP" == "0" ]
+    if ynh_is_on_sd_card --dir="$swapfile_dir" && [ "$SD_CARD_CAN_SWAP" == "0" ]
     then
         ynh_print_warn --message="The main mountpoint of your system '/' is on an SD card, swap will not be added to prevent some damage to it. If you still want activate the swap, you can relaunch the command preceded by 'SD_CARD_CAN_SWAP=1'"
         return
@@ -202,16 +202,24 @@ ynh_del_swap () {
     fi
 }
 
-# Check if the device of the main mountpoint "/" is an SD card
+# Check if the device of the provided directory is an SD card
 #
 # [internal]
 #
-# return 0 if it's an SD card, else 1
-ynh_is_main_device_a_sd_card () {
-    local main_device=$(lsblk --output PKNAME --noheadings $(findmnt / --nofsroot --uniq --output source --noheadings --first-only))
+# usage: ynh_is_on_sd_card --dir=/
+# | arg: -d, --dir= - Directory to check
+ynh_is_on_sd_card () {
+    # Declare an array to define the options of this helper.
+    local -A args_array=( [d]=dir= )
+    local dir
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
 
-    if echo $main_device | grep --quiet "mmc" && [ $(tail -n1 /sys/block/$main_device/queue/rotational) == "0" ]
-    then
+    device_dev=$(findmnt --nofsroot --uniq --output source --noheadings --first-only --target "$dir")
+    device_pkname=$(lsblk --output PKNAME --noheadings "$device_dev")
+    device_rotational=$(lsblk --output ROTA --noheadings "$device_dev")
+
+    if [[ "$device_pkname" == *"mmc"* ]] && [[ "$device_rotational" == "0" ]]; then
         return 0
     else
         return 1
