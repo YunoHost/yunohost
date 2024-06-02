@@ -1,29 +1,24 @@
 name: Check / auto apply Black
+
 on:
   push:
-      branches:
-          - dev
+    branches: [ "dev" ]
+
 jobs:
   black:
     name: Check / auto apply black
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: Check files using the black formatter
         uses: psf/black@stable
         id: black
         with:
           options: "."
         continue-on-error: true
-      - shell: pwsh
-        id: check_files_changed
-        run: |
-          # Diff HEAD with the previous commit
-          $diff = git diff
-          $HasDiff = $diff.Length -gt 0
-          Write-Host "::set-output name=files_changed::$HasDiff"
+
       - name: Create Pull Request
-        if: steps.check_files_changed.outputs.files_changed == 'true'
         uses: peter-evans/create-pull-request@v6
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
