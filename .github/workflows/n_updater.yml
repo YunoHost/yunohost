@@ -19,7 +19,7 @@ jobs:
           # Download n
           wget https://raw.githubusercontent.com/tj/n/master/bin/n --output-document=helpers/vendor/n/n
 
-          echo "VERSION=$(sed -n 's/^VERSION=\"\(.*\)\"/\1/p' < n)" >> $GITHUB_ENV
+          echo "VERSION=$(sed -n 's/^VERSION=\"\(.*\)\"/\1/p' < helpers/vendor/n/n)" >> $GITHUB_ENV
 
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
