@@ -111,43 +111,35 @@ ynh_install_go () {
     test -x /usr/bin/go && mv /usr/bin/go /usr/bin/go_goenv
 
     # Install or update goenv
-    goenv="$(command -v goenv $goenv_install_dir/bin/goenv | head -1)"
-    if [ -n "$goenv" ]; then
-        ynh_print_info --message="goenv already seems installed in \`$goenv'."
-        pushd "${goenv%/*/*}"
-            if git remote -v 2>/dev/null | grep "https://github.com/syndbg/goenv.git"; then
-                echo "Trying to update with Git..."
-                git pull -q --tags origin master
-                cd ..
-                ynh_go_try_bash_extension
-            fi
-        popd
-    else
-        ynh_print_info --message="Installing goenv with Git..."
-        mkdir -p $goenv_install_dir
-        pushd $goenv_install_dir
+    mkdir -p $goenv_install_dir
+    pushd "$goenv_install_dir"
+        if ! [ -x "$goenv_install_dir/bin/goenv" ]; then
+            ynh_print_info --message="Downloading goenv..."
             git init -q
-            git remote add -f -t master origin https://github.com/syndbg/goenv.git > /dev/null 2>&1
-            git checkout -q -b master origin/master
-            ynh_go_try_bash_extension
-            goenv=$goenv_install_dir/bin/goenv
-        popd
-    fi
+            git remote add origin https://github.com/syndbg/goenv.git 
+        else
+            ynh_print_info --message="Updating goenv..."
+        fi
+        git fetch -q --tags --prune origin
+        local git_latest_tag=$(git describe --tags "$(git rev-list --tags --max-count=1)")
+        git checkout -q "$git_latest_tag"
+        ynh_go_try_bash_extension
+        goenv=$goenv_install_dir/bin/goenv
+    popd
 
-    goenv_latest="$(command -v "$goenv_install_dir"/plugins/*/bin/goenv-latest goenv-latest | head -1)"
-    if [ -n "$goenv_latest" ]; then
-        ynh_print_info --message="\`goenv latest' command already available in \`$goenv_latest'."
-        pushd "${goenv_latest%/*/*}"
-            if git remote -v 2>/dev/null | grep "https://github.com/momo-lab/xxenv-latest.git"; then
-                ynh_print_info --message="Trying to update xxenv-latest with git..."
-                git pull -q origin master
-            fi
-        popd
-    else
-        ynh_print_info --message="Installing xxenv-latest with Git..."
-        mkdir -p "${goenv_install_dir}/plugins"
-        git clone -q https://github.com/momo-lab/xxenv-latest.git "${goenv_install_dir}/plugins/xxenv-latest"
-    fi
+    # Install or update xxenv-latest
+    mkdir -p "$goenv_install_dir/plugins/xxenv-latest"
+    pushd "$goenv_install_dir/plugins/xxenv-latest"
+        if ! [ -x "$goenv_install_dir/plugins/xxenv-latest/bin/goenv-latest" ]; then
+            ynh_print_info --message="Downloading xxenv-latest..."
+            git init -q
+            git remote add origin https://github.com/momo-lab/xxenv-latest.git 
+        else
+            ynh_print_info --message="Updating xxenv-latest..."
+        fi
+        local git_latest_tag=$(git describe --tags "$(git rev-list --tags --max-count=1)")
+        git checkout -q "$git_latest_tag"
+    popd
 
     # Enable caching
     mkdir -p "${goenv_install_dir}/cache"
@@ -224,7 +216,7 @@ ynh_cleanup_go () {
             required_go_versions="${installed_app_go_version}\n${required_go_versions}"
         fi
     done
-    
+
     # Remove no more needed Go versions
     local installed_go_versions=$(goenv versions --bare --skip-aliases | grep -Ev '/')
     for installed_go_version in $installed_go_versions
