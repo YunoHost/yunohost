@@ -54,7 +54,7 @@ ynh_use_ruby () {
     ruby_version=$(ynh_app_setting_get --app=$app --key=ruby_version)
 
     # Get the absolute path of this version of Ruby
-    ruby_path="$ruby_version_path/$YNH_APP_INSTANCE_NAME/bin"
+    ruby_path="$ruby_version_path/$app/bin"
 
     # Allow alias to be used into bash script
     shopt -s expand_aliases
@@ -207,16 +207,16 @@ ynh_install_ruby () {
     RUBY_CONFIGURE_OPTS="--disable-install-doc --with-jemalloc" MAKE_OPTS="-j2" rbenv install --skip-existing $final_ruby_version > /dev/null 2>&1
 
     # Store ruby_version into the config of this app
-    ynh_app_setting_set --app=$YNH_APP_INSTANCE_NAME --key=ruby_version --value=$final_ruby_version
+    ynh_app_setting_set --app=$app --key=ruby_version --value=$final_ruby_version
 
     # Remove app virtualenv
-    if rbenv alias --list | grep --quiet "$YNH_APP_INSTANCE_NAME "
+    if rbenv alias --list | grep --quiet "$app "
     then
-        rbenv alias $YNH_APP_INSTANCE_NAME --remove
+        rbenv alias $app --remove
     fi
 
     # Create app virtualenv
-    rbenv alias $YNH_APP_INSTANCE_NAME $final_ruby_version
+    rbenv alias $app $final_ruby_version
 
     # Cleanup Ruby versions
     ynh_cleanup_ruby
@@ -238,7 +238,7 @@ eval \"\$(rbenv init -)\"
 #
 # usage: ynh_remove_ruby
 ynh_remove_ruby () {
-    local ruby_version=$(ynh_app_setting_get --app=$YNH_APP_INSTANCE_NAME --key=ruby_version)
+    local ruby_version=$(ynh_app_setting_get --app=$app --key=ruby_version)
 
     # Load rbenv path in PATH
     local CLEAR_PATH="$rbenv_install_dir/bin:$PATH"
@@ -246,10 +246,10 @@ ynh_remove_ruby () {
     # Remove /usr/local/bin in PATH in case of Ruby prior installation
     PATH=$(echo $CLEAR_PATH | sed 's@/usr/local/bin:@@')
 
-    rbenv alias $YNH_APP_INSTANCE_NAME --remove
+    rbenv alias $app --remove
 
     # Remove the line for this app
-    ynh_app_setting_delete --app=$YNH_APP_INSTANCE_NAME --key=ruby_version
+    ynh_app_setting_delete --app=$app --key=ruby_version
 
     # Cleanup Ruby versions
     ynh_cleanup_ruby
