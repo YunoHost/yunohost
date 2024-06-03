@@ -167,7 +167,7 @@ ynh_install_go () {
     goenv install --skip-existing $final_go_version
 
     # Store go_version into the config of this app
-    ynh_app_setting_set --app=$YNH_APP_INSTANCE_NAME --key=go_version --value=$final_go_version
+    ynh_app_setting_set --app=$app --key=go_version --value=$final_go_version
 
     # Cleanup Go versions
     ynh_cleanup_go
@@ -189,7 +189,7 @@ eval \"\$(goenv init -)\"
 #
 # usage: ynh_remove_go
 ynh_remove_go () {
-    local go_version=$(ynh_app_setting_get --app=$YNH_APP_INSTANCE_NAME --key=go_version)
+    local go_version=$(ynh_app_setting_get --app=$app --key=go_version)
 
     # Load goenv path in PATH
     local CLEAR_PATH="$goenv_install_dir/bin:$PATH"
@@ -198,7 +198,7 @@ ynh_remove_go () {
     PATH=$(echo $CLEAR_PATH | sed 's@/usr/local/bin:@@')
 
     # Remove the line for this app
-    ynh_app_setting_delete --app=$YNH_APP_INSTANCE_NAME --key=go_version
+    ynh_app_setting_delete --app=$app --key=go_version
 
     # Cleanup Go versions
     ynh_cleanup_go

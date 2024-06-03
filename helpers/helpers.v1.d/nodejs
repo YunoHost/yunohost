@@ -144,7 +144,7 @@ ynh_install_nodejs() {
     fi
 
     # Store the ID of this app and the version of node requested for it
-    echo "$YNH_APP_INSTANCE_NAME:$nodejs_version" | tee --append "$n_install_dir/ynh_app_version"
+    echo "$app:$nodejs_version" | tee --append "$n_install_dir/ynh_app_version"
 
     # Store nodejs_version into the config of this app
     ynh_app_setting_set --app=$app --key=nodejs_version --value=$nodejs_version
@@ -168,7 +168,7 @@ ynh_remove_nodejs() {
     nodejs_version=$(ynh_app_setting_get --app=$app --key=nodejs_version)
 
     # Remove the line for this app
-    sed --in-place "/$YNH_APP_INSTANCE_NAME:$nodejs_version/d" "$n_install_dir/ynh_app_version"
+    sed --in-place "/$app:$nodejs_version/d" "$n_install_dir/ynh_app_version"
 
     # If no other app uses this version of nodejs, remove it.
     if ! grep --quiet "$nodejs_version" "$n_install_dir/ynh_app_version"; then
