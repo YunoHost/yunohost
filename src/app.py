@@ -2968,8 +2968,10 @@ def _make_environment_for_app_script(
         "YNH_APP_INSTANCE_NUMBER": str(app_instance_nb),
         "YNH_APP_MANIFEST_VERSION": manifest.get("version", "?"),
         "YNH_APP_PACKAGING_FORMAT": str(manifest["packaging_format"]),
-        "YNH_HELPERS_VERSION": str(manifest.get("integration", {}).get("helpers_version")
-        or manifest["packaging_format"]),
+        "YNH_HELPERS_VERSION": str(
+            manifest.get("integration", {}).get("helpers_version")
+            or manifest["packaging_format"]
+        ),
         "YNH_ARCH": system_arch(),
         "YNH_DEBIAN_VERSION": debian_version(),
     }
