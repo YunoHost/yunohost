@@ -2971,7 +2971,7 @@ def _make_environment_for_app_script(
         "YNH_HELPERS_VERSION": str(
             manifest.get("integration", {}).get("helpers_version")
             or manifest["packaging_format"]
-        ),
+        ).replace(".0", ""),
         "YNH_ARCH": system_arch(),
         "YNH_DEBIAN_VERSION": debian_version(),
     }
