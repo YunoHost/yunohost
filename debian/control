@@ -28,7 +28,7 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , opendkim-tools, opendkim, postsrsd, procmail, mailutils
  , redis-server
  , acl
- , git, curl, wget, cron, unzip, jq, bc, at, procps
+ , git, curl, wget, cron, unzip, jq, bc, at, procps, j2cli
  , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
 Recommends: yunohost-admin, yunohost-portal (>= 12.0)
  , ntp, inetutils-ping | iputils-ping

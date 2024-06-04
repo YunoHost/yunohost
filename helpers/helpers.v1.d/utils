@@ -318,7 +318,7 @@ ynh_setup_source() {
             mv $src_filename $dest_dir/$src_rename
         fi
     elif [[ "$src_format" == "docker" ]]; then
-        /usr/share/yunohost/helpers.d/vendor/docker-image-extract/docker-image-extract -p $src_platform -o $dest_dir $src_url 2>&1
+        "$YNH_HELPERS_DIR/vendor/docker-image-extract/docker-image-extract" -p $src_platform -o $dest_dir $src_url 2>&1
     elif [[ "$src_format" == "zip" ]]; then
         # Zip format
         # Using of a temp directory, because unzip doesn't manage --strip-components
@@ -451,12 +451,17 @@ ynh_local_curl() {
 #
 # usage: ynh_add_config --template="template" --destination="destination"
 # | arg: -t, --template=     - Template config file to use
-# | arg: -d, --destination=    - Destination of the config file
+# | arg: -d, --destination=  - Destination of the config file
+# | arg: -j, --jinja         - Use jinja template instead of legacy __MY_VAR__
 #
 # examples:
 #    ynh_add_config --template=".env" --destination="$install_dir/.env" use the template file "../conf/.env"
+#    ynh_add_config --jinja --template="config.j2" --destination="$install_dir/config" use the template file "../conf/config.j2"
 #    ynh_add_config --template="/etc/nginx/sites-available/default" --destination="etc/nginx/sites-available/mydomain.conf"
 #
+##
+## How it works in "legacy" mode
+##
 # The template can be by default the name of a file in the conf directory
 # of a YunoHost Package, a relative path or an absolute path.
 #
@@ -480,6 +485,37 @@ ynh_local_curl() {
 #   __VAR_2__    by $var_2
 # ```
 #
+##
+## When --jinja is enabled
+##
+# For a full documentation of the template you can refer to: https://jinja.palletsprojects.com/en/3.1.x/templates/
+# In Yunohost context there are no really some specificity except that all variable passed are of type string.
+# So here are some example of recommended usage:
+#
+# If you need a conditional block
+#
+# {% if should_my_block_be_shown == 'true' %}
+# ...
+# {% endif %}
+#
+# or
+#
+# {% if should_my_block_be_shown == '1' %}
+# ...
+# {% endif %}
+#
+# If you need to iterate with loop:
+#
+# {% for yolo in var_with_multiline_value.splitlines() %}
+# ...
+# {% endfor %}
+#
+# or
+#
+# {% for jail in my_var_with_coma.split(',') %}
+# ...
+# {% endfor %}
+#
 # The helper will verify the checksum and backup the destination file
 # if it's different before applying the new template.
 #
@@ -489,13 +525,15 @@ ynh_local_curl() {
 # Requires YunoHost version 4.1.0 or higher.
 ynh_add_config() {
     # Declare an array to define the options of this helper.
-    local legacy_args=tdv
-    local -A args_array=([t]=template= [d]=destination=)
+    local legacy_args=tdj
+    local -A args_array=([t]=template= [d]=destination= [j]=jinja)
     local template
     local destination
+    local jinja
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     local template_path
+    jinja="${jinja:-0}"
 
     if [ -f "$YNH_APP_BASEDIR/conf/$template" ]; then
         template_path="$YNH_APP_BASEDIR/conf/$template"
@@ -512,14 +550,20 @@ ynh_add_config() {
     # created a file beforehand to have control over it
     # (cp won't overwrite ownership / modes by default...)
     touch $destination
-    chown root:root $destination
     chmod 640 $destination
-
-    cp -f "$template_path" "$destination"
-
     _ynh_apply_default_permissions $destination
 
-    ynh_replace_vars --file="$destination"
+    if [[ "$jinja" == 1 ]]
+    then
+        # This is ran in a subshell such that the "export" does not "contaminate" the main process
+        (
+            export $(compgen -v)
+            j2 "$template_path" -f env -o $destination
+        )
+    else
+        cp -f "$template_path" "$destination"
+        ynh_replace_vars --file="$destination"
+    fi
 
     ynh_store_file_checksum --file="$destination"
 }
@@ -1084,7 +1128,7 @@ _ynh_apply_default_permissions() {
     # Crons should be owned by root
     # Also we don't want systemd conf, nginx conf or others stuff to be owned by the app,
     # otherwise they could self-edit their own systemd conf and escalate privilege
-    if echo "$target" | grep -q '^/etc/cron\|/etc/php\|/etc/nginx/conf.d\|/etc/fail2ban\|/etc/systemd/system'
+    if grep -qE '^(/etc/cron|/etc/php|/etc/nginx/conf.d|/etc/fail2ban|/etc/systemd/system)' <<< "$target"
     then
         chmod 400 $target
         chown root:root $target
