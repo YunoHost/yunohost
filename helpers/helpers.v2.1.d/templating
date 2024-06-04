@@ -4,12 +4,17 @@
 #
 # usage: ynh_add_config --template="template" --destination="destination"
 # | arg: -t, --template=     - Template config file to use
-# | arg: -d, --destination=    - Destination of the config file
+# | arg: -d, --destination=  - Destination of the config file
+# | arg: -j, --jinja         - Use jinja template instead of legacy __MY_VAR__
 #
 # examples:
 #    ynh_add_config --template=".env" --destination="$install_dir/.env" use the template file "../conf/.env"
+#    ynh_add_config --jinja --template="config.j2" --destination="$install_dir/config" use the template file "../conf/config.j2"
 #    ynh_add_config --template="/etc/nginx/sites-available/default" --destination="etc/nginx/sites-available/mydomain.conf"
 #
+##
+## How it works in "legacy" mode
+##
 # The template can be by default the name of a file in the conf directory
 # of a YunoHost Package, a relative path or an absolute path.
 #
@@ -19,8 +24,6 @@
 # ```
 #   __PATH__                by $path_url
 #   __USER__                by $app
-#   __FINALPATH__           by $final_path
-#   __PHPVERSION__          by $YNH_PHP_VERSION (packaging v1 only, packaging v2 uses phpversion setting implicitly set by apt resource)
 #   __YNH_NODE_LOAD_PATH__  by $ynh_node_load_PATH
 # ```
 # And any dynamic variables that should be defined before calling this helper like:
@@ -31,6 +34,37 @@
 #   __VAR_2__    by $var_2
 # ```
 #
+##
+## When --jinja is enabled
+##
+# For a full documentation of the template you can refer to: https://jinja.palletsprojects.com/en/3.1.x/templates/
+# In Yunohost context there are no really some specificity except that all variable passed are of type string.
+# So here are some example of recommended usage:
+#
+# If you need a conditional block
+#
+# {% if should_my_block_be_shown == 'true' %}
+# ...
+# {% endif %}
+#
+# or
+#
+# {% if should_my_block_be_shown == '1' %}
+# ...
+# {% endif %}
+#
+# If you need to iterate with loop:
+#
+# {% for yolo in var_with_multiline_value.splitlines() %}
+# ...
+# {% endfor %}
+#
+# or
+#
+# {% for jail in my_var_with_coma.split(',') %}
+# ...
+# {% endfor %}
+#
 # The helper will verify the checksum and backup the destination file
 # if it's different before applying the new template.
 #
@@ -40,10 +74,12 @@
 # Requires YunoHost version 4.1.0 or higher.
 ynh_add_config() {
     # ============ Argument parsing =============
-    local -A args_array=([t]=template= [d]=destination=)
+    local -A args_array=([t]=template= [d]=destination= [j]=jinja)
     local template
     local destination
+    local jinja
     ynh_handle_getopts_args "$@"
+    jinja="${jinja:-0}"
     # ===========================================
 
     local template_path
@@ -62,14 +98,20 @@ ynh_add_config() {
     # created a file beforehand to have control over it
     # (cp won't overwrite ownership / modes by default...)
     touch $destination
-    chown root:root $destination
     chmod 640 $destination
-
-    cp -f "$template_path" "$destination"
-
     _ynh_apply_default_permissions $destination
 
-    ynh_replace_vars --file="$destination"
+    if [[ "$jinja" == 1 ]]
+    then
+        # This is ran in a subshell such that the "export" does not "contaminate" the main process
+        (
+            export $(compgen -v)
+            j2 "$template_path" -f env -o $destination
+        )
+    else
+        cp -f "$template_path" "$destination"
+        ynh_replace_vars --file="$destination"
+    fi
 
     ynh_store_file_checksum --file="$destination"
 }
@@ -85,8 +127,6 @@ ynh_add_config() {
 # that should be defined before calling this helper :
 #   __PATH__                by $path_url
 #   __USER__                by $app
-#   __FINALPATH__           by $final_path
-#   __PHPVERSION__          by $YNH_PHP_VERSION (packaging v1 only, packaging v2 uses phpversion setting implicitly set by apt resource)
 #   __YNH_NODE_LOAD_PATH__  by $ynh_node_load_PATH
 #
 # And any dynamic variables that should be defined before calling this helper like:
