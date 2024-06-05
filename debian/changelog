@@ -1,3 +1,9 @@
+yunohost (11.2.14) testing; urgency=low
+
+  - helpers/go: fix missing git fetch (5676a7275)
+
+ -- Félix Piédallu <felix@piedallu.me>  Wed, 05 Jun 2024 15:52:06 +0200
+
 yunohost (11.2.13) stable; urgency=low
 
   - helpers: add a --jinja option to ynh_add_config ([#1851](http://github.com/YunoHost/yunohost/pull/1851))
@@ -5149,4 +5155,3 @@ moulinette-yunohost (1.0~megusta1) megusta; urgency=low
   * Init
 
  -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 15 May 2014 13:16:03 +0200
-
