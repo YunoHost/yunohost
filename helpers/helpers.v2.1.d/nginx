@@ -39,7 +39,7 @@ ynh_add_nginx_config() {
 #
 # Requires YunoHost version 2.7.2 or higher.
 ynh_remove_nginx_config() {
-    ynh_secure_remove --file="/etc/nginx/conf.d/$domain.d/$app.conf"
+    ynh_safe_rm --target="/etc/nginx/conf.d/$domain.d/$app.conf"
     ynh_systemd_action --service_name=nginx --action=reload
 }
 
@@ -58,7 +58,7 @@ ynh_change_url_nginx_config() {
     local old_nginx_conf_path=/etc/nginx/conf.d/$old_domain.d/$app.conf
     ynh_backup_if_checksum_is_different --file="$old_nginx_conf_path"
     ynh_delete_file_checksum --file="$old_nginx_conf_path"
-    ynh_secure_remove --file="$old_nginx_conf_path"
+    ynh_safe_rm --target="$old_nginx_conf_path"
 
     # Regen the nginx conf
     ynh_add_nginx_config

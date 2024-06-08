@@ -127,7 +127,7 @@ pm.process_idle_timeout = 10s
     # Validate that the new php conf doesn't break php-fpm entirely
     if ! php-fpm${phpversion} --test 2>/dev/null; then
         php-fpm${phpversion} --test || true
-        ynh_secure_remove --file="$finalphpconf"
+        ynh_safe_rm --target="$finalphpconf"
         ynh_die --message="The new configuration broke php-fpm?"
     fi
     ynh_systemd_action --service_name=$fpm_service --action=reload
@@ -142,7 +142,7 @@ ynh_remove_fpm_config() {
     local fpm_config_dir=$(ynh_app_setting_get --key=fpm_config_dir)
     local fpm_service=$(ynh_app_setting_get --key=fpm_service)
 
-    ynh_secure_remove --file="$fpm_config_dir/pool.d/$app.conf"
+    ynh_safe_rm --target="$fpm_config_dir/pool.d/$app.conf"
     ynh_systemd_action --service_name=$fpm_service --action=reload
 }
 

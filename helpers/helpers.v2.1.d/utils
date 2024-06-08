@@ -259,7 +259,7 @@ ynh_setup_source() {
     fi
 
     if [ "$full_replace" -eq 1 ]; then
-        ynh_secure_remove --file="$dest_dir"
+        ynh_safe_rm --target="$dest_dir"
     fi
 
     # Extract source into the app dir
@@ -288,11 +288,11 @@ ynh_setup_source() {
             local tmp_dir=$(mktemp --directory)
             unzip -quo $src_filename -d "$tmp_dir"
             cp --archive $tmp_dir/*/. "$dest_dir"
-            ynh_secure_remove --file="$tmp_dir"
+            ynh_safe_rm --target="$tmp_dir"
         else
             unzip -quo $src_filename -d "$dest_dir"
         fi
-        ynh_secure_remove --file="$src_filename"
+        ynh_safe_rm --target="$src_filename"
     else
         local strip=""
         if [ "$src_in_subdir" != "false" ]; then
@@ -308,7 +308,7 @@ ynh_setup_source() {
         else
             ynh_die --message="Archive format unrecognized."
         fi
-        ynh_secure_remove --file="$src_filename"
+        ynh_safe_rm --target="$src_filename"
     fi
 
     # Apply patches
@@ -432,30 +432,30 @@ _acceptable_path_to_delete() {
 
 # Remove a file or a directory securely
 #
-# usage: ynh_secure_remove --file=path_to_remove
-# | arg: -f, --file=    - File or directory to remove
+# usage: ynh_safe_rm --target=path_to_remove
+# | arg: -t, --target=    - File or directory to remove
 #
 # Requires YunoHost version 2.6.4 or higher.
-ynh_secure_remove() {
+ynh_safe_rm() {
     # ============ Argument parsing =============
-    local -A args_array=([f]=file=)
-    local file
+    local -A args_array=([t]=target=)
+    local target
     ynh_handle_getopts_args "$@"
     # ===========================================
     set +o xtrace # set +x
 
     if [ $# -ge 2 ]; then
-        ynh_print_warn --message="/!\ Packager ! You provided more than one argument to ynh_secure_remove but it will be ignored... Use this helper with one argument at time."
+        ynh_print_warn --message="/!\ Packager ! You provided more than one argument to ynh_safe_rm but it will be ignored... Use this helper with one argument at time."
     fi
 
-    if [[ -z "$file" ]]; then
-        ynh_print_warn --message="ynh_secure_remove called with empty argument, ignoring."
-    elif [[ ! -e $file ]]; then
-        ynh_print_info --message="'$file' wasn't deleted because it doesn't exist."
-    elif ! _acceptable_path_to_delete "$file"; then
-        ynh_print_warn --message="Not deleting '$file' because it is not an acceptable path to delete."
+    if [[ -z "$target" ]]; then
+        ynh_print_warn --message="ynh_safe_rm called with empty argument, ignoring."
+    elif [[ ! -e $target ]]; then
+        ynh_print_info --message="'$target' wasn't deleted because it doesn't exist."
+    elif ! _acceptable_path_to_delete "$target"; then
+        ynh_print_warn --message="Not deleting '$target' because it is not an acceptable path to delete."
     else
-        rm --recursive "$file"
+        rm --recursive "$target"
     fi
 
     set -o xtrace # set -x

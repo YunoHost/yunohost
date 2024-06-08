@@ -265,7 +265,7 @@ ynh_restore_file() {
             mkdir --parents "$(dirname "$backup_file")"
             mv "${dest_path}" "$backup_file" # Move the current file or directory
         else
-            ynh_secure_remove --file=${dest_path}
+            ynh_safe_rm --target=${dest_path}
         fi
     fi
 

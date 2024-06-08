@@ -123,7 +123,7 @@ ynh_install_ruby () {
             else
                 ynh_print_info --message="Reinstalling rbenv..."
                 cd ..
-                ynh_secure_remove --file=$rbenv_install_dir
+                ynh_safe_rm --target=$rbenv_install_dir
                 mkdir -p $rbenv_install_dir
                 cd $rbenv_install_dir
                 git init -q
@@ -291,8 +291,8 @@ ynh_cleanup_ruby () {
     then
         # Remove rbenv environment configuration
         ynh_print_info --message="Removing rbenv"
-        ynh_secure_remove --file="$rbenv_install_dir"
-        ynh_secure_remove --file="/etc/profile.d/rbenv.sh"
+        ynh_safe_rm --target="$rbenv_install_dir"
+        ynh_safe_rm --target="/etc/profile.d/rbenv.sh"
     fi
 }
 

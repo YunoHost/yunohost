@@ -197,7 +197,7 @@ ynh_exec_and_print_stderr_only_if_error() {
     "$@" 2> "$logfile" || rc="$?"
     if (( rc != 0 )); then
         ynh_exec_warn cat "$logfile"
-        ynh_secure_remove --file="$logfile"
+        ynh_safe_rm --target="$logfile"
         return "$rc"
     fi
 }
