@@ -235,15 +235,8 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
     # Custom records #
     ##################
 
-    # Defined by custom hooks ships in apps for example ...
-
-    # FIXME : this ain't practical for apps that may want to add
-    # custom dns records for a subdomain ... there's no easy way for
-    # an app to compare the base domain is the parent of the subdomain ?
-    # (On the other hand, in sep 2021, it looks like no app is using
-    # this mechanism...)
-
-    hook_results = hook_callback("custom_dns_rules", args=[base_domain])
+    # Defined by custom hooks shipped in apps for example ...
+    hook_results = hook_callback("custom_dns_rules", env={"base_domain": base_domain, "suffix": suffix})
     for hook_name, results in hook_results.items():
         #
         # There can be multiple results per hook name, so results look like
