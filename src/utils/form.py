@@ -272,6 +272,14 @@ FORBIDDEN_READONLY_TYPES = {
     OptionType.user,
     OptionType.group,
 }
+
+# To simplify AppConfigPanel bash scripts, we've chosen to use question 
+# short_ids as global variables. The consequence is that there is a risk 
+# of collision with other variables, notably different global variables 
+# used to expose old values or the type of a question...
+# In addition to conflicts with bash variables, there is a direct
+# conflict with the TOML properties of sections, so the keywords `name`, 
+# `visible`, `services`, `optional` and `help` cannot be used either.
 FORBIDDEN_KEYWORDS = {
     "old",
     "app",
@@ -289,8 +297,11 @@ FORBIDDEN_KEYWORDS = {
     "changes_validated",
     "result",
     "max_progression",
-    "properties",
-    "defaults",
+    "name",
+    "visible",
+    "services",
+    "optional",
+    "help",
 }
 
 Context = dict[str, Any]

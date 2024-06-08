@@ -12,28 +12,18 @@ jobs:
     steps:
       - name: Fetch the source code
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Run the updater script
         id: run_updater
         run: |
-          # Setting up Git user
-          git config --global user.name 'yunohost-bot'
-          git config --global user.email 'yunohost-bot@users.noreply.github.com'
           # Download n
           wget https://raw.githubusercontent.com/tj/n/master/bin/n --output-document=helpers/vendor/n/n
-          # Proceed only if there is a change
-          [[ -z "$(git diff helpers/vendor/n/n)" ]] || echo "PROCEED=true" >> $GITHUB_ENV
-          echo "VERSION=$(sed -n 's/^VERSION=\"\(.*\)\"/\1/p' < n)" >> $GITHUB_ENV
-      - name: Commit changes
-        id: commit
-        if: ${{ env.PROCEED == 'true' }}
-        run: |
-          git commit -am "Upgrade n to v$VERSION"
+
+          echo "VERSION=$(sed -n 's/^VERSION=\"\(.*\)\"/\1/p' < helpers/vendor/n/n)" >> $GITHUB_ENV
+
       - name: Create Pull Request
-        id: cpr
-        if: ${{ env.PROCEED == 'true' }}
         uses: peter-evans/create-pull-request@v6
+        id: cpr
         with:
           token: ${{ secrets.GITHUB_TOKEN }}
           commit-message: Update n to ${{ env.VERSION }}
@@ -41,7 +31,7 @@ jobs:
           author: 'yunohost-bot <yunohost-bot@users.noreply.github.com>'
           signoff: false
           base: dev
-          branch: ci-auto-update-n-v${{ env.VERSION }}
+          branch: ci-auto-update-n-${{ env.VERSION }}
           delete-branch: true
           title: 'Upgrade n to ${{ env.VERSION }}'
           body: |

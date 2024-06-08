@@ -41,6 +41,10 @@ popd >/dev/null
 
 VAR_WWW=$(mktemp -d)/var/www
 mkdir -p $VAR_WWW
+
+# Needed to check the permission behavior in ynh_add_config x_x
+getent passwd ynhtest &>/dev/null || useradd --system ynhtest
+
 # =========================================================
 
 for TEST_SUITE in $(ls test_helpers.d/*)

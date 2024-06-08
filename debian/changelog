@@ -4,7 +4,34 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
  
-yunohost (11.2.11.2) stable; urgency=low
+yunohost (11.2.12) stable; urgency=low
+
+  - doc: Remove internal/packagingv1 helpers from helpers doc ([#1832](http://github.com/YunoHost/yunohost/pull/1832))
+  - helpers: Document ynh_add_source --full_replace=1 ([#1834](http://github.com/YunoHost/yunohost/pull/1834))
+  - helpers/apt: Actually remove the newly added repo. ([#1835](http://github.com/YunoHost/yunohost/pull/1835))
+  - ldap: fix ldap write access for admin users ([#1836](http://github.com/YunoHost/yunohost/pull/1836))
+  - helpers: Add Go Helper to the core ([#1837](http://github.com/YunoHost/yunohost/pull/1837))
+  - helpers: Prevent yet another Node and Corepack madness ([#1842](http://github.com/YunoHost/yunohost/pull/1842))
+  - certs: fix renew cert for sub subdomain ([#1819](http://github.com/YunoHost/yunohost/pull/1819))
+  - cli: [enh] Implement 'yunohost log show last' to display the last log file. ([#1805](http://github.com/YunoHost/yunohost/pull/1805))
+  - helpers: Add redis and ruby helpers ([#1838](http://github.com/YunoHost/yunohost/pull/1838))
+  - [i18n] Translations updated for Basque, Catalan, Chinese (Simplified), Esperanto, French, Galician, German, Indonesian, Italian, Japanese, Persian, Slovak, Spanish, Ukrainian
+
+  Thanks to all contributors <3 ! (alexAubin, BELLAHBIB Ayoub, eric_G, José M, Kayou, manor-tile, Mateusz, rosbeef andino, selfhoster1312, tituspijean, xabirequejo, Yann Autissier)
+
+ -- OniriCorpe <oniricorpe@yunohost.org>  Mon, 20 May 2024 00:02:47 +0200
+
+yunohost (11.2.11.3) stable; urgency=low
+
+  - fix: edge case when parsing app upstream version from resource manager (5e4e59a1, a5560c30)
+  - helpers: fix 'ls: cannot access <folder> No such file or directory' errors on CI (537699ca)
+  - maintenance: Upgrade n to 9.2.3 ([#1818](http://github.com/YunoHost/yunohost/pull/1818))
+
+  Thanks to all contributors <3 ! (Alexandre Aubin, OniriCorpe)
+
+ -- tituspijean <titus+yunohost@pijean.ovh>  Sun, 21 Apr 2024 19:10:02 +0200
+
+ yunohost (11.2.11.2) stable; urgency=low
 
   - More oopsies (22b30c79)
 

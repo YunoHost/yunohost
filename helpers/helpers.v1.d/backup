@@ -417,6 +417,8 @@ ynh_backup_archive_exists() {
 
 # Make a backup in case of failed upgrade
 #
+# [packagingv1]
+#
 # usage: ynh_backup_before_upgrade
 #
 # Usage in a package script:
@@ -464,6 +466,8 @@ ynh_backup_before_upgrade() {
 }
 
 # Restore a previous backup if the upgrade process failed
+#
+# [packagingv1]
 #
 # usage: ynh_restore_upgradebackup
 #

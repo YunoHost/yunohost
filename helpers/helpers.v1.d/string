@@ -91,6 +91,8 @@ ynh_replace_special_string() {
 
 # Sanitize a string intended to be the name of a database
 #
+# [packagingv1]
+#
 # usage: ynh_sanitize_dbid --db_name=name
 # | arg: -n, --db_name=     - name to correct/sanitize
 # | ret: the corrected name

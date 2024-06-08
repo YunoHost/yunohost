@@ -36,6 +36,8 @@
 # | arg: -t, --show_tile=        - (optional) Define if a tile will be shown in the SSO. If yes the name of the tile will be the 'label' parameter. Defaults to false for the permission different than 'main'.
 # | arg: -P, --protected=        - (optional) Define if this permission is protected. If it is protected the administrator won't be able to add or remove the visitors group of this permission. Defaults to 'false'.
 #
+# [packagingv1]
+#
 # If provided, 'url' or 'additional_urls' is assumed to be relative to the app domain/path if they
 # start with '/'.  For example:
 #     /                             -> domain.tld/app
@@ -143,6 +145,8 @@ ynh_permission_create() {
 
 # Remove a permission for the app (note that when the app is removed all permission is automatically removed)
 #
+# [packagingv1]
+#
 # example: ynh_permission_delete --permission=editors
 #
 # usage: ynh_permission_delete --permission="permission"
@@ -161,6 +165,8 @@ ynh_permission_delete() {
 
 # Check if a permission exists
 #
+# [packagingv1]
+#
 # usage: ynh_permission_exists --permission=permission
 # | arg: -p, --permission=      - the permission to check
 # | exit: Return 1 if the permission doesn't exist, 0 otherwise
@@ -178,6 +184,8 @@ ynh_permission_exists() {
 }
 
 # Redefine the url associated to a permission
+#
+# [packagingv1]
 #
 # usage: ynh_permission_url --permission "permission" [--url="url"] [--add_url="new-url" [ "other-new-url" ]] [--remove_url="old-url" [ "other-old-url" ]]
 #                                                     [--auth_header=true|false] [--clear_urls]
@@ -246,6 +254,8 @@ ynh_permission_url() {
 }
 
 # Update a permission for the app
+#
+# [packagingv1]
 #
 # usage: ynh_permission_update --permission "permission" [--add="group" ["group" ...]] [--remove="group" ["group" ...]]
 #                                                        [--label="label"] [--show_tile=true|false] [--protected=true|false]
@@ -352,6 +362,8 @@ ynh_permission_has_user() {
 
 # Check if a legacy permissions exist
 #
+# [packagingv1]
+#
 # usage: ynh_legacy_permissions_exists
 # | exit: Return 1 if the permission doesn't exist, 0 otherwise
 #
@@ -366,6 +378,8 @@ ynh_legacy_permissions_exists() {
 }
 
 # Remove all legacy permissions
+#
+# [packagingv1]
 #
 # usage: ynh_legacy_permissions_delete_all
 #

@@ -109,15 +109,16 @@ def autofix_orthotypography_and_standardized_words():
         "\u2008",
         "\u2009",
         "\u200A",
-        "\u202f",
-        "\u202F",
+        # "\u202f",
+        # "\u202F",
         "\u3000",
     ]
 
     transformations = {s: " " for s in godamn_spaces_of_hell}
     transformations.update(
         {
-            "…": "...",
+            r"\.\.\.": "…",
+            "https ://": "https://",
         }
     )
 

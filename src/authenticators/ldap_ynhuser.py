@@ -232,6 +232,7 @@ class Authenticator(BaseAuthenticator):
             path="/",
             # Doesn't this cause issues ? May cause issue if the portal is on different subdomain than the portal API ? Will surely cause issue for development similar to CORS ?
             samesite="strict" if not is_dev else None,
+            domain=f".{request.get_header('host')}",
         )
 
         # Create the session file (expiration mechanism)

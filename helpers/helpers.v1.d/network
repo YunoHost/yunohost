@@ -2,6 +2,8 @@
 
 # Find a free port and return it
 #
+# [packagingv1]
+#
 # usage: ynh_find_port --port=begin_port
 # | arg: -p, --port=    - port to start to search
 # | ret: the port number
@@ -25,6 +27,8 @@ ynh_find_port() {
 }
 
 # Test if a port is available
+#
+# [packagingv1]
 #
 # usage: ynh_find_port --port=XYZ
 # | arg: -p, --port=    - port to check

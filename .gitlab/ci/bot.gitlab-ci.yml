@@ -11,8 +11,8 @@ generate-helpers-doc:
     - python3 generate_resource_doc.py > resources.md
     - python3 generate_configpanel_and_formoptions_doc.py > forms.md
     - hub clone https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/doc.git doc_repo
-    - cp helpers.md doc_repo/pages/06.contribute/10.packaging_apps/80.resources/11.helpers/packaging_apps_helpers.md
-    - cp resources.md doc_repo/pages/06.contribute/10.packaging_apps/80.resources/15.appresources/packaging_apps_resources.md
+    - cp helpers.md doc_repo/pages/06.contribute/10.packaging_apps/20.scripts/10.helpers/packaging_app_scripts_helpers.md
+    - cp resources.md doc_repo/pages/06.contribute/10.packaging_apps/10.manifest/10.appresources/packaging_app_manifest_resources.md
     - cp forms doc_repo/pages/06.contribute/15.dev/03.forms/forms.md
     - cd doc_repo
     # replace ${CI_COMMIT_REF_NAME} with ${CI_COMMIT_TAG} ?
