@@ -338,7 +338,7 @@ def check_LDAP_db_integrity():
 def check_permission_for_apps():
     # We check that the for each installed apps we have at last the "main" permission
     # and we don't have any permission linked to no apps. The only exception who is not liked to an app
-    # is mail, xmpp, and sftp
+    # is mail, and sftp
 
     app_perms = user_permission_list(ignore_system_perms=True)["permissions"].keys()
 
@@ -397,7 +397,6 @@ def test_permission_list():
     res = user_permission_list(full=True)["permissions"]
 
     assert "mail.main" in res
-    assert "xmpp.main" in res
 
     assert "wiki.main" in res
     assert "blog.main" in res
@@ -615,7 +614,6 @@ def test_permission_delete_doesnt_existing(mocker):
     assert "wiki.main" in res
     assert "blog.main" in res
     assert "mail.main" in res
-    assert "xmpp.main" in res
 
 
 def test_permission_delete_main_without_force(mocker):
