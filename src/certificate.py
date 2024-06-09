@@ -579,8 +579,8 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
         #
         # Loop over the sub-results
         for result in results.values():
-            if results["stdreturn"]:
-                sanlist += results["stdreturn"]
+            if result.get("stdreturn"):
+                sanlist += result["stdreturn"]
 
     if sanlist:
         csr.add_extensions(
