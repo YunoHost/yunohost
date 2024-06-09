@@ -725,15 +725,6 @@ def _enable_certificate(domain, new_cert_folder):
 
     logger.debug("Restarting services...")
 
-    for service in ("dovecot", "metronome"):
-        # Ugly trick to not restart metronome if it's not installed or no domain configured for XMPP
-        if service == "metronome" and (
-            os.system("dpkg --list | grep -q 'ii *metronome'") != 0
-            or not glob("/etc/metronome/conf.d/*.cfg.lua")
-        ):
-            continue
-        _run_service_command("restart", service)
-
     if os.path.isfile("/etc/yunohost/installed"):
         # regen nginx conf to be sure it integrates OCSP Stapling
         # (We don't do this yet if postinstall is not finished yet)
@@ -741,6 +732,7 @@ def _enable_certificate(domain, new_cert_folder):
         regen_conf(names=["nginx", "postfix"])
 
     _run_service_command("reload", "nginx")
+    _run_service_command("restart", "dovecot")
 
     from yunohost.hook import hook_callback
 
