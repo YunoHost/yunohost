@@ -471,7 +471,7 @@ def dyndns_update(
     # Delete custom DNS records, we don't support them (have to explicitly
     # authorize them on dynette)
     for category in dns_conf.keys():
-        if category not in ["basic", "mail", "xmpp", "extra"]:
+        if category not in ["basic", "mail", "extra"]:
             del dns_conf[category]
 
     # Delete the old records for all domain/subdomains

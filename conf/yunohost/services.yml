@@ -8,11 +8,6 @@ fail2ban:
   log: /var/log/fail2ban.log
   category: security
   test_conf: fail2ban-server --test
-metronome:
-  log: [/var/log/metronome/metronome.log,/var/log/metronome/metronome.err]
-  needs_exposed_ports: [5222, 5269]
-  category: xmpp
-  ignore_if_package_is_not_installed: metronome
 mysql:
   log: [/var/log/mysql.log,/var/log/mysql.err,/var/log/mysql/error.log]
   actual_systemd_service: mariadb

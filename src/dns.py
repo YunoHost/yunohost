@@ -75,12 +75,6 @@ def domain_dns_suggest(domain):
             result += "\n{name} {ttl} IN {type} {value}".format(**record)
         result += "\n\n"
 
-    if dns_conf["xmpp"]:
-        result += "\n\n"
-        result += "; XMPP"
-        for record in dns_conf["xmpp"]:
-            result += "\n{name} {ttl} IN {type} {value}".format(**record)
-
     if dns_conf["extra"]:
         result += "\n\n"
         result += "; Extra"
@@ -88,7 +82,7 @@ def domain_dns_suggest(domain):
             result += "\n{name} {ttl} IN {type} {value}".format(**record)
 
     for name, record_list in dns_conf.items():
-        if name not in ("basic", "xmpp", "mail", "extra") and record_list:
+        if name not in ("basic", "mail", "extra") and record_list:
             result += "\n\n"
             result += "; " + name
             for record in record_list:
@@ -117,14 +111,6 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
             # if ipv6 available
             {"type": "AAAA", "name": "@", "value": "valid-ipv6", "ttl": 3600},
         ],
-        "xmpp": [
-            {"type": "SRV", "name": "_xmpp-client._tcp", "value": "0 5 5222 domain.tld.", "ttl": 3600},
-            {"type": "SRV", "name": "_xmpp-server._tcp", "value": "0 5 5269 domain.tld.", "ttl": 3600},
-            {"type": "CNAME", "name": "muc", "value": "@", "ttl": 3600},
-            {"type": "CNAME", "name": "pubsub", "value": "@", "ttl": 3600},
-            {"type": "CNAME", "name": "vjud", "value": "@", "ttl": 3600}
-            {"type": "CNAME", "name": "xmpp-upload", "value": "@", "ttl": 3600}
-        ],
         "mail": [
             {"type": "MX", "name": "@", "value": "10 domain.tld.", "ttl": 3600},
             {"type": "TXT", "name": "@", "value": "\"v=spf1 a mx ip4:123.123.123.123 ipv6:valid-ipv6 -all\"", "ttl": 3600 },
@@ -148,7 +134,6 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
 
     basic = []
     mail = []
-    xmpp = []
     extra = []
     ipv4 = get_public_ip()
     ipv6 = get_public_ip(6)
@@ -211,29 +196,6 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
                     [f"_dmarc{suffix}", ttl, "TXT", '"v=DMARC1; p=none"'],
                 ]
 
-        ########
-        # XMPP #
-        ########
-        if settings["xmpp"]:
-            xmpp += [
-                [
-                    f"_xmpp-client._tcp{suffix}",
-                    ttl,
-                    "SRV",
-                    f"0 5 5222 {domain}.",
-                ],
-                [
-                    f"_xmpp-server._tcp{suffix}",
-                    ttl,
-                    "SRV",
-                    f"0 5 5269 {domain}.",
-                ],
-                [f"muc{suffix}", ttl, "CNAME", f"{domain}."],
-                [f"pubsub{suffix}", ttl, "CNAME", f"{domain}."],
-                [f"vjud{suffix}", ttl, "CNAME", f"{domain}."],
-                [f"xmpp-upload{suffix}", ttl, "CNAME", f"{domain}."],
-            ]
-
         #########
         # Extra #
         #########
@@ -259,10 +221,6 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
             {"name": name, "ttl": ttl_, "type": type_, "value": value}
             for name, ttl_, type_, value in basic
         ],
-        "xmpp": [
-            {"name": name, "ttl": ttl_, "type": type_, "value": value}
-            for name, ttl_, type_, value in xmpp
-        ],
         "mail": [
             {"name": name, "ttl": ttl_, "type": type_, "value": value}
             for name, ttl_, type_, value in mail
@@ -277,15 +235,8 @@ def _build_dns_conf(base_domain, include_empty_AAAA_if_no_ipv6=False):
     # Custom records #
     ##################
 
-    # Defined by custom hooks ships in apps for example ...
-
-    # FIXME : this ain't practical for apps that may want to add
-    # custom dns records for a subdomain ... there's no easy way for
-    # an app to compare the base domain is the parent of the subdomain ?
-    # (On the other hand, in sep 2021, it looks like no app is using
-    # this mechanism...)
-
-    hook_results = hook_callback("custom_dns_rules", args=[base_domain])
+    # Defined by custom hooks shipped in apps for example ...
+    hook_results = hook_callback("custom_dns_rules", env={"base_domain": base_domain, "suffix": suffix})
     for hook_name, results in hook_results.items():
         #
         # There can be multiple results per hook name, so results look like

@@ -556,6 +556,7 @@ def _fetch_and_enable_new_certificate(domain, no_checks=False):
 
 def _prepare_certificate_signing_request(domain, key_file, output_folder):
     from OpenSSL import crypto  # lazy loading this module for performance reasons
+    from yunohost.hook import hook_callback
 
     # Init a request
     csr = crypto.X509Req()
@@ -563,53 +564,34 @@ def _prepare_certificate_signing_request(domain, key_file, output_folder):
     # Set the domain
     csr.get_subject().CN = domain
 
-    from yunohost.domain import domain_config_get
+    sanlist = []
+    hook_results = hook_callback("cert_alternate_names", env={"domain": domain})
+    for hook_name, results in hook_results.items():
+        #
+        # There can be multiple results per hook name, so results look like
+        # {'/some/path/to/hook1':
+        #       { 'state': 'succeed',
+        #         'stdreturn': ["foo", "bar"]
+        #       },
+        #  '/some/path/to/hook2':
+        #       { ... },
+        #  [...]
+        #
+        # Loop over the sub-results
+        for result in results.values():
+            if results["stdreturn"]:
+                sanlist += results["stdreturn"]
 
-    # If XMPP is enabled for this domain, add xmpp-upload and muc subdomains
-    # in subject alternate names
-    if domain_config_get(domain, key="feature.xmpp.xmpp") == 1:
-        subdomain = "xmpp-upload." + domain
-        xmpp_records = (
-            Diagnoser.get_cached_report(
-                "dnsrecords", item={"domain": domain, "category": "xmpp"}
-            ).get("data")
-            or {}
-        )
-        sanlist = []
-
-        # Handle the boring case where the domain is not the root of the dns zone etc...
-        from yunohost.dns import (
-            _get_relative_name_for_dns_zone,
-            _get_dns_zone_for_domain,
-        )
-
-        base_dns_zone = _get_dns_zone_for_domain(domain)
-        basename = _get_relative_name_for_dns_zone(domain, base_dns_zone)
-        suffix = f".{basename}" if basename != "@" else ""
-
-        for sub in ("xmpp-upload", "muc"):
-            subdomain = sub + "." + domain
-            if xmpp_records.get("CNAME:" + sub + suffix) == "OK":
-                sanlist.append(("DNS:" + subdomain))
-            else:
-                logger.warning(
-                    m18n.n(
-                        "certmanager_warning_subdomain_dns_record",
-                        subdomain=subdomain,
-                        domain=domain,
-                    )
+    if sanlist:
+        csr.add_extensions(
+            [
+                crypto.X509Extension(
+                    b"subjectAltName",
+                    False,
+                    (", ".join(["DNS:{sub}.{domain}" for sub in sanlist])).encode("utf-8"),
                 )
-
-        if sanlist:
-            csr.add_extensions(
-                [
-                    crypto.X509Extension(
-                        b"subjectAltName",
-                        False,
-                        (", ".join(sanlist)).encode("utf-8"),
-                    )
-                ]
-            )
+            ]
+        )
 
     # Set the key
     with open(key_file, "rt") as f:

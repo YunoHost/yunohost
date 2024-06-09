@@ -28,7 +28,7 @@ from yunohost.log import is_unit_operation
 
 logger = getLogger("yunohost.user")
 
-SYSTEM_PERMS = ["mail", "xmpp", "sftp", "ssh"]
+SYSTEM_PERMS = ["mail", "sftp", "ssh"]
 
 #
 #
@@ -170,7 +170,7 @@ def user_permission_update(
 
     existing_permission = user_permission_info(permission)
 
-    # Refuse to add "visitors" to mail, xmpp ... they require an account to make sense.
+    # Refuse to add "visitors" to mail ... they require an account to make sense.
     if add and "visitors" in add and permission.split(".")[0] in SYSTEM_PERMS:
         raise YunohostValidationError(
             "permission_require_account", permission=permission

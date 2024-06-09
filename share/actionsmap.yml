@@ -86,7 +86,7 @@ user:
                         comment: good_practices_about_user_password
                 -d:
                     full: --domain
-                    help: Domain for the email address and xmpp account
+                    help: Domain for the email address
                     extra:
                         pattern: &pattern_domain
                             - !!str ^([^\W_A-Z]+([-]*[^\W_A-Z]+)*\.)+((xn--)?[^\W_]{2,})$
@@ -467,7 +467,7 @@ domain:
                     help: Display domains as a tree
                     action: store_true
                 --features:
-                    help: List only domains with features enabled (xmpp, mail_in, mail_out)
+                    help: List only domains with features enabled (mail_in, mail_out)
                     nargs: "*"
 
         ### domain_info()
@@ -1982,7 +1982,7 @@ diagnosis:
             api: PUT /diagnosis/ignore
             arguments:
                 --filter:
-                    help: "Add a filter. The first element should be a diagnosis category, and other criterias can be provided using the infos from the 'meta' sections in 'yunohost diagnosis show'. For example: 'dnsrecords domain=yolo.test category=xmpp'"
+                    help: "Add a filter. The first element should be a diagnosis category, and other criterias can be provided using the infos from the 'meta' sections in 'yunohost diagnosis show'. For example: 'dnsrecords domain=yolo.test category=mail'"
                     nargs: "*"
                     metavar: CRITERIA
                 --list:

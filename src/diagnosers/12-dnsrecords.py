@@ -91,7 +91,7 @@ class MyDiagnoser(Diagnoser):
             domain, include_empty_AAAA_if_no_ipv6=True
         )
 
-        categories = ["basic", "mail", "xmpp", "extra"]
+        categories = ["basic", "mail", "extra"]
 
         for category in categories:
             records = expected_configuration[category]
