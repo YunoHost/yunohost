@@ -281,11 +281,6 @@ ynh_get_scalable_phpfpm() {
     fi
 }
 
-readonly YNH_DEFAULT_COMPOSER_VERSION=1.10.17
-# Declare the actual composer version to use.
-# A packager willing to use another version of composer can override the variable into its _common.sh.
-YNH_COMPOSER_VERSION=${YNH_COMPOSER_VERSION:-$YNH_DEFAULT_COMPOSER_VERSION}
-
 # Execute a command with Composer
 #
 # usage: ynh_composer_exec [--workdir=$install_dir] --commands="commands"
@@ -324,10 +319,12 @@ ynh_install_composer() {
     install_args="${install_args:-}"
     # ===========================================
 
-    local composer_url="https://getcomposer.org/download/$YNH_COMPOSER_VERSION/composer.phar"
+    [[ -n "${composer_version}" ]] || ynh_die --message="\$composer_version should be defined before calling ynh_install_composer. (In the past, this was called \$YNH_COMPOSER_VERSION)"
 
     [[ ! -e "$workdir/composer.phar" ]] || ynh_safe_rm $workdir/composer.phar
-    
+
+    local composer_url="https://getcomposer.org/download/$composer_version/composer.phar"
+
     # NB. we have to declare the var as local first,
     # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
     # because local always return 0 ...
@@ -337,6 +334,6 @@ ynh_install_composer() {
         || ynh_die --message="$out"
 
     # install dependencies
-    ynh_composer_exec --phpversion="${phpversion}" --workdir="$workdir" --commands="install --no-dev $install_args" \
+    ynh_composer_exec --workdir="$workdir" --commands="install --no-dev $install_args" \
         || ynh_die --message="Unable to install core dependencies with Composer."
 }
