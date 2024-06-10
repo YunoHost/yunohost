@@ -148,14 +148,14 @@ ynh_replace_vars() {
     if test -n "${path:-}"; then
         # path_slash_less is path, or a blank value if path is only '/'
         local path_slash_less=${path%/}
-        ynh_replace_string --match_string="__PATH__/" --replace_string="$path_slash_less/" --target_file="$file"
-        ynh_replace_string --match_string="__PATH__" --replace_string="$path" --target_file="$file"
+        ynh_replace --match="__PATH__/" --replace="$path_slash_less/" --file="$file"
+        ynh_replace --match="__PATH__" --replace="$path" --file="$file"
     fi
     if test -n "${app:-}"; then
-        ynh_replace_string --match_string="__USER__" --replace_string="$app" --target_file="$file"
+        ynh_replace --match="__USER__" --replace="$app" --file="$file"
     fi
     if test -n "${ynh_node_load_PATH:-}"; then
-        ynh_replace_string --match_string="__YNH_NODE_LOAD_PATH__" --replace_string="$ynh_node_load_PATH" --target_file="$file"
+        ynh_replace --match="__YNH_NODE_LOAD_PATH__" --replace="$ynh_node_load_PATH" --file="$file"
     fi
 
     # Replace others variables

@@ -27,63 +27,63 @@ ynh_string_random() {
 
 # Substitute/replace a string (or expression) by another in a file
 #
-# usage: ynh_replace_string --match_string=match_string --replace_string=replace_string --target_file=target_file
-# | arg: -m, --match_string=    - String to be searched and replaced in the file
-# | arg: -r, --replace_string=  - String that will replace matches
-# | arg: -f, --target_file=     - File in which the string will be replaced.
+# usage: ynh_replace --match=match --replace=replace --file=file
+# | arg: -m, --match=    - String to be searched and replaced in the file
+# | arg: -r, --replace=  - String that will replace matches
+# | arg: -f, --file=     - File in which the string will be replaced.
 #
 # As this helper is based on sed command, regular expressions and references to
 # sub-expressions can be used (see sed manual page for more information)
 #
 # Requires YunoHost version 2.6.4 or higher.
-ynh_replace_string() {
+ynh_replace() {
     # ============ Argument parsing =============
-    local -A args_array=([m]=match_string= [r]=replace_string= [f]=target_file=)
-    local match_string
-    local replace_string
-    local target_file
+    local -A args_array=([m]=match= [r]=replaceg= [f]=file=)
+    local match
+    local replace
+    local file
     ynh_handle_getopts_args "$@"
     # ===========================================
     set +o xtrace # set +x
 
     local delimit=$'\001'
     # Escape the delimiter if it's in the string.
-    match_string=${match_string//${delimit}/"\\${delimit}"}
-    replace_string=${replace_string//${delimit}/"\\${delimit}"}
+    match=${match//${delimit}/"\\${delimit}"}
+    replace=${replace//${delimit}/"\\${delimit}"}
 
     set -o xtrace # set -x
-    sed --in-place "s${delimit}${match_string}${delimit}${replace_string}${delimit}g" "$target_file"
+    sed --in-place "s${delimit}${match}${delimit}${replace}${delimit}g" "$file"
 }
 
 # Substitute/replace a special string by another in a file
 #
-# usage: ynh_replace_special_string --match_string=match_string --replace_string=replace_string --target_file=target_file
-# | arg: -m, --match_string=    - String to be searched and replaced in the file
-# | arg: -r, --replace_string=  - String that will replace matches
-# | arg: -t, --target_file=     - File in which the string will be replaced.
+# usage: ynh_replace_special_string --match=match --replace=replace --file=file
+# | arg: -m, --match=    - String to be searched and replaced in the file
+# | arg: -r, --replace=  - String that will replace matches
+# | arg: -f, --file=     - File in which the string will be replaced.
 #
-# This helper will use ynh_replace_string, but as you can use special
+# This helper will use ynh_replace, but as you can use special
 # characters, you can't use some regular expressions and sub-expressions.
 #
 # Requires YunoHost version 2.7.7 or higher.
 ynh_replace_special_string() {
     # ============ Argument parsing =============
-    local -A args_array=([m]=match_string= [r]=replace_string= [f]=target_file=)
-    local match_string
-    local replace_string
-    local target_file
+    local -A args_array=([m]=match= [r]=replace= [f]=file=)
+    local match
+    local replace
+    local file
     ynh_handle_getopts_args "$@"
     # ===========================================
 
     # Escape any backslash to preserve them as simple backslash.
-    match_string=${match_string//\\/"\\\\"}
-    replace_string=${replace_string//\\/"\\\\"}
+    match=${match//\\/"\\\\"}
+    replace=${replace//\\/"\\\\"}
 
     # Escape the & character, who has a special function in sed.
-    match_string=${match_string//&/"\&"}
-    replace_string=${replace_string//&/"\&"}
+    match=${match//&/"\&"}
+    replace=${replace//&/"\&"}
 
-    ynh_replace_string --match_string="$match_string" --replace_string="$replace_string" --target_file="$target_file"
+    ynh_replace --match="$match" --replace="$replace" --file="$file"
 }
 
 # Sanitize a string intended to be the name of a database

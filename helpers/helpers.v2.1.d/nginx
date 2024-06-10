@@ -23,9 +23,9 @@ ynh_add_nginx_config() {
     ynh_add_config --template="nginx.conf" --destination="$finalnginxconf"
 
     if [ "${path:-}" != "/" ]; then
-        ynh_replace_string --match_string="^#sub_path_only" --replace_string="" --target_file="$finalnginxconf"
+        ynh_replace --match="^#sub_path_only" --replace="" --file="$finalnginxconf"
     else
-        ynh_replace_string --match_string="^#root_path_only" --replace_string="" --target_file="$finalnginxconf"
+        ynh_replace --match="^#root_path_only" --replace="" --file="$finalnginxconf"
     fi
 
     ynh_store_file_checksum --file="$finalnginxconf"

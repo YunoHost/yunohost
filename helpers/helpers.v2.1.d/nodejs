@@ -111,7 +111,7 @@ ynh_install_nodejs() {
     mkdir -p $n_install_dir/bin/
     cp "$YNH_HELPERS_DIR/vendor/n/n" $n_install_dir/bin/n
     # Tweak for n to understand it's installed in $N_PREFIX
-    ynh_replace_string --match_string="^N_PREFIX=\${N_PREFIX-.*}$" --replace_string="N_PREFIX=\${N_PREFIX-$N_PREFIX}" --target_file="$n_install_dir/bin/n"
+    ynh_replace --match="^N_PREFIX=\${N_PREFIX-.*}$" --replace="N_PREFIX=\${N_PREFIX-$N_PREFIX}" --file="$n_install_dir/bin/n"
 
     # Restore /usr/local/bin in PATH
     PATH=$CLEAR_PATH
