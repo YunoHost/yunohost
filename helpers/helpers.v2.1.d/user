@@ -180,10 +180,5 @@ ynh_system_user_delete() {
 ynh_exec_as() {
     local user=$1
     shift 1
-
-    if [[ $user = $(whoami) ]]; then
-        eval "$@"
-    else
-        sudo -u "$user" "$@"
-    fi
+    sudo -u "$user" "$@"
 }
