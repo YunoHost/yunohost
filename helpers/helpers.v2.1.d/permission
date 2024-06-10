@@ -258,30 +258,21 @@ ynh_permission_url() {
 # [packagingv1]
 #
 # usage: ynh_permission_update --permission "permission" [--add="group" ["group" ...]] [--remove="group" ["group" ...]]
-#                                                        [--label="label"] [--show_tile=true|false] [--protected=true|false]
+#
 # | arg: -p, --permission= - the name for the permission (by default a permission named "main" already exist)
 # | arg: -a, --add=        - the list of group or users to enable add to the permission
 # | arg: -r, --remove=     - the list of group or users to remove from the permission
-# | arg: -l, --label=      - (optional) Define a name for the permission. This label will be shown on the SSO and in the admin.
-# | arg: -t, --show_tile=  - (optional) Define if a tile will be shown in the SSO
-# | arg: -P, --protected=  - (optional) Define if this permission is protected. If it is protected the administrator won't be able to add or remove the visitors group of this permission.
 #
 # Requires YunoHost version 3.7.0 or higher.
 ynh_permission_update() {
     # ============ Argument parsing =============
-    local -A args_array=([p]=permission= [a]=add= [r]=remove= [l]=label= [t]=show_tile= [P]=protected=)
+    local -A args_array=([p]=permission= [a]=add= [r]=remove=)
     local permission
     local add
     local remove
-    local label
-    local show_tile
-    local protected
     ynh_handle_getopts_args "$@"
     add=${add:-}
     remove=${remove:-}
-    label=${label:-}
-    show_tile=${show_tile:-}
-    protected=${protected:-}
     # ===========================================
 
     if [[ -n $add ]]; then
@@ -303,27 +294,7 @@ ynh_permission_update() {
         remove=",remove=['${remove//';'/"','"}']"
     fi
 
-    if [[ -n $label ]]; then
-        label=",label='$label'"
-    fi
-
-    if [[ -n $show_tile ]]; then
-        if [ $show_tile == "true" ]; then
-            show_tile=",show_tile=True"
-        else
-            show_tile=",show_tile=False"
-        fi
-    fi
-
-    if [[ -n $protected ]]; then
-        if [ $protected == "true" ]; then
-            protected=",protected=True"
-        else
-            protected=",protected=False"
-        fi
-    fi
-
-    yunohost tools shell -c "from yunohost.permission import user_permission_update; user_permission_update('$app.$permission' $add $remove $label $show_tile $protected , force=True)"
+    yunohost tools shell -c "from yunohost.permission import user_permission_update; user_permission_update('$app.$permission' $add $remove , force=True)"
 }
 
 # Check if a permission has an user
