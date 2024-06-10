@@ -1,5 +1,5 @@
 VERSION="?"
-RELEASE="testing"
+RELEASE="stable"
 REPO=$(basename $(git rev-parse --show-toplevel))
 REPO_URL=$(git remote get-url origin)
 ME=$(git config --get user.name)
