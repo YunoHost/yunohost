@@ -3,9 +3,9 @@
 # Open a connection as a user
 #
 # usage: ynh_mysql_connect_as --user=user --password=password [--database=database]
-# | arg: -u, --user=        - the user name to connect as
-# | arg: -p, --password=    - the user password
-# | arg: -d, --database=    - the database to connect to
+# | arg: -u, --user=        - the user name to connect as (by default, $db_user)
+# | arg: -p, --password=    - the user password (by default, $db_pwd)
+# | arg: -d, --database=    - the database to connect to (by default, $db_name)
 #
 # examples:
 #    ynh_mysql_connect_as --user="user" --password="pass" <<< "UPDATE ...;"
@@ -19,7 +19,9 @@ ynh_mysql_connect_as() {
     local password
     local database
     ynh_handle_getopts_args "$@"
-    database="${database:-}"
+    user="${database:-$db_name}"
+    password="${database:-$db_pwd}"
+    database="${database:-$db_name}"
     # ===========================================
 
     mysql --user="$user" --password="$password" --batch "$database"
@@ -29,7 +31,7 @@ ynh_mysql_connect_as() {
 #
 # usage: ynh_mysql_execute_as_root --sql=sql [--database=database]
 # | arg: -s, --sql=         - the SQL command to execute
-# | arg: -d, --database=    - the database to connect to
+# | arg: -d, --database=    - the database to connect to (by default, $db_name)
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_execute_as_root() {
@@ -38,7 +40,7 @@ ynh_mysql_execute_as_root() {
     local sql
     local database
     ynh_handle_getopts_args "$@"
-    database="${database:-}"
+    database="${database:-$db_name}"
     # ===========================================
 
     if [ -n "$database" ]; then
@@ -52,7 +54,7 @@ ynh_mysql_execute_as_root() {
 #
 # usage: ynh_mysql_execute_file_as_root --file=file [--database=database]
 # | arg: -f, --file=        - the file containing SQL commands
-# | arg: -d, --database=    - the database to connect to
+# | arg: -d, --database=    - the database to connect to (by default, $db_name)
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_mysql_execute_file_as_root() {
@@ -61,7 +63,7 @@ ynh_mysql_execute_file_as_root() {
     local file
     local database
     ynh_handle_getopts_args "$@"
-    database="${database:-}"
+    database="${database:-$db_name}"
     # ===========================================
 
     if [ -n "$database" ]; then
@@ -116,7 +118,7 @@ ynh_mysql_drop_db() {
 # Dump a database
 #
 # usage: ynh_mysql_dump_db --database=database
-# | arg: -d, --database=    - the database name to dump
+# | arg: -d, --database=    - the database name to dump (by default, $db_name)
 # | ret: The mysqldump output
 #
 # example: ynh_mysql_dump_db --database=roundcube > ./dump.sql
@@ -127,6 +129,7 @@ ynh_mysql_dump_db() {
     local -A args_array=([d]=database=)
     local database
     ynh_handle_getopts_args "$@"
+    database="${database:-$db_name}"
     # ===========================================
 
     mysqldump --single-transaction --skip-dump-date --routines "$database"

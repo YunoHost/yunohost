@@ -6,9 +6,9 @@ PSQL_VERSION=13
 # Open a connection as a user
 #
 # usage: ynh_psql_connect_as --user=user --password=password [--database=database]
-# | arg: -u, --user=        - the user name to connect as
-# | arg: -p, --password=    - the user password
-# | arg: -d, --database=    - the database to connect to
+# | arg: -u, --user=        - the user name to connect as (by default, $db_user)
+# | arg: -p, --password=    - the user password (by default, $db_pw)
+# | arg: -d, --database=    - the database to connect to (by default, $db_name)
 #
 # examples:
 #    ynh_psql_connect_as 'user' 'pass' <<< "UPDATE ...;"
@@ -22,7 +22,9 @@ ynh_psql_connect_as() {
     local password
     local database
     ynh_handle_getopts_args "$@"
-    database="${database:-}"
+    user="${user:-$db_user}"
+    password="${password:-$db_pwd}"
+    database="${database:-$db_name}"
     # ===========================================
 
     sudo --login --user=postgres PGUSER="$user" PGPASSWORD="$password" psql "$database"
@@ -32,7 +34,7 @@ ynh_psql_connect_as() {
 #
 # usage: ynh_psql_execute_as_root --sql=sql [--database=database]
 # | arg: -s, --sql=         - the SQL command to execute
-# | arg: -d, --database=    - the database to connect to
+# | arg: -d, --database=    - the database to connect to (by default, $db_name)
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_psql_execute_as_root() {
@@ -41,7 +43,7 @@ ynh_psql_execute_as_root() {
     local sql
     local database
     ynh_handle_getopts_args "$@"
-    database="${database:-}"
+    database="${database:-$db_name}"
     # ===========================================
 
     if [ -n "$database" ]; then
@@ -56,7 +58,7 @@ ynh_psql_execute_as_root() {
 #
 # usage: ynh_psql_execute_file_as_root --file=file [--database=database]
 # | arg: -f, --file=        - the file containing SQL commands
-# | arg: -d, --database=    - the database to connect to
+# | arg: -d, --database=    - the database to connect to (by default, $db_name)
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_psql_execute_file_as_root() {
@@ -65,7 +67,7 @@ ynh_psql_execute_file_as_root() {
     local file
     local database
     ynh_handle_getopts_args "$@"
-    database="${database:-}"
+    database="${database:-$db_name}"
     # ===========================================
 
     if [ -n "$database" ]; then
@@ -123,7 +125,7 @@ ynh_psql_drop_db() {
 # Dump a database
 #
 # usage: ynh_psql_dump_db --database=database
-# | arg: -d, --database=    - the database name to dump
+# | arg: -d, --database=    - the database name to dump (by default, $db_name)
 # | ret: the psqldump output
 #
 # example: ynh_psql_dump_db 'roundcube' > ./dump.sql
@@ -134,6 +136,7 @@ ynh_psql_dump_db() {
     local -A args_array=([d]=database=)
     local database
     ynh_handle_getopts_args "$@"
+    database="${database:-$db_name}"
     # ===========================================
 
     sudo --login --user=postgres pg_dump "$database"
@@ -180,7 +183,7 @@ ynh_psql_user_exists() {
 # Check if a psql database exists
 #
 # usage: ynh_psql_database_exists --database=database
-# | arg: -d, --database=    - the database for which to check existence
+# | arg: -d, --database=    - the database for which to check existence (by default, $db_name)
 # | exit: Return 1 if the database doesn't exist, 0 otherwise
 #
 # Requires YunoHost version 3.5.0 or higher.
@@ -189,6 +192,7 @@ ynh_psql_database_exists() {
     local -A args_array=([d]=database=)
     local database
     ynh_handle_getopts_args "$@"
+    database="${database:-$db_name}"
     # ===========================================
 
     # if psql is not there, we cannot check the db
@@ -226,7 +230,6 @@ ynh_psql_drop_user() {
 # | arg: -p, --db_pwd=      - Password of the database. If not provided, a password will be generated
 #
 # After executing this helper, the password of the created database will be available in $db_pwd
-# It will also be stored as "psqlpwd" into the app settings.
 #
 # Requires YunoHost version 2.7.13 or higher.
 ynh_psql_setup_db() {
@@ -249,7 +252,6 @@ ynh_psql_setup_db() {
     fi
 
     ynh_psql_create_db "$db_name" "$db_user"                     # Create the database
-    ynh_app_setting_set --key=psqlpwd --value=$db_pwd # Store the password in the app's config
 }
 
 # Remove a database if it exists, and the associated user
