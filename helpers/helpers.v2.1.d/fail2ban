@@ -105,7 +105,7 @@ ignoreregex =
     chown -R "$app:$app" "/var/log/$app"
     chmod -R u=rwX,g=rX,o= "/var/log/$app"
 
-    ynh_systemd_action --service_name=fail2ban --action=reload --line_match="(Started|Reloaded) Fail2Ban Service" --log_path=systemd
+    ynh_systemd_action --service=fail2ban --action=reload --line_match="(Started|Reloaded) Fail2Ban Service" --log_path=systemd
 
     local fail2ban_error="$(journalctl --no-hostname --unit=fail2ban | tail --lines=50 | grep "WARNING.*$app.*")"
     if [[ -n "$fail2ban_error" ]]; then
@@ -122,5 +122,5 @@ ignoreregex =
 ynh_remove_fail2ban_config() {
     ynh_safe_rm --target="/etc/fail2ban/jail.d/$app.conf"
     ynh_safe_rm --target="/etc/fail2ban/filter.d/$app.conf"
-    ynh_systemd_action --service_name=fail2ban --action=reload
+    ynh_systemd_action --service=fail2ban --action=reload
 }

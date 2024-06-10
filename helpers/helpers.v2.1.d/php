@@ -130,7 +130,7 @@ pm.process_idle_timeout = 10s
         ynh_safe_rm --target="$finalphpconf"
         ynh_die --message="The new configuration broke php-fpm?"
     fi
-    ynh_systemd_action --service_name=$fpm_service --action=reload
+    ynh_systemd_action --service=$fpm_service --action=reload
 }
 
 # Remove the dedicated PHP-FPM config
@@ -143,7 +143,7 @@ ynh_remove_fpm_config() {
     local fpm_service=$(ynh_app_setting_get --key=fpm_service)
 
     ynh_safe_rm --target="$fpm_config_dir/pool.d/$app.conf"
-    ynh_systemd_action --service_name=$fpm_service --action=reload
+    ynh_systemd_action --service=$fpm_service --action=reload
 }
 
 # Define the values to configure PHP-FPM
