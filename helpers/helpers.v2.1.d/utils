@@ -138,7 +138,7 @@ fi
 # Requires YunoHost version 2.6.4 or higher.
 ynh_setup_source() {
     # ============ Argument parsing =============
-    local -A args_array=([d]=dest_dir= [s]=source_id= [k]=keep= [r]=full_replace=)
+    local -A args_array=([d]=dest_dir= [s]=source_id= [k]=keep= [r]=full_replace)
     local dest_dir
     local source_id
     local keep
