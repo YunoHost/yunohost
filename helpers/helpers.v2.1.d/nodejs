@@ -172,8 +172,8 @@ ynh_remove_nodejs() {
 
     # If no other app uses n, remove n
     if [ ! -s "$n_install_dir/ynh_app_version" ]; then
-        ynh_safe_rm --target="$n_install_dir"
-        ynh_safe_rm --target="/usr/local/n"
+        ynh_safe_rm "$n_install_dir"
+        ynh_safe_rm "/usr/local/n"
         sed --in-place "/N_PREFIX/d" /root/.bashrc
         rm --force /etc/cron.daily/node_update
     fi

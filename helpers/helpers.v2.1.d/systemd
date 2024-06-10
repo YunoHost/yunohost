@@ -46,7 +46,7 @@ ynh_remove_systemd_config() {
     if [ -e "$finalsystemdconf" ]; then
         ynh_systemd_action --service=$service --action=stop
         systemctl disable $service --quiet
-        ynh_safe_rm --target="$finalsystemdconf"
+        ynh_safe_rm "$finalsystemdconf"
         systemctl daemon-reload
     fi
 }
@@ -181,6 +181,6 @@ ynh_clean_check_starting() {
         kill -SIGTERM $pid_tail 2>&1
     fi
     if [ -n "${templog:-}" ]; then
-        ynh_safe_rm --target="$templog" 2>&1
+        ynh_safe_rm "$templog" 2>&1
     fi
 }

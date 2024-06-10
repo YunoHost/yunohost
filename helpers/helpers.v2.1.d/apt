@@ -481,10 +481,10 @@ EOF
 # Requires YunoHost version 3.8.1 or higher.
 ynh_remove_extra_repo() {
 
-    ynh_safe_rm --target="/etc/apt/sources.list.d/$app.list"
-    ynh_safe_rm --target="/etc/apt/preferences.d/$app"
+    ynh_safe_rm "/etc/apt/sources.list.d/$app.list"
+    ynh_safe_rm "/etc/apt/preferences.d/$app"
     if [ -e /etc/apt/trusted.gpg.d/$app.gpg ]; then
-        ynh_safe_rm --target="/etc/apt/trusted.gpg.d/$app.gpg"
+        ynh_safe_rm "/etc/apt/trusted.gpg.d/$app.gpg"
     fi
     ynh_package_update
 }

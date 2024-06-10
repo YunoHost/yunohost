@@ -120,7 +120,7 @@ ignoreregex =
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_remove_fail2ban_config() {
-    ynh_safe_rm --target="/etc/fail2ban/jail.d/$app.conf"
-    ynh_safe_rm --target="/etc/fail2ban/filter.d/$app.conf"
+    ynh_safe_rm "/etc/fail2ban/jail.d/$app.conf"
+    ynh_safe_rm "/etc/fail2ban/filter.d/$app.conf"
     ynh_systemd_action --service=fail2ban --action=reload
 }

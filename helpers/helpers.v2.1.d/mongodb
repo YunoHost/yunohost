@@ -265,7 +265,7 @@ ynh_remove_mongo() {
         mongodb_servicename=mongod
         # Remove the mongodb service
         yunohost service remove $mongodb_servicename
-        ynh_safe_rm --target="/var/lib/mongodb"
-        ynh_safe_rm --target="/var/log/mongodb"
+        ynh_safe_rm "/var/lib/mongodb"
+        ynh_safe_rm "/var/log/mongodb"
     fi
 }

@@ -76,7 +76,7 @@ _ynh_app_config_apply_one() {
             local bind_file="$(echo "$bind" | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/)"
             if [[ "${!short_setting}" == "" ]]; then
                 ynh_backup_if_checksum_is_different --file="$bind_file"
-                ynh_safe_rm --target="$bind_file"
+                ynh_safe_rm "$bind_file"
                 ynh_delete_file_checksum --file="$bind_file"
                 ynh_print_info --message="File '$bind_file' removed"
             else

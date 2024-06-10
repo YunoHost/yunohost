@@ -205,7 +205,7 @@ ynh_restore() {
             mkdir --parents "$(dirname "$backup_file")"
             mv "${target}" "$backup_file" # Move the current file or directory
         else
-            ynh_safe_rm --target=${target}
+            ynh_safe_rm "${target}"
         fi
     fi
 
