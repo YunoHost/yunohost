@@ -320,15 +320,21 @@ ynh_install_composer() {
     local workdir
     local install_args
     ynh_handle_getopts_args "$@"
-    # ===========================================
-
     workdir="${workdir:-$install_dir}"
     install_args="${install_args:-}"
+    # ===========================================
 
-    curl -sS https://getcomposer.org/installer \
-        | COMPOSER_HOME="$workdir/.composer" \
-            php${phpversion} -- --quiet --install-dir="$workdir" --version=$YNH_COMPOSER_VERSION \
-        || ynh_die --message="Unable to install Composer."
+    local composer_url="https://getcomposer.org/download/$YNH_COMPOSER_VERSION/composer.phar"
+
+    [[ ! -e "$workdir/composer.phar" ]] || ynh_safe_rm $workdir/composer.phar
+    
+    # NB. we have to declare the var as local first,
+    # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
+    # because local always return 0 ...
+    local out
+    # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
+    out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$workdir $composer_url 2>&1) \
+        || ynh_die --message="$out"
 
     # install dependencies
     ynh_composer_exec --phpversion="${phpversion}" --workdir="$workdir" --commands="install --no-dev $install_args" \
