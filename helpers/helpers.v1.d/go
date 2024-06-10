@@ -128,9 +128,10 @@ ynh_install_go () {
     popd
 
     # Install or update xxenv-latest
-    mkdir -p "$goenv_install_dir/plugins/xxenv-latest"
-    pushd "$goenv_install_dir/plugins/xxenv-latest"
-        if ! [ -x "$goenv_install_dir/plugins/xxenv-latest/bin/goenv-latest" ]; then
+    goenv_latest_dir="$goenv_install_dir/plugins/xxenv-latest"
+    mkdir -p "$goenv_latest_dir"
+    pushd "$goenv_latest_dir"
+        if ! [ -x "$goenv_latest_dir/bin/goenv-latest" ]; then
             ynh_print_info --message="Downloading xxenv-latest..."
             git init -q
             git remote add origin https://github.com/momo-lab/xxenv-latest.git 
@@ -155,7 +156,7 @@ ynh_install_go () {
     test -x /usr/bin/go_goenv && mv /usr/bin/go_goenv /usr/bin/go
 
     # Install the requested version of Go
-    local final_go_version=$(goenv latest --print "$go_version")
+    local final_go_version=$("$goenv_latest_dir/bin/goenv-latest" --print "$go_version")
     ynh_print_info --message="Installation of Go-$final_go_version"
     goenv install --skip-existing "$final_go_version"
 
