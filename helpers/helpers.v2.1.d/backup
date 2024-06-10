@@ -225,6 +225,24 @@ ynh_restore() {
     fi
 }
 
+# Restore all files that were previously backuped in an app backup script
+#
+# usage: ynh_restore_everything
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_restore_everything() {
+    # Deduce the relative path of $YNH_CWD
+    local REL_DIR="${YNH_CWD#$YNH_BACKUP_DIR/}"
+    REL_DIR="${REL_DIR%/}/"
+
+    # For each destination path begining by $REL_DIR
+    cat ${YNH_BACKUP_CSV} | tr --delete $'\r' | grep --only-matching --no-filename --perl-regexp "^\".*\",\"$REL_DIR.*\"$" \
+        | while read line; do
+            local ARCHIVE_PATH=$(echo "$line" | grep --only-matching --no-filename --perl-regexp "^\".*\",\"$REL_DIR\K.*(?=\"$)")
+            ynh_restore --target="$ARCHIVE_PATH"
+        done
+}
+
 # Calculate and store a file checksum into the app settings
 #
 # usage: ynh_store_file_checksum --file=file
