@@ -2,17 +2,17 @@
 
 # Open a connection as a user
 #
-# usage: ynh_mysql_connect_as --user=user --password=password [--database=database]
+# usage: ynh_mysql_execute --user=user --password=password [--database=database]
 # | arg: -u, --user=        - the user name to connect as (by default, $db_user)
 # | arg: -p, --password=    - the user password (by default, $db_pwd)
 # | arg: -d, --database=    - the database to connect to (by default, $db_name)
 #
 # examples:
-#    ynh_mysql_connect_as --user="user" --password="pass" <<< "UPDATE ...;"
-#    ynh_mysql_connect_as --user="user" --password="pass" < /path/to/file.sql
+#    ynh_mysql_execute <<< "UPDATE ...;"
+#    ynh_mysql_execute < /path/to/file.sql
 #
 # Requires YunoHost version 2.2.4 or higher.
-ynh_mysql_connect_as() {
+ynh_mysql_execute() {
     # ============ Argument parsing =============
     local -A args_array=([u]=user= [p]=password= [d]=database=)
     local user

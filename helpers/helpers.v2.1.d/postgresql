@@ -5,17 +5,17 @@ PSQL_VERSION=13
 
 # Open a connection as a user
 #
-# usage: ynh_psql_connect_as --user=user --password=password [--database=database]
+# usage: ynh_psql_execute --user=user --password=password [--database=database]
 # | arg: -u, --user=        - the user name to connect as (by default, $db_user)
 # | arg: -p, --password=    - the user password (by default, $db_pw)
 # | arg: -d, --database=    - the database to connect to (by default, $db_name)
 #
 # examples:
-#    ynh_psql_connect_as 'user' 'pass' <<< "UPDATE ...;"
-#    ynh_psql_connect_as 'user' 'pass' < /path/to/file.sql
+#    ynh_psql_execute <<< "UPDATE ...;"
+#    ynh_psql_execute < /path/to/file.sql
 #
 # Requires YunoHost version 3.5.0 or higher.
-ynh_psql_connect_as() {
+ynh_psql_execute() {
     # ============ Argument parsing =============
     local -A args_array=([u]=user= [p]=password= [d]=database=)
     local user
@@ -50,8 +50,8 @@ ynh_psql_execute_as_root() {
         database="--database=$database"
     fi
 
-    ynh_psql_connect_as --user="postgres" --password="$(cat $PSQL_ROOT_PWD_FILE)" \
-        $database <<<"$sql"
+    ynh_psql_execute --user="postgres" --password="$(cat $PSQL_ROOT_PWD_FILE)" \
+        --database="$database" <<<"$sql"
 }
 
 # Execute a command from a file as root user
@@ -74,8 +74,8 @@ ynh_psql_execute_file_as_root() {
         database="--database=$database"
     fi
 
-    ynh_psql_connect_as --user="postgres" --password="$(cat $PSQL_ROOT_PWD_FILE)" \
-        $database <"$file"
+    ynh_psql_execute --user="postgres" --password="$(cat $PSQL_ROOT_PWD_FILE)" \
+        --database="$database" <"$file"
 }
 
 # Create a database and grant optionnaly privilegies to a user
