@@ -85,8 +85,6 @@ else:
         if key in settings:
             del settings[key]
     elif action == "set":
-        if key in ['redirected_urls', 'redirected_regex']:
-            value = yaml.safe_load(value)
         settings[key] = value
     else:
         raise ValueError("action should either be get, set or delete")
