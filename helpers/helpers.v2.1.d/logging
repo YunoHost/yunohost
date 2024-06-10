@@ -61,16 +61,8 @@ ynh_print_warn() {
 #
 # Requires YunoHost version 3.2.0 or higher.
 ynh_exec_warn_less() {
-    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
-    # (because in the past eval was used) ...
-    # we detect this by checking that there's no 2nd arg, and $1 contains a space
-    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
-    then
-        eval $@ 2>&1
-    else
-        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
-        "$@" 2>&1
-    fi
+    # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
+    "$@" 2>&1
 }
 
 # Execute a command and redirect stderr in /dev/null. Print stderr on error.
