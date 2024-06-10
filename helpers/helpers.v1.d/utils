@@ -943,9 +943,9 @@ ynh_secure_remove() {
 
 # Read the value of a key in a ynh manifest file
 #
-# usage: ynh_read_manifest --manifest="manifest.json" --key="key"
-# | arg: -m, --manifest=    - Path of the manifest to read
-# | arg: -k, --key=         - Name of the key to find
+# usage: ynh_read_manifest --manifest="manifest.json" --manifest_key="key"
+# | arg: -m, --manifest=      - Path of the manifest to read
+# | arg: -k, --manifest_key=  - Name of the key to find
 # | ret: the value associate to that key
 #
 # Requires YunoHost version 3.5.0 or higher.

@@ -4,6 +4,33 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
  
+yunohost (11.2.14.1) stable; urgency=low
+
+  - helpers: Fix typo in ynh_read_manifest documentation ([#1866](http://github.com/YunoHost/yunohost/pull/1866))
+  - helpers/go: fix goenv call ([#1868](http://github.com/YunoHost/yunohost/pull/1868))
+
+  Thanks to all contributors <3 ! (Chris Vogel, clecle226, Félix Piédallu, OniriCorpe)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 10 Jun 2024 12:34:25 +0200
+
+yunohost (11.2.14) testing; urgency=low
+
+  - helpers/go: fix missing git fetch (5676a7275)
+
+ -- Félix Piédallu <felix@piedallu.me>  Wed, 05 Jun 2024 15:52:06 +0200
+
+yunohost (11.2.13) stable; urgency=low
+
+  - helpers: add a --jinja option to ynh_add_config ([#1851](http://github.com/YunoHost/yunohost/pull/1851))
+  - helpers: add mongodb helpers ([#1844](http://github.com/YunoHost/yunohost/pull/1844))
+  - helpers: update getopts to accept arguments that are valid arguments to echo ([#1847](http://github.com/YunoHost/yunohost/pull/1847))
+  - helpers: create versionned directories of the helpers ([#1717](http://github.com/YunoHost/yunohost/pull/1717))
+  - helpers: fix goenv broken when checking out latest master commit ([#1863](http://github.com/YunoHost/yunohost/pull/1863))
+
+  Thanks to all contributors <3 ! (alexAubin, Chris Vogel, Félix Piédallu, Josué Tille, Salamandar, tituspijean)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 04 Jun 2024 16:43:42 +0200
+
 yunohost (11.2.12) stable; urgency=low
 
   - doc: Remove internal/packagingv1 helpers from helpers doc ([#1832](http://github.com/YunoHost/yunohost/pull/1832))
@@ -5143,4 +5170,3 @@ moulinette-yunohost (1.0~megusta1) megusta; urgency=low
   * Init
 
  -- Adrien Beudin <beudbeud@yunohost.org>  Thu, 15 May 2014 13:16:03 +0200
-
