@@ -46,11 +46,11 @@ export N_PREFIX="$n_install_dir"
 #
 # 2 other variables are also available
 #   - $nodejs_path: The absolute path to node binaries for the chosen version.
-#   - $nodejs_version: Just the version number of node for this app. Stored as 'nodejs_version' in settings.yml.
 #
 # Requires YunoHost version 2.7.12 or higher.
 ynh_use_nodejs() {
-    nodejs_version=$(ynh_app_setting_get --key=nodejs_version)
+
+    [[ -n "${nodejs_version:-}" ]] || ynh_die --message="\$nodejs_version should be defined prior to calling ynh_install_nodejs"
 
     # Get the absolute path of this version of node
     nodejs_path="$node_version_path/$nodejs_version/bin"
@@ -78,12 +78,11 @@ ynh_use_nodejs() {
     export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 }
 
-# Install a specific version of nodejs
+# Install a specific version of nodejs, using 'n'
 #
-# ynh_install_nodejs will install the version of node provided as argument by using n.
+# The installed version is defined by $nodejs_version which should be defined as global prior to calling this helper
 #
-# usage: ynh_install_nodejs --nodejs_version=nodejs_version
-# | arg: -n, --nodejs_version=      - Version of node to install. When possible, your should prefer to use major version number (e.g. 8 instead of 8.10.0). The crontab will then handle the update of minor versions when needed.
+# usage: ynh_install_nodejs
 #
 # `n` (Node version management) uses the `PATH` variable to store the path of the version of node it is going to use.
 # That's how it changes the version
@@ -94,11 +93,7 @@ ynh_use_nodejs() {
 ynh_install_nodejs() {
     # Use n, https://github.com/tj/n to manage the nodejs versions
 
-    # ============ Argument parsing =============
-    local -A args_array=([n]=nodejs_version=)
-    local nodejs_version
-    ynh_handle_getopts_args "$@"
-    # ===========================================
+    [[ -n "${nodejs_version:-}" ]] || ynh_die --message="\$nodejs_version should be defined prior to calling ynh_install_nodejs"
 
     # Create $n_install_dir
     mkdir --parents "$n_install_dir"
@@ -164,7 +159,8 @@ ynh_install_nodejs() {
 #
 # Requires YunoHost version 2.7.12 or higher.
 ynh_remove_nodejs() {
-    nodejs_version=$(ynh_app_setting_get --key=nodejs_version)
+
+    [[ -n "${nodejs_version:-}" ]] || ynh_die --message="\$nodejs_version should be defined prior to calling ynh_install_nodejs"
 
     # Remove the line for this app
     sed --in-place "/$YNH_APP_INSTANCE_NAME:$nodejs_version/d" "$n_install_dir/ynh_app_version"

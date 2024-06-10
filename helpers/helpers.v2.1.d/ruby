@@ -51,7 +51,8 @@ fi
 #
 # Requires YunoHost version 3.2.2 or higher.
 ynh_use_ruby () {
-    ruby_version=$(ynh_app_setting_get --key=ruby_version)
+
+    [[ -n "${ruby_version:-}" ]] || ynh_die --message="\$ruby_version should be defined prior to calling ynh_use_ruby"
 
     # Get the absolute path of this version of Ruby
     ruby_path="$ruby_version_path/$YNH_APP_INSTANCE_NAME/bin"
@@ -79,9 +80,9 @@ ynh_use_ruby () {
     popd
 }
 
-# Install a specific version of Ruby
+# Install a specific version of Ruby using rbenv
 #
-# ynh_install_ruby will install the version of Ruby provided as argument by using rbenv.
+# The installed version is defined by $ruby_version which should be defined as global prior to calling this helper
 #
 # This helper creates a /etc/profile.d/rbenv.sh that configures PATH environment for rbenv
 # for every LOGIN user, hence your user must have a defined shell (as opposed to /usr/sbin/nologin)
@@ -91,16 +92,12 @@ ynh_use_ruby () {
 # When not possible (e.g. in systemd service definition), please use direct path
 # to rbenv shims (e.g. $RBENV_ROOT/shims/bundle)
 #
-# usage: ynh_install_ruby --ruby_version=ruby_version
-# | arg: -v, --ruby_version= - Version of ruby to install.
+# usage: ynh_install_ruby
 #
 # Requires YunoHost version 3.2.2 or higher.
 ynh_install_ruby () {
-    # ============ Argument parsing =============
-    local -A args_array=( [v]=ruby_version= )
-    local ruby_version
-    ynh_handle_getopts_args "$@"
-    # ===========================================
+
+    [[ -n "${ruby_version:-}" ]] || ynh_die --message="\$ruby_version should be defined prior to calling ynh_install_ruby"
 
     # Load rbenv path in PATH
     local CLEAR_PATH="$rbenv_install_dir/bin:$PATH"
@@ -207,6 +204,7 @@ ynh_install_ruby () {
 
     # Store ruby_version into the config of this app
     ynh_app_setting_set --key=ruby_version --value=$final_ruby_version
+    ruby_version=$final_ruby_version
 
     # Remove app virtualenv
     if rbenv alias --list | grep --quiet "$YNH_APP_INSTANCE_NAME "
@@ -274,7 +272,7 @@ ynh_cleanup_ruby () {
             required_ruby_versions="${installed_app_ruby_version}\n${required_ruby_versions}"
         fi
     done
-    
+
     # Remove no more needed Ruby versions
     local installed_ruby_versions=$(rbenv versions --bare --skip-aliases | grep -Ev '/')
     for installed_ruby_version in $installed_ruby_versions

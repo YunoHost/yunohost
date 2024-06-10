@@ -304,6 +304,8 @@ ynh_composer_exec() {
 
 # Install and initialize Composer in the given directory
 #
+# The installed version is defined by $composer_version which should be defined as global prior to calling this helper
+#
 # usage: ynh_install_composer [--workdir=$install_dir] [--install_args="--optimize-autoloader"]
 # | arg: -w, --workdir - The directory from where the command will be executed. Default $install_dir.
 # | arg: -a, --install_args - Additional arguments provided to the composer install. Argument --no-dev already include
