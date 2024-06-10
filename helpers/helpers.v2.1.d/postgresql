@@ -195,7 +195,7 @@ ynh_psql_database_exists() {
     # though it could exists.
     if ! command -v psql
     then
-      ynh_print_err --message="PostgreSQL is not installed, impossible to check for db existence."
+      ynh_print_warn --message="PostgreSQL is not installed, impossible to check for db existence."
       return 1
     elif ! sudo --login --user=postgres PGUSER="postgres" PGPASSWORD="$(cat $PSQL_ROOT_PWD_FILE)" psql -tAc "SELECT datname FROM pg_database WHERE datname='$database';" | grep --quiet "$database"; then
         return 1

@@ -108,7 +108,7 @@ ynh_backup() {
 
     # Check if dest_path already exists in tmp archive
     if [[ -e "${dest_path}" ]]; then
-        ynh_print_err --message="Destination path '${dest_path}' already exist"
+        ynh_print_warn --message="Destination path '${dest_path}' already exist"
         return 1
     fi
 

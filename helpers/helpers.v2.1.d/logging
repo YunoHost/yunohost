@@ -36,15 +36,6 @@ ynh_print_info() {
     echo "$message" >&$YNH_STDINFO
 }
 
-# Main printer, just in case in the future we have to change anything about that.
-#
-# [internal]
-#
-# Requires YunoHost version 3.2.0 or higher.
-ynh_print_log() {
-    echo -e "${1}"
-}
-
 # Print a warning on stderr
 #
 # usage: ynh_print_warn --message="Text to print"
@@ -58,65 +49,7 @@ ynh_print_warn() {
     ynh_handle_getopts_args "$@"
     # ===========================================
 
-    ynh_print_log "${message}" >&2
-}
-
-# Print an error on stderr
-#
-# usage: ynh_print_err --message="Text to print"
-# | arg: -m, --message=     - The text to print
-#
-# Requires YunoHost version 3.2.0 or higher.
-ynh_print_err() {
-    # ============ Argument parsing =============
-    local -A args_array=([m]=message=)
-    local message
-    ynh_handle_getopts_args "$@"
-    # ===========================================
-
-    ynh_print_log "[Error] ${message}" >&2
-}
-
-# Execute a command and print the result as an error
-#
-# usage: ynh_exec_err your command and args
-# | arg: command - command to execute
-#
-# Note that you should NOT quote the command but only prefix it with ynh_exec_err
-#
-# Requires YunoHost version 3.2.0 or higher.
-ynh_exec_err() {
-    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
-    # (because in the past eval was used) ...
-    # we detect this by checking that there's no 2nd arg, and $1 contains a space
-    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
-    then
-        ynh_print_err --message="$(eval $@)"
-    else
-        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
-        ynh_print_err --message="$("$@")"
-    fi
-}
-
-# Execute a command and print the result as a warning
-#
-# usage: ynh_exec_warn your command and args
-# | arg: command - command to execute
-#
-# Note that you should NOT quote the command but only prefix it with ynh_exec_warn
-#
-# Requires YunoHost version 3.2.0 or higher.
-ynh_exec_warn() {
-    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
-    # (because in the past eval was used) ...
-    # we detect this by checking that there's no 2nd arg, and $1 contains a space
-    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
-    then
-        ynh_print_warn --message="$(eval $@)"
-    else
-        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
-        ynh_print_warn --message="$("$@")"
-    fi
+    echo -e "${message}" >&2
 }
 
 # Execute a command and force the result to be printed on stdout
@@ -140,48 +73,6 @@ ynh_exec_warn_less() {
     fi
 }
 
-# Execute a command and redirect stdout in /dev/null
-#
-# usage: ynh_exec_quiet your command and args
-# | arg: command - command to execute
-#
-# Note that you should NOT quote the command but only prefix it with ynh_exec_warn
-#
-# Requires YunoHost version 3.2.0 or higher.
-ynh_exec_quiet() {
-    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
-    # (because in the past eval was used) ...
-    # we detect this by checking that there's no 2nd arg, and $1 contains a space
-    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
-    then
-        eval $@ > /dev/null
-    else
-        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
-        "$@" > /dev/null
-    fi
-}
-
-# Execute a command and redirect stdout and stderr in /dev/null
-#
-# usage: ynh_exec_quiet your command and args
-# | arg: command - command to execute
-#
-# Note that you should NOT quote the command but only prefix it with ynh_exec_quiet
-#
-# Requires YunoHost version 3.2.0 or higher.
-ynh_exec_fully_quiet() {
-    # Boring legacy handling for when people calls ynh_exec_* wrapping the command in quotes,
-    # (because in the past eval was used) ...
-    # we detect this by checking that there's no 2nd arg, and $1 contains a space
-    if [[ "$#" -eq 1 ]] && [[ "$1" == *" "* ]]
-    then
-        eval $@ > /dev/null 2>&1
-    else
-        # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
-        "$@" > /dev/null 2>&1
-    fi
-}
-
 # Execute a command and redirect stderr in /dev/null. Print stderr on error.
 #
 # usage: ynh_exec_and_print_stderr_only_if_error your command and args
@@ -200,32 +91,6 @@ ynh_exec_and_print_stderr_only_if_error() {
         ynh_safe_rm --target="$logfile"
         return "$rc"
     fi
-}
-
-# Remove any logs for all the following commands.
-#
-# usage: ynh_print_OFF
-#
-# [internal]
-#
-# WARNING: You should be careful with this helper, and never forget to use ynh_print_ON as soon as possible to restore the logging.
-#
-# Requires YunoHost version 3.2.0 or higher.
-ynh_print_OFF() {
-    exec {BASH_XTRACEFD}>/dev/null
-}
-
-# Restore the logging after ynh_print_OFF
-#
-# usage: ynh_print_ON
-#
-# [internal]
-#
-# Requires YunoHost version 3.2.0 or higher.
-ynh_print_ON() {
-    exec {BASH_XTRACEFD}>&1
-    # Print an echo only for the log, to be able to know that ynh_print_ON has been called.
-    echo ynh_print_ON >/dev/null
 }
 
 # Initial definitions for ynh_script_progression

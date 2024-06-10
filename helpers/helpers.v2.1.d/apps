@@ -134,7 +134,7 @@ ynh_spawn_app_shell() {
     # Force Bash to be used to run this helper
     if [[ ! $0 =~ \/?bash$ ]]
     then
-        ynh_print_err --message="Please use Bash as shell"
+        ynh_print_warn --message="Please use Bash as shell"
         exit 1
     fi
 
@@ -142,13 +142,13 @@ ynh_spawn_app_shell() {
     local installed_apps_list=($(yunohost app list --output-as json --quiet | jq -r .apps[].id))
     if [[ " ${installed_apps_list[*]} " != *" ${app} "* ]]
     then
-        ynh_print_err --message="$app is not in the apps list"
+        ynh_print_warn --message="$app is not in the apps list"
         exit 1
     fi
 
     # Make sure the app has its own user
     if ! id -u "$app" &>/dev/null; then
-        ynh_print_err --message="There is no \"$app\" system user"
+        ynh_print_warn --message="There is no \"$app\" system user"
         exit 1
     fi
 
@@ -156,7 +156,7 @@ ynh_spawn_app_shell() {
     local install_dir=$(ynh_app_setting_get --key=install_dir)
     if [ -z "$install_dir" ]
     then
-        ynh_print_err --message="$app has no install_dir setting (does it use packaging format >=2?)"
+        ynh_print_warn --message="$app has no install_dir setting (does it use packaging format >=2?)"
         exit 1
     fi
 
