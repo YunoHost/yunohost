@@ -289,7 +289,7 @@ YNH_COMPOSER_VERSION=${YNH_COMPOSER_VERSION:-$YNH_DEFAULT_COMPOSER_VERSION}
 # Execute a command with Composer
 #
 # usage: ynh_composer_exec [--workdir=$install_dir] --commands="commands"
-# | arg: -w, --workdir - The directory from where the command will be executed. Default $install_dir or $final_path
+# | arg: -w, --workdir - The directory from where the command will be executed. Default $install_dir
 # | arg: -c, --commands - Commands to execute.
 #
 # Requires YunoHost version 4.2 or higher.
@@ -299,7 +299,7 @@ ynh_composer_exec() {
     local workdir
     local commands
     ynh_handle_getopts_args "$@"
-    workdir="${workdir:-${install_dir:-$final_path}}"
+    workdir="${workdir:-${install_dir}}"
     # ===========================================
 
     COMPOSER_HOME="$workdir/.composer" COMPOSER_MEMORY_LIMIT=-1 \

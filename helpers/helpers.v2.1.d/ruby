@@ -29,7 +29,7 @@ fi
 # However, $PATH is duplicated into $ruby_path to outlast any manipulation of $PATH
 # You can use the variable `$ynh_ruby_load_path` to quickly load your Ruby version
 #  in $PATH for an usage into a separate script.
-# Exemple: $ynh_ruby_load_path $final_path/script_that_use_gem.sh`
+# Exemple: $ynh_ruby_load_path $install_dir/script_that_use_gem.sh`
 #
 #
 # Finally, to start a Ruby service with the correct version, 2 solutions
@@ -74,7 +74,7 @@ ynh_use_ruby () {
     ynh_ruby_load_path="PATH=$PATH"
 
     # Sets the local application-specific Ruby version
-    pushd ${install_dir:-$final_path}
+    pushd ${install_dir}
         $rbenv_install_dir/bin/rbenv local $ruby_version
     popd
 }
