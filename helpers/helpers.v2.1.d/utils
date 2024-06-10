@@ -502,10 +502,10 @@ ynh_check_app_version_changed() {
 
 # Compare the current package version is strictly lower than another version given as an argument
 #
-# example: if ynh_app_upgrading_from_version_prior_to 2.3.2~ynh1; then ...
+# example: if ynh_app_upgrading_from_version_before 2.3.2~ynh1; then ...
 #
 # Requires YunoHost version 11.2 or higher.
-ynh_app_upgrading_from_version_prior_to() {
+ynh_app_upgrading_from_version_before() {
     local version=$1
     [[ $version =~ '~ynh' ]] || ynh_die --message="Invalid argument for version, should include the ~ynhX prefix"
 
@@ -514,10 +514,10 @@ ynh_app_upgrading_from_version_prior_to() {
 
 # Compare the current package version is lower or equal to another version given as an argument
 #
-# example: if ynh_app_upgrading_from_version_prior_or_equal_to 2.3.2~ynh1; then ...
+# example: if ynh_app_upgrading_from_version_before_or_equal_to 2.3.2~ynh1; then ...
 #
 # Requires YunoHost version 11.2 or higher.
-ynh_app_upgrading_from_version_prior_or_equal_to() {
+ynh_app_upgrading_from_version_before_or_equal_to() {
     local version=$1
     [[ $version =~ '~ynh' ]] || ynh_die --message="Invalid argument for version, should include the ~ynhX prefix"
 
