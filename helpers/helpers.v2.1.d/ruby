@@ -50,7 +50,7 @@ ynh_use_ruby () {
     [[ -n "${ruby_version:-}" ]] || ynh_die --message="\$ruby_version should be defined prior to calling ynh_use_ruby"
 
     # Get the absolute path of this version of Ruby
-    ruby_path="$ruby_version_path/$YNH_APP_INSTANCE_NAME/bin"
+    ruby_path="$ruby_version_path/$app/bin"
 
     # Allow alias to be used into bash script
     shopt -s expand_aliases
@@ -202,13 +202,13 @@ ynh_install_ruby () {
     ruby_version=$final_ruby_version
 
     # Remove app virtualenv
-    if rbenv alias --list | grep --quiet "$YNH_APP_INSTANCE_NAME "
+    if rbenv alias --list | grep --quiet "$app "
     then
-        rbenv alias $YNH_APP_INSTANCE_NAME --remove
+        rbenv alias $app --remove
     fi
 
     # Create app virtualenv
-    rbenv alias $YNH_APP_INSTANCE_NAME $final_ruby_version
+    rbenv alias $app $final_ruby_version
 
     # Cleanup Ruby versions
     ynh_cleanup_ruby
@@ -238,7 +238,7 @@ ynh_remove_ruby () {
     # Remove /usr/local/bin in PATH in case of Ruby prior installation
     PATH=$(echo $CLEAR_PATH | sed 's@/usr/local/bin:@@')
 
-    rbenv alias $YNH_APP_INSTANCE_NAME --remove
+    rbenv alias $app --remove
 
     # Remove the line for this app
     ynh_app_setting_delete --key=ruby_version
