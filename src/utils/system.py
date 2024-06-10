@@ -29,13 +29,25 @@ YUNOHOST_PACKAGES = ["yunohost", "yunohost-admin", "moulinette", "ssowat"]
 
 
 def debian_version():
-    return check_output(
-        'grep "^VERSION_CODENAME=" /etc/os-release 2>/dev/null | cut -d= -f2'
-    )
+    if debian_version.cache is None:
+        debian_version.cache = check_output(
+            'grep "^VERSION_CODENAME=" /etc/os-release 2>/dev/null | cut -d= -f2'
+        )
+    return debian_version.cache
+
+
+def debian_version_id():
+    if debian_version_id.cache is None:
+        debian_version_id.cache = check_output(
+            'grep "^VERSION_ID=" /etc/os-release 2>/dev/null | cut -d= -f2'
+        ).strip('"')
+    return debian_version_id.cache
 
 
 def system_arch():
-    return check_output("dpkg --print-architecture 2>/dev/null")
+    if system_arch.cache is None:
+        system_arch.cache = check_output("dpkg --print-architecture 2>/dev/null")
+    return system_arch.cache
 
 
 def system_virt():
@@ -46,7 +58,15 @@ def system_virt():
     # Detect virt technology (if not bare metal) and arch
     # Gotta have this "|| true" because it systemd-detect-virt return 'none'
     # with an error code on bare metal ~.~
-    return check_output("systemd-detect-virt 2>/dev/null || true")
+    if system_virt.cache is None:
+        system_virt.cache = check_output("systemd-detect-virt 2>/dev/null || true")
+    return system_virt.cache
+
+
+debian_version.cache = None  # type: ignore[attr-defined]
+debian_version_id.cache = None  # type: ignore[attr-defined]
+system_arch.cache = None  # type: ignore[attr-defined]
+system_virt.cache = None  # type: ignore[attr-defined]
 
 
 def free_space_in_directory(dirpath):

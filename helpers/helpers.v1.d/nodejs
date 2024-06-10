@@ -74,6 +74,8 @@ ynh_use_nodejs() {
     ynh_node_load_PATH="PATH=$node_PATH"
     # Same var but in lower case to be compatible with ynh_replace_vars...
     ynh_node_load_path="PATH=$node_PATH"
+    # Prevent yet another Node and Corepack madness, with Corepack wanting the user to confirm download of Yarn
+    export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 }
 
 # Install a specific version of nodejs
@@ -113,7 +115,7 @@ ynh_install_nodejs() {
 
     # Install (or update if YunoHost vendor/ folder updated since last install) n
     mkdir -p $n_install_dir/bin/
-    cp /usr/share/yunohost/helpers.d/vendor/n/n $n_install_dir/bin/n
+    cp "$YNH_HELPERS_DIR/vendor/n/n" $n_install_dir/bin/n
     # Tweak for n to understand it's installed in $N_PREFIX
     ynh_replace_string --match_string="^N_PREFIX=\${N_PREFIX-.*}$" --replace_string="N_PREFIX=\${N_PREFIX-$N_PREFIX}" --target_file="$n_install_dir/bin/n"
 
@@ -142,7 +144,7 @@ ynh_install_nodejs() {
     fi
 
     # Store the ID of this app and the version of node requested for it
-    echo "$YNH_APP_INSTANCE_NAME:$nodejs_version" | tee --append "$n_install_dir/ynh_app_version"
+    echo "$app:$nodejs_version" | tee --append "$n_install_dir/ynh_app_version"
 
     # Store nodejs_version into the config of this app
     ynh_app_setting_set --app=$app --key=nodejs_version --value=$nodejs_version
@@ -166,7 +168,7 @@ ynh_remove_nodejs() {
     nodejs_version=$(ynh_app_setting_get --app=$app --key=nodejs_version)
 
     # Remove the line for this app
-    sed --in-place "/$YNH_APP_INSTANCE_NAME:$nodejs_version/d" "$n_install_dir/ynh_app_version"
+    sed --in-place "/$app:$nodejs_version/d" "$n_install_dir/ynh_app_version"
 
     # If no other app uses this version of nodejs, remove it.
     if ! grep --quiet "$nodejs_version" "$n_install_dir/ynh_app_version"; then

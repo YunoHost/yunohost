@@ -32,7 +32,7 @@ from moulinette.utils.filesystem import mkdir, chown, chmod, write_to_file
 from moulinette.utils.filesystem import (
     rm,
 )
-from yunohost.utils.system import system_arch, debian_version
+from yunohost.utils.system import system_arch, debian_version, debian_version_id
 from yunohost.utils.error import YunohostError, YunohostValidationError
 
 logger = getActionLogger("yunohost.app_resources")
@@ -148,28 +148,41 @@ class AppResource:
         self.manager = manager
         properties = self.default_properties | properties
 
+        # It's not guaranteed that this info will be defined, e.g. during unit tests, only small resource snippets are used, not proper manifests
+        app_upstream_version = ""
+        if manager and manager.wanted and "version" in manager.wanted:
+            app_upstream_version = manager.wanted["version"].split("~")[0]
+        elif manager and manager.current and "version" in manager.current:
+            app_upstream_version = manager.current["version"].split("~")[0]
+
         replacements: dict[str, str] = {
             "__APP__": self.app,
             "__YNH_ARCH__": system_arch(),
             "__YNH_DEBIAN_VERSION__": debian_version(),
+            "__YNH_DEBIAN_VERSION_ID__": debian_version_id(),
+            "__YNH_APP_UPSTREAM_VERSION__": app_upstream_version,
         }
 
         def recursive_apply(function: Callable, data: Any) -> Any:
             if isinstance(data, dict):  # FIXME: hashable?
-                return {key: recursive_apply(value, function) for key, value in data.items()}
+                return {
+                    key: recursive_apply(function, value) for key, value in data.items()
+                }
 
             if isinstance(data, list):  # FIXME: iterable?
-                return [recursive_apply(value, function) for value in data]
+                return [recursive_apply(function, value) for value in data]
 
             return function(data)
 
         def replace_tokens_in_strings(data: Any):
             if not isinstance(data, str):
-                return
+                return data
             for token, replacement in replacements.items():
                 data = data.replace(token, replacement)
 
-        recursive_apply(replace_tokens_in_strings, properties)
+            return data
+
+        properties = recursive_apply(replace_tokens_in_strings, properties)
 
         for key, value in properties.items():
             setattr(self, key, value)
