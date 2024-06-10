@@ -386,23 +386,3 @@ ynh_write_var_in_file() {
     fi
     set -o xtrace # set -x
 }
-
-# Render templates with Jinja2
-#
-# [internal]
-#
-# Attention : Variables should be exported before calling this helper to be
-# accessible inside templates.
-#
-# usage: ynh_render_template some_template output_path
-# | arg: some_template - Template file to be rendered
-# | arg: output_path   - The path where the output will be redirected to
-ynh_render_template() {
-    local template_path=$1
-    local output_path=$2
-    mkdir -p "$(dirname $output_path)"
-    # Taken from https://stackoverflow.com/a/35009576
-    python3 -c 'import os, sys, jinja2; sys.stdout.write(
-                    jinja2.Template(sys.stdin.read()
-                    ).render(os.environ));' <$template_path >$output_path
-}
