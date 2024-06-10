@@ -1,3 +1,12 @@
+yunohost (11.2.14.1) stable; urgency=low
+
+  - helpers: Fix typo in ynh_read_manifest documentation ([#1866](http://github.com/YunoHost/yunohost/pull/1866))
+  - helpers/go: fix goenv call ([#1868](http://github.com/YunoHost/yunohost/pull/1868))
+
+  Thanks to all contributors <3 ! (Chris Vogel, clecle226, Félix Piédallu, OniriCorpe)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 10 Jun 2024 12:34:25 +0200
+
 yunohost (11.2.14) testing; urgency=low
 
   - helpers/go: fix missing git fetch (5676a7275)
