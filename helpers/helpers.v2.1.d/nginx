@@ -9,8 +9,8 @@
 # format and how placeholders are replaced with actual variables.
 #
 # Additionally, ynh_add_nginx_config will replace:
-# - `#sub_path_only`      by empty string if `path_url` is not `'/'`
-# - `#root_path_only`     by empty string if `path_url`  *is*  `'/'`
+# - `#sub_path_only`      by empty string if `path` is not `'/'`
+# - `#root_path_only`     by empty string if `path`  *is*  `'/'`
 #
 # This allows to enable/disable specific behaviors dependenging on the install
 # location
@@ -22,7 +22,7 @@ ynh_add_nginx_config() {
 
     ynh_add_config --template="nginx.conf" --destination="$finalnginxconf"
 
-    if [ "${path_url:-}" != "/" ]; then
+    if [ "${path:-}" != "/" ]; then
         ynh_replace_string --match_string="^#sub_path_only" --replace_string="" --target_file="$finalnginxconf"
     else
         ynh_replace_string --match_string="^#root_path_only" --replace_string="" --target_file="$finalnginxconf"

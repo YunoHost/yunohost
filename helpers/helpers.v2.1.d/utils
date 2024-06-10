@@ -353,7 +353,7 @@ ynh_setup_source() {
 # Curl abstraction to help with POST requests to local pages (such as installation forms)
 #
 # usage: ynh_local_curl "page_uri" "key1=value1" "key2=value2" ...
-# | arg: page_uri    - Path (relative to `$path_url`) of the page where POST data will be sent
+# | arg: page_uri    - Path (relative to `$path`) of the page where POST data will be sent
 # | arg: key1=value1 - (Optionnal) POST key and corresponding value
 # | arg: key2=value2 - (Optionnal) Another POST key and corresponding value
 # | arg: ...         - (Optionnal) More POST keys and values
@@ -362,15 +362,15 @@ ynh_setup_source() {
 #
 # For multiple calls, cookies are persisted between each call for the same app
 #
-# `$domain` and `$path_url` should be defined externally (and correspond to the domain.tld and the /path (of the app?))
+# `$domain` and `$path` should be defined externally (and correspond to the domain.tld and the /path (of the app?))
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_local_curl() {
     # Define url of page to curl
     local local_page=$(ynh_normalize_url_path $1)
-    local full_path=$path_url$local_page
+    local full_path=$path$local_page
 
-    if [ "${path_url}" == "/" ]; then
+    if [ "${path}" == "/" ]; then
         full_path=$local_page
     fi
 

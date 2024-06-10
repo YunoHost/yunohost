@@ -22,13 +22,13 @@
 # `destination` by replacing the following keywords with global variables
 # that should be defined before calling this helper :
 # ```
-#   __PATH__                by $path_url
 #   __USER__                by $app
 #   __YNH_NODE_LOAD_PATH__  by $ynh_node_load_PATH
 # ```
 # And any dynamic variables that should be defined before calling this helper like:
 # ```
 #   __DOMAIN__   by $domain
+#   __PATH__     by $path
 #   __APP__      by $app
 #   __VAR_1__    by $var_1
 #   __VAR_2__    by $var_2
@@ -125,7 +125,8 @@ ynh_add_config() {
 #
 # The helper will replace the following keywords with global variables
 # that should be defined before calling this helper :
-#   __PATH__                by $path_url
+#   __PATH__                by $path
+#   __PATH__/               by $path/ if $path != /, or just / otherwise (instead of //)
 #   __USER__                by $app
 #   __YNH_NODE_LOAD_PATH__  by $ynh_node_load_PATH
 #
@@ -144,11 +145,11 @@ ynh_replace_vars() {
     # ===========================================
 
     # Replace specific YunoHost variables
-    if test -n "${path_url:-}"; then
-        # path_url_slash_less is path_url, or a blank value if path_url is only '/'
-        local path_url_slash_less=${path_url%/}
-        ynh_replace_string --match_string="__PATH__/" --replace_string="$path_url_slash_less/" --target_file="$file"
-        ynh_replace_string --match_string="__PATH__" --replace_string="$path_url" --target_file="$file"
+    if test -n "${path:-}"; then
+        # path_slash_less is path, or a blank value if path is only '/'
+        local path_slash_less=${path%/}
+        ynh_replace_string --match_string="__PATH__/" --replace_string="$path_slash_less/" --target_file="$file"
+        ynh_replace_string --match_string="__PATH__" --replace_string="$path" --target_file="$file"
     fi
     if test -n "${app:-}"; then
         ynh_replace_string --match_string="__USER__" --replace_string="$app" --target_file="$file"
