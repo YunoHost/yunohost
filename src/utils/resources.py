@@ -1176,10 +1176,10 @@ class AptDependenciesAppResource(AppResource):
                     raw_msg=True,
                 )
 
-            # Drop 'extras' entries associated to no packages
-            self.extras = {
-                key: values for key, values in self.extras.items() if values["packages"]
-            }
+        # Drop 'extras' entries associated to no packages
+        self.extras = {
+            key: values for key, values in self.extras.items() if values["packages"]
+        }
 
     def provision_or_update(self, context: Dict = {}):
         script = " ".join(["ynh_install_app_dependencies", *self.packages])
