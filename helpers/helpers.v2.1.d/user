@@ -172,13 +172,11 @@ ynh_system_user_delete() {
     fi
 }
 
-# Execute a command as another user
+# Execute a command after sudoing as $app
 #
-# usage: ynh_exec_as $USER COMMAND [ARG ...]
+# Note that exported bash env variables are kept (using -E option of sudo)
 #
-# Requires YunoHost version 4.1.7 or higher.
-ynh_exec_as() {
-    local user=$1
-    shift 1
-    sudo -u "$user" "$@"
+# usage: ynh_exec_as_app COMMAND [ARG ...]
+ynh_exec_as_app() {
+    sudo -E -u"$app" "$@"
 }
