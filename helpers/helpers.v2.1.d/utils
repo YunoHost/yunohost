@@ -132,8 +132,7 @@ fi
 # - Uncompress the archive to `$dest_dir`.
 #   - If `in_subdir` is true, the first level directory of the archive will be removed.
 #   - If `in_subdir` is a numeric value, the N first level directories will be removed.
-# - Patches named `sources/patches/${src_id}-*.patch` will be applied to `$dest_dir`
-# - Extra files in `sources/extra_files/$src_id` will be copied to dest_dir
+# - Patches named `patches/${src_id}-*.patch` will be applied to `$dest_dir`
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_setup_source() {
@@ -309,9 +308,10 @@ ynh_setup_source() {
     fi
 
     # Apply patches
-    if [ -d "$YNH_APP_BASEDIR/sources/patches/" ]; then
-        local patches_folder=$(realpath $YNH_APP_BASEDIR/sources/patches/)
-        if (($(find $patches_folder -type f -name "${source_id}-*.patch" 2>/dev/null | wc --lines) > "0")); then
+    if [ -d "$YNH_APP_BASEDIR/patches/" ]; then
+        local patches_folder=$(realpath $YNH_APP_BASEDIR/patches/)
+        # Check if any file matching the pattern exists, cf https://stackoverflow.com/a/34195247
+        if compgen -G "$patches_folder/${source_id}-*.patch" >/dev/null; then
             pushd "$dest_dir"
             for p in $patches_folder/${source_id}-*.patch; do
                 echo $p
@@ -319,11 +319,6 @@ ynh_setup_source() {
             done
             popd
         fi
-    fi
-
-    # Add supplementary files
-    if test -e "$YNH_APP_BASEDIR/sources/extra_files/${source_id}"; then
-        cp --archive $YNH_APP_BASEDIR/sources/extra_files/$source_id/. "$dest_dir"
     fi
 
     # Keep files to be backup/restored at the end of the helper
