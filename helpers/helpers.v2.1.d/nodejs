@@ -5,75 +5,23 @@ node_version_path="$n_install_dir/n/versions/node"
 # N_PREFIX is the directory of n, it needs to be loaded as a environment variable.
 export N_PREFIX="$n_install_dir"
 
-# Load the version of node for an app, and set variables.
-#
-# usage: ynh_use_nodejs
-#
-# `ynh_use_nodejs` has to be used in any app scripts before using node for the first time.
-# This helper will provide alias and variables to use in your scripts.
-#
-# To use npm or node, use the alias `ynh_npm` and `ynh_node`.
-#
-# Those alias will use the correct version installed for the app.
-# For example: use `ynh_npm install` instead of `npm install`
-#
-# With `sudo` or `ynh_exec_as`, use instead the fallback variables `$ynh_npm` and `$ynh_node`
-# And propagate $PATH to sudo with $ynh_node_load_PATH
-# Exemple: `ynh_exec_as $app $ynh_node_load_PATH $ynh_npm install`
-#
-# $PATH contains the path of the requested version of node.
-# However, $PATH is duplicated into $node_PATH to outlast any manipulation of `$PATH`
-# You can use the variable `$ynh_node_load_PATH` to quickly load your node version
-# in $PATH for an usage into a separate script.
-# Exemple: $ynh_node_load_PATH $install_dir/script_that_use_npm.sh`
-#
-#
-# Finally, to start a nodejs service with the correct version, 2 solutions
-#  Either the app is dependent of node or npm, but does not called it directly.
-#  In such situation, you need to load PATH :
-# ```
-# Environment="__NODE_ENV_PATH__"
-# ExecStart=__FINALPATH__/my_app
-# ```
-# You will replace __NODE_ENV_PATH__ with $ynh_node_load_PATH.
-#
-#  Or node start the app directly, then you don't need to load the PATH variable
-# ```
-# ExecStart=__YNH_NODE__ my_app run
-# ```
-# You will replace __YNH_NODE__ with $ynh_node
-#
-#
-# 2 other variables are also available
-#   - $nodejs_path: The absolute path to node binaries for the chosen version.
-#
-# Requires YunoHost version 2.7.12 or higher.
-ynh_use_nodejs() {
-
-    [[ -n "${nodejs_version:-}" ]] || ynh_die --message="\$nodejs_version should be defined prior to calling ynh_install_nodejs"
+_ynh_load_nodejs_in_path_and_other_tweaks() {
 
     # Get the absolute path of this version of node
-    nodejs_path="$node_version_path/$nodejs_version/bin"
-
-    # Allow alias to be used into bash script
-    shopt -s expand_aliases
-
-    # Create an alias for the specific version of node and a variable as fallback
-    ynh_node="$nodejs_path/node"
-    alias ynh_node="$ynh_node"
-    # And npm
-    ynh_npm="$nodejs_path/npm"
-    alias ynh_npm="$ynh_npm"
+    local nodejs_path="$node_version_path/$nodejs_version/bin"
 
     # Load the path of this version of node in $PATH
     if [[ :$PATH: != *":$nodejs_path"* ]]; then
         PATH="$nodejs_path:$PATH"
     fi
-    node_PATH="$PATH"
-    # Create an alias to easily load the PATH
-    ynh_node_load_PATH="PATH=$node_PATH"
-    # Same var but in lower case to be compatible with ynh_replace_vars...
-    ynh_node_load_path="PATH=$node_PATH"
+
+    # Export PATH such that it's available through sudo -E / ynh_exec_as $app
+    export PATH
+
+    # This is in full lowercase such that it gets replaced in templates
+    path_with_nodejs="$PATH"
+    PATH_with_nodejs="$PATH"
+
     # Prevent yet another Node and Corepack madness, with Corepack wanting the user to confirm download of Yarn
     export COREPACK_ENABLE_DOWNLOAD_PROMPT=0
 }
@@ -87,7 +35,10 @@ ynh_use_nodejs() {
 # `n` (Node version management) uses the `PATH` variable to store the path of the version of node it is going to use.
 # That's how it changes the version
 #
-# Refer to `ynh_use_nodejs` for more information about available commands and variables
+# Adds the appropriate, specific version of nodejs to the PATH variable (which
+# is also exported, to ease the use of ynh_exec_as_app). Also define variable
+# PATH_with_nodejs to be used in the systemd config
+# (Environment="PATH=__PATH_WITH_NODEJS__")
 #
 # Requires YunoHost version 2.7.12 or higher.
 ynh_install_nodejs() {
@@ -146,7 +97,7 @@ ynh_install_nodejs() {
     # Build the update script and set the cronjob
     ynh_cron_upgrade_node
 
-    ynh_use_nodejs
+    _ynh_load_nodejs_in_path_and_other_tweaks
 }
 
 # Remove the version of node used by the app.

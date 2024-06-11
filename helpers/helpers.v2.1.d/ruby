@@ -7,67 +7,22 @@ ruby_version_path="$rbenv_install_dir/versions"
 export RBENV_ROOT="$rbenv_install_dir"
 export rbenv_root="$rbenv_install_dir"
 
-# Load the version of Ruby for an app, and set variables.
-#
-# ynh_use_ruby has to be used in any app scripts before using Ruby for the first time.
-# This helper will provide alias and variables to use in your scripts.
-#
-# To use gem or Ruby, use the alias `ynh_gem` and `ynh_ruby`
-# Those alias will use the correct version installed for the app
-# For example: use `ynh_gem install` instead of `gem install`
-#
-# With `sudo` or `ynh_exec_as`, use instead the fallback variables `$ynh_gem` and `$ynh_ruby`
-# And propagate $PATH to sudo with $ynh_ruby_load_path
-# Exemple: `ynh_exec_as $app $ynh_ruby_load_path $ynh_gem install`
-#
-# $PATH contains the path of the requested version of Ruby.
-# However, $PATH is duplicated into $ruby_path to outlast any manipulation of $PATH
-# You can use the variable `$ynh_ruby_load_path` to quickly load your Ruby version
-#  in $PATH for an usage into a separate script.
-# Exemple: $ynh_ruby_load_path $install_dir/script_that_use_gem.sh`
-#
-#
-# Finally, to start a Ruby service with the correct version, 2 solutions
-#  Either the app is dependent of Ruby or gem, but does not called it directly.
-#  In such situation, you need to load PATH
-#    `Environment="__YNH_RUBY_LOAD_PATH__"`
-#    `ExecStart=__FINALPATH__/my_app`
-#     You will replace __YNH_RUBY_LOAD_PATH__ with $ynh_ruby_load_path
-#
-#  Or Ruby start the app directly, then you don't need to load the PATH variable
-#    `ExecStart=__YNH_RUBY__ my_app run`
-#     You will replace __YNH_RUBY__ with $ynh_ruby
-#
-#
-# one other variable is also available
-#   - $ruby_path: The absolute path to Ruby binaries for the chosen version.
-#
-# usage: ynh_use_ruby
-#
-# Requires YunoHost version 3.2.2 or higher.
-ynh_use_ruby () {
-
-    [[ -n "${ruby_version:-}" ]] || ynh_die --message="\$ruby_version should be defined prior to calling ynh_use_ruby"
+_ynh_load_ruby_in_path_and_other_tweaks() {
 
     # Get the absolute path of this version of Ruby
-    ruby_path="$ruby_version_path/$app/bin"
+    local ruby_path="$ruby_version_path/$app/bin"
 
-    # Allow alias to be used into bash script
-    shopt -s expand_aliases
-
-    # Create an alias for the specific version of Ruby and a variable as fallback
-    ynh_ruby="$ruby_path/ruby"
-    alias ynh_ruby="$ynh_ruby"
-    # And gem
-    ynh_gem="$ruby_path/gem"
-    alias ynh_gem="$ynh_gem"
-
-    # Load the path of this version of Ruby in $PATH
+    # Load the path of this version of ruby in $PATH
     if [[ :$PATH: != *":$ruby_path"* ]]; then
         PATH="$ruby_path:$PATH"
     fi
-    # Create an alias to easily load the PATH
-    ynh_ruby_load_path="PATH=$PATH"
+
+    # Export PATH such that it's available through sudo -E / ynh_exec_as $app
+    export PATH
+
+    # This is in full lowercase such that it gets replaced in templates
+    path_with_ruby="$PATH"
+    PATH_with_ruby="$PATH"
 
     # Sets the local application-specific Ruby version
     pushd ${install_dir}
@@ -88,6 +43,11 @@ ynh_use_ruby () {
 # to rbenv shims (e.g. $RBENV_ROOT/shims/bundle)
 #
 # usage: ynh_install_ruby
+#
+# Adds the appropriate, specific version of ruby to the PATH variable (which
+# is also exported, to ease the use of ynh_exec_as_app). Also define variable
+# PATH_with_ruby to be used in the systemd config
+# (Environment="PATH=__PATH_WITH_RUBY__")
 #
 # Requires YunoHost version 3.2.2 or higher.
 ynh_install_ruby () {
@@ -222,6 +182,8 @@ eval \"\$(rbenv init -)\"
 
     # Load the environment
     eval "$(rbenv init -)"
+
+    _ynh_load_ruby_in_path_and_other_variable_tweaks
 }
 
 # Remove the version of Ruby used by the app.
