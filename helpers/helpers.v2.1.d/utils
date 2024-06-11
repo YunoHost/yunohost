@@ -476,23 +476,12 @@ ynh_app_upstream_version() {
     echo "${$YNH_APP_MANIFEST_VERSION/~ynh*/}"
 }
 
-# Checks the app version to upgrade with the existing app version and returns:
+# Return 0 if the "upstream" part of the version changed, or 1 otherwise (ie only the ~ynh suffix changed)
 #
-# usage: ynh_check_app_version_changed
-# | ret: `UPGRADE_APP` if the upstream version changed, `UPGRADE_PACKAGE` otherwise.
-#
-# This helper should be used to avoid an upgrade of an app, or the upstream part
-# of it, when it's not needed
-#
-# Requires YunoHost version 3.5.0 or higher.
-ynh_check_app_version_changed() {
-    local return_value=${YNH_APP_UPGRADE_TYPE}
-
-    if [ "$return_value" == "UPGRADE_SAME" ] || [ "$return_value" == "DOWNGRADE" ]; then
-        return_value="UPGRADE_APP"
-    fi
-
-    echo $return_value
+# usage: if ynh_app_upstream_version_changed; then ...
+ynh_app_upstream_version_changed() {
+    # "UPGRADE_PACKAGE" means only the ~ynh prefix changed
+    [[ "$YNH_APP_UPGRADE_TYPE" == "UPGRADE_PACKAGE" ]] && return 1 || return 0
 }
 
 # Compare the current package version is strictly lower than another version given as an argument
