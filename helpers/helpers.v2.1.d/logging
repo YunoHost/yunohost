@@ -52,15 +52,12 @@ ynh_print_warn() {
     echo -e "${message}" >&2
 }
 
-# Execute a command and force the result to be printed on stdout
+# Execute a command and redirect stderr to stdout
 #
-# usage: ynh_exec_warn_less your command and args
+# usage: ynh_hide_warnings your command and args
 # | arg: command - command to execute
 #
-# Note that you should NOT quote the command but only prefix it with ynh_exec_warn
-#
-# Requires YunoHost version 3.2.0 or higher.
-ynh_exec_warn_less() {
+ynh_hide_warnings() {
     # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
     "$@" 2>&1
 }
@@ -79,7 +76,7 @@ ynh_exec_and_print_stderr_only_if_error() {
     # Note that "$@" is used and not $@, c.f. https://unix.stackexchange.com/a/129077
     "$@" 2> "$logfile" || rc="$?"
     if (( rc != 0 )); then
-        ynh_exec_warn cat "$logfile"
+        cat "$logfile" >&2
         ynh_safe_rm "$logfile"
         return "$rc"
     fi
