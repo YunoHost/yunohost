@@ -1486,6 +1486,9 @@ def app_remove(operation_logger, app, purge=False, force_workdir=None):
         for permission_name in user_permission_list(apps=[app])["permissions"].keys():
             permission_delete(permission_name, force=True, sync_perm=False)
 
+    if purge and os.path.exists(f"/var/log/{app}"):
+        shutil.rmtree(f"/var/log/{app}")
+
     if os.path.exists(app_setting_path):
         shutil.rmtree(app_setting_path)
 
