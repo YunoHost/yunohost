@@ -1,9 +1,19 @@
 #!/bin/bash
 
+# (this is used in the apt helpers, big meh ...)
 readonly YNH_DEFAULT_PHP_VERSION=7.4
-# Declare the actual PHP version to use.
-# A packager willing to use another version of PHP can override the variable into its _common.sh.
-YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
+
+# Legacy: auto-convert phpversion to php_version (for consistency with nodejs_version, ruby_version, ...)
+if [[ -n "${app:-}" ]] && [[ -n "${phpversion:-}" ]]
+then
+    if [[ -z "${php_version:-}" ]]
+    then
+        php_version=$phpversion
+        ynh_app_setting_set --key=php_version --value=$php_version
+    fi
+    ynh_app_setting_delete --key=phpversion
+    unset phpversion
+fi
 
 # Create a dedicated PHP-FPM config
 #
@@ -14,7 +24,7 @@ YNH_PHP_VERSION=${YNH_PHP_VERSION:-$YNH_DEFAULT_PHP_VERSION}
 # The actual PHP configuration will be automatically generated, 
 # and your extra_php-fpm.conf will be appended (typically contains PHP upload limits)
 #
-# The resulting configuration will be deployed to the appropriate place, /etc/php/$phpversion/fpm/pool.d/$app.conf
+# The resulting configuration will be deployed to the appropriate place, /etc/php/$php_version/fpm/pool.d/$app.conf
 #
 # Performance-related options in the PHP conf, such as : 
 # pm.max_children, pm.start_servers, pm.min_spare_servers pm.max_spare_servers
@@ -58,8 +68,8 @@ ynh_add_fpm_config() {
 
     # If the PHP version changed, remove the old fpm conf
     # (NB: This stuff is also handled by the apt helper, which is usually triggered before this helper)
-    local old_phpversion=$(ynh_app_setting_get --key=phpversion)
-    if [ -n "$old_phpversion" ] && [ "$old_phpversion" != "$phpversion" ]; then
+    local old_php_version=$(ynh_app_setting_get --key=php_version)
+    if [ -n "$old_php_version" ] && [ "$old_php_version" != "$php_version" ]; then
         local old_php_fpm_config_dir=$(ynh_app_setting_get --key=fpm_config_dir)
         local old_php_finalphpconf="$old_php_fpm_config_dir/pool.d/$app.conf"
 
@@ -70,15 +80,15 @@ ynh_add_fpm_config() {
         fi
     fi
 
-    local fpm_service="php${phpversion}-fpm"
-    local fpm_config_dir="/etc/php/$phpversion/fpm"
+    local fpm_service="php${php_version}-fpm"
+    local fpm_config_dir="/etc/php/$php_version/fpm"
 
     # Create the directory for FPM pools
     mkdir --parents "$fpm_config_dir/pool.d"
 
     ynh_app_setting_set --key=fpm_config_dir --value="$fpm_config_dir"
     ynh_app_setting_set --key=fpm_service --value="$fpm_service"
-    ynh_app_setting_set --key=phpversion --value=$phpversion
+    ynh_app_setting_set --key=php_version --value=$php_version
 
     # Define the values to use for the configuration of PHP.
     ynh_get_scalable_phpfpm
@@ -93,7 +103,7 @@ group = __PHPFPM_GROUP__
 
 chdir = __INSTALL_DIR__
 
-listen = /var/run/php/php__PHPVERSION__-fpm-__APP__.sock
+listen = /var/run/php/php__PHP_VERSION__-fpm-__APP__.sock
 listen.owner = www-data
 listen.group = www-data
 
@@ -125,8 +135,8 @@ pm.process_idle_timeout = 10s
     ynh_add_config --template="$phpfpm_path" --destination="$finalphpconf"
 
     # Validate that the new php conf doesn't break php-fpm entirely
-    if ! php-fpm${phpversion} --test 2>/dev/null; then
-        php-fpm${phpversion} --test || true
+    if ! php-fpm${php_version} --test 2>/dev/null; then
+        php-fpm${php_version} --test || true
         ynh_safe_rm "$finalphpconf"
         ynh_die --message="The new configuration broke php-fpm?"
     fi
@@ -298,7 +308,7 @@ ynh_composer_exec() {
     # ===========================================
 
     COMPOSER_HOME="$workdir/.composer" COMPOSER_MEMORY_LIMIT=-1 \
-        php${phpversion} "$workdir/composer.phar" $commands \
+        php${php_version} "$workdir/composer.phar" $commands \
         -d "$workdir" --no-interaction --no-ansi 2>&1
 }
 
