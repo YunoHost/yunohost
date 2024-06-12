@@ -217,7 +217,7 @@ ynh_get_scalable_phpfpm() {
     fi
 
     # Get the total of RAM available, except swap.
-    local max_ram=$(ynh_get_ram --total --ignore_swap)
+    local max_ram=$(ynh_get_ram --total)
 
     at_least_one() {
         # Do not allow value below 1
@@ -266,28 +266,6 @@ ynh_get_scalable_phpfpm() {
         php_min_spare_servers=0
         php_max_spare_servers=0
         php_start_servers=0
-    fi
-
-    if [ $print -eq 1 ]; then
-        ynh_print_warn --message="Footprint=${footprint}Mb by pool."
-        ynh_print_warn --message="Process manager=$php_pm"
-        ynh_print_warn --message="Max RAM=${max_ram}Mb"
-        if [ "$php_pm" != "static" ]; then
-            ynh_print_warn --message="\nMax estimated footprint=$(($php_max_children * $footprint))"
-            ynh_print_warn --message="Min estimated footprint=$(($php_min_spare_servers * $footprint))"
-        fi
-        if [ "$php_pm" = "dynamic" ]; then
-            ynh_print_warn --message="Estimated average footprint=$(($php_max_spare_servers * $footprint))"
-        elif [ "$php_pm" = "static" ]; then
-            ynh_print_warn --message="Estimated footprint=$(($php_max_children * $footprint))"
-        fi
-        ynh_print_warn --message="\nRaw php-fpm values:"
-        ynh_print_warn --message="pm.max_children = $php_max_children"
-        if [ "$php_pm" = "dynamic" ]; then
-            ynh_print_warn --message="pm.start_servers = $php_start_servers"
-            ynh_print_warn --message="pm.min_spare_servers = $php_min_spare_servers"
-            ynh_print_warn --message="pm.max_spare_servers = $php_max_spare_servers"
-        fi
     fi
 }
 
@@ -342,7 +320,7 @@ ynh_install_composer() {
     # because local always return 0 ...
     local out
     # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-    out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$workdir $composer_url 2>&1) \
+    out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$workdir/composer.phar $composer_url 2>&1) \
         || ynh_die --message="$out"
 
     # install dependencies

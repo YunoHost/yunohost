@@ -234,7 +234,7 @@ ynh_install_app_dependencies() {
     dependencies="$(echo "$dependencies" | sed 's/\([^\<=\>]\)\ \([^(]\)/\1, \2/g')"
     local dependencies=${dependencies//|/ | }
 
-    local version=$(ynh_read_manifest --manifest_key="version")
+    local version=$(ynh_read_manifest "version")
     if [ -z "${version}" ] || [ "$version" == "null" ]; then
         version="1.0"
     fi

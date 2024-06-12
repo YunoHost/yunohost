@@ -388,7 +388,7 @@ ynh_local_curl() {
     chmod 700 $cookiefile
 
     # Temporarily enable visitors if needed...
-    local visitors_enabled=$(ynh_permission_has_user "main" "visitors" && echo yes || echo no)
+    local visitors_enabled=$(ynh_permission_has_user --permission="main" --user="visitors" && echo yes || echo no)
     if [[ $visitors_enabled == "no" ]]; then
         ynh_permission_update --permission="main" --add="visitors"
     fi
@@ -456,7 +456,7 @@ ynh_safe_rm() {
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_read_manifest() {
-    cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq ".$manifest_key" --raw-output
+    cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq "$1" --raw-output
 }
 
 # Return the app upstream version, deduced from `$YNH_APP_MANIFEST_VERSION` and strippig the `~ynhX` part

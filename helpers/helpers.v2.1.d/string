@@ -38,7 +38,7 @@ ynh_string_random() {
 # Requires YunoHost version 2.6.4 or higher.
 ynh_replace() {
     # ============ Argument parsing =============
-    local -A args_array=([m]=match= [r]=replaceg= [f]=file=)
+    local -A args_array=([m]=match= [r]=replace= [f]=file=)
     local match
     local replace
     local file
