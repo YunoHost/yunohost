@@ -1455,13 +1455,16 @@ class DatabaseAppResource(AppResource):
         db_name = self.get_setting("db_name") or db_user
 
         if self.dbtype == "mysql":
-            self._run_script(
-                "deprovision", f"ynh_mysql_remove_db '{db_name}' '{db_user}'"
-            )
+            db_helper_name = "mysql"
         elif self.dbtype == "postgresql":
-            self._run_script(
-                "deprovision", f"ynh_psql_remove_db '{db_name}' '{db_user}'"
-            )
+            db_helper_name = "psql"
+
+        self._run_script(
+            "deprovision", f"""
+ynh_{db_helper_name}_database_exists "{db_name}" && ynh_{db_helper_name}_drop_db "{db_name}" || true
+ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "{db_user}" || true
+"""
+        )
 
         self.delete_setting("db_name")
         self.delete_setting("db_user")
