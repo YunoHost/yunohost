@@ -216,7 +216,7 @@ ynh_store_file_checksum() {
 
     ynh_app_setting_set --key=$checksum_setting_name --value=$(md5sum "$file" | cut --delimiter=' ' --fields=1)
 
-    if [ ${PACKAGE_CHECK_EXEC:-0} -eq 1 ]; then
+    if ynh_in_ci_tests; then
         # Using a base64 is in fact more reversible than "replace / and space by _" ... So we can in fact obtain the original file path in an easy reliable way ...
         local file_path_base64=$(echo "$file" | base64 -w0)
         mkdir -p /var/cache/yunohost/appconfbackup/
@@ -253,7 +253,7 @@ ynh_backup_if_checksum_is_different() {
             cp --archive "$file" "$backup_file_checksum" # Backup the current file
             ynh_print_warn "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file_checksum"
             echo "$backup_file_checksum" # Return the name of the backup file
-            if [ ${PACKAGE_CHECK_EXEC:-0} -eq 1 ]; then
+            if ynh_in_ci_tests; then
                 local file_path_base64=$(echo "$file" | base64 -w0)
                 if test -e /var/cache/yunohost/appconfbackup/original_${file_path_base64}
                 then
