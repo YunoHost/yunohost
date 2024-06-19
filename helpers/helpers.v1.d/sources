@@ -267,8 +267,11 @@ ynh_setup_source() {
         for patchfile in "$patches_folder/"*.patch; do
             echo "$patchfile"
             if ! patch --strip=1 < "$patchfile"; then
-                ynh_print_warn --message="Warn your packagers /!\\ patch $patchfile failed to apply"
-            fi
+                if ynh_in_ci_tests; then
+                    ynh_die --message"Patch $patchfile failed to apply!"
+                else
+                    ynh_print_warn --message="Warn your packagers /!\\ patch $patchfile failed to apply"
+                fi            fi
         done
         popd
     fi
