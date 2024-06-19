@@ -259,7 +259,7 @@ ynh_install_mongo() {
 #
 ynh_remove_mongo() {
     # Only remove the mongodb service if it is not installed.
-    if ! ynh_package_is_installed "mongodb*"
+    if ! _ynh_apt_package_is_installed "mongodb*"
     then
         ynh_print_info --message="Removing MongoDB service..."
         mongodb_servicename=mongod
