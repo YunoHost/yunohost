@@ -100,9 +100,9 @@ ynh_handle_getopts_args() {
             getopts ":$getopts_parameters" parameter || true
 
             if [ "$parameter" = "?" ]; then
-                ynh_die --message="Invalid argument: -${OPTARG:-}"
+                ynh_die "Invalid argument: -${OPTARG:-}"
             elif [ "$parameter" = ":" ]; then
-                ynh_die --message="-$OPTARG parameter requires an argument."
+                ynh_die "-$OPTARG parameter requires an argument."
             else
                 local shift_value=1
                 # Use the long option, corresponding to the short option read by getopts, as a variable
@@ -128,7 +128,7 @@ ynh_handle_getopts_args() {
 
                         # At this point, if all_args[0] start with "-", then the argument is not well formed
                         if [ "${all_args[0]:0:1}" == "-" ]; then
-                            ynh_die --message="Argument \"${all_args[0]}\" not valid! Did you use a single \"-\" instead of two?"
+                            ynh_die "Argument \"${all_args[0]}\" not valid! Did you use a single \"-\" instead of two?"
                         fi
                         # Reduce the value of shift, because the option has been removed manually
                         shift_value=$((shift_value - 1))

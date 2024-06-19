@@ -41,9 +41,9 @@ ynh_backup() {
     # don't backup big data items
     if [[ "$is_data" == true ]] && ([[ ${do_not_backup_data:-0} -eq 1 ]] || [[ ${BACKUP_CORE_ONLY:-0} -eq 1 ]]); then
         if [ $BACKUP_CORE_ONLY -eq 1 ]; then
-            ynh_print_info --message="$target will not be saved, because 'BACKUP_CORE_ONLY' is set."
+            ynh_print_info "$target will not be saved, because 'BACKUP_CORE_ONLY' is set."
         else
-            ynh_print_info --message="$target will not be saved, because 'do_not_backup_data' is set."
+            ynh_print_info "$target will not be saved, because 'do_not_backup_data' is set."
         fi
         return 1
     fi
@@ -53,7 +53,7 @@ ynh_backup() {
     # ==============================================================================
     # Be sure the source path is not empty
     if [ ! -e "$target" ]; then
-        ynh_print_warn --message="File or folder '${target}' to be backed up does not exist"
+        ynh_print_warn "File or folder '${target}' to be backed up does not exist"
         return 1
     fi
 
@@ -67,7 +67,7 @@ ynh_backup() {
 
     # Check if dest_path already exists in tmp archive
     if [[ -e "${dest_path}" ]]; then
-        ynh_print_warn --message="Destination path '${dest_path}' already exist"
+        ynh_print_warn "Destination path '${dest_path}' already exist"
         return 1
     fi
 
@@ -146,7 +146,7 @@ ynh_restore() {
     if [ ! -d "$archive_path" ] && [ ! -f "$archive_path" ] && [ ! -L "$archive_path" ]; then
         if [[ "$is_data" == true ]]
         then
-            ynh_print_info --message="Skipping $target which doesn't exists in the archive, probably because restoring from a safety-backup-before-upgrade"
+            ynh_print_info "Skipping $target which doesn't exists in the archive, probably because restoring from a safety-backup-before-upgrade"
             # Assume it's not a big deal, we may be restoring a safety-backup-before-upgrade which doesnt contain those
             return 0
         else
@@ -275,13 +275,13 @@ ynh_backup_if_checksum_is_different() {
             backup_file_checksum="/var/cache/yunohost/appconfbackup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
             mkdir --parents "$(dirname "$backup_file_checksum")"
             cp --archive "$file" "$backup_file_checksum" # Backup the current file
-            ynh_print_warn --message="File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file_checksum"
+            ynh_print_warn "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file_checksum"
             echo "$backup_file_checksum" # Return the name of the backup file
             if [ ${PACKAGE_CHECK_EXEC:-0} -eq 1 ]; then
                 local file_path_base64=$(echo "$file" | base64 -w0)
                 if test -e /var/cache/yunohost/appconfbackup/original_${file_path_base64}
                 then
-                    ynh_print_warn --message="Diff with the original file:"
+                    ynh_print_warn "Diff with the original file:"
                     diff --report-identical-files --unified --color=always /var/cache/yunohost/appconfbackup/original_${file_path_base64} $file >&2 || true
                 fi
             fi

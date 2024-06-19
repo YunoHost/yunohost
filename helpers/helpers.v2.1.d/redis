@@ -23,7 +23,7 @@ ynh_redis_get_free_db() {
  		db=-1
 	done
 
-	test "$db" -eq -1 && ynh_die --message="No available Redis databases..."
+	test "$db" -eq -1 && ynh_die "No available Redis databases..."
 
 	echo "$db"
 }

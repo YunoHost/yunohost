@@ -1,55 +1,25 @@
 #!/bin/bash
 
-# Print a message to stderr and exit
+# Print a message to stderr and terminate the current script
 #
-# usage: ynh_die --message=MSG [--ret_code=RETCODE]
-# | arg: -m, --message=     - Message to display
-# | arg: -c, --ret_code=    - Exit code to exit with
-#
-# Requires YunoHost version 2.4.0 or higher.
+# usage: ynh_die "Some message"
 ynh_die() {
-    # ============ Argument parsing =============
-    local -A args_array=([m]=message= [c]=ret_code=)
-    local message
-    local ret_code
-    ynh_handle_getopts_args "$@"
-    ret_code=${ret_code:-1}
-    # ===========================================
-
-    echo "$message" 1>&2
-    exit "$ret_code"
+    echo "$1" 1>&2
+    exit 1
 }
 
-# Display a message in the 'INFO' logging category
+# Print an "INFO" message
 #
-# usage: ynh_print_info --message="Some message"
-# | arg: -m, --message=     - Message to display
-#
-# Requires YunoHost version 3.2.0 or higher.
+# usage: ynh_print_info "Some message"
 ynh_print_info() {
-    # ============ Argument parsing =============
-    local -A args_array=([m]=message=)
-    local message
-    ynh_handle_getopts_args "$@"
-    # ===========================================
-
-    echo "$message" >&$YNH_STDINFO
+    echo "$1" >&$YNH_STDINFO
 }
 
 # Print a warning on stderr
 #
-# usage: ynh_print_warn --message="Text to print"
-# | arg: -m, --message=     - The text to print
-#
-# Requires YunoHost version 3.2.0 or higher.
+# usage: ynh_print_warn "Some message"
 ynh_print_warn() {
-    # ============ Argument parsing =============
-    local -A args_array=([m]=message=)
-    local message
-    ynh_handle_getopts_args "$@"
-    # ===========================================
-
-    echo -e "${message}" >&2
+    echo "$1" >&2
 }
 
 # Execute a command and redirect stderr to stdout
@@ -82,6 +52,16 @@ ynh_exec_and_print_stderr_only_if_error() {
     fi
 }
 
+# Return data to the YunoHost core for later processing
+# (to be used by special hooks like app config panel and core diagnosis)
+#
+# usage: ynh_return somedata
+#
+# Requires YunoHost version 3.6.0 or higher.
+ynh_return() {
+    echo "$1" >>"$YNH_STDRETURN"
+}
+
 # Initial definitions for ynh_script_progression
 increment_progression=0
 previous_weight=0
@@ -92,107 +72,47 @@ progress_scale=20
 progress_string2="####################"
 progress_string1="++++++++++++++++++++"
 progress_string0="...................."
-# Define base_time when the file is sourced
-base_time=$(date +%s)
 
 # Print a progress bar showing the progression of an app script
 #
-# usage: ynh_script_progression --message=message [--weight=weight] [--time]
-# | arg: -m, --message= - The text to print
-# | arg: -w, --weight=  - The weight for this progression. This value is 1 by default. Use a bigger value for a longer part of the script.
-# | arg: -t, --time     - Print the execution time since the last call to this helper. Especially usefull to define weights. The execution time is given for the duration since the previous call. So the weight should be applied to this previous call.
-# | arg: -l, --last     - Use for the last call of the helper, to fill the progression bar.
+# usage: ynh_script_progression "Some message"
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_script_progression() {
     set +o xtrace # set +x
 
-    # ============ Argument parsing =============
-    local -A args_array=([m]=message= [w]=weight= [t]=time [l]=last)
-    local message
-    local weight
-    local time
-    local last
-    ynh_handle_getopts_args "$@"
-    weight=${weight:-1}
-    # ===========================================
-
-    # Re-disable xtrace, ynh_handle_getopts_args set it back
-    set +o xtrace # set +x
-
-    # Always activate time when running inside CI tests
-    if [ ${PACKAGE_CHECK_EXEC:-0} -eq 1 ]; then
-    	time=${time:-1}
-    else
-    	time=${time:-0}
-    fi
-
-    last=${last:-0}
-
-    # Get execution time since the last $base_time
-    local exec_time=$(($(date +%s) - $base_time))
-    base_time=$(date +%s)
-
     # Compute $max_progression (if we didn't already)
     if [ "$max_progression" = -1 ]; then
         # Get the number of occurrences of 'ynh_script_progression' in the script. Except those are commented.
-        local helper_calls="$(grep --count "^[^#]*ynh_script_progression" $0)"
-        # Get the number of call with a weight value
-        local weight_calls=$(grep --perl-regexp --count "^[^#]*ynh_script_progression.*(--weight|-w )" $0)
-
-        # Get the weight of each occurrences of 'ynh_script_progression' in the script using --weight
-        local weight_valuesA="$(grep --perl-regexp "^[^#]*ynh_script_progression.*--weight" $0 | sed 's/.*--weight[= ]\([[:digit:]]*\).*/\1/g')"
-        # Get the weight of each occurrences of 'ynh_script_progression' in the script using -w
-        local weight_valuesB="$(grep --perl-regexp "^[^#]*ynh_script_progression.*-w " $0 | sed 's/.*-w[= ]\([[:digit:]]*\).*/\1/g')"
-        # Each value will be on a different line.
-        # Remove each 'end of line' and replace it by a '+' to sum the values.
-        local weight_values=$(($(echo "$weight_valuesA" "$weight_valuesB" | grep -v -E '^\s*$' | tr '\n' '+' | sed 's/+$/+0/g')))
-
-        # max_progression is a total number of calls to this helper.
-        # 	Less the number of calls with a weight value.
-        # 	Plus the total of weight values
-        max_progression=$(($helper_calls - $weight_calls + $weight_values))
+        local helper_calls=
+        max_progression="$(grep --count "^[^#]*ynh_script_progression" $0)"
     fi
 
     # Increment each execution of ynh_script_progression in this script by the weight of the previous call.
     increment_progression=$(($increment_progression + $previous_weight))
     # Store the weight of the current call in $previous_weight for next call
-    previous_weight=$weight
+    previous_weight=1
 
     # Reduce $increment_progression to the size of the scale
-    if [ $last -eq 0 ]; then
-        local effective_progression=$(($increment_progression * $progress_scale / $max_progression))
+    local effective_progression=$(($increment_progression * $progress_scale / $max_progression))
+
     # If last is specified, fill immediately the progression_bar
-    else
-        local effective_progression=$progress_scale
-    fi
 
     # Build $progression_bar from progress_string(0,1,2) according to $effective_progression and the weight of the current task
     # expected_progression is the progression expected after the current task
     local expected_progression="$((($increment_progression + $weight) * $progress_scale / $max_progression - $effective_progression))"
-    if [ $last -eq 1 ]; then
-        expected_progression=0
+
+    # Hack for the "--last" message
+    if grep -qw 'completed' <<< "$1";
+    then
+         effective_progression=$progress_scale
+         expected_progression=0
     fi
     # left_progression is the progression not yet done
     local left_progression="$(($progress_scale - $effective_progression - $expected_progression))"
     # Build the progression bar with $effective_progression, work done, $expected_progression, current work and $left_progression, work to be done.
     local progression_bar="${progress_string2:0:$effective_progression}${progress_string1:0:$expected_progression}${progress_string0:0:$left_progression}"
 
-    local print_exec_time=""
-    if [ $time -eq 1 ] && [ "$exec_time" -gt 10 ]; then
-        print_exec_time=" [$(bc <<< "scale=1; $exec_time / 60" ) minutes]"
-    fi
-
-    echo "[$progression_bar] > ${message}${print_exec_time}" >&$YNH_STDINFO
+    echo "[$progression_bar] > ${1}" >&$YNH_STDINFO
     set -o xtrace # set -x
-}
-
-# Return data to the YunoHost core for later processing
-# (to be used by special hooks like app config panel and core diagnosis)
-#
-# usage: ynh_return somedata
-#
-# Requires YunoHost version 3.6.0 or higher.
-ynh_return() {
-    echo "$1" >>"$YNH_STDRETURN"
 }

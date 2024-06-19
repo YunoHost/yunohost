@@ -88,7 +88,7 @@ ynh_config_add() {
     elif [ -f "$template" ]; then
         template_path=$template
     else
-        ynh_die --message="The provided template $template doesn't exist"
+        ynh_die "The provided template $template doesn't exist"
     fi
 
     ynh_backup_if_checksum_is_different --file="$destination"
@@ -173,7 +173,7 @@ ynh_replace_vars() {
         #     -v FOO  tests if $FOO is defined
         #     -v $FOO tests if ${!FOO} is defined
         # More info: https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash/17538964#comment96392525_17538964
-        [[ -v "${one_var:-}" ]] || ynh_die --message="Variable \$$one_var wasn't initialized when trying to replace __${one_var^^}__ in $file"
+        [[ -v "${one_var:-}" ]] || ynh_die "Variable \$$one_var wasn't initialized when trying to replace __${one_var^^}__ in $file"
 
         # Escape delimiter in match/replace string
         match_string="__${one_var^^}__"
@@ -232,7 +232,7 @@ ynh_read_var_in_file() {
     after="${after:-}"
     # ===========================================
 
-    [[ -f $file ]] || ynh_die --message="File $file does not exists"
+    [[ -f $file ]] || ynh_die "File $file does not exists"
 
     set +o xtrace # set +x
 
@@ -310,7 +310,7 @@ ynh_write_var_in_file() {
     after="${after:-}"
     # ===========================================
 
-    [[ -f $file ]] || ynh_die --message="File $file does not exists"
+    [[ -f $file ]] || ynh_die "File $file does not exists"
 
     set +o xtrace # set +x
 

@@ -22,7 +22,7 @@ ynh_install_apps() {
 	do
 		# Retrieve the name of the app (part before ?)
 		local one_app=$(cut -d "?" -f1 <<< "$one_app_and_its_args")
-		[ -z "$one_app" ] && ynh_die --message="You didn't provided a YunoHost app to install"
+		[ -z "$one_app" ] && ynh_die "You didn't provided a YunoHost app to install"
 
 		yunohost tools update apps
 		
@@ -102,10 +102,10 @@ ynh_remove_apps() {
 			if [[ -z "$required_by" ]]
 			then
 				# Remove $one_app
-				ynh_print_info --message="Removing of $one_app"
+				ynh_print_info "Removing of $one_app"
 				yunohost app remove $one_app --purge
 			else
-				ynh_print_info --message="$one_app was not removed because it's still required by${required_by}"
+				ynh_print_info "$one_app was not removed because it's still required by${required_by}"
 			fi
 		done
 	fi
@@ -134,7 +134,7 @@ ynh_spawn_app_shell() {
     # Force Bash to be used to run this helper
     if [[ ! $0 =~ \/?bash$ ]]
     then
-        ynh_print_warn --message="Please use Bash as shell"
+        ynh_print_warn "Please use Bash as shell"
         exit 1
     fi
 
@@ -142,13 +142,13 @@ ynh_spawn_app_shell() {
     local installed_apps_list=($(yunohost app list --output-as json --quiet | jq -r .apps[].id))
     if [[ " ${installed_apps_list[*]} " != *" ${app} "* ]]
     then
-        ynh_print_warn --message="$app is not in the apps list"
+        ynh_print_warn "$app is not in the apps list"
         exit 1
     fi
 
     # Make sure the app has its own user
     if ! id -u "$app" &>/dev/null; then
-        ynh_print_warn --message="There is no \"$app\" system user"
+        ynh_print_warn "There is no \"$app\" system user"
         exit 1
     fi
 
@@ -156,7 +156,7 @@ ynh_spawn_app_shell() {
     local install_dir=$(ynh_app_setting_get --key=install_dir)
     if [ -z "$install_dir" ]
     then
-        ynh_print_warn --message="$app has no install_dir setting (does it use packaging format >=2?)"
+        ynh_print_warn "$app has no install_dir setting (does it use packaging format >=2?)"
         exit 1
     fi
 

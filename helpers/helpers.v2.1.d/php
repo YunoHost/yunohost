@@ -139,7 +139,7 @@ pm.process_idle_timeout = 10s
     if ! php-fpm${php_version} --test 2>/dev/null; then
         php-fpm${php_version} --test || true
         ynh_safe_rm "$fpm_config_dir/pool.d/$app.conf"
-        ynh_die --message="The new configuration broke php-fpm?"
+        ynh_die "The new configuration broke php-fpm?"
     fi
     ynh_systemd_action --service=$fpm_service --action=reload
 }
@@ -213,7 +213,7 @@ _ynh_get_scalable_phpfpm() {
     elif [ "$usage" = "high" ]; then
         php_pm=static
     else
-        ynh_die --message="Does not recognize '$usage' as an usage value."
+        ynh_die "Does not recognize '$usage' as an usage value."
     fi
 
     # Get the total of RAM available, except swap.
@@ -309,7 +309,7 @@ ynh_composer_install() {
     install_args="${install_args:-}"
     # ===========================================
 
-    [[ -n "${composer_version}" ]] || ynh_die --message="\$composer_version should be defined before calling ynh_composer_install. (In the past, this was called \$YNH_COMPOSER_VERSION)"
+    [[ -n "${composer_version}" ]] || ynh_die "\$composer_version should be defined before calling ynh_composer_install. (In the past, this was called \$YNH_COMPOSER_VERSION)"
 
     [[ ! -e "$workdir/composer.phar" ]] || ynh_safe_rm $workdir/composer.phar
 
@@ -321,9 +321,9 @@ ynh_composer_install() {
     local out
     # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
     out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$workdir/composer.phar $composer_url 2>&1) \
-        || ynh_die --message="$out"
+        || ynh_die "$out"
 
     # install dependencies
     ynh_composer_exec --workdir="$workdir" --commands="install --no-dev $install_args" \
-        || ynh_die --message="Unable to install core dependencies with Composer."
+        || ynh_die "Unable to install core dependencies with Composer."
 }

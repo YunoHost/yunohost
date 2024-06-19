@@ -44,7 +44,7 @@ _ynh_load_nodejs_in_path_and_other_tweaks() {
 ynh_nodejs_install() {
     # Use n, https://github.com/tj/n to manage the nodejs versions
 
-    [[ -n "${nodejs_version:-}" ]] || ynh_die --message="\$nodejs_version should be defined prior to calling ynh_nodejs_install"
+    [[ -n "${nodejs_version:-}" ]] || ynh_die "\$nodejs_version should be defined prior to calling ynh_nodejs_install"
 
     # Create $n_install_dir
     mkdir --parents "$n_install_dir"
@@ -111,7 +111,7 @@ ynh_nodejs_install() {
 # Requires YunoHost version 2.7.12 or higher.
 ynh_nodejs_remove() {
 
-    [[ -n "${nodejs_version:-}" ]] || ynh_die --message="\$nodejs_version should be defined prior to calling ynh_nodejs_remove"
+    [[ -n "${nodejs_version:-}" ]] || ynh_die "\$nodejs_version should be defined prior to calling ynh_nodejs_remove"
 
     # Remove the line for this app
     sed --in-place "/$YNH_APP_INSTANCE_NAME:$nodejs_version/d" "$n_install_dir/ynh_app_version"

@@ -166,8 +166,8 @@ ynh_setup_source() {
     local src_platform="$(jq -r ".platform" <<< "$sources_json" | sed 's/^null$//')"
     local src_rename="$(jq -r ".rename" <<< "$sources_json" | sed 's/^null$//')"
 
-    [[ -n "$src_url" ]] || ynh_die --message="No URL defined for source $source_id$arch_prefix ?"
-    [[ -n "$src_sum" ]] || ynh_die --message="No sha256 sum defined for source $source_id$arch_prefix ?"
+    [[ -n "$src_url" ]] || ynh_die "No URL defined for source $source_id$arch_prefix ?"
+    [[ -n "$src_sum" ]] || ynh_die "No sha256 sum defined for source $source_id$arch_prefix ?"
 
     if [[ -z "$src_format" ]]
     then
@@ -195,7 +195,7 @@ ynh_setup_source() {
 
     if [[ "$src_extract" != "true" ]] && [[ "$src_extract" != "false" ]]
     then
-        ynh_die --message="For source $source_id, expected either 'true' or 'false' for the extract parameter"
+        ynh_die "For source $source_id, expected either 'true' or 'false' for the extract parameter"
     fi
 
     # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
@@ -212,7 +212,7 @@ ynh_setup_source() {
             cp $local_src $src_filename
         fi
 
-        [ -n "$src_url" ] || ynh_die --message="Couldn't parse SOURCE_URL from $src_file_path ?"
+        [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
 
         # If the file was prefetched but somehow doesn't match the sum, rm and redownload it
         if [ -e "$src_filename" ] && ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
@@ -229,7 +229,7 @@ ynh_setup_source() {
             local out
             # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
             out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$src_filename $src_url 2>&1) \
-                || ynh_die --message="$out"
+                || ynh_die "$out"
         fi
 
         # Check the control sum
@@ -238,7 +238,7 @@ ynh_setup_source() {
             local actual_sum="$(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1)"
             local actual_size="$(du -hs ${src_filename} | cut --fields=1)"
             rm -f ${src_filename}
-            ynh_die --message="Corrupt source for ${src_url}: Expected sha256sum to be ${src_sum} but got ${actual_sum} (size: ${actual_size})."
+            ynh_die "Corrupt source for ${src_url}: Expected sha256sum to be ${src_sum} but got ${actual_sum} (size: ${actual_size})."
         fi
     fi
 
@@ -302,7 +302,7 @@ ynh_setup_source() {
         if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz$ ]]; then
             tar --extract --file=$src_filename --directory="$dest_dir" $strip
         else
-            ynh_die --message="Archive format unrecognized."
+            ynh_die "Archive format unrecognized."
         fi
         ynh_safe_rm "$src_filename"
     fi
@@ -315,7 +315,7 @@ ynh_setup_source() {
             pushd "$dest_dir"
             for p in $patches_folder/${source_id}-*.patch; do
                 echo $p
-                patch --strip=1 <$p || ynh_print_warn --message="Packagers /!\\ patch $p failed to apply"
+                patch --strip=1 <$p || ynh_print_warn "Packagers /!\\ patch $p failed to apply"
             done
             popd
         fi
@@ -432,15 +432,15 @@ ynh_safe_rm() {
     set +o xtrace # set +x
 
     if [ $# -ge 2 ]; then
-        ynh_print_warn --message="/!\ Packager ! You provided more than one argument to ynh_safe_rm but it will be ignored... Use this helper with one argument at time."
+        ynh_print_warn "/!\ Packager ! You provided more than one argument to ynh_safe_rm but it will be ignored... Use this helper with one argument at time."
     fi
 
     if [[ -z "$target" ]]; then
-        ynh_print_warn --message="ynh_safe_rm called with empty argument, ignoring."
+        ynh_print_warn "ynh_safe_rm called with empty argument, ignoring."
     elif [[ ! -e $target ]]; then
-        ynh_print_info --message="'$target' wasn't deleted because it doesn't exist."
+        ynh_print_info "'$target' wasn't deleted because it doesn't exist."
     elif ! _acceptable_path_to_delete "$target"; then
-        ynh_print_warn --message="Not deleting '$target' because it is not an acceptable path to delete."
+        ynh_print_warn "Not deleting '$target' because it is not an acceptable path to delete."
     else
         rm --recursive "$target"
     fi
@@ -486,7 +486,7 @@ ynh_app_upstream_version_changed() {
 # Requires YunoHost version 11.2 or higher.
 ynh_app_upgrading_from_version_before() {
     local version=$1
-    [[ $version =~ '~ynh' ]] || ynh_die --message="Invalid argument for version, should include the ~ynhX prefix"
+    [[ $version =~ '~ynh' ]] || ynh_die "Invalid argument for version, should include the ~ynhX prefix"
 
     dpkg --compare-versions $YNH_APP_CURRENT_VERSION lt $version
 }
@@ -498,7 +498,7 @@ ynh_app_upgrading_from_version_before() {
 # Requires YunoHost version 11.2 or higher.
 ynh_app_upgrading_from_version_before_or_equal_to() {
     local version=$1
-    [[ $version =~ '~ynh' ]] || ynh_die --message="Invalid argument for version, should include the ~ynhX prefix"
+    [[ $version =~ '~ynh' ]] || ynh_die "Invalid argument for version, should include the ~ynhX prefix"
 
     dpkg --compare-versions $YNH_APP_CURRENT_VERSION le $version
 }
@@ -600,7 +600,7 @@ ynh_get_ram() {
     # ===========================================
 
     if [ $free -eq $total ]; then
-        ynh_print_warn --message="You have to choose --free or --total when using ynh_get_ram"
+        ynh_print_warn "You have to choose --free or --total when using ynh_get_ram"
         ram=0
     elif [ $free -eq 1 ]; then
         local free_ram=$(LC_ALL=C vmstat --stats --unit M | grep "free memory" | awk '{print $1}')

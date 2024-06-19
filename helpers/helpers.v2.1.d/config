@@ -20,7 +20,7 @@ _ynh_app_config_get_one() {
     # Get value from app settings or from another file
     elif [[ "$type" == "file" ]]; then
         if [[ "$bind" == "settings" ]]; then
-            ynh_die --message="File '${short_setting}' can't be stored in settings"
+            ynh_die "File '${short_setting}' can't be stored in settings"
         fi
         old[$short_setting]="$(ls "$(echo $bind | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/)" 2>/dev/null || echo YNH_NULL)"
         file_hash[$short_setting]="true"
@@ -30,7 +30,7 @@ _ynh_app_config_get_one() {
         if [[ "$bind" == "settings" ]]; then
             old[$short_setting]="$(ynh_app_setting_get $app $short_setting)"
         elif [[ "$bind" == *":"* ]]; then
-            ynh_die --message="For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
+            ynh_die "For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
         else
             old[$short_setting]="$(cat $(echo $bind | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/) 2>/dev/null || echo YNH_NULL)"
         fi
@@ -71,38 +71,38 @@ _ynh_app_config_apply_one() {
         # Save in a file
         elif [[ "$type" == "file" ]]; then
             if [[ "$bind" == "settings" ]]; then
-                ynh_die --message="File '${short_setting}' can't be stored in settings"
+                ynh_die "File '${short_setting}' can't be stored in settings"
             fi
             local bind_file="$(echo "$bind" | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/)"
             if [[ "${!short_setting}" == "" ]]; then
                 ynh_backup_if_checksum_is_different --file="$bind_file"
                 ynh_safe_rm "$bind_file"
                 ynh_delete_file_checksum --file="$bind_file"
-                ynh_print_info --message="File '$bind_file' removed"
+                ynh_print_info "File '$bind_file' removed"
             else
                 ynh_backup_if_checksum_is_different --file="$bind_file"
                 if [[ "${!short_setting}" != "$bind_file" ]]; then
                     cp "${!short_setting}" "$bind_file"
                 fi
                 ynh_store_file_checksum --file="$bind_file" --update_only
-                ynh_print_info --message="File '$bind_file' overwritten with ${!short_setting}"
+                ynh_print_info "File '$bind_file' overwritten with ${!short_setting}"
             fi
 
         # Save value in app settings
         elif [[ "$bind" == "settings" ]]; then
             ynh_app_setting_set --key=$short_setting --value="${!short_setting}"
-            ynh_print_info --message="Configuration key '$short_setting' edited in app settings"
+            ynh_print_info "Configuration key '$short_setting' edited in app settings"
 
         # Save multiline text in a file
         elif [[ "$type" == "text" ]]; then
             if [[ "$bind" == *":"* ]]; then
-                ynh_die --message="For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
+                ynh_die "For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
             fi
             local bind_file="$(echo "$bind" | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/)"
             ynh_backup_if_checksum_is_different --file="$bind_file"
             echo "${!short_setting}" >"$bind_file"
             ynh_store_file_checksum --file="$bind_file" --update_only
-            ynh_print_info --message="File '$bind_file' overwritten with the content provided in question '${short_setting}'"
+            ynh_print_info "File '$bind_file' overwritten with the content provided in question '${short_setting}'"
 
         # Set value into a kind of key/value file
         else
@@ -121,7 +121,7 @@ _ynh_app_config_apply_one() {
 
             # We stored the info in settings in order to be able to upgrade the app
             ynh_app_setting_set --key=$short_setting --value="${!short_setting}"
-            ynh_print_info --message="Configuration key '$bind_key_' edited into $bind_file"
+            ynh_print_info "Configuration key '$bind_key_' edited into $bind_file"
 
         fi
     fi
@@ -212,7 +212,7 @@ _ynh_app_config_show() {
 
 _ynh_app_config_validate() {
     # Change detection
-    ynh_script_progression --message="Checking what changed in the new configuration..." --weight=1
+    ynh_script_progression "Checking what changed in the new configuration..."
     local nothing_changed=true
     local changes_validated=true
     for short_setting in "${!old[@]}"; do
@@ -248,12 +248,12 @@ _ynh_app_config_validate() {
         fi
     done
     if [[ "$nothing_changed" == "true" ]]; then
-        ynh_print_info --message="Nothing has changed"
+        ynh_print_info "Nothing has changed"
         exit 0
     fi
 
     # Run validation if something is changed
-    ynh_script_progression --message="Validating the new configuration..." --weight=1
+    ynh_script_progression "Validating the new configuration..."
 
     for short_setting in "${!old[@]}"; do
         [[ "${changed[$short_setting]}" == "false" ]] && continue
@@ -320,7 +320,7 @@ ynh_app_action_run() {
         #ynh_return "result:"
         #ynh_return "$(echo "${result}" | sed 's/^/  /g')"
     else
-        ynh_die --message="No handler defined in app's script for action $1. If you are the maintainer of this app, you should define '$runner'"
+        ynh_die "No handler defined in app's script for action $1. If you are the maintainer of this app, you should define '$runner'"
     fi
 }
 
@@ -339,14 +339,14 @@ ynh_app_config_run() {
         ;;
     apply)
         max_progression=4
-        ynh_script_progression --message="Reading config panel description and current configuration..."
+        ynh_script_progression "Reading config panel description and current configuration..."
         ynh_app_config_get
 
         ynh_app_config_validate
 
-        ynh_script_progression --message="Applying the new configuration..."
+        ynh_script_progression "Applying the new configuration..."
         ynh_app_config_apply
-        ynh_script_progression --message="Configuration of $app completed" --last
+        ynh_script_progression "Configuration of $app completed"
         ;;
     *)
         ynh_app_action_run $1

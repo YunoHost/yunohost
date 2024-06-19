@@ -65,7 +65,7 @@ ynh_config_add_fail2ban() {
 
     # If failregex is provided, Build a config file on-the-fly using $logpath and $failregex
     if [[ -n "${failregex:-}" ]]; then
-        test -n "$logpath" || ynh_die --message="ynh_config_add_fail2ban expects a logfile path as first argument and received nothing."
+        test -n "$logpath" || ynh_die "ynh_config_add_fail2ban expects a logfile path as first argument and received nothing."
 
         echo "
 [__APP__]
@@ -109,8 +109,8 @@ ignoreregex =
 
     local fail2ban_error="$(journalctl --no-hostname --unit=fail2ban | tail --lines=50 | grep "WARNING.*$app.*")"
     if [[ -n "$fail2ban_error" ]]; then
-        ynh_print_warn --message="Fail2ban failed to load the jail for $app"
-        ynh_print_warn --message="${fail2ban_error#*WARNING}"
+        ynh_print_warn "Fail2ban failed to load the jail for $app"
+        ynh_print_warn "${fail2ban_error#*WARNING}"
     fi
 }
 

@@ -52,7 +52,7 @@ _ynh_load_ruby_in_path_and_other_tweaks() {
 # Requires YunoHost version 3.2.2 or higher.
 ynh_ruby_install () {
 
-    [[ -n "${ruby_version:-}" ]] || ynh_die --message="\$ruby_version should be defined prior to calling ynh_ruby_install"
+    [[ -n "${ruby_version:-}" ]] || ynh_die "\$ruby_version should be defined prior to calling ynh_ruby_install"
 
     # Load rbenv path in PATH
     local CLEAR_PATH="$rbenv_install_dir/bin:$PATH"
@@ -252,7 +252,7 @@ _ynh_ruby_cleanup () {
 ynh_ruby_try_bash_extension() {
   if [ -x src/configure ]; then
     src/configure && make -C src 2>&1 || {
-      ynh_print_info --message="Optional bash extension failed to build, but things will still work normally."
+      ynh_print_info "Optional bash extension failed to build, but things will still work normally."
     }
   fi
 }

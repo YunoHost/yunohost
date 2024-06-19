@@ -3,7 +3,7 @@
 ynh_go_try_bash_extension() {
   if [ -x src/configure ]; then
     src/configure && make -C src || {
-      ynh_print_info --message="Optional bash extension failed to build, but things will still work normally."
+      ynh_print_info "Optional bash extension failed to build, but things will still work normally."
     }
   fi
 }
@@ -53,7 +53,7 @@ _ynh_load_go_in_path_and_other_tweaks() {
 # Requires YunoHost version 3.2.2 or higher.
 ynh_go_install () {
 
-    [[ -n "${go_version:-}" ]] || ynh_die --message="\$go_version should be defined prior to calling ynh_go_install"
+    [[ -n "${go_version:-}" ]] || ynh_die "\$go_version should be defined prior to calling ynh_go_install"
 
     # Load goenv path in PATH
     local CLEAR_PATH="$goenv_install_dir/bin:$PATH"
@@ -68,11 +68,11 @@ ynh_go_install () {
     mkdir -p $goenv_install_dir
     pushd "$goenv_install_dir"
         if ! [ -x "$goenv_install_dir/bin/goenv" ]; then
-            ynh_print_info --message="Downloading goenv..."
+            ynh_print_info "Downloading goenv..."
             git init -q
             git remote add origin https://github.com/syndbg/goenv.git 
         else
-            ynh_print_info --message="Updating goenv..."
+            ynh_print_info "Updating goenv..."
         fi
         git fetch -q --tags --prune origin
         local git_latest_tag=$(git describe --tags "$(git rev-list --tags --max-count=1)")
@@ -85,11 +85,11 @@ ynh_go_install () {
     mkdir -p "$goenv_install_dir/plugins/xxenv-latest"
     pushd "$goenv_install_dir/plugins/xxenv-latest"
         if ! [ -x "$goenv_install_dir/plugins/xxenv-latest/bin/goenv-latest" ]; then
-            ynh_print_info --message="Downloading xxenv-latest..."
+            ynh_print_info "Downloading xxenv-latest..."
             git init -q
             git remote add origin https://github.com/momo-lab/xxenv-latest.git 
         else
-            ynh_print_info --message="Updating xxenv-latest..."
+            ynh_print_info "Updating xxenv-latest..."
         fi
         git fetch -q --tags --prune origin
         local git_latest_tag=$(git describe --tags "$(git rev-list --tags --max-count=1)")
@@ -110,7 +110,7 @@ ynh_go_install () {
 
     # Install the requested version of Go
     local final_go_version=$(goenv latest --print "$go_version")
-    ynh_print_info --message="Installation of Go-$final_go_version"
+    ynh_print_info "Installation of Go-$final_go_version"
     goenv install --quiet --skip-existing "$final_go_version" 2>&1
 
     # Store go_version into the config of this app
@@ -181,7 +181,7 @@ _ynh_go_cleanup () {
     do
         if ! `echo ${required_go_versions} | grep "${installed_go_version}" 1>/dev/null 2>&1`
         then
-            ynh_print_info --message="Removing of Go-$installed_go_version"
+            ynh_print_info "Removing of Go-$installed_go_version"
             $goenv_install_dir/bin/goenv uninstall --force "$installed_go_version"
         fi
     done
@@ -190,7 +190,7 @@ _ynh_go_cleanup () {
     if [[ ! $required_go_versions ]]
     then
         # Remove goenv environment configuration
-        ynh_print_info --message="Removing of goenv"
+        ynh_print_info "Removing of goenv"
         ynh_secure_remove --file="$goenv_install_dir"
         ynh_secure_remove --file="/etc/profile.d/goenv.sh"
     fi

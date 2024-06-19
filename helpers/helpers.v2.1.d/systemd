@@ -131,12 +131,12 @@ ynh_systemd_action() {
             if [ "$log_path" == "systemd" ]; then
                 # For systemd services, we in fact dont rely on the templog, which for some reason is not reliable, but instead re-read journalctl every iteration, starting at the timestamp where we triggered the action
                 if journalctl --unit=$service --since="$time_start" --quiet --no-pager --no-hostname | grep --extended-regexp --quiet "$wait_until"; then
-                    ynh_print_info --message="The service $service has correctly executed the action ${action}."
+                    ynh_print_info "The service $service has correctly executed the action ${action}."
                     break
                 fi
             else
                 if grep --extended-regexp --quiet "$wait_until" "$templog"; then
-                    ynh_print_info --message="The service $service has correctly executed the action ${action}."
+                    ynh_print_info "The service $service has correctly executed the action ${action}."
                     break
                 fi
             fi
@@ -158,11 +158,11 @@ ynh_systemd_action() {
             echo "" >&2
         fi
         if [ $i -eq $timeout ]; then
-            ynh_print_warn --message="The service $service didn't fully executed the action ${action} before the timeout."
-            ynh_print_warn --message="Please find here an extract of the end of the log of the service $service:"
+            ynh_print_warn "The service $service didn't fully executed the action ${action} before the timeout."
+            ynh_print_warn "Please find here an extract of the end of the log of the service $service:"
             journalctl --quiet --no-hostname --no-pager --lines=$length --unit=$service >&2
             if [ -e "$log_path" ]; then
-                ynh_print_warn --message="\-\-\-"
+                ynh_print_warn "==="
                 tail --lines=$length "$log_path" >&2
             fi
         fi

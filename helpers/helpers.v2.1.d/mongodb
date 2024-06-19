@@ -206,7 +206,7 @@ ynh_mongo_remove_db() {
     if ynh_mongo_database_exists --database=$db_name; then  # Check if the database exists
         ynh_mongo_drop_db --database=$db_name  # Remove the database
     else
-        ynh_print_warn --message="Database $db_name not found"
+        ynh_print_warn "Database $db_name not found"
     fi
 
     # Remove mongo user if it exists
@@ -221,17 +221,17 @@ ynh_mongo_remove_db() {
 #
 ynh_install_mongo() {
 
-    [[ -n "${mongo_version:-}" ]] || ynh_die --message="\$mongo_version should be defined prior to calling ynh_install_mongo"
+    [[ -n "${mongo_version:-}" ]] || ynh_die "\$mongo_version should be defined prior to calling ynh_install_mongo"
 
-    ynh_print_info --message="Installing MongoDB Community Edition ..."
+    ynh_print_info "Installing MongoDB Community Edition ..."
     local mongo_debian_release=$YNH_DEBIAN_VERSION
 
     if [[ $(cat /proc/cpuinfo) != *"avx"* && "$mongo_version" != "4.4" ]]; then
-        ynh_print_warn --message="Installing Mongo 4.4 as $mongo_version is not compatible with your cpu (see https://docs.mongodb.com/manual/administration/production-notes/#x86_64)."
+        ynh_print_warn "Installing Mongo 4.4 as $mongo_version is not compatible with your cpu (see https://docs.mongodb.com/manual/administration/production-notes/#x86_64)."
         mongo_version="4.4"
     fi
     if [[ "$mongo_version" == "4.4" ]]; then
-        ynh_print_warn --message="Switched to buster install as Mongo 4.4 is not compatible with $mongo_debian_release."
+        ynh_print_warn "Switched to buster install as Mongo 4.4 is not compatible with $mongo_debian_release."
         mongo_debian_release=buster
     fi
 
@@ -261,7 +261,7 @@ ynh_remove_mongo() {
     # Only remove the mongodb service if it is not installed.
     if ! _ynh_apt_package_is_installed "mongodb*"
     then
-        ynh_print_info --message="Removing MongoDB service..."
+        ynh_print_info "Removing MongoDB service..."
         mongodb_servicename=mongod
         # Remove the mongodb service
         yunohost service remove $mongodb_servicename
