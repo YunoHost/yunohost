@@ -241,7 +241,7 @@ ynh_install_mongo() {
     # Make sure MongoDB is started and enabled
     systemctl enable $mongodb_servicename --quiet
     systemctl daemon-reload --quiet
-    ynh_systemd_action --service=$mongodb_servicename --action=restart --line_match="aiting for connections" --log_path="/var/log/mongodb/$mongodb_servicename.log"
+    ynh_systemd_action --service=$mongodb_servicename --action=restart --wait_until="aiting for connections" --log_path="/var/log/mongodb/$mongodb_servicename.log"
 
     # Integrate MongoDB service in YunoHost
     yunohost service add $mongodb_servicename --description="MongoDB daemon" --log="/var/log/mongodb/$mongodb_servicename.log"

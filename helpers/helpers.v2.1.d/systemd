@@ -53,10 +53,10 @@ ynh_config_remove_systemd() {
 
 # Start (or other actions) a service,  print a log in case of failure and optionnaly wait until the service is completely started
 #
-# usage: ynh_systemd_action [--service=service] [--action=action] [ [--line_match="line to match"] [--log_path=log_path] [--timeout=300] [--length=20] ]
+# usage: ynh_systemd_action [--service=service] [--action=action] [ [--wait_until="line to match"] [--log_path=log_path] [--timeout=300] [--length=20] ]
 # | arg: -n, --service= - Name of the service to start. Default : `$app`
 # | arg: -a, --action=       - Action to perform with systemctl. Default: start
-# | arg: -l, --line_match=   - Line to match - The line to find in the log to attest the service have finished to boot. If not defined it don't wait until the service is completely started.
+# | arg: -w, --wait_until=   - The pattern to find in the log to attest the service is effectively fully started.
 # | arg: -p, --log_path=     - Log file - Path to the log file. Default : `/var/log/$app/$app.log`
 # | arg: -t, --timeout=      - Timeout - The maximum time to wait before ending the watching. Default : 300 seconds.
 # | arg: -e, --length=       - Length of the error log displayed for debugging : Default : 20
@@ -64,17 +64,17 @@ ynh_config_remove_systemd() {
 # Requires YunoHost version 3.5.0 or higher.
 ynh_systemd_action() {
     # ============ Argument parsing =============
-    local -A args_array=([n]=service= [a]=action= [l]=line_match= [p]=log_path= [t]=timeout= [e]=length=)
+    local -A args_array=([n]=service= [a]=action= [w]=wait_until= [p]=log_path= [t]=timeout= [e]=length=)
     local service
     local action
-    local line_match
+    local wait_until
     local length
     local log_path
     local timeout
     ynh_handle_getopts_args "$@"
     service="${service:-$app}"
     action=${action:-start}
-    line_match=${line_match:-}
+    wait_until=${wait_until:-}
     length=${length:-20}
     log_path="${log_path:-/var/log/$service/$service.log}"
     timeout=${timeout:-300}
@@ -86,7 +86,7 @@ ynh_systemd_action() {
     fi
 
     # Start to read the log
-    if [[ -n "$line_match" ]]; then
+    if [[ -n "$wait_until" ]]; then
         local templog="$(mktemp)"
         # Following the starting of the app in its log
         if [ "$log_path" == "systemd" ]; then
@@ -121,8 +121,8 @@ ynh_systemd_action() {
         return 1
     fi
 
-    # Start the timeout and try to find line_match
-    if [[ -n "${line_match:-}" ]]; then
+    # Start the timeout and try to find wait_until
+    if [[ -n "${wait_until:-}" ]]; then
         set +x
         local i=0
         local starttime=$(date +%s)
@@ -130,12 +130,12 @@ ynh_systemd_action() {
             # Read the log until the sentence is found, that means the app finished to start. Or run until the timeout
             if [ "$log_path" == "systemd" ]; then
                 # For systemd services, we in fact dont rely on the templog, which for some reason is not reliable, but instead re-read journalctl every iteration, starting at the timestamp where we triggered the action
-                if journalctl --unit=$service --since="$time_start" --quiet --no-pager --no-hostname | grep --extended-regexp --quiet "$line_match"; then
+                if journalctl --unit=$service --since="$time_start" --quiet --no-pager --no-hostname | grep --extended-regexp --quiet "$wait_until"; then
                     ynh_print_info --message="The service $service has correctly executed the action ${action}."
                     break
                 fi
             else
-                if grep --extended-regexp --quiet "$line_match" "$templog"; then
+                if grep --extended-regexp --quiet "$wait_until" "$templog"; then
                     ynh_print_info --message="The service $service has correctly executed the action ${action}."
                     break
                 fi
