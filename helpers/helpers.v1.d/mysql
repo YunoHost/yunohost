@@ -184,7 +184,7 @@ ynh_mysql_user_exists() {
 #
 ynh_mysql_database_exists() {
     local database=$1
-    mysqlshow | grep -q "^| $database "
+    mysqlshow | grep -qE "^|\s+$database\s+|"
 }
 
 # Drop a user
