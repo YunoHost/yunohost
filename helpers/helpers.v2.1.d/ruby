@@ -42,7 +42,7 @@ _ynh_load_ruby_in_path_and_other_tweaks() {
 # When not possible (e.g. in systemd service definition), please use direct path
 # to rbenv shims (e.g. $RBENV_ROOT/shims/bundle)
 #
-# usage: ynh_install_ruby
+# usage: ynh_ruby_install
 #
 # Adds the appropriate, specific version of ruby to the PATH variable (which
 # is also exported, to ease the use of ynh_exec_as_app). Also define variable
@@ -50,9 +50,9 @@ _ynh_load_ruby_in_path_and_other_tweaks() {
 # (Environment="PATH=__PATH_WITH_RUBY__")
 #
 # Requires YunoHost version 3.2.2 or higher.
-ynh_install_ruby () {
+ynh_ruby_install () {
 
-    [[ -n "${ruby_version:-}" ]] || ynh_die --message="\$ruby_version should be defined prior to calling ynh_install_ruby"
+    [[ -n "${ruby_version:-}" ]] || ynh_die --message="\$ruby_version should be defined prior to calling ynh_ruby_install"
 
     # Load rbenv path in PATH
     local CLEAR_PATH="$rbenv_install_dir/bin:$PATH"
@@ -171,7 +171,7 @@ ynh_install_ruby () {
     rbenv alias $app $final_ruby_version
 
     # Cleanup Ruby versions
-    ynh_cleanup_ruby
+    _ynh_ruby_cleanup
 
     # Set environment for Ruby users
     echo  "#rbenv
@@ -183,15 +183,15 @@ eval \"\$(rbenv init -)\"
     # Load the environment
     eval "$(rbenv init -)"
 
-    _ynh_load_ruby_in_path_and_other_variable_tweaks
+    _ynh_load_ruby_in_path_and_other_tweaks
 }
 
 # Remove the version of Ruby used by the app.
 #
 # This helper will also cleanup Ruby versions
 #
-# usage: ynh_remove_ruby
-ynh_remove_ruby () {
+# usage: ynh_ruby_remove
+ynh_ruby_remove () {
     local ruby_version=$(ynh_app_setting_get --key=ruby_version)
 
     # Load rbenv path in PATH
@@ -206,7 +206,7 @@ ynh_remove_ruby () {
     ynh_app_setting_delete --key=ruby_version
 
     # Cleanup Ruby versions
-    ynh_cleanup_ruby
+    _ynh_ruby_cleanup
 }
 
 # Remove no more needed versions of Ruby used by the app.
@@ -214,9 +214,7 @@ ynh_remove_ruby () {
 # This helper will check what Ruby version are no more required,
 # and uninstall them
 # If no app uses Ruby, rbenv will be also removed.
-#
-# usage: ynh_cleanup_ruby
-ynh_cleanup_ruby () {
+_ynh_ruby_cleanup () {
 
     # List required Ruby versions
     local installed_apps=$(yunohost app list | grep -oP 'id: \K.*$')

@@ -307,12 +307,3 @@ ynh_delete_file_checksum() {
     local checksum_setting_name=checksum_${file//[\/ ]/_} # Replace all '/' and ' ' by '_'
     ynh_app_setting_delete --key=$checksum_setting_name
 }
-
-# Checks a backup archive exists
-#
-# [internal]
-#
-ynh_backup_archive_exists() {
-    yunohost backup list --output-as json --quiet \
-        | jq -e --arg archive "$1" '.archives | index($archive)' >/dev/null
-}

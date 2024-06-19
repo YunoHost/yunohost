@@ -2,17 +2,17 @@
 
 # Create a dedicated systemd config
 #
-# usage: ynh_add_systemd_config [--service=service] [--template=template]
+# usage: ynh_config_add_systemd [--service=service] [--template=template]
 # | arg: -s, --service=     - Service name (optionnal, `$app` by default)
 # | arg: -t, --template=    - Name of template file (optionnal, this is 'systemd' by default, meaning `../conf/systemd.service` will be used as template)
 #
 # This will use the template `../conf/<templatename>.service`.
 #
-# See the documentation of `ynh_add_config` for a description of the template
+# See the documentation of `ynh_config_add` for a description of the template
 # format and how placeholders are replaced with actual variables.
 #
 # Requires YunoHost version 4.1.0 or higher.
-ynh_add_systemd_config() {
+ynh_config_add_systemd() {
     # ============ Argument parsing =============
     local -A args_array=([s]=service= [t]=template=)
     local service
@@ -22,7 +22,7 @@ ynh_add_systemd_config() {
     template="${template:-systemd.service}"
     # ===========================================
 
-    ynh_add_config --template="$template" --destination="/etc/systemd/system/$service.service"
+    ynh_config_add --template="$template" --destination="/etc/systemd/system/$service.service"
 
     systemctl enable $service --quiet
     systemctl daemon-reload
@@ -30,11 +30,11 @@ ynh_add_systemd_config() {
 
 # Remove the dedicated systemd config
 #
-# usage: ynh_remove_systemd_config [--service=service]
+# usage: ynh_config_remove_systemd [--service=service]
 # | arg: -s, --service=     - Service name (optionnal, $app by default)
 #
 # Requires YunoHost version 2.7.2 or higher.
-ynh_remove_systemd_config() {
+ynh_config_remove_systemd() {
     # ============ Argument parsing =============
     local -A args_array=([s]=service=)
     local service
@@ -117,7 +117,7 @@ ynh_systemd_action() {
         if [ -e "$log_path" ]; then
             tail --lines=$length "$log_path" >&2
         fi
-        ynh_clean_check_starting
+        _ynh_clean_check_starting
         return 1
     fi
 
@@ -166,16 +166,11 @@ ynh_systemd_action() {
                 tail --lines=$length "$log_path" >&2
             fi
         fi
-        ynh_clean_check_starting
+        _ynh_clean_check_starting
     fi
 }
 
-# Clean temporary process and file used by ynh_check_starting
-#
-# [internal]
-#
-# Requires YunoHost version 3.5.0 or higher.
-ynh_clean_check_starting() {
+_ynh_clean_check_starting() {
     if [ -n "${pid_tail:-}" ]; then
         # Stop the execution of tail.
         kill -SIGTERM $pid_tail 2>&1

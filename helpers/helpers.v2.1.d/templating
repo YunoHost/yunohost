@@ -2,15 +2,15 @@
 
 # Create a dedicated config file from a template
 #
-# usage: ynh_add_config --template="template" --destination="destination"
+# usage: ynh_config_add --template="template" --destination="destination"
 # | arg: -t, --template=     - Template config file to use
 # | arg: -d, --destination=  - Destination of the config file
 # | arg: -j, --jinja         - Use jinja template instead of legacy __MY_VAR__
 #
 # examples:
-#    ynh_add_config --template=".env" --destination="$install_dir/.env" use the template file "../conf/.env"
-#    ynh_add_config --jinja --template="config.j2" --destination="$install_dir/config" use the template file "../conf/config.j2"
-#    ynh_add_config --template="/etc/nginx/sites-available/default" --destination="etc/nginx/sites-available/mydomain.conf"
+#    ynh_config_add --template=".env" --destination="$install_dir/.env" use the template file "../conf/.env"
+#    ynh_config_add --jinja --template="config.j2" --destination="$install_dir/config" use the template file "../conf/config.j2"
+#    ynh_config_add --template="/etc/nginx/sites-available/default" --destination="etc/nginx/sites-available/mydomain.conf"
 #
 ##
 ## How it works in "legacy" mode
@@ -72,7 +72,7 @@
 # into the app settings when configuration is done.
 #
 # Requires YunoHost version 4.1.0 or higher.
-ynh_add_config() {
+ynh_config_add() {
     # ============ Argument parsing =============
     local -A args_array=([t]=template= [d]=destination= [j]=jinja)
     local template

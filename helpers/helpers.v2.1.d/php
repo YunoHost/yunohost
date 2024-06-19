@@ -17,7 +17,7 @@ fi
 
 # Create a dedicated PHP-FPM config
 #
-# usage: ynh_add_fpm_config
+# usage: ynh_config_add_phpfpm
 #
 # This helper assumes the app has an conf/extra_php-fpm.conf snippet
 #
@@ -58,7 +58,7 @@ fi
 #   children ready to answer.
 #
 # Requires YunoHost version 4.1.0 or higher.
-ynh_add_fpm_config() {
+ynh_config_add_phpfpm() {
     # ============ Argument parsing =============
     local -A args_array=([g]=group=)
     local group
@@ -68,6 +68,7 @@ ynh_add_fpm_config() {
 
     # If the PHP version changed, remove the old fpm conf
     # (NB: This stuff is also handled by the apt helper, which is usually triggered before this helper)
+    # FIXME: so is this still needed @_@
     local old_php_version=$(ynh_app_setting_get --key=php_version)
     if [ -n "$old_php_version" ] && [ "$old_php_version" != "$php_version" ]; then
         local old_php_fpm_config_dir=$(ynh_app_setting_get --key=fpm_config_dir)
@@ -86,12 +87,13 @@ ynh_add_fpm_config() {
     # Create the directory for FPM pools
     mkdir --parents "$fpm_config_dir/pool.d"
 
+    # FIXME: zzzz do we really need those ...
     ynh_app_setting_set --key=fpm_config_dir --value="$fpm_config_dir"
     ynh_app_setting_set --key=fpm_service --value="$fpm_service"
     ynh_app_setting_set --key=php_version --value=$php_version
 
     # Define the values to use for the configuration of PHP.
-    ynh_get_scalable_phpfpm
+    _ynh_get_scalable_phpfpm
 
     local phpfpm_group=$([[ -n "$group" ]] && echo "$group" || echo "$app")
     local phpfpm_path="$YNH_APP_BASEDIR/conf/php-fpm.conf"
@@ -131,13 +133,12 @@ pm.process_idle_timeout = 10s
         cat $YNH_APP_BASEDIR/conf/extra_php-fpm.conf >>"$phpfpm_path"
     fi
 
-    local finalphpconf="$fpm_config_dir/pool.d/$app.conf"
-    ynh_add_config --template="$phpfpm_path" --destination="$finalphpconf"
+    ynh_config_add --template="$phpfpm_path" --destination="$fpm_config_dir/pool.d/$app.conf"
 
     # Validate that the new php conf doesn't break php-fpm entirely
     if ! php-fpm${php_version} --test 2>/dev/null; then
         php-fpm${php_version} --test || true
-        ynh_safe_rm "$finalphpconf"
+        ynh_safe_rm "$fpm_config_dir/pool.d/$app.conf"
         ynh_die --message="The new configuration broke php-fpm?"
     fi
     ynh_systemd_action --service=$fpm_service --action=reload
@@ -145,22 +146,21 @@ pm.process_idle_timeout = 10s
 
 # Remove the dedicated PHP-FPM config
 #
-# usage: ynh_remove_fpm_config
+# usage: ynh_config_remove_phpfpm
 #
 # Requires YunoHost version 2.7.2 or higher.
-ynh_remove_fpm_config() {
+ynh_config_remove_phpfpm() {
     local fpm_config_dir=$(ynh_app_setting_get --key=fpm_config_dir)
-    local fpm_service=$(ynh_app_setting_get --key=fpm_service)
 
     ynh_safe_rm "$fpm_config_dir/pool.d/$app.conf"
-    ynh_systemd_action --service=$fpm_service --action=reload
+    ynh_systemd_action --service="php${php_version}-fpm" --action=reload
 }
 
 # Define the values to configure PHP-FPM
 #
 # [internal]
 #
-# usage: ynh_get_scalable_phpfpm
+# usage: _ynh_get_scalable_phpfpm
 # Footprint can be defined via the "fpm_footprint", to be set prior to calling this helper
 # low    - Less than 20 MB of RAM by pool.
 # medium - Between 20 MB and 40 MB of RAM by pool.
@@ -174,7 +174,7 @@ ynh_remove_fpm_config() {
 # medium - Low usage, few people or/and publicly accessible.
 # high   - High usage, frequently visited website.
 #
-ynh_get_scalable_phpfpm() {
+_ynh_get_scalable_phpfpm() {
 
     # If no usage provided, default to the value existing in setting ... or to low
     local fpm_usage_in_setting=$(ynh_app_setting_get --key=fpm_usage)
@@ -294,12 +294,12 @@ ynh_composer_exec() {
 #
 # The installed version is defined by $composer_version which should be defined as global prior to calling this helper
 #
-# usage: ynh_install_composer [--workdir=$install_dir] [--install_args="--optimize-autoloader"]
+# usage: ynh_composer_install [--workdir=$install_dir] [--install_args="--optimize-autoloader"]
 # | arg: -w, --workdir - The directory from where the command will be executed. Default $install_dir.
 # | arg: -a, --install_args - Additional arguments provided to the composer install. Argument --no-dev already include
 #
 # Requires YunoHost version 4.2 or higher.
-ynh_install_composer() {
+ynh_composer_install() {
     # ============ Argument parsing =============
     local -A args_array=([w]=workdir= [a]=install_args=)
     local workdir
@@ -309,7 +309,7 @@ ynh_install_composer() {
     install_args="${install_args:-}"
     # ===========================================
 
-    [[ -n "${composer_version}" ]] || ynh_die --message="\$composer_version should be defined before calling ynh_install_composer. (In the past, this was called \$YNH_COMPOSER_VERSION)"
+    [[ -n "${composer_version}" ]] || ynh_die --message="\$composer_version should be defined before calling ynh_composer_install. (In the past, this was called \$YNH_COMPOSER_VERSION)"
 
     [[ ! -e "$workdir/composer.phar" ]] || ynh_safe_rm $workdir/composer.phar
 

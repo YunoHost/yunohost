@@ -504,7 +504,7 @@ ynh_app_upgrading_from_version_before_or_equal_to() {
 }
 
 # Check if we should enforce sane default permissions (= disable rwx for 'others')
-# on file/folders handled with ynh_setup_source and ynh_add_config
+# on file/folders handled with ynh_setup_source and ynh_config_add
 #
 # [internal]
 #

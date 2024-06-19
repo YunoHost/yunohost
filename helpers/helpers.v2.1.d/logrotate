@@ -4,7 +4,7 @@ FIRST_CALL_TO_LOGROTATE="true"
 
 # Add a logrotate configuration to manage log files / log directory
 #
-# usage: ynh_add_logrotate_config [/path/to/log/file/or/folder]
+# usage: ynh_config_add_logrotate [/path/to/log/file/or/folder]
 #
 # If not argument is provided, `/var/log/$app/*.log` is used as default.
 #
@@ -12,7 +12,7 @@ FIRST_CALL_TO_LOGROTATE="true"
 # (ie it doesnt come from a specific app template like nginx or systemd conf)
 #
 # Requires YunoHost version 2.6.4 or higher.
-ynh_add_logrotate_config() {
+ynh_config_add_logrotate() {
 
     logfile="$1"
 
@@ -70,7 +70,7 @@ EOF
 # usage: ynh_remove_logrotate
 #
 # Requires YunoHost version 2.6.4 or higher.
-ynh_remove_logrotate_config() {
+ynh_config_remove_logrotate() {
     if [ -e "/etc/logrotate.d/$app" ]; then
         rm "/etc/logrotate.d/$app"
     fi

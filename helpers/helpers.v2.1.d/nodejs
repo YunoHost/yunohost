@@ -30,7 +30,7 @@ _ynh_load_nodejs_in_path_and_other_tweaks() {
 #
 # The installed version is defined by $nodejs_version which should be defined as global prior to calling this helper
 #
-# usage: ynh_install_nodejs
+# usage: ynh_nodejs_install
 #
 # `n` (Node version management) uses the `PATH` variable to store the path of the version of node it is going to use.
 # That's how it changes the version
@@ -41,10 +41,10 @@ _ynh_load_nodejs_in_path_and_other_tweaks() {
 # (Environment="PATH=__PATH_WITH_NODEJS__")
 #
 # Requires YunoHost version 2.7.12 or higher.
-ynh_install_nodejs() {
+ynh_nodejs_install() {
     # Use n, https://github.com/tj/n to manage the nodejs versions
 
-    [[ -n "${nodejs_version:-}" ]] || ynh_die --message="\$nodejs_version should be defined prior to calling ynh_install_nodejs"
+    [[ -n "${nodejs_version:-}" ]] || ynh_die --message="\$nodejs_version should be defined prior to calling ynh_nodejs_install"
 
     # Create $n_install_dir
     mkdir --parents "$n_install_dir"
@@ -95,23 +95,23 @@ ynh_install_nodejs() {
     ynh_app_setting_set --key=nodejs_version --value=$nodejs_version
 
     # Build the update script and set the cronjob
-    ynh_cron_upgrade_node
+    _ynh_cron_upgrade_node
 
     _ynh_load_nodejs_in_path_and_other_tweaks
 }
 
 # Remove the version of node used by the app.
 #
-# usage: ynh_remove_nodejs
+# usage: ynh_nodejs_remove
 #
 # This helper will check if another app uses the same version of node.
 # - If not, this version of node will be removed.
 # - If no other app uses node, n will be also removed.
 #
 # Requires YunoHost version 2.7.12 or higher.
-ynh_remove_nodejs() {
+ynh_nodejs_remove() {
 
-    [[ -n "${nodejs_version:-}" ]] || ynh_die --message="\$nodejs_version should be defined prior to calling ynh_install_nodejs"
+    [[ -n "${nodejs_version:-}" ]] || ynh_die --message="\$nodejs_version should be defined prior to calling ynh_nodejs_remove"
 
     # Remove the line for this app
     sed --in-place "/$YNH_APP_INSTANCE_NAME:$nodejs_version/d" "$n_install_dir/ynh_app_version"
@@ -136,10 +136,10 @@ ynh_remove_nodejs() {
 #
 # This cron will check and update all minor node versions used by your apps.
 #
-# usage: ynh_cron_upgrade_node
+# usage: _ynh_cron_upgrade_node
 #
 # Requires YunoHost version 2.7.12 or higher.
-ynh_cron_upgrade_node() {
+_ynh_cron_upgrade_node() {
     # Build the update script
     cat >"$n_install_dir/node_update.sh" <<EOF
 #!/bin/bash
