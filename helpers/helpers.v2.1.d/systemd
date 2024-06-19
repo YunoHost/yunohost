@@ -30,23 +30,14 @@ ynh_config_add_systemd() {
 
 # Remove the dedicated systemd config
 #
-# usage: ynh_config_remove_systemd [--service=service]
-# | arg: -s, --service=     - Service name (optionnal, $app by default)
-#
-# Requires YunoHost version 2.7.2 or higher.
+# usage: ynh_config_remove_systemd service
+# | arg: service   - Service name (optionnal, $app by default)
 ynh_config_remove_systemd() {
-    # ============ Argument parsing =============
-    local -A args_array=([s]=service=)
-    local service
-    ynh_handle_getopts_args "$@"
-    local service="${service:-$app}"
-    # ===========================================
-
-    local finalsystemdconf="/etc/systemd/system/$service.service"
-    if [ -e "$finalsystemdconf" ]; then
+    local service="${1:-$app}"
+    if [ -e "/etc/systemd/system/$service.service" ]; then
         ynh_systemd_action --service=$service --action=stop
         systemctl disable $service --quiet
-        ynh_safe_rm "$finalsystemdconf"
+        ynh_safe_rm "/etc/systemd/system/$service.service"
         systemctl daemon-reload
     fi
 }
