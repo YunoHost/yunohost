@@ -91,7 +91,7 @@ ynh_config_add() {
         ynh_die "The provided template $template doesn't exist"
     fi
 
-    ynh_backup_if_checksum_is_different --file="$destination"
+    ynh_backup_if_checksum_is_different "$destination"
 
     # Make sure to set the permissions before we copy the file
     # This is to cover a case where an attacker could have
@@ -113,7 +113,7 @@ ynh_config_add() {
         ynh_replace_vars --file="$destination"
     fi
 
-    ynh_store_file_checksum --file="$destination"
+    ynh_store_file_checksum "$destination"
 }
 
 # Replace variables in a file

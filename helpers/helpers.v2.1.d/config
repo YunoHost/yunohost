@@ -75,16 +75,19 @@ _ynh_app_config_apply_one() {
             fi
             local bind_file="$(echo "$bind" | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/)"
             if [[ "${!short_setting}" == "" ]]; then
-                ynh_backup_if_checksum_is_different --file="$bind_file"
+                ynh_backup_if_checksum_is_different "$bind_file"
                 ynh_safe_rm "$bind_file"
-                ynh_delete_file_checksum --file="$bind_file"
+                ynh_delete_file_checksum "$bind_file"
                 ynh_print_info "File '$bind_file' removed"
             else
-                ynh_backup_if_checksum_is_different --file="$bind_file"
+                ynh_backup_if_checksum_is_different "$bind_file"
                 if [[ "${!short_setting}" != "$bind_file" ]]; then
                     cp "${!short_setting}" "$bind_file"
                 fi
-                ynh_store_file_checksum --file="$bind_file" --update_only
+                if _ynh_file_checksum_exists "$bind_file"
+                then
+                    ynh_store_file_checksum "$bind_file"
+                fi
                 ynh_print_info "File '$bind_file' overwritten with ${!short_setting}"
             fi
 
@@ -99,9 +102,12 @@ _ynh_app_config_apply_one() {
                 ynh_die "For technical reasons, multiline text '${short_setting}' can't be stored automatically  in a variable file, you have to create custom getter/setter"
             fi
             local bind_file="$(echo "$bind" | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/)"
-            ynh_backup_if_checksum_is_different --file="$bind_file"
+            ynh_backup_if_checksum_is_different "$bind_file"
             echo "${!short_setting}" >"$bind_file"
-            ynh_store_file_checksum --file="$bind_file" --update_only
+            if _ynh_file_checksum_exists "$bind_file"
+            then
+                ynh_store_file_checksum "$bind_file"
+            fi
             ynh_print_info "File '$bind_file' overwritten with the content provided in question '${short_setting}'"
 
         # Set value into a kind of key/value file
@@ -115,9 +121,12 @@ _ynh_app_config_apply_one() {
             bind_key_=${bind_key_:-$short_setting}
             local bind_file="$(echo "$bind" | cut -d: -f2 | sed s@__INSTALL_DIR__@${install_dir:-}@ | sed s/__APP__/$app/)"
 
-            ynh_backup_if_checksum_is_different --file="$bind_file"
+            ynh_backup_if_checksum_is_different "$bind_file"
             ynh_write_var_in_file --file="${bind_file}" --key="${bind_key_}" --value="${!short_setting}" --after="${bind_after}"
-            ynh_store_file_checksum --file="$bind_file" --update_only
+            if _ynh_file_checksum_exists "$bind_file"
+            then
+                ynh_store_file_checksum "$bind_file"
+            fi
 
             # We stored the info in settings in order to be able to upgrade the app
             ynh_app_setting_set --key=$short_setting --value="${!short_setting}"

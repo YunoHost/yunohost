@@ -191,7 +191,7 @@ _ynh_go_cleanup () {
     then
         # Remove goenv environment configuration
         ynh_print_info "Removing of goenv"
-        ynh_secure_remove --file="$goenv_install_dir"
-        ynh_secure_remove --file="/etc/profile.d/goenv.sh"
+        ynh_safe_rm "$goenv_install_dir"
+        ynh_safe_rm "/etc/profile.d/goenv.sh"
     fi
 }

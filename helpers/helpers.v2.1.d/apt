@@ -62,7 +62,7 @@ ynh_apt_install_dependencies() {
 
             if [[ -f "$old_php_finalphpconf" ]]
             then
-                ynh_backup_if_checksum_is_different --file="$old_php_finalphpconf"
+                ynh_backup_if_checksum_is_different "$old_php_finalphpconf"
                 ynh_remove_fpm_config
             fi
         fi

@@ -422,7 +422,7 @@ _acceptable_path_to_delete() {
     fi
 }
 
-# Remove a file or a directory securely
+# Remove a file or a directory, checking beforehand that it's not a disastrous location to rm such as entire /var or /home
 #
 # usage: ynh_safe_rm path_to_remove
 #

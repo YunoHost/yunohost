@@ -201,33 +201,18 @@ ynh_restore_everything() {
         done
 }
 
+_ynh_file_checksum_exists() {
+    local file=$1
+    local checksum_setting_name=checksum_${file//[\/ ]/_} # Replace all '/' and ' ' by '_'
+    [[ -n "$(ynh_app_setting_get --key=$checksum_setting_name)" ]]
+}
+
 # Calculate and store a file checksum into the app settings
 #
-# usage: ynh_store_file_checksum --file=file
-# | arg: -f, --file=    - The file on which the checksum will performed, then stored.
-#
-# $app should be defined when calling this helper
-#
-# Requires YunoHost version 2.6.4 or higher.
+# usage: ynh_store_file_checksum /path/to/file
 ynh_store_file_checksum() {
-    # ============ Argument parsing =============
-    local -A args_array=([f]=file= [u]=update_only)
-    local file
-    local update_only
-    update_only="${update_only:-0}"
-    ynh_handle_getopts_args "$@"
-    # ===========================================
-
+    local file=$1
     local checksum_setting_name=checksum_${file//[\/ ]/_} # Replace all '/' and ' ' by '_'
-
-    # If update only, we don't save the new checksum if no old checksum exist
-    if [ $update_only -eq 1 ]; then
-        local checksum_value=$(ynh_app_setting_get --key=$checksum_setting_name)
-        if [ -z "${checksum_value}" ]; then
-            unset backup_file_checksum
-            return 0
-        fi
-    fi
 
     ynh_app_setting_set --key=$checksum_setting_name --value=$(md5sum "$file" | cut --delimiter=' ' --fields=1)
 
@@ -250,21 +235,12 @@ ynh_store_file_checksum() {
 
 # Verify the checksum and backup the file if it's different
 #
-# usage: ynh_backup_if_checksum_is_different --file=file
-# | arg: -f, --file=    - The file on which the checksum test will be perfomed.
-# | ret: the name of a backup file, or nothing
+# usage: ynh_backup_if_checksum_is_different /path/to/file
 #
 # This helper is primarily meant to allow to easily backup personalised/manually
 # modified config files.
-#
-# Requires YunoHost version 2.6.4 or higher.
 ynh_backup_if_checksum_is_different() {
-    # ============ Argument parsing =============
-    local -A args_array=([f]=file=)
-    local file
-    ynh_handle_getopts_args "$@"
-    # ===========================================
-
+    local file=$1
     local checksum_setting_name=checksum_${file//[\/ ]/_} # Replace all '/' and ' ' by '_'
     local checksum_value=$(ynh_app_setting_get --key=$checksum_setting_name)
     # backup_file_checksum isn't declare as local, so it can be reuse by ynh_store_file_checksum
@@ -291,19 +267,9 @@ ynh_backup_if_checksum_is_different() {
 
 # Delete a file checksum from the app settings
 #
-# usage: ynh_delete_file_checksum --file=file
-# | arg: -f, --file=    - The file for which the checksum will be deleted
-#
-# $app should be defined when calling this helper
-#
-# Requires YunoHost version 3.3.1 or higher.
+# usage: ynh_delete_file_checksum /path/to/file
 ynh_delete_file_checksum() {
-    # ============ Argument parsing =============
-    local -A args_array=([f]=file=)
-    local file
-    ynh_handle_getopts_args "$@"
-    # ===========================================
-
+    local file=$1
     local checksum_setting_name=checksum_${file//[\/ ]/_} # Replace all '/' and ' ' by '_'
     ynh_app_setting_delete --key=$checksum_setting_name
 }

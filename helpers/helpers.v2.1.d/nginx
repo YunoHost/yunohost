@@ -28,7 +28,7 @@ ynh_config_add_nginx() {
         ynh_replace --match="^#root_path_only" --replace="" --file="$finalnginxconf"
     fi
 
-    ynh_store_file_checksum --file="$finalnginxconf"
+    ynh_store_file_checksum "$finalnginxconf"
 
     ynh_systemd_action --service=nginx --action=reload
 }
@@ -56,8 +56,8 @@ ynh_config_change_url_nginx() {
     # ynh_config_add inside ynh_config_add_nginx because the path may have 
     # changed if we're changing the domain too...)
     local old_nginx_conf_path=/etc/nginx/conf.d/$old_domain.d/$app.conf
-    ynh_backup_if_checksum_is_different --file="$old_nginx_conf_path"
-    ynh_delete_file_checksum --file="$old_nginx_conf_path"
+    ynh_backup_if_checksum_is_different "$old_nginx_conf_path"
+    ynh_delete_file_checksum "$old_nginx_conf_path"
     ynh_safe_rm "$old_nginx_conf_path"
 
     # Regen the nginx conf
