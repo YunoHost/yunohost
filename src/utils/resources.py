@@ -1458,6 +1458,8 @@ class DatabaseAppResource(AppResource):
             db_helper_name = "mysql"
         elif self.dbtype == "postgresql":
             db_helper_name = "psql"
+        else:
+            raise RuntimeError(f"Invalid dbtype {self.dbtype}")
 
         self._run_script(
             "deprovision", f"""
