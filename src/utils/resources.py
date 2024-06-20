@@ -155,6 +155,19 @@ class AppResource:
         elif manager and manager.current and "version" in manager.current:
             app_upstream_version = manager.current["version"].split("~")[0]
 
+        # FIXME : should use packaging.version to properly parse / compare versions >_>
+        self.helpers_version = None
+        if manager and manager.wanted and manager.wanted.get("integration", {}).get("helpers_version"):
+            self.helpers_version = manager.wanted.get("integration", {}).get("helpers_version")
+        elif manager and manager.current and manager.current.get("integration", {}).get("helpers_version"):
+            self.helpers_version = manager.current.get("integration", {}).get("helpers_version")
+        elif manager and manager.wanted and manager.wanted.get("packaging_format"):
+            self.helpers_version = str(manager.wanted.get("packaging_format"))
+        elif manager and manager.current and manager.current.get("packaging_format"):
+            self.helpers_version = str(manager.current.get("packaging_format"))
+        if not self.helpers_version:
+            self.helpers_version = "1"
+
         replacements: dict[str, str] = {
             "__APP__": self.app,
             "__YNH_ARCH__": system_arch(),
@@ -1182,11 +1195,19 @@ class AptDependenciesAppResource(AppResource):
             }
 
     def provision_or_update(self, context: Dict = {}):
-        script = " ".join(["ynh_install_app_dependencies", *self.packages])
+
+        if float(self.helpers_version) >= 2.1:
+            ynh_apt_install_dependencies = "ynh_apt_install_dependencies"
+            ynh_apt_install_dependencies_from_extra_repository = "ynh_apt_install_dependencies_from_extra_repository"
+        else:
+            ynh_apt_install_dependencies = "ynh_install_app_dependencies"
+            ynh_apt_install_dependencies_from_extra_repository = "ynh_install_extra_app_dependencies"
+
+        script = " ".join([ynh_apt_install_dependencies, *self.packages])
         for repo, values in self.extras.items():
             script += "\n" + " ".join(
                 [
-                    "ynh_install_extra_app_dependencies",
+                    ynh_apt_install_dependencies_from_extra_repository,
                     f"--repo='{values['repo']}'",
                     f"--key='{values['key']}'",
                     f"--package='{' '.join(values['packages'])}'",
@@ -1197,7 +1218,12 @@ class AptDependenciesAppResource(AppResource):
         self._run_script("provision_or_update", script)
 
     def deprovision(self, context: Dict = {}):
-        self._run_script("deprovision", "ynh_remove_app_dependencies")
+        if float(self.helpers_version) >= 2.1:
+            ynh_apt_remove_dependencies = "ynh_apt_remove_dependencies"
+        else:
+            ynh_apt_remove_dependencies = "ynh_remove_app_dependencies"
+
+        self._run_script("deprovision", ynh_apt_remove_dependencies)
 
 
 class PortsResource(AppResource):
