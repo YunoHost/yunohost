@@ -30,7 +30,7 @@ ynh_config_add_nginx() {
 
     ynh_store_file_checksum "$finalnginxconf"
 
-    ynh_systemd_action --service=nginx --action=reload
+    ynh_systemctl --service=nginx --action=reload
 }
 
 # Remove the dedicated nginx config
@@ -40,7 +40,7 @@ ynh_config_add_nginx() {
 # Requires YunoHost version 2.7.2 or higher.
 ynh_config_remove_nginx() {
     ynh_safe_rm "/etc/nginx/conf.d/$domain.d/$app.conf"
-    ynh_systemd_action --service=nginx --action=reload
+    ynh_systemctl --service=nginx --action=reload
 }
 
 
