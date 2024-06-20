@@ -157,10 +157,22 @@ class AppResource:
 
         # FIXME : should use packaging.version to properly parse / compare versions >_>
         self.helpers_version = None
-        if manager and manager.wanted and manager.wanted.get("integration", {}).get("helpers_version"):
-            self.helpers_version = manager.wanted.get("integration", {}).get("helpers_version")
-        elif manager and manager.current and manager.current.get("integration", {}).get("helpers_version"):
-            self.helpers_version = manager.current.get("integration", {}).get("helpers_version")
+        if (
+            manager
+            and manager.wanted
+            and manager.wanted.get("integration", {}).get("helpers_version")
+        ):
+            self.helpers_version = manager.wanted.get("integration", {}).get(
+                "helpers_version"
+            )
+        elif (
+            manager
+            and manager.current
+            and manager.current.get("integration", {}).get("helpers_version")
+        ):
+            self.helpers_version = manager.current.get("integration", {}).get(
+                "helpers_version"
+            )
         elif manager and manager.wanted and manager.wanted.get("packaging_format"):
             self.helpers_version = str(manager.wanted.get("packaging_format"))
         elif manager and manager.current and manager.current.get("packaging_format"):
@@ -1198,10 +1210,14 @@ class AptDependenciesAppResource(AppResource):
 
         if float(self.helpers_version) >= 2.1:
             ynh_apt_install_dependencies = "ynh_apt_install_dependencies"
-            ynh_apt_install_dependencies_from_extra_repository = "ynh_apt_install_dependencies_from_extra_repository"
+            ynh_apt_install_dependencies_from_extra_repository = (
+                "ynh_apt_install_dependencies_from_extra_repository"
+            )
         else:
             ynh_apt_install_dependencies = "ynh_install_app_dependencies"
-            ynh_apt_install_dependencies_from_extra_repository = "ynh_install_extra_app_dependencies"
+            ynh_apt_install_dependencies_from_extra_repository = (
+                "ynh_install_extra_app_dependencies"
+            )
 
         script = " ".join([ynh_apt_install_dependencies, *self.packages])
         for repo, values in self.extras.items():
@@ -1488,10 +1504,11 @@ class DatabaseAppResource(AppResource):
             raise RuntimeError(f"Invalid dbtype {self.dbtype}")
 
         self._run_script(
-            "deprovision", f"""
+            "deprovision",
+            f"""
 ynh_{db_helper_name}_database_exists "{db_name}" && ynh_{db_helper_name}_drop_db "{db_name}" || true
 ynh_{db_helper_name}_user_exists "{db_user}" && ynh_{db_helper_name}_drop_user "{db_user}" || true
-"""
+""",
         )
 
         self.delete_setting("db_name")
