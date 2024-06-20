@@ -1,3 +1,15 @@
+yunohost (11.2.15) stable; urgency=low
+
+  - apps: new experimentals "2.1" helpers ([#1855](http://github.com/YunoHost/yunohost/pull/1855))
+  - apps: when removing an app with --purge, also remove /var/log/{app}
+  - apps: drop clumsy auto-update of nodejs via cron job which fills up disk space with nodejs copies and doesnt actually restart the app services...
+  - apps: fix apt resources when multiple extras are set ([#1869](http://github.com/YunoHost/yunohost/pull/1869))
+  - mail: allow aliases for sender addresses of apps ([#1843](http://github.com/YunoHost/yunohost/pull/1843))
+
+  Thanks to all contributors <3 ! (alexAubin, Chris Vogel, Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 20 Jun 2024 21:20:47 +0200
+
 yunohost (11.2.14.1) stable; urgency=low
 
   - helpers: Fix typo in ynh_read_manifest documentation ([#1866](http://github.com/YunoHost/yunohost/pull/1866))
