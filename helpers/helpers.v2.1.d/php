@@ -271,43 +271,35 @@ _ynh_get_scalable_phpfpm() {
 
 # Execute a command with Composer
 #
-# usage: ynh_composer_exec [--workdir=$install_dir] --commands="commands"
-# | arg: -w, --workdir - The directory from where the command will be executed. Default $install_dir
-# | arg: -c, --commands - Commands to execute.
+# Will use $install_dir as workdir unless $composer_workdir exists (but that shouldnt be necessary)
+#
+# You may also define composer_user=root prior to call this helper if you absolutely need composer to run as root, but this is discouraged...
+#
+# usage: ynh_composer_exec commands
 #
 # Requires YunoHost version 4.2 or higher.
 ynh_composer_exec() {
-    # ============ Argument parsing =============
-    local -A args_array=([w]=workdir= [c]=commands=)
-    local workdir
-    local commands
-    ynh_handle_getopts_args "$@"
-    workdir="${workdir:-${install_dir}}"
-    # ===========================================
+    local workdir="${composer_workdir:-$install_dir}"
 
-    COMPOSER_HOME="$workdir/.composer" COMPOSER_MEMORY_LIMIT=-1 \
-        php${php_version} "$workdir/composer.phar" $commands \
+    COMPOSER_HOME="$workdir/.composer" \
+    COMPOSER_MEMORY_LIMIT=-1 \
+    sudo -E -u "${composer_user:-$app}" \
+    php${php_version} "$workdir/composer.phar" $@ \
         -d "$workdir" --no-interaction --no-ansi 2>&1
 }
 
 # Install and initialize Composer in the given directory
 #
-# The installed version is defined by $composer_version which should be defined as global prior to calling this helper
+# The installed version is defined by $composer_version which should be defined
+# as global prior to calling this helper.
 #
-# usage: ynh_composer_install [--workdir=$install_dir] [--install_args="--optimize-autoloader"]
-# | arg: -w, --workdir - The directory from where the command will be executed. Default $install_dir.
-# | arg: -a, --install_args - Additional arguments provided to the composer install. Argument --no-dev already include
+# Will use $install_dir as workdir unless $composer_workdir exists (but that shouldnt be necessary)
+#
+# usage: ynh_composer_install
 #
 # Requires YunoHost version 4.2 or higher.
 ynh_composer_install() {
-    # ============ Argument parsing =============
-    local -A args_array=([w]=workdir= [a]=install_args=)
-    local workdir
-    local install_args
-    ynh_handle_getopts_args "$@"
-    workdir="${workdir:-$install_dir}"
-    install_args="${install_args:-}"
-    # ===========================================
+    local workdir="${composer_workdir:-$install_dir}"
 
     [[ -n "${composer_version}" ]] || ynh_die "\$composer_version should be defined before calling ynh_composer_install. (In the past, this was called \$YNH_COMPOSER_VERSION)"
 
@@ -322,8 +314,4 @@ ynh_composer_install() {
     # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
     out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$workdir/composer.phar $composer_url 2>&1) \
         || ynh_die "$out"
-
-    # install dependencies
-    ynh_composer_exec --workdir="$workdir" --commands="install --no-dev $install_args" \
-        || ynh_die "Unable to install core dependencies with Composer."
 }
