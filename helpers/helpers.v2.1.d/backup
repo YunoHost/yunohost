@@ -1,0 +1,275 @@
+#!/bin/bash
+
+CAN_BIND=${CAN_BIND:-1}
+
+# Add a file or a directory to the list of paths to backup
+#
+# usage: ynh_backup /path/to/stuff
+#
+# NB : note that this helper does *NOT* perform any copy in itself, it only
+# declares stuff to be backuped via a CSV which is later picked up by the core
+#
+# NB 2 : there is a specific behavior for $data_dir (or childs of $data_dir) and
+# /var/log/$app which are *NOT* backedup during safety-backup-before-upgrade,
+# OR if the setting "do_not_backup_data" is equals 1 for that app
+#
+# The rationale is that these directories are usually too heavy to be integrated in every backup
+# (think for example about Nextcloud with quite a lot of data, or an app with a lot of media files...)
+#
+# This is coupled to the fact that $data_dir and the log dir won't be (and
+# should NOT) be deleted during remove, unless --purge is used. Hence, if the
+# upgrade fails and the script is removed prior to restoring the backup, the
+# data/logs are not destroyed.
+#
+ynh_backup() {
+
+    local target="$1"
+    local is_data=false
+
+    # If the path starts with /var/log/$app or $data_dir
+    if ([[ -n "${app:-}" ]] && [[ "$target" == "/var/log/$app*" ]]) || ([[ -n "${data_dir:-}" ]] && [[ "$target" == "$data_dir*" ]])
+    then
+        is_data=true
+    fi
+
+    if [[ -n "${app:-}" ]]
+    then
+        local do_not_backup_data=$(ynh_app_setting_get --key=do_not_backup_data)
+    fi
+
+    # If backing up core only (used by ynh_backup_before_upgrade),
+    # don't backup big data items
+    if [[ "$is_data" == true ]] && ([[ ${do_not_backup_data:-0} -eq 1 ]] || [[ ${BACKUP_CORE_ONLY:-0} -eq 1 ]]); then
+        if [ $BACKUP_CORE_ONLY -eq 1 ]; then
+            ynh_print_info "$target will not be saved, because 'BACKUP_CORE_ONLY' is set."
+        else
+            ynh_print_info "$target will not be saved, because 'do_not_backup_data' is set."
+        fi
+        return 1
+    fi
+
+    # ==============================================================================
+    # Format correctly source and destination paths
+    # ==============================================================================
+    # Be sure the source path is not empty
+    if [ ! -e "$target" ]; then
+        ynh_print_warn "File or folder '${target}' to be backed up does not exist"
+        return 1
+    fi
+
+    # Transform the source path as an absolute path
+    # If it's a dir remove the ending /
+    src_path=$(realpath "$target")
+
+    # Initialize the dest path with the source path relative to "/".
+    # eg: src_path=/etc/yunohost -> dest_path=etc/yunohost
+    dest_path="${src_path#/}"
+
+    # Check if dest_path already exists in tmp archive
+    if [[ -e "${dest_path}" ]]; then
+        ynh_print_warn "Destination path '${dest_path}' already exist"
+        return 1
+    fi
+
+    # Add the relative current working directory to the destination path
+    local rel_dir="${YNH_CWD#$YNH_BACKUP_DIR}"
+    rel_dir="${rel_dir%/}/"
+    dest_path="${rel_dir}${dest_path}"
+    dest_path="${dest_path#/}"
+    # ==============================================================================
+
+    # ==============================================================================
+    # Write file to backup into backup_list
+    # ==============================================================================
+    local src=$(echo "${src_path}" | sed --regexp-extended 's/"/\"\"/g')
+    local dest=$(echo "${dest_path}" | sed --regexp-extended 's/"/\"\"/g')
+    echo "\"${src}\",\"${dest}\"" >>"${YNH_BACKUP_CSV}"
+
+    # ==============================================================================
+
+    # Create the parent dir of the destination path
+    # It's for retro compatibility, some script consider ynh_backup creates this dir
+    mkdir --parents $(dirname "$YNH_BACKUP_DIR/${dest_path}")
+}
+
+# Return the path in the archive where has been stocked the origin path
+#
+# [internal]
+#
+# usage: _get_archive_path ORIGIN_PATH
+_get_archive_path() {
+    # For security reasons we use csv python library to read the CSV
+    python3 -c "
+import sys
+import csv
+with open(sys.argv[1], 'r') as backup_file:
+    backup_csv = csv.DictReader(backup_file, fieldnames=['source', 'dest'])
+    for row in backup_csv:
+        if row['source']==sys.argv[2].strip('\"'):
+            print(row['dest'])
+            sys.exit(0)
+    raise Exception('Original path for %s not found' % sys.argv[2])
+    " "${YNH_BACKUP_CSV}" "$1"
+    return $?
+}
+
+# Restore a file or a directory from the backup archive
+#
+# usage: ynh_restore /path/to/stuff
+#
+# examples:
+#     ynh_restore "/etc/nginx/conf.d/$domain.d/$app.conf"
+#
+# If the file or dir to be restored already exists on the system and is lighter
+# than 500 Mo, it is backed up in `/var/cache/yunohost/appconfbackup/`.
+# Otherwise, the existing file or dir is removed.
+#
+# if `apps/$app/etc/nginx/conf.d/$domain.d/$app.conf` exists, restore it into
+# `/etc/nginx/conf.d/$domain.d/$app.conf`
+# otheriwse, search for a match in the csv (eg: conf/nginx.conf) and restore it into
+# `/etc/nginx/conf.d/$domain.d/$app.conf`
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_restore() {
+    target="$1"
+
+    local archive_path="$YNH_CWD${target}"
+
+    # If the path starts with /var/log/$app or $data_dir
+    local is_data=false
+    if ([[ -n "${app:-}" ]] && [[ "$target" == "/var/log/$app*" ]]) || ([[ -n "${data_dir:-}" ]] && [[ "$target" == "$data_dir*" ]])
+    then
+        is_data=true
+    fi
+
+    # If archive_path doesn't exist, search for a corresponding path in CSV
+    if [ ! -d "$archive_path" ] && [ ! -f "$archive_path" ] && [ ! -L "$archive_path" ]; then
+        if [[ "$is_data" == true ]]
+        then
+            ynh_print_info "Skipping $target which doesn't exists in the archive, probably because restoring from a safety-backup-before-upgrade"
+            # Assume it's not a big deal, we may be restoring a safety-backup-before-upgrade which doesnt contain those
+            return 0
+        else
+            # (get_archive_path will raise an exception if no match found)
+            archive_path="$YNH_BACKUP_DIR/$(_get_archive_path \"$target\")"
+        fi
+    fi
+
+    # Move the old directory if it already exists
+    if [[ -e "${target}" ]]; then
+        # Check if the file/dir size is less than 500 Mo
+        if [[ $(du --summarize --bytes ${target} | cut --delimiter="/" --fields=1) -le "500000000" ]]; then
+            local backup_file="/var/cache/yunohost/appconfbackup/${target}.backup.$(date '+%Y%m%d.%H%M%S')"
+            mkdir --parents "$(dirname "$backup_file")"
+            mv "${target}" "$backup_file" # Move the current file or directory
+        else
+            ynh_safe_rm "${target}"
+        fi
+    fi
+
+    # Restore target into target
+    mkdir --parents $(dirname "$target")
+
+    # Do a copy if it's just a mounting point
+    if mountpoint --quiet $YNH_BACKUP_DIR; then
+        if [[ -d "${archive_path}" ]]; then
+            archive_path="${archive_path}/."
+            mkdir --parents "$target"
+        fi
+        cp --archive "$archive_path" "${target}"
+    # Do a move if YNH_BACKUP_DIR is already a copy
+    else
+        mv "$archive_path" "${target}"
+    fi
+}
+
+# Restore all files that were previously backuped in an app backup script
+#
+# usage: ynh_restore_everything
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_restore_everything() {
+    # Deduce the relative path of $YNH_CWD
+    local REL_DIR="${YNH_CWD#$YNH_BACKUP_DIR/}"
+    REL_DIR="${REL_DIR%/}/"
+
+    # For each destination path begining by $REL_DIR
+    cat ${YNH_BACKUP_CSV} | tr --delete $'\r' | grep --only-matching --no-filename --perl-regexp "^\".*\",\"$REL_DIR.*\"$" \
+        | while read line; do
+            local ARCHIVE_PATH=$(echo "$line" | grep --only-matching --no-filename --perl-regexp "^\".*\",\"$REL_DIR\K.*(?=\"$)")
+            ynh_restore "$ARCHIVE_PATH"
+        done
+}
+
+_ynh_file_checksum_exists() {
+    local file=$1
+    local checksum_setting_name=checksum_${file//[\/ ]/_} # Replace all '/' and ' ' by '_'
+    [[ -n "$(ynh_app_setting_get --key=$checksum_setting_name)" ]]
+}
+
+# Calculate and store a file checksum into the app settings
+#
+# usage: ynh_store_file_checksum /path/to/file
+ynh_store_file_checksum() {
+    local file=$1
+    local checksum_setting_name=checksum_${file//[\/ ]/_} # Replace all '/' and ' ' by '_'
+
+    ynh_app_setting_set --key=$checksum_setting_name --value=$(md5sum "$file" | cut --delimiter=' ' --fields=1)
+
+    if ynh_in_ci_tests; then
+        # Using a base64 is in fact more reversible than "replace / and space by _" ... So we can in fact obtain the original file path in an easy reliable way ...
+        local file_path_base64=$(echo "$file" | base64 -w0)
+        mkdir -p /var/cache/yunohost/appconfbackup/
+        cat $file > /var/cache/yunohost/appconfbackup/original_${file_path_base64}
+    fi
+
+    # If backup_file_checksum isn't empty, ynh_backup_if_checksum_is_different has made a backup
+    if [ -n "${backup_file_checksum-}" ]; then
+        # Print the diff between the previous file and the new one.
+        # diff return 1 if the files are different, so the || true
+        diff --report-identical-files --unified --color=always $backup_file_checksum $file >&2 || true
+    fi
+    # Unset the variable, so it wouldn't trig a ynh_store_file_checksum without a ynh_backup_if_checksum_is_different before it.
+    unset backup_file_checksum
+}
+
+# Verify the checksum and backup the file if it's different
+#
+# usage: ynh_backup_if_checksum_is_different /path/to/file
+#
+# This helper is primarily meant to allow to easily backup personalised/manually
+# modified config files.
+ynh_backup_if_checksum_is_different() {
+    local file=$1
+    local checksum_setting_name=checksum_${file//[\/ ]/_} # Replace all '/' and ' ' by '_'
+    local checksum_value=$(ynh_app_setting_get --key=$checksum_setting_name)
+    # backup_file_checksum isn't declare as local, so it can be reuse by ynh_store_file_checksum
+    backup_file_checksum=""
+    if [ -n "$checksum_value" ]; then                                                     # Proceed only if a value was stored into the app settings
+        if [ -e $file ] && ! echo "$checksum_value $file" | md5sum --check --status; then # If the checksum is now different
+
+            backup_file_checksum="/var/cache/yunohost/appconfbackup/$file.backup.$(date '+%Y%m%d.%H%M%S')"
+            mkdir --parents "$(dirname "$backup_file_checksum")"
+            cp --archive "$file" "$backup_file_checksum" # Backup the current file
+            ynh_print_warn "File $file has been manually modified since the installation or last upgrade. So it has been duplicated in $backup_file_checksum"
+            echo "$backup_file_checksum" # Return the name of the backup file
+            if ynh_in_ci_tests; then
+                local file_path_base64=$(echo "$file" | base64 -w0)
+                if test -e /var/cache/yunohost/appconfbackup/original_${file_path_base64}
+                then
+                    ynh_print_warn "Diff with the original file:"
+                    diff --report-identical-files --unified --color=always /var/cache/yunohost/appconfbackup/original_${file_path_base64} $file >&2 || true
+                fi
+            fi
+        fi
+    fi
+}
+
+# Delete a file checksum from the app settings
+#
+# usage: ynh_delete_file_checksum /path/to/file
+ynh_delete_file_checksum() {
+    local file=$1
+    local checksum_setting_name=checksum_${file//[\/ ]/_} # Replace all '/' and ' ' by '_'
+    ynh_app_setting_delete --key=$checksum_setting_name
+}

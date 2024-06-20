@@ -1,0 +1,120 @@
+#!/bin/bash
+
+PSQL_ROOT_PWD_FILE=/etc/yunohost/psql
+PSQL_VERSION=13
+
+# Run SQL instructions in a database ($db_name by default)
+#
+# usage: ynh_psql_db_shell database <<< "instructions"
+# | arg: database    - the database to connect to (by default, $db_name)
+#
+# examples:
+#    ynh_psql_db_shell $db_name <<< "UPDATE ...;"
+#    ynh_psql_db_shell < /path/to/file.sql
+#
+ynh_psql_db_shell() {
+    local database="${1:-$db_name}"
+    sudo --login --user=postgres psql "$database"
+}
+
+# Create a database and grant optionnaly privilegies to a user
+#
+# [internal]
+#
+# usage: ynh_psql_create_db db [user]
+# | arg: db - the database name to create
+# | arg: user - the user to grant privilegies
+#
+ynh_psql_create_db() {
+    local db=$1
+    local user=${2:-}
+
+    local sql="CREATE DATABASE ${db};"
+
+    # grant all privilegies to user
+    if [ -n "$user" ]; then
+        sql+="ALTER DATABASE ${db} OWNER TO ${user};"
+        sql+="GRANT ALL PRIVILEGES ON DATABASE ${db} TO ${user} WITH GRANT OPTION;"
+    fi
+
+    sudo --login --user=postgres psql <<< "$sql"
+}
+
+# Drop a database
+#
+# [internal]
+#
+# If you intend to drop the database *and* the associated user,
+# consider using ynh_psql_remove_db instead.
+#
+# usage: ynh_psql_drop_db db
+# | arg: db - the database name to drop
+#
+ynh_psql_drop_db() {
+    local db=$1
+    # First, force disconnection of all clients connected to the database
+    # https://stackoverflow.com/questions/17449420/postgresql-unable-to-drop-database-because-of-some-auto-connections-to-db
+    sudo --login --user=postgres psql $db <<< "REVOKE CONNECT ON DATABASE $db FROM public;"
+    sudo --login --user=postgres psql $db <<< "SELECT pg_terminate_backend (pg_stat_activity.pid) FROM pg_stat_activity WHERE pg_stat_activity.datname = '$db' AND pid <> pg_backend_pid();"
+    sudo --login --user=postgres dropdb $db
+}
+
+# Dump a database
+#
+# usage: ynh_psql_dump_db database
+# | arg: database    - the database name to dump (by default, $db_name)
+# | ret: the psqldump output
+#
+# example: ynh_psql_dump_db 'roundcube' > ./dump.sql
+#
+ynh_psql_dump_db() {
+    local database="${1:-$db_name}"
+    sudo --login --user=postgres pg_dump "$database"
+}
+
+# Create a user
+#
+# [internal]
+#
+# usage: ynh_psql_create_user user pwd
+# | arg: user - the user name to create
+# | arg: pwd - the password to identify user by
+#
+ynh_psql_create_user() {
+    sudo --login --user=postgres psql <<< "CREATE USER $user WITH ENCRYPTED PASSWORD '$pwd'"
+}
+
+# Check if a psql user exists
+#
+# [packagingv1]
+#
+# usage: ynh_psql_user_exists user
+# | arg: user=    - the user for which to check existence
+# | exit: Return 1 if the user doesn't exist, 0 otherwise
+#
+ynh_psql_user_exists() {
+    local user=$1
+    sudo --login --user=postgres psql -tAc "SELECT rolname FROM pg_roles WHERE rolname='$user';" | grep --quiet "$user"
+}
+
+# Check if a psql database exists
+#
+# usage: ynh_psql_database_exists database
+# | arg: database    - the database for which to check existence
+# | exit: Return 1 if the database doesn't exist, 0 otherwise
+#
+ynh_psql_database_exists() {
+    local database=$1
+    sudo --login --user=postgres psql -tAc "SELECT datname FROM pg_database WHERE datname='$database';" | grep --quiet "$database"
+}
+
+# Drop a user
+#
+# [internal]
+#
+# usage: ynh_psql_drop_user user
+# | arg: user - the user name to drop
+#
+ynh_psql_drop_user() {
+    sudo --login --user=postgres psql <<< "DROP USER ${1};"
+}

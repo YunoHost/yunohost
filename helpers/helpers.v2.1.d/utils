@@ -1,0 +1,629 @@
+#!/bin/bash
+
+YNH_APP_BASEDIR=${YNH_APP_BASEDIR:-$(realpath ..)}
+
+# Handle script crashes / failures
+#
+# [internal]
+#
+# usage:
+# ynh_exit_properly is used only by the helper ynh_abort_if_errors.
+# You should not use it directly.
+# Instead, add to your script:
+# ynh_clean_setup () {
+#        instructions...
+# }
+#
+# This function provide a way to clean some residual of installation that not managed by remove script.
+#
+# It prints a warning to inform that the script was failed, and execute the ynh_clean_setup function if used in the app script
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_exit_properly() {
+    local exit_code=$?
+
+    if [[ "${YNH_APP_ACTION:-}" =~ ^install$|^upgrade$|^restore$ ]]
+    then
+        rm -rf "/var/cache/yunohost/download/"
+    fi
+
+    if [ "$exit_code" -eq 0 ]; then
+        exit 0 # Exit without error if the script ended correctly
+    fi
+
+    trap '' EXIT # Ignore new exit signals
+    # Do not exit anymore if a command fail or if a variable is empty
+    set +o errexit # set +e
+    set +o nounset # set +u
+
+    # Small tempo to avoid the next message being mixed up with other DEBUG messages
+    sleep 0.5
+
+    if type -t ynh_clean_setup >/dev/null; then # Check if the function exist in the app script.
+        ynh_clean_setup                         # Call the function to do specific cleaning for the app.
+    fi
+
+    # Exit with error status
+    # We don't call ynh_die basically to avoid unecessary 10-ish
+    # debug lines about parsing args and stuff just to exit 1..
+    exit 1
+}
+
+# Exits if an error occurs during the execution of the script.
+#
+# [packagingv1]
+#
+# usage: ynh_abort_if_errors
+#
+# This configure the rest of the script execution such that, if an error occurs
+# or if an empty variable is used, the execution of the script stops immediately
+# and a call to `ynh_clean_setup` is triggered if it has been defined by your script.
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_abort_if_errors() {
+    set -o errexit              # set -e; Exit if a command fail
+    set -o nounset              # set -u; And if a variable is used unset
+    trap ynh_exit_properly EXIT # Capturing exit signals on shell script
+}
+
+# When running an app script, auto-enable ynh_abort_if_errors except for remove script
+if [[ "${YNH_CONTEXT:-}" != "regenconf" ]] && [[ "${YNH_APP_ACTION}" != "remove" ]]
+then
+    ynh_abort_if_errors
+fi
+
+# Download, check integrity, uncompress and patch upstream sources
+#
+# usage: ynh_setup_source --dest_dir=dest_dir [--source_id=source_id] [--keep="file1 file2"] [--full_replace]
+# | arg: -d, --dest_dir=     - Directory where to setup sources
+# | arg: -s, --source_id=    - Name of the source, defaults to `main` (when the sources resource exists in manifest.toml) or (legacy) `app` otherwise
+# | arg: -k, --keep=         - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs' (no trailing `/` for folders)
+# | arg: -r, --full_replace= - Remove previous sources before installing new sources  (can be 1 or 0, default to 0)
+#
+# #### New 'sources' resources
+#
+# (See also the resources documentation which may be more complete?)
+#
+# This helper will read infos from the 'sources' resources in the manifest.toml of the app
+# and expect a structure like:
+#
+# ```toml
+# [resources.sources]
+#     [resources.sources.main]
+#     url = "https://some.address.to/download/the/app/archive"
+#     sha256 = "0123456789abcdef"    # The sha256 sum of the asset obtained from the URL
+# ```
+#
+# ##### Optional flags
+#
+# ```text
+# format    = "tar.gz"/xz/bz2    # automatically guessed from the extension of the URL, but can be set explicitly. Will use `tar` to extract
+#             "zip"              # automatically guessed from the extension of the URL, but can be set explicitly. Will use `unzip` to extract
+#             "docker"           # useful to extract files from an already-built docker image (instead of rebuilding them locally). Will use `docker-image-extract` to extract
+#             "whatever"         # an arbitrary value, not really meaningful except to imply that the file won't be extracted
+#
+# in_subdir = true    # default, there's an intermediate subdir in the archive before accessing the actual files
+#             false   # sources are directly in the archive root
+#             n       # (special cases) an integer representing a number of subdirs levels to get rid of
+#
+# extract   = true    # default if file is indeed an archive such as .zip, .tar.gz, .tar.bz2, ...
+#           = false   # default if file 'format' is not set and the file is not to be extracted because it is not an archive but a script or binary or whatever asset.
+#                     #    in which case the file will only be `mv`ed to the location possibly renamed using the `rename` value
+#
+# rename    = "whatever_your_want"   # to be used for convenience when `extract` is false and the default name of the file is not practical
+# platform  = "linux/amd64"          # (defaults to "linux/$YNH_ARCH") to be used in conjonction with `format = "docker"` to specify which architecture to extract for
+# ```
+#
+# You may also define assets url and checksum per-architectures such as:
+# ```toml
+# [resources.sources]
+#     [resources.sources.main]
+#     amd64.url = "https://some.address.to/download/the/app/archive/when/amd64"
+#     amd64.sha256 = "0123456789abcdef"
+#     armhf.url = "https://some.address.to/download/the/app/archive/when/armhf"
+#     armhf.sha256 = "fedcba9876543210"
+# ```
+#
+# In which case ynh_setup_source --dest_dir="$install_dir" will automatically pick the appropriate source depending on the arch
+#
+# The helper will:
+# - Download the specific URL if there is no local archive
+# - Check the integrity with the specific sha256 sum
+# - Uncompress the archive to `$dest_dir`.
+#   - If `in_subdir` is true, the first level directory of the archive will be removed.
+#   - If `in_subdir` is a numeric value, the N first level directories will be removed.
+# - Patches named `patches/${src_id}-*.patch` will be applied to `$dest_dir`
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_setup_source() {
+    # ============ Argument parsing =============
+    local -A args_array=([d]=dest_dir= [s]=source_id= [k]=keep= [r]=full_replace)
+    local dest_dir
+    local source_id
+    local keep
+    local full_replace
+    ynh_handle_getopts_args "$@"
+    keep="${keep:-}"
+    full_replace="${full_replace:-0}"
+    source_id="${source_id:-main}"
+    # ===========================================
+
+    local sources_json=$(ynh_read_manifest "resources.sources[\"$source_id\"]")
+    if jq -re ".url" <<< "$sources_json"
+    then
+        local arch_prefix=""
+    else
+        local arch_prefix=".$YNH_ARCH"
+    fi
+
+    local src_url="$(jq -r "$arch_prefix.url" <<< "$sources_json" | sed 's/^null$//')"
+    local src_sum="$(jq -r "$arch_prefix.sha256" <<< "$sources_json" | sed 's/^null$//')"
+    local src_sumprg="sha256sum"
+    local src_format="$(jq -r ".format" <<< "$sources_json" | sed 's/^null$//')"
+    local src_in_subdir="$(jq -r ".in_subdir" <<< "$sources_json" | sed 's/^null$//')"
+    src_in_subdir=${src_in_subdir:-true}
+    local src_extract="$(jq -r ".extract" <<< "$sources_json" | sed 's/^null$//')"
+    local src_platform="$(jq -r ".platform" <<< "$sources_json" | sed 's/^null$//')"
+    local src_rename="$(jq -r ".rename" <<< "$sources_json" | sed 's/^null$//')"
+
+    [[ -n "$src_url" ]] || ynh_die "No URL defined for source $source_id$arch_prefix ?"
+    [[ -n "$src_sum" ]] || ynh_die "No sha256 sum defined for source $source_id$arch_prefix ?"
+
+    if [[ -z "$src_format" ]]
+    then
+        if [[ "$src_url" =~ ^.*\.zip$ ]] || [[ "$src_url" =~ ^.*/zipball/.*$ ]]
+        then
+            src_format="zip"
+        elif [[ "$src_url" =~ ^.*\.tar\.gz$ ]] || [[ "$src_url" =~ ^.*\.tgz$ ]] || [[ "$src_url" =~ ^.*/tar\.gz/.*$ ]] || [[ "$src_url" =~ ^.*/tarball/.*$ ]]
+        then
+            src_format="tar.gz"
+        elif [[ "$src_url" =~ ^.*\.tar\.xz$ ]]
+        then
+            src_format="tar.xz"
+        elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]
+        then
+            src_format="tar.bz2"
+        elif [[ -z "$src_extract" ]]
+        then
+            src_extract="false"
+        fi
+    fi
+
+    src_format=${src_format:-tar.gz}
+    src_format=$(echo "$src_format" | tr '[:upper:]' '[:lower:]')
+    src_extract=${src_extract:-true}
+
+    if [[ "$src_extract" != "true" ]] && [[ "$src_extract" != "false" ]]
+    then
+        ynh_die "For source $source_id, expected either 'true' or 'false' for the extract parameter"
+    fi
+
+    # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
+    local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${source_id}"
+
+    # Gotta use this trick with 'dirname' because source_id may contain slashes x_x
+    mkdir -p $(dirname /var/cache/yunohost/download/${YNH_APP_ID}/${source_id})
+    src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${source_id}"
+
+    if [ "$src_format" = "docker" ]; then
+        src_platform="${src_platform:-"linux/$YNH_ARCH"}"
+    else
+        if test -e "$local_src"; then
+            cp $local_src $src_filename
+        fi
+
+        [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
+
+        # If the file was prefetched but somehow doesn't match the sum, rm and redownload it
+        if [ -e "$src_filename" ] && ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
+        then
+            rm -f "$src_filename"
+        fi
+
+        # Only redownload the file if it wasnt prefetched
+        if [ ! -e "$src_filename" ]
+        then
+            # NB. we have to declare the var as local first,
+            # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
+            # because local always return 0 ...
+            local out
+            # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
+            out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$src_filename $src_url 2>&1) \
+                || ynh_die "$out"
+        fi
+
+        # Check the control sum
+        if ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
+        then
+            local actual_sum="$(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1)"
+            local actual_size="$(du -hs ${src_filename} | cut --fields=1)"
+            rm -f ${src_filename}
+            ynh_die "Corrupt source for ${src_url}: Expected sha256sum to be ${src_sum} but got ${actual_sum} (size: ${actual_size})."
+        fi
+    fi
+
+    # Keep files to be backup/restored at the end of the helper
+    # Assuming $dest_dir already exists
+    rm -rf /var/cache/yunohost/files_to_keep_during_setup_source/
+    if [ -n "$keep" ] && [ -e "$dest_dir" ]; then
+        local keep_dir=/var/cache/yunohost/files_to_keep_during_setup_source/${YNH_APP_ID}
+        mkdir -p $keep_dir
+        local stuff_to_keep
+        for stuff_to_keep in $keep; do
+            if [ -e "$dest_dir/$stuff_to_keep" ]; then
+                mkdir --parents "$(dirname "$keep_dir/$stuff_to_keep")"
+                cp --archive "$dest_dir/$stuff_to_keep" "$keep_dir/$stuff_to_keep"
+            fi
+        done
+    fi
+
+    if [ "$full_replace" -eq 1 ]; then
+        ynh_safe_rm "$dest_dir"
+    fi
+
+    # Extract source into the app dir
+    mkdir --parents "$dest_dir"
+
+    if [ -n "${install_dir:-}" ] && [ "$dest_dir" == "$install_dir" ]; then
+        _ynh_apply_default_permissions $dest_dir
+    fi
+
+    if [[ "$src_extract" == "false" ]]; then
+        if [[ -z "$src_rename" ]]
+        then
+            mv $src_filename $dest_dir
+        else
+            mv $src_filename $dest_dir/$src_rename
+        fi
+    elif [[ "$src_format" == "docker" ]]; then
+        "$YNH_HELPERS_DIR/vendor/docker-image-extract/docker-image-extract" -p $src_platform -o $dest_dir $src_url 2>&1
+    elif [[ "$src_format" == "zip" ]]; then
+        # Zip format
+        # Using of a temp directory, because unzip doesn't manage --strip-components
+        if $src_in_subdir; then
+            local tmp_dir=$(mktemp --directory)
+            unzip -quo $src_filename -d "$tmp_dir"
+            cp --archive $tmp_dir/*/. "$dest_dir"
+            ynh_safe_rm "$tmp_dir"
+        else
+            unzip -quo $src_filename -d "$dest_dir"
+        fi
+        ynh_safe_rm "$src_filename"
+    else
+        local strip=""
+        if [ "$src_in_subdir" != "false" ]; then
+            if [ "$src_in_subdir" == "true" ]; then
+                local sub_dirs=1
+            else
+                local sub_dirs="$src_in_subdir"
+            fi
+            strip="--strip-components $sub_dirs"
+        fi
+        if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz$ ]]; then
+            tar --extract --file=$src_filename --directory="$dest_dir" $strip
+        else
+            ynh_die "Archive format unrecognized."
+        fi
+        ynh_safe_rm "$src_filename"
+    fi
+
+    # Apply patches
+    if [ -d "$YNH_APP_BASEDIR/patches/" ]; then
+        local patches_folder=$(realpath $YNH_APP_BASEDIR/patches/)
+        # Check if any file matching the pattern exists, cf https://stackoverflow.com/a/34195247
+        if compgen -G "$patches_folder/${source_id}-*.patch" >/dev/null; then
+            pushd "$dest_dir"
+            for p in $patches_folder/${source_id}-*.patch; do
+                echo $p
+                patch --strip=1 <$p || ynh_print_warn "Packagers /!\\ patch $p failed to apply"
+            done
+            popd
+        fi
+    fi
+
+    # Keep files to be backup/restored at the end of the helper
+    # Assuming $dest_dir already exists
+    if [ -n "$keep" ]; then
+        local keep_dir=/var/cache/yunohost/files_to_keep_during_setup_source/${YNH_APP_ID}
+        local stuff_to_keep
+        for stuff_to_keep in $keep; do
+            if [ -e "$keep_dir/$stuff_to_keep" ]; then
+                mkdir --parents "$(dirname "$dest_dir/$stuff_to_keep")"
+
+                # We add "--no-target-directory" (short option is -T) to handle the special case
+                # when we "keep" a folder, but then the new setup already contains the same dir (but possibly empty)
+                # in which case a regular "cp" will create a copy of the directory inside the directory ...
+                # resulting in something like /var/www/$app/data/data instead of /var/www/$app/data
+                # cf https://unix.stackexchange.com/q/94831 for a more elaborate explanation on the option
+                cp --archive --no-target-directory "$keep_dir/$stuff_to_keep" "$dest_dir/$stuff_to_keep"
+            fi
+        done
+    fi
+    rm -rf /var/cache/yunohost/files_to_keep_during_setup_source/
+}
+
+# Curl abstraction to help with POST requests to local pages (such as installation forms)
+#
+# usage: ynh_local_curl "page_uri" "key1=value1" "key2=value2" ...
+# | arg: page_uri    - Path (relative to `$path`) of the page where POST data will be sent
+# | arg: key1=value1 - (Optionnal) POST key and corresponding value
+# | arg: key2=value2 - (Optionnal) Another POST key and corresponding value
+# | arg: ...         - (Optionnal) More POST keys and values
+#
+# example: ynh_local_curl "/install.php?installButton" "foo=$var1" "bar=$var2"
+#
+# For multiple calls, cookies are persisted between each call for the same app
+#
+# `$domain` and `$path` should be defined externally (and correspond to the domain.tld and the /path (of the app?))
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_local_curl() {
+    # Define url of page to curl
+    local local_page=$(ynh_normalize_url_path $1)
+    local full_path=$path$local_page
+
+    if [ "${path}" == "/" ]; then
+        full_path=$local_page
+    fi
+
+    local full_page_url=https://localhost$full_path
+
+    # Concatenate all other arguments with '&' to prepare POST data
+    local POST_data=""
+    local arg=""
+    for arg in "${@:2}"; do
+        POST_data="${POST_data}${arg}&"
+    done
+    if [ -n "$POST_data" ]; then
+        # Add --data arg and remove the last character, which is an unecessary '&'
+        POST_data="--data ${POST_data::-1}"
+    fi
+
+    # Wait untils nginx has fully reloaded (avoid curl fail with http2)
+    sleep 2
+
+    local cookiefile=/tmp/ynh-$app-cookie.txt
+    touch $cookiefile
+    chown root $cookiefile
+    chmod 700 $cookiefile
+
+    # Temporarily enable visitors if needed...
+    local visitors_enabled=$(ynh_permission_has_user --permission="main" --user="visitors" && echo yes || echo no)
+    if [[ $visitors_enabled == "no" ]]; then
+        ynh_permission_update --permission="main" --add="visitors"
+    fi
+
+    # Curl the URL
+    curl --silent --show-error --insecure --location --header "Host: $domain" --resolve $domain:443:127.0.0.1 $POST_data "$full_page_url" --cookie-jar $cookiefile --cookie $cookiefile
+
+    if [[ $visitors_enabled == "no" ]]; then
+        ynh_permission_update --permission="main" --remove="visitors"
+    fi
+}
+
+_acceptable_path_to_delete() {
+    local file=$1
+
+    local forbidden_paths=$(ls -d / /* /{var,home,usr}/* /etc/{default,sudoers.d,yunohost,cron*} /etc/yunohost/{apps,domains,hooks.d} /opt/yunohost 2> /dev/null)
+
+    # Legacy : A couple apps still have data in /home/$app ...
+    if [[ -n "${app:-}" ]]
+    then
+        forbidden_paths=$(echo "$forbidden_paths" | grep -v "/home/$app")
+    fi
+
+    # Use realpath to normalize the path ..
+    # i.e convert ///foo//bar//..///baz//// to /foo/baz
+    file=$(realpath --no-symlinks "$file")
+    if [ -z "$file" ] || grep -q -x -F "$file" <<< "$forbidden_paths"; then
+        return 1
+    else
+        return 0
+    fi
+}
+
+# Remove a file or a directory, checking beforehand that it's not a disastrous location to rm such as entire /var or /home
+#
+# usage: ynh_safe_rm path_to_remove
+#
+# Requires YunoHost version 2.6.4 or higher.
+ynh_safe_rm() {
+    local target="$1"
+    set +o xtrace # set +x
+
+    if [ $# -ge 2 ]; then
+        ynh_print_warn "/!\ Packager ! You provided more than one argument to ynh_safe_rm but it will be ignored... Use this helper with one argument at time."
+    fi
+
+    if [[ -z "$target" ]]; then
+        ynh_print_warn "ynh_safe_rm called with empty argument, ignoring."
+    elif [[ ! -e $target ]]; then
+        ynh_print_info "'$target' wasn't deleted because it doesn't exist."
+    elif ! _acceptable_path_to_delete "$target"; then
+        ynh_print_warn "Not deleting '$target' because it is not an acceptable path to delete."
+    else
+        rm --recursive "$target"
+    fi
+
+    set -o xtrace # set -x
+}
+
+# Read the value of a key in the app's manifest
+#
+# usage: ynh_read_manifest "key"
+# | arg: key - Name of the key to find
+# | ret: the value associate to that key
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_read_manifest() {
+    cat $YNH_APP_BASEDIR/manifest.toml | toml_to_json | jq ".$1" --raw-output
+}
+
+# Return the app upstream version, deduced from `$YNH_APP_MANIFEST_VERSION` and strippig the `~ynhX` part
+#
+# usage: ynh_app_upstream_version
+# | ret: the version number of the upstream app
+#
+# For example, if the manifest contains `4.3-2~ynh3` the function will return `4.3-2`
+#
+# Requires YunoHost version 3.5.0 or higher.
+ynh_app_upstream_version() {
+    echo "${$YNH_APP_MANIFEST_VERSION/~ynh*/}"
+}
+
+# Return 0 if the "upstream" part of the version changed, or 1 otherwise (ie only the ~ynh suffix changed)
+#
+# usage: if ynh_app_upstream_version_changed; then ...
+ynh_app_upstream_version_changed() {
+    # "UPGRADE_PACKAGE" means only the ~ynh prefix changed
+    [[ "$YNH_APP_UPGRADE_TYPE" == "UPGRADE_PACKAGE" ]] && return 1 || return 0
+}
+
+# Compare the current package version is strictly lower than another version given as an argument
+#
+# example: if ynh_app_upgrading_from_version_before 2.3.2~ynh1; then ...
+#
+# Requires YunoHost version 11.2 or higher.
+ynh_app_upgrading_from_version_before() {
+    local version=$1
+    [[ $version =~ '~ynh' ]] || ynh_die "Invalid argument for version, should include the ~ynhX prefix"
+
+    dpkg --compare-versions $YNH_APP_CURRENT_VERSION lt $version
+}
+
+# Compare the current package version is lower or equal to another version given as an argument
+#
+# example: if ynh_app_upgrading_from_version_before_or_equal_to 2.3.2~ynh1; then ...
+#
+# Requires YunoHost version 11.2 or higher.
+ynh_app_upgrading_from_version_before_or_equal_to() {
+    local version=$1
+    [[ $version =~ '~ynh' ]] || ynh_die "Invalid argument for version, should include the ~ynhX prefix"
+
+    dpkg --compare-versions $YNH_APP_CURRENT_VERSION le $version
+}
+
+# Check if we should enforce sane default permissions (= disable rwx for 'others')
+# on file/folders handled with ynh_setup_source and ynh_config_add
+#
+# [internal]
+#
+# Having a file others-readable or a folder others-executable(=enterable)
+# is a security risk comparable to "chmod 777"
+#
+# Configuration files may contain secrets. Or even just being able to enter a
+# folder may allow an attacker to do nasty stuff (maybe a file or subfolder has
+# some write permission enabled for 'other' and the attacker may edit the
+# content or create files as leverage for priviledge escalation ...)
+#
+# The sane default should be to set ownership to $app:$app.
+# In specific case, you may want to set the ownership to $app:www-data
+# for example if nginx needs access to static files.
+#
+_ynh_apply_default_permissions() {
+    local target=$1
+
+    chmod o-rwx $target
+    chmod g-w $target
+    chown -R root:root $target
+    if ynh_system_user_exists --username=$app; then
+        chown $app:$app $target
+    fi
+
+    # Crons should be owned by root
+    # Also we don't want systemd conf, nginx conf or others stuff to be owned by the app,
+    # otherwise they could self-edit their own systemd conf and escalate privilege
+    if echo "$target" | grep -q '^/etc/cron\|/etc/php\|/etc/nginx/conf.d\|/etc/fail2ban\|/etc/systemd/system'
+    then
+        chmod 400 $target
+        chown root:root $target
+    fi
+}
+
+int_to_bool() {
+    sed -e 's/^1$/True/g' -e 's/^0$/False/g' -e 's/^true$/True/g' -e 's/^false$/False/g'
+}
+
+toml_to_json() {
+    python3 -c 'import toml, json, sys; print(json.dumps(toml.load(sys.stdin)))'
+}
+
+# Validate an IP address
+#
+# usage: ynh_validate_ip --family=family --ip_address=ip_address
+# | ret: 0 for valid ip addresses, 1 otherwise
+#
+# example: ynh_validate_ip 4 111.222.333.444
+#
+# Requires YunoHost version 2.2.4 or higher.
+ynh_validate_ip() {
+    # ============ Argument parsing =============
+    local -A args_array=([f]=family= [i]=ip_address=)
+    local family
+    local ip_address
+    ynh_handle_getopts_args "$@"
+    # ===========================================
+
+    [ "$family" == "4" ] || [ "$family" == "6" ] || return 1
+
+    # http://stackoverflow.com/questions/319279/how-to-validate-ip-address-in-python#319298
+    python3 /dev/stdin <<EOF
+import socket
+import sys
+family = { "4" : socket.AF_INET, "6" : socket.AF_INET6 }
+try:
+    socket.inet_pton(family["$family"], "$ip_address")
+except socket.error:
+    sys.exit(1)
+sys.exit(0)
+EOF
+}
+
+# Get the total or free amount of RAM+swap on the system
+#
+# [packagingv1]
+#
+# usage: ynh_get_ram [--free|--total]
+# | arg: -f, --free         - Count free RAM+swap
+# | arg: -t, --total        - Count total RAM+swap
+# | ret: the amount of free ram, in MB (MegaBytes)
+#
+# Requires YunoHost version 3.8.1 or higher.
+ynh_get_ram() {
+    # ============ Argument parsing =============
+    local -A args_array=([f]=free [t]=total)
+    local free
+    local total
+    ynh_handle_getopts_args "$@"
+    free=${free:-0}
+    total=${total:-0}
+    # ===========================================
+
+    if [ $free -eq $total ]; then
+        ynh_print_warn "You have to choose --free or --total when using ynh_get_ram"
+        ram=0
+    elif [ $free -eq 1 ]; then
+        local free_ram=$(LC_ALL=C vmstat --stats --unit M | grep "free memory" | awk '{print $1}')
+        local free_swap=$(LC_ALL=C vmstat --stats --unit M | grep "free swap" | awk '{print $1}')
+        local free_ram_swap=$((free_ram + free_swap))
+        local ram=$free_ram_swap
+    elif [ $total -eq 1 ]; then
+        local total_ram=$(LC_ALL=C vmstat --stats --unit M | grep "total memory" | awk '{print $1}')
+        local total_swap=$(LC_ALL=C vmstat --stats --unit M | grep "total swap" | awk '{print $1}')
+        local total_ram_swap=$((total_ram + total_swap))
+        local ram=$total_ram_swap
+    fi
+
+    echo $ram
+}
+
+# Check if the scripts are being run by the package_check in CI
+#
+# usage: ynh_in_ci_tests
+#
+# Return 0 if in CI, 1 otherwise
+#
+# Requires YunoHost version 11.3 or higher.
+ynh_in_ci_tests() {
+    [ "${PACKAGE_CHECK_EXEC:-0}" -eq 1 ]
+}
