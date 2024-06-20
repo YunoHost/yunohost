@@ -100,7 +100,7 @@ ynh_script_progression() {
 
     # Build $progression_bar from progress_string(0,1,2) according to $effective_progression and the weight of the current task
     # expected_progression is the progression expected after the current task
-    local expected_progression="$((($increment_progression + $weight) * $progress_scale / $max_progression - $effective_progression))"
+    local expected_progression="$((($increment_progression + 1) * $progress_scale / $max_progression - $effective_progression))"
 
     # Hack for the "--last" message
     if grep -qw 'completed' <<< "$1";
