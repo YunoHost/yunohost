@@ -16,15 +16,14 @@ YNH_APT_INSTALL_DEPENDENCIES_REPLACE="true"
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_apt_install_dependencies() {
-    local dependencies=$@
-    # Add a comma for each space between packages. But not add a comma if the space separate a version specification. (See  below)
-    dependencies="$(echo "$dependencies" | sed 's/\([^\<=\>]\)\ \([^(]\)/\1, \2/g')"
-    local dependencies=${dependencies//|/ | }
+
+    # Add a comma for each space between packages. But not add a comma if the space separate a version specification. (See below)
+    local dependencies="$(sed 's/\([^\<=\>]\)\ \([^(]\)/\1, \2/g' <<< "$@" | sed 's/|/ | /')"
     local version=$(ynh_read_manifest "version")
     local app_ynh_deps="${app//_/-}-ynh-deps" # Replace all '_' by '-', and append -ynh-deps
 
     # Handle specific versions
-    if [[ "$dependencies" =~ [\<=\>] ]]; then
+    if grep '[<=>]' <<< "$dependencies"; then
         # Replace version specifications by relationships syntax
         # https://www.debian.org/doc/debian-policy/ch-relationships.html
         # Sed clarification
@@ -33,7 +32,7 @@ ynh_apt_install_dependencies() {
         # \+ matches one or more occurence of the previous characters, for >= or >>.
         # [^,]\+ matches all characters except ','
         # Ex: 'package>=1.0' will be replaced by 'package (>= 1.0)'
-        dependencies="$(echo "$dependencies" | sed 's/\([^(\<=\>]\)\([\<=\>]\+\)\([^,]\+\)/\1 (\2 \3)/g')"
+        dependencies="$(sed 's/\([^(\<=\>]\)\([\<=\>]\+\)\([^,]\+\)/\1 (\2 \3)/g' <<< "$dependencies")"
     fi
 
     # ############################## #
@@ -43,7 +42,7 @@ ynh_apt_install_dependencies() {
     # Check for specific php dependencies which requires sury
     # This grep will for example return "7.4" if dependencies is "foo bar php7.4-pwet php-gni"
     # The (?<=php) syntax corresponds to lookbehind ;)
-    local specific_php_version=$(echo $dependencies | grep -oP '(?<=php)[0-9.]+(?=-|\>|)' | sort -u)
+    local specific_php_version=$(grep -oP '(?<=php)[0-9.]+(?=-|\>|)' <<< "$dependencies" | sort -u)
 
     if [[ -n "$specific_php_version" ]]
     then
@@ -128,21 +127,22 @@ EOF
         # NB: this is in a subshell (though not sure why exactly not just use pushd/popd...)
         cd "$TMPDIR"
         # Install the fake package without its dependencies with dpkg --force-depends
-        LC_ALL=C equivs-build ./control 2>&1
-        LC_ALL=C dpkg --force-depends --install "./${app_ynh_deps}_${version}_all.deb" 2>&1 | tee ./dpkg_log
+        LC_ALL=C equivs-build ./control > ./equivs_log 2>&1 || { cat ./equivs_log; false; }
+        LC_ALL=C dpkg --force-depends --install "./${app_ynh_deps}_${version}_all.deb" > ./dpkg_log 2>&1
     )
 
     # Then install the missing dependencies with apt install
-    _ynh_apt_install --fix-broken \
-        || { # If the installation failed
-            # (the following is ran inside { } to not start a subshell otherwise ynh_die wouldnt exit the original process)
-            # Parse the list of problematic dependencies from dpkg's log ...
-            # (relevant lines look like: "foo-ynh-deps depends on bar; however:")
-            local problematic_dependencies="$(cat $TMPDIR/dpkg_log | grep -oP '(?<=-ynh-deps depends on ).*(?=; however)' | tr '\n' ' ')"
-            # Fake an install of those dependencies to see the errors
-            # The sed command here is, Print only from 'Reading state info' to the end.
-            [[ -n "$problematic_dependencies" ]] && _ynh_apt_install $problematic_dependencies --dry-run 2>&1 | sed --quiet '/Reading state info/,$p' | grep -v "fix-broken\|Reading state info" >&2
-            ynh_die "Unable to install dependencies"
+    _ynh_apt_install --fix-broken || {
+        # If the installation failed
+        # (the following is ran inside { } to not start a subshell otherwise ynh_die wouldnt exit the original process)
+        # Parse the list of problematic dependencies from dpkg's log ...
+        # (relevant lines look like: "foo-ynh-deps depends on bar; however:")
+        cat $TMPDIR/dpkg_log
+        local problematic_dependencies="$(grep -oP '(?<=-ynh-deps depends on ).*(?=; however)' $TMPDIR/dpkg_log | tr '\n' ' ')"
+        # Fake an install of those dependencies to see the errors
+        # The sed command here is, Print only from 'Reading state info' to the end.
+        [[ -n "$problematic_dependencies" ]] && _ynh_apt_install $problematic_dependencies --dry-run 2>&1 | sed --quiet '/Reading state info/,$p' | grep -v "fix-broken\|Reading state info" >&2
+        ynh_die "Unable to install dependencies"
     }
     rm --recursive --force "$TMPDIR" # Remove the temp dir.
 

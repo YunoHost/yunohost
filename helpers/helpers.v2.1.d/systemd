@@ -114,7 +114,7 @@ ynh_systemctl() {
 
     # Start the timeout and try to find wait_until
     if [[ -n "${wait_until:-}" ]]; then
-        set +x
+        set +o xtrace # set +x
         local i=0
         local starttime=$(date +%s)
         for i in $(seq 1 $timeout); do
@@ -144,7 +144,7 @@ ynh_systemctl() {
             fi
             sleep 1
         done
-        set -x
+        set -o xtrace # set -x
         if [ $i -ge 3 ]; then
             echo "" >&2
         fi

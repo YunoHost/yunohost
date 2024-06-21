@@ -211,6 +211,7 @@ _ynh_file_checksum_exists() {
 #
 # usage: ynh_store_file_checksum /path/to/file
 ynh_store_file_checksum() {
+    set +o xtrace # set +x
     local file=$1
     local checksum_setting_name=checksum_${file//[\/ ]/_} # Replace all '/' and ' ' by '_'
 
@@ -231,6 +232,7 @@ ynh_store_file_checksum() {
     fi
     # Unset the variable, so it wouldn't trig a ynh_store_file_checksum without a ynh_backup_if_checksum_is_different before it.
     unset backup_file_checksum
+    set -o xtrace # set -x
 }
 
 # Verify the checksum and backup the file if it's different
@@ -240,6 +242,7 @@ ynh_store_file_checksum() {
 # This helper is primarily meant to allow to easily backup personalised/manually
 # modified config files.
 ynh_backup_if_checksum_is_different() {
+    set +o xtrace # set +x
     local file=$1
     local checksum_setting_name=checksum_${file//[\/ ]/_} # Replace all '/' and ' ' by '_'
     local checksum_value=$(ynh_app_setting_get --key=$checksum_setting_name)
@@ -263,6 +266,7 @@ ynh_backup_if_checksum_is_different() {
             fi
         fi
     fi
+    set -o xtrace # set -x
 }
 
 # Delete a file checksum from the app settings

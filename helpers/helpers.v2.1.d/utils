@@ -158,7 +158,6 @@ ynh_setup_source() {
 
     local src_url="$(jq -r "$arch_prefix.url" <<< "$sources_json" | sed 's/^null$//')"
     local src_sum="$(jq -r "$arch_prefix.sha256" <<< "$sources_json" | sed 's/^null$//')"
-    local src_sumprg="sha256sum"
     local src_format="$(jq -r ".format" <<< "$sources_json" | sed 's/^null$//')"
     local src_in_subdir="$(jq -r ".in_subdir" <<< "$sources_json" | sed 's/^null$//')"
     src_in_subdir=${src_in_subdir:-true}
@@ -215,7 +214,7 @@ ynh_setup_source() {
         [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
 
         # If the file was prefetched but somehow doesn't match the sum, rm and redownload it
-        if [ -e "$src_filename" ] && ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
+        if [ -e "$src_filename" ] && ! echo "${src_sum} ${src_filename}" | sha256sum --check --status
         then
             rm -f "$src_filename"
         fi
@@ -233,9 +232,9 @@ ynh_setup_source() {
         fi
 
         # Check the control sum
-        if ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
+        if ! echo "${src_sum} ${src_filename}" | sha256sum --check --status
         then
-            local actual_sum="$(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1)"
+            local actual_sum="$(sha256sum ${src_filename} | cut --delimiter=' ' --fields=1)"
             local actual_size="$(du -hs ${src_filename} | cut --fields=1)"
             rm -f ${src_filename}
             ynh_die "Corrupt source for ${src_url}: Expected sha256sum to be ${src_sum} but got ${actual_sum} (size: ${actual_size})."

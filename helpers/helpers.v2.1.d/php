@@ -176,6 +176,8 @@ ynh_config_remove_phpfpm() {
 #
 _ynh_get_scalable_phpfpm() {
 
+    set +o xtrace # set +x
+
     # If no usage provided, default to the value existing in setting ... or to low
     local fpm_usage_in_setting=$(ynh_app_setting_get --key=fpm_usage)
     local usage=${fpm_usage_in_setting:-low}
@@ -195,16 +197,6 @@ _ynh_get_scalable_phpfpm() {
         footprint=50
     fi
 
-    # Define the factor to determine min_spare_servers
-    # to avoid having too few children ready to start for heavy apps
-    if [ $footprint -le 20 ]; then
-        min_spare_servers_factor=8
-    elif [ $footprint -le 35 ]; then
-        min_spare_servers_factor=5
-    else
-        min_spare_servers_factor=3
-    fi
-
     # Define the way the process manager handle child processes.
     if [ "$usage" = "low" ]; then
         php_pm=ondemand
@@ -216,9 +208,6 @@ _ynh_get_scalable_phpfpm() {
         ynh_die "Does not recognize '$usage' as an usage value."
     fi
 
-    # Get the total of RAM available, except swap.
-    local max_ram=$(ynh_get_ram --total)
-
     at_least_one() {
         # Do not allow value below 1
         if [ $1 -le 0 ]; then
@@ -228,10 +217,13 @@ _ynh_get_scalable_phpfpm() {
         fi
     }
 
+    # Get the total of RAM available, except swap.
+    local total_ram=$(ynh_get_ram --total)
+
     # Define pm.max_children
     # The value of pm.max_children is the total amount of ram divide by 2 and divide again by the footprint of a pool for this app.
     # So if PHP-FPM start the maximum of children, it won't exceed half of the ram.
-    php_max_children=$(($max_ram / 2 / $footprint))
+    php_max_children=$(($total_ram / 2 / $footprint))
     # If process manager is set as static, use half less children.
     # Used as static, there's always as many children as the value of pm.max_children
     if [ "$php_pm" = "static" ]; then
@@ -253,6 +245,17 @@ _ynh_get_scalable_phpfpm() {
     fi
 
     if [ "$php_pm" = "dynamic" ]; then
+
+        # Define the factor to determine min_spare_servers
+        # to avoid having too few children ready to start for heavy apps
+        if [ $footprint -le 20 ]; then
+            min_spare_servers_factor=8
+        elif [ $footprint -le 35 ]; then
+            min_spare_servers_factor=5
+        else
+            min_spare_servers_factor=3
+        fi
+
         # Define pm.start_servers, pm.min_spare_servers and pm.max_spare_servers for a dynamic process manager
         php_min_spare_servers=$(($php_max_children / $min_spare_servers_factor))
         php_min_spare_servers=$(at_least_one $php_min_spare_servers)
@@ -267,6 +270,15 @@ _ynh_get_scalable_phpfpm() {
         php_max_spare_servers=0
         php_start_servers=0
     fi
+
+    set -o xtrace # set -x
+
+    # For debugging, since otherwise things are hidden with set +x/-x
+    echo "php_pm:                $php_pm"
+    echo "php_max_children:      $php_max_children"
+    echo "php_min_spare_servers: $php_min_spare_servers"
+    echo "php_max_spare_servers: $php_max_spare_servers"
+    echo "php_start_servers:     $php_start_servers"
 }
 
 # Execute a command with Composer
