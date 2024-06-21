@@ -197,9 +197,6 @@ ynh_setup_source() {
         ynh_die "For source $source_id, expected either 'true' or 'false' for the extract parameter"
     fi
 
-    # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
-    local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${source_id}"
-
     # Gotta use this trick with 'dirname' because source_id may contain slashes x_x
     mkdir -p $(dirname /var/cache/yunohost/download/${YNH_APP_ID}/${source_id})
     src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${source_id}"
@@ -207,10 +204,6 @@ ynh_setup_source() {
     if [ "$src_format" = "docker" ]; then
         src_platform="${src_platform:-"linux/$YNH_ARCH"}"
     else
-        if test -e "$local_src"; then
-            cp $local_src $src_filename
-        fi
-
         [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
 
         # If the file was prefetched but somehow doesn't match the sum, rm and redownload it
