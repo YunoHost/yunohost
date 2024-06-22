@@ -81,6 +81,8 @@ ynh_psql_dump_db() {
 # | arg: pwd - the password to identify user by
 #
 ynh_psql_create_user() {
+    local user=$1
+    local pwd=$2
     sudo --login --user=postgres psql <<< "CREATE USER $user WITH ENCRYPTED PASSWORD '$pwd'"
 }
 
