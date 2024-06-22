@@ -328,14 +328,21 @@ ynh_install_mongo() {
 	# Check if MongoDB is already installed
 	local install_package=true
 	local current_version=$(ynh_package_version --package="mongodb-org-server")
+	# Focus only the major, minor versions
 	current_version=$(cut -c 1-3 <<< "$current_version")
 	
 	if [[ "a$current_version" != "a" ]]; then
 		if (( $(bc <<< "$current_version < $mongo_version") )); then
-			ynh_print_info --message="Upgrading Mongo from version $current_version to $mongo_version"
+			if (( $(bc <<< "scale = 0 ; x = $mongo_version / 1 - $current_version / 1; x > 1.0" ))); then
+				# Mongo only support upgrading a major version to another
+				ynh_print_err --message="Upgrading Mongo from version  $current_version to $mongo_version is not supported"
+				install_package=false
+			else
+				ynh_print_info --message="Upgrading Mongo from version $current_version to $mongo_version"
+			fi
 		else
 			if (( $(bc <<< "$current_version >= $mongo_version") )); then
-				ynh_print_info --message="Mongo version $current_version is already installed and will be kept instead of requested version $mongo_version"
+				ynh_print_warn --message="Mongo version $current_version is already installed and will be kept instead of requested version $mongo_version"
 				install_package=false
 			fi
 		fi
