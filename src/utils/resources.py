@@ -1234,7 +1234,7 @@ class AptDependenciesAppResource(AppResource):
         self._run_script("provision_or_update", script)
 
     def deprovision(self, context: Dict = {}):
-        if self.helpers_version >= 2.1
+        if self.helpers_version >= 2.1:
             ynh_apt_remove_dependencies = "ynh_apt_remove_dependencies"
         else:
             ynh_apt_remove_dependencies = "ynh_remove_app_dependencies"
