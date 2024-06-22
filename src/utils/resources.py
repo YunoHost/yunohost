@@ -162,17 +162,17 @@ class AppResource:
             and manager.wanted
             and manager.wanted.get("integration", {}).get("helpers_version")
         ):
-            self.helpers_version = float(manager.wanted.get("integration", {}).get(
-                "helpers_version"
-            ))
+            self.helpers_version = float(
+                manager.wanted.get("integration", {}).get("helpers_version")
+            )
         elif (
             manager
             and manager.current
             and manager.current.get("integration", {}).get("helpers_version")
         ):
-            self.helpers_version = float(manager.current.get("integration", {}).get(
-                "helpers_version"
-            ))
+            self.helpers_version = float(
+                manager.current.get("integration", {}).get("helpers_version")
+            )
         elif manager and manager.wanted and manager.wanted.get("packaging_format"):
             self.helpers_version = float(manager.wanted.get("packaging_format"))
         elif manager and manager.current and manager.current.get("packaging_format"):
