@@ -156,29 +156,29 @@ class AppResource:
             app_upstream_version = manager.current["version"].split("~")[0]
 
         # FIXME : should use packaging.version to properly parse / compare versions >_>
-        self.helpers_version = None
+        self.helpers_version: float = 0
         if (
             manager
             and manager.wanted
             and manager.wanted.get("integration", {}).get("helpers_version")
         ):
-            self.helpers_version = manager.wanted.get("integration", {}).get(
+            self.helpers_version = float(manager.wanted.get("integration", {}).get(
                 "helpers_version"
-            )
+            ))
         elif (
             manager
             and manager.current
             and manager.current.get("integration", {}).get("helpers_version")
         ):
-            self.helpers_version = manager.current.get("integration", {}).get(
+            self.helpers_version = float(manager.current.get("integration", {}).get(
                 "helpers_version"
-            )
+            ))
         elif manager and manager.wanted and manager.wanted.get("packaging_format"):
-            self.helpers_version = str(manager.wanted.get("packaging_format"))
+            self.helpers_version = float(manager.wanted.get("packaging_format"))
         elif manager and manager.current and manager.current.get("packaging_format"):
-            self.helpers_version = str(manager.current.get("packaging_format"))
+            self.helpers_version = float(manager.current.get("packaging_format"))
         if not self.helpers_version:
-            self.helpers_version = "1"
+            self.helpers_version = 1.0
 
         replacements: dict[str, str] = {
             "__APP__": self.app,
@@ -1208,7 +1208,7 @@ class AptDependenciesAppResource(AppResource):
 
     def provision_or_update(self, context: Dict = {}):
 
-        if float(self.helpers_version) >= 2.1:
+        if self.helpers_version >= 2.1:
             ynh_apt_install_dependencies = "ynh_apt_install_dependencies"
             ynh_apt_install_dependencies_from_extra_repository = (
                 "ynh_apt_install_dependencies_from_extra_repository"
@@ -1234,7 +1234,7 @@ class AptDependenciesAppResource(AppResource):
         self._run_script("provision_or_update", script)
 
     def deprovision(self, context: Dict = {}):
-        if float(self.helpers_version) >= 2.1:
+        if self.helpers_version >= 2.1
             ynh_apt_remove_dependencies = "ynh_apt_remove_dependencies"
         else:
             ynh_apt_remove_dependencies = "ynh_remove_app_dependencies"

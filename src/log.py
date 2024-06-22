@@ -77,7 +77,7 @@ BORING_LOG_LINES = [
     r"DEBUG - \+\+ app=\S+$",
     r"DEBUG - \+\+ jq -r .\S+$",
     r"DEBUG - \+\+ sed 's/\^null\$//'$",
-    "DEBUG - \\+ sed --in-place \$'s\\\\001",
+    "DEBUG - \\+ sed --in-place \\$'s\\\\001",
     "DEBUG - \\+ sed --in-place 's\u0001.*$",
 ]
 
