@@ -19,89 +19,68 @@ fi
 #
 # usage: ynh_config_add_phpfpm
 #
-# This helper assumes the app has an conf/extra_php-fpm.conf snippet
+# This will automatically generate an appropriate PHP-FPM configuration for this app.
 #
-# The actual PHP configuration will be automatically generated, 
-# and your extra_php-fpm.conf will be appended (typically contains PHP upload limits)
+# The resulting configuration will be deployed to the appropriate place:
+# /etc/php/$php_version/fpm/pool.d/$app.conf
 #
-# The resulting configuration will be deployed to the appropriate place, /etc/php/$php_version/fpm/pool.d/$app.conf
+# If the app provides a conf/extra_php-fpm.conf template, it will be appended
+# to the generated configuration. (In the vast majority of cases, this shouldnt
+# be necessary)
 #
-# Performance-related options in the PHP conf, such as : 
-# pm.max_children, pm.start_servers, pm.min_spare_servers pm.max_spare_servers
-# are computed from two parameters called "usage" and "footprint" which can be set to low/medium/high. (cf details below)
+# $php_version should be defined prior to calling this helper, but there should
+# be no reason to manually set it, as it is automatically set by the apt
+# helpers/resources when installing phpX.Y dependencies (PHP apps should at
+# least install phpX.Y-fpm using the apt helper/resource)
 #
-# If you wish to tweak those, please initialize the settings `fpm_usage` and `fpm_footprint` 
-# *prior* to calling this helper. Otherwise, "low" will be used as a default for both values.
+# $php_group can be defined as a global (from _common.sh) if the worker
+# processes should run with a different group than $app
 #
-# Otherwise, if you want the user to have control over these, we encourage to create a config panel 
-# (which should ultimately be standardized by the core ...)
+# Additional "pm" and "php_admin_value" settings which are meant to be possibly
+# configurable by admins from a future standard config panel at some point,
+# related to performance and availability of the app, for which tweaking may be
+# required if the app is used by "plenty" of users and other memory/CPU load
+# considerations....
 #
-# The footprint of the service will be used to defined the maximum footprint we can allow, which is half the maximum RAM.
-# So it will be used to defined 'pm.max_children'
-# A lower value for the footprint will allow more children for 'pm.max_children'. And so for
-#    'pm.start_servers', 'pm.min_spare_servers' and 'pm.max_spare_servers' which are defined from the
-#    value of 'pm.max_children'
-# NOTE: 'pm.max_children' can't exceed 4 times the number of processor's cores.
+# If you have good reasons to be willing to use different
+# defaults than the one set by this helper (while still allowing admin to
+# override it) you should use `ynh_app_setting_set_default`
 #
-# The usage value will defined the way php will handle the children for the pool.
-# A value set as 'low' will set the process manager to 'ondemand'. Children will start only if the
-#   service is used, otherwise no child will stay alive. This config gives the lower footprint when the
-#   service is idle. But will use more proc since it has to start a child as soon it's used.
-# Set as 'medium', the process manager will be at dynamic. If the service is idle, a number of children
-#   equal to pm.min_spare_servers will stay alive. So the service can be quick to answer to any request.
-#   The number of children can grow if needed. The footprint can stay low if the service is idle, but
-#   not null. The impact on the proc is a little bit less than 'ondemand' as there's always a few
-#   children already available.
-# Set as 'high', the process manager will be set at 'static'. There will be always as many children as
-#   'pm.max_children', the footprint is important (but will be set as maximum a quarter of the maximum
-#   RAM) but the impact on the proc is lower. The service will be quick to answer as there's always many
-#   children ready to answer.
+# - $php_upload_max_filezise: corresponds upload_max_filesize and post_max_size. Defaults to 50M
+# - $php_process_management: corresponds to "pm" (ondemand, dynamic, static). Defaults to ondemand
+# - $php_max_children: by default, computed from "total RAM" divided by 40, cf _default_php_max_children
+# - $php_memory_limit: by default, 128M (from global php.ini)
 #
-# Requires YunoHost version 4.1.0 or higher.
+# Note that if $php_process_management is set to "dynamic", then these
+# variables MUST be defined prior to calling the helper (no default value) ...
+# Check PHP-FPM's manual for more info on what these are (: ...
+#
+# - $php_start_servers
+# - $php_min_spare_servers
+# - $php_max_spare_servers
+#
 ynh_config_add_phpfpm() {
-    # ============ Argument parsing =============
-    local -A args_array=([g]=group=)
-    local group
-    ynh_handle_getopts_args "$@"
-    group=${group:-}
-    # ===========================================
 
-    # If the PHP version changed, remove the old fpm conf
-    # (NB: This stuff is also handled by the apt helper, which is usually triggered before this helper)
-    # FIXME: so is this still needed @_@
-    local old_php_version=$(ynh_app_setting_get --key=php_version)
-    if [ -n "$old_php_version" ] && [ "$old_php_version" != "$php_version" ]; then
-        local old_php_fpm_config_dir=$(ynh_app_setting_get --key=fpm_config_dir)
-        local old_php_finalphpconf="$old_php_fpm_config_dir/pool.d/$app.conf"
+    [[ -n "${php_version:-}" ]] || ynh_die "\$php_version should be defined prior to calling ynh_config_add_phpfpm. You should not need to define it manually, it is automatically set by the apt helper when installing the phpX.Y- depenencies"
 
-        if [[ -f "$old_php_finalphpconf" ]]
-        then
-            ynh_backup_if_checksum_is_different "$old_php_finalphpconf"
-            ynh_remove_fpm_config
-        fi
-    fi
+    # Apps may define $php_group as a global (e.g. from _common.sh) to change this
+    # (this is not meant to be overridable by users)
+    local php_group=${php_group:-$app}
 
-    local fpm_service="php${php_version}-fpm"
-    local fpm_config_dir="/etc/php/$php_version/fpm"
+    # Meant to be overridable by users from a standard config panel at some point ...
+    # Apps willing to tweak these should use ynh_setting_set_default_value (in install and upgrade?)
+    #
+    local php_upload_max_filesize=${php_upload_max_filesize:-50M}
+    local php_process_management=${php_process_management:-ondemand}  # alternatively 'dynamic' or 'static'
+    local php_max_children=${php_max_children:-$(_default_php_max_children)}
+    local php_memory_limit=${php_memory_limit:-128M}  # default value is from global php.ini
 
-    # Create the directory for FPM pools
-    mkdir --parents "$fpm_config_dir/pool.d"
-
-    # FIXME: zzzz do we really need those ...
-    ynh_app_setting_set --key=fpm_config_dir --value="$fpm_config_dir"
-    ynh_app_setting_set --key=fpm_service --value="$fpm_service"
-    ynh_app_setting_set --key=php_version --value=$php_version
-
-    # Define the values to use for the configuration of PHP.
-    _ynh_get_scalable_phpfpm
-
-    local phpfpm_group=$([[ -n "$group" ]] && echo "$group" || echo "$app")
-    local phpfpm_path="$YNH_APP_BASEDIR/conf/php-fpm.conf"
-    echo "
+    local phpfpm_template=$(mktemp)
+    cat << EOF > $phpfpm_template
 [__APP__]
 
 user = __APP__
-group = __PHPFPM_GROUP__
+group = __PHP_GROUP__
 
 chdir = __INSTALL_DIR__
 
@@ -109,39 +88,48 @@ listen = /var/run/php/php__PHP_VERSION__-fpm-__APP__.sock
 listen.owner = www-data
 listen.group = www-data
 
-pm = __PHP_PM__
+pm = __PHP_PROCESS_MANAGEMENT__
 pm.max_children = __PHP_MAX_CHILDREN__
 pm.max_requests = 500
 request_terminate_timeout = 1d
-" >"$phpfpm_path"
 
-    if [ "$php_pm" = "dynamic" ]; then
-        echo "
+EOF
+    if [ "$php_process_management" = "dynamic" ]; then
+        cat << EOF >> $phpfpm_template
 pm.start_servers = __PHP_START_SERVERS__
 pm.min_spare_servers = __PHP_MIN_SPARE_SERVERS__
 pm.max_spare_servers = __PHP_MAX_SPARE_SERVERS__
-" >>"$phpfpm_path"
-
-    elif [ "$php_pm" = "ondemand" ]; then
-        echo "
+EOF
+    elif [ "$php_process_management" = "ondemand" ]; then
+        cat << EOF >> $phpfpm_template
 pm.process_idle_timeout = 10s
-" >>"$phpfpm_path"
+EOF
     fi
 
-    # Concatene the extra config.
+    cat << EOF >> $phpfpm_template
+php_admin_value[upload_max_filesize] = __PHP_UPLOAD_MAX_FILESIZE__
+php_admin_value[post_max_size] = __PHP_UPLOAD_MAX_FILESIZE__
+php_admin_value[memory_limit] = __PHP_MEMORY_LIMIT__
+EOF
+
+    # Concatene the extra config
     if [ -e $YNH_APP_BASEDIR/conf/extra_php-fpm.conf ]; then
-        cat $YNH_APP_BASEDIR/conf/extra_php-fpm.conf >>"$phpfpm_path"
+        cat $YNH_APP_BASEDIR/conf/extra_php-fpm.conf >>"$phpfpm_template"
     fi
 
-    ynh_config_add --template="$phpfpm_path" --destination="$fpm_config_dir/pool.d/$app.conf"
+    # Make sure the fpm pool dir exists
+    mkdir --parents "/etc/php/$php_version/fpm/pool.d"
+    # And hydrate configuration
+    ynh_config_add --template="$phpfpm_template" --destination="/etc/php/$php_version/fpm/pool.d/$app.conf"
 
     # Validate that the new php conf doesn't break php-fpm entirely
     if ! php-fpm${php_version} --test 2>/dev/null; then
         php-fpm${php_version} --test || true
-        ynh_safe_rm "$fpm_config_dir/pool.d/$app.conf"
+        ynh_safe_rm "/etc/php/$php_version/fpm/pool.d/$app.conf"
         ynh_die "The new configuration broke php-fpm?"
     fi
-    ynh_systemctl --service=$fpm_service --action=reload
+
+    ynh_systemctl --service=php${php_version}-fpm --action=reload
 }
 
 # Remove the dedicated PHP-FPM config
@@ -150,136 +138,30 @@ pm.process_idle_timeout = 10s
 #
 # Requires YunoHost version 2.7.2 or higher.
 ynh_config_remove_phpfpm() {
-    local fpm_config_dir=$(ynh_app_setting_get --key=fpm_config_dir)
-
-    ynh_safe_rm "$fpm_config_dir/pool.d/$app.conf"
+    ynh_safe_rm "/etc/php/$php_version/fpm/pool.d/$app.conf"
     ynh_systemctl --service="php${php_version}-fpm" --action=reload
 }
 
-# Define the values to configure PHP-FPM
-#
-# [internal]
-#
-# usage: _ynh_get_scalable_phpfpm
-# Footprint can be defined via the "fpm_footprint", to be set prior to calling this helper
-# low    - Less than 20 MB of RAM by pool.
-# medium - Between 20 MB and 40 MB of RAM by pool.
-# high   - More than 40 MB of RAM by pool.
-# Or specify exactly the footprint, the load of the service as MB by pool instead of having a standard value.
-# To have this value, use the following command and stress the service.
-# watch -n0.5 ps -o user,cmd,%cpu,rss -u APP
-#
-# Usage can be defined via the "fpm_usage", to be set prior to calling this helper
-# low    - Personal usage, behind the SSO.
-# medium - Low usage, few people or/and publicly accessible.
-# high   - High usage, frequently visited website.
-#
-_ynh_get_scalable_phpfpm() {
-
-    set +o xtrace # set +x
-
-    # If no usage provided, default to the value existing in setting ... or to low
-    local fpm_usage_in_setting=$(ynh_app_setting_get --key=fpm_usage)
-    local usage=${fpm_usage_in_setting:-low}
-    ynh_app_setting_set --key=fpm_usage --value=$usage
-
-    # If no footprint provided, default to the value existing in setting ... or to low
-    local fpm_footprint_in_setting=$(ynh_app_setting_get --key=fpm_footprint)
-    local footprint=${fpm_footprint_in_setting:-low}
-    ynh_app_setting_set --key=fpm_footprint --value=$footprint
-
-    # Set all characters as lowercase
-    if [ "$footprint" = "low" ]; then
-        footprint=20
-    elif [ "$footprint" = "medium" ]; then
-        footprint=35
-    elif [ "$footprint" = "high" ]; then
-        footprint=50
-    fi
-
-    # Define the way the process manager handle child processes.
-    if [ "$usage" = "low" ]; then
-        php_pm=ondemand
-    elif [ "$usage" = "medium" ]; then
-        php_pm=dynamic
-    elif [ "$usage" = "high" ]; then
-        php_pm=static
-    else
-        ynh_die "Does not recognize '$usage' as an usage value."
-    fi
-
-    at_least_one() {
-        # Do not allow value below 1
-        if [ $1 -le 0 ]; then
-            echo 1
-        else
-            echo $1
-        fi
-    }
-
-    # Get the total of RAM available, except swap.
+_default_php_max_children() {
+    # Get the total of RAM available
     local total_ram=$(ynh_get_ram --total)
 
-    # Define pm.max_children
-    # The value of pm.max_children is the total amount of ram divide by 2 and divide again by the footprint of a pool for this app.
-    # So if PHP-FPM start the maximum of children, it won't exceed half of the ram.
-    php_max_children=$(($total_ram / 2 / $footprint))
-    # If process manager is set as static, use half less children.
-    # Used as static, there's always as many children as the value of pm.max_children
-    if [ "$php_pm" = "static" ]; then
-        php_max_children=$(($php_max_children / 2))
-    fi
-    php_max_children=$(at_least_one $php_max_children)
-
+    # The value of pm.max_children is the total amount of ram divide by 2,
+    # divide again by 20MB (= a default, classic worker footprint) This is
+    # designed such that if PHP-FPM start the maximum of children, it won't
+    # exceed half of the ram.
+    local php_max_children="$(($total_ram / 40))"
+    # Make sure we get at least max_children = 1
+    if [ $php_max_children -le 0 ]; then
+        php_max_children=1
     # To not overload the proc, limit the number of children to 4 times the number of cores.
-    local core_number=$(nproc)
-    local max_proc=$(($core_number * 4))
-    if [ $php_max_children -gt $max_proc ]; then
-        php_max_children=$max_proc
+    elif [ $php_max_children -gt "$(($(nproc) * 4))" ]; then
+        php_max_children="$(($(nproc) * 4))"
     fi
 
-    # Get a potential forced value for php_max_children
-    local php_forced_max_children=$(ynh_app_setting_get --key=php_forced_max_children)
-    if [ -n "$php_forced_max_children" ]; then
-        php_max_children=$php_forced_max_children
-    fi
-
-    if [ "$php_pm" = "dynamic" ]; then
-
-        # Define the factor to determine min_spare_servers
-        # to avoid having too few children ready to start for heavy apps
-        if [ $footprint -le 20 ]; then
-            min_spare_servers_factor=8
-        elif [ $footprint -le 35 ]; then
-            min_spare_servers_factor=5
-        else
-            min_spare_servers_factor=3
-        fi
-
-        # Define pm.start_servers, pm.min_spare_servers and pm.max_spare_servers for a dynamic process manager
-        php_min_spare_servers=$(($php_max_children / $min_spare_servers_factor))
-        php_min_spare_servers=$(at_least_one $php_min_spare_servers)
-
-        php_max_spare_servers=$(($php_max_children / 2))
-        php_max_spare_servers=$(at_least_one $php_max_spare_servers)
-
-        php_start_servers=$(($php_min_spare_servers + ($php_max_spare_servers - $php_min_spare_servers) / 2))
-        php_start_servers=$(at_least_one $php_start_servers)
-    else
-        php_min_spare_servers=0
-        php_max_spare_servers=0
-        php_start_servers=0
-    fi
-
-    set -o xtrace # set -x
-
-    # For debugging, since otherwise things are hidden with set +x/-x
-    echo "php_pm:                $php_pm"
-    echo "php_max_children:      $php_max_children"
-    echo "php_min_spare_servers: $php_min_spare_servers"
-    echo "php_max_spare_servers: $php_max_spare_servers"
-    echo "php_start_servers:     $php_start_servers"
+    echo "$php_max_children"
 }
+
 
 # Execute a command with Composer
 #
