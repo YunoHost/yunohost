@@ -14,7 +14,7 @@ FIRST_CALL_TO_LOGROTATE="true"
 # Requires YunoHost version 2.6.4 or higher.
 ynh_config_add_logrotate() {
 
-    logfile="$1"
+    local logfile="${1:-}"
 
     set -o noglob
     if [[ -z "$logfile" ]]; then
