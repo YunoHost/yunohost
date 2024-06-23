@@ -8,19 +8,18 @@ ynh_go_try_bash_extension() {
   fi
 }
 
-goenv_install_dir="/opt/goenv"
-go_version_path="$goenv_install_dir/versions"
+readonly GOENV_INSTALL_DIR="/opt/goenv"
 # goenv_ROOT is the directory of goenv, it needs to be loaded as a environment variable.
-export GOENV_ROOT="$goenv_install_dir"
+export GOENV_ROOT="$GOENV_INSTALL_DIR"
 
 _ynh_load_go_in_path_and_other_tweaks() {
 
     # Get the absolute path of this version of go
-    local go_path="$go_version_path/$app/bin"
+    go_dir="$GOENV_INSTALL_DIR/versions/$app/bin"
 
     # Load the path of this version of go in $PATH
-    if [[ :$PATH: != *":$go_path"* ]]; then
-        PATH="$go_path:$PATH"
+    if [[ :$PATH: != *":$go_dir"* ]]; then
+        PATH="$go_dir:$PATH"
     fi
 
     # Export PATH such that it's available through sudo -E / ynh_exec_as $app
@@ -32,7 +31,7 @@ _ynh_load_go_in_path_and_other_tweaks() {
 
     # Sets the local application-specific go version
     pushd ${install_dir}
-        $goenv_install_dir/bin/goenv local $go_version
+        $GOENV_INSTALL_DIR/bin/goenv local $go_version
     popd
 }
 
@@ -56,7 +55,7 @@ ynh_go_install () {
     [[ -n "${go_version:-}" ]] || ynh_die "\$go_version should be defined prior to calling ynh_go_install"
 
     # Load goenv path in PATH
-    local CLEAR_PATH="$goenv_install_dir/bin:$PATH"
+    local CLEAR_PATH="$GOENV_INSTALL_DIR/bin:$PATH"
 
     # Remove /usr/local/bin in PATH in case of Go prior installation
     PATH=$(echo $CLEAR_PATH | sed 's@/usr/local/bin:@@')
@@ -65,9 +64,9 @@ ynh_go_install () {
     test -x /usr/bin/go && mv /usr/bin/go /usr/bin/go_goenv
 
     # Install or update goenv
-    mkdir -p $goenv_install_dir
-    pushd "$goenv_install_dir"
-        if ! [ -x "$goenv_install_dir/bin/goenv" ]; then
+    mkdir -p $GOENV_INSTALL_DIR
+    pushd "$GOENV_INSTALL_DIR"
+        if ! [ -x "$GOENV_INSTALL_DIR/bin/goenv" ]; then
             ynh_print_info "Downloading goenv..."
             git init -q
             git remote add origin https://github.com/syndbg/goenv.git 
@@ -78,13 +77,13 @@ ynh_go_install () {
         local git_latest_tag=$(git describe --tags "$(git rev-list --tags --max-count=1)")
         git checkout -q "$git_latest_tag"
         ynh_go_try_bash_extension
-        goenv=$goenv_install_dir/bin/goenv
+        goenv=$GOENV_INSTALL_DIR/bin/goenv
     popd
 
     # Install or update xxenv-latest
-    mkdir -p "$goenv_install_dir/plugins/xxenv-latest"
-    pushd "$goenv_install_dir/plugins/xxenv-latest"
-        if ! [ -x "$goenv_install_dir/plugins/xxenv-latest/bin/goenv-latest" ]; then
+    mkdir -p "$GOENV_INSTALL_DIR/plugins/xxenv-latest"
+    pushd "$GOENV_INSTALL_DIR/plugins/xxenv-latest"
+        if ! [ -x "$GOENV_INSTALL_DIR/plugins/xxenv-latest/bin/goenv-latest" ]; then
             ynh_print_info "Downloading xxenv-latest..."
             git init -q
             git remote add origin https://github.com/momo-lab/xxenv-latest.git 
@@ -97,10 +96,10 @@ ynh_go_install () {
     popd
 
     # Enable caching
-    mkdir -p "${goenv_install_dir}/cache"
+    mkdir -p "${GOENV_INSTALL_DIR}/cache"
 
     # Create shims directory if needed
-    mkdir -p "${goenv_install_dir}/shims"
+    mkdir -p "${GOENV_INSTALL_DIR}/shims"
 
     # Restore /usr/local/bin in PATH
     PATH=$CLEAR_PATH
@@ -122,8 +121,8 @@ ynh_go_install () {
 
     # Set environment for Go users
     echo  "#goenv
-export GOENV_ROOT=$goenv_install_dir
-export PATH=\"$goenv_install_dir/bin:$PATH\"
+export GOENV_ROOT=$GOENV_INSTALL_DIR
+export PATH=\"$GOENV_INSTALL_DIR/bin:$PATH\"
 eval \"\$(goenv init -)\"
 #goenv" > /etc/profile.d/goenv.sh
 
@@ -142,7 +141,7 @@ ynh_go_remove () {
     local go_version=$(ynh_app_setting_get --key="go_version")
 
     # Load goenv path in PATH
-    local CLEAR_PATH="$goenv_install_dir/bin:$PATH"
+    local CLEAR_PATH="$GOENV_INSTALL_DIR/bin:$PATH"
 
     # Remove /usr/local/bin in PATH in case of Go prior installation
     PATH=$(echo $CLEAR_PATH | sed 's@/usr/local/bin:@@')
@@ -182,7 +181,7 @@ _ynh_go_cleanup () {
         if ! `echo ${required_go_versions} | grep "${installed_go_version}" 1>/dev/null 2>&1`
         then
             ynh_print_info "Removing of Go-$installed_go_version"
-            $goenv_install_dir/bin/goenv uninstall --force "$installed_go_version"
+            $GOENV_INSTALL_DIR/bin/goenv uninstall --force "$installed_go_version"
         fi
     done
 
@@ -191,7 +190,7 @@ _ynh_go_cleanup () {
     then
         # Remove goenv environment configuration
         ynh_print_info "Removing of goenv"
-        ynh_safe_rm "$goenv_install_dir"
+        ynh_safe_rm "$GOENV_INSTALL_DIR"
         ynh_safe_rm "/etc/profile.d/goenv.sh"
     fi
 }
