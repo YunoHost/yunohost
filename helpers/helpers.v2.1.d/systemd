@@ -71,6 +71,12 @@ ynh_systemctl() {
     timeout=${timeout:-60}
     # ===========================================
 
+    # On CI, use length=100 because it's sometime hell to debug otherwise for super-long output
+    if ynh_in_ci_tests && [ $length -le 20 ]
+    then
+        length=100
+    fi
+
     # Manage case of service already stopped
     if [ "$action" == "stop" ] && ! systemctl is-active --quiet $service; then
         return 0
