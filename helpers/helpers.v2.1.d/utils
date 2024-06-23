@@ -460,7 +460,7 @@ ynh_read_manifest() {
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_app_upstream_version() {
-    echo "${$YNH_APP_MANIFEST_VERSION/~ynh*/}"
+    echo "${YNH_APP_MANIFEST_VERSION/~ynh*/}"
 }
 
 # Return 0 if the "upstream" part of the version changed, or 1 otherwise (ie only the ~ynh suffix changed)
