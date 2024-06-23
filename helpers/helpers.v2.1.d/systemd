@@ -49,7 +49,7 @@ ynh_config_remove_systemd() {
 # | arg: -a, --action=       - Action to perform with systemctl. Default: start
 # | arg: -w, --wait_until=   - The pattern to find in the log to attest the service is effectively fully started.
 # | arg: -p, --log_path=     - Log file - Path to the log file. Default : `/var/log/$app/$app.log`
-# | arg: -t, --timeout=      - Timeout - The maximum time to wait before ending the watching. Default : 300 seconds.
+# | arg: -t, --timeout=      - Timeout - The maximum time to wait before ending the watching. Default : 60 seconds.
 # | arg: -e, --length=       - Length of the error log displayed for debugging : Default : 20
 #
 # Requires YunoHost version 3.5.0 or higher.
@@ -68,7 +68,7 @@ ynh_systemctl() {
     wait_until=${wait_until:-}
     length=${length:-20}
     log_path="${log_path:-/var/log/$service/$service.log}"
-    timeout=${timeout:-300}
+    timeout=${timeout:-60}
     # ===========================================
 
     # Manage case of service already stopped
