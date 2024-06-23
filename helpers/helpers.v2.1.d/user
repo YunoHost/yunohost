@@ -178,5 +178,5 @@ ynh_system_user_delete() {
 #
 # usage: ynh_exec_as_app COMMAND [ARG ...]
 ynh_exec_as_app() {
-    sudo -E -u"$app" "$@"
+    sudo -E -u "$app" "$@"
 }
