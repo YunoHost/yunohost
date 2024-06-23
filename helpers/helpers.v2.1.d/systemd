@@ -162,6 +162,13 @@ ynh_systemctl() {
                 ynh_print_warn "==="
                 tail --lines=$length "$log_path" >&2
             fi
+
+            # If we tried to reload/start/restart the service but systemctl consider it to be still inactive/broken, then handle it as a failure
+            if ([ "$action" == "reload" ] || [ "$action" == "start" ] || [ "$action" == "restart" ]) && ! systemctl --quiet is-active $service
+            then
+                _ynh_clean_check_starting
+                return 1
+            fi
         fi
         _ynh_clean_check_starting
     fi
