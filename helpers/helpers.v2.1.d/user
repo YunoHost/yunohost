@@ -174,9 +174,9 @@ ynh_system_user_delete() {
 
 # Execute a command after sudoing as $app
 #
-# Note that exported bash env variables are kept (using -E option of sudo)
+# Note that the $PATH variable is preserved (using --preserve-env=PATH)
 #
 # usage: ynh_exec_as_app COMMAND [ARG ...]
 ynh_exec_as_app() {
-    sudo -E -u "$app" "$@"
+    sudo --preserve-env=PATH -u "$app" "$@"
 }
