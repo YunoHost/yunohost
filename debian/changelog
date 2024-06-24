@@ -1,3 +1,15 @@
+yunohost (11.2.17) stable; urgency=low
+
+  - helpers: Misc cleaning / reorganizing to prepare new doc (2895d4d9)
+  - helpers: rework helper doc now that we have multiple versions of helpers in parallel + improve structure (group helper file in categories) (094cd9dd)
+  - helpers/mongo: less noisy output when checking the avx flag is here in /proc/cpuinfo (2af4c157)
+  - apps/helpers2.1: fix app env in resource upgrade context ending up in incorrect helper version being used (ed426f05)
+  - helpers2.1: forgot to propagate the 'goenv latest' fix from helpers v1 (d8c3ff4c)
+  - helpers2.1: drop ynh_apps helper because only a single app is using it ... (1fb80e5d)
+  - helpers2.1: other typo fixes
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 24 Jun 2024 22:36:32 +0200
+
 yunohost (11.2.16) stable; urgency=low
 
   - apps/logs: fix some information not being redacted because of the packaging v2 flows (a25033bb)
