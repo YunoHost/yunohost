@@ -257,7 +257,11 @@ class AppResource:
         )
         from yunohost.hook import hook_exec_with_script_debug_if_failure
 
-        workdir = self.manager.workdir if self.manager and self.manager.workdir else _make_tmp_workdir_for_app(app=self.app)
+        workdir = (
+            self.manager.workdir
+            if self.manager and self.manager.workdir
+            else _make_tmp_workdir_for_app(app=self.app)
+        )
 
         env_ = _make_environment_for_app_script(
             self.app,
