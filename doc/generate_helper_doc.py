@@ -21,20 +21,35 @@ tree = {
         "title": "Databases",
         "notes": "This is coupled to the 'database' resource in the manifest.toml - at least for mysql/postgresql. Mongodb/redis may have better integration in the future.",
         "subsections": ["mysql", "postgresql", "mongodb", "redis"],
-     },
+    },
     "conf": {
         "title": "Configurations / templating",
-        "subsections": ["templating", "nginx", "php", "systemd", "fail2ban", "logrotate"],
+        "subsections": [
+            "templating",
+            "nginx",
+            "php",
+            "systemd",
+            "fail2ban",
+            "logrotate",
+        ],
     },
     "misc": {
         "title": "Misc tools",
-        "subsections": ["utils", "setting", "string", "backup", "logging", "multimedia"],
+        "subsections": [
+            "utils",
+            "setting",
+            "string",
+            "backup",
+            "logging",
+            "multimedia",
+        ],
     },
     "meh": {
         "title": "Deprecated or handled by the core / app resources since v2",
         "subsections": ["permission", "apt", "systemuser"],
     },
 }
+
 
 def get_current_commit():
     p = subprocess.Popen(
@@ -147,7 +162,10 @@ class Parser:
                     # (we ignore helpers containing [internal] ...)
                     if (
                         "[packagingv1]" not in current_block["comments"]
-                        and not any(line.startswith("[internal]") for line in current_block["comments"])
+                        and not any(
+                            line.startswith("[internal]")
+                            for line in current_block["comments"]
+                        )
                         and not current_block["name"].startswith("_")
                     ):
                         self.blocks.append(current_block)
