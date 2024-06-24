@@ -770,7 +770,7 @@ def app_upgrade(
             from yunohost.utils.resources import AppResourceManager
 
             AppResourceManager(
-                app_instance_name, wanted=manifest, current=app_dict["manifest"]
+                app_instance_name, wanted=manifest, current=app_dict["manifest"], workdir=extracted_app_folder
             ).apply(
                 rollback_and_raise_exception_if_failure=True,
                 operation_logger=operation_logger,
