@@ -46,10 +46,13 @@
 #
 # Requires YunoHost version 3.2.2 or higher.
 ynh_handle_getopts_args() {
+    # Trick to only re-enable debugging if it was set before
+    local xtrace_enable=$(set +o | grep xtrace)
+
     # Manage arguments only if there's some provided
     set +o xtrace # set +x
     if [ $# -eq 0 ]; then
-        set -o xtrace # set -x
+        eval "$xtrace_enable"
         return
     fi
 
@@ -181,5 +184,5 @@ ynh_handle_getopts_args() {
     # Call parse_arg and pass the modified list of args as an array of arguments.
     parse_arg "${arguments[@]}"
     
-    set -o xtrace # set -x
+    eval "$xtrace_enable"
 }

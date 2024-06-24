@@ -2992,18 +2992,42 @@ def _make_environment_for_app_script(
     # If packaging format v2, load all settings
     if manifest["packaging_format"] >= 2 or force_include_app_settings:
         env_dict["app"] = app
+        data_to_redact = []
+        prefixes_or_suffixes_to_redact = [
+            "pwd",
+            "pass",
+            "passwd",
+            "password",
+            "passphrase",
+            "secret",
+            "key",
+            "token",
+        ]
+
         for setting_name, setting_value in _get_app_settings(app).items():
             # Ignore special internal settings like checksum__
             # (not a huge deal to load them but idk...)
             if setting_name.startswith("checksum__"):
                 continue
 
-            env_dict[setting_name] = str(setting_value)
+            setting_value = str(setting_value)
+            env_dict[setting_name] = setting_value
+
+            # Check if we should redact this setting value
+            # (the check on the setting length exists to prevent stupid stuff like redacting empty string or something which is actually just 0/1, true/false, ...
+            if len(setting_value) > 6 and any(
+                setting_name.startswith(p) or setting_name.endswith(p)
+                for p in prefixes_or_suffixes_to_redact
+            ):
+                data_to_redact.append(setting_value)
 
         # Special weird case for backward compatibility...
         # 'path' was loaded into 'path_url' .....
         if "path" in env_dict:
             env_dict["path_url"] = env_dict["path"]
+
+        for operation_logger in OperationLogger._instances:
+            operation_logger.data_to_redact.extend(data_to_redact)
 
     return env_dict
 

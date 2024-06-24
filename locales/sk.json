@@ -265,5 +265,18 @@
     "service_description_rspamd": "Filtruje spam a iné funkcie týkajúce sa e-mailu",
     "log_letsencrypt_cert_renew": "Obnoviť '{}' certifikát Let's Encrypt",
     "domain_config_cert_summary_selfsigned": "UPOZORNENIE: Aktuálny certifikát je vlastnoručne podpísaný. Prehliadače budú návštevníkom zobrazovať strašidelné varovanie!",
-    "global_settings_setting_ssowat_panel_overlay_enabled": "Povoliť malú štvorcovú ikonu portálu „YunoHost“ na aplikáciach"
+    "global_settings_setting_ssowat_panel_overlay_enabled": "Povoliť malú štvorcovú ikonu portálu „YunoHost“ na aplikáciach",
+    "domain_config_mail_out": "Odchádzajúce e-maily",
+    "domain_config_default_app": "Predvolená aplikácia",
+    "domain_config_xmpp_help": "Pozor: niektoré funkcie XMPP vyžadujú aktualizáciu vašich DNS záznamov a obnovenie Lets Encrypt certifikátu pred tým, ako je ich možné zapnúť",
+    "domain_config_default_app_help": "Návštevníci budú pri návšteve tejto domény automaticky presmerovaní na túto doménu. Ak nenastavíte žiadnu aplikáciu, zobrazí sa stránka s prihlasovacím formulárom na portál.",
+    "registrar_infos": "Informácie o registrátorovi",
+    "domain_dns_registrar_managed_in_parent_domain": "Táto doména je subdoména {parent_domain_link}. Nastavenie DNS registrátora je spravovaná v konfiguračnom paneli {parent_domain}.",
+    "log_letsencrypt_cert_install": "Inštalovať certifikát Let's Encrypt na doménu '{}'",
+    "domain_config_cert_no_checks": "Ignorovať kontroly diagnostiky",
+    "domain_config_cert_install": "Nainštalovať certifikát Let's Encrypt",
+    "domain_config_mail_in": "Prichádzajúce e-maily",
+    "domain_config_cert_summary": "Stav certifikátu",
+    "domain_config_xmpp": "Krátke správy (XMPP)",
+    "log_app_makedefault": "Nastaviť '{}' ako predvolenú aplikáciu"
 }

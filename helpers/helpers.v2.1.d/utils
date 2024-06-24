@@ -158,7 +158,6 @@ ynh_setup_source() {
 
     local src_url="$(jq -r "$arch_prefix.url" <<< "$sources_json" | sed 's/^null$//')"
     local src_sum="$(jq -r "$arch_prefix.sha256" <<< "$sources_json" | sed 's/^null$//')"
-    local src_sumprg="sha256sum"
     local src_format="$(jq -r ".format" <<< "$sources_json" | sed 's/^null$//')"
     local src_in_subdir="$(jq -r ".in_subdir" <<< "$sources_json" | sed 's/^null$//')"
     src_in_subdir=${src_in_subdir:-true}
@@ -198,9 +197,6 @@ ynh_setup_source() {
         ynh_die "For source $source_id, expected either 'true' or 'false' for the extract parameter"
     fi
 
-    # (Unused?) mecanism where one can have the file in a special local cache to not have to download it...
-    local local_src="/opt/yunohost-apps-src/${YNH_APP_ID}/${source_id}"
-
     # Gotta use this trick with 'dirname' because source_id may contain slashes x_x
     mkdir -p $(dirname /var/cache/yunohost/download/${YNH_APP_ID}/${source_id})
     src_filename="/var/cache/yunohost/download/${YNH_APP_ID}/${source_id}"
@@ -208,14 +204,10 @@ ynh_setup_source() {
     if [ "$src_format" = "docker" ]; then
         src_platform="${src_platform:-"linux/$YNH_ARCH"}"
     else
-        if test -e "$local_src"; then
-            cp $local_src $src_filename
-        fi
-
         [ -n "$src_url" ] || ynh_die "Couldn't parse SOURCE_URL from $src_file_path ?"
 
         # If the file was prefetched but somehow doesn't match the sum, rm and redownload it
-        if [ -e "$src_filename" ] && ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
+        if [ -e "$src_filename" ] && ! echo "${src_sum} ${src_filename}" | sha256sum --check --status
         then
             rm -f "$src_filename"
         fi
@@ -233,9 +225,9 @@ ynh_setup_source() {
         fi
 
         # Check the control sum
-        if ! echo "${src_sum} ${src_filename}" | ${src_sumprg} --check --status
+        if ! echo "${src_sum} ${src_filename}" | sha256sum --check --status
         then
-            local actual_sum="$(${src_sumprg} ${src_filename} | cut --delimiter=' ' --fields=1)"
+            local actual_sum="$(sha256sum ${src_filename} | cut --delimiter=' ' --fields=1)"
             local actual_size="$(du -hs ${src_filename} | cut --fields=1)"
             rm -f ${src_filename}
             ynh_die "Corrupt source for ${src_url}: Expected sha256sum to be ${src_sum} but got ${actual_sum} (size: ${actual_size})."
@@ -468,7 +460,7 @@ ynh_read_manifest() {
 #
 # Requires YunoHost version 3.5.0 or higher.
 ynh_app_upstream_version() {
-    echo "${$YNH_APP_MANIFEST_VERSION/~ynh*/}"
+    echo "${YNH_APP_MANIFEST_VERSION/~ynh*/}"
 }
 
 # Return 0 if the "upstream" part of the version changed, or 1 otherwise (ie only the ~ynh suffix changed)
