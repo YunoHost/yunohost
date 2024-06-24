@@ -51,6 +51,7 @@ ynh_handle_getopts_args() {
         return
     # Validate that the first char is - because it should be something like --option=value or -o ...
     elif [[ "${1:0:1}" != "-" ]]
+    then
         ynh_die "It looks like you called the helper using positional arguments instead of keyword arguments ?"
     fi
 
