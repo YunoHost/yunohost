@@ -4,6 +4,7 @@ readonly N_INSTALL_DIR="/opt/node_n"
 # N_PREFIX is the directory of n, it needs to be loaded as a environment variable.
 export N_PREFIX="$N_INSTALL_DIR"
 
+# [internal]
 _ynh_load_nodejs_in_path_and_other_tweaks() {
 
     # Get the absolute path of this version of node
@@ -27,19 +28,17 @@ _ynh_load_nodejs_in_path_and_other_tweaks() {
 
 # Install a specific version of nodejs, using 'n'
 #
-# The installed version is defined by $nodejs_version which should be defined as global prior to calling this helper
+# The installed version is defined by `$nodejs_version` which should be defined as global prior to calling this helper
 #
 # usage: ynh_nodejs_install
 #
 # `n` (Node version management) uses the `PATH` variable to store the path of the version of node it is going to use.
 # That's how it changes the version
 #
-# Adds the appropriate, specific version of nodejs to the PATH variable (which
-# is also exported, to ease the use of ynh_exec_as_app). Also define variable
-# PATH_with_nodejs to be used in the systemd config
-# (Environment="PATH=__PATH_WITH_NODEJS__")
-#
-# Requires YunoHost version 2.7.12 or higher.
+# The helper adds the appropriate, specific version of nodejs to the `$PATH` variable (which
+# is preserved when calling ynh_exec_as_app). Also defines:
+# - `$path_with_nodejs` to be used in the systemd config (`Environment="PATH=__PATH_WITH_NODEJS__"`)
+# - `$nodejs_dir`, the directory containing the specific version of nodejs, which may be used in the systemd config too (e.g. `ExecStart=__NODEJS_DIR__/node foo bar`)
 ynh_nodejs_install() {
     # Use n, https://github.com/tj/n to manage the nodejs versions
 
@@ -105,8 +104,6 @@ ynh_nodejs_install() {
 # This helper will check if another app uses the same version of node.
 # - If not, this version of node will be removed.
 # - If no other app uses node, n will be also removed.
-#
-# Requires YunoHost version 2.7.12 or higher.
 ynh_nodejs_remove() {
 
     [[ -n "${nodejs_version:-}" ]] || ynh_die "\$nodejs_version should be defined prior to calling ynh_nodejs_remove"

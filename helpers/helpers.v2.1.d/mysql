@@ -16,7 +16,7 @@ ynh_mysql_db_shell() {
 
 # Create a database and grant optionnaly privilegies to a user
 #
-# [internal]
+# [internal] ... handled by the core / "database resource"
 #
 # usage: ynh_mysql_create_db db [user [pwd]]
 # | arg: db - the database name to create
@@ -42,7 +42,7 @@ ynh_mysql_create_db() {
 
 # Drop a database
 #
-# [internal]
+# [internal] ... handled by the core / "database resource"
 #
 # If you intend to drop the database *and* the associated user,
 # consider using ynh_mysql_remove_db instead.
@@ -57,7 +57,7 @@ ynh_mysql_drop_db() {
 # Dump a database
 #
 # usage: ynh_mysql_dump_db database
-# | arg: -d, --database=    - the database name to dump (by default, $db_name)
+# | arg: database   - the database name to dump (by default, $db_name)
 # | ret: The mysqldump output
 #
 # example: ynh_mysql_dump_db "roundcube" > ./dump.sql
@@ -69,7 +69,7 @@ ynh_mysql_dump_db() {
 
 # Create a user
 #
-# [internal]
+# [internal] ... handled by the core / "database resource"
 #
 # usage: ynh_mysql_create_user user pwd [host]
 # | arg: user - the user name to create
@@ -84,7 +84,7 @@ ynh_mysql_create_user() {
 # [internal]
 #
 # usage: ynh_mysql_user_exists user
-# | arg: user=    - the user for which to check existence
+# | arg: user   - the user for which to check existence
 # | ret: 0 if the user exists, 1 otherwise.
 ynh_mysql_user_exists() {
     local user=$1
@@ -92,6 +92,8 @@ ynh_mysql_user_exists() {
 }
 
 # Check if a mysql database exists
+#
+# [internal]
 #
 # usage: ynh_mysql_database_exists database
 # | arg: database    - the database for which to check existence
@@ -104,7 +106,7 @@ ynh_mysql_database_exists() {
 
 # Drop a user
 #
-# [internal]
+# [internal] ... handled by the core / "database resource"
 #
 # usage: ynh_mysql_drop_user user
 # | arg: user - the user name to drop

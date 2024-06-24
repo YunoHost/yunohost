@@ -19,7 +19,7 @@ ynh_psql_db_shell() {
 
 # Create a database and grant optionnaly privilegies to a user
 #
-# [internal]
+# [internal] ... handled by the core / "database resource"
 #
 # usage: ynh_psql_create_db db [user]
 # | arg: db - the database name to create
@@ -42,7 +42,7 @@ ynh_psql_create_db() {
 
 # Drop a database
 #
-# [internal]
+# [internal] ... handled by the core / "database resource"
 #
 # If you intend to drop the database *and* the associated user,
 # consider using ynh_psql_remove_db instead.
@@ -74,7 +74,7 @@ ynh_psql_dump_db() {
 
 # Create a user
 #
-# [internal]
+# [internal] ... handled by the core / "database resource"
 #
 # usage: ynh_psql_create_user user pwd
 # | arg: user - the user name to create
@@ -88,7 +88,7 @@ ynh_psql_create_user() {
 
 # Check if a psql user exists
 #
-# [packagingv1]
+# [internal]
 #
 # usage: ynh_psql_user_exists user
 # | arg: user=    - the user for which to check existence
@@ -101,6 +101,8 @@ ynh_psql_user_exists() {
 
 # Check if a psql database exists
 #
+# [internal]
+#
 # usage: ynh_psql_database_exists database
 # | arg: database    - the database for which to check existence
 # | exit: Return 1 if the database doesn't exist, 0 otherwise
@@ -112,7 +114,7 @@ ynh_psql_database_exists() {
 
 # Drop a user
 #
-# [internal]
+# [internal] ... handled by the core / "database resource"
 #
 # usage: ynh_psql_drop_user user
 # | arg: user - the user name to drop

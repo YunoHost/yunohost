@@ -40,9 +40,7 @@
 #     ignoreregex =
 # ```
 #
-# -----------------------------------------------------------------------------
-#
-# Note about the "failregex" option:
+# ##### Note about the "failregex" option:
 #
 # regex to match the password failure messages in the logfile. The host must be
 # matched by a group named "`host`". The tag "`<HOST>`" can be used for standard

@@ -4,17 +4,12 @@ YNH_APT_INSTALL_DEPENDENCIES_REPLACE="true"
 
 # Define and install dependencies with a equivs control file
 #
-# [packagingv1]
-#
-# This helper can/should only be called once per app
-#
 # example : ynh_install_app_dependencies dep1 dep2 "dep3|dep4|dep5"
 #
 # usage: ynh_install_app_dependencies dep [dep [...]]
 # | arg: dep - the package name to install in dependence.
 # | arg: "dep1|dep2|…" - You can specify alternatives. It will require to install (dep1 or dep2, etc).
 #
-# Requires YunoHost version 2.6.4 or higher.
 ynh_apt_install_dependencies() {
 
     # Add a comma for each space between packages. But not add a comma if the space separate a version specification. (See below)
@@ -158,13 +153,9 @@ EOF
 
 # Remove fake package and its dependencies
 #
-# [packagingv1]
-#
 # Dependencies will removed only if no other package need them.
 #
 # usage: ynh_apt_remove_dependencies
-#
-# Requires YunoHost version 2.6.4 or higher.
 ynh_apt_remove_dependencies() {
     local app_ynh_deps="${app//_/-}-ynh-deps" # Replace all '_' by '-', and append -ynh-deps
 
@@ -192,14 +183,11 @@ ynh_apt_remove_dependencies() {
 
 # Install packages from an extra repository properly.
 #
-# [packagingv1]
-#
 # usage: ynh_apt_install_dependencies_from_extra_repository --repo="repo" --package="dep1 dep2" --key=key_url
-# | arg: -r, --repo=    - Complete url of the extra repository.
-# | arg: -p, --package= - The packages to install from this extra repository
-# | arg: -k, --key=     - url to get the public key.
+# | arg: --repo=    - Complete url of the extra repository.
+# | arg: --package= - The packages to install from this extra repository
+# | arg: --key=     - url to get the public key.
 #
-# Requires YunoHost version 3.8.1 or higher.
 ynh_apt_install_dependencies_from_extra_repository() {
     # ============ Argument parsing =============
     local -A args_array=([r]=repo= [p]=package= [k]=key=)
@@ -262,10 +250,9 @@ EOF
     ynh_apt_update
 }
 
-
-#######################
+# #####################
 # Internal misc utils #
-#######################
+# #####################
 
 # Check if apt is free to use, or wait, until timeout.
 _ynh_wait_dpkg_free() {

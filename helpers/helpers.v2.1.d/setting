@@ -2,11 +2,9 @@
 
 # Get an application setting
 #
-# usage: ynh_app_setting_get --app=app --key=key
-# | arg: -a, --app=     - the application id
-# | arg: -k, --key=     - the setting to get
-#
-# Requires YunoHost version 2.2.4 or higher.
+# usage: ynh_app_setting_get --key=key
+# | arg: --app=     - the application id (global $app by default)
+# | arg: --key=     - the setting to get
 ynh_app_setting_get() {
     # ============ Argument parsing =============
     local _globalapp=${app-:}
@@ -22,12 +20,10 @@ ynh_app_setting_get() {
 
 # Set an application setting
 #
-# usage: ynh_app_setting_set --app=app --key=key --value=value
-# | arg: -a, --app=     - the application id
-# | arg: -k, --key=     - the setting name to set
-# | arg: -v, --value=   - the setting value to set
-#
-# Requires YunoHost version 2.2.4 or higher.
+# usage: ynh_app_setting_set --key=key --value=value
+# | arg: --app=     - the application id (global $app by default)
+# | arg: --key=     - the setting name to set
+# | arg: --value=   - the setting value to set
 ynh_app_setting_set() {
     # ============ Argument parsing =============
     local _globalapp=${app-:}
@@ -54,12 +50,10 @@ ynh_app_setting_set() {
 #     ynh_app_setting_set --key="foo" --value="$foo"
 # fi
 #
-# usage: ynh_app_setting_set_default --app=app --key=key --value=value
-# | arg: -a, --app=     - the application id
-# | arg: -k, --key=     - the setting name to set
-# | arg: -v, --value=   - the default setting value to set
-#
-# Requires YunoHost version 11.1.16 or higher.
+# usage: ynh_app_setting_set_default --key=key --value=value
+# | arg: --app=     - the application id (global $app by default)
+# | arg: --key=     - the setting name to set
+# | arg: --value=   - the default setting value to set
 ynh_app_setting_set_default() {
     # ============ Argument parsing =============
     local _globalapp=${app-:}
@@ -79,11 +73,9 @@ ynh_app_setting_set_default() {
 
 # Delete an application setting
 #
-# usage: ynh_app_setting_delete --app=app --key=key
-# | arg: -a, --app=     - the application id
-# | arg: -k, --key=     - the setting to delete
-#
-# Requires YunoHost version 2.2.4 or higher.
+# usage: ynh_app_setting_delete --key=key
+# | arg: --app=     - the application id (global $app by default)
+# | arg: --key=     - the setting to delete
 ynh_app_setting_delete() {
     # ============ Argument parsing =============
     local _globalapp=${app-:}

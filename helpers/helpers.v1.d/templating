@@ -2,27 +2,37 @@
 
 # Create a dedicated config file from a template
 #
-# usage: ynh_config_add --template="template" --destination="destination"
-# | arg: --template=     - Template config file to use
-# | arg: --destination=  - Destination of the config file
-# | arg: --jinja         - Use jinja template instead of the simple `__MY_VAR__` templating format
+# usage: ynh_add_config --template="template" --destination="destination"
+# | arg: -t, --template=     - Template config file to use
+# | arg: -d, --destination=  - Destination of the config file
+# | arg: -j, --jinja         - Use jinja template instead of the simple `__MY_VAR__` templating format
 #
 # examples:
 # ynh_add_config --template=".env" --destination="$install_dir/.env"   # (use the template file "conf/.env" from the app's package)
 # ynh_add_config --jinja --template="config.j2" --destination="$install_dir/config"    # (use the template file "conf/config.j2" from the app's package)
 #
-# The template can be 1) the name of a file in the `conf` directory of
-# the app, 2) a relative path or 3) an absolute path.
+# The template can be by default the name of a file in the conf directory
+# of a YunoHost Package, a relative path or an absolute path.
 #
-# This applies a simple templating format which covers a good 95% of cases,
-# where patterns like `__FOO__` are replaced by the bash variable `$foo`, for example:
-#   `__DOMAIN__`   by `$domain`
-#   `__PATH__`     by `$path`
-#   `__APP__`      by `$app`
-#   `__VAR_1__`    by `$var_1`
-#   `__VAR_2__`    by `$var_2`
-#
-# Special case for `__PATH__/` which is replaced by `/` instead of `//` if `$path` is `/`
+# The helper will use the template `template` to generate a config file
+# `destination` by replacing the following keywords with global variables
+# that should be defined before calling this helper :
+# ```
+#   __PATH__                by $path_url
+#   __NAME__                by $app
+#   __NAMETOCHANGE__        by $app
+#   __USER__                by $app
+#   __FINALPATH__           by $final_path
+#   __PHPVERSION__          by $YNH_PHP_VERSION (packaging v1 only, packaging v2 uses phpversion setting implicitly set by apt resource)
+#   __YNH_NODE_LOAD_PATH__  by $ynh_node_load_PATH
+# ```
+# And any dynamic variables that should be defined before calling this helper like:
+# ```
+#   __DOMAIN__   by $domain
+#   __APP__      by $app
+#   __VAR_1__    by $var_1
+#   __VAR_2__    by $var_2
+# ```
 #
 # ##### When --jinja is enabled
 #
@@ -33,7 +43,7 @@
 # https://jinja.palletsprojects.com/en/3.1.x/templates/
 #
 # Note that in YunoHost context, all variables are from shell variables and therefore are strings
-#
+# 
 # ##### Keeping track of manual changes by the admin
 #
 # The helper will verify the checksum and backup the destination file
@@ -41,26 +51,29 @@
 #
 # And it will calculate and store the destination file checksum
 # into the app settings when configuration is done.
-ynh_config_add() {
-    # ============ Argument parsing =============
+#
+# Requires YunoHost version 4.1.0 or higher.
+ynh_add_config() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=tdj
     local -A args_array=([t]=template= [d]=destination= [j]=jinja)
     local template
     local destination
     local jinja
+    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    jinja="${jinja:-0}"
-    # ===========================================
-
     local template_path
+    jinja="${jinja:-0}"
+
     if [ -f "$YNH_APP_BASEDIR/conf/$template" ]; then
         template_path="$YNH_APP_BASEDIR/conf/$template"
     elif [ -f "$template" ]; then
         template_path=$template
     else
-        ynh_die "The provided template $template doesn't exist"
+        ynh_die --message="The provided template $template doesn't exist"
     fi
 
-    ynh_backup_if_checksum_is_different "$destination"
+    ynh_backup_if_checksum_is_different --file="$destination"
 
     # Make sure to set the permissions before we copy the file
     # This is to cover a case where an attacker could have
@@ -79,40 +92,75 @@ ynh_config_add() {
         )
     else
         cp -f "$template_path" "$destination"
-        _ynh_replace_vars "$destination"
+        ynh_replace_vars --file="$destination"
     fi
 
-    ynh_store_file_checksum "$destination"
+    ynh_store_file_checksum --file="$destination"
 }
 
-# Replace `__FOO__` patterns in file with bash variable `$foo`
+# Replace variables in a file
 #
 # [internal]
 #
-# usage: ynh_replace_vars "/path/to/file"
-# | arg: /path/to/file     - File where to replace variables
+# usage: ynh_replace_vars --file="file"
+# | arg: -f, --file=     - File where to replace variables
 #
-# This applies a simple templating format which covers a good 95% of cases,
-# where patterns like `__FOO__` are replaced by the bash variable `$foo`, for example:
-#   `__DOMAIN__`   by `$domain`
-#   `__PATH__`     by `$path`
-#   `__APP__`      by `$app`
-#   `__VAR_1__`    by `$var_1`
-#   `__VAR_2__`    by `$var_2`
+# The helper will replace the following keywords with global variables
+# that should be defined before calling this helper :
+#   __PATH__                by $path_url
+#   __NAME__                by $app
+#   __NAMETOCHANGE__        by $app
+#   __USER__                by $app
+#   __FINALPATH__           by $final_path
+#   __PHPVERSION__          by $YNH_PHP_VERSION (packaging v1 only, packaging v2 uses phpversion setting implicitly set by apt resource)
+#   __YNH_NODE_LOAD_PATH__  by $ynh_node_load_PATH
 #
-# Special case for `__PATH__/` which is replaced by `/` instead of `//` if `$path` is `/`
-_ynh_replace_vars() {
-    local file=$1
+# And any dynamic variables that should be defined before calling this helper like:
+#   __DOMAIN__   by $domain
+#   __APP__      by $app
+#   __VAR_1__    by $var_1
+#   __VAR_2__    by $var_2
+#
+# Requires YunoHost version 4.1.0 or higher.
+ynh_replace_vars() {
+    # Declare an array to define the options of this helper.
+    local legacy_args=f
+    local -A args_array=([f]=file=)
+    local file
+    # Manage arguments with getopts
+    ynh_handle_getopts_args "$@"
 
-    # List unique (__ __) variables in $file
+    # Replace specific YunoHost variables
+    if test -n "${path_url:-}"; then
+        # path_url_slash_less is path_url, or a blank value if path_url is only '/'
+        local path_url_slash_less=${path_url%/}
+        ynh_replace_string --match_string="__PATH__/" --replace_string="$path_url_slash_less/" --target_file="$file"
+        ynh_replace_string --match_string="__PATH__" --replace_string="$path_url" --target_file="$file"
+    fi
+    if test -n "${app:-}"; then
+        ynh_replace_string --match_string="__NAME__" --replace_string="$app" --target_file="$file"
+        ynh_replace_string --match_string="__NAMETOCHANGE__" --replace_string="$app" --target_file="$file"
+        ynh_replace_string --match_string="__USER__" --replace_string="$app" --target_file="$file"
+    fi
+    # Legacy
+    if test -n "${final_path:-}"; then
+        ynh_replace_string --match_string="__FINALPATH__" --replace_string="$final_path" --target_file="$file"
+        ynh_replace_string --match_string="__INSTALL_DIR__" --replace_string="$final_path" --target_file="$file"
+    fi
+    # Legacy / Packaging v1 only
+    if dpkg --compare-versions ${YNH_APP_PACKAGING_FORMAT:-0} lt 2 && test -n "${YNH_PHP_VERSION:-}"; then
+        ynh_replace_string --match_string="__PHPVERSION__" --replace_string="$YNH_PHP_VERSION" --target_file="$file"
+    fi
+    if test -n "${ynh_node_load_PATH:-}"; then
+        ynh_replace_string --match_string="__YNH_NODE_LOAD_PATH__" --replace_string="$ynh_node_load_PATH" --target_file="$file"
+    fi
+
+    # Replace others variables
+
+    # List other unique (__ __) variables in $file
     local uniques_vars=($(grep -oP '__[A-Z0-9]+?[A-Z0-9_]*?[A-Z0-9]*?__' $file | sort --unique | sed "s@__\([^.]*\)__@\L\1@g"))
 
     set +o xtrace # set +x
-
-    # Specific trick to make sure that __PATH__/ doesn't end up in "//" if $path=/
-    if [[ "${path:-}" == "/" ]] && grep -q '__PATH__/' $file; then
-        sed --in-place "s@__PATH__/@${path%/}@g" "$file"
-    fi
 
     # Do the replacement
     local delimit=@
@@ -122,7 +170,7 @@ _ynh_replace_vars() {
         #     -v FOO  tests if $FOO is defined
         #     -v $FOO tests if ${!FOO} is defined
         # More info: https://stackoverflow.com/questions/3601515/how-to-check-if-a-variable-is-set-in-bash/17538964#comment96392525_17538964
-        [[ -v "${one_var:-}" ]] || ynh_die "Variable \$$one_var wasn't initialized when trying to replace __${one_var^^}__ in $file"
+        [[ -v "${one_var:-}" ]] || ynh_die --message="Variable \$$one_var wasn't initialized when trying to replace __${one_var^^}__ in $file"
 
         # Escape delimiter in match/replace string
         match_string="__${one_var^^}__"
@@ -140,9 +188,9 @@ _ynh_replace_vars() {
 # Get a value from heterogeneous file (yaml, json, php, python...)
 #
 # usage: ynh_read_var_in_file --file=PATH --key=KEY
-# | arg: --file=    - the path to the file
-# | arg: --key=     - the key to get
-# | arg: --after=   - the line just before the key (in case of multiple lines with the name of the key in the file)
+# | arg: -f, --file=     - the path to the file
+# | arg: -k, --key=     - the key to get
+# | arg: -a, --after=     - the line just before the key (in case of multiple lines with the name of the key in the file)
 #
 # This helpers match several var affectation use case in several languages
 # We don't use jq or equivalent to keep comments and blank space in files
@@ -169,17 +217,20 @@ _ynh_replace_vars() {
 #     USER = 8102
 #     user = 'https://donate.local'
 #     CUSTOM['user'] = 'YunoHost'
+#
+# Requires YunoHost version 4.3 or higher.
 ynh_read_var_in_file() {
-    # ============ Argument parsing =============
+    # Declare an array to define the options of this helper.
+    local legacy_args=fka
     local -A args_array=([f]=file= [k]=key= [a]=after=)
     local file
     local key
     local after
+    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     after="${after:-}"
-    # ===========================================
 
-    [[ -f $file ]] || ynh_die "File $file does not exists"
+    [[ -f $file ]] || ynh_die --message="File $file does not exists"
 
     set +o xtrace # set +x
 
@@ -240,22 +291,25 @@ ynh_read_var_in_file() {
 # Set a value into heterogeneous file (yaml, json, php, python...)
 #
 # usage: ynh_write_var_in_file --file=PATH --key=KEY --value=VALUE
-# | arg: --file=    - the path to the file
-# | arg: --key=     - the key to set
-# | arg: --value=   - the value to set
-# | arg: --after=   - the line just before the key (in case of multiple lines with the name of the key in the file)
+# | arg: -f, --file=     - the path to the file
+# | arg: -k, --key=     - the key to set
+# | arg: -v, --value=     - the value to set
+# | arg: -a, --after=     - the line just before the key (in case of multiple lines with the name of the key in the file)
+#
+# Requires YunoHost version 4.3 or higher.
 ynh_write_var_in_file() {
-    # ============ Argument parsing =============
+    # Declare an array to define the options of this helper.
+    local legacy_args=fkva
     local -A args_array=([f]=file= [k]=key= [v]=value= [a]=after=)
     local file
     local key
     local value
     local after
+    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     after="${after:-}"
-    # ===========================================
 
-    [[ -f $file ]] || ynh_die "File $file does not exists"
+    [[ -f $file ]] || ynh_die --message="File $file does not exists"
 
     set +o xtrace # set +x
 
@@ -330,4 +384,24 @@ ynh_write_var_in_file() {
         sed -ri "${range}s$delimiter(^${var_part}).*\$$delimiter\1${value}${endline}${delimiter}i" ${file}
     fi
     set -o xtrace # set -x
+}
+
+# Render templates with Jinja2
+#
+# [internal]
+#
+# Attention : Variables should be exported before calling this helper to be
+# accessible inside templates.
+#
+# usage: ynh_render_template some_template output_path
+# | arg: some_template - Template file to be rendered
+# | arg: output_path   - The path where the output will be redirected to
+ynh_render_template() {
+    local template_path=$1
+    local output_path=$2
+    mkdir -p "$(dirname $output_path)"
+    # Taken from https://stackoverflow.com/a/35009576
+    python3 -c 'import os, sys, jinja2; sys.stdout.write(
+                    jinja2.Template(sys.stdin.read()
+                    ).render(os.environ));' <$template_path >$output_path
 }

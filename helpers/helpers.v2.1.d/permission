@@ -27,14 +27,14 @@
 # usage: ynh_permission_create --permission="permission" [--url="url"] [--additional_urls="second-url" [ "third-url" ]] [--auth_header=true|false]
 #                                                        [--allowed=group1 [ group2 ]] [--label="label"] [--show_tile=true|false]
 #                                                        [--protected=true|false]
-# | arg: -p, --permission=       - the name for the permission (by default a permission named "main" already exist)
-# | arg: -u, --url=              - (optional) URL for which access will be allowed/forbidden. Note that if 'show_tile' is enabled, this URL will be the URL of the tile.
-# | arg: -A, --additional_urls=  - (optional) List of additional URL for which access will be allowed/forbidden
-# | arg: -h, --auth_header=      - (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application. Default is true
-# | arg: -a, --allowed=          - (optional) A list of group/user to allow for the permission
-# | arg: -l, --label=            - (optional) Define a name for the permission. This label will be shown on the SSO and in the admin. Default is "APP_LABEL (permission name)".
-# | arg: -t, --show_tile=        - (optional) Define if a tile will be shown in the SSO. If yes the name of the tile will be the 'label' parameter. Defaults to false for the permission different than 'main'.
-# | arg: -P, --protected=        - (optional) Define if this permission is protected. If it is protected the administrator won't be able to add or remove the visitors group of this permission. Defaults to 'false'.
+# | arg: --permission=       - the name for the permission (by default a permission named "main" already exist)
+# | arg: --url=              - (optional) URL for which access will be allowed/forbidden. Note that if 'show_tile' is enabled, this URL will be the URL of the tile.
+# | arg: --additional_urls=  - (optional) List of additional URL for which access will be allowed/forbidden
+# | arg: --auth_header=      - (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application. Default is true
+# | arg: --allowed=          - (optional) A list of group/user to allow for the permission
+# | arg: --label=            - (optional) Define a name for the permission. This label will be shown on the SSO and in the admin. Default is "APP_LABEL (permission name)".
+# | arg: --show_tile=        - (optional) Define if a tile will be shown in the SSO. If yes the name of the tile will be the 'label' parameter. Defaults to false for the permission different than 'main'.
+# | arg: --protected=        - (optional) Define if this permission is protected. If it is protected the administrator won't be able to add or remove the visitors group of this permission. Defaults to 'false'.
 #
 # [packagingv1]
 #
@@ -62,9 +62,6 @@
 #
 # Generally this feature is usefull to authenticate automatically the user in the application but in some case the application don't work with theses header and theses header need to be disabled to have the application to work correctly.
 # See https://github.com/YunoHost/issues/issues/1420 for more informations
-#
-#
-# Requires YunoHost version 3.7.0 or higher.
 ynh_permission_create() {
     # ============ Argument parsing =============
     local -A args_array=([p]=permission= [u]=url= [A]=additional_urls= [h]=auth_header= [a]=allowed= [l]=label= [t]=show_tile= [P]=protected=)
@@ -145,14 +142,10 @@ ynh_permission_create() {
 
 # Remove a permission for the app (note that when the app is removed all permission is automatically removed)
 #
-# [packagingv1]
-#
 # example: ynh_permission_delete --permission=editors
 #
 # usage: ynh_permission_delete --permission="permission"
-# | arg: -p, --permission=      - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
-#
-# Requires YunoHost version 3.7.0 or higher.
+# | arg: --permission=      - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
 ynh_permission_delete() {
     # ============ Argument parsing =============
     local -A args_array=([p]=permission=)
@@ -165,13 +158,9 @@ ynh_permission_delete() {
 
 # Check if a permission exists
 #
-# [packagingv1]
-#
 # usage: ynh_permission_exists --permission=permission
-# | arg: -p, --permission=      - the permission to check
+# | arg: --permission=      - the permission to check
 # | exit: Return 1 if the permission doesn't exist, 0 otherwise
-#
-# Requires YunoHost version 3.7.0 or higher.
 ynh_permission_exists() {
     # ============ Argument parsing =============
     local -A args_array=([p]=permission=)
@@ -185,18 +174,14 @@ ynh_permission_exists() {
 
 # Redefine the url associated to a permission
 #
-# [packagingv1]
-#
 # usage: ynh_permission_url --permission "permission" [--url="url"] [--add_url="new-url" [ "other-new-url" ]] [--remove_url="old-url" [ "other-old-url" ]]
 #                                                     [--auth_header=true|false] [--clear_urls]
-# | arg: -p, --permission=   - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
-# | arg: -u, --url=          - (optional) URL for which access will be allowed/forbidden. Note that if you want to remove url you can pass an empty sting as arguments ("").
-# | arg: -a, --add_url=      - (optional) List of additional url to add for which access will be allowed/forbidden.
-# | arg: -r, --remove_url=   - (optional) List of additional url to remove for which access will be allowed/forbidden
-# | arg: -h, --auth_header=  - (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application
-# | arg: -c, --clear_urls    - (optional) Clean all urls (url and additional_urls)
-#
-# Requires YunoHost version 3.7.0 or higher.
+# | arg: --permission=   - the name for the permission (by default a permission named "main" is removed automatically when the app is removed)
+# | arg: --url=          - (optional) URL for which access will be allowed/forbidden. Note that if you want to remove url you can pass an empty sting as arguments ("").
+# | arg: --add_url=      - (optional) List of additional url to add for which access will be allowed/forbidden.
+# | arg: --remove_url=   - (optional) List of additional url to remove for which access will be allowed/forbidden
+# | arg: --auth_header=  - (optional) Define for the URL of this permission, if SSOwat pass the authentication header to the application
+# | arg: --clear_urls    - (optional) Clean all urls (url and additional_urls)
 ynh_permission_url() {
     # ============ Argument parsing =============
     local -A args_array=([p]=permission= [u]=url= [a]=add_url= [r]=remove_url= [h]=auth_header= [c]=clear_urls)
@@ -255,15 +240,11 @@ ynh_permission_url() {
 
 # Update a permission for the app
 #
-# [packagingv1]
-#
 # usage: ynh_permission_update --permission "permission" [--add="group" ["group" ...]] [--remove="group" ["group" ...]]
 #
-# | arg: -p, --permission= - the name for the permission (by default a permission named "main" already exist)
-# | arg: -a, --add=        - the list of group or users to enable add to the permission
-# | arg: -r, --remove=     - the list of group or users to remove from the permission
-#
-# Requires YunoHost version 3.7.0 or higher.
+# | arg: --permission= - the name for the permission (by default a permission named "main" already exist)
+# | arg: --add=        - the list of group or users to enable add to the permission
+# | arg: --remove=     - the list of group or users to remove from the permission
 ynh_permission_update() {
     # ============ Argument parsing =============
     local -A args_array=([p]=permission= [a]=add= [r]=remove=)
@@ -302,11 +283,9 @@ ynh_permission_update() {
 # example: ynh_permission_has_user --permission=main --user=visitors
 #
 # usage: ynh_permission_has_user --permission=permission --user=user
-# | arg: -p, --permission=  - the permission to check
-# | arg: -u, --user=        - the user seek in the permission
+# | arg: --permission=  - the permission to check
+# | arg: --user=        - the user seek in the permission
 # | exit: Return 1 if the permission doesn't have that user or doesn't exist, 0 otherwise
-#
-# Requires YunoHost version 3.7.1 or higher.
 ynh_permission_has_user() {
     # ============ Argument parsing =============
     local -A args_array=([p]=permission= [u]=user=)

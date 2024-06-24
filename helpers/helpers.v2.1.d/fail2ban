@@ -2,18 +2,16 @@
 
 # Create a dedicated fail2ban config (jail and filter conf files)
 #
-# usage 1: ynh_config_add_fail2ban --logpath=log_file --failregex=filter
-# | arg: -l, --logpath=   - Log file to be checked by fail2ban
-# | arg: -r, --failregex= - Failregex to be looked for by fail2ban
+# usage: ynh_config_add_fail2ban --logpath=log_file --failregex=filter
+# | arg: --logpath=   - Log file to be checked by fail2ban
+# | arg: --failregex= - Failregex to be looked for by fail2ban
 #
-# usage 2: ynh_config_add_fail2ban
-# | arg: -t, --use_template - Use this helper in template mode
+# If --logpath / --failregex are provided, the helper will generate the appropriate conf using these.
 #
-# This will use a template in `../conf/f2b_jail.conf` and `../conf/f2b_filter.conf`
-# See the documentation of `ynh_config_add` for a description of the template
-# format and how placeholders are replaced with actual variables.
+# Otherwise, it will assume that the app provided templates, namely
+# `../conf/f2b_jail.conf` and `../conf/f2b_filter.conf`
 #
-# Generally your template will look like that by example (for synapse):
+# They will typically look like (for example here for synapse):
 # ```
 # f2b_jail.conf:
 #     [__APP__]
@@ -38,9 +36,7 @@
 #     ignoreregex =
 # ```
 #
-# -----------------------------------------------------------------------------
-#
-# Note about the "failregex" option:
+# ##### Regarding the the `failregex` option:
 #
 # regex to match the password failure messages in the logfile. The host must be
 # matched by a group named "`host`". The tag "`<HOST>`" can be used for standard
@@ -53,8 +49,6 @@
 # ```
 # fail2ban-regex /var/log/YOUR_LOG_FILE_PATH /etc/fail2ban/filter.d/YOUR_APP.conf
 # ```
-#
-# Requires YunoHost version 4.1.0 or higher.
 ynh_config_add_fail2ban() {
     # ============ Argument parsing =============
     local -A args_array=([l]=logpath= [r]=failregex=)
@@ -117,8 +111,6 @@ ignoreregex =
 # Remove the dedicated fail2ban config (jail and filter conf files)
 #
 # usage: ynh_config_remove_fail2ban
-#
-# Requires YunoHost version 3.5.0 or higher.
 ynh_config_remove_fail2ban() {
     ynh_safe_rm "/etc/fail2ban/jail.d/$app.conf"
     ynh_safe_rm "/etc/fail2ban/filter.d/$app.conf"
