@@ -1,3 +1,12 @@
+yunohost (11.2.17.1) stable; urgency=low
+
+  - helpers2.1: fix __PATH__/ handling (997388dc)
+  - ci: Fix helpers 2.1 doc location (7347b08e)
+  - helpers/doc: De-hide some helpers v1 in documentation now that the structure is less bloated sort of ? (2a7fefae)
+  - helpers/doc: fix detail block, cant use the HTML <details> because grav doesnt interpret markdown in it (feb9a095)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 25 Jun 2024 14:19:58 +0200
+
 yunohost (11.2.17) stable; urgency=low
 
   - helpers: Misc cleaning / reorganizing to prepare new doc (2895d4d9)
