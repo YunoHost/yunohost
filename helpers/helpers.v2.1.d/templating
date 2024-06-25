@@ -111,7 +111,7 @@ _ynh_replace_vars() {
 
     # Specific trick to make sure that __PATH__/ doesn't end up in "//" if $path=/
     if [[ "${path:-}" == "/" ]] && grep -q '__PATH__/' $file; then
-        sed --in-place "s@__PATH__/@${path%/}@g" "$file"
+        sed --in-place "s@__PATH__/@/@g" "$file"
     fi
 
     # Do the replacement
