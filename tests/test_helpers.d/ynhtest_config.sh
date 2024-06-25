@@ -27,6 +27,8 @@ ENABLED = False
 # TITLE = "Old title"
 TITLE = "Lorem Ipsum"
 THEME = "colib'ris"
+NOT_AN_EMAIL = "thisisnothemailyouarelookingfor"
+EMAIL_IS_NOT = "notthemailyouarelookingforthisis"
 EMAIL = "root@example.com" # This is a comment without quotes
 PORT   = 1234 # This is a comment without quotes
 URL = 'https://yunohost.org'
@@ -83,6 +85,8 @@ ENABLED = False
 # TITLE = "Old title"
 TITLE = "Lorem Ipsum"
 THEME = "colib'ris"
+NOT_AN_EMAIL = "thisisnothemailyouarelookingfor"
+EMAIL_IS_NOT = "notthemailyouarelookingforthisis"
 EMAIL = "root@example.com" # This is a comment without quotes
 PORT   = 1234 # This is a comment without quotes
 URL = 'https://yunohost.org'
@@ -165,6 +169,8 @@ enabled =    False
 # title = Old title
 title =    Lorem Ipsum
 theme = colib'ris
+not_an_email = thisisnothemailyouarelookingfor
+email_is_not = notthemailyouarelookingforthisis
 email = root@example.com ; This is a comment without quotes
 port =     1234 ; This is a comment without quotes
 url = https://yunohost.org
@@ -216,6 +222,8 @@ enabled =    False
 # title = Old title
 title =    Lorem Ipsum
 theme = colib'ris
+not_an_email = thisisnothemailyouarelookingfor
+email_is_not = notthemailyouarelookingforthisis
 email = root@example.com # This is a comment without quotes
 port =     1234 # This is a comment without quotes
 url = https://yunohost.org
@@ -293,6 +301,8 @@ enabled: false
 # title: old title
 title: Lorem Ipsum
 theme: colib'ris
+not_an_email: thisisnothemailyouarelookingfor
+email_is_not: notthemailyouarelookingforthisis
 email: root@example.com # This is a comment without quotes
 port: 1234 # This is a comment without quotes
 url: https://yunohost.org
@@ -342,6 +352,8 @@ enabled: false
 # title: old title
 title: Lorem Ipsum
 theme: colib'ris
+not_an_email: thisisnothemailyouarelookingfor
+email_is_not: notthemailyouarelookingforthisis
 email: root@example.com # This is a comment without quotes
 port: 1234 # This is a comment without quotes
 url: https://yunohost.org
@@ -417,6 +429,8 @@ ynhtest_config_read_json() {
      "enabled":     false,
      "title": "Lorem Ipsum",
      "theme": "colib'ris",
+     "not_an_email": "thisisnothemailyouarelookingfor",
+     "email_is_not": "notthemailyouarelookingforthisis",
      "email": "root@example.com",
        "port": 1234,
      "url": "https://yunohost.org",
@@ -468,6 +482,8 @@ ynhtest_config_write_json() {
      "enabled":     false,
      "title": "Lorem Ipsum",
      "theme": "colib'ris",
+     "not_an_email": "thisisnothemailyouarelookingfor",
+     "email_is_not": "notthemailyouarelookingforthisis",
      "email": "root@example.com",
        "port": 1234,
      "url": "https://yunohost.org",
@@ -551,6 +567,8 @@ ynhtest_config_read_php() {
   // \$title = "old title";
   \$title = "Lorem Ipsum";
    \$theme = "colib'ris";
+  \$not_an_email = "thisisnothemailyouarelookingfor";
+  \$email_is_not = "notthemailyouarelookingforthisis";
   \$email = "root@example.com"; // This is a comment without quotes
   \$port = 1234; // This is a second comment without quotes
   \$url = "https://yunohost.org";
@@ -610,6 +628,8 @@ ynhtest_config_write_php() {
   // \$title = "old title";
   \$title = "Lorem Ipsum";
    \$theme = "colib'ris";
+  \$not_an_email = "thisisnothemailyouarelookingfor";
+  \$email_is_not = "notthemailyouarelookingforthisis";
   \$email = "root@example.com"; // This is a comment without quotes
   \$port = 1234; // This is a comment without quotes
   \$url = "https://yunohost.org";
