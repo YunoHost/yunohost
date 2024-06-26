@@ -31,24 +31,16 @@ _ynh_load_ruby_in_path_and_other_tweaks() {
 
 # Install a specific version of Ruby using rbenv
 #
-# The installed version is defined by $ruby_version which should be defined as global prior to calling this helper
-#
-# This helper creates a /etc/profile.d/rbenv.sh that configures PATH environment for rbenv
-# for every LOGIN user, hence your user must have a defined shell (as opposed to /usr/sbin/nologin)
-#
-# Don't forget to execute ruby-dependent command in a login environment
-# (e.g. sudo --login option)
-# When not possible (e.g. in systemd service definition), please use direct path
-# to rbenv shims (e.g. $RBENV_ROOT/shims/bundle)
+# The installed version is defined by `$ruby_version` which should be defined as global prior to calling this helper
 #
 # usage: ynh_ruby_install
 #
-# Adds the appropriate, specific version of ruby to the PATH variable (which
-# is also exported, to ease the use of ynh_exec_as_app). Also define variable
-# PATH_with_ruby to be used in the systemd config
-# (Environment="PATH=__PATH_WITH_RUBY__")
+# The helper adds the appropriate, specific version of ruby to the `$PATH` variable (which
+# is preserved when calling ynh_exec_as_app). Also defines:
+# - `$path_with_ruby` to be used in the systemd config (`Environment="PATH=__PATH_WITH_RUBY__"`)
+# - `$ruby_dir`, the directory containing the specific version of ruby, which may be used in the systemd config too (e.g. `ExecStart=__RUBY_DIR__/ruby foo bar`)
 #
-# Requires YunoHost version 3.2.2 or higher.
+# This helper also creates a /etc/profile.d/rbenv.sh that configures PATH environment for rbenv
 ynh_ruby_install () {
 
     [[ -n "${ruby_version:-}" ]] || ynh_die "\$ruby_version should be defined prior to calling ynh_ruby_install"
@@ -70,7 +62,7 @@ ynh_ruby_install () {
             if git remote -v 2>/dev/null | grep "https://github.com/rbenv/rbenv.git"; then
                 echo "Updating rbenv..."
                 git pull -q --tags origin master
-                ynh_ruby_try_bash_extension
+                _ynh_ruby_try_bash_extension
             else
                 echo "Reinstalling rbenv..."
                 cd ..
@@ -80,7 +72,7 @@ ynh_ruby_install () {
                 git init -q
                 git remote add -f -t master origin https://github.com/rbenv/rbenv.git > /dev/null 2>&1
                 git checkout -q -b master origin/master
-                ynh_ruby_try_bash_extension
+                _ynh_ruby_try_bash_extension
                 rbenv=$RBENV_INSTALL_DIR/bin/rbenv
             fi
         popd
@@ -90,7 +82,7 @@ ynh_ruby_install () {
             git init -q
             git remote add -f -t master origin https://github.com/rbenv/rbenv.git > /dev/null 2>&1
             git checkout -q -b master origin/master
-            ynh_ruby_try_bash_extension
+            _ynh_ruby_try_bash_extension
             rbenv=$RBENV_INSTALL_DIR/bin/rbenv
         popd
     fi
@@ -187,7 +179,7 @@ eval \"\$(rbenv init -)\"
 
 # Remove the version of Ruby used by the app.
 #
-# This helper will also cleanup Ruby versions
+# This helper will also cleanup unused Ruby versions
 #
 # usage: ynh_ruby_remove
 ynh_ruby_remove () {
@@ -210,6 +202,8 @@ ynh_ruby_remove () {
 }
 
 # Remove no more needed versions of Ruby used by the app.
+#
+# [internal]
 #
 # This helper will check what Ruby version are no more required,
 # and uninstall them
@@ -249,7 +243,7 @@ _ynh_ruby_cleanup () {
     fi
 }
 
-ynh_ruby_try_bash_extension() {
+_ynh_ruby_try_bash_extension() {
   if [ -x src/configure ]; then
     src/configure && make -C src 2>&1 || {
       ynh_print_info "Optional bash extension failed to build, but things will still work normally."

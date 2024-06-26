@@ -128,8 +128,6 @@ with open(sys.argv[1], 'r') as backup_file:
 # `/etc/nginx/conf.d/$domain.d/$app.conf`
 # otheriwse, search for a match in the csv (eg: conf/nginx.conf) and restore it into
 # `/etc/nginx/conf.d/$domain.d/$app.conf`
-#
-# Requires YunoHost version 2.6.4 or higher.
 ynh_restore() {
     target="$1"
 
@@ -186,8 +184,6 @@ ynh_restore() {
 # Restore all files that were previously backuped in an app backup script
 #
 # usage: ynh_restore_everything
-#
-# Requires YunoHost version 2.6.4 or higher.
 ynh_restore_everything() {
     # Deduce the relative path of $YNH_CWD
     local REL_DIR="${YNH_CWD#$YNH_BACKUP_DIR/}"

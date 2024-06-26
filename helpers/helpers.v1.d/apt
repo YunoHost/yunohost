@@ -224,8 +224,6 @@ YNH_INSTALL_APP_DEPENDENCIES_REPLACE="true"
 
 # Define and install dependencies with a equivs control file
 #
-# [packagingv1]
-#
 # This helper can/should only be called once per app
 #
 # example : ynh_install_app_dependencies dep1 dep2 "dep3|dep4|dep5"
@@ -364,8 +362,6 @@ ynh_add_app_dependencies() {
 
 # Remove fake package and its dependencies
 #
-# [packagingv1]
-#
 # Dependencies will removed only if no other package need them.
 #
 # usage: ynh_remove_app_dependencies
@@ -397,8 +393,6 @@ ynh_remove_app_dependencies() {
 }
 
 # Install packages from an extra repository properly.
-#
-# [packagingv1]
 #
 # usage: ynh_install_extra_app_dependencies --repo="repo" --package="dep1 dep2" [--key=key_url] [--name=name]
 # | arg: -r, --repo=    - Complete url of the extra repository.

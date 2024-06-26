@@ -1,57 +1,5 @@
 #!/bin/bash
 
-# Check if a YunoHost user exists
-#
-# usage: ynh_user_exists --username=username
-# | arg: -u, --username=    - the username to check
-# | ret: 0 if the user exists, 1 otherwise.
-#
-# example: ynh_user_exists 'toto' || echo "User does not exist"
-#
-# Requires YunoHost version 2.2.4 or higher.
-ynh_user_exists() {
-    # ============ Argument parsing =============
-    local -A args_array=([u]=username=)
-    local username
-    ynh_handle_getopts_args "$@"
-    # ===========================================
-
-    yunohost user list --output-as json --quiet | jq -e ".users.\"${username}\"" >/dev/null
-}
-
-# Retrieve a YunoHost user information
-#
-# usage: ynh_user_get_info --username=username --key=key
-# | arg: -u, --username=    - the username to retrieve info from
-# | arg: -k, --key=         - the key to retrieve
-# | ret: the value associate to that key
-#
-# example: mail=$(ynh_user_get_info --username="toto" --key=mail)
-#
-# Requires YunoHost version 2.2.4 or higher.
-ynh_user_get_info() {
-    # ============ Argument parsing =============
-    local -A args_array=([u]=username= [k]=key=)
-    local username
-    local key
-    ynh_handle_getopts_args "$@"
-    # ===========================================
-
-    yunohost user info "$username" --output-as json --quiet | jq -r ".$key"
-}
-
-# Get the list of YunoHost users
-#
-# usage: ynh_user_list
-# | ret: one username per line as strings
-#
-# example: for u in $(ynh_user_list); do ... ; done
-#
-# Requires YunoHost version 2.4.0 or higher.
-ynh_user_list() {
-    yunohost user list --output-as json --quiet | jq -r ".users | keys[]"
-}
-
 # Check if a user exists on the system
 #
 # [packagingv1]
@@ -62,11 +10,12 @@ ynh_user_list() {
 #
 # Requires YunoHost version 2.2.4 or higher.
 ynh_system_user_exists() {
-    # ============ Argument parsing =============
+    # Declare an array to define the options of this helper.
+    local legacy_args=u
     local -A args_array=([u]=username=)
     local username
+    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    # ===========================================
 
     getent passwd "$username" &>/dev/null
 }
@@ -81,18 +30,17 @@ ynh_system_user_exists() {
 #
 # Requires YunoHost version 3.5.0.2 or higher.
 ynh_system_group_exists() {
-    # ============ Argument parsing =============
+    # Declare an array to define the options of this helper.
+    local legacy_args=g
     local -A args_array=([g]=group=)
     local group
+    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    # ===========================================
 
     getent group "$group" &>/dev/null
 }
 
 # Create a system user
-#
-# [packagingv1]
 #
 # usage: ynh_system_user_create --username=user_name [--home_dir=home_dir] [--use_shell] [--groups="group1 group2"]
 # | arg: -u, --username=    - Name of the system user that will be create
@@ -111,19 +59,21 @@ ynh_system_group_exists() {
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_system_user_create() {
-    # ============ Argument parsing =============
+    # Declare an array to define the options of this helper.
+    local legacy_args=uhs
     local -A args_array=([u]=username= [h]=home_dir= [s]=use_shell [g]=groups=)
     local username
     local home_dir
     local use_shell
     local groups
+
+    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     use_shell="${use_shell:-0}"
     home_dir="${home_dir:-}"
     groups="${groups:-}"
-    # ===========================================
 
-    if ! ynh_system_user_exists --username="$username"; then # Check if the user exists on the system
+    if ! ynh_system_user_exists "$username"; then # Check if the user exists on the system
         # If the user doesn't exist
         if [ -n "$home_dir" ]; then # If a home dir is mentioned
             local user_home_dir="--home-dir $home_dir"
@@ -135,7 +85,7 @@ ynh_system_user_create() {
         else
             local shell="--shell /usr/sbin/nologin"
         fi
-        useradd $user_home_dir --system --user-group $username $shell || ynh_die "Unable to create $username system account"
+        useradd $user_home_dir --system --user-group $username $shell || ynh_die --message="Unable to create $username system account"
     fi
 
     local group
@@ -146,37 +96,43 @@ ynh_system_user_create() {
 
 # Delete a system user
 #
-# [packagingv1]
-#
 # usage: ynh_system_user_delete --username=user_name
 # | arg: -u, --username=    - Name of the system user that will be create
 #
 # Requires YunoHost version 2.6.4 or higher.
 ynh_system_user_delete() {
-    # ============ Argument parsing =============
+    # Declare an array to define the options of this helper.
+    local legacy_args=u
     local -A args_array=([u]=username=)
     local username
+    # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
-    # ===========================================
 
     # Check if the user exists on the system
-    if ynh_system_user_exists --username="$username"; then
+    if ynh_system_user_exists "$username"; then
         deluser $username
     else
-        ynh_print_warn "The user $username was not found"
+        ynh_print_warn --message="The user $username was not found"
     fi
 
     # Check if the group exists on the system
-    if ynh_system_group_exists --group="$username"; then
+    if ynh_system_group_exists "$username"; then
         delgroup $username
     fi
 }
 
-# Execute a command after sudoing as $app
+# Execute a command as another user
 #
-# Note that the $PATH variable is preserved (using --preserve-env=PATH)
+# usage: ynh_exec_as $USER COMMAND [ARG ...]
 #
-# usage: ynh_exec_as_app COMMAND [ARG ...]
-ynh_exec_as_app() {
-    sudo --preserve-env=PATH -u "$app" "$@"
+# Requires YunoHost version 4.1.7 or higher.
+ynh_exec_as() {
+    local user=$1
+    shift 1
+
+    if [[ $user = $(whoami) ]]; then
+        eval "$@"
+    else
+        sudo -u "$user" "$@"
+    fi
 }

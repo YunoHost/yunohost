@@ -1,13 +1,5 @@
 #!/bin/bash
 
-ynh_go_try_bash_extension() {
-  if [ -x src/configure ]; then
-    src/configure && make -C src || {
-      ynh_print_info "Optional bash extension failed to build, but things will still work normally."
-    }
-  fi
-}
-
 readonly GOENV_INSTALL_DIR="/opt/goenv"
 # goenv_ROOT is the directory of goenv, it needs to be loaded as a environment variable.
 export GOENV_ROOT="$GOENV_INSTALL_DIR"
@@ -37,19 +29,16 @@ _ynh_load_go_in_path_and_other_tweaks() {
 
 # Install a specific version of Go using goenv
 #
-# The installed version is defined by $nodejs_version which should be defined as global prior to calling this helper
-#
-# This helper creates a /etc/profile.d/goenv.sh that configures PATH environment for goenv
-# for every LOGIN user, hence your user must have a defined shell (as opposed to /usr/sbin/nologin)
-#
-# Don't forget to execute go-dependent command in a login environment
-# (e.g. sudo --login option)
-# When not possible (e.g. in systemd service definition), please use direct path
-# to goenv shims (e.g. $goenv_ROOT/shims/bundle)
+# The installed version is defined by `$go_version` which should be defined as global prior to calling this helper
 #
 # usage: ynh_go_install
 #
-# Requires YunoHost version 3.2.2 or higher.
+# The helper adds the appropriate, specific version of go to the `$PATH` variable (which
+# is preserved when calling `ynh_exec_as_app`). Also defines:
+# - `$path_with_go` (the value of the modified `$PATH`, but you dont really need it?)
+# - `$go_dir` (the directory containing the specific go version)
+#
+# This helper also creates a /etc/profile.d/goenv.sh that configures PATH environment for goenv
 ynh_go_install () {
 
     [[ -n "${go_version:-}" ]] || ynh_die "\$go_version should be defined prior to calling ynh_go_install"
@@ -76,7 +65,7 @@ ynh_go_install () {
         git fetch -q --tags --prune origin
         local git_latest_tag=$(git describe --tags "$(git rev-list --tags --max-count=1)")
         git checkout -q "$git_latest_tag"
-        ynh_go_try_bash_extension
+        _ynh_go_try_bash_extension
         goenv=$GOENV_INSTALL_DIR/bin/goenv
     popd
 
@@ -155,6 +144,8 @@ ynh_go_remove () {
 
 # Remove no more needed versions of Go used by the app.
 #
+# [internal]
+#
 # This helper will check what Go version are no more required,
 # and uninstall them
 # If no app uses Go, goenv will be also removed.
@@ -193,4 +184,12 @@ _ynh_go_cleanup () {
         ynh_safe_rm "$GOENV_INSTALL_DIR"
         ynh_safe_rm "/etc/profile.d/goenv.sh"
     fi
+}
+
+_ynh_go_try_bash_extension() {
+  if [ -x src/configure ]; then
+    src/configure && make -C src || {
+      ynh_print_info "Optional bash extension failed to build, but things will still work normally."
+    }
+  fi
 }

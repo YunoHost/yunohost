@@ -22,19 +22,19 @@ fi
 # This will automatically generate an appropriate PHP-FPM configuration for this app.
 #
 # The resulting configuration will be deployed to the appropriate place:
-# /etc/php/$php_version/fpm/pool.d/$app.conf
+# `/etc/php/$php_version/fpm/pool.d/$app.conf`
 #
-# If the app provides a conf/extra_php-fpm.conf template, it will be appended
+# If the app provides a `conf/extra_php-fpm.conf` template, it will be appended
 # to the generated configuration. (In the vast majority of cases, this shouldnt
 # be necessary)
 #
 # $php_version should be defined prior to calling this helper, but there should
 # be no reason to manually set it, as it is automatically set by the apt
 # helpers/resources when installing phpX.Y dependencies (PHP apps should at
-# least install phpX.Y-fpm using the apt helper/resource)
+# least install phpX.Y-fpm using the `apt` helper/resource)
 #
-# $php_group can be defined as a global (from _common.sh) if the worker
-# processes should run with a different group than $app
+# `$php_group` can be defined as a global (from `_common.sh`) if the worker
+# processes should run with a different group than `$app`
 #
 # Additional "pm" and "php_admin_value" settings which are meant to be possibly
 # configurable by admins from a future standard config panel at some point,
@@ -46,18 +46,18 @@ fi
 # defaults than the one set by this helper (while still allowing admin to
 # override it) you should use `ynh_app_setting_set_default`
 #
-# - $php_upload_max_filezise: corresponds upload_max_filesize and post_max_size. Defaults to 50M
-# - $php_process_management: corresponds to "pm" (ondemand, dynamic, static). Defaults to ondemand
-# - $php_max_children: by default, computed from "total RAM" divided by 40, cf _default_php_max_children
-# - $php_memory_limit: by default, 128M (from global php.ini)
+# - `$php_upload_max_filezise`: corresponds upload_max_filesize and post_max_size. Defaults to 50M
+# - `$php_process_management`: corresponds to "pm" (ondemand, dynamic, static). Defaults to ondemand
+# - `$php_max_children`: by default, computed from "total RAM" divided by 40, cf `_default_php_max_children`
+# - `$php_memory_limit`: by default, 128M (from global php.ini)
 #
 # Note that if $php_process_management is set to "dynamic", then these
 # variables MUST be defined prior to calling the helper (no default value) ...
 # Check PHP-FPM's manual for more info on what these are (: ...
 #
-# - $php_start_servers
-# - $php_min_spare_servers
-# - $php_max_spare_servers
+# - `$php_start_servers`
+# - `$php_min_spare_servers`
+# - `$php_max_spare_servers`
 #
 ynh_config_add_phpfpm() {
 
@@ -135,8 +135,6 @@ EOF
 # Remove the dedicated PHP-FPM config
 #
 # usage: ynh_config_remove_phpfpm
-#
-# Requires YunoHost version 2.7.2 or higher.
 ynh_config_remove_phpfpm() {
     ynh_safe_rm "/etc/php/$php_version/fpm/pool.d/$app.conf"
     ynh_systemctl --service="php${php_version}-fpm" --action=reload
@@ -160,52 +158,4 @@ _default_php_max_children() {
     fi
 
     echo "$php_max_children"
-}
-
-
-# Execute a command with Composer
-#
-# Will use $install_dir as workdir unless $composer_workdir exists (but that shouldnt be necessary)
-#
-# You may also define composer_user=root prior to call this helper if you absolutely need composer to run as root, but this is discouraged...
-#
-# usage: ynh_composer_exec commands
-#
-# Requires YunoHost version 4.2 or higher.
-ynh_composer_exec() {
-    local workdir="${composer_workdir:-$install_dir}"
-
-    COMPOSER_HOME="$workdir/.composer" \
-    COMPOSER_MEMORY_LIMIT=-1 \
-    sudo -E -u "${composer_user:-$app}" \
-    php${php_version} "$workdir/composer.phar" $@ \
-        -d "$workdir" --no-interaction --no-ansi 2>&1
-}
-
-# Install and initialize Composer in the given directory
-#
-# The installed version is defined by $composer_version which should be defined
-# as global prior to calling this helper.
-#
-# Will use $install_dir as workdir unless $composer_workdir exists (but that shouldnt be necessary)
-#
-# usage: ynh_composer_install
-#
-# Requires YunoHost version 4.2 or higher.
-ynh_composer_install() {
-    local workdir="${composer_workdir:-$install_dir}"
-
-    [[ -n "${composer_version}" ]] || ynh_die "\$composer_version should be defined before calling ynh_composer_install. (In the past, this was called \$YNH_COMPOSER_VERSION)"
-
-    [[ ! -e "$workdir/composer.phar" ]] || ynh_safe_rm $workdir/composer.phar
-
-    local composer_url="https://getcomposer.org/download/$composer_version/composer.phar"
-
-    # NB. we have to declare the var as local first,
-    # otherwise 'local foo=$(false) || echo 'pwet'" does'nt work
-    # because local always return 0 ...
-    local out
-    # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-    out=$(wget --tries 3 --no-dns-cache --timeout 900 --no-verbose --output-document=$workdir/composer.phar $composer_url 2>&1) \
-        || ynh_die "$out"
 }

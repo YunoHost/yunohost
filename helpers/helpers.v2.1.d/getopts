@@ -40,11 +40,6 @@
 # If there's many values for an option, -f /final /path, the value will be separated by a ';' $finalpath=/final;/path
 # For an option without value, like --user in the example, the helper can be called only with --user or -u. $user will then get the value 1.
 #
-# To keep a retrocompatibility, a package can still call a helper, using getopts, with positional arguments.
-# The "legacy mode" will manage the positional arguments and fill the variable in the same order than they are given in $args_array.
-# e.g. for `my_helper "val1" val2`, arg1 will be filled with val1, and arg2 with val2.
-#
-# Requires YunoHost version 3.2.2 or higher.
 ynh_handle_getopts_args() {
     # Trick to only re-enable debugging if it was set before
     local xtrace_enable=$(set +o | grep xtrace)
@@ -54,6 +49,10 @@ ynh_handle_getopts_args() {
     if [ $# -eq 0 ]; then
         eval "$xtrace_enable"
         return
+    # Validate that the first char is - because it should be something like --option=value or -o ...
+    elif [[ "${1:0:1}" != "-" ]]
+    then
+        ynh_die "It looks like you called the helper using positional arguments instead of keyword arguments ?"
     fi
 
     # Store arguments in an array to keep each argument separated

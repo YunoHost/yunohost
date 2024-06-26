@@ -3,15 +3,13 @@
 # Create a dedicated systemd config
 #
 # usage: ynh_config_add_systemd [--service=service] [--template=template]
-# | arg: -s, --service=     - Service name (optionnal, `$app` by default)
-# | arg: -t, --template=    - Name of template file (optionnal, this is 'systemd' by default, meaning `../conf/systemd.service` will be used as template)
+# | arg: --service=     - Service name (optionnal, `$app` by default)
+# | arg: --template=    - Name of template file (optionnal, this is 'systemd' by default, meaning `../conf/systemd.service` will be used as template)
 #
 # This will use the template `../conf/<templatename>.service`.
 #
 # See the documentation of `ynh_config_add` for a description of the template
 # format and how placeholders are replaced with actual variables.
-#
-# Requires YunoHost version 4.1.0 or higher.
 ynh_config_add_systemd() {
     # ============ Argument parsing =============
     local -A args_array=([s]=service= [t]=template=)
@@ -45,14 +43,12 @@ ynh_config_remove_systemd() {
 # Start (or other actions) a service,  print a log in case of failure and optionnaly wait until the service is completely started
 #
 # usage: ynh_systemctl [--service=service] [--action=action] [ [--wait_until="line to match"] [--log_path=log_path] [--timeout=300] [--length=20] ]
-# | arg: -n, --service= - Name of the service to start. Default : `$app`
-# | arg: -a, --action=       - Action to perform with systemctl. Default: start
-# | arg: -w, --wait_until=   - The pattern to find in the log to attest the service is effectively fully started.
-# | arg: -p, --log_path=     - Log file - Path to the log file. Default : `/var/log/$app/$app.log`
-# | arg: -t, --timeout=      - Timeout - The maximum time to wait before ending the watching. Default : 60 seconds.
-# | arg: -e, --length=       - Length of the error log displayed for debugging : Default : 20
-#
-# Requires YunoHost version 3.5.0 or higher.
+# | arg: --service=      - Name of the service to start. Default : `$app`
+# | arg: --action=       - Action to perform with systemctl. Default: start
+# | arg: --wait_until=   - The pattern to find in the log to attest the service is effectively fully started.
+# | arg: --log_path=     - Log file - Path to the log file. Default : `/var/log/$app/$app.log`
+# | arg: --timeout=      - Timeout - The maximum time to wait before ending the watching. Default : 60 seconds.
+# | arg: --length=       - Length of the error log displayed for debugging : Default : 20
 ynh_systemctl() {
     # ============ Argument parsing =============
     local -A args_array=([n]=service= [a]=action= [w]=wait_until= [p]=log_path= [t]=timeout= [e]=length=)
