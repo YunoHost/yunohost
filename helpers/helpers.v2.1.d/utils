@@ -256,14 +256,15 @@ _ynh_apply_default_permissions() {
         # If this is the install dir (so far this is the only way this helper is called with a directory)
         if [ "$target" ==  "${install_dir:-}" ]
         then
-            # Files inside should be owned by $app/www-data with rw-r----- (+x for folders or files that already have +x)
-            chmod -R u=rwX,g=r-X,o=--- "$target"
             local group="$app"
-            # We set the group to www-data because most apps do serve static assets that need to be readable by nginx ...
-            # The fact that the app is a webapp is infered by the fact that $domain and $path are defined
-            if [[ -n "${domain:-}" ]] && [[ -n "${path:-}" ]] then
+            # We set the group to www-data for webapps that do serve static assets, which therefore need to be readable by nginx ...
+            # The fact that the app needs this is infered by the existence of an nginx.conf and the presence of "alias" or "root" directive
+            if grep -q '^\s*alias\s\|^\s*root\s' "$YNH_APP_BASEDIR/conf/nginx.conf" 2>/dev/null then
                 group="www-data"
             fi
+            # Files inside should be owned by $app with rw-r----- (+x for folders or files that already have +x)
+            # The group needs read/dirtraversal (in particular if it's www-data)
+            chmod -R u=rwX,g=r-X,o=--- "$target"
             chown -R "$app:$group" "$target"
             return
         fi
