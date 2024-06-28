@@ -241,7 +241,7 @@ _ynh_apply_default_permissions() {
         [ -n "$2" ] || return 1
         local child=$(realpath "$1" 2>/dev/null)
         local parent=$(realpath "$2" 2>/dev/null)
-        [[ "${child/$parent/}" != "$child" ]]
+        [[ "${child}" =~ ^$parent ]]
     }
 
     # App files can have files of their own
