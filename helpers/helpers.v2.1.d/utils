@@ -258,8 +258,13 @@ _ynh_apply_default_permissions() {
         then
             # Files inside should be owned by $app/www-data with rw-r----- (+x for folders or files that already have +x)
             chmod -R u=rwX,g=r-X,o=--- "$target"
+            local group="$app"
             # We set the group to www-data because most apps do serve static assets that need to be readable by nginx ...
-            chown -R "$app:www-data" "$target"
+            # The fact that the app is a webapp is infered by the fact that $domain and $path are defined
+            if [[ -n "${domain:-}" ]] && [[ -n "${path:-}" ]] then
+                group="www-data"
+            fi
+            chown -R "$app:$group" "$target"
             return
         fi
     fi
