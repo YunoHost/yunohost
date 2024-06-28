@@ -247,7 +247,7 @@ _ynh_apply_default_permissions() {
     # App files can have files of their own
     if ynh_system_user_exists --username="$app"; then
         # If this is a file in $install_dir or $data_dir : it should be owned and read+writable by $app only
-        if [ -f "$target" ] && (is_in_dir "$target" "${install_dir:-}" || is_in_dir "$target" "${data_dir:-}")
+        if [ -f "$target" ] && (is_in_dir "$target" "${install_dir:-}" || is_in_dir "$target" "${data_dir:-}" || is_in_dir "$target" "/etc/$app")
         then
             chmod 600 "$target"
             chown "$app:$app" "$target"
