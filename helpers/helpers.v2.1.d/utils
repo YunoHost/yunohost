@@ -226,41 +226,36 @@ ynh_app_upgrading_from_version_before_or_equal_to() {
     dpkg --compare-versions $YNH_APP_CURRENT_VERSION le $version
 }
 
-# Check if we should enforce sane default permissions (= disable rwx for 'others')
-# on file/folders handled with ynh_setup_source and ynh_config_add
+# Apply sane permissions for files installed by ynh_setup_source and ynh_config_add.
 #
 # [internal]
 #
-# Having a file others-readable or a folder others-executable(=enterable)
-# is a security risk comparable to "chmod 777"
-#
-# Configuration files may contain secrets. Or even just being able to enter a
-# folder may allow an attacker to do nasty stuff (maybe a file or subfolder has
-# some write permission enabled for 'other' and the attacker may edit the
-# content or create files as leverage for priviledge escalation ...)
-#
-# The sane default should be to set ownership to $app:$app.
-# In specific case, you may want to set the ownership to $app:www-data
-# for example if nginx needs access to static files.
+# * Anything below $install_dir is chown $app:$app and chmod o-rwx,g-w
+# * The rest is considered as system configuration and chown root, chmod 400
 #
 _ynh_apply_default_permissions() {
     local target=$1
 
-    chmod o-rwx $target
-    chmod g-w $target
-    chown -R root:root $target
-    if ynh_system_user_exists --username=$app; then
-        chown $app:$app $target
+    is_subdir() {
+        # Returns false if child or parent is empty
+        child=$(realpath "$1" 2>/dev/null)
+        parent=$(realpath "$2" 2>/dev/null)
+        [[ "${child/$parent/}" != "$child" ]]
+    }
+
+    # App files can have files of their own
+    if ynh_system_user_exists --username="$app"; then
+        if is_subdir "$target" "$install_dir" ||  is_subdir "$target" "$data_dir"; then
+            chmod -R u=rwX,g=rX,o=X "$target"
+            chown -R "$app:$app" "$target"
+            chown "$app:www-data" "$target"
+            return
+        fi
     fi
 
-    # Crons should be owned by root
-    # Also we don't want systemd conf, nginx conf or others stuff to be owned by the app,
-    # otherwise they could self-edit their own systemd conf and escalate privilege
-    if echo "$target" | grep -q '^/etc/cron\|/etc/php\|/etc/nginx/conf.d\|/etc/fail2ban\|/etc/systemd/system'
-    then
-        chmod 400 $target
-        chown root:root $target
-    fi
+    # Other files are considered system
+    chmod -R 400 "$target"
+    chown -R root:root "$target"
 }
 
 int_to_bool() {
