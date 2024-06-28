@@ -24,9 +24,11 @@ ynh_config_add_logrotate() {
 
     for stuff in $logfile
     do
-        mkdir --parents $(dirname "$stuff")
         # Make sure the permissions of the parent dir are correct (otherwise the config file could be ignored and the corresponding logs never rotated)
-        chmod 750 $(dirname "$stuff")
+        local dir=$(dirname "$stuff")
+        mkdir --parents $dir
+        chmod 750 $dir
+        chown $app:$app $dir
     done
 
     local tempconf="$(mktemp)"
