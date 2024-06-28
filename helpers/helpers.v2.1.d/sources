@@ -182,10 +182,6 @@ ynh_setup_source() {
     # Extract source into the app dir
     mkdir --parents "$dest_dir"
 
-    if [ -n "${install_dir:-}" ] && [ "$dest_dir" == "$install_dir" ]; then
-        _ynh_apply_default_permissions $dest_dir
-    fi
-
     if [[ "$src_extract" == "false" ]]; then
         if [[ -z "$src_rename" ]]
         then
@@ -258,4 +254,8 @@ ynh_setup_source() {
         done
     fi
     rm -rf /var/cache/yunohost/files_to_keep_during_setup_source/
+
+    if [ -n "${install_dir:-}" ] && [ "$dest_dir" == "$install_dir" ]; then
+        _ynh_apply_default_permissions $dest_dir
+    fi
 }
