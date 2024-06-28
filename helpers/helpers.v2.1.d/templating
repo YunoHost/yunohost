@@ -209,7 +209,7 @@ ynh_read_var_in_file() {
         comments="//"
     fi
     local list='\[\s*['$string']?\w+['$string']?\]'
-    local var_part='^\s*((const|var|let)\s+)?\$?(('$list')*(->|\.|\[))*\s*'
+    local var_part='^\s*((const|var|let)\s+)?\$?(\w+('$list')*(->|\.|\[))*\s*'
     var_part+="[$string]?${key}[$string]?"
     var_part+='\s*\]?\s*'
     var_part+="($assign)"
@@ -285,7 +285,7 @@ ynh_write_var_in_file() {
         comments="//"
     fi
     local list='\[\s*['$string']?\w+['$string']?\]'
-    local var_part='^\s*((const|var|let)\s+)?\$?(('$list')*(->|\.|\[))*\s*'
+    local var_part='^\s*((const|var|let)\s+)?\$?(\w+('$list')*(->|\.|\[))*\s*'
     var_part+="[$string]?${key}[$string]?"
     var_part+='\s*\]?\s*'
     var_part+="($assign)"
