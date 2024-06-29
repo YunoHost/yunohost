@@ -849,6 +849,39 @@ def app_upgrade(
                     + "\n     -".join(manually_modified_files_by_app)
                 )
 
+            # If the upgrade didnt fail, update the revision and app files (even if it broke the system, otherwise we end up in a funky intermediate state where the app files don't match the installed version or settings, for example for v1->v2 upgrade marked as "broke the system" for some reason)
+            if not upgrade_failed:
+                now = int(time.time())
+                app_setting(app_instance_name, "update_time", now)
+                app_setting(
+                    app_instance_name,
+                    "current_revision",
+                    manifest.get("remote", {}).get("revision", "?"),
+                )
+
+                # Clean hooks and add new ones
+                hook_remove(app_instance_name)
+                if "hooks" in os.listdir(extracted_app_folder):
+                    for hook in os.listdir(extracted_app_folder + "/hooks"):
+                        hook_add(app_instance_name, extracted_app_folder + "/hooks/" + hook)
+
+                # Replace scripts and manifest and conf (if exists)
+                # Move scripts and manifest to the right place
+                for file_to_copy in APP_FILES_TO_COPY:
+                    rm(f"{app_setting_path}/{file_to_copy}", recursive=True, force=True)
+                    if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
+                        cp(
+                            f"{extracted_app_folder}/{file_to_copy}",
+                            f"{app_setting_path}/{file_to_copy}",
+                            recursive=True,
+                        )
+
+                # Clean and set permissions
+                shutil.rmtree(extracted_app_folder)
+                chmod(app_setting_path, 0o600)
+                chmod(f"{app_setting_path}/settings.yml", 0o400)
+                chown(app_setting_path, "root", recursive=True)
+
             # If upgrade failed or broke the system,
             # raise an error and interrupt all other pending upgrades
             if upgrade_failed or broke_the_system:
@@ -899,36 +932,6 @@ def app_upgrade(
                     )
 
             # Otherwise we're good and keep going !
-            now = int(time.time())
-            app_setting(app_instance_name, "update_time", now)
-            app_setting(
-                app_instance_name,
-                "current_revision",
-                manifest.get("remote", {}).get("revision", "?"),
-            )
-
-            # Clean hooks and add new ones
-            hook_remove(app_instance_name)
-            if "hooks" in os.listdir(extracted_app_folder):
-                for hook in os.listdir(extracted_app_folder + "/hooks"):
-                    hook_add(app_instance_name, extracted_app_folder + "/hooks/" + hook)
-
-            # Replace scripts and manifest and conf (if exists)
-            # Move scripts and manifest to the right place
-            for file_to_copy in APP_FILES_TO_COPY:
-                rm(f"{app_setting_path}/{file_to_copy}", recursive=True, force=True)
-                if os.path.exists(os.path.join(extracted_app_folder, file_to_copy)):
-                    cp(
-                        f"{extracted_app_folder}/{file_to_copy}",
-                        f"{app_setting_path}/{file_to_copy}",
-                        recursive=True,
-                    )
-
-            # Clean and set permissions
-            shutil.rmtree(extracted_app_folder)
-            chmod(app_setting_path, 0o600)
-            chmod(f"{app_setting_path}/settings.yml", 0o400)
-            chown(app_setting_path, "root", recursive=True)
 
             # So much win
             logger.success(m18n.n("app_upgraded", app=app_instance_name))
