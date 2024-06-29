@@ -1,59 +1,5 @@
 #!/bin/bash
 
-# Check if a YunoHost user exists
-#
-# usage: ynh_user_exists --username=username
-# | arg: -u, --username=    - the username to check
-# | ret: 0 if the user exists, 1 otherwise.
-#
-# example: ynh_user_exists 'toto' || echo "User does not exist"
-#
-# Requires YunoHost version 2.2.4 or higher.
-ynh_user_exists() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=u
-    local -A args_array=([u]=username=)
-    local username
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-
-    yunohost user list --output-as json --quiet | jq -e ".users.\"${username}\"" >/dev/null
-}
-
-# Retrieve a YunoHost user information
-#
-# usage: ynh_user_get_info --username=username --key=key
-# | arg: -u, --username=    - the username to retrieve info from
-# | arg: -k, --key=         - the key to retrieve
-# | ret: the value associate to that key
-#
-# example: mail=$(ynh_user_get_info --username="toto" --key=mail)
-#
-# Requires YunoHost version 2.2.4 or higher.
-ynh_user_get_info() {
-    # Declare an array to define the options of this helper.
-    local legacy_args=uk
-    local -A args_array=([u]=username= [k]=key=)
-    local username
-    local key
-    # Manage arguments with getopts
-    ynh_handle_getopts_args "$@"
-
-    yunohost user info "$username" --output-as json --quiet | jq -r ".$key"
-}
-
-# Get the list of YunoHost users
-#
-# usage: ynh_user_list
-# | ret: one username per line as strings
-#
-# example: for u in $(ynh_user_list); do ... ; done
-#
-# Requires YunoHost version 2.4.0 or higher.
-ynh_user_list() {
-    yunohost user list --output-as json --quiet | jq -r ".users | keys[]"
-}
-
 # Check if a user exists on the system
 #
 # [packagingv1]
@@ -95,8 +41,6 @@ ynh_system_group_exists() {
 }
 
 # Create a system user
-#
-# [packagingv1]
 #
 # usage: ynh_system_user_create --username=user_name [--home_dir=home_dir] [--use_shell] [--groups="group1 group2"]
 # | arg: -u, --username=    - Name of the system user that will be create
@@ -151,8 +95,6 @@ ynh_system_user_create() {
 }
 
 # Delete a system user
-#
-# [packagingv1]
 #
 # usage: ynh_system_user_delete --username=user_name
 # | arg: -u, --username=    - Name of the system user that will be create

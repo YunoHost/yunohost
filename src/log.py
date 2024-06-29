@@ -42,12 +42,18 @@ LOG_FILE_EXT = ".log"
 BORING_LOG_LINES = [
     r"set [+-]x$",
     r"set [+-]o xtrace$",
+    r"\+ set \+o$",
+    r"\+ grep xtrace$",
+    r"local 'xtrace_enable=",
     r"set [+-]o errexit$",
     r"set [+-]o nounset$",
     r"trap '' EXIT",
     r"local \w+$",
     r"local exit_code=(1|0)$",
     r"local legacy_args=.*$",
+    r"local _globalapp=.*$",
+    r"local checksum_setting_name=.*$",
+    r"ynh_app_setting ",  # (note the trailing space to match the "low level" one called by other setting helpers)
     r"local -A args_array$",
     r"args_array=.*$",
     r"ret_code=1",
@@ -59,8 +65,17 @@ BORING_LOG_LINES = [
     r"\[?\['? -n '' '?\]\]?$",
     r"rm -rf /var/cache/yunohost/download/$",
     r"type -t ynh_clean_setup$",
+    r"DEBUG - \+ unset \S+$",
     r"DEBUG - \+ echo '",
+    r"DEBUG - \+ LC_ALL=C$",
+    r"DEBUG - \+ DEBIAN_FRONTEND=noninteractive$",
     r"DEBUG - \+ exit (1|0)$",
+    r"DEBUG - \+ app=\S+$",
+    r"DEBUG - \+\+ app=\S+$",
+    r"DEBUG - \+\+ jq -r .\S+$",
+    r"DEBUG - \+\+ sed 's/\^null\$//'$",
+    "DEBUG - \\+ sed --in-place \\$'s\\\\001",
+    "DEBUG - \\+ sed --in-place 's\u0001.*$",
 ]
 
 

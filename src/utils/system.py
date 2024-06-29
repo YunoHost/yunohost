@@ -159,7 +159,7 @@ def ynh_packages_version(*args, **kwargs):
 
 
 def dpkg_is_broken():
-    if check_output("dpkg --audit") != "":
+    if check_output("dpkg --audit", cwd="/tmp/") != "":
         return True
     # If dpkg is broken, /var/lib/dpkg/updates
     # will contains files like 0001, 0002, ...

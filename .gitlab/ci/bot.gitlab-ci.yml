@@ -7,11 +7,13 @@ generate-helpers-doc:
     - git config --global user.name "$GITHUB_USER"
   script:
     - cd doc
-    - python3 generate_helper_doc.py
+    - python3 generate_helper_doc.py 2
+    - python3 generate_helper_doc.py 2.1
     - python3 generate_resource_doc.py > resources.md
     - python3 generate_configpanel_and_formoptions_doc.py > forms.md
     - hub clone https://$GITHUB_TOKEN:x-oauth-basic@github.com/YunoHost/doc.git doc_repo
-    - cp helpers.md doc_repo/pages/06.contribute/10.packaging_apps/20.scripts/10.helpers/packaging_app_scripts_helpers.md
+    - cp helpers.v2.md doc_repo/pages/06.contribute/10.packaging_apps/20.scripts/10.helpers/packaging_app_scripts_helpers.md
+    - cp helpers.v2.1.md doc_repo/pages/06.contribute/10.packaging_apps/20.scripts/12.helpers21/packaging_app_scripts_helpers_v21.md
     - cp resources.md doc_repo/pages/06.contribute/10.packaging_apps/10.manifest/10.appresources/packaging_app_manifest_resources.md
     - cp forms doc_repo/pages/06.contribute/15.dev/03.forms/forms.md
     - cd doc_repo
