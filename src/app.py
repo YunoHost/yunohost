@@ -863,7 +863,9 @@ def app_upgrade(
                 hook_remove(app_instance_name)
                 if "hooks" in os.listdir(extracted_app_folder):
                     for hook in os.listdir(extracted_app_folder + "/hooks"):
-                        hook_add(app_instance_name, extracted_app_folder + "/hooks/" + hook)
+                        hook_add(
+                            app_instance_name, extracted_app_folder + "/hooks/" + hook
+                        )
 
                 # Replace scripts and manifest and conf (if exists)
                 # Move scripts and manifest to the right place
