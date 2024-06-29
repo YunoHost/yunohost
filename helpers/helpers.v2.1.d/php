@@ -3,18 +3,6 @@
 # (this is used in the apt helpers, big meh ...)
 readonly YNH_DEFAULT_PHP_VERSION=7.4
 
-# Legacy: auto-convert phpversion to php_version (for consistency with nodejs_version, ruby_version, ...)
-if [[ -n "${app:-}" ]] && [[ -n "${phpversion:-}" ]]
-then
-    if [[ -z "${php_version:-}" ]]
-    then
-        php_version=$phpversion
-        ynh_app_setting_set --key=php_version --value=$php_version
-    fi
-    ynh_app_setting_delete --key=phpversion
-    unset phpversion
-fi
-
 # Create a dedicated PHP-FPM config
 #
 # usage: ynh_config_add_phpfpm
