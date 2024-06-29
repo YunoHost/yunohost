@@ -168,7 +168,7 @@ ynh_safe_rm() {
 
     if [[ -z "$target" ]]; then
         ynh_print_warn "ynh_safe_rm called with empty argument, ignoring."
-    elif [[ ! -e $target ]]; then
+    elif [[ ! -e "$target" ]] && [[ ! -L "$target" ]]; then
         ynh_print_info "'$target' wasn't deleted because it doesn't exist."
     elif ! _acceptable_path_to_delete "$target"; then
         ynh_print_warn "Not deleting '$target' because it is not an acceptable path to delete."
