@@ -1,3 +1,12 @@
+yunohost (11.2.19) stable; urgency=low
+
+  - apps: tweaks to be more robust and prevent the stupid flood of 'sh: 0: getcwd() failed: No such file or directory' when running an app upgrade/remove from /var/www/$app, sometimes making it look like the upgrade failed when it didnt (a349fc03)
+  - apps: be more robust when an app upgrade succeeds but for some reason is marked with 'broke the system' ... ending up in inconsistent state between the app settings vs the app scritpts (for example in v1->v2 transitions but not only) (e5b57590)
+  - helpers2.1: Fix getopts error handling ... (3e1c9eba)
+  - helpers2.1: also run _ynh_apply_default_permissions in ynh_restore to be consistent (also because the user uid on the new system may be different than in the archive etc) (eee84c5f)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 29 Jun 2024 23:55:52 +0200
+
 yunohost (11.2.18) stable; urgency=low
 
   - helpers2.1: Rework _ynh_apply_default_permissions to hopefully remove the necessity to chown/chmod in the app scripts ([#1883](http://github.com/YunoHost/yunohost/pull/1883))
