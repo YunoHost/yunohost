@@ -26,6 +26,7 @@ from glob import glob
 from datetime import datetime
 
 from moulinette import m18n
+from yunohost.utils.diagnosis import diagnosis_ignore, diagnosis_unignore
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
@@ -296,6 +297,9 @@ def service_enable(names):
         names = [names]
     for name in names:
         if _run_service_command("enable", name):
+            services = _get_services()
+            if name in services:
+                diagnosis_unignore({"services": [{"service": name}]})
             logger.success(m18n.n("service_enabled", service=name))
         else:
             raise YunohostError(
@@ -315,6 +319,9 @@ def service_disable(names):
         names = [names]
     for name in names:
         if _run_service_command("disable", name):
+            services = _get_services()
+            if name in services:
+                diagnosis_ignore({"services": [{"service": name}]})
             logger.success(m18n.n("service_disabled", service=name))
         else:
             raise YunohostError(
