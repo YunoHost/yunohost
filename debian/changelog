@@ -1,3 +1,14 @@
+yunohost (11.2.18) stable; urgency=low
+
+  - helpers2.1: Rework _ynh_apply_default_permissions to hopefully remove the necessity to chown/chmod in the app scripts ([#1883](http://github.com/YunoHost/yunohost/pull/1883))
+  - helpers2.1: in logrotate, make sure to also chown $app the log dir (1dfc47d1d)
+  - helpers2.1: forgot to rename the apt call in mongodb helpers (7b2959a3e)
+  - helpers2.1: in ynh_safe_rm, check if target is not a broken symlink before erorring out ([#1716](http://github.com/YunoHost/yunohost/pull/1716))
+
+  Thanks to all contributors <3 ! (Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 29 Jun 2024 18:05:04 +0200
+
 yunohost (11.2.17.1) stable; urgency=low
 
   - helpers2.1: fix __PATH__/ handling (997388dc)
