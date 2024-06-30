@@ -309,7 +309,7 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
 
         configuration["ignore_filters"][category].append(criterias)
         _diagnosis_write_configuration(configuration)
-        logger.success("Filter added")
+        logger.success(f"Added a {category} diagnosis filter")
         return
 
     if remove_filter:
@@ -327,7 +327,7 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
 
         configuration["ignore_filters"][category].remove(criterias)
         _diagnosis_write_configuration(configuration)
-        logger.success("Filter removed")
+        logger.success(f"Removed a {category} diagnosis filter")
         return
 
 
