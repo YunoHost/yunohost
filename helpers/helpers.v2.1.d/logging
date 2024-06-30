@@ -4,6 +4,7 @@
 #
 # usage: ynh_die "Some message"
 ynh_die() {
+    set +o xtrace # set +x
     if [[ -n "${1:-}" ]]
     then
         python3 -c 'import yaml, sys; print(yaml.dump({"error": sys.stdin.read()}))' <<< "${1:-}" >>"$YNH_STDRETURN"
