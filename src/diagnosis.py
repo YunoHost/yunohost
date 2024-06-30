@@ -323,6 +323,7 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
 
         if criterias not in configuration["ignore_filters"][category]:
             logger.warning(f"(There is no such diagnosis {category} filter with these criterias to remove)")
+            return
 
         configuration["ignore_filters"][category].remove(criterias)
         _diagnosis_write_configuration(configuration)
