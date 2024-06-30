@@ -122,3 +122,18 @@ else:
 EOF
     eval "$xtrace_enable"
 }
+
+# Legacy: auto-convert phpversion to php_version (for consistency with nodejs_version, ruby_version, ...)
+# This has to be here and not in the "php" code file because ynh_app_setting_set/delete need to be defined @_@
+if [[ -n "${app:-}" ]] && [[ -n "${phpversion:-}" ]]
+then
+    if [[ -z "${php_version:-}" ]]
+    then
+        php_version=$phpversion
+        ynh_app_setting_set --key=php_version --value=$php_version
+    fi
+    ynh_app_setting_delete --key=phpversion
+    unset phpversion
+fi
+
+

@@ -179,6 +179,8 @@ ynh_restore() {
     else
         mv "$archive_path" "${target}"
     fi
+
+    _ynh_apply_default_permissions "$target"
 }
 
 # Restore all files that were previously backuped in an app backup script
