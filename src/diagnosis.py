@@ -304,7 +304,7 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             configuration["ignore_filters"][category] = []
 
         if criterias in configuration["ignore_filters"][category]:
-            logger.warning("This filter already exists.")
+            logger.warning(f"(There is already a diagnosis {category} filter with these criterias)")
             return
 
         configuration["ignore_filters"][category].append(criterias)
@@ -322,7 +322,7 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             configuration["ignore_filters"][category] = []
 
         if criterias not in configuration["ignore_filters"][category]:
-            logger.warning("This filter does not exists.")
+            logger.warning(f"(There is no such diagnosis {category} filter with these criterias to remove)")
 
         configuration["ignore_filters"][category].remove(criterias)
         _diagnosis_write_configuration(configuration)
