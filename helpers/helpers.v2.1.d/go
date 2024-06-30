@@ -97,7 +97,7 @@ ynh_go_install () {
     test -x /usr/bin/go_goenv && mv /usr/bin/go_goenv /usr/bin/go
 
     # Install the requested version of Go
-    local final_go_version=$("$goenv_latest_dir/bin/goenv-latest" --print "$go_version")
+    local final_go_version=$("$GOENV_INSTALL_DIR/plugins/xxenv-latest/bin/goenv-latest" --print "$go_version")
     ynh_print_info "Installation of Go-$final_go_version"
     goenv install --quiet --skip-existing "$final_go_version" 2>&1
 

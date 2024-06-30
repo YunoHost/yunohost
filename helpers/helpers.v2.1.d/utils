@@ -168,7 +168,7 @@ ynh_safe_rm() {
 
     if [[ -z "$target" ]]; then
         ynh_print_warn "ynh_safe_rm called with empty argument, ignoring."
-    elif [[ ! -e $target ]]; then
+    elif [[ ! -e "$target" ]] && [[ ! -L "$target" ]]; then
         ynh_print_info "'$target' wasn't deleted because it doesn't exist."
     elif ! _acceptable_path_to_delete "$target"; then
         ynh_print_warn "Not deleting '$target' because it is not an acceptable path to delete."
@@ -226,41 +226,61 @@ ynh_app_upgrading_from_version_before_or_equal_to() {
     dpkg --compare-versions $YNH_APP_CURRENT_VERSION le $version
 }
 
-# Check if we should enforce sane default permissions (= disable rwx for 'others')
-# on file/folders handled with ynh_setup_source and ynh_config_add
+# Apply sane permissions for files installed by ynh_setup_source and ynh_config_add.
 #
 # [internal]
 #
-# Having a file others-readable or a folder others-executable(=enterable)
-# is a security risk comparable to "chmod 777"
-#
-# Configuration files may contain secrets. Or even just being able to enter a
-# folder may allow an attacker to do nasty stuff (maybe a file or subfolder has
-# some write permission enabled for 'other' and the attacker may edit the
-# content or create files as leverage for priviledge escalation ...)
-#
-# The sane default should be to set ownership to $app:$app.
-# In specific case, you may want to set the ownership to $app:www-data
-# for example if nginx needs access to static files.
+# * Anything below $install_dir is chown $app:$app and chmod o-rwx,g-w
+# * The rest is considered as system configuration and chown root, chmod 400
 #
 _ynh_apply_default_permissions() {
     local target=$1
 
-    chmod o-rwx $target
-    chmod g-w $target
-    chown -R root:root $target
-    if ynh_system_user_exists --username=$app; then
-        chown $app:$app $target
+    is_in_dir() {
+        # Returns false if parent is empty
+        [ -n "$2" ] || return 1
+        local child=$(realpath "$1" 2>/dev/null)
+        local parent=$(realpath "$2" 2>/dev/null)
+        [[ "${child}" =~ ^$parent ]]
+    }
+
+    # App files can have files of their own
+    if ynh_system_user_exists --username="$app"; then
+        # If this is a file in $install_dir or $data_dir : it should be owned and read+writable by $app only
+        if [ -f "$target" ] && (is_in_dir "$target" "${install_dir:-}" || is_in_dir "$target" "${data_dir:-}" || is_in_dir "$target" "/etc/$app")
+        then
+            chmod 600 "$target"
+            chown "$app:$app" "$target"
+            return
+        fi
+        # If this is the install dir (so far this is the only way this helper is called with a directory)
+        if [ "$target" ==  "${install_dir:-}" ]
+        then
+            # Read the group from the install_dir manifest resource
+            local group="$(ynh_read_manifest 'resources.install_dir.group' | sed 's/null//g' | sed "s/__APP__/$app/g" | cut -f1 -d:)"
+            if [[ -z "$group" ]]
+            then
+                # We set the group to www-data for webapps that do serve static assets, which therefore need to be readable by nginx ...
+                # The fact that the app needs this is infered by the existence of an nginx.conf and the presence of "alias" or "root" directive
+                if grep -q '^\s*alias\s\|^\s*root\s' "$YNH_APP_BASEDIR/conf/nginx.conf" 2>/dev/null;
+                then
+                    group="www-data"
+                # Or default to "$app"
+                else
+                    group="$app"
+                fi
+            fi
+            # Files inside should be owned by $app with rw-r----- (+x for folders or files that already have +x)
+            # The group needs read/dirtraversal (in particular if it's www-data)
+            chmod -R u=rwX,g=r-X,o=--- "$target"
+            chown -R "$app:$group" "$target"
+            return
+        fi
     fi
 
-    # Crons should be owned by root
-    # Also we don't want systemd conf, nginx conf or others stuff to be owned by the app,
-    # otherwise they could self-edit their own systemd conf and escalate privilege
-    if echo "$target" | grep -q '^/etc/cron\|/etc/php\|/etc/nginx/conf.d\|/etc/fail2ban\|/etc/systemd/system'
-    then
-        chmod 400 $target
-        chown root:root $target
-    fi
+    # Other files are considered system
+    chmod 400 "$target"
+    chown root:root "$target"
 }
 
 int_to_bool() {

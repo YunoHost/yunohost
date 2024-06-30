@@ -265,20 +265,24 @@ ynh_install_mongo() {
 	fi
 
 	if [[ "$install_package" = true ]]; then
-        ynh_install_extra_app_dependencies --repo="deb http://repo.mongodb.org/apt/debian $mongo_debian_release/mongodb-org/$mongo_version main" --package="mongodb-org mongodb-org-server mongodb-org-tools mongodb-mongosh" --key="https://www.mongodb.org/static/pgp/server-$mongo_version.asc"
-    fi
-    mongodb_servicename=mongod
+    ynh_apt_install_dependencies_from_extra_repository \
+        --repo="deb http://repo.mongodb.org/apt/debian $mongo_debian_release/mongodb-org/$mongo_version main" \
+        --package="mongodb-org mongodb-org-server mongodb-org-tools mongodb-mongosh" \
+        --key="https://www.mongodb.org/static/pgp/server-$mongo_version.asc"
+  fi
+
+  mongodb_servicename=mongod
 
     # Make sure MongoDB is started and enabled
-    systemctl enable $mongodb_servicename --quiet
-    systemctl daemon-reload --quiet
-    ynh_systemctl --service=$mongodb_servicename --action=restart --wait_until="aiting for connections" --log_path="/var/log/mongodb/$mongodb_servicename.log"
+  systemctl enable $mongodb_servicename --quiet
+  systemctl daemon-reload --quiet
+  ynh_systemctl --service=$mongodb_servicename --action=restart --wait_until="aiting for connections" --log_path="/var/log/mongodb/$mongodb_servicename.log"
 
     # Integrate MongoDB service in YunoHost
-    yunohost service add $mongodb_servicename --description="MongoDB daemon" --log="/var/log/mongodb/$mongodb_servicename.log"
+  yunohost service add $mongodb_servicename --description="MongoDB daemon" --log="/var/log/mongodb/$mongodb_servicename.log"
 
     # Store mongo_version into the config of this app
-    ynh_app_setting_set --key=mongo_version --value=$mongo_version
+  ynh_app_setting_set --key=mongo_version --value=$mongo_version
 }
 
 # Remove MongoDB
