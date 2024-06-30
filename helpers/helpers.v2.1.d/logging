@@ -4,7 +4,11 @@
 #
 # usage: ynh_die "Some message"
 ynh_die() {
-    echo "$1" 1>&2
+    if [[ -n "${1:-}" ]]
+    then
+        python3 -c 'import yaml, sys; print(yaml.dump({"error": sys.stdin.read()}))' <<< "${1:-}" >>"$YNH_STDRETURN"
+        echo "${1:-}" 1>&2
+    fi
     exit 1
 }
 
