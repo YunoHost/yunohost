@@ -272,7 +272,7 @@ _ynh_apply_default_permissions() {
             fi
             # Files inside should be owned by $app with rw-r----- (+x for folders or files that already have +x)
             # The group needs read/dirtraversal (in particular if it's www-data)
-            chmod -R u=rwX,g=r-X,o=--- "$target"
+            chmod -R u=rwX,g=rX,o=--- "$target"
             chown -R "$app:$group" "$target"
             return
         fi
