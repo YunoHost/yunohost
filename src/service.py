@@ -26,7 +26,7 @@ from glob import glob
 from datetime import datetime
 
 from moulinette import m18n
-from yunohost.utils.diagnosis import diagnosis_ignore, diagnosis_unignore
+from yunohost.diagnosis import diagnosis_ignore, diagnosis_unignore
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
