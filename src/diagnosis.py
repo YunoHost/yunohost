@@ -322,7 +322,7 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             configuration["ignore_filters"][category] = []
 
         if criterias not in configuration["ignore_filters"][category]:
-            raise YunohostValidationError("This filter does not exists.")
+            logger.warning("This filter does not exists.")
 
         configuration["ignore_filters"][category].remove(criterias)
         _diagnosis_write_configuration(configuration)
