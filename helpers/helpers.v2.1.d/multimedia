@@ -84,6 +84,6 @@ ynh_multimedia_addfolder() {
 #
 # | arg: user_name   - The name of the user which gain this access.
 ynh_multimedia_addaccess() {
-    groupadd -f multimedia
-    usermod -a -G multimedia $1
+    groupadd -f $MEDIA_GROUP
+    usermod -a -G $MEDIA_GROUP $1
 }
