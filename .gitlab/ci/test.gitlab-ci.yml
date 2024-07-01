@@ -57,14 +57,17 @@ test-actionmap:
     changes:
       - share/actionsmap.yml
 
-test-helpers:
+test-helpers2:
   extends: .test-stage
   script:
     - cd tests
     - bash test_helpers.sh
-#  only:
-#    changes:
-#      - helpers/*
+
+test-helpers2.1:
+  extends: .test-stage
+  script:
+    - cd tests
+    - bash test_helpers.sh 2.1
 
 test-domains:
   extends: .test-stage
