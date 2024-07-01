@@ -16,7 +16,7 @@ _make_dummy_manifest() {
 
     cat << EOF
 packaging_format = 2
-id = "helloworld"
+id = "$app"
 version = "0.1~ynh2"
 
 [resources]
@@ -33,6 +33,7 @@ EOF
 ynhtest_setup_source_nominal() {
     install_dir="$(mktemp -d -p $VAR_WWW)"
     _make_dummy_manifest > ../manifest.toml
+    cat ../manifest.toml # debug
     
     ynh_setup_source --dest_dir="$install_dir" --source_id="dummy"
 

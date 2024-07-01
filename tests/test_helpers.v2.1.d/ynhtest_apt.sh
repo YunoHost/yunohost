@@ -1,5 +1,11 @@
 ynhtest_apt_install_apt_deps_regular() {
 
+    cat << EOF > ../manifest.toml
+packaging_format = 2
+id = "$app"
+version = "0.1~ynh2"
+EOF
+
     dpkg --list | grep -q "ii *$app-ynh-deps" && apt remove $app-ynh-deps --assume-yes || true
     dpkg --list | grep -q 'ii *nyancat' && apt remove nyancat --assume-yes || true
     dpkg --list | grep -q 'ii *sl' && apt remove sl --assume-yes || true

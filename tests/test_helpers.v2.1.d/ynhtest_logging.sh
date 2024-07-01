@@ -45,48 +45,7 @@ ynhtest_exec_warn_less() {
     test -e "$FOOANDBAR"
     rm "$FOOANDBAR"
 
-    ###########################
-    # Legacy stuff using eval #
-    ###########################
-    
     test ! -e $FOO
-    ynh_hide_warnings "touch $FOO"
-    test -e $FOO
-    rm $FOO
-
-    test ! -e $FOO1QUOTEBAR
-    ynh_hide_warnings "touch \"$FOO1QUOTEBAR\""
-    # (this works but expliciy *double* quotes have to be provided)
-    test -e $FOO1QUOTEBAR
-    rm $FOO1QUOTEBAR
-
-    #test ! -e $FOO2QUOTEBAR
-    #ynh_hide_warnings "touch \'$FOO2QUOTEBAR\'"
-    ## (this doesn't work with simple or double quotes)
-    #test -e $FOO2QUOTEBAR
-    #rm $FOO2QUOTEBAR
-
-    test ! -e $BAR
-    ynh_hide_warnings 'touch $BAR'
-    # That one works because $BAR is only interpreted during eval
-    test -e $BAR
-    rm $BAR
-
-    #test ! -e $BAR
-    #ynh_hide_warnings "touch $BAR"
-    # That one doesn't work because $bar gets interpreted as empty var by eval...
-    #test -e $BAR
-    #rm $BAR
-
-    test ! -e "$FOOBAR"
-    ynh_hide_warnings "touch \"$FOOBAR\""
-    # (works but requires explicit double quotes otherwise eval would interpret 'foo bar' as two separate args..)
-    test -e "$FOOBAR"
-    rm "$FOOBAR"
-
-    test ! -e "$FOOANDBAR"
-    ynh_hide_warnings "touch \"$FOOANDBAR\""
-    # (works but requires explicit double quotes otherwise eval would interpret '&' as a "run command in background" and also bar is not a valid command)
-    test -e "$FOOANDBAR"
-    rm "$FOOANDBAR"
+    ! ynh_hide_warnings "touch $FOO"
+    ! test -e $FOO
 }

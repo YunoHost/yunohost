@@ -10,6 +10,7 @@ foo=__FOO__
 EOF
 
     foo="bar"
+    install_dir="$VAR_WWW"
     
     ynh_config_add --template="$template" --destination="$VAR_WWW/config.txt"
 
