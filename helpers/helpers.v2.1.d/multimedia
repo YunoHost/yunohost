@@ -78,19 +78,12 @@ ynh_multimedia_addfolder() {
     setfacl -RL -m m::rwx "$source_dir"
 }
 
-# Allow an user to have an write authorisation in multimedia directories
+# Add an user to the multimedia group, in turn having write permission in multimedia directories
 #
 # usage: ynh_multimedia_addaccess user_name
 #
-# | arg: --user_name= - The name of the user which gain this access.
+# | arg: user_name   - The name of the user which gain this access.
 ynh_multimedia_addaccess() {
-    
-    # ============ Argument parsing =============
-    local -A args_array=([u]=user_name=)
-    local user_name
-    ynh_handle_getopts_args "$@"
-    # ===========================================
-
     groupadd -f multimedia
-    usermod -a -G multimedia $user_name
+    usermod -a -G multimedia $1
 }
