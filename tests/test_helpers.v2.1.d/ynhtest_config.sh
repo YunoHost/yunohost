@@ -130,7 +130,7 @@ EOF
     ! _read_py                          "$file"       "NONEXISTENT"
     test "$(ynh_read_var_in_file --file="$file" --key="NONEXISTENT")" == "YNH_NULL"
 
-    ! ynh_write_var_in_file      --file="$file" --key="ENABLE" -value="foobar"
+    ! ynh_write_var_in_file      --file="$file" --key="ENABLE" --value="foobar"
     ! _read_py                          "$file"       "ENABLE"
     test "$(ynh_read_var_in_file --file="$file" --key="ENABLE")" == "YNH_NULL"
 

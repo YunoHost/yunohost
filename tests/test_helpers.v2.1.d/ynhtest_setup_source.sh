@@ -1,17 +1,17 @@
 _make_dummy_manifest() {
     if [ ! -e $HTTPSERVER_DIR/dummy.tar.gz ]
     then
-        pushd "$HTTPSERVER_DIR"
+        pushd "$HTTPSERVER_DIR" >/dev/null
             mkdir dummy
-            pushd dummy
+            pushd dummy >/dev/null
             echo "Lorem Ipsum" > index.html
             echo '{"foo": "bar"}' > conf.json
             mkdir assets
             echo '.some.css { }' > assets/main.css
             echo 'var some="js";' > assets/main.js
-            popd
-            tar -czf dummy.tar.gz dummy
-        popd
+            popd >/dev/null
+            tar -czf dummy.tar.gz dummy >/dev/null
+        popd >/dev/null
     fi
 
     cat << EOF
@@ -38,16 +38,17 @@ ynhtest_setup_source_nominal() {
 
     test -e "$install_dir"
     test -e "$install_dir/index.html"
+    test -e "$install_dir/assets"
 
     ls -ld "$install_dir"            | grep -q "drwxr-x--- . $app www-data"
     ls -l  "$install_dir/index.html" | grep -q "\-rw-r----- . $app www-data"
+    ls -ld "$install_dir/assets"     | grep -q "drwxr-x--- . $app www-data"
 }
 
 ynhtest_setup_source_no_group_in_manifest() {
     install_dir="$(mktemp -d -p $VAR_WWW)"
     _make_dummy_manifest > ../manifest.toml
     sed '/www-data/d' -i ../manifest.toml
-    cat ../manifest.toml # debug
     
     ynh_setup_source --dest_dir="$install_dir" --source_id="dummy"
 
@@ -56,6 +57,7 @@ ynhtest_setup_source_no_group_in_manifest() {
 
     ls -ld "$install_dir"            | grep -q "drwxr-x--- . $app $app"
     ls -l  "$install_dir/index.html" | grep -q "\-rw-r----- . $app $app"
+    ls -ld "$install_dir/assets"     | grep -q "drwxr-x--- . $app $app"
 }
 
 
