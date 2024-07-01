@@ -1,3 +1,10 @@
+yunohost (11.2.20.1) stable; urgency=low
+
+  - helpers2.1: typo (1ed56952e)
+  - helpers2.1: add unit tests (92807afb1)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 01 Jul 2024 23:38:29 +0200
+
 yunohost (11.2.20) stable; urgency=low
 
   - helpers2.1: fix automigration of phpversion to php_version (3f973669)
