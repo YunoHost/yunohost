@@ -33,7 +33,6 @@ EOF
 ynhtest_setup_source_nominal() {
     install_dir="$(mktemp -d -p $VAR_WWW)"
     _make_dummy_manifest > ../manifest.toml
-    cat ../manifest.toml # debug
     
     ynh_setup_source --dest_dir="$install_dir" --source_id="dummy"
 
@@ -48,6 +47,7 @@ ynhtest_setup_source_no_group_in_manifest() {
     install_dir="$(mktemp -d -p $VAR_WWW)"
     _make_dummy_manifest > ../manifest.toml
     sed '/www-data/d' -i ../manifest.toml
+    cat ../manifest.toml # debug
     
     ynh_setup_source --dest_dir="$install_dir" --source_id="dummy"
 

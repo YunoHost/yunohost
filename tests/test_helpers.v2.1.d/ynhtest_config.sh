@@ -63,7 +63,7 @@ EOF
     
     test "$(ynh_read_var_in_file --file="$file" --key="user")" == "camille"
     
-    test "$(ynh_read_var_in_file --file="$file" --key="TITLE" --after"YNH_ICI")" == "Hello world"
+    test "$(ynh_read_var_in_file --file="$file" --key="TITLE" --after="YNH_ICI")" == "Hello world"
 
     ! _read_py                          "$file"       "NONEXISTENT"
     test "$(ynh_read_var_in_file --file="$file" --key="NONEXISTENT")" == "YNH_NULL"
@@ -123,8 +123,8 @@ EOF
     ynh_write_var_in_file        --file="$file" --key="ldap_base" --value="ou=users,dc=yunohost,dc=org"
     test "$(ynh_read_var_in_file --file="$file" --key="ldap_base")"    == "ou=users,dc=yunohost,dc=org"
     
-    ynh_write_var_in_file        --file="$file" --key="TITLE" --value="YOLO" --after"YNH_ICI"
-    test "$(ynh_read_var_in_file --file="$file" --key="TITLE" --after"YNH_ICI")" == "YOLO"
+    ynh_write_var_in_file        --file="$file" --key="TITLE" --value="YOLO" --after="YNH_ICI"
+    test "$(ynh_read_var_in_file --file="$file" --key="TITLE" --after="YNH_ICI")" == "YOLO"
 
     ! ynh_write_var_in_file      --file="$file" --key="NONEXISTENT" --value="foobar"
     ! _read_py                          "$file"       "NONEXISTENT"
@@ -251,8 +251,8 @@ EOF
     test "$(_read_ini                   "$file"       "url")"    == "https://domain.tld/foobar"
     test "$(ynh_read_var_in_file --file="$file" --key="url")"    == "https://domain.tld/foobar"
 
-    ynh_write_var_in_file               "$file"       "ldap_base"      "ou=users,dc=yunohost,dc=org"
-    test "$(ynh_read_var_in_file --file="$file" --key="ldap_base")" == "ou=users,dc=yunohost,dc=org"
+    ynh_write_var_in_file        --file="$file" --key="ldap_base" --value="ou=users,dc=yunohost,dc=org"
+    test "$(ynh_read_var_in_file --file="$file" --key="ldap_base")"    == "ou=users,dc=yunohost,dc=org"
 
     ! ynh_write_var_in_file      --file="$file" --key="nonexistent" "foobar"
     ! _read_ini                         "$file"       "nonexistent"

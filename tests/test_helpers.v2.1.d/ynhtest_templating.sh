@@ -15,7 +15,7 @@ EOF
     ynh_config_add --template="$template" --destination="$VAR_WWW/config.txt"
 
     test "$(cat $VAR_WWW/config.txt)" == "$(echo -ne 'app=ynhtest\nfoo=bar')"
-    test "$(ls -l $VAR_WWW/config.txt | cut -d' ' -f1-4)" == "-rw-r----- 1 ynhtest ynhtest"
+    test "$(ls -l $VAR_WWW/config.txt | cut -d' ' -f1-4)" == "-rw------- 1 ynhtest ynhtest"
 }
 
 ynhtest_simple_template_system_config() {
@@ -35,7 +35,7 @@ EOF
     
     ynh_config_add --template="$template" --destination="/etc/cron.d/ynhtest_config"
 
-    test "$(cat $VAR_WWW/config.txt)" == "$(echo -ne 'app=ynhtest\nfoo=bar')"
+    test "$(cat /etc/cron.d/ynhtest_config)" == "$(echo -ne 'app=ynhtest\nfoo=bar')"
     test "$(ls -l /etc/cron.d/ynhtest_config | cut -d' ' -f1-4)" == "-r-------- 1 root root"
 
     rm -f /etc/cron.d/ynhtest_config
@@ -53,11 +53,12 @@ app={{ app }}
 EOF
 
     foo="bar"
+    install_dir="$VAR_WWW"
     
     ynh_config_add --template="$template" --destination="$VAR_WWW/config.txt" --jinja
 
     test "$(cat $VAR_WWW/config.txt)" == "$(echo -ne 'app=ynhtest\nfoo=true')"
-    test "$(ls -l $VAR_WWW/config.txt | cut -d' ' -f1-4)" == "-rw-r----- 1 ynhtest ynhtest"
+    test "$(ls -l $VAR_WWW/config.txt | cut -d' ' -f1-4)" == "-rw------- 1 ynhtest ynhtest"
 }
 
 
