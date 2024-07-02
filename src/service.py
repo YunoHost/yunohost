@@ -297,7 +297,7 @@ def service_enable(names):
         names = [names]
     for name in names:
         if _run_service_command("enable", name):
-            _diagnosis_ignore(remove_filter="services", list=f"service={name}")
+            _diagnosis_ignore(remove_filter=["services", f"service={name}"])
             logger.success(m18n.n("service_enabled", service=name))
         else:
             raise YunohostError(
@@ -317,7 +317,7 @@ def service_disable(names):
         names = [names]
     for name in names:
         if _run_service_command("disable", name):
-            _diagnosis_ignore(add_filter="services", list=f"service={name}")
+            _diagnosis_ignore(add_filter=["services", f"service={name}"])
             logger.success(m18n.n("service_disabled", service=name))
         else:
             raise YunohostError(
