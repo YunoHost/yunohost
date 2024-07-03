@@ -155,7 +155,6 @@ def tools_postinstall(
     from yunohost.user import user_create, ADMIN_ALIASES
     from yunohost.app_catalog import _update_apps_catalog
     from yunohost.firewall import firewall_upnp
-    from yunohost.service import service_start, service_enable
 
     import psutil
 
