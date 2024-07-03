@@ -301,13 +301,13 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
 
         if criterias in configuration["ignore_filters"][category]:
             logger.warning(
-                m18n.n("diagnosis_ignore_already_filtered", service=category)
+                m18n.n("diagnosis_ignore_already_filtered", category=category)
             )
             return
 
         configuration["ignore_filters"][category].append(criterias)
         _diagnosis_write_configuration(configuration)
-        logger.success(m18n.n("diagnosis_ignore_filter_added", service=category))
+        logger.success(m18n.n("diagnosis_ignore_filter_added", category=category))
         return
 
     if remove_filter:
@@ -320,12 +320,14 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             configuration["ignore_filters"][category] = []
 
         if criterias not in configuration["ignore_filters"][category]:
-            logger.warning(m18n.n("diagnosis_ignore_no_filter_found", service=category))
+            logger.warning(
+                m18n.n("diagnosis_ignore_no_filter_found", category=category)
+            )
             return
 
         configuration["ignore_filters"][category].remove(criterias)
         _diagnosis_write_configuration(configuration)
-        logger.success(m18n.n("diagnosis_ignore_filter_removed", service=category))
+        logger.success(m18n.n("diagnosis_ignore_filter_removed", category=category))
         return
 
 
