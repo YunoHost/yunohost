@@ -10,7 +10,7 @@ from moulinette.utils.filesystem import rm
 
 logger = getLogger("yunohost.migration")
 
-VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bullseye_upgrade.txt"
+VENV_REQUIREMENTS_SUFFIX = ".requirements_backup_for_bookworm_upgrade.txt"
 
 
 def extract_app_from_venv_path(venv_path):
@@ -56,28 +56,28 @@ class MyMigration(Migration):
     """
 
     ignored_python_apps = [
-        "calibreweb",
-        "django-for-runners",
-        "ffsync",
-        "jupiterlab",
-        "librephotos",
-        "mautrix",
-        "mediadrop",
-        "mopidy",
-        "pgadmin",
-        "tracim",
-        "synapse",
-        "matrix-synapse",
-        "weblate",
+        "diacamma",   # Does an ugly sed in the sites-packages/django_auth_ldap3_ad
+        "kresus",  # uses virtualenv instead of venv, with --system-site-packages (?)
+        "librephotos",  # runs a setup.py ? not sure pip freeze / pip install -r requirements.txt is gonna be equivalent ..
+        "mautrix",  # install stuff from a .tar.gz
+        "microblogpub",  # uses poetry ? x_x
+        "mopidy",  # applies a custom patch?
+        "motioneye",  # install stuff from a .tar.gz
+        "pgadmin",  # bunch of manual patches
+        "searxng",  # uses --system-site-packages ?
+        "synapse",  # specific stuff for ARM to prevent local compiling etc
+        "matrix-synapse",  # synapse is actually installed in /opt/yunohost/matrix-synapse because ... yeah ...
+        "tracim",  # pip install -e .
+        "weblate",  # weblate settings are .. inside the venv T_T
     ]
 
-    dependencies = ["migrate_to_bullseye"]
+    dependencies = ["migrate_to_bookworm"]
     state = None
 
     def is_pending(self):
         if not self.state:
             self.state = tools_migrations_state()["migrations"].get(
-                "0024_rebuild_python_venv", "pending"
+                "0030_rebuild_python_venv_in_bookworm", "pending"
             )
         return self.state == "pending"
 
@@ -121,15 +121,15 @@ class MyMigration(Migration):
             else:
                 rebuild_apps.append(app_corresponding_to_venv)
 
-        msg = m18n.n("migration_0024_rebuild_python_venv_disclaimer_base")
+        msg = m18n.n("migration_0030_rebuild_python_venv_in_bookworm_disclaimer_base")
         if rebuild_apps:
             msg += "\n\n" + m18n.n(
-                "migration_0024_rebuild_python_venv_disclaimer_rebuild",
+                "migration_0030_rebuild_python_venv_in_bookworm_disclaimer_rebuild",
                 rebuild_apps="\n    - " + "\n    - ".join(rebuild_apps),
             )
         if ignored_apps:
             msg += "\n\n" + m18n.n(
-                "migration_0024_rebuild_python_venv_disclaimer_ignored",
+                "migration_0030_rebuild_python_venv_in_bookworm_disclaimer_ignored",
                 ignored_apps="\n    - " + "\n    - ".join(ignored_apps),
             )
 
@@ -151,7 +151,7 @@ class MyMigration(Migration):
                 rm(venv + VENV_REQUIREMENTS_SUFFIX)
                 logger.info(
                     m18n.n(
-                        "migration_0024_rebuild_python_venv_broken_app",
+                        "migration_0030_rebuild_python_venv_in_bookworm_broken_app",
                         app=app_corresponding_to_venv,
                     )
                 )
@@ -159,7 +159,7 @@ class MyMigration(Migration):
 
             logger.info(
                 m18n.n(
-                    "migration_0024_rebuild_python_venv_in_progress",
+                    "migration_0030_rebuild_python_venv_in_bookworm_in_progress",
                     app=app_corresponding_to_venv,
                 )
             )
@@ -178,7 +178,7 @@ class MyMigration(Migration):
             if status != 0:
                 logger.error(
                     m18n.n(
-                        "migration_0024_rebuild_python_venv_failed",
+                        "migration_0030_rebuild_python_venv_in_bookworm_failed",
                         app=app_corresponding_to_venv,
                     )
                 )
