@@ -781,5 +781,12 @@
     "log_dyndns_unsubscribe": "Se désabonner d'un sous-domaine YunoHost '{}'",
     "dyndns_too_many_requests": "Le service dyndns de YunoHost a reçu trop de requêtes/demandes de votre part, attendez environ 1 heure avant de réessayer.",
     "ask_dyndns_recovery_password_explain_unavailable": "Ce domaine DynDNS est déjà enregistré. Si vous êtes la personne qui a enregistré ce domaine lors de sa création, vous pouvez entrer le mot de passe de récupération pour récupérer ce domaine.",
-    "global_settings_setting_ssh_port_help": "Il est préférable d'utiliser un port inférieur à 1024 pour éviter les tentatives d'usurpation par des services non administrateurs sur la machine distante. Vous devez également éviter d'utiliser un port déjà utilisé tel que le 80 ou le 443."
+    "global_settings_setting_ssh_port_help": "Il est préférable d'utiliser un port inférieur à 1024 pour éviter les tentatives d'usurpation par des services non administrateurs sur la machine distante. Vous devez également éviter d'utiliser un port déjà utilisé tel que le 80 ou le 443.",
+    "diagnosis_ignore_already_filtered": "(Il y a déjà un filtre de diagnostic {category} qui correspond à ces critères)",
+    "diagnosis_ignore_no_filter_found": "(Il n'y pas de filtre de diagnostic pour la catégorie {category} qui correspond à ces critères)",
+    "diagnosis_ignore_filter_added": "Filtre de diagnostic pour {category} ajouté",
+    "diagnosis_ignore_filter_removed": "Filtre de diagnostic pour {category} supprimé",
+    "diagnosis_ignore_missing_criteria": "Vous devez fournir au moins un critère qui est une catégorie de diagnostic à ignorer",
+    "diagnosis_ignore_criteria_error": "Les critères doivent être sous la forme de clé=valeur (ex. domain=yolo.test)",
+    "diagnosis_ignore_no_issue_found": "Aucun problème correspondant au critère donné n'a été trouvé."
 }
