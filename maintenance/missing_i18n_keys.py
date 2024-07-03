@@ -140,6 +140,7 @@ def find_expected_string_keys():
         "portal_public_intro",
         "portal_theme",
         "portal_user_intro",
+        "search_engine",
     ]
     for panel in domain_config.values():
         if not isinstance(panel, dict):

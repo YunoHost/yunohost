@@ -181,7 +181,7 @@ class MyMigration(Migration):
         aptitude_with_progress_bar("full-upgrade --show-why -y -o Dpkg::Options::='--force-confold'")
 
         if self.debian_major_version() == N_CURRENT_DEBIAN:
-            raise YunohostError("migration_0027_still_on_buster_after_main_upgrade")
+            raise YunohostError("migration_0027_still_on_bullseye_after_main_upgrade")
 
         # Clean the mess
         logger.info(m18n.n("migration_0027_cleaning_up"))
