@@ -304,12 +304,14 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             configuration["ignore_filters"][category] = []
 
         if criterias in configuration["ignore_filters"][category]:
-            logger.warning("This filter already exists.")
+            logger.warning(
+                f"(There is already a diagnosis {category} filter with these criterias)"
+            )
             return
 
         configuration["ignore_filters"][category].append(criterias)
         _diagnosis_write_configuration(configuration)
-        logger.success("Filter added")
+        logger.success(f"Added a {category} diagnosis filter")
         return
 
     if remove_filter:
@@ -322,11 +324,14 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             configuration["ignore_filters"][category] = []
 
         if criterias not in configuration["ignore_filters"][category]:
-            raise YunohostValidationError("This filter does not exists.")
+            logger.warning(
+                f"(There is no such diagnosis {category} filter with these criterias to remove)"
+            )
+            return
 
         configuration["ignore_filters"][category].remove(criterias)
         _diagnosis_write_configuration(configuration)
-        logger.success("Filter removed")
+        logger.success(f"Removed a {category} diagnosis filter")
         return
 
 

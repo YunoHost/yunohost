@@ -1,3 +1,98 @@
+yunohost (11.2.20.1) stable; urgency=low
+
+  - helpers2.1: typo (1ed56952e)
+  - helpers2.1: add unit tests (92807afb1)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 01 Jul 2024 23:38:29 +0200
+
+yunohost (11.2.20) stable; urgency=low
+
+  - helpers2.1: fix automigration of phpversion to php_version (3f973669)
+  - helpers2.1: change source patches location + raise an error instead of a warning when a patch fails to apply on CI (a48bfa67)
+  - helpers2.1: when using ynh_die, also return the error via YNH_STDRETURN such that it can be obtained from the python and displayed in the main error message, to increase the chance that people may read it and have something more useful than "An error happened in the script" (f2b5f0f2)
+  - helpers2.1: remove the ynh_clean_setup mechanism underused/useless.. (1c62960e)
+  - helpers2.1: switch to posisional args for ynh_multimedia_addaccess because that's what 99% of apps already do (ef622ffe)
+  - helpers2.1: add support for downloading .tar files ([#1889](http://github.com/YunoHost/yunohost/pull/1889))
+  - services/diagnosis: automatically ignore the service in diagnosis if it has been deactivated with the ynh cli ([#1886](http://github.com/YunoHost/yunohost/pull/1886))
+
+  Thanks to all contributors <3 ! (alexAubin, OniriCorpe, Sebastian Gumprich)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 01 Jul 2024 18:46:52 +0200
+
+yunohost (11.2.19) stable; urgency=low
+
+  - apps: tweaks to be more robust and prevent the stupid flood of 'sh: 0: getcwd() failed: No such file or directory' when running an app upgrade/remove from /var/www/$app, sometimes making it look like the upgrade failed when it didnt (a349fc03)
+  - apps: be more robust when an app upgrade succeeds but for some reason is marked with 'broke the system' ... ending up in inconsistent state between the app settings vs the app scritpts (for example in v1->v2 transitions but not only) (e5b57590)
+  - helpers2.1: Fix getopts error handling ... (3e1c9eba)
+  - helpers2.1: also run _ynh_apply_default_permissions in ynh_restore to be consistent (also because the user uid on the new system may be different than in the archive etc) (eee84c5f)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 29 Jun 2024 23:55:52 +0200
+
+yunohost (11.2.18) stable; urgency=low
+
+  - helpers2.1: Rework _ynh_apply_default_permissions to hopefully remove the necessity to chown/chmod in the app scripts ([#1883](http://github.com/YunoHost/yunohost/pull/1883))
+  - helpers2.1: in logrotate, make sure to also chown $app the log dir (1dfc47d1d)
+  - helpers2.1: forgot to rename the apt call in mongodb helpers (7b2959a3e)
+  - helpers2.1: in ynh_safe_rm, check if target is not a broken symlink before erorring out ([#1716](http://github.com/YunoHost/yunohost/pull/1716))
+
+  Thanks to all contributors <3 ! (Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sat, 29 Jun 2024 18:05:04 +0200
+
+yunohost (11.2.17.1) stable; urgency=low
+
+  - helpers2.1: fix __PATH__/ handling (997388dc)
+  - ci: Fix helpers 2.1 doc location (7347b08e)
+  - helpers/doc: De-hide some helpers v1 in documentation now that the structure is less bloated sort of ? (2a7fefae)
+  - helpers/doc: fix detail block, cant use the HTML <details> because grav doesnt interpret markdown in it (feb9a095)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Tue, 25 Jun 2024 14:19:58 +0200
+
+yunohost (11.2.17) stable; urgency=low
+
+  - helpers: Misc cleaning / reorganizing to prepare new doc (2895d4d9)
+  - helpers: rework helper doc now that we have multiple versions of helpers in parallel + improve structure (group helper file in categories) (094cd9dd)
+  - helpers/mongo: less noisy output when checking the avx flag is here in /proc/cpuinfo (2af4c157)
+  - apps/helpers2.1: fix app env in resource upgrade context ending up in incorrect helper version being used (ed426f05)
+  - helpers2.1: forgot to propagate the 'goenv latest' fix from helpers v1 (d8c3ff4c)
+  - helpers2.1: drop ynh_apps helper because only a single app is using it ... (1fb80e5d)
+  - helpers2.1: other typo fixes
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 24 Jun 2024 22:36:32 +0200
+
+yunohost (11.2.16) stable; urgency=low
+
+  - apps/logs: fix some information not being redacted because of the packaging v2 flows (a25033bb)
+  - logs: misc ad-hoc tweaks to limit the noise in log sharing (06c8fbc8)
+  - helpers: (1/2/2.1) add a new ynh_app_setting_set_default to replace the unecessarily complex 'if [ -z ${foo:-} ]' trick ([#1873](http://github.com/YunoHost/yunohost/pull/1873))
+  - helpers2.1: drop unused 'local source' mechanism from ynh_setup_source (dd8db188)
+  - helpers2.1: fix positional arg parsing in ynh_psql_create_user (e5585136)
+  - helpers2.1: rework the fpm usage/footprint madness ([#1874](http://github.com/YunoHost/yunohost/pull/1874))
+  - helpers2.1: fix ynh_config_add_logrotate when no arg is passed (3942ea12)
+  - helpers2.1: sudo -u$app -> sudo -u $app (d4857834)
+  - helpers2.1: change default timeout of ynh_systemctl to 60s instead of 300s (262453f1)
+  - helpers2.1: display 100 lines instead of 20 in CI context when service fails to start (9298738d)
+  - helpers2.1: when using ynh_systemctl to reload/start/restart a service with a wait_until and it timesout, handle it as a failure rather than keep going (b3409729)
+  - helpers2.1: for some reason sudo -E doesn't preserve PATH even though it's exported, so we gotta explicitly use --preserve-env=PATH (5f6df6a8)
+  - helpers2.1: var rename / cosmetic etc for nodejs/ruby/go version and install directories (2b1f7426)
+  - i18n: Translations updated for Basque, Slovak
+
+  Thanks to all contributors <3 ! (alexAubin, Jose Riha, xabirequejo)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Sun, 23 Jun 2024 15:30:22 +0200
+
+yunohost (11.2.15) stable; urgency=low
+
+  - apps: new experimentals "2.1" helpers ([#1855](http://github.com/YunoHost/yunohost/pull/1855))
+  - apps: when removing an app with --purge, also remove /var/log/{app}
+  - apps: drop clumsy auto-update of nodejs via cron job which fills up disk space with nodejs copies and doesnt actually restart the app services...
+  - apps: fix apt resources when multiple extras are set ([#1869](http://github.com/YunoHost/yunohost/pull/1869))
+  - mail: allow aliases for sender addresses of apps ([#1843](http://github.com/YunoHost/yunohost/pull/1843))
+
+  Thanks to all contributors <3 ! (alexAubin, Chris Vogel, Félix Piédallu)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 20 Jun 2024 21:20:47 +0200
+
 yunohost (11.2.14.1) stable; urgency=low
 
   - helpers: Fix typo in ynh_read_manifest documentation ([#1866](http://github.com/YunoHost/yunohost/pull/1866))

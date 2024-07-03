@@ -26,6 +26,7 @@ from glob import glob
 from datetime import datetime
 
 from moulinette import m18n
+from yunohost.diagnosis import diagnosis_ignore, diagnosis_unignore
 from yunohost.utils.error import YunohostError, YunohostValidationError
 from moulinette.utils.process import check_output
 from moulinette.utils.log import getActionLogger
@@ -296,6 +297,7 @@ def service_enable(names):
         names = [names]
     for name in names:
         if _run_service_command("enable", name):
+            diagnosis_unignore(["services", f"service={name}"])
             logger.success(m18n.n("service_enabled", service=name))
         else:
             raise YunohostError(
@@ -315,6 +317,7 @@ def service_disable(names):
         names = [names]
     for name in names:
         if _run_service_command("disable", name):
+            diagnosis_ignore(["services", f"service={name}"])
             logger.success(m18n.n("service_disabled", service=name))
         else:
             raise YunohostError(
@@ -688,13 +691,20 @@ def _get_services():
     ]
     for name in services_with_package_condition:
         package = services[name]["ignore_if_package_is_not_installed"]
-        if os.system(f"dpkg --list | grep -q 'ii *{package}'") != 0:
+        if (
+            check_output(
+                f"dpkg-query --show --showformat='${{db:Status-Status}}' '{package}' 2>/dev/null || true"
+            )
+            != "installed"
+        ):
             del services[name]
 
     php_fpm_versions = check_output(
-        r"dpkg --list | grep -P 'ii  php\d.\d-fpm' | awk '{print $2}' | grep -o -P '\d.\d' || true"
+        r"dpkg --list | grep -P 'ii  php\d.\d-fpm' | awk '{print $2}' | grep -o -P '\d.\d' || true",
+        cwd="/tmp",
     )
     php_fpm_versions = [v for v in php_fpm_versions.split("\n") if v.strip()]
+
     for version in php_fpm_versions:
         # Skip php 7.3 which is most likely dead after buster->bullseye migration
         # because users get spooked
