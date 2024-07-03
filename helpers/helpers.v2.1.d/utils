@@ -6,17 +6,6 @@ YNH_APP_BASEDIR=${YNH_APP_BASEDIR:-$(realpath ..)}
 #
 # [internal]
 #
-# usage:
-# ynh_exit_properly is used only by the helper ynh_abort_if_errors.
-# You should not use it directly.
-# Instead, add to your script:
-# ynh_clean_setup () {
-#        instructions...
-# }
-#
-# This function provide a way to clean some residual of installation that not managed by remove script.
-#
-# It prints a warning to inform that the script was failed, and execute the ynh_clean_setup function if used in the app script
 ynh_exit_properly() {
     local exit_code=$?
 
@@ -37,10 +26,6 @@ ynh_exit_properly() {
     # Small tempo to avoid the next message being mixed up with other DEBUG messages
     sleep 0.5
 
-    if type -t ynh_clean_setup >/dev/null; then # Check if the function exist in the app script.
-        ynh_clean_setup                         # Call the function to do specific cleaning for the app.
-    fi
-
     # Exit with error status
     # We don't call ynh_die basically to avoid unecessary 10-ish
     # debug lines about parsing args and stuff just to exit 1..
@@ -55,7 +40,6 @@ ynh_exit_properly() {
 #
 # This configure the rest of the script execution such that, if an error occurs
 # or if an empty variable is used, the execution of the script stops immediately
-# and a call to `ynh_clean_setup` is triggered if it has been defined by your script.
 ynh_abort_if_errors() {
     set -o errexit              # set -e; Exit if a command fail
     set -o nounset              # set -u; And if a variable is used unset
@@ -272,7 +256,7 @@ _ynh_apply_default_permissions() {
             fi
             # Files inside should be owned by $app with rw-r----- (+x for folders or files that already have +x)
             # The group needs read/dirtraversal (in particular if it's www-data)
-            chmod -R u=rwX,g=r-X,o=--- "$target"
+            chmod -R u=rwX,g=rX,o=--- "$target"
             chown -R "$app:$group" "$target"
             return
         fi

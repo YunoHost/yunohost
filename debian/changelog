@@ -4,6 +4,27 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
  
+yunohost (11.2.20.1) stable; urgency=low
+
+  - helpers2.1: typo (1ed56952e)
+  - helpers2.1: add unit tests (92807afb1)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 01 Jul 2024 23:38:29 +0200
+
+yunohost (11.2.20) stable; urgency=low
+
+  - helpers2.1: fix automigration of phpversion to php_version (3f973669)
+  - helpers2.1: change source patches location + raise an error instead of a warning when a patch fails to apply on CI (a48bfa67)
+  - helpers2.1: when using ynh_die, also return the error via YNH_STDRETURN such that it can be obtained from the python and displayed in the main error message, to increase the chance that people may read it and have something more useful than "An error happened in the script" (f2b5f0f2)
+  - helpers2.1: remove the ynh_clean_setup mechanism underused/useless.. (1c62960e)
+  - helpers2.1: switch to posisional args for ynh_multimedia_addaccess because that's what 99% of apps already do (ef622ffe)
+  - helpers2.1: add support for downloading .tar files ([#1889](http://github.com/YunoHost/yunohost/pull/1889))
+  - services/diagnosis: automatically ignore the service in diagnosis if it has been deactivated with the ynh cli ([#1886](http://github.com/YunoHost/yunohost/pull/1886))
+
+  Thanks to all contributors <3 ! (alexAubin, OniriCorpe, Sebastian Gumprich)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 01 Jul 2024 18:46:52 +0200
+
 yunohost (11.2.19) stable; urgency=low
 
   - apps: tweaks to be more robust and prevent the stupid flood of 'sh: 0: getcwd() failed: No such file or directory' when running an app upgrade/remove from /var/www/$app, sometimes making it look like the upgrade failed when it didnt (a349fc03)

@@ -144,6 +144,7 @@ def tools_postinstall(
     force_diskspace=False,
     overwrite_root_password=True,
 ):
+    from yunohost.service import _run_service_command
     from yunohost.dyndns import _dyndns_available, dyndns_unsubscribe
     from yunohost.utils.dns import is_yunohost_dyndns_domain
     from yunohost.utils.password import (
@@ -259,8 +260,8 @@ def tools_postinstall(
     os.system("touch /etc/yunohost/installed")
 
     # Enable and start YunoHost firewall at boot time
-    service_enable("yunohost-firewall")
-    service_start("yunohost-firewall")
+    _run_service_command("enable", "yunohost-firewall")
+    _run_service_command("start", "yunohost-firewall")
 
     tools_regen_conf(names=["ssh"], force=True)
 

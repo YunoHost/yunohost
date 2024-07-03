@@ -1994,6 +1994,6 @@ diagnosis:
             api: PUT /diagnosis/unignore
             arguments:
                 --filter:
-                    help: Remove a filter (it should be an existing filter as listed with --list)
+                    help: Remove a filter (it should be an existing filter as listed with "ignore --list")
                     nargs: "*"
                     metavar: CRITERIA

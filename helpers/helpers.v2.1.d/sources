@@ -8,11 +8,7 @@
 # | arg: --keep=         - Space-separated list of files/folders that will be backup/restored in $dest_dir, such as a config file you don't want to overwrite. For example 'conf.json secrets.json logs' (no trailing `/` for folders)
 # | arg: --full_replace= - Remove previous sources before installing new sources  (can be 1 or 0, default to 0)
 #
-# ##### New 'sources' resources
-#
-# (See also the resources documentation which may be more complete?)
-#
-# This helper will read infos from the 'sources' resources in the manifest.toml of the app
+# This helper will read infos from the 'sources' resources in the `manifest.toml` of the app
 # and expect a structure like:
 #
 # ```toml
@@ -22,13 +18,15 @@
 #     sha256 = "0123456789abcdef"    # The sha256 sum of the asset obtained from the URL
 # ```
 #
-# ##### Optional flags
+# (See also the resources documentation which may be more complete?)
+#
+# ##### Optional flags in the 'sources' resource
 #
 # ```text
-# format    = "tar.gz"/xz/bz2    # automatically guessed from the extension of the URL, but can be set explicitly. Will use `tar` to extract
-#             "zip"              # automatically guessed from the extension of the URL, but can be set explicitly. Will use `unzip` to extract
-#             "docker"           # useful to extract files from an already-built docker image (instead of rebuilding them locally). Will use `docker-image-extract` to extract
-#             "whatever"         # an arbitrary value, not really meaningful except to imply that the file won't be extracted
+# format    = "tar.gz"/xz/bz2/tar # automatically guessed from the extension of the URL, but can be set explicitly. Will use `tar` to extract
+#             "zip"               # automatically guessed from the extension of the URL, but can be set explicitly. Will use `unzip` to extract
+#             "docker"            # useful to extract files from an already-built docker image (instead of rebuilding them locally). Will use `docker-image-extract` to extract
+#             "whatever"          # an arbitrary value, not really meaningful except to imply that the file won't be extracted
 #
 # in_subdir = true    # default, there's an intermediate subdir in the archive before accessing the actual files
 #             false   # sources are directly in the archive root
@@ -60,7 +58,8 @@
 # - Uncompress the archive to `$dest_dir`.
 #   - If `in_subdir` is true, the first level directory of the archive will be removed.
 #   - If `in_subdir` is a numeric value, the N first level directories will be removed.
-# - Patches named `patches/${src_id}-*.patch` will be applied to `$dest_dir`
+# - Patches named `patches/${src_id}/*.patch` will be applied to `$dest_dir`
+# - Apply sane default permissions (see _ynh_apply_default_permissions)
 ynh_setup_source() {
     # ============ Argument parsing =============
     local -A args_array=([d]=dest_dir= [s]=source_id= [k]=keep= [r]=full_replace)
@@ -108,6 +107,9 @@ ynh_setup_source() {
         elif [[ "$src_url" =~ ^.*\.tar\.bz2$ ]]
         then
             src_format="tar.bz2"
+        elif [[ "$src_url" =~ ^.*\.tar$ ]]
+        then
+            src_format="tar"
         elif [[ -z "$src_extract" ]]
         then
             src_extract="false"
@@ -213,7 +215,7 @@ ynh_setup_source() {
             fi
             strip="--strip-components $sub_dirs"
         fi
-        if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz$ ]]; then
+        if [[ "$src_format" =~ ^tar.gz|tar.bz2|tar.xz|tar$ ]]; then
             tar --extract --file=$src_filename --directory="$dest_dir" $strip
         else
             ynh_die "Archive format unrecognized."
@@ -222,17 +224,20 @@ ynh_setup_source() {
     fi
 
     # Apply patches
-    if [ -d "$YNH_APP_BASEDIR/patches/" ]; then
-        local patches_folder=$(realpath $YNH_APP_BASEDIR/patches/)
-        # Check if any file matching the pattern exists, cf https://stackoverflow.com/a/34195247
-        if compgen -G "$patches_folder/${source_id}-*.patch" >/dev/null; then
-            pushd "$dest_dir"
-            for p in $patches_folder/${source_id}-*.patch; do
-                echo $p
-                patch --strip=1 <$p || ynh_print_warn "Packagers /!\\ patch $p failed to apply"
-            done
-            popd
-        fi
+    local patches_folder=$(realpath "$YNH_APP_BASEDIR/patches/$source_id")
+    if [ -d "$patches_folder" ]; then
+        pushd "$dest_dir"
+        for patchfile in "$patches_folder/"*.patch; do
+            echo "Applying $patchfile"
+            if ! patch --strip=1 < "$patchfile"; then
+                if ynh_in_ci_tests; then
+                    ynh_die "Patch $patchfile failed to apply!"
+                else
+                    ynh_print_warn "Warn your packagers /!\\ Patch $patchfile failed to apply"
+                fi
+            fi
+        done
+        popd
     fi
 
     # Keep files to be backup/restored at the end of the helper

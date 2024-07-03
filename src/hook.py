@@ -540,6 +540,9 @@ def hook_exec_with_script_debug_if_failure(*args, **kwargs):
         failed = True if retcode != 0 else False
         if failed:
             error = error_message_if_script_failed
+            # check more specific error message added by ynh_die in $YNH_STDRETURN
+            if isinstance(retpayload, dict) and "error" in retpayload:
+                error += " : " + retpayload["error"].strip()
             logger.error(error_message_if_failed(error))
             failure_message_with_debug_instructions = operation_logger.error(error)
             if Moulinette.interface.type != "api":
