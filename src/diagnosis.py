@@ -263,16 +263,12 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
 
         # Sanity checks for the provided arguments
         if len(filter_) == 0:
-            raise YunohostValidationError(
-                "You should provide at least one criteria being the diagnosis category to ignore"
-            )
+            raise YunohostValidationError(m18n.n("diagnosis_ignore_missing_criteria"))
         category = filter_[0]
         if category not in all_categories_names:
             raise YunohostValidationError(f"{category} is not a diagnosis category")
         if any("=" not in criteria for criteria in filter_[1:]):
-            raise YunohostValidationError(
-                "Criterias should be of the form key=value (e.g. domain=yolo.test)"
-            )
+            raise YunohostValidationError(m18n.n("diagnosis_ignore_criteria_error"))
 
         # Convert the provided criteria into a nice dict
         criterias = {c.split("=")[0]: c.split("=")[1] for c in filter_[1:]}
@@ -295,7 +291,7 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             issue_matches_criterias(i, criterias)
             for i in current_issues_for_this_category
         ):
-            raise YunohostError("No issues was found matching the given criteria.")
+            raise YunohostError(m18n.n("diagnosis_ignore_no_issue_found"))
 
         # Make sure the subdicts/lists exists
         if "ignore_filters" not in configuration:
@@ -305,13 +301,13 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
 
         if criterias in configuration["ignore_filters"][category]:
             logger.warning(
-                f"(There is already a diagnosis {category} filter with these criterias)"
+                m18n.n("diagnosis_ignore_already_filtered", service=category)
             )
             return
 
         configuration["ignore_filters"][category].append(criterias)
         _diagnosis_write_configuration(configuration)
-        logger.success(f"Added a {category} diagnosis filter")
+        logger.success(m18n.n("diagnosis_ignore_filter_added", service=category))
         return
 
     if remove_filter:
@@ -324,14 +320,12 @@ def _diagnosis_ignore(add_filter=None, remove_filter=None, list=False):
             configuration["ignore_filters"][category] = []
 
         if criterias not in configuration["ignore_filters"][category]:
-            logger.warning(
-                f"(There is no such diagnosis {category} filter with these criterias to remove)"
-            )
+            logger.warning(m18n.n("diagnosis_ignore_no_filter_found", service=category))
             return
 
         configuration["ignore_filters"][category].remove(criterias)
         _diagnosis_write_configuration(configuration)
-        logger.success(f"Removed a {category} diagnosis filter")
+        logger.success(m18n.n("diagnosis_ignore_filter_removed", service=category))
         return
 
 
