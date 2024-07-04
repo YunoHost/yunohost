@@ -1,6 +1,7 @@
 import glob
 import os
 import subprocess
+from time import sleep
 
 from moulinette import Moulinette, m18n
 from yunohost.utils.error import YunohostError
@@ -242,7 +243,7 @@ class MyMigration(Migration):
             sleep(5)
             # Restart the API after 10 sec (at now doesn't support sub-minute times...)
             # We do this so that the API / webadmin still gets the proper HTTP response
-            cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart yunohost-api"'
+            cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart nginx yunohost-api"'
             # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
             subprocess.check_call(["bash", "-c", cmd])
 
