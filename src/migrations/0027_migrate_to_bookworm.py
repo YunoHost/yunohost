@@ -12,7 +12,7 @@ from yunohost.tools import (
     tools_update,
 )
 from yunohost.app import unstable_apps
-from yunohost.regenconf import manually_modified_files
+from yunohost.regenconf import manually_modified_files, regen_conf
 from yunohost.utils.system import (
     free_space_in_directory,
     get_ynh_package_version,
@@ -180,6 +180,11 @@ class MyMigration(Migration):
 
         # FIXME : find a way to simulate and validate the upgrade first
         aptitude_with_progress_bar("full-upgrade --show-why -y -o Dpkg::Options::='--force-confold'")
+
+        # Force regenconf of nsswitch because for some reason
+        # /etc/nsswitch.conf is reset despite the --force-confold? It's a
+        # disaster because then admins cannot "sudo" >_> ...
+        regen_conf(names=["nsswitch"], force=True)
 
         if self.debian_major_version() == N_CURRENT_DEBIAN:
             raise YunohostError("migration_0027_still_on_bullseye_after_main_upgrade")
