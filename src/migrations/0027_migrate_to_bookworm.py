@@ -1,5 +1,6 @@
 import glob
 import os
+import subprocess
 
 from moulinette import m18n
 from yunohost.utils.error import YunohostError
@@ -229,6 +230,16 @@ class MyMigration(Migration):
         #postupgradecmds = "rm -f /usr/sbin/policy-rc.d\n"
         #postupgradecmds += "echo 'Restarting nginx...' >&2\n"
         #postupgradecmds += "systemctl restart nginx\n"
+
+        # If running from the webadmin, restart the API after a delay
+        if Moulinette.interface.type == "api":
+            logger.warning(m18n.n("migration_0027_delayed_api_restart"))
+            sleep(5)
+            # Restart the API after 10 sec (at now doesn't support sub-minute times...)
+            # We do this so that the API / webadmin still gets the proper HTTP response
+            cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart yunohost-api"'
+            # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
+            subprocess.check_call(["bash", "-c", cmd])
 
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
