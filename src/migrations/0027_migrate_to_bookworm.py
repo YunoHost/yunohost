@@ -2,7 +2,7 @@ import glob
 import os
 import subprocess
 
-from moulinette import m18n
+from moulinette import Moulinette, m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file, write_to_file

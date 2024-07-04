@@ -20,6 +20,7 @@ import re
 import os
 import logging
 
+from moulinette import Moulinette
 from moulinette.utils.process import check_output
 from yunohost.utils.error import YunohostError
 
