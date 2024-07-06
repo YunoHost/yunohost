@@ -1,7 +1,9 @@
 import glob
 import os
+import subprocess
+from time import sleep
 
-from moulinette import m18n
+from moulinette import Moulinette, m18n
 from yunohost.utils.error import YunohostError
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file, write_to_file
@@ -11,7 +13,7 @@ from yunohost.tools import (
     tools_update,
 )
 from yunohost.app import unstable_apps
-from yunohost.regenconf import manually_modified_files
+from yunohost.regenconf import manually_modified_files, regen_conf
 from yunohost.utils.system import (
     free_space_in_directory,
     get_ynh_package_version,
@@ -175,10 +177,20 @@ class MyMigration(Migration):
         apps_packages = self.get_apps_equivs_packages()
         aptitude_with_progress_bar(f"hold yunohost moulinette ssowat yunohost-admin {' '.join(apps_packages)}")
 
-        aptitude_with_progress_bar("upgrade cron --show-why -y -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
+        # Dirty hack to be able to remove rspamd because it's causing too many issues due to libluajit ...
+        command = "sed -i /var/lib/dpkg/status -e 's@rspamd, @@g'"
+        logger.debug(f"Running: {command}")
+        os.system(command)
+
+        aptitude_with_progress_bar("upgrade cron rspamd- libluajit-5.1-2- --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
 
         # FIXME : find a way to simulate and validate the upgrade first
-        aptitude_with_progress_bar("full-upgrade --show-why -y -o Dpkg::Options::='--force-confold'")
+        aptitude_with_progress_bar("full-upgrade --show-why -o Dpkg::Options::='--force-confold'")
+
+        # Force regenconf of nsswitch because for some reason
+        # /etc/nsswitch.conf is reset despite the --force-confold? It's a
+        # disaster because then admins cannot "sudo" >_> ...
+        regen_conf(names=["nsswitch"], force=True)
 
         if self.debian_major_version() == N_CURRENT_DEBIAN:
             raise YunohostError("migration_0027_still_on_bullseye_after_main_upgrade")
@@ -208,8 +220,7 @@ class MyMigration(Migration):
         aptitude_with_progress_bar(f"unhold yunohost moulinette ssowat yunohost-admin {' '.join(apps_packages)}")
 
         # FIXME : find a way to simulate and validate the upgrade first
-        # FIXME : why were libluajit needed in the first place ?
-        aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin moulinette ssowat libluajit-5.1-2- libluajit-5.1-common- -y -o Dpkg::Options::='--force-confold'")
+        aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin moulinette ssowat -o Dpkg::Options::='--force-confold'")
 
         #cmd = "LC_ALL=C"
         #cmd += " DEBIAN_FRONTEND=noninteractive"
@@ -229,6 +240,16 @@ class MyMigration(Migration):
         #postupgradecmds = "rm -f /usr/sbin/policy-rc.d\n"
         #postupgradecmds += "echo 'Restarting nginx...' >&2\n"
         #postupgradecmds += "systemctl restart nginx\n"
+
+        # If running from the webadmin, restart the API after a delay
+        if Moulinette.interface.type == "api":
+            logger.warning(m18n.n("migration_0027_delayed_api_restart"))
+            sleep(5)
+            # Restart the API after 10 sec (at now doesn't support sub-minute times...)
+            # We do this so that the API / webadmin still gets the proper HTTP response
+            cmd = 'at -M now >/dev/null 2>&1 <<< "sleep 10; systemctl restart nginx yunohost-api"'
+            # For some reason subprocess doesn't like the redirections so we have to use bash -c explicity...
+            subprocess.check_call(["bash", "-c", cmd])
 
     def debian_major_version(self):
         # The python module "platform" and lsb_release are not reliable because
