@@ -178,16 +178,14 @@ class MyMigration(Migration):
         aptitude_with_progress_bar(f"hold yunohost moulinette ssowat yunohost-admin {' '.join(apps_packages)}")
 
         # Dirty hack to be able to remove rspamd because it's causing too many issues due to libluajit ...
-        command = (
-            f"sed -i /var/lib/dpkg/status -e 's@rspamd, @@g'"
-        )
+        command = "sed -i /var/lib/dpkg/status -e 's@rspamd, @@g'"
         logger.debug(f"Running: {command}")
         os.system(command)
 
-        aptitude_with_progress_bar("upgrade cron rspamd- libluajit-5.1-2- --show-why -y -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
+        aptitude_with_progress_bar("upgrade cron rspamd- libluajit-5.1-2- --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
 
         # FIXME : find a way to simulate and validate the upgrade first
-        aptitude_with_progress_bar("full-upgrade --show-why -y -o Dpkg::Options::='--force-confold' <<< 'y\ny\ny'")
+        aptitude_with_progress_bar("full-upgrade --show-why -o Dpkg::Options::='--force-confold'")
 
         # Force regenconf of nsswitch because for some reason
         # /etc/nsswitch.conf is reset despite the --force-confold? It's a
@@ -222,7 +220,7 @@ class MyMigration(Migration):
         aptitude_with_progress_bar(f"unhold yunohost moulinette ssowat yunohost-admin {' '.join(apps_packages)}")
 
         # FIXME : find a way to simulate and validate the upgrade first
-        aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin moulinette ssowat -y -o Dpkg::Options::='--force-confold'")
+        aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin moulinette ssowat -o Dpkg::Options::='--force-confold'")
 
         #cmd = "LC_ALL=C"
         #cmd += " DEBIAN_FRONTEND=noninteractive"
