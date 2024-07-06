@@ -2,7 +2,7 @@ Source: yunohost
 Section: utils
 Priority: extra
 Maintainer: YunoHost Contributors <contrib@yunohost.org>
-Build-Depends: debhelper (>=9), debhelper-compat (= 13), dh-python, python3-all (>= 3.11), python3-yaml, python3-jinja2
+Build-Depends: debhelper (>=9), debhelper-compat (= 13), dh-python, python3-all (>= 3.11), python3-yaml, python3-jinja2 (>= 3.0)
 Standards-Version: 3.9.6
 Homepage: https://yunohost.org/
 
@@ -12,7 +12,7 @@ Architecture: all
 Depends: python3-all (>= 3.11),
  , moulinette (>= 12.0), ssowat (>= 12.0),
  , python3-psutil, python3-requests, python3-dnspython, python3-openssl
- , python3-miniupnpc, python3-dbus, python3-jinja2
+ , python3-miniupnpc, python3-dbus, python3-jinja2 (>= 3.0)
  , python3-toml, python3-packaging, python3-publicsuffix2
  , python3-ldap, python3-zeroconf (>= 0.47), python3-lexicon,
  , python3-cryptography, python3-jwt, python3-passlib, python3-magic
