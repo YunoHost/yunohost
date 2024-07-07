@@ -791,7 +791,7 @@ class OperationLogger:
 
         # Get the 20 lines before the last 'ynh_exit_properly'
         rev_lines = list(reversed(lines))
-        for i, line in enumerate(rev_lines):
+        for i, line in enumerate(rev_lines[:50]):
             if line.endswith("+ ynh_exit_properly"):
                 lines_to_display = reversed(rev_lines[i : i + 20])
                 break
