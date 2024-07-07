@@ -186,21 +186,19 @@ ynh_package_install_from_equivs() {
 
     # Build and install the package
     local TMPDIR=$(mktemp --directory)
-
-    # Make sure to delete the legacy compat file
-    # It's now handle somewhat magically through the control file
-    rm -f /usr/share/equivs/template/debian/compat
+    mkdir -p ${TMPDIR}/${pkgname}/DEBIAN/
 
     # Note that the cd executes into a sub shell
     # Create a fake deb package with equivs-build and the given control file
     # Install the fake package without its dependencies with dpkg
     # Install missing dependencies with ynh_package_install
     ynh_wait_dpkg_free
-    cp "$controlfile" "${TMPDIR}/control"
+    cp "$controlfile" "${TMPDIR}/${pkgname}/DEBIAN/control"
     (
         cd "$TMPDIR"
-        LC_ALL=C equivs-build ./control 2>&1
-        LC_ALL=C dpkg --force-depends --install "./${pkgname}_${pkgversion}_all.deb" 2>&1 | tee ./dpkg_log
+        # Install the fake package without its dependencies with dpkg --force-depends
+        LC_ALL=C dpkg-deb --build ${pkgname} ${pkgname}.deb > ./dpkg_log 2>&1 || { cat ./dpkg_log; false; }
+        LC_ALL=C dpkg --force-depends --install "./${pkgname}.deb" 2>&1 | tee ./dpkg_log
     )
 
     ynh_package_install --fix-broken \
@@ -323,6 +321,7 @@ Package: ${dep_app}-ynh-deps
 Version: ${version}
 Depends: ${dependencies}
 Architecture: all
+Maintainer: root@localhost
 Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF

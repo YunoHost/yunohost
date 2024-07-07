@@ -90,26 +90,24 @@ ynh_apt_install_dependencies() {
         dependencies="$current_dependencies, $dependencies"
     fi
 
-    # #############################
-    # Actual install using equivs #
-    # #############################
+    # ################
+    # Actual install #
+    # ################
 
-    # Prepare the virtual-dependency control file for equivs
+    # Prepare the virtual-dependency control file for dpkg-deb --build
     local TMPDIR=$(mktemp --directory)
-    cat >${TMPDIR}/control <<EOF # Make a control file for equivs-build
+    mkdir -p ${TMPDIR}/${app_ynh_deps}/DEBIAN
+    cat >${TMPDIR}/${app_ynh_deps}/DEBIAN/control <<EOF
 Section: misc
 Priority: optional
 Package: ${app_ynh_deps}
 Version: ${version}
 Depends: ${dependencies}
 Architecture: all
+Maintainer: root@localhost
 Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
-
-    # Make sure to delete equivs' legacy compat file
-    # It's now handle somewhat magically through the control file
-    rm -f /usr/share/equivs/template/debian/compat
 
     _ynh_apt update
 
@@ -119,8 +117,8 @@ EOF
         # NB: this is in a subshell (though not sure why exactly not just use pushd/popd...)
         cd "$TMPDIR"
         # Install the fake package without its dependencies with dpkg --force-depends
-        LC_ALL=C equivs-build ./control > ./equivs_log 2>&1 || { cat ./equivs_log; false; }
-        LC_ALL=C dpkg --force-depends --install "./${app_ynh_deps}_${version}_all.deb" > ./dpkg_log 2>&1
+        LC_ALL=C dpkg-deb --build ${app_ynh_deps} ${app_ynh_deps}.deb > ./dpkg_log 2>&1 || { cat ./dpkg_log; false; }
+        LC_ALL=C dpkg --force-depends --install "./${app_ynh_deps}.deb" > ./dpkg_log 2>&1
     )
 
     # Then install the missing dependencies with apt install
