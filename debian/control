@@ -28,7 +28,7 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , redis-server
  , acl
  , git, curl, wget, cron, unzip, jq, bc, at, procps, j2cli
- , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
+ , lsb-release, haveged, fake-hwclock, lsof, whois
 Recommends: yunohost-admin
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog
