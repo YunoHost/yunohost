@@ -20,6 +20,7 @@ import re
 import os
 import logging
 
+from moulinette import Moulinette
 from moulinette.utils.process import check_output
 from yunohost.utils.error import YunohostError
 
@@ -211,3 +212,122 @@ def _dump_sources_list():
                 if line.startswith("#") or not line.strip():
                     continue
                 yield filename.replace("/etc/apt/", "") + ":" + line.strip()
+
+
+def aptitude_with_progress_bar(cmd):
+
+    from moulinette.utils.process import call_async_output
+
+    msg_to_verb = {
+        "Preparing for removal": "Removing",
+        "Preparing to configure": "Installing",
+        "Removing": "Removing",
+        "Unpacking": "Installing",
+        "Configuring": "Installing",
+        "Installing": "Installing",
+        "Installed": "Installing",
+        "Preparing": "Installing",
+        "Done": "Done",
+        "Failed?": "Failed?",
+    }
+
+    disable_progress_bar = False
+    if cmd.startswith("update"):
+        # the status-fd does stupid stuff for 'aptitude update', percentage is always zero except last iteration
+        disable_progress_bar = True
+
+    def log_apt_status_to_progress_bar(data):
+
+        if disable_progress_bar:
+            return
+
+        t, package, percent, msg = data.split(":", 3)
+
+        # We only display the stuff related to download once
+        if t == "dlstatus":
+            if log_apt_status_to_progress_bar.download_message_displayed is False:
+                logger.info("Downloading...")
+                log_apt_status_to_progress_bar.download_message_displayed = True
+            return
+
+        if package == "dpkg-exec":
+            return
+        if package and log_apt_status_to_progress_bar.previous_package and package == log_apt_status_to_progress_bar.previous_package:
+            return
+
+        try:
+            percent = round(float(percent), 1)
+        except Exception:
+            return
+
+        verb = "Processing"
+        for m, v in msg_to_verb.items():
+            if msg.startswith(m):
+                verb = v
+
+        log_apt_status_to_progress_bar.previous_package = package
+
+        width = 20
+        done = "#" * int(width * percent / 100)
+        remain = "." * (width - len(done))
+        logger.info(f"[{done}{remain}] > {percent}% {verb} {package}\r")
+
+    log_apt_status_to_progress_bar.previous_package = None
+    log_apt_status_to_progress_bar.download_message_displayed = False
+
+    def strip_boring_dpkg_reading_database(s):
+        return re.sub(r'(\(Reading database ... \d*%?|files and directories currently installed.\))', '', s)
+
+    callbacks = (
+        lambda l: logger.debug(strip_boring_dpkg_reading_database(l).rstrip() + "\r"),
+        lambda l: logger.warning(l.rstrip() + "\r"), # ... aptitude has no stderr ? :|  if _apt_log_line_is_relevant(l.rstrip()) else logger.debug(l.rstrip() + "\r"),
+        lambda l: log_apt_status_to_progress_bar(l.rstrip()),
+    )
+
+    original_cmd = cmd
+    cmd = (
+        f'LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none aptitude {cmd} --quiet=2 -o=Dpkg::Use-Pty=0 -o "APT::Status-Fd=$YNH_STDINFO"'
+    )
+
+    # If upgrading yunohost from the API, delay the Yunohost-api restart
+    # (this should be the last time we need it before bookworm, because on bookworm, yunohost-admin cookies will be persistent upon api restart)
+    if " yunohost " in cmd and Moulinette.interface.type == "api":
+        cmd = "YUNOHOST_API_RESTART_WILL_BE_HANDLED_BY_YUNOHOST=yes " + cmd
+
+    logger.debug(f"Running: {cmd}")
+
+    read, write = os.pipe()
+    os.write(write, b"y\ny\ny")
+    os.close(write)
+    ret = call_async_output(cmd, callbacks, shell=True)
+
+    if log_apt_status_to_progress_bar.previous_package is not None and ret == 0:
+        log_apt_status_to_progress_bar("done::100:Done")
+    elif ret != 0:
+        raise YunohostError(f"Failed to run command 'aptitude {original_cmd}'", raw_msg=True)
+
+
+def _apt_log_line_is_relevant(line):
+    irrelevants = [
+        "service sudo-ldap already provided",
+        "Reading database ...",
+        "Preparing to unpack",
+        "Selecting previously unselected package",
+        "Created symlink /etc/systemd",
+        "Replacing config file",
+        "Creating config file",
+        "Installing new version of config file",
+        "Installing new config file as you requested",
+        ", does not exist on system.",
+        "unable to delete old directory",
+        "update-alternatives:",
+        "Configuration file '/etc",
+        "==> Modified (by you or by a script) since installation.",
+        "==> Package distributor has shipped an updated version.",
+        "==> Keeping old config file as default.",
+        "is a disabled or a static unit",
+        " update-rc.d: warning: start and stop actions are no longer supported; falling back to defaults",
+        "insserv: warning: current stop runlevel",
+        "insserv: warning: current start runlevel",
+    ]
+    return line.rstrip() and all(i not in line.rstrip() for i in irrelevants)
