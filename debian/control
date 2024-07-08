@@ -17,7 +17,7 @@ Depends: ${python3:Depends}, ${misc:Depends}
  , python3-ldap, python3-zeroconf (>= 0.36), python3-lexicon,
  , python-is-python3
  , nginx, nginx-extras (>=1.18)
- , apt, apt-transport-https, apt-utils, dirmngr
+ , apt, apt-transport-https, apt-utils, aptitude, dirmngr
  , openssh-server, iptables, fail2ban, bind9-dnsutils
  , openssl, ca-certificates, netcat-openbsd, iproute2
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
