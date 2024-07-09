@@ -469,18 +469,20 @@ ynh_install_extra_repo() {
         wget_append="tee"
     fi
 
-    # Split the repository into uri, suite and components.
+    IFS=', ' read -r -a repo_parts <<< "$repo"
+    index=0
+
     # Remove "deb " at the beginning of the repo.
-    repo="${repo#deb }"
-
-    # Get the uri
-    local uri="$(echo "$repo" | awk '{ print $1 }')"
-
-    # Get the suite
-    local suite="$(echo "$repo" | awk '{ print $2 }')"
+    if [[ "${repo_parts[0]}" == "deb" ]]; then
+        index=1
+    fi
+    uri="${repo_parts[$index]}" ; index=$((index+1))
+    suite="${repo_parts[$index]}" ; index=$((index+1))
 
     # Get the components
-    local component="${repo##$uri $suite }"
+    if (( "${#repo_parts[@]}" > 0 )); then
+        component="${repo_parts[*]:$index}"
+    fi
 
     # Add the repository into sources.list.d
     ynh_add_repo --uri="$uri" --suite="$suite" --component="$component" --name="$name" $append

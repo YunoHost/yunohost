@@ -196,10 +196,20 @@ ynh_apt_install_dependencies_from_extra_repository() {
     # ===========================================
 
     # Split the repository into uri, suite and components.
-    repo="${repo#deb }"
-    local uri="$(echo "$repo" | awk '{ print $1 }')"
-    local suite="$(echo "$repo" | awk '{ print $2 }')"
-    local component="${repo##$uri $suite }"
+    IFS=', ' read -r -a repo_parts <<< "$repo"
+    index=0
+
+    # Remove "deb " at the beginning of the repo.
+    if [[ "${repo_parts[0]}" == "deb" ]]; then
+        index=1
+    fi
+    uri="${repo_parts[$index]}" ; index=$((index+1))
+    suite="${repo_parts[$index]}" ; index=$((index+1))
+
+    # Get the components
+    if (( "${#repo_parts[@]}" > 0 )); then
+        component="${repo_parts[*]:$index}"
+    fi
 
     # Add the new repo in sources.list.d
     mkdir --parents "/etc/apt/sources.list.d"
