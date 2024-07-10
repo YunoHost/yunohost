@@ -187,6 +187,8 @@ ynh_package_install_from_equivs() {
     # Build and install the package
     local TMPDIR=$(mktemp --directory)
     mkdir -p ${TMPDIR}/${pkgname}/DEBIAN/
+    # For some reason, dpkg-deb insists for folder perm to be 755 and sometimes it's 777 o_O?
+    chmod -R 755 ${TMPDIR}/${pkgname}
 
     # Note that the cd executes into a sub shell
     # Create a fake deb package with equivs-build and the given control file
