@@ -98,7 +98,7 @@ ynh_apt_install_dependencies() {
     local TMPDIR=$(mktemp --directory)
     mkdir -p ${TMPDIR}/${app_ynh_deps}/DEBIAN
     # For some reason, dpkg-deb insists for folder perm to be 755 and sometimes it's 777 o_O?
-    chmod -R 755 ${TMPDIR}/${pkgname}
+    chmod -R 755 ${TMPDIR}/${app_ynh_deps}
 
     cat >${TMPDIR}/${app_ynh_deps}/DEBIAN/control <<EOF
 Section: misc
