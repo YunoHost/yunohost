@@ -2314,11 +2314,6 @@ def backup_restore(name, system=[], apps=[], force=False):
     # Initialize                                                            #
     #
 
-    if name.endswith(".tar.gz"):
-        name = name[: -len(".tar.gz")]
-    elif name.endswith(".tar"):
-        name = name[: -len(".tar")]
-
     restore_manager = RestoreManager(name)
 
     restore_manager.set_system_targets(system)
@@ -2451,6 +2446,7 @@ def backup_info(name, with_details=False, human_readable=False):
         human_readable -- Print sizes in human readable format
 
     """
+    original_name = name
 
     if name.endswith(".tar.gz"):
         name = name[: -len(".tar.gz")]
@@ -2463,7 +2459,10 @@ def backup_info(name, with_details=False, human_readable=False):
     if not os.path.lexists(archive_file):
         archive_file += ".gz"
         if not os.path.lexists(archive_file):
-            raise YunohostValidationError("backup_archive_name_unknown", name=name)
+            # Maybe the user provided a path to the backup?
+            archive_file = original_name
+            if not os.path.lexists(archive_file):
+                raise YunohostValidationError("backup_archive_name_unknown", name=name)
 
     # If symlink, retrieve the real path
     if os.path.islink(archive_file):
