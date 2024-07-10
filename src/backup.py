@@ -2328,7 +2328,7 @@ def backup_restore(name, system=[], apps=[], force=False):
     # Add validation if restoring system parts on an already-installed system
     #
 
-    if restore_manager.targets.targets["system"] != [] and os.path.isfile(
+    if restore_manager.info["system"] != {} and restore_manager.targets.targets["system"] != [] and os.path.isfile(
         "/etc/yunohost/installed"
     ):
         logger.warning(m18n.n("yunohost_already_installed"))
