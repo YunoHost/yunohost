@@ -440,5 +440,8 @@
     "restore_system_part_failed": "Tidak dapat memulihkan segmen '{part}'",
     "service_enable_failed": "Tidak dapat membuat layanan '{service}' dimulai mandiri saat pemulaian.\n\nLog layanan baru-baru ini:{logs}",
     "service_not_reloading_because_conf_broken": "Tidak memuat atau memulai ulang layanan '{name}' karena konfigurasinya rusak: {errors}",
-    "service_reloaded": "Layanan {service} dimuat ulang"
+    "service_reloaded": "Layanan {service} dimuat ulang",
+    "additional_urls_already_removed": "URL tambahan '{url}' sudah disingkirkan pada URL tambahan untuk perizinan '{permission}'",
+    "additional_urls_already_added": "URL tambahan '{url}' sudah ditambahkan pada URL tambahan untuk perizinan '{permission}'",
+    "app_argument_password_no_default": "Galat ketika mengurai argumen sandi '{name}': argumen sandi tidak diperbolehkan mempunyai suatu nilai baku demi alasan keamanan"
 }
