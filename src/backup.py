@@ -1923,6 +1923,9 @@ class TarBackupMethod(BackupMethod):
 
     @property
     def _archive_file(self):
+        if isinstance(self.manager, RestoreManager):
+            return self.manager.archive_path
+
         if isinstance(self.manager, BackupManager) and settings_get(
             "misc.backup.backup_compress_tar_archives"
         ):
