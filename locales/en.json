@@ -609,7 +609,7 @@
     "migration_0027_patch_yunohost_conflicts": "Applying patch to workaround conflict issue…",
     "migration_0027_patching_sources_list": "Patching the sources.lists…",
     "migration_0027_problematic_apps_warning": "Please note that the following possibly problematic installed apps were detected. It looks like those were not installed from the YunoHost app catalog, or are not flagged as 'working'. Consequently, it cannot be guaranteed that they will still work after the upgrade: {problematic_apps}",
-    "migration_0027_start": "Starting migration to Bullseye",
+    "migration_0027_start": "Starting migration to Bookworm",
     "migration_0027_still_on_bullseye_after_main_upgrade": "Something went wrong during the main upgrade, the system appears to still be on Debian Bullseye",
     "migration_0027_system_not_fully_up_to_date": "Your system is not fully up-to-date. Please perform a regular upgrade before running the migration to Bullseye.",
     "migration_0027_yunohost_upgrade": "Starting YunoHost core upgrade…",
