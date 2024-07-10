@@ -299,7 +299,7 @@ def aptitude_with_progress_bar(cmd):
     read, write = os.pipe()
     os.write(write, b"y\ny\ny")
     os.close(write)
-    ret = call_async_output(cmd, callbacks, shell=True)
+    ret = call_async_output(cmd, callbacks, shell=True, stdin=read)
 
     if log_apt_status_to_progress_bar.previous_package is not None and ret == 0:
         log_apt_status_to_progress_bar("done::100:Done")
