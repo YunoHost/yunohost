@@ -32,9 +32,9 @@ postfix:
   needs_exposed_ports: [25, 587]
   category: email
 postgresql:
-  actual_systemd_service: 'postgresql@13-main'
+  actual_systemd_service: 'postgresql@15-main'
   category: database
-  ignore_if_package_is_not_installed: postgresql-13
+  ignore_if_package_is_not_installed: postgresql-15
 redis-server:
   log: /var/log/redis/redis-server.log
   category: database
