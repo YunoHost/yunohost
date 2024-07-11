@@ -1694,7 +1694,7 @@ def app_ssowatconf():
             else:
                 auth_header = "basic-without-password"
         else:
-            auth_header = None
+            auth_header = False
 
         permissions[perm_name] = {
             "users": perm_info["corresponding_users"],
