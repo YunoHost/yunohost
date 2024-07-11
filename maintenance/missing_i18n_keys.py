@@ -32,6 +32,7 @@ def find_expected_string_keys():
     python_files = glob.glob(ROOT + "src/*.py")
     python_files.extend(glob.glob(ROOT + "src/utils/*.py"))
     python_files.extend(glob.glob(ROOT + "src/migrations/*.py"))
+    python_files.extend(glob.glob(ROOT + "src/migrations/*.py.disabled"))
     python_files.extend(glob.glob(ROOT + "src/authenticators/*.py"))
     python_files.extend(glob.glob(ROOT + "src/diagnosers/*.py"))
     python_files.append(ROOT + "bin/yunohost")
@@ -74,6 +75,9 @@ def find_expected_string_keys():
         if "__init__" in path:
             continue
         yield "migration_description_" + os.path.basename(path)[:-3]
+
+    # FIXME: to be removed in bookworm branch
+    yield "migration_description_0027_migrate_to_bookworm"
 
     # For each default service, expect to find "service_description_<name>"
     for service, info in yaml.safe_load(
