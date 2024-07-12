@@ -85,7 +85,7 @@ BORING_LOG_LINES = [
 
 def _update_log_parent_symlinks():
 
-    one_year_ago = (time.time() - 365 * 24 * 3600)
+    one_year_ago = time.time() - 365 * 24 * 3600
 
     logs = glob.iglob(OPERATIONS_PATH + "*" + METADATA_FILE_EXT)
     for log_md in logs:
@@ -134,15 +134,23 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
 
     _update_log_parent_symlinks()
 
-    one_year_ago = (time.time() - 365 * 24 * 3600)
-    logs = [x for x in os.listdir(OPERATIONS_PATH) if x.endswith(METADATA_FILE_EXT) and os.path.getctime(x) > one_year_ago]
+    one_year_ago = time.time() - 365 * 24 * 3600
+    logs = [
+        x
+        for x in os.listdir(OPERATIONS_PATH)
+        if x.endswith(METADATA_FILE_EXT) and os.path.getctime(x) > one_year_ago
+    ]
     logs = list(reversed(sorted(logs)))
 
     if not with_suboperations:
+
         def parent_symlink_points_to_dev_null(log):
             name = log[: -len(METADATA_FILE_EXT)]
             parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
-            return os.path.islink(parent_symlink) and os.path.realpath(parent_symlink) == "/dev/null"
+            return (
+                os.path.islink(parent_symlink)
+                and os.path.realpath(parent_symlink) == "/dev/null"
+            )
 
         logs = [log for log in logs if parent_symlink_points_to_dev_null(log)]
 
