@@ -58,21 +58,6 @@ yunohost-firewall:
   category: security
 yunomdns:
   category: mdns
-glances: null
-nsswitch: null
-ssl: null
-yunohost: null
-bind9: null
-tahoe-lafs: null
-memcached: null
-udisks2: null
-udisk-glue: null
-amavis: null
-postgrey: null
-spamassassin: null
-rmilter: null
 php5-fpm: null
 php7.0-fpm: null
 php7.3-fpm: null
-nslcd: null
-avahi-daemon: null
