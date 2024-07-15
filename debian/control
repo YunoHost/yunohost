@@ -26,7 +26,6 @@ Depends: python3-all (>= 3.11),
  , postfix, postfix-ldap, postfix-policyd-spf-perl, postfix-pcre
  , dovecot-core, dovecot-ldap, dovecot-lmtpd, dovecot-managesieved, dovecot-antispam
  , opendkim-tools, opendkim, postsrsd, procmail, mailutils
- , redis-server
  , acl
  , git, curl, wget, cron, unzip, jq, bc, at, procps, j2cli
  , lsb-release, haveged, fake-hwclock, lsof, whois
@@ -44,7 +43,6 @@ Conflicts: iptables-persistent
  , openssl (>= 3.1)
  , slapd (>= 2.6)
  , dovecot-core (>= 1:2.4)
- , redis-server (>= 5:7.1)
  , fail2ban (>= 1.1)
  , iptables (>= 1.8.10)
 Description: manageable and configured self-hosting server
