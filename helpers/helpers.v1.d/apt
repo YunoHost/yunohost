@@ -471,21 +471,29 @@ ynh_install_extra_repo() {
         wget_append="tee"
     fi
 
-    # Split the repository into uri, suite and components.
+    if [[ "$key" == "trusted=yes" ]]; then
+        trusted="--trusted"
+    else
+        trusted=""
+    fi
+
+    IFS=', ' read -r -a repo_parts <<< "$repo"
+    index=0
+
     # Remove "deb " at the beginning of the repo.
-    repo="${repo#deb }"
-
-    # Get the uri
-    local uri="$(echo "$repo" | awk '{ print $1 }')"
-
-    # Get the suite
-    local suite="$(echo "$repo" | awk '{ print $2 }')"
+    if [[ "${repo_parts[0]}" == "deb" ]]; then
+        index=1
+    fi
+    uri="${repo_parts[$index]}" ; index=$((index+1))
+    suite="${repo_parts[$index]}" ; index=$((index+1))
 
     # Get the components
-    local component="${repo##$uri $suite }"
+    if (( "${#repo_parts[@]}" > 0 )); then
+        component="${repo_parts[*]:$index}"
+    fi
 
     # Add the repository into sources.list.d
-    ynh_add_repo --uri="$uri" --suite="$suite" --component="$component" --name="$name" $append
+    ynh_add_repo --uri="$uri" --suite="$suite" --component="$component" --name="$name" $append $trusted
 
     # Pin the new repo with the default priority, so it won't be used for upgrades.
     # Build $pin from the uri without http and any sub path
@@ -498,7 +506,7 @@ ynh_install_extra_repo() {
     ynh_pin_repo --package="*" --pin="origin \"$pin\"" $priority --name="$name" $append
 
     # Get the public key for the repo
-    if [ -n "$key" ]; then
+    if [ -n "$key" ] && [[ "$key" != "trusted=yes" ]]; then
         mkdir --parents "/etc/apt/trusted.gpg.d"
         # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
         wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor | $wget_append /etc/apt/trusted.gpg.d/$name.gpg >/dev/null
@@ -551,6 +559,7 @@ ynh_remove_extra_repo() {
 # | arg: -c, --component=   - Component of the repository.
 # | arg: -n, --name=        - Name for the files for this repo, $app as default value.
 # | arg: -a, --append       - Do not overwrite existing files.
+# | arg: -t, --trusted      - Add trusted=yes to the repository (not recommended)
 #
 # Example for a repo like deb http://forge.yunohost.org/debian/ stretch stable
 #                             uri                               suite   component
@@ -559,13 +568,14 @@ ynh_remove_extra_repo() {
 # Requires YunoHost version 3.8.1 or higher.
 ynh_add_repo() {
     # Declare an array to define the options of this helper.
-    local legacy_args=uscna
-    local -A args_array=([u]=uri= [s]=suite= [c]=component= [n]=name= [a]=append)
+    local legacy_args=uscnat
+    local -A args_array=([u]=uri= [s]=suite= [c]=component= [n]=name= [a]=append [t]=trusted)
     local uri
     local suite
     local component
     local name
     local append
+    local trusted
     # Manage arguments with getopts
     ynh_handle_getopts_args "$@"
     name="${name:-$app}"
@@ -576,10 +586,15 @@ ynh_add_repo() {
     else
         append="tee"
     fi
+    if [[ "$trusted" -eq 1 ]]; then
+        trust="[trusted=yes]"
+    else
+        trust=""
+    fi
 
     mkdir --parents "/etc/apt/sources.list.d"
     # Add the new repo in sources.list.d
-    echo "deb $uri $suite $component" \
+    echo "deb $trust $uri $suite $component" \
         | $append "/etc/apt/sources.list.d/$name.list"
 }
 

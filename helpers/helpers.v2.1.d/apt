@@ -199,14 +199,30 @@ ynh_apt_install_dependencies_from_extra_repository() {
     # ===========================================
 
     # Split the repository into uri, suite and components.
-    repo="${repo#deb }"
-    local uri="$(echo "$repo" | awk '{ print $1 }')"
-    local suite="$(echo "$repo" | awk '{ print $2 }')"
-    local component="${repo##$uri $suite }"
+    IFS=', ' read -r -a repo_parts <<< "$repo"
+    index=0
+
+    # Remove "deb " at the beginning of the repo.
+    if [[ "${repo_parts[0]}" == "deb" ]]; then
+        index=1
+    fi
+    uri="${repo_parts[$index]}" ; index=$((index+1))
+    suite="${repo_parts[$index]}" ; index=$((index+1))
+
+    # Get the components
+    if (( "${#repo_parts[@]}" > 0 )); then
+        component="${repo_parts[*]:$index}"
+    fi
+
+    if [[ "$key" == "trusted=yes" ]]; then
+        trust="[trusted=yes]"
+    else
+        trust=""
+    fi
 
     # Add the new repo in sources.list.d
     mkdir --parents "/etc/apt/sources.list.d"
-    echo "deb $uri $suite $component" > "/etc/apt/sources.list.d/$app.list"
+    echo "deb $trust $uri $suite $component" > "/etc/apt/sources.list.d/$app.list"
 
     # Pin the new repo with the default priority, so it won't be used for upgrades.
     # Build $pin from the uri without http and any sub path
@@ -221,9 +237,11 @@ Pin: origin $pin
 Pin-Priority: 995
 EOF
 
-    mkdir --parents "/etc/apt/trusted.gpg.d"
-    # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-    wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor > /etc/apt/trusted.gpg.d/$app.gpg
+    if [ -n "$key" ] && [[ "$key" != "trusted=yes" ]]; then
+        mkdir --parents "/etc/apt/trusted.gpg.d"
+        # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
+        wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor > /etc/apt/trusted.gpg.d/$app.gpg
+    fi
 
     # Update the list of package with the new repo NB: we use -o
     # Dir::Etc::sourcelist to only refresh this repo, because
