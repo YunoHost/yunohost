@@ -18,7 +18,7 @@ Depends: python3-all (>= 3.11),
  , python3-cryptography, python3-jwt, python3-passlib, python3-magic
  , python-is-python3, python3-pydantic, python3-email-validator
  , nginx, nginx-extras (>=1.22)
- , apt, apt-transport-https, apt-utils, dirmngr
+ , apt, apt-transport-https, apt-utils, aptitude, dirmngr
  , openssh-server, iptables, fail2ban, bind9-dnsutils
  , openssl, ca-certificates, netcat-openbsd, iproute2
  , slapd, ldap-utils, sudo-ldap, libnss-ldapd, unscd, libpam-ldapd
@@ -29,7 +29,7 @@ Depends: python3-all (>= 3.11),
  , redis-server
  , acl
  , git, curl, wget, cron, unzip, jq, bc, at, procps, j2cli
- , lsb-release, haveged, fake-hwclock, equivs, lsof, whois
+ , lsb-release, haveged, fake-hwclock, lsof, whois
 Recommends: yunohost-admin, yunohost-portal (>= 12.0)
  , ntp, inetutils-ping | iputils-ping
  , bash-completion, rsyslog

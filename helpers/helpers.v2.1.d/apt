@@ -90,26 +90,27 @@ ynh_apt_install_dependencies() {
         dependencies="$current_dependencies, $dependencies"
     fi
 
-    # #############################
-    # Actual install using equivs #
-    # #############################
+    # ################
+    # Actual install #
+    # ################
 
-    # Prepare the virtual-dependency control file for equivs
+    # Prepare the virtual-dependency control file for dpkg-deb --build
     local TMPDIR=$(mktemp --directory)
-    cat >${TMPDIR}/control <<EOF # Make a control file for equivs-build
+    mkdir -p ${TMPDIR}/${app_ynh_deps}/DEBIAN
+    # For some reason, dpkg-deb insists for folder perm to be 755 and sometimes it's 777 o_O?
+    chmod -R 755 ${TMPDIR}/${app_ynh_deps}
+
+    cat >${TMPDIR}/${app_ynh_deps}/DEBIAN/control <<EOF
 Section: misc
 Priority: optional
 Package: ${app_ynh_deps}
 Version: ${version}
 Depends: ${dependencies}
 Architecture: all
+Maintainer: root@localhost
 Description: Fake package for ${app} (YunoHost app) dependencies
  This meta-package is only responsible of installing its dependencies.
 EOF
-
-    # Make sure to delete equivs' legacy compat file
-    # It's now handle somewhat magically through the control file
-    rm -f /usr/share/equivs/template/debian/compat
 
     _ynh_apt update
 
@@ -119,8 +120,8 @@ EOF
         # NB: this is in a subshell (though not sure why exactly not just use pushd/popd...)
         cd "$TMPDIR"
         # Install the fake package without its dependencies with dpkg --force-depends
-        LC_ALL=C equivs-build ./control > ./equivs_log 2>&1 || { cat ./equivs_log; false; }
-        LC_ALL=C dpkg --force-depends --install "./${app_ynh_deps}_${version}_all.deb" > ./dpkg_log 2>&1
+        LC_ALL=C dpkg-deb --build ${app_ynh_deps} ${app_ynh_deps}.deb > ./dpkg_log 2>&1 || { cat ./dpkg_log; false; }
+        LC_ALL=C dpkg --force-depends --install "./${app_ynh_deps}.deb" > ./dpkg_log 2>&1
     )
 
     # Then install the missing dependencies with apt install
@@ -198,14 +199,30 @@ ynh_apt_install_dependencies_from_extra_repository() {
     # ===========================================
 
     # Split the repository into uri, suite and components.
-    repo="${repo#deb }"
-    local uri="$(echo "$repo" | awk '{ print $1 }')"
-    local suite="$(echo "$repo" | awk '{ print $2 }')"
-    local component="${repo##$uri $suite }"
+    IFS=', ' read -r -a repo_parts <<< "$repo"
+    index=0
+
+    # Remove "deb " at the beginning of the repo.
+    if [[ "${repo_parts[0]}" == "deb" ]]; then
+        index=1
+    fi
+    uri="${repo_parts[$index]}" ; index=$((index+1))
+    suite="${repo_parts[$index]}" ; index=$((index+1))
+
+    # Get the components
+    if (( "${#repo_parts[@]}" > 0 )); then
+        component="${repo_parts[*]:$index}"
+    fi
+
+    if [[ "$key" == "trusted=yes" ]]; then
+        trust="[trusted=yes]"
+    else
+        trust=""
+    fi
 
     # Add the new repo in sources.list.d
     mkdir --parents "/etc/apt/sources.list.d"
-    echo "deb $uri $suite $component" > "/etc/apt/sources.list.d/$app.list"
+    echo "deb $trust $uri $suite $component" > "/etc/apt/sources.list.d/$app.list"
 
     # Pin the new repo with the default priority, so it won't be used for upgrades.
     # Build $pin from the uri without http and any sub path
@@ -220,9 +237,11 @@ Pin: origin $pin
 Pin-Priority: 995
 EOF
 
-    mkdir --parents "/etc/apt/trusted.gpg.d"
-    # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
-    wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor > /etc/apt/trusted.gpg.d/$app.gpg
+    if [ -n "$key" ] && [[ "$key" != "trusted=yes" ]]; then
+        mkdir --parents "/etc/apt/trusted.gpg.d"
+        # Timeout option is here to enforce the timeout on dns query and tcp connect (c.f. man wget)
+        wget --timeout 900 --quiet "$key" --output-document=- | gpg --dearmor > /etc/apt/trusted.gpg.d/$app.gpg
+    fi
 
     # Update the list of package with the new repo NB: we use -o
     # Dir::Etc::sourcelist to only refresh this repo, because

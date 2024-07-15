@@ -252,7 +252,11 @@ def aptitude_with_progress_bar(cmd):
 
         if package == "dpkg-exec":
             return
-        if package and log_apt_status_to_progress_bar.previous_package and package == log_apt_status_to_progress_bar.previous_package:
+        if (
+            package
+            and log_apt_status_to_progress_bar.previous_package
+            and package == log_apt_status_to_progress_bar.previous_package
+        ):
             return
 
         try:
@@ -276,18 +280,22 @@ def aptitude_with_progress_bar(cmd):
     log_apt_status_to_progress_bar.download_message_displayed = False
 
     def strip_boring_dpkg_reading_database(s):
-        return re.sub(r'(\(Reading database ... \d*%?|files and directories currently installed.\))', '', s)
+        return re.sub(
+            r"(\(Reading database ... \d*%?|files and directories currently installed.\))",
+            "",
+            s,
+        )
 
     callbacks = (
         lambda l: logger.debug(strip_boring_dpkg_reading_database(l).rstrip() + "\r"),
-        lambda l: logger.warning(l.rstrip() + "\r"), # ... aptitude has no stderr ? :|  if _apt_log_line_is_relevant(l.rstrip()) else logger.debug(l.rstrip() + "\r"),
+        lambda l: logger.warning(
+            l.rstrip() + "\r"
+        ),  # ... aptitude has no stderr ? :|  if _apt_log_line_is_relevant(l.rstrip()) else logger.debug(l.rstrip() + "\r"),
         lambda l: log_apt_status_to_progress_bar(l.rstrip()),
     )
 
     original_cmd = cmd
-    cmd = (
-        f'LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none aptitude {cmd} --quiet=2 -o=Dpkg::Use-Pty=0 -o "APT::Status-Fd=$YNH_STDINFO"'
-    )
+    cmd = f'LC_ALL=C DEBIAN_FRONTEND=noninteractive APT_LISTCHANGES_FRONTEND=none aptitude {cmd} --quiet=2 -o=Dpkg::Use-Pty=0 -o "APT::Status-Fd=$YNH_STDINFO"'
 
     # If upgrading yunohost from the API, delay the Yunohost-api restart
     # (this should be the last time we need it before bookworm, because on bookworm, yunohost-admin cookies will be persistent upon api restart)
@@ -299,12 +307,14 @@ def aptitude_with_progress_bar(cmd):
     read, write = os.pipe()
     os.write(write, b"y\ny\ny")
     os.close(write)
-    ret = call_async_output(cmd, callbacks, shell=True)
+    ret = call_async_output(cmd, callbacks, shell=True, stdin=read)
 
     if log_apt_status_to_progress_bar.previous_package is not None and ret == 0:
         log_apt_status_to_progress_bar("done::100:Done")
     elif ret != 0:
-        raise YunohostError(f"Failed to run command 'aptitude {original_cmd}'", raw_msg=True)
+        raise YunohostError(
+            f"Failed to run command 'aptitude {original_cmd}'", raw_msg=True
+        )
 
 
 def _apt_log_line_is_relevant(line):

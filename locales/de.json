@@ -63,7 +63,7 @@
     "mail_forward_remove_failed": "Die Weiterleitungs-E-Mail '{mail}' konnte nicht gelöscht werden",
     "main_domain_change_failed": "Die Hauptdomain konnte nicht geändert werden",
     "main_domain_changed": "Die Hauptdomain wurde geändert",
-    "pattern_backup_archive_name": "Muss ein gültiger Dateiname mit maximal 30 Zeichen sein, ausschliesslich alphanumerische Zeichen und -_.",
+    "pattern_backup_archive_name": "Muss ein gültiger Dateiname mit maximal 30 Zeichen sein, ausschließlich alphanumerische Zeichen und -_.",
     "pattern_domain": "Muss ein gültiger Domainname sein (z.B. meine-domain.org)",
     "pattern_email": "Es muss sich um eine gültige E-Mail-Adresse handeln, ohne '+'-Symbol (z. B. name@domäne.de)",
     "pattern_firstname": "Muss ein gültiger Vorname sein (mindestens 3 Zeichen)",

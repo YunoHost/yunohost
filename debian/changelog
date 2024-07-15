@@ -4,6 +4,30 @@ yunohost (12.0.0) unstable; urgency=low
 
  -- Alexandre Aubin <alex.aubin@mailoo.org>  Thu, 04 May 2023 20:30:19 +0200
  
+yunohost (11.2.21) stable; urgency=low
+
+  - log: optimize log list perf by creating a 'cache' symlink pointing to the log's parent ([#1907](http://github.com/YunoHost/yunohost/pull/1907))
+  - log: small hack when dumping log right after script failure, prevent a weird edge case where it'll dump the log of the resource provisioning instead of the script (1bb81e8f)
+  - debian: Bullseye->Bookworm migration ('hidden' but easier to test) ([#1759](http://github.com/YunoHost/yunohost/pull/1759), ab8e0e66, e54e99bf)
+  - helpers/apt: rely on simpler dpkg-deb --build rather than equivs to create .deb for app virtual dependencies (f6fbd69c, 8be726b9)
+  - helpers/apt: Support apt repositories with [trusted=yes] ([#1903](http://github.com/YunoHost/yunohost/pull/1903))
+  - backups: one should be able to restore a backup archive by providing a path to the archive without moving it to /home/yunohost.backup/archives/ (c8a18129, b266e398)
+  - backups: yunohost should not ask confirmation that 'YunoHost is already installed' when restoring only apps (9c22d36c)
+  - i18n: translate _diagnosis_ignore function ([#1894](http://github.com/YunoHost/yunohost/pull/1894))
+  - i18n: Translations updated for Basque, Catalan, French, Galician, German, Indonesian, Japanese, Russian, Spanish, Ukrainian
+
+  Thanks to all contributors <3 ! (alexAubin, Anonymous, cjdw, Félix Piédallu, Ivan Davydov, José M, Kayou, OniriCorpe, ppr, Zwiebel)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 15 Jul 2024 16:22:26 +0200
+
+yunohost (11.2.20.2) stable; urgency=low
+
+  - Fix service enable/disable auto-ignoring diagnosis entries ([#1886](http://github.com/YunoHost/yunohost/pull/1886))
+
+  Thanks to all contributors <3 ! (OniriCorpe)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Wed, 03 Jul 2024 21:51:50 +0200
+
 yunohost (11.2.20.1) stable; urgency=low
 
   - helpers2.1: typo (1ed56952e)
