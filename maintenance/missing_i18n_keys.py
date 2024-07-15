@@ -76,9 +76,6 @@ def find_expected_string_keys():
             continue
         yield "migration_description_" + os.path.basename(path)[:-3]
 
-    # FIXME: to be removed in bookworm branch
-    yield "migration_description_0027_migrate_to_bookworm"
-
     # For each default service, expect to find "service_description_<name>"
     for service, info in yaml.safe_load(
         open(ROOT + "conf/yunohost/services.yml")
