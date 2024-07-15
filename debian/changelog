@@ -1,3 +1,10 @@
+yunohost (11.2.21.2) stable; urgency=low
+
+  - bullseye->bookworm migration: tweak message to reflect the fact that metronome and rspamd will be applications starting with bookworm (64c8d9e8)
+  - helpers/apt: unbound variable (8a65053a)
+
+ -- Alexandre Aubin <alex.aubin@mailoo.org>  Mon, 15 Jul 2024 23:07:08 +0200
+
 yunohost (11.2.21.1) stable; urgency=low
 
   - helpers2.1: forgot to patch ynh_remove_fpm_config -> ynh_config_remove_phpfpm (bb20020c)
