@@ -580,6 +580,7 @@ ynh_add_repo() {
     ynh_handle_getopts_args "$@"
     name="${name:-$app}"
     append=${append:-0}
+    trusted=${trusted:-0}
 
     if [ $append -eq 1 ]; then
         append="tee --append"

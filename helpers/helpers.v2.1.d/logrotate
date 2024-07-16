@@ -67,7 +67,7 @@ EOF
 
 # Remove the app's logrotate config.
 #
-# usage: ynh_remove_logrotate
+# usage:ynh_config_remove_logrotate
 ynh_config_remove_logrotate() {
     if [ -e "/etc/logrotate.d/$app" ]; then
         rm "/etc/logrotate.d/$app"

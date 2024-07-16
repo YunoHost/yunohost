@@ -356,7 +356,7 @@ class MyMigration(Migration):
             "N.B.: This migration has been tested by the community over the last few months but has only been declared stable recently. If your server hosts critical services and if you are not too confident with debugging possible issues, we recommend you to wait a little bit more while we gather more feedback and polish things up. If on the other hand you are relatively confident with debugging small issues that may arise, you are encouraged to run this migration ;)! You can read about remaining known issues and feedback from the community here: https://forum.yunohost.org/t/?? FIXME ?? \n\n"
             + message
             + "\n\n"
-            + "Packages 'metronome' (xmpp server) and 'rspamd' (mail antispam) are now optional dependencies and may get uninstalled during the upgrade. Make sure to explicitly re-install those using 'apt install' after the upgrade if you care about those!"
+            + "Packages 'metronome' (xmpp server) and 'rspamd' (mail antispam) are now separate applications available in the catalog, and will be uninstalled during the upgrade. Make sure to explicitly install the corresponding new apps after the upgrade if you care about those!"
         )
 
         if problematic_apps:

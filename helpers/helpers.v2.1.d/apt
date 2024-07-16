@@ -54,7 +54,7 @@ ynh_apt_install_dependencies() {
             if [[ -f "/etc/php/$php_version/fpm/pool.d/$app.conf" ]]
             then
                 ynh_backup_if_checksum_is_different "/etc/php/$php_version/fpm/pool.d/$app.conf"
-                ynh_remove_fpm_config
+                ynh_config_remove_phpfpm
             fi
         fi
         # Store php_version into the config of this app
