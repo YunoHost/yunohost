@@ -74,8 +74,9 @@ def _backup_pip_freeze_for_python_app_venvs():
     venvs = _get_all_venvs("/opt/") + _get_all_venvs("/var/www/")
     for venv in venvs:
         # Generate a requirements file from venv
+        # Remove pkg resources from the freeze to avoid an error during the python venv https://stackoverflow.com/a/40167445
         os.system(
-            f"{venv}/bin/pip freeze > {venv}{VENV_REQUIREMENTS_SUFFIX} 2>/dev/null"
+            f"{venv}/bin/pip freeze | grep -E -v 'pkg(-|_)resources==' > {venv}{VENV_REQUIREMENTS_SUFFIX} 2>/dev/null"
         )
 
 
