@@ -56,7 +56,7 @@ class MyMigration(Migration):
             "LC_ALL=C pg_dropcluster --stop 15 main || true"
         )  # We do not trigger an exception if the command fails because that probably means cluster 15 doesn't exists, which is fine because it's created during the pg_upgradecluster)
         time.sleep(3)
-        self.runcmd("LC_ALL=C pg_upgradecluster -m upgrade 13 main")
+        self.runcmd("LC_ALL=C pg_upgradecluster -m upgrade 13 main -v 15")
         self.runcmd("LC_ALL=C pg_dropcluster --stop 13 main")
         self.runcmd("systemctl start postgresql")
 
