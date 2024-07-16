@@ -135,7 +135,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
     logs = [
         x
         for x in os.listdir(OPERATIONS_PATH)
-        if x.endswith(METADATA_FILE_EXT) and os.path.getctime(OPERATIONS_PATH + "/" + x) > one_year_ago
+        if x.endswith(METADATA_FILE_EXT) and os.path.getctime(os.path.join(OPERATIONS_PATH, x)) > one_year_ago
     ]
     logs = list(reversed(sorted(logs)))
 
