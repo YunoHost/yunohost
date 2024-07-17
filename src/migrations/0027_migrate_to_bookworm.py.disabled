@@ -4,7 +4,9 @@ import subprocess
 from time import sleep
 
 from moulinette import Moulinette, m18n
+from moulinette.utils.process import call_async_output
 from yunohost.utils.error import YunohostError
+from yunohost.tools import _write_migration_state
 from moulinette.utils.process import check_output
 from moulinette.utils.filesystem import read_file, write_to_file
 
@@ -229,6 +231,18 @@ class MyMigration(Migration):
             # If the upgrade was sucessful, we want to unhold the apps packages
             if apps_packages:
                 aptitude_with_progress_bar(f"unhold {' '.join(apps_packages)}")
+
+        # Mark this migration as completed before triggering the "new" migrations
+        _write_migration_state(self.id, "done")
+
+        callbacks = (
+            lambda l: logger.debug("+ " + l.rstrip() + "\r"),
+            lambda l: logger.warning(l.rstrip()),
+        )
+        try:
+            call_async_output(["yunohost", "tools", "migrations", "run"], callbacks)
+        except Exception as e:
+            logger.error(e)
 
         # If running from the webadmin, restart the API after a delay
         if Moulinette.interface.type == "api":
