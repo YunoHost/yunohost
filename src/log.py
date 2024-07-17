@@ -87,7 +87,7 @@ def _update_log_parent_symlinks():
 
     one_year_ago = time.time() - 365 * 24 * 3600
 
-    logs = glob.iglob("*" + METADATA_FILE_EXT, root_dir=OPERATIONS_PATH)
+    logs = glob.iglob("*" + METADATA_FILE_EXT, root_dir=OPERATIONS_PATH, include_hidden=True)
     for log_md in logs:
         log_file = os.path.join(OPERATIONS_PATH, log_md)
         if os.path.getctime(log_file) < one_year_ago:
@@ -95,7 +95,7 @@ def _update_log_parent_symlinks():
             continue
 
         name = log_md[: -len(METADATA_FILE_EXT)]
-        parent_symlink = os.path.join(OPERATIONS_PATH, f"{name}.parent.yml")
+        parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
         if (os.path.islink(log_file) and os.path.realpath(log_file) == "/dev/null") or os.path.islink(parent_symlink):
             continue
 
@@ -147,7 +147,7 @@ def log_list(limit=None, with_details=False, with_suboperations=False):
 
         def parent_symlink_points_to_dev_null(log):
             name = log[: -len(METADATA_FILE_EXT)]
-            parent_symlink = os.path.join(OPERATIONS_PATH, f"{name}.parent.yml")
+            parent_symlink = os.path.join(OPERATIONS_PATH, f".{name}.parent.yml")
             return (
                 os.path.islink(parent_symlink)
                 and os.path.realpath(parent_symlink) == "/dev/null"
