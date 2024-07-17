@@ -111,7 +111,6 @@ def _update_log_parent_symlinks():
         parent = metadata.get("parent")
         parent = parent + METADATA_FILE_EXT if parent else "/dev/null"
         try:
-            print(parent, parent_symlink)
             os.symlink(parent, parent_symlink)
         except Exception as e:
             logger.warning(f"Failed to create symlink {parent_symlink} ? {e}")
