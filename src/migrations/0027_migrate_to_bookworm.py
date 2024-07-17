@@ -218,11 +218,11 @@ class MyMigration(Migration):
         # Yunohost upgrade
         #
         logger.info(m18n.n("migration_0027_yunohost_upgrade"))
-        aptitude_with_progress_bar(f"unhold yunohost moulinette ssowat yunohost-admin")
+        aptitude_with_progress_bar("unhold yunohost moulinette ssowat yunohost-admin")
 
         try:
             aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin yunohost-portal moulinette ssowat python3.9- python3.9-venv- -o Dpkg::Options::='--force-confold'")
-        except Exception as e:
+        except Exception:
             # Retry after unholding the app packages, maybe it can unlock the situation idk
             if apps_packages:
                 aptitude_with_progress_bar(f"unhold {' '.join(apps_packages)}")
