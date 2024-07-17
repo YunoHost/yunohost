@@ -185,7 +185,6 @@ class MyMigration(Migration):
 
         aptitude_with_progress_bar("upgrade cron rspamd- libluajit-5.1-2- --show-why -o APT::Force-LoopBreak=1 -o Dpkg::Options::='--force-confold'")
 
-        # FIXME : find a way to simulate and validate the upgrade first
         aptitude_with_progress_bar("full-upgrade --show-why -o Dpkg::Options::='--force-confold'")
 
         # Force regenconf of nsswitch because for some reason
@@ -220,27 +219,7 @@ class MyMigration(Migration):
 
         aptitude_with_progress_bar(f"unhold yunohost moulinette ssowat yunohost-admin {' '.join(apps_packages)}")
 
-        # FIXME : find a way to simulate and validate the upgrade first
         aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin yunohost-portal moulinette ssowat python3.9- python3.9-venv- -o Dpkg::Options::='--force-confold'")
-
-        #cmd = "LC_ALL=C"
-        #cmd += " DEBIAN_FRONTEND=noninteractive"
-        #cmd += " APT_LISTCHANGES_FRONTEND=none"
-        #cmd += " apt dist-upgrade "
-        #cmd += " --quiet -o=Dpkg::Use-Pty=0 --fix-broken --dry-run"
-        #cmd += " | grep -q 'ynh-deps'"
-
-        #logger.info("Simulating upgrade...")
-        #if os.system(cmd) == 0:
-        #    raise YunohostError(
-        #        "The upgrade cannot be completed, because some app dependencies would need to be removed?",
-        #        raw_msg=True,
-        #    )
-
-        # FIXME :
-        #postupgradecmds = "rm -f /usr/sbin/policy-rc.d\n"
-        #postupgradecmds += "echo 'Restarting nginx...' >&2\n"
-        #postupgradecmds += "systemctl restart nginx\n"
 
         # If running from the webadmin, restart the API after a delay
         if Moulinette.interface.type == "api":
