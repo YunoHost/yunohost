@@ -371,6 +371,7 @@ class MyMigration(Migration):
         # - comments lines containing "backports"
         # - replace 'bullseye/updates' by 'bookworm/updates' (or same with -)
         # - make sure the yunohost line has the "signed-by" thingy
+        # - replace "non-free" with "non-free non-free-firmware"
         # Special note about the security suite:
         # https://www.debian.org/releases/bullseye/amd64/release-notes/ch-information.en.html#security-archive
         for f in sources_list:
@@ -380,6 +381,7 @@ class MyMigration(Migration):
                 "-e '/backports/ s@^#*@#@' "
                 "-e 's@ bullseye/updates @ bookworm-security @g' "
                 "-e 's@ bullseye-@ bookworm-@g' "
+                "-e 's@ non-free@ non-free non-free-firmware@g' "
                 "-e 's@deb.*http://forge.yunohost.org@deb [signed-by=/usr/share/keyrings/yunohost-bookworm.gpg] http://forge.yunohost.org@g' "
             )
             os.system(command)
