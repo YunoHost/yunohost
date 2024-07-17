@@ -216,10 +216,19 @@ class MyMigration(Migration):
         # Yunohost upgrade
         #
         logger.info(m18n.n("migration_0027_yunohost_upgrade"))
-
         aptitude_with_progress_bar(f"unhold yunohost moulinette ssowat yunohost-admin {' '.join(apps_packages)}")
 
-        aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin yunohost-portal moulinette ssowat python3.9- python3.9-venv- -o Dpkg::Options::='--force-confold'")
+        try:
+            aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin yunohost-portal moulinette ssowat python3.9- python3.9-venv- -o Dpkg::Options::='--force-confold'")
+        except Exception as e:
+            # Retry after unholding the app packages, maybe it can unlock the situation idk
+            if apps_packages:
+                aptitude_with_progress_bar(f"unhold {' '.join(apps_packages)}")
+                aptitude_with_progress_bar("full-upgrade --show-why yunohost yunohost-admin yunohost-portal moulinette ssowat python3.9- python3.9-venv- -o Dpkg::Options::='--force-confold'")
+        else:
+            # If the upgrade was sucessful, we want to unhold the apps packages
+            if apps_packages:
+                aptitude_with_progress_bar(f"unhold {' '.join(apps_packages)}")
 
         # If running from the webadmin, restart the API after a delay
         if Moulinette.interface.type == "api":
