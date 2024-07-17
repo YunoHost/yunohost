@@ -36,6 +36,8 @@ do_post_regen() {
 
     chown -R opendkim /etc/dkim/
     chmod 700 /etc/dkim/
+
+    systemctl restart opendkim
 }
 
 do_$1_regen ${@:2}
