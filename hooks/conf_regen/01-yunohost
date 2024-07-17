@@ -300,9 +300,16 @@ do_post_regen() {
     base_folder_and_perm_init
 
     # Legacy log tree structure
-    if [ ! -e /var/log/yunohost/operations ] && [ -d /var/log/yunohost/categories/operation ] && [ ! -L /var/log/yunohost/categories/operation ]
+    if [ ! -e /var/log/yunohost/operations ]
     then
-        mv /var/log/yunohost/categories/operation /var/log/yunohost/operations
+        mkdir -p /var/log/yunohost/operations
+    fi
+    if [ -d /var/log/yunohost/categories/operation ] && [ ! -L /var/log/yunohost/categories/operation ]
+    then
+        # (we use find -type f instead of mv /folder/* to make sure to also move hidden files which are not included in globs by default)
+        find /var/log/yunohost/categories/operation/ -type f -print0 | xargs -0 -I {} mv {} /var/log/yunohost/operations/
+        # Attempt to delete the old dir (because we want it to be a symlink) or just rename it if it can't be removed (not empty) for some reason
+        rmdir /var/log/yunohost/categories/operation || mv /var/log/yunohost/categories/operation /var/log/yunohost/categories/operation.old
         ln -s /var/log/yunohost/operations /var/log/yunohost/categories/operation
     fi
 
